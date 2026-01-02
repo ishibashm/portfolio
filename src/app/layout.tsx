@@ -28,6 +28,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <footer className="py-8 bg-black text-center text-gray-600 text-sm">
+          <p>© {new Date().getFullYear()} My Portfolio. All rights reserved.</p>
+          <div className="mt-2">
+            <a href="/admin" className="hover:text-gray-400 transition-colors">
+              Admin Login
+            </a>
+          </div>
+        </footer>
       </body>
     </html>
   );

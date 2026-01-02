@@ -9,7 +9,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-black opacity-50 z-0"></div>
         <div className="z-10 text-center px-4">
           <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight animate-fade-in-up">
-            Creative Developer (Updated)
+            Creative Developer
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-2xl mx-auto animate-fade-in-up delay-100">
             Crafting digital experiences with code and passion.
