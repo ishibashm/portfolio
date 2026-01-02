@@ -77,8 +77,12 @@ jobs:
             rm deploy.zip
             
             cd my-app
-            # Prismaクライアント再生成
-            npx prisma generate --schema=./prisma/schema.prisma
-            # アプリ再起動
-            pm2 restart portfolio
+            
+            # Prismaクライアントはビルド時に生成されているため、サーバーでの再生成はスキップ
+            # (もしエラーが出る場合は binaryTargets の設定を確認)
+            
+            # アプリ再起動 (プロセスがない場合のエラーを回避するため、一度deleteしてstartする)
+            pm2 delete portfolio || true
+            HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name "portfolio" --update-env
+            pm2 save
           "
