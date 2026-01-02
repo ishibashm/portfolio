@@ -25,7 +25,7 @@ export default async function BlogPage() {
         </header>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {posts.map((post) => (
+          {posts.map((post: any) => (
             <Link key={post.id} href={`/blog/${post.slug}`} className="block group">
               <article className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition-all border border-gray-700 hover:border-indigo-500">
                 <div className="p-6">
@@ -33,15 +33,10 @@ export default async function BlogPage() {
                     <time dateTime={post.publishedAt.toISOString()}>
                       {formatDate(post.publishedAt.toISOString())}
                     </time>
-                    {post.tags && (
-                      <span className="bg-gray-700 px-2 py-1 rounded text-xs">
-                        {/* 簡易的なタグ表示 */}
-                        Tags
-                      </span>
-                    )}
+                    {/* post.tags && ... (タグはJSON文字列なのでパース必要だが割愛) */}
                   </div>
                   <h2 className="text-xl font-semibold mb-2 group-hover:text-indigo-400 transition-colors">
-                    {post.title}
+                    {post.title} (Slug: {post.slug})
                   </h2>
                   <p className="text-gray-400 line-clamp-3">
                     {post.excerpt || post.content.substring(0, 100)}...
