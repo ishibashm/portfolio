@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Deployment
+
+This project is deployed to GCP using GitHub Actions.
+See `docs/deployment.md` for details.
+
 ## Getting Started
 
 First, run the development server:
