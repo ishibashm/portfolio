@@ -2,7 +2,7 @@ name: Deploy to GCP
 
 on:
   push:
-    branches: [ main ] # mainブランチにプッシュされたら実行
+    branches: [ master ] # masterに変更
 
 jobs:
   deploy:
@@ -38,6 +38,10 @@ jobs:
           mkdir -p .next/standalone/.next/static
           cp -r public/* .next/standalone/public/
           cp -r .next/static/* .next/standalone/.next/static/
+
+      - name: Create .env from Secret
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
 
       - name: Zip Artifact
         run: |
