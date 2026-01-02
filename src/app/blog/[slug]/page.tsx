@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
-import { notFound } from 'next/navigation';
-import { remark } from 'remark';
-import html from 'remark-html';
+// import { notFound } from 'next/navigation';
+// import { remark } from 'remark';
+// import html from 'remark-html';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,10 +35,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   }
 
   // MarkdownをHTMLに変換
+  /*
   const processedContent = await remark()
     .use(html)
     .process(post.content);
   const contentHtml = processedContent.toString();
+  */
+  const contentHtml = post.content; // Raw content for debugging
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -54,10 +57,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         </header>
 
-        <div 
-          className="prose prose-invert max-w-none prose-headings:text-indigo-300 prose-a:text-indigo-400"
-          dangerouslySetInnerHTML={{ __html: contentHtml }}
-        />
+        <div className="whitespace-pre-wrap">
+            {contentHtml}
+        </div>
       </article>
     </div>
   );
