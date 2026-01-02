@@ -1,6 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { deletePost } from "./actions";
+import { BlogPost } from "@prisma/client";
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const posts = await prisma.blogPost.findMany({
