@@ -1,0 +1,79 @@
+name: Deploy to GCP
+
+on:
+  push:
+    branches: [ main ] # mainブランチにプッシュされたら実行
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    env:
+      INSTANCE_NAME: wordpress-1-vm
+      ZONE: us-central1-f
+      PROJECT_ID: blog-471319
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Prepare Standalone
+        run: |
+          mkdir -p .next/standalone/public
+          mkdir -p .next/standalone/.next/static
+          cp -r public/* .next/standalone/public/
+          cp -r .next/static/* .next/standalone/.next/static/
+
+      - name: Zip Artifact
+        run: |
+          cd .next/standalone
+          # シンボリックリンクを保持するために -y を使う場合もあるが、今回は実体化させるため標準zip
+          zip -r ../../deploy.zip .
+
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Transfer to VM
+        run: |
+          gcloud compute scp deploy.zip $INSTANCE_NAME:~/ --zone $ZONE --project $PROJECT_ID
+
+      - name: Deploy on VM
+        run: |
+          gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
+            # 解凍して一時フォルダへ
+            unzip -o deploy.zip -d deploy_temp
+            
+            # アプリフォルダへ上書きコピー
+            cp -r deploy_temp/* my-app/
+            
+            # 後片付け
+            rm -rf deploy_temp
+            rm deploy.zip
+            
+            # 再起動などの処理
+            cd my-app
+            # Prismaクライアント再生成（念のため）
+            npx prisma generate --schema=./prisma/schema.prisma
+            # アプリ再起動
+            pm2 restart portfolio
+          "
