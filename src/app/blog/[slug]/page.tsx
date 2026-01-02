@@ -17,8 +17,21 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const post = await getPost(slug);
 
-  if (!post || !post.published) {
-    notFound();
+  if (!post) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <h1>Debug: Post not found</h1>
+        <p>Slug: {slug}</p>
+      </div>
+    );
+  }
+  
+  if (!post.published) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <h1>Debug: Post is not published</h1>
+      </div>
+    );
   }
 
   // MarkdownをHTMLに変換
