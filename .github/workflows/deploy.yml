@@ -64,19 +64,20 @@ jobs:
       - name: Deploy on VM
         run: |
           gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
-            # 解凍して一時フォルダへ
-            unzip -o deploy.zip -d deploy_temp
+            # ディスク容量節約のため、直接上書き解凍する
+            # (念のためバックアップを取るなら cp -r my-app my-app-bk だが容量がないのでスキップ)
             
-            # アプリフォルダへ上書きコピー
-            cp -r deploy_temp/* my-app/
+            # 既存の node_modules が肥大化している場合は削除 (standaloneに含まれるため不要)
+            rm -rf my-app/node_modules
+
+            # 解凍 (my-appフォルダに直接展開)
+            # スタンドアロン構成の場合、zipの中身はそのままルートに展開される想定
+            unzip -o deploy.zip -d my-app
             
-            # 後片付け
-            rm -rf deploy_temp
             rm deploy.zip
             
-            # 再起動などの処理
             cd my-app
-            # Prismaクライアント再生成（念のため）
+            # Prismaクライアント再生成
             npx prisma generate --schema=./prisma/schema.prisma
             # アプリ再起動
             pm2 restart portfolio
