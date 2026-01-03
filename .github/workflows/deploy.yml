@@ -27,29 +27,24 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare Deployment Files
+      - name: Prepare Standalone
         run: |
-          # デプロイ用のディレクトリを作成
-          mkdir -p deploy-package
-          # 必要なファイルをコピー
-          cp -r .next deploy-package/
-          cp -r public deploy-package/
-          cp package.json deploy-package/
-          cp package-lock.json deploy-package/ 2>/dev/null || true
-          cp -r prisma deploy-package/
-          # node_modulesは含めない（サーバー側でnpm installを実行するため）
-          # 過去の成功パターン: standaloneモードのモジュール解決問題を避けるため、サーバー側でnpm installを実行
+          # Standaloneモードのためのファイル準備
+          # .next/standalone に必要な静的ファイルをコピーする
+          cp -r public .next/standalone/
+          mkdir -p .next/standalone/.next/static
+          cp -r .next/static/* .next/standalone/.next/static/
 
       - name: Create .env from Secret
         run: |
-          echo "${{ secrets.ENV_FILE }}" > deploy-package/.env
+          echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
 
       - name: Zip Artifact
         run: |
-          cd deploy-package
-          # node_modulesを除外（サーバー側でnpm installを実行するため）
-          # 過去の成功パターンに基づく: サーバー側でnpm installを実行することで、モジュール解決の問題を回避
-          zip -r ../deploy.zip . -x "node_modules/*" "*.log"
+          cd .next/standalone
+          # node_modulesも含めてzipにする（サーバーでのnpm installを避けるため）
+          # ※シンボリックリンクを保持する (-y)
+          zip -r -y ../../deploy.zip .
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -74,7 +69,13 @@ jobs:
             pm2 delete portfolio || true
             echo '既存のプロセスを停止しました'
             
-            # 既存のmy-appを削除（新しいバージョンに置き換えるため）
+            # データベースをバックアップ (存在する場合)
+            if [ -f my-app/dev.db ]; then
+              cp my-app/dev.db ./dev.db.bak
+              echo 'データベースをバックアップしました'
+            fi
+            
+            # 既存のmy-appを削除（クリーンインストールのため）
             rm -rf my-app
             echo '古いmy-appフォルダを削除しました'
             
@@ -85,20 +86,26 @@ jobs:
             rm deploy.zip
             echo '解凍完了'
             
+            # データベースを復元
+            if [ -f ./dev.db.bak ]; then
+              mv ./dev.db.bak my-app/dev.db
+              echo 'データベースを復元しました'
+            fi
+            
             cd my-app
             
             # ファイル構造を確認
             echo 'ファイル構造を確認中...'
             ls -la | head -20
             
-            # package.jsonが存在するか確認
-            if [ ! -f package.json ]; then
-              echo 'エラー: package.jsonが見つかりません'
+            # package.jsonが存在するか確認 (standaloneなのでserver.jsがあるか確認)
+            if [ ! -f server.js ]; then
+              echo 'エラー: server.jsが見つかりません (Standaloneビルド失敗?)'
+              ls -la
               exit 1
             fi
             
             # 依存関係のインストールはスキップ（standaloneに含まれるnode_modulesを使用）
-            # GitHub Actions (Linux) でビルドしているため、そのまま使えるはず
             echo 'standaloneに含まれるnode_modulesを使用します'
             
             # アプリを起動
