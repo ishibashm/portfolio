@@ -97,22 +97,13 @@ jobs:
               exit 1
             fi
             
-            # 依存関係をインストール（過去の成功パターン: サーバー側でnpm installを実行）
-            echo '依存関係をインストール中...'
-            echo '過去の成功パターンに基づき、サーバー側でnpm installを実行します（standaloneモードのモジュール解決問題を回避）'
-            npm install --omit=dev --no-audit --no-fund
-            echo '依存関係のインストール完了'
+            # 依存関係のインストールはスキップ（standaloneに含まれるnode_modulesを使用）
+            # GitHub Actions (Linux) でビルドしているため、そのまま使えるはず
+            echo 'standaloneに含まれるnode_modulesを使用します'
             
-            # Prismaクライアントを生成
-            echo 'Prismaクライアントを生成中...'
-            if [ -f prisma/schema.prisma ]; then
-              npx prisma generate --schema=./prisma/schema.prisma
-              echo 'Prismaクライアント生成完了'
-            fi
-            
-            # アプリを起動（通常のNext.js起動方法）
+            # アプリを起動
             echo 'アプリを起動中...'
-            HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" -- start
+            HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name "portfolio" --update-env
             pm2 save
             echo 'アプリ起動完了'
             
