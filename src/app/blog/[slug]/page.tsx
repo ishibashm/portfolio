@@ -19,14 +19,15 @@ async function getPost(slug: string) {
 
 async function processMarkdown(content: string): Promise<string> {
   try {
+    // remarkライブラリを使用してMarkdownをHTMLに変換
     const processedContent = await remark()
       .use(html)
       .process(content);
     return processedContent.toString();
   } catch (error) {
     console.error('Error processing markdown:', error);
-    // フォールバック: 生のコンテンツを返す
-    return content;
+    // フォールバック: 生のコンテンツを返す（最低限表示されるように）
+    return `<div style="white-space: pre-wrap">${content}</div>`;
   }
 }
 
@@ -78,7 +79,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     );
   }
 
-  // MarkdownをHTMLに変換
+  // MarkdownをHTMLに変換（エラーハンドリング付き）
   const contentHtml = await processMarkdown(post.content);
 
   return (
