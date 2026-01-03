@@ -27,29 +27,29 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare Standalone
+      - name: Prepare Deployment Files
         run: |
-          mkdir -p .next/standalone/public
-          mkdir -p .next/standalone/.next/static
-          mkdir -p .next/standalone/prisma
-          cp -r public/* .next/standalone/public/
-          cp -r .next/static/* .next/standalone/.next/static/
-          # package.jsonをコピー（フォールバック用: standaloneのnode_modulesが機能しない場合にnpm installを実行）
-          cp package.json .next/standalone/
-          # Prismaスキーマをコピー（Prismaクライアント生成に必要）
-          cp prisma/schema.prisma .next/standalone/prisma/
+          # デプロイ用のディレクトリを作成
+          mkdir -p deploy-package
+          # 必要なファイルをコピー
+          cp -r .next deploy-package/
+          cp -r public deploy-package/
+          cp package.json deploy-package/
+          cp package-lock.json deploy-package/ 2>/dev/null || true
+          cp -r prisma deploy-package/
+          # node_modulesは含めない（サーバー側でnpm installを実行するため）
+          # 過去の成功パターン: standaloneモードのモジュール解決問題を避けるため、サーバー側でnpm installを実行
 
       - name: Create .env from Secret
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
+          echo "${{ secrets.ENV_FILE }}" > deploy-package/.env
 
       - name: Zip Artifact
         run: |
-          cd .next/standalone
-          # standaloneのnode_modulesを含める（環境が同じLinuxなので使用可能）
-          # 過去の手動デプロイ（Windows→Linux）では破損したが、自動デプロイ（Linux→Linux）では問題ない
-          # standaloneモードの本来の使い方: 必要な依存関係だけを含めて使用
-          zip -r ../../deploy.zip . -x "*.log"
+          cd deploy-package
+          # node_modulesを除外（サーバー側でnpm installを実行するため）
+          # 過去の成功パターンに基づく: サーバー側でnpm installを実行することで、モジュール解決の問題を回避
+          zip -r ../deploy.zip . -x "node_modules/*" "*.log"
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -91,49 +91,28 @@ jobs:
             echo 'ファイル構造を確認中...'
             ls -la | head -20
             
-            # server.jsが存在するか確認
-            if [ ! -f server.js ]; then
-              echo 'エラー: server.jsが見つかりません'
-              echo '現在のディレクトリ:'
-              pwd
-              echo 'ファイル一覧:'
-              ls -la
+            # package.jsonが存在するか確認
+            if [ ! -f package.json ]; then
+              echo 'エラー: package.jsonが見つかりません'
               exit 1
             fi
             
-            # node_modulesが存在するか確認（standaloneモードでは含まれているはず）
-            if [ ! -d node_modules ]; then
-              echo '警告: standaloneのnode_modulesが見つかりません。サーバー側でインストールします...'
-              if [ -f package.json ]; then
-                npm install --omit=dev --no-audit --no-fund
-              else
-                echo 'エラー: package.jsonも見つかりません'
-                exit 1
-              fi
-            else
-              echo 'standaloneのnode_modulesが見つかりました（環境が同じLinuxなので使用可能）'
-              # Next.jsのモジュールが存在するか確認
-              if [ ! -f node_modules/next/dist/server/next-server.js ]; then
-                echo '警告: Next.jsのサーバーモジュールが見つかりません。サーバー側で再インストールします...'
-                if [ -f package.json ]; then
-                  npm install --omit=dev --no-audit --no-fund
-                fi
-              fi
-            fi
+            # 依存関係をインストール（過去の成功パターン: サーバー側でnpm installを実行）
+            echo '依存関係をインストール中...'
+            echo '過去の成功パターンに基づき、サーバー側でnpm installを実行します（standaloneモードのモジュール解決問題を回避）'
+            npm install --omit=dev --no-audit --no-fund
+            echo '依存関係のインストール完了'
             
-            # Prismaクライアントを確認（standaloneのnode_modulesに含まれている可能性がある）
-            echo 'Prismaクライアントを確認中...'
+            # Prismaクライアントを生成
+            echo 'Prismaクライアントを生成中...'
             if [ -f prisma/schema.prisma ]; then
-              if [ -f node_modules/.bin/prisma ]; then
-                ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma 2>/dev/null || echo 'Prisma生成スキップ（既に生成済み）'
-              elif command -v npx >/dev/null 2>&1; then
-                npx prisma generate --schema=./prisma/schema.prisma 2>/dev/null || echo 'Prisma生成スキップ（既に生成済み）'
-              fi
+              npx prisma generate --schema=./prisma/schema.prisma
+              echo 'Prismaクライアント生成完了'
             fi
             
-            # アプリを起動
+            # アプリを起動（通常のNext.js起動方法）
             echo 'アプリを起動中...'
-            HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name "portfolio" --update-env
+            HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" -- start
             pm2 save
             echo 'アプリ起動完了'
             
