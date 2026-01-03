@@ -44,7 +44,8 @@ jobs:
       - name: Zip Artifact
         run: |
           cd deploy-package
-          zip -r ../deploy.zip .
+          # node_modulesはサーバー側でインストールするため、zipには含めない
+          zip -r ../deploy.zip . -x "node_modules/*"
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -90,7 +91,9 @@ jobs:
             cd my-app
             
             # 依存関係のインストール (Standardモードでは必須)
+            # ENOTEMPTYエラー対策: 既存のnode_modulesを削除してからインストール
             echo 'Installing dependencies...'
+            rm -rf node_modules
             npm install --omit=dev
             
             # Prisma生成

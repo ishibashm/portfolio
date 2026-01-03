@@ -1,0 +1,132 @@
+Run details
+check-logs
+succeeded 1 minute ago in 36s
+Search logs
+8s
+0s
+0s
+0s
+0s
+2s
+21s
+3s
+0s
+0s
+0s
+0s
+2s
+0s
+  inflating: my-app/deploy-package/prisma/schema.prisma  
+  inflating: my-app/deploy-package/package.json  
+  inflating: my-app/deploy-package/.env  
+  inflating: my-app/deploy-package/package-lock.json  
+  inflating: my-app/deploy-package/.next/package.json  
+  inflating: my-app/deploy-package/.next/routes-manifest.json  
+  inflating: my-app/deploy-package/.next/build-manifest.json  
+  inflating: my-app/deploy-package/.next/app-build-manifest.json  
+  inflating: my-app/deploy-package/.next/react-loadable-manifest.json  
+  inflating: my-app/deploy-package/.next/prerender-manifest.json  
+  inflating: my-app/deploy-package/.next/next-server.js.nft.json  
+  inflating: my-app/deploy-package/.next/required-server-files.json  
+  inflating: my-app/deploy-package/.next/images-manifest.json  
+  inflating: my-app/deploy-package/.next/BUILD_ID  
+  inflating: my-app/deploy-package/.next/server/middleware-manifest.json  
+  inflating: my-app/deploy-package/.next/server/app-paths-manifest.json  
+  inflating: my-app/deploy-package/.next/server/middleware.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/webpack-runtime.js  
+  inflating: my-app/deploy-package/.next/server/next-font-manifest.json  
+  inflating: my-app/deploy-package/.next/server/server-reference-manifest.js  
+  inflating: my-app/deploy-package/.next/server/server-reference-manifest.json  
+  inflating: my-app/deploy-package/.next/server/middleware.js  
+  inflating: my-app/deploy-package/.next/server/middleware.js.map  
+  inflating: my-app/deploy-package/.next/server/middleware-build-manifest.js  
+  inflating: my-app/deploy-package/.next/server/interception-route-rewrite-manifest.js  
+  inflating: my-app/deploy-package/.next/server/pages-manifest.json  
+  inflating: my-app/deploy-package/.next/server/next-font-manifest.js  
+  inflating: my-app/deploy-package/.next/server/edge/chunks/383.js  
+  inflating: my-app/deploy-package/.next/server/edge/chunks/383.js.map  
+  inflating: my-app/deploy-package/.next/server/app/not-found.js  
+  inflating: my-app/deploy-package/.next/server/app/not-found.html  
+  inflating: my-app/deploy-package/.next/server/app/_not-found/page.js  
+  inflating: my-app/deploy-package/.next/server/app/not-found.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/page.js  
+  inflating: my-app/deploy-package/.next/server/app/page.html  
+  inflating: my-app/deploy-package/.next/server/app/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/admin/posts/new/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/admin/posts/new/page.js  
+  inflating: my-app/deploy-package/.next/server/app/admin/posts/[id]/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/admin/posts/[id]/page.js  
+  inflating: my-app/deploy-package/.next/server/app/admin/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/admin/page.js  
+  inflating: my-app/deploy-package/.next/server/app/portfolio/page.js  
+  inflating: my-app/deploy-package/.next/server/app/portfolio/page.html  
+  inflating: my-app/deploy-package/.next/server/app/portfolio/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/api/auth/[...nextauth]/route.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/api/auth/[...nextauth]/route.js  
+  inflating: my-app/deploy-package/.next/server/app/blog/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/blog/page.js  
+  inflating: my-app/deploy-package/.next/server/app/blog/page.html  
+  inflating: my-app/deploy-package/.next/server/app/blog/[slug]/page.js  
+  inflating: my-app/deploy-package/.next/server/app/blog/[slug]/page.js.nft.json  
+  inflating: my-app/deploy-package/.next/server/app/blog/[slug]/page_client-reference-manifest.js  
+  inflating: my-app/deploy-package/.next/server/chunks/286.js  
+  inflating: my-app/deploy-package/.next/server/chunks/680.js  
+  inflating: my-app/deploy-package/.next/server/chunks/363.js  
+  inflating: my-app/deploy-package/.next/server/chunks/322.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_compiled_react_1f7278._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_server_app-render_rsc_vendor-react-server-dom-webpack-server_edge-flight-client-entry_js_848529._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_blog_[slug]_page_tsx_e08285._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_client_components_not-found-error_c65275.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_client_components_app-router_945d8b.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_layout_tsx_36ac26._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_blog_page_tsx_890a88._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_compiled_react-dom_12d46e._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_client_components_error-boundary_09462e.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_globals_css_999710._.css  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_admin_posts_new_page_tsx_e8b0b8._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_not-found_tsx_1749b5._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_portfolio_page_tsx_e08285._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_admin_layout_tsx_890a88._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_page_tsx_e08285._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_admin_posts_[id]_page_tsx_e8b0b8._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/src_app_admin_page_tsx_088d8b._.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_client_components_render-from-template-context_180e0c.js  
+  inflating: my-app/deploy-package/.next/server/chunks/ssr/node_modules_next_dist_client_components_layout-router_c3973c.js  
+  inflating: my-app/deploy-package/.next/static/css/b220268571439265.css  
+  inflating: my-app/deploy-package/.next/static/chunks/858-2974052a2202273c.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/admin/page-65a585e0541d4002.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/portfolio/page-085e332155d37d04.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/blog/page-22921b7c0cc667b9.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/blog/[slug]/page-c7752e825a0a3826.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/_not-found/page-643f80c657924683.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/admin/posts/new/page-c1d09e5192807f43.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/admin/posts/[id]/page-b108990234a98075.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/page-09252c79c836c071.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/admin/layout-74220b33c5e8b61c.js  
+  inflating: my-app/deploy-package/.next/static/chunks/app/layout-78cc738a163a8a3c.js  
+  inflating: my-app/deploy-package/.next/static/chunks/main-app-3acb860655806637.js  
+  inflating: my-app/deploy-package/.next/static/chunks/webpack-4512e088c4b1265f.js  
+  inflating: my-app/deploy-package/.next/static/chunks/polyfills-78c92fac7aa8fdd8.js  
+  inflating: my-app/deploy-package/.next/static/chunks/main-e498c8c6913e2f5d.js  
+  inflating: my-app/deploy-package/.next/static/chunks/framework-5798993f4117b8f0.js  
+  inflating: my-app/deploy-package/.next/static/chunks/fd9d1056-a070e30018a381cf.js  
+  inflating: my-app/deploy-package/.next/static/chunks/23-1466033878775494.js  
+  inflating: my-app/deploy-package/.next/static/bXbVl5oG35T3W9o6h1i0z/_ssgManifest.js  
+  inflating: my-app/deploy-package/.next/static/bXbVl5oG35T3W9o6h1i0z/_buildManifest.js  
+  inflating: my-app/deploy-package/public/next.svg  
+  inflating: my-app/deploy-package/public/file.svg  
+  inflating: my-app/deploy-package/public/globe.svg  
+  inflating: my-app/deploy-package/public/window.svg  
+  inflating: my-app/deploy-package/public/vercel.svg  
+Installing dependencies...
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm error code ENOTEMPTY
+npm error syscall rename
+npm error path /home/runner/my-app/node_modules/next
+npm error dest /home/runner/my-app/node_modules/.next-3f9p692t
+npm error errno -39
+npm error ENOTEMPTY: directory not empty, rename '/home/runner/my-app/node_modules/next' -> '/home/runner/my-app/node_modules/.next-3f9p692t'
+npm error Log files were not written due to an error writing to the log.
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-01-03T13_33_00_183Z-debug-0.log
