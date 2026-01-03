@@ -27,24 +27,24 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Prepare Standalone
+      - name: Prepare Deployment Files
         run: |
-          # Standaloneモードのためのファイル準備
-          # .next/standalone に必要な静的ファイルをコピーする
-          cp -r public .next/standalone/
-          mkdir -p .next/standalone/.next/static
-          cp -r .next/static/* .next/standalone/.next/static/
+          mkdir -p deploy-package
+          # Standaloneではなく通常のビルド成果物を使用
+          cp -r .next deploy-package/
+          cp -r public deploy-package/
+          cp package.json deploy-package/
+          cp package-lock.json deploy-package/ 2>/dev/null || true
+          cp -r prisma deploy-package/
 
       - name: Create .env from Secret
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
+          echo "${{ secrets.ENV_FILE }}" > deploy-package/.env
 
       - name: Zip Artifact
         run: |
-          cd .next/standalone
-          # node_modulesも含めてzipにする（サーバーでのnpm installを避けるため）
-          # ※シンボリックリンクを保持する (-y)
-          zip -r -y ../../deploy.zip .
+          cd deploy-package
+          zip -r ../deploy.zip .
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -61,63 +61,42 @@ jobs:
       - name: Deploy on VM
         run: |
           gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
-            set -e  # エラー時に停止
-            
-            echo '=== デプロイ開始 ==='
+            echo '=== デプロイ開始 (通常モード) ==='
             
             # 既存のアプリを停止
             pm2 delete portfolio || true
-            echo '既存のプロセスを停止しました'
             
-            # データベースをバックアップ (存在する場合)
+            # データベースをバックアップ
             if [ -f my-app/dev.db ]; then
               cp my-app/dev.db ./dev.db.bak
-              echo 'データベースをバックアップしました'
             fi
             
-            # 既存のmy-appを削除（クリーンインストールのため）
+            # クリーンアップ
             rm -rf my-app
-            echo '古いmy-appフォルダを削除しました'
-            
-            # my-appフォルダを作成して解凍
-            echo 'ZIPファイルを解凍中...'
             mkdir -p my-app
+            
+            # 解凍
             unzip -o deploy.zip -d my-app
             rm deploy.zip
-            echo '解凍完了'
             
-            # データベースを復元
+            # データベース復元
             if [ -f ./dev.db.bak ]; then
               mv ./dev.db.bak my-app/dev.db
-              echo 'データベースを復元しました'
             fi
             
             cd my-app
             
-            # ファイル構造を確認
-            echo 'ファイル構造を確認中...'
-            ls -la | head -20
+            # 依存関係のインストール (Standardモードでは必須)
+            echo 'Installing dependencies...'
+            npm install --omit=dev
             
-            # package.jsonが存在するか確認 (standaloneなのでserver.jsがあるか確認)
-            if [ ! -f server.js ]; then
-              echo 'エラー: server.jsが見つかりません (Standaloneビルド失敗?)'
-              ls -la
-              exit 1
-            fi
+            # Prisma生成
+            npx prisma generate --schema=./prisma/schema.prisma
             
-            # 依存関係のインストールはスキップ（standaloneに含まれるnode_modulesを使用）
-            echo 'standaloneに含まれるnode_modulesを使用します'
-            
-            # アプリを起動
-            echo 'アプリを起動中...'
-            HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name "portfolio" --update-env
+            # アプリ起動 (npm startを使用)
+            echo 'Starting app...'
+            HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" -- start
             pm2 save
-            echo 'アプリ起動完了'
-            
-            # ステータス確認
-            sleep 2
-            pm2 status
-            pm2 logs portfolio --lines 20 --nostream || true
             
             echo '=== デプロイ完了 ==='
           "
