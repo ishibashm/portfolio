@@ -49,11 +49,12 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
 
-      - name: Zip Artifact (excluding node_modules)
+      - name: Zip Artifact
         run: |
           cd .next/standalone
-          # node_modulesを除外してzipを作成（サーバー側でnpm installするため）
-          zip -r ../../deploy.zip . -x "node_modules/*" "*.log"
+          # standaloneのnode_modulesを含める（Next.jsのサーバーモジュールが必要）
+          # standaloneモードでは必要な依存関係のみが含まれるため、サイズはそれほど大きくない
+          zip -r ../../deploy.zip . -x "*.log"
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -78,36 +79,55 @@ jobs:
             pm2 delete portfolio || true
             echo '既存のプロセスを停止しました'
             
-            # 古い.nextフォルダを削除（キャッシュ問題を防ぐ）
-            rm -rf my-app/.next
-            echo '古い.nextフォルダを削除しました'
+            # 既存のmy-appを削除（新しいバージョンに置き換えるため）
+            rm -rf my-app
+            echo '古いmy-appフォルダを削除しました'
             
-            # node_modulesを削除（サーバー側で再インストールするため）
-            rm -rf my-app/node_modules
-            echo '古いnode_modulesを削除しました'
-            
-            # 解凍 (my-appフォルダに直接展開)
+            # my-appフォルダを作成して解凍
             echo 'ZIPファイルを解凍中...'
+            mkdir -p my-app
             unzip -o deploy.zip -d my-app
             rm deploy.zip
             echo '解凍完了'
             
             cd my-app
             
-            # package.jsonが存在するか確認
-            if [ ! -f package.json ]; then
-              echo 'エラー: package.jsonが見つかりません'
+            # ファイル構造を確認
+            echo 'ファイル構造を確認中...'
+            ls -la | head -20
+            
+            # server.jsが存在するか確認
+            if [ ! -f server.js ]; then
+              echo 'エラー: server.jsが見つかりません'
+              echo '現在のディレクトリ:'
+              pwd
+              echo 'ファイル一覧:'
+              ls -la
               exit 1
             fi
             
-            # 依存関係をインストール（Linux環境用）
-            echo '依存関係をインストール中...'
-            npm install --omit=dev --no-audit --no-fund
-            echo '依存関係のインストール完了'
+            # node_modulesが存在するか確認
+            if [ ! -d node_modules ]; then
+              echo 'エラー: node_modulesが見つかりません'
+              echo '現在のディレクトリ:'
+              pwd
+              echo 'ファイル一覧:'
+              ls -la
+              exit 1
+            fi
             
-            # Prismaクライアントを再生成（念のため）
-            echo 'Prismaクライアントを生成中...'
-            npx prisma generate --schema=./prisma/schema.prisma || echo 'Prisma生成スキップ（既に生成済み）'
+            # Next.jsのモジュールが存在するか確認
+            if [ ! -f node_modules/next/dist/server/next-server.js ]; then
+              echo '警告: Next.jsのサーバーモジュールが見つかりません'
+              echo 'node_modules/next/dist/server/ の内容:'
+              ls -la node_modules/next/dist/server/ 2>/dev/null || echo 'ディレクトリが存在しません'
+            fi
+            
+            # Prismaクライアントを確認（standaloneのnode_modulesに含まれているはず）
+            echo 'Prismaクライアントを確認中...'
+            if [ -f prisma/schema.prisma ] && [ -f node_modules/.bin/prisma ]; then
+              ./node_modules/.bin/prisma generate --schema=./prisma/schema.prisma 2>/dev/null || echo 'Prisma生成スキップ（既に生成済み）'
+            fi
             
             # アプリを起動
             echo 'アプリを起動中...'
