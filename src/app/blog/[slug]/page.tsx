@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
-import { remark } from 'remark';
-import html from 'remark-html';
+// import { remark } from 'remark';
+// import html from 'remark-html';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,19 +17,17 @@ async function getPost(slug: string) {
   }
 }
 
-async function processMarkdown(content: string): Promise<string> {
-  try {
-    // remarkライブラリを使用してMarkdownをHTMLに変換
-    const processedContent = await remark()
-      .use(html)
-      .process(content);
-    return processedContent.toString();
-  } catch (error) {
-    console.error('Error processing markdown:', error);
-    // フォールバック: 生のコンテンツを返す（最低限表示されるように）
-    return `<div style="white-space: pre-wrap">${content}</div>`;
-  }
-}
+// async function processMarkdown(content: string): Promise<string> {
+//   try {
+//     const processedContent = await remark()
+//       .use(html)
+//       .process(content);
+//     return processedContent.toString();
+//   } catch (error) {
+//     console.error('Error processing markdown:', error);
+//     return content;
+//   }
+// }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   let slug: string = '';
@@ -79,8 +77,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
     );
   }
 
-  // MarkdownをHTMLに変換（エラーハンドリング付き）
-  const contentHtml = await processMarkdown(post.content);
+  // Markdown変換を一時的に無効化（Rawテキストを表示）
+  // const contentHtml = await processMarkdown(post.content);
+  const contentHtml = post.content;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -97,9 +96,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </header>
 
         <div 
-          className="blog-content text-gray-300 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: contentHtml }}
-        />
+          className="blog-content text-gray-300 leading-relaxed whitespace-pre-wrap"
+        >
+          {contentHtml}
+        </div>
       </article>
     </div>
   );
