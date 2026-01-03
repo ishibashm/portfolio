@@ -36,18 +36,24 @@ jobs:
         run: |
           mkdir -p .next/standalone/public
           mkdir -p .next/standalone/.next/static
+          mkdir -p .next/standalone/prisma
           cp -r public/* .next/standalone/public/
           cp -r .next/static/* .next/standalone/.next/static/
+          # package.jsonとpnpm-lock.yamlをコピー（サーバー側でnpm installするため）
+          cp package.json .next/standalone/
+          cp pnpm-lock.yaml .next/standalone/ 2>/dev/null || true
+          # Prismaスキーマをコピー（Prismaクライアント生成に必要）
+          cp prisma/schema.prisma .next/standalone/prisma/
 
       - name: Create .env from Secret
         run: |
           echo "${{ secrets.ENV_FILE }}" > .next/standalone/.env
 
-      - name: Zip Artifact
+      - name: Zip Artifact (excluding node_modules)
         run: |
           cd .next/standalone
-          # シンボリックリンクを保持するために -y を使う場合もあるが、今回は実体化させるため標準zip
-          zip -r ../../deploy.zip .
+          # node_modulesを除外してzipを作成（サーバー側でnpm installするため）
+          zip -r ../../deploy.zip . -x "node_modules/*" "*.log"
 
       - name: Auth with GCP
         uses: google-github-actions/auth@v2
@@ -64,25 +70,55 @@ jobs:
       - name: Deploy on VM
         run: |
           gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
-            # ディスク容量節約のため、直接上書き解凍する
-            # (念のためバックアップを取るなら cp -r my-app my-app-bk だが容量がないのでスキップ)
+            set -e  # エラー時に停止
             
-            # 既存の node_modules が肥大化している場合は削除 (standaloneに含まれるため不要)
+            echo '=== デプロイ開始 ==='
+            
+            # 既存のアプリを停止
+            pm2 delete portfolio || true
+            echo '既存のプロセスを停止しました'
+            
+            # 古い.nextフォルダを削除（キャッシュ問題を防ぐ）
+            rm -rf my-app/.next
+            echo '古い.nextフォルダを削除しました'
+            
+            # node_modulesを削除（サーバー側で再インストールするため）
             rm -rf my-app/node_modules
-
-            # 解凍 (my-appフォルダに直接展開)
-            # スタンドアロン構成の場合、zipの中身はそのままルートに展開される想定
-            unzip -o deploy.zip -d my-app
+            echo '古いnode_modulesを削除しました'
             
+            # 解凍 (my-appフォルダに直接展開)
+            echo 'ZIPファイルを解凍中...'
+            unzip -o deploy.zip -d my-app
             rm deploy.zip
+            echo '解凍完了'
             
             cd my-app
             
-            # Prismaクライアントはビルド時に生成されているため、サーバーでの再生成はスキップ
-            # (もしエラーが出る場合は binaryTargets の設定を確認)
+            # package.jsonが存在するか確認
+            if [ ! -f package.json ]; then
+              echo 'エラー: package.jsonが見つかりません'
+              exit 1
+            fi
             
-            # アプリ再起動 (プロセスがない場合のエラーを回避するため、一度deleteしてstartする)
-            pm2 delete portfolio || true
+            # 依存関係をインストール（Linux環境用）
+            echo '依存関係をインストール中...'
+            npm install --omit=dev --no-audit --no-fund
+            echo '依存関係のインストール完了'
+            
+            # Prismaクライアントを再生成（念のため）
+            echo 'Prismaクライアントを生成中...'
+            npx prisma generate --schema=./prisma/schema.prisma || echo 'Prisma生成スキップ（既に生成済み）'
+            
+            # アプリを起動
+            echo 'アプリを起動中...'
             HOSTNAME=0.0.0.0 PORT=3000 pm2 start server.js --name "portfolio" --update-env
             pm2 save
+            echo 'アプリ起動完了'
+            
+            # ステータス確認
+            sleep 2
+            pm2 status
+            pm2 logs portfolio --lines 20 --nostream || true
+            
+            echo '=== デプロイ完了 ==='
           "
