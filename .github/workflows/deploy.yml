@@ -71,7 +71,10 @@ jobs:
               cp my-app/dev.db ./dev.db.bak
             fi
             
-            # クリーンアップ
+            # クリーンアップ (npm error ENOTEMPTY 対策)
+            # 既存の node_modules を完全に削除してからインストールする
+            echo 'Cleaning up existing files...'
+            pm2 delete portfolio || true
             rm -rf my-app
             mkdir -p my-app
             
