@@ -7,11 +7,16 @@ export const revalidate = 3600; // 1時間ごとに再検証 (ISR)
 
 // データベースから記事一覧を取得
 async function getPosts() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    orderBy: { publishedAt: 'desc' },
-  });
-  return posts;
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      orderBy: { publishedAt: 'desc' },
+    });
+    return posts;
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return [];
+  }
 }
 
 export default async function BlogPage() {

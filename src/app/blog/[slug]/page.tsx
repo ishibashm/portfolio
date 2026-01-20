@@ -7,14 +7,19 @@ import html from 'remark-html';
 // export const dynamic = 'force-dynamic'; // ISR/SSGを使用するため削除
 
 export async function generateStaticParams() {
-  const posts = await prisma.blogPost.findMany({
-    where: { published: true },
-    select: { slug: true },
-  });
+  try {
+    const posts = await prisma.blogPost.findMany({
+      where: { published: true },
+      select: { slug: true },
+    });
 
-  return posts.map((post) => ({
-    slug: post.slug,
-  }));
+    return posts.map((post) => ({
+      slug: post.slug,
+    }));
+  } catch (error) {
+    console.error('Error in generateStaticParams:', error);
+    return [];
+  }
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
