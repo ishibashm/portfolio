@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
+import { BlogPost } from '@prisma/client';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // 1時間ごとに再検証 (ISR)
 
 // データベースから記事一覧を取得
 async function getPosts() {
@@ -25,7 +26,7 @@ export default async function BlogPage() {
         </header>
 
         <div className="grid gap-8 md:grid-cols-2">
-          {posts.map((post: any) => (
+          {posts.map((post: BlogPost) => (
             <Link key={post.id} href={`/blog/${post.slug}`} className="block group">
               <article className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition-all border border-gray-700 hover:border-indigo-500">
                 <div className="p-6">
@@ -46,11 +47,11 @@ export default async function BlogPage() {
             </Link>
           ))}
         </div>
-        
+
         {posts.length === 0 && (
-            <div className="text-center py-20 text-gray-500">
-                No posts found.
-            </div>
+          <div className="text-center py-20 text-gray-500">
+            No posts found.
+          </div>
         )}
       </div>
     </div>

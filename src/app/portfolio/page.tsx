@@ -1,25 +1,13 @@
 // src/app/portfolio/page.tsx
 import Link from 'next/link';
+import { portfolios } from '@/lib/portfolios';
+
+export const metadata = {
+  title: 'Portfolio',
+  description: 'Selected works and experiments.',
+};
 
 export default function PortfolioPage() {
-  const portfolios = [
-    {
-      id: '1',
-      title: 'Project Alpha',
-      description: 'A cutting-edge web application built with Next.js.',
-      slug: 'project-alpha',
-      image: '/images/portfolio1.jpg' // 仮の画像パス
-    },
-    {
-      id: '2',
-      title: 'Project Beta',
-      description: 'An e-commerce platform with seamless user experience.',
-      slug: 'project-beta',
-      image: '/images/portfolio2.jpg'
-    },
-    // 将来的にはDBから取得
-  ];
-
   return (
     <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-6xl mx-auto">

@@ -1,9 +1,44 @@
+import { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
-// import { remark } from 'remark';
-// import html from 'remark-html';
+import { remark } from 'remark';
+import html from 'remark-html';
 
-export const dynamic = 'force-dynamic';
+// export const dynamic = 'force-dynamic'; // ISR/SSGを使用するため削除
+
+export async function generateStaticParams() {
+  const posts = await prisma.blogPost.findMany({
+    where: { published: true },
+    select: { slug: true },
+  });
+
+  return posts.map((post) => ({
+    slug: post.slug,
+  }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const post = await getPost(slug);
+
+  if (!post) {
+    return {
+      title: 'Post Not Found',
+    };
+  }
+
+  return {
+    title: post.title,
+    description: post.excerpt || post.content.substring(0, 100),
+    openGraph: {
+      title: post.title,
+      description: post.excerpt || post.content.substring(0, 100),
+      type: 'article',
+      publishedTime: post.publishedAt.toISOString(),
+      modifiedTime: post.updatedAt.toISOString(),
+    },
+  };
+}
 
 async function getPost(slug: string) {
   try {
@@ -17,69 +52,47 @@ async function getPost(slug: string) {
   }
 }
 
-// async function processMarkdown(content: string): Promise<string> {
-//   try {
-//     const processedContent = await remark()
-//       .use(html)
-//       .process(content);
-//     return processedContent.toString();
-//   } catch (error) {
-//     console.error('Error processing markdown:', error);
-//     return content;
-//   }
-// }
+async function processMarkdown(content: string): Promise<string> {
+  try {
+    const processedContent = await remark()
+      .use(html)
+      .process(content);
+    return processedContent.toString();
+  } catch (error) {
+    console.error('Error processing markdown:', error);
+    return content;
+  }
+}
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
-  let slug: string = '';
-  let post;
-  let errorMessage: string | null = null;
+  const { slug } = await params;
+  const post = await getPost(slug);
 
-  try {
-    const resolvedParams = await params;
-    slug = resolvedParams.slug;
-    
-    post = await getPost(slug);
-    
-    if (!post) {
-      return (
-        <div className="min-h-screen bg-gray-900 text-white p-8">
-          <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
-            <h1 className="text-3xl font-bold mb-4 text-red-400">記事が見つかりません</h1>
-            <p className="text-gray-400 mb-4">Slug: {slug}</p>
-            <p className="text-gray-500 text-sm">この記事は存在しないか、削除された可能性があります。</p>
-          </div>
-        </div>
-      );
-    }
-    
-    if (!post.published) {
-      return (
-        <div className="min-h-screen bg-gray-900 text-white p-8">
-          <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
-            <h1 className="text-3xl font-bold mb-4 text-yellow-400">記事は公開されていません</h1>
-            <p className="text-gray-400">この記事はまだ公開されていません。</p>
-          </div>
-        </div>
-      );
-    }
-  } catch (error) {
-    console.error('Error in BlogPostPage:', error);
-    errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  if (!post) {
     return (
       <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-red-700">
-          <h1 className="text-3xl font-bold mb-4 text-red-400">エラーが発生しました</h1>
-          <p className="text-gray-400 mb-4">記事の読み込み中にエラーが発生しました。</p>
-          <p className="text-gray-500 text-sm">Error: {errorMessage}</p>
-          {slug && <p className="text-gray-500 text-sm mt-2">Slug: {slug}</p>}
+        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
+          <h1 className="text-3xl font-bold mb-4 text-red-400">記事が見つかりません</h1>
+          <p className="text-gray-400 mb-4">Slug: {slug}</p>
+          <p className="text-gray-500 text-sm">この記事は存在しないか、削除された可能性があります。</p>
         </div>
       </div>
     );
   }
 
-  // Markdown変換を一時的に無効化（Rawテキストを表示）
-  // const contentHtml = await processMarkdown(post.content);
-  const contentHtml = post.content;
+  if (!post.published) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white p-8">
+        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
+          <h1 className="text-3xl font-bold mb-4 text-yellow-400">記事は公開されていません</h1>
+          <p className="text-gray-400">この記事はまだ公開されていません。</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Markdown変換を実行
+  const contentHtml = await processMarkdown(post.content);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
@@ -95,11 +108,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         </header>
 
-        <div 
-          className="blog-content text-gray-300 leading-relaxed whitespace-pre-wrap"
-        >
-          {contentHtml}
-        </div>
+        <div
+          className="blog-content prose prose-invert prose-lg max-w-none text-gray-300"
+          dangerouslySetInnerHTML={{ __html: contentHtml }}
+        />
       </article>
     </div>
   );

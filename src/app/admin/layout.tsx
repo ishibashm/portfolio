@@ -23,9 +23,9 @@ export default function AdminLayout({
             </li>
             <li>
               {/* NextAuthのデフォルトログアウト */}
-              <a href="/api/auth/signout" className="hover:text-red-400">
+              <Link href="/api/auth/signout" className="hover:text-red-400">
                 Logout
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>

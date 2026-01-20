@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { deletePost } from "./actions";
-import { BlogPost } from "@prisma/client";
 
 export const dynamic = 'force-dynamic';
 
@@ -41,11 +40,10 @@ export default async function AdminDashboard() {
                 </td>
                 <td className="p-4">
                   <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      post.published
+                    className={`px-2 py-1 rounded text-xs ${post.published
                         ? "bg-green-100 text-green-800"
                         : "bg-gray-100 text-gray-800"
-                    }`}
+                      }`}
                   >
                     {post.published ? "Published" : "Draft"}
                   </span>

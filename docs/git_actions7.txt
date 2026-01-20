@@ -1,0 +1,1187 @@
+2026-01-03T15:08:31.8063427Z Current runner version: '2.330.0'
+2026-01-03T15:08:31.8132293Z ##[group]Runner Image Provisioner
+2026-01-03T15:08:31.8134412Z Hosted Compute Agent
+2026-01-03T15:08:31.8136004Z Version: 20251211.462
+2026-01-03T15:08:31.8137807Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+2026-01-03T15:08:31.8139632Z Build Date: 2025-12-11T16:28:49Z
+2026-01-03T15:08:31.8141457Z Worker ID: ***e85f09af-21ad-4140-8ce6-9fbcd8f10950***
+2026-01-03T15:08:31.8143505Z ##[endgroup]
+2026-01-03T15:08:31.8145423Z ##[group]Operating System
+2026-01-03T15:08:31.8147068Z Ubuntu
+2026-01-03T15:08:31.8148532Z 24.04.3
+2026-01-03T15:08:31.8149950Z LTS
+2026-01-03T15:08:31.8151415Z ##[endgroup]
+2026-01-03T15:08:31.8152756Z ##[group]Runner Image
+2026-01-03T15:08:31.8154650Z Image: ubuntu-24.04
+2026-01-03T15:08:31.8156220Z Version: 20251215.174.1
+2026-01-03T15:08:31.8158684Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251215.174/images/ubuntu/Ubuntu2404-Readme.md
+2026-01-03T15:08:31.8162173Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251215.174
+2026-01-03T15:08:31.8164888Z ##[endgroup]
+2026-01-03T15:08:31.8167802Z ##[group]GITHUB_TOKEN Permissions
+2026-01-03T15:08:31.8171428Z Contents: read
+2026-01-03T15:08:31.8172900Z Metadata: read
+2026-01-03T15:08:31.8174671Z Packages: read
+2026-01-03T15:08:31.8176280Z ##[endgroup]
+2026-01-03T15:08:31.8180735Z Secret source: Actions
+2026-01-03T15:08:31.8182768Z Prepare workflow directory
+2026-01-03T15:08:31.9279763Z Prepare all required actions
+2026-01-03T15:08:31.9398310Z Getting action download info
+2026-01-03T15:08:32.3856333Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2026-01-03T15:08:32.8916523Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+2026-01-03T15:08:33.0837734Z Download action repository 'google-github-actions/auth@v2' (SHA:c200f3691d83b41bf9bbd8638997a462592937ed)
+2026-01-03T15:08:33.5021058Z Download action repository 'google-github-actions/setup-gcloud@v2' (SHA:e427ad8a34f8676edf47cf7d7925499adf3eb74f)
+2026-01-03T15:08:34.0826023Z Complete job name: deploy
+2026-01-03T15:08:34.1818400Z ##[group]Run actions/checkout@v4
+2026-01-03T15:08:34.1820145Z with:
+2026-01-03T15:08:34.1821422Z   repository: ishibashm/portfolio
+2026-01-03T15:08:34.1823139Z   token: ***
+2026-01-03T15:08:34.1824691Z   ssh-strict: true
+2026-01-03T15:08:34.1825939Z   ssh-user: git
+2026-01-03T15:08:34.1827191Z   persist-credentials: true
+2026-01-03T15:08:34.1828511Z   clean: true
+2026-01-03T15:08:34.1829775Z   sparse-checkout-cone-mode: true
+2026-01-03T15:08:34.1831193Z   fetch-depth: 1
+2026-01-03T15:08:34.1832415Z   fetch-tags: false
+2026-01-03T15:08:34.1833655Z   show-progress: true
+2026-01-03T15:08:34.1835067Z   lfs: false
+2026-01-03T15:08:34.1836226Z   submodules: false
+2026-01-03T15:08:34.1837475Z   set-safe-directory: true
+2026-01-03T15:08:34.1839109Z env:
+2026-01-03T15:08:34.1840290Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:08:34.1841664Z   ZONE: us-central1-f
+2026-01-03T15:08:34.1842962Z   PROJECT_ID: blog-471319
+2026-01-03T15:08:34.1844385Z ##[endgroup]
+2026-01-03T15:08:34.3034739Z Syncing repository: ishibashm/portfolio
+2026-01-03T15:08:34.3038206Z ##[group]Getting Git version info
+2026-01-03T15:08:34.3040695Z Working directory is '/home/runner/work/portfolio/portfolio'
+2026-01-03T15:08:34.3044769Z [command]/usr/bin/git version
+2026-01-03T15:08:34.3133111Z git version 2.52.0
+2026-01-03T15:08:34.3163893Z ##[endgroup]
+2026-01-03T15:08:34.3178280Z Temporarily overriding HOME='/home/runner/work/_temp/ba874185-1c5c-440a-b4c0-5a9a1da1ef47' before making global git config changes
+2026-01-03T15:08:34.3187033Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-03T15:08:34.3200149Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/portfolio/portfolio
+2026-01-03T15:08:34.3248830Z Deleting the contents of '/home/runner/work/portfolio/portfolio'
+2026-01-03T15:08:34.3257679Z ##[group]Initializing the repository
+2026-01-03T15:08:34.3262763Z [command]/usr/bin/git init /home/runner/work/portfolio/portfolio
+2026-01-03T15:08:34.3363534Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-01-03T15:08:34.3367674Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-01-03T15:08:34.3371453Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-01-03T15:08:34.3375073Z hint: call:
+2026-01-03T15:08:34.3377088Z hint:
+2026-01-03T15:08:34.3379528Z hint: 	git config --global init.defaultBranch <name>
+2026-01-03T15:08:34.3382526Z hint:
+2026-01-03T15:08:34.3385410Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-01-03T15:08:34.3389373Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-01-03T15:08:34.3392464Z hint:
+2026-01-03T15:08:34.3394609Z hint: 	git branch -m <name>
+2026-01-03T15:08:34.3396799Z hint:
+2026-01-03T15:08:34.3399656Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-01-03T15:08:34.3403882Z Initialized empty Git repository in /home/runner/work/portfolio/portfolio/.git/
+2026-01-03T15:08:34.3410837Z [command]/usr/bin/git remote add origin https://github.com/ishibashm/portfolio
+2026-01-03T15:08:34.3433209Z ##[endgroup]
+2026-01-03T15:08:34.3437012Z ##[group]Disabling automatic garbage collection
+2026-01-03T15:08:34.3441043Z [command]/usr/bin/git config --local gc.auto 0
+2026-01-03T15:08:34.3471263Z ##[endgroup]
+2026-01-03T15:08:34.3475565Z ##[group]Setting up auth
+2026-01-03T15:08:34.3480057Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-03T15:08:34.3513345Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-03T15:08:34.3922928Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-03T15:08:34.3933435Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-03T15:08:34.4148908Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-03T15:08:34.4193137Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-03T15:08:34.4436001Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-01-03T15:08:34.4468861Z ##[endgroup]
+2026-01-03T15:08:34.4472648Z ##[group]Fetching the repository
+2026-01-03T15:08:34.4480588Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +444cabcca4b7b427214e8a7887be266a7b05970a:refs/remotes/origin/master
+2026-01-03T15:08:34.7858723Z From https://github.com/ishibashm/portfolio
+2026-01-03T15:08:34.7859793Z  * [new ref]         444cabcca4b7b427214e8a7887be266a7b05970a -> origin/master
+2026-01-03T15:08:34.7868224Z ##[endgroup]
+2026-01-03T15:08:34.7869359Z ##[group]Determining the checkout info
+2026-01-03T15:08:34.7870508Z ##[endgroup]
+2026-01-03T15:08:34.7871241Z [command]/usr/bin/git sparse-checkout disable
+2026-01-03T15:08:34.7873087Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-01-03T15:08:34.7904628Z ##[group]Checking out the ref
+2026-01-03T15:08:34.7910596Z [command]/usr/bin/git checkout --progress --force -B master refs/remotes/origin/master
+2026-01-03T15:08:34.8058164Z Reset branch 'master'
+2026-01-03T15:08:34.8062986Z branch 'master' set up to track 'origin/master'.
+2026-01-03T15:08:34.8072359Z ##[endgroup]
+2026-01-03T15:08:34.8108382Z [command]/usr/bin/git log -1 --format=%H
+2026-01-03T15:08:34.8132240Z 444cabcca4b7b427214e8a7887be266a7b05970a
+2026-01-03T15:08:34.8466439Z ##[group]Run actions/setup-node@v4
+2026-01-03T15:08:34.8467251Z with:
+2026-01-03T15:08:34.8468153Z   node-version: 20
+2026-01-03T15:08:34.8468810Z   always-auth: false
+2026-01-03T15:08:34.8469494Z   check-latest: false
+2026-01-03T15:08:34.8470349Z   token: ***
+2026-01-03T15:08:34.8471006Z env:
+2026-01-03T15:08:34.8471656Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:08:34.8472373Z   ZONE: us-central1-f
+2026-01-03T15:08:34.8473051Z   PROJECT_ID: blog-471319
+2026-01-03T15:08:34.8473735Z ##[endgroup]
+2026-01-03T15:08:35.0604923Z Found in cache @ /opt/hostedtoolcache/node/20.19.6/x64
+2026-01-03T15:08:35.0608621Z ##[group]Environment details
+2026-01-03T15:08:35.5052422Z node: v20.19.6
+2026-01-03T15:08:35.5057500Z npm: 10.8.2
+2026-01-03T15:08:35.5066342Z yarn: 1.22.22
+2026-01-03T15:08:35.5068370Z ##[endgroup]
+2026-01-03T15:08:35.5203931Z ##[group]Run npm install
+2026-01-03T15:08:35.5204712Z [36;1mnpm install[0m
+2026-01-03T15:08:35.5251289Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:08:35.5251797Z env:
+2026-01-03T15:08:35.5252159Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:08:35.5252568Z   ZONE: us-central1-f
+2026-01-03T15:08:35.5252941Z   PROJECT_ID: blog-471319
+2026-01-03T15:08:35.5253316Z ##[endgroup]
+2026-01-03T15:09:30.3595386Z 
+2026-01-03T15:09:30.3605834Z added 489 packages, and audited 490 packages in 55s
+2026-01-03T15:09:30.3607988Z 
+2026-01-03T15:09:30.3609573Z 229 packages are looking for funding
+2026-01-03T15:09:30.3611633Z   run `npm fund` for details
+2026-01-03T15:09:30.3654650Z 
+2026-01-03T15:09:30.3656285Z found 0 vulnerabilities
+2026-01-03T15:09:30.4043898Z ##[group]Run npm run build
+2026-01-03T15:09:30.4044529Z [36;1mnpm run build[0m
+2026-01-03T15:09:30.4077165Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:09:30.4077528Z env:
+2026-01-03T15:09:30.4077813Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:30.4078139Z   ZONE: us-central1-f
+2026-01-03T15:09:30.4078440Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:30.4078777Z ##[endgroup]
+2026-01-03T15:09:30.6075222Z 
+2026-01-03T15:09:30.6076233Z > my-portfolio@0.1.0 build
+2026-01-03T15:09:30.6077336Z > next build
+2026-01-03T15:09:30.6078004Z 
+2026-01-03T15:09:31.4141969Z ⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2026-01-03T15:09:31.4273353Z Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2026-01-03T15:09:31.4274871Z This information is used to shape Next.js' roadmap and prioritize features.
+2026-01-03T15:09:31.4276541Z You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2026-01-03T15:09:31.4277854Z https://nextjs.org/telemetry
+2026-01-03T15:09:31.4278308Z 
+2026-01-03T15:09:31.4417256Z ▲ Next.js 16.1.1 (Turbopack)
+2026-01-03T15:09:31.4419923Z 
+2026-01-03T15:09:31.4851666Z ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+2026-01-03T15:09:31.5315084Z   Creating an optimized production build ...
+2026-01-03T15:09:38.7774107Z ✓ Compiled successfully in 6.7s
+2026-01-03T15:09:38.7858297Z   Running TypeScript ...
+2026-01-03T15:09:43.1280728Z   Collecting page data using 1 worker ...
+2026-01-03T15:09:43.5490833Z   Generating static pages using 1 worker (0/5) ...
+2026-01-03T15:09:43.7052016Z   Generating static pages using 1 worker (1/5) 
+2026-01-03T15:09:43.7052950Z   Generating static pages using 1 worker (2/5) 
+2026-01-03T15:09:43.7065242Z   Generating static pages using 1 worker (3/5) 
+2026-01-03T15:09:43.7066810Z ✓ Generating static pages using 1 worker (5/5) in 156.8ms
+2026-01-03T15:09:43.7113675Z   Finalizing page optimization ...
+2026-01-03T15:09:43.7164693Z 
+2026-01-03T15:09:43.7205879Z Route (app)
+2026-01-03T15:09:43.7206894Z ┌ ○ /
+2026-01-03T15:09:43.7207849Z ├ ○ /_not-found
+2026-01-03T15:09:43.7211920Z ├ ƒ /admin
+2026-01-03T15:09:43.7213691Z ├ ƒ /admin/posts/[id]
+2026-01-03T15:09:43.7214580Z ├ ○ /admin/posts/new
+2026-01-03T15:09:43.7215262Z ├ ƒ /api/auth/[...nextauth]
+2026-01-03T15:09:43.7215845Z ├ ƒ /blog
+2026-01-03T15:09:43.7216396Z ├ ƒ /blog/[slug]
+2026-01-03T15:09:43.7217341Z └ ○ /portfolio
+2026-01-03T15:09:43.7217639Z 
+2026-01-03T15:09:43.7217652Z 
+2026-01-03T15:09:43.7218057Z ƒ Proxy (Middleware)
+2026-01-03T15:09:43.7218405Z 
+2026-01-03T15:09:43.7218904Z ○  (Static)   prerendered as static content
+2026-01-03T15:09:43.7219773Z ƒ  (Dynamic)  server-rendered on demand
+2026-01-03T15:09:43.7220199Z 
+2026-01-03T15:09:43.8482105Z ##[group]Run mkdir -p deploy-package
+2026-01-03T15:09:43.8482793Z [36;1mmkdir -p deploy-package[0m
+2026-01-03T15:09:43.8483429Z [36;1m# Standaloneではなく通常のビルド成果物を使用[0m
+2026-01-03T15:09:43.8484096Z [36;1mcp -r .next deploy-package/[0m
+2026-01-03T15:09:43.8485442Z [36;1mcp -r public deploy-package/[0m
+2026-01-03T15:09:43.8486075Z [36;1mcp package.json deploy-package/[0m
+2026-01-03T15:09:43.8486811Z [36;1mcp package-lock.json deploy-package/ 2>/dev/null || true[0m
+2026-01-03T15:09:43.8487546Z [36;1mcp -r prisma deploy-package/[0m
+2026-01-03T15:09:43.8522692Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:09:43.8523058Z env:
+2026-01-03T15:09:43.8523334Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:43.8523700Z   ZONE: us-central1-f
+2026-01-03T15:09:43.8523995Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:43.8524553Z ##[endgroup]
+2026-01-03T15:09:43.8899689Z ##[group]Run echo "***
+2026-01-03T15:09:43.8900109Z [36;1mecho "***[0m
+2026-01-03T15:09:43.8900392Z [36;1m[0m
+2026-01-03T15:09:43.8900719Z [36;1m***[0m
+2026-01-03T15:09:43.8901020Z [36;1m***[0m
+2026-01-03T15:09:43.8901385Z [36;1m***[0m
+2026-01-03T15:09:43.8901672Z [36;1m***[0m
+2026-01-03T15:09:43.8901917Z [36;1m[0m
+2026-01-03T15:09:43.8902167Z [36;1m***[0m
+2026-01-03T15:09:43.8902532Z [36;1m***[0m
+2026-01-03T15:09:43.8902876Z [36;1m***[0m
+2026-01-03T15:09:43.8903146Z [36;1m" > deploy-package/.env[0m
+2026-01-03T15:09:43.8935376Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:09:43.8935710Z env:
+2026-01-03T15:09:43.8935983Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:43.8936310Z   ZONE: us-central1-f
+2026-01-03T15:09:43.8936615Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:43.8936927Z ##[endgroup]
+2026-01-03T15:09:43.9014844Z ##[group]Run cd deploy-package
+2026-01-03T15:09:43.9015250Z [36;1mcd deploy-package[0m
+2026-01-03T15:09:43.9015654Z [36;1m# node_modulesはサーバー側でインストールするため、zipには含めない[0m
+2026-01-03T15:09:43.9016085Z [36;1mzip -r ../deploy.zip . -x "node_modules/*"[0m
+2026-01-03T15:09:43.9044680Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:09:43.9045017Z env:
+2026-01-03T15:09:43.9045292Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:43.9045624Z   ZONE: us-central1-f
+2026-01-03T15:09:43.9045924Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:43.9046221Z ##[endgroup]
+2026-01-03T15:09:43.9905509Z 	zip warning: name not matched: .next/node_modules/@prisma/client-2c3a283f134fdcb6
+2026-01-03T15:09:43.9922999Z   adding: .next/ (stored 0%)
+2026-01-03T15:09:43.9933121Z   adding: .next/export-marker.json (deflated 24%)
+2026-01-03T15:09:43.9933905Z   adding: .next/build-manifest.json (deflated 50%)
+2026-01-03T15:09:43.9934794Z   adding: .next/types/ (stored 0%)
+2026-01-03T15:09:43.9935717Z   adding: .next/types/validator.ts (deflated 85%)
+2026-01-03T15:09:43.9936499Z   adding: .next/types/routes.d.ts (deflated 66%)
+2026-01-03T15:09:43.9938463Z   adding: .next/required-server-files.json (deflated 63%)
+2026-01-03T15:09:43.9940970Z   adding: .next/fallback-build-manifest.json (deflated 39%)
+2026-01-03T15:09:43.9942919Z   adding: .next/turbopack (stored 0%)
+2026-01-03T15:09:43.9952380Z   adding: .next/next-minimal-server.js.nft.json (deflated 85%)
+2026-01-03T15:09:43.9953146Z   adding: .next/server/ (stored 0%)
+2026-01-03T15:09:43.9953875Z   adding: .next/server/next-font-manifest.json (deflated 84%)
+2026-01-03T15:09:43.9954975Z   adding: .next/server/app-paths-manifest.json (deflated 69%)
+2026-01-03T15:09:43.9955779Z   adding: .next/server/middleware/ (stored 0%)
+2026-01-03T15:09:43.9956620Z   adding: .next/server/middleware/middleware-manifest.json (deflated 47%)
+2026-01-03T15:09:43.9957458Z   adding: .next/server/pages/ (stored 0%)
+2026-01-03T15:09:43.9958401Z   adding: .next/server/pages/500.html (deflated 70%)
+2026-01-03T15:09:43.9959152Z   adding: .next/server/pages/404.html (deflated 75%)
+2026-01-03T15:09:43.9959923Z   adding: .next/server/pages-manifest.json (deflated 29%)
+2026-01-03T15:09:43.9960746Z   adding: .next/server/next-font-manifest.js (deflated 83%)
+2026-01-03T15:09:43.9961468Z   adding: .next/server/chunks/ (stored 0%)
+2026-01-03T15:09:43.9962113Z   adding: .next/server/chunks/ssr/ (stored 0%)
+2026-01-03T15:09:43.9962866Z   adding: .next/server/chunks/ssr/_2cfe73b3._.js (deflated 64%)
+2026-01-03T15:09:43.9963695Z   adding: .next/server/chunks/ssr/_adf2bbda._.js (deflated 64%)
+2026-01-03T15:09:43.9964899Z   adding: .next/server/chunks/ssr/[root-of-the-server]__58d4ec1c._.js (deflated 55%)
+2026-01-03T15:09:43.9973234Z   adding: .next/server/chunks/ssr/[turbopack]_runtime.js.map (deflated 71%)
+2026-01-03T15:09:43.9985907Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4b57d460._.js (deflated 75%)
+2026-01-03T15:09:43.9987306Z   adding: .next/server/chunks/ssr/src_app_admin_posts__components_PostForm_tsx_6732d3c5._.js.map (deflated 71%)
+2026-01-03T15:09:43.9988766Z   adding: .next/server/chunks/ssr/[root-of-the-server]__11fa4345._.js.map (deflated 66%)
+2026-01-03T15:09:43.9989885Z   adding: .next/server/chunks/ssr/node_modules_next_dist_08570d7f._.js (deflated 64%)
+2026-01-03T15:09:44.0009936Z   adding: .next/server/chunks/ssr/node_modules_next_dist_08570d7f._.js.map (deflated 75%)
+2026-01-03T15:09:44.0034463Z   adding: .next/server/chunks/ssr/node_modules_ea845e5f._.js (deflated 73%)
+2026-01-03T15:09:44.0040030Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_15817684.js (deflated 40%)
+2026-01-03T15:09:44.0041524Z   adding: .next/server/chunks/ssr/_next-internal_server_app_blog_page_actions_cb4aaadc.js (deflated 1%)
+2026-01-03T15:09:44.0062494Z   adding: .next/server/chunks/ssr/_2cfe73b3._.js.map (deflated 75%)
+2026-01-03T15:09:44.0089026Z   adding: .next/server/chunks/ssr/_08d4a9f7._.js.map (deflated 75%)
+2026-01-03T15:09:44.0090816Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4af51a06._.js.map (deflated 67%)
+2026-01-03T15:09:44.0096073Z   adding: .next/server/chunks/ssr/_1144bdce._.js (deflated 64%)
+2026-01-03T15:09:44.0097921Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4af51a06._.js (deflated 63%)
+2026-01-03T15:09:44.0107727Z   adding: .next/server/chunks/ssr/_61b58078._.js.map (deflated 71%)
+2026-01-03T15:09:44.0109110Z   adding: .next/server/chunks/ssr/[root-of-the-server]__d143f79e._.js (deflated 56%)
+2026-01-03T15:09:44.0179024Z   adding: .next/server/chunks/ssr/node_modules_next_dist_esm_9bea2a37._.js.map (deflated 75%)
+2026-01-03T15:09:44.0180572Z   adding: .next/server/chunks/ssr/[root-of-the-server]__b9356576._.js.map (deflated 58%)
+2026-01-03T15:09:44.0182265Z   adding: .next/server/chunks/ssr/[root-of-the-server]__843141d4._.js.map (deflated 69%)
+2026-01-03T15:09:44.0183452Z   adding: .next/server/chunks/ssr/[root-of-the-server]__7ef04de9._.js (deflated 60%)
+2026-01-03T15:09:44.0184874Z   adding: .next/server/chunks/ssr/[root-of-the-server]__9ea464a7._.js.map (deflated 44%)
+2026-01-03T15:09:44.0403074Z   adding: .next/server/chunks/ssr/_9809e503._.js.map (deflated 74%)
+2026-01-03T15:09:44.0648815Z   adding: .next/server/chunks/ssr/node_modules_next_dist_82db42d6._.js.map (deflated 76%)
+2026-01-03T15:09:44.0665843Z   adding: .next/server/chunks/ssr/node_modules_next_dist_82db42d6._.js (deflated 72%)
+2026-01-03T15:09:44.0701436Z   adding: .next/server/chunks/ssr/_46b9dca4._.js.map (deflated 75%)
+2026-01-03T15:09:44.0705965Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_2fffaa3a._.js.map (deflated 61%)
+2026-01-03T15:09:44.0707492Z   adding: .next/server/chunks/ssr/_next-internal_server_app__global-error_page_actions_75761787.js.map (deflated 12%)
+2026-01-03T15:09:44.0748784Z   adding: .next/server/chunks/ssr/_9809e503._.js (deflated 74%)
+2026-01-03T15:09:44.0810168Z   adding: .next/server/chunks/ssr/src_utils_formatDate_ts_297004ce._.js.map (deflated 80%)
+2026-01-03T15:09:44.0811798Z   adding: .next/server/chunks/ssr/_next-internal_server_app_blog_page_actions_cb4aaadc.js.map (deflated 12%)
+2026-01-03T15:09:44.0813069Z   adding: .next/server/chunks/ssr/[root-of-the-server]__c7cbb5e1._.js (deflated 66%)
+2026-01-03T15:09:44.0814162Z   adding: .next/server/chunks/ssr/[root-of-the-server]__843141d4._.js (deflated 73%)
+2026-01-03T15:09:44.0842834Z   adding: .next/server/chunks/ssr/_23476a34._.js.map (deflated 75%)
+2026-01-03T15:09:44.0893407Z   adding: .next/server/chunks/ssr/[root-of-the-server]__e17d8479._.js (deflated 69%)
+2026-01-03T15:09:44.0894777Z   adding: .next/server/chunks/ssr/_61b58078._.js (deflated 58%)
+2026-01-03T15:09:44.0895790Z   adding: .next/server/chunks/ssr/[root-of-the-server]__a36c45d7._.js (deflated 45%)
+2026-01-03T15:09:44.0896893Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4d2ce17d._.js (deflated 54%)
+2026-01-03T15:09:44.0898145Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_2fffaa3a._.js (deflated 64%)
+2026-01-03T15:09:44.0922966Z   adding: .next/server/chunks/ssr/_adf2bbda._.js.map (deflated 75%)
+2026-01-03T15:09:44.0927762Z   adding: .next/server/chunks/ssr/[root-of-the-server]__ed4f4e28._.js.map (deflated 60%)
+2026-01-03T15:09:44.0932213Z   adding: .next/server/chunks/ssr/_next-internal_server_app_blog_[slug]_page_actions_ec3909d7.js.map (deflated 12%)
+2026-01-03T15:09:44.0937123Z   adding: .next/server/chunks/ssr/[root-of-the-server]__e9249ca0._.js (deflated 58%)
+2026-01-03T15:09:44.0938818Z   adding: .next/server/chunks/ssr/_next-internal_server_app__global-error_page_actions_75761787.js (deflated 2%)
+2026-01-03T15:09:44.0942120Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_ece394eb.js.map (deflated 54%)
+2026-01-03T15:09:44.1190233Z   adding: .next/server/chunks/ssr/node_modules_ea845e5f._.js.map (deflated 73%)
+2026-01-03T15:09:44.1192656Z   adding: .next/server/chunks/ssr/[root-of-the-server]__38974243._.js.map (deflated 44%)
+2026-01-03T15:09:44.1199235Z   adding: .next/server/chunks/ssr/node_modules_next_dist_esm_9bea2a37._.js (deflated 66%)
+2026-01-03T15:09:44.1201994Z   adding: .next/server/chunks/ssr/[root-of-the-server]__d143f79e._.js.map (deflated 79%)
+2026-01-03T15:09:44.1204654Z   adding: .next/server/chunks/ssr/[root-of-the-server]__cee71f51._.js (deflated 59%)
+2026-01-03T15:09:44.1205837Z   adding: .next/server/chunks/ssr/src_app_admin_layout_tsx_9cb4d248._.js (deflated 53%)
+2026-01-03T15:09:44.1207182Z   adding: .next/server/chunks/ssr/_next-internal_server_app_portfolio_page_actions_224c57fe.js (deflated 1%)
+2026-01-03T15:09:44.1208657Z   adding: .next/server/chunks/ssr/_next-internal_server_app__not-found_page_actions_554ec2bf.js (deflated 2%)
+2026-01-03T15:09:44.1210026Z   adding: .next/server/chunks/ssr/_next-internal_server_app_portfolio_page_actions_224c57fe.js.map (deflated 12%)
+2026-01-03T15:09:44.1211476Z   adding: .next/server/chunks/ssr/src_app_admin_posts__components_PostForm_tsx_6732d3c5._.js (deflated 66%)
+2026-01-03T15:09:44.1212734Z   adding: .next/server/chunks/ssr/[root-of-the-server]__38974243._.js (deflated 35%)
+2026-01-03T15:09:44.1214054Z   adding: .next/server/chunks/ssr/[root-of-the-server]__c7cbb5e1._.js.map (deflated 67%)
+2026-01-03T15:09:44.1215569Z   adding: .next/server/chunks/ssr/_next-internal_server_app_page_actions_39d4fc33.js (stored 0%)
+2026-01-03T15:09:44.1216906Z   adding: .next/server/chunks/ssr/[root-of-the-server]__11fa4345._.js (deflated 51%)
+2026-01-03T15:09:44.1218117Z   adding: .next/server/chunks/ssr/[root-of-the-server]__e9249ca0._.js.map (deflated 55%)
+2026-01-03T15:09:44.1224430Z   adding: .next/server/chunks/ssr/node_modules_next_dist_4b9a0874._.js (deflated 62%)
+2026-01-03T15:09:44.1244124Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4b57d460._.js.map (deflated 78%)
+2026-01-03T15:09:44.1245616Z   adding: .next/server/chunks/ssr/[root-of-the-server]__9ea464a7._.js (deflated 35%)
+2026-01-03T15:09:44.1247062Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_15817684.js.map (deflated 40%)
+2026-01-03T15:09:44.1248557Z   adding: .next/server/chunks/ssr/[turbopack]_runtime.js (deflated 71%)
+2026-01-03T15:09:44.1249865Z   adding: .next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_ece394eb.js (deflated 47%)
+2026-01-03T15:09:44.1251367Z   adding: .next/server/chunks/ssr/_next-internal_server_app_blog_[slug]_page_actions_ec3909d7.js (deflated 1%)
+2026-01-03T15:09:44.1252693Z   adding: .next/server/chunks/ssr/src_app_admin_layout_tsx_9cb4d248._.js.map (deflated 62%)
+2026-01-03T15:09:44.1263970Z   adding: .next/server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_036c91c3.js.map (deflated 75%)
+2026-01-03T15:09:44.1269719Z   adding: .next/server/chunks/ssr/src_utils_formatDate_ts_297004ce._.js (deflated 70%)
+2026-01-03T15:09:44.1274868Z   adding: .next/server/chunks/ssr/[root-of-the-server]__4d2ce17d._.js.map (deflated 60%)
+2026-01-03T15:09:44.1276049Z   adding: .next/server/chunks/ssr/[root-of-the-server]__0eb61e08._.js.map (deflated 44%)
+2026-01-03T15:09:44.1300101Z   adding: .next/server/chunks/ssr/node_modules_next_dist_compiled_bc6b8ddf._.js.map (deflated 78%)
+2026-01-03T15:09:44.1325668Z   adding: .next/server/chunks/ssr/_c19c7642._.js.map (deflated 75%)
+2026-01-03T15:09:44.1327060Z   adding: .next/server/chunks/ssr/[root-of-the-server]__7ef04de9._.js.map (deflated 53%)
+2026-01-03T15:09:44.1328978Z   adding: .next/server/chunks/ssr/[root-of-the-server]__cee71f51._.js.map (deflated 69%)
+2026-01-03T15:09:44.1333906Z   adding: .next/server/chunks/ssr/_c19c7642._.js (deflated 64%)
+2026-01-03T15:09:44.1335518Z   adding: .next/server/chunks/ssr/[root-of-the-server]__ed4f4e28._.js (deflated 54%)
+2026-01-03T15:09:44.1339609Z   adding: .next/server/chunks/ssr/_next-internal_server_app_page_actions_39d4fc33.js.map (deflated 12%)
+2026-01-03T15:09:44.1558403Z   adding: .next/server/chunks/ssr/[root-of-the-server]__e17d8479._.js.map (deflated 77%)
+2026-01-03T15:09:44.1560420Z   adding: .next/server/chunks/ssr/[root-of-the-server]__58d4ec1c._.js.map (deflated 63%)
+2026-01-03T15:09:44.1564063Z   adding: .next/server/chunks/ssr/_46b9dca4._.js (deflated 64%)
+2026-01-03T15:09:44.1565382Z   adding: .next/server/chunks/ssr/[root-of-the-server]__0eb61e08._.js (deflated 35%)
+2026-01-03T15:09:44.1566729Z   adding: .next/server/chunks/ssr/_next-internal_server_app__not-found_page_actions_554ec2bf.js.map (deflated 12%)
+2026-01-03T15:09:44.1593823Z   adding: .next/server/chunks/ssr/_1144bdce._.js.map (deflated 75%)
+2026-01-03T15:09:44.1602022Z   adding: .next/server/chunks/ssr/node_modules_next_dist_compiled_bc6b8ddf._.js (deflated 72%)
+2026-01-03T15:09:44.1606861Z   adding: .next/server/chunks/ssr/_08d4a9f7._.js (deflated 64%)
+2026-01-03T15:09:44.1626161Z   adding: .next/server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_036c91c3.js (deflated 64%)
+2026-01-03T15:09:44.1657831Z   adding: .next/server/chunks/ssr/node_modules_next_dist_4b9a0874._.js.map (deflated 74%)
+2026-01-03T15:09:44.1661674Z   adding: .next/server/chunks/ssr/[root-of-the-server]__b9356576._.js (deflated 50%)
+2026-01-03T15:09:44.1662851Z   adding: .next/server/chunks/ssr/[root-of-the-server]__a36c45d7._.js.map (deflated 40%)
+2026-01-03T15:09:44.1664901Z   adding: .next/server/chunks/ssr/_23476a34._.js (deflated 64%)
+2026-01-03T15:09:44.1683993Z   adding: .next/server/chunks/[turbopack]_runtime.js.map (deflated 71%)
+2026-01-03T15:09:44.1688049Z   adding: .next/server/chunks/_next-internal_server_app_api_auth_[___nextauth]_route_actions_1c865db8.js (deflated 5%)
+2026-01-03T15:09:44.1689309Z   adding: .next/server/chunks/[externals]__e0527121._.js (deflated 72%)
+2026-01-03T15:09:44.1695774Z   adding: .next/server/chunks/[turbopack]_runtime.js (deflated 71%)
+2026-01-03T15:09:44.1698631Z   adding: .next/server/chunks/_next-internal_server_app_api_auth_[___nextauth]_route_actions_1c865db8.js.map (deflated 12%)
+2026-01-03T15:09:44.2505314Z   adding: .next/server/chunks/[root-of-the-server]__567aabe5._.js.map (deflated 77%)
+2026-01-03T15:09:44.2506878Z   adding: .next/server/chunks/[externals]__e0527121._.js.map (deflated 12%)
+2026-01-03T15:09:44.2655164Z   adding: .next/server/chunks/[root-of-the-server]__567aabe5._.js (deflated 73%)
+2026-01-03T15:09:44.2656386Z   adding: .next/server/functions-config-manifest.json (deflated 8%)
+2026-01-03T15:09:44.2657399Z   adding: .next/server/app/ (stored 0%)
+2026-01-03T15:09:44.2658264Z   adding: .next/server/app/_not-found.meta (deflated 47%)
+2026-01-03T15:09:44.2660035Z   adding: .next/server/app/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2660988Z   adding: .next/server/app/_global-error/ (stored 0%)
+2026-01-03T15:09:44.2662010Z   adding: .next/server/app/_global-error/page_client-reference-manifest.js (deflated 88%)
+2026-01-03T15:09:44.2663103Z   adding: .next/server/app/_global-error/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2669634Z   adding: .next/server/app/_global-error/page.js.nft.json (deflated 82%)
+2026-01-03T15:09:44.2672025Z   adding: .next/server/app/_global-error/page/ (stored 0%)
+2026-01-03T15:09:44.2673029Z   adding: .next/server/app/_global-error/page/next-font-manifest.json (deflated 44%)
+2026-01-03T15:09:44.2674373Z   adding: .next/server/app/_global-error/page/app-paths-manifest.json (deflated 27%)
+2026-01-03T15:09:44.2675530Z   adding: .next/server/app/_global-error/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2676698Z   adding: .next/server/app/_global-error/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2677959Z   adding: .next/server/app/_global-error/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2679000Z   adding: .next/server/app/_global-error/page.js (deflated 62%)
+2026-01-03T15:09:44.2679792Z   adding: .next/server/app/api/ (stored 0%)
+2026-01-03T15:09:44.2680513Z   adding: .next/server/app/api/auth/ (stored 0%)
+2026-01-03T15:09:44.2681336Z   adding: .next/server/app/api/auth/[...nextauth]/ (stored 0%)
+2026-01-03T15:09:44.2682289Z   adding: .next/server/app/api/auth/[...nextauth]/route.js (deflated 42%)
+2026-01-03T15:09:44.2683549Z   adding: .next/server/app/api/auth/[...nextauth]/route.js.map (deflated 21%)
+2026-01-03T15:09:44.2710429Z   adding: .next/server/app/api/auth/[...nextauth]/route_client-reference-manifest.js (deflated 46%)
+2026-01-03T15:09:44.2722515Z   adding: .next/server/app/api/auth/[...nextauth]/route.js.nft.json (deflated 84%)
+2026-01-03T15:09:44.2723592Z   adding: .next/server/app/api/auth/[...nextauth]/route/ (stored 0%)
+2026-01-03T15:09:44.2725041Z   adding: .next/server/app/api/auth/[...nextauth]/route/app-paths-manifest.json (deflated 36%)
+2026-01-03T15:09:44.2726310Z   adding: .next/server/app/api/auth/[...nextauth]/route/build-manifest.json (deflated 36%)
+2026-01-03T15:09:44.2727645Z   adding: .next/server/app/api/auth/[...nextauth]/route/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2728682Z   adding: .next/server/app/admin/ (stored 0%)
+2026-01-03T15:09:44.2729663Z   adding: .next/server/app/admin/page_client-reference-manifest.js (deflated 88%)
+2026-01-03T15:09:44.2730693Z   adding: .next/server/app/admin/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2731556Z   adding: .next/server/app/admin/page.js.nft.json (deflated 83%)
+2026-01-03T15:09:44.2732381Z   adding: .next/server/app/admin/posts/ (stored 0%)
+2026-01-03T15:09:44.2733190Z   adding: .next/server/app/admin/posts/new.html (deflated 75%)
+2026-01-03T15:09:44.2734058Z   adding: .next/server/app/admin/posts/new.meta (deflated 57%)
+2026-01-03T15:09:44.2765368Z   adding: .next/server/app/admin/posts/new/ (stored 0%)
+2026-01-03T15:09:44.2766479Z   adding: .next/server/app/admin/posts/new/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2767661Z   adding: .next/server/app/admin/posts/new/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2768705Z   adding: .next/server/app/admin/posts/new/page.js.nft.json (deflated 84%)
+2026-01-03T15:09:44.2769690Z   adding: .next/server/app/admin/posts/new/page/ (stored 0%)
+2026-01-03T15:09:44.2770759Z   adding: .next/server/app/admin/posts/new/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2772214Z   adding: .next/server/app/admin/posts/new/page/app-paths-manifest.json (deflated 28%)
+2026-01-03T15:09:44.2773391Z   adding: .next/server/app/admin/posts/new/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2774864Z   adding: .next/server/app/admin/posts/new/page/server-reference-manifest.json (deflated 78%)
+2026-01-03T15:09:44.2776182Z   adding: .next/server/app/admin/posts/new/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2777280Z   adding: .next/server/app/admin/posts/new/page.js (deflated 69%)
+2026-01-03T15:09:44.2778191Z   adding: .next/server/app/admin/posts/new.segments/ (stored 0%)
+2026-01-03T15:09:44.2779133Z   adding: .next/server/app/admin/posts/new.segments/admin/ (stored 0%)
+2026-01-03T15:09:44.2780164Z   adding: .next/server/app/admin/posts/new.segments/admin/posts/ (stored 0%)
+2026-01-03T15:09:44.2781273Z   adding: .next/server/app/admin/posts/new.segments/admin/posts/new/ (stored 0%)
+2026-01-03T15:09:44.2782568Z   adding: .next/server/app/admin/posts/new.segments/admin/posts/new/__PAGE__.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.2783953Z   adding: .next/server/app/admin/posts/new.segments/admin/posts/new.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.2795613Z   adding: .next/server/app/admin/posts/new.segments/admin/posts.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.2796853Z   adding: .next/server/app/admin/posts/new.segments/_tree.segment.rsc (deflated 65%)
+2026-01-03T15:09:44.2798055Z   adding: .next/server/app/admin/posts/new.segments/_index.segment.rsc (deflated 53%)
+2026-01-03T15:09:44.2799198Z   adding: .next/server/app/admin/posts/new.segments/_full.segment.rsc (deflated 73%)
+2026-01-03T15:09:44.2800344Z   adding: .next/server/app/admin/posts/new.segments/admin.segment.rsc (deflated 61%)
+2026-01-03T15:09:44.2801475Z   adding: .next/server/app/admin/posts/new.segments/_head.segment.rsc (deflated 52%)
+2026-01-03T15:09:44.2802398Z   adding: .next/server/app/admin/posts/[id]/ (stored 0%)
+2026-01-03T15:09:44.2803600Z   adding: .next/server/app/admin/posts/[id]/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2804839Z   adding: .next/server/app/admin/posts/[id]/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2805826Z   adding: .next/server/app/admin/posts/[id]/page.js.nft.json (deflated 84%)
+2026-01-03T15:09:44.2806773Z   adding: .next/server/app/admin/posts/[id]/page/ (stored 0%)
+2026-01-03T15:09:44.2807784Z   adding: .next/server/app/admin/posts/[id]/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2808933Z   adding: .next/server/app/admin/posts/[id]/page/app-paths-manifest.json (deflated 29%)
+2026-01-03T15:09:44.2810086Z   adding: .next/server/app/admin/posts/[id]/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2811278Z   adding: .next/server/app/admin/posts/[id]/page/server-reference-manifest.json (deflated 78%)
+2026-01-03T15:09:44.2812478Z   adding: .next/server/app/admin/posts/[id]/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2813517Z   adding: .next/server/app/admin/posts/[id]/page.js (deflated 69%)
+2026-01-03T15:09:44.2844673Z   adding: .next/server/app/admin/posts/new.rsc (deflated 73%)
+2026-01-03T15:09:44.2845568Z   adding: .next/server/app/admin/page/ (stored 0%)
+2026-01-03T15:09:44.2846513Z   adding: .next/server/app/admin/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2847559Z   adding: .next/server/app/admin/page/app-paths-manifest.json (deflated 18%)
+2026-01-03T15:09:44.2848576Z   adding: .next/server/app/admin/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2849636Z   adding: .next/server/app/admin/page/server-reference-manifest.json (deflated 77%)
+2026-01-03T15:09:44.2850747Z   adding: .next/server/app/admin/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2851650Z   adding: .next/server/app/admin/page.js (deflated 70%)
+2026-01-03T15:09:44.2852412Z   adding: .next/server/app/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2853159Z   adding: .next/server/app/_global-error.html (deflated 70%)
+2026-01-03T15:09:44.2854156Z   adding: .next/server/app/_not-found.html (deflated 75%)
+2026-01-03T15:09:44.2855051Z   adding: .next/server/app/index.html (deflated 73%)
+2026-01-03T15:09:44.2855803Z   adding: .next/server/app/_not-found.rsc (deflated 72%)
+2026-01-03T15:09:44.2856580Z   adding: .next/server/app/page.js.nft.json (deflated 81%)
+2026-01-03T15:09:44.2857356Z   adding: .next/server/app/portfolio.segments/ (stored 0%)
+2026-01-03T15:09:44.2858269Z   adding: .next/server/app/portfolio.segments/_tree.segment.rsc (deflated 56%)
+2026-01-03T15:09:44.2859306Z   adding: .next/server/app/portfolio.segments/_index.segment.rsc (deflated 53%)
+2026-01-03T15:09:44.2860370Z   adding: .next/server/app/portfolio.segments/_full.segment.rsc (deflated 71%)
+2026-01-03T15:09:44.2861430Z   adding: .next/server/app/portfolio.segments/_head.segment.rsc (deflated 52%)
+2026-01-03T15:09:44.2862541Z   adding: .next/server/app/portfolio.segments/portfolio.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.2897673Z   adding: .next/server/app/portfolio.segments/portfolio/ (stored 0%)
+2026-01-03T15:09:44.2898901Z   adding: .next/server/app/portfolio.segments/portfolio/__PAGE__.segment.rsc (deflated 68%)
+2026-01-03T15:09:44.2899868Z   adding: .next/server/app/page/ (stored 0%)
+2026-01-03T15:09:44.2900719Z   adding: .next/server/app/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2901721Z   adding: .next/server/app/page/app-paths-manifest.json (deflated 7%)
+2026-01-03T15:09:44.2902693Z   adding: .next/server/app/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2903685Z   adding: .next/server/app/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2904915Z   adding: .next/server/app/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2905748Z   adding: .next/server/app/index.meta (deflated 39%)
+2026-01-03T15:09:44.2906480Z   adding: .next/server/app/_not-found/ (stored 0%)
+2026-01-03T15:09:44.2907404Z   adding: .next/server/app/_not-found/page_client-reference-manifest.js (deflated 88%)
+2026-01-03T15:09:44.2908590Z   adding: .next/server/app/_not-found/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2909515Z   adding: .next/server/app/_not-found/page.js.nft.json (deflated 82%)
+2026-01-03T15:09:44.2910348Z   adding: .next/server/app/_not-found/page/ (stored 0%)
+2026-01-03T15:09:44.2911263Z   adding: .next/server/app/_not-found/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2912297Z   adding: .next/server/app/_not-found/page/app-paths-manifest.json (deflated 24%)
+2026-01-03T15:09:44.2913312Z   adding: .next/server/app/_not-found/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2914464Z   adding: .next/server/app/_not-found/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2915545Z   adding: .next/server/app/_not-found/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2916474Z   adding: .next/server/app/_not-found/page.js (deflated 65%)
+2026-01-03T15:09:44.2917241Z   adding: .next/server/app/portfolio.rsc (deflated 71%)
+2026-01-03T15:09:44.2918024Z   adding: .next/server/app/_global-error.meta (deflated 45%)
+2026-01-03T15:09:44.2918777Z   adding: .next/server/app/index.rsc (deflated 65%)
+2026-01-03T15:09:44.2919515Z   adding: .next/server/app/portfolio.meta (deflated 46%)
+2026-01-03T15:09:44.2920211Z   adding: .next/server/app/blog/ (stored 0%)
+2026-01-03T15:09:44.2921071Z   adding: .next/server/app/blog/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2922004Z   adding: .next/server/app/blog/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2922748Z   adding: .next/server/app/blog/page.js.nft.json (deflated 83%)
+2026-01-03T15:09:44.2923464Z   adding: .next/server/app/blog/[slug]/ (stored 0%)
+2026-01-03T15:09:44.2949850Z   adding: .next/server/app/blog/[slug]/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2950973Z   adding: .next/server/app/blog/[slug]/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2951912Z   adding: .next/server/app/blog/[slug]/page.js.nft.json (deflated 84%)
+2026-01-03T15:09:44.2952908Z   adding: .next/server/app/blog/[slug]/page/ (stored 0%)
+2026-01-03T15:09:44.2953840Z   adding: .next/server/app/blog/[slug]/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2955091Z   adding: .next/server/app/blog/[slug]/page/app-paths-manifest.json (deflated 25%)
+2026-01-03T15:09:44.2956131Z   adding: .next/server/app/blog/[slug]/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2957207Z   adding: .next/server/app/blog/[slug]/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2958314Z   adding: .next/server/app/blog/[slug]/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2959260Z   adding: .next/server/app/blog/[slug]/page.js (deflated 67%)
+2026-01-03T15:09:44.2960010Z   adding: .next/server/app/blog/page/ (stored 0%)
+2026-01-03T15:09:44.2960864Z   adding: .next/server/app/blog/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2961868Z   adding: .next/server/app/blog/page/app-paths-manifest.json (deflated 16%)
+2026-01-03T15:09:44.2962872Z   adding: .next/server/app/blog/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2963854Z   adding: .next/server/app/blog/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2965014Z   adding: .next/server/app/blog/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2965883Z   adding: .next/server/app/blog/page.js (deflated 67%)
+2026-01-03T15:09:44.2966646Z   adding: .next/server/app/_global-error.rsc (deflated 65%)
+2026-01-03T15:09:44.2967384Z   adding: .next/server/app/page.js (deflated 68%)
+2026-01-03T15:09:44.2968072Z   adding: .next/server/app/portfolio/ (stored 0%)
+2026-01-03T15:09:44.2968981Z   adding: .next/server/app/portfolio/page_client-reference-manifest.js (deflated 87%)
+2026-01-03T15:09:44.2969954Z   adding: .next/server/app/portfolio/page.js.map (deflated 21%)
+2026-01-03T15:09:44.2970828Z   adding: .next/server/app/portfolio/page.js.nft.json (deflated 82%)
+2026-01-03T15:09:44.2971641Z   adding: .next/server/app/portfolio/page/ (stored 0%)
+2026-01-03T15:09:44.2972726Z   adding: .next/server/app/portfolio/page/next-font-manifest.json (deflated 34%)
+2026-01-03T15:09:44.2973808Z   adding: .next/server/app/portfolio/page/app-paths-manifest.json (deflated 23%)
+2026-01-03T15:09:44.2974991Z   adding: .next/server/app/portfolio/page/build-manifest.json (deflated 49%)
+2026-01-03T15:09:44.2976060Z   adding: .next/server/app/portfolio/page/server-reference-manifest.json (deflated 17%)
+2026-01-03T15:09:44.2977142Z   adding: .next/server/app/portfolio/page/react-loadable-manifest.json (stored 0%)
+2026-01-03T15:09:44.2978082Z   adding: .next/server/app/portfolio/page.js (deflated 68%)
+2026-01-03T15:09:44.2978899Z   adding: .next/server/app/_global-error.segments/ (stored 0%)
+2026-01-03T15:09:44.2979856Z   adding: .next/server/app/_global-error.segments/__PAGE__.segment.rsc (deflated 55%)
+2026-01-03T15:09:44.2980920Z   adding: .next/server/app/_global-error.segments/_tree.segment.rsc (deflated 44%)
+2026-01-03T15:09:44.2981970Z   adding: .next/server/app/_global-error.segments/_index.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.2983033Z   adding: .next/server/app/_global-error.segments/_full.segment.rsc (deflated 65%)
+2026-01-03T15:09:44.2984090Z   adding: .next/server/app/_global-error.segments/_head.segment.rsc (deflated 51%)
+2026-01-03T15:09:44.3005456Z   adding: .next/server/app/portfolio.html (deflated 77%)
+2026-01-03T15:09:44.3006276Z   adding: .next/server/app/_not-found.segments/ (stored 0%)
+2026-01-03T15:09:44.3007211Z   adding: .next/server/app/_not-found.segments/_tree.segment.rsc (deflated 53%)
+2026-01-03T15:09:44.3008088Z   adding: .next/server/app/_not-found.segments/_not-found/ (stored 0%)
+2026-01-03T15:09:44.3009138Z   adding: .next/server/app/_not-found.segments/_not-found/__PAGE__.segment.rsc (deflated 53%)
+2026-01-03T15:09:44.3010226Z   adding: .next/server/app/_not-found.segments/_index.segment.rsc (deflated 59%)
+2026-01-03T15:09:44.3011246Z   adding: .next/server/app/_not-found.segments/_full.segment.rsc (deflated 72%)
+2026-01-03T15:09:44.3012539Z   adding: .next/server/app/_not-found.segments/_not-found.segment.rsc (deflated 45%)
+2026-01-03T15:09:44.3013584Z   adding: .next/server/app/_not-found.segments/_head.segment.rsc (deflated 54%)
+2026-01-03T15:09:44.3014615Z   adding: .next/server/app/index.segments/ (stored 0%)
+2026-01-03T15:09:44.3015481Z   adding: .next/server/app/index.segments/__PAGE__.segment.rsc (deflated 58%)
+2026-01-03T15:09:44.3016468Z   adding: .next/server/app/index.segments/_tree.segment.rsc (deflated 48%)
+2026-01-03T15:09:44.3017441Z   adding: .next/server/app/index.segments/_index.segment.rsc (deflated 53%)
+2026-01-03T15:09:44.3018410Z   adding: .next/server/app/index.segments/_full.segment.rsc (deflated 65%)
+2026-01-03T15:09:44.3019371Z   adding: .next/server/app/index.segments/_head.segment.rsc (deflated 52%)
+2026-01-03T15:09:44.3020360Z   adding: .next/server/interception-route-rewrite-manifest.js (stored 0%)
+2026-01-03T15:09:44.3021179Z   adding: .next/server/server-reference-manifest.js (deflated 85%)
+2026-01-03T15:09:44.3021936Z   adding: .next/server/edge/ (stored 0%)
+2026-01-03T15:09:44.3022570Z   adding: .next/server/edge/chunks/ (stored 0%)
+2026-01-03T15:09:44.3023674Z   adding: .next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_78fa9d6a.js (deflated 40%)
+2026-01-03T15:09:44.3045201Z   adding: .next/server/edge/chunks/[root-of-the-server]__b629104b._.js (deflated 70%)
+2026-01-03T15:09:44.3046628Z   adding: .next/server/edge/chunks/turbopack-node_modules_next_dist_esm_build_templates_edge-wrapper_0d661a8d.js (deflated 61%)
+2026-01-03T15:09:44.3222013Z   adding: .next/server/edge/chunks/[root-of-the-server]__b629104b._.js.map (deflated 77%)
+2026-01-03T15:09:44.3223531Z   adding: .next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_78fa9d6a.js.map (deflated 51%)
+2026-01-03T15:09:44.3253376Z   adding: .next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_0d661a8d.js.map (deflated 71%)
+2026-01-03T15:09:44.3258602Z   adding: .next/server/middleware-manifest.json (deflated 47%)
+2026-01-03T15:09:44.3262845Z   adding: .next/server/server-reference-manifest.json (deflated 85%)
+2026-01-03T15:09:44.3265962Z   adding: .next/server/middleware-build-manifest.js (deflated 50%)
+2026-01-03T15:09:44.3268689Z   adding: .next/static/ (stored 0%)
+2026-01-03T15:09:44.3270757Z   adding: .next/static/media/ (stored 0%)
+2026-01-03T15:09:44.3276474Z   adding: .next/static/media/4fa387ec64143e14-s.c1fdd6c2.woff2 (stored 0%)
+2026-01-03T15:09:44.3277529Z   adding: .next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2 (stored 0%)
+2026-01-03T15:09:44.3278586Z   adding: .next/static/media/bbc41e54d2fcbd21-s.799d8ef8.woff2 (stored 0%)
+2026-01-03T15:09:44.3279593Z   adding: .next/static/media/7178b3e590c64307-s.b97b3418.woff2 (stored 0%)
+2026-01-03T15:09:44.3283094Z   adding: .next/static/media/797e433ab948586e-s.p.dbea232f.woff2 (stored 0%)
+2026-01-03T15:09:44.3286456Z   adding: .next/static/media/8a480f0b521d4e75-s.8e0177b5.woff2 (stored 0%)
+2026-01-03T15:09:44.3287759Z   adding: .next/static/chunks/ (stored 0%)
+2026-01-03T15:09:44.3289531Z   adding: .next/static/chunks/turbopack-492cd776fed59e0e.js (deflated 61%)
+2026-01-03T15:09:44.3330097Z   adding: .next/static/chunks/4dd28bc3f722184a.js (deflated 73%)
+2026-01-03T15:09:44.3370354Z   adding: .next/static/chunks/a6dad97d9634a72d.js (deflated 65%)
+2026-01-03T15:09:44.3373315Z   adding: .next/static/chunks/bf0931b61d7f1049.js (deflated 61%)
+2026-01-03T15:09:44.3376829Z   adding: .next/static/chunks/796e69ae18b2784c.js (deflated 61%)
+2026-01-03T15:09:44.3419798Z   adding: .next/static/chunks/a6dad97d9634a72d.js.map (deflated 66%)
+2026-01-03T15:09:44.3506347Z   adding: .next/static/chunks/cc759f7c2413b7ff.js (deflated 69%)
+2026-01-03T15:09:44.3513502Z   adding: .next/static/chunks/7340adf74ff47ec0.js (deflated 76%)
+2026-01-03T15:09:44.3516396Z   adding: .next/static/chunks/cbd55ab9639e1e66.js (deflated 62%)
+2026-01-03T15:09:44.3517316Z   adding: .next/static/chunks/ff1a16fafef87110.js (deflated 27%)
+2026-01-03T15:09:44.3525118Z   adding: .next/static/chunks/aa0a7c5c022cbeb9.js (deflated 79%)
+2026-01-03T15:09:44.3526467Z   adding: .next/static/chunks/ee454af588c5d311.js (deflated 66%)
+2026-01-03T15:09:44.3531762Z   adding: .next/static/chunks/0604e05ae6425c1b.css (deflated 77%)
+2026-01-03T15:09:44.3533919Z   adding: .next/static/GSmcL1CfubyBfO23ys8ni/ (stored 0%)
+2026-01-03T15:09:44.3536862Z   adding: .next/static/GSmcL1CfubyBfO23ys8ni/_ssgManifest.js (deflated 43%)
+2026-01-03T15:09:44.3538053Z   adding: .next/static/GSmcL1CfubyBfO23ys8ni/_clientMiddlewareManifest.json (deflated 26%)
+2026-01-03T15:09:44.3539043Z   adding: .next/static/GSmcL1CfubyBfO23ys8ni/_buildManifest.js (deflated 39%)
+2026-01-03T15:09:44.3539923Z   adding: .next/app-path-routes-manifest.json (deflated 63%)
+2026-01-03T15:09:44.3540746Z   adding: .next/prerender-manifest.json (deflated 84%)
+2026-01-03T15:09:44.3541437Z   adding: .next/trace (deflated 82%)
+2026-01-03T15:09:44.3548851Z   adding: .next/routes-manifest.json (deflated 74%)
+2026-01-03T15:09:44.3549576Z   adding: .next/BUILD_ID (stored 0%)
+2026-01-03T15:09:44.3550180Z   adding: .next/cache/ (stored 0%)
+2026-01-03T15:09:44.3580545Z   adding: .next/cache/.tsbuildinfo (deflated 71%)
+2026-01-03T15:09:44.3582674Z   adding: .next/cache/config.json (deflated 21%)
+2026-01-03T15:09:44.3583454Z   adding: .next/cache/.previewinfo (deflated 30%)
+2026-01-03T15:09:44.3584371Z   adding: .next/cache/.rscinfo (deflated 8%)
+2026-01-03T15:09:44.3585149Z   adding: .next/required-server-files.js (deflated 63%)
+2026-01-03T15:09:44.3585793Z   adding: .next/diagnostics/ (stored 0%)
+2026-01-03T15:09:44.3586580Z   adding: .next/diagnostics/build-diagnostics.json (deflated 18%)
+2026-01-03T15:09:44.3587909Z   adding: .next/diagnostics/framework.json (stored 0%)
+2026-01-03T15:09:44.3588905Z   adding: .next/trace-build (deflated 64%)
+2026-01-03T15:09:44.3589811Z   adding: .next/package.json (stored 0%)
+2026-01-03T15:09:44.3614973Z   adding: .next/build/ (stored 0%)
+2026-01-03T15:09:44.3616025Z   adding: .next/build/postcss.js (deflated 68%)
+2026-01-03T15:09:44.3616964Z   adding: .next/build/chunks/ (stored 0%)
+2026-01-03T15:09:44.3617816Z   adding: .next/build/chunks/[turbopack]_runtime.js.map (deflated 71%)
+2026-01-03T15:09:44.3748629Z   adding: .next/build/chunks/node_modules_fe693df6._.js.map (deflated 78%)
+2026-01-03T15:09:44.3757097Z   adding: .next/build/chunks/[root-of-the-server]__974941ed._.js.map (deflated 71%)
+2026-01-03T15:09:44.3758634Z   adding: .next/build/chunks/[turbopack-node]_transforms_postcss_ts_6920245c._.js (deflated 53%)
+2026-01-03T15:09:44.3760501Z   adding: .next/build/chunks/[root-of-the-server]__51225daf._.js.map (deflated 66%)
+2026-01-03T15:09:44.3837229Z   adding: .next/build/chunks/node_modules_fe693df6._.js (deflated 80%)
+2026-01-03T15:09:44.3838631Z   adding: .next/build/chunks/[turbopack-node]_transforms_postcss_ts_6920245c._.js.map (deflated 21%)
+2026-01-03T15:09:44.3847608Z   adding: .next/build/chunks/[turbopack]_runtime.js (deflated 71%)
+2026-01-03T15:09:44.3849968Z   adding: .next/build/chunks/[root-of-the-server]__51225daf._.js (deflated 76%)
+2026-01-03T15:09:44.3855439Z   adding: .next/build/chunks/[root-of-the-server]__974941ed._.js (deflated 74%)
+2026-01-03T15:09:44.3856634Z   adding: .next/build/package.json (stored 0%)
+2026-01-03T15:09:44.3857504Z   adding: .next/build/postcss.js.map (deflated 21%)
+2026-01-03T15:09:44.3858382Z   adding: .next/images-manifest.json (deflated 60%)
+2026-01-03T15:09:44.3859093Z   adding: .next/node_modules/ (stored 0%)
+2026-01-03T15:09:44.3859784Z   adding: .next/node_modules/@prisma/ (stored 0%)
+2026-01-03T15:09:44.3867115Z   adding: .next/next-server.js.nft.json (deflated 87%)
+2026-01-03T15:09:44.3868522Z   adding: .env (deflated 25%)
+2026-01-03T15:09:44.3921454Z   adding: package-lock.json (deflated 78%)
+2026-01-03T15:09:44.3922388Z   adding: public/ (stored 0%)
+2026-01-03T15:09:44.3923310Z   adding: public/file.svg (deflated 37%)
+2026-01-03T15:09:44.3924773Z   adding: public/next.svg (deflated 49%)
+2026-01-03T15:09:44.3925743Z   adding: public/globe.svg (deflated 50%)
+2026-01-03T15:09:44.3926641Z   adding: public/window.svg (deflated 48%)
+2026-01-03T15:09:44.3931036Z   adding: public/vercel.svg (deflated 13%)
+2026-01-03T15:09:44.3931891Z   adding: prisma/ (stored 0%)
+2026-01-03T15:09:44.3932747Z   adding: prisma/schema.prisma (deflated 64%)
+2026-01-03T15:09:44.3935613Z   adding: package.json (deflated 62%)
+2026-01-03T15:09:44.4041970Z ##[group]Run google-github-actions/auth@v2
+2026-01-03T15:09:44.4042349Z with:
+2026-01-03T15:09:44.4051760Z   credentials_json: ***
+
+2026-01-03T15:09:44.4052092Z   create_credentials_file: true
+2026-01-03T15:09:44.4052425Z   export_environment_variables: true
+2026-01-03T15:09:44.4052762Z   universe: googleapis.com
+2026-01-03T15:09:44.4053069Z   cleanup_credentials: true
+2026-01-03T15:09:44.4053373Z   access_token_lifetime: 3600s
+2026-01-03T15:09:44.4053793Z   access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+2026-01-03T15:09:44.4054371Z   id_token_include_email: false
+2026-01-03T15:09:44.4054673Z env:
+2026-01-03T15:09:44.4054953Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:44.4055263Z   ZONE: us-central1-f
+2026-01-03T15:09:44.4055556Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:44.4055845Z ##[endgroup]
+2026-01-03T15:09:44.5000039Z Created credentials file at "/home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json"
+2026-01-03T15:09:44.5211939Z ##[group]Run google-github-actions/setup-gcloud@v2
+2026-01-03T15:09:44.5212345Z with:
+2026-01-03T15:09:44.5212610Z   version: latest
+2026-01-03T15:09:44.5212900Z   skip_install: false
+2026-01-03T15:09:44.5213195Z   skip_tool_cache: false
+2026-01-03T15:09:44.5213484Z env:
+2026-01-03T15:09:44.5213747Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:09:44.5214063Z   ZONE: us-central1-f
+2026-01-03T15:09:44.5214560Z   PROJECT_ID: blog-471319
+2026-01-03T15:09:44.5215125Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:09:44.5215929Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:09:44.5216675Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:09:44.5217196Z   CLOUDSDK_CORE_PROJECT: blog-471319
+2026-01-03T15:09:44.5217535Z   CLOUDSDK_PROJECT: blog-471319
+2026-01-03T15:09:44.5217877Z   GCLOUD_PROJECT: blog-471319
+2026-01-03T15:09:44.5218189Z   GCP_PROJECT: blog-471319
+2026-01-03T15:09:44.5218504Z   GOOGLE_CLOUD_PROJECT: blog-471319
+2026-01-03T15:09:44.5218825Z ##[endgroup]
+2026-01-03T15:09:47.4261388Z [command]/usr/bin/tar xz --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/2560e56f-3180-40b0-ab4c-aa5473c561b7 -f /home/runner/work/_temp/4e0289e4-442a-4039-8b45-bf8611d3c467
+2026-01-03T15:10:12.0030322Z Successfully authenticated
+2026-01-03T15:10:12.0196638Z ##[group]Run gcloud compute scp deploy.zip $INSTANCE_NAME:~/ --zone $ZONE --project $PROJECT_ID
+2026-01-03T15:10:12.0197383Z [36;1mgcloud compute scp deploy.zip $INSTANCE_NAME:~/ --zone $ZONE --project $PROJECT_ID[0m
+2026-01-03T15:10:12.0230401Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:10:12.0230729Z env:
+2026-01-03T15:10:12.0230999Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:10:12.0231319Z   ZONE: us-central1-f
+2026-01-03T15:10:12.0231608Z   PROJECT_ID: blog-471319
+2026-01-03T15:10:12.0232173Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:12.0232978Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:12.0233703Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:12.0234430Z   CLOUDSDK_CORE_PROJECT: blog-471319
+2026-01-03T15:10:12.0234826Z   CLOUDSDK_PROJECT: blog-471319
+2026-01-03T15:10:12.0235145Z   GCLOUD_PROJECT: blog-471319
+2026-01-03T15:10:12.0235450Z   GCP_PROJECT: blog-471319
+2026-01-03T15:10:12.0235782Z   GOOGLE_CLOUD_PROJECT: blog-471319
+2026-01-03T15:10:12.0236442Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+2026-01-03T15:10:12.0236877Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+2026-01-03T15:10:12.0237214Z ##[endgroup]
+2026-01-03T15:10:12.5523037Z WARNING: The private SSH key file for gcloud does not exist.
+2026-01-03T15:10:12.5529437Z WARNING: The public SSH key file for gcloud does not exist.
+2026-01-03T15:10:12.5530307Z WARNING: You do not have an SSH key for gcloud.
+2026-01-03T15:10:12.5531247Z WARNING: SSH keygen will be executed to generate a key.
+2026-01-03T15:10:12.5532290Z This tool needs to create the directory [/home/runner/.ssh] before being able to
+2026-01-03T15:10:12.5533084Z  generate SSH keys.
+2026-01-03T15:10:12.5533428Z 
+2026-01-03T15:10:12.5533739Z Do you want to continue (Y/n)?  
+2026-01-03T15:10:13.9683951Z Generating public/private rsa key pair.
+2026-01-03T15:10:13.9685322Z Your identification has been saved in /home/runner/.ssh/google_compute_engine
+2026-01-03T15:10:13.9691126Z Your public key has been saved in /home/runner/.ssh/google_compute_engine.pub
+2026-01-03T15:10:13.9692001Z The key fingerprint is:
+2026-01-03T15:10:13.9692941Z SHA256:M6kTg3QblFepTiIxrxuUC/Im1eDQoCFE5s9QzWZjyv8 runner@runnervmh13bl
+2026-01-03T15:10:13.9693827Z The key's randomart image is:
+2026-01-03T15:10:13.9694631Z +---[RSA 3072]----+
+2026-01-03T15:10:13.9695101Z |** .o .. ...     |
+2026-01-03T15:10:13.9695578Z |*.+ oO. . .      |
+2026-01-03T15:10:13.9696071Z |.=.o*=+. .       |
+2026-01-03T15:10:13.9696534Z |. B+=oooo.       |
+2026-01-03T15:10:13.9696987Z | + =o+++S        |
+2026-01-03T15:10:13.9697462Z |. o +. +.o       |
+2026-01-03T15:10:13.9697946Z | o   o+          |
+2026-01-03T15:10:13.9698424Z |    .  E         |
+2026-01-03T15:10:13.9698897Z |                 |
+2026-01-03T15:10:13.9699361Z +----[SHA256]-----+
+2026-01-03T15:10:15.2666138Z Updating project ssh metadata...
+2026-01-03T15:10:27.4514675Z ............................................................Updated [https://www.googleapis.com/compute/v1/projects/blog-471319].
+2026-01-03T15:10:27.6724885Z .done.
+2026-01-03T15:10:27.6751530Z Waiting for SSH key to propagate.
+2026-01-03T15:10:27.9219162Z Warning: Permanently added 'compute.2394029836295254651' (ED25519) to the list of known hosts.
+2026-01-03T15:10:30.8059223Z ##[group]Run gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
+2026-01-03T15:10:30.8060520Z [36;1mgcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "[0m
+2026-01-03T15:10:30.8061406Z [36;1m  echo '=== デプロイ開始 (通常モード) ==='[0m
+2026-01-03T15:10:30.8061949Z [36;1m  [0m
+2026-01-03T15:10:30.8062377Z [36;1m  # 既存のアプリを停止[0m
+2026-01-03T15:10:30.8062920Z [36;1m  pm2 delete portfolio || true[0m
+2026-01-03T15:10:30.8063494Z [36;1m  [0m
+2026-01-03T15:10:30.8063940Z [36;1m  # データベースをバックアップ[0m
+2026-01-03T15:10:30.8064676Z [36;1m  if [ -f my-app/dev.db ]; then[0m
+2026-01-03T15:10:30.8065336Z [36;1m    cp my-app/dev.db ./dev.db.bak[0m
+2026-01-03T15:10:30.8065913Z [36;1m  fi[0m
+2026-01-03T15:10:30.8066344Z [36;1m  [0m
+2026-01-03T15:10:30.8066843Z [36;1m  # クリーンアップ (npm error ENOTEMPTY 対策)[0m
+2026-01-03T15:10:30.8067477Z [36;1m  # 既存の node_modules を完全に削除してからインストールする[0m
+2026-01-03T15:10:30.8068167Z [36;1m  echo 'Cleaning up existing files...'[0m
+2026-01-03T15:10:30.8068829Z [36;1m  pm2 delete portfolio || true[0m
+2026-01-03T15:10:30.8069413Z [36;1m  rm -rf my-app[0m
+2026-01-03T15:10:30.8069944Z [36;1m  mkdir -p my-app[0m
+2026-01-03T15:10:30.8070446Z [36;1m  [0m
+2026-01-03T15:10:30.8070884Z [36;1m  # 解凍[0m
+2026-01-03T15:10:30.8071390Z [36;1m  unzip -o deploy.zip -d my-app[0m
+2026-01-03T15:10:30.8071985Z [36;1m  rm deploy.zip[0m
+2026-01-03T15:10:30.8072493Z [36;1m  [0m
+2026-01-03T15:10:30.8072921Z [36;1m  # データベース復元[0m
+2026-01-03T15:10:30.8073415Z [36;1m  if [ -f ./dev.db.bak ]; then[0m
+2026-01-03T15:10:30.8074024Z [36;1m    mv ./dev.db.bak my-app/dev.db[0m
+2026-01-03T15:10:30.8074888Z [36;1m  fi[0m
+2026-01-03T15:10:30.8075324Z [36;1m  [0m
+2026-01-03T15:10:30.8075765Z [36;1m  cd my-app[0m
+2026-01-03T15:10:30.8076589Z [36;1m  [0m
+2026-01-03T15:10:30.8077080Z [36;1m  # 依存関係のインストール (Standardモードでは必須)[0m
+2026-01-03T15:10:30.8077828Z [36;1m  # ENOTEMPTYエラー対策: 既存のnode_modulesを削除してからインストール[0m
+2026-01-03T15:10:30.8078543Z [36;1m  echo 'Installing dependencies...'[0m
+2026-01-03T15:10:30.8079157Z [36;1m  rm -rf node_modules[0m
+2026-01-03T15:10:30.8079725Z [36;1m  npm install --omit=dev[0m
+2026-01-03T15:10:30.8080257Z [36;1m  [0m
+2026-01-03T15:10:30.8080704Z [36;1m  # Prisma生成[0m
+2026-01-03T15:10:30.8081322Z [36;1m  npx prisma generate --schema=./prisma/schema.prisma[0m
+2026-01-03T15:10:30.8081997Z [36;1m  [0m
+2026-01-03T15:10:30.8082477Z [36;1m  # アプリ起動 (npm startを使用)[0m
+2026-01-03T15:10:30.8083097Z [36;1m  echo 'Starting app...'[0m
+2026-01-03T15:10:30.8083892Z [36;1m  HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" -- start[0m
+2026-01-03T15:10:30.8085028Z [36;1m  pm2 save[0m
+2026-01-03T15:10:30.8085514Z [36;1m  [0m
+2026-01-03T15:10:30.8085976Z [36;1m  echo '=== デプロイ完了 ==='[0m
+2026-01-03T15:10:30.8086548Z [36;1m"[0m
+2026-01-03T15:10:30.8129414Z shell: /usr/bin/bash -e ***0***
+2026-01-03T15:10:30.8129754Z env:
+2026-01-03T15:10:30.8130043Z   INSTANCE_NAME: wordpress-1-vm
+2026-01-03T15:10:30.8130367Z   ZONE: us-central1-f
+2026-01-03T15:10:30.8130651Z   PROJECT_ID: blog-471319
+2026-01-03T15:10:30.8131225Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:30.8132054Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:30.8132797Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json
+2026-01-03T15:10:30.8133322Z   CLOUDSDK_CORE_PROJECT: blog-471319
+2026-01-03T15:10:30.8133656Z   CLOUDSDK_PROJECT: blog-471319
+2026-01-03T15:10:30.8133970Z   GCLOUD_PROJECT: blog-471319
+2026-01-03T15:10:30.8134510Z   GCP_PROJECT: blog-471319
+2026-01-03T15:10:30.8134829Z   GOOGLE_CLOUD_PROJECT: blog-471319
+2026-01-03T15:10:30.8135242Z   CLOUDSDK_METRICS_ENVIRONMENT: github-actions-setup-gcloud
+2026-01-03T15:10:30.8135674Z   CLOUDSDK_METRICS_ENVIRONMENT_VERSION: 2.2.1
+2026-01-03T15:10:30.8136015Z ##[endgroup]
+2026-01-03T15:10:32.5497293Z === デプロイ開始 (通常モード) ===
+2026-01-03T15:10:33.1100653Z [PM2] Applying action deleteProcessId on app [portfolio](ids: [ 0 ])
+2026-01-03T15:10:34.2916779Z [PM2] [portfolio](0) ✓
+2026-01-03T15:10:34.5057502Z ┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+2026-01-03T15:10:34.5058807Z │ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+2026-01-03T15:10:34.5060039Z └────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+2026-01-03T15:10:34.5137819Z Cleaning up existing files...
+2026-01-03T15:10:34.7749883Z [PM2][ERROR] Process or Namespace portfolio not found
+2026-01-03T15:10:39.3447983Z Archive:  deploy.zip
+2026-01-03T15:10:39.3448917Z    creating: my-app/.next/
+2026-01-03T15:10:39.3464133Z   inflating: my-app/.next/export-marker.json  
+2026-01-03T15:10:39.3465491Z   inflating: my-app/.next/build-manifest.json  
+2026-01-03T15:10:39.3466223Z    creating: my-app/.next/types/
+2026-01-03T15:10:39.3466935Z   inflating: my-app/.next/types/validator.ts  
+2026-01-03T15:10:39.3467692Z   inflating: my-app/.next/types/routes.d.ts  
+2026-01-03T15:10:39.3468501Z   inflating: my-app/.next/required-server-files.json  
+2026-01-03T15:10:39.3469374Z   inflating: my-app/.next/fallback-build-manifest.json  
+2026-01-03T15:10:39.3470178Z  extracting: my-app/.next/turbopack  
+2026-01-03T15:10:39.3471000Z   inflating: my-app/.next/next-minimal-server.js.nft.json  
+2026-01-03T15:10:39.3471753Z    creating: my-app/.next/server/
+2026-01-03T15:10:39.3472207Z   inflating: my-app/.next/server/next-font-manifest.json  
+2026-01-03T15:10:39.3472728Z   inflating: my-app/.next/server/app-paths-manifest.json  
+2026-01-03T15:10:39.3473562Z    creating: my-app/.next/server/middleware/
+2026-01-03T15:10:39.3488282Z   inflating: my-app/.next/server/middleware/middleware-manifest.json  
+2026-01-03T15:10:39.3500956Z    creating: my-app/.next/server/pages/
+2026-01-03T15:10:39.3501757Z   inflating: my-app/.next/server/pages/500.html  
+2026-01-03T15:10:39.3502559Z   inflating: my-app/.next/server/pages/404.html  
+2026-01-03T15:10:39.3503403Z   inflating: my-app/.next/server/pages-manifest.json  
+2026-01-03T15:10:39.3504143Z   inflating: my-app/.next/server/next-font-manifest.js  
+2026-01-03T15:10:39.3504921Z    creating: my-app/.next/server/chunks/
+2026-01-03T15:10:39.3505358Z    creating: my-app/.next/server/chunks/ssr/
+2026-01-03T15:10:39.3505819Z   inflating: my-app/.next/server/chunks/ssr/_2cfe73b3._.js  
+2026-01-03T15:10:39.3506316Z   inflating: my-app/.next/server/chunks/ssr/_adf2bbda._.js  
+2026-01-03T15:10:39.3506901Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__58d4ec1c._.js  
+2026-01-03T15:10:39.3507876Z   inflating: my-app/.next/server/chunks/ssr/[turbopack]_runtime.js.map  
+2026-01-03T15:10:39.3508916Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4b57d460._.js  
+2026-01-03T15:10:39.3510615Z   inflating: my-app/.next/server/chunks/ssr/src_app_admin_posts__components_PostForm_tsx_6732d3c5._.js.map  
+2026-01-03T15:10:39.3511767Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__11fa4345._.js.map  
+2026-01-03T15:10:39.3512853Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_08570d7f._.js  
+2026-01-03T15:10:39.3514713Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_08570d7f._.js.map  
+2026-01-03T15:10:39.3516193Z   inflating: my-app/.next/server/chunks/ssr/node_modules_ea845e5f._.js  
+2026-01-03T15:10:39.3660255Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_15817684.js  
+2026-01-03T15:10:39.3661895Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_blog_page_actions_cb4aaadc.js  
+2026-01-03T15:10:39.3663096Z   inflating: my-app/.next/server/chunks/ssr/_2cfe73b3._.js.map  
+2026-01-03T15:10:39.3664862Z   inflating: my-app/.next/server/chunks/ssr/_08d4a9f7._.js.map  
+2026-01-03T15:10:39.3666024Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4af51a06._.js.map  
+2026-01-03T15:10:39.3666959Z   inflating: my-app/.next/server/chunks/ssr/_1144bdce._.js  
+2026-01-03T15:10:39.3667960Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4af51a06._.js  
+2026-01-03T15:10:39.3668882Z   inflating: my-app/.next/server/chunks/ssr/_61b58078._.js.map  
+2026-01-03T15:10:39.3669901Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__d143f79e._.js  
+2026-01-03T15:10:39.3671082Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_esm_9bea2a37._.js.map  
+2026-01-03T15:10:39.3672152Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__b9356576._.js.map  
+2026-01-03T15:10:39.3673221Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__843141d4._.js.map  
+2026-01-03T15:10:39.3674448Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__7ef04de9._.js  
+2026-01-03T15:10:39.3675524Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__9ea464a7._.js.map  
+2026-01-03T15:10:39.3676454Z   inflating: my-app/.next/server/chunks/ssr/_9809e503._.js.map  
+2026-01-03T15:10:39.3690684Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_82db42d6._.js.map  
+2026-01-03T15:10:39.3695816Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_82db42d6._.js  
+2026-01-03T15:10:39.3708288Z   inflating: my-app/.next/server/chunks/ssr/_46b9dca4._.js.map  
+2026-01-03T15:10:39.3709285Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_2fffaa3a._.js.map  
+2026-01-03T15:10:39.3712387Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app__global-error_page_actions_75761787.js.map  
+2026-01-03T15:10:39.3726831Z   inflating: my-app/.next/server/chunks/ssr/_9809e503._.js  
+2026-01-03T15:10:39.3742873Z   inflating: my-app/.next/server/chunks/ssr/src_utils_formatDate_ts_297004ce._.js.map  
+2026-01-03T15:10:39.3744132Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_blog_page_actions_cb4aaadc.js.map  
+2026-01-03T15:10:39.3746215Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__c7cbb5e1._.js  
+2026-01-03T15:10:39.3747182Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__843141d4._.js  
+2026-01-03T15:10:39.3757594Z   inflating: my-app/.next/server/chunks/ssr/_23476a34._.js.map  
+2026-01-03T15:10:39.3774080Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__e17d8479._.js  
+2026-01-03T15:10:39.3775576Z   inflating: my-app/.next/server/chunks/ssr/_61b58078._.js  
+2026-01-03T15:10:39.3777562Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__a36c45d7._.js  
+2026-01-03T15:10:39.3778743Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4d2ce17d._.js  
+2026-01-03T15:10:39.3788035Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_2fffaa3a._.js  
+2026-01-03T15:10:39.3788998Z   inflating: my-app/.next/server/chunks/ssr/_adf2bbda._.js.map  
+2026-01-03T15:10:39.3790005Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__ed4f4e28._.js.map  
+2026-01-03T15:10:39.3872496Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_blog_[slug]_page_actions_ec3909d7.js.map  
+2026-01-03T15:10:39.3873878Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__e9249ca0._.js  
+2026-01-03T15:10:39.3875534Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app__global-error_page_actions_75761787.js  
+2026-01-03T15:10:39.3876987Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_ece394eb.js.map  
+2026-01-03T15:10:39.3878742Z   inflating: my-app/.next/server/chunks/ssr/node_modules_ea845e5f._.js.map  
+2026-01-03T15:10:39.3879902Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__38974243._.js.map  
+2026-01-03T15:10:39.3881288Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_esm_9bea2a37._.js  
+2026-01-03T15:10:39.3882468Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__d143f79e._.js.map  
+2026-01-03T15:10:39.3883615Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__cee71f51._.js  
+2026-01-03T15:10:39.3884930Z   inflating: my-app/.next/server/chunks/ssr/src_app_admin_layout_tsx_9cb4d248._.js  
+2026-01-03T15:10:39.3886152Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_portfolio_page_actions_224c57fe.js  
+2026-01-03T15:10:39.3887362Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app__not-found_page_actions_554ec2bf.js  
+2026-01-03T15:10:39.3888597Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_portfolio_page_actions_224c57fe.js.map  
+2026-01-03T15:10:39.3889816Z   inflating: my-app/.next/server/chunks/ssr/src_app_admin_posts__components_PostForm_tsx_6732d3c5._.js  
+2026-01-03T15:10:39.3891312Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__38974243._.js  
+2026-01-03T15:10:39.3892738Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__c7cbb5e1._.js.map  
+2026-01-03T15:10:39.3894328Z  extracting: my-app/.next/server/chunks/ssr/_next-internal_server_app_page_actions_39d4fc33.js  
+2026-01-03T15:10:39.3895383Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__11fa4345._.js  
+2026-01-03T15:10:39.3896441Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__e9249ca0._.js.map  
+2026-01-03T15:10:39.3897465Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_4b9a0874._.js  
+2026-01-03T15:10:39.3898497Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4b57d460._.js.map  
+2026-01-03T15:10:39.3899513Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__9ea464a7._.js  
+2026-01-03T15:10:39.3901097Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_unauthorized_15817684.js.map  
+2026-01-03T15:10:39.3902500Z   inflating: my-app/.next/server/chunks/ssr/[turbopack]_runtime.js  
+2026-01-03T15:10:39.3903766Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_client_components_builtin_global-error_ece394eb.js  
+2026-01-03T15:10:39.3905144Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_blog_[slug]_page_actions_ec3909d7.js  
+2026-01-03T15:10:39.3906456Z   inflating: my-app/.next/server/chunks/ssr/src_app_admin_layout_tsx_9cb4d248._.js.map  
+2026-01-03T15:10:39.3907734Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_036c91c3.js.map  
+2026-01-03T15:10:39.3950138Z   inflating: my-app/.next/server/chunks/ssr/src_utils_formatDate_ts_297004ce._.js  
+2026-01-03T15:10:39.3951451Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__4d2ce17d._.js.map  
+2026-01-03T15:10:39.3952785Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__0eb61e08._.js.map  
+2026-01-03T15:10:39.3954398Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_compiled_bc6b8ddf._.js.map  
+2026-01-03T15:10:39.3955405Z   inflating: my-app/.next/server/chunks/ssr/_c19c7642._.js.map  
+2026-01-03T15:10:39.3956472Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__7ef04de9._.js.map  
+2026-01-03T15:10:39.3957536Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__cee71f51._.js.map  
+2026-01-03T15:10:39.3958416Z   inflating: my-app/.next/server/chunks/ssr/_c19c7642._.js  
+2026-01-03T15:10:39.3959432Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__ed4f4e28._.js  
+2026-01-03T15:10:39.3960478Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app_page_actions_39d4fc33.js.map  
+2026-01-03T15:10:39.4002950Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__e17d8479._.js.map  
+2026-01-03T15:10:39.4005210Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__58d4ec1c._.js.map  
+2026-01-03T15:10:39.4008967Z   inflating: my-app/.next/server/chunks/ssr/_46b9dca4._.js  
+2026-01-03T15:10:39.4011306Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__0eb61e08._.js  
+2026-01-03T15:10:39.4019066Z   inflating: my-app/.next/server/chunks/ssr/_next-internal_server_app__not-found_page_actions_554ec2bf.js.map  
+2026-01-03T15:10:39.4022421Z   inflating: my-app/.next/server/chunks/ssr/_1144bdce._.js.map  
+2026-01-03T15:10:39.4029326Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_compiled_bc6b8ddf._.js  
+2026-01-03T15:10:39.4030413Z   inflating: my-app/.next/server/chunks/ssr/_08d4a9f7._.js  
+2026-01-03T15:10:39.4031873Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_esm_build_templates_app-page_036c91c3.js  
+2026-01-03T15:10:39.4047696Z   inflating: my-app/.next/server/chunks/ssr/node_modules_next_dist_4b9a0874._.js.map  
+2026-01-03T15:10:39.4051879Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__b9356576._.js  
+2026-01-03T15:10:39.4052857Z   inflating: my-app/.next/server/chunks/ssr/[root-of-the-server]__a36c45d7._.js.map  
+2026-01-03T15:10:39.4057672Z   inflating: my-app/.next/server/chunks/ssr/_23476a34._.js  
+2026-01-03T15:10:39.4064758Z   inflating: my-app/.next/server/chunks/[turbopack]_runtime.js.map  
+2026-01-03T15:10:39.4067342Z   inflating: my-app/.next/server/chunks/_next-internal_server_app_api_auth_[___nextauth]_route_actions_1c865db8.js  
+2026-01-03T15:10:39.4071124Z   inflating: my-app/.next/server/chunks/[externals]__e0527121._.js  
+2026-01-03T15:10:39.4072066Z   inflating: my-app/.next/server/chunks/[turbopack]_runtime.js  
+2026-01-03T15:10:39.4073173Z   inflating: my-app/.next/server/chunks/_next-internal_server_app_api_auth_[___nextauth]_route_actions_1c865db8.js.map  
+2026-01-03T15:10:39.4237191Z   inflating: my-app/.next/server/chunks/[root-of-the-server]__567aabe5._.js.map  
+2026-01-03T15:10:39.4238783Z   inflating: my-app/.next/server/chunks/[externals]__e0527121._.js.map  
+2026-01-03T15:10:39.4284673Z   inflating: my-app/.next/server/chunks/[root-of-the-server]__567aabe5._.js  
+2026-01-03T15:10:39.4285906Z   inflating: my-app/.next/server/functions-config-manifest.json  
+2026-01-03T15:10:39.4288806Z    creating: my-app/.next/server/app/
+2026-01-03T15:10:39.4290112Z   inflating: my-app/.next/server/app/_not-found.meta  
+2026-01-03T15:10:39.4291467Z   inflating: my-app/.next/server/app/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4292527Z    creating: my-app/.next/server/app/_global-error/
+2026-01-03T15:10:39.4294064Z   inflating: my-app/.next/server/app/_global-error/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4296164Z   inflating: my-app/.next/server/app/_global-error/page.js.map  
+2026-01-03T15:10:39.4297324Z   inflating: my-app/.next/server/app/_global-error/page.js.nft.json  
+2026-01-03T15:10:39.4298230Z    creating: my-app/.next/server/app/_global-error/page/
+2026-01-03T15:10:39.4299289Z   inflating: my-app/.next/server/app/_global-error/page/next-font-manifest.json  
+2026-01-03T15:10:39.4300342Z   inflating: my-app/.next/server/app/_global-error/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4301366Z   inflating: my-app/.next/server/app/_global-error/page/build-manifest.json  
+2026-01-03T15:10:39.4302715Z   inflating: my-app/.next/server/app/_global-error/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4304468Z  extracting: my-app/.next/server/app/_global-error/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4305404Z   inflating: my-app/.next/server/app/_global-error/page.js  
+2026-01-03T15:10:39.4306196Z    creating: my-app/.next/server/app/api/
+2026-01-03T15:10:39.4306994Z    creating: my-app/.next/server/app/api/auth/
+2026-01-03T15:10:39.4307832Z    creating: my-app/.next/server/app/api/auth/[...nextauth]/
+2026-01-03T15:10:39.4308777Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route.js  
+2026-01-03T15:10:39.4310201Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route.js.map  
+2026-01-03T15:10:39.4311346Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route_client-reference-manifest.js  
+2026-01-03T15:10:39.4312677Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route.js.nft.json  
+2026-01-03T15:10:39.4313838Z    creating: my-app/.next/server/app/api/auth/[...nextauth]/route/
+2026-01-03T15:10:39.4316591Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route/app-paths-manifest.json  
+2026-01-03T15:10:39.4318334Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route/build-manifest.json  
+2026-01-03T15:10:39.4319494Z   inflating: my-app/.next/server/app/api/auth/[...nextauth]/route/server-reference-manifest.json  
+2026-01-03T15:10:39.4320310Z    creating: my-app/.next/server/app/admin/
+2026-01-03T15:10:39.4321900Z   inflating: my-app/.next/server/app/admin/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4322770Z   inflating: my-app/.next/server/app/admin/page.js.map  
+2026-01-03T15:10:39.4323705Z   inflating: my-app/.next/server/app/admin/page.js.nft.json  
+2026-01-03T15:10:39.4324918Z    creating: my-app/.next/server/app/admin/posts/
+2026-01-03T15:10:39.4325753Z   inflating: my-app/.next/server/app/admin/posts/new.html  
+2026-01-03T15:10:39.4326261Z   inflating: my-app/.next/server/app/admin/posts/new.meta  
+2026-01-03T15:10:39.4326732Z    creating: my-app/.next/server/app/admin/posts/new/
+2026-01-03T15:10:39.4327326Z   inflating: my-app/.next/server/app/admin/posts/new/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4328277Z   inflating: my-app/.next/server/app/admin/posts/new/page.js.map  
+2026-01-03T15:10:39.4329500Z   inflating: my-app/.next/server/app/admin/posts/new/page.js.nft.json  
+2026-01-03T15:10:39.4330586Z    creating: my-app/.next/server/app/admin/posts/new/page/
+2026-01-03T15:10:39.4331641Z   inflating: my-app/.next/server/app/admin/posts/new/page/next-font-manifest.json  
+2026-01-03T15:10:39.4332743Z   inflating: my-app/.next/server/app/admin/posts/new/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4334021Z   inflating: my-app/.next/server/app/admin/posts/new/page/build-manifest.json  
+2026-01-03T15:10:39.4335562Z   inflating: my-app/.next/server/app/admin/posts/new/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4336970Z  extracting: my-app/.next/server/app/admin/posts/new/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4337997Z   inflating: my-app/.next/server/app/admin/posts/new/page.js  
+2026-01-03T15:10:39.4338899Z    creating: my-app/.next/server/app/admin/posts/new.segments/
+2026-01-03T15:10:39.4339837Z    creating: my-app/.next/server/app/admin/posts/new.segments/admin/
+2026-01-03T15:10:39.4341016Z    creating: my-app/.next/server/app/admin/posts/new.segments/admin/posts/
+2026-01-03T15:10:39.4342331Z    creating: my-app/.next/server/app/admin/posts/new.segments/admin/posts/new/
+2026-01-03T15:10:39.4343708Z   inflating: my-app/.next/server/app/admin/posts/new.segments/admin/posts/new/__PAGE__.segment.rsc  
+2026-01-03T15:10:39.4345001Z   inflating: my-app/.next/server/app/admin/posts/new.segments/admin/posts/new.segment.rsc  
+2026-01-03T15:10:39.4346280Z   inflating: my-app/.next/server/app/admin/posts/new.segments/admin/posts.segment.rsc  
+2026-01-03T15:10:39.4347839Z   inflating: my-app/.next/server/app/admin/posts/new.segments/_tree.segment.rsc  
+2026-01-03T15:10:39.4349122Z   inflating: my-app/.next/server/app/admin/posts/new.segments/_index.segment.rsc  
+2026-01-03T15:10:39.4350112Z   inflating: my-app/.next/server/app/admin/posts/new.segments/_full.segment.rsc  
+2026-01-03T15:10:39.4351073Z   inflating: my-app/.next/server/app/admin/posts/new.segments/admin.segment.rsc  
+2026-01-03T15:10:39.4366162Z   inflating: my-app/.next/server/app/admin/posts/new.segments/_head.segment.rsc  
+2026-01-03T15:10:39.4367236Z    creating: my-app/.next/server/app/admin/posts/[id]/
+2026-01-03T15:10:39.4368591Z   inflating: my-app/.next/server/app/admin/posts/[id]/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4369771Z   inflating: my-app/.next/server/app/admin/posts/[id]/page.js.map  
+2026-01-03T15:10:39.4370982Z   inflating: my-app/.next/server/app/admin/posts/[id]/page.js.nft.json  
+2026-01-03T15:10:39.4372327Z    creating: my-app/.next/server/app/admin/posts/[id]/page/
+2026-01-03T15:10:39.4373843Z   inflating: my-app/.next/server/app/admin/posts/[id]/page/next-font-manifest.json  
+2026-01-03T15:10:39.4375732Z   inflating: my-app/.next/server/app/admin/posts/[id]/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4376744Z   inflating: my-app/.next/server/app/admin/posts/[id]/page/build-manifest.json  
+2026-01-03T15:10:39.4377883Z   inflating: my-app/.next/server/app/admin/posts/[id]/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4379006Z  extracting: my-app/.next/server/app/admin/posts/[id]/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4379925Z   inflating: my-app/.next/server/app/admin/posts/[id]/page.js  
+2026-01-03T15:10:39.4380813Z   inflating: my-app/.next/server/app/admin/posts/new.rsc  
+2026-01-03T15:10:39.4381639Z    creating: my-app/.next/server/app/admin/page/
+2026-01-03T15:10:39.4382579Z   inflating: my-app/.next/server/app/admin/page/next-font-manifest.json  
+2026-01-03T15:10:39.4383577Z   inflating: my-app/.next/server/app/admin/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4385149Z   inflating: my-app/.next/server/app/admin/page/build-manifest.json  
+2026-01-03T15:10:39.4386170Z   inflating: my-app/.next/server/app/admin/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4387239Z  extracting: my-app/.next/server/app/admin/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4388112Z   inflating: my-app/.next/server/app/admin/page.js  
+2026-01-03T15:10:39.4388952Z   inflating: my-app/.next/server/app/page.js.map  
+2026-01-03T15:10:39.4389825Z   inflating: my-app/.next/server/app/_global-error.html  
+2026-01-03T15:10:39.4390682Z   inflating: my-app/.next/server/app/_not-found.html  
+2026-01-03T15:10:39.4392842Z   inflating: my-app/.next/server/app/index.html  
+2026-01-03T15:10:39.4393752Z   inflating: my-app/.next/server/app/_not-found.rsc  
+2026-01-03T15:10:39.4395489Z   inflating: my-app/.next/server/app/page.js.nft.json  
+2026-01-03T15:10:39.4396488Z    creating: my-app/.next/server/app/portfolio.segments/
+2026-01-03T15:10:39.4397500Z   inflating: my-app/.next/server/app/portfolio.segments/_tree.segment.rsc  
+2026-01-03T15:10:39.4398556Z   inflating: my-app/.next/server/app/portfolio.segments/_index.segment.rsc  
+2026-01-03T15:10:39.4400260Z   inflating: my-app/.next/server/app/portfolio.segments/_full.segment.rsc  
+2026-01-03T15:10:39.4401449Z   inflating: my-app/.next/server/app/portfolio.segments/_head.segment.rsc  
+2026-01-03T15:10:39.4402719Z   inflating: my-app/.next/server/app/portfolio.segments/portfolio.segment.rsc  
+2026-01-03T15:10:39.4403824Z    creating: my-app/.next/server/app/portfolio.segments/portfolio/
+2026-01-03T15:10:39.4405084Z   inflating: my-app/.next/server/app/portfolio.segments/portfolio/__PAGE__.segment.rsc  
+2026-01-03T15:10:39.4405887Z    creating: my-app/.next/server/app/page/
+2026-01-03T15:10:39.4406862Z   inflating: my-app/.next/server/app/page/next-font-manifest.json  
+2026-01-03T15:10:39.4408156Z   inflating: my-app/.next/server/app/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4409169Z   inflating: my-app/.next/server/app/page/build-manifest.json  
+2026-01-03T15:10:39.4410584Z   inflating: my-app/.next/server/app/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4411594Z  extracting: my-app/.next/server/app/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4412457Z   inflating: my-app/.next/server/app/index.meta  
+2026-01-03T15:10:39.4413284Z    creating: my-app/.next/server/app/_not-found/
+2026-01-03T15:10:39.4414463Z   inflating: my-app/.next/server/app/_not-found/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4415403Z   inflating: my-app/.next/server/app/_not-found/page.js.map  
+2026-01-03T15:10:39.4416348Z   inflating: my-app/.next/server/app/_not-found/page.js.nft.json  
+2026-01-03T15:10:39.4417210Z    creating: my-app/.next/server/app/_not-found/page/
+2026-01-03T15:10:39.4418433Z   inflating: my-app/.next/server/app/_not-found/page/next-font-manifest.json  
+2026-01-03T15:10:39.4419944Z   inflating: my-app/.next/server/app/_not-found/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4420986Z   inflating: my-app/.next/server/app/_not-found/page/build-manifest.json  
+2026-01-03T15:10:39.4422117Z   inflating: my-app/.next/server/app/_not-found/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4423184Z  extracting: my-app/.next/server/app/_not-found/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4424071Z   inflating: my-app/.next/server/app/_not-found/page.js  
+2026-01-03T15:10:39.4425134Z   inflating: my-app/.next/server/app/portfolio.rsc  
+2026-01-03T15:10:39.4426054Z   inflating: my-app/.next/server/app/_global-error.meta  
+2026-01-03T15:10:39.4426844Z   inflating: my-app/.next/server/app/index.rsc  
+2026-01-03T15:10:39.4430417Z   inflating: my-app/.next/server/app/portfolio.meta  
+2026-01-03T15:10:39.4431242Z    creating: my-app/.next/server/app/blog/
+2026-01-03T15:10:39.4432332Z   inflating: my-app/.next/server/app/blog/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4433238Z   inflating: my-app/.next/server/app/blog/page.js.map  
+2026-01-03T15:10:39.4434151Z   inflating: my-app/.next/server/app/blog/page.js.nft.json  
+2026-01-03T15:10:39.4435181Z    creating: my-app/.next/server/app/blog/[slug]/
+2026-01-03T15:10:39.4436164Z   inflating: my-app/.next/server/app/blog/[slug]/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4441998Z   inflating: my-app/.next/server/app/blog/[slug]/page.js.map  
+2026-01-03T15:10:39.4442955Z   inflating: my-app/.next/server/app/blog/[slug]/page.js.nft.json  
+2026-01-03T15:10:39.4443835Z    creating: my-app/.next/server/app/blog/[slug]/page/
+2026-01-03T15:10:39.4445067Z   inflating: my-app/.next/server/app/blog/[slug]/page/next-font-manifest.json  
+2026-01-03T15:10:39.4446100Z   inflating: my-app/.next/server/app/blog/[slug]/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4447537Z   inflating: my-app/.next/server/app/blog/[slug]/page/build-manifest.json  
+2026-01-03T15:10:39.4448858Z   inflating: my-app/.next/server/app/blog/[slug]/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4449991Z  extracting: my-app/.next/server/app/blog/[slug]/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4450964Z   inflating: my-app/.next/server/app/blog/[slug]/page.js  
+2026-01-03T15:10:39.4451828Z    creating: my-app/.next/server/app/blog/page/
+2026-01-03T15:10:39.4452966Z   inflating: my-app/.next/server/app/blog/page/next-font-manifest.json  
+2026-01-03T15:10:39.4454112Z   inflating: my-app/.next/server/app/blog/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4455356Z   inflating: my-app/.next/server/app/blog/page/build-manifest.json  
+2026-01-03T15:10:39.4456415Z   inflating: my-app/.next/server/app/blog/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4457506Z  extracting: my-app/.next/server/app/blog/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4458614Z   inflating: my-app/.next/server/app/blog/page.js  
+2026-01-03T15:10:39.4459653Z   inflating: my-app/.next/server/app/_global-error.rsc  
+2026-01-03T15:10:39.4460512Z   inflating: my-app/.next/server/app/page.js  
+2026-01-03T15:10:39.4461419Z    creating: my-app/.next/server/app/portfolio/
+2026-01-03T15:10:39.4462433Z   inflating: my-app/.next/server/app/portfolio/page_client-reference-manifest.js  
+2026-01-03T15:10:39.4463881Z   inflating: my-app/.next/server/app/portfolio/page.js.map  
+2026-01-03T15:10:39.4465021Z   inflating: my-app/.next/server/app/portfolio/page.js.nft.json  
+2026-01-03T15:10:39.4465889Z    creating: my-app/.next/server/app/portfolio/page/
+2026-01-03T15:10:39.4466891Z   inflating: my-app/.next/server/app/portfolio/page/next-font-manifest.json  
+2026-01-03T15:10:39.4468096Z   inflating: my-app/.next/server/app/portfolio/page/app-paths-manifest.json  
+2026-01-03T15:10:39.4469250Z   inflating: my-app/.next/server/app/portfolio/page/build-manifest.json  
+2026-01-03T15:10:39.4470514Z   inflating: my-app/.next/server/app/portfolio/page/server-reference-manifest.json  
+2026-01-03T15:10:39.4472133Z  extracting: my-app/.next/server/app/portfolio/page/react-loadable-manifest.json  
+2026-01-03T15:10:39.4473304Z   inflating: my-app/.next/server/app/portfolio/page.js  
+2026-01-03T15:10:39.4474162Z    creating: my-app/.next/server/app/_global-error.segments/
+2026-01-03T15:10:39.4475389Z   inflating: my-app/.next/server/app/_global-error.segments/__PAGE__.segment.rsc  
+2026-01-03T15:10:39.4476359Z   inflating: my-app/.next/server/app/_global-error.segments/_tree.segment.rsc  
+2026-01-03T15:10:39.4491243Z   inflating: my-app/.next/server/app/_global-error.segments/_index.segment.rsc  
+2026-01-03T15:10:39.4492276Z   inflating: my-app/.next/server/app/_global-error.segments/_full.segment.rsc  
+2026-01-03T15:10:39.4493292Z   inflating: my-app/.next/server/app/_global-error.segments/_head.segment.rsc  
+2026-01-03T15:10:39.4494157Z   inflating: my-app/.next/server/app/portfolio.html  
+2026-01-03T15:10:39.4495760Z    creating: my-app/.next/server/app/_not-found.segments/
+2026-01-03T15:10:39.4496741Z   inflating: my-app/.next/server/app/_not-found.segments/_tree.segment.rsc  
+2026-01-03T15:10:39.4497697Z    creating: my-app/.next/server/app/_not-found.segments/_not-found/
+2026-01-03T15:10:39.4499408Z   inflating: my-app/.next/server/app/_not-found.segments/_not-found/__PAGE__.segment.rsc  
+2026-01-03T15:10:39.4500432Z   inflating: my-app/.next/server/app/_not-found.segments/_index.segment.rsc  
+2026-01-03T15:10:39.4501427Z   inflating: my-app/.next/server/app/_not-found.segments/_full.segment.rsc  
+2026-01-03T15:10:39.4502475Z   inflating: my-app/.next/server/app/_not-found.segments/_not-found.segment.rsc  
+2026-01-03T15:10:39.4503720Z   inflating: my-app/.next/server/app/_not-found.segments/_head.segment.rsc  
+2026-01-03T15:10:39.4504898Z    creating: my-app/.next/server/app/index.segments/
+2026-01-03T15:10:39.4505884Z   inflating: my-app/.next/server/app/index.segments/__PAGE__.segment.rsc  
+2026-01-03T15:10:39.4507048Z   inflating: my-app/.next/server/app/index.segments/_tree.segment.rsc  
+2026-01-03T15:10:39.4508033Z   inflating: my-app/.next/server/app/index.segments/_index.segment.rsc  
+2026-01-03T15:10:39.4509012Z   inflating: my-app/.next/server/app/index.segments/_full.segment.rsc  
+2026-01-03T15:10:39.4509970Z   inflating: my-app/.next/server/app/index.segments/_head.segment.rsc  
+2026-01-03T15:10:39.4510987Z  extracting: my-app/.next/server/interception-route-rewrite-manifest.js  
+2026-01-03T15:10:39.4511909Z   inflating: my-app/.next/server/server-reference-manifest.js  
+2026-01-03T15:10:39.4512707Z    creating: my-app/.next/server/edge/
+2026-01-03T15:10:39.4513503Z    creating: my-app/.next/server/edge/chunks/
+2026-01-03T15:10:39.4514736Z   inflating: my-app/.next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_78fa9d6a.js  
+2026-01-03T15:10:39.4526494Z   inflating: my-app/.next/server/edge/chunks/[root-of-the-server]__b629104b._.js  
+2026-01-03T15:10:39.4528303Z   inflating: my-app/.next/server/edge/chunks/turbopack-node_modules_next_dist_esm_build_templates_edge-wrapper_0d661a8d.js  
+2026-01-03T15:10:39.4607104Z   inflating: my-app/.next/server/edge/chunks/[root-of-the-server]__b629104b._.js.map  
+2026-01-03T15:10:39.4608747Z   inflating: my-app/.next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_78fa9d6a.js.map  
+2026-01-03T15:10:39.4615889Z   inflating: my-app/.next/server/edge/chunks/node_modules_next_dist_esm_build_templates_edge-wrapper_0d661a8d.js.map  
+2026-01-03T15:10:39.4618593Z   inflating: my-app/.next/server/middleware-manifest.json  
+2026-01-03T15:10:39.4621934Z   inflating: my-app/.next/server/server-reference-manifest.json  
+2026-01-03T15:10:39.4622889Z   inflating: my-app/.next/server/middleware-build-manifest.js  
+2026-01-03T15:10:39.4623654Z    creating: my-app/.next/static/
+2026-01-03T15:10:39.4624593Z    creating: my-app/.next/static/media/
+2026-01-03T15:10:39.4625978Z  extracting: my-app/.next/static/media/4fa387ec64143e14-s.c1fdd6c2.woff2  
+2026-01-03T15:10:39.4626955Z  extracting: my-app/.next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2  
+2026-01-03T15:10:39.4630844Z  extracting: my-app/.next/static/media/bbc41e54d2fcbd21-s.799d8ef8.woff2  
+2026-01-03T15:10:39.4634643Z  extracting: my-app/.next/static/media/7178b3e590c64307-s.b97b3418.woff2  
+2026-01-03T15:10:39.4635594Z  extracting: my-app/.next/static/media/797e433ab948586e-s.p.dbea232f.woff2  
+2026-01-03T15:10:39.4637525Z  extracting: my-app/.next/static/media/8a480f0b521d4e75-s.8e0177b5.woff2  
+2026-01-03T15:10:39.4638572Z    creating: my-app/.next/static/chunks/
+2026-01-03T15:10:39.4639748Z   inflating: my-app/.next/static/chunks/turbopack-492cd776fed59e0e.js  
+2026-01-03T15:10:39.4656206Z   inflating: my-app/.next/static/chunks/4dd28bc3f722184a.js  
+2026-01-03T15:10:39.4669374Z   inflating: my-app/.next/static/chunks/a6dad97d9634a72d.js  
+2026-01-03T15:10:39.4672997Z   inflating: my-app/.next/static/chunks/bf0931b61d7f1049.js  
+2026-01-03T15:10:39.4674060Z   inflating: my-app/.next/static/chunks/796e69ae18b2784c.js  
+2026-01-03T15:10:39.4688501Z   inflating: my-app/.next/static/chunks/a6dad97d9634a72d.js.map  
+2026-01-03T15:10:39.4719674Z   inflating: my-app/.next/static/chunks/cc759f7c2413b7ff.js  
+2026-01-03T15:10:39.4723376Z   inflating: my-app/.next/static/chunks/7340adf74ff47ec0.js  
+2026-01-03T15:10:39.4730060Z   inflating: my-app/.next/static/chunks/cbd55ab9639e1e66.js  
+2026-01-03T15:10:39.4730940Z   inflating: my-app/.next/static/chunks/ff1a16fafef87110.js  
+2026-01-03T15:10:39.4735972Z   inflating: my-app/.next/static/chunks/aa0a7c5c022cbeb9.js  
+2026-01-03T15:10:39.4737121Z   inflating: my-app/.next/static/chunks/ee454af588c5d311.js  
+2026-01-03T15:10:39.4738242Z   inflating: my-app/.next/static/chunks/0604e05ae6425c1b.css  
+2026-01-03T15:10:39.4739307Z    creating: my-app/.next/static/GSmcL1CfubyBfO23ys8ni/
+2026-01-03T15:10:39.4740369Z   inflating: my-app/.next/static/GSmcL1CfubyBfO23ys8ni/_ssgManifest.js  
+2026-01-03T15:10:39.4741577Z   inflating: my-app/.next/static/GSmcL1CfubyBfO23ys8ni/_clientMiddlewareManifest.json  
+2026-01-03T15:10:39.4743336Z   inflating: my-app/.next/static/GSmcL1CfubyBfO23ys8ni/_buildManifest.js  
+2026-01-03T15:10:39.4744596Z   inflating: my-app/.next/app-path-routes-manifest.json  
+2026-01-03T15:10:39.4745474Z   inflating: my-app/.next/prerender-manifest.json  
+2026-01-03T15:10:39.4746296Z   inflating: my-app/.next/trace      
+2026-01-03T15:10:39.4747138Z   inflating: my-app/.next/routes-manifest.json  
+2026-01-03T15:10:39.4747898Z  extracting: my-app/.next/BUILD_ID   
+2026-01-03T15:10:39.4748648Z    creating: my-app/.next/cache/
+2026-01-03T15:10:39.4765359Z   inflating: my-app/.next/cache/.tsbuildinfo  
+2026-01-03T15:10:39.4766129Z   inflating: my-app/.next/cache/config.json  
+2026-01-03T15:10:39.4767215Z   inflating: my-app/.next/cache/.previewinfo  
+2026-01-03T15:10:39.4768174Z   inflating: my-app/.next/cache/.rscinfo  
+2026-01-03T15:10:39.4777515Z   inflating: my-app/.next/required-server-files.js  
+2026-01-03T15:10:39.4778293Z    creating: my-app/.next/diagnostics/
+2026-01-03T15:10:39.4779208Z   inflating: my-app/.next/diagnostics/build-diagnostics.json  
+2026-01-03T15:10:39.4780075Z  extracting: my-app/.next/diagnostics/framework.json  
+2026-01-03T15:10:39.4780864Z   inflating: my-app/.next/trace-build  
+2026-01-03T15:10:39.4781638Z  extracting: my-app/.next/package.json  
+2026-01-03T15:10:39.4782386Z    creating: my-app/.next/build/
+2026-01-03T15:10:39.4783382Z   inflating: my-app/.next/build/postcss.js  
+2026-01-03T15:10:39.4784430Z    creating: my-app/.next/build/chunks/
+2026-01-03T15:10:39.4785359Z   inflating: my-app/.next/build/chunks/[turbopack]_runtime.js.map  
+2026-01-03T15:10:39.4822615Z   inflating: my-app/.next/build/chunks/node_modules_fe693df6._.js.map  
+2026-01-03T15:10:39.4828175Z   inflating: my-app/.next/build/chunks/[root-of-the-server]__974941ed._.js.map  
+2026-01-03T15:10:39.4829394Z   inflating: my-app/.next/build/chunks/[turbopack-node]_transforms_postcss_ts_6920245c._.js  
+2026-01-03T15:10:39.4831411Z   inflating: my-app/.next/build/chunks/[root-of-the-server]__51225daf._.js.map  
+2026-01-03T15:10:39.4855634Z   inflating: my-app/.next/build/chunks/node_modules_fe693df6._.js  
+2026-01-03T15:10:39.4857310Z   inflating: my-app/.next/build/chunks/[turbopack-node]_transforms_postcss_ts_6920245c._.js.map  
+2026-01-03T15:10:39.4861386Z   inflating: my-app/.next/build/chunks/[turbopack]_runtime.js  
+2026-01-03T15:10:39.4867007Z   inflating: my-app/.next/build/chunks/[root-of-the-server]__51225daf._.js  
+2026-01-03T15:10:39.4870794Z   inflating: my-app/.next/build/chunks/[root-of-the-server]__974941ed._.js  
+2026-01-03T15:10:39.4871658Z  extracting: my-app/.next/build/package.json  
+2026-01-03T15:10:39.4875211Z   inflating: my-app/.next/build/postcss.js.map  
+2026-01-03T15:10:39.4876077Z   inflating: my-app/.next/images-manifest.json  
+2026-01-03T15:10:39.4876867Z    creating: my-app/.next/node_modules/
+2026-01-03T15:10:39.4880523Z    creating: my-app/.next/node_modules/@prisma/
+2026-01-03T15:10:39.4882873Z   inflating: my-app/.next/next-server.js.nft.json  
+2026-01-03T15:10:39.4883672Z   inflating: my-app/.env             
+2026-01-03T15:10:39.4904837Z   inflating: my-app/package-lock.json  
+2026-01-03T15:10:39.4905585Z    creating: my-app/public/
+2026-01-03T15:10:39.4907356Z   inflating: my-app/public/file.svg  
+2026-01-03T15:10:39.4920832Z   inflating: my-app/public/next.svg  
+2026-01-03T15:10:39.4921643Z   inflating: my-app/public/globe.svg  
+2026-01-03T15:10:39.4922435Z   inflating: my-app/public/window.svg  
+2026-01-03T15:10:39.4923196Z   inflating: my-app/public/vercel.svg  
+2026-01-03T15:10:39.4923932Z    creating: my-app/prisma/
+2026-01-03T15:10:39.4924870Z   inflating: my-app/prisma/schema.prisma  
+2026-01-03T15:10:39.4925695Z   inflating: my-app/package.json     
+2026-01-03T15:10:39.4945703Z Installing dependencies...
+2026-01-03T15:11:55.5115807Z 
+2026-01-03T15:11:55.5117212Z added 168 packages, and audited 169 packages in 1m
+2026-01-03T15:11:55.5117686Z 
+2026-01-03T15:11:55.5118326Z 94 packages are looking for funding
+2026-01-03T15:11:55.5119281Z   run `npm fund` for details
+2026-01-03T15:11:55.5119655Z 
+2026-01-03T15:11:55.5120088Z found 0 vulnerabilities
+2026-01-03T15:12:01.5948088Z Environment variables loaded from .env
+2026-01-03T15:12:01.5983608Z Prisma schema loaded from prisma/schema.prisma
+2026-01-03T15:12:03.0234791Z 
+2026-01-03T15:12:03.0243461Z ✔ Generated Prisma Client (v5.22.0) to ./node_modules/@prisma/client in 382ms
+2026-01-03T15:12:03.0244102Z 
+2026-01-03T15:12:03.0244944Z Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2026-01-03T15:12:03.0245592Z 
+2026-01-03T15:12:03.0246269Z Tip: Want real-time updates to your database without manual polling? Discover how with Pulse: https://pris.ly/tip-0-pulse
+2026-01-03T15:12:03.0246836Z 
+2026-01-03T15:12:03.2133770Z Starting app...
+2026-01-03T15:12:07.7991776Z [PM2] Starting /usr/bin/npm in fork_mode (1 instance)
+2026-01-03T15:12:09.4728234Z [PM2] Done.
+2026-01-03T15:12:10.2501626Z ┌────┬──────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+2026-01-03T15:12:10.2504155Z │ id │ name         │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+2026-01-03T15:12:10.2506547Z ├────┼──────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+2026-01-03T15:12:10.2507981Z │ 0  │ portfolio    │ default     │ N/A     │ fork    │ 51468    │ 2s     │ 0    │ online    │ 0%       │ 47.2mb   │ runner   │ disabled │
+2026-01-03T15:12:10.2516190Z └────┴──────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+2026-01-03T15:12:10.4220794Z [PM2] Saving current process list...
+2026-01-03T15:12:11.0103591Z [PM2] Successfully saved in /home/runner/.pm2/dump.pm2
+2026-01-03T15:12:11.0161952Z === デプロイ完了 ===
+2026-01-03T15:12:11.3038037Z Post job cleanup.
+2026-01-03T15:12:11.3872368Z Removed exported credentials at "/home/runner/work/portfolio/portfolio/gha-creds-7e160d788f703da7.json".
+2026-01-03T15:12:11.3962075Z Post job cleanup.
+2026-01-03T15:12:11.5973710Z Post job cleanup.
+2026-01-03T15:12:11.6932556Z [command]/usr/bin/git version
+2026-01-03T15:12:11.6976104Z git version 2.52.0
+2026-01-03T15:12:11.7023979Z Temporarily overriding HOME='/home/runner/work/_temp/d8969e28-ca94-4d26-8952-9c39538e511f' before making global git config changes
+2026-01-03T15:12:11.7026039Z Adding repository directory to the temporary git global config as a safe directory
+2026-01-03T15:12:11.7031859Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/portfolio/portfolio
+2026-01-03T15:12:11.7077449Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-01-03T15:12:11.7121511Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-01-03T15:12:11.7416493Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-01-03T15:12:11.7419146Z http.https://github.com/.extraheader
+2026-01-03T15:12:11.7430748Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-01-03T15:12:11.7465051Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-01-03T15:12:11.7701170Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-01-03T15:12:11.7737639Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-01-03T15:12:11.8175718Z Cleaning up orphan processes
