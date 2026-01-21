@@ -70,14 +70,15 @@ export default async function PortfolioDetailPage({ params }: { params: Promise<
 
                 {/* Hero Image */}
                 <div className="aspect-video bg-gray-900 rounded-2xl mb-16 overflow-hidden border border-white/10 shadow-2xl relative group">
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
                     <Image
                         src={portfolio.image}
                         alt={portfolio.title}
                         fill
                         className="object-cover"
                         priority
+                        unoptimized
                     />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 pointer-events-none"></div>
                 </div>
 
                 {/* Content */}

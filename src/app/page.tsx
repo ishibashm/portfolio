@@ -57,6 +57,7 @@ export default function Home() {
                 alt="Profile"
                 fill
                 className="object-cover"
+                unoptimized
               />
             </div>
           </div>

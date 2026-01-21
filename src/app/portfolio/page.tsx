@@ -26,7 +26,6 @@ export default function PortfolioPage() {
             <Link key={project.id} href={`/portfolio/${project.slug}`} className="block group">
               <article className="h-full bg-gray-900 border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                 <div className="aspect-video bg-gray-800 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60 z-10"></div>
                   <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-500">
                     <Image
                       src={project.image}
@@ -34,8 +33,10 @@ export default function PortfolioPage() {
                       fill
                       className="object-cover"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      unoptimized
                     />
                   </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60 z-10 pointer-events-none"></div>
 
                   {/* Tags Overlay */}
                   <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2">
