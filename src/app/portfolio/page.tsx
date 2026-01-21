@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { portfolios } from '@/lib/portfolios';
 import { Metadata } from 'next';
 
@@ -26,10 +27,14 @@ export default function PortfolioPage() {
               <article className="h-full bg-gray-900 border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                 <div className="aspect-video bg-gray-800 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-60 z-10"></div>
-                  {/* Image Placeholder or Actual Image */}
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-700 font-mono text-lg group-hover:scale-105 transition-transform duration-500">
-                    {/* <Image src={project.image} alt={project.title} fill className="object-cover" /> */}
-                    {project.image}
+                  <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-500">
+                    <Image
+                      src={project.image}
+                      alt={project.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
                   </div>
 
                   {/* Tags Overlay */}

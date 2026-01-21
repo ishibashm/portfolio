@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   return (
@@ -50,19 +51,13 @@ export default function Home() {
           </div>
           <div className="relative transform hover:rotate-1 transition-transform duration-500">
             <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur-lg opacity-30"></div>
-            <div className="relative bg-gray-900 border border-white/10 rounded-2xl p-8 shadow-2xl">
-              <div className="flex gap-4 mb-6">
-                <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              </div>
-              <div className="space-y-4 font-mono text-sm text-gray-300">
-                <p><span className="text-purple-400">const</span> developer = <span className="text-yellow-400">{`{`}</span></p>
-                <p className="pl-4">name: <span className="text-green-400">'My Portfolio'</span>,</p>
-                <p className="pl-4">skills: [<span className="text-green-400">'Next.js'</span>, <span className="text-green-400">'React'</span>, <span className="text-green-400">'TypeScript'</span>],</p>
-                <p className="pl-4">passion: <span className="text-blue-400">true</span></p>
-                <p><span className="text-yellow-400">{`}`}</span>;</p>
-              </div>
+            <div className="relative bg-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl aspect-square">
+              <Image
+                src="/images/profile.jpg"
+                alt="Profile"
+                fill
+                className="object-cover"
+              />
             </div>
           </div>
         </div>

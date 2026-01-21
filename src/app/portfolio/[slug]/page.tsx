@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { portfolios } from '@/lib/portfolios';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export async function generateStaticParams() {
     return portfolios.map((portfolio) => ({
@@ -70,10 +71,13 @@ export default async function PortfolioDetailPage({ params }: { params: Promise<
                 {/* Hero Image */}
                 <div className="aspect-video bg-gray-900 rounded-2xl mb-16 overflow-hidden border border-white/10 shadow-2xl relative group">
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
-                    {/* Actual Image component would go here */}
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-700 font-mono text-xl">
-                        {portfolio.image}
-                    </div>
+                    <Image
+                        src={portfolio.image}
+                        alt={portfolio.title}
+                        fill
+                        className="object-cover"
+                        priority
+                    />
                 </div>
 
                 {/* Content */}
