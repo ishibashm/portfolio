@@ -23,30 +23,35 @@ export default async function BlogPage() {
   const posts = await getPosts();
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
-        <header className="mb-12 text-center">
-          <h1 className="text-4xl font-bold mb-4 text-indigo-400">Blog</h1>
-          <p className="text-gray-400">Thoughts, tutorials, and updates.</p>
+        <header className="mb-16 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+            Blog
+          </h1>
+          <p className="text-xl text-gray-400">Thoughts, tutorials, and updates.</p>
         </header>
 
         <div className="grid gap-8 md:grid-cols-2">
           {posts.map((post: BlogPost) => (
             <Link key={post.id} href={`/blog/${post.slug}`} className="block group">
-              <article className="bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition-all border border-gray-700 hover:border-indigo-500">
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-4 text-sm text-gray-400">
-                    <time dateTime={post.publishedAt.toISOString()}>
+              <article className="h-full bg-gray-900 border border-white/10 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/10 hover:-translate-y-1">
+                <div className="p-8">
+                  <div className="flex justify-between items-center mb-6 text-sm text-gray-400">
+                    <time dateTime={post.publishedAt.toISOString()} className="font-mono text-purple-400">
                       {formatDate(post.publishedAt.toISOString())}
                     </time>
-                    {/* post.tags && ... (タグはJSON文字列なのでパース必要だが割愛) */}
+                    {/* Tags could go here */}
                   </div>
-                  <h2 className="text-xl font-semibold mb-2 group-hover:text-indigo-400 transition-colors">
-                    {post.title} (Slug: {post.slug})
+                  <h2 className="text-2xl font-bold mb-4 group-hover:text-purple-400 transition-colors leading-tight">
+                    {post.title}
                   </h2>
-                  <p className="text-gray-400 line-clamp-3">
+                  <p className="text-gray-400 leading-relaxed line-clamp-3 mb-6">
                     {post.excerpt || post.content.substring(0, 100)}...
                   </p>
+                  <div className="flex items-center text-purple-400 text-sm font-medium">
+                    Read More <span className="ml-2 transition-transform group-hover:translate-x-1">→</span>
+                  </div>
                 </div>
               </article>
             </Link>
@@ -54,8 +59,8 @@ export default async function BlogPage() {
         </div>
 
         {posts.length === 0 && (
-          <div className="text-center py-20 text-gray-500">
-            No posts found.
+          <div className="text-center py-20 bg-gray-900/50 rounded-2xl border border-white/5">
+            <p className="text-gray-500 text-lg">No posts found yet.</p>
           </div>
         )}
       </div>

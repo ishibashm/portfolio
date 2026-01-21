@@ -3,8 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
 import { remark } from 'remark';
 import html from 'remark-html';
-
-// export const dynamic = 'force-dynamic'; // ISR/SSGを使用するため削除
+import Link from 'next/link';
 
 export async function generateStaticParams() {
   try {
@@ -75,11 +74,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   if (!post) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
-          <h1 className="text-3xl font-bold mb-4 text-red-400">記事が見つかりません</h1>
-          <p className="text-gray-400 mb-4">Slug: {slug}</p>
-          <p className="text-gray-500 text-sm">この記事は存在しないか、削除された可能性があります。</p>
+      <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4 text-red-400">Post Not Found</h1>
+          <Link href="/blog" className="text-gray-400 hover:text-white underline">Back to Blog</Link>
         </div>
       </div>
     );
@@ -87,10 +85,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   if (!post.published) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
-          <h1 className="text-3xl font-bold mb-4 text-yellow-400">記事は公開されていません</h1>
-          <p className="text-gray-400">この記事はまだ公開されていません。</p>
+      <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-4 text-yellow-400">Post Not Published</h1>
+          <Link href="/blog" className="text-gray-400 hover:text-white underline">Back to Blog</Link>
         </div>
       </div>
     );
@@ -100,23 +98,37 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
   const contentHtml = await processMarkdown(post.content);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <article className="max-w-3xl mx-auto bg-gray-800 rounded-lg p-8 shadow-xl border border-gray-700">
-        <header className="mb-8 border-b border-gray-700 pb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-indigo-400">
+    <div className="min-h-screen bg-black text-white p-8">
+      <article className="max-w-3xl mx-auto">
+        <header className="mb-12 border-b border-white/10 pb-8">
+          <Link href="/blog" className="text-purple-400 hover:text-purple-300 text-sm font-medium mb-6 inline-block transition-colors">
+            ← Back to Blog
+          </Link>
+
+          <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
             {post.title}
           </h1>
-          <div className="flex items-center text-gray-400">
+
+          <div className="flex items-center text-gray-400 text-sm font-mono">
             <time dateTime={post.publishedAt.toISOString()}>
               {formatDate(post.publishedAt.toISOString())}
             </time>
+            <span className="mx-2">•</span>
+            <span>Article</span>
           </div>
         </header>
 
         <div
-          className="blog-content prose prose-invert prose-lg max-w-none text-gray-300"
+          className="blog-content prose prose-invert prose-lg max-w-none text-gray-300 prose-headings:text-white prose-a:text-purple-400 prose-a:no-underline hover:prose-a:underline prose-blockquote:border-l-purple-400 prose-blockquote:bg-white/5 prose-blockquote:px-4 prose-blockquote:py-1 prose-blockquote:rounded-r-lg prose-pre:bg-gray-900 prose-pre:border prose-pre:border-white/10"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
+
+        <div className="mt-16 pt-8 border-t border-white/10 flex justify-between items-center">
+          <Link href="/blog" className="text-gray-400 hover:text-white transition-colors">
+            View all posts
+          </Link>
+          {/* Share buttons could go here */}
+        </div>
       </article>
     </div>
   );
