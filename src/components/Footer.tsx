@@ -41,8 +41,11 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="border-t border-white/10 pt-8 text-center text-gray-500 text-sm">
+                <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
                     <p>© {new Date().getFullYear()} My Portfolio. All rights reserved.</p>
+                    <Link href="/admin" className="hover:text-gray-400 transition-colors mt-2 md:mt-0">
+                        Admin
+                    </Link>
                 </div>
             </div>
         </footer>

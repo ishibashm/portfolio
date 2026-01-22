@@ -102,7 +102,7 @@ jobs:
             # DATABASE_URLを絶対パスに書き換え (SQLiteのパス問題回避)
             if [ -f .env ]; then
               sed -i '/DATABASE_URL=/d' .env
-              echo "DATABASE_URL=\"file:$(pwd)/dev.db\"" >> .env
+              echo "DATABASE_URL=\"file:\$(pwd)/dev.db\"" >> .env
             fi
             
             # 依存関係のインストール (Standardモードでは必須)
