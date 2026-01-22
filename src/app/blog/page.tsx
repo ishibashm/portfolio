@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/utils/formatDate';
 import { BlogPost } from '@prisma/client';
 
-export const revalidate = 3600; // 1時間ごとに再検証 (ISR)
+export const dynamic = 'force-dynamic';
 
 // データベースから記事一覧を取得
 async function getPosts() {
