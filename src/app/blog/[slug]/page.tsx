@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 async function getPost(slug: string) {
+  if (!prisma) return null;
   try {
     const post = await prisma.blogPost.findUnique({
       where: { slug },

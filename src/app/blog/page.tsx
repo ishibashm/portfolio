@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // データベースから記事一覧を取得
 async function getPosts() {
+  if (!prisma) return [];
   try {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },

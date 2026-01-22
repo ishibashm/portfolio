@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-let prisma: PrismaClient;
+let prisma: PrismaClient | undefined;
 
 try {
   prisma =
@@ -12,10 +12,8 @@ try {
     });
 } catch (error) {
   console.error("Failed to initialize Prisma Client:", error);
-  // Fallback to avoid module crash, though functionality will be broken
-  prisma = new PrismaClient();
 }
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production" && prisma) globalForPrisma.prisma = prisma;
 
 export { prisma };

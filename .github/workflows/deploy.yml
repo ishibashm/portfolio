@@ -98,6 +98,12 @@ jobs:
             fi
             
             cd my-app
+
+            # DATABASE_URLを絶対パスに書き換え (SQLiteのパス問題回避)
+            if [ -f .env ]; then
+              sed -i '/DATABASE_URL=/d' .env
+              echo "DATABASE_URL=\"file:$(pwd)/dev.db\"" >> .env
+            fi
             
             # 依存関係のインストール (Standardモードでは必須)
             # ENOTEMPTYエラー対策: 既存のnode_modulesを削除してからインストール
