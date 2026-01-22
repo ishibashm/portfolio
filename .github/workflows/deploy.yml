@@ -100,6 +100,9 @@ jobs:
             # Prisma生成
             npx prisma generate --schema=./prisma/schema.prisma
 
+            # データベース構造の適用 (テーブル作成)
+            npx prisma db push --schema=./prisma/schema.prisma
+
             # データシーディング (記事の自動登録)
             npx prisma db seed
             
