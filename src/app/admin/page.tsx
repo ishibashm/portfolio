@@ -5,6 +5,9 @@ import { deletePost } from "./actions";
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
+  if (!prisma) {
+    return <div className="p-8">Database connection failed</div>;
+  }
   const posts = await prisma.blogPost.findMany({
     orderBy: { publishedAt: "desc" },
   });
@@ -41,8 +44,8 @@ export default async function AdminDashboard() {
                 <td className="p-4">
                   <span
                     className={`px-2 py-1 rounded text-xs ${post.published
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-gray-100 text-gray-800"
                       }`}
                   >
                     {post.published ? "Published" : "Draft"}

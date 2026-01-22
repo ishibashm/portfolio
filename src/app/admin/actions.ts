@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 // 記事の削除
 export async function deletePost(id: string) {
+  if (!prisma) throw new Error("Database connection failed");
   await prisma.blogPost.delete({
     where: { id },
   });
@@ -14,23 +15,24 @@ export async function deletePost(id: string) {
 
 // 記事の作成
 export async function createPost(formData: FormData) {
+  if (!prisma) throw new Error("Database connection failed");
   const title = formData.get("title") as string;
   const slug = formData.get("slug") as string;
   const content = formData.get("content") as string;
   const published = formData.get("published") === "on";
-  
+
   // 仮のユーザーID (本来はセッションから取得すべきですが、SchemaのUserとNextAuthのUserが紐付いていないため)
   // ここでは既存のユーザー、またはダミーユーザーを使用する必要があります。
   // Admin機能を作成する前に、PrismaのUserを作成しておく必要がありますが、
   // NextAuth (GithubProvider) は自動的に User を作成しません（Adapterを使っていないため）。
   // よって、今回は簡易的に「ユーザー紐付けなし」で進めるか、または「最初のユーザー」を取得して紐付けます。
-  
+
   // Adapterなしの場合、NextAuthはJWTセッションのみで、DBにUserを作りません。
   // しかし BlogPost は authorId が必須です。
   // これを解決するには：
   // 1. PrismaAdapterを使う (推奨)
   // 2. 毎回固定のダミーユーザーIDを使う (非推奨だが楽)
-  
+
   // ここでは「最初のユーザー」を検索して、いなければ作る、という処理を入れます。
   let user = await prisma.user.findFirst();
   if (!user) {
@@ -60,6 +62,7 @@ export async function createPost(formData: FormData) {
 
 // 記事の更新
 export async function updatePost(id: string, formData: FormData) {
+  if (!prisma) throw new Error("Database connection failed");
   const title = formData.get("title") as string;
   const slug = formData.get("slug") as string;
   const content = formData.get("content") as string;
