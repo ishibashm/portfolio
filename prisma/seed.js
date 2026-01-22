@@ -43,6 +43,25 @@ async function main() {
         });
         console.log('Seeded: Voice-Pro Guide');
     }
+
+    // 確実に表示されるテスト記事を追加
+    const user = await prisma.user.findFirst();
+    if (user) {
+        await prisma.blogPost.upsert({
+            where: { slug: 'welcome' },
+            update: {},
+            create: {
+                title: 'Welcome to My Portfolio',
+                slug: 'welcome',
+                content: '# Welcome\n\nThis is a test post to verify database connection.',
+                excerpt: 'System check post.',
+                tags: JSON.stringify(['System']),
+                published: true,
+                authorId: user.id,
+            }
+        });
+        console.log('Seeded: Welcome Post');
+    }
 }
 
 main()

@@ -61,15 +61,18 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
   try {
     post = await getPost(slug);
-  } catch (error) {
+  } catch (error: any) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
-        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20">
-          <h2 className="text-2xl font-bold text-red-400 mb-2">System Error</h2>
-          <p className="text-gray-300">
-            Failed to load article. Database might be unavailable.
+        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20 max-w-2xl">
+          <h2 className="text-2xl font-bold text-red-400 mb-4">System Error</h2>
+          <p className="text-gray-300 mb-4">
+            Failed to load article.
           </p>
-          <div className="mt-4">
+          <div className="bg-black/50 p-4 rounded text-left overflow-auto text-xs font-mono text-red-300 border border-red-500/20 mb-6">
+            {error.message || String(error)}
+          </div>
+          <div>
             <Link href="/blog" className="text-gray-400 hover:text-white underline">Back to Blog</Link>
           </div>
         </div>

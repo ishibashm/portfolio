@@ -13,6 +13,8 @@ export async function GET() {
         env: {
             NODE_ENV: process.env.NODE_ENV,
             DATABASE_URL_SET: !!process.env.DATABASE_URL,
+            NEXTAUTH_SECRET_SET: !!process.env.NEXTAUTH_SECRET,
+            NEXTAUTH_URL_SET: !!process.env.NEXTAUTH_URL,
             // Masked URL
             DATABASE_URL: process.env.DATABASE_URL ? process.env.DATABASE_URL.replace(/:.*@/, ':****@') : 'Not Set',
         },

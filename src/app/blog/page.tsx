@@ -7,34 +7,39 @@ export const dynamic = 'force-dynamic';
 
 // データベースから記事一覧を取得
 async function getPosts() {
-  if (!prisma) return null;
+  if (!prisma) return { error: 'Prisma Client not initialized' };
   try {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },
       orderBy: { publishedAt: 'desc' },
     });
-    return posts;
-  } catch (error) {
+    return { posts };
+  } catch (error: any) {
     console.error('Error fetching posts:', error);
-    return null;
+    return { error: error.message || 'Unknown error' };
   }
 }
 
 export default async function BlogPage() {
-  const posts = await getPosts();
+  const result = await getPosts();
 
-  if (posts === null) {
+  if (result.error) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
-        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20">
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Service Unavailable</h2>
-          <p className="text-gray-300">
-            Database connection failed. Please try again later.
+        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20 max-w-2xl">
+          <h2 className="text-2xl font-bold text-red-400 mb-4">Service Unavailable</h2>
+          <p className="text-gray-300 mb-4">
+            Database connection failed.
           </p>
+          <div className="bg-black/50 p-4 rounded text-left overflow-auto text-xs font-mono text-red-300 border border-red-500/20">
+            {result.error}
+          </div>
         </div>
       </div>
     );
   }
+
+  const posts = result.posts || [];
 
   return (
     <div className="min-h-screen bg-black text-white p-8">

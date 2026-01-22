@@ -102,7 +102,9 @@ jobs:
             # DATABASE_URLを絶対パスに書き換え (SQLiteのパス問題回避)
             if [ -f .env ]; then
               sed -i '/DATABASE_URL=/d' .env
-              echo "DATABASE_URL=\"file:\$(pwd)/dev.db\"" >> .env
+              # 既存の最終行に改行がない場合に備えて改行を追加してから追記
+              echo "" >> .env
+              echo "DATABASE_URL=\"file:\$PWD/dev.db\"" >> .env
             fi
             
             # 依存関係のインストール (Standardモードでは必須)
@@ -126,8 +128,9 @@ jobs:
             fi
             
             # アプリ起動 (npm startを使用)
+            # 環境変数を明示的に渡して起動 (パス問題の確実な回避)
             echo 'Starting app...'
-            HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" -- start
+            DATABASE_URL="file:\$(pwd)/dev.db" HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" --update-env -- start
             pm2 save
             
             echo '=== デプロイ完了 ==='
