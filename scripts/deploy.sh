@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+echo '=== デプロイ開始 (スクリプト実行) ==='
+
+# ディスク容量チェック
+echo 'Disk Usage Before Cleanup:'
+df -h
+
+# キャッシュ削除で容量確保
+rm -rf ~/.npm
+npm cache clean --force
+
+# 既存のアプリを停止
+pm2 delete portfolio || true
+
+# データベースをバックアップ
+if [ -f my-app/dev.db ]; then
+  cp my-app/dev.db ./dev.db.bak
+fi
+
+# クリーンアップ
+echo 'Cleaning up existing files...'
+rm -rf my-app
+mkdir -p my-app
+
+# 解凍
+unzip -o deploy.zip -d my-app
+rm deploy.zip
+
+# データベース復元
+if [ -f ./dev.db.bak ]; then
+  mv ./dev.db.bak my-app/dev.db
+fi
+
+cd my-app
+
+# DATABASE_URLを絶対パスに書き換え (SQLiteのパス問題回避)
+# .envはdeploy.ymlで生成済みだが、念のため絶対パスで上書きする
+if [ -f .env ]; then
+  # 既存の定義があれば削除
+  sed -i '/DATABASE_URL=/d' .env
+  # 絶対パスで追記 (ここはリモート実行なので $PWD はサーバー上のパスになる)
+  echo "" >> .env
+  echo "DATABASE_URL=\"file:$PWD/dev.db\"" >> .env
+fi
+
+# 依存関係のインストール
+echo 'Installing dependencies...'
+rm -rf node_modules
+npm install --omit=dev
+
+# Prisma生成
+npx prisma generate --schema=./prisma/schema.prisma
+
+# データベース構造の適用
+npx prisma db push --schema=./prisma/schema.prisma
+
+# データシーディング
+npx prisma db seed
+
+# DBファイルの配置調整
+if [ -f prisma/dev.db ]; then
+  cp prisma/dev.db ./dev.db
+fi
+
+# アプリ起動
+echo 'Starting app...'
+# 環境変数を明示的に渡して起動
+DATABASE_URL="file:$PWD/dev.db" HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" --update-env -- start
+pm2 save
+
+echo '=== デプロイ完了 ==='

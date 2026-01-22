@@ -37,6 +37,7 @@ jobs:
           cp package-lock.json deploy-package/ 2>/dev/null || true
           cp -r prisma deploy-package/
           cp -r docs deploy-package/
+          cp -r scripts deploy-package/
 
       - name: Create .env from Secret
         run: |
@@ -63,75 +64,11 @@ jobs:
       - name: Deploy on VM
         run: |
           gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
-            echo '=== デプロイ開始 (通常モード) ==='
+            # 外部スクリプトの解凍と実行 (クォート問題を回避するため)
+            # まずスクリプトだけを取り出す (zip内パス: scripts/deploy.sh -> ./scripts/deploy.sh)
+            unzip -o deploy.zip scripts/deploy.sh
+            chmod +x scripts/deploy.sh
             
-            # ディスク容量チェック
-            echo 'Disk Usage Before Cleanup:'
-            df -h
-            
-            # キャッシュ削除で容量確保
-            rm -rf ~/.npm
-            npm cache clean --force
-            
-            # 既存のアプリを停止
-            pm2 delete portfolio || true
-            
-            # データベースをバックアップ
-            if [ -f my-app/dev.db ]; then
-              cp my-app/dev.db ./dev.db.bak
-            fi
-            
-            # クリーンアップ (npm error ENOTEMPTY 対策)
-            # 既存の node_modules を完全に削除してからインストールする
-            echo 'Cleaning up existing files...'
-            pm2 delete portfolio || true
-            rm -rf my-app
-            mkdir -p my-app
-            
-            # 解凍
-            unzip -o deploy.zip -d my-app
-            rm deploy.zip
-            
-            # データベース復元
-            if [ -f ./dev.db.bak ]; then
-              mv ./dev.db.bak my-app/dev.db
-            fi
-            
-            cd my-app
-
-            # DATABASE_URLを絶対パスに書き換え (SQLiteのパス問題回避)
-            if [ -f .env ]; then
-              sed -i '/DATABASE_URL=/d' .env
-              # 既存の最終行に改行がない場合に備えて改行を追加してから追記
-              echo "" >> .env
-              echo "DATABASE_URL=\"file:\$PWD/dev.db\"" >> .env
-            fi
-            
-            # 依存関係のインストール (Standardモードでは必須)
-            # ENOTEMPTYエラー対策: 既存のnode_modulesを削除してからインストール
-            echo 'Installing dependencies...'
-            rm -rf node_modules
-            npm install --omit=dev
-            
-            # Prisma生成
-            npx prisma generate --schema=./prisma/schema.prisma
-
-            # データベース構造の適用 (テーブル作成)
-            npx prisma db push --schema=./prisma/schema.prisma
-
-            # データシーディング (記事の自動登録)
-            npx prisma db seed
-
-            # DBファイルの配置調整 (念のためルートにも配置)
-            if [ -f prisma/dev.db ]; then
-              cp prisma/dev.db ./dev.db
-            fi
-            
-            # アプリ起動 (npm startを使用)
-            # 環境変数を明示的に渡して起動 (パス問題の確実な回避)
-            echo 'Starting app...'
-            DATABASE_URL="file:\$(pwd)/dev.db" HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" --update-env -- start
-            pm2 save
-            
-            echo '=== デプロイ完了 ==='
+            # スクリプト実行
+            ./scripts/deploy.sh
           "
