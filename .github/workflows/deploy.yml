@@ -36,6 +36,7 @@ jobs:
           cp package.json deploy-package/
           cp package-lock.json deploy-package/ 2>/dev/null || true
           cp -r prisma deploy-package/
+          cp -r docs deploy-package/
 
       - name: Create .env from Secret
         run: |
@@ -98,6 +99,9 @@ jobs:
             
             # Prisma生成
             npx prisma generate --schema=./prisma/schema.prisma
+
+            # データシーディング (記事の自動登録)
+            npx prisma db seed
             
             # アプリ起動 (npm startを使用)
             echo 'Starting app...'
