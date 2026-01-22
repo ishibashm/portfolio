@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // データベースから記事一覧を取得
 async function getPosts() {
-  if (!prisma) return [];
+  if (!prisma) return null;
   try {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },
@@ -16,12 +16,25 @@ async function getPosts() {
     return posts;
   } catch (error) {
     console.error('Error fetching posts:', error);
-    return [];
+    return null;
   }
 }
 
 export default async function BlogPage() {
   const posts = await getPosts();
+
+  if (posts === null) {
+    return (
+      <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
+        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20">
+          <h2 className="text-2xl font-bold text-red-400 mb-2">Service Unavailable</h2>
+          <p className="text-gray-300">
+            Database connection failed. Please try again later.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-8">

@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 async function getPost(slug: string) {
-  if (!prisma) return null;
+  if (!prisma) throw new Error("Prisma client is not initialized");
   try {
     const post = await prisma.blogPost.findUnique({
       where: { slug },
@@ -39,7 +39,7 @@ async function getPost(slug: string) {
     return post;
   } catch (error) {
     console.error('Error fetching post:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -57,13 +57,31 @@ async function processMarkdown(content: string): Promise<string> {
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  let post;
+
+  try {
+    post = await getPost(slug);
+  } catch (error) {
+    return (
+      <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
+        <div className="text-center p-8 border border-red-500/50 rounded-xl bg-red-900/20">
+          <h2 className="text-2xl font-bold text-red-400 mb-2">System Error</h2>
+          <p className="text-gray-300">
+            Failed to load article. Database might be unavailable.
+          </p>
+          <div className="mt-4">
+            <Link href="/blog" className="text-gray-400 hover:text-white underline">Back to Blog</Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!post) {
     return (
       <div className="min-h-screen bg-black text-white p-8 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4 text-red-400">Post Not Found</h1>
+          <h1 className="text-3xl font-bold mb-4 text-gray-400">Post Not Found</h1>
           <Link href="/blog" className="text-gray-400 hover:text-white underline">Back to Blog</Link>
         </div>
       </div>
