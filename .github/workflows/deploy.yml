@@ -65,6 +65,14 @@ jobs:
           gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
             echo '=== デプロイ開始 (通常モード) ==='
             
+            # ディスク容量チェック
+            echo 'Disk Usage Before Cleanup:'
+            df -h
+            
+            # キャッシュ削除で容量確保
+            rm -rf ~/.npm
+            npm cache clean --force
+            
             # 既存のアプリを停止
             pm2 delete portfolio || true
             
@@ -105,6 +113,11 @@ jobs:
 
             # データシーディング (記事の自動登録)
             npx prisma db seed
+
+            # DBファイルの配置調整 (念のためルートにも配置)
+            if [ -f prisma/dev.db ]; then
+              cp prisma/dev.db ./dev.db
+            fi
             
             # アプリ起動 (npm startを使用)
             echo 'Starting app...'
