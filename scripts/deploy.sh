@@ -45,6 +45,15 @@ if [ -f .env ]; then
   echo "DATABASE_URL=\"file:$PWD/dev.db\"" >> .env
 fi
 
+# NEXTAUTH_SECRETの確保 (重要: これがないとミドルウェアでクラッシュする)
+if ! grep -q "NEXTAUTH_SECRET=" .env; then
+  echo "NEXTAUTH_SECRET not found in .env, generating a random one..." >> /dev/stderr
+  # ランダムな文字列を生成して追記
+  RANDOM_SECRET=$(openssl rand -base64 32)
+  echo "" >> .env
+  echo "NEXTAUTH_SECRET=\"$RANDOM_SECRET\"" >> .env
+fi
+
 # 依存関係のインストール
 echo 'Installing dependencies...'
 rm -rf node_modules
