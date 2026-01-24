@@ -31,6 +31,9 @@ mkdir -p my-app/public
 echo "Deploy Date: $(date)" > my-app/public/deploy-status.txt
 echo "User: $(whoami)" >> my-app/public/deploy-status.txt
 cat /etc/os-release > my-app/public/os-info.txt
+touch my-app/public/debug.txt
+chmod 666 my-app/public/debug.txt
+chmod 666 my-app/dev.db
 
 # 権限修正 (重要)
 chmod -R 755 my-app
