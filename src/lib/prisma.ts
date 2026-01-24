@@ -3,11 +3,18 @@ import { PrismaClient } from "@prisma/client";
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 
-// Simple initialization for debugging
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: ['query', 'info', 'warn', 'error'],
-  });
+let prismaInstance: PrismaClient | undefined;
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+try {
+  prismaInstance =
+    globalForPrisma.prisma ||
+    new PrismaClient({
+      log: ['query', 'info', 'warn', 'error'],
+    });
+} catch (e) {
+  console.error('Failed to initialize Prisma Client:', e);
+}
+
+export const prisma = prismaInstance;
+
+if (process.env.NODE_ENV !== 'production' && prisma) globalForPrisma.prisma = prisma;
