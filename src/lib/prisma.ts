@@ -2,7 +2,6 @@ import { PrismaClient } from "@prisma/client";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
 // Simple initialization for debugging
 export const prisma =
