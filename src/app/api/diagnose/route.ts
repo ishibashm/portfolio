@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma, initializationError } from '@/lib/prisma';
+import { prisma, initializationError, getPrisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
@@ -74,22 +74,27 @@ export async function GET() {
 
     log('Starting Diagnostic Check via API');
 
-    if (!prisma) {
-      dbStatus = 'Prisma Client Not Initialized';
-      log('Prisma Client is null/undefined');
-      if (initializationError) {
-        errorDetail = {
-          phase: 'Initialization',
-          message: initializationError.message,
-          name: initializationError.name,
-          stack: initializationError.stack
-        };
-      }
-    } else {
+    let prismaClient: any = null;
+    try {
+      log('Attempting to initialize Prisma Client lazily...');
+      prismaClient = getPrisma();
+      log('Prisma Client initialized successfully.');
+      dbStatus = 'Initialized';
+    } catch (e: any) {
+      log(`Prisma Initialization Failed: ${e.message}`);
+      dbStatus = 'Init Failed';
+      errorDetail = {
+        phase: 'Initialization',
+        message: e.message,
+        stack: e.stack
+      };
+    }
+
+    if (prismaClient) {
       try {
         log('Prisma Client exists. Attempting user.count()...');
         // Attempt a simple query
-        userCount = await prisma.user.count();
+        userCount = await prismaClient.user.count();
         log(`Query Success! Count: ${userCount}`);
         dbStatus = 'Connected';
       } catch (e: any) {
