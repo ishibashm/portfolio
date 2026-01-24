@@ -149,7 +149,7 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
           },
           onmessage: async (message: LiveServerMessage) => {
             const base64Audio =
-              message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+              message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
 
             if (base64Audio && audioContextRef.current) {
               const ctx = audioContextRef.current;
