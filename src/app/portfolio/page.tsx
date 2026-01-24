@@ -1,11 +1,11 @@
-import Link from 'next/link';
-import Image from 'next/image';
-import { portfolios } from '@/lib/portfolios';
-import { Metadata } from 'next';
+import Link from "next/link";
+import Image from "next/image";
+import { portfolios } from "@/lib/portfolios";
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Portfolio | My Portfolio',
-  description: 'Selected works and experiments.',
+  title: "Portfolio | My Portfolio",
+  description: "Selected works and experiments.",
 };
 
 export default function PortfolioPage() {
@@ -17,13 +17,18 @@ export default function PortfolioPage() {
             Portfolio
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            A collection of my recent projects, experiments, and digital creations.
+            A collection of my recent projects, experiments, and digital
+            creations.
           </p>
         </header>
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {portfolios.map((project) => (
-            <Link key={project.id} href={`/portfolio/${project.slug}`} className="block group">
+            <Link
+              key={project.id}
+              href={`/portfolio/${project.slug}`}
+              className="block group"
+            >
               <article className="h-full bg-gray-900 border border-white/10 rounded-2xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                 <div className="aspect-video bg-gray-800 relative overflow-hidden">
                   <div className="absolute inset-0 group-hover:scale-105 transition-transform duration-500">
@@ -40,11 +45,15 @@ export default function PortfolioPage() {
 
                   {/* Tags Overlay */}
                   <div className="absolute bottom-4 left-4 z-20 flex flex-wrap gap-2">
-                    {project.tags && project.tags.slice(0, 2).map(tag => (
-                      <span key={tag} className="px-2 py-1 text-xs font-semibold bg-black/50 backdrop-blur-sm border border-white/20 rounded-md text-white">
-                        {tag}
-                      </span>
-                    ))}
+                    {project.tags &&
+                      project.tags.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="px-2 py-1 text-xs font-semibold bg-black/50 backdrop-blur-sm border border-white/20 rounded-md text-white"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                   </div>
                 </div>
 
@@ -62,6 +71,48 @@ export default function PortfolioPage() {
               </article>
             </Link>
           ))}
+        </div>
+
+        {/* New Section for Interactive Tools */}
+        <div className="mt-16">
+          <h2 className="text-3xl font-bold mb-8 text-white border-b border-white/10 pb-4">
+            Interactive Demos
+          </h2>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <Link href="/portfolio/blog-buddy-ai" className="block group">
+              <article className="h-full bg-slate-900 border border-indigo-500/30 rounded-2xl overflow-hidden hover:border-indigo-400 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 relative">
+                {/* Banner / Pattern */}
+                <div className="aspect-video bg-gradient-to-br from-indigo-900 to-purple-900 relative overflow-hidden flex items-center justify-center">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
+                  <span className="text-6xl animate-pulse">🤖</span>
+                </div>
+
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-indigo-400 transition-colors">
+                    Blog Buddy AI
+                  </h2>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    An interactive AI assistant that chats, speaks, and creates
+                    content based on your blog posts. Powered by Google Gemini.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-indigo-500/20 text-indigo-300 rounded-md">
+                      Gemini API
+                    </span>
+                    <span className="px-2 py-1 text-xs font-semibold bg-pink-500/20 text-pink-300 rounded-md">
+                      React
+                    </span>
+                    <span className="px-2 py-1 text-xs font-semibold bg-blue-500/20 text-blue-300 rounded-md">
+                      Voice
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center text-indigo-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                    Try Demo <span className="ml-2">→</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
