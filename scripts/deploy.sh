@@ -70,7 +70,7 @@ fi
 # 依存関係のインストール
 echo 'Installing dependencies...'
 rm -rf node_modules
-npm install --omit=dev
+npm install --omit=dev --legacy-peer-deps
 
 # Prisma生成
 npx prisma generate --schema=./prisma/schema.prisma
