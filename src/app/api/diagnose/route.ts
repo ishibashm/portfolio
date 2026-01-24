@@ -32,6 +32,18 @@ export async function GET() {
       dbExists = fs.existsSync(dbAbsolutePath);
     }
 
+    const nodeModulesPath = path.join(process.cwd(), 'node_modules');
+    const prismaClientPath = path.join(nodeModulesPath, '@prisma', 'client');
+    const dotPrismaClientPath = path.join(nodeModulesPath, '.prisma', 'client');
+
+    const listFiles = (dir: string) => {
+      try {
+        return fs.existsSync(dir) ? fs.readdirSync(dir) : ['(Directory Not Found)'];
+      } catch (e: any) {
+        return [`Error: ${e.message}`];
+      }
+    };
+
     const envCheck = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_URL_SET: dbUrl !== 'NOT_SET',
@@ -42,7 +54,9 @@ export async function GET() {
         CWD: cwd,
         DB_PATH_PARSED: dbPath,
         DB_ABSOLUTE_PATH: dbAbsolutePath,
-        DB_FILE_EXISTS: dbExists
+        DB_FILE_EXISTS: dbExists,
+        PRISMA_CLIENT_FILES: listFiles(prismaClientPath),
+        DOT_PRISMA_CLIENT_FILES: listFiles(dotPrismaClientPath)
       }
     };
 
