@@ -47,21 +47,32 @@ export async function GET() {
     };
 
     // 2. Check Prisma Connection
-    let dbStatus = 'Skipped (Prisma import active, usage disabled)';
+    let dbStatus = 'Initiating...';
     let userCount = -1;
     let errorDetail = null;
 
-    /*
+    const logPath = path.join(process.cwd(), 'public', 'debug.txt');
+    const log = (msg: string) => {
+      try {
+        fs.appendFileSync(logPath, `${new Date().toISOString()}: ${msg}\n`);
+      } catch (e) { /* ignore log error */ }
+    };
+
+    log('Starting Diagnostic Check via API');
+
     if (!prisma) {
       dbStatus = 'Prisma Client Not Initialized';
+      log('Prisma Client is null/undefined');
     } else {
       try {
-        // Attempt a simple query. Using a timeout if possible would be good, but Prisma doesn't support easy per-query timeout in V5 without extension?
-        // simple count
+        log('Prisma Client exists. Attempting user.count()...');
+        // Attempt a simple query
         userCount = await prisma.user.count();
+        log(`Query Success! Count: ${userCount}`);
         dbStatus = 'Connected';
       } catch (e: any) {
         dbStatus = 'Connection Failed';
+        log(`Query Failed: ${e.message}`);
         errorDetail = {
           message: e.message,
           code: e.code,
@@ -70,7 +81,6 @@ export async function GET() {
         };
       }
     }
-    */
 
     return NextResponse.json({
       status: 'Diagnostic Complete',
