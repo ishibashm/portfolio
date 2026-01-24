@@ -102,6 +102,93 @@ Since Next.js 16 uses Turbopack by default (which might handle externals differe
 By stripping away build-time optimizations for the database client and forcing runtime resolution, we ensure that the application always connects using the correct binary for the operating system it is running on.
 `;
 
+    // Antigravity Guide
+    const antigravityPath = path.join(process.cwd(), 'docs', 'google-antigravity-guide.md');
+    if (fs.existsSync(antigravityPath)) {
+        const content = fs.readFileSync(antigravityPath, 'utf-8');
+        await prisma.blogPost.upsert({
+            where: { slug: 'google-antigravity-guide' },
+            update: {
+                title: '【完全ガイド】Google Antigravityとは？日本語化と導入・実践ガイド',
+                content: content,
+                excerpt: 'Google Antigravityは指示だけで開発が完結する完全自律型AIです。Cursorとの違いやハンズオン形式でのアプリ作成手順を徹底解説。',
+                tags: JSON.stringify(['AI', 'Antigravity', 'Google', 'DevTools']),
+                published: true,
+                publishedAt: new Date('2026-01-24T17:42:28'),
+                authorId: user.id
+            },
+            create: {
+                title: '【完全ガイド】Google Antigravityとは？日本語化と導入・実践ガイド',
+                slug: 'google-antigravity-guide',
+                content: content,
+                excerpt: 'Google Antigravityは指示だけで開発が完結する完全自律型AIです。Cursorとの違いやハンズオン形式でのアプリ作成手順を徹底解説。',
+                tags: JSON.stringify(['AI', 'Antigravity', 'Google', 'DevTools']),
+                published: true,
+                publishedAt: new Date('2026-01-24T17:42:28'),
+                authorId: user.id,
+            },
+        });
+        console.log('Seeded: Antigravity Guide');
+    }
+
+    // OpenCode Guide
+    const opencodePath = path.join(process.cwd(), 'docs', 'opencode-glm47-guide.md');
+    if (fs.existsSync(opencodePath)) {
+        const content = fs.readFileSync(opencodePath, 'utf-8');
+        await prisma.blogPost.upsert({
+            where: { slug: 'opencode-glm47-guide' },
+            update: {
+                title: 'OpenCodeとGLM 4.7で始める無課金コーディングエージェント',
+                content: content,
+                excerpt: 'アカウント登録不要・完全無料で使えるコーディングエージェント「OpenCode」と「GLM 4.7」の導入からTODOアプリ作成までを体験レビュー。',
+                tags: JSON.stringify(['AI', 'OpenSource', 'Coding Agent']),
+                published: true,
+                publishedAt: new Date('2026-01-24T17:42:53'),
+                authorId: user.id
+            },
+            create: {
+                title: 'OpenCodeとGLM 4.7で始める無課金コーディングエージェント',
+                slug: 'opencode-glm47-guide',
+                content: content,
+                excerpt: 'アカウント登録不要・完全無料で使えるコーディングエージェント「OpenCode」と「GLM 4.7」の導入からTODOアプリ作成までを体験レビュー。',
+                tags: JSON.stringify(['AI', 'OpenSource', 'Coding Agent']),
+                published: true,
+                publishedAt: new Date('2026-01-24T17:42:53'),
+                authorId: user.id,
+            },
+        });
+        console.log('Seeded: OpenCode Guide');
+    }
+
+    // AI Video Editing Guide
+    const aiVideoPath = path.join(process.cwd(), 'docs', 'ai-video-editing-guide.md');
+    if (fs.existsSync(aiVideoPath)) {
+        const content = fs.readFileSync(aiVideoPath, 'utf-8');
+        await prisma.blogPost.upsert({
+            where: { slug: 'ai-video-editing-guide' },
+            update: {
+                title: 'AI動画編集の教科書：AI×Remotionでテキストから動画を作る',
+                content: content,
+                excerpt: '動画編集はAIに任せる時代へ。テキスト指示だけで動画を生成する「AI×Remotion」の仕組みと、Antigravityを使った環境構築方法を解説。',
+                tags: JSON.stringify(['AI', 'Video Editing', 'Remotion', 'Tutorial']),
+                published: true,
+                publishedAt: new Date('2026-01-24T20:37:17'),
+                authorId: user.id
+            },
+            create: {
+                title: 'AI動画編集の教科書：AI×Remotionでテキストから動画を作る',
+                slug: 'ai-video-editing-guide',
+                content: content,
+                excerpt: '動画編集はAIに任せる時代へ。テキスト指示だけで動画を生成する「AI×Remotion」の仕組みと、Antigravityを使った環境構築方法を解説。',
+                tags: JSON.stringify(['AI', 'Video Editing', 'Remotion', 'Tutorial']),
+                published: true,
+                publishedAt: new Date('2026-01-24T20:37:17'),
+                authorId: user.id,
+            },
+        });
+        console.log('Seeded: AI Video Editing Guide');
+    }
+
     if (user) {
         await prisma.blogPost.upsert({
             where: { slug: 'troubleshooting-deployment' },
@@ -126,20 +213,6 @@ By stripping away build-time optimizations for the database client and forcing r
         });
         console.log('Seeded: Troubleshooting Guide');
 
-        await prisma.blogPost.upsert({
-            where: { slug: 'welcome' },
-            update: {},
-            create: {
-                title: 'Welcome to My Portfolio',
-                slug: 'welcome',
-                content: '# Welcome\n\nThis is a test post to verify database connection.',
-                excerpt: 'System check post.',
-                tags: JSON.stringify(['System']),
-                published: true,
-                authorId: user.id,
-            }
-        });
-        console.log('Seeded: Welcome Post');
     }
 }
 

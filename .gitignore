@@ -62,3 +62,6 @@ next-env.d.ts
 # public/images
 
 *.log
+
+# raw materials
+/materials/
