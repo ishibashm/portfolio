@@ -117,7 +117,7 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
 
       // Connect to Live API
       const sessionPromise = ai.live.connect({
-        model: "gemini-2.5-flash-native-audio-preview-12-2025",
+        model: "gemini-2.0-flash-exp",
         callbacks: {
           onopen: () => {
             console.log("Session opened");

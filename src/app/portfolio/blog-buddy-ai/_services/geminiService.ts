@@ -25,7 +25,7 @@ export const generateChatResponse = async (
   Answer questions based on this context. Be concise and engaging.`;
 
   const chat = ai.chats.create({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash-exp",
     config: { systemInstruction },
     history: history as any, // Cast to any to avoid minor type mismatches with history format
   });
@@ -38,7 +38,7 @@ export const generateChatResponse = async (
 export const generateSpeech = async (text: string) => {
   const ai = getClient();
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash-preview-tts",
+    model: "gemini-2.0-flash-exp",
     contents: [{ parts: [{ text }] }],
     config: {
       responseModalities: [Modality.AUDIO],
