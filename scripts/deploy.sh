@@ -22,11 +22,18 @@ fi
 # クリーンアップ
 echo 'Cleaning up existing files...'
 rm -rf my-app
-mkdir -p my-app
-
 # 解凍
 unzip -o deploy.zip -d my-app
 rm deploy.zip
+
+# 診断用ファイル作成 (アプリ公開ディレクトリ配置)
+mkdir -p my-app/public
+echo "Deploy Date: $(date)" > my-app/public/deploy-status.txt
+echo "User: $(whoami)" >> my-app/public/deploy-status.txt
+
+# 権限修正 (重要)
+chmod -R 755 my-app
+
 
 # データベース復元
 if [ -f ./dev.db.bak ]; then
