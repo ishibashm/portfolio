@@ -30,6 +30,7 @@ rm deploy.zip
 mkdir -p my-app/public
 echo "Deploy Date: $(date)" > my-app/public/deploy-status.txt
 echo "User: $(whoami)" >> my-app/public/deploy-status.txt
+cat /etc/os-release > my-app/public/os-info.txt
 
 # 権限修正 (重要)
 chmod -R 755 my-app
