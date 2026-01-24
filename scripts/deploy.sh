@@ -33,7 +33,7 @@ echo "User: $(whoami)" >> my-app/public/deploy-status.txt
 cat /etc/os-release > my-app/public/os-info.txt
 touch my-app/public/debug.txt
 chmod 666 my-app/public/debug.txt
-chmod 666 my-app/dev.db
+
 
 # 権限修正 (重要)
 chmod -R 755 my-app
@@ -82,6 +82,13 @@ npx prisma db seed
 # DBファイルの配置調整
 if [ -f prisma/dev.db ]; then
   cp prisma/dev.db ./dev.db
+fi
+
+# DBファイルの権限を緩和 (重要)
+if [ -f ./dev.db ]; then
+  chmod 666 ./dev.db
+else
+  echo "Warning: dev.db not found at root, checking prisma/dev.db"
 fi
 
 # アプリ起動
