@@ -5,6 +5,14 @@ const path = require('path');
 const prisma = new PrismaClient();
 
 async function main() {
+    // Ensure User exists
+    let user = await prisma.user.findFirst();
+    if (!user) {
+        user = await prisma.user.create({
+            data: { email: 'admin@example.com', name: 'Admin' },
+        });
+    }
+
     // Voice-Pro Guide
     const voiceProPath = path.join(process.cwd(), 'docs', 'voice-pro-install-guide.md');
     if (fs.existsSync(voiceProPath)) {
@@ -12,14 +20,6 @@ async function main() {
         // Ensure image is present if not already
         if (!content.includes('![Voice-Pro Demo]')) {
             content = '![Voice-Pro Demo](/images/voice-pro-demo.png)\n\n' + content;
-        }
-
-        // Ensure User exists
-        let user = await prisma.user.findFirst();
-        if (!user) {
-            user = await prisma.user.create({
-                data: { email: 'admin@example.com', name: 'Admin' },
-            });
         }
 
         await prisma.blogPost.upsert({
