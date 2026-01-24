@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,6 +74,9 @@ export async function GET() {
 
   // 4. DB Connection Test
   try {
+    // Dynamic import to avoid top-level crash if module is missing
+    const { prisma } = await import('@/lib/prisma');
+
     // Try a simple query
     await prisma.$queryRaw`SELECT 1`;
     diagnostics.db.connection = 'Success';
@@ -84,7 +86,8 @@ export async function GET() {
       message: e.message,
       code: e.code,
       meta: e.meta,
-      name: e.name
+      name: e.name,
+      stack: e.stack
     };
   }
 
