@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { prisma, initializationError } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
@@ -63,6 +63,14 @@ export async function GET() {
     if (!prisma) {
       dbStatus = 'Prisma Client Not Initialized';
       log('Prisma Client is null/undefined');
+      if (initializationError) {
+        errorDetail = {
+          phase: 'Initialization',
+          message: initializationError.message,
+          name: initializationError.name,
+          stack: initializationError.stack
+        };
+      }
     } else {
       try {
         log('Prisma Client exists. Attempting user.count()...');
