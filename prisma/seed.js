@@ -44,9 +44,88 @@ async function main() {
         console.log('Seeded: Voice-Pro Guide');
     }
 
-    // 確実に表示されるテスト記事を追加
-    const user = await prisma.user.findFirst();
+    // Troubleshooting Guide
+    const troubleshootingContent = `
+# Troubleshooting: Fixing "Internal Server Error" in Next.js 16 + Prisma Deployment
+
+When deploying a Next.js 16 application with Prisma to a Linux environment (like Google Cloud Run or a VPS) from a Windows development machine, you might encounter a 500 Internal Server Error. Diagnostic logs often reveal the culprit:
+
+\`Error: Cannot find module '@prisma/client-...'\`
+
+This article documents why this happens and how to fix it.
+
+## The Problem: Environment Mismatch
+
+The root cause is a mismatch between how **pnpm on Windows** resolves dependencies versus how **npm on Linux** expects them, combined with Next.js 16's default bundler, **Turbopack**.
+
+1.  **Build Time (Windows)**: Next.js/Turbopack "bakes in" the file paths of the Prisma Client optimized for Windows.
+2.  **Runtime (Linux)**: The application tries to load those specific Windows paths or binaries, which don't exist in the Linux container.
+
+## The Solution
+
+We implemented a robust fix involving three layers:
+
+### 1. Force Runtime Resolution
+
+We modified \`src/lib/prisma.ts\` to use a dynamic \`require\` instead of a static \`import\`. This forces the application to look up the Prisma Client in the *current* environment's \`node_modules\` folder at runtime, ignoring whatever path was calculated at build time.
+
+\`\`\`typescript
+const { PrismaClient } = require('@prisma/client');
+\`\`\`
+
+### 2. Externalize Prisma
+
+We updated \`next.config.ts\` to explicitly tell Webpack to treat Prisma as an external package. This prevents the bundler from trying to package the binary or optimize imports.
+
+\`\`\`typescript
+const nextConfig: NextConfig = {
+  serverExternalPackages: ["prisma", "@prisma/client"],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+        config.externals.push("prisma", "@prisma/client");
+    }
+    return config;
+  },
+};
+\`\`\`
+
+### 3. Force Webpack Build
+
+Since Next.js 16 uses Turbopack by default (which might handle externals differently), we modified \`package.json\` to explicitly use Webpack for the build process.
+
+\`\`\`json
+"build": "next build --webpack && next-sitemap"
+\`\`\`
+
+## Conclusion
+
+By stripping away build-time optimizations for the database client and forcing runtime resolution, we ensure that the application always connects using the correct binary for the operating system it is running on.
+`;
+
     if (user) {
+        await prisma.blogPost.upsert({
+            where: { slug: 'troubleshooting-deployment' },
+            update: {
+                title: 'Fixing Internal Server Errors: Next.js 16 & Prisma',
+                content: troubleshootingContent,
+                excerpt: 'How we solved the "Cannot find module" crash when deploying Next.js 16 apps with Prisma from Windows to Linux.',
+                tags: JSON.stringify(['Engineering', 'Next.js', 'Prisma', 'DevOps']),
+                published: true,
+                publishedAt: new Date(),
+            },
+            create: {
+                title: 'Fixing Internal Server Errors: Next.js 16 & Prisma',
+                slug: 'troubleshooting-deployment',
+                content: troubleshootingContent,
+                excerpt: 'How we solved the "Cannot find module" crash when deploying Next.js 16 apps with Prisma from Windows to Linux.',
+                tags: JSON.stringify(['Engineering', 'Next.js', 'Prisma', 'DevOps']),
+                published: true,
+                authorId: user.id,
+                publishedAt: new Date(),
+            },
+        });
+        console.log('Seeded: Troubleshooting Guide');
+
         await prisma.blogPost.upsert({
             where: { slug: 'welcome' },
             update: {},
