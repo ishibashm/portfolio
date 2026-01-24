@@ -6,11 +6,13 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient };
 let prismaInstance: PrismaClient | undefined;
 
 try {
-  prismaInstance =
-    globalForPrisma.prisma ||
-    new PrismaClient({
-      log: ['query', 'info', 'warn', 'error'],
-    });
+  //   prismaInstance =
+  //     globalForPrisma.prisma ||
+  //     new PrismaClient({
+  //       log: ['query', 'info', 'warn', 'error'],
+  //     });
+  console.log("Skipping Prisma init for crash isolation");
+  prismaInstance = undefined;
 } catch (e) {
   console.error('Failed to initialize Prisma Client:', e);
 }
