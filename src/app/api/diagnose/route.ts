@@ -47,10 +47,11 @@ export async function GET() {
     };
 
     // 2. Check Prisma Connection
-    let dbStatus = 'Initiating...';
+    let dbStatus = 'Skipped (Prisma import active, usage disabled)';
     let userCount = -1;
     let errorDetail = null;
 
+    /*
     if (!prisma) {
       dbStatus = 'Prisma Client Not Initialized';
     } else {
@@ -69,6 +70,7 @@ export async function GET() {
         };
       }
     }
+    */
 
     return NextResponse.json({
       status: 'Diagnostic Complete',
