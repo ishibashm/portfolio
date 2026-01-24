@@ -99,4 +99,16 @@ echo 'Starting app...'
 DATABASE_URL="file:$PWD/dev.db" HOSTNAME=0.0.0.0 PORT=3000 pm2 start npm --name "portfolio" --update-env -- start
 pm2 save
 
+echo 'Waiting for application to start...'
+sleep 10
+
+# ヘルスチェックとログ収集
+if curl -f http://127.0.0.1:3000/api/health; then
+  echo "Health check passed!"
+else
+  echo "Health check failed! Dumping logs..."
+  pm2 logs portfolio --lines 100 --nostream
+  exit 1
+fi
+
 echo '=== デプロイ完了 ==='
