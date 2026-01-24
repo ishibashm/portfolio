@@ -85,14 +85,16 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
   }, []);
 
   const startSession = async () => {
-    if (!process.env.API_KEY) {
+    if (!process.env.NEXT_PUBLIC_GEMINI_API_KEY) {
       alert("API Key missing");
       return;
     }
 
     try {
       setStatus("connecting");
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({
+        apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
+      });
 
       // Setup Audio Contexts
       inputAudioContextRef.current = new (
