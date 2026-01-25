@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
+const matter = require('gray-matter');
 
 const prisma = new PrismaClient();
 
@@ -12,6 +13,46 @@ async function main() {
             data: { email: 'admin@example.com', name: 'Admin' },
         });
     }
+
+    // Helper to seed MDX files from src/
+    async function seedMdxFile(filename) {
+        const filePath = path.join(process.cwd(), 'src', filename);
+        if (fs.existsSync(filePath)) {
+            const fileContent = fs.readFileSync(filePath, 'utf-8');
+            const { data, content } = matter(fileContent);
+            // slug is filename without extension if not provided in frontmatter (it's not in these files)
+            const slug = filename.replace('.mdx', '');
+            
+            await prisma.blogPost.upsert({
+                where: { slug: slug },
+                update: {
+                    title: data.title,
+                    content: content,
+                    excerpt: data.description,
+                    tags: JSON.stringify(data.tags || []),
+                    published: true,
+                    publishedAt: new Date(data.date),
+                    authorId: user.id
+                },
+                create: {
+                    title: data.title,
+                    slug: slug,
+                    content: content,
+                    excerpt: data.description,
+                    tags: JSON.stringify(data.tags || []),
+                    published: true,
+                    publishedAt: new Date(data.date),
+                    authorId: user.id,
+                },
+            });
+            console.log(`Seeded MDX: ${data.title}`);
+        }
+    }
+
+    // Seed src/ MDX files
+    await seedMdxFile('first-post.mdx');
+    await seedMdxFile('mdx-blog-sample.mdx');
+    await seedMdxFile('web-design-trends.mdx');
 
     // Voice-Pro Guide
     const voiceProPath = path.join(process.cwd(), 'docs', 'voice-pro-install-guide.md');
