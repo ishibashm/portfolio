@@ -142,6 +142,36 @@ export default function PortfolioPage() {
                 </div>
               </article>
             </Link>
+
+            <Link href="/portfolio/newsletter" className="block group">
+              <article className="h-full bg-slate-900 border border-orange-500/30 rounded-2xl overflow-hidden hover:border-orange-400 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/20 hover:-translate-y-1 relative">
+                {/* Banner / Pattern */}
+                <div className="aspect-video bg-gradient-to-br from-orange-900 to-red-900 relative overflow-hidden flex items-center justify-center">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
+                  <span className="text-6xl animate-pulse">📧</span>
+                </div>
+
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-orange-400 transition-colors">
+                    Newsletter Template
+                  </h2>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    A modern, responsive newsletter subscription page template with animations and glassmorphism.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-orange-500/20 text-orange-300 rounded-md">
+                      Template
+                    </span>
+                    <span className="px-2 py-1 text-xs font-semibold bg-red-500/20 text-red-300 rounded-md">
+                      UI/UX
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center text-orange-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                    View Template <span className="ml-2">→</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
           </div>
         </div>
       </div>
