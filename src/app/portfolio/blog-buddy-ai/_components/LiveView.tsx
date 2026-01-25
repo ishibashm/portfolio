@@ -57,10 +57,6 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
 
     // Close session
     if (sessionRef.current) {
-      // session.close() is not explicitly a method on the promise,
-      // usually we just stop sending data and close contexts.
-      // The SDK examples use onclose callback mainly.
-      // However, we can drop the reference.
       sessionRef.current = null;
     }
 
@@ -97,12 +93,10 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
       });
 
       // Setup Audio Contexts
-      inputAudioContextRef.current = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )({ sampleRate: 16000 });
-      audioContextRef.current = new (
-        window.AudioContext || (window as any).webkitAudioContext
-      )({ sampleRate: 24000 });
+      inputAudioContextRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      audioContextRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
       const outputNode = audioContextRef.current.createGain();
       outputNode.connect(audioContextRef.current.destination);
@@ -219,31 +213,41 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
   }, [stopSession]);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 bg-slate-900 text-white relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center h-full p-8 relative overflow-hidden bg-black/80 backdrop-blur-3xl text-white">
       {/* Visualizer Background Placeholder */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center opacity-20 pointer-events-none">
+      <div className="absolute inset-0 z-0 flex items-center justify-center opacity-30 pointer-events-none">
         <div
-          className={`w-64 h-64 rounded-full bg-indigo-500 blur-3xl transition-all duration-1000 ${isConnected ? "scale-150 animate-pulse" : "scale-100"}`}
+          className={`w-96 h-96 rounded-full bg-indigo-500 blur-[100px] transition-all duration-1000 ${isConnected ? "scale-150 animate-pulse" : "scale-100"}`}
         ></div>
         <div
-          className={`w-48 h-48 rounded-full bg-purple-500 blur-3xl absolute transition-all duration-1000 ${isConnected ? "scale-125 animate-pulse delay-75" : "scale-90"}`}
+          className={`w-64 h-64 rounded-full bg-purple-500 blur-[80px] absolute transition-all duration-1000 ${isConnected ? "scale-125 animate-pulse delay-75" : "scale-90"}`}
         ></div>
       </div>
 
-      <div className="z-10 flex flex-col items-center space-y-8 max-w-md text-center">
-        <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Blog Buddy Live</h2>
-          <p className="text-slate-400">
-            Have a real-time voice conversation about your article.
+      <div className="z-10 flex flex-col items-center space-y-12 max-w-md text-center">
+        <div className="space-y-4">
+          <h2 className="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 to-purple-200">
+            Live Conversation
+          </h2>
+          <p className="text-slate-300/80 text-lg">
+            Speak naturally with Bloggy AI about your content.
           </p>
         </div>
 
         <div
-          className={`w-32 h-32 rounded-full border-4 flex items-center justify-center transition-colors duration-300 ${isConnected ? "border-indigo-500 bg-indigo-500/10 shadow-[0_0_30px_rgba(99,102,241,0.5)]" : "border-slate-700 bg-slate-800"}`}
+          className={`w-40 h-40 rounded-full border-4 flex items-center justify-center transition-all duration-500 relative ${isConnected ? "border-indigo-400/50 shadow-[0_0_60px_rgba(99,102,241,0.4)]" : "border-white/10 bg-white/5"}`}
         >
+          {/* Ripple Effect */}
+          {isConnected && (
+            <>
+              <div className="absolute inset-0 rounded-full border border-indigo-500/30 animate-ping opacity-75 duration-[2000ms]"></div>
+              <div className="absolute inset-[-10px] rounded-full border border-indigo-500/20 animate-ping opacity-50 delay-300 duration-[2000ms]"></div>
+            </>
+          )}
+
           {status === "connecting" ? (
             <svg
-              className="animate-spin h-10 w-10 text-indigo-500"
+              className="animate-spin h-12 w-12 text-indigo-400"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -265,15 +269,15 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
+              width="56"
+              height="56"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={`${isConnected ? "text-indigo-400" : "text-slate-500"}`}
+              className={`${isConnected ? "text-indigo-300" : "text-slate-400"}`}
             >
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -283,36 +287,80 @@ const LiveView: React.FC<LiveViewProps> = ({ blogState }) => {
           )}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-6">
           {!isConnected ? (
             <button
               onClick={startSession}
               disabled={status === "connecting"}
-              className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-full font-semibold shadow-lg transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-10 py-4 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-md rounded-full font-semibold shadow-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-indigo-100"
             >
-              {status === "connecting" ? "Connecting..." : "Start Conversation"}
+              {status === "connecting" ? "Connecting..." : "Start Call"}
             </button>
           ) : (
             <>
               <button
                 onClick={() => setIsMuted(!isMuted)}
-                className={`px-6 py-3 rounded-full font-medium transition-colors ${isMuted ? "bg-red-500/20 text-red-400 border border-red-500/50" : "bg-slate-800 text-white border border-slate-700 hover:bg-slate-700"}`}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${isMuted ? "bg-red-500/80 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
               >
-                {isMuted ? "Unmute Mic" : "Mute Mic"}
+                {isMuted ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                    <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                  </svg>
+                )}
               </button>
               <button
                 onClick={stopSession}
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-full font-medium shadow-lg transition-transform active:scale-95"
+                className="w-20 h-14 rounded-full bg-red-500/80 hover:bg-red-600/90 text-white flex items-center justify-center shadow-lg transition-transform active:scale-95"
               >
-                End Call
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M12 22c5.5 0 10-4.5 10-10V8h-2v4c0 4.4-3.6 8-8 8s-8-3.6-8-8V8H2v4c0 5.5 4.5 10 10 10z" />
+                  <path d="M18 6h-5V2h-2v4H6v3h12V6z" />
+                </svg>
               </button>
             </>
           )}
         </div>
 
         {status === "error" && (
-          <p className="text-red-400 text-sm">
-            Connection failed. Please check permissions and try again.
+          <p className="text-red-300 text-sm bg-red-900/20 px-4 py-2 rounded-lg border border-red-500/20">
+            Connection failed. Please check microphone permissions.
           </p>
         )}
       </div>

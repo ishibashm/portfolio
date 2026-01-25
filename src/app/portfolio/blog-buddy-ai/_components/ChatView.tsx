@@ -11,7 +11,7 @@ const ChatView: React.FC<ChatViewProps> = ({ blogState }) => {
     {
       id: "1",
       role: "model",
-      text: "Hi! I'm Bloggy. Paste a blog post above, and let's talk about it!",
+      text: "Hi! I'm Bloggy. Paste a blog post to the left, and let's discuss it!",
       timestamp: new Date(),
     },
   ]);
@@ -69,14 +69,21 @@ const ChatView: React.FC<ChatViewProps> = ({ blogState }) => {
           },
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
+      let errorMessage = "Sorry, I encountered an error responding to that.";
+
+      if (error.message?.includes("429") || error.message?.includes("quota")) {
+        errorMessage =
+          "⏳ Usage limit reached (Free Tier). Please wait a moment before trying again.";
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           role: "model",
-          text: "Sorry, I encountered an error responding to that.",
+          text: errorMessage,
           timestamp: new Date(),
         },
       ]);
@@ -86,37 +93,44 @@ const ChatView: React.FC<ChatViewProps> = ({ blogState }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <div className="flex flex-col h-full relative">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm shadow-sm ${
+              className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm backdrop-blur-md ${
                 msg.role === "user"
-                  ? "bg-indigo-600 text-white rounded-br-none"
-                  : "bg-white text-slate-800 border border-slate-100 rounded-bl-none"
+                  ? "bg-indigo-600/90 text-white rounded-br-none"
+                  : "bg-white/60 text-slate-800 border border-white/50 rounded-bl-none"
               }`}
             >
               {msg.text}
             </div>
+            <span className="text-[10px] text-slate-500 mt-1 px-1 opacity-60">
+              {msg.role === "user" ? "You" : "Bloggy AI"} •{" "}
+              {msg.timestamp.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
           </div>
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white px-4 py-3 rounded-2xl rounded-bl-none border border-slate-100 shadow-sm flex gap-2 items-center">
+            <div className="bg-white/60 px-4 py-3 rounded-2xl rounded-bl-none border border-white/50 shadow-sm flex gap-2 items-center backdrop-blur-md">
               <span
-                className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
+                className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
                 style={{ animationDelay: "0ms" }}
               ></span>
               <span
-                className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
+                className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
                 style={{ animationDelay: "150ms" }}
               ></span>
               <span
-                className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"
+                className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"
                 style={{ animationDelay: "300ms" }}
               ></span>
             </div>
@@ -125,22 +139,35 @@ const ChatView: React.FC<ChatViewProps> = ({ blogState }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="p-4 bg-white border-t border-slate-200 sticky bottom-0">
-        <div className="flex gap-2 max-w-4xl mx-auto">
+      <div className="p-4 bg-white/20 backdrop-blur-md border-t border-white/30">
+        <div className="relative flex items-center gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask a question about the blog post..."
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50"
+            placeholder="Ask a question about the article..."
+            className="w-full pl-5 pr-14 py-4 rounded-full bg-white/60 border border-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:bg-white/80 transition-all text-slate-800 placeholder-slate-500 shadow-sm backdrop-blur-sm"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="absolute right-2 p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
           >
-            Send
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
           </button>
         </div>
       </div>

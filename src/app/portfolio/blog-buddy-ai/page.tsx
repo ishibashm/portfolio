@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import BlogInput from "./_components/BlogInput";
+import ContextPanel from "./_components/ContextPanel";
 import ChatView from "./_components/ChatView";
 import LiveView from "./_components/LiveView";
 import VeoView from "./_components/VeoView";
@@ -14,150 +14,191 @@ export default function BlogBuddyPage() {
     title: "",
     content: "",
   });
-  const [isBlogCollapsed, setIsBlogCollapsed] = useState(false);
-
-  // When switching to Live View, automatically collapse blog input for more screen real estate
-  const handleViewChange = (view: AppView) => {
-    setCurrentView(view);
-    if (view === AppView.LIVE) {
-      setIsBlogCollapsed(true);
-    }
-  };
+  const [isMobileContextOpen, setIsMobileContextOpen] = useState(false);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
-      {/* Header / Blog Context */}
-      <BlogInput
-        blogState={blogState}
-        setBlogState={setBlogState}
-        isCollapsed={isBlogCollapsed}
-        toggleCollapse={() => setIsBlogCollapsed(!isBlogCollapsed)}
-      />
+    <div className="h-screen w-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200 via-purple-100 to-pink-100 overflow-hidden font-sans text-slate-800">
+      {/* Decorative background blobs */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-300/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-300/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-hidden relative">
-        {currentView === AppView.CHAT && <ChatView blogState={blogState} />}
-        {currentView === AppView.LIVE && <LiveView blogState={blogState} />}
-        {currentView === AppView.VEO && <VeoView />}
-        {currentView === AppView.TTS && <TTSView blogState={blogState} />}
-      </main>
+      <div className="max-w-[1920px] mx-auto h-full flex relative z-10">
+        {/* LEFT COLUMN: Context (Desktop) */}
+        <aside className="hidden md:block w-[400px] h-full bg-white/20 backdrop-blur-xl border-r border-white/30 shadow-2xl z-20">
+          <ContextPanel blogState={blogState} setBlogState={setBlogState} />
+        </aside>
 
-      {/* Navigation Tab Bar */}
-      <nav className="bg-white border-t border-slate-200 px-4 py-2 pb-safe">
-        <div className="max-w-md mx-auto flex justify-around items-center">
-          <NavButton
-            active={currentView === AppView.CHAT}
-            onClick={() => handleViewChange(AppView.CHAT)}
-            icon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+        {/* MOBILE CONTEXT DRAWER */}
+        {isMobileContextOpen && (
+          <div className="md:hidden absolute inset-0 z-50 bg-black/20 backdrop-blur-sm">
+            <div className="absolute inset-y-0 left-0 w-4/5 bg-white/90 backdrop-blur-xl shadow-2xl animate-in slide-in-from-left duration-300">
+              <button
+                onClick={() => setIsMobileContextOpen(false)}
+                className="absolute top-4 right-4 p-2 bg-white/50 rounded-full hover:bg-white/80 transition-colors"
               >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-            }
-            label="Chat"
-          />
-          <NavButton
-            active={currentView === AppView.LIVE}
-            onClick={() => handleViewChange(AppView.LIVE)}
-            icon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            }
-            label="Live"
-          />
-          <NavButton
-            active={currentView === AppView.TTS}
-            onClick={() => handleViewChange(AppView.TTS)}
-            icon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
-              </svg>
-            }
-            label="Speech"
-          />
-          <NavButton
-            active={currentView === AppView.VEO}
-            onClick={() => handleViewChange(AppView.VEO)}
-            icon={
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="23 7 16 12 23 17 23 7"></polygon>
-                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-              </svg>
-            }
-            label="Veo"
-          />
-        </div>
-      </nav>
+                <svg
+                  className="w-5 h-5 text-slate-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+              <ContextPanel blogState={blogState} setBlogState={setBlogState} />
+            </div>
+          </div>
+        )}
+
+        {/* RIGHT COLUMN: Main Content */}
+        <main className="flex-1 h-full flex flex-col relative">
+          {/* Mobile Header */}
+          <header className="md:hidden h-14 bg-white/30 backdrop-blur-md border-b border-white/20 flex items-center justify-between px-4 shrink-0">
+            <h1 className="font-bold text-slate-800">Blog Buddy AI</h1>
+            <button
+              onClick={() => setIsMobileContextOpen(true)}
+              className="p-2 bg-white/40 rounded-lg text-indigo-700 font-medium text-sm"
+            >
+              Context
+            </button>
+          </header>
+
+          {/* View Container */}
+          <div className="flex-1 overflow-hidden relative p-4 md:p-6">
+            <div className="h-full w-full bg-white/40 backdrop-blur-xl rounded-3xl border border-white/30 shadow-xl overflow-hidden relative">
+              {currentView === AppView.CHAT && (
+                <ChatView blogState={blogState} />
+              )}
+              {currentView === AppView.LIVE && (
+                <LiveView blogState={blogState} />
+              )}
+              {currentView === AppView.VEO && <VeoView />}
+              {currentView === AppView.TTS && <TTSView blogState={blogState} />}
+            </div>
+          </div>
+
+          {/* Navigation Dock */}
+          <div className="h-20 md:h-24 flex items-center justify-center shrink-0 pb-safe">
+            <div className="bg-white/40 backdrop-blur-2xl border border-white/40 rounded-2xl px-6 py-3 flex gap-4 shadow-lg mb-4">
+              <NavButton
+                active={currentView === AppView.CHAT}
+                onClick={() => setCurrentView(AppView.CHAT)}
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                }
+                label="Chat"
+              />
+              <NavButton
+                active={currentView === AppView.LIVE}
+                onClick={() => setCurrentView(AppView.LIVE)}
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+                    />
+                  </svg>
+                }
+                label="Live"
+              />
+              <NavButton
+                active={currentView === AppView.TTS}
+                onClick={() => setCurrentView(AppView.TTS)}
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"
+                    />
+                  </svg>
+                }
+                label="Speech"
+              />
+              <NavButton
+                active={currentView === AppView.VEO}
+                onClick={() => setCurrentView(AppView.VEO)}
+                icon={
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                }
+                label="Veo"
+              />
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
 
-interface NavButtonProps {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}
-
-const NavButton: React.FC<NavButtonProps> = ({
+const NavButton = ({
   active,
   onClick,
   icon,
   label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
 }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors w-16 ${active ? "text-indigo-600" : "text-slate-400 hover:text-slate-600"}`}
+    className={`group flex flex-col items-center gap-1 min-w-[60px] transition-all duration-300 ${
+      active ? "text-indigo-600 scale-110" : "text-slate-500 hover:text-indigo-500"
+    }`}
   >
     <div
-      className={`${active ? "scale-110" : "scale-100"} transition-transform duration-200`}
+      className={`p-2 rounded-xl transition-all duration-300 ${
+        active
+          ? "bg-indigo-100 shadow-inner"
+          : "bg-transparent group-hover:bg-white/30"
+      }`}
     >
       {icon}
     </div>
-    <span className="text-[10px] font-medium">{label}</span>
+    <span className="text-[10px] font-bold tracking-wide">{label}</span>
   </button>
 );
