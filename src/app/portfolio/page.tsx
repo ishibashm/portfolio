@@ -112,6 +112,36 @@ export default function PortfolioPage() {
                 </div>
               </article>
             </Link>
+
+            <Link href="/portfolio/sanpeki-ki" className="block group">
+              <article className="h-full bg-slate-900 border border-teal-500/30 rounded-2xl overflow-hidden hover:border-teal-400 transition-all duration-300 hover:shadow-2xl hover:shadow-teal-500/20 hover:-translate-y-1 relative">
+                {/* Banner / Pattern */}
+                <div className="aspect-video bg-gradient-to-br from-teal-900 to-emerald-900 relative overflow-hidden flex items-center justify-center">
+                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent"></div>
+                  <span className="text-6xl animate-pulse">🔮</span>
+                </div>
+
+                <div className="p-6">
+                  <h2 className="text-2xl font-bold mb-3 text-white group-hover:text-teal-400 transition-colors">
+                    Sanpeki Mokusei
+                  </h2>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    Visualizing the directional flow (Kaiza) and Central Palace (Chugu) of the Three Turquoise Wood Star.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 text-xs font-semibold bg-teal-500/20 text-teal-300 rounded-md">
+                      Nine Star Ki
+                    </span>
+                    <span className="px-2 py-1 text-xs font-semibold bg-emerald-500/20 text-emerald-300 rounded-md">
+                      Visualizer
+                    </span>
+                  </div>
+                  <div className="mt-4 flex items-center text-teal-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0">
+                    View Charts <span className="ml-2">→</span>
+                  </div>
+                </div>
+              </article>
+            </Link>
           </div>
         </div>
       </div>

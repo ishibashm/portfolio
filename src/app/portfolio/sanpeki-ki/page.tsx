@@ -1,0 +1,99 @@
+"use client";
+
+import React, { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+
+const images = [
+  "0066.png",
+  "0067.png",
+  "0068.png",
+  "0069.png",
+  "0070.png",
+  "0071.png",
+  "0072.png",
+  "0073.png",
+];
+
+export default function SanpekiPage() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
+
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 p-8 flex flex-col items-center">
+      <header className="mb-12 text-center">
+        <h1 className="text-4xl font-bold mb-4 text-indigo-700">
+          Sanpeki Mokusei (三碧木星)
+        </h1>
+        <p className="text-lg text-slate-600 max-w-2xl">
+          Visualization of directional flows (Kaiza) and the Central Palace (Chugu).
+          Explore the cycle of the Nine Star Ki.
+        </p>
+      </header>
+
+      <main className="flex-1 w-full max-w-4xl flex flex-col items-center gap-8">
+        <div className="relative w-full aspect-square md:aspect-[4/3] max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 flex items-center justify-center p-8"
+            >
+              <div className="relative w-full h-full">
+                <Image
+                  src={`/images/sanpeki/${images[currentIndex]}`}
+                  alt={`Sanpeki Chart ${images[currentIndex]}`}
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </motion.div>
+          </AnimatePresence>
+          
+          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-mono border border-slate-200">
+            {images[currentIndex]}
+          </div>
+        </div>
+
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={prevImage}
+            className="px-6 py-3 bg-white border border-slate-300 rounded-full hover:bg-slate-50 hover:scale-105 transition-all shadow-sm active:scale-95 flex items-center gap-2 font-medium"
+          >
+            ← Previous
+          </button>
+          <div className="text-sm font-mono text-slate-500">
+            {currentIndex + 1} / {images.length}
+          </div>
+          <button
+            onClick={nextImage}
+            className="px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 hover:scale-105 transition-all shadow-md active:scale-95 flex items-center gap-2 font-medium"
+          >
+            Next →
+          </button>
+        </div>
+      </main>
+
+      <footer className="mt-16 text-center">
+        <Link
+          href="/portfolio"
+          className="text-indigo-600 hover:underline hover:text-indigo-800 transition-colors"
+        >
+          Back to Portfolio
+        </Link>
+      </footer>
+    </div>
+  );
+}
