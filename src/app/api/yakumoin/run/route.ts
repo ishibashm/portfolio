@@ -7,14 +7,19 @@ const execAsync = promisify(exec);
 
 export async function POST(request: Request) {
   try {
-    const { date } = await request.json();
+    const { date, birthDate } = await request.json();
     
     if (!date) {
       return NextResponse.json({ error: 'Date is required' }, { status: 400 });
     }
+
+    if (!birthDate) {
+        return NextResponse.json({ error: 'Birth Date is required' }, { status: 400 });
+    }
     
-    // Construct URL based on date (YYYYMMDD)
-    const targetUrl = `https://yakumoin.info/check/direction/day/${date}`;
+    // Construct URL based on date (YYYYMMDD) and birthDate (YYYYMMDD)
+    // Example: https://yakumoin.info/check/direction/day/20260131?birthday=19900101
+    const targetUrl = `https://yakumoin.info/check/direction/day/${date}?birthday=${birthDate}`;
     
     const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'yakumoin-scraper', 'snapshot.py');
     const outputDir = path.join(process.cwd(), 'public', 'scraped_data');

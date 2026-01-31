@@ -1,49 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { calculateKyusei, KyuseiResult, BoardPositions, NineStarInfo } from '@/lib/kyusei';
+import { format } from 'date-fns';
 
 export default function YakumoinScraperPage() {
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(''); // Target Date for Scraper
+  const [birthDate, setBirthDate] = useState(''); // Birth Date
+  
+  // Dashboard State
+  const [currentKyusei, setCurrentKyusei] = useState<KyuseiResult | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
+
+  // Scraper State
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ stdout: string; outputDir: string } | null>(null);
   const [error, setError] = useState('');
+  const [myStars, setMyStars] = useState<KyuseiResult | null>(null);
+
+  // Clock Effect
+  useEffect(() => {
+     const update = () => {
+         const t = new Date();
+         setNow(t);
+         setCurrentKyusei(calculateKyusei(t));
+     };
+     update();
+     const interval = setInterval(update, 60000); // Every minute
+     return () => clearInterval(interval);
+  }, []);
+
+  // My Stars Calculation
+  useEffect(() => {
+      if (birthDate) {
+          // Just verify valid date
+          const d = new Date(birthDate);
+          if (!isNaN(d.getTime())) {
+              setMyStars(calculateKyusei(d));
+          }
+      }
+  }, [birthDate]);
+
 
   const handleRun = async () => {
-    if (!date) {
-      setError('Please select a date.');
-      return;
-    }
+    if (!date) { setError('Please select a date.'); return; }
+    if (!birthDate) { setError('Please select birth date.'); return; }
     
-    // Format date to YYYYMMDD
+    // Formatting
     const dateObj = new Date(date);
     const yyyy = dateObj.getFullYear();
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
     const dd = String(dateObj.getDate()).padStart(2, '0');
     const formattedDate = `${yyyy}${mm}${dd}`;
 
-    setLoading(true);
-    setError('');
-    setResult(null);
+    const bDateObj = new Date(birthDate);
+    const byyyy = bDateObj.getFullYear();
+    const bmm = String(bDateObj.getMonth() + 1).padStart(2, '0');
+    const bdd = String(bDateObj.getDate()).padStart(2, '0');
+    const formattedBirthDate = `${byyyy}${bmm}${bdd}`;
+
+    setLoading(true); setError(''); setResult(null);
 
     try {
       const response = await fetch('/api/yakumoin/run', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ date: formattedDate }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: formattedDate, birthDate: formattedBirthDate }),
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        const errorMsg = data.error || 'Failed to run scraper';
-        const debugInfo = data.stderr || data.details || '';
-        throw new Error(`${errorMsg}${debugInfo ? `\n${debugInfo}` : ''}`);
-      }
-
+      if (!response.ok) throw new Error(data.error || 'Failed');
       setResult(data);
     } catch (err: any) {
       setError(err.message);
@@ -53,238 +79,255 @@ export default function YakumoinScraperPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <article className="max-w-4xl mx-auto">
-        <header className="mb-12">
-          <Link href="/portfolio" className="text-indigo-400 hover:text-indigo-300 text-sm font-medium mb-8 inline-block transition-colors">
-            ← Back to Portfolio
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent mb-4">
-            Yakumoin Scraper
-          </h1>
-          <p className="text-gray-300 text-lg">
-            Archive data from Yakumoin.info by selecting a date below.
-          </p>
-        </header>
+    <div className="min-h-screen bg-slate-950 text-white font-sans selection:bg-indigo-500/30">
+        {/* Header / Nav */}
+        <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md bg-black/20 sticky top-0 z-50">
+             <Link href="/portfolio" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
+                ← Back to Portfolio
+             </Link>
+             <div className="text-right">
+                 <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                     Kyusei Dashboard
+                 </h1>
+                 {now && <p className="text-xs text-gray-400 font-mono">{format(now, 'yyyy-MM-dd HH:mm')}</p>}
+             </div>
+        </nav>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-gray-900 border border-white/10 rounded-2xl p-8 shadow-2xl h-fit">
-            <h2 className="text-xl font-bold mb-4 text-white border-b border-white/10 pb-2">How to Use</h2>
-            <ol className="list-decimal list-inside text-gray-400 space-y-2 mb-8 text-sm">
-                <li>Select a date from the calendar or input.</li>
-                <li>(Optional) Click "View Source" to check the original site.</li>
-                <li>Click <strong>Run Scraper</strong> to start archiving.</li>
-                <li>Wait for the process to complete (background browser launch).</li>
-                <li>View the captured screenshot and download links below.</li>
-            </ol>
+        <main className="max-w-7xl mx-auto p-6 space-y-12">
+            
+            {/* 1. Dashboard Section */}
+            <section className="animate-fade-in-up">
+                <header className="mb-6 flex items-baseline gap-4">
+                    <h2 className="text-2xl font-bold text-white">Current Energy</h2>
+                    <span className="text-sm text-gray-500">Live Kyusei Plates</span>
+                </header>
 
-            <div className="flex flex-col gap-4 items-end">
-              <div className="w-full">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-bold text-gray-300">
-                    Select Target Date
-                  </label>
-                  {date && (
-                    <a
-                      href={`https://yakumoin.info/check/direction/day/${date.replace(/-/g, '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center"
-                    >
-                      View Source <span className="ml-1">↗</span>
-                    </a>
-                  )}
-                </div>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-black border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-              
-              <button
-                onClick={handleRun}
-                disabled={loading}
-                className={`w-full py-4 rounded-lg font-bold text-lg transition-all transform active:scale-95 flex justify-center items-center ${
-                  loading
-                    ? 'bg-gray-800 cursor-not-allowed text-gray-500'
-                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40'
-                }`}
-              >
-                {loading ? (
-                    <span className="flex items-center gap-2">
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Running Scraper...
-                    </span>
-                ) : 'Run Scraper'}
-              </button>
-            </div>
-
-            {error && (
-              <div className="mt-6 bg-red-900/20 border border-red-500/50 text-red-200 p-4 rounded-lg animate-fade-in text-sm">
-                <strong>Error:</strong> {error}
-              </div>
-            )}
-          </div>
-
-          <div className="bg-gray-900/50 border border-white/5 rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden">
-            {!result && !loading && (
-                <div className="text-center text-gray-500">
-                    <span className="text-6xl mb-4 block opacity-20">📸</span>
-                    <p>Scraped content will appear here</p>
-                </div>
-            )}
-
-            {loading && (
-                <div className="text-center">
-                     <span className="text-6xl mb-4 block animate-pulse">📡</span>
-                     <p className="text-indigo-300 animate-pulse">Connecting to Yakumoin...</p>
-                </div>
-            )}
-
-            {result && (
-              <div className="w-full flex flex-col gap-6 animate-fade-in h-full">
-                <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mb-2 flex justify-between items-center">
-                    <div className="flex items-center gap-3 text-green-400 font-bold">
-                        <span className="text-xl">✓</span>
-                        Success
+                {currentKyusei && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <KyuseiCard title="Year Plate" titleSub={format(now!, 'yyyy')} board={currentKyusei.year.board} center={currentKyusei.year.star} />
+                        <KyuseiCard title="Month Plate" titleSub={format(now!, 'MMM')} board={currentKyusei.month.board} center={currentKyusei.month.star} />
+                        <KyuseiCard 
+                            title="Day Plate" 
+                            titleSub={format(now!, 'd')} 
+                            board={currentKyusei.day.board} 
+                            center={currentKyusei.day.star} 
+                            badge={currentKyusei.day.ton === 'YANG' ? '陽遁' : '陰遁'}
+                        />
+                        <KyuseiCard title="Time Plate" titleSub={format(now!, 'HH:mm')} board={currentKyusei.time.board} center={currentKyusei.time.star} isDynamic />
                     </div>
-                    <div className="text-sm text-gray-400">
-                        {date}
+                )}
+            </section>
+
+            {/* 2. Scraper Tool Section */}
+            <section className="grid lg:grid-cols-3 gap-8 items-start">
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                             <span>🛠</span> Scraper Tool
+                        </h2>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">My Birth Date</label>
+                                <input 
+                                    type="date" 
+                                    value={birthDate} 
+                                    onChange={(e) => setBirthDate(e.target.value)}
+                                    className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                                />
+                                {myStars && (
+                                    <div className="mt-2 p-3 bg-indigo-900/20 rounded border border-indigo-500/20 text-xs space-y-1">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Honmei (Year)</span>
+                                            <span className={`font-bold ${myStars.year.star.color}`}>{myStars.year.star.name}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-400">Getsumei (Month)</span>
+                                            <span className={`font-bold ${myStars.month.star.color}`}>{myStars.month.star.name}</span>
+                                        </div>
+                                         <div className="flex justify-between">
+                                            <span className="text-gray-400">Nichimei (Day)</span>
+                                            <span className={`font-bold ${myStars.day.star.color}`}>{myStars.day.star.name}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Target Date</label>
+                                <input 
+                                    type="date" 
+                                    value={date} 
+                                    onChange={(e) => setDate(e.target.value)}
+                                    className="w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all font-mono"
+                                />
+                           </div>
+
+                           <button
+                                onClick={handleRun}
+                                disabled={loading}
+                                className={`w-full py-4 rounded-lg font-bold text-lg transition-all transform active:scale-95 flex justify-center items-center ${
+                                loading
+                                    ? 'bg-gray-800 cursor-not-allowed text-gray-500'
+                                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40'
+                                }`}
+                            >
+                                {loading ? 'Running...' : 'Run Scraper'}
+                            </button>
+                            {error && <p className="text-red-400 text-xs bg-red-900/20 p-2 rounded border border-red-500/20">{error}</p>}
+                        </div>
                     </div>
                 </div>
 
-                <ResultTabs 
-                    result={result} 
-                    date={date} 
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </article>
+                <div className="lg:col-span-2 min-h-[500px] bg-black/40 border border-white/5 rounded-2xl p-6 relative overflow-hidden">
+                     {!result && !loading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
+                             <span className="text-6xl mb-4 opacity-20">📊</span>
+                             <p>Select dates and run to archive data.</p>
+                        </div>
+                     )}
+                     {loading && (
+                         <div className="absolute inset-0 flex items-center justify-center">
+                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+                         </div>
+                     )}
+                     {result && (
+                         <div className="h-full flex flex-col">
+                             <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/10">
+                                 <h3 className="font-bold text-green-400 flex items-center gap-2">✅ Archived</h3>
+                                 <div className="flex gap-2">
+                                     {date && birthDate && (
+                                         <a href={`https://yakumoin.info/check/direction/day/${date.replace(/-/g,'')}?birthday=${birthDate.replace(/-/g,'')}`} target="_blank" className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition">Original Site ↗</a>
+                                     )}
+                                 </div>
+                             </div>
+                             <ResultTabs result={result} date={date.replace(/-/g,'')} />
+                         </div>
+                     )}
+                </div>
+            </section>
+        </main>
     </div>
   );
 }
 
+function KyuseiCard({ title, titleSub, board, center, badge, isDynamic }: { title: string, titleSub: string, board: BoardPositions, center: NineStarInfo, badge?: string, isDynamic?: boolean }) {
+    return (
+        <div className={`bg-white/5 border border-white/10 rounded-xl p-4 backdrop-blur-md relative overflow-hidden ${isDynamic ? 'ring-1 ring-indigo-500/30' : ''}`}>
+            {isDynamic && <div className="absolute top-0 right-0 p-1"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div></div>}
+            
+            <header className="flex justify-between items-end mb-4 border-b border-white/5 pb-2">
+                <div>
+                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">{title}</h3>
+                     <p className="text-lg font-bold text-white font-mono">{titleSub}</p>
+                </div>
+                {badge && <span className="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded border border-indigo-500/30">{badge}</span>}
+            </header>
+
+            {/* 3x3 Grid */}
+            <div className="aspect-square grid grid-cols-3 gap-1 bg-black/20 p-1 rounded-lg">
+                {/* Row 1: SE, S, SW (South Top layout) */}
+                {/* Usually South is Top in Kyusei logic: SE(4) - S(9) - SW(2) */}
+                {/* My generateBoard returns keys. I need to map them to grid. */}
+                {/* Convention: standard map often North Up. But user asked for 'Rich' so traditional South Up is cooler? */}
+                {/* Let's stick to standard North Up for readability unless specified. */}
+                {/* Standard Map: 
+                    SE S SW
+                    E  C  W
+                    NE N NW
+                   Wait, North Up map:
+                   SE(4) S(9) SW(2)   <-- This is South Up! 
+                   Standard North Up:
+                   NW N NE
+                   W  C  E
+                   SW S SE
+                   
+                   Wait, typical Feng Shui / Kyusei chart circles usually have S on top.
+                   Luo Shu: 4 9 2 (Top Row) -> SE S SW.
+                   I will implement SOUTH TOP (Luo Shu standard).
+                */}
+                
+                <GridCell star={board.SE} label="SE" />
+                <GridCell star={board.S} label="S" highlight />
+                <GridCell star={board.SW} label="SW" />
+                
+                <GridCell star={board.E} label="E" />
+                <GridCell star={board.center} label="C" isCenter />
+                <GridCell star={board.W} label="W" />
+                
+                <GridCell star={board.NE} label="NE" />
+                <GridCell star={board.N} label="N" highlight />
+                <GridCell star={board.NW} label="NW" />
+            </div>
+            
+            <div className={`mt-3 text-center text-sm font-bold ${center.color}`}>
+                {center.name}
+            </div>
+        </div>
+    );
+}
+
+function GridCell({ star, label, isCenter, highlight }: { star: NineStarInfo, label: string, isCenter?: boolean, highlight?: boolean }) {
+    return (
+        <div className={`
+            relative flex flex-col items-center justify-center rounded 
+            ${isCenter ? 'bg-indigo-900/40 ring-1 ring-indigo-500/50' : 'bg-white/5 hover:bg-white/10'} 
+            transition-colors cursor-default
+        `}>
+            <span className={`text-[8px] absolute top-0.5 left-1 opacity-30 ${highlight ? 'text-red-400 font-bold opacity-70' : ''}`}>{label}</span>
+            <span className={`text-sm md:text-base font-bold ${star.color}`}>{star.number}</span>
+            {/* Optional element icon or color dot */}
+            <div className={`w-1 h-1 rounded-full mt-0.5 opacity-50 ${
+                star.element === 'Fire' ? 'bg-red-500' :
+                star.element === 'Water' ? 'bg-blue-500' :
+                star.element === 'Wood' ? 'bg-green-500' :
+                star.element === 'Metal' ? 'bg-gray-200' : 'bg-yellow-600'
+            }`}></div>
+        </div>
+    );
+}
+
+
 function ResultTabs({ result, date }: { result: { stdout: string; outputDir: string }, date: string }) {
     const [activeTab, setActiveTab] = useState<'image' | 'html' | 'text'>('image');
     const [textContent, setTextContent] = useState<string>('');
-
-    // Fetch text content when switching to text tab
     const handleTabChange = async (tab: 'image' | 'html' | 'text') => {
         setActiveTab(tab);
         if (tab === 'text' && !textContent) {
             try {
-                const res = await fetch(`${result.outputDir}/yakumoin_${date.replace(/-/g, '')}.txt`);
+                const res = await fetch(`${result.outputDir}/yakumoin_${date}.txt`);
                 const text = await res.text();
                 setTextContent(text);
-            } catch (e) {
-                setTextContent('Failed to load text content.');
-            }
+            } catch (e) { setTextContent('Failed to load text.'); }
         }
     };
-
-    const filename = `yakumoin_${date.replace(/-/g, '')}`;
+    const filename = `yakumoin_${date}`;
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex border-b border-white/10 mb-4">
-                <button
-                    onClick={() => handleTabChange('image')}
-                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
-                        activeTab === 'image' 
-                            ? 'border-indigo-500 text-white' 
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                    }`}
-                >
-                    Screenshot
-                </button>
-                <button
-                    onClick={() => handleTabChange('html')}
-                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
-                        activeTab === 'html' 
-                            ? 'border-indigo-500 text-white' 
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                    }`}
-                >
-                    HTML Snapshot
-                </button>
-                <button
-                    onClick={() => handleTabChange('text')}
-                    className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${
-                        activeTab === 'text' 
-                            ? 'border-indigo-500 text-white' 
-                            : 'border-transparent text-gray-500 hover:text-gray-300'
-                    }`}
-                >
-                    Extracted Text
-                </button>
+            <div className="flex gap-2 mb-4 bg-black/40 p-1 rounded-lg w-fit">
+                {(['image', 'html', 'text'] as const).map(tab => (
+                    <button key={tab} onClick={() => handleTabChange(tab)}
+                        className={`px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-500 hover:text-white hover:bg-white/10'}`}
+                    >
+                        {tab}
+                    </button>
+                ))}
             </div>
-
-            <div className="flex-1 min-h-[400px] relative bg-black/40 rounded-lg overflow-hidden border border-white/5">
+            <div className="flex-1 bg-black/60 rounded-lg overflow-hidden border border-white/5 relative group">
                 {activeTab === 'image' && (
-                     <div className="relative h-full w-full group overflow-auto">
-                        <img 
-                            src={`${result.outputDir}/${filename}.png`} 
-                            alt="Scraped Screenshot" 
-                            className="w-full h-auto object-contain"
-                        />
-                         <a 
-                            href={`${result.outputDir}/${filename}.png`} 
-                            target="_blank"
-                            className="absolute top-2 right-2 px-3 py-1 bg-black/70 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                            Open Original ↗
-                        </a>
+                    <div className="h-full overflow-auto p-4 custom-scrollbar">
+                         <img src={`${result.outputDir}/${filename}.png`} className="w-full h-auto shadow-2xl rounded" />
                     </div>
                 )}
-
                 {activeTab === 'html' && (
-                    <div className="relative h-full w-full">
-                        <iframe 
-                            src={`${result.outputDir}/${filename}.html`} 
-                            className="w-full h-[600px] bg-white"
-                            title="HTML Snapshot"
-                        />
-                         <a 
-                            href={`${result.outputDir}/${filename}.html`} 
-                            target="_blank"
-                            className="absolute top-2 right-2 px-3 py-1 bg-black/70 text-white text-xs rounded"
-                        >
-                            Open New Tab ↗
-                        </a>
-                    </div>
+                    <iframe src={`${result.outputDir}/${filename}.html`} className="w-full h-full bg-white" title="Snapshot" />
                 )}
-
-                {activeTab === 'text' && (
-                    <div className="relative h-full w-full p-4 overflow-auto">
-                        <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap h-[600px]">
-                            {textContent || 'Loading text data...'}
-                        </pre>
-                         <a 
-                            href={`${result.outputDir}/${filename}.txt`} 
-                            target="_blank"
-                            className="absolute top-2 right-2 px-3 py-1 bg-white/10 text-white text-xs rounded hover:bg-white/20"
-                        >
-                            Download .txt ↗
-                        </a>
-                    </div>
+                 {activeTab === 'text' && (
+                    <pre className="p-4 text-xs font-mono text-green-400 whitespace-pre-wrap h-full overflow-auto">{textContent || 'Loading...'}</pre>
                 )}
             </div>
-            
-             <div className="mt-4">
-                  <details className="text-xs text-gray-500">
-                      <summary className="cursor-pointer hover:text-gray-300">View Console Logs</summary>
-                      <pre className="bg-black/50 p-4 rounded-md mt-2 text-mono overflow-x-auto">
-                          {result.stdout}
-                      </pre>
-                  </details>
-              </div>
         </div>
     );
 }
+
