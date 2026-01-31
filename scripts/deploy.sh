@@ -51,6 +51,26 @@ echo 'Installing dependencies...'
 rm -rf node_modules
 npm install --omit=dev --legacy-peer-deps
 
+# Python環境のセットアップ (GCP用)
+echo 'Setting up Python environment...'
+if command -v apt-get &> /dev/null; then
+  echo 'Installing system python3 and pip...'
+  # sudoなしで失敗する可能性もあるが、通常GCP VMユーザーはsudo権限を持つか、
+  # すでにインストールされていることを期待する。
+  # 念のため、エラーでも止まらないように || true をつける、あるいはsudoを試みる
+  sudo apt-get update && sudo apt-get install -y python3 python3-pip || echo "Warning: Failed to install python via apt"
+fi
+
+# Pythonライブラリのインストール
+echo 'Installing Python libraries...'
+# --break-system-packages は最近のDebian/Ubuntuで必要になる場合がある
+pip3 install -r src/scripts/yakumoin-scraper/requirements.txt --break-system-packages || pip3 install -r src/scripts/yakumoin-scraper/requirements.txt
+
+# Playwright ブラウザのインストール
+echo 'Installing Playwright browsers...'
+playwright install chromium
+
+
 # Prisma生成
 npx prisma generate --schema=./prisma/schema.prisma
 

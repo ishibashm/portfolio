@@ -19,10 +19,18 @@ export async function POST(request: Request) {
     const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'yakumoin-scraper', 'snapshot.py');
     const outputDir = path.join(process.cwd(), 'public', 'scraped_data');
     
-    // Ensure python command is fitting for the environment
-    // On Vercel, this won't work out of the box without special configuration.
-    // For local Windows, 'python' is standard.
-    const command = `python "${scriptPath}" --url "${targetUrl}" --output "${outputDir}"`;
+    // Determine Python executable based on platform
+    let pythonPath = 'python'; // Default fallback
+    
+    if (process.platform === 'win32') {
+        // Local Windows Development
+        pythonPath = 'C:\\Users\\ishib\\AppData\\Local\\Programs\\Python\\Python310\\python.exe';
+    } else {
+        // Linux / Production (GCP)
+        pythonPath = 'python3';
+    }
+
+    const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}"`;
     
     console.log(`Executing: ${command}`);
     
