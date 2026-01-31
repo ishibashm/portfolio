@@ -39,7 +39,9 @@ export default function YakumoinScraperPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to run scraper');
+        const errorMsg = data.error || 'Failed to run scraper';
+        const debugInfo = data.stderr || data.details || '';
+        throw new Error(`${errorMsg}${debugInfo ? `\n${debugInfo}` : ''}`);
       }
 
       setResult(data);
