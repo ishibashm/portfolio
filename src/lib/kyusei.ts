@@ -119,8 +119,8 @@ export function calculateKyusei(birthDate: Date): KyuseiResult {
   const group2 = [3, 6, 9];
   let baseFebStar = 0;
   if (group1.includes(yearNum)) baseFebStar = 8;
-  else if (group2.includes(yearNum)) baseFebStar = 2;
-  else baseFebStar = 5;
+  else if (group2.includes(yearNum)) baseFebStar = 5; // 3, 6, 9 -> Feb is 5
+  else baseFebStar = 2; // 2, 5, 8 -> Feb is 2
   
   let offset = (solarMonth === 1) ? 11 : solarMonth - 2;
   let monthNum = baseFebStar - offset;
