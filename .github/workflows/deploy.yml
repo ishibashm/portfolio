@@ -2,12 +2,12 @@ name: Deploy to GCP
 
 on:
   push:
-    branches: [ master ] # masterに変更
+    branches: [master] # masterに変更
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     env:
       INSTANCE_NAME: wordpress-1-vm
       ZONE: us-central1-f
@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install Dependencies
         run: npm install
@@ -38,6 +38,8 @@ jobs:
           cp -r prisma deploy-package/
           cp -r docs deploy-package/
           cp -r scripts deploy-package/
+          mkdir -p deploy-package/src
+          cp -r src/scripts deploy-package/src/
 
       - name: Create .env from Secret
         run: |

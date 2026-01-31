@@ -20,14 +20,16 @@ export async function POST(request: Request) {
     const outputDir = path.join(process.cwd(), 'public', 'scraped_data');
     
     // Determine Python executable based on platform
-    let pythonPath = 'python'; // Default fallback
+    let pythonPath = process.env.PYTHON_PATH || 'python'; 
     
-    if (process.platform === 'win32') {
-        // Local Windows Development
-        pythonPath = 'C:\\Users\\ishib\\AppData\\Local\\Programs\\Python\\Python310\\python.exe';
-    } else {
-        // Linux / Production (GCP)
-        pythonPath = 'python3';
+    if (!process.env.PYTHON_PATH) {
+      if (process.platform === 'win32') {
+          // Local Windows Development
+          pythonPath = 'C:\\Users\\ishib\\AppData\\Local\\Programs\\Python\\Python310\\python.exe';
+      } else {
+          // Linux / Production (GCP) - Fallback if env var not set
+          pythonPath = 'python3';
+      }
     }
 
     const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}"`;
