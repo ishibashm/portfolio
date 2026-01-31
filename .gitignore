@@ -66,5 +66,10 @@ mcp.json
 
 *.log
 
+
 # raw materials
 /materials/
+
+# Local backup of images (now in Supabase Storage)
+/public/images/sanpeki/
+/三碧木星/

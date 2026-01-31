@@ -69,3 +69,12 @@ model BlogPost {
   published   Boolean  @default(false)
   author      User     @relation(fields: [authorId], references: [id])
 }
+
+model PortfolioImage {
+  id          String   @id @default(cuid())
+  projectId   String   // e.g. 'sanpeki-ki'
+  url         String   // e.g. '/images/sanpeki/0066.png'
+  caption     String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+}

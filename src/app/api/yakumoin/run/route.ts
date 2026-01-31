@@ -37,7 +37,8 @@ export async function POST(request: Request) {
       }
     }
 
-    const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}"`;
+    const baseFilename = `yakumoin_${date.replace(/-/g, '')}`;
+    const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}" --filename "${baseFilename}"`;
     
     console.log(`Executing: ${command}`);
     
