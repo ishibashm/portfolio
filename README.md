@@ -1,41 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Portfolio & Scraper Tool
 
-## Deployment
+A modern portfolio website built with Next.js, featuring a custom web scraper for archiving data from Yakumoin.info.
+UI Design inspired by **Synecdoche**.
 
-This project is deployed to GCP using GitHub Actions.
-See `docs/deployment.md` for details.
+## Features
 
-## Getting Started
+### 🎨 Modern Aesthetics
 
-First, run the development server:
+- **Dynamic Backgrounds**: Floating orbs with noise texture overlays.
+- **Smooth Animations**: Powered by `framer-motion` for professional entrance effects.
+- **Glassmorphism**: Premium UI elements with blur and transparency.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 🛠 Yakumoin Scraper
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A built-in tool to archive daily direction checks from `yakumoin.info`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**How it works:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1.  **Select a Date**: Choose the target date you want to archive.
+2.  **Run Scraper**: The backend launches a headless browser (Playwright).
+3.  **View Results**:
+    - **Screenshot**: Full-page capture of the target site.
+    - **HTML Snapshot**: Interactivable copy of the page.
+    - **Text Data**: Structured table data extracted for analysis.
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Frontend**: Next.js 15 (App Router), React, Tailwind CSS, Framer Motion.
+- **Backend**: Next.js API Routes.
+- **Scraper**: Python 3, Playwright, BeautifulSoup4.
+- **Database**: Prisma (PostgreSQL).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1.  **Install Dependencies**:
 
-## Deploy on Vercel
+    ```bash
+    npm install
+    pip install -r src/scripts/yakumoin-scraper/requirements.txt
+    playwright install
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Run Development Server**:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+    ```bash
+    npm run dev
+    ```
+
+3.  **Open Browser**:
+    Visit [http://localhost:3000](http://localhost:3000).

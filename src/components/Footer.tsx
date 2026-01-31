@@ -22,6 +22,7 @@ export default function Footer() {
                             <li><Link href="/" className="text-gray-400 hover:text-indigo-400 transition-colors">Home</Link></li>
                             <li><Link href="/portfolio" className="text-gray-400 hover:text-indigo-400 transition-colors">Portfolio</Link></li>
                             <li><Link href="/blog" className="text-gray-400 hover:text-indigo-400 transition-colors">Blog</Link></li>
+                            <li><Link href="/docs" className="text-gray-400 hover:text-indigo-400 transition-colors">Docs</Link></li>
                         </ul>
                     </div>
 
@@ -43,6 +44,7 @@ export default function Footer() {
 
                 <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-500 text-sm">
                     <p>© {new Date().getFullYear()} My Portfolio. All rights reserved.</p>
+                    <p className="mt-2 md:mt-0 text-xs opacity-60">UI Design inspired by Synecdoche</p>
                     <Link href="/admin" className="hover:text-gray-400 transition-colors mt-2 md:mt-0">
                         Admin
                     </Link>
