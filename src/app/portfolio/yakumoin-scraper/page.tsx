@@ -68,9 +68,21 @@ export default function YakumoinScraperPage() {
         <div className="bg-gray-900 border border-white/10 rounded-2xl p-8 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-4 items-end mb-8">
             <div className="flex-1 w-full">
-              <label className="block text-sm font-bold text-gray-400 mb-2">
-                Select Date
-              </label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-bold text-gray-400">
+                  Select Date
+                </label>
+                {date && (
+                  <a
+                    href={`https://yakumoin.info/check/direction/day/${date.replace(/-/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors flex items-center"
+                  >
+                    View Source <span className="ml-1">↗</span>
+                  </a>
+                )}
+              </div>
               <input
                 type="date"
                 value={date}
