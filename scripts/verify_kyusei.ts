@@ -6,9 +6,9 @@ const result = calculateKyusei(testDate);
 
 console.log(`Date: ${testDate.toISOString()}`);
 console.log(`Expected Day Star: 六白金星`);
-console.log(`Calculated Day Star: ${result.dayStar}`);
+console.log(`Calculated Day Star: ${result.day.star.name}`);
 
-if (result.dayStar === '六白金星') {
+if (result.day.star.name === '六白金星') {
     console.log('✅ Verification SUCCESS');
     process.exit(0);
 } else {
