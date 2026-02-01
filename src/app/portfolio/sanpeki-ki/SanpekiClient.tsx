@@ -27,7 +27,8 @@ export default function SanpekiClient({ images }: SanpekiClientProps) {
   const currentImage = images[currentIndex];
   // Verify if URL is full path or just filename. Seed script stored filename.
   // We need to prepend path if it's just filename.
-  const imageUrl = currentImage.url.startsWith('/') 
+  const isAbsolute = currentImage.url.startsWith('http') || currentImage.url.startsWith('/');
+  const imageUrl = isAbsolute
       ? currentImage.url 
       : `/images/sanpeki/${currentImage.url}`;
 
