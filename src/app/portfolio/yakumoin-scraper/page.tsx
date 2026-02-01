@@ -15,7 +15,7 @@ export default function YakumoinScraperPage() {
 
   // Scraper State
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ stdout: string; outputDir: string } | null>(null);
+  const [result, setResult] = useState<{ stdout: string; outputDir: string; filename?: string } | null>(null);
   const [error, setError] = useState('');
   const [myStars, setMyStars] = useState<KyuseiResult | null>(null);
 
@@ -83,7 +83,7 @@ export default function YakumoinScraperPage() {
         {/* Header / Nav */}
         <nav className="p-6 border-b border-white/5 flex justify-between items-center backdrop-blur-md bg-black/20 sticky top-0 z-50">
              <Link href="/portfolio" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
-                ← Back to Portfolio
+                ← ポートフォリオに戻る
              </Link>
              <div className="text-right">
                  <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
@@ -98,22 +98,22 @@ export default function YakumoinScraperPage() {
             {/* 1. Dashboard Section */}
             <section className="animate-fade-in-up">
                 <header className="mb-6 flex items-baseline gap-4">
-                    <h2 className="text-2xl font-bold text-white">Current Energy</h2>
-                    <span className="text-sm text-gray-500">Live Kyusei Plates</span>
+                    <h2 className="text-2xl font-bold text-white">現在の気</h2>
+                    <span className="text-sm text-gray-500">リアルタイム九星盤</span>
                 </header>
 
                 {currentKyusei && (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <KyuseiCard title="Year Plate" titleSub={format(now!, 'yyyy')} board={currentKyusei.year.board} center={currentKyusei.year.star} />
-                        <KyuseiCard title="Month Plate" titleSub={format(now!, 'MMM')} board={currentKyusei.month.board} center={currentKyusei.month.star} />
+                        <KyuseiCard title="年盤" titleSub={format(now!, 'yyyy')} board={currentKyusei.year.board} center={currentKyusei.year.star} />
+                        <KyuseiCard title="月盤" titleSub={format(now!, 'MMM')} board={currentKyusei.month.board} center={currentKyusei.month.star} />
                         <KyuseiCard 
-                            title="Day Plate" 
+                            title="日盤" 
                             titleSub={format(now!, 'd')} 
                             board={currentKyusei.day.board} 
                             center={currentKyusei.day.star} 
                             badge={currentKyusei.day.ton === 'YANG' ? '陽遁' : '陰遁'}
                         />
-                        <KyuseiCard title="Time Plate" titleSub={format(now!, 'HH:mm')} board={currentKyusei.time.board} center={currentKyusei.time.star} isDynamic />
+                        <KyuseiCard title="時盤" titleSub={format(now!, 'HH:mm')} board={currentKyusei.time.board} center={currentKyusei.time.star} isDynamic />
                     </div>
                 )}
             </section>
@@ -123,12 +123,12 @@ export default function YakumoinScraperPage() {
                 <div className="lg:col-span-1 space-y-6">
                     <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-sm">
                         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                             <span>🛠</span> Scraper Tool
+                             <span>🛠</span> アーカイブツール
                         </h2>
                         
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">My Birth Date</label>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">生年月日</label>
                                 <input 
                                     type="date" 
                                     value={birthDate} 
@@ -138,15 +138,15 @@ export default function YakumoinScraperPage() {
                                 {myStars && (
                                     <div className="mt-2 p-3 bg-indigo-900/20 rounded border border-indigo-500/20 text-xs space-y-1">
                                         <div className="flex justify-between">
-                                            <span className="text-gray-400">Honmei (Year)</span>
+                                            <span className="text-gray-400">本命星 (年)</span>
                                             <span className={`font-bold ${myStars.year.star.color}`}>{myStars.year.star.name}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-gray-400">Getsumei (Month)</span>
+                                            <span className="text-gray-400">月命星 (月)</span>
                                             <span className={`font-bold ${myStars.month.star.color}`}>{myStars.month.star.name}</span>
                                         </div>
                                          <div className="flex justify-between">
-                                            <span className="text-gray-400">Nichimei (Day)</span>
+                                            <span className="text-gray-400">日命星 (日)</span>
                                             <span className={`font-bold ${myStars.day.star.color}`}>{myStars.day.star.name}</span>
                                         </div>
                                     </div>
@@ -154,7 +154,7 @@ export default function YakumoinScraperPage() {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Target Date</label>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">対象日</label>
                                 <input 
                                     type="date" 
                                     value={date} 
@@ -172,7 +172,7 @@ export default function YakumoinScraperPage() {
                                     : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40'
                                 }`}
                             >
-                                {loading ? 'Running...' : 'Run Scraper'}
+                                {loading ? '実行中...' : 'アーカイブ実行'}
                             </button>
                             {error && <p className="text-red-400 text-xs bg-red-900/20 p-2 rounded border border-red-500/20">{error}</p>}
                         </div>
@@ -183,7 +183,7 @@ export default function YakumoinScraperPage() {
                      {!result && !loading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-600">
                              <span className="text-6xl mb-4 opacity-20">📊</span>
-                             <p>Select dates and run to archive data.</p>
+                             <p>日付を選択してデータをアーカイブしてください。</p>
                         </div>
                      )}
                      {loading && (
@@ -197,7 +197,7 @@ export default function YakumoinScraperPage() {
                                  <h3 className="font-bold text-green-400 flex items-center gap-2">✅ Archived</h3>
                                  <div className="flex gap-2">
                                      {date && birthDate && (
-                                         <a href={`https://yakumoin.info/check/direction/day/${date.replace(/-/g,'')}?birthday=${birthDate.replace(/-/g,'')}`} target="_blank" className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition">Original Site ↗</a>
+                                         <a href={`https://yakumoin.info/check/direction/day/${date.replace(/-/g,'')}?birthday=${birthDate.replace(/-/g,'')}`} target="_blank" className="text-xs bg-white/10 px-3 py-1 rounded hover:bg-white/20 transition">公式サイト ↗</a>
                                      )}
                                  </div>
                              </div>
@@ -288,20 +288,25 @@ function GridCell({ star, label, isCenter, highlight }: { star: NineStarInfo, la
 }
 
 
-function ResultTabs({ result, date }: { result: { stdout: string; outputDir: string }, date: string }) {
+function ResultTabs({ result, date }: { result: { stdout: string; outputDir: string; filename?: string }, date: string }) {
     const [activeTab, setActiveTab] = useState<'image' | 'html' | 'text'>('image');
     const [textContent, setTextContent] = useState<string>('');
+    
+    // Fallback if API doesn't return filename (should assume YYYYMMDD)
+    const filename = result.filename || `yakumoin_${date}`;
+    const publicBasePath = '/scraped_data';
+
     const handleTabChange = async (tab: 'image' | 'html' | 'text') => {
         setActiveTab(tab);
         if (tab === 'text' && !textContent) {
             try {
-                const res = await fetch(`${result.outputDir}/yakumoin_${date}.txt`);
+                const res = await fetch(`${publicBasePath}/${filename}.txt`);
+                if (!res.ok) throw new Error('File not found');
                 const text = await res.text();
                 setTextContent(text);
             } catch (e) { setTextContent('Failed to load text.'); }
         }
     };
-    const filename = `yakumoin_${date}`;
 
     return (
         <div className="flex flex-col h-full">
@@ -317,11 +322,11 @@ function ResultTabs({ result, date }: { result: { stdout: string; outputDir: str
             <div className="flex-1 bg-black/60 rounded-lg overflow-hidden border border-white/5 relative group">
                 {activeTab === 'image' && (
                     <div className="h-full overflow-auto p-4 custom-scrollbar">
-                         <img src={`${result.outputDir}/${filename}.png`} className="w-full h-auto shadow-2xl rounded" />
+                         <img src={`${publicBasePath}/${filename}.png?t=${Date.now()}`} className="w-full h-auto shadow-2xl rounded" alt="Scraping Result" />
                     </div>
                 )}
                 {activeTab === 'html' && (
-                    <iframe src={`${result.outputDir}/${filename}.html`} className="w-full h-full bg-white" title="Snapshot" />
+                    <iframe src={`${publicBasePath}/${filename}.html`} className="w-full h-full bg-white" title="Snapshot" />
                 )}
                  {activeTab === 'text' && (
                     <pre className="p-4 text-xs font-mono text-green-400 whitespace-pre-wrap h-full overflow-auto">{textContent || 'Loading...'}</pre>

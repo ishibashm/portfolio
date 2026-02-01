@@ -17,7 +17,7 @@ export default function BlogBuddyPage() {
   const [isMobileContextOpen, setIsMobileContextOpen] = useState(false);
 
   return (
-    <div className="h-[calc(100vh-4rem)] w-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-200 via-purple-100 to-pink-100 overflow-hidden font-sans text-slate-800">
+    <div className="h-[calc(100vh-4rem)] w-full bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-indigo-200 via-purple-100 to-pink-100 overflow-hidden font-sans text-slate-800">
       {/* Decorative background blobs */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-300/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-300/30 rounded-full blur-3xl animate-pulse pointer-events-none" />
@@ -64,7 +64,7 @@ export default function BlogBuddyPage() {
               onClick={() => setIsMobileContextOpen(true)}
               className="p-2 bg-white/40 rounded-lg text-indigo-700 font-medium text-sm"
             >
-              Context
+              コンテキスト
             </button>
           </header>
 
@@ -103,7 +103,7 @@ export default function BlogBuddyPage() {
                     />
                   </svg>
                 }
-                label="Chat"
+                label="チャット"
               />
               <NavButton
                 active={currentView === AppView.LIVE}
@@ -123,7 +123,7 @@ export default function BlogBuddyPage() {
                     />
                   </svg>
                 }
-                label="Live"
+                label="ライブ"
               />
               <NavButton
                 active={currentView === AppView.TTS}
@@ -143,7 +143,7 @@ export default function BlogBuddyPage() {
                     />
                   </svg>
                 }
-                label="Speech"
+                label="音声"
               />
               <NavButton
                 active={currentView === AppView.VEO}

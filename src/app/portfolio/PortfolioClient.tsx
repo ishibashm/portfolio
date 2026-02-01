@@ -20,7 +20,7 @@ export default function PortfolioClient() {
             Portfolio
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            A collection of my recent projects, experiments, and digital creations.
+            最近のプロジェクト、実験、デジタル作品のコレクション。
           </p>
         </motion.header>
 
@@ -80,7 +80,7 @@ export default function PortfolioClient() {
              <DemoCard 
                 href="/portfolio/blog-buddy-ai"
                 title="Blog Buddy AI"
-                desc="Interactive AI assistant powered by Gemini."
+                desc="Geminiを搭載したインタラクティブAIアシスタント。"
                 icon="🤖"
                 gradient="from-indigo-900 to-purple-900"
                 tags={['Gemini API', 'React', 'Voice']}
@@ -90,7 +90,7 @@ export default function PortfolioClient() {
              <DemoCard 
                 href="/portfolio/sanpeki-ki"
                 title="Sanpeki Mokusei"
-                desc="Visualizing the directional flow of Three Turquoise Wood Star."
+                desc="回座（正規のルート）と中宮（中央）の視覚化。"
                 icon="🔮"
                 gradient="from-teal-900 to-emerald-900"
                 tags={['Nine Star Ki', 'Visualizer']}
@@ -101,7 +101,7 @@ export default function PortfolioClient() {
              <DemoCard 
                 href="/portfolio/yakumoin-scraper"
                 title="Kyusei Dashboard"
-                desc="Real-time Nine Star Ki dashboard displaying Year, Month, Day, and Time plates."
+                desc="年盤、月盤、日盤、時盤を表示するリアルタイム九星気学ダッシュボード。"
                 icon="🌌"
                 gradient="from-slate-900 via-purple-900 to-slate-900"
                 tags={['Nine Star Ki', 'Dashboard', 'Real-time']}
@@ -112,7 +112,7 @@ export default function PortfolioClient() {
              <DemoCard 
                 href="/portfolio/newsletter"
                 title="Newsletter Template"
-                desc="Modern responsive subscription page."
+                desc="モダンでレスポンシブなニュースレター登録ページテンプレート。"
                 icon="📧"
                 gradient="from-orange-900 to-red-900"
                 tags={['Template', 'UI/UX']}

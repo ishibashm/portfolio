@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import fs from 'fs';
 
 const execAsync = promisify(exec);
 
@@ -17,28 +18,34 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Birth Date is required' }, { status: 400 });
     }
     
-    // Construct URL based on date (YYYYMMDD) and birthDate (YYYYMMDD)
-    // Example: https://yakumoin.info/check/direction/day/20260131?birthday=19900101
-    const targetUrl = `https://yakumoin.info/check/direction/day/${date}?birthday=${birthDate}`;
+    // Ensure date and birthDate are in YYYYMMDD format (remove dashes if present)
+    const cleanDate = date.replace(/-/g, '');
+    const cleanBirthDate = birthDate.replace(/-/g, '');
+    
+    // Correct logic: Base URL is the Birthday Page
+    // The scraper will then POST the target date to get the correct data
+    const targetUrl = `https://yakumoin.info/check/direction/day/${cleanBirthDate}`;
     
     const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'yakumoin-scraper', 'snapshot.py');
     const outputDir = path.join(process.cwd(), 'public', 'scraped_data');
-    
+    const baseFilename = `yakumoin_${cleanDate}`;
+
     // Determine Python executable based on platform
     let pythonPath = process.env.PYTHON_PATH || 'python'; 
     
     if (!process.env.PYTHON_PATH) {
       if (process.platform === 'win32') {
-          // Local Windows Development
-          pythonPath = 'C:\\Users\\ishib\\AppData\\Local\\Programs\\Python\\Python310\\python.exe';
+          const localPy = 'C:\\Users\\ishib\\AppData\\Local\\Programs\\Python\\Python310\\python.exe';
+          if (fs.existsSync(localPy)) {
+              pythonPath = localPy;
+          }
       } else {
-          // Linux / Production (GCP) - Fallback if env var not set
           pythonPath = 'python3';
       }
     }
 
-    const baseFilename = `yakumoin_${date.replace(/-/g, '')}`;
-    const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}" --filename "${baseFilename}"`;
+    // Pass target-date to the script so it can perform the POST interaction
+    const command = `"${pythonPath}" "${scriptPath}" --url "${targetUrl}" --output "${outputDir}" --filename "${baseFilename}" --target-date "${cleanDate}"`;
     
     console.log(`Executing: ${command}`);
     
@@ -50,12 +57,12 @@ export async function POST(request: Request) {
       console.error('stderr:', stderr);
     }
     
-    // Parse output to find created files (optional, or just return success)
     return NextResponse.json({ 
       success: true, 
       message: 'Scraping completed',
       stdout,
-      outputDir: '/scraped_data' 
+      outputDir: '/scraped_data',
+      filename: baseFilename
     });
     
   } catch (error: any) {

@@ -36,11 +36,11 @@ export default function SanpekiClient({ images }: SanpekiClientProps) {
     <div className="min-h-screen bg-slate-50 text-slate-800 p-8 flex flex-col items-center">
       <header className="mb-12 text-center">
         <h1 className="text-4xl font-bold mb-4 text-indigo-700">
-          Sanpeki Mokusei (三碧木星)
+          Sanpeki Mokusei
         </h1>
         <p className="text-lg text-slate-600 max-w-2xl">
-          Visualization of directional flows (Kaiza) and the Central Palace (Chugu).
-          Explore the cycle of the Nine Star Ki.
+          回座（正規のルート）と中宮（中央）の視覚化。
+          九星気学の循環を探求しましょう。
           <span className="block text-xs mt-2 text-gray-400 font-mono">Data fetched from Supabase</span>
         </p>
       </header>
@@ -68,8 +68,13 @@ export default function SanpekiClient({ images }: SanpekiClientProps) {
             </motion.div>
           </AnimatePresence>
           
-          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-mono border border-slate-200">
-            {currentImage.url}
+
+          <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-mono border border-slate-200 flex flex-col items-end gap-1">
+            <span>Src: {imageUrl}</span>
+            <span className="text-gray-400">Orig: {currentImage.url}</span>
+            <span className={isAbsolute ? "text-green-600" : "text-blue-600"}>
+              {isAbsolute ? "Absolute URL" : "Local Path"}
+            </span>
           </div>
         </div>
 

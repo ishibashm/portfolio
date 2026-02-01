@@ -149,11 +149,10 @@ export const Newsletter = () => {
                     ease: EASE_OUT,
                     delay: DELAY,
                   }}
-                  className="text-base short:lg:text-lg sm:text-lg lg:text-xl !leading-[1.1] font-medium text-center text-foreground text-pretty"
+                  className="text-base short:lg:text-lg sm:text-lg lg:text-xl leading-[1.1]! font-medium text-center text-foreground text-pretty"
                 >
-                  Stay updated with the latest news and exclusive content!
-                  Subscribe to our newsletter today and never miss out on
-                  exciting updates.
+                  最新のニュースや限定コンテンツをお届けします！
+                  今すぐニュースレターに登録して、エキサイティングな更新情報をお見逃しなく。
                 </motion.p>
               </div>
             </motion.div>
@@ -175,7 +174,7 @@ export const Newsletter = () => {
                 transition={{ duration: DURATION, ease: EASE_OUT }}
                 className="inline-block"
               >
-                Manifesto
+                マニフェスト
               </motion.span>
 
               {isOpen && (
@@ -225,41 +224,27 @@ export const Newsletter = () => {
                   transition: { duration: DURATION, ease: EASE_OUT_OPACITY },
                 },
               }}
-              className="relative flex min-h-0 flex-shrink overflow-hidden text-sm md:text-base max-h-[calc(70dvh-var(--footer-safe-area))] flex-col gap-8 text-center backdrop-blur-xl text-balance border-2 border-border/50 bg-primary/20 max-w-3xl text-foreground rounded-3xl ring-1 ring-offset-primary/10 ring-border/10 ring-offset-2 shadow-button"
+              className="relative flex min-h-0 shrink overflow-hidden text-sm md:text-base max-h-[calc(70dvh-var(--footer-safe-area))] flex-col gap-8 text-center backdrop-blur-xl text-balance border-2 border-border/50 bg-primary/20 max-w-3xl text-foreground rounded-3xl ring-1 ring-offset-primary/10 ring-border/10 ring-offset-2 shadow-button"
             >
               <article className="relative overflow-y-auto italic p-6 h-full [&_p]:my-4">
                 <p>
-                  "We stand at the forefront of a new era, where creativity
-                  meets technology to redefine what's possible. Our mission
-                  is to empower individuals and businesses alike with
-                  groundbreaking solutions that inspire change and drive
-                  progress.
+                  「私たちは、創造性とテクノロジーが融合し、可能性を再定義する新しい時代の最前線に立っています。
+                  私たちの使命は、変化を促し、進歩を推進する画期的なソリューションで、個人や企業をエンパワーすることです。」
                 </p>
                 <p>
-                  We stand at the forefront of a new era, where creativity meets
-                  technology to redefine what's possible. Our mission is to
-                  empower individuals and businesses alike with groundbreaking
-                  solutions that inspire change and drive progress.
+                  私たちはイノベーションを信じ、単なるツールではなく、変革の触媒となる製品を生み出すために限界を押し広げます。
+                  シンプルさを重視し、複雑なタスクを簡単で楽しいものにする直感的な体験をデザインします。
                 </p>
                 <p>
-                  We believe in constant innovation, pushing boundaries to
-                  create products that are not just tools, but catalysts for
-                  transformation. We value simplicity, designing intuitive
-                  experiences that make complex tasks effortless and enjoyable.
-                  Our commitment to sustainability drives us to protect our
-                  planet while delivering exceptional value. We foster
-                  collaboration, building a community of thinkers, creators, and
-                  doers who share a vision for a better tomorrow.
+                  持続可能性へのコミットメントは、地球を守りながら卓越した価値を提供する原動力となっています。
+                  私たちはコラボレーションを育み、より良い明日へのビジョンを共有する思想家、クリエイター、実行者のコミュニティを構築します。
                 </p>
                 <p>
-                  Our promise is to deliver cutting-edge technology that is
-                  accessible, reliable, and tailored to meet the needs of our
-                  users. We will challenge the status quo, embrace change, and
-                  lead the charge towards a brighter, more innovative future.
+                  私たちの約束は、アクセシブルで信頼性が高く、ユーザーのニーズに合わせて調整された最先端のテクノロジーを提供することです。
+                  現状に挑戦し、変化を受け入れ、より明るく革新的な未来へ向けてリードします。
                 </p>
                 <p>
-                  Join us on this journey as we innovate, inspire, and ignite
-                  the spark of creativity in every corner of the globe."
+                  私たちと一緒に、世界中の隅々でイノベーションを起こし、インスピレーションを与え、創造性の火を灯す旅に参加しましょう。
                 </p>
               </article>
             </motion.div>
