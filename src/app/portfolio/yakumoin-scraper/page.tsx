@@ -322,7 +322,16 @@ function ResultTabs({ result, date }: { result: { stdout: string; outputDir: str
             <div className="flex-1 bg-black/60 rounded-lg overflow-hidden border border-white/5 relative group">
                 {activeTab === 'image' && (
                     <div className="h-full overflow-auto p-4 custom-scrollbar">
-                         <img src={`${publicBasePath}/${filename}.png?t=${Date.now()}`} className="w-full h-auto shadow-2xl rounded" alt="Scraping Result" />
+                         <img 
+                            src={`${publicBasePath}/${filename}.png?t=${Date.now()}`} 
+                            className="w-full h-auto shadow-2xl rounded" 
+                            alt="Scraping Result"
+                            onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                e.currentTarget.parentElement?.insertAdjacentHTML('beforeend', `<p class="text-red-400 p-4">Failed to load image at: ${publicBasePath}/${filename}.png</p>`);
+                            }} 
+                         />
+                         <p className="text-xs text-gray-500 mt-2 text-center">Path: {publicBasePath}/{filename}.png</p>
                     </div>
                 )}
                 {activeTab === 'html' && (
