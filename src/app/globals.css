@@ -10,6 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-shippori-mincho), serif; /* Add serif font */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,118 +26,27 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ブログコンテンツのスタイル */
-.blog-content {
-  line-height: 1.8;
-}
-
-.blog-content h1,
-.blog-content h2,
-.blog-content h3,
-.blog-content h4,
-.blog-content h5,
-.blog-content h6 {
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  font-weight: bold;
-  color: #e0e7ff;
-}
-
-.blog-content h1 {
-  font-size: 2em;
-}
-
-.blog-content h2 {
-  font-size: 1.5em;
-}
-
-.blog-content h3 {
-  font-size: 1.25em;
-}
-
-.blog-content p {
-  margin-bottom: 1em;
-}
-
-.blog-content ul,
-.blog-content ol {
-  margin-left: 1.5em;
-  margin-bottom: 1em;
-}
-
-.blog-content li {
-  margin-bottom: 0.5em;
-}
-
-.blog-content a {
-  color: #818cf8;
-  text-decoration: underline;
-}
-
-.blog-content a:hover {
-  color: #a5b4fc;
-}
-
-.blog-content code {
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 0.2em 0.4em;
-  border-radius: 0.25rem;
-  font-family: monospace;
-}
-
-.blog-content pre {
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: 1em;
-  border-radius: 0.5rem;
-  overflow-x: auto;
-  margin-bottom: 1em;
-}
-
-.blog-content pre code {
-  background-color: transparent;
-  padding: 0;
-}
-
-.blog-content blockquote {
-  border-left: 4px solid #818cf8;
-  padding-left: 1em;
-  margin-left: 0;
-  margin-bottom: 1em;
-  color: #cbd5e1;
-  font-style: italic;
-}
-
-.blog-content img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 0.5rem;
-  margin: 1em 0;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+/* Custom Utilities for Zen Theme */
+@layer utilities {
+  .font-shippori {
+    font-family: var(--font-serif);
   }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .text-glow {
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.5), 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  .text-glow-gold {
+     text-shadow: 0 0 10px rgba(245, 158, 11, 0.5), 0 0 20px rgba(245, 158, 11, 0.3);
   }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
+/* Animations */
+@keyframes breathe {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
 }
 
-.delay-100 {
-  animation-delay: 100ms;
-}
-
-.delay-200 {
-  animation-delay: 200ms;
-}
-
-.delay-300 {
-  animation-delay: 300ms;
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
 }
