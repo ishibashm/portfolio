@@ -35,11 +35,7 @@ jobs:
           cp -r public deploy-package/
           cp package.json deploy-package/
           cp package-lock.json deploy-package/ 2>/dev/null || true
-          cp -r prisma deploy-package/
-          cp -r docs deploy-package/
           cp -r scripts deploy-package/
-          mkdir -p deploy-package/src
-          cp -r src/scripts deploy-package/src/
 
       - name: Create .env from Secret
         run: |

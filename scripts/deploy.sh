@@ -37,47 +37,12 @@ chmod -R 755 my-app
 
 cd my-app
 
-# NEXTAUTH_SECRETの確保
-if ! grep -q "NEXTAUTH_SECRET=" .env; then
-  echo "NEXTAUTH_SECRET not found in .env, generating a random one..." >> /dev/stderr
-  # ランダムな文字列を生成して追記
-  RANDOM_SECRET=$(openssl rand -base64 32)
-  echo "" >> .env
-  echo "NEXTAUTH_SECRET=\"$RANDOM_SECRET\"" >> .env
-fi
+# NEXTAUTH_SECRETの確保 (NextAuth削除したので本来不要だが、念のため残すか、あるいは削除しても良い。今回はシンプルに削除)
 
 # 依存関係のインストール
 echo 'Installing dependencies...'
 rm -rf node_modules
 npm install --omit=dev --legacy-peer-deps
-
-# Python環境のセットアップ (GCP用 - venv使用)
-echo 'Setting up Python environment...'
-if command -v apt-get &> /dev/null; then
-  echo 'Installing system python3, pip, and venv...'
-  sudo apt-get update && sudo apt-get install -y python3 python3-pip python3-venv || echo "Warning: Failed to install python via apt"
-fi
-
-# 仮想環境の作成と有効化
-if [ ! -d "venv" ]; then
-  python3 -m venv venv
-fi
-source venv/bin/activate
-
-# Pythonライブラリのインストール
-echo 'Installing Python libraries...'
-pip install -r src/scripts/yakumoin-scraper/requirements.txt
-
-# Playwright ブラウザのインストール
-echo 'Installing Playwright browsers...'
-playwright install chromium
-
-# Prisma生成
-npx prisma generate --schema=./prisma/schema.prisma
-
-# データシーディング
-echo 'Seeding database...'
-npx prisma db seed
 
 # アプリ起動
 echo 'Starting app...'
@@ -90,7 +55,7 @@ echo 'Waiting for application to start...'
 sleep 10
 
 # ヘルスチェックとログ収集
-if curl -f http://127.0.0.1:3000/api/health; then
+if curl -f http://127.0.0.1:3000/; then
   echo "Health check passed!"
 else
   echo "Health check failed! Dumping logs..."
