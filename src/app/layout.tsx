@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import GoogleTranslate from "@/components/GoogleTranslate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,22 +14,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "My Portfolio | Creative Developer",
-    template: "%s | My Portfolio",
+    default: "Solar Time Clock | Zen Mode",
+    template: "%s | Solar Time Clock",
   },
-  description: "A portfolio site showcasing my work as a creative developer.",
+  description: "A minimal True Solar Time clock for precise auspicious actions.",
   openGraph: {
-    title: "My Portfolio",
-    description: "A portfolio site showcasing my work as a creative developer.",
-    url: "https://example.com", // 実際のドメインに変更してください
-    siteName: "My Portfolio",
+    title: "Solar Time Clock",
+    description: "A minimal True Solar Time clock for precise auspicious actions.",
+    url: "https://example.com", 
+    siteName: "Solar Time Clock",
     locale: "ja_JP",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "My Portfolio",
-    description: "A portfolio site showcasing my work as a creative developer.",
+    title: "Solar Time Clock",
+    description: "A minimal True Solar Time clock for precise auspicious actions.",
   },
 };
 
@@ -44,14 +41,11 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white overflow-y-scroll`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white overflow-hidden`}
       >
-        <Header />
-        <main className="min-h-screen pt-16">
+        <main className="min-h-screen">
           {children}
         </main>
-        <Footer />
-        <GoogleTranslate />
       </body>
     </html>
   );
