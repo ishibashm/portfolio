@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "temp_newsletter", "scripts"]
+  "exclude": ["node_modules", "temp_newsletter", "scripts", "archived_src"]
 }
