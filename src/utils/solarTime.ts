@@ -1,3 +1,5 @@
+import { getHourlyKyusei, getHourlyHachimon, KYUSEI, HACHIMON } from './kigaku';
+
 /**
  * Solar Time Calculation Logic
  * Optimized for Frontend usage
@@ -155,6 +157,8 @@ export interface KimonScheduleItem {
   note?: string;
   startStandard: Date;
   endStandard: Date;
+  kyusei: typeof KYUSEI[0];   // Added
+  hachimon: typeof HACHIMON[0]; // Added
 }
 
 /**
@@ -171,16 +175,17 @@ export function getDailySolarSchedule(
   noon.setHours(12, 0, 0, 0);
   const { totalCorrection } = calculateSolarTime(noon, longitude, timezoneOffset);
   
-  // Calculate Day Stem for the specific day
+  // Calculate Day Stem and Branch for the specific day
   const dayStemIdx = getDayStemIndex(noon);
+  const dayJunishiIdx = getDayJunishiIndex(noon); // Ensure this function exists or calculate it here
 
   // 2. Define Solar Hour boundaries (Starts)
-  const schedule: KimonScheduleItem[] = [];
-  const baseDate = new Date(date);
-  baseDate.setHours(0, 0, 0, 0);
-
   // Solar start times for the 12 branches: -1 (23:00 prev), 1, 3, 5, ... 21
   const solarStartHours = [-1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+
+  const schedule: KimonScheduleItem[] = []; // Initialize array
+  const baseDate = new Date(date);
+  baseDate.setHours(0, 0, 0, 0);
 
   solarStartHours.forEach((hour, i) => {
     // Solar Start Date
@@ -193,14 +198,17 @@ export function getDailySolarSchedule(
 
     // Get Name info
     const midSolar = new Date(solarStart);
-    midSolar.setHours(hour + 1);
+    midSolar.setHours(midSolar.getHours() + 1); // Use getHours + 1 to handle date rollover safely
     const properties = getKimonHour(midSolar);
     
     // Calculate Hour Stem
-    // i corresponds to the branch index starting from Rat (0) to Boar (11)
-    // solarStartHours[0] is -1 (Rat start), so i=0 is Rat.
     const stemIdx = getHourStemIndex(dayStemIdx, i);
     const stem = JIKKAN[stemIdx];
+
+    // Calculate Kyusei & Hachimon
+    // i corresponds to the branch index starting from Rat (0) to Boar (11)
+    const kyusei = getHourlyKyusei(dayJunishiIdx, i); 
+    const hachimon = getHourlyHachimon(dayStemIdx, i, date.getMonth());
 
     schedule.push({
       ...properties,
@@ -209,8 +217,29 @@ export function getDailySolarSchedule(
       etoKanji: stem.kanji + properties.japanese,
       startStandard,
       endStandard,
+      kyusei,
+      hachimon,
     });
   });
 
   return schedule;
+}
+
+// --- Helper for Day Junishi ---
+// Simple calculation based on a known base date
+// Base: Jan 1 2024 was 甲子 (Kinoe-Ne)? No.
+// Let's use a known epoch.
+// 2000-01-01 was Saturday.
+// Jan 1 2024: 
+// Better: Use a simple function.
+function getDayJunishiIndex(date: Date): number {
+    // Known base: 2024-01-01 was Kinoe-Ne (0,0) ?
+    // 2024 is Dragon year.
+    // Let's use the same logic as getDayStemIndex but mod 12.
+    // Base: 2024-01-01.
+    // 2024-01-01 was 甲子 (Kinoe Ne). Stem=0, Branch=0.
+    const base = new Date(2024, 0, 1); // Jan 1 2024
+    const diff = date.getTime() - base.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    return ((days % 12) + 12) % 12; 
 }
