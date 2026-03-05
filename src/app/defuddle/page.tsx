@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { extractArticle } from "./actions";
 
@@ -56,8 +57,19 @@ export default function DefuddlePage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-6 left-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 rounded-full shadow-sm hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+      <div className="max-w-3xl mx-auto pt-8">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-neutral-900">
             Defuddle <span className="text-blue-600">Web</span>
