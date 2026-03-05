@@ -43,7 +43,7 @@ export const SolarTimeClock = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-900 py-12 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-zinc-950 text-zinc-100 font-sans selection:bg-emerald-900 pt-24 pb-16 relative overflow-x-hidden">
       <div className="flex flex-col items-center space-y-12 z-10 w-full max-w-4xl px-4 animate-fade-in-up">
         
         {/* Main Display: Kimon Hour */}
