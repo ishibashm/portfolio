@@ -9,6 +9,7 @@ const KYOTO_LONGITUDE = 135.72; // Nishikyogoku
 export const SolarTimeClock = () => {
   const [now, setNow] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     // Client-side only to avoid hydration mismatch
@@ -19,6 +20,12 @@ export const SolarTimeClock = () => {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 80);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -111,6 +118,17 @@ export const SolarTimeClock = () => {
           <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-900/10 blur-[150px] rounded-full mix-blend-screen"></div>
           <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-900/5 blur-[150px] rounded-full mix-blend-screen"></div>
           <div className="absolute top-[20%] right-[10%] w-[20%] h-[20%] bg-amber-900/5 blur-[100px] rounded-full mix-blend-screen"></div>
+      </div>
+
+      {/* Scroll Down Indicator */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1 pointer-events-none"
+           style={{ opacity: scrolled ? 0 : 1, transition: "opacity 0.5s ease" }}>
+        <span className="text-[9px] tracking-[0.25em] uppercase text-emerald-700/70 font-sans">Scroll</span>
+        <div className="animate-scroll-bounce">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-emerald-600/60">
+            <path d="M12 5v14M5 12l7 7 7-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
       </div>
     </div>
   );
