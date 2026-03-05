@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { extractArticle } from "./actions";
 
 export default function DefuddlePage() {
@@ -9,6 +9,20 @@ export default function DefuddlePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [driveSaving, setDriveSaving] = useState(false);
+
+  // Load Google Identity Services script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +70,85 @@ export default function DefuddlePage() {
     }
   };
 
+  const uploadToGoogleDrive = async (accessToken: string) => {
+    if (!result?.content) return;
+    setDriveSaving(true);
+    
+    try {
+      const safeTitle = result.title
+        ? result.title.replace(/[^a-zA-Z0-9]/gi, "_").toLowerCase()
+        : "extracted_article";
+      const fileName = `${safeTitle}.md`;
+
+      const metadata = {
+        name: fileName,
+        mimeType: "text/markdown",
+      };
+
+      const fileContent = result.content;
+
+      const form = new FormData();
+      form.append(
+        "metadata",
+        new Blob([JSON.stringify(metadata)], { type: "application/json" })
+      );
+      form.append(
+        "file",
+        new Blob([fileContent], { type: "text/markdown" })
+      );
+
+      const response = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: form,
+        }
+      );
+
+      if (response.ok) {
+        alert(`Successfully saved "${fileName}" to Google Drive!`);
+      } else {
+        const errData = await response.json();
+        console.error("Drive Error:", errData);
+        alert(`Failed to save to Google Drive: ${errData.error?.message || response.statusText}`);
+      }
+    } catch (err) {
+      console.error("Upload Error:", err);
+      alert("An error occurred while uploading to Google Drive.");
+    } finally {
+      setDriveSaving(false);
+    }
+  };
+
+  const handleSaveToDrive = () => {
+    if (!window.google?.accounts?.oauth2) {
+      alert("Google Identity Services failed to load. Please refresh the page.");
+      return;
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      alert("Google Client ID is not configured in the environment variables.");
+      return;
+    }
+
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/drive.file",
+      callback: (tokenResponse: any) => {
+        if (tokenResponse.error !== undefined) {
+          throw window.google.accounts.oauth2.TokenError(tokenResponse);
+        }
+        uploadToGoogleDrive(tokenResponse.access_token);
+      },
+    });
+
+    tokenClient.requestAccessToken();
+  };
+
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 py-12 px-4 sm:px-6 lg:px-8 relative">
       <div className="absolute top-6 left-6">
@@ -89,11 +182,11 @@ export default function DefuddlePage() {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://example.com/article"
                 className="flex-1 rounded-xl border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg py-3 px-4 border"
-                disabled={loading}
+                disabled={loading || driveSaving}
               />
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || driveSaving}
                 className="inline-flex justify-center items-center px-8 py-3 border border-transparent text-lg font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -129,26 +222,50 @@ export default function DefuddlePage() {
 
         {result && (
           <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-neutral-100 flex flex-col">
-            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex justify-between items-center">
-              <div>
+            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex-1 w-full">
                 <h2 className="text-lg font-bold text-neutral-800 line-clamp-1">{result.title}</h2>
-                <div className="text-sm text-neutral-500 flex gap-4 mt-1">
+                <div className="text-sm text-neutral-500 flex flex-wrap gap-4 mt-1">
                   {result.author && <span>By {result.author}</span>}
                   {result.site && <span>From {result.site}</span>}
                 </div>
               </div>
-              <div className="flex gap-3 ml-4">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button
                   onClick={copyToClipboard}
-                  className="flex-shrink-0 inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   Copy Markdown
                 </button>
                 <button
                   onClick={downloadAsFile}
-                  className="flex-shrink-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 >
                   Download .md
+                </button>
+                <button
+                  onClick={handleSaveToDrive}
+                  disabled={driveSaving}
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#1fa463] hover:bg-[#198751] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1fa463] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {driveSaving ? (
+                    <span className="flex items-center gap-1">
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <svg width="16" height="16" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M58.3 52l29-50-29.2-2L0 52l29 50 29.3-50z" fill="#FFC107"/>
+                        <path d="M87.3 52l-29 50H0l29-50h58.3z" fill="#1976D2"/>
+                        <path d="M29 0h58.3l-29 50H0L29 0z" fill="#4CAF50"/>
+                      </svg>
+                      Save to Drive
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
