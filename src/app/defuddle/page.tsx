@@ -1,0 +1,155 @@
+"use client";
+
+import { useState } from "react";
+import { extractArticle } from "./actions";
+
+export default function DefuddlePage() {
+  const [url, setUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url) return;
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const response = await extractArticle(url);
+      if (response.success) {
+        setResult(response.data);
+      } else {
+        setError(response.error);
+      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (result?.content) {
+      navigator.clipboard.writeText(result.content);
+      alert("Copied directly to clipboard!");
+    }
+  };
+
+  const downloadAsFile = () => {
+    if (result?.content) {
+      const blob = new Blob([result.content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const safeTitle = result.title
+        ? result.title.replace(/[^a-zA-Z0-9]/gi, "_").toLowerCase()
+        : "extracted_article";
+      a.download = `${safeTitle}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-neutral-900">
+            Defuddle <span className="text-blue-600">Web</span>
+          </h1>
+          <p className="mt-4 text-lg text-neutral-600">
+            Extract clean, readable markdown from any web page URL instantly.
+          </p>
+        </div>
+
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden mb-8 border border-neutral-100">
+          <div className="p-6 sm:p-8">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
+              <input
+                type="url"
+                required
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/article"
+                className="flex-1 rounded-xl border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg py-3 px-4 border"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex justify-center items-center px-8 py-3 border border-transparent text-lg font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Extracting...
+                  </span>
+                ) : (
+                  "Extract"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded-r-lg">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-neutral-100 flex flex-col">
+            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-bold text-neutral-800 line-clamp-1">{result.title}</h2>
+                <div className="text-sm text-neutral-500 flex gap-4 mt-1">
+                  {result.author && <span>By {result.author}</span>}
+                  {result.site && <span>From {result.site}</span>}
+                </div>
+              </div>
+              <div className="flex gap-3 ml-4">
+                <button
+                  onClick={copyToClipboard}
+                  className="flex-shrink-0 inline-flex items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Copy Markdown
+                </button>
+                <button
+                  onClick={downloadAsFile}
+                  className="flex-shrink-0 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Download .md
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <textarea
+                readOnly
+                value={result.content}
+                className="w-full h-[500px] p-4 text-sm font-mono text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
