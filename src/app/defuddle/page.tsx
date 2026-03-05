@@ -129,18 +129,17 @@ export default function DefuddlePage() {
       return;
     }
 
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      alert("Google Client ID is not configured in the environment variables.");
-      return;
-    }
+    const clientId = "1048856040219-0r5hkme3p98ntim1r6c3qondi37n061t.apps.googleusercontent.com";
 
     const tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: "https://www.googleapis.com/auth/drive.file",
       callback: (tokenResponse: any) => {
         if (tokenResponse.error !== undefined) {
-          throw window.google.accounts.oauth2.TokenError(tokenResponse);
+          console.error("Token Error:", tokenResponse);
+          alert("Authentication failed. Please try again.");
+          setDriveSaving(false);
+          return;
         }
         uploadToGoogleDrive(tokenResponse.access_token);
       },
