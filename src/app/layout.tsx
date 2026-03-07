@@ -48,7 +48,7 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} antialiased bg-black text-white overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} antialiased bg-black text-white`}
       >
         <main className="min-h-screen">
           {children}
