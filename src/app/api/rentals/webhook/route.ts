@@ -7,9 +7,7 @@ import type { Database } from '@/types/database.types';
 
 export const maxDuration = 60; // Allow more time for AI processing
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
+
 
 const PropertySchema = z.object({
   properties: z.array(z.object({
@@ -36,6 +34,16 @@ export async function POST(req: Request) {
       console.warn("GEMINI_API_KEY is not set. Cannot process email with AI.");
       return NextResponse.json({ error: 'AI API Key not configured' }, { status: 500 });
     }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.warn("Supabase credentials are not set.");
+      return NextResponse.json({ error: 'Database credentials not configured' }, { status: 500 });
+    }
+    
+    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
 
     // 1. Extract property details using Gemini
     const { object } = await generateObject({
