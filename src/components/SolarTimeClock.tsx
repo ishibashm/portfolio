@@ -111,6 +111,61 @@ export const SolarTimeClock = () => {
         {/* Schedule Table */}
         <SolarTimeTable date={now} longitude={KYOTO_LONGITUDE} />
 
+        {/* Deep Insights Section */}
+        <section className="mt-32 w-full max-w-4xl px-4 space-y-24 border-t border-zinc-900/50 pt-24">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <h2 className="text-3xl font-serif font-light tracking-[0.3em] text-zinc-100 italic">Deep Insights</h2>
+            <div className="h-px w-12 bg-emerald-500/30"></div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            {/* 2026 Perspective */}
+            <div className="space-y-6 group">
+              <div className="flex flex-col space-y-2">
+                <span className="text-[10px] tracking-[0.4em] text-emerald-500/60 uppercase">Horizon 2026</span>
+                <h3 className="text-xl font-serif text-zinc-300 group-hover:text-emerald-400 transition-colors">三碧木星の年</h3>
+              </div>
+              <p className="text-sm leading-relaxed text-zinc-500 font-light text-justify">
+                2026年は「木」のエネルギーが極まる三碧木星の年。停滞した気が一気に動き出す「成長と雷」の季節です。南東（巽）と北東（艮）が鍵となる方位。
+              </p>
+              <div className="pt-4 flex gap-4">
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">SE: Auspicious</div>
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">NE: Gateway</div>
+              </div>
+            </div>
+
+            {/* Bio-Electromagnetic Health */}
+            <div className="space-y-6 group">
+              <div className="flex flex-col space-y-2">
+                <span className="text-[10px] tracking-[0.4em] text-emerald-500/60 uppercase">Bio-Physical</span>
+                <h3 className="text-xl font-serif text-zinc-300 group-hover:text-emerald-400 transition-colors">電磁ノイズと天中殺</h3>
+              </div>
+              <p className="text-sm leading-relaxed text-zinc-500 font-light text-justify">
+                東洋の「天中殺」は、現代物理学における電磁ノイズ過多の状態。特に午の刻（11時-15時）は自律神経が揺らぎやすい時間帯です。
+              </p>
+              <div className="pt-4 flex gap-4">
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">Linen & Silk</div>
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">Earthing</div>
+              </div>
+            </div>
+
+            {/* Geomagnetic Awareness */}
+            <div className="space-y-6 group">
+              <div className="flex flex-col space-y-2">
+                <span className="text-[10px] tracking-[0.4em] text-emerald-500/60 uppercase">Earth Dynamics</span>
+                <h3 className="text-xl font-serif text-zinc-300 group-hover:text-emerald-400 transition-colors">磁北とポールシフト</h3>
+              </div>
+              <p className="text-sm leading-relaxed text-zinc-500 font-light text-justify">
+                宇宙の「10-12」システムに対し、地球グリッドは磁北に支配されます。現在進行中の地磁気逆転を鑑み、方位の定義を常に再同期する必要があります。
+              </p>
+              <div className="pt-4 flex gap-4">
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">Magnetic North</div>
+                <div className="text-[10px] border border-zinc-800 px-3 py-1 text-zinc-600">Sync Grid</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
       
       {/* Background Decor */}
