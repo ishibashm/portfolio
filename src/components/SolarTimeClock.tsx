@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { SolarTimeTable } from "./SolarTimeTable";
 
-const KYOTO_LONGITUDE = 135.72; // Nishikyogoku
+const KYOTO_LONGITUDE = 135.72;
 
 export const SolarTimeClock = () => {
   const [now, setNow] = useState<Date | null>(null);
@@ -55,7 +55,7 @@ export const SolarTimeClock = () => {
         
         {/* Main Display: Kimon Hour */}
         <div className="text-center space-y-6">
-          <div className="text-xs tracking-[0.3em] text-zinc-500 uppercase font-light">Current Kimon (Kyoto)</div>
+          <div className="text-xs tracking-[0.3em] text-zinc-500 uppercase font-light">Current Solar Hour</div>
           
           <div className="relative group cursor-default">
             <div className="text-[12rem] leading-none font-serif font-thin text-emerald-500/90 text-glow animate-breathe transition-all duration-1000 group-hover:text-emerald-400">
