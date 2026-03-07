@@ -27,6 +27,7 @@ jobs:
       - name: Create .env from Secret required for Build
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
 
       - name: Build
