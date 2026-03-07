@@ -24,6 +24,10 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Create .env from Secret required for Build
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
       - name: Build
         run: npm run build
 
@@ -36,10 +40,7 @@ jobs:
           cp package.json deploy-package/
           cp package-lock.json deploy-package/ 2>/dev/null || true
           cp -r scripts deploy-package/
-
-      - name: Create .env from Secret
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > deploy-package/.env
+          cp .env deploy-package/
 
       - name: Zip Artifact
         run: |
