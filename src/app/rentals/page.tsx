@@ -3,8 +3,9 @@
 import { useEffect, useState, useMemo } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { formatDistanceToNow, differenceInDays } from "date-fns";
-import { Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import type { Database } from "@/types/database.types";
+import { addSampleData } from "./actions";
 
 type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
 type SortField = 'rent' | 'size_sqm' | 'first_seen_at';
@@ -19,6 +20,7 @@ export default function RentalsDashboard() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [filterNewBuild, setFilterNewBuild] = useState(false);
   const [search, setSearch] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const supabase = useMemo(() => createClient(), []);
 
@@ -48,6 +50,17 @@ export default function RentalsDashboard() {
       setSortField(field);
       setSortOrder('desc'); // Default to descending when changing fields
     }
+  };
+
+  const handleGenerateSample = async () => {
+    setIsGenerating(true);
+    const result = await addSampleData();
+    if (result.success) {
+      await fetchProperties();
+    } else {
+      alert("Error: " + result.error);
+    }
+    setIsGenerating(false);
   };
 
   const filteredAndSortedProperties = useMemo(() => {
@@ -105,12 +118,27 @@ export default function RentalsDashboard() {
             </h1>
             <p className="text-zinc-400 mt-2">Automated rental property tracking</p>
           </div>
-          <button 
-            onClick={fetchProperties}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors"
-          >
-            Refresh Data
-          </button>
+          <div className="flex gap-3">
+            <button 
+              onClick={handleGenerateSample}
+              disabled={isGenerating || loading}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-500/20"
+            >
+              {isGenerating ? (
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              {isGenerating ? "Generating..." : "取得する (サンプル)"}
+            </button>
+            <button 
+              onClick={fetchProperties}
+              disabled={loading}
+              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              Refresh Data
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
