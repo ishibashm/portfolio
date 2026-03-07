@@ -126,34 +126,4 @@ export default function RentalsDashboard() {
       </div>
     </div>
   );
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col items-start gap-2">
-                            {prop.first_seen_at ? (
-                                <>
-                                  <span className={`px-2.5 py-1 border rounded-full text-xs font-semibold ${domStyle}`}>
-                                    {daysOnMarket === 0 ? 'New Today' : `${daysOnMarket} DOM`}
-                                  </span>
-                                  <span className="text-zinc-500 text-xs flex items-center gap-1" title={new Date(prop.last_seen_at || prop.first_seen_at).toLocaleString()}>
-                                    <Calendar className="w-3 h-3" />
-                                    Last seen: {formatDistanceToNow(new Date(prop.last_seen_at || prop.first_seen_at), { addSuffix: true })}
-                                  </span>
-                                </>
-                            ) : '-'}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-  */
 }
