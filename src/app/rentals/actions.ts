@@ -86,3 +86,21 @@ export async function addSampleData() {
 
   return { success: true };
 }
+
+export async function triggerRealScrape() {
+  const gasUrl = process.env.GAS_WEBAPP_URL;
+  if (!gasUrl) {
+    return { success: false, error: "GAS_WEBAPP_URL environment variable is not configured." };
+  }
+
+  try {
+    const res = await fetch(gasUrl, { method: "GET" });
+    if (!res.ok) {
+      return { success: false, error: `GAS Web App returned status ${res.status}` };
+    }
+    const data = await res.json();
+    return data; // { success: true/false, ...}
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}

@@ -5,7 +5,7 @@ import { createClient } from "@/utils/supabase/client";
 import { formatDistanceToNow, differenceInDays } from "date-fns";
 import { Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, ArrowUpDown, ArrowUp, ArrowDown, Plus } from "lucide-react";
 import type { Database } from "@/types/database.types";
-import { addSampleData } from "./actions";
+import { addSampleData, triggerRealScrape } from "./actions";
 
 type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
 type SortField = 'rent' | 'size_sqm' | 'first_seen_at';
@@ -61,6 +61,19 @@ export default function RentalsDashboard() {
       alert("Error: " + result.error);
     }
     setIsGenerating(false);
+  };
+
+  const [isFetchingReal, setIsFetchingReal] = useState(false);
+  const handleFetchReal = async () => {
+    setIsFetchingReal(true);
+    const result = await triggerRealScrape();
+    if (result.success) {
+      alert("✅ 取得リクエストを送信しました！数秒後にデータを更新してください。");
+      await fetchProperties();
+    } else {
+      alert("エラーが発生しました: " + result.error + "\n\n(GAS Web AppのURLが設定されていない可能性があります。マニュアルを参照してください)");
+    }
+    setIsFetchingReal(false);
   };
 
   const filteredAndSortedProperties = useMemo(() => {
@@ -120,6 +133,18 @@ export default function RentalsDashboard() {
           </div>
           <div className="flex gap-3">
             <button 
+              onClick={handleFetchReal}
+              disabled={isFetchingReal || loading}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+            >
+              {isFetchingReal ? (
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              {isFetchingReal ? "取得中..." : "今すぐ取得する"}
+            </button>
+            <button 
               onClick={handleGenerateSample}
               disabled={isGenerating || loading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg shadow-blue-500/20"
@@ -129,7 +154,7 @@ export default function RentalsDashboard() {
               ) : (
                 <Plus className="w-4 h-4" />
               )}
-              {isGenerating ? "Generating..." : "取得する (サンプル)"}
+              {isGenerating ? "Generating..." : "サンプルを作る"}
             </button>
             <button 
               onClick={fetchProperties}
@@ -210,7 +235,13 @@ export default function RentalsDashboard() {
                       <tr key={prop.id} className="hover:bg-zinc-800/30 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex flex-col gap-1">
-                            <span className="font-semibold text-zinc-200 text-base">{prop.property_name}</span>
+                            {prop.url ? (
+                              <a href={prop.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-400 hover:text-blue-300 text-base flex items-center gap-1">
+                                {prop.property_name} <ExternalLink className="w-4 h-4 inline" />
+                              </a>
+                            ) : (
+                              <span className="font-semibold text-zinc-200 text-base">{prop.property_name}</span>
+                            )}
                             <div className="flex items-center gap-3 text-zinc-500 text-xs mt-1">
                               {prop.area && (
                                 <span className="flex items-center gap-1">

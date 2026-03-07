@@ -192,6 +192,7 @@ export type Database = {
           rent: number | null
           size_sqm: number | null
           source_emails: string[] | null
+          url: string | null
         }
         Insert: {
           area?: string | null
@@ -207,6 +208,7 @@ export type Database = {
           rent?: number | null
           size_sqm?: number | null
           source_emails?: string[] | null
+          url?: string | null
         }
         Update: {
           area?: string | null
@@ -222,6 +224,7 @@ export type Database = {
           rent?: number | null
           size_sqm?: number | null
           source_emails?: string[] | null
+          url?: string | null
         }
         Relationships: []
       }

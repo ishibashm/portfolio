@@ -19,6 +19,7 @@ const PropertySchema = z.object({
     size_sqm: z.number().nullable().describe("The size of the property in square meters"),
     is_new_build: z.boolean().nullable().describe("Whether the property is newly built ('新築')"),
     minutes_to_station: z.number().nullable().describe("Walking minutes to the nearest station"),
+    url: z.string().nullable().describe("The URL link to the property listing, if available in the email body"),
   }))
 });
 
@@ -109,6 +110,7 @@ ${body}`,
             first_seen_at: emailDate,
             last_seen_at: emailDate,
             source_emails: email_id ? [email_id] : [],
+            url: property.url,
           })
           .select()
           .single();

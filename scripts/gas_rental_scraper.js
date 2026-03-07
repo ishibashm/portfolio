@@ -76,3 +76,17 @@ function sendToWebhook(data) {
     return false;
   }
 }
+
+/**
+ * 手動取得ボタン（Web App経由）用のエンドポイント
+ */
+function doGet(e) {
+  try {
+    fetchAndSendRealEstateEmails();
+    return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Emails scraped and sent to webhook." }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
