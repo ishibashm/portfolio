@@ -64,6 +64,8 @@ if curl -f http://127.0.0.1:3000/; then
 else
   echo "Health check failed! Dumping logs..."
   pm2 logs portfolio --lines 100 --nostream
+  echo "--- PM2 DUMP FILE (/home/runner/.pm2/dump.pm2) ---"
+  cat /home/runner/.pm2/dump.pm2 || true
   exit 1
 fi
 
