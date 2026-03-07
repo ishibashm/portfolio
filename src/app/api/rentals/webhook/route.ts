@@ -25,6 +25,15 @@ const PropertySchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // 1. Authenticate the Webhook via a Secret Key
+    const authHeader = req.headers.get('authorization');
+    const secretKey = process.env.API_SECRET_KEY;
+    
+    if (secretKey && authHeader !== `Bearer ${secretKey}`) {
+      console.warn("Unauthorized webhook access attempt.");
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { email_id, subject, body, date } = await req.json();
 
     if (!body) {

@@ -12,6 +12,10 @@ const GMAIL_LABEL = "不動産";
 // ローカルテスト時は ngrok のURLなどを指定します
 const WEBHOOK_URL = "https://cloud-palette.com/api/rentals/webhook"; 
 
+// 不正アクセスを防ぐためのシークレットキー (必須)
+// Next.jsの環境変数(API_SECRET_KEY)と同じ文字列を設定してください
+const API_SECRET_KEY = "PLEASE_SET_YOUR_SECRET_KEY_HERE"; 
+
 /**
  * フィルターに合致する新着（未読）メールを取得してWebhookに送信するメイン関数
  */
@@ -55,6 +59,9 @@ function fetchAndSendRealEstateEmails() {
 function sendToWebhook(data) {
   const options = {
     method: 'post',
+    headers: {
+      'Authorization': `Bearer ${API_SECRET_KEY}`
+    },
     contentType: 'application/json',
     payload: JSON.stringify(data),
     muteHttpExceptions: true // エラー時も例外を投げずにレスポンスを取得

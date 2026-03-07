@@ -35,6 +35,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const isAuthorized = !adminEmail || user?.email === adminEmail;
+
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && request.nextUrl.pathname.startsWith('/rentals')) {
     const url = request.nextUrl.clone();
@@ -42,8 +45,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // If user is logged in, and tries to visit login page, redirect to rentals
-  if (user && request.nextUrl.pathname === '/login') {
+  // If the user is logged in, but their email does NOT match the owner's ADMIN_EMAIL
+  if (user && !isAuthorized && request.nextUrl.pathname.startsWith('/rentals')) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    url.searchParams.set('error', 'Unauthorized access.');
+    return NextResponse.redirect(url);
+  }
+
+  // If authorized user is logged in, and tries to visit login page, redirect to rentals
+  if (user && isAuthorized && request.nextUrl.pathname === '/login') {
       const url = request.nextUrl.clone();
       url.pathname = '/rentals';
       return NextResponse.redirect(url);
