@@ -73,3 +73,7 @@ mcp.json
 # Local backup of images (now in Supabase Storage)
 /public/images/sanpeki/
 /三碧木星/
+
+# next-sitemap generated files
+public/sitemap*.xml
+public/robots.txt
