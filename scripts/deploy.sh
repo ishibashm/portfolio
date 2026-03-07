@@ -46,7 +46,7 @@ sudo apt-get install -yq ca-certificates fonts-liberation libasound2 libatk-brid
 
 echo 'Installing application dependencies...'
 rm -rf node_modules
-npm install --omit=dev
+npm install --omit=dev --legacy-peer-deps
 
 # アプリ起動
 echo 'Starting app...'
