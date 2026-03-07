@@ -10,6 +10,8 @@ type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
 type SortField = 'rent' | 'size_sqm' | 'first_seen_at';
 type SortOrder = 'asc' | 'desc';
 
+export const dynamic = 'force-dynamic';
+
 export default function RentalsDashboard() {
   const [properties, setProperties] = useState<RentalProperty[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ export default function RentalsDashboard() {
   const [filterNewBuild, setFilterNewBuild] = useState(false);
   const [search, setSearch] = useState("");
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchProperties();
