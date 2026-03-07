@@ -14,6 +14,12 @@ export default function Home() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
           </svg>
         </Link>
+        <Link 
+          href="/rentals" 
+          className="px-5 py-2.5 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-500 hover:text-zinc-400 text-xs tracking-widest uppercase rounded-full border border-zinc-800 backdrop-blur-md transition-all flex items-center gap-2 shadow-lg"
+        >
+          <span>Properties (工事中)</span>
+        </Link>
       </div>
       <SolarTimeClock />
     </main>

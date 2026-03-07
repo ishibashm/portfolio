@@ -38,6 +38,7 @@ export async function updateSession(request: NextRequest) {
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAuthorized = !adminEmail || user?.email === adminEmail;
 
+  /* TEMPORARILY DISABLED REDIRECTS FOR "UNDER CONSTRUCTION" MODE
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && request.nextUrl.pathname.startsWith('/rentals')) {
     const url = request.nextUrl.clone();
@@ -52,6 +53,7 @@ export async function updateSession(request: NextRequest) {
     url.searchParams.set('error', 'Unauthorized access.');
     return NextResponse.redirect(url);
   }
+  */
 
   // If authorized user is logged in, and tries to visit login page, redirect to rentals
   if (user && isAuthorized && request.nextUrl.pathname === '/login') {
