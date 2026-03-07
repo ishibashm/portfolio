@@ -15,158 +15,126 @@ export function SolarTimeTable({ date, longitude }: SolarTimeTableProps) {
     [date, longitude]
   );
   
-  // State for expanded row
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const toggleRow = (index: number) => {
-    if (expandedIndex === index) {
-      setExpandedIndex(null);
-    } else {
-      setExpandedIndex(index);
-    }
+    setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  const formatTime = (d: Date) => {
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (d: Date) => d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+
+  const isVoidTimeHour = (item: KimonScheduleItem) => {
+    return item.etoKanji === "午" || item.etoKanji === "未"; // 11:00 - 15:00
   };
 
-  const handleDownloadCsv = () => {
-    // Header
-    const headers = ["Eto", "Branch Name", "Stem Name", "Reading", "Nine Stars", "Eight Gates", "Note", "Standard Start", "Standard End"];
-    
-    // Rows
-    const rows = schedule.map((item) => [
-      item.etoKanji,
-      item.name,
-      item.stemName,
-      item.reading,
-      item.kyusei.japanese,
-      item.hachimon.japanese,
-      item.note || "",
-      formatTime(item.startStandard),
-      formatTime(item.endStandard),
-    ]);
-
-    // CSV Content
-    const csvContent =
-      "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
-      [headers, ...rows]
-        .map((e) => e.map((c) => `"${c}"`).join(",")) // Quote fields
-        .join("\n");
-
-    // Download Link
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const dateStr = date.toLocaleDateString().replace(/\//g, "-");
-    link.setAttribute("download", `solar_schedule_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const isOptimalTimeHour = (item: KimonScheduleItem) => {
+    const isGoodGate = item.hachimon.auspicious; // 生, 休, 開
+    const isWoodFire = ["三碧木星", "四緑木星", "九紫火星"].includes(item.kyusei.japanese);
+    return isGoodGate && isWoodFire;
   };
 
   return (
-    <div className="mt-12 w-full max-w-2xl bg-zinc-900/30 p-8 rounded-2xl backdrop-blur-md border border-zinc-800/50 shadow-2xl relative overflow-hidden group hover:border-zinc-700/50 transition-colors duration-500">
-      
-      {/* Decorative Shine */}
-      <div className="absolute top-0 left-0 w-full h-px bg-linear-to-r from-transparent via-zinc-700/50 to-transparent"></div>
-
-      <div className="flex justify-between items-end mb-6">
-        <div>
-           <h2 className="text-base font-light tracking-[0.3em] text-zinc-400 uppercase mb-1">
-             Daily Schedule
-           </h2>
-           <p className="text-[10px] text-zinc-600 tracking-wider">
-             Time Board (Click to Expand)
-           </p>
-        </div>
-        <button
-          onClick={handleDownloadCsv}
-          className="px-4 py-2 text-[10px] uppercase tracking-widest border border-zinc-800 text-zinc-500 rounded hover:bg-zinc-800 hover:text-zinc-300 transition-all active:scale-95 cursor-pointer"
-        >
-          Export CSV
-        </button>
+    <div className="w-full max-w-4xl mt-8">
+      <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2 mb-4">
+        <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
+          Temporal Filter Matrix
+        </h2>
+        <div className="h-px bg-zinc-800 flex-grow"></div>
+        <div className="text-[8px] font-mono text-zinc-600 tracking-widest">{date.toLocaleDateString()}</div>
       </div>
 
-      <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full text-sm text-left text-zinc-500">
-          <thead className="text-[10px] uppercase bg-black/20 text-zinc-600 tracking-wider font-light">
+      <div className="overflow-x-auto custom-scrollbar border border-zinc-900 bg-black/60 shadow-2xl rounded-sm">
+        <table className="w-full text-left font-mono text-[10px] whitespace-nowrap">
+          <thead className="bg-zinc-950 text-zinc-500 uppercase tracking-widest border-b border-zinc-800 sticky top-0">
             <tr>
-              <th className="px-4 py-3 font-normal">Kimon</th>
-              <th className="px-4 py-3 font-normal text-center">Star</th>
-              <th className="px-4 py-3 font-normal text-center">Gate</th>
-              <th className="px-4 py-3 font-normal text-right">Start</th>
-              <th className="px-4 py-3 font-normal text-right">End</th>
+              <th className="px-3 py-2 font-normal w-12 text-center">STS</th>
+              <th className="px-3 py-2 font-normal">Kimon</th>
+              <th className="px-3 py-2 font-normal">Star (Qi)</th>
+              <th className="px-3 py-2 font-normal">Gate (Filter)</th>
+              <th className="px-3 py-2 font-normal text-right">Start</th>
+              <th className="px-3 py-2 font-normal text-right">End</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-800/50">
+          <tbody className="divide-y divide-zinc-900">
             {schedule.map((item, index) => {
-               // Check if current time falls within this slot
                const now = new Date();
                const isCurrent = now >= item.startStandard && now < item.endStandard;
                const isExpanded = expandedIndex === index;
+               const isVoid = isVoidTimeHour(item);
+               const isOptimal = isOptimalTimeHour(item);
                
+               let rowClass = "text-zinc-500 hover:bg-zinc-900/50 cursor-pointer transition-colors";
+               let statusIcon = "○";
+               let statusColor = "text-zinc-600";
+
+               if (isVoid) {
+                 rowClass = "bg-red-950/20 text-red-900/50 hover:bg-red-950/40 cursor-pointer";
+                 statusIcon = "X";
+                 statusColor = "text-red-600 animate-pulse";
+               } else if (isOptimal) {
+                 rowClass = "bg-emerald-950/10 text-emerald-400/80 hover:bg-emerald-950/30 cursor-pointer";
+                 statusIcon = "●";
+                 statusColor = "text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
+               }
+
+               if (isCurrent && !isVoid) {
+                 rowClass += " border-l-2 border-emerald-500 bg-zinc-900/80";
+               } else if (isCurrent && isVoid) {
+                 rowClass += " border-l-2 border-red-600 bg-red-950/60";
+               }
+
                return (
                 <React.Fragment key={index}>
-                  <tr 
-                    onClick={() => toggleRow(index)}
-                    className={`transition-colors duration-300 group/row cursor-pointer ${isCurrent ? "bg-emerald-900/10" : "hover:bg-zinc-800/30"} ${isExpanded ? "bg-zinc-800/30" : ""}`}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center space-x-3">
-                          <span className={`text-xl font-serif font-light ${isCurrent ? "text-emerald-400 text-glow" : "text-zinc-400 group-hover/row:text-zinc-300"}`}>
-                              {item.etoKanji}
-                          </span>
-                          <div className="flex flex-col">
-                              <span className="text-xs opacity-70 tracking-tight">{item.reading}</span>
-                              {item.note && (
-                                  <span className="text-[9px] text-amber-500/90 uppercase tracking-wider mt-0.5">{item.note}</span>
-                              )}
-                          </div>
+                  <tr onClick={() => toggleRow(index)} className={rowClass}>
+                    <td className={`px-3 py-2 text-center ${statusColor}`}>{statusIcon}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-bold ${isVoid ? 'text-red-700' : (isCurrent ? 'text-zinc-200' : 'text-zinc-400')}`}>{item.etoKanji}</span>
+                        <span className="opacity-50 tracking-wider">[{item.reading}]</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-serif ${isCurrent ? "text-zinc-300" : "text-zinc-500"}`}>
-                          {item.kyusei.japanese}
+                    <td className="px-3 py-2">
+                      <span className={isVoid ? 'opacity-40' : ''}>{item.kyusei.japanese}</span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`${isVoid ? 'opacity-40' : (item.hachimon.auspicious ? 'text-amber-500/80' : '')}`}>
+                        {item.hachimon.japanese}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`text-xs font-serif ${item.hachimon.auspicious ? "text-amber-600/80" : "text-zinc-600"} ${isCurrent ? "opacity-100" : "opacity-70"}`}>
-                          {item.hachimon.japanese}
-                      </span>
-                    </td>
-                    <td className={`px-4 py-3 font-mono text-xs text-right ${isCurrent ? "text-emerald-300" : ""}`}>
-                      {formatTime(item.startStandard)}
-                    </td>
-                    <td className={`px-4 py-3 font-mono text-xs text-right ${isCurrent ? "text-emerald-300" : ""}`}>
-                      {formatTime(item.endStandard)}
-                    </td>
+                    <td className="px-3 py-2 text-right opacity-80">{formatTime(item.startStandard)}</td>
+                    <td className="px-3 py-2 text-right opacity-80">{formatTime(item.endStandard)}</td>
                   </tr>
                   
-                  {/* Expanded Content: Board Visualization */}
-                  <tr>
-                    <td colSpan={5} className={`px-0 py-0 transition-all duration-500 ease-in-out border-b-0 ${isExpanded ? "max-h-[400px] opacity-100" : "max-h-0 opacity-0 hidden"}`}>
-                      <div className="bg-zinc-950/50 p-6 flex flex-col items-center border-b border-zinc-800/50 shadow-inner">
-                          <div className="mb-4 text-center">
-                            <h3 className="text-sm font-serif text-zinc-300 mb-1">
-                              {item.etoKanji} Hour Board
-                            </h3>
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest">
-                              Center: {item.kyusei.japanese}
-                            </p>
-                          </div>
-                          <KigakuBoard centerStar={item.kyusei} />
-                      </div>
-                    </td>
-                  </tr>
+                  {isExpanded && !isVoid && (
+                    <tr>
+                      <td colSpan={6} className="bg-zinc-950 p-4 border-b border-zinc-800 shadow-inner">
+                        <div className="flex flex-col items-center">
+                           <div className="mb-2 text-center space-y-1">
+                             <div className="text-[9px] text-zinc-600 uppercase tracking-widest">Kigaku Compass Matrix</div>
+                             <div className="text-xs text-zinc-400 font-sans">{item.etoKanji} Hour ({item.kyusei.japanese} Center)</div>
+                           </div>
+                           <div className="scale-90 opacity-80"><KigakuBoard centerStar={item.kyusei} /></div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  {isExpanded && isVoid && (
+                    <tr>
+                      <td colSpan={6} className="bg-red-950/10 p-4 border-b border-red-900/30 text-center">
+                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] animate-pulse">
+                           WARNING: System Bio-Shield Offline.
+                        </div>
+                        <div className="text-[9px] font-sans text-red-800/80 mt-1">
+                           No favorable matrices available during void phase.
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                 </React.Fragment>
               );
             })}
           </tbody>
         </table>
-      </div>
-      <div className="mt-4 text-[9px] text-center text-zinc-700 tracking-widest uppercase">
-         Kyoto Solar Time • {date.toLocaleDateString()}
       </div>
     </div>
   );
