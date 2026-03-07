@@ -10,6 +10,9 @@ export default function DefuddlePage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [driveSaving, setDriveSaving] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
+  const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -51,6 +54,46 @@ export default function DefuddlePage() {
       navigator.clipboard.writeText(result.content);
       alert("Copied directly to clipboard!");
     }
+  };
+
+  const takeScreenshot = async () => {
+    if (!url) return;
+    setScreenshotLoading(true);
+    setScreenshotError(null);
+    if (screenshotUrl) {
+      URL.revokeObjectURL(screenshotUrl);
+      setScreenshotUrl(null);
+    }
+    try {
+      const res = await fetch("/api/screenshot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Screenshot failed");
+      }
+      const blob = await res.blob();
+      setScreenshotUrl(URL.createObjectURL(blob));
+    } catch (err: any) {
+      setScreenshotError(err.message || "Failed to take screenshot");
+    } finally {
+      setScreenshotLoading(false);
+    }
+  };
+
+  const downloadScreenshot = () => {
+    if (!screenshotUrl) return;
+    const a = document.createElement("a");
+    a.href = screenshotUrl;
+    const safeTitle = result?.title
+      ? result.title.replace(/[^a-zA-Z0-9]/gi, "_").toLowerCase()
+      : "screenshot";
+    a.download = `${safeTitle}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const downloadAsFile = () => {
@@ -200,6 +243,30 @@ export default function DefuddlePage() {
                   "Extract"
                 )}
               </button>
+              <button
+                type="button"
+                onClick={takeScreenshot}
+                disabled={screenshotLoading || !url}
+                className="inline-flex justify-center items-center px-6 py-3 border border-neutral-300 text-lg font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {screenshotLoading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Capturing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Screenshot
+                  </span>
+                )}
+              </button>
             </form>
           </div>
         </div>
@@ -215,6 +282,29 @@ export default function DefuddlePage() {
               <div className="ml-3">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {screenshotError && (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-r-lg">
+            <p className="text-sm text-orange-700">Screenshot error: {screenshotError}</p>
+          </div>
+        )}
+
+        {screenshotUrl && (
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-neutral-100 mb-8">
+            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-base font-semibold text-neutral-700">📸 Screenshot</h2>
+              <button
+                onClick={downloadScreenshot}
+                className="inline-flex items-center gap-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-neutral-700 hover:bg-neutral-800 transition-colors"
+              >
+                Download PNG
+              </button>
+            </div>
+            <div className="p-4">
+              <img src={screenshotUrl} alt="Screenshot" className="w-full rounded-lg border border-neutral-100 shadow-sm" />
             </div>
           </div>
         )}
