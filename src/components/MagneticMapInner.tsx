@@ -19,7 +19,7 @@ interface MapInnerProps {
   declination: number; // Magnetic Declination (D) in degrees
   intensity?: number;  // Magnetic Intensity (F) in nT
   vectors?: Record<string, string> | null;
-  honmeiStar?: number;
+  honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
 }
@@ -230,7 +230,7 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
       
       <div className="absolute bottom-4 right-4 z-1000 pointer-events-none">
         <div className="bg-zinc-950/80 backdrop-blur-md px-3 py-2 border border-emerald-500/30 rounded-sm text-right">
-          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">Honmei Star: {honmeiStar}</div>}
+          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">Honmei (Phys): {honmeiStar.physical}</div>}
           <div className="text-[9px] uppercase font-mono tracking-widest text-emerald-400 mt-1">Optimal Zones (Green)</div>
           <div className="text-[8px] font-sans text-zinc-400">Biological Synchronization</div>
           <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400 mt-1">Safe Zones (Blue)</div>

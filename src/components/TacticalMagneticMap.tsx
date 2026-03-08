@@ -22,7 +22,7 @@ interface MapProps {
   declination: number | null;
   intensity: number | null;
   vectors?: Record<string, string> | null;
-  honmeiStar?: number;
+  honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
 }
