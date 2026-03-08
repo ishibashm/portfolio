@@ -88,12 +88,13 @@ export const AstroEngine = {
  * 古典的な「立春」による新年切り替えも、実際には「太陽黄経(L0) = 315度」に相当。
  * 単なるカレンダーではなく、生誕時の地球と太陽の幾何学的位相から天体学的に判定する物理モデル。
  */
-export function getHonmeiStar(birthDate: Date): StarFrequency {
-  const L0 = AstroEngine.getSolarLongitude(birthDate);
-  const year = birthDate.getFullYear();
+// 暦（Classical Calendar）ベースの算出ロジックを保持
+export function getClassicalYearStar(date: Date): StarFrequency {
+  const L0 = AstroEngine.getSolarLongitude(date);
+  const year = date.getFullYear();
   
   // 太陽黄経が315度（極小位相ポイント）未満であれば、天体位相的には前サイクルの影響下にある
-  const isPreviousCycle = (L0 < 315 && birthDate.getMonth() < 3);
+  const isPreviousCycle = (L0 < 315 && date.getMonth() < 3);
   let calcYear = isPreviousCycle ? year - 1 : year;
 
   // フラクタル周波数への圧縮（Harmonic Reduction）
@@ -107,6 +108,13 @@ export function getHonmeiStar(birthDate: Date): StarFrequency {
   if (star <= 0) star += 9;
   
   return star as StarFrequency;
+}
+
+export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, classical: StarFrequency } {
+  return {
+    physical: getYearStar(birthDate),
+    classical: getClassicalYearStar(birthDate)
+  };
 }
 
 /**
@@ -177,13 +185,14 @@ export function getMonthStar(date: Date): StarFrequency {
 }
 
 export function getCurrentEnvironmentalFrequencies(date: Date) {
-  const y = getYearStar(date);
+  const physY = getYearStar(date);
+  const classY = getClassicalYearStar(date);
   const m = getMonthStar(date);
   const d = getDayStar(date);
   
-  // Return stars along with raw orbital parameters for visualization
   return {
-    yearStar: y,
+    yearStar: physY,
+    classicalYearStar: classY,
     monthStar: m,
     dayStar: d,
     hourStar: 5 as StarFrequency,  // Placeholder

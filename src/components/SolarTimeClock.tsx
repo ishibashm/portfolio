@@ -39,15 +39,24 @@ export const SolarTimeClock = () => {
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
 
+  // Calculate Solar Data (Current & Birth)
+  const birthSolarData = React.useMemo(() => {
+    if (!birthDate || !birthLon) return null;
+    return calculateSolarTime(new Date(birthDate), birthLon);
+  }, [birthDate, birthLon]);
+
   // --- Environmental Context ---
   // 物理モデルへの完全統合 & パフォーマンス最適化
-  // 1秒ごとに重い天体計算（astronomy-engine）が走らないように、1分ごとの専用時間をベースに計算
   const env = React.useMemo(() => {
-    if (!ephemerisTime || !lon) return null;
-    // 真太陽時をベースにする
-    const slowSolar = calculateSolarTime(ephemerisTime, lon);
-    return getCurrentEnvironmentalFrequencies(slowSolar.solarTime);
-  }, [ephemerisTime, lon]);
+    if (!ephemerisTime || !solarData) return null;
+    return getCurrentEnvironmentalFrequencies(solarData.solarTime);
+  }, [ephemerisTime, solarData]);
+
+  // --- Hardware Init Context (Birth Data) ---
+  const birthEnv = React.useMemo(() => {
+    if (!birthSolarData) return null;
+    return getCurrentEnvironmentalFrequencies(birthSolarData.solarTime);
+  }, [birthSolarData]);
 
   // --- Dynamic Ephemeris Calculation ---
   const honmeiStar = React.useMemo(() => {
@@ -55,11 +64,12 @@ export const SolarTimeClock = () => {
   }, [birthDate]);
 
   const { board, layers } = React.useMemo(() => {
-    if (!env) return { board: null, layers: null };
+    if (!env || !honmeiStar) return { board: null, layers: null };
     const yearBoard = generateBoard(env.yearStar);
     const monthBoard = generateBoard(env.monthStar);
     const dayBoard = generateBoard(env.dayStar);
-    const vectorData = calculateVectorCollision(honmeiStar, yearBoard, monthBoard, dayBoard);
+    // Core engine uses the PHYSICAL star as the base frequency
+    const vectorData = calculateVectorCollision(honmeiStar.physical, yearBoard, monthBoard, dayBoard);
     // TACTICAL MAP overrides: using 'dayBoard' to represent the daily tactical noise environment.
     return { board: dayBoard, layers: vectorData };
   }, [honmeiStar, env]);
@@ -103,7 +113,6 @@ export const SolarTimeClock = () => {
     }
   }, []);
 
-  // Calculate Solar Time every second locally
   useEffect(() => {
     if (baseTime && lon) {
       setSolarData(calculateSolarTime(baseTime, lon));
@@ -222,46 +231,114 @@ export const SolarTimeClock = () => {
             <div className="h-px bg-zinc-800 grow"></div>
           </div>
           
-          <div className="flex flex-wrap gap-2 mb-4">
-            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Year Star</span>
-              <span className="text-base font-mono text-purple-500">{env?.yearStar || '--'}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            
+            {/* Birth Imprint Data (Hardware Init) */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
+              <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest border-b border-zinc-800 pb-1">
+                Hardware Init (Birth Vector)
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="bg-black/50 border border-amber-900/40 px-3 py-1 flex flex-col w-full">
+                  <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Honmei Star (Base Frequency)</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-xl font-bold font-mono text-emerald-500">{honmeiStar?.physical}</span>
+                    <span className="text-[10px] text-zinc-500">(Phys)</span>
+                    <span className="text-xl font-bold font-mono text-zinc-500 ml-2">{honmeiStar?.classical}</span>
+                    <span className="text-[10px] text-zinc-500">(Class)</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Year (Phys/Class)</span>
+                    <div className="flex gap-1 font-mono">
+                      <span className="text-purple-400">{birthEnv?.yearStar}</span>
+                      <span className="text-zinc-600">/</span>
+                      <span className="text-zinc-400">{birthEnv?.classicalYearStar}</span>
+                    </div>
+                  </div>
+                  <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Month Star</span>
+                    <span className="text-base font-mono text-amber-500">{birthEnv?.monthStar || '--'}</span>
+                  </div>
+                  <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Day Star</span>
+                    <span className="text-base font-mono text-blue-500">{birthEnv?.dayStar || '--'}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Raw Birth Orbital Parameters */}
+              {birthEnv?.raw && (
+                <div className="flex flex-wrap gap-2 mt-auto">
+                  <div className="bg-black/50 border flex flex-col border-purple-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">JUPITER (Y)</span>
+                    <span className="text-xs font-mono text-purple-400">{birthEnv.raw.jupiterLon.toFixed(2)}°</span>
+                  </div>
+                  <div className="bg-black/50 border flex flex-col border-amber-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">LUNAR (M)</span>
+                    <span className="text-xs font-mono text-amber-400">{birthEnv.raw.moonLon.toFixed(2)}°</span>
+                  </div>
+                  <div className="bg-black/50 border flex flex-col border-blue-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">SOLAR (D)</span>
+                    <span className="text-xs font-mono text-blue-400">{birthEnv.raw.sunLon.toFixed(2)}°</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Month Star</span>
-              <span className="text-base font-mono text-amber-500">{env?.monthStar || '--'}</span>
-            </div>
-            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Day Star</span>
-              <span className="text-base font-mono text-blue-500">{env?.dayStar || '--'}</span>
-            </div>
-            <div className="bg-zinc-950 border border-amber-900/40 px-3 py-1 flex flex-col">
-              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Honmei</span>
-              <span className="text-base font-mono text-amber-500">{honmeiStar}</span>
-            </div>
-          </div>
 
-          {/* Raw Orbital Parameters */}
-          {env?.raw && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              <div className="bg-black/50 border flex flex-col items-center justify-center border-purple-900/40 px-3 py-1">
-                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Jupiter Lon. (Year Base)</span>
-                <span className="text-sm font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
+            {/* Current Environment Data */}
+            <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
+              <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between">
+                <span>Current Live Environment</span>
+                <span className="text-[8px] text-emerald-500 animate-pulse">● TRACKING</span>
               </div>
-              <div className="bg-black/50 border flex flex-col items-center justify-center border-amber-900/40 px-3 py-1">
-                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Lunar Lon. (Month Base)</span>
-                <span className="text-sm font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
+              <div className="flex flex-wrap gap-2">
+                <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
+                  <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Current Year (P/C)</span>
+                  <div className="flex gap-1 font-mono">
+                    <span className="text-purple-400">{env?.yearStar}</span>
+                    <span className="text-zinc-600">/</span>
+                    <span className="text-zinc-400">{env?.classicalYearStar}</span>
+                  </div>
+                </div>
+                <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
+                  <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Current Month Star</span>
+                  <span className="text-base font-mono text-amber-500">{env?.monthStar || '--'}</span>
+                </div>
+                <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
+                  <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Current Day Star</span>
+                  <span className="text-base font-mono text-blue-500">{env?.dayStar || '--'}</span>
+                </div>
               </div>
-              <div className="bg-black/50 border flex flex-col items-center justify-center border-blue-900/40 px-3 py-1">
-                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Solar Lon. (Day Base)</span>
-                <span className="text-sm font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
-              </div>
+
+              {/* Raw Current Orbital Parameters */}
+              {env?.raw && (
+                <div className="flex flex-wrap gap-2 mt-auto">
+                  <div className="bg-black/50 border flex flex-col border-purple-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">JUPITER (Y)</span>
+                    <span className="text-xs font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
+                  </div>
+                  <div className="bg-black/50 border flex flex-col border-amber-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">LUNAR (M)</span>
+                    <span className="text-xs font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
+                  </div>
+                  <div className="bg-black/50 border flex flex-col border-blue-900/40 px-2 py-1">
+                    <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">SOLAR (D)</span>
+                    <span className="text-xs font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
             <div className="bg-black/50 border border-zinc-800 p-2">
-              <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1">YEAR BOARD (年盤)</div>
+              <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                <span>YEAR BOARD (年盤)</span>
+                <span className="text-[7px] text-zinc-500">CURRENT ENV</span>
+              </div>
               {env && (
                 <div className="grid grid-cols-3 gap-1 text-center font-bold">
                   <div>SE: {(env.yearStar + 8) % 9 || 9}</div>
@@ -275,13 +352,17 @@ export const SolarTimeClock = () => {
                   <div>NW: {(env.yearStar + 1) % 9 || 9}</div>
                 </div>
               )}
-              <div className="mt-2 text-[8px] text-zinc-600">
-                Formula: Modulo 9. Sets long-term baseline.
+              <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                木星黄経に基づく物理的うねり。<br/>
+                あなたの本命星 {honmeiStar?.physical} (Phys) との干渉を計算。
               </div>
             </div>
 
             <div className="bg-black/50 border border-zinc-800 p-2">
-              <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1">MONTH BOARD (月盤)</div>
+              <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                <span>MONTH BOARD (月盤)</span>
+                <span className="text-[7px] text-zinc-500">CURRENT ENV</span>
+              </div>
               {env && (
                 <div className="grid grid-cols-3 gap-1 text-center font-bold">
                   <div>SE: {(env.monthStar + 8) % 9 || 9}</div>
@@ -296,12 +377,15 @@ export const SolarTimeClock = () => {
                 </div>
               )}
               <div className="mt-2 text-[8px] text-zinc-600">
-                Formula: Modulo 9. Sets mid-term trends.
+                月・太陽位相に基づく潮汐干渉モデル。
               </div>
             </div>
             
             <div className="bg-black/50 border border-zinc-800 p-2">
-              <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1">DAY BOARD (日盤)</div>
+              <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                <span>DAY BOARD (日盤)</span>
+                <span className="text-[7px] text-zinc-500">CURRENT ENV</span>
+              </div>
               {env && (
                 <div className="grid grid-cols-3 gap-1 text-center font-bold">
                   <div>SE: {(env.dayStar + 8) % 9 || 9}</div>
@@ -316,7 +400,7 @@ export const SolarTimeClock = () => {
                 </div>
               )}
               <div className="mt-2 text-[8px] text-zinc-600">
-                Formula: Modulo 9. Generates daily offsets. 
+                自転・太陽風フラックス直撃角モデル。
               </div>
             </div>
           </div>
