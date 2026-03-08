@@ -36,19 +36,19 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
          <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex justify-between items-start">
             <div className="flex items-center gap-2">
               <Crosshair size={14} className="text-blue-500 animate-pulse" />
-              <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-300 drop-shadow-md">
+              <h2 className="text-xs uppercase font-mono tracking-widest text-zinc-300 drop-shadow-md">
                 Tactical Magnetic Vectors
               </h2>
             </div>
             <div className="flex flex-col items-end gap-1">
                <button 
                   onClick={() => downloadKML(lat, lon, declination || 0)}
-                  className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[9px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
+                  className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
                >
                   <Download size={10} />
                   KML Export
                </button>
-               <div className="text-[8px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
+               <div className="text-[10px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
                   COORD: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
                   DEC: {declination ? declination.toFixed(2) : '--'}°
                </div>
@@ -59,13 +59,13 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
            <MagneticMapInner lat={lat} lon={lon} declination={declination || 0} intensity={intensity || 50000} vectors={vectors} honmeiStar={honmeiStar} kpIndex={kpIndex} ansLoad={ansLoad} />
          </div>
          
-         {/* Overlays */}
-         <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
-            <div className="bg-black/80 border border-zinc-800 p-2 font-mono text-[9px] leading-tight text-zinc-400 backdrop-blur-sm">
-               <div className="text-emerald-500 font-bold mb-1">■ True North (Geo)</div>
-               <div className="text-blue-500 font-bold">■ Magnetic North (WMM2020)</div>
-               <div className="mt-2 text-zinc-600 text-[8px]">
-                  * Lines represent primary spatial azimuths. <br/>
+          {/* Overlays */}
+          <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
+             <div className="bg-black/80 border border-zinc-800 p-2 font-mono text-[11px] leading-tight text-zinc-400 backdrop-blur-sm">
+                <div className="text-emerald-500 font-bold mb-1">■ True North (Geo)</div>
+                <div className="text-blue-500 font-bold">■ Magnetic North (WMM2020)</div>
+                <div className="mt-2 text-zinc-600 text-[10px]">
+                   * Lines represent primary spatial azimuths. <br/>
                   * Green overlays = safe vectors. Red = hazardous noise.
                </div>
             </div>
@@ -73,9 +73,9 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
       </div>
 
       {/* Info Panel Dense */}
-      <div className="bg-zinc-950 border border-zinc-800 p-3 text-[8px] sm:text-[9px] font-mono text-zinc-400 flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[400px] md:max-h-[600px] lg:max-h-[700px]">
+      <div className="bg-zinc-950 border border-zinc-800 p-3 text-[10px] sm:text-[11px] font-mono text-zinc-400 flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[400px] md:max-h-[600px] lg:max-h-[700px]">
          <div className="border-b border-zinc-900 pb-2">
-            <h3 className="text-blue-500 text-[10px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
+            <h3 className="text-blue-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-blue-900/40 px-1">SYS.1</span> 磁北偏角計算 (WMM補正)
             </h3>
             <p className="leading-relaxed text-justify">
@@ -88,7 +88,7 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
          </div>
 
          <div className="border-b border-zinc-900 pb-2">
-            <h3 className="text-emerald-500 text-[10px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
+            <h3 className="text-emerald-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-emerald-900/40 px-1">SYS.2</span> 空間ベクトル（正中・四隅フィルター）
             </h3>
             <p className="leading-relaxed text-justify mb-1">
@@ -102,7 +102,7 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
          </div>
 
          <div className="pt-1 border-b border-zinc-900 pb-2">
-            <h3 className="text-amber-500 text-[10px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
+            <h3 className="text-amber-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-amber-900/40 px-1">WARN</span> 長距離移動シールド減衰理論
             </h3>
             <p className="leading-relaxed text-justify">
@@ -112,7 +112,7 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
          </div>
 
          <div className="pt-1">
-            <h3 className="text-purple-500 text-[10px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
+            <h3 className="text-purple-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-purple-900/40 px-1">SYS.3</span> パーソナル・エフェメリス（星回り）物理演算
             </h3>
             <p className="leading-relaxed text-justify mb-2">
@@ -120,8 +120,8 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
             </p>
             
             <div className="bg-zinc-900/50 p-2 border-l-2 border-emerald-500 mb-2">
-               <h4 className="text-emerald-500 text-[9px] font-bold mb-1">■ なぜ「緑エリア（吉方）」が最適なのか？</h4>
-               <p className="text-[8px] leading-relaxed text-zinc-400">
+               <h4 className="text-emerald-500 text-[11px] font-bold mb-1">■ なぜ「緑エリア（吉方）」が最適なのか？</h4>
+               <p className="text-[10px] leading-relaxed text-zinc-400">
                   五行の「相生（そうじょう）」関係は、現代物理学における<span className="text-emerald-400">「位相同期（Phase Synchronization）」</span>として解釈される。
                   環境周波数（環境の星）が個体周波数（本命星）にエネルギーを供給する「共振状態」が発生し、ミトコンドリアの電子伝達系における量子効率が最大化される。
                   <br/>
@@ -132,22 +132,22 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
                </p>
             </div>
 
-            <h4 className="text-zinc-400 text-[10px] font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ 空間磁気グリッド（Base Matrix）の算術基盤と算出ルール</h4>
+            <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ 空間磁気グリッド（Base Matrix）の算術基盤と算出ルール</h4>
 
-            <p className="text-[8px] leading-relaxed text-zinc-400 mb-2">
+            <p className="text-[10px] leading-relaxed text-zinc-400 mb-2">
                ※本システムの「年盤・月盤・日盤」という呼称は、天体物理学に基づくフラクタル干渉モデルとして機能します。
                木星の公転軌道（約11.86年周期）からの重力波長、および月と太陽の黄経座標からリアルタイム演算される位相波長をベースに、地球磁場の8方位へと磁束（ベクトル）を展開。その配置された星（固有周波数）と、あなた自身の「本命星」との干渉をセクターごとに算出しています。
             </p>
 
-            <h4 className="text-zinc-400 text-[10px] font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ マップ上のライン（線）の凡例</h4>
-            <ul className="list-disc pl-4 text-zinc-400 space-y-1 text-[9px] mb-3">
+            <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ マップ上のライン（線）の凡例</h4>
+            <ul className="list-disc pl-4 text-zinc-400 space-y-1 text-[11px] mb-3">
                <li><span className="text-emerald-500 font-bold">緑の破線 (True North):</span> 地理的な真北（北極点方向）。</li>
                <li><span className="text-blue-500 font-bold">青の実線 (Magnetic North):</span> WMMデータにより補正された、コンパスが実際に指し示す「磁北」。</li>
                <li><span className="text-zinc-500 font-bold">グレーの点線リング:</span> 距離被曝減衰リング（100km, 500km, 1000km...）。</li>
                <li><span className="text-red-500 font-bold">赤の点線枠 (Danger Boundary):</span> 致死的なノイズエリアとの物理的隣接境界線。</li>
             </ul>
 
-            <h4 className="text-zinc-400 text-[10px] font-bold mb-2 mt-2 border-b border-zinc-800 pb-1">■ エリアカラーの算出ルール（凡例）</h4>
+            <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-2 border-b border-zinc-800 pb-1">■ エリアカラーの算出ルール（凡例）</h4>
             <ul className="list-disc pl-4 text-zinc-400 space-y-2 text-[9px]">
                <li>
                  <span className="text-red-600 font-bold">Type-I NOISE (濃赤エリア):</span> 宇宙からの強力な磁気嵐直撃帯。<br/>

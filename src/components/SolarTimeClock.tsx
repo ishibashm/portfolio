@@ -224,20 +224,20 @@ export const SolarTimeClock = () => {
           
           <div className="flex flex-wrap gap-2 mb-4">
             <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Year Star</span>
-              <span className="text-sm font-mono text-purple-500">{env?.yearStar || '--'}</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Year Star</span>
+              <span className="text-base font-mono text-purple-500">{env?.yearStar || '--'}</span>
             </div>
             <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Month Star</span>
-              <span className="text-sm font-mono text-amber-500">{env?.monthStar || '--'}</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Month Star</span>
+              <span className="text-base font-mono text-amber-500">{env?.monthStar || '--'}</span>
             </div>
             <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
-              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Day Star</span>
-              <span className="text-sm font-mono text-blue-500">{env?.dayStar || '--'}</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Day Star</span>
+              <span className="text-base font-mono text-blue-500">{env?.dayStar || '--'}</span>
             </div>
             <div className="bg-zinc-950 border border-amber-900/40 px-3 py-1 flex flex-col">
-              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Honmei</span>
-              <span className="text-sm font-mono text-amber-500">{honmeiStar}</span>
+              <span className="text-[10px] text-zinc-500 uppercase tracking-tighter">Honmei</span>
+              <span className="text-base font-mono text-amber-500">{honmeiStar}</span>
             </div>
           </div>
 
@@ -245,21 +245,21 @@ export const SolarTimeClock = () => {
           {env?.raw && (
             <div className="flex flex-wrap gap-2 mb-4">
               <div className="bg-black/50 border flex flex-col items-center justify-center border-purple-900/40 px-3 py-1">
-                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Jupiter Lon. (Year Base)</span>
-                <span className="text-xs font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
+                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Jupiter Lon. (Year Base)</span>
+                <span className="text-sm font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
               </div>
               <div className="bg-black/50 border flex flex-col items-center justify-center border-amber-900/40 px-3 py-1">
-                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Lunar Lon. (Month Base)</span>
-                <span className="text-xs font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
+                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Lunar Lon. (Month Base)</span>
+                <span className="text-sm font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
               </div>
               <div className="bg-black/50 border flex flex-col items-center justify-center border-blue-900/40 px-3 py-1">
-                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Solar Lon. (Day Base)</span>
-                <span className="text-xs font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
+                <span className="text-[9px] text-zinc-400 uppercase tracking-tighter">Solar Lon. (Day Base)</span>
+                <span className="text-sm font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[9px] font-mono text-zinc-400">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
             <div className="bg-black/50 border border-zinc-800 p-2">
               <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1">YEAR BOARD (年盤)</div>
               {env && (
