@@ -132,11 +132,34 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
                </p>
             </div>
 
-            <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ 空間磁気グリッド（Base Matrix）の算術基盤と算出ルール</h4>
+            <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ 空間磁束の変動サイクル（Time-Span Models）</h4>
+            <div className="grid grid-cols-1 gap-2 mb-4">
+               <div className="bg-black/40 p-2 border border-purple-900/30">
+                  <div className="text-purple-400 font-bold text-[10px] mb-1">【Year Vector】約1年スパン (長期ベースライン)</div>
+                  <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 木星の黄経（Ecliptic Longitude）に基づく11.86年周期の重力・磁場干渉モデル。<br/>
+                     <span className="text-zinc-500">地球外からの最も巨大な引力源である木星の公転が、太陽系全体の磁力線ネットワーク（ヘリオスフィア）に与えるマクロな歪みを計算。引っ越しや就職など、数ヶ月〜数年単位の長期的・根本的な環境エネルギー基盤を決定します。</span>
+                  </div>
+               </div>
+               <div className="bg-black/40 p-2 border border-amber-900/30">
+                  <div className="text-amber-500 font-bold text-[10px] mb-1">【Month Vector】約1ヶ月スパン (中期的トレンド)</div>
+                  <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 太陽と月の黄経差（Lunar-Solar Phase）による月齢サイクルモデル。<br/>
+                     <span className="text-zinc-500">月の公転（約29.5日）が地球の自転軸や海洋（および体内）の水分・血流に与える潮汐力（潮汐摩擦）と地磁気の微小変動を計算。出張や短期プロジェクトなど、数日〜数週間のバイオリズムを支配します。</span>
+                  </div>
+               </div>
+               <div className="bg-black/40 p-2 border border-blue-900/30">
+                  <div className="text-blue-400 font-bold text-[10px] mb-1">【Day / Hour Vector】約1日〜2時間スパン (短期ノイズ・トリガー)</div>
+                  <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 地球の自転（日周運動）および太陽風フラックスの直撃角モデル。<br/>
+                     <span className="text-zinc-500">地球が特定の経度で太陽のプラズマ風を正面から受ける際の、電離層と地磁気のリアルタイムな押し込み（Bow Shock）を計算。日帰りの用事や数時間の会議など、即効性の高い自律神経へのトリガーとして作用します。</span>
+                  </div>
+               </div>
+            </div>
 
+            <h4 className="text-zinc-400 text-xs font-bold mb-2 border-b border-zinc-800 pb-1">■ ベースマトリクスと最終判定の算出ルール</h4>
             <p className="text-[10px] leading-relaxed text-zinc-400 mb-2">
-               ※本システムの「年盤・月盤・日盤」という呼称は、天体物理学に基づくフラクタル干渉モデルとして機能します。
-               木星の公転軌道（約11.86年周期）からの重力波長、および月と太陽の黄経座標からリアルタイム演算される位相波長をベースに、地球磁場の8方位へと磁束（ベクトル）を展開。その配置された星（固有周波数）と、あなた自身の「本命星」との干渉をセクターごとに算出しています。
+               上記の天体物理波長（木星・月・太陽）をベースに、地球磁場の8方位へと磁束（ベクトル）を展開。各空間セクターに配置されたインプリント周波数と、あなた自身の「本命星（初期周波数）」との干渉をセクターごとに算出します。最終表示される色は、**長期・中期・短期すべてのレイヤーの波形を重ね合わせた最終同期結果（コンポジット）**です。
             </p>
 
             <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ マップ上のライン（線）の凡例</h4>
