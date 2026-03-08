@@ -449,6 +449,43 @@ export const SolarTimeClock = () => {
               })}
             </div>
           )}
+
+          {/* Theory & Model Explanation */}
+          <div className="mt-4 bg-zinc-900/30 border border-zinc-800 p-3 w-full">
+            <div className="text-blue-400 font-bold mb-2 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              Astrophysical Core Logic (Theory & Model)
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2">YEAR: JUPITER RESONANCE</span>
+                <p className="text-[8px] text-zinc-500 leading-relaxed">
+                  木星の公転周期（約11.86年）を12分割し、地球への重力的・磁気的影響を1-9のフラクタル周波数に変換。
+                  カレンダーの「1月1日」ではなく、木星が物理的に黄極を移動した瞬間に盤面が切り替わります。
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2">MONTH: TIDAL INTERFERENCE</span>
+                <p className="text-[8px] text-zinc-500 leading-relaxed">
+                  太陽黄経（季節）と月相（月の満ち欠け）の相対位相差から算出。
+                  月の引力による潮汐変動が生体に与えるノイズを、九星のアルゴリズムを流用してシミュレーションします。
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2">DAY: ROTATIONAL FLUX</span>
+                <p className="text-[8px] text-zinc-500 leading-relaxed">
+                  地球の自転(Julian Day)をベースに、太陽黄経による位相反転（陽遁・陰遁）を適用。
+                  夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
+              <div className="text-[8px] text-zinc-600 italic">
+                ※ 本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
+                古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
+              </div>
+            </div>
+          </div>
         </div>
         {/* Module 3: Temporal Filter Matrix */}
         <SolarTimeTable

@@ -120,6 +120,10 @@ export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, class
 /**
  * Long-term Wave (年盤) の算出：
  * これまでの暦法（カレンダー剰余）を完全に破棄し、木星の黄道上の実際の位置（0〜360度）からベクトル量子化(1-9)する。
+ * 
+ * 物理的根拠:
+ * 木星は太陽系最大の質量を持ち、地球の磁気圏や重力バランスに長期的な周期（約11.86年）で影響を与える。
+ * 九星気学の「9年サイクル」は、木星の公転と土星との会合周期による干渉パターンのフラクタル近似であると定義。
  */
 export function getYearStar(date: Date): StarFrequency {
   const jupLon = AstroEngine.getJupiterLongitude(date);
@@ -137,32 +141,12 @@ export function getYearStar(date: Date): StarFrequency {
 }
 
 /**
- * Short-term Wave (日盤) の算出：
- * 暦ではなく、ユリウス日（Julian Day）と太陽黄経を用いた最新の軌道物理モデリング。
- */
-export function getDayStar(date: Date): StarFrequency {
-  const jd = AstroEngine.getJulianDay(date);
-  const L0 = AstroEngine.getSolarLongitude(date);
-  
-  // 物理モデル: 夏至(L0=90)から冬至(L0=270)は太陽エネルギーが減衰する「負の位相（陰遁）」
-  // 冬至(L0=270)から夏至(L0=90)はエネルギーが増幅する「正の位相（陽遁）」
-  const isYinPhase = (L0 >= 90 && L0 < 270);
-  
-  // Base rotation phase using Julian Day
-  const cycle = Math.floor(jd) % 9;
-  
-  // 逆相（キャンセリング） / 正相（アンプリファイング）の適用
-  let star = isYinPhase ? (9 - cycle) : (cycle + 1);
-  if (star <= 0) star += 9;
-  if (star > 9) star %= 9;
-  if (star === 0) star = 9;
-  
-  return star as StarFrequency;
-}
-
-/**
  * Mid-term Wave (月盤) の算出：
  * 月の黄経（Moon Longitude）と太陽の黄経（Solar Longitude）の物理的・潮汐的干渉（Lunar-Solar Phase）から算出。
+ * 
+ * 物理的根拠:
+ * 月の公転による潮汐力の変動と、地球の公転（太陽との相対位置）による季節的エネルギー変化の合成波。
+ * 太陽黄経（季節）をキャリア波、月相（満ち欠け）をモジュレーション波としたAM変調モデルとして定義。
  */
 export function getMonthStar(date: Date): StarFrequency {
   const sunLon = AstroEngine.getSolarLongitude(date);
@@ -180,6 +164,34 @@ export function getMonthStar(date: Date): StarFrequency {
   let phase = (solarTerm * 12 + lunarTerm) % 9;
   let star = 9 - phase;
   if (star <= 0) star += 9;
+  
+  return star as StarFrequency;
+}
+
+/**
+ * Short-term Wave (日盤) の算出：
+ * 暦ではなく、ユリウス日（Julian Day）と太陽黄経を用いた最新の軌道物理モデリング。
+ * 
+ * 物理的根拠:
+ * 地球の自転による昼夜サイクルを基調とし、太陽光子の入射角（太陽黄経）による「陽遁・陰遁」の位相反転を再現。
+ * 夏至（L0=90°）と冬至（L0=270°）を物理的な極性反転ポイント（至点）として厳密に定義。
+ */
+export function getDayStar(date: Date): StarFrequency {
+  const jd = AstroEngine.getJulianDay(date);
+  const L0 = AstroEngine.getSolarLongitude(date);
+  
+  // 物理モデル: 夏至(L0=90)から冬至(L0=270)は太陽エネルギーが減衰する「負の位相（陰遁）」
+  // 冬至(L0=270)から夏至(L0=90)はエネルギーが増幅する「正の位相（陽遁）」
+  const isYinPhase = (L0 >= 90 && L0 < 270);
+  
+  // Base rotation phase using Julian Day
+  const cycle = Math.floor(jd) % 9;
+  
+  // 逆相（キャンセリング） / 正相（アンプリファイング）の適用
+  let star = isYinPhase ? (9 - cycle) : (cycle + 1);
+  if (star <= 0) star += 9;
+  if (star > 9) star %= 9;
+  if (star === 0) star = 9;
   
   return star as StarFrequency;
 }
