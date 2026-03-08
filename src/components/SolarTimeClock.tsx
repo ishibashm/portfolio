@@ -18,18 +18,18 @@ export const SolarTimeClock = () => {
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
 
-  // Geo & Environment State
-  const [lat, setLat] = useState<number>(34.40297864445456);
-  const [lon, setLon] = useState<number>(132.46465113007235);
+  // Geo & Environment State (Default: Tokyo)
+  const [lat, setLat] = useState<number>(35.6895);
+  const [lon, setLon] = useState<number>(139.6917);
   const [spaceWeather, setSpaceWeather] = useState<SpaceWeatherData | null>(
     null,
   );
   const [geoData, setGeoData] = useState<GeomagneticData | null>(null);
 
   // Hardware Init State (Personal Profile)
-  const [birthDate, setBirthDate] = useState<string>("1988-11-25T05:00");
-  const [birthLat, setBirthLat] = useState<number>(34.40297864445456);
-  const [birthLon, setBirthLon] = useState<number>(132.46465113007235);
+  const [birthDate, setBirthDate] = useState<string>("2000-01-01T00:00");
+  const [birthLat, setBirthLat] = useState<number>(35.6895);
+  const [birthLon, setBirthLon] = useState<number>(139.6917);
 
   // Bio-Sync State
   const [hrv, setHrv] = useState(50);
@@ -55,14 +55,14 @@ export const SolarTimeClock = () => {
   }, [birthDate]);
 
   const { board, layers } = React.useMemo(() => {
-    if (!baseTime || !env) return { board: null, layers: null };
+    if (!env) return { board: null, layers: null };
     const yearBoard = generateBoard(env.yearStar);
     const monthBoard = generateBoard(env.monthStar);
     const dayBoard = generateBoard(env.dayStar);
     const vectorData = calculateVectorCollision(honmeiStar, yearBoard, monthBoard, dayBoard);
     // TACTICAL MAP overrides: using 'dayBoard' to represent the daily tactical noise environment.
     return { board: dayBoard, layers: vectorData };
-  }, [baseTime, honmeiStar, env]);
+  }, [honmeiStar, env]);
 
   useEffect(() => {
     const now = new Date();
