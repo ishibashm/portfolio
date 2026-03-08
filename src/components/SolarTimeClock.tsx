@@ -8,9 +8,10 @@ import { BioMagneticDashboard } from "./BioMagneticDashboard";
 import { TacticalMagneticMap } from "./TacticalMagneticMap";
 import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
+import { ClockDisplay } from "./ClockDisplay";
 
 export const SolarTimeClock = () => {
-  const [now, setNow] = useState<Date | null>(null);
+  const [baseTime, setBaseTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
 
@@ -30,8 +31,9 @@ export const SolarTimeClock = () => {
   const [shieldCapacity, setShieldCapacity] = useState(100);
 
   useEffect(() => {
-    setNow(new Date());
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    setBaseTime(new Date());
+    // Restoring 1-second ticking per user request
+    const timer = setInterval(() => setBaseTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -66,13 +68,13 @@ export const SolarTimeClock = () => {
   }, []);
 
   useEffect(() => {
-    if (now && lon) {
-      setSolarData(calculateSolarTime(now, lon));
+    if (baseTime && lon) {
+      setSolarData(calculateSolarTime(baseTime, lon));
     }
-    if (now && lat && lon) {
-      setGeoData(getGeomagneticData(lat, lon, now));
+    if (baseTime && lat && lon) {
+      setGeoData(getGeomagneticData(lat, lon, baseTime));
     }
-  }, [now, lat, lon]);
+  }, [baseTime, lat, lon]);
 
   // Calculate ANS Load & Shield Capacity
   useEffect(() => {
@@ -98,7 +100,7 @@ export const SolarTimeClock = () => {
     setAnsLoad(Math.round(Math.min(100, Math.max(0, mitigatedLoad))));
   }, [hrv, gsr, baseSyncDays, spaceWeather]);
 
-  if (!now || !solarData) return (
+  if (!baseTime || !solarData) return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
       Initializing Tactical Systems...
     </div>
@@ -106,8 +108,6 @@ export const SolarTimeClock = () => {
 
   const kimon = getKimonHour(solarData.solarTime);
   const isVoidTime = kimon.etoKanji === "午" || kimon.etoKanji === "未";
-  
-  const formatTime = (date: Date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-8 md:pt-16 pb-16 relative overflow-x-hidden">
@@ -126,40 +126,14 @@ export const SolarTimeClock = () => {
           isVoidTime={isVoidTime} 
         />
 
-        {/* Temporal HUD (Main Clock Focus) */}
-        <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl border border-zinc-900/80 bg-black/40 p-6 rounded-sm backdrop-blur-sm relative">
-          <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500"></div>
-          <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500"></div>
-
-          <div className="text-center md:text-left space-y-1">
-            <div className="text-[10px] tracking-[0.3em] text-zinc-500 uppercase font-mono">Current Matrix Cycle</div>
-            <div className={`text-6xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red animate-pulse' : 'text-emerald-500 text-glow'}`}>
-              {kimon.japanese}
-            </div>
-            <div className="text-sm tracking-[0.2em] text-zinc-400 font-serif">
-              {kimon.reading} / Center: {kimon.name}
-            </div>
-          </div>
-
-          <div className="mt-8 md:mt-0 flex flex-col items-end space-y-4">
-             <div className="text-right">
-                <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">True Solar Time</div>
-                <div className="text-3xl font-mono font-light text-emerald-400">
-                  {formatTime(solarData.solarTime)}
-                </div>
-             </div>
-             <div className="text-right">
-                <div className="text-[9px] uppercase tracking-widest text-zinc-600 font-mono">Standard JST</div>
-                <div className="text-xl font-mono font-light text-zinc-500">
-                  {formatTime(now)}
-                </div>
-             </div>
-             <div className="text-[8px] font-mono text-zinc-600 gap-2 flex">
-                <span>EOT:{solarData.equationOfTime.toFixed(1)}m</span>
-                <span>OS:{solarData.longitudeCorrection.toFixed(1)}m</span>
-             </div>
-          </div>
-        </div>
+        {/* Temporal HUD (Main Clock Focus) - Extracted for performance */}
+        <ClockDisplay 
+           kimon={kimon} 
+           isVoidTime={isVoidTime} 
+           solarTime={solarData.solarTime} 
+           eot={solarData.equationOfTime} 
+           longOffset={solarData.longitudeCorrection} 
+        />
 
         {/* Module 1 & 2: BioMagnetic Dashboard */}
         <BioMagneticDashboard 
@@ -176,7 +150,16 @@ export const SolarTimeClock = () => {
         />
 
         {/* Module 3: Temporal Filter Matrix */}
-        <SolarTimeTable date={now} longitude={lon || 135.7681} />
+        <SolarTimeTable 
+           date={baseTime} 
+           longitude={lon || 135.7681} 
+           latitude={lat}
+           eot={solarData.equationOfTime}
+           kpIndex={spaceWeather?.kpIndex || null}
+           xrayFlux={spaceWeather?.xrayFlux || null}
+           ansLoad={ansLoad}
+           shieldCapacity={shieldCapacity}
+        />
 
         {/* Module 4: Tactical Magnetic Map */}
         <div className="w-full max-w-4xl mt-12">
@@ -184,7 +167,7 @@ export const SolarTimeClock = () => {
              <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
                Tactical Magnetic Navigator
              </h2>
-             <div className="h-px bg-zinc-800 flex-grow"></div>
+             <div className="h-px bg-zinc-800 grow"></div>
              <div className="text-[8px] font-mono text-zinc-600 tracking-widest">
                LAT: {lat?.toFixed(4)} / LON: {lon?.toFixed(4)}
              </div>
@@ -196,8 +179,8 @@ export const SolarTimeClock = () => {
            </p>
            
            <TacticalMagneticMap 
-              lat={lat} 
-              lon={lon} 
+              lat={lat || 35.0116} 
+              lon={lon || 135.7681} 
               declination={geoData?.declination || 0} 
            />
         </div>

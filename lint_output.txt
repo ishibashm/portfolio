@@ -1,0 +1,234 @@
+
+> my-portfolio@0.1.0 lint
+> eslint
+
+
+C:\Users\ishib\projects\portfolio\my-portfolio\scripts\gas_rental_scraper.js
+  1:1  error  Do not use "@ts-nocheck" because it alters compilation errors  @typescript-eslint/ban-ts-comment
+
+C:\Users\ishib\projects\portfolio\my-portfolio\scripts\migrate_storage.ts
+  72:17  warning  'data' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\api\rentals\webhook\route.ts
+  134:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\api\screenshot\route.ts
+  60:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\ceremonial-sample\page.tsx
+  27:15   error  Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+  63:96   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  63:103  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  64:31   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  64:37   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  64:43   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  64:52   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  72:62   error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+  72:125  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                        react/no-unescaped-entities
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\defuddle\actions.ts
+  29:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\defuddle\page.tsx
+   10:40  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   45:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   79:19  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  180:33  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  307:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\rentals\actions.ts
+  103:15  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\rentals\page.tsx
+    5:10   warning  'formatDistanceToNow' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+    5:31   warning  'differenceInDays' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+    6:10   warning  'Home' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    6:16   warning  'ExternalLink' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+    6:30   warning  'Calendar' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+    6:40   warning  'MapPin' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+    6:48   warning  'JapaneseYen' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+    6:61   warning  'Clock' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+    6:101  warning  'Plus' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   18:10   warning  'loading' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   21:26   warning  'setFilterNewBuild' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   22:18   warning  'setSearch' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   23:10   warning  'isGenerating' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   28:5    error    Error: Cannot access variable before it is declared
+
+`fetchProperties` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\rentals\page.tsx:28:5
+  26 |
+  27 |   useEffect(() => {
+> 28 |     fetchProperties();
+     |     ^^^^^^^^^^^^^^^ `fetchProperties` accessed before it is declared
+  29 |   }, []);
+  30 |
+  31 |   async function fetchProperties() {
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\app\rentals\page.tsx:31:3
+  29 |   }, []);
+  30 |
+> 31 |   async function fetchProperties() {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 32 |     setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 33 |     const { data, error } = await supabase
+     窶ｦ
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 43 |     setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^
+> 44 |   }
+     | ^^^^ `fetchProperties` is declared here
+  45 |
+  46 |   const handleSort = (field: SortField) => {
+  47 |     if (sortField === field) {  react-hooks/immutability
+   29:6    warning  React Hook useEffect has a missing dependency: 'fetchProperties'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+   46:9    warning  'handleSort' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   55:9    warning  'handleGenerateSample' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   66:10   warning  'isFetchingReal' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   67:9    warning  'handleFetchReal' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   79:9    warning  'filteredAndSortedProperties' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  116:9    warning  'SortIcon' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\BioMagneticDashboard.tsx
+   24:55   warning  'eot' is defined but never used                                  @typescript-eslint/no-unused-vars
+   76:205  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+   88:196  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+   88:211  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  105:121  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\KigakuBoard.tsx
+  20:9  warning  'directions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\MagneticMapInner.tsx
+   9:37  error    Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+  99:9   warning  'directions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeClock.tsx
+  14:46  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  15:10  warning  'scrolled' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  33:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeClock.tsx:33:5
+  31 |
+  32 |   useEffect(() => {
+> 33 |     setNow(new Date());
+     |     ^^^^^^ Avoid calling setState() directly within an effect
+  34 |     const timer = setInterval(() => setNow(new Date()), 1000);
+  35 |     return () => clearInterval(timer);
+  36 |   }, []);                                                                                                                                            react-hooks/set-state-in-effect
+  63:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeClock.tsx:63:7
+  61 |     } else {
+  62 |       // Fallback to Kyoto
+> 63 |       setLat(35.0116);
+     |       ^^^^^^ Avoid calling setState() directly within an effect
+  64 |       setLon(135.7681);
+  65 |     }
+  66 |   }, []);                                                                                                                                                                                               react-hooks/set-state-in-effect
+  70:7   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeClock.tsx:70:7
+  68 |   useEffect(() => {
+  69 |     if (now && lon) {
+> 70 |       setSolarData(calculateSolarTime(now, lon));
+     |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  71 |     }
+  72 |     if (now && lat && lon) {
+  73 |       setGeoData(getGeomagneticData(lat, lon, now));                                                                                                            react-hooks/set-state-in-effect
+  81:5   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeClock.tsx:81:5
+  79 |     // Shield Capacity is based on Base Sync Days (max 60 days)
+  80 |     const capacity = Math.min(100, Math.max(0, (baseSyncDays / 60) * 100));
+> 81 |     setShieldCapacity(Math.round(capacity));
+     |     ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  82 |
+  83 |     // ANS Load calculation
+  84 |     // Base load from HRV (lower is worse, e.g. 20ms = high load 80%)  react-hooks/set-state-in-effect
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\SolarTimeTable.tsx
+  103:114  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  194:137  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\TacticalActionCommand.tsx
+  84:194  error  Parsing error: Unexpected token. Did you mean `{'>'}` or `&gt;`?
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\TenchusatsuVisualizer.tsx
+  83:36  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  83:49  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\WeddingDateSelector.tsx
+   4:21  warning  'isWeddingFriendly' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+  17:38  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  20:5   error    Error: Cannot access variable before it is declared
+
+`generateCalendar` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\WeddingDateSelector.tsx:20:5
+  18 |
+  19 |   useEffect(() => {
+> 20 |     generateCalendar();
+     |     ^^^^^^^^^^^^^^^^ `generateCalendar` accessed before it is declared
+  21 |   }, [year, month]);
+  22 |
+  23 |   const generateCalendar = () => {
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\components\WeddingDateSelector.tsx:23:3
+  21 |   }, [year, month]);
+  22 |
+> 23 |   const generateCalendar = () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |     const list = [];
+     | ^^^^^^^^^^^^^^^^^^^^
+> 25 |     // Generate dates for the selected month
+     窶ｦ
+     | ^^^^^^^^^^^^^^^^^^^^
+> 64 |     setDates(list);
+     | ^^^^^^^^^^^^^^^^^^^^
+> 65 |   };
+     | ^^^^^ `generateCalendar` is declared here
+  66 |
+  67 |   return (
+  68 |     <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 max-w-4xl mx-auto my-8">  react-hooks/immutability
+  21:6   warning  React Hook useEffect has a missing dependency: 'generateCalendar'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/exhaustive-deps
+  74:11  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react/no-unescaped-entities
+  74:18  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react/no-unescaped-entities
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\utils\geomagnetism.ts
+  1:1  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\utils\kigaku.ts
+  41:9  warning  'group' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\ishib\projects\portfolio\my-portfolio\src\utils\supabase\middleware.ts
+  18:48  warning  'options' is defined but never used  @typescript-eslint/no-unused-vars
+
+笨・69 problems (39 errors, 30 warnings)
+

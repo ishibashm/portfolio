@@ -3,13 +3,22 @@
 import React, { useMemo, useState } from "react";
 import { getDailySolarSchedule, KimonScheduleItem } from "../utils/solarTime";
 import { KigakuBoard } from "./KigakuBoard";
+import { BlockMath, InlineMath } from 'react-katex';
 
 interface SolarTimeTableProps {
   date: Date;
   longitude: number;
+  latitude: number | null;
+  eot: number;
+  kpIndex: number | null;
+  xrayFlux: string | null;
+  ansLoad: number;
+  shieldCapacity: number;
 }
 
-export function SolarTimeTable({ date, longitude }: SolarTimeTableProps) {
+export function SolarTimeTable({ 
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity 
+}: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
     [date, longitude]
@@ -33,16 +42,106 @@ export function SolarTimeTable({ date, longitude }: SolarTimeTableProps) {
     return isGoodGate && isWoodFire;
   };
 
+  const handleDownloadCsv = () => {
+    // Telemetry Header
+    const telemetryHeaders = [
+      "Record Date", date.toLocaleDateString(),
+      "Time", date.toLocaleTimeString(),
+      "Latitude", latitude?.toFixed(4) || "N/A",
+      "Longitude", longitude.toFixed(4),
+      "EoT (min)", eot.toFixed(2),
+      "Kp-Index", kpIndex?.toFixed(2) || "N/A",
+      "X-Ray Flux", xrayFlux || "N/A",
+      "ANS Load %", ansLoad.toString(),
+      "Shield Cap %", shieldCapacity.toString()
+    ];
+
+    // Data Headers
+    const headers = [
+      "Eto", "Branch Name", "Stem Name", "Reading", 
+      "Nine Stars", "Eight Gates", "Auspicious Gate", 
+      "Void Time", "Standard Start", "Standard End"
+    ];
+    
+    // Rows
+    const rows = schedule.map((item) => [
+      item.etoKanji,
+      item.name,
+      item.stemName,
+      item.reading,
+      item.kyusei.japanese,
+      item.hachimon.japanese,
+      item.hachimon.auspicious ? "Yes" : "No",
+      isVoidTimeHour(item) ? "Yes (DANGER)" : "No",
+      formatTime(item.startStandard),
+      formatTime(item.endStandard),
+    ]);
+
+    // CSV Content
+    const csvContent =
+      "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
+      telemetryHeaders.map(c => `"${c}"`).join(",") + "\n\n" +
+      [headers, ...rows]
+        .map((e) => e.map((c) => `"${c}"`).join(",")) // Quote fields
+        .join("\n");
+
+    // Download Link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const dateStr = date.toLocaleDateString().replace(/\//g, "-");
+    link.setAttribute("download", `temporal_matrix_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="w-full max-w-4xl mt-8">
-      <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2 mb-4">
-        <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
-          Temporal Filter Matrix
-        </h2>
-        <div className="h-px bg-zinc-800 flex-grow"></div>
-        <div className="text-[8px] font-mono text-zinc-600 tracking-widest">{date.toLocaleDateString()}</div>
+    <div className="w-full max-w-4xl mt-8 flex flex-col gap-4">
+      {/* HUD Header */}
+      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-800/80 pb-2">
+        <div className="flex items-center gap-2">
+           <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-zinc-400">
+             Temporal Filter Matrix / 時系空間フィルター
+           </h2>
+           <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1 py-0.5 ml-2">v2.4.1</span>
+        </div>
+        <div className="flex items-center gap-4">
+           <div className="text-[8px] font-mono text-zinc-600 tracking-widest hidden md:block">
+              {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
+           </div>
+           <button
+             onClick={handleDownloadCsv}
+             className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+           >
+             Export CSV
+           </button>
+        </div>
       </div>
 
+      {/* High Density Info Panel for Matrix */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] font-mono leading-relaxed text-zinc-500 mb-2">
+        <div className="bg-zinc-950/50 p-2 border border-blue-900/30">
+           <strong className="text-blue-500 block mb-1">=== ALGORITHM: KIGAKU / MENJIA ===</strong>
+           <p className="text-justify">
+             本マトリックスは完全な生体電磁気的適合性に基づく時間窓を設定する。均時差（Equation of Time）を補正し、経度<InlineMath math={`${longitude.toFixed(2)}^\circ`} />における「真太陽時」を算出。干支・九星・八門の各磁束フィルターを時間軸に適用。
+           </p>
+        </div>
+        <div className="bg-zinc-950/50 p-2 border border-red-900/30">
+           <strong className="text-red-500 block mb-1">=== FILTER: VOID TIME PROHIBITION ===</strong>
+           <p className="text-justify">
+             午刻 (11:00-13:00) および未刻 (13:00-15:00) は「天中殺帯」として処理。この位相では地球の磁気シールドが自律神経周波数と同調外れを起こす。磁力線を垂直に切る物理移動（旅行/外出）は細胞レベルの深刻な電圧ギャップ（ANSショック）を引き起こすため全行動を凍結する。
+           </p>
+        </div>
+        <div className="bg-zinc-950/50 p-2 border border-emerald-900/30">
+           <strong className="text-emerald-500 block mb-1">=== FILTER: OPTIMAL DETOX WINDOW ===</strong>
+           <p className="text-justify">
+             緑色ハイライト：吉門（生/休/開）と木火の気（三碧/四緑/九紫）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、細胞代謝と電気的デトックス（排出）を極限まで加速させる。
+           </p>
+        </div>
+      </div>
+
+      {/* The Matrix */}
       <div className="overflow-x-auto custom-scrollbar border border-zinc-900 bg-black/60 shadow-2xl rounded-sm">
         <table className="w-full text-left font-mono text-[10px] whitespace-nowrap">
           <thead className="bg-zinc-950 text-zinc-500 uppercase tracking-widest border-b border-zinc-800 sticky top-0">
@@ -111,7 +210,7 @@ export function SolarTimeTable({ date, longitude }: SolarTimeTableProps) {
                         <div className="flex flex-col items-center">
                            <div className="mb-2 text-center space-y-1">
                              <div className="text-[9px] text-zinc-600 uppercase tracking-widest">Kigaku Compass Matrix</div>
-                             <div className="text-xs text-zinc-400 font-sans">{item.etoKanji} Hour ({item.kyusei.japanese} Center)</div>
+                             <div className="text-xs text-zinc-400 font-sans">{item.etoKanji}の刻 ({item.kyusei.japanese}中宮)</div>
                            </div>
                            <div className="scale-90 opacity-80"><KigakuBoard centerStar={item.kyusei} /></div>
                         </div>
@@ -121,11 +220,11 @@ export function SolarTimeTable({ date, longitude }: SolarTimeTableProps) {
                   {isExpanded && isVoid && (
                     <tr>
                       <td colSpan={6} className="bg-red-950/10 p-4 border-b border-red-900/30 text-center">
-                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] animate-pulse">
+                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] animate-pulse mb-2">
                            WARNING: System Bio-Shield Offline.
                         </div>
-                        <div className="text-[9px] font-sans text-red-800/80 mt-1">
-                           No favorable matrices available during void phase.
+                        <div className="text-[9px] font-sans text-red-800/80 max-w-xl mx-auto text-justify">
+                           午・未の強力な電磁気結合は全球の方位ベクトル特性を上書き（オーバーライド）します。現在あなたの細胞ネットワークは地球共鳴基底周波数から完全に切り離されています。一切の空間移動、物理的・物質的追求・決断・交信を停止してください。CSVエクスポート等のバックアップ行動のみ許可されます。
                         </div>
                       </td>
                     </tr>
