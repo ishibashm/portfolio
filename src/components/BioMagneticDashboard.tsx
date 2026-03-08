@@ -53,31 +53,31 @@ export function BioMagneticDashboard({
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-2 text-xs font-mono relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono relative z-10">
           {/* KP Index */}
-          <div className="flex flex-col">
-            <span className="text-[9px] text-zinc-600 mb-1 font-bold">KP-INDEX (NOAA)</span>
+          <div className="flex flex-col p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-sm">
+            <span className="text-[9px] text-zinc-600 mb-1 font-bold uppercase tracking-wider">KP-INDEX (NOAA)</span>
             <span className={`text-3xl font-bold font-sans tracking-tighter ${getKpColor(kpIndex)}`}>
               {kpIndex !== null ? kpIndex.toFixed(2) : "N/A"}
             </span>
-            <div className="text-[8px] text-zinc-500 mt-1 leading-relaxed text-justify pr-2">
+            <div className="text-[8px] text-zinc-500 mt-1 leading-tight text-justify">
               <strong className="text-zinc-400">算出基準・使用先:</strong> 太陽風による擾乱スケール（0-9）。 <InlineMath math="Kp \geq 4" /> で強力な電磁気ノイズが発生。「Tactical Magnetic Map」上の吉方領域を減衰させる係数として使用。
             </div>
           </div>
 
           {/* XRAY FLUX */}
-          <div className="flex flex-col">
-            <span className="text-[9px] text-zinc-600 mb-1">X-RAY FLUX</span>
+          <div className="flex flex-col p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-sm">
+            <span className="text-[9px] text-zinc-600 mb-1 font-bold uppercase tracking-wider">X-RAY FLUX</span>
             <span className={`text-2xl font-bold tracking-tight ${xrayFlux?.includes('M') || xrayFlux?.includes('X') ? 'text-red-500 animate-pulse' : 'text-zinc-300'}`}>
               {xrayFlux || "A-CLASS"}
             </span>
-            <div className="text-[8px] text-zinc-500 mt-1 leading-relaxed text-justify pr-2">
-              <strong className="text-zinc-400">算出基準:</strong> GOES衛星観測のX線フラックス量。M/Xクラスフレアは電離層に電磁波（X線/紫外線）を打ち込み、シューマン共振の基底周波数 <InlineMath math="(7.83\text{Hz})" /> を歪め、精神状態にダイレクトな影響を与える。
+            <div className="text-[8px] text-zinc-500 mt-1 leading-tight text-justify">
+              <strong className="text-zinc-400">算出基準:</strong> GOES衛星観測のX線フラックス量。電離層に電磁波を打ち込み、シューマン共振周波数 <InlineMath math="(7.83\text{Hz})" /> を歪め、精神状態に影響。
             </div>
           </div>
 
           {/* WMM Output */}
-          <div className="col-span-2 mt-2 pt-2 border-t border-zinc-900/50">
+          <div className="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-zinc-900/50">
              <div className="flex flex-col mb-2">
                 <div className="flex items-center gap-1.5 mb-1">
                    <Compass size={12} className="text-zinc-500" />
@@ -88,31 +88,31 @@ export function BioMagneticDashboard({
                   <br/><strong className="text-zinc-400">【使用先】:</strong> 下記の「偏角 (D)」が、マップ描画エンジンにおいて**「真北と磁北のズレ（Magnetic North）」を物理的に補正するための回転角度**として直接使用されます。
                 </div>
              </div>
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-zinc-900/50 p-2 border border-zinc-800">
-               <div className="border-b sm:border-b-0 sm:border-r border-zinc-800 pb-2 sm:pb-0 sm:pr-2">
-                  <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Intensity (F) / 全磁力</div>
-                  <div className="text-sm text-zinc-300 font-mono">{magneticF ? `${magneticF.toFixed(0)} nT` : 'CALC'}</div>
-                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
-                    <InlineMath math="F = \sqrt{H^2 + Z^2}" /><br/>
-                    <strong className="text-zinc-400">【使用先】:</strong> 生体電位の基底ベースライン参考値。被曝量算出の係数として使用。
-                  </div>
-               </div>
-               <div className="border-b sm:border-b-0 sm:border-r border-zinc-800 py-2 sm:py-0 sm:px-2">
-                  <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Declination (D) / 偏角</div>
-                  <div className="text-sm text-zinc-300 font-mono">{magneticD ? `${magneticD.toFixed(2)}°` : '--'}</div>
-                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
-                    <InlineMath math="D = \arctan(Y/X)" /><br/>
-                    真北と磁北のズレ。ベクトル計算に物理的方位補正として必須。
-                  </div>
-               </div>
-               <div className="pt-2 sm:pt-0 sm:pl-2">
-                  <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Inclination (I) / 伏角</div>
-                  <div className="text-sm text-zinc-300 font-mono">{magneticI ? `${magneticI.toFixed(2)}°` : '--'}</div>
-                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
-                    <InlineMath math="I = \arctan(Z/H)" /><br/>
-                    <strong className="text-zinc-400">【使用先】:</strong> 磁力線突入角度。鉛直方向の高度ノイズ係数として演算。
-                  </div>
-               </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 bg-zinc-900/50 p-2 border border-zinc-800">
+                <div className="border-b md:border-b-0 md:border-r border-zinc-800 pb-2 md:pb-0 md:pr-2">
+                   <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Intensity (F) / 全磁力</div>
+                   <div className="text-sm text-zinc-300 font-mono">{magneticF ? `${magneticF.toFixed(0)} nT` : 'CALC'}</div>
+                   <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
+                     <InlineMath math="F = \sqrt{H^2 + Z^2}" /><br/>
+                     <strong className="text-zinc-400">【使用先】:</strong> 基底ベースライン参考値。被曝量算出の係数として使用。
+                   </div>
+                </div>
+                <div className="border-b md:border-b-0 md:border-r border-zinc-800 py-2 md:py-0 md:px-2">
+                   <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Declination (D) / 偏角</div>
+                   <div className="text-sm text-zinc-300 font-mono">{magneticD ? `${magneticD.toFixed(2)}°` : '--'}</div>
+                   <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
+                     <InlineMath math="D = \arctan(Y/X)" /><br/>
+                     真北と磁北のズレ。ベクトル計算に物理的方位補正として必須。
+                   </div>
+                </div>
+                <div className="pt-2 md:pt-0 md:pl-2">
+                   <div className="text-[8px] text-amber-600/70 mb-0.5 uppercase">Inclination (I) / 伏角</div>
+                   <div className="text-sm text-zinc-300 font-mono">{magneticI ? `${magneticI.toFixed(2)}°` : '--'}</div>
+                   <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight">
+                     <InlineMath math="I = \arctan(Z/H)" /><br/>
+                     <strong className="text-zinc-400">【使用先】:</strong> 磁力線突入角度。鉛直方向の高度ノイズ係数として演算。
+                   </div>
+                </div>
              </div>
           </div>
         </div>

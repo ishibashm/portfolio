@@ -462,7 +462,7 @@ export const SolarTimeClock = () => {
               <div className="flex flex-col gap-2">
                 <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2">YEAR: JUPITER RESONANCE</span>
                 <p className="text-[8px] text-zinc-500 leading-relaxed">
-                  木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。
+                  木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
                 </p>
                 <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
                   <BlockMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
