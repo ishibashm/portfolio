@@ -29,7 +29,7 @@ interface MapProps {
 
 export function TacticalMagneticMapComponent({ lat, lon, declination, intensity, vectors, honmeiStar, kpIndex, ansLoad }: MapProps) {
   return (
-    <div className="w-full max-w-6xl mt-8 grid grid-cols-1 gap-4 md:grid-cols-[1fr_300px] xl:grid-cols-[1fr_350px]">
+    <div className="w-full max-w-6xl mt-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-4">
       
       {/* Map Container */}
       <div className="relative border border-zinc-800 shadow-2xl w-full flex flex-col h-[400px] md:h-[600px] lg:h-[700px]">

@@ -11,6 +11,8 @@ import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { ClockDisplay } from "./ClockDisplay";
 import { PersonalProfileConfig } from "./PersonalProfileConfig";
 import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision } from "../utils/ephemerisEngine";
+import { InlineMath, BlockMath } from 'react-katex';
+import 'katex/dist/katex.min.css';
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -163,7 +165,7 @@ export const SolarTimeClock = () => {
   const isVoidTime = kimon.japanese === "午" || kimon.japanese === "未";
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-8 md:pt-16 pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
       {/* Background Grid Pattern */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-10"
@@ -174,7 +176,7 @@ export const SolarTimeClock = () => {
         }}
       ></div>
 
-      <div className="flex flex-col items-center space-y-8 z-10 w-full max-w-5xl px-4 animate-fade-in-up">
+      <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up">
         {/* Module 0: Tactical Action Command */}
         <TacticalActionCommand
           kpIndex={spaceWeather?.kpIndex || null}
@@ -231,7 +233,7 @@ export const SolarTimeClock = () => {
             <div className="h-px bg-zinc-800 grow"></div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             
             {/* Birth Imprint Data (Hardware Init) */}
             <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
@@ -457,26 +459,39 @@ export const SolarTimeClock = () => {
               Astrophysical Core Logic (Theory & Model)
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2">YEAR: JUPITER RESONANCE</span>
                 <p className="text-[8px] text-zinc-500 leading-relaxed">
-                  木星の公転周期（約11.86年）を12分割し、地球への重力的・磁気的影響を1-9のフラクタル周波数に変換。
-                  カレンダーの「1月1日」ではなく、木星が物理的に黄極を移動した瞬間に盤面が切り替わります。
+                  木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。
                 </p>
+                <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
+                  <BlockMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
+                  <div className="mt-1 text-zinc-600">
+                    <InlineMath math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`} /> (Jupiter Lon)
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2">MONTH: TIDAL INTERFERENCE</span>
                 <p className="text-[8px] text-zinc-500 leading-relaxed">
-                  太陽黄経（季節）と月相（月の満ち欠け）の相対位相差から算出。
-                  月の引力による潮汐変動が生体に与えるノイズを、九星のアルゴリズムを流用してシミュレーションします。
+                  太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
                 </p>
+                <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
+                  <BlockMath math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`} />
+                  <div className="mt-1 text-zinc-600">
+                    <InlineMath math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`} /> (Phase)
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-2">
                 <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2">DAY: ROTATIONAL FLUX</span>
                 <p className="text-[8px] text-zinc-500 leading-relaxed">
-                  地球の自転(Julian Day)をベースに、太陽黄経による位相反転（陽遁・陰遁）を適用。
-                  夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
+                  地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
                 </p>
+                <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
+                  <BlockMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{Yin}) \\\\ (JD \\% 9) + 1 & (\\text{Yang}) \\end{cases}`} />
+                  <div className="mt-1 text-zinc-600 italic">JD: Julian Day Baseline</div>
+                </div>
               </div>
             </div>
             <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">

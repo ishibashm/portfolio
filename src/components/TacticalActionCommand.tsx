@@ -55,20 +55,20 @@ export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }:
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 relative z-10">
-        <div className="shrink-0 flex items-center justify-center bg-black/50 border border-current p-4 min-w-[120px]">
+        <div className="shrink-0 flex items-center justify-center bg-black/50 border border-current p-2 md:p-4 min-w-[80px] md:min-w-[120px]">
           <div className="flex flex-col items-center">
-            <Icon size={42} className="mb-1 animate-pulse" />
-            <div className="text-[10px] uppercase tracking-[0.3em] font-mono mt-1">Defcon</div>
-            <div className="text-5xl font-black font-sans tracking-tighter leading-none">{defcon}</div>
+            <Icon size={32} className="md:size-[42px] mb-1 animate-pulse" />
+            <div className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-mono mt-1">Defcon</div>
+            <div className="text-3xl md:text-5xl font-black font-sans tracking-tighter leading-none">{defcon}</div>
           </div>
         </div>
 
-        <div className="grow flex flex-col justify-center border-l border-current pl-4 sm:pl-6 py-2">
-          <div className="flex items-center gap-2 mb-1">
-             <h2 className="text-[10px] uppercase font-mono tracking-widest bg-black/50 px-2 py-0.5 border border-current">Command Directive</h2>
-             <span className="text-[8px] font-mono opacity-80">{logicTrace}</span>
+        <div className="grow flex flex-col justify-center border-t md:border-t-0 md:border-l border-current md:pl-6 pt-3 md:pt-0 pb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+             <h2 className="text-[9px] md:text-[10px] uppercase font-mono tracking-widest bg-black/50 px-2 py-0.5 border border-current self-start sm:self-auto">Command Directive</h2>
+             <span className="text-[7px] md:text-[8px] font-mono opacity-80">{logicTrace}</span>
           </div>
-          <p className="text-lg md:text-xl font-bold font-serif leading-tight mt-1 tracking-tight">
+          <p className="text-base md:text-xl font-bold font-serif leading-tight mt-1 tracking-tight">
             {directive}
           </p>
         </div>
