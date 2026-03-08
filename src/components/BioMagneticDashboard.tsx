@@ -185,7 +185,7 @@ export function BioMagneticDashboard({
                    <BlockMath math="\text{Load} = (1 - h) + \Delta\text{Kp} + g - (S \times 0.2)" />
                  </div>
                  <span className="text-[6.5px]">※ <InlineMath math="h" />: HRV補正係数, <InlineMath math="\Delta\text{Kp}" />: 超過Kpペナルティ, <InlineMath math="g" />: GSR補正, <InlineMath math="S" />: 定住シールド乗数。</span><br/>
-                 <div className="mt-1 text-justify">宇宙天気ノイズと現在生体ステータスを統合した自律神経過負荷指数。 <InlineMath math="\geq 50\%" /> で経絡の電位濾過機能の限界点を超退し、 <InlineMath math="\geq 80\%" /> で防御網の崩壊＝細胞毒性の蓄積フェーズへの突入を示す。</div>
+                 <div className="mt-1 text-justify">宇宙天気ノイズと現在生体ステータスを統合した自律神経過負荷指数。 <InlineMath math="\geq 50\%" /> で経絡の電位濾過機能の限界点を超過し、 <InlineMath math="\geq 80\%" /> で防御網の崩壊＝細胞毒性の蓄積フェーズへの突入を示す。</div>
               </div>
 
               <div className="flex justify-between items-end">

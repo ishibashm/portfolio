@@ -489,7 +489,7 @@ export const SolarTimeClock = () => {
                   地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
                 </p>
                 <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
-                  <BlockMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{Yin}) \\\\ (JD \\% 9) + 1 & (\\text{Yang}) \\end{cases}`} />
+                  <BlockMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`} />
                   <div className="mt-1 text-zinc-600 italic">JD: Julian Day Baseline</div>
                 </div>
               </div>
