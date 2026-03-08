@@ -1,3 +1,5 @@
+"use server";
+
 // @ts-ignore
 import geomagnetism from 'geomagnetism';
 
@@ -11,7 +13,8 @@ export interface GeomagneticData {
   z: number;
 }
 
-export function getGeomagneticData(lat: number, lon: number, date: Date = new Date()): GeomagneticData | null {
+export async function getGeomagneticData(lat: number, lon: number, timestamp: number = Date.now()): Promise<GeomagneticData | null> {
+  const date = new Date(timestamp);
   try {
     const model = geomagnetism.model(date);
     const info = model.point([lat, lon]);

@@ -9,32 +9,75 @@ import { TacticalMagneticMap } from "./TacticalMagneticMap";
 import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { ClockDisplay } from "./ClockDisplay";
+import { PersonalProfileConfig } from "./PersonalProfileConfig";
+import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision } from "../utils/ephemerisEngine";
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
+  const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
 
   // Geo & Environment State
-  const [lat, setLat] = useState<number | null>(null);
-  const [lon, setLon] = useState<number | null>(null);
-  const [spaceWeather, setSpaceWeather] = useState<SpaceWeatherData | null>(null);
+  const [lat, setLat] = useState<number>(34.40297864445456);
+  const [lon, setLon] = useState<number>(132.46465113007235);
+  const [spaceWeather, setSpaceWeather] = useState<SpaceWeatherData | null>(
+    null,
+  );
   const [geoData, setGeoData] = useState<GeomagneticData | null>(null);
+
+  // Hardware Init State (Personal Profile)
+  const [birthDate, setBirthDate] = useState<string>("1988-11-25T05:00");
+  const [birthLat, setBirthLat] = useState<number>(34.40297864445456);
+  const [birthLon, setBirthLon] = useState<number>(132.46465113007235);
 
   // Bio-Sync State
   const [hrv, setHrv] = useState(50);
   const [gsr, setGsr] = useState(5);
   const [baseSyncDays, setBaseSyncDays] = useState(30);
 
-  // Sub-calculations
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
 
+  // --- Environmental Context ---
+  // 物理モデルへの完全統合 & パフォーマンス最適化
+  // 1秒ごとに重い天体計算（astronomy-engine）が走らないように、1分ごとの専用時間をベースに計算
+  const env = React.useMemo(() => {
+    if (!ephemerisTime || !lon) return null;
+    // 真太陽時をベースにする
+    const slowSolar = calculateSolarTime(ephemerisTime, lon);
+    return getCurrentEnvironmentalFrequencies(slowSolar.solarTime);
+  }, [ephemerisTime, lon]);
+
+  // --- Dynamic Ephemeris Calculation ---
+  const honmeiStar = React.useMemo(() => {
+    return getHonmeiStar(new Date(birthDate));
+  }, [birthDate]);
+
+  const { board, layers } = React.useMemo(() => {
+    if (!baseTime || !env) return { board: null, layers: null };
+    const yearBoard = generateBoard(env.yearStar);
+    const monthBoard = generateBoard(env.monthStar);
+    const dayBoard = generateBoard(env.dayStar);
+    const vectorData = calculateVectorCollision(honmeiStar, yearBoard, monthBoard, dayBoard);
+    // TACTICAL MAP overrides: using 'dayBoard' to represent the daily tactical noise environment.
+    return { board: dayBoard, layers: vectorData };
+  }, [baseTime, honmeiStar, env]);
+
   useEffect(() => {
-    setBaseTime(new Date());
-    // Restoring 1-second ticking per user request
-    const timer = setInterval(() => setBaseTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    const now = new Date();
+    setBaseTime(now);
+    setEphemerisTime(now);
+
+    // Clock ticks every second
+    const fastTimer = setInterval(() => setBaseTime(new Date()), 1000);
+    // Ephemeris engine calculation runs only once a minute to prevent high CPU load
+    const slowTimer = setInterval(() => setEphemerisTime(new Date()), 60000);
+
+    return () => {
+      clearInterval(fastTimer);
+      clearInterval(slowTimer);
+    };
   }, []);
 
   useEffect(() => {
@@ -45,8 +88,8 @@ export const SolarTimeClock = () => {
 
   // Fetch Space Weather & Geolocation on mount
   useEffect(() => {
-    fetchSpaceWeather().then(data => setSpaceWeather(data));
-    
+    fetchSpaceWeather().then((data) => setSpaceWeather(data));
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -55,26 +98,26 @@ export const SolarTimeClock = () => {
         },
         (error) => {
           console.error("GPS Error:", error);
-          // Fallback to Kyoto
-          setLat(35.0116);
-          setLon(135.7681);
-        }
+        },
       );
-    } else {
-      // Fallback to Kyoto
-      setLat(35.0116);
-      setLon(135.7681);
     }
   }, []);
 
+  // Calculate Solar Time every second locally
   useEffect(() => {
     if (baseTime && lon) {
       setSolarData(calculateSolarTime(baseTime, lon));
     }
-    if (baseTime && lat && lon) {
-      setGeoData(getGeomagneticData(lat, lon, baseTime));
+  }, [baseTime, lon]);
+
+  // Fetch Geomagnetic Data (Server Action) ONLY when coordinates change!
+  useEffect(() => {
+    if (lat && lon) {
+      getGeomagneticData(lat, lon, new Date().getTime()).then((data) =>
+        setGeoData(data),
+      );
     }
-  }, [baseTime, lat, lon]);
+  }, [lat, lon]);
 
   // Calculate ANS Load & Shield Capacity
   useEffect(() => {
@@ -85,106 +128,286 @@ export const SolarTimeClock = () => {
     // ANS Load calculation
     // Base load from HRV (lower is worse, e.g. 20ms = high load 80%)
     let currentLoad = 100 - Math.min(100, (hrv / 120) * 100);
-    
+
     // Add Kp Index penalty (Kp > 3 adds to load)
     if (spaceWeather?.kpIndex) {
-       const kpPenalty = Math.max(0, (spaceWeather.kpIndex - 3) * 10);
-       currentLoad += kpPenalty;
+      const kpPenalty = Math.max(0, (spaceWeather.kpIndex - 3) * 10);
+      currentLoad += kpPenalty;
     }
-    
+
     // Add GSR penalty (High sweat/stress = high load)
-    currentLoad += (gsr * 2);
+    currentLoad += gsr * 2;
 
     // Shield mitigation
-    const mitigatedLoad = currentLoad - (capacity * 0.2);
+    const mitigatedLoad = currentLoad - capacity * 0.2;
     setAnsLoad(Math.round(Math.min(100, Math.max(0, mitigatedLoad))));
   }, [hrv, gsr, baseSyncDays, spaceWeather]);
 
-  if (!baseTime || !solarData) return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
-      Initializing Tactical Systems...
-    </div>
-  );
+  if (!baseTime || !solarData)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
+        Initializing Tactical Systems...
+      </div>
+    );
 
   const kimon = getKimonHour(solarData.solarTime);
-  const isVoidTime = kimon.etoKanji === "午" || kimon.etoKanji === "未";
+  const isVoidTime = kimon.japanese === "午" || kimon.japanese === "未";
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-8 md:pt-16 pb-16 relative overflow-x-hidden">
-      
       {/* Background Grid Pattern */}
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-10" 
-           style={{ backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '30px 30px' }}>
-      </div>
+      <div
+        className="fixed inset-0 pointer-events-none z-0 opacity-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)",
+          backgroundSize: "30px 30px",
+        }}
+      ></div>
 
       <div className="flex flex-col items-center space-y-8 z-10 w-full max-w-5xl px-4 animate-fade-in-up">
-        
         {/* Module 0: Tactical Action Command */}
-        <TacticalActionCommand 
-          kpIndex={spaceWeather?.kpIndex || null} 
-          ansLoad={ansLoad} 
-          isVoidTime={isVoidTime} 
+        <TacticalActionCommand
+          kpIndex={spaceWeather?.kpIndex || null}
+          ansLoad={ansLoad}
+          isVoidTime={isVoidTime}
         />
 
         {/* Temporal HUD (Main Clock Focus) - Extracted for performance */}
-        <ClockDisplay 
-           kimon={kimon} 
-           isVoidTime={isVoidTime} 
-           solarTime={solarData.solarTime} 
-           eot={solarData.equationOfTime} 
-           longOffset={solarData.longitudeCorrection} 
+        <ClockDisplay
+          kimon={kimon}
+          isVoidTime={isVoidTime}
+          solarTime={solarData.solarTime}
+          eot={solarData.equationOfTime}
+          longOffset={solarData.longitudeCorrection}
+        />
+
+        {/* Hardware Init & Anchor Config */}
+        <PersonalProfileConfig
+          birthDate={birthDate}
+          setBirthDate={setBirthDate}
+          birthLat={birthLat}
+          setBirthLat={setBirthLat}
+          birthLon={birthLon}
+          setBirthLon={setBirthLon}
+          baseLat={lat}
+          setBaseLat={setLat}
+          baseLon={lon}
+          setBaseLon={setLon}
         />
 
         {/* Module 1 & 2: BioMagnetic Dashboard */}
-        <BioMagneticDashboard 
+        <BioMagneticDashboard
           kpIndex={spaceWeather?.kpIndex || null}
           xrayFlux={spaceWeather?.xrayFlux || null}
           magneticF={geoData?.intensity || null}
           magneticD={geoData?.declination || null}
           magneticI={geoData?.inclination || null}
           eot={solarData.equationOfTime}
-          hrv={hrv} setHrv={setHrv}
-          gsr={gsr} setGsr={setGsr}
-          baseSyncDays={baseSyncDays} setBaseSyncDays={setBaseSyncDays}
-          ansLoad={ansLoad} shieldCapacity={shieldCapacity}
+          hrv={hrv}
+          setHrv={setHrv}
+          gsr={gsr}
+          setGsr={setGsr}
+          baseSyncDays={baseSyncDays}
+          setBaseSyncDays={setBaseSyncDays}
+          ansLoad={ansLoad}
+          shieldCapacity={shieldCapacity}
         />
 
+        <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
+          <div className="flex items-center gap-2 mb-2">
+            <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-400">
+              Ephemeris Engine Diagnostics
+            </h2>
+            <div className="h-px bg-zinc-800 grow"></div>
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
+              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Year Star</span>
+              <span className="text-sm font-mono text-purple-500">{env?.yearStar || '--'}</span>
+            </div>
+            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
+              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Month Star</span>
+              <span className="text-sm font-mono text-amber-500">{env?.monthStar || '--'}</span>
+            </div>
+            <div className="bg-zinc-950 border border-zinc-800 px-3 py-1 flex flex-col">
+              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Day Star</span>
+              <span className="text-sm font-mono text-blue-500">{env?.dayStar || '--'}</span>
+            </div>
+            <div className="bg-zinc-950 border border-amber-900/40 px-3 py-1 flex flex-col">
+              <span className="text-[8px] text-zinc-600 uppercase tracking-tighter">Honmei</span>
+              <span className="text-sm font-mono text-amber-500">{honmeiStar}</span>
+            </div>
+          </div>
+
+          {/* Raw Orbital Parameters */}
+          {env?.raw && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="bg-black/50 border flex flex-col items-center justify-center border-purple-900/40 px-3 py-1">
+                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Jupiter Lon. (Year Base)</span>
+                <span className="text-xs font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
+              </div>
+              <div className="bg-black/50 border flex flex-col items-center justify-center border-amber-900/40 px-3 py-1">
+                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Lunar Lon. (Month Base)</span>
+                <span className="text-xs font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
+              </div>
+              <div className="bg-black/50 border flex flex-col items-center justify-center border-blue-900/40 px-3 py-1">
+                <span className="text-[7px] text-zinc-500 uppercase tracking-tighter">Solar Lon. (Day Base)</span>
+                <span className="text-xs font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[9px] font-mono text-zinc-400">
+            <div className="bg-black/50 border border-zinc-800 p-2">
+              <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1">YEAR BOARD (年盤)</div>
+              {env && (
+                <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                  <div>SE: {(env.yearStar + 8) % 9 || 9}</div>
+                  <div>S: {(env.yearStar + 4) % 9 || 9}</div>
+                  <div>SW: {(env.yearStar + 6) % 9 || 9}</div>
+                  <div>E: {(env.yearStar + 7) % 9 || 9}</div>
+                  <div className="text-purple-400">C: {env.yearStar}</div>
+                  <div>W: {(env.yearStar + 2) % 9 || 9}</div>
+                  <div>NE: {(env.yearStar + 3) % 9 || 9}</div>
+                  <div>N: {(env.yearStar + 5) % 9 || 9}</div>
+                  <div>NW: {(env.yearStar + 1) % 9 || 9}</div>
+                </div>
+              )}
+              <div className="mt-2 text-[8px] text-zinc-600">
+                Formula: Modulo 9. Sets long-term baseline.
+              </div>
+            </div>
+
+            <div className="bg-black/50 border border-zinc-800 p-2">
+              <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1">MONTH BOARD (月盤)</div>
+              {env && (
+                <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                  <div>SE: {(env.monthStar + 8) % 9 || 9}</div>
+                  <div>S: {(env.monthStar + 4) % 9 || 9}</div>
+                  <div>SW: {(env.monthStar + 6) % 9 || 9}</div>
+                  <div>E: {(env.monthStar + 7) % 9 || 9}</div>
+                  <div className="text-amber-400">C: {env.monthStar}</div>
+                  <div>W: {(env.monthStar + 2) % 9 || 9}</div>
+                  <div>NE: {(env.monthStar + 3) % 9 || 9}</div>
+                  <div>N: {(env.monthStar + 5) % 9 || 9}</div>
+                  <div>NW: {(env.monthStar + 1) % 9 || 9}</div>
+                </div>
+              )}
+              <div className="mt-2 text-[8px] text-zinc-600">
+                Formula: Modulo 9. Sets mid-term trends.
+              </div>
+            </div>
+            
+            <div className="bg-black/50 border border-zinc-800 p-2">
+              <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1">DAY BOARD (日盤)</div>
+              {env && (
+                <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                  <div>SE: {(env.dayStar + 8) % 9 || 9}</div>
+                  <div>S: {(env.dayStar + 4) % 9 || 9}</div>
+                  <div>SW: {(env.dayStar + 6) % 9 || 9}</div>
+                  <div>E: {(env.dayStar + 7) % 9 || 9}</div>
+                  <div className="text-blue-400">C: {env.dayStar}</div>
+                  <div>W: {(env.dayStar + 2) % 9 || 9}</div>
+                  <div>NE: {(env.dayStar + 3) % 9 || 9}</div>
+                  <div>N: {(env.dayStar + 5) % 9 || 9}</div>
+                  <div>NW: {(env.dayStar + 1) % 9 || 9}</div>
+                </div>
+              )}
+              <div className="mt-2 text-[8px] text-zinc-600">
+                Formula: Modulo 9. Generates daily offsets. 
+              </div>
+            </div>
+          </div>
+
+          {/* Final Vector Calculation Visualization */}
+          {env && layers && (
+            <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
+              <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase">
+                Phase Interference Diagnosis (NOISE &gt; OPTIMAL &gt; SAFE)
+              </div>
+              <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
+                <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的なアーティファクト（赤・橙）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
+              </div>
+              <div className="grid grid-cols-5 gap-2 text-[9px] uppercase font-mono tracking-wider border-b border-zinc-800 pb-1 mb-1 text-zinc-500">
+                <div className="flex flex-col justify-end"><span>Direction</span></div>
+                <div className="flex flex-col justify-end"><span>Year Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【長期的影響】<br/>数ヶ月〜年単位<br/>(引越・就職等)</span></div>
+                <div className="flex flex-col justify-end"><span>Month Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【中期的影響】<br/>数日〜月単位<br/>(出張・短期PJ等)</span></div>
+                <div className="flex flex-col justify-end"><span>Day Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【短期的影響】<br/>数時間〜日単位<br/>(日帰り・会議等)</span></div>
+                <div className="font-bold text-zinc-300 flex flex-col justify-end"><span>Final Vector</span></div>
+              </div>
+              {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const).map(dir => {
+                const y = layers.yearLayer[dir] || 'SAFE';
+                const m = layers.monthLayer[dir] || 'SAFE';
+                const d = layers.dayLayer[dir] || 'SAFE';
+                const final = layers.finalVectors[dir] || 'SAFE';
+                const getColor = (s: string) => {
+                  if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
+                  if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-amber-500 font-bold';
+                  if (s === 'OPTIMAL') return 'text-emerald-400';
+                  return 'text-blue-400';
+                };
+                const formatLabel = (s: string) => {
+                   if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
+                   if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
+                   return s;
+                };
+                return (
+                  <div key={dir} className="grid grid-cols-5 gap-2 text-[9px] py-1 border-b border-zinc-800/50 font-mono items-center">
+                    <div className="text-zinc-400 font-bold">{dir}</div>
+                    <div className={getColor(y)}>{formatLabel(y)}</div>
+                    <div className={getColor(m)}>{formatLabel(m)}</div>
+                    <div className={getColor(d)}>{formatLabel(d)}</div>
+                    <div className={`font-bold ${getColor(final)}`}>{formatLabel(final)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {/* Module 3: Temporal Filter Matrix */}
-        <SolarTimeTable 
-           date={baseTime} 
-           longitude={lon || 135.7681} 
-           latitude={lat}
-           eot={solarData.equationOfTime}
-           kpIndex={spaceWeather?.kpIndex || null}
-           xrayFlux={spaceWeather?.xrayFlux || null}
-           ansLoad={ansLoad}
-           shieldCapacity={shieldCapacity}
+        <SolarTimeTable
+          date={baseTime}
+          longitude={lon || 135.7681}
+          latitude={lat}
+          eot={solarData.equationOfTime}
+          kpIndex={spaceWeather?.kpIndex || null}
+          xrayFlux={spaceWeather?.xrayFlux || null}
+          ansLoad={ansLoad}
+          shieldCapacity={shieldCapacity}
+          vectors={layers?.finalVectors || null}
         />
 
         {/* Module 4: Tactical Magnetic Map */}
         <div className="w-full max-w-4xl mt-12">
-           <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2 mb-2">
-             <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
-               Tactical Magnetic Navigator
-             </h2>
-             <div className="h-px bg-zinc-800 grow"></div>
-             <div className="text-[8px] font-mono text-zinc-600 tracking-widest">
-               LAT: {lat?.toFixed(4)} / LON: {lon?.toFixed(4)}
-             </div>
-           </div>
-           
-           <p className="text-xs font-mono text-zinc-500 mb-4 bg-zinc-950/50 p-2 border-l border-emerald-500">
-             <span className="text-emerald-500 mr-2">▶</span> 
-             TARGET ACQUISITION: Align with Magnetic North. Proceed to GREEN sectors exclusively. Evade RED border zones.
-           </p>
-           
-           <TacticalMagneticMap 
-              lat={lat || 35.0116} 
-              lon={lon || 135.7681} 
-              declination={geoData?.declination || 0} 
-           />
-        </div>
+          <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2 mb-2">
+            <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
+              Tactical Magnetic Navigator
+            </h2>
+            <div className="h-px bg-zinc-800 grow"></div>
+            <div className="text-[8px] font-mono text-zinc-600 tracking-widest">
+              LAT: {lat?.toFixed(4)} / LON: {lon?.toFixed(4)}
+            </div>
+          </div>
 
+          <p className="text-xs font-mono text-zinc-500 mb-4 bg-zinc-950/50 p-2 border-l border-emerald-500">
+            <span className="text-emerald-500 mr-2">▶</span>
+            TARGET ACQUISITION: Align with Magnetic North. Proceed to GREEN
+            sectors exclusively. Evade RED border zones.
+          </p>
+
+          <TacticalMagneticMap
+            lat={lat || 35.0116}
+            lon={lon || 135.7681}
+            declination={geoData?.declination || 0}
+            intensity={geoData?.intensity || null}
+            vectors={layers?.finalVectors}
+            honmeiStar={honmeiStar}
+            kpIndex={spaceWeather?.kpIndex || null}
+            ansLoad={ansLoad}
+          />
+        </div>
       </div>
     </div>
   );

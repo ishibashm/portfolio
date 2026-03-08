@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@types/pg": "^8.18.0",
     "ai": "^6.0.116",
+    "astronomy-engine": "^2.1.19",
     "date-fns": "^4.1.0",
     "defuddle": "^0.8.0",
     "geomagnetism": "^0.2.0",

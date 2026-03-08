@@ -1,28 +1,27 @@
-name: Deploy to GCP
+name: Deploy to GCP Cloud Run (Free Tier)
 
 on:
   push:
-    branches: [master] # masterに変更
+    branches: [master]
+
+env:
+  PROJECT_ID: blog-471319
+  REGION: us-central1
+  SERVICE_NAME: portfolio-app
+  GAR_LOCATION: us-central1-docker.pkg.dev
+  REPOSITORY: portfolio-repo
+  IMAGE_NAME: portfolio-app
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    env:
-      INSTANCE_NAME: wordpress-1-vm
-      ZONE: us-central1-f
-      PROJECT_ID: blog-471319
+    permissions:
+      contents: "read"
+      id-token: "write"
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps
 
       - name: Create .env from Secret required for Build
         run: |
@@ -30,46 +29,37 @@ jobs:
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
 
-      - name: Build
-        run: npm run build
-
-      - name: Prepare Deployment Files
-        run: |
-          mkdir -p deploy-package
-          # Standaloneではなく通常のビルド成果物を使用
-          cp -r .next deploy-package/
-          cp -r public deploy-package/
-          cp package.json deploy-package/
-          cp package-lock.json deploy-package/ 2>/dev/null || true
-          cp -r scripts deploy-package/
-          cp .env deploy-package/
-
-      - name: Zip Artifact
-        run: |
-          cd deploy-package
-          # node_modulesはサーバー側でインストールするため、zipには含めない
-          zip -r ../deploy.zip . -x "node_modules/*"
-
-      - name: Auth with GCP
+      - name: Auth with GCP By Service Account
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Setup Cloud SDK
+      - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: Transfer to VM
-        run: |
-          gcloud compute scp deploy.zip $INSTANCE_NAME:~/ --zone $ZONE --project $PROJECT_ID
+      - name: Docker Auth for Artifact Registry
+        run: |-
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      - name: Deploy on VM
-        run: |
-          gcloud compute ssh $INSTANCE_NAME --zone $ZONE --project $PROJECT_ID --command "
-            # 外部スクリプトの解凍と実行 (クォート問題を回避するため)
-            # まずスクリプトだけを取り出す (zip内パス: scripts/deploy.sh -> ./scripts/deploy.sh)
-            unzip -o deploy.zip scripts/deploy.sh
-            chmod +x scripts/deploy.sh
-            
-            # スクリプト実行
-            ./scripts/deploy.sh
-          "
+      - name: Build and Push Container
+        run: |-
+          DOCKER_TAG="${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker build -t $DOCKER_TAG .
+          docker push $DOCKER_TAG
+
+      - name: Deploy to Cloud Run (Free Tier Optimized)
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          flags: >-
+            --cpu=1
+            --memory=512Mi
+            --max-instances=2
+            --min-instances=0
+            --concurrency=80
+            --allow-unauthenticated
+            --no-cpu-throttling=false

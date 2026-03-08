@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { KimonScheduleItem } from "../utils/solarTime";
 
 interface ClockDisplayProps {
-  kimon: KimonScheduleItem;
+  kimon: { name: string; japanese: string; reading: string; note?: string };
   isVoidTime: boolean;
   solarTime: Date;
   eot: number;
@@ -27,7 +26,11 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500"></div>
 
       <div className="text-center md:text-left space-y-1">
-        <div className="text-[10px] tracking-[0.3em] text-zinc-500 uppercase font-mono">Current Matrix Cycle</div>
+        <div className="text-[10px] tracking-[0.3em] text-zinc-500 uppercase font-mono mb-1">Current Matrix Cycle
+          <span className="block text-[7px] tracking-normal text-zinc-600 mt-1 normal-case font-sans">
+            (現在時刻の太陽角と地磁気から計算された「干支ベースの空間位相」)
+          </span>
+        </div>
         <div className={`text-6xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red animate-pulse' : 'text-emerald-500 text-glow'}`}>
           {kimon.japanese}
         </div>

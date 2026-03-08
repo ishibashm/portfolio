@@ -14,10 +14,11 @@ interface SolarTimeTableProps {
   xrayFlux: string | null;
   ansLoad: number;
   shieldCapacity: number;
+  vectors?: Record<string, string> | null;
 }
 
-export function SolarTimeTable({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity 
+export function SolarTimeTableComponent({ 
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -33,7 +34,7 @@ export function SolarTimeTable({
   const formatTime = (d: Date) => d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
 
   const isVoidTimeHour = (item: KimonScheduleItem) => {
-    return item.etoKanji === "午" || item.etoKanji === "未"; // 11:00 - 15:00
+    return item.japanese === "午" || item.japanese === "未"; // 11:00 - 15:00
   };
 
   const isOptimalTimeHour = (item: KimonScheduleItem) => {
@@ -53,7 +54,16 @@ export function SolarTimeTable({
       "Kp-Index", kpIndex?.toFixed(2) || "N/A",
       "X-Ray Flux", xrayFlux || "N/A",
       "ANS Load %", ansLoad.toString(),
-      "Shield Cap %", shieldCapacity.toString()
+      "Shield Cap %", shieldCapacity.toString(),
+      "---", "---",
+      "Vector N", vectors?.[ "N" ] || "N/A",
+      "Vector NE", vectors?.[ "NE" ] || "N/A",
+      "Vector E", vectors?.[ "E" ] || "N/A",
+      "Vector SE", vectors?.[ "SE" ] || "N/A",
+      "Vector S", vectors?.[ "S" ] || "N/A",
+      "Vector SW", vectors?.[ "SW" ] || "N/A",
+      "Vector W", vectors?.[ "W" ] || "N/A",
+      "Vector NW", vectors?.[ "NW" ] || "N/A"
     ];
 
     // Data Headers
@@ -123,8 +133,11 @@ export function SolarTimeTable({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] font-mono leading-relaxed text-zinc-500 mb-2">
         <div className="bg-zinc-950/50 p-2 border border-blue-900/30">
            <strong className="text-blue-500 block mb-1">=== ALGORITHM: KIGAKU / MENJIA ===</strong>
-           <p className="text-justify">
+           <p className="text-justify mb-1">
              本マトリックスは完全な生体電磁気的適合性に基づく時間窓を設定する。均時差（Equation of Time）を補正し、経度<InlineMath math={`${longitude.toFixed(2)}^\circ`} />における「真太陽時」を算出。干支・九星・八門の各磁束フィルターを時間軸に適用。
+           </p>
+           <p className="text-justify text-blue-400">
+             【極短期的影響（時盤）】: 約2時間単位。当日のピンポイントな行動（出発時刻・重要会議の開始など）の成否に直結する即効性のレイヤー。
            </p>
         </div>
         <div className="bg-zinc-950/50 p-2 border border-red-900/30">
@@ -146,7 +159,7 @@ export function SolarTimeTable({
         <table className="w-full text-left font-mono text-[10px] whitespace-nowrap">
           <thead className="bg-zinc-950 text-zinc-500 uppercase tracking-widest border-b border-zinc-800 sticky top-0">
             <tr>
-              <th className="px-3 py-2 font-normal w-12 text-center">STS</th>
+              <th className="px-3 py-2 font-normal w-12 text-center">STS(判定)</th>
               <th className="px-3 py-2 font-normal">Kimon</th>
               <th className="px-3 py-2 font-normal">Star (Qi)</th>
               <th className="px-3 py-2 font-normal">Gate (Filter)</th>
@@ -238,3 +251,5 @@ export function SolarTimeTable({
     </div>
   );
 }
+
+export const SolarTimeTable = React.memo(SolarTimeTableComponent);

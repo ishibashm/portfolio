@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { Activity, Shield, Zap, Compass, Radio } from "lucide-react";
 import { InlineMath, BlockMath } from 'react-katex';
@@ -63,7 +61,7 @@ export function BioMagneticDashboard({
               {kpIndex !== null ? kpIndex.toFixed(2) : "N/A"}
             </span>
             <div className="text-[8px] text-zinc-500 mt-1 leading-relaxed text-justify pr-2">
-              <strong className="text-zinc-400">算出基準:</strong> 太陽風による地球磁気圏の擾乱スケール（0-9）。 <InlineMath math="Kp \geq 4" /> で強力な電磁気ノイズが発生し、人体細胞内の微小電位差を狂わせ自律神経系（ANS）に過負荷を誘発する。
+              <strong className="text-zinc-400">算出基準・使用先:</strong> 太陽風による擾乱スケール（0-9）。 <InlineMath math="Kp \geq 4" /> で強力な電磁気ノイズが発生。「Tactical Magnetic Map」上の赤いノイズ領域を物理的に肥大化させ、緑の吉方領域を減衰させる係数としてマップ描画エンジンに直接使用されます。
             </div>
           </div>
 
@@ -87,13 +85,14 @@ export function BioMagneticDashboard({
                 </div>
                 <div className="text-[8px] text-zinc-500 leading-relaxed mb-1">
                   <strong className="text-zinc-400">測定原理:</strong> 世界磁気モデル（WMM）に基づきGPS座標から磁束密度ベクトルを導出。これが生体細胞が現在同期している「基準電位（0Vベース）」となる。 <InlineMath math="\vec{B} = (X, Y, Z)" /> を成分に分解。
+                  <br/><strong className="text-zinc-400">【使用先】:</strong> 下記の「偏角 (D)」が、マップ描画エンジンにおいて**「真北と磁北のズレ（Magnetic North）」を物理的に補正するための回転角度**として直接使用されます。
                 </div>
              </div>
              <div className="grid grid-cols-3 gap-2 bg-zinc-900/50 p-2 border border-zinc-800">
                <div>
                   <div className="text-[8px] text-amber-600/70 mb-0.5">全磁力 / INTENSITY (F)</div>
                   <div className="text-sm text-zinc-300">{magneticF ? `${magneticF.toFixed(0)} nT` : 'CALC'}</div>
-                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight"><InlineMath math="F = \sqrt{H^2 + Z^2}" /> <br/>細胞電位の基底となる絶対磁力。</div>
+                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight"><InlineMath math="F = \sqrt{H^2 + Z^2}" /> <br/><strong className="text-zinc-400">【使用先】:</strong> 現在は観測用（生体電位の基底ベースライン参考値）として取得。将来的に移動距離に応じた被曝量（ダメージ量）の算出係数として使用予定。</div>
                </div>
                <div>
                   <div className="text-[8px] text-amber-600/70 mb-0.5">偏角 / DECLINATION (D)</div>
@@ -103,7 +102,7 @@ export function BioMagneticDashboard({
                <div>
                   <div className="text-[8px] text-amber-600/70 mb-0.5">伏角 / INCLINATION (I)</div>
                   <div className="text-sm text-zinc-300">{magneticI ? `${magneticI.toFixed(2)}°` : '--'}</div>
-                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight"><InlineMath math="I = \arctan(Z/H)" /> <br/>磁力線が地表に突入するZ軸角度。</div>
+                  <div className="text-[7px] text-zinc-500 mt-0.5 leading-tight"><InlineMath math="I = \arctan(Z/H)" /> <br/><strong className="text-zinc-400">【使用先】:</strong> 観測用。磁力線が地表に突入するZ軸角度。標高・フライト移動時の3次元干渉計算（高度ノイズ係数）として使用予定。</div>
                </div>
              </div>
           </div>
@@ -134,7 +133,7 @@ export function BioMagneticDashboard({
                 </span>
                 <input type="range" min="10" max="150" value={hrv} onChange={(e) => setHrv(Number(e.target.value))} 
                   className="w-full accent-emerald-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer mb-1" />
-                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">副交感神経（PNS）の優位性指標。数値が高いほどリラックス状態。低下は交感神経過緊張を示し、代謝と電位デトックス機能が著しく低下する。</span>
+                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">副交感神経（PNS）の優位性指標。<strong className="text-zinc-400">【使用先】:</strong> 下部の「ANS Load（自律神経負荷）」に直接加算され、ノイズ環境下でのあなたの防衛力（シールド）と相殺計算されます。数値が低い（過緊張）ほど負荷が上がります。</span>
               </label>
 
               <label className="flex flex-col">
@@ -144,7 +143,7 @@ export function BioMagneticDashboard({
                 </span>
                 <input type="range" min="0" max="20" step="0.5" value={gsr} onChange={(e) => setGsr(Number(e.target.value))} 
                   className="w-full accent-amber-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer mb-1" />
-                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">皮膚コンダクタンスによる交感神経活動量の実測値。値が高いほど身体の電気抵抗が低下（多汗・ストレス）しており、経絡を通じた外部ノイズの影響を受けやすい。</span>
+                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">皮膚コンダクタンスによる交感神経活動量の実測値。<strong className="text-zinc-400">【使用先】:</strong> HRVと同様に「ANS Load（負荷）」としてペナルティ加算されます。数値が高い（多汗・ストレス）ほど、外部ノイズのダメージを受けやすくなります。</span>
               </label>
 
               <label className="flex flex-col">

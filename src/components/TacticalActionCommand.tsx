@@ -9,7 +9,7 @@ interface Props {
   isVoidTime: boolean;
 }
 
-export function TacticalActionCommand({ kpIndex, ansLoad, isVoidTime }: Props) {
+export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }: Props) {
   
   // Logic for DEFCON and Directive
   let defcon = 5;
@@ -92,3 +92,5 @@ export function TacticalActionCommand({ kpIndex, ansLoad, isVoidTime }: Props) {
     </div>
   );
 }
+
+export const TacticalActionCommand = React.memo(TacticalActionCommandComponent);

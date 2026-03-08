@@ -43,8 +43,8 @@ export function generateMagneticMapKML(lat: number, lon: number, declination: nu
   const magNorthBearing = declination;
   const maxRadiusKm = 5000;
 
-  // Safe Zones
-  const safeZonesList = [45, 135, 225, 315];
+  // Safe Zones (N, E, S, W)
+  const safeZonesList = [0, 90, 180, 270];
   let safeZonesKML = '';
   safeZonesList.forEach((az) => {
     const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + az, 10, maxRadiusKm);
