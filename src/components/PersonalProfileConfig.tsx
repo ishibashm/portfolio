@@ -12,6 +12,8 @@ interface PersonalProfileProps {
   setBaseLat: (v: number) => void;
   baseLon: number;
   setBaseLon: (v: number) => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
 export function PersonalProfileConfig({
@@ -19,7 +21,8 @@ export function PersonalProfileConfig({
   birthLat, setBirthLat,
   birthLon, setBirthLon,
   baseLat, setBaseLat,
-  baseLon, setBaseLon
+  baseLon, setBaseLon,
+  onSave, isSaving
 }: PersonalProfileProps) {
   
   return (
@@ -118,7 +121,22 @@ export function PersonalProfileConfig({
              </div>
            </div>
 
-        </div>
+         </div>
+         
+         <div className="md:col-span-2 pt-4 flex justify-end border-t border-zinc-900 mt-2">
+            <button
+               onClick={onSave}
+               disabled={isSaving}
+               className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group ${
+                  isSaving 
+                  ? "bg-zinc-800 text-zinc-500 cursor-wait" 
+                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
+               }`}
+            >
+               {isSaving ? "[ SYNCING... ]" : "[ COMMIT PERSISTENCE ]"}
+               <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
+            </button>
+         </div>
 
       </div>
     </div>

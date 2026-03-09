@@ -28,11 +28,13 @@ interface MapProps {
 }
 
 export function TacticalMagneticMapComponent({ lat, lon, declination, intensity, vectors, honmeiStar, kpIndex, ansLoad }: MapProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   return (
-    <div className="w-full max-w-6xl mt-8 grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-4">
+    <div className={`w-full max-w-6xl mt-8 grid grid-cols-1 ${isFullscreen ? "" : "lg:grid-cols-[1fr_350px]"} gap-4`}>
       
       {/* Map Container */}
-      <div className="relative border border-zinc-800 shadow-2xl w-full flex flex-col h-[400px] md:h-[600px] lg:h-[700px]">
+      <div className={`relative border border-zinc-800 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
          <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex justify-between items-start">
             <div className="flex items-center gap-2">
               <Crosshair size={14} className="text-blue-500 animate-pulse" />
@@ -41,13 +43,22 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
               </h2>
             </div>
             <div className="flex flex-col items-end gap-1">
-               <button 
-                  onClick={() => downloadKML(lat, lon, declination || 0)}
-                  className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
-               >
-                  <Download size={10} />
-                  KML Export
-               </button>
+               <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => downloadKML(lat, lon, declination || 0)}
+                    className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
+                  >
+                    <Download size={10} />
+                    KML Export
+                  </button>
+                  <button 
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
+                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                  >
+                    {isFullscreen ? <Minimize size={10} /> : <Maximize size={10} />}
+                  </button>
+               </div>
                <div className="text-[10px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
                   COORD: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
                   DEC: {declination ? declination.toFixed(2) : '--'}°
@@ -56,7 +67,17 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
          </div>
          
          <div className="w-full h-full relative z-0 flex grow min-h-0">
-           <MagneticMapInner lat={lat} lon={lon} declination={declination || 0} intensity={intensity || 50000} vectors={vectors} honmeiStar={honmeiStar} kpIndex={kpIndex} ansLoad={ansLoad} />
+           <MagneticMapInner
+            lat={lat}
+            lon={lon}
+            declination={declination || 0}
+            intensity={intensity || 50000}
+            vectors={vectors}
+            honmeiStar={honmeiStar}
+            kpIndex={kpIndex}
+            ansLoad={ansLoad}
+            isFullscreen={isFullscreen}
+           />
          </div>
          
           {/* Overlays */}
@@ -73,7 +94,8 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
       </div>
 
       {/* Info Panel Dense */}
-      <div className="bg-zinc-950 border border-zinc-800 p-3 text-[10px] sm:text-[11px] font-mono text-zinc-400 flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[400px] md:max-h-[600px] lg:max-h-[700px]">
+      {!isFullscreen && (
+        <div className="bg-zinc-950 border border-zinc-800 p-3 text-[10px] sm:text-[11px] font-mono text-zinc-400 flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[400px] md:max-h-[600px] lg:max-h-[700px]">
          <div className="border-b border-zinc-900 pb-2">
             <h3 className="text-blue-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-blue-900/40 px-1">SYS.1</span> 磁北偏角計算 (WMM補正)
@@ -111,51 +133,54 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
             </p>
          </div>
 
-         <div className="pt-1">
+         <div className="pt-1 border-b border-zinc-900 pb-2">
             <h3 className="text-purple-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
-               <span className="bg-purple-900/40 px-1">SYS.3</span> パーソナル・エフェメリス（星回り）物理演算
+               <span className="bg-purple-900/40 px-1">SYS.3</span> パーソナル・エフェメリス（天体歴エンジン）
             </h3>
             <p className="leading-relaxed text-justify mb-2">
-               生年月日（インプリンティング）から「本命星（ハードウェアの初期ベース波長）」を算出し、現在の空間環境波（年盤・月盤・日盤・時盤）である「洛書（魔法陣）」の展開ベクトルと衝突計算を行う独自エンジン。
+               母体を離れ、初めて地球の磁場と太陽光を浴びた瞬間の「宇宙のスナップショット」をハッシュ関数へ入力し、固有周波数（本命星）を算出。現在の空間環境波（木星・月・太陽の移動マトリクス）との干渉をリアルタイムにシミュレートする演算モデル。
             </p>
+            <div className="bg-black py-1 my-1 rounded text-center">
+               <InlineMath math="F_{\text{self}} = (11 - \sum \text{digits}(Y)) \pmod 9" />
+            </div>
             
             <div className="bg-zinc-900/50 p-2 border-l-2 border-emerald-500 mb-2">
                <h4 className="text-emerald-500 text-[11px] font-bold mb-1">■ なぜ「緑エリア（吉方）」が最適なのか？</h4>
-               <p className="text-[10px] leading-relaxed text-zinc-400">
-                  五行の「相生（そうじょう）」関係は、現代物理学における<span className="text-emerald-400">「位相同期（Phase Synchronization）」</span>として解釈される。
-                  環境周波数（環境の星）が個体周波数（本命星）にエネルギーを供給する「共振状態」が発生し、ミトコンドリアの電子伝達系における量子効率が最大化される。
+                <p className="text-[10px] leading-relaxed text-zinc-400">
+                  五行の相関関係を、現代物理学における<span className="text-emerald-400">「位相同期（Phase Synchronization）」</span>として再定義。
+                  環境周波数（空間の波動）が個体周波数（本命星）にエネルギーを供給する「共振状態」が発生し、ミトコンドリアの電子伝達系における量子効率が最大化される状態を判定する。
                   <br/>
                   <span className="text-emerald-500">【計算過程】</span><br/>
-                  1. 個体固有振動数 <InlineMath math="f_{\text{birth}}" /> の同定<br/>
-                  2. 空間グリッド <InlineMath math="M_{3 \times 3}" /> への現在の磁束分布展開<br/>
-                  3. <InlineMath math="\Delta \Phi > 0" />（位相差が正の干渉）となる方位ベクトルを抽出。
-               </p>
+                  1. 個体固有振動数 <InlineMath math="F_{\text{self}}" /> の同定（エピジェネティクス的初期化）<br/>
+                  2. 空間グリッド <InlineMath math="M_{3 \times 3}" /> への実際の天体座（黄経）展開<br/>
+                  3. <InlineMath math="\Delta \Phi > 0" />（位相が整合する方位ベクトル）を OPTIMAL と定義。
+                </p>
             </div>
 
             <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-4 border-b border-zinc-800 pb-1">■ 空間磁束の変動サイクル（Time-Span Models）</h4>
-            <div className="grid grid-cols-1 gap-2 mb-4">
+             <div className="grid grid-cols-1 gap-2 mb-4">
                <div className="bg-black/40 p-2 border border-purple-900/30">
-                  <div className="text-purple-400 font-bold text-[10px] mb-1">【Year Vector】約1年スパン (長期ベースライン)</div>
+                  <div className="text-purple-400 font-bold text-[10px] mb-1">【Year Vector】約1年スパン (マクロ・ベースライン)</div>
                   <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
-                     <span className="text-zinc-300 font-bold">数理モデル:</span> 木星の黄経（Ecliptic Longitude）に基づく11.86年周期の重力・磁場干渉モデル。<br/>
-                     <span className="text-zinc-500">地球外からの最も巨大な引力源である木星の公転が、太陽系全体の磁力線ネットワーク（ヘリオスフィア）に与えるマクロな歪みを計算。引っ越しや就職など、数ヶ月〜数年単位の長期的・根本的な環境エネルギー基盤を決定します。</span>
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 木星の黄経（Ecliptic Longitude）に基づく11.86年周期の地磁気変調モデル。<br/>
+                     <span className="text-zinc-500">太陽系最大の巨大質量である木星の公転が、地球磁気圏（ヘリオスフィアとの相互作用）に与えるマクロな歪みを計算。引っ越しや長期プロジェクトなど、年単位の根本的な環境エネルギー（定在波）を決定する。</span>
                   </div>
                </div>
                <div className="bg-black/40 p-2 border border-amber-900/30">
-                  <div className="text-amber-500 font-bold text-[10px] mb-1">【Month Vector】約1ヶ月スパン (中期的トレンド)</div>
+                  <div className="text-amber-500 font-bold text-[10px] mb-1">【Month Vector】約1ヶ月スパン (メゾ・潮流)</div>
                   <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
-                     <span className="text-zinc-300 font-bold">数理モデル:</span> 太陽と月の黄経差（Lunar-Solar Phase）による月齢サイクルモデル。<br/>
-                     <span className="text-zinc-500">月の公転（約29.5日）が地球の自転軸や海洋（および体内）の水分・血流に与える潮汐力（潮汐摩擦）と地磁気の微小変動を計算。出張や短期プロジェクトなど、数日〜数週間のバイオリズムを支配します。</span>
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 太陽と月の黄経差（Relative Phase）による潮汐摩擦と磁気流体モデル。<br/>
+                     <span className="text-zinc-500">月の公転（約29.5日）が地球の自転軸や体液・血流に与える潮汐力と、地磁気の微小な脈動を計算。数週間のバイオリズムや中期的トレンドを支配する。</span>
                   </div>
                </div>
                <div className="bg-black/40 p-2 border border-blue-900/30">
-                  <div className="text-blue-400 font-bold text-[10px] mb-1">【Day / Hour Vector】約1日〜2時間スパン (短期ノイズ・トリガー)</div>
+                  <div className="text-blue-400 font-bold text-[10px] mb-1">【Day Vector】約1日〜2時間スパン (ミクロ・トリガー)</div>
                   <div className="text-[9px] text-zinc-400 leading-relaxed text-justify">
-                     <span className="text-zinc-300 font-bold">数理モデル:</span> 地球の自転（日周運動）および太陽風フラックスの直撃角モデル。<br/>
-                     <span className="text-zinc-500">地球が特定の経度で太陽のプラズマ風を正面から受ける際の、電離層と地磁気のリアルタイムな押し込み（Bow Shock）を計算。日帰りの用事や数時間の会議など、即効性の高い自律神経へのトリガーとして作用します。</span>
+                     <span className="text-zinc-300 font-bold">数理モデル:</span> 地球の自転（日周運動）および太陽風（Solar Wind）の直撃角モデル。<br/>
+                     <span className="text-zinc-500">地球が特定の経度で太陽のプラズマ流を正面から受ける際の、電離層と地磁気のBow Shock（機首衝撃波）を計算。数時間単位の即効性の高い自律神経トリガーとして作用する。</span>
                   </div>
                </div>
-            </div>
+             </div>
 
             <h4 className="text-zinc-400 text-xs font-bold mb-2 border-b border-zinc-800 pb-1">■ ベースマトリクスと最終判定の算出ルール</h4>
             <p className="text-[10px] leading-relaxed text-zinc-400 mb-2">
@@ -171,24 +196,23 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
             </ul>
 
             <h4 className="text-zinc-400 text-xs font-bold mb-2 mt-2 border-b border-zinc-800 pb-1">■ エリアカラーの算出ルール（凡例）</h4>
-            <ul className="list-disc pl-4 text-zinc-400 space-y-2 text-[9px]">
+             <ul className="list-disc pl-4 text-zinc-400 space-y-2 text-[9px]">
                <li>
-                 <span className="text-red-600 font-bold">Type-I NOISE (濃赤エリア):</span> 宇宙からの強力な磁気嵐直撃帯。<br/>
-                 <span className="text-zinc-500 text-[8px]">【算出ルール】: グリッド上に「5」が配置された方位（古典的:五黄殺）、およびその「正確に180度反対」の方位（古典的:暗剣殺）。</span>
+                 <span className="text-red-600 font-bold">Type-I NOISE (エントロピー最大化):</span> 宇宙磁気嵐の直撃および吹き返し座標。<br/>
+                 <span className="text-zinc-500 text-[8px]">【算出ルール】: 洛書マトリクス上で「5（極相）」が配置されたベクトル、およびその180度反対（デッドウェイク）の方位。</span>
                </li>
                <li>
-                 <span className="text-amber-500 font-bold">Type-II NOISE (橙エリア):</span> 自律神経のベース波長と完全に反発干渉を起こす位相キャンセレーション帯。<br/>
-                 <span className="text-zinc-500 text-[8px]">【算出ルール】: グリッド上に「自分の本命星と同じ数値」が配置された方位（古典的:本命殺）、およびその「180度反対」の方位（古典的:的殺）。</span>
+                 <span className="text-amber-500 font-bold">Type-II NOISE (位相同期ノイズ):</span> 生体固有周波数と空間波が過剰共振（ハウリング）を起こす位相キャンセル帯。<br/>
+                 <span className="text-zinc-500 text-[8px]">【算出ルール】: グリッド上に「自身の本命星」が配置された方位、およびその180度反対の方位。</span>
                </li>
                <li>
-                 <span className="text-emerald-500 font-bold">OPTIMAL (緑エリア):</span> 宇宙波・地磁気・生体波の全位相が同期し、ミトコンドリアにエネルギーを供給する相生ベクトル。<br/>
-                 <span className="text-zinc-500 text-[8px]">【算出ルール】: ノイズ帯ではなく、かつ自分の本命星に対して生み出す・生み出される関係（水生木など）の周波数が配置された方位。</span>
+                 <span className="text-emerald-500 font-bold">OPTIMAL (位相同期):</span> 宇宙波・地磁気・生体波が整合し、ミトコンドリアにエネルギー供給を行う相生ベクトル。<br/>
+                 <span className="text-zinc-500 text-[8px]">【算出ルール】: ノイズ帯を除外し、かつ本命星に対してエネルギー供給を行う周波数が配置された方位。</span>
                </li>
                <li>
-                 <span className="text-blue-500 font-bold">SAFE (青エリア):</span> ノイズ干渉がなく、かつエネルギー供給もされない中立（0V）空間。<br/>
-                 <span className="text-zinc-500 text-[8px]">【算出ルール】: 上記のNOISEやOPTIMALのいずれにも該当しない方位。</span>
+                 <span className="text-blue-500 font-bold">SAFE (中立基面):</span> 有害なノイズ干渉がなく、かつエネルギー供給も行われない 0V（ベースライン）空間。<br/>
                </li>
-            </ul>
+             </ul>
          </div>
 
          <div className="mt-1 border-t border-zinc-900 pt-3">
@@ -210,7 +234,8 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
                </p>
             </div>
          </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

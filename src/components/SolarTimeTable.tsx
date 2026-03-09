@@ -15,10 +15,12 @@ interface SolarTimeTableProps {
   ansLoad: number;
   shieldCapacity: number;
   vectors?: Record<string, string> | null;
+  honmeiStar?: { physical: number; classical: number } | null;
+  envData?: any;
 }
 
 export function SolarTimeTableComponent({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -63,7 +65,16 @@ export function SolarTimeTableComponent({
       "Vector S", vectors?.[ "S" ] || "N/A",
       "Vector SW", vectors?.[ "SW" ] || "N/A",
       "Vector W", vectors?.[ "W" ] || "N/A",
-      "Vector NW", vectors?.[ "NW" ] || "N/A"
+      "Vector NW", vectors?.[ "NW" ] || "N/A",
+      "---", "---",
+      "Honmei Star (P)", honmeiStar?.physical?.toString() || "N/A",
+      "Honmei Star (C)", honmeiStar?.classical?.toString() || "N/A",
+      "Jupiter Lon", envData?.raw?.jupiterLon?.toFixed(2) || "N/A",
+      "Lunar Lon", envData?.raw?.moonLon?.toFixed(2) || "N/A",
+      "Solar Lon", envData?.raw?.sunLon?.toFixed(2) || "N/A",
+      "---", "---",
+      "STS Method", "True Solar Time (Verified)",
+      "Engine Version", "v2.5.0-Tactical"
     ];
 
     // Data Headers
