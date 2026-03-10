@@ -72,10 +72,10 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
     setMounted(true);
   }, []);
 
-  const center: [number, number] = [lat, lon];
+  const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
   
   // Calculate bearings based on TRUE NORTH (0) + Magnetic Declination
-  const magNorthBearing = declination;
+  const magNorthBearing = React.useMemo(() => declination, [declination]);
   
   // Memoize sectors based on vectors to avoid heavy re-calculation on every tick
   const sectors = React.useMemo(() => {
@@ -94,40 +94,6 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
     });
   }, [vectors]);
 
-  // Memoize creation functions
-  const createSector = React.useCallback((baseBearing: number, radiusKm: number, color: string) => {
-    const points: [number, number][] = [center];
-    for (let offset = -10; offset <= 10; offset += 1) {
-      points.push(getDestination(lat, lon, baseBearing + offset, radiusKm));
-    }
-    return (
-      <Polygon 
-        positions={points} 
-        color={color} 
-        fillColor={color} 
-        fillOpacity={color === "#10b981" ? 0.4 : color === "#ef4444" || color === "#dc2626" || color === "#f59e0b" ? 0.5 : 0.15} 
-        weight={1} 
-      />
-    );
-  }, [center, lat, lon]);
-
-  const createRedZone = React.useCallback((baseBearing: number, radiusKm: number) => {
-    const points: [number, number][] = [center];
-    for (let offset = -7.5; offset <= 7.5; offset += 1) {
-      points.push(getDestination(lat, lon, baseBearing + offset, radiusKm));
-    }
-    return (
-      <Polygon 
-        positions={points} 
-        color="#ef4444" 
-        fillColor="#ef4444" 
-        fillOpacity={0.4} 
-        weight={0} 
-        dashArray="4"
-      />
-    );
-  }, [center, lat, lon]);
-
   // 1. Memoize boundaries - only depends on declination and intensity
   const boundaries = React.useMemo(() => {
     const distortionFactor = Math.max(-0.25, Math.min(0.25, (intensity - 50000) / 100000));
@@ -137,38 +103,36 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
     });
   }, [declination, intensity]);
 
-  // 2. Memoize vector colors based on status and kpIndex
-  const getColorForVector = React.useCallback((status: string) => {
-    // Geophysical Distortion Multipliers
+  // 2. Memoize vector styles based on status and kpIndex
+  const getStyleForVector = React.useCallback((status: string) => {
     const baseKp = kpIndex || 0;
     const noiseMultiplier = 1 + (baseKp * 0.15); 
     const safeMultiplier = Math.max(0.1, 1 - (baseKp * 0.1));
+    const weight = status.startsWith('NOISE') && baseKp >= 4 ? 2 : 1;
 
+    let style;
     switch (status) {
-      case 'OPTIMAL': return { color: "#10b981", opacity: Math.min(0.8, 0.4 * safeMultiplier) };
-      case 'SAFE': return { color: "#3b82f6", opacity: Math.min(0.5, 0.15 * safeMultiplier) };
-      case 'NOISE_GOU': return { color: "#dc2626", opacity: Math.min(0.9, 0.5 * noiseMultiplier) };
-      case 'NOISE_ANKEN': return { color: "#ef4444", opacity: Math.min(0.9, 0.4 * noiseMultiplier) };
-      case 'NOISE_HONMEI': return { color: "#f59e0b", opacity: Math.min(0.8, 0.4 * noiseMultiplier) };
-      case 'NOISE_TEKI': return { color: "#f59e0b", opacity: Math.min(0.8, 0.3 * noiseMultiplier) };
-      case 'NOISE': return { color: "#ef4444", opacity: Math.min(0.8, 0.3 * noiseMultiplier) };
-      default: return { color: "#3f3f46", opacity: 0.1 };
+      case 'OPTIMAL': style = { color: "#10b981", opacity: Math.min(0.8, 0.4 * safeMultiplier) }; break;
+      case 'SAFE': style = { color: "#3b82f6", opacity: Math.min(0.5, 0.15 * safeMultiplier) }; break;
+      case 'NOISE_GOU': style = { color: "#dc2626", opacity: Math.min(0.9, 0.5 * noiseMultiplier) }; break;
+      case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: Math.min(0.9, 0.4 * noiseMultiplier) }; break;
+      case 'NOISE_HONMEI': style = { color: "#f59e0b", opacity: Math.min(0.8, 0.4 * noiseMultiplier) }; break;
+      case 'NOISE_TEKI': style = { color: "#f59e0b", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
+      case 'NOISE': style = { color: "#ef4444", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
+      default: style = { color: "#3f3f46", opacity: 0.1 };
     }
-  }, [kpIndex]);
-
-  const getWeightForVector = React.useCallback((status: string) => {
-    const baseKp = kpIndex || 0;
-    if (status.startsWith('NOISE') && baseKp >= 4) return 2; // Thicker border for noise during magnetic storms
-    return 1;
+    return { ...style, weight };
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
+  // Note: We use a stable reference for center and coords
   const vectorLayer = React.useMemo(() => {
     return sectors.map(d => {
-      const style = getColorForVector(d.status);
+      const { color, opacity, weight } = getStyleForVector(d.status);
       const baseBearing = magNorthBearing + d.deg;
       
       const points: [number, number][] = [center];
+      // Generate 21 points for the 20-degree wide sector (approximate visual representation)
       for (let offset = -10; offset <= 10; offset += 1) {
         points.push(getDestination(lat, lon, baseBearing + offset, 5000));
       }
@@ -177,14 +141,14 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
         <Polygon 
           key={`sector-${d.dir}`}
           positions={points} 
-          color={style.color} 
-          fillColor={style.color} 
-          fillOpacity={style.opacity}
-          weight={getWeightForVector(d.status)} 
+          color={color} 
+          fillColor={color} 
+          fillOpacity={opacity}
+          weight={weight} 
         />
       );
     });
-  }, [sectors, getColorForVector, magNorthBearing, center, lat, lon, getWeightForVector]);
+  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon]);
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {

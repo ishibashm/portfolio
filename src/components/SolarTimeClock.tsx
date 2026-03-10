@@ -18,6 +18,7 @@ const TacticalActionCommand = dynamic(() => import("./TacticalActionCommand").th
 const BioMagneticDashboard = dynamic(() => import("./BioMagneticDashboard").then(mod => mod.BioMagneticDashboard), { ssr: false });
 const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(mod => mod.TacticalMagneticMap), { ssr: false });
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
+const AmbientPlayer = dynamic(() => import("./AmbientPlayer").then(mod => mod.AmbientPlayer), { ssr: false });
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -110,9 +111,9 @@ export const SolarTimeClock = () => {
   // --- Environmental Context ---
   // 物理モデルへの完全統合 & パフォーマンス最適化
   const env = React.useMemo(() => {
-    if (!ephemerisTime || !solarData) return null;
-    return getCurrentEnvironmentalFrequencies(solarData.solarTime);
-  }, [ephemerisTime, solarData]);
+    if (!ephemerisTime) return null;
+    return getCurrentEnvironmentalFrequencies(ephemerisTime);
+  }, [ephemerisTime]);
 
   // --- Hardware Init Context (Birth Data) ---
   const birthEnv = React.useMemo(() => {
@@ -681,6 +682,11 @@ export const SolarTimeClock = () => {
           </div>
         )}
       </div>
+      {/* Ambient Music Player HUD */}
+      <div className="fixed bottom-6 right-6 z-50 animate-fade-in-up" style={{ animationDelay: '1s' }}>
+        <AmbientPlayer url="https://archive.org/download/no-copyright-10-minutes-lofi-chill-instrumental-beat-mellow/No%20Copyright%5D%2010%20Minutes%20%E2%99%AB%20LOFI%20Chill%20Instrumental%20Beat%20Mellow.mp3" />
+      </div>
+
     </div>
   );
 };
