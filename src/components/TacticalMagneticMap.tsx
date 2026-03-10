@@ -2,8 +2,9 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { Crosshair, Maximize, Minimize, Download } from "lucide-react";
+import { Crosshair, Maximize, Minimize, Download, HelpCircle, Layers, Box } from "lucide-react";
 import { BlockMath, InlineMath } from 'react-katex';
+import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
 
 // Because Leaflet needs the window object, we must dynamically import it with ssr: false
@@ -20,15 +21,24 @@ interface MapProps {
   lat: number;
   lon: number;
   declination: number | null;
+  inclination: number | null;
   intensity: number | null;
   vectors?: Record<string, string> | null;
+  layers?: {
+    yearLayer: Partial<Record<string, string>>;
+    monthLayer: Partial<Record<string, string>>;
+    dayLayer: Partial<Record<string, string>>;
+    finalVectors: Record<string, string>;
+  } | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
+  shieldCapacity?: number;
 }
 
-export function TacticalMagneticMapComponent({ lat, lon, declination, intensity, vectors, honmeiStar, kpIndex, ansLoad }: MapProps) {
+export function TacticalMagneticMapComponent({ lat, lon, declination, inclination, intensity, vectors, layers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100 }: MapProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showHUD, setShowHUD] = useState(true);
 
   return (
     <div className={`w-full max-w-6xl mt-8 grid grid-cols-1 ${isFullscreen ? "" : "lg:grid-cols-[1fr_350px]"} gap-4`}>
@@ -44,6 +54,14 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
             </div>
             <div className="flex flex-col items-end gap-1">
                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowHUD(!showHUD)}
+                    className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? 'border-blue-500 text-blue-400' : 'border-zinc-700'}`}
+                    title="Toggle 3D HUD"
+                  >
+                    <Box size={10} />
+                    HUD: {showHUD ? 'ON' : 'OFF'}
+                  </button>
                   <button 
                     onClick={() => downloadKML(lat, lon, declination || 0)}
                     className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
@@ -73,10 +91,22 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, intensity,
             declination={declination || 0}
             intensity={intensity || 50000}
             vectors={vectors}
+            layers={layers}
             honmeiStar={honmeiStar}
             kpIndex={kpIndex}
             ansLoad={ansLoad}
             isFullscreen={isFullscreen}
+           />
+         </div>
+
+         {/* 3D HUD Overlay */}
+         <div className={`absolute bottom-2 left-2 z-20 pointer-events-auto transition-all duration-500 translate-y-0 ${showHUD ? 'opacity-100 scale-100' : 'opacity-0 scale-90 translate-y-4 pointer-events-none'}`}>
+           <MagneticSpatialHUD 
+             declination={declination || 0}
+             inclination={inclination || 0}
+             kpIndex={kpIndex || 0}
+             shieldCapacity={shieldCapacity}
+             size={isFullscreen ? 280 : 180}
            />
          </div>
          

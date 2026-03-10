@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -19,6 +19,12 @@ interface MapInnerProps {
   declination: number; // Magnetic Declination (D) in degrees
   intensity?: number;  // Magnetic Intensity (F) in nT
   vectors?: Record<string, string> | null;
+  layers?: {
+    yearLayer: Partial<Record<string, string>>;
+    monthLayer: Partial<Record<string, string>>;
+    dayLayer: Partial<Record<string, string>>;
+    finalVectors: Record<string, string>;
+  } | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
@@ -66,7 +72,7 @@ function MapResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
   return null;
 }
 
-export default function MagneticMapInner({ lat, lon, declination, intensity = 50000, vectors, honmeiStar, kpIndex, ansLoad = 0, isFullscreen = false }: MapInnerProps) {
+export default function MagneticMapInner({ lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, isFullscreen = false }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => {
     setMounted(true);
@@ -125,30 +131,97 @@ export default function MagneticMapInner({ lat, lon, declination, intensity = 50
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
-  // Note: We use a stable reference for center and coords
   const vectorLayer = React.useMemo(() => {
     return sectors.map(d => {
       const { color, opacity, weight } = getStyleForVector(d.status);
       const baseBearing = magNorthBearing + d.deg;
       
       const points: [number, number][] = [center];
-      // Generate 21 points for the 20-degree wide sector (approximate visual representation)
       for (let offset = -10; offset <= 10; offset += 1) {
         points.push(getDestination(lat, lon, baseBearing + offset, 5000));
       }
 
+      // Calculate label position (approx 3km out)
+      const labelPos = getDestination(lat, lon, baseBearing, 3000);
+
+      const getStatusLabel = (status: string) => {
+        if (status === 'NOISE_GOU') return '五';
+        if (status === 'NOISE_ANKEN') return '暗';
+        if (status === 'NOISE_HONMEI') return '本';
+        if (status === 'NOISE_TEKI') return '的';
+        if (status === 'OPTIMAL') return '吉';
+        return '';
+      };
+
+      const label = getStatusLabel(d.status);
+
+      // Tooltip breakdown
+      const y = layers?.yearLayer[d.dir] || 'SAFE';
+      const m = layers?.monthLayer[d.dir] || 'SAFE';
+      const dLayer = layers?.dayLayer[d.dir] || 'SAFE';
+
+      const formatLayer = (s: string) => {
+        if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return '危険 (宇宙嵐)';
+        if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return '不調 (体質不適合)';
+        if (s === 'OPTIMAL') return '良好 (位相同期)';
+        return '平穏';
+      };
+
       return (
-        <Polygon 
-          key={`sector-${d.dir}`}
-          positions={points} 
-          color={color} 
-          fillColor={color} 
-          fillOpacity={opacity}
-          weight={weight} 
-        />
+        <React.Fragment key={`sector-group-${d.dir}`}>
+          <Polygon 
+            positions={points} 
+            color={color} 
+            fillColor={color} 
+            fillOpacity={opacity}
+            weight={weight} 
+          >
+            <Tooltip sticky className="custom-map-tooltip">
+              <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl">
+                <div className="text-blue-400 border-b border-zinc-800 mb-1 pb-1 uppercase tracking-widest">{d.dir} Sector Analysis</div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-zinc-500">川 (地磁気ベース):</span>
+                    <span className="text-emerald-500">平滑</span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-zinc-500">天気 (天体サイクル):</span>
+                    <span className={y.includes('NOISE') || m.includes('NOISE') || dLayer.includes('NOISE') ? 'text-red-500' : 'text-emerald-500'}>
+                      {formatLayer(y)} / {formatLayer(m)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-zinc-500">体質 (個人相性):</span>
+                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-amber-500' : 'text-emerald-500'}>
+                      {formatLayer(dLayer)}
+                    </span>
+                  </div>
+                  <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px]">
+                    <span className="text-zinc-400">STATUS: </span>
+                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : 'text-amber-500'}>
+                      {d.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Tooltip>
+          </Polygon>
+          {label && (
+            <Marker 
+              position={labelPos} 
+              icon={L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="color: ${color}; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 14px;">${label}</div>`,
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+              })}
+              interactive={false}
+            />
+          )}
+        </React.Fragment>
       );
     });
-  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon]);
+  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers]);
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {

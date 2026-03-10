@@ -61,7 +61,7 @@ export function BioMagneticDashboard({
               {kpIndex !== null ? kpIndex.toFixed(2) : "N/A"}
             </span>
             <div className="text-[8px] text-zinc-500 mt-1 leading-tight text-justify">
-              <strong className="text-zinc-400">算出基準・使用先:</strong> 太陽風による擾乱スケール（0-9）。 <InlineMath math="Kp \geq 4" /> で強力な電磁気ノイズが発生。「Tactical Magnetic Map」上の吉方領域を減衰させる係数として使用。
+              <strong className="text-zinc-400">算出基準・使用先:</strong> 太陽風による擾乱スケール（0-9）。 <InlineMath math="Kp \geq 4" /> で強力な電磁気ノイズが発生。**「宇宙の天気 (Weather)」**として自律神経負荷に直接作用します。
             </div>
           </div>
 
@@ -162,7 +162,7 @@ export function BioMagneticDashboard({
                 </span>
                 <input type="range" min="0" max="100" value={baseSyncDays} onChange={(e) => setBaseSyncDays(Number(e.target.value))} 
                   className="w-full accent-blue-500 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer mb-1" />
-                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">現在のGPS座標における連続睡眠日数。細胞電位がその土地の磁場ベクトルに完全にアンカーされ（0V同期）、シールド強度が100%になるには約60日を要する。</span>
+                <span className="text-[7px] text-zinc-500 leading-relaxed text-justify">現在のGPS座標における連続睡眠日数。細胞電位がその土地の磁場ベクトルに完全にアンカーされ（0V同期）、シールド強度が100%になるには約60日を要する。**「川の流れ (River)」**への適応度。</span>
               </label>
            </div>
 

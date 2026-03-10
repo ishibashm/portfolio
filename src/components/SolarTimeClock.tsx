@@ -672,11 +672,14 @@ export const SolarTimeClock = () => {
                 lat={lat || 35.0116}
                 lon={lon || 135.7681}
                 declination={geoData?.declination || 0}
+                inclination={geoData?.inclination || 0}
                 intensity={geoData?.intensity || null}
                 vectors={layers?.finalVectors}
+                layers={layers}
                 honmeiStar={honmeiStar}
                 kpIndex={spaceWeather?.kpIndex || null}
                 ansLoad={ansLoad}
+                shieldCapacity={shieldCapacity}
               />
             </div>
           </div>
