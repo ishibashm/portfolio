@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, useMap, LatLngExpression } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -21,7 +21,7 @@ interface MapInnerProps {
   vectors?: Record<string, string> | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
-  ansLoad: number;
+  ansLoad?: number;
   isFullscreen?: boolean;
 }
 
@@ -66,7 +66,7 @@ function MapResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
   return null;
 }
 
-export default function MagneticMapInner({ lat, lon, declination, intensity = 50000, vectors, honmeiStar, kpIndex, ansLoad, isFullscreen = false }: MapInnerProps) {
+export default function MagneticMapInner({ lat, lon, declination, intensity = 50000, vectors, honmeiStar, kpIndex, ansLoad = 0, isFullscreen = false }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => {
     setMounted(true);
