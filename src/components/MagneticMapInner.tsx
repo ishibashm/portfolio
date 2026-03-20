@@ -171,7 +171,8 @@ export default function MagneticMapInner({
 
       const points: [number, number][] = [center];
       for (let offset = -10; offset <= 10; offset += 1) {
-        points.push(getDestination(lat, lon, baseBearing + offset, 5000));
+        // Reduced from 5000km to 1000km bounds to save mobile memory
+        points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
 
       // Calculate label position (approx 3km out)
@@ -261,7 +262,7 @@ export default function MagneticMapInner({
       const baseBearing = magNorthBearing + b;
       const points: [number, number][] = [center];
       for (let offset = -7.5; offset <= 7.5; offset += 1) {
-        points.push(getDestination(lat, lon, baseBearing + offset, 5000));
+        points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
       return (
         <Polygon 
@@ -277,7 +278,8 @@ export default function MagneticMapInner({
   }, [boundaries, magNorthBearing, center, lat, lon]);
 
   // Concentric Rings for Shield Attenuation Theory (in meters)
-  const attenuationRings: number[] = [100000, 500000, 1000000, 2500000, 5000000]; // 100km, 500km, 1000km, 2500km, 5000km
+  // Reduced max radius from 5000km to 1000km to prevent projection crashes on mobile devices
+  const attenuationRings: number[] = [100000, 250000, 500000, 750000, 1000000];
 
   if (!mounted) {
     return (
@@ -289,7 +291,7 @@ export default function MagneticMapInner({
 
   return (
     <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-        <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false}>
+        <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
             <SyncMapCenter lat={lat} lon={lon} />
             <MapResizeHandler isFullscreen={isFullscreen} />
             <TileLayer
@@ -301,7 +303,7 @@ export default function MagneticMapInner({
         
         {/* Draw True North Line (Geographic) */}
         <Polyline 
-           positions={[center, getDestination(lat, lon, 0, 5000)]} 
+           positions={[center, getDestination(lat, lon, 0, 1000)]} 
            color="#10b981" 
            weight={3} 
            dashArray="10,10" 
@@ -310,7 +312,7 @@ export default function MagneticMapInner({
 
         {/* Draw Magnetic North Line */}
         <Polyline 
-          positions={[center, getDestination(lat, lon, magNorthBearing, 5000)]} 
+          positions={[center, getDestination(lat, lon, magNorthBearing, 1000)]} 
           color="#3b82f6" 
           weight={4} 
         />
