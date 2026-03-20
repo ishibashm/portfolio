@@ -18,7 +18,6 @@ const TacticalActionCommand = dynamic(() => import("./TacticalActionCommand").th
 const BioMagneticDashboard = dynamic(() => import("./BioMagneticDashboard").then(mod => mod.BioMagneticDashboard), { ssr: false });
 const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(mod => mod.TacticalMagneticMap), { ssr: false });
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
-const AmbientPlayer = dynamic(() => import("./AmbientPlayer").then(mod => mod.AmbientPlayer), { ssr: false });
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -748,9 +747,9 @@ export const SolarTimeClock = () => {
           </div>
         )}
       </div>
-      {/* Ambient Music Player HUD */}
-      <div className="fixed bottom-6 right-6 z-50 animate-fade-in-up" style={{ animationDelay: '1s' }}>
-        <AmbientPlayer url="https://cdn.pixabay.com/audio/2023/06/11/audio_5404d6027a.mp3" />
+      {/* Audio Player */}
+      <div className="fixed bottom-6 right-6 z-50">
+        
       </div>
 
     </div>
