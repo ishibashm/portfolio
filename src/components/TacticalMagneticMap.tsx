@@ -11,7 +11,7 @@ import { downloadKML } from "../utils/kmlExport";
 const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-96 bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600 animate-pulse">
+    <div className="w-full h-96 bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600 md:animate-pulse">
       [ INITIALIZING SPATIAL VECTORS... ]
     </div>
   ),
@@ -34,9 +34,15 @@ interface MapProps {
   kpIndex?: number | null;
   ansLoad?: number;
   shieldCapacity?: number;
+  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean };
+  toggleLayer?: (layer: 'terrain' | 'weather' | 'bio') => void;
 }
 
-export function TacticalMagneticMapComponent({ lat, lon, declination, inclination, intensity, vectors, layers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100 }: MapProps) {
+export function TacticalMagneticMapComponent({ 
+  lat, lon, declination, inclination, intensity, vectors, layers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100,
+  hudLayers = { terrain: true, weather: true, bio: true },
+  toggleLayer
+}: MapProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHUD, setShowHUD] = useState(true);
 
@@ -47,13 +53,37 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, inclinatio
       <div className={`relative border border-zinc-800 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
          <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex justify-between items-start">
             <div className="flex items-center gap-2">
-              <Crosshair size={14} className="text-blue-500 animate-pulse" />
+              <Crosshair size={14} className="text-blue-500 md:animate-pulse" />
               <h2 className="text-xs uppercase font-mono tracking-widest text-zinc-300 drop-shadow-md">
                 Tactical Magnetic Vectors
               </h2>
             </div>
             <div className="flex flex-col items-end gap-1">
                <div className="flex items-center gap-2">
+                  {/* Layer Toggles */}
+                  <div className="pointer-events-auto flex items-center bg-zinc-950/80 border border-zinc-800 p-0.5 rounded-sm mr-2">
+                    <button 
+                      onClick={() => toggleLayer?.('terrain')}
+                      className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.terrain ? 'text-blue-400 bg-blue-500/10' : 'text-zinc-600'}`}
+                      title="Terrain (Magnetic Base)"
+                    >
+                      TER
+                    </button>
+                    <button 
+                      onClick={() => toggleLayer?.('weather')}
+                      className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.weather ? 'text-amber-400 bg-amber-500/10' : 'text-zinc-600'}`}
+                      title="Weather (Cosmic Storms)"
+                    >
+                      WTH
+                    </button>
+                    <button 
+                      onClick={() => toggleLayer?.('bio')}
+                      className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? 'text-purple-400 bg-purple-500/10' : 'text-zinc-600'}`}
+                      title="Bio (Personal Resonance)"
+                    >
+                      BIO
+                    </button>
+                  </div>
                   <button 
                     onClick={() => setShowHUD(!showHUD)}
                     className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? 'border-blue-500 text-blue-400' : 'border-zinc-700'}`}
@@ -84,19 +114,20 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, inclinatio
             </div>
          </div>
          
-         <div className="w-full h-full relative z-0 flex grow min-h-0">
-           <MagneticMapInner
-            lat={lat}
-            lon={lon}
-            declination={declination || 0}
-            intensity={intensity || 50000}
-            vectors={vectors}
-            layers={layers}
-            honmeiStar={honmeiStar}
-            kpIndex={kpIndex}
-            ansLoad={ansLoad}
-            isFullscreen={isFullscreen}
-           />
+         <div className="w-full h-full relative z-0 flex grow min-h-0 overflow-hidden bg-black">
+             <MagneticMapInner
+              lat={lat}
+              lon={lon}
+              declination={declination || 0}
+              intensity={intensity || 50000}
+              vectors={vectors}
+              layers={layers}
+              honmeiStar={honmeiStar}
+              kpIndex={kpIndex}
+              ansLoad={ansLoad}
+              hudLayers={hudLayers}
+              isFullscreen={isFullscreen}
+             />
          </div>
 
          {/* 3D HUD Overlay */}
@@ -112,7 +143,7 @@ export function TacticalMagneticMapComponent({ lat, lon, declination, inclinatio
          
           {/* Overlays */}
           <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
-             <div className="bg-black/80 border border-zinc-800 p-2 font-mono text-[11px] leading-tight text-zinc-400 backdrop-blur-sm">
+             <div className="bg-black/80 border border-zinc-800 p-2 font-mono text-[11px] leading-tight text-zinc-400 md:backdrop-blur-sm">
                 <div className="text-emerald-500 font-bold mb-1">■ True North (Geo)</div>
                 <div className="text-blue-500 font-bold">■ Magnetic North (WMM2020)</div>
                 <div className="mt-2 text-zinc-600 text-[10px]">

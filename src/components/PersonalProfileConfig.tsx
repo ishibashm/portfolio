@@ -14,6 +14,10 @@ interface PersonalProfileProps {
   setBaseLon: (v: number) => void;
   onSave?: () => void;
   isSaving?: boolean;
+  onLoad?: () => void;
+  onGetGPS?: () => void;
+  onAuth?: () => void;
+  isLoggedIn?: boolean;
 }
 
 export function PersonalProfileConfig({
@@ -22,20 +26,37 @@ export function PersonalProfileConfig({
   birthLon, setBirthLon,
   baseLat, setBaseLat,
   baseLon, setBaseLon,
-  onSave, isSaving
+  onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn
 }: PersonalProfileProps) {
   
   return (
-    <div className="w-full max-w-4xl mt-4 bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl backdrop-blur-md relative overflow-hidden group">
+    <div className="w-full max-w-4xl mt-4 bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
         <Database size={120} className="text-zinc-600" />
       </div>
       
-      <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-zinc-800/50 pb-2">
-        <Database size={14} className="text-blue-500 animate-pulse" />
-        <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
-          Hardware Initialization & Anchor Sync / 初期設定・ベース同期座標
-        </h2>
+      <div className="flex items-center gap-2 mb-4 relative z-10 border-b border-zinc-800/50 pb-2 justify-between">
+        <div className="flex items-center gap-2">
+          <Database size={14} className="text-blue-500 md:animate-pulse" />
+          <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
+            Hardware Initialization & Anchor Sync / 初期設定・ベース同期座標
+          </h2>
+        </div>
+        <div className="flex items-center">
+          {isLoggedIn ? (
+            <span className="text-[9px] font-mono text-emerald-500 tracking-widest flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 md:animate-pulse"></span>
+              LINK ESTABLISHED
+            </span>
+          ) : (
+            <button 
+              onClick={onAuth}
+              className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 hover:text-white hover:underline transition-all"
+            >
+              [ AUTHENTICATE ]
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 font-mono text-xs">
@@ -123,7 +144,21 @@ export function PersonalProfileConfig({
 
          </div>
          
-         <div className="md:col-span-2 pt-4 flex justify-end border-t border-zinc-900 mt-2">
+         <div className="md:col-span-2 pt-4 flex justify-between gap-2 border-t border-zinc-900 mt-2 flex-wrap">
+            <div className="flex gap-2">
+              <button
+                 onClick={onGetGPS}
+                 className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              >
+                 [ GET DEVICE GPS ]
+              </button>
+              <button
+                 onClick={onLoad}
+                 className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 transition-colors"
+               >
+                 [ SYNC FROM CLOUD ]
+              </button>
+            </div>
             <button
                onClick={onSave}
                disabled={isSaving}

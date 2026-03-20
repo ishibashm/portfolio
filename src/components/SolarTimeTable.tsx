@@ -193,7 +193,7 @@ export function SolarTimeTableComponent({
                if (isVoid) {
                  rowClass = "bg-red-950/20 text-red-900/50 hover:bg-red-950/40 cursor-pointer";
                  statusIcon = "X";
-                 statusColor = "text-red-600 animate-pulse";
+                 statusColor = "text-red-600 md:animate-pulse";
                } else if (isOptimal) {
                  rowClass = "bg-emerald-950/10 text-emerald-400/80 hover:bg-emerald-950/30 cursor-pointer";
                  statusIcon = "●";
@@ -244,7 +244,7 @@ export function SolarTimeTableComponent({
                   {isExpanded && isVoid && (
                     <tr>
                       <td colSpan={6} className="bg-red-950/10 p-4 border-b border-red-900/30 text-center">
-                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] animate-pulse mb-2">
+                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] md:animate-pulse mb-2">
                            WARNING: System Bio-Shield Offline.
                         </div>
                         <div className="text-[9px] font-sans text-red-800/80 max-w-xl mx-auto text-justify">

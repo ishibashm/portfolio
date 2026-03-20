@@ -57,7 +57,7 @@ export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }:
       <div className="flex flex-col md:flex-row items-center gap-4 relative z-10">
         <div className="shrink-0 flex items-center justify-center bg-black/50 border border-current p-2 md:p-4 min-w-[80px] md:min-w-[120px]">
           <div className="flex flex-col items-center">
-            <Icon size={32} className="md:size-[42px] mb-1 animate-pulse" />
+            <Icon size={32} className="md:size-[42px] mb-1 md:animate-pulse" />
             <div className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-mono mt-1">Defcon</div>
             <div className="text-3xl md:text-5xl font-black font-sans tracking-tighter leading-none">{defcon}</div>
           </div>

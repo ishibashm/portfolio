@@ -48,13 +48,37 @@ export const SolarTimeClock = () => {
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  
+  // HUD Layer Visibility (Idea 3)
+  const [hudLayers, setHudLayers] = useState({
+    terrain: true,
+    weather: true,
+    bio: true
+  });
 
-  // --- Persistence Logic ---
-  useEffect(() => {
-    const fetchConfig = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+  const handleLoadConfig = async (silent = true) => {
+    // 1. ローカル環境（オフライン）からの復元を優先
+    const localData = localStorage.getItem('tactical_config_v1');
+    if (localData) {
+      try {
+        const data = JSON.parse(localData);
+        if (data.birth_date) setBirthDate(data.birth_date);
+        if (data.birth_lat) setBirthLat(data.birth_lat);
+        if (data.birth_lon) setBirthLon(data.birth_lon);
+        if (data.base_lat) setLat(data.base_lat);
+        if (data.base_lon) setLon(data.base_lon);
+        if (!silent) alert("ブラウザ環境から設定を復元しました。");
+        return true;
+      } catch (e) {
+        console.error("LocalStorage parse error", e);
+      }
+    }
 
+    // 2. クラウド（Supabase）にログインしていれば探す
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      setIsLoggedIn(true);
       const { data, error } = await supabase
         .from('user_configs')
         .select('*')
@@ -67,33 +91,78 @@ export const SolarTimeClock = () => {
         if (data.birth_lon) setBirthLon(data.birth_lon);
         if (data.base_lat) setLat(data.base_lat);
         if (data.base_lon) setLon(data.base_lon);
+        if (!silent) alert("クラウドから設定を同期しました。");
+        return true;
       }
-    };
-    fetchConfig();
-  }, []);
-
-  const handleSaveConfig = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      alert("ログインが必要です（GitHub連携など）");
-      return;
     }
 
+    if (!silent) alert("保存された設定が見つかりませんでした。");
+    return false;
+  };
+
+  const handleAuth = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=/`,
+      },
+    });
+
+    if (error) {
+      console.error("Auth Error:", error);
+      alert("認証システムへのパスが切断されました。");
+    }
+  };
+
+  useEffect(() => {
+    // Only fetch on mount silently
+    handleLoadConfig(true);
+  }, []);
+
+  const handleGetGPS = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLat(position.coords.latitude);
+          setLon(position.coords.longitude);
+          alert("現在のGPS座標をBase座標としてセットしました。");
+        },
+        (error) => {
+          console.error("GPS Error:", error);
+          alert("GPS情報の取得に失敗しました。ブラウザの設定と権限をご確認ください。");
+        }
+      );
+    } else {
+      alert("ご使用のプラットフォームはGPSをサポートしていません。");
+    }
+  };
+
+  const handleSaveConfig = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('user_configs')
-        .upsert({
-          user_email: session.user.email,
-          birth_date: birthDate,
-          birth_lat: birthLat,
-          birth_lon: birthLon,
-          base_lat: lat,
-          base_lon: lon,
-        }, { onConflict: 'user_email' });
+      const configToSave = {
+        birth_date: birthDate,
+        birth_lat: birthLat,
+        birth_lon: birthLon,
+        base_lat: lat,
+        base_lon: lon,
+      };
 
-      if (error) throw error;
-      alert("設定を保存しました。");
+      // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
+      localStorage.setItem('tactical_config_v1', JSON.stringify(configToSave));
+
+      // ログイン済みユーザーならクラウドにもバックアップ同期する
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase
+          .from('user_configs')
+          .upsert({
+            user_email: session.user.email,
+            ...configToSave
+          }, { onConflict: 'user_email' });
+      }
+
+      alert("設定を保存しました（ブラウザ内にセキュアに記録されました）。");
     } catch (err: any) {
       console.error("Save Error:", err);
       alert(`保存に失敗しました: ${err.message}`);
@@ -141,8 +210,8 @@ export const SolarTimeClock = () => {
     setBaseTime(now);
     setEphemerisTime(now);
 
-    // Clock ticks every second
-    const fastTimer = setInterval(() => setBaseTime(new Date()), 1000);
+    // Clock updates every minute to save React tree re-renders
+    const fastTimer = setInterval(() => setBaseTime(new Date()), 60000);
     // Ephemeris engine calculation runs only once a minute to prevent high CPU load
     const slowTimer = setInterval(() => setEphemerisTime(new Date()), 60000);
 
@@ -158,21 +227,9 @@ export const SolarTimeClock = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch Space Weather & Geolocation on mount
+  // Fetch Space Weather on mount
   useEffect(() => {
     fetchSpaceWeather().then((data) => setSpaceWeather(data));
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLat(position.coords.latitude);
-          setLon(position.coords.longitude);
-        },
-        (error) => {
-          console.error("GPS Error:", error);
-        },
-      );
-    }
   }, []);
 
   useEffect(() => {
@@ -216,7 +273,7 @@ export const SolarTimeClock = () => {
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase animate-pulse">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
         Initializing Tactical Systems...
       </div>
     );
@@ -238,7 +295,7 @@ export const SolarTimeClock = () => {
 
       <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up">
         {/* Tab Navigation */}
-        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full backdrop-blur-sm sticky top-4 z-40">
+        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
@@ -327,6 +384,10 @@ export const SolarTimeClock = () => {
               setBaseLon={setLon}
               onSave={handleSaveConfig}
               isSaving={isSaving}
+              onLoad={() => handleLoadConfig(false)}
+              onGetGPS={handleGetGPS}
+              onAuth={handleAuth}
+              isLoggedIn={isLoggedIn}
             />
 
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
@@ -397,7 +458,7 @@ export const SolarTimeClock = () => {
                 <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
                   <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between">
                     <span>Current Live Environment</span>
-                    <span className="text-[8px] text-emerald-500 animate-pulse">● TRACKING</span>
+                    <span className="text-[8px] text-emerald-500 md:animate-pulse">● TRACKING</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
@@ -582,7 +643,7 @@ export const SolarTimeClock = () => {
               {/* Theory & Model Explanation */}
               <div className="mt-4 bg-zinc-900/30 border border-zinc-800 p-3 w-full">
                 <div className="text-blue-400 font-bold mb-2 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                  <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
                   Astrophysical Core Logic (Theory & Model)
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -680,6 +741,8 @@ export const SolarTimeClock = () => {
                 kpIndex={spaceWeather?.kpIndex || null}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
+                hudLayers={hudLayers}
+                toggleLayer={(layer: 'terrain' | 'weather' | 'bio') => setHudLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
               />
             </div>
           </div>
@@ -687,7 +750,7 @@ export const SolarTimeClock = () => {
       </div>
       {/* Ambient Music Player HUD */}
       <div className="fixed bottom-6 right-6 z-50 animate-fade-in-up" style={{ animationDelay: '1s' }}>
-        <AmbientPlayer url="https://archive.org/download/no-copyright-10-minutes-lofi-chill-instrumental-beat-mellow/No%20Copyright%5D%2010%20Minutes%20%E2%99%AB%20LOFI%20Chill%20Instrumental%20Beat%20Mellow.mp3" />
+        <AmbientPlayer url="https://cdn.pixabay.com/audio/2023/06/11/audio_5404d6027a.mp3" />
       </div>
 
     </div>

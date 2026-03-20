@@ -41,13 +41,13 @@ export function BioMagneticDashboard({
   return (
     <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
       {/* Environmental Telemetry */}
-      <div className="bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl backdrop-blur-md relative overflow-hidden group flex flex-col h-full">
+      <div className="bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group flex flex-col h-full">
         <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
           <Zap size={120} className="text-zinc-600" />
         </div>
         
         <div className="flex items-center gap-2 mb-3 relative z-10 border-b border-zinc-800/50 pb-2">
-          <Radio size={14} className="text-emerald-500 animate-pulse" />
+          <Radio size={14} className="text-emerald-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
             Environmental Telemetry / 外部環境パラメータ
           </h2>
@@ -68,7 +68,7 @@ export function BioMagneticDashboard({
           {/* XRAY FLUX */}
           <div className="flex flex-col p-2 bg-zinc-900/30 border border-zinc-800/50 rounded-sm">
             <span className="text-[9px] text-zinc-600 mb-1 font-bold uppercase tracking-wider">X-RAY FLUX</span>
-            <span className={`text-2xl font-bold tracking-tight ${xrayFlux?.includes('M') || xrayFlux?.includes('X') ? 'text-red-500 animate-pulse' : 'text-zinc-300'}`}>
+            <span className={`text-2xl font-bold tracking-tight ${xrayFlux?.includes('M') || xrayFlux?.includes('X') ? 'text-red-500 md:animate-pulse' : 'text-zinc-300'}`}>
               {xrayFlux || "A-CLASS"}
             </span>
             <div className="text-[8px] text-zinc-500 mt-1 leading-tight text-justify">
@@ -119,13 +119,13 @@ export function BioMagneticDashboard({
       </div>
 
       {/* Bio-Sync Diagnostics */}
-      <div className="bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl backdrop-blur-md relative overflow-hidden group flex flex-col h-full">
+      <div className="bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group flex flex-col h-full">
         <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
           <Activity size={120} className="text-zinc-600" />
         </div>
         
         <div className="flex items-center gap-2 mb-3 relative z-10 border-b border-zinc-800/50 pb-2">
-          <Shield size={14} className="text-amber-500 animate-pulse" />
+          <Shield size={14} className="text-amber-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
             Bio-Sync Diagnostics / 生体同期パラメータ
           </h2>

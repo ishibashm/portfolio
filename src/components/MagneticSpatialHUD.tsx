@@ -114,8 +114,12 @@ export function MagneticSpatialHUD({
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
-      angle += 0.5;
-      frameRef.current = requestAnimationFrame(render);
+      // Disable continuous animation on mobile for performance
+      const isMobile = window.innerWidth < 768;
+      if (!isMobile) {
+        angle += 0.5;
+        frameRef.current = requestAnimationFrame(render);
+      }
     };
 
     render();
@@ -133,7 +137,7 @@ export function MagneticSpatialHUD({
       
       {/* HUD Overlays */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center pointer-events-none select-none">
-        <div className="text-[8px] font-mono text-blue-400/70 border-t border-blue-500/20 px-2 bg-black/40 backdrop-blur-sm">
+        <div className="text-[8px] font-mono text-blue-400/70 border-t border-blue-500/20 px-2 bg-black/40 md:backdrop-blur-sm">
           SPATIAL INTERFERENCE HUD v1.0
         </div>
         <div className="flex gap-4 text-[7px] font-mono text-zinc-500 mt-0.5">
@@ -144,7 +148,7 @@ export function MagneticSpatialHUD({
       </div>
 
       {/* Hover Info */}
-      <div className="absolute top-0 left-0 w-full h-full bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-zinc-300 backdrop-blur-sm border border-blue-500/30">
+      <div className="absolute top-0 left-0 w-full h-full bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-zinc-300 md:backdrop-blur-sm border border-blue-500/30">
         <div className="text-blue-400 mb-2 border-b border-blue-900 w-full text-center pb-1">3D VECTOR DIAGNOSIS</div>
         <div className="w-full flex justify-between">
           <span>INCLINATION (伏角):</span>

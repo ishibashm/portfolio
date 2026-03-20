@@ -21,7 +21,7 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
   const formatTime = (date: Date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl border border-zinc-900/80 bg-black/40 p-6 rounded-sm backdrop-blur-sm relative">
+    <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl border border-zinc-900/80 bg-black/40 p-6 rounded-sm md:backdrop-blur-sm relative">
       <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500"></div>
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500"></div>
 
@@ -31,7 +31,7 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
             (現在時刻の太陽角と地磁気から計算された「干支ベースの空間位相」)
           </span>
         </div>
-        <div className={`text-4xl sm:text-6xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red animate-pulse' : 'text-emerald-500 text-glow'}`}>
+        <div className={`text-4xl sm:text-6xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red md:animate-pulse' : 'text-emerald-500 text-glow'}`}>
           {kimon.japanese}
         </div>
         <div className="text-xs md:text-sm tracking-widest text-zinc-400 font-serif">
@@ -43,7 +43,7 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
          <div className="text-right">
             <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">True Solar Time</div>
             <div className="text-3xl font-mono font-light text-emerald-400">
-              {formatTime(solarTime)}
+              {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
             </div>
          </div>
          <div className="text-right">

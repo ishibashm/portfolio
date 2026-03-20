@@ -23,7 +23,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="grid grid-cols-3 gap-2 p-4 bg-zinc-950/80 rounded-xl border border-zinc-800 shadow-2xl backdrop-blur-xl max-w-[300px]">
+      <div className="grid grid-cols-3 gap-2 p-4 bg-zinc-950/80 rounded-xl border border-zinc-800 shadow-2xl md:backdrop-blur-xl max-w-[300px]">
         {board.map((star, index) => {
           const isCenter = index === 4;
           const label = directionsJp[index];
