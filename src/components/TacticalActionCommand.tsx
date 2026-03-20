@@ -6,41 +6,47 @@ import { AlertOctagon, ShieldAlert, CheckCircle2 } from "lucide-react";
 interface Props {
   kpIndex: number | null;
   ansLoad: number;
-  isVoidTime: boolean;
+  isPersonalVoid: boolean;
+  personalVoidZodiac: string[];
 }
 
-export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }: Props) {
+export function TacticalActionCommandComponent({ kpIndex, ansLoad, isPersonalVoid, personalVoidZodiac }: Props) {
   
   // Logic for DEFCON and Directive
   let defcon = 5;
-  let directive = "ALL CLEAR. 磁気的セーフゾーンでのアーシング（デトックス）を推奨します。";
+  let directive = "COMMAND: PROCEED (通常行動可)";
   let logicTrace = "[EOT OK] [Kp < 4] [ANS < 70] [Time: Active]";
   let colorClass = "text-emerald-400 border-emerald-500/50 bg-emerald-950/20";
+  let iconClass = "md:animate-pulse";
   let Icon = CheckCircle2;
 
-  if (isVoidTime) {
+  if (isPersonalVoid) {
     defcon = 1;
-    directive = "天中殺フェーズ（絶対防御）：全移動ベクトルを破棄し、現在の0Vベースでグラウンディングを維持せよ。";
-    logicTrace = "[CRITICAL] [Time: VOID (午/未)] -> Absolute Filter Overriden";
-    colorClass = "text-red-500 border-red-500/50 bg-red-950/20 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]";
+    directive = "COMMAND: HOLD_POSITION (完全避難推奨)";
+    logicTrace = `[CRITICAL] [Personal Void: ${personalVoidZodiac.join(', ')}] -> System Restrict`;
+    colorClass = "text-red-500 border-red-500/50 bg-red-950/40 shadow-[inset_0_0_80px_rgba(255,0,0,0.3)] animate-pulse border-2";
+    iconClass = "animate-spin-slow text-red-500";
     Icon = AlertOctagon;
   } else if (kpIndex !== null && kpIndex >= 5) {
     defcon = 2;
-    directive = `GEOMAGNETIC STORM (Kp=${kpIndex.toFixed(1)}): 地磁気嵐警報。荷電領域を回避し絶対安静を確保せよ。`;
-    logicTrace = `[WARN] [Kp: ${kpIndex.toFixed(1)} >= 5] -> High Solar Wind Env Matrix`;
+    directive = `COMMAND: SHELTER (地磁気嵐・絶対安静)`;
+    logicTrace = `[WARN] [Kp: ${kpIndex.toFixed(1)} >= 5] -> High Solar Wind Env`;
     colorClass = "text-red-400 border-red-500/50 bg-red-950/20";
+    iconClass = "";
     Icon = AlertOctagon;
   } else if (kpIndex !== null && kpIndex >= 4) {
     defcon = 3;
-    directive = `ELEVATED NOISE (Kp=${kpIndex.toFixed(1)}): 環境ノイズ上昇。外部被ばく時間を極小化せよ。`;
-    logicTrace = `[CAUTION] [Kp: ${kpIndex.toFixed(1)} >= 4] -> Moderate Storm Activity`;
+    directive = `COMMAND: MINIMIZE_EXPOSURE (外部被ばく抑制)`;
+    logicTrace = `[CAUTION] [Kp: ${kpIndex.toFixed(1)} >= 4] -> Moderate Storm`;
     colorClass = "text-amber-500 border-amber-500/50 bg-amber-950/20";
+    iconClass = "";
     Icon = ShieldAlert;
   } else if (ansLoad > 70) {
     defcon = 3;
-    directive = `HIGH ANS LOAD (${ansLoad}%): 自律神経シールド低下。祐気取りよりアーシングを最優先せよ。`;
+    directive = `COMMAND: EARTHING_PRIORITY (自律神経シールド低下)`;
     logicTrace = `[CAUTION] [ANS Load: ${ansLoad}% > 70%] -> Bio-Shield Depleted`;
     colorClass = "text-amber-500 border-amber-500/50 bg-amber-950/20";
+    iconClass = "";
     Icon = ShieldAlert;
   }
 
@@ -57,7 +63,7 @@ export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }:
       <div className="flex flex-col md:flex-row items-center gap-4 relative z-10">
         <div className="shrink-0 flex items-center justify-center bg-black/50 border border-current p-2 md:p-4 min-w-[80px] md:min-w-[120px]">
           <div className="flex flex-col items-center">
-            <Icon size={32} className="md:size-[42px] mb-1 md:animate-pulse" />
+            <Icon size={32} className={`md:size-[42px] mb-1 ${iconClass}`} />
             <div className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-mono mt-1">Defcon</div>
             <div className="text-3xl md:text-5xl font-black font-sans tracking-tighter leading-none">{defcon}</div>
           </div>
@@ -74,18 +80,18 @@ export function TacticalActionCommandComponent({ kpIndex, ansLoad, isVoidTime }:
         </div>
       </div>
 
-      <div className="mt-1 border-t border-current/30 pt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-[9px] font-mono leading-relaxed text-current opacity-80">
-         <div>
-            <strong className="block mb-0.5 font-bold tracking-widest">--- SYSTEM OBJECTIVE: PDD (Personal Defense & Detoxification) ---</strong>
-            <p className="text-justify">本システムは従来の「開運・願掛け」という古典的パラダイムを破棄し、生体電磁気学（Bio-electromagnetics）に基づく「絶対防衛・完全デトックス」を目的とする。外部環境の強烈な電気的ノイズ期においては、能動的な気取りよりも、体内の電位差を相殺するアーシング（Earthing）を最優先戦略と規定する。</p>
+      <div className="mt-4 border-t border-current/30 pt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-current">
+         <div className="bg-black/30 p-4 border border-current/20 flex flex-col items-center hover:bg-black/80 transition-colors">
+            <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">STAY</span>
+            <span className="text-[10px] md:text-xs font-mono tracking-widest opacity-80 mt-1">01. Zero-Volt Sync</span>
          </div>
-         <div>
-            <strong className="block mb-0.5 font-bold tracking-widest">--- ABSOLUTE LAWS OF COMPUTATION: 力学的三原則 ---</strong>
-            <ul className="list-disc pl-3">
-               <li><span className="font-bold">Zero-Volt Sync:</span> 現在地（ベース）への連泊日数が生体電磁シールドの強度を決定する。</li>
-               <li><span className="font-bold">Void Overwrite:</span> 午刻・未刻（11:00-15:00）の天中殺中は地球磁場の同期パスが一時遮断されるため、全空間移動を禁止する。</li>
-               <li><span className="font-bold">Kp Limit:</span> Kp指数4.0以上は自律神経ホメオスタシスへの侵襲リスクありとし強制的にDEFCONを下げる。</li>
-            </ul>
+         <div className="bg-black/30 p-4 border border-current/20 flex flex-col items-center hover:bg-black/80 transition-colors">
+            <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">ALIGN</span>
+            <span className="text-[10px] md:text-xs font-mono tracking-widest opacity-80 mt-1">02. Kp Shield Limit</span>
+         </div>
+         <div className="bg-black/30 p-4 border border-current/20 flex flex-col items-center hover:bg-black/80 transition-colors">
+            <span className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">VOID</span>
+            <span className="text-[10px] md:text-xs font-mono tracking-widest opacity-80 mt-1">03. Time Overwrite</span>
          </div>
       </div>
       

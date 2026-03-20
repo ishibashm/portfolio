@@ -315,3 +315,34 @@ export function calculateVectorCollision(
     finalVectors
   };
 }
+
+/**
+ * 生年月日の「日干支」から個人の天中殺（Void Zodiac）を算出する。
+ * （2024年1月1日を甲子＝インデックス0とする近似ロジック）
+ */
+export function getPersonalVoidZodiac(birthDate: Date): string[] {
+  // 基準日: 2024年1月1日 (甲子)
+  const baseDate = new Date(2024, 0, 1);
+  const diffTime = birthDate.getTime() - baseDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  // 60干支のインデックス (0〜59)
+  const ganZhiIndex = ((diffDays % 60) + 60) % 60;
+  
+  const gan = ganZhiIndex % 10;
+  const zhi = ganZhiIndex % 12;
+  
+  // 天中殺グループの判定 (支 - 干)
+  const voidDiff = (zhi - gan + 12) % 12;
+  
+  switch (voidDiff) {
+    case 0: return ["戌", "亥"]; // 甲子旬
+    case 10: return ["申", "酉"]; // 甲戌旬
+    case 8: return ["午", "未"];  // 甲申旬
+    case 6: return ["辰", "巳"];  // 甲午旬
+    case 4: return ["寅", "卯"];  // 甲辰旬
+    case 2: return ["子", "丑"];  // 甲寅旬
+    default: return ["午", "未"]; // フォールバック
+  }
+}
+

@@ -7,7 +7,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac } from "../utils/ephemerisEngine";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { createClient } from '../utils/supabase/client';
@@ -58,6 +58,8 @@ export const SolarTimeClock = () => {
     weather: true,
     bio: true
   });
+
+  const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
 
   const handleLoadConfig = async (silent = true) => {
     // 1. ローカル環境（オフライン）からの復元を優先
@@ -281,7 +283,8 @@ export const SolarTimeClock = () => {
     );
 
   const kimon = getKimonHour(solarData.solarTime);
-  const isVoidTime = kimon.japanese === "午" || kimon.japanese === "未";
+  const personalVoidZodiac = getPersonalVoidZodiac(new Date(birthDate));
+  const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
@@ -337,13 +340,14 @@ export const SolarTimeClock = () => {
             <TacticalActionCommand
               kpIndex={spaceWeather?.kpIndex || null}
               ansLoad={ansLoad}
-              isVoidTime={isVoidTime}
+              isPersonalVoid={isPersonalVoid}
+              personalVoidZodiac={personalVoidZodiac}
             />
 
             {/* Temporal HUD (Main Clock Focus) */}
             <ClockDisplay
               kimon={kimon}
-              isVoidTime={isVoidTime}
+              isVoidTime={isPersonalVoid}
               solarTime={solarData.solarTime}
               eot={solarData.equationOfTime}
               longOffset={solarData.longitudeCorrection}
@@ -690,52 +694,65 @@ export const SolarTimeClock = () => {
 
               {/* Theory & Model Explanation */}
               <div className="mt-4 bg-zinc-900/30 border border-zinc-800 p-3 w-full">
-                <div className="text-blue-400 font-bold mb-2 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
-                  Astrophysical Core Logic (Theory & Model)
+                <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2">
+                   <div className="text-blue-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+                     <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
+                     Astrophysical Core Logic (Theory & Model)
+                   </div>
+                   <button 
+                      onClick={() => setShowAstrophysicalLogic(!showAstrophysicalLogic)}
+                      className="text-[9px] font-mono text-zinc-400 hover:text-white bg-zinc-950 px-2 py-1 border border-zinc-700 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                   >
+                     {showAstrophysicalLogic ? '[-] CLOSE TERMINAL' : '[+] EXAMINE LOGIC'}
+                   </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2">YEAR: JUPITER RESONANCE</span>
-                    <p className="text-[8px] text-zinc-500 leading-relaxed">
-                      木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
-                    </p>
-                    <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
-                      <BlockMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
-                      <div className="mt-1 text-zinc-600">
-                        <InlineMath math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`} /> (Jupiter Lon)
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2">MONTH: TIDAL INTERFERENCE</span>
-                    <p className="text-[8px] text-zinc-500 leading-relaxed">
-                      太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
-                    </p>
-                    <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
-                      <BlockMath math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`} />
-                      <div className="mt-1 text-zinc-600">
-                        <InlineMath math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`} /> (Phase)
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2">DAY: ROTATIONAL FLUX</span>
-                    <p className="text-[8px] text-zinc-500 leading-relaxed">
-                      地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
-                    </p>
-                    <div className="bg-black/40 p-2 border border-zinc-800 font-mono text-[8px]">
-                      <BlockMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`} />
-                      <div className="mt-1 text-zinc-600 italic">JD: Julian Day Baseline</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
-                  <div className="text-[8px] text-zinc-600 italic">
-                    ※ 本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
-                    古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
-                  </div>
-                </div>
+                
+                {showAstrophysicalLogic && (
+                   <div className="animate-fade-in border-l-2 border-blue-500 pl-3 mt-3">
+                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                       <div className="flex flex-col gap-2">
+                         <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2 bg-purple-950/20 py-0.5">YEAR: JUPITER RESONANCE</span>
+                         <p className="text-[8px] text-zinc-500 leading-relaxed">
+                           木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
+                         </p>
+                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                           <InlineMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
+                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                             <InlineMath math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`} /> (Jupiter Lon)
+                           </div>
+                         </div>
+                       </div>
+                       <div className="flex flex-col gap-2">
+                         <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2 bg-amber-950/20 py-0.5">MONTH: TIDAL INTERFERENCE</span>
+                         <p className="text-[8px] text-zinc-500 leading-relaxed">
+                           太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
+                         </p>
+                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                           <InlineMath math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`} />
+                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                             <InlineMath math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`} /> (Phase)
+                           </div>
+                         </div>
+                       </div>
+                       <div className="flex flex-col gap-2">
+                         <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2 bg-blue-950/20 py-0.5">DAY: ROTATIONAL FLUX</span>
+                         <p className="text-[8px] text-zinc-500 leading-relaxed">
+                           地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
+                         </p>
+                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                           <InlineMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`} />
+                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1 italic">JD: Julian Day Baseline</div>
+                         </div>
+                       </div>
+                     </div>
+                     <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
+                       <div className="text-[8px] text-zinc-600 italic">
+                         ※ 本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
+                         古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
+                       </div>
+                     </div>
+                   </div>
+                )}
               </div>
             </div>
 
@@ -771,11 +788,58 @@ export const SolarTimeClock = () => {
                 </div>
               </div>
 
-              <p className="text-xs font-mono text-zinc-500 mb-4 bg-zinc-950/50 p-2 border-l border-emerald-500">
-                <span className="text-emerald-500 mr-2">▶</span>
-                TARGET ACQUISITION: Align with Magnetic North. Proceed to GREEN
-                sectors exclusively. Evade RED border zones.
-              </p>
+              {/* COMMANDER'S BRIEFING HUD */}
+              <div className="mb-4">
+                 {(() => {
+                   const fv: any = layers?.finalVectors || {};
+                   const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
+                      const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                      return map[k] || k;
+                   });
+                   const dangers = Object.keys(fv).filter(k => (fv[k] || '').startsWith('NOISE')).map(k => {
+                      const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                      return map[k] || k;
+                   });
+                   
+                   return (
+                     <div className="flex flex-col gap-2">
+                       {optimals.length > 0 && (
+                         <div className="bg-emerald-950/40 border-l-4 border-emerald-500 p-3 sm:p-4 rounded-r-md">
+                            <div className="text-emerald-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                              [ GO ] 推奨方位
+                            </div>
+                            <div className="text-emerald-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
+                              {optimals.join(' / ')}
+                            </div>
+                         </div>
+                       )}
+                       {dangers.length > 0 && (
+                         <div className="bg-red-950/40 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-md">
+                            <div className="text-red-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                              [ NO-GO ] 警告方位 (進入厳禁)
+                            </div>
+                            <div className="text-red-500 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
+                              {dangers.join(' / ')}
+                            </div>
+                         </div>
+                       )}
+                       {optimals.length === 0 && dangers.length === 0 && (
+                         <div className="bg-blue-950/40 border-l-4 border-blue-500 p-3 sm:p-4 rounded-r-md">
+                            <div className="text-blue-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                              [ STAY ]
+                            </div>
+                            <div className="text-blue-400 font-bold text-xl sm:text-3xl tracking-widest uppercase mt-1">
+                              ALL CLEAR (全方位中立)
+                            </div>
+                         </div>
+                       )}
+                     </div>
+                   );
+                 })()}
+              </div>
 
               <TacticalMagneticMap
                 lat={lat || 35.0116}

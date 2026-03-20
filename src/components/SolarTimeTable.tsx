@@ -41,8 +41,31 @@ export function SolarTimeTableComponent({
 
   const isOptimalTimeHour = (item: KimonScheduleItem) => {
     const isGoodGate = item.hachimon.auspicious; // 生, 休, 開
-    const isWoodFire = ["三碧木星", "四緑木星", "九紫火星"].includes(item.kyusei.japanese);
-    return isGoodGate && isWoodFire;
+    
+    // Dynamic Element Resonance (相生/相比) based on user's Honmei Star
+    if (!honmeiStar || !honmeiStar.physical) return false;
+    
+    const getElement = (starNum: number) => {
+       if (starNum === 1) return 'Water';
+       if ([2, 5, 8].includes(starNum)) return 'Earth';
+       if ([3, 4].includes(starNum)) return 'Wood';
+       if ([6, 7].includes(starNum)) return 'Metal';
+       if (starNum === 9) return 'Fire';
+       return 'Earth'; // fallback
+    };
+    
+    const myElement = getElement(honmeiStar.physical);
+    const timeElement = getElement(item.kyusei.number || parseInt(item.kyusei.japanese.substring(0,1)) || 3);
+    
+    let isFavorable = false;
+    if (myElement === timeElement) isFavorable = true; // Same element (相比)
+    if (myElement === 'Wood' && ['Water', 'Fire'].includes(timeElement)) isFavorable = true;
+    if (myElement === 'Fire' && ['Wood', 'Earth'].includes(timeElement)) isFavorable = true;
+    if (myElement === 'Earth' && ['Fire', 'Metal'].includes(timeElement)) isFavorable = true;
+    if (myElement === 'Metal' && ['Earth', 'Water'].includes(timeElement)) isFavorable = true;
+    if (myElement === 'Water' && ['Metal', 'Wood'].includes(timeElement)) isFavorable = true;
+
+    return isGoodGate && isFavorable;
   };
 
   const handleDownloadCsv = () => {
@@ -183,105 +206,94 @@ export function SolarTimeTableComponent({
            <div className="p-2 border border-emerald-900/30">
               <strong className="text-emerald-500 block mb-1">=== FILTER: OPTIMAL DETOX ===</strong>
               <p className="text-justify">
-                緑色ハイライト：吉門（生/休/開）と木火の気（三碧/四緑/九紫）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、電気的デトックスを極限まで加速させる。
+                緑色ハイライト：吉門（生/休/開）とあなたの本命星（固有周波数）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、電気的デトックスを極限まで加速させる。
               </p>
            </div>
          </div>
       </details>
 
-      {/* The Matrix */}
-      <div className="overflow-x-auto custom-scrollbar border border-zinc-900 bg-black/60 shadow-2xl rounded-sm">
-        <table className="w-full text-left font-mono text-[10px]">
-          <thead className="bg-zinc-950 text-zinc-500 uppercase tracking-widest border-b border-zinc-800 sticky top-0">
-            <tr>
-              <th className="px-2 py-2 font-normal w-12 text-center whitespace-nowrap">STS</th>
-              <th className="px-2 py-2 font-normal whitespace-nowrap">Kimon</th>
-              <th className="px-2 py-2 font-normal">Star(Qi)</th>
-              <th className="px-2 py-2 font-normal">Gate Filter</th>
-              <th className="px-2 py-2 font-normal text-right whitespace-nowrap">Start</th>
-              <th className="px-2 py-2 font-normal text-right whitespace-nowrap">End</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-900">
-            {schedule.map((item, index) => {
-               const now = new Date();
-               const isCurrent = now >= item.startStandard && now < item.endStandard;
-               const isExpanded = expandedIndex === index;
-               const isVoid = isVoidTimeHour(item);
-               const isOptimal = isOptimalTimeHour(item);
-               
-               let rowClass = "text-zinc-500 hover:bg-zinc-900/50 cursor-pointer transition-colors";
-               let statusIcon = "○";
-               let statusColor = "text-zinc-600";
-
-               if (isVoid) {
-                 rowClass = "bg-red-950/20 text-red-900/50 hover:bg-red-950/40 cursor-pointer";
-                 statusIcon = "X";
-                 statusColor = "text-red-600 md:animate-pulse";
-               } else if (isOptimal) {
-                 rowClass = "bg-emerald-950/10 text-emerald-400/80 hover:bg-emerald-950/30 cursor-pointer";
-                 statusIcon = "●";
-                 statusColor = "text-emerald-500 drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
-               }
-
-               if (isCurrent && !isVoid) {
-                 rowClass += " border-l-2 border-emerald-500 bg-zinc-900/80";
-               } else if (isCurrent && isVoid) {
-                 rowClass += " border-l-2 border-red-600 bg-red-950/60";
-               }
-
-               return (
-                <React.Fragment key={index}>
-                  <tr onClick={() => toggleRow(index)} className={rowClass}>
-                    <td className={`px-2 py-2 text-center ${statusColor}`}>{statusIcon}</td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-sm font-bold ${isVoid ? 'text-red-700' : (isCurrent ? 'text-zinc-200' : 'text-zinc-400')}`}>{item.etoKanji}</span>
-                        <span className="opacity-50 tracking-wider text-[9px] hidden sm:inline-block">[{item.reading}]</span>
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={isVoid ? 'opacity-40' : ''}>{item.kyusei.japanese}</span>
-                    </td>
-                    <td className="px-2 py-2 whitespace-nowrap">
-                      <span className={`${isVoid ? 'opacity-40' : (item.hachimon.auspicious ? 'text-amber-500/80' : '')}`}>
-                        {item.hachimon.japanese}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 text-right opacity-80 whitespace-nowrap">{formatTime(item.startStandard)}</td>
-                    <td className="px-2 py-2 text-right opacity-80 whitespace-nowrap">{formatTime(item.endStandard)}</td>
-                  </tr>
+      {/* Vertical Timeline Feed */}
+      <div className="flex flex-col gap-3">
+        {schedule.map((item, index) => {
+           const now = new Date();
+           const isCurrent = now >= item.startStandard && now < item.endStandard;
+           const isExpanded = expandedIndex === index;
+           const isVoid = isVoidTimeHour(item);
+           const isOptimal = isOptimalTimeHour(item);
+           
+           const cardClass = isVoid ? "border-red-900/50 bg-red-950/20" 
+                                    : isOptimal ? "border-emerald-900/50 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+                                    : "border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 transition-colors";
+           
+           return (
+             <div key={index} className={`flex flex-col border ${cardClass} p-3 sm:p-5 rounded-md relative overflow-hidden`}>
+                {/* Background Flavor text */}
+                <div className="absolute right-[-10%] top-[-30%] text-[100px] sm:text-[140px] font-bold text-black/30 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none">
+                   {item.etoKanji}
+                </div>
+                
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between relative z-10 gap-4">
+                  <div className="flex flex-col">
+                     <span className="text-xl sm:text-3xl font-mono text-zinc-100 font-bold tracking-widest drop-shadow-md">
+                       {formatTime(item.startStandard)} - {formatTime(item.endStandard)}
+                     </span>
+                     <div className="flex items-center gap-3 mt-1 sm:mt-2">
+                        <span className={`text-lg sm:text-xl font-bold ${isVoid ? 'text-red-500' : 'text-zinc-400'}`}>{item.etoKanji}の刻</span>
+                        <span className="text-[10px] text-zinc-600 font-mono hidden sm:inline-block tracking-widest uppercase">[{item.reading}]</span>
+                     </div>
+                  </div>
                   
-                  {isExpanded && !isVoid && (
-                    <tr>
-                      <td colSpan={6} className="bg-zinc-950 p-4 border-b border-zinc-800 shadow-inner">
-                        <div className="flex flex-col items-center">
-                           <div className="mb-2 text-center space-y-1">
-                             <div className="text-[9px] text-zinc-600 uppercase tracking-widest">Kigaku Compass Matrix</div>
-                             <div className="text-xs text-zinc-400 font-sans">{item.etoKanji}の刻 ({item.kyusei.japanese}中宮)</div>
-                           </div>
-                           <div className="scale-90 opacity-80"><KigakuBoard centerStar={item.kyusei} /></div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                  {isExpanded && isVoid && (
-                    <tr>
-                      <td colSpan={6} className="bg-red-950/10 p-4 border-b border-red-900/30 text-center">
-                        <div className="text-xs font-mono text-red-500 uppercase tracking-[0.2em] md:animate-pulse mb-2">
-                           WARNING: System Bio-Shield Offline.
-                        </div>
-                        <div className="text-[9px] font-sans text-red-800/80 max-w-xl mx-auto text-justify">
-                           午・未の強力な電磁気結合は全球の方位ベクトル特性を上書き（オーバーライド）します。現在あなたの細胞ネットワークは地球共鳴基底周波数から完全に切り離されています。一切の空間移動、物理的・物質的追求・決断・交信を停止してください。CSVエクスポート等のバックアップ行動のみ許可されます。
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </tbody>
-        </table>
+                  {/* Status Badge */}
+                  <div className="flex-shrink-0 flex flex-col items-start sm:items-end">
+                     {isVoid && <span className="bg-red-900/60 text-red-500 border border-red-500/80 px-4 py-1.5 font-bold text-sm sm:text-base tracking-widest md:animate-pulse shadow-md">[ NO-GO ] 行動凍結</span>}
+                     {!isVoid && isOptimal && <span className="bg-emerald-900/60 text-emerald-400 border border-emerald-500/80 px-4 py-1.5 font-bold text-sm sm:text-base tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">[ GO ] 行動推奨</span>}
+                     {!isVoid && !isOptimal && <span className="text-zinc-500 text-xs font-mono tracking-widest border border-zinc-800 px-3 py-1">ROUTINE (中立)</span>}
+                  </div>
+                </div>
+
+                {/* Sub-info layout */}
+                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row flex-wrap gap-x-8 gap-y-3 relative z-10 text-[10px] sm:text-xs font-mono text-zinc-400">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-zinc-600 uppercase tracking-widest text-[8px] sm:text-[10px]">Star(Qi) / 九星</span> 
+                    <span className={`font-bold ${isVoid ? 'text-red-800' : 'text-zinc-300'}`}>{item.kyusei.japanese}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-zinc-600 uppercase tracking-widest text-[8px] sm:text-[10px]">Gate(Filter) / 八門</span> 
+                    <span className={`font-bold ${isVoid ? 'text-red-800' : (item.hachimon.auspicious ? 'text-amber-400' : 'text-zinc-300')}`}>
+                      {item.hachimon.japanese}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Warning Text for Void Time */}
+                {isVoid && (
+                  <div className="mt-4 bg-red-950/40 p-3 sm:p-4 border-l-2 border-red-500/50 text-justify relative z-10 shadow-inner">
+                    <div className="text-[10px] sm:text-xs font-mono text-red-500 uppercase tracking-widest mb-1 md:animate-pulse">
+                       ⚠ SYSTEM SHIELD OFFLINE
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-sans text-red-400/80 leading-relaxed">
+                       {item.japanese}の刻における強烈な電磁気定在波が地球共鳴と非同期状態です。物理移動・新規アクション・重要な決断の一切を停止し、安全なROUTINEタスクへ移行してください。
+                    </div>
+                  </div>
+                )}
+
+                {/* Decrypt Matrix Toggle */}
+                <div className="mt-4 relative z-10 flex justify-end">
+                   <button onClick={() => toggleRow(index)} className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-2 transition-colors uppercase tracking-widest font-bold bg-zinc-950/50 px-3 py-1.5 border border-zinc-800">
+                     <span className={expandedIndex === index ? 'text-blue-500' : ''}>{expandedIndex === index ? '▲' : '▼'}</span>
+                     {expandedIndex === index ? 'HIDE MATRIX' : 'DECRYPT MATRIX'}
+                   </button>
+                </div>
+                
+                {isExpanded && !isVoid && (
+                   <div className="mt-4 bg-black/80 p-4 border border-zinc-800 rounded-sm flex flex-col items-center relative z-10 shadow-inner">
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Kigaku Compass Matrix</div>
+                      <div className="scale-90 opacity-90"><KigakuBoard centerStar={item.kyusei} /></div>
+                   </div>
+                )}
+             </div>
+           );
+        })}
       </div>
     </div>
   );
