@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
+
 import { ClockDisplay } from "./ClockDisplay";
 import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision } from "../utils/ephemerisEngine";
 import { InlineMath, BlockMath } from 'react-katex';
@@ -18,6 +19,8 @@ const TacticalActionCommand = dynamic(() => import("./TacticalActionCommand").th
 const BioMagneticDashboard = dynamic(() => import("./BioMagneticDashboard").then(mod => mod.BioMagneticDashboard), { ssr: false });
 const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(mod => mod.TacticalMagneticMap), { ssr: false });
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
+const SystemTelemetryLog = dynamic(() => import("./SystemTelemetryLog").then(mod => mod.SystemTelemetryLog), { ssr: false });
+
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -603,39 +606,74 @@ export const SolarTimeClock = () => {
                   <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
                     <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的なアーティファクト（赤・橙）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
                   </div>
-                  <div className="grid grid-cols-5 gap-2 text-[9px] uppercase font-mono tracking-wider border-b border-zinc-800 pb-1 mb-1 text-zinc-500">
-                    <div className="flex flex-col justify-end"><span>Direction</span></div>
-                    <div className="flex flex-col justify-end"><span>Year Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【長期的影響】<br/>数ヶ月〜年単位<br/>(引越・就職等)</span></div>
-                    <div className="flex flex-col justify-end"><span>Month Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【中期的影響】<br/>数日〜月単位<br/>(出張・短期PJ等)</span></div>
-                    <div className="flex flex-col justify-end"><span>Day Layer</span><span className="text-[7px] text-zinc-600 font-sans normal-case mt-0.5 leading-tight">【短期的影響】<br/>数時間〜日単位<br/>(日帰り・会議等)</span></div>
-                    <div className="font-bold text-zinc-300 flex flex-col justify-end"><span>Final Vector</span></div>
+                  <div className="overflow-visible w-full mt-4">
+                    <table className="w-full text-left font-mono">
+                      <thead className="border-b border-zinc-800 text-zinc-500 text-[9px] uppercase tracking-wider">
+                        <tr>
+                          <th className="pb-2 pr-2 font-normal align-bottom">Dir</th>
+                          <th className="pb-2 px-1 font-normal align-bottom">Year Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【長期的影響】</span></th>
+                          <th className="pb-2 px-1 font-normal align-bottom">Month Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【中期的影響】</span></th>
+                          <th className="pb-2 px-1 font-normal align-bottom">Day Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【短期的影響】</span></th>
+                          <th className="pb-2 pl-2 font-bold text-zinc-300 align-bottom">Final Vector</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/50 text-[10px]">
+                        {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const).map(dir => {
+                          const y = layers.yearLayer[dir] || 'SAFE';
+                          const m = layers.monthLayer[dir] || 'SAFE';
+                          const d = layers.dayLayer[dir] || 'SAFE';
+                          const final = layers.finalVectors[dir] || 'SAFE';
+                          
+                          const getColor = (s: string) => {
+                            if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
+                            if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-amber-500 font-bold';
+                            if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
+                            return 'text-blue-400';
+                          };
+                          
+                          const formatLabel = (s: string) => {
+                             if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
+                             if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
+                             return s;
+                          };
+
+                          const TooltipCell = ({ status, board, isFinal }: { status: string, board: any, isFinal?: boolean }) => {
+                             const star = board ? board[dir] : '?';
+                             let title = "無干渉 (SAFE)";
+                             let desc = "致命的な定在波やノイズは観測されていません。";
+                             if (status === 'NOISE_GOU') { title="五黄殺 (TYPE I)"; desc="強力な破壊定在波（五黄土星）が観測されています。"; }
+                             else if (status === 'NOISE_ANKEN') { title="暗剣殺 (TYPE I)"; desc="五黄の対角にあたり、外部からの突発的干渉ノイズが観測。"; }
+                             else if (status === 'NOISE_HONMEI') { title="本命殺 (TYPE II)"; desc="あなたの本命波長と同じ波長が配置され、共鳴過負荷ノイズが起きます。"; }
+                             else if (status === 'NOISE_TEKI') { title="的殺 (TYPE II)"; desc="本命の対角にあたり、目標や方向性への干渉ノイズが起きます。"; }
+                             else if (status === 'OPTIMAL') { title="相生 (OPTIMAL)"; desc="あなたの波長を調和・増幅させる最適ベクトルです。"; }
+                             
+                             const label = formatLabel(status);
+                             
+                             return (
+                               <div className="group relative cursor-help inline-block">
+                                 <span className={`${getColor(status)} border-b border-zinc-700/50 hover:border-current`}>{label}</span>
+                                 <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-950 border border-zinc-700 text-zinc-300 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
+                                   <div className={`font-bold mb-1 border-b border-zinc-800 pb-1 ${getColor(status)}`}>{title}</div>
+                                   <div className="text-zinc-400 mb-1 leading-tight">{desc}</div>
+                                   {!isFinal && <div className="text-[9px] text-zinc-500 font-mono mt-1 pt-1 border-t border-zinc-800">配置星: {star} / My: {honmeiStar?.physical}</div>}
+                                 </div>
+                               </div>
+                             );
+                          };
+
+                          return (
+                            <tr key={dir} className="hover:bg-zinc-900/30 transition-colors">
+                              <td className="py-2.5 pr-2 text-zinc-400 font-bold align-middle">{dir}</td>
+                              <td className="py-2.5 px-1 align-middle"><TooltipCell status={y} board={yearBoard} /></td>
+                              <td className="py-2.5 px-1 align-middle"><TooltipCell status={m} board={monthBoard} /></td>
+                              <td className="py-2.5 px-1 align-middle"><TooltipCell status={d} board={dayBoard} /></td>
+                              <td className="py-2.5 pl-2 align-middle bg-zinc-950/50"><TooltipCell status={final} board={null} isFinal={true} /></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
-                  {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const).map(dir => {
-                    const y = layers.yearLayer[dir] || 'SAFE';
-                    const m = layers.monthLayer[dir] || 'SAFE';
-                    const d = layers.dayLayer[dir] || 'SAFE';
-                    const final = layers.finalVectors[dir] || 'SAFE';
-                    const getColor = (s: string) => {
-                      if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-                      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-amber-500 font-bold';
-                      if (s === 'OPTIMAL') return 'text-emerald-400';
-                      return 'text-blue-400';
-                    };
-                    const formatLabel = (s: string) => {
-                       if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
-                       if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
-                       return s;
-                    };
-                    return (
-                      <div key={dir} className="grid grid-cols-5 gap-2 text-[9px] py-1 border-b border-zinc-800/50 font-mono items-center">
-                        <div className="text-zinc-400 font-bold">{dir}</div>
-                        <div className={getColor(y)}>{formatLabel(y)}</div>
-                        <div className={getColor(m)}>{formatLabel(m)}</div>
-                        <div className={getColor(d)}>{formatLabel(d)}</div>
-                        <div className={`font-bold ${getColor(final)}`}>{formatLabel(final)}</div>
-                      </div>
-                    );
-                  })}
                 </div>
               )}
 
@@ -747,10 +785,14 @@ export const SolarTimeClock = () => {
           </div>
         )}
       </div>
-      {/* Audio Player */}
-      <div className="fixed bottom-6 right-6 z-50">
-        
-      </div>
+      {/* Telemetry and Audit Log */}
+      <SystemTelemetryLog 
+        lat={lat} 
+        lon={lon} 
+        solarTime={solarData?.solarTime} 
+        declination={geoData?.declination || null} 
+        env={env} 
+      />
 
     </div>
   );

@@ -167,15 +167,15 @@ export function SolarTimeTableComponent({
 
       {/* The Matrix */}
       <div className="overflow-x-auto custom-scrollbar border border-zinc-900 bg-black/60 shadow-2xl rounded-sm">
-        <table className="w-full text-left font-mono text-[10px] whitespace-nowrap">
+        <table className="w-full text-left font-mono text-[10px]">
           <thead className="bg-zinc-950 text-zinc-500 uppercase tracking-widest border-b border-zinc-800 sticky top-0">
             <tr>
-              <th className="px-3 py-2 font-normal w-12 text-center">STS(判定)</th>
-              <th className="px-3 py-2 font-normal">Kimon</th>
-              <th className="px-3 py-2 font-normal">Star (Qi)</th>
-              <th className="px-3 py-2 font-normal">Gate (Filter)</th>
-              <th className="px-3 py-2 font-normal text-right">Start</th>
-              <th className="px-3 py-2 font-normal text-right">End</th>
+              <th className="px-2 py-2 font-normal w-12 text-center whitespace-nowrap">STS</th>
+              <th className="px-2 py-2 font-normal whitespace-nowrap">Kimon</th>
+              <th className="px-2 py-2 font-normal">Star(Qi)</th>
+              <th className="px-2 py-2 font-normal">Gate Filter</th>
+              <th className="px-2 py-2 font-normal text-right whitespace-nowrap">Start</th>
+              <th className="px-2 py-2 font-normal text-right whitespace-nowrap">End</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-900">
@@ -209,23 +209,23 @@ export function SolarTimeTableComponent({
                return (
                 <React.Fragment key={index}>
                   <tr onClick={() => toggleRow(index)} className={rowClass}>
-                    <td className={`px-3 py-2 text-center ${statusColor}`}>{statusIcon}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
+                    <td className={`px-2 py-2 text-center ${statusColor}`}>{statusIcon}</td>
+                    <td className="px-2 py-2 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
                         <span className={`text-sm font-bold ${isVoid ? 'text-red-700' : (isCurrent ? 'text-zinc-200' : 'text-zinc-400')}`}>{item.etoKanji}</span>
-                        <span className="opacity-50 tracking-wider">[{item.reading}]</span>
+                        <span className="opacity-50 tracking-wider text-[9px] hidden sm:inline-block">[{item.reading}]</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-2 py-2 whitespace-nowrap">
                       <span className={isVoid ? 'opacity-40' : ''}>{item.kyusei.japanese}</span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-2 py-2 whitespace-nowrap">
                       <span className={`${isVoid ? 'opacity-40' : (item.hachimon.auspicious ? 'text-amber-500/80' : '')}`}>
                         {item.hachimon.japanese}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-right opacity-80">{formatTime(item.startStandard)}</td>
-                    <td className="px-3 py-2 text-right opacity-80">{formatTime(item.endStandard)}</td>
+                    <td className="px-2 py-2 text-right opacity-80 whitespace-nowrap">{formatTime(item.startStandard)}</td>
+                    <td className="px-2 py-2 text-right opacity-80 whitespace-nowrap">{formatTime(item.endStandard)}</td>
                   </tr>
                   
                   {isExpanded && !isVoid && (
