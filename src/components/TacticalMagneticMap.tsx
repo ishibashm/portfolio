@@ -169,17 +169,17 @@ export function TacticalMagneticMapComponent({
             {/* Horizontal Tab Menu List */}
             <div className="w-full border-b border-zinc-800 flex flex-row bg-black/50 overflow-x-auto custom-scrollbar snap-x">
               {[
-                { id: 1, name: "D-CORRECT", subtitle: "WMM2020" },
-                { id: 2, name: "V-FILTER", subtitle: "SPATIAL" },
-                { id: 3, name: "E-ENGINE", subtitle: "EPHEMERIS" },
-                { id: 4, name: "U-SYNC", subtitle: "UMWELT" },
+                { id: 1, name: "D-CORRECT", subtitle: "WMM2020", shape: "[LINE]", color: "text-blue-500", border: "border-blue-500", bgActive: "bg-blue-900/10" },
+                { id: 2, name: "V-FILTER", subtitle: "SPATIAL", shape: "[ZONE]", color: "text-emerald-500", border: "border-emerald-500", bgActive: "bg-emerald-900/10" },
+                { id: 3, name: "E-ENGINE", subtitle: "EPHEMERIS", shape: "[CORE]", color: "text-purple-500", border: "border-purple-500", bgActive: "bg-purple-900/10" },
+                { id: 4, name: "U-SYNC", subtitle: "UMWELT", shape: "[POINT]", color: "text-amber-500", border: "border-amber-500", bgActive: "bg-amber-900/10" },
               ].map(tab => (
                 <button
                    key={tab.id}
                    onClick={(e) => { e.preventDefault(); setActiveDecryptTab(tab.id); }}
-                   className={`flex flex-col text-center justify-center items-center py-2 px-4 border-b-2 transition-all min-w-[100px] sm:min-w-[120px] snap-center shrink-0 ${activeDecryptTab === tab.id ? 'border-blue-500 bg-blue-900/10 text-white' : 'border-transparent text-zinc-600 hover:bg-zinc-900/50 hover:text-zinc-400'}`}
+                   className={`flex flex-col text-center justify-center items-center py-2 px-4 border-b-2 transition-all min-w-[100px] sm:min-w-[120px] snap-center shrink-0 ${activeDecryptTab === tab.id ? `${tab.border} ${tab.bgActive} text-white` : 'border-transparent text-zinc-600 hover:bg-zinc-900/50 hover:text-zinc-400'}`}
                 >
-                   <span className="text-[9px] font-bold tracking-widest uppercase text-blue-500/50">SYS.{tab.id}</span>
+                   <span className={`text-[9px] font-bold tracking-widest uppercase ${activeDecryptTab === tab.id ? tab.color : 'text-zinc-500'}`}>SYS.{tab.id} {tab.shape}</span>
                    <span className="text-[10px] sm:text-[11px] font-bold mt-0.5">{tab.name}</span>
                    <span className="text-[8px] mt-0.5 opacity-60 hidden md:block">{tab.subtitle}</span>
                 </button>
@@ -195,8 +195,15 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.1 */}
                   {activeDecryptTab === 1 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-blue-500 font-bold tracking-widest mb-2 border-b border-blue-900/50 pb-2 uppercase flex items-center gap-2 text-xs sm:text-sm">
-                         <span className="bg-blue-900/40 text-blue-400 px-1.5 py-0.5">SYS.1</span> MAGNETIC_DECLINATION_CORRECTION
+                      <div className="text-blue-500 font-bold tracking-widest mb-2 border-b border-blue-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-blue-900/40 text-blue-400 px-1.5 py-1 flex flex-col items-center shrink-0">
+                           <span className="text-[8px] leading-none mb-1">SYS.1</span>
+                           <span className="text-[7px] leading-none border-t border-blue-400/50 pt-1 w-full text-center">[LINE]</span>
+                         </div>
+                         <div className="flex flex-col justify-center">
+                           <span>MAGNETIC_DECLINATION_CORRECTION</span>
+                           <span className="text-[9px] text-blue-400/80 flex items-center gap-1.5 mt-0.5"><span className="w-4 h-0.5 bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.8)] block"></span> MAP ELEMENT: Blue Magnetic North Line</span>
+                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
@@ -224,8 +231,18 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.2 */}
                   {activeDecryptTab === 2 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-emerald-500 font-bold tracking-widest mb-2 border-b border-emerald-900/50 pb-2 uppercase flex items-center gap-2 text-xs sm:text-sm">
-                         <span className="bg-emerald-900/40 text-emerald-400 px-1.5 py-0.5">SYS.2</span> SPATIAL_VECTOR_FILTERS
+                      <div className="text-emerald-500 font-bold tracking-widest mb-2 border-b border-emerald-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-emerald-900/40 text-emerald-400 px-1.5 py-1 flex flex-col items-center shrink-0">
+                           <span className="text-[8px] leading-none mb-1">SYS.2</span>
+                           <span className="text-[7px] leading-none border-t border-emerald-400/50 pt-1 w-full text-center">[ZONE]</span>
+                         </div>
+                         <div className="flex flex-col justify-center">
+                           <span>SPATIAL_VECTOR_FILTERS</span>
+                           <span className="text-[9px] text-emerald-400/80 flex items-center gap-1.5 mt-0.5">
+                             <div className="flex items-center"><span className="w-2.5 h-2.5 bg-emerald-500/60 block border border-emerald-400"></span><span className="w-2.5 h-2.5 bg-red-500/60 block border border-red-400 -ml-0.5"></span></div>
+                             MAP ELEMENT: Colored Sector Overlays
+                           </span>
+                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
@@ -253,8 +270,15 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.3 */}
                   {activeDecryptTab === 3 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-purple-500 font-bold tracking-widest mb-2 border-b border-purple-900/50 pb-2 uppercase flex items-center gap-2 text-xs sm:text-sm">
-                         <span className="bg-purple-900/40 text-purple-400 px-1.5 py-0.5">SYS.3</span> EPHEMERIS_ENGINE_RESONANCE
+                      <div className="text-purple-500 font-bold tracking-widest mb-2 border-b border-purple-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-purple-900/40 text-purple-400 px-1.5 py-1 flex flex-col items-center shrink-0">
+                           <span className="text-[8px] leading-none mb-1">SYS.3</span>
+                           <span className="text-[7px] leading-none border-t border-purple-400/50 pt-1 w-full text-center">[CORE]</span>
+                         </div>
+                         <div className="flex flex-col justify-center">
+                           <span>EPHEMERIS_ENGINE_RESONANCE</span>
+                           <span className="text-[9px] text-purple-400/80 flex items-center gap-1.5 mt-0.5"><span className="w-3 h-3 border border-purple-500 rotate-45 block"></span> MAP ELEMENT: Invisible Base Matrix</span>
+                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
@@ -292,8 +316,15 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.4 */}
                   {activeDecryptTab === 4 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-blue-400 font-bold tracking-widest mb-2 border-b border-blue-900/50 pb-2 uppercase flex items-center gap-2 text-xs sm:text-sm">
-                         <span className="bg-blue-900/40 text-blue-400 px-1.5 py-0.5">SYS.4</span> UMWELT_SYNCHRONIZATION
+                      <div className="text-amber-500 font-bold tracking-widest mb-2 border-b border-amber-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-amber-900/40 text-amber-500 px-1.5 py-1 flex flex-col items-center shrink-0">
+                           <span className="text-[8px] leading-none mb-1">SYS.4</span>
+                           <span className="text-[7px] leading-none border-t border-amber-500/50 pt-1 w-full text-center">[POINT]</span>
+                         </div>
+                         <div className="flex flex-col justify-center">
+                           <span>UMWELT_SYNCHRONIZATION</span>
+                           <span className="text-[9px] text-amber-500/80 flex items-center gap-1.5 mt-0.5"><span className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.8)] block"></span> MAP ELEMENT: Center Location Ping</span>
+                         </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
