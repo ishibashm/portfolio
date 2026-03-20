@@ -154,10 +154,17 @@ export function TacticalMagneticMapComponent({
          </div>
       </div>
 
-      {/* Info Panel Dense */}
+      {/* Theoretical Info Panel (Hidden by default) */}
       {!isFullscreen && (
-        <div className="bg-zinc-950 border border-zinc-800 p-3 text-[10px] sm:text-[11px] font-mono text-zinc-400 flex flex-col gap-3 custom-scrollbar overflow-y-auto max-h-[400px] md:max-h-[600px] lg:max-h-[700px]">
-         <div className="border-b border-zinc-900 pb-2">
+        <details className="bg-zinc-950/80 border border-zinc-800 font-mono text-zinc-400 text-[10px] w-full group">
+          <summary className="p-3 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800/80 transition-colors uppercase tracking-widest font-bold text-zinc-500 list-none flex items-center justify-between">
+             <div className="flex items-center gap-2">
+               <span className="text-blue-500 animate-pulse">■</span> [ DECRYPT THEORETICAL DATA ]
+             </div>
+             <span className="group-open:rotate-180 transition-transform text-zinc-600">▼</span>
+          </summary>
+          <div className="p-4 flex flex-col gap-4 border-t border-zinc-800 custom-scrollbar overflow-y-auto max-h-[400px]">
+           <div className="border-b border-zinc-900 pb-2">
             <h3 className="text-blue-500 text-xs font-bold tracking-widest uppercase mb-1 flex items-center gap-1">
                <span className="bg-blue-900/40 px-1">SYS.1</span> 磁北偏角計算 (WMM補正)
             </h3>
@@ -294,8 +301,9 @@ export function TacticalMagneticMapComponent({
                   結論として、<span className="text-blue-400">「年・月・日盤（宇宙の波）」「現在地の地磁気ベクトル（地球の場）」「本命星（あなたの生体アンテナ）」</span>の位相が完全に同期（Phase Sync）する時、細胞代謝と自律神経の回復が最大化される座標が「緑（Optimal）」になります。これが数学・地理・生体が一つに統合されるメカニズムです。
                </p>
             </div>
-         </div>
-        </div>
+             </div>
+          </div>
+        </details>
       )}
     </div>
   );

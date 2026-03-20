@@ -501,101 +501,112 @@ export const SolarTimeClock = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
-                <div className="bg-black/50 border border-purple-900/30 p-2">
-                  <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                    <span>物理年盤 (天体位相)</span>
-                    <span className="text-[7px] text-zinc-500">PHYSICAL MODEL</span>
+              <details className="mt-4 mb-4 border border-zinc-800 bg-zinc-950/50 group">
+                <summary className="p-3 text-[10px] text-zinc-500 font-mono uppercase tracking-widest cursor-pointer hover:bg-zinc-900/50 flex items-center justify-between list-none">
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-500 animate-pulse">◆</span> [ DECRYPT MATRICES ] 生体空間マトリクスの展開
                   </div>
-                  {yearBoard && (
-                    <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                      <div>SE: {yearBoard.SE}</div>
-                      <div>S: {yearBoard.S}</div>
-                      <div>SW: {yearBoard.SW}</div>
-                      <div>E: {yearBoard.E}</div>
-                      <div className="text-purple-400">C: {yearBoard.CENTER}</div>
-                      <div>W: {yearBoard.W}</div>
-                      <div>NE: {yearBoard.NE}</div>
-                      <div>N: {yearBoard.N}</div>
-                      <div>NW: {yearBoard.NW}</div>
-                    </div>
-                  )}
-                  <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
-                    木星黄経に基づく真の物理的うねり。<br/>
-                    あなたの本命星 {honmeiStar?.physical} (Phys) との干渉。
-                  </div>
-                </div>
-
-                <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                  <div className="text-zinc-400 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                    <span>古典年盤 (暦・節切り)</span>
-                    <span className="text-[7px] text-zinc-500">CLASSICAL DOCS</span>
-                  </div>
-                  {classicalYearBoard && (
-                    <div className="grid grid-cols-3 gap-1 text-center font-bold text-zinc-500">
-                      <div>SE: {classicalYearBoard.SE}</div>
-                      <div>S: {classicalYearBoard.S}</div>
-                      <div>SW: {classicalYearBoard.SW}</div>
-                      <div>E: {classicalYearBoard.E}</div>
-                      <div className="text-zinc-400">C: {classicalYearBoard.CENTER}</div>
-                      <div>W: {classicalYearBoard.W}</div>
-                      <div>NE: {classicalYearBoard.NE}</div>
-                      <div>N: {classicalYearBoard.N}</div>
-                      <div>NW: {classicalYearBoard.NW}</div>
-                    </div>
-                  )}
-                  <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
-                    一般的な書籍・暦に基づく盤面。<br/>
-                    立春を基準としたカレンダー・モデル。
-                  </div>
-                </div>
-
-                <div className="bg-black/50 border border-zinc-800 p-2">
-                  <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                    <span>月盤 (潮汐干渉)</span>
-                    <span className="text-[7px] text-zinc-500">MONTHLY MODEL</span>
-                  </div>
-                  {monthBoard && (
-                    <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                      <div>SE: {monthBoard.SE}</div>
-                      <div>S: {monthBoard.S}</div>
-                      <div>SW: {monthBoard.SW}</div>
-                      <div>E: {monthBoard.E}</div>
-                      <div className="text-amber-400">C: {monthBoard.CENTER}</div>
-                      <div>W: {monthBoard.W}</div>
-                      <div>NE: {monthBoard.NE}</div>
-                      <div>N: {monthBoard.N}</div>
-                      <div>NW: {monthBoard.NW}</div>
-                    </div>
-                  )}
-                  <div className="mt-2 text-[8px] text-zinc-600">
-                    月経度と太陽黄経の相対位相（月相）モデル。
-                  </div>
-                </div>
+                  <span className="group-open:rotate-180 transition-transform">▼</span>
+                </summary>
                 
-                <div className="bg-black/50 border border-zinc-800 p-2">
-                  <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                    <span>日盤 (自転ベクトル)</span>
-                    <span className="text-[7px] text-zinc-500">DAILY MODEL</span>
-                  </div>
-                  {dayBoard && (
-                    <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                      <div>SE: {dayBoard.SE}</div>
-                      <div>S: {dayBoard.S}</div>
-                      <div>SW: {dayBoard.SW}</div>
-                      <div>E: {dayBoard.E}</div>
-                      <div className="text-blue-400">C: {dayBoard.CENTER}</div>
-                      <div>W: {dayBoard.W}</div>
-                      <div>NE: {dayBoard.NE}</div>
-                      <div>N: {dayBoard.N}</div>
-                      <div>NW: {dayBoard.NW}</div>
+                <div className="p-3 border-t border-zinc-800 bg-black/50">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px] font-mono text-zinc-300">
+                    <div className="bg-black/50 border border-purple-900/30 p-2">
+                      <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <span>物理年盤 (天体位相)</span>
+                        <span className="text-[7px] text-zinc-500">PHYSICAL MODEL</span>
+                      </div>
+                      {yearBoard && (
+                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                          <div>SE: {yearBoard.SE}</div>
+                          <div>S: {yearBoard.S}</div>
+                          <div>SW: {yearBoard.SW}</div>
+                          <div>E: {yearBoard.E}</div>
+                          <div className="text-purple-400">C: {yearBoard.CENTER}</div>
+                          <div>W: {yearBoard.W}</div>
+                          <div>NE: {yearBoard.NE}</div>
+                          <div>N: {yearBoard.N}</div>
+                          <div>NW: {yearBoard.NW}</div>
+                        </div>
+                      )}
+                      <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                        木星黄経に基づく真の物理的うねり。<br/>
+                        あなたの本命星 {honmeiStar?.physical} (Phys) との干渉。
+                      </div>
                     </div>
-                  )}
-                  <div className="mt-2 text-[8px] text-zinc-600">
-                    地球の自転(JD)と至点による物理反転モデル。
+
+                    <div className="bg-zinc-900/20 border border-zinc-800 p-2">
+                      <div className="text-zinc-400 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <span>古典年盤 (暦・節切り)</span>
+                        <span className="text-[7px] text-zinc-500">CLASSICAL DOCS</span>
+                      </div>
+                      {classicalYearBoard && (
+                        <div className="grid grid-cols-3 gap-1 text-center font-bold text-zinc-500">
+                          <div>SE: {classicalYearBoard.SE}</div>
+                          <div>S: {classicalYearBoard.S}</div>
+                          <div>SW: {classicalYearBoard.SW}</div>
+                          <div>E: {classicalYearBoard.E}</div>
+                          <div className="text-zinc-400">C: {classicalYearBoard.CENTER}</div>
+                          <div>W: {classicalYearBoard.W}</div>
+                          <div>NE: {classicalYearBoard.NE}</div>
+                          <div>N: {classicalYearBoard.N}</div>
+                          <div>NW: {classicalYearBoard.NW}</div>
+                        </div>
+                      )}
+                      <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                        一般的な書籍・暦に基づく盤面。<br/>
+                        立春を基準としたカレンダー・モデル。
+                      </div>
+                    </div>
+
+                    <div className="bg-black/50 border border-zinc-800 p-2">
+                      <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <span>月盤 (潮汐干渉)</span>
+                        <span className="text-[7px] text-zinc-500">MONTHLY MODEL</span>
+                      </div>
+                      {monthBoard && (
+                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                          <div>SE: {monthBoard.SE}</div>
+                          <div>S: {monthBoard.S}</div>
+                          <div>SW: {monthBoard.SW}</div>
+                          <div>E: {monthBoard.E}</div>
+                          <div className="text-amber-400">C: {monthBoard.CENTER}</div>
+                          <div>W: {monthBoard.W}</div>
+                          <div>NE: {monthBoard.NE}</div>
+                          <div>N: {monthBoard.N}</div>
+                          <div>NW: {monthBoard.NW}</div>
+                        </div>
+                      )}
+                      <div className="mt-2 text-[8px] text-zinc-600">
+                        月経度と太陽黄経の相対位相（月相）モデル。
+                      </div>
+                    </div>
+                    
+                    <div className="bg-black/50 border border-zinc-800 p-2">
+                      <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <span>日盤 (自転ベクトル)</span>
+                        <span className="text-[7px] text-zinc-500">DAILY MODEL</span>
+                      </div>
+                      {dayBoard && (
+                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
+                          <div>SE: {dayBoard.SE}</div>
+                          <div>S: {dayBoard.S}</div>
+                          <div>SW: {dayBoard.SW}</div>
+                          <div>E: {dayBoard.E}</div>
+                          <div className="text-blue-400">C: {dayBoard.CENTER}</div>
+                          <div>W: {dayBoard.W}</div>
+                          <div>NE: {dayBoard.NE}</div>
+                          <div>N: {dayBoard.N}</div>
+                          <div>NW: {dayBoard.NW}</div>
+                        </div>
+                      )}
+                      <div className="mt-2 text-[8px] text-zinc-600">
+                        地球の自転(JD)と至点による物理反転モデル。
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </details>
 
               {/* Final Vector Calculation Visualization */}
               {env && layers && (

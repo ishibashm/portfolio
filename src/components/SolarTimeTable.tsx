@@ -140,30 +140,54 @@ export function SolarTimeTableComponent({
         </div>
       </div>
 
-      {/* High Density Info Panel for Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-[8px] font-mono leading-relaxed text-zinc-500 mb-2">
-        <div className="bg-zinc-950/50 p-2 border border-blue-900/30">
-           <strong className="text-blue-500 block mb-1">=== ALGORITHM: KIGAKU / MENJIA ===</strong>
-           <p className="text-justify mb-1">
-             本マトリックスは完全な生体電磁気的適合性に基づく時間窓を設定する。均時差（Equation of Time）を補正し、経度<InlineMath math={`${longitude.toFixed(2)}^\circ`} />における「真太陽時」を算出。干支・九星・八門の各磁束フィルターを時間軸に適用。
-           </p>
-           <p className="text-justify text-blue-400">
-             【極短期的影響（時盤）】: 約2時間単位。当日のピンポイントな行動（出発時刻・重要会議の開始など）の成否に直結する即効性のレイヤー。
-           </p>
-        </div>
-        <div className="bg-zinc-950/50 p-2 border border-red-900/30">
-           <strong className="text-red-500 block mb-1">=== FILTER: VOID TIME PROHIBITION ===</strong>
-           <p className="text-justify">
-             午刻 (11:00-13:00) および未刻 (13:00-15:00) は「天中殺帯」として処理。この位相では地球の磁気シールドが自律神経周波数と同調外れを起こす。磁力線を垂直に切る物理移動（旅行/外出）は細胞レベルの深刻な電圧ギャップ（ANSショック）を引き起こすため全行動を凍結する。
+      {/* Actionable Directives Legend */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+        <div className="bg-emerald-950/20 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
+           <div className="text-emerald-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> [ ACTION WINDOW ] 実行推奨帯
+           </div>
+           <p className="text-zinc-400 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
+              生体磁気と空間位相が最適化されるゴールデンタイム。重要な決断、交渉の開始、新しいプロジェクトの着手、および長距離移動（出発）に最も適した時間帯です。
            </p>
         </div>
-        <div className="bg-zinc-950/50 p-2 border border-emerald-900/30">
-           <strong className="text-emerald-500 block mb-1">=== FILTER: OPTIMAL DETOX WINDOW ===</strong>
-           <p className="text-justify">
-             緑色ハイライト：吉門（生/休/開）と木火の気（三碧/四緑/九紫）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、細胞代謝と電気的デトックス（排出）を極限まで加速させる。
+        <div className="bg-red-950/20 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
+           <div className="text-red-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span> [ VOID TIME ] 警告帯・行動凍結
+           </div>
+           <p className="text-zinc-400 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
+              地球の磁気シールドが乱れ、ヒューマンエラーや通信障害が多発する魔の時間帯（天中殺）。大きな決断、新規の開始、および長距離の物理的移動を完全に停止し、ルーチンワークに徹してください。
            </p>
         </div>
       </div>
+
+      <details className="mb-4 bg-zinc-950/50 border border-zinc-800 text-[9px] font-mono text-zinc-500 group">
+         <summary className="p-2 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest">
+            <div className="flex items-center gap-2">
+               <span className="text-blue-500 blur-[0.5px]">◆</span> [ DECRYPT ALGORITHM ] 算術フィルターの展開
+            </div>
+            <span className="group-open:rotate-180 transition-transform">▼</span>
+         </summary>
+         <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[8px] leading-relaxed">
+           <div className="p-2 border border-blue-900/30">
+              <strong className="text-blue-500 block mb-1">=== ALGORITHM: KIGAKU ===</strong>
+              <p className="text-justify mb-1">
+                本マトリックスは完全な生体電磁気的適合性に基づく時間窓を設定する。均時差を補正し、経度に基づく「真太陽時」を算出。干支・九星・八門の各磁束フィルターを時間軸に適用。
+              </p>
+           </div>
+           <div className="p-2 border border-red-900/30">
+              <strong className="text-red-500 block mb-1">=== FILTER: VOID TIME ===</strong>
+              <p className="text-justify">
+                午刻 (11:00-13:00) および未刻 (13:00-15:00) は「天中殺帯」として処理。この位相では地球の磁気シールドが自律神経周波数と同調外れを起こす。磁力線を垂直に切る物理移動は細胞レベルの深刻な電圧ギャップを引き起こすため凍結する。
+              </p>
+           </div>
+           <div className="p-2 border border-emerald-900/30">
+              <strong className="text-emerald-500 block mb-1">=== FILTER: OPTIMAL DETOX ===</strong>
+              <p className="text-justify">
+                緑色ハイライト：吉門（生/休/開）と木火の気（三碧/四緑/九紫）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、電気的デトックスを極限まで加速させる。
+              </p>
+           </div>
+         </div>
+      </details>
 
       {/* The Matrix */}
       <div className="overflow-x-auto custom-scrollbar border border-zinc-900 bg-black/60 shadow-2xl rounded-sm">
