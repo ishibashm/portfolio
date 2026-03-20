@@ -34,13 +34,22 @@ export async function GET(request: Request) {
     );
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
+    
+    // Fix for reverse proxies (Docker/Cloud Run load balancers)
+    const forwardedHost = request.headers.get('x-forwarded-host');
+    const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https';
+    const origin = forwardedHost ? `${forwardedProto}://${forwardedHost}` : requestUrl.origin;
+
     if (!error) {
-      return NextResponse.redirect(`${requestUrl.origin}${next}`);
+      return NextResponse.redirect(`${origin}${next}`);
     } else {
         console.error("Auth callback error:", error);
     }
   }
 
   // return the user to an error page with instructions
-  return NextResponse.redirect(`${requestUrl.origin}/login?error=Could not authenticate user`);
+  const errOrigin = request.headers.get('x-forwarded-host') 
+      ? `${request.headers.get('x-forwarded-proto') ?? 'https'}://${request.headers.get('x-forwarded-host')}` 
+      : requestUrl.origin;
+  return NextResponse.redirect(`${errOrigin}/login?error=Could not authenticate user`);
 }
