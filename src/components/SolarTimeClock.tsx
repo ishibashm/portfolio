@@ -184,9 +184,12 @@ export const SolarTimeClock = () => {
   // --- Environmental Context ---
   // 物理モデルへの完全統合 & パフォーマンス最適化
   const env = React.useMemo(() => {
-    if (!ephemerisTime) return null;
-    return getCurrentEnvironmentalFrequencies(ephemerisTime);
-  }, [ephemerisTime]);
+    if (!solarData?.solarTime) {
+      if (!ephemerisTime) return null;
+      return getCurrentEnvironmentalFrequencies(ephemerisTime);
+    }
+    return getCurrentEnvironmentalFrequencies(solarData.solarTime);
+  }, [ephemerisTime, solarData]);
 
   // --- Hardware Init Context (Birth Data) ---
   const birthEnv = React.useMemo(() => {
@@ -196,8 +199,12 @@ export const SolarTimeClock = () => {
 
   // --- Dynamic Ephemeris Calculation ---
   const honmeiStar = React.useMemo(() => {
-    return getHonmeiStar(new Date(birthDate));
-  }, [birthDate]);
+    if (!birthSolarData?.solarTime) {
+      if (!birthDate) return null;
+      return getHonmeiStar(new Date(birthDate));
+    }
+    return getHonmeiStar(birthSolarData.solarTime);
+  }, [birthDate, birthSolarData]);
 
   const { board, layers, yearBoard, monthBoard, dayBoard, classicalYearBoard } = React.useMemo(() => {
     if (!env || !honmeiStar) return { board: null, layers: null, yearBoard: null, monthBoard: null, dayBoard: null, classicalYearBoard: null };
@@ -615,8 +622,9 @@ export const SolarTimeClock = () => {
               {/* Final Vector Calculation Visualization */}
               {env && layers && (
                 <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
-                  <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase">
-                    Phase Interference Diagnosis (NOISE &gt; OPTIMAL &gt; SAFE)
+                  <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
+                    <span>Phase Interference Diagnosis</span>
+                    <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 非推奨 &gt; 🟩 最適化 &gt; 🟦 通常 )</span>
                   </div>
                   <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
                     <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的なアーティファクト（赤・橙）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
@@ -654,13 +662,13 @@ export const SolarTimeClock = () => {
 
                           const TooltipCell = ({ status, board, isFinal }: { status: string, board: any, isFinal?: boolean }) => {
                              const star = board ? board[dir] : '?';
-                             let title = "無干渉 (SAFE)";
-                             let desc = "致命的な定在波やノイズは観測されていません。";
-                             if (status === 'NOISE_GOU') { title="五黄殺 (TYPE I)"; desc="強力な破壊定在波（五黄土星）が観測されています。"; }
-                             else if (status === 'NOISE_ANKEN') { title="暗剣殺 (TYPE I)"; desc="五黄の対角にあたり、外部からの突発的干渉ノイズが観測。"; }
-                             else if (status === 'NOISE_HONMEI') { title="本命殺 (TYPE II)"; desc="あなたの本命波長と同じ波長が配置され、共鳴過負荷ノイズが起きます。"; }
-                             else if (status === 'NOISE_TEKI') { title="的殺 (TYPE II)"; desc="本命の対角にあたり、目標や方向性への干渉ノイズが起きます。"; }
-                             else if (status === 'OPTIMAL') { title="相生 (OPTIMAL)"; desc="あなたの波長を調和・増幅させる最適ベクトルです。"; }
+                             let title = "🟦 通常ゾーン (SAFE)";
+                             let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
+                             if (status === 'NOISE_GOU') { title="🟥 非推奨ベクトル (TYPE I)"; desc="強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
+                             else if (status === 'NOISE_ANKEN') { title="🟥 非推奨ベクトル (TYPE I)"; desc="外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
+                             else if (status === 'NOISE_HONMEI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
+                             else if (status === 'NOISE_TEKI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+                             else if (status === 'OPTIMAL') { title="🟩 最適化ゾーン (OPTIMAL)"; desc="あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
                              
                              const label = formatLabel(status);
                              

@@ -337,27 +337,27 @@ export default function MagneticMapInner({
       {/* UI Overlay */}
       <div className="absolute top-4 left-4 z-1000 pointer-events-none">
         <div className="bg-zinc-950/80 md:backdrop-blur-md px-3 py-2 border border-blue-500/30 rounded-sm">
-          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400">Magnetic North</div>
-          <div className="text-xs font-mono text-zinc-300">D: {declination.toFixed(2)}° Offset</div>
+          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400">磁北 (WMM2020)</div>
+          <div className="text-xs font-mono text-zinc-300">現在地偏差: {declination.toFixed(2)}°</div>
         </div>
       </div>
       
       <div className="absolute bottom-4 right-4 z-1000 pointer-events-none">
         <div className="bg-zinc-950/80 md:backdrop-blur-md px-3 py-2 border border-emerald-500/30 rounded-sm text-right">
-          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">Honmei (Phys): {honmeiStar.physical}</div>}
-          <div className="text-[9px] uppercase font-mono tracking-widest text-emerald-400 mt-1">Optimal Zones (Green)</div>
-          <div className="text-[8px] font-sans text-zinc-400">Biological Synchronization</div>
-          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400 mt-1">Safe Zones (Blue)</div>
-          <div className="text-[8px] font-sans text-zinc-400">Neutral Baseline</div>
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1 pt-1 border-t border-zinc-800">Noise Vectors (Red/Amber)</div>
-          <div className="text-[8px] font-sans text-zinc-400">Gou / Anken / Honmei / Teki</div>
+          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
+          <div className="text-[9px] uppercase font-mono tracking-widest text-emerald-400 mt-1">最適化ゾーン (緑)</div>
+          <div className="text-[8px] font-sans text-zinc-400">行動パフォーマンス最大化帯</div>
+          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400 mt-1">通常ゾーン (青)</div>
+          <div className="text-[8px] font-sans text-zinc-400">標準的な環境負荷</div>
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1 pt-1 border-t border-zinc-800">非推奨ベクトル (赤/黄)</div>
+          <div className="text-[8px] font-sans text-zinc-400">演算に基づく行動阻害エリア</div>
           <div className="flex justify-end items-center gap-1 mt-1 pt-1 border-t border-zinc-800">
              <div className="w-3 border-t-2 border-dashed border-red-500"></div>
-             <div className="text-[9px] uppercase font-mono tracking-widest text-red-500">Danger Boundary</div>
+             <div className="text-[9px] uppercase font-mono tracking-widest text-red-500">危険境界</div>
           </div>
           <div className="flex justify-end items-center gap-1 mt-1">
              <div className="w-3 border-t border-dashed border-zinc-500"></div>
-             <div className="text-[9px] uppercase font-mono tracking-widest text-zinc-500">Distance Rings</div>
+             <div className="text-[9px] uppercase font-mono tracking-widest text-zinc-500">距離リング (空間スケール)</div>
           </div>
         </div>
       </div>

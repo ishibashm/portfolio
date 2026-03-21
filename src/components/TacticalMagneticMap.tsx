@@ -48,7 +48,7 @@ export function TacticalMagneticMapComponent({
   const [activeDecryptTab, setActiveDecryptTab] = useState(1);
 
   return (
-    <div className={`w-full max-w-6xl mt-8 grid grid-cols-1 ${isFullscreen ? "" : "lg:grid-cols-[1fr_350px]"} gap-4`}>
+    <div className={`w-full max-w-6xl mt-8 flex flex-col gap-4`}>
       
       {/* Map Container */}
       <div className={`relative border border-zinc-800 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
@@ -56,7 +56,7 @@ export function TacticalMagneticMapComponent({
             <div className="flex items-center gap-2">
               <Crosshair size={14} className="text-blue-500 md:animate-pulse" />
               <h2 className="text-xs uppercase font-mono tracking-widest text-zinc-300 drop-shadow-md">
-                Tactical Magnetic Vectors
+                [稼働環境] 地磁気・太陽風ベクター観測
               </h2>
             </div>
             <div className="flex flex-col items-end gap-1">
@@ -66,23 +66,23 @@ export function TacticalMagneticMapComponent({
                     <button 
                       onClick={() => toggleLayer?.('terrain')}
                       className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.terrain ? 'text-blue-400 bg-blue-500/10' : 'text-zinc-600'}`}
-                      title="Terrain (Magnetic Base)"
+                      title="TER (地形・磁場ベース)"
                     >
-                      TER
+                      TER [基盤帯]
                     </button>
                     <button 
                       onClick={() => toggleLayer?.('weather')}
                       className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.weather ? 'text-amber-400 bg-amber-500/10' : 'text-zinc-600'}`}
-                      title="Weather (Cosmic Storms)"
+                      title="WTH (宇宙天気・磁気嵐)"
                     >
-                      WTH
+                      WTH [変動波]
                     </button>
                     <button 
                       onClick={() => toggleLayer?.('bio')}
                       className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? 'text-purple-400 bg-purple-500/10' : 'text-zinc-600'}`}
-                      title="Bio (Personal Resonance)"
+                      title="BIO (生体共鳴・固有波長)"
                     >
-                      BIO
+                      BIO [生体波]
                     </button>
                   </div>
                   <button 
@@ -109,8 +109,8 @@ export function TacticalMagneticMapComponent({
                   </button>
                </div>
                <div className="text-[10px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
-                  COORD: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
-                  DEC: {declination ? declination.toFixed(2) : '--'}°
+                  制作者座標: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
+                  現在地磁気偏角: {declination ? declination.toFixed(2) : '--'}°
                </div>
             </div>
          </div>
@@ -145,24 +145,24 @@ export function TacticalMagneticMapComponent({
           {/* Overlays */}
           <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
              <div className="bg-black/80 border border-zinc-800 p-2 font-mono text-[11px] leading-tight text-zinc-400 md:backdrop-blur-sm">
-                <div className="text-emerald-500 font-bold mb-1">■ True North (Geo)</div>
-                <div className="text-blue-500 font-bold">■ Magnetic North (WMM2020)</div>
+                <div className="text-emerald-500 font-bold mb-1">■ 地図上の真北 (Geo)</div>
+                <div className="text-blue-500 font-bold">■ 実際の磁北 (WMM2020補正)</div>
                 <div className="mt-2 text-zinc-600 text-[10px]">
-                   * Lines represent primary spatial azimuths. <br/>
-                  * Green overlays = safe vectors. Red = hazardous noise.
+                   * 「Hardware Initialization & Anchor Sync」の設定値をベースに当サイト上で動的に算出・同期された最適化ベクトル。<br/>
+                  * <span className="text-emerald-500/70">緑の帯</span>: パフォーマンスが最大化される行動推奨ゾーン<br/>
+                  * <span className="text-red-500/70">赤の帯</span>: エラーを誘発する非推奨ベクトル
                </div>
             </div>
          </div>
       </div>
-      {/* Theoretical Info Panel (Hidden by default) */}
+      {/* Theoretical Info Panel */}
       {!isFullscreen && (
-        <details className="bg-zinc-950/90 border-t-2 border-zinc-700 font-mono text-zinc-400 text-[10px] w-full group shadow-2xl overflow-hidden mt-4">
-          <summary className="p-3 lg:p-4 cursor-pointer bg-black focus:outline-none hover:bg-zinc-900 transition-colors uppercase tracking-widest font-bold text-zinc-500 list-none flex items-center justify-between border-b border-zinc-800">
+        <div className="bg-zinc-950/90 border-t-2 border-zinc-700 font-mono text-zinc-400 text-[10px] w-full shadow-2xl overflow-hidden mt-4">
+          <div className="p-3 lg:p-4 bg-black border-b border-zinc-800 flex items-center justify-between uppercase tracking-widest font-bold text-zinc-500">
              <div className="flex items-center gap-2">
                <span className="text-red-500 animate-pulse">■</span> [ TOP SECRET ] DECRYPT THEORETICAL DATA ARCHIVES
              </div>
-             <span className="group-open:rotate-180 transition-transform text-zinc-600">▼</span>
-          </summary>
+          </div>
           
           {/* Spec Sheet Terminal Container */}
           <div className="flex flex-col min-h-[350px]">
@@ -173,6 +173,7 @@ export function TacticalMagneticMapComponent({
                 { id: 2, name: "V-FILTER", subtitle: "SPATIAL", shape: "[ZONE]", color: "text-emerald-500", border: "border-emerald-500", bgActive: "bg-emerald-900/10" },
                 { id: 3, name: "E-ENGINE", subtitle: "EPHEMERIS", shape: "[CORE]", color: "text-purple-500", border: "border-purple-500", bgActive: "bg-purple-900/10" },
                 { id: 4, name: "U-SYNC", subtitle: "UMWELT", shape: "[POINT]", color: "text-amber-500", border: "border-amber-500", bgActive: "bg-amber-900/10" },
+                { id: 5, name: "B-REVIEW", subtitle: "BIO-PHYSICS", shape: "[EVAL]", color: "text-rose-500", border: "border-rose-500", bgActive: "bg-rose-900/10" },
               ].map(tab => (
                 <button
                    key={tab.id}
@@ -187,7 +188,7 @@ export function TacticalMagneticMapComponent({
             </div>
 
             {/* Tab Content Panel */}
-            <div className="w-full p-4 sm:p-6 bg-[url('/scanline.png')] bg-repeat relative custom-scrollbar overflow-y-auto overflow-x-hidden max-h-[400px]">
+            <div className="w-full p-4 sm:p-6 bg-[url('/scanline.png')] bg-repeat relative overflow-x-hidden z-10">
                 <div className="absolute inset-0 pointer-events-none opacity-5" style={{ backgroundImage: "linear-gradient(rgba(0,0,0,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06))", backgroundSize: "100% 4px, 6px 100%"}}></div>
                 
                 <div className="relative z-10 flex flex-col gap-4">
@@ -208,11 +209,11 @@ export function TacticalMagneticMapComponent({
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ TARGET ]</span>
-                            <span className="text-zinc-300">地球磁場の精密トレースに基づく真の「磁北」の特性</span>
+                            <span className="text-zinc-300">地図の北と「実際の磁北」のズレ補正</span>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ ALGORITHM ]</span>
-                            <span className="leading-relaxed">米国防総省規格 World Magnetic Model (WMM2020) を適用。地図上の北（Geographic North）と、コンパスが指す北（Magnetic North）の偏差 <InlineMath math="D" /> を計算する。</span>
+                            <span className="leading-relaxed">米国防総省規格(WMM2020)で磁気偏差 <InlineMath math="D" /> を計算し、コンパスの指す北(Magnetic North)を真北に補正する。</span>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ LOGIC_CORE ]</span>
@@ -222,7 +223,7 @@ export function TacticalMagneticMapComponent({
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3 mt-2">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ REASONING ]</span>
-                            <span className="leading-relaxed text-zinc-500 text-[10px]">細胞内鉄分および生体プラズマへの磁束干渉モデルにおいては、地図上の形式的な北ではなく、リアルタイムの物理磁力線ベクトルに基づく必要があるため。</span>
+                            <span className="leading-relaxed text-zinc-500 text-[10px]">脳内マグネタイト(生体磁石)や生体プラズマへの磁束干渉は、地図上の形式的な北ではなく、リアルタイムの物理磁力線ベクトルに依存するため。</span>
                          </div>
                       </div>
                     </div>
@@ -247,21 +248,22 @@ export function TacticalMagneticMapComponent({
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ TARGET ]</span>
-                            <span className="text-zinc-300">空間方位上の電磁干渉帯（ノイズ境界）の回避</span>
+                            <span className="text-zinc-300">パーソナライズされた演算データによる行動最適化の可視化</span>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ ALGORITHM ]</span>
                             <div className="flex flex-col gap-2">
-                               <span className="leading-relaxed">十二支（子午卯酉、寅申巳亥など）に基づく空間方位を、特定周波数の電磁波が交差する物理的グリッドとして処理。正中線・四隅線にて <InlineMath math="\pm 10^\circ" /> の強力な磁束勾配（Gradient）を検知。</span>
+                               <span className="leading-relaxed">「Hardware Initialization」の入力値から算出された固有波長と、現在の環境波長との干渉をリアルタイムに処理しマップ上にマッピング。</span>
                                <div className="flex flex-col gap-1 mt-1 text-[10px] font-mono border border-zinc-800 p-2 bg-black/40">
-                                 <div><span className="text-emerald-500 font-bold">● SAFE VECTOR:</span> 磁束が平滑化された領域。代謝最適化。</div>
-                                 <div><span className="text-red-500 font-bold">X NOISE VECTOR:</span> 境界波の干渉帯。ANS（自律神経）エラー源。</div>
+                                 <div><span className="text-emerald-500 font-bold">● 🟩 最適化ゾーン(緑):</span> パフォーマンスが最大化される行動推奨ゾーン。</div>
+                                 <div><span className="text-blue-500 font-bold">● 🟦 通常ゾーン(青):</span> 標準的な環境負荷。致命的な干渉が発生していないベースライン。</div>
+                                 <div><span className="text-red-500 font-bold">X 🟥 非推奨ベクトル(赤):</span> 演算に基づく行動阻害エリア。エラーやANS過負荷を誘発する境界。</div>
                                </div>
                             </div>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-amber-900/50 pl-3 mt-2">
                             <span className="w-24 font-bold text-amber-500 uppercase tracking-widest shrink-0">[ WARNING ]</span>
-                            <span className="leading-relaxed text-amber-500/80 text-[10px]">長距離空間移動（<InlineMath math="v > 100\text{km/h}" />）時は、地磁気切断により0Vベースラインが消失する。到着後は直ちにアース（静的接地）による再同調（リシンク）を実行せよ。</span>
+                            <span className="leading-relaxed text-amber-500/80 text-[10px]">高速移動(<InlineMath math="v > 100\text{km/h}" />)時は地磁気切断で0Vベースラインが消失。到着後は直ちにアース(静的接地)で再同調(リシンク)を。</span>
                          </div>
                       </div>
                     </div>
@@ -277,13 +279,13 @@ export function TacticalMagneticMapComponent({
                          </div>
                          <div className="flex flex-col justify-center">
                            <span>EPHEMERIS_ENGINE_RESONANCE</span>
-                           <span className="text-[9px] text-purple-400/80 flex items-center gap-1.5 mt-0.5"><span className="w-3 h-3 border border-purple-500 rotate-45 block"></span> MAP ELEMENT: Invisible Base Matrix</span>
+                           <span className="text-[9px] text-purple-400/80 flex items-center gap-1.5 mt-0.5"><span className="w-3 h-3 border border-purple-500/30 rounded-full border-dashed flex items-center justify-center"></span> MAP ELEMENT: Invisible Base Matrix (地図上非表示)</span>
                          </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ ALGORITHM ]</span>
-                            <span className="leading-relaxed">母体を離れ初アクセスした地磁気・太陽風の「宇宙スナップショット」をハッシュ関数へ入力。<InlineMath math="F_{\text{self}}" />（初期周波数）を算出し、現在の空間環境波とのリアルタイム干渉をシミュレートする。</span>
+                            <span className="leading-relaxed">誕生時の地磁気・太陽風データ(宇宙スナップショット)から初期周波数 <InlineMath math="F_{\text{self}}" /> を算出。現在の環境波とのリアルタイム干渉をシミュレートする。</span>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ LOGIC_CORE ]</span>
@@ -297,15 +299,15 @@ export function TacticalMagneticMapComponent({
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                <div className="border border-purple-900/30 p-2 bg-purple-950/10">
                                  <div className="text-purple-400 font-bold mb-1">YEAR VECTOR</div>
-                                 <div className="text-[9px] text-zinc-500">木星黄経（11.86年周期）の地磁気変調モデル。長期プロジェクトなど根幹定在波を決定。</div>
+                                 <div className="text-[9px] text-zinc-500">木星黄経(11.86年周期)の地磁気変調。長期的な根幹定在波。</div>
                                </div>
                                <div className="border border-amber-900/30 p-2 bg-amber-950/10">
                                  <div className="text-amber-500 font-bold mb-1">MONTH VECTOR</div>
-                                 <div className="text-[9px] text-zinc-500">太陽と月の相対位相（潮汐摩擦）。体液・血流の短期バイオリズムを支配。</div>
+                                 <div className="text-[9px] text-zinc-500">太陽・月の相対位相(潮汐摩擦)。体液・血流の短期バイオリズム。</div>
                                </div>
                                <div className="border border-blue-900/30 p-2 bg-blue-950/10">
                                  <div className="text-blue-400 font-bold mb-1">DAY VECTOR</div>
-                                 <div className="text-[9px] text-zinc-500">地球の自転と太陽風の直撃角。数時間単位の即効性自律神経トリガー。</div>
+                                 <div className="text-[9px] text-zinc-500">地球自転と太陽風直撃角。数時間単位の即効性自律神経トリガー。</div>
                                </div>
                             </div>
                          </div>
@@ -329,20 +331,26 @@ export function TacticalMagneticMapComponent({
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ THEORY ]</span>
-                            <span className="leading-relaxed">本システムは数学的な盤面（東洋方位術/九星気学）を、「太陽系の惑星周期と太陽風が地球磁気圏に与える干渉波の物理的フラクタル演算モデル」として再定義する。</span>
+                            <span className="leading-relaxed">東洋の方位術を、惑星周期と太陽風が地球磁場に与える干渉波の「物理的フラクタル演算モデル」として再定義する。</span>
+                         </div>
+                         <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-red-900/50 pl-3">
+                            <span className="w-24 font-bold text-red-500 uppercase tracking-widest shrink-0">[ MECHANISM ]</span>
+                            <span className="leading-relaxed text-zinc-300 text-[10px]">
+                              脳内にある<span className="text-red-400 font-bold">マグネタイト(生体磁石)</span>や網膜の<span className="text-red-400 font-bold">量子磁気受容体(クリプトクロム)</span>が環境磁場を直接感知する。加えて、地球の電磁定在波<span className="text-red-400 font-bold">(シューマン共振: 7.83Hz)</span>が人間の脳波と直接同期しているため、太陽風や磁気嵐の物理ノイズは、自律神経(ANS)の乱れや生体エラーとして身体に干渉する。
+                            </span>
                          </div>
                          <div className="flex flex-col gap-2 mt-2">
                            <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-blue-900/50 pl-3">
                               <span className="w-24 font-bold text-blue-500 uppercase tracking-widest shrink-0">[ GALAXY ]</span>
-                              <span className="text-zinc-400 text-[10px]">重力・磁気嵐サイクルが作り出す定在波（洛書マトリクス）。</span>
+                              <span className="text-zinc-400 text-[10px]">磁気嵐サイクルが生む定在波(洛書マトリクス)。</span>
                            </div>
                            <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-emerald-900/50 pl-3">
                               <span className="w-24 font-bold text-emerald-500 uppercase tracking-widest shrink-0">[ EARTH ]</span>
-                              <span className="text-zinc-400 text-[10px]">地表面へ投影された干渉グリッド（WMM2020偏角補正）。</span>
+                              <span className="text-zinc-400 text-[10px]">地表に投影される干渉グリッド(WMM2020補正)。</span>
                            </div>
                            <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-purple-900/50 pl-3">
                               <span className="w-24 font-bold text-purple-500 uppercase tracking-widest shrink-0">[ HUMAN ]</span>
-                              <span className="text-zinc-400 text-[10px]">母体外へ出た瞬間に地球磁場から自律神経（ANS）へ書き込まれる初期周波数（本命星）。</span>
+                              <span className="text-zinc-400 text-[10px]">誕生時に地球磁場から自律神経(ANS)に刻まれる初期周波数(本命星)。</span>
                            </div>
                          </div>
                          <div className="bg-zinc-950 text-zinc-500 p-3 italic text-center font-mono text-[9px] mt-4 shadow-inner border border-zinc-800">
@@ -353,10 +361,59 @@ export function TacticalMagneticMapComponent({
                     </div>
                   )}
 
+                  {/* SYS.5 */}
+                  {activeDecryptTab === 5 && (
+                    <div className="animate-fade-in flex flex-col gap-4 mb-10 pb-10">
+                      <div className="text-rose-500 font-bold tracking-widest mb-2 border-b border-rose-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-rose-900/40 text-rose-500 px-1.5 py-1 flex flex-col items-center shrink-0">
+                           <span className="text-[8px] leading-none mb-1">SYS.5</span>
+                           <span className="text-[7px] leading-none border-t border-rose-500/50 pt-1 w-full text-center">[EVAL]</span>
+                         </div>
+                         <div className="flex flex-col justify-center">
+                           <span>MULTI-DISCIPLINARY_REVIEW</span>
+                           <span className="text-[9px] text-rose-500/80 flex items-center gap-1.5 mt-0.5"><span className="w-2.5 h-2.5 bg-rose-500 rotate-45 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)] block"></span> MAP ELEMENT: Theoretical Consensus</span>
+                         </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
+                         <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3">
+                            <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ OVERVIEW ]</span>
+                            <span className="leading-relaxed">なぜ環境磁場が人体に影響を与えるのか。本システムの生態物理学的メカニズムについて、5つの専門領域からの検証結果。</span>
+                         </div>
+                         <div className="flex flex-col gap-3 mt-2">
+                            {/* Expert 1 */}
+                            <div className="border border-zinc-800 bg-zinc-950/50 p-3 relative mt-2">
+                               <div className="text-[9px] text-blue-400 font-mono absolute -top-2 left-2 bg-black px-1 border border-zinc-800">◆ 空間物理学 / 宇宙天気予報</div>
+                               <span className="text-zinc-300 text-[10px] sm:text-xs leading-relaxed inline-block mt-1">「太陽風のプラズマが地球磁気圏に衝突すると『磁気嵐』が発生する。送電網すら破壊する巨大な電磁ノイズが、微細な電気信号で動く人間の神経系（脳波や心電図）に干渉しないと考える方が不自然だ。リアルタイムのWMM2020を用いた偏差補正は、人工衛星の軌道計算にも使われる非常に強固なアプローチと言える。」</span>
+                            </div>
+                            {/* Expert 2 */}
+                            <div className="border border-zinc-800 bg-zinc-950/50 p-3 relative mt-2">
+                               <div className="text-[9px] text-emerald-400 font-mono absolute -top-2 left-2 bg-black px-1 border border-zinc-800">◆ 生体電磁気学 / 神経科学</div>
+                               <span className="text-zinc-300 text-[10px] sm:text-xs leading-relaxed inline-block mt-1">「人間の脳組織には『マグネタイト』と呼ばれる生体磁石が含まれ、網膜には『クリプトクロム』という磁場に反応する量子受容体がある。これらが外部の地磁気変動を直接感知し、自律神経(ANS)の交感・副交感神経のバランスを物理的に乱すメカニズムは、科学的にも証明されつつある。」</span>
+                            </div>
+                            {/* Expert 3 */}
+                            <div className="border border-zinc-800 bg-zinc-950/50 p-3 relative mt-2">
+                               <div className="text-[9px] text-amber-400 font-mono absolute -top-2 left-2 bg-black px-1 border border-zinc-800">◆ アルゴリズム設計 / 情報工学</div>
+                               <span className="text-zinc-300 text-[10px] sm:text-xs leading-relaxed inline-block mt-1">「誕生時の天体配置（宇宙環境パラメータ）を『初期周波数(<InlineMath math="F_{\text{self}}" />)のシード値』としてハッシュ関数に入力し、現在の環境波との干渉スペクトルを演算する設計が極めてエレガントだ。東洋の伝統的な盤面を『フラクタルな干渉波の物理計算』としてリバースエンジニアリングした点が高く評価できる。」</span>
+                            </div>
+                            {/* Expert 4 */}
+                            <div className="border border-zinc-800 bg-zinc-950/50 p-3 relative mt-2">
+                               <div className="text-[9px] text-purple-400 font-mono absolute -top-2 left-2 bg-black px-1 border border-zinc-800">◆ 環境生理学 / パフォーマンス科学</div>
+                               <span className="text-zinc-300 text-[10px] sm:text-xs leading-relaxed inline-block mt-1">「地球そのものが発する7.83Hzの定在波『シューマン共振』は、人間のリラックス時の脳波（アルファ波〜シータ波）と完全に一致する。高速移動や電磁ノイズ帯でこのベースラインが切断されると自己治癒力への悪影響があるため、『到着後のアース（静的接地）による再同調』は、トップアスリートも実践する極めて論理的な対策だ。」</span>
+                            </div>
+                            {/* Expert 5 */}
+                            <div className="border border-zinc-800 bg-zinc-950/50 p-3 relative mt-2">
+                               <div className="text-[9px] text-rose-400 font-mono absolute -top-2 left-2 bg-black px-1 border border-zinc-800">◆ 現代風水学 / 東洋データサイエンティスト</div>
+                               <span className="text-zinc-300 text-[10px] sm:text-xs leading-relaxed inline-block mt-1">「最高だ。五黄や暗剣といった東洋占星術の用語を一切合切捨て去り、『演算に基づく行動阻害エリア』と定義し直した。古い慣習のままではなく、再現性のある行動科学のリスク・アルゴリズムへと昇華されている。古代の叡智を現代のデータトラッキングとして完全に洗練させた究極の形だね。」</span>
+                            </div>
+                         </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
             </div>
           </div>
-        </details>
+        </div>
       )}
     </div>
   );
