@@ -33,7 +33,8 @@ export function SolarTimeTableComponent({
   const [previewContent, setPreviewContent] = useState("");
 
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashim@gmail.com"; 
-  const isAuthorized = userEmail === adminEmail;
+  // ローカル開発環境ではテストのために常に表示し、本番環境では指定メールアドレスのみに制限します
+  const isAuthorized = process.env.NODE_ENV === 'development' || userEmail === adminEmail;
 
   const toggleRow = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -299,7 +300,7 @@ export function SolarTimeTableComponent({
                    </button>
                 </div>
                 
-                {isExpanded && !isVoid && (
+                {isExpanded && (
                    <div className="mt-4 bg-black/80 p-4 border border-zinc-800 rounded-sm flex flex-col items-center relative z-10 shadow-inner">
                       <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Kigaku Compass Matrix</div>
                       <div className="scale-90 opacity-90"><KigakuBoard centerStar={item.kyusei} /></div>
