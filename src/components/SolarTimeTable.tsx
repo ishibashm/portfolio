@@ -17,10 +17,11 @@ interface SolarTimeTableProps {
   vectors?: Record<string, string> | null;
   honmeiStar?: { physical: number; classical: number } | null;
   envData?: any;
+  userEmail?: string | null;
 }
 
 export function SolarTimeTableComponent({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, userEmail
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -28,6 +29,11 @@ export function SolarTimeTableComponent({
   );
   
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewContent, setPreviewContent] = useState("");
+
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashim@gmail.com"; 
+  const isAuthorized = userEmail === adminEmail;
 
   const toggleRow = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
@@ -68,7 +74,7 @@ export function SolarTimeTableComponent({
     return isGoodGate && isFavorable;
   };
 
-  const handleDownloadCsv = () => {
+  const generateCsvString = () => {
     // Telemetry Header
     const telemetryHeaders = [
       "Record Date", date.toLocaleDateString(),
@@ -122,15 +128,20 @@ export function SolarTimeTableComponent({
     ]);
 
     // CSV Content
-    const csvContent =
-      "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
+    return "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
       telemetryHeaders.map(c => `"${c}"`).join(",") + "\n\n" +
       [headers, ...rows]
         .map((e) => e.map((c) => `"${c}"`).join(",")) // Quote fields
         .join("\n");
+  };
 
-    // Download Link
-    const encodedUri = encodeURI(csvContent);
+  const openPreview = () => {
+    setPreviewContent(generateCsvString());
+    setShowPreview(true);
+  };
+
+  const executeDownload = () => {
+    const encodedUri = encodeURI(previewContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     const dateStr = date.toLocaleDateString().replace(/\//g, "-");
@@ -138,6 +149,7 @@ export function SolarTimeTableComponent({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setShowPreview(false);
   };
 
   return (
@@ -154,12 +166,14 @@ export function SolarTimeTableComponent({
            <div className="text-[8px] font-mono text-zinc-600 tracking-widest hidden md:block">
               {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
            </div>
-           <button
-             onClick={handleDownloadCsv}
-             className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
-           >
-             Export CSV
-           </button>
+           {isAuthorized && (
+             <button
+               onClick={openPreview}
+               className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+             >
+               Review & Export AI Data
+             </button>
+           )}
         </div>
       </div>
 
@@ -295,6 +309,51 @@ export function SolarTimeTableComponent({
            );
         })}
       </div>
+
+      {/* SECURE DATA REVIEW MODAL */}
+      {showPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-zinc-950 border border-zinc-800 p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in-up">
+            <div className="flex justify-between items-center border-b border-zinc-800 pb-4 mb-4">
+              <h3 className="text-emerald-500 font-mono tracking-widest uppercase text-sm font-bold">
+                [ SECURE DATA REVIEW ]
+              </h3>
+              <button 
+                onClick={() => setShowPreview(false)}
+                className="text-zinc-500 hover:text-white font-mono text-xl leading-none"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <p className="text-zinc-400 text-xs font-mono mb-4 text-justify leading-relaxed">
+              以下のデータは生成AI（LLM）へのプロンプト入力として最適化されたフル・テレメトリーデータです。
+              本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければエクスポートしてAIプロンプトに貼り付けてください。
+            </p>
+
+            <div className="flex-grow overflow-auto border border-zinc-800 bg-black/50 p-4 mb-4">
+              <pre className="text-[10px] sm:text-xs text-zinc-400 font-mono whitespace-pre-wrap leading-tight">
+                {previewContent.replace("data:text/csv;charset=utf-8,\uFEFF", "")}
+              </pre>
+            </div>
+
+            <div className="flex justify-end gap-4 border-t border-zinc-800 pt-4">
+              <button 
+                onClick={() => setShowPreview(false)}
+                className="px-4 py-2 text-zinc-400 text-xs font-mono uppercase tracking-widest hover:text-white"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={executeDownload}
+                className="px-6 py-2 bg-emerald-900/50 text-emerald-400 border border-emerald-500/50 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+              >
+                Confirm & Download
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

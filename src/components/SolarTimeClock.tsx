@@ -51,6 +51,7 @@ export const SolarTimeClock = () => {
   const [shieldCapacity, setShieldCapacity] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -83,6 +84,7 @@ export const SolarTimeClock = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       setIsLoggedIn(true);
+      setUserEmail(session.user?.email || null);
       const { data, error } = await supabase
         .from('user_configs')
         .select('*')
@@ -777,6 +779,7 @@ export const SolarTimeClock = () => {
               vectors={layers?.finalVectors || null}
               honmeiStar={honmeiStar}
               envData={env}
+              userEmail={userEmail}
             />
           </div>
         )}
