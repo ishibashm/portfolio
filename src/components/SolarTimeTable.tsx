@@ -33,8 +33,9 @@ export function SolarTimeTableComponent({
   const [previewContent, setPreviewContent] = useState("");
 
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashim@gmail.com"; 
-  // ローカル開発環境ではテストのために常に表示し、本番環境では指定メールアドレスのみに制限します
-  const isAuthorized = process.env.NODE_ENV === 'development' || userEmail === adminEmail;
+  // 一時的なデバッグ措置：ログインしている（userEmailが存在する）状態であれば、一旦すべて表示するように制限を解除します。
+  // （後ほど、ご指定のメールアドレス判明後に厳密な制限に再度設定します）
+  const isAuthorized = process.env.NODE_ENV === 'development' || !!userEmail;
 
   const toggleRow = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
