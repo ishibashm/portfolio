@@ -803,11 +803,12 @@ export const SolarTimeClock = () => {
               <div className="mb-4">
                  {(() => {
                    const fv: any = layers?.finalVectors || {};
+                   const allDirs = ['N','NE','E','SE','S','SW','W','NW'];
                    const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
                       const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
                       return map[k] || k;
                    });
-                   const dangers = Object.keys(fv).filter(k => (fv[k] || '').startsWith('NOISE')).map(k => {
+                   const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
                       const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
                       return map[k] || k;
                    });
@@ -818,32 +819,32 @@ export const SolarTimeClock = () => {
                          <div className="bg-emerald-950/40 border-l-4 border-emerald-500 p-3 sm:p-4 rounded-r-md">
                             <div className="text-emerald-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
                               <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                              [ GO ] 推奨方位
+                              [ GO ] 推奨方位 (最適化エリア)
                             </div>
                             <div className="text-emerald-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
                               {optimals.join(' / ')}
                             </div>
                          </div>
                        )}
-                       {dangers.length > 0 && (
-                         <div className="bg-red-950/40 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-md">
-                            <div className="text-red-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                              [ NO-GO ] 警告方位 (進入厳禁)
-                            </div>
-                            <div className="text-red-500 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
-                              {dangers.join(' / ')}
-                            </div>
-                         </div>
-                       )}
-                       {optimals.length === 0 && dangers.length === 0 && (
+                       {safes.length > 0 && (
                          <div className="bg-blue-950/40 border-l-4 border-blue-500 p-3 sm:p-4 rounded-r-md">
                             <div className="text-blue-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
                               <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                              [ STAY ]
+                              [ SAFE ] 進入可能方位 (通常エリア)
                             </div>
-                            <div className="text-blue-400 font-bold text-xl sm:text-3xl tracking-widest uppercase mt-1">
-                              ALL CLEAR (全方位中立)
+                            <div className="text-blue-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
+                              {safes.join(' / ')}
+                            </div>
+                         </div>
+                       )}
+                       {optimals.length === 0 && safes.length === 0 && (
+                         <div className="bg-red-950/40 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-md">
+                            <div className="text-red-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                              [ ALERT ]
+                            </div>
+                            <div className="text-red-500 font-bold text-xl sm:text-3xl tracking-widest mt-1">
+                              全方位 進入非推奨 (待機)
                             </div>
                          </div>
                        )}
