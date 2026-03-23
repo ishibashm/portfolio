@@ -218,6 +218,52 @@ export const SolarTimeClock = () => {
     return { board: dB, layers: vectorData, yearBoard: yB, monthBoard: mB, dayBoard: dB, classicalYearBoard: cyB };
   }, [honmeiStar, env]);
 
+  const handleExportCSV = () => {
+    const header = [
+      "Timestamp", "Base_Lat", "Base_Lon",
+      "Birth_Date", "Birth_Lat", "Birth_Lon",
+      "Honmei_Phys", "Honmei_Class",
+      "Birth_Year_Star", "Birth_Month_Star", "Birth_Day_Star",
+      "Birth_Jupiter_Lon", "Birth_Lunar_Lon", "Birth_Solar_Lon",
+      "Current_Time",
+      "Current_Year_Star", "Current_Month_Star", "Current_Day_Star",
+      "Current_Jupiter_Lon", "Current_Lunar_Lon", "Current_Solar_Lon",
+      "Space_Kp_Index", "Space_Xray_Flux",
+      "Geo_Magnetic_F", "Geo_Magnetic_D", "Geo_Magnetic_I",
+      "Bio_HRV", "Bio_GSR", "Bio_ANS_Load", "Bio_Shield_Capacity",
+      "N_FinalVector", "NE_FinalVector", "E_FinalVector", "SE_FinalVector",
+      "S_FinalVector", "SW_FinalVector", "W_FinalVector", "NW_FinalVector"
+    ].join(",");
+
+    const row = [
+      new Date().toISOString(), lat, lon,
+      birthDate, birthLat, birthLon,
+      honmeiStar?.physical || "", honmeiStar?.classical || "",
+      birthEnv?.yearStar || "", birthEnv?.monthStar || "", birthEnv?.dayStar || "",
+      birthEnv?.raw?.jupiterLon?.toFixed(4) || "", birthEnv?.raw?.moonLon?.toFixed(4) || "", birthEnv?.raw?.sunLon?.toFixed(4) || "",
+      ephemerisTime?.toISOString() || "",
+      env?.yearStar || "", env?.monthStar || "", env?.dayStar || "",
+      env?.raw?.jupiterLon?.toFixed(4) || "", env?.raw?.moonLon?.toFixed(4) || "", env?.raw?.sunLon?.toFixed(4) || "",
+      spaceWeather?.kpIndex !== null ? spaceWeather?.kpIndex : "",
+      spaceWeather?.xrayFlux !== null ? spaceWeather?.xrayFlux : "",
+      geoData?.intensity || "", geoData?.declination || "", geoData?.inclination || "",
+      hrv, gsr, ansLoad, shieldCapacity,
+      layers?.finalVectors?.N || "", layers?.finalVectors?.NE || "",
+      layers?.finalVectors?.E || "", layers?.finalVectors?.SE || "",
+      layers?.finalVectors?.S || "", layers?.finalVectors?.SW || "",
+      layers?.finalVectors?.W || "", layers?.finalVectors?.NW || ""
+    ].join(",");
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + header + "\n" + row;
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `ephemeris_engine_export_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   useEffect(() => {
     const now = new Date();
     setBaseTime(now);
@@ -411,6 +457,13 @@ export const SolarTimeClock = () => {
                   Ephemeris Engine Diagnostics
                 </h2>
                 <div className="h-px bg-zinc-800 grow"></div>
+                <button
+                  onClick={handleExportCSV}
+                  className="px-3 py-1 bg-zinc-950 border border-zinc-700 hover:border-zinc-500 hover:text-white text-zinc-400 text-[9px] uppercase font-mono tracking-widest transition-colors flex items-center gap-1 shrink-0 group"
+                  title="Export raw calculation matrices and environmental telemtry to CSV"
+                >
+                  <span className="text-zinc-600 group-hover:text-emerald-500 transition-colors">▼</span> EXPORT CSV
+                </button>
               </div>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
