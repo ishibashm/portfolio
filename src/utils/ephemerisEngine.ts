@@ -88,13 +88,13 @@ export const AstroEngine = {
  * 古典的な「立春」による新年切り替えも、実際には「太陽黄経(L0) = 315度」に相当。
  * 単なるカレンダーではなく、生誕時の地球と太陽の幾何学的位相から天体学的に判定する物理モデル。
  */
-// 暦（Classical Calendar）ベースの算出ロジックを保持
 export function getClassicalYearStar(date: Date): StarFrequency {
-  const L0 = AstroEngine.getSolarLongitude(date);
   const year = date.getFullYear();
+  const month = date.getMonth() + 1; // 1-12
+  const day = date.getDate();
   
-  // 太陽黄経が315度（極小位相ポイント）未満であれば、天体位相的には前サイクルの影響下にある
-  const isPreviousCycle = (L0 < 315 && date.getMonth() < 3);
+  // 一般的な暦（カレンダー）では2月4日を立春として年を切り替える
+  const isPreviousCycle = (month === 1) || (month === 2 && day < 4);
   let calcYear = isPreviousCycle ? year - 1 : year;
 
   // フラクタル周波数への圧縮（Harmonic Reduction）
@@ -119,21 +119,26 @@ export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, class
 
 /**
  * Long-term Wave (年盤) の算出：
- * これまでの暦法（カレンダー剰余）を完全に破棄し、木星の黄道上の実際の位置（0〜360度）からベクトル量子化(1-9)する。
+ * これまでの暦法（カレンダー剰余）ではなく、太陽黄経（L0 = 315°）の完全な天体位相を基準とする。
  * 
  * 物理的根拠:
- * 木星は太陽系最大の質量を持ち、地球の磁気圏や重力バランスに長期的な周期（約11.86年）で影響を与える。
- * 九星気学の「9年サイクル」は、木星の公転と土星との会合周期による干渉パターンのフラクタル近似であると定義。
+ * 太陽系の重心移動と地球の公転軌道上の特定位相（立春・黄経315度）をフラクタルな9年周期の起点と定義。
+ * 古典暦の「2月4日」固定ではなく、実際の天体配置に基づく物理的な境界線を使用。
  */
 export function getYearStar(date: Date): StarFrequency {
-  const jupLon = AstroEngine.getJupiterLongitude(date);
+  const L0 = AstroEngine.getSolarLongitude(date);
+  const year = date.getFullYear();
   
-  // 360度を12のフラクタル・セクター（約30度ずつ）に分割
-  // 木星の軌道位置がどの重力フェーズにあるかを割り出す
-  const jupPhase = Math.floor(jupLon / 30);
+  // 太陽黄経が315度（極小位相ポイント・真の立春）未満であれば、天体位相的には前サイクルの影響下にある
+  const isPreviousCycle = (L0 < 315 && date.getMonth() < 3);
+  let calcYear = isPreviousCycle ? year - 1 : year;
+
+  let reduced = String(calcYear).split('').reduce((acc, val) => acc + Number(val), 0);
+  while (reduced > 9) {
+    reduced = String(reduced).split('').reduce((acc, val) => acc + Number(val), 0);
+  }
   
-  // The Jupiter 12-stage cycle reduces to the 9-cycle magnetic grid via harmonic interference
-  let star = 11 - ((jupPhase + 8) % 9);
+  let star = 11 - reduced;
   if (star > 9) star -= 9;
   if (star <= 0) star += 9;
   

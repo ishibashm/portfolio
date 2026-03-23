@@ -138,30 +138,22 @@ export default function MagneticMapInner({
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
   const vectorLayer = React.useMemo(() => {
     return sectors.map(d => {
-      // 3D HUD Logic: Calculate status based on ACTIVE layers
-      const hasWeatherNoise = layers?.yearLayer[d.dir]?.includes('NOISE') || 
-                              layers?.monthLayer[d.dir]?.includes('NOISE') || 
-                              layers?.dayLayer[d.dir]?.includes('NOISE');
-      
+      // 3D HUD Logic: Calculate status based on ACTIVE layers directly from final status
+      const hasTerrainNoise = d.status === 'NOISE';
       const hasBioNoise = d.status.includes('HONMEI') || d.status.includes('TEKI');
+      const hasWeatherNoise = d.status.includes('NOISE') && !hasBioNoise && !hasTerrainNoise;
       
       // Filter logic: If a layer is OFF, ignore its noise contribution for the VISUAL display
       let displayStatus = 'SAFE';
-      
-      if (hudLayers.terrain && d.status === 'NOISE') displayStatus = 'NOISE';
-      
-      if (hudLayers.weather && hasWeatherNoise) {
-        // Find specific weather noise
-        displayStatus = layers?.yearLayer[d.dir] || layers?.monthLayer[d.dir] || layers?.dayLayer[d.dir] || 'NOISE_GOU';
-      }
-      
+
+      if (hudLayers.terrain && hasTerrainNoise) displayStatus = d.status;
+      if (hudLayers.weather && hasWeatherNoise) displayStatus = d.status;
       if (hudLayers.bio && hasBioNoise) {
         displayStatus = d.status; // Bio noise (Honmei/Teki)
       }
-      
-      // If all relevant layers are ON and none are noise, and it was originally OPTIMAL
-      if (hudLayers.terrain && hudLayers.weather && hudLayers.bio && d.status === 'OPTIMAL') {
-        displayStatus = 'OPTIMAL';
+
+      if (!d.status.includes('NOISE')) {
+        displayStatus = d.status;
       }
 
       const { color, opacity, weight } = getStyleForVector(displayStatus);

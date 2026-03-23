@@ -543,7 +543,7 @@ export const SolarTimeClock = () => {
                         </div>
                       )}
                       <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
-                        木星黄経に基づく真の物理的うねり。<br/>
+                        太陽黄経(立春起点)に基づく真の物理的位相。<br/>
                         あなたの本命星 {honmeiStar?.physical} (Phys) との干渉。
                       </div>
                     </div>
