@@ -416,100 +416,164 @@ export const SolarTimeClock = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                 
                 {/* Birth Imprint Data (Hardware Init) */}
-                <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
-                  <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest border-b border-zinc-800 pb-1">
-                    Hardware Init (Birth Vector)
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <div className="bg-black/50 border border-amber-900/40 px-3 py-1 flex flex-col w-full">
-                      <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Honmei Star (Base Frequency)</span>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xl font-bold font-mono text-emerald-500">{honmeiStar?.physical}</span>
-                        <span className="text-[10px] text-zinc-500">(Phys)</span>
-                        <span className="text-xl font-bold font-mono text-zinc-500 ml-2">{honmeiStar?.classical}</span>
-                        <span className="text-[10px] text-zinc-500">(Class)</span>
-                      </div>
+                <div className="border border-zinc-800 bg-zinc-950/50 p-4 flex flex-col gap-4 relative overflow-hidden group">
+                  {/* Decorative background element */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                  <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
+                    <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                      <span className="text-purple-500">▶</span> Hardware Init <span className="text-zinc-500 font-normal">(Birth Vector)</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Year (Phys/Class)</span>
-                        <div className="flex gap-1 font-mono">
-                          <span className="text-purple-400">{birthEnv?.yearStar}</span>
-                          <span className="text-zinc-600">/</span>
-                          <span className="text-zinc-400">{birthEnv?.classicalYearStar}</span>
+                    <div className="text-[9px] text-zinc-500 font-sans leading-tight">
+                      生年月日から算出されたあなた固有のベース波長（初期設定）
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3 z-10">
+                    <div className="bg-black/60 border border-purple-900/30 p-3 flex flex-col w-full rounded-sm">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">Honmei Star</span>
+                        <span className="text-[8px] text-purple-400 bg-purple-500/10 px-1 border border-purple-500/20">BASE FREQUENCY</span>
+                      </div>
+                      <div className="flex items-end gap-3 mt-1">
+                        <div className="flex flex-col">
+                          <span className="text-2xl font-bold font-mono text-emerald-400 leading-none">{honmeiStar?.physical}</span>
+                          <span className="text-[9px] text-zinc-400 mt-1">Physical (物理/天文学)</span>
+                        </div>
+                        <div className="w-px h-8 bg-zinc-800"></div>
+                        <div className="flex flex-col">
+                          <span className="text-xl font-bold font-mono text-zinc-500 leading-none">{honmeiStar?.classical}</span>
+                          <span className="text-[9px] text-zinc-500 mt-1">Class (古典暦)</span>
                         </div>
                       </div>
-                      <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Month Star</span>
-                        <span className="text-base font-mono text-amber-500">{birthEnv?.monthStar || '--'}</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Year</span>
+                        <div className="flex items-baseline gap-1 font-mono">
+                          <span className="text-lg text-purple-400 font-bold">{birthEnv?.yearStar}</span>
+                          <span className="text-[10px] text-zinc-600">/</span>
+                          <span className="text-sm text-zinc-500">{birthEnv?.classicalYearStar}</span>
+                        </div>
+                        <span className="text-[8px] text-zinc-500 mt-1">Phys / Class</span>
                       </div>
-                      <div className="bg-black/50 border border-zinc-800 px-2 py-1 flex flex-col">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Day Star</span>
-                        <span className="text-base font-mono text-blue-500">{birthEnv?.dayStar || '--'}</span>
+                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Month</span>
+                        <span className="text-lg font-mono text-amber-400 font-bold">{birthEnv?.monthStar || '--'}</span>
+                        <span className="text-[8px] text-zinc-500 mt-1">Physical</span>
+                      </div>
+                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Day</span>
+                        <span className="text-lg font-mono text-blue-400 font-bold">{birthEnv?.dayStar || '--'}</span>
+                        <span className="text-[8px] text-zinc-500 mt-1">Physical</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Raw Birth Orbital Parameters */}
                   {birthEnv?.raw && (
-                    <div className="flex flex-wrap gap-2 mt-auto">
-                      <div className="bg-black/50 border flex flex-col border-purple-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">JUPITER (Y)</span>
-                        <span className="text-xs font-mono text-purple-400">{birthEnv.raw.jupiterLon.toFixed(2)}°</span>
+                    <div className="mt-auto pt-3 border-t border-zinc-900">
+                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <span>Orbital Parameters</span>
+                        <div className="h-px bg-zinc-800 grow"></div>
                       </div>
-                      <div className="bg-black/50 border flex flex-col border-amber-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">LUNAR (M)</span>
-                        <span className="text-xs font-mono text-amber-400">{birthEnv.raw.moonLon.toFixed(2)}°</span>
-                      </div>
-                      <div className="bg-black/50 border flex flex-col border-blue-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">SOLAR (D)</span>
-                        <span className="text-xs font-mono text-blue-400">{birthEnv.raw.sunLon.toFixed(2)}°</span>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            JUPITER <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5">Y</span>
+                          </span>
+                          <span className="text-sm font-mono text-purple-300 mt-1">{birthEnv.raw.jupiterLon.toFixed(2)}°</span>
+                        </div>
+                        <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            LUNAR <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5">M</span>
+                          </span>
+                          <span className="text-sm font-mono text-amber-300 mt-1">{birthEnv.raw.moonLon.toFixed(2)}°</span>
+                        </div>
+                        <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            SOLAR <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5">D</span>
+                          </span>
+                          <span className="text-sm font-mono text-blue-300 mt-1">{birthEnv.raw.sunLon.toFixed(2)}°</span>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Current Environment Data */}
-                <div className="border border-zinc-800 bg-zinc-950/50 p-3 flex flex-col gap-3">
-                  <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between">
-                    <span>Current Live Environment</span>
-                    <span className="text-[8px] text-emerald-500 md:animate-pulse">● TRACKING</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
-                      <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">Current Year (P/C)</span>
-                      <div className="flex gap-1 font-mono">
-                        <span className="text-purple-400">{env?.yearStar}</span>
-                        <span className="text-zinc-600">/</span>
-                        <span className="text-zinc-400">{env?.classicalYearStar}</span>
+                <div className="border border-zinc-800 bg-zinc-950/50 p-4 flex flex-col gap-4 relative overflow-hidden group">
+                  {/* Decorative background element */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                  <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
+                    <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-500">▶</span> Live Environment
+                      </div>
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-sm">
+                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                         <span className="text-[8px] text-emerald-400 font-mono tracking-widest">TRACKING</span>
                       </div>
                     </div>
-                    <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
-                      <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Current Month Star</span>
-                      <span className="text-base font-mono text-amber-500">{env?.monthStar || '--'}</span>
+                    <div className="text-[9px] text-zinc-500 font-sans leading-tight">
+                      現在この空間を飛び交っている環境波長・リアルタイム天体座標
                     </div>
-                    <div className="bg-black border border-zinc-800 px-3 py-1 flex flex-col">
-                      <span className="text-[9px] text-zinc-500 uppercase tracking-tighter">Current Day Star</span>
-                      <span className="text-base font-mono text-blue-500">{env?.dayStar || '--'}</span>
+                  </div>
+
+                  <div className="flex flex-col gap-3 z-10">
+                    <div className="grid grid-cols-3 gap-2 mt-1">
+                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Current Year</span>
+                        <div className="flex items-baseline gap-1 font-mono">
+                          <span className="text-2xl text-purple-400 font-bold leading-none">{env?.yearStar}</span>
+                          <span className="text-[10px] text-zinc-600">/</span>
+                          <span className="text-base text-zinc-500 leading-none">{env?.classicalYearStar}</span>
+                        </div>
+                        <span className="text-[8px] text-zinc-500 mt-2">Phys / Class</span>
+                      </div>
+                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Current Month</span>
+                        <span className="text-2xl font-mono text-amber-400 font-bold leading-none">{env?.monthStar || '--'}</span>
+                        <span className="text-[8px] text-zinc-500 mt-2">Physical</span>
+                      </div>
+                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">Current Day</span>
+                        <span className="text-2xl font-mono text-blue-400 font-bold leading-none">{env?.dayStar || '--'}</span>
+                        <span className="text-[8px] text-zinc-500 mt-2">Physical</span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Raw Current Orbital Parameters */}
                   {env?.raw && (
-                    <div className="flex flex-wrap gap-2 mt-auto">
-                      <div className="bg-black/50 border flex flex-col border-purple-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">JUPITER (Y)</span>
-                        <span className="text-xs font-mono text-purple-400">{env.raw.jupiterLon.toFixed(2)}°</span>
-                      </div>
-                      <div className="bg-black/50 border flex flex-col border-amber-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">LUNAR (M)</span>
-                        <span className="text-xs font-mono text-amber-400">{env.raw.moonLon.toFixed(2)}°</span>
-                      </div>
-                      <div className="bg-black/40 border flex flex-col border-blue-900/40 px-2 py-1">
-                        <span className="text-[8px] text-zinc-500 uppercase tracking-tighter">SOLAR (D)</span>
-                        <span className="text-xs font-mono text-blue-400">{env.raw.sunLon.toFixed(2)}°</span>
-                      </div>
-                    </div>
+                     <div className="mt-auto pt-3 border-t border-zinc-900">
+                     <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                       <span>Live Orbital Matrix</span>
+                       <div className="h-px bg-zinc-800 grow"></div>
+                     </div>
+                     <div className="grid grid-cols-3 gap-2">
+                       <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
+                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                           JUPITER <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5 animate-pulse">Y</span>
+                         </span>
+                         <span className="text-sm font-mono text-purple-300 mt-1">{env.raw.jupiterLon.toFixed(2)}°</span>
+                       </div>
+                       <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
+                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                           LUNAR <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5 animate-pulse">M</span>
+                         </span>
+                         <span className="text-sm font-mono text-amber-300 mt-1">{env.raw.moonLon.toFixed(2)}°</span>
+                       </div>
+                       <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
+                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                           SOLAR <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5 animate-pulse">D</span>
+                         </span>
+                         <span className="text-sm font-mono text-blue-300 mt-1">{env.raw.sunLon.toFixed(2)}°</span>
+                       </div>
+                     </div>
+                   </div>
                   )}
                 </div>
               </div>
