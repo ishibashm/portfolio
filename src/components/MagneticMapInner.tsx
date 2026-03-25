@@ -30,6 +30,7 @@ interface MapInnerProps {
   ansLoad?: number;
   hudLayers?: { terrain: boolean; weather: boolean; bio: boolean };
   isFullscreen?: boolean;
+  activeLayerMode?: 'final' | 'year' | 'month' | 'day';
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -76,7 +77,8 @@ function MapResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
 export default function MagneticMapInner({ 
   lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, 
   hudLayers = { terrain: true, weather: true, bio: true },
-  isFullscreen = false 
+  isFullscreen = false,
+  activeLayerMode = 'final'
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function MagneticMapInner({
   // Calculate bearings based on TRUE NORTH (0) + Magnetic Declination
   const magNorthBearing = React.useMemo(() => declination, [declination]);
   
-  // Memoize sectors based on vectors to avoid heavy re-calculation on every tick
+  // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
     const dirMap = [
       { dir: 'N', deg: 0 }, { dir: 'NE', deg: 45 }, { dir: 'E', deg: 90 },
@@ -98,12 +100,22 @@ export default function MagneticMapInner({
 
     return dirMap.map(d => {
       let status = 'SAFE';
-      if (vectors && vectors[d.dir]) {
+      if (layers) {
+        if (activeLayerMode === 'final' && layers.finalVectors) {
+          status = layers.finalVectors[d.dir] || 'SAFE';
+        } else if (activeLayerMode === 'year' && layers.yearLayer) {
+          status = layers.yearLayer[d.dir] || 'SAFE';
+        } else if (activeLayerMode === 'month' && layers.monthLayer) {
+          status = layers.monthLayer[d.dir] || 'SAFE';
+        } else if (activeLayerMode === 'day' && layers.dayLayer) {
+          status = layers.dayLayer[d.dir] || 'SAFE';
+        }
+      } else if (vectors && vectors[d.dir]) {
         status = vectors[d.dir];
       }
       return { ...d, status };
     });
-  }, [vectors]);
+  }, [vectors, layers, activeLayerMode]);
 
   // 1. Memoize boundaries - only depends on declination and intensity
   const boundaries = React.useMemo(() => {
@@ -194,13 +206,14 @@ export default function MagneticMapInner({
       };
 
       return (
-        <React.Fragment key={`sector-group-${d.dir}`}>
+        <React.Fragment key={`sector-group-${d.dir}-${activeLayerMode}`}>
           <Polygon 
             positions={points} 
             color={color} 
             fillColor={color} 
             fillOpacity={opacity}
-            weight={weight} 
+            weight={weight}
+            pathOptions={{ color, fillColor: color, fillOpacity: opacity, weight }}
           >
             <Tooltip className="custom-map-tooltip">
               <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl">
@@ -247,7 +260,7 @@ export default function MagneticMapInner({
         </React.Fragment>
       );
     });
-  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers]);
+  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers, activeLayerMode]);
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {
@@ -336,6 +349,9 @@ export default function MagneticMapInner({
       
       <div className="absolute bottom-4 right-4 z-1000 pointer-events-none">
         <div className="bg-zinc-950/80 md:backdrop-blur-md px-3 py-2 border border-emerald-500/30 rounded-sm text-right">
+          <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-300 border-b border-zinc-800 pb-1 mb-1 font-bold">
+            [{activeLayerMode.toUpperCase()} LAYER DISPLAY]
+          </div>
           {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
           <div className="text-[9px] uppercase font-mono tracking-widest text-emerald-400 mt-1">最適化ゾーン (緑)</div>
           <div className="text-[8px] font-sans text-zinc-400">行動パフォーマンス最大化帯</div>

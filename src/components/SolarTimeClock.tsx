@@ -28,6 +28,7 @@ export const SolarTimeClock = () => {
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "diagnostics" | "map">("overview");
+  const [activeLayerMode, setActiveLayerMode] = useState<'final' | 'year' | 'month' | 'day'>('final');
 
   // Geo & Environment State (Default: Tokyo)
   const [lat, setLat] = useState<number>(35.6895);
@@ -341,6 +342,11 @@ export const SolarTimeClock = () => {
   const personalVoidZodiac = getPersonalVoidZodiac(new Date(birthDate));
   const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
 
+  let activeVectors: any = layers?.finalVectors || {};
+  if (activeLayerMode === 'year') activeVectors = layers?.yearLayer || {};
+  else if (activeLayerMode === 'month') activeVectors = layers?.monthLayer || {};
+  else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
       {/* Background Grid Pattern */}
@@ -450,7 +456,6 @@ export const SolarTimeClock = () => {
               onAuth={handleAuth}
               isLoggedIn={isLoggedIn}
             />
-
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-400">
@@ -893,7 +898,7 @@ export const SolarTimeClock = () => {
               xrayFlux={spaceWeather?.xrayFlux || null}
               ansLoad={ansLoad}
               shieldCapacity={shieldCapacity}
-              vectors={layers?.finalVectors || null}
+              vectors={activeVectors || null}
               honmeiStar={honmeiStar}
               envData={env}
               userEmail={userEmail}
@@ -919,7 +924,7 @@ export const SolarTimeClock = () => {
               {/* COMMANDER'S BRIEFING HUD */}
               <div className="mb-4">
                  {(() => {
-                   const fv: any = layers?.finalVectors || {};
+                   const fv = activeVectors;
                    const allDirs = ['N','NE','E','SE','S','SW','W','NW'];
                    const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
                       const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
@@ -984,6 +989,8 @@ export const SolarTimeClock = () => {
                 shieldCapacity={shieldCapacity}
                 hudLayers={hudLayers}
                 toggleLayer={(layer: 'terrain' | 'weather' | 'bio') => setHudLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
+                activeLayerMode={activeLayerMode}
+                setActiveLayerMode={setActiveLayerMode}
               />
             </div>
           </div>
@@ -997,7 +1004,6 @@ export const SolarTimeClock = () => {
         declination={geoData?.declination || null} 
         env={env} 
       />
-
     </div>
   );
 };
