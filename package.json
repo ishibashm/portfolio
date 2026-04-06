@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
-    "research": "npx tsx scripts/ai_quant_researcher.ts",
-    "postinstall": "prisma generate"
+    "research": "npx tsx scripts/ai_quant_researcher.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
