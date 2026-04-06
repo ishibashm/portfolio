@@ -7,7 +7,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, ActionIntent } from "../utils/ephemerisEngine";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { createClient } from '../utils/supabase/client';
@@ -53,6 +53,12 @@ export const SolarTimeClock = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  
+  // Future Simulation & Intent State
+  const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
+  const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
+  const [targetLat, setTargetLat] = useState<number | null>(null);
+  const [targetLon, setTargetLon] = useState<number | null>(null);
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -215,9 +221,15 @@ export const SolarTimeClock = () => {
     const mB = generateBoard(env.monthStar);
     const dB = generateBoard(env.dayStar);
     const cyB = generateBoard(env.classicalYearStar);
-    const vectorData = calculateVectorCollision(honmeiStar.physical, yB, mB, dB);
+    const vectorData = calculateVectorCollision(
+      honmeiStar.physical, 
+      yB, mB, dB,
+      getPersonalVoidZodiac(new Date(birthDate)),
+      env.raw.lunarNode,
+      actionIntent
+    );
     return { board: dB, layers: vectorData, yearBoard: yB, monthBoard: mB, dayBoard: dB, classicalYearBoard: cyB };
-  }, [honmeiStar, env]);
+  }, [honmeiStar, env, birthDate, actionIntent]);
 
   const handleExportCSV = () => {
     const header = [
@@ -294,9 +306,10 @@ export const SolarTimeClock = () => {
 
   useEffect(() => {
     if (baseTime && lon) {
-      setSolarData(calculateSolarTime(baseTime, lon));
+      const targetTime = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
+      setSolarData(calculateSolarTime(targetTime, targetLon || lon));
     }
-  }, [baseTime, lon]);
+  }, [baseTime, lon, timeOffsetDays, targetLon]);
 
   // Fetch Geomagnetic Data (Server Action) ONLY when coordinates change!
   useEffect(() => {
@@ -404,6 +417,36 @@ export const SolarTimeClock = () => {
               isPersonalVoid={isPersonalVoid}
               personalVoidZodiac={personalVoidZodiac}
             />
+
+            {/* Navigation & Intent Panel */}
+            <div className="w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg">
+              <div className="flex-1 w-full">
+                <label className="text-xs text-zinc-500 uppercase tracking-widest mb-2 block">
+                  Time Slider: {timeOffsetDays === 0 ? "NOW" : timeOffsetDays > 0 ? `+${timeOffsetDays} DAYS` : `${timeOffsetDays} DAYS`}
+                </label>
+                <input 
+                  type="range" 
+                  min="-365" max="365" 
+                  value={timeOffsetDays} 
+                  onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
+                  className="w-full accent-emerald-500"
+                />
+              </div>
+              <div className="flex flex-col gap-2 min-w-[200px]">
+                <label className="text-xs text-zinc-500 uppercase tracking-widest">
+                  Action Intent
+                </label>
+                <select 
+                  value={actionIntent} 
+                  onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
+                  className="bg-black border border-zinc-700 text-emerald-400 text-sm px-3 py-1.5 rounded outline-none"
+                >
+                  <option value="DEFAULT">DEFAULT (STANDARD)</option>
+                  <option value="REST">REST (RECOVERY/MENDING)</option>
+                  <option value="BUSINESS">BUSINESS (EXPANSION/CONFLICT)</option>
+                </select>
+              </div>
+            </div>
 
             {/* Temporal HUD (Main Clock Focus) */}
             <ClockDisplay

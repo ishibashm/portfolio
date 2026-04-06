@@ -7,10 +7,12 @@
     "build": "next build --webpack && next-sitemap",
     "start": "next start",
     "lint": "eslint",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "research": "npx tsx scripts/ai_quant_researcher.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
+    "@prisma/client": "^7.6.0",
     "@sparticuz/chromium": "^143.0.4",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.98.0",
@@ -19,6 +21,7 @@
     "astronomy-engine": "^2.1.19",
     "date-fns": "^4.1.0",
     "defuddle": "^0.8.0",
+    "dotenv": "^17.3.1",
     "geomagnetism": "^0.2.0",
     "jsdom": "^28.1.0",
     "katex": "^0.16.37",
@@ -49,6 +52,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "prettier": "^3.7.4",
+    "prisma": "^7.6.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

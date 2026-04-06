@@ -80,6 +80,14 @@ export const AstroEngine = {
     const time = new AstroTime(date);
     const coords = Ecliptic(GeoVector(Body.Jupiter, time, true));
     return coords.elon;
+  },
+
+  // ドラゴンヘッド（月の昇交点）の黄経
+  getLunarNodeLongitude(date: Date): number {
+    const jd = AstroEngine.getJulianDay(date);
+    const T = (jd - 2451545.0) / 36525;
+    let node = (125.04452 - 1934.136261 * T) % 360;
+    return node < 0 ? node + 360 : node;
   }
 };
 
@@ -155,20 +163,30 @@ export function getYearStar(date: Date): StarFrequency {
  */
 export function getMonthStar(date: Date): StarFrequency {
   const sunLon = AstroEngine.getSolarLongitude(date);
-  const moonLon = AstroEngine.getLunarLongitude(date);
   
-  // 月と太陽の相対的な黄経差（月相・位相差）を導出
-  let lunarPhaseAngle = moonLon - sunLon;
-  if (lunarPhaseAngle < 0) lunarPhaseAngle += 360;
+  // 節入り（立春: 315°）を基準とした月のインデックス (0 = 2月〜立春, 1 = 3月〜啓蟄...)
+  // 315°〜344.9° が インデックス0
+  const monthIndex = Math.floor(((sunLon + 45) % 360) / 30);
+  
+  // 物理的な年盤（木星黄経と太陽黄経の合成フラクタル）の星を取得
+  const physicalYearStar = getYearStar(date);
+  
+  // 年星ごとの月順ベースを算出
+  // グループ1 (1, 4, 7): ベース 8
+  // グループ2 (3, 6, 9): ベース 5
+  // グループ3 (2, 5, 8): ベース 2
+  let baseStar = 0;
+  if (physicalYearStar % 3 === 1) baseStar = 8;
+  else if (physicalYearStar % 3 === 0) baseStar = 5;
+  else if (physicalYearStar % 3 === 2) baseStar = 2;
 
-  // 12のソーラーターム（30度）と、月の位相を掛け合わせる
-  const solarTerm = Math.floor(sunLon / 30);
-  const lunarTerm = Math.floor(lunarPhaseAngle / 30);
+  // インデックス分だけ星を後退させる（毎月1つ減る）
+  let star = baseStar - monthIndex;
   
-  // 太陽と月の重力干渉波から、9つのノイズフラクタルへ圧縮
-  let phase = (solarTerm * 12 + lunarTerm) % 9;
-  let star = 9 - phase;
-  if (star <= 0) star += 9;
+  // 1〜9の範囲に正規化
+  while (star <= 0) {
+    star += 9;
+  }
   
   return star as StarFrequency;
 }
@@ -216,10 +234,16 @@ export function getCurrentEnvironmentalFrequencies(date: Date) {
     raw: {
       sunLon: AstroEngine.getSolarLongitude(date),
       moonLon: AstroEngine.getLunarLongitude(date),
-      jupiterLon: AstroEngine.getJupiterLongitude(date)
+      jupiterLon: AstroEngine.getJupiterLongitude(date),
+      lunarNode: AstroEngine.getLunarNodeLongitude(date)
     }
   };
 }
+
+/**
+ * アクション目的に応じた最適化フラグ
+ */
+export type ActionIntent = 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
 
 /**
  * ベクトル衝突計算（吉凶方位の物理的割り出し）
@@ -228,12 +252,15 @@ export function calculateVectorCollision(
   personalStar: StarFrequency, 
   yearBoard: BoardLayout,
   monthBoard: BoardLayout,
-  dayBoard: BoardLayout
+  dayBoard: BoardLayout,
+  voidZodiacs: string[] = [],
+  lunarNodeLon: number | null = null,
+  actionIntent: ActionIntent = 'DEFAULT'
 ): {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, 'OPTIMAL' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE'>;
+  finalVectors: Record<Direction, 'OPTIMAL' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE'>;
 } {
   
   const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -277,6 +304,37 @@ export function calculateVectorCollision(
 
   const finalVectors: any = {};
   
+  // 天中殺（Void Zodiac）の方位マッピング
+  // 子(N), 丑寅(NE), 卯(E), 辰巳(SE), 午(S), 未申(SW), 酉(W), 戌亥(NW)
+  const z2d: Record<string, Direction[]> = {
+    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+  };
+  const voidDirs = new Set<Direction>();
+  voidZodiacs.forEach(z => {
+    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  });
+
+  // ドラゴンヘッド/テールの侵犯方向 (交点から45度幅をノイズ帯とする)
+  const nodeDirs = new Set<Direction>();
+  if (lunarNodeLon !== null) {
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    // Ecliptic longitude to rough compass bearing (offset by 90 if N=0... usually 0 is E, 90 is N)
+    // ざっくり天球上の方向: 0=E, 90=N, 180=W, 270=Sとする（黄道基準のアバウトなマップ）
+    const getBearing = (lon: number) => {
+      let b = (lon - 90) % 360; 
+      if (b < 0) b += 360;
+      // b is 0 at N, 90 at E
+      b = 360 - b; 
+      // Simplified: Just match angle to 8 directions (45 deg sectors)
+      const i = Math.floor(((b + 22.5) % 360) / 45);
+      return dirs[i];
+    };
+    nodeDirs.add(getBearing(lunarNodeLon));
+    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
+  }
+  
   // 相生関係
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
     switch(star) {
@@ -292,15 +350,32 @@ export function calculateVectorCollision(
       default: return [];
     }
   };
-  const compatibles = getCompatibleStars(personalStar);
+  
+  let compatibles = getCompatibleStars(personalStar);
+  
+  // アクションインテントによる相生の再定義
+  if (actionIntent === 'REST') {
+    // 回復優先: 土や水など、自律神経を安定させる星を優先（簡易版）
+    if (personalStar === 3 || personalStar === 4) compatibles = [1];
+    else if (personalStar === 1) compatibles = [6, 7];
+    // 他はそのまま
+  } else if (actionIntent === 'BUSINESS') {
+    // 発展・闘争優先: 木や火など、活性化させる星を優先
+    if (personalStar === 1) compatibles = [3, 4];
+    else if (personalStar === 3 || personalStar === 4) compatibles = [9];
+  }
 
   for (const dir of directions) {
-    // 優先度：NOISE > OPTIMAL > SAFE
+    // 優先度：NOISE_VOID / NOISE_NODE > GOU/ANKEN > HONMEI/TEKI > OPTIMAL > SAFE
     const yStatus = yearLayer[dir]!;
     const mStatus = monthLayer[dir]!;
     const dStatus = dayLayer[dir]!;
 
-    if (yStatus.startsWith('NOISE')) {
+    if (voidDirs.has(dir)) {
+      finalVectors[dir] = 'NOISE_VOID';
+    } else if (nodeDirs.has(dir)) {
+      finalVectors[dir] = 'NOISE_NODE';
+    } else if (yStatus.startsWith('NOISE')) {
       finalVectors[dir] = yStatus;
     } else if (mStatus.startsWith('NOISE')) {
       finalVectors[dir] = mStatus;
