@@ -7,7 +7,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, ActionIntent } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, ActionIntent, Direction } from "../utils/ephemerisEngine";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { createClient } from '../utils/supabase/client';
@@ -59,6 +59,7 @@ export const SolarTimeClock = () => {
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
+  const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -80,6 +81,7 @@ export const SolarTimeClock = () => {
         if (data.birth_lon) setBirthLon(data.birth_lon);
         if (data.base_lat) setLat(data.base_lat);
         if (data.base_lon) setLon(data.base_lon);
+        if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
         if (!silent) alert("ブラウザ環境から設定を復元しました。");
         return true;
       } catch (e) {
@@ -104,6 +106,7 @@ export const SolarTimeClock = () => {
         if (data.birth_lon) setBirthLon(data.birth_lon);
         if (data.base_lat) setLat(data.base_lat);
         if (data.base_lon) setLon(data.base_lon);
+        if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
         if (!silent) alert("クラウドから設定を同期しました。");
         return true;
       }
@@ -159,6 +162,7 @@ export const SolarTimeClock = () => {
         birth_lon: birthLon,
         base_lat: lat,
         base_lon: lon,
+        void_zodiac_override: voidZodiacOverride
       };
 
       // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
@@ -224,12 +228,12 @@ export const SolarTimeClock = () => {
     const vectorData = calculateVectorCollision(
       honmeiStar.physical, 
       yB, mB, dB,
-      getPersonalVoidZodiac(new Date(birthDate)),
+      voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate)),
       env.raw.lunarNode,
       actionIntent
     );
     return { board: dB, layers: vectorData, yearBoard: yB, monthBoard: mB, dayBoard: dB, classicalYearBoard: cyB };
-  }, [honmeiStar, env, birthDate, actionIntent]);
+  }, [honmeiStar, env, birthDate, actionIntent, voidZodiacOverride]);
 
   const handleExportCSV = () => {
     const header = [
@@ -352,13 +356,36 @@ export const SolarTimeClock = () => {
     );
 
   const kimon = getKimonHour(solarData.solarTime);
-  const personalVoidZodiac = getPersonalVoidZodiac(new Date(birthDate));
+  const basePersonalVoidZodiac = getPersonalVoidZodiac(new Date(birthDate));
+  const personalVoidZodiac = voidZodiacOverride ? voidZodiacOverride.split('') : basePersonalVoidZodiac;
   const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
 
   let activeVectors: any = layers?.finalVectors || {};
   if (activeLayerMode === 'year') activeVectors = layers?.yearLayer || {};
   else if (activeLayerMode === 'month') activeVectors = layers?.monthLayer || {};
   else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
+
+  // Destination Check Logic
+  let targetDirection = null;
+  let targetVectorStatus = null;
+  
+  if (targetLat !== null && targetLon !== null && lat && lon) {
+    const toRad = (val: number) => val * Math.PI / 180;
+    const toDeg = (val: number) => val * 180 / Math.PI;
+    const dLon = toRad(targetLon - lon);
+    const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
+    const x = Math.cos(toRad(lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(lat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
+    let brng = toDeg(Math.atan2(y, x));
+    brng = (brng + 360) % 360;
+    
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const i = Math.floor(((brng + 22.5) % 360) / 45);
+    targetDirection = dirs[i];
+    
+    if (layers && layers.finalVectors) {
+      targetVectorStatus = layers.finalVectors[targetDirection as Direction];
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
@@ -446,6 +473,39 @@ export const SolarTimeClock = () => {
                   <option value="BUSINESS">BUSINESS (EXPANSION/CONFLICT)</option>
                 </select>
               </div>
+              <div className="flex flex-col gap-2 min-w-[250px] md:border-l border-t md:border-t-0 border-zinc-800 md:pl-4 pt-4 md:pt-0">
+                <label className="text-xs text-zinc-500 uppercase tracking-widest">
+                  Destination (Target Coordinates)
+                </label>
+                <div className="flex gap-2">
+                  <input 
+                    type="number" 
+                    placeholder="Lat" 
+                    value={targetLat ?? ""} 
+                    onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
+                    className="bg-black border border-zinc-700 text-zinc-300 text-sm px-2 py-1.5 rounded outline-none w-1/2" 
+                  />
+                  <input 
+                    type="number" 
+                    placeholder="Lon" 
+                    value={targetLon ?? ""} 
+                    onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
+                    className="bg-black border border-zinc-700 text-zinc-300 text-sm px-2 py-1.5 rounded outline-none w-1/2" 
+                  />
+                </div>
+                {targetDirection && targetVectorStatus && (
+                  <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center gap-2 ${
+                    targetVectorStatus.startsWith('NOISE') 
+                      ? 'bg-red-500/10 border-red-500/30 text-red-400' 
+                      : targetVectorStatus === 'OPTIMAL'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-400'
+                  }`}>
+                    <span className="font-bold border border-current px-1">{targetDirection}</span>
+                    <span>{targetVectorStatus}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Temporal HUD (Main Clock Focus) */}
@@ -498,6 +558,8 @@ export const SolarTimeClock = () => {
               onGetGPS={handleGetGPS}
               onAuth={handleAuth}
               isLoggedIn={isLoggedIn}
+              voidZodiacOverride={voidZodiacOverride}
+              setVoidZodiacOverride={setVoidZodiacOverride}
             />
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">

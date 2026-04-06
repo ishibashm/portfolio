@@ -18,6 +18,8 @@ interface PersonalProfileProps {
   onGetGPS?: () => void;
   onAuth?: () => void;
   isLoggedIn?: boolean;
+  voidZodiacOverride?: string;
+  setVoidZodiacOverride?: (v: string) => void;
 }
 
 export function PersonalProfileConfig({
@@ -26,7 +28,8 @@ export function PersonalProfileConfig({
   birthLon, setBirthLon,
   baseLat, setBaseLat,
   baseLon, setBaseLon,
-  onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn
+  onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn,
+  voidZodiacOverride, setVoidZodiacOverride
 }: PersonalProfileProps) {
   
   return (
@@ -79,7 +82,25 @@ export function PersonalProfileConfig({
               <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">自律神経の初期ベースライン（本命星システム）を設定。</span>
            </div>
 
-           <div className="grid grid-cols-2 gap-2">
+           <div className="flex flex-col gap-1 mt-2">
+              <label className="text-[8px] text-zinc-500 uppercase">Void Zodiac (天中殺) Override</label>
+              <select 
+                value={voidZodiacOverride || ""}
+                onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
+                className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
+              >
+                <option value="">Auto-calculate from Birth Timestamp</option>
+                <option value="戌亥">戌亥 (Inui)</option>
+                <option value="申酉">申酉 (Sarutori)</option>
+                <option value="午未">午未 (Umapi)</option>
+                <option value="辰巳">辰巳 (Tatsumi)</option>
+                <option value="寅卯">寅卯 (Torau)</option>
+                <option value="子丑">子丑 (Neushi)</option>
+              </select>
+              <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">独自の流派や自覚に基づく天中殺の上書き。</span>
+           </div>
+
+           <div className="grid grid-cols-2 gap-2 mt-2">
               <div className="flex flex-col gap-1">
                  <label className="text-[8px] text-zinc-500 uppercase">Birth Lat (緯度)</label>
                  <input 
