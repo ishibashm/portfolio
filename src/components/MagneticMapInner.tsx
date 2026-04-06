@@ -129,20 +129,20 @@ export default function MagneticMapInner({
   // 2. Memoize vector styles based on status and kpIndex
   const getStyleForVector = React.useCallback((status: string) => {
     const baseKp = kpIndex || 0;
-    const noiseMultiplier = 1 + (baseKp * 0.15); 
-    const safeMultiplier = Math.max(0.1, 1 - (baseKp * 0.1));
     const weight = status.startsWith('NOISE') && baseKp >= 4 ? 2 : 1;
 
     let style;
     switch (status) {
-      case 'OPTIMAL': style = { color: "#10b981", opacity: Math.min(0.8, 0.4 * safeMultiplier) }; break;
-      case 'SAFE': style = { color: "#3b82f6", opacity: 0.35 }; break;
-      case 'NOISE_GOU': style = { color: "#dc2626", opacity: Math.min(0.9, 0.5 * noiseMultiplier) }; break;
-      case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: Math.min(0.9, 0.4 * noiseMultiplier) }; break;
-      case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: Math.min(0.8, 0.4 * noiseMultiplier) }; break;
-      case 'NOISE_TEKI': style = { color: "#d946ef", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
-      case 'NOISE': style = { color: "#ef4444", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
-      default: style = { color: "#3f3f46", opacity: 0.1 };
+      case 'OPTIMAL': style = { color: "#10b981", opacity: 0.85 }; break;
+      case 'SAFE': style = { color: "#3b82f6", opacity: 0.8 }; break;
+      case 'NOISE_GOU': style = { color: "#dc2626", opacity: 0.9 }; break;
+      case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: 0.9 }; break;
+      case 'NOISE_HONMEI': style = { color: "#a855f7", opacity: 0.9 }; break;
+      case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.9 }; break;
+      case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.9 }; break;
+      case 'NOISE_NODE': style = { color: "#f59e0b", opacity: 0.9 }; break;
+      case 'NOISE': style = { color: "#ef4444", opacity: 0.85 }; break;
+      default: style = { color: "#3f3f46", opacity: 0.8 };
     }
     return { ...style, weight: status === 'SAFE' ? 1 : weight };
   }, [kpIndex]);
@@ -185,6 +185,8 @@ export default function MagneticMapInner({
         if (status === 'NOISE_ANKEN') return '暗';
         if (status === 'NOISE_HONMEI') return '本';
         if (status === 'NOISE_TEKI') return '的';
+        if (status === 'NOISE_VOID') return '空';
+        if (status === 'NOISE_NODE') return '交';
         if (status === 'OPTIMAL') return '吉';
         return '';
       };
@@ -229,13 +231,13 @@ export default function MagneticMapInner({
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-zinc-500">体質 (個人相性):</span>
-                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#d946ef]' : 'text-emerald-500'}>
+                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#a855f7]' : 'text-emerald-500'}>
                       {formatLayer(dLayer)}
                     </span>
                   </div>
                   <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px]">
                     <span className="text-zinc-400">STATUS: </span>
-                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : color.includes('d946ef') ? 'text-[#d946ef]' : 'text-zinc-500'}>
+                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : color.includes('a855f7') || color.includes('c026d3') ? 'text-[#a855f7]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
                       {d.status}
                     </span>
                   </div>
@@ -350,14 +352,17 @@ export default function MagneticMapInner({
           <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-300 border-b border-zinc-800 pb-1 mb-1 font-bold">
             [{activeLayerMode.toUpperCase()} LAYER DISPLAY]
           </div>
-          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#d946ef] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
+          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#a855f7] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
           <div className="text-[9px] uppercase font-mono tracking-widest text-[#10b981] mt-1 pt-1 border-t border-zinc-800">最適化ゾーン (緑)</div>
           <div className="text-[8px] font-sans text-zinc-400">行動パフォーマンス最大化帯</div>
           
           <div className="text-[9px] uppercase font-mono tracking-widest text-[#3b82f6] mt-1">通常ゾーン (青)</div>
           <div className="text-[8px] font-sans text-zinc-400">標準的な環境負荷</div>
+
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#eab308] mt-1 pt-1 border-t border-zinc-800">特異点・構造バグ (黄)</div>
+          <div className="text-[8px] font-sans text-zinc-400">時空間の特異点帯 (天中殺/月交点)</div>
           
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#d946ef] mt-1 pt-1 border-t border-zinc-800">生体警告ベクトル (紫)</div>
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#a855f7] mt-1">生体警告ベクトル (紫)</div>
           <div className="text-[8px] font-sans text-zinc-400">パーソナル波長との強干渉領域 (本命殺/的殺)</div>
           
           <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1">凶殺ベクトル (赤)</div>

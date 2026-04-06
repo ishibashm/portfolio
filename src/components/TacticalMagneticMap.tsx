@@ -326,8 +326,8 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.4: BIO NOISE */}
                   {activeDecryptTab === 4 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-[#d946ef] font-bold tracking-widest mb-2 border-b border-fuchsia-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
-                         <div className="bg-fuchsia-900/40 text-[#d946ef] px-1.5 py-1 flex flex-col items-center shrink-0">
+                      <div className="text-[#a855f7] font-bold tracking-widest mb-2 border-b border-fuchsia-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-fuchsia-900/40 text-[#a855f7] px-1.5 py-1 flex flex-col items-center shrink-0">
                            <span className="text-[8px] leading-none mb-1">SYS.4</span>
                            <span className="text-[7px] leading-none border-t border-fuchsia-500/50 pt-1 w-full text-center">[BIO]</span>
                          </div>
@@ -338,7 +338,7 @@ export function TacticalMagneticMapComponent({
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-fuchsia-900/50 pl-3">
-                            <span className="w-24 font-bold text-[#d946ef] uppercase tracking-widest shrink-0">[ RESONANCE ]</span>
+                            <span className="w-24 font-bold text-[#a855f7] uppercase tracking-widest shrink-0">[ RESONANCE ]</span>
                             <div className="flex flex-col gap-1">
                                <span className="leading-relaxed text-zinc-300">
                                   あなたが誕生時に受けた地球磁場「Hardware Init（固有波長・本命星）」と、現在の空間波長が強烈に干渉・反発しあう方位を算出します。
@@ -350,11 +350,11 @@ export function TacticalMagneticMapComponent({
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ NOISE TYPE ]</span>
                             <div className="flex flex-col gap-2">
                                <div className="bg-fuchsia-950/20 p-2 border border-fuchsia-900/30">
-                                  <strong className="text-[#d946ef]">同調過多 (NOISE_HONMEI / 本命殺)</strong>
+                                  <strong className="text-[#a855f7]">同調過多 (NOISE_HONMEI / 本命殺)</strong>
                                   <p className="text-[9px] mt-0.5 text-zinc-400">空間波長と出力波長が完全に被り、ハウリング（不整脈や焦燥感）を起こすベクトル。</p>
                                </div>
                                <div className="bg-fuchsia-950/20 p-2 border border-fuchsia-900/30">
-                                  <strong className="text-[#d946ef]">反射干渉 (NOISE_TEKI / 的殺)</strong>
+                                  <strong className="text-[#a855f7]">反射干渉 (NOISE_TEKI / 的殺)</strong>
                                   <p className="text-[9px] mt-0.5 text-zinc-400">対極の位置から返ってくる反射位相により、行動の空振りや予測エラーが発生するベクトル。</p>
                                </div>
                             </div>

@@ -1013,7 +1013,7 @@ export const SolarTimeClock = () => {
                           
                           const getColor = (s: string) => {
                             if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-                            if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#d946ef] font-bold';
+                            if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
                             if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
                             return 'text-blue-400';
                           };

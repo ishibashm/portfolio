@@ -366,21 +366,28 @@ export function calculateVectorCollision(
   }
 
   for (const dir of directions) {
-    // 優先度：NOISE_VOID / NOISE_NODE > GOU/ANKEN > HONMEI/TEKI > OPTIMAL > SAFE
+    // 優先度：1(🟥) GOU/ANKEN > 2(🟪) HONMEI/TEKI > 3(🟨) NOISE_VOID/NODE > 4(🟩) OPTIMAL > 5(🟦) SAFE
     const yStatus = yearLayer[dir]!;
     const mStatus = monthLayer[dir]!;
     const dStatus = dayLayer[dir]!;
 
-    if (voidDirs.has(dir)) {
+    // Extract all noises across layers for priority sorting
+    const layers = [yStatus, mStatus, dStatus];
+    
+    // Check for Type I Noise (Red: Gou/Anken)
+    const hasRedNoise = layers.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN');
+    
+    // Check for Type II Noise (Purple: Honmei/Teki)
+    const hasPurpleNoise = layers.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
+
+    if (hasRedNoise) {
+      finalVectors[dir] = hasRedNoise as any;
+    } else if (hasPurpleNoise) {
+      finalVectors[dir] = hasPurpleNoise as any;
+    } else if (voidDirs.has(dir)) {
       finalVectors[dir] = 'NOISE_VOID';
     } else if (nodeDirs.has(dir)) {
       finalVectors[dir] = 'NOISE_NODE';
-    } else if (yStatus.startsWith('NOISE')) {
-      finalVectors[dir] = yStatus;
-    } else if (mStatus.startsWith('NOISE')) {
-      finalVectors[dir] = mStatus;
-    } else if (dStatus.startsWith('NOISE')) {
-      finalVectors[dir] = dStatus;
     } else if (compatibles.includes(dayBoard[dir])) {
       finalVectors[dir] = 'OPTIMAL';
     } else {
