@@ -21,6 +21,14 @@ const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(m
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
 const SystemTelemetryLog = dynamic(() => import("./SystemTelemetryLog").then(mod => mod.SystemTelemetryLog), { ssr: false });
 
+const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600">
+      [ INITIALIZING MAP INTERFACE... ]
+    </div>
+  ),
+});
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -28,6 +36,9 @@ export const SolarTimeClock = () => {
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "diagnostics" | "map">("overview");
+
+  // Map Picker State
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [activeLayerMode, setActiveLayerMode] = useState<'final' | 'year' | 'month' | 'day'>('final');
 
   // Geo & Environment State (Default: Tokyo)
@@ -387,6 +398,43 @@ export const SolarTimeClock = () => {
     }
   }
 
+  // --- Helper for visually colorful board matrices ---
+  const renderMatrixCell = (dir: string, num: number | string, noiseStr?: string, isCenter = false) => {
+    if (isCenter) {
+      return (
+        <div className="p-1 flex flex-col items-center justify-center bg-black/40 border border-zinc-800/50">
+          <span className="text-[7px] text-zinc-600">C</span>
+          <span className="text-sm font-bold text-zinc-500">{num}</span>
+        </div>
+      );
+    }
+
+    let colorClass = "text-zinc-400";
+    let bgClass = "bg-black/30 border border-transparent";
+    let tooltip = noiseStr || "SAFE";
+
+    if (noiseStr?.startsWith('NOISE_VOID') || noiseStr?.startsWith('NOISE_NODE')) {
+      colorClass = "text-yellow-400 font-bold";
+      bgClass = "bg-yellow-500/10 border border-yellow-500/20";
+    } else if (noiseStr?.startsWith('NOISE')) {
+      colorClass = "text-red-400 font-bold";
+      bgClass = "bg-red-500/10 border border-red-500/20";
+    } else if (noiseStr === 'OPTIMAL') {
+      colorClass = "text-emerald-400 font-bold";
+      bgClass = "bg-emerald-500/10 border border-emerald-500/20";
+    } else if (noiseStr === 'SAFE' || !noiseStr) {
+      colorClass = "text-blue-400";
+      bgClass = "bg-blue-500/5 border border-blue-500/10";
+    }
+
+    return (
+      <div className={`p-0.5 sm:p-1 flex flex-col items-center justify-center ${bgClass}`} title={tooltip}>
+        <span className="text-[7px] text-zinc-500">{dir}</span>
+        <span className={colorClass}>{num}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
       {/* Background Grid Pattern */}
@@ -445,66 +493,143 @@ export const SolarTimeClock = () => {
               personalVoidZodiac={personalVoidZodiac}
             />
 
-            {/* Navigation & Intent Panel */}
-            <div className="w-full max-w-4xl bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg">
-              <div className="flex-1 w-full">
-                <label className="text-xs text-zinc-500 uppercase tracking-widest mb-2 block">
-                  Time Slider: {timeOffsetDays === 0 ? "NOW" : timeOffsetDays > 0 ? `+${timeOffsetDays} DAYS` : `${timeOffsetDays} DAYS`}
-                </label>
-                <input 
-                  type="range" 
-                  min="-365" max="365" 
-                  value={timeOffsetDays} 
-                  onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
-                  className="w-full accent-emerald-500"
-                />
-              </div>
-              <div className="flex flex-col gap-2 min-w-[200px]">
-                <label className="text-xs text-zinc-500 uppercase tracking-widest">
-                  Action Intent
-                </label>
-                <select 
-                  value={actionIntent} 
-                  onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
-                  className="bg-black border border-zinc-700 text-emerald-400 text-sm px-3 py-1.5 rounded outline-none"
-                >
-                  <option value="DEFAULT">DEFAULT (STANDARD)</option>
-                  <option value="REST">REST (RECOVERY/MENDING)</option>
-                  <option value="BUSINESS">BUSINESS (EXPANSION/CONFLICT)</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-2 min-w-[250px] md:border-l border-t md:border-t-0 border-zinc-800 md:pl-4 pt-4 md:pt-0">
-                <label className="text-xs text-zinc-500 uppercase tracking-widest">
-                  Destination (Target Coordinates)
-                </label>
-                <div className="flex gap-2">
+            {/* SPATIAL & TEMPORAL CONTROL PANELS */}
+            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4">
+              
+              {/* Temporal Navigation */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group z-10">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                  <span className="text-indigo-400 animate-pulse">▶</span>
+                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Temporal Navigation <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 時間軸操作</span></h3>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
+                  未来や過去へ時間をスライドし、空間のエネルギー推移をシミュレーションします。
+                </p>
+                <div className="flex-1 w-full mt-auto">
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="text-xs text-indigo-400 uppercase tracking-widest font-mono">
+                      Time Offset
+                    </label>
+                    <span className="text-lg font-mono font-bold text-zinc-300">
+                      {timeOffsetDays === 0 ? "NOW" : timeOffsetDays > 0 ? `+${timeOffsetDays} DAYS` : `${timeOffsetDays} DAYS`}
+                    </span>
+                  </div>
                   <input 
-                    type="number" 
-                    placeholder="Lat" 
-                    value={targetLat ?? ""} 
-                    onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
-                    className="bg-black border border-zinc-700 text-zinc-300 text-sm px-2 py-1.5 rounded outline-none w-1/2" 
-                  />
-                  <input 
-                    type="number" 
-                    placeholder="Lon" 
-                    value={targetLon ?? ""} 
-                    onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
-                    className="bg-black border border-zinc-700 text-zinc-300 text-sm px-2 py-1.5 rounded outline-none w-1/2" 
+                    type="range" 
+                    min="-365" max="365" 
+                    value={timeOffsetDays} 
+                    onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
+                    className="w-full accent-indigo-500 relative z-20"
                   />
                 </div>
-                {targetDirection && targetVectorStatus && (
-                  <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center gap-2 ${
-                    targetVectorStatus.startsWith('NOISE') 
-                      ? 'bg-red-500/10 border-red-500/30 text-red-400' 
-                      : targetVectorStatus === 'OPTIMAL'
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                      : 'bg-zinc-800/50 border-zinc-700 text-zinc-400'
-                  }`}>
-                    <span className="font-bold border border-current px-1">{targetDirection}</span>
-                    <span>{targetVectorStatus}</span>
+              </div>
+
+              {/* Spatial Targeting */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                  <span className="text-emerald-500 animate-pulse">▶</span>
+                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Spatial Targeting <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間・目的の捕捉</span></h3>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
+                  目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
+                </p>
+                <div className="flex flex-col gap-3 mt-auto">
+                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm">
+                    <div className="flex flex-col">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Action Intent</label>
+                      <span className="text-[8px] text-zinc-600">行動の性質により吉凶の計算結果が変わります</span>
+                    </div>
+                    <select 
+                      value={actionIntent} 
+                      onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
+                      className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right"
+                    >
+                      <option value="DEFAULT">DEFAULT (通常行動)</option>
+                      <option value="REST">REST (回復・静養)</option>
+                      <option value="BUSINESS">BUSINESS (事業・拡張)</option>
+                    </select>
                   </div>
-                )}
+                  
+                  <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                        Destination <span className="text-[9px] text-zinc-600">Lat/Lon</span>
+                      </label>
+                      <button 
+                        onClick={() => setShowMapPicker(!showMapPicker)}
+                        className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
+                      >
+                        [ MAP SEARCH ]
+                      </button>
+                    </div>
+                    
+                    {showMapPicker && (
+                      <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20">
+                        <LocationPickerInner 
+                          initialLat={targetLat || lat} 
+                          initialLon={targetLon || lon} 
+                          onSelect={(newLat: number, newLon: number) => {
+                            setTargetLat(Number(newLat.toFixed(5)));
+                            setTargetLon(Number(newLon.toFixed(5)));
+                          }} 
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="w-full relative z-10 flex gap-1 mb-1">
+                      <input 
+                        type="text" 
+                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)" 
+                        className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
+                        onChange={(e) => {
+                          const url = e.target.value;
+                          const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                          if (match) {
+                            setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
+                            setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
+                            e.target.value = ''; // clear upon success
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex gap-2 relative z-10">
+                      <input 
+                        type="number" 
+                        placeholder="Latitude" 
+                        value={targetLat ?? ""} 
+                        onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                      />
+                      <input 
+                        type="number" 
+                        placeholder="Longitude" 
+                        value={targetLon ?? ""} 
+                        onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                      />
+                    </div>
+                    {targetDirection && targetVectorStatus && (
+                      <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
+                        targetVectorStatus.startsWith('NOISE_VOID') || targetVectorStatus.startsWith('NOISE_NODE')
+                          ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                          : targetVectorStatus.startsWith('NOISE') 
+                          ? 'bg-red-500/10 border-red-500/30 text-red-400' 
+                          : targetVectorStatus === 'OPTIMAL'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                           <span className="font-bold border border-current px-1">{targetDirection}</span>
+                           <span>{targetVectorStatus}</span>
+                        </div>
+                        <span className="text-[8px] opacity-70">TARGET EVAL</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -750,6 +875,16 @@ export const SolarTimeClock = () => {
                 </summary>
                 
                 <div className="p-3 border-t border-zinc-800 bg-black/50">
+                  <div className="mb-4 p-2 bg-zinc-950/80 border border-zinc-800 text-[9px] sm:text-[10px] text-zinc-400 font-mono leading-relaxed">
+                    <strong>[ 進入可能方位とノイズの解読法則 ]</strong><br/>
+                    気学の理論と引力モデルに基づき、盤面と本命星を重ね合わせます。<br/>
+                    <span className="text-red-400 font-bold">赤色(NOISE)</span> のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。<br/>
+                    <span className="text-yellow-400 font-bold">黄色(WARNING)</span> は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。<br/>
+                    <span className="text-emerald-400 font-bold">緑色(OPTIMAL)</span> は生体波長と完全にシンクロし能力が増幅されるゾーン、<span className="text-blue-400 font-bold">青(SAFE)</span> は異常干渉のない安定ゾーンです。<br/>
+                    <em>※FINALマップでは、以下の年・月・日のいずれかのレイヤーで赤・黄色があると優先してブロック（警告色）が表示されます。<br/>
+                    ※緑(OPTIMAL)は、全レイヤーがクリアでかつ目的とあなたの波長が完全一致した場合のみ出現します（条件が厳しいため表示されないことも多々あります）。</em>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-[11px] font-mono text-zinc-300">
                     <div className="bg-black/50 border border-purple-900/30 p-2">
                       <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
@@ -757,16 +892,16 @@ export const SolarTimeClock = () => {
                         <span className="text-[7px] text-zinc-500">PHYSICAL MODEL</span>
                       </div>
                       {yearBoard && (
-                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                          <div>SE: {yearBoard.SE}</div>
-                          <div>S: {yearBoard.S}</div>
-                          <div>SW: {yearBoard.SW}</div>
-                          <div>E: {yearBoard.E}</div>
-                          <div className="text-purple-400">C: {yearBoard.CENTER}</div>
-                          <div>W: {yearBoard.W}</div>
-                          <div>NE: {yearBoard.NE}</div>
-                          <div>N: {yearBoard.N}</div>
-                          <div>NW: {yearBoard.NW}</div>
+                        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                          {renderMatrixCell('SE', yearBoard.SE, layers?.yearLayer?.SE)}
+                          {renderMatrixCell('S', yearBoard.S, layers?.yearLayer?.S)}
+                          {renderMatrixCell('SW', yearBoard.SW, layers?.yearLayer?.SW)}
+                          {renderMatrixCell('E', yearBoard.E, layers?.yearLayer?.E)}
+                          {renderMatrixCell('C', yearBoard.CENTER, undefined, true)}
+                          {renderMatrixCell('W', yearBoard.W, layers?.yearLayer?.W)}
+                          {renderMatrixCell('NE', yearBoard.NE, layers?.yearLayer?.NE)}
+                          {renderMatrixCell('N', yearBoard.N, layers?.yearLayer?.N)}
+                          {renderMatrixCell('NW', yearBoard.NW, layers?.yearLayer?.NW)}
                         </div>
                       )}
                       <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
@@ -781,21 +916,21 @@ export const SolarTimeClock = () => {
                         <span className="text-[7px] text-zinc-500">CLASSICAL DOCS</span>
                       </div>
                       {classicalYearBoard && (
-                        <div className="grid grid-cols-3 gap-1 text-center font-bold text-zinc-500">
-                          <div>SE: {classicalYearBoard.SE}</div>
-                          <div>S: {classicalYearBoard.S}</div>
-                          <div>SW: {classicalYearBoard.SW}</div>
-                          <div>E: {classicalYearBoard.E}</div>
-                          <div className="text-zinc-400">C: {classicalYearBoard.CENTER}</div>
-                          <div>W: {classicalYearBoard.W}</div>
-                          <div>NE: {classicalYearBoard.NE}</div>
-                          <div>N: {classicalYearBoard.N}</div>
-                          <div>NW: {classicalYearBoard.NW}</div>
+                        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                          {renderMatrixCell('SE', classicalYearBoard.SE, undefined)}
+                          {renderMatrixCell('S', classicalYearBoard.S, undefined)}
+                          {renderMatrixCell('SW', classicalYearBoard.SW, undefined)}
+                          {renderMatrixCell('E', classicalYearBoard.E, undefined)}
+                          {renderMatrixCell('C', classicalYearBoard.CENTER, undefined, true)}
+                          {renderMatrixCell('W', classicalYearBoard.W, undefined)}
+                          {renderMatrixCell('NE', classicalYearBoard.NE, undefined)}
+                          {renderMatrixCell('N', classicalYearBoard.N, undefined)}
+                          {renderMatrixCell('NW', classicalYearBoard.NW, undefined)}
                         </div>
                       )}
                       <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
                         一般的な書籍・暦に基づく盤面。<br/>
-                        立春を基準としたカレンダー・モデル。
+                        こちらは干渉ノイズの評価には使われません。
                       </div>
                     </div>
 
@@ -805,16 +940,16 @@ export const SolarTimeClock = () => {
                         <span className="text-[7px] text-zinc-500">MONTHLY MODEL</span>
                       </div>
                       {monthBoard && (
-                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                          <div>SE: {monthBoard.SE}</div>
-                          <div>S: {monthBoard.S}</div>
-                          <div>SW: {monthBoard.SW}</div>
-                          <div>E: {monthBoard.E}</div>
-                          <div className="text-amber-400">C: {monthBoard.CENTER}</div>
-                          <div>W: {monthBoard.W}</div>
-                          <div>NE: {monthBoard.NE}</div>
-                          <div>N: {monthBoard.N}</div>
-                          <div>NW: {monthBoard.NW}</div>
+                        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                          {renderMatrixCell('SE', monthBoard.SE, layers?.monthLayer?.SE)}
+                          {renderMatrixCell('S', monthBoard.S, layers?.monthLayer?.S)}
+                          {renderMatrixCell('SW', monthBoard.SW, layers?.monthLayer?.SW)}
+                          {renderMatrixCell('E', monthBoard.E, layers?.monthLayer?.E)}
+                          {renderMatrixCell('C', monthBoard.CENTER, undefined, true)}
+                          {renderMatrixCell('W', monthBoard.W, layers?.monthLayer?.W)}
+                          {renderMatrixCell('NE', monthBoard.NE, layers?.monthLayer?.NE)}
+                          {renderMatrixCell('N', monthBoard.N, layers?.monthLayer?.N)}
+                          {renderMatrixCell('NW', monthBoard.NW, layers?.monthLayer?.NW)}
                         </div>
                       )}
                       <div className="mt-2 text-[8px] text-zinc-600">
@@ -828,16 +963,16 @@ export const SolarTimeClock = () => {
                         <span className="text-[7px] text-zinc-500">DAILY MODEL</span>
                       </div>
                       {dayBoard && (
-                        <div className="grid grid-cols-3 gap-1 text-center font-bold">
-                          <div>SE: {dayBoard.SE}</div>
-                          <div>S: {dayBoard.S}</div>
-                          <div>SW: {dayBoard.SW}</div>
-                          <div>E: {dayBoard.E}</div>
-                          <div className="text-blue-400">C: {dayBoard.CENTER}</div>
-                          <div>W: {dayBoard.W}</div>
-                          <div>NE: {dayBoard.NE}</div>
-                          <div>N: {dayBoard.N}</div>
-                          <div>NW: {dayBoard.NW}</div>
+                        <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                          {renderMatrixCell('SE', dayBoard.SE, layers?.dayLayer?.SE)}
+                          {renderMatrixCell('S', dayBoard.S, layers?.dayLayer?.S)}
+                          {renderMatrixCell('SW', dayBoard.SW, layers?.dayLayer?.SW)}
+                          {renderMatrixCell('E', dayBoard.E, layers?.dayLayer?.E)}
+                          {renderMatrixCell('C', dayBoard.CENTER, undefined, true)}
+                          {renderMatrixCell('W', dayBoard.W, layers?.dayLayer?.W)}
+                          {renderMatrixCell('NE', dayBoard.NE, layers?.dayLayer?.NE)}
+                          {renderMatrixCell('N', dayBoard.N, layers?.dayLayer?.N)}
+                          {renderMatrixCell('NW', dayBoard.NW, layers?.dayLayer?.NW)}
                         </div>
                       )}
                       <div className="mt-2 text-[8px] text-zinc-600">
@@ -853,10 +988,10 @@ export const SolarTimeClock = () => {
                 <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
                   <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
                     <span>Phase Interference Diagnosis</span>
-                    <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 非推奨 &gt; 🟩 最適化 &gt; 🟦 通常 )</span>
+                    <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt; 🟩 波長共鳴 &gt; 🟦 無干渉(透明) )</span>
                   </div>
                   <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
-                    <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的なアーティファクト（赤・橙）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
+                    <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的な物理アーティファクト（赤）や生体コンフリクト（紫）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
                   </div>
                   <div className="overflow-visible w-full mt-4">
                     <table className="w-full text-left font-mono">
@@ -878,7 +1013,7 @@ export const SolarTimeClock = () => {
                           
                           const getColor = (s: string) => {
                             if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-                            if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-amber-500 font-bold';
+                            if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#d946ef] font-bold';
                             if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
                             return 'text-blue-400';
                           };

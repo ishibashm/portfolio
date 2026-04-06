@@ -139,8 +139,8 @@ export default function MagneticMapInner({
       case 'SAFE': style = { color: "#3b82f6", opacity: Math.min(0.5, 0.15 * safeMultiplier) }; break;
       case 'NOISE_GOU': style = { color: "#dc2626", opacity: Math.min(0.9, 0.5 * noiseMultiplier) }; break;
       case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: Math.min(0.9, 0.4 * noiseMultiplier) }; break;
-      case 'NOISE_HONMEI': style = { color: "#f59e0b", opacity: Math.min(0.8, 0.4 * noiseMultiplier) }; break;
-      case 'NOISE_TEKI': style = { color: "#f59e0b", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
+      case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: Math.min(0.8, 0.4 * noiseMultiplier) }; break;
+      case 'NOISE_TEKI': style = { color: "#d946ef", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
       case 'NOISE': style = { color: "#ef4444", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
       default: style = { color: "#3f3f46", opacity: 0.1 };
     }
@@ -231,13 +231,13 @@ export default function MagneticMapInner({
                   </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-zinc-500">体質 (個人相性):</span>
-                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-amber-500' : 'text-emerald-500'}>
+                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#d946ef]' : 'text-emerald-500'}>
                       {formatLayer(dLayer)}
                     </span>
                   </div>
                   <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px]">
                     <span className="text-zinc-400">STATUS: </span>
-                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : 'text-amber-500'}>
+                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : color.includes('d946ef') ? 'text-[#d946ef]' : 'text-zinc-500'}>
                       {d.status}
                     </span>
                   </div>
@@ -266,7 +266,7 @@ export default function MagneticMapInner({
     return boundaries.map((b, idx) => {
       const baseBearing = magNorthBearing + b;
       const points: [number, number][] = [center];
-      for (let offset = -7.5; offset <= 7.5; offset += 1) {
+      for (let offset = -2; offset <= 2; offset += 1) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
       return (
@@ -352,13 +352,19 @@ export default function MagneticMapInner({
           <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-300 border-b border-zinc-800 pb-1 mb-1 font-bold">
             [{activeLayerMode.toUpperCase()} LAYER DISPLAY]
           </div>
-          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#f59e0b] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
-          <div className="text-[9px] uppercase font-mono tracking-widest text-emerald-400 mt-1">最適化ゾーン (緑)</div>
+          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#d946ef] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#10b981] mt-1 pt-1 border-t border-zinc-800">最適化ゾーン (緑)</div>
           <div className="text-[8px] font-sans text-zinc-400">行動パフォーマンス最大化帯</div>
-          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400 mt-1">通常ゾーン (青)</div>
+          
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#3b82f6] mt-1">通常ゾーン (青)</div>
           <div className="text-[8px] font-sans text-zinc-400">標準的な環境負荷</div>
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1 pt-1 border-t border-zinc-800">非推奨ベクトル (赤/黄)</div>
-          <div className="text-[8px] font-sans text-zinc-400">演算に基づく行動阻害エリア</div>
+          
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#d946ef] mt-1 pt-1 border-t border-zinc-800">生体警告ベクトル (紫)</div>
+          <div className="text-[8px] font-sans text-zinc-400">パーソナル波長との強干渉領域 (本命殺/的殺)</div>
+          
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1">凶殺ベクトル (赤)</div>
+          <div className="text-[8px] font-sans text-zinc-400">物理的な磁気異常ノイズ (五黄殺/暗剣殺)</div>
+          
           <div className="flex justify-end items-center gap-1 mt-1 pt-1 border-t border-zinc-800">
              <div className="w-3 border-t-2 border-dashed border-red-500"></div>
              <div className="text-[9px] uppercase font-mono tracking-widest text-red-500">危険境界</div>

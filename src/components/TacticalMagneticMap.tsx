@@ -326,33 +326,36 @@ export function TacticalMagneticMapComponent({
                   {/* SYS.4: BIO NOISE */}
                   {activeDecryptTab === 4 && (
                     <div className="animate-fade-in flex flex-col gap-4">
-                      <div className="text-rose-500 font-bold tracking-widest mb-2 border-b border-rose-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
-                         <div className="bg-rose-900/40 text-rose-500 px-1.5 py-1 flex flex-col items-center shrink-0">
+                      <div className="text-[#d946ef] font-bold tracking-widest mb-2 border-b border-fuchsia-900/50 pb-2 uppercase flex items-start gap-2 text-xs sm:text-sm">
+                         <div className="bg-fuchsia-900/40 text-[#d946ef] px-1.5 py-1 flex flex-col items-center shrink-0">
                            <span className="text-[8px] leading-none mb-1">SYS.4</span>
-                           <span className="text-[7px] leading-none border-t border-rose-500/50 pt-1 w-full text-center">[BIO]</span>
+                           <span className="text-[7px] leading-none border-t border-fuchsia-500/50 pt-1 w-full text-center">[BIO]</span>
                          </div>
                          <div className="flex flex-col justify-center">
                            <span>パーソナル波長との強干渉（本命殺）</span>
-                           <span className="text-[9px] text-rose-500/80 flex items-center gap-1.5 mt-0.5">固有の自律神経波長へ向けた電磁波ノイズの抽出結果</span>
+                           <span className="text-[9px] text-fuchsia-400/80 flex items-center gap-1.5 mt-0.5">固有の自律神経波長へ向けた電磁波ノイズの抽出結果</span>
                          </div>
                       </div>
                       <div className="grid grid-cols-1 gap-3 text-[10px] sm:text-xs text-zinc-400">
-                         <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-rose-900/50 pl-3">
-                            <span className="w-24 font-bold text-rose-500 uppercase tracking-widest shrink-0">[ RESONANCE ]</span>
-                            <span className="leading-relaxed text-zinc-300">
-                               あなたが誕生時に受けた地球磁場「Hardware Init（固有波長・本命星）」と、現在の空間に広がる磁力線が強烈に干渉・反発しあう方位を算出します。
-                            </span>
+                         <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-fuchsia-900/50 pl-3">
+                            <span className="w-24 font-bold text-[#d946ef] uppercase tracking-widest shrink-0">[ RESONANCE ]</span>
+                            <div className="flex flex-col gap-1">
+                               <span className="leading-relaxed text-zinc-300">
+                                  あなたが誕生時に受けた地球磁場「Hardware Init（固有波長・本命星）」と、現在の空間波長が強烈に干渉・反発しあう方位を算出します。
+                               </span>
+                               <span className="text-[9px] text-fuchsia-400">※固有波長とは、あなたの身体（ハードウェア）が初期化された年月に浴びた自律神経層の初期設定リズムのことです。</span>
+                            </div>
                          </div>
                          <div className="flex flex-col md:flex-row md:gap-4 border-l-2 border-zinc-700 pl-3 mt-2">
                             <span className="w-24 font-bold text-zinc-500 uppercase tracking-widest shrink-0">[ NOISE TYPE ]</span>
                             <div className="flex flex-col gap-2">
-                               <div className="bg-rose-950/20 p-2 border border-rose-900/30">
-                                  <strong className="text-rose-400">同調過多 (NOISE_HONMEI / 本命殺)</strong>
-                                  <p className="text-[9px] mt-0.5">空間波長と出力波長が完全に被り、ハウリング（不整脈や焦燥感）を起こすベクトル。</p>
+                               <div className="bg-fuchsia-950/20 p-2 border border-fuchsia-900/30">
+                                  <strong className="text-[#d946ef]">同調過多 (NOISE_HONMEI / 本命殺)</strong>
+                                  <p className="text-[9px] mt-0.5 text-zinc-400">空間波長と出力波長が完全に被り、ハウリング（不整脈や焦燥感）を起こすベクトル。</p>
                                </div>
-                               <div className="bg-amber-950/20 p-2 border border-amber-900/30">
-                                  <strong className="text-amber-500">反射干渉 (NOISE_TEKI / 的殺)</strong>
-                                  <p className="text-[9px] mt-0.5">対極の位置から返ってくる反射位相により、行動の空振りや予測エラーが発生するベクトル。</p>
+                               <div className="bg-fuchsia-950/20 p-2 border border-fuchsia-900/30">
+                                  <strong className="text-[#d946ef]">反射干渉 (NOISE_TEKI / 的殺)</strong>
+                                  <p className="text-[9px] mt-0.5 text-zinc-400">対極の位置から返ってくる反射位相により、行動の空振りや予測エラーが発生するベクトル。</p>
                                </div>
                             </div>
                          </div>
@@ -382,18 +385,24 @@ export function TacticalMagneticMapComponent({
                                </span>
                                
                                <div className="bg-black/60 p-3 border border-zinc-800 font-mono text-[9px] md:text-[10px]">
-                                  <div className="text-red-400 mb-1">IF (Year OR Month OR Day == 危険ノイズ)</div>
-                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-red-500">[ 🟥 非推奨ベクトル (赤・黄) ]</strong> 最優先で危険と判定され進入禁止。</div>
+                                  <div className="text-red-400 mb-1">IF (Year OR Month OR Day == 致命的ノイズ)</div>
+                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-red-500">[ 🟥 凶殺ベクトル (赤) ]</strong> (NOISE) 宇宙天気や地球磁場由来の物理的ノイズ。進入は固く禁止されます。</div>
                                   
-                                  <div className="text-emerald-400 mb-1">ELSE IF (すべてのレイヤーにノイズが無い AND 固有波長と共鳴する)</div>
-                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-emerald-500">[ 🟩 最適化ゾーン (緑) ]</strong> (OPTIMAL) 能力が120%発揮される超推奨帯。</div>
+                                  <div className="text-[#d946ef] mb-1">ELSE IF (個人の固有波長(本命星)と強干渉する)</div>
+                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-[#d946ef]">[ 🟪 生体警告ベクトル (紫) ]</strong> (WARNING) あなたの生体波長と反発する「本命殺・的殺」。環境自体は正常でも個人のエラーが増加します。</div>
+
+                                  <div className="text-yellow-400 mb-1">ELSE IF (構造的バグ・空亡/天中殺)</div>
+                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-yellow-500">[ 🟨 警告ゾーン (黄) ]</strong> (WARNING) 空間のフレームワークが崩壊しているバグ領域。不可侵。</div>
+
+                                  <div className="text-emerald-400 mb-1">ELSE IF (全レイヤーノイズ無し AND 目的/固有波長と完全共鳴)</div>
+                                  <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-emerald-500">[ 🟩 最適化ゾーン (緑) ]</strong> (OPTIMAL) 能力が増幅される超推奨帯。(※条件が厳しいため表示されない事が多いです)</div>
                                   
                                   <div className="text-blue-400 mb-1">ELSE</div>
-                                  <div className="ml-4 text-zinc-500">→ <strong className="text-blue-500">[ 🟦 通常ゾーン (青) ]</strong> (SAFE) リスクもなく加点もないフラットな帯域。</div>
+                                  <div className="ml-4 text-zinc-500">→ <strong className="text-blue-500">[ 🟦 通常ゾーン (透明) ]</strong> (SAFE) リスクもなく加点もないフラットな帯域。画面上では「透明/無色」で表現されます。</div>
                                </div>
                                
                                <span className="text-[9px] text-emerald-400/80 mt-1 italic">
-                                  ※レイヤー単体表示（YEAR/MONTH等）時にはレイヤー間の「共鳴連携」が存在しないため、緑の最適化ゾーンは存在せず、青(安全)か赤(危険)のみで純一な生データを確認できます。
+                                  ※レイヤー単体表示（YEAR/MONTH等）時には統合された「共鳴連携」が存在しないため、緑の最適化ゾーンは存在しません。
                                </span>
                             </div>
                          </div>
