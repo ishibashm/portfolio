@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
+    "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@sparticuz/chromium": "^143.0.4",
     "@supabase/ssr": "^0.9.0",
@@ -39,7 +40,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/babel__core": "^7.20.5",
+    "@types/gensync": "^1.0.4",
     "@types/google.accounts": "^0.0.18",
+    "@types/graceful-fs": "^4.1.9",
+    "@types/istanbul-lib-coverage": "^2.0.6",
+    "@types/istanbul-lib-report": "^3.0.3",
+    "@types/istanbul-reports": "^3.0.4",
     "@types/jsdom": "^28.0.0",
     "@types/katex": "^0.16.8",
     "@types/leaflet": "^1.9.21",

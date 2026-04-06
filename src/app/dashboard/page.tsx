@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma"
-import { rental_properties, StockTarget, TimingAstrology } from "@prisma/client"
+import { rental_propertiesModel as rental_properties, StockTargetModel as StockTarget, TimingAstrologyModel as TimingAstrology } from "@/generated/prisma/models"
 import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles } from "lucide-react"
 import Link from "next/link"
 
