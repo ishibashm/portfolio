@@ -988,7 +988,7 @@ export const SolarTimeClock = () => {
                 <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
                   <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
                     <span>Phase Interference Diagnosis</span>
-                    <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt; 🟩 波長共鳴 &gt; 🟦 無干渉(透明) )</span>
+                    <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt; 🟩 波長共鳴 &gt; 🟦 無干渉(青) )</span>
                   </div>
                   <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
                     <strong className="text-zinc-400">判定ロジック:</strong> 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的な物理アーティファクト（赤）や生体コンフリクト（紫）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）

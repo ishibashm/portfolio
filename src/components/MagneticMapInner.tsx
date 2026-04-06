@@ -136,7 +136,7 @@ export default function MagneticMapInner({
     let style;
     switch (status) {
       case 'OPTIMAL': style = { color: "#10b981", opacity: Math.min(0.8, 0.4 * safeMultiplier) }; break;
-      case 'SAFE': style = { color: "#3b82f6", opacity: Math.min(0.5, 0.15 * safeMultiplier) }; break;
+      case 'SAFE': style = { color: "#3b82f6", opacity: 0.35 }; break;
       case 'NOISE_GOU': style = { color: "#dc2626", opacity: Math.min(0.9, 0.5 * noiseMultiplier) }; break;
       case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: Math.min(0.9, 0.4 * noiseMultiplier) }; break;
       case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: Math.min(0.8, 0.4 * noiseMultiplier) }; break;
@@ -144,7 +144,7 @@ export default function MagneticMapInner({
       case 'NOISE': style = { color: "#ef4444", opacity: Math.min(0.8, 0.3 * noiseMultiplier) }; break;
       default: style = { color: "#3f3f46", opacity: 0.1 };
     }
-    return { ...style, weight };
+    return { ...style, weight: status === 'SAFE' ? 1 : weight };
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
@@ -171,8 +171,6 @@ export default function MagneticMapInner({
       const { color, opacity, weight } = getStyleForVector(displayStatus);
       const baseBearing = magNorthBearing + d.deg;
       
-      if (displayStatus === 'SAFE' && !hudLayers.terrain && !hudLayers.weather && !hudLayers.bio) return null;
-
       const points: [number, number][] = [center];
       for (let offset = -10; offset <= 10; offset += 1) {
         // Reduced from 5000km to 1000km bounds to save mobile memory

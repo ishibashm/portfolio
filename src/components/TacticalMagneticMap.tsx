@@ -398,7 +398,7 @@ export function TacticalMagneticMapComponent({
                                   <div className="ml-4 mb-2 text-zinc-500">→ <strong className="text-emerald-500">[ 🟩 最適化ゾーン (緑) ]</strong> (OPTIMAL) 能力が増幅される超推奨帯。(※条件が厳しいため表示されない事が多いです)</div>
                                   
                                   <div className="text-blue-400 mb-1">ELSE</div>
-                                  <div className="ml-4 text-zinc-500">→ <strong className="text-blue-500">[ 🟦 通常ゾーン (透明) ]</strong> (SAFE) リスクもなく加点もないフラットな帯域。画面上では「透明/無色」で表現されます。</div>
+                                  <div className="ml-4 text-zinc-500">→ <strong className="text-blue-500">[ 🟦 通常ゾーン (青) ]</strong> (SAFE) リスクもなく加点もないフラットな帯域。画面上では「青色」で表現されます。</div>
                                </div>
                                
                                <span className="text-[9px] text-emerald-400/80 mt-1 italic">
