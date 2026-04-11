@@ -6,19 +6,28 @@ import Link from "next/link"
 export const revalidate = 60 // Revalidate cache every minute
 
 export default async function DashboardPage() {
-  // Fetch data from Prisma concurrently
+  // Fetch data from Prisma concurrently with error handling to prevent build crashes
   const [realEstates, stocks, timings] = await Promise.all([
     prisma.rental_properties.findMany({
       orderBy: { created_at: 'desc' },
       take: 5
+    }).catch((e: any) => {
+      console.warn("Failed to fetch rental_properties:", e.message);
+      return [];
     }),
     prisma.stockTarget.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5
+    }).catch((e: any) => {
+      console.warn("Failed to fetch stockTarget:", e.message);
+      return [];
     }),
     prisma.timingAstrology.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5
+    }).catch((e: any) => {
+      console.warn("Failed to fetch timingAstrology:", e.message);
+      return [];
     })
   ])
 
