@@ -6,11 +6,11 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/kb',
-        destination: 'https://knowledge-base-app-116694017128.us-central1.run.app',
+        destination: 'https://knowledge-base-app-116694017128.us-central1.run.app/kb',
       },
       {
         source: '/kb/:path*',
-        destination: 'https://knowledge-base-app-116694017128.us-central1.run.app/:path*',
+        destination: 'https://knowledge-base-app-116694017128.us-central1.run.app/kb/:path*',
       },
     ];
   },
