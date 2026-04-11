@@ -129,22 +129,24 @@ export default function MagneticMapInner({
   // 2. Memoize vector styles based on status and kpIndex
   const getStyleForVector = React.useCallback((status: string) => {
     const baseKp = kpIndex || 0;
-    const weight = status.startsWith('NOISE') && baseKp >= 4 ? 2 : 1;
+    // Stroke weight is increased for NOISE to make dash patterns visible
+    const weight = status.startsWith('NOISE') ? (baseKp >= 4 ? 3 : 2) : 1;
 
     let style;
+    let dashArray;
     switch (status) {
-      case 'OPTIMAL': style = { color: "#10b981", opacity: 0.85 }; break;
-      case 'SAFE': style = { color: "#3b82f6", opacity: 0.8 }; break;
-      case 'NOISE_GOU': style = { color: "#dc2626", opacity: 0.9 }; break;
-      case 'NOISE_ANKEN': style = { color: "#ef4444", opacity: 0.9 }; break;
-      case 'NOISE_HONMEI': style = { color: "#a855f7", opacity: 0.9 }; break;
-      case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.9 }; break;
-      case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.9 }; break;
-      case 'NOISE_NODE': style = { color: "#f59e0b", opacity: 0.9 }; break;
-      case 'NOISE': style = { color: "#ef4444", opacity: 0.85 }; break;
-      default: style = { color: "#3f3f46", opacity: 0.8 };
+      case 'OPTIMAL': style = { color: "#10b981", opacity: 0.6 }; dashArray = undefined; break;
+      case 'SAFE': style = { color: "#3b82f6", opacity: 0.15 }; dashArray = undefined; break;
+      case 'NOISE_GOU': style = { color: "#ef4444", opacity: 0.8 }; dashArray = "10,5"; break;
+      case 'NOISE_ANKEN': style = { color: "#f43f5e", opacity: 0.8 }; dashArray = "5,5"; break;
+      case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: 0.8 }; dashArray = "15,10,5,10"; break;
+      case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.8 }; dashArray = "15,15"; break;
+      case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.5 }; dashArray = "1,5"; break;
+      case 'NOISE_NODE': style = { color: "#f59e0b", opacity: 0.5 }; dashArray = "4,4"; break;
+      case 'NOISE': style = { color: "#ef4444", opacity: 0.8 }; dashArray = "10,10"; break;
+      default: style = { color: "#3f3f46", opacity: 0.3 }; dashArray = "1,4";
     }
-    return { ...style, weight: status === 'SAFE' ? 1 : weight };
+    return { ...style, weight: status === 'SAFE' ? 1 : weight, dashArray };
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
@@ -168,7 +170,7 @@ export default function MagneticMapInner({
         displayStatus = d.status;
       }
 
-      const { color, opacity, weight } = getStyleForVector(displayStatus);
+      const { color, opacity, weight, dashArray } = getStyleForVector(displayStatus);
       const baseBearing = magNorthBearing + d.deg;
       
       const points: [number, number][] = [center];
@@ -205,6 +207,14 @@ export default function MagneticMapInner({
         return '平穏';
       };
 
+      const getActionSuggest = (status: string) => {
+        if (status.startsWith('NOISE_GOU') || status.startsWith('NOISE_ANKEN')) return '【退避推奨】致命的な物理エラー発生域。迂回が必要です';
+        if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI')) return '【警戒】主観的エラー・判断ミスが頻発する帯域です';
+        if (status.includes('VOID') || status.includes('NODE')) return '【警告】システムバグ領域。重大な決行は保留してください';
+        if (status === 'OPTIMAL') return '【推奨】最適化ゾーン。積極的な行動がリターンを生みます';
+        return '【中立】平穏な環境です。現状のルーティンを維持';
+      };
+
       return (
         <React.Fragment key={`sector-group-${d.dir}-${activeLayerMode}`}>
           <Polygon 
@@ -213,11 +223,15 @@ export default function MagneticMapInner({
             fillColor={color} 
             fillOpacity={opacity}
             weight={weight}
-            pathOptions={{ color, fillColor: color, fillOpacity: opacity, weight }}
+            dashArray={dashArray}
+            pathOptions={{ color, fillColor: color, fillOpacity: opacity, weight, dashArray }}
           >
             <Tooltip className="custom-map-tooltip">
-              <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl">
-                <div className="text-blue-400 border-b border-zinc-800 mb-1 pb-1 uppercase tracking-widest">{d.dir} Sector Analysis</div>
+              <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl max-w-[200px]">
+                <div className="text-blue-400 border-b border-zinc-800 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
+                  <span>{d.dir} Sector Analysis</span>
+                  <span className="text-zinc-600 font-normal">{(dashArray ? '破線' : '実線')}</span>
+                </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
                     <span className="text-zinc-500">川 (地磁気ベース):</span>
@@ -235,11 +249,16 @@ export default function MagneticMapInner({
                       {formatLayer(dLayer)}
                     </span>
                   </div>
-                  <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px]">
-                    <span className="text-zinc-400">STATUS: </span>
-                    <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('dc2626') || color.includes('ef4444') ? 'text-red-500' : color.includes('a855f7') || color.includes('c026d3') ? 'text-[#a855f7]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
-                      {d.status}
-                    </span>
+                  <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px] flex flex-col gap-1">
+                    <div className="flex gap-2">
+                       <span className="text-zinc-400">STATUS: </span>
+                       <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('ef4444') || color.includes('f43f5e') ? 'text-red-500' : color.includes('d946ef') || color.includes('c026d3') ? 'text-[#d946ef]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
+                         {d.status}
+                       </span>
+                    </div>
+                    <div className="text-zinc-300 font-bold bg-zinc-900/50 p-1 border-l-2 border-zinc-600 mt-1">
+                       {getActionSuggest(d.status)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -362,7 +381,7 @@ export default function MagneticMapInner({
           <div className="text-[9px] uppercase font-mono tracking-widest text-[#eab308] mt-1 pt-1 border-t border-zinc-800">特異点・構造バグ (黄)</div>
           <div className="text-[8px] font-sans text-zinc-400">時空間の特異点帯 (天中殺/月交点)</div>
           
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#a855f7] mt-1">生体警告ベクトル (紫)</div>
+          <div className="text-[9px] uppercase font-mono tracking-widest text-[#d946ef] mt-1">生体警告ベクトル (紫)</div>
           <div className="text-[8px] font-sans text-zinc-400">パーソナル波長との強干渉領域 (本命殺/的殺)</div>
           
           <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1">凶殺ベクトル (赤)</div>

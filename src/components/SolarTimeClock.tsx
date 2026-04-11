@@ -20,6 +20,7 @@ const BioMagneticDashboard = dynamic(() => import("./BioMagneticDashboard").then
 const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(mod => mod.TacticalMagneticMap), { ssr: false });
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
 const SystemTelemetryLog = dynamic(() => import("./SystemTelemetryLog").then(mod => mod.SystemTelemetryLog), { ssr: false });
+const ExpertCouncilPanel = dynamic(() => import("./ExpertCouncilPanel"), { ssr: false });
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -35,7 +36,7 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "diagnostics" | "map">("overview");
+  const [activeTab, setActiveTab] = useState<"temporal" | "spatial" | "diagnostics">("temporal");
 
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -451,14 +452,24 @@ export const SolarTimeClock = () => {
         {/* Tab Navigation */}
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40">
           <button
-            onClick={() => setActiveTab("overview")}
+            onClick={() => setActiveTab("temporal")}
             className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "overview"
+              activeTab === "temporal"
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            Temporal
+          </button>
+          <button
+            onClick={() => setActiveTab("spatial")}
+            className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "spatial"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            Overview
+            Spatial
           </button>
           <button
             onClick={() => setActiveTab("diagnostics")}
@@ -470,169 +481,91 @@ export const SolarTimeClock = () => {
           >
             Diagnostics
           </button>
-          <button
-            onClick={() => setActiveTab("map")}
-            className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "map"
-                ? "bg-blue-500/10 text-blue-500 border border-blue-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            Tactical Map
-          </button>
         </div>
 
-        {/* --- TAB CONTENT: OVERVIEW --- */}
-        {activeTab === "overview" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
-            {/* Module 0: Tactical Action Command */}
-            <TacticalActionCommand
-              kpIndex={spaceWeather?.kpIndex || null}
-              ansLoad={ansLoad}
-              isPersonalVoid={isPersonalVoid}
-              personalVoidZodiac={personalVoidZodiac}
-            />
+        {/* --- GLOBAL CONTROLS --- */}
+        <div className="w-full flex flex-col items-center space-y-4 animate-fade-in mt-4 mb-2 max-w-4xl">
+          {/* Tactical Action Command & Action Intent Selector */}
+          <div className="w-full flex flex-col md:flex-row gap-4">
+            <div className="w-full md:w-1/3 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
+              <label className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
+                <span className="text-emerald-500">◆</span> Action Intent <span className="text-[8px] text-zinc-600">/ 目的設定</span>
+              </label>
+              <select
+                value={actionIntent}
+                onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
+                className="w-full bg-black/50 border border-zinc-700 text-sm text-zinc-300 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+              >
+                <option value="DEFAULT">Normal Ops (通常行動)</option>
+                <option value="REST">Rest & Recovery (休養・療養)</option>
+                <option value="BUSINESS">Business / Attack (交渉・勝負事)</option>
+                <option value="MIGRATION">Relocation (引越し・長期滞在)</option>
+              </select>
+              <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
+                現在の目的に応じて、空間ベクトル（方位）の吉凶判定アルゴリズムが最適化されます。
+              </p>
+            </div>
+            
+            <div className="flex-1 w-full relative">
+              <TacticalActionCommand
+                kpIndex={spaceWeather?.kpIndex || null}
+                ansLoad={ansLoad}
+                isPersonalVoid={isPersonalVoid}
+                personalVoidZodiac={personalVoidZodiac}
+              />
+            </div>
+          </div>
 
-            {/* SPATIAL & TEMPORAL CONTROL PANELS */}
-            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4">
-              
-              {/* Temporal Navigation */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group z-10">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
-                  <span className="text-indigo-400 animate-pulse">▶</span>
-                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Temporal Navigation <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 時間軸操作</span></h3>
-                </div>
-                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
-                  未来や過去へ時間をスライドし、空間のエネルギー推移をシミュレーションします。
-                </p>
-                <div className="flex-1 w-full mt-auto">
-                  <div className="flex justify-between items-end mb-2">
-                    <label className="text-xs text-indigo-400 uppercase tracking-widest font-mono">
-                      Time Offset
-                    </label>
-                    <span className="text-lg font-mono font-bold text-zinc-300">
+          {/* Temporal Navigation (Global) */}
+          <div className="w-full max-w-4xl grid grid-cols-1 gap-4">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group z-10">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+              <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                <span className="text-indigo-400 animate-pulse">▶</span>
+                <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Temporal Navigation <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 時間軸操作</span></h3>
+              </div>
+              <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
+                未来や過去へ時間をスライドし、実空間のエネルギー波長推移をシミュレーションします。
+              </p>
+              <div className="flex-1 w-full mt-auto">
+                <div className="flex justify-between items-end mb-2">
+                  <label className="text-xs text-indigo-400 uppercase tracking-widest font-mono">
+                    Time Offset
+                  </label>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[12px] text-zinc-400 font-mono mb-1">
+                      {baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) : '...'}
+                    </span>
+                    <span className="text-lg font-mono font-bold text-zinc-300 leading-none">
                       {timeOffsetDays === 0 ? "NOW" : timeOffsetDays > 0 ? `+${timeOffsetDays} DAYS` : `${timeOffsetDays} DAYS`}
                     </span>
                   </div>
-                  <input 
-                    type="range" 
-                    min="-365" max="365" 
-                    value={timeOffsetDays} 
-                    onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
-                    className="w-full accent-indigo-500 relative z-20"
-                  />
                 </div>
-              </div>
-
-              {/* Spatial Targeting */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
-                  <span className="text-emerald-500 animate-pulse">▶</span>
-                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Spatial Targeting <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間・目的の捕捉</span></h3>
-                </div>
-                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
-                  目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
-                </p>
-                <div className="flex flex-col gap-3 mt-auto">
-                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm">
-                    <div className="flex flex-col">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Action Intent</label>
-                      <span className="text-[8px] text-zinc-600">行動の性質により吉凶の計算結果が変わります</span>
-                    </div>
-                    <select 
-                      value={actionIntent} 
-                      onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
-                      className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right"
-                    >
-                      <option value="DEFAULT">DEFAULT (通常行動)</option>
-                      <option value="REST">REST (回復・静養)</option>
-                      <option value="BUSINESS">BUSINESS (事業・拡張)</option>
-                    </select>
-                  </div>
-                  
-                  <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                        Destination <span className="text-[9px] text-zinc-600">Lat/Lon</span>
-                      </label>
-                      <button 
-                        onClick={() => setShowMapPicker(!showMapPicker)}
-                        className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
-                      >
-                        [ MAP SEARCH ]
-                      </button>
-                    </div>
-                    
-                    {showMapPicker && (
-                      <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20">
-                        <LocationPickerInner 
-                          initialLat={targetLat || lat} 
-                          initialLon={targetLon || lon} 
-                          onSelect={(newLat: number, newLon: number) => {
-                            setTargetLat(Number(newLat.toFixed(5)));
-                            setTargetLon(Number(newLon.toFixed(5)));
-                          }} 
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="w-full relative z-10 flex gap-1 mb-1">
-                      <input 
-                        type="text" 
-                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)" 
-                        className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
-                        onChange={(e) => {
-                          const url = e.target.value;
-                          const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-                          if (match) {
-                            setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
-                            setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
-                            e.target.value = ''; // clear upon success
-                          }
-                        }}
-                      />
-                    </div>
-
-                    <div className="flex gap-2 relative z-10">
-                      <input 
-                        type="number" 
-                        placeholder="Latitude" 
-                        value={targetLat ?? ""} 
-                        onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
-                      />
-                      <input 
-                        type="number" 
-                        placeholder="Longitude" 
-                        value={targetLon ?? ""} 
-                        onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
-                      />
-                    </div>
-                    {targetDirection && targetVectorStatus && (
-                      <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
-                        targetVectorStatus.startsWith('NOISE_VOID') || targetVectorStatus.startsWith('NOISE_NODE')
-                          ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                          : targetVectorStatus.startsWith('NOISE') 
-                          ? 'bg-red-500/10 border-red-500/30 text-red-400' 
-                          : targetVectorStatus === 'OPTIMAL'
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                      }`}>
-                        <div className="flex items-center gap-2">
-                           <span className="font-bold border border-current px-1">{targetDirection}</span>
-                           <span>{targetVectorStatus}</span>
-                        </div>
-                        <span className="text-[8px] opacity-70">TARGET EVAL</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <input 
+                  type="range" 
+                  min="-365" max="365" 
+                  value={timeOffsetDays} 
+                  onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
+                  className="w-full accent-indigo-500 relative z-20"
+                />
               </div>
             </div>
 
+            <ExpertCouncilPanel
+              actionIntent={actionIntent}
+              targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
+              honmeiStar={honmeiStar?.physical || null}
+              environmentalFrequencies={solarData.environmentalFrequencies}
+              finalVectors={solarData.vectors}
+              isPersonalVoid={isPersonalVoid}
+              kpIndex={spaceWeather?.kpIndex || null}
+            />
+          </div>
+        </div>
+
+        {/* --- TAB CONTENT: TEMPORAL --- */}
+        {activeTab === "temporal" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
             {/* Temporal HUD (Main Clock Focus) */}
             <ClockDisplay
               kimon={kimon}
@@ -658,6 +591,22 @@ export const SolarTimeClock = () => {
               setBaseSyncDays={setBaseSyncDays}
               ansLoad={ansLoad}
               shieldCapacity={shieldCapacity}
+            />
+
+            {/* Module 3: Temporal Filter Matrix */}
+            <SolarTimeTable
+              date={baseTime}
+              longitude={lon || 135.7681}
+              latitude={lat}
+              eot={solarData.equationOfTime}
+              kpIndex={spaceWeather?.kpIndex || null}
+              xrayFlux={spaceWeather?.xrayFlux || null}
+              ansLoad={ansLoad}
+              shieldCapacity={shieldCapacity}
+              vectors={activeVectors || null}
+              honmeiStar={honmeiStar}
+              envData={env}
+              userEmail={userEmail}
             />
           </div>
         )}
@@ -1128,92 +1077,186 @@ export const SolarTimeClock = () => {
               </div>
             </div>
 
-            {/* Module 3: Temporal Filter Matrix */}
-            <SolarTimeTable
-              date={baseTime}
-              longitude={lon || 135.7681}
-              latitude={lat}
-              eot={solarData.equationOfTime}
-              kpIndex={spaceWeather?.kpIndex || null}
-              xrayFlux={spaceWeather?.xrayFlux || null}
-              ansLoad={ansLoad}
-              shieldCapacity={shieldCapacity}
-              vectors={activeVectors || null}
-              honmeiStar={honmeiStar}
-              envData={env}
-              userEmail={userEmail}
-            />
           </div>
         )}
 
-        {/* --- TAB CONTENT: MAP --- */}
-        {activeTab === "map" && (
+        {/* --- TAB CONTENT: SPATIAL --- */}
+        {activeTab === "spatial" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
-            {/* Module 4: Tactical Magnetic Map */}
-            <div className="w-full max-w-4xl mt-4">
-              <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2 mb-2">
-                <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-zinc-400">
-                  Tactical Magnetic Navigator
-                </h2>
-                <div className="h-px bg-zinc-800 grow"></div>
-                <div className="text-[8px] font-mono text-zinc-600 tracking-widest">
-                  LAT: {lat?.toFixed(4)} / LON: {lon?.toFixed(4)}
+            <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Spatial Targeting */}
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                  <span className="text-emerald-500 animate-pulse">▶</span>
+                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Spatial Targeting <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間・目的の捕捉</span></h3>
+                </div>
+                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
+                  目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
+                </p>
+                <div className="flex flex-col gap-3 mt-auto">
+                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm">
+                    <div className="flex flex-col">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Action Intent</label>
+                      <span className="text-[8px] text-zinc-600">行動の性質により吉凶の計算結果が変わります</span>
+                    </div>
+                    <select 
+                      value={actionIntent} 
+                      onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
+                      className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right"
+                    >
+                      <option value="DEFAULT">DEFAULT (通常行動)</option>
+                      <option value="REST">REST (回復・静養)</option>
+                      <option value="BUSINESS">BUSINESS (事業・拡張)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                        Destination <span className="text-[9px] text-zinc-600">Lat/Lon</span>
+                      </label>
+                      <button 
+                        onClick={() => setShowMapPicker(!showMapPicker)}
+                        className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
+                      >
+                        [ MAP SEARCH ]
+                      </button>
+                    </div>
+                    
+                    {showMapPicker && (
+                      <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20">
+                        <LocationPickerInner 
+                          initialLat={targetLat || lat} 
+                          initialLon={targetLon || lon} 
+                          onSelect={(newLat: number, newLon: number) => {
+                            setTargetLat(Number(newLat.toFixed(5)));
+                            setTargetLon(Number(newLon.toFixed(5)));
+                          }} 
+                        />
+                      </div>
+                    )}
+                    
+                    <div className="w-full relative z-10 flex gap-1 mb-1">
+                      <input 
+                        type="text" 
+                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)" 
+                        className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
+                        onChange={(e) => {
+                          const url = e.target.value;
+                          const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                          if (match) {
+                            setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
+                            setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
+                            e.target.value = ''; // clear upon success
+                          }
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex gap-2 relative z-10">
+                      <input 
+                        type="number" 
+                        placeholder="Latitude" 
+                        value={targetLat ?? ""} 
+                        onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                      />
+                      <input 
+                        type="number" 
+                        placeholder="Longitude" 
+                        value={targetLon ?? ""} 
+                        onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                      />
+                    </div>
+                    {targetDirection && targetVectorStatus && (
+                      <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
+                        targetVectorStatus.startsWith('NOISE_VOID') || targetVectorStatus.startsWith('NOISE_NODE')
+                          ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                          : targetVectorStatus.startsWith('NOISE') 
+                          ? 'bg-red-500/10 border-red-500/30 text-red-400' 
+                          : targetVectorStatus === 'OPTIMAL'
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                          : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                           <span className="font-bold border border-current px-1">{targetDirection}</span>
+                           <span>{targetVectorStatus}</span>
+                        </div>
+                        <span className="text-[8px] opacity-70">TARGET EVAL</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* COMMANDER'S BRIEFING HUD */}
-              <div className="mb-4">
-                 {(() => {
-                   const fv = activeVectors;
-                   const allDirs = ['N','NE','E','SE','S','SW','W','NW'];
-                   const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
-                      const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
-                      return map[k] || k;
-                   });
-                   const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
-                      const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
-                      return map[k] || k;
-                   });
-                   
-                   return (
-                     <div className="flex flex-col gap-2">
-                       {optimals.length > 0 && (
-                         <div className="bg-emerald-950/40 border-l-4 border-emerald-500 p-3 sm:p-4 rounded-r-md">
-                            <div className="text-emerald-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                              [ GO ] 推奨方位 (最適化エリア)
-                            </div>
-                            <div className="text-emerald-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
-                              {optimals.join(' / ')}
-                            </div>
-                         </div>
-                       )}
-                       {safes.length > 0 && (
-                         <div className="bg-blue-950/40 border-l-4 border-blue-500 p-3 sm:p-4 rounded-r-md">
-                            <div className="text-blue-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                              [ SAFE ] 進入可能方位 (通常エリア)
-                            </div>
-                            <div className="text-blue-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
-                              {safes.join(' / ')}
-                            </div>
-                         </div>
-                       )}
-                       {optimals.length === 0 && safes.length === 0 && (
-                         <div className="bg-red-950/40 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-md">
-                            <div className="text-red-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                              [ ALERT ]
-                            </div>
-                            <div className="text-red-500 font-bold text-xl sm:text-3xl tracking-widest mt-1">
-                              全方位 進入非推奨 (待機)
-                            </div>
-                         </div>
-                       )}
-                     </div>
-                   );
-                 })()}
+              {/* COMMANDER'S BRIEFING HUD (Moved up to side-by-side with targeting) */}
+              <div className="flex flex-col gap-4">
+                <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+                  <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                    <span className="text-zinc-500 animate-pulse">◆</span>
+                    <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Zone Classification <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間分類</span></h3>
+                  </div>
+                  <div className="flex-1 mt-4">
+                   {(() => {
+                     const fv = activeVectors;
+                     const allDirs = ['N','NE','E','SE','S','SW','W','NW'];
+                     const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
+                        const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                        return map[k] || k;
+                     });
+                     const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
+                        const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                        return map[k] || k;
+                     });
+                     
+                     return (
+                       <div className="flex flex-col gap-2 h-full justify-center">
+                         {optimals.length > 0 && (
+                           <div className="bg-emerald-950/40 border-l-4 border-emerald-500 p-3 sm:p-4 rounded-r-md">
+                              <div className="text-emerald-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                                [ GO ] 推奨方位 (最適化エリア)
+                              </div>
+                              <div className="text-emerald-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
+                                {optimals.join(' / ')}
+                              </div>
+                           </div>
+                         )}
+                         {safes.length > 0 && (
+                           <div className="bg-blue-950/40 border-l-4 border-blue-500 p-3 sm:p-4 rounded-r-md">
+                              <div className="text-blue-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                [ SAFE ] 進入可能方位 (通常エリア)
+                              </div>
+                              <div className="text-blue-400 font-bold text-2xl sm:text-4xl tracking-widest mt-1">
+                                {safes.join(' / ')}
+                              </div>
+                           </div>
+                         )}
+                         {optimals.length === 0 && safes.length === 0 && (
+                           <div className="bg-red-950/40 border-l-4 border-red-500 p-3 sm:p-4 rounded-r-md">
+                              <div className="text-red-500 font-bold text-[10px] md:text-sm uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                [ ALERT ]
+                              </div>
+                              <div className="text-red-500 font-bold text-xl sm:text-3xl tracking-widest mt-1">
+                                全方位 進入非推奨 (待機)
+                              </div>
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })()}
+                  </div>
+                </div>
               </div>
+            </div>
+
+            {/* Module 4: Tactical Magnetic Map */}
+            <div className="w-full max-w-4xl mt-0">
 
               <TacticalMagneticMap
                 lat={lat || 35.0116}

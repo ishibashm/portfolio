@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma"
 import { rental_propertiesModel as rental_properties, StockTargetModel as StockTarget, TimingAstrologyModel as TimingAstrology } from "@/generated/prisma/models"
-import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles } from "lucide-react"
+import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen } from "lucide-react"
 import Link from "next/link"
 
 export const revalidate = 60 // Revalidate cache every minute
@@ -46,6 +46,10 @@ export default async function DashboardPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            <Link href="/knowledge" className="px-5 py-2.5 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-all font-medium text-sm text-purple-300 hover:text-purple-200 flex items-center gap-2 shadow-[0_0_15px_rgba(147,51,234,0.15)] hover:shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+              <BookOpen className="w-4 h-4" />
+              Second Brain
+            </Link>
             <Link href="/" className="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-medium text-sm text-gray-300 hover:text-white flex items-center gap-2">
               Enter Cockpit
             </Link>
