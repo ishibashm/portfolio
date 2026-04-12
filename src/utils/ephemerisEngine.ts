@@ -408,13 +408,13 @@ export function calculateVectorCollision(
  * （2024年1月1日を甲子＝インデックス0とする近似ロジック）
  */
 export function getPersonalVoidZodiac(birthDate: Date): string[] {
-  // 基準日: 2024年1月1日 (甲子)
-  const baseDate = new Date(2024, 0, 1);
-  const diffTime = birthDate.getTime() - baseDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  // ユリウス日を用いて日本時間の干支を正確に算出する
+  // 2024年1月1日(甲子=0) の JD は約 2460310.125 (JST 0:00)
+  // Math.floor(JD + 0.5) = 2460310。 2460310 % 60 = 10。
+  // したがって、(Math.floor(JD + 0.5) + 50) % 60 が干支インデックスとなる。
   
-  // 60干支のインデックス (0〜59)
-  const ganZhiIndex = ((diffDays % 60) + 60) % 60;
+  const jd = AstroEngine.getJulianDay(birthDate);
+  const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
   
   const gan = ganZhiIndex % 10;
   const zhi = ganZhiIndex % 12;
