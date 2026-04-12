@@ -598,6 +598,14 @@ export const SolarTimeClock = () => {
               finalVectors={layers?.finalVectors || {}}
               isPersonalVoid={isPersonalVoid}
               kpIndex={spaceWeather?.kpIndex || null}
+              xrayFlux={spaceWeather?.xrayFlux || null}
+              magneticF={geoData?.intensity || null}
+              magneticD={geoData?.declination || null}
+              magneticI={geoData?.inclination || null}
+              hrv={hrv}
+              gsr={gsr}
+              ansLoad={ansLoad}
+              shieldCapacity={shieldCapacity}
             />
           </div>
         </div>

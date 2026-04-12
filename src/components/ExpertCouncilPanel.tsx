@@ -11,6 +11,14 @@ interface ExpertCouncilPanelProps {
   finalVectors: Record<string, string>;
   isPersonalVoid: boolean;
   kpIndex: number | null;
+  xrayFlux: string | null;
+  magneticF: number | null;
+  magneticD: number | null;
+  magneticI: number | null;
+  hrv: number;
+  gsr: number;
+  ansLoad: number;
+  shieldCapacity: number;
 }
 
 export default function ExpertCouncilPanel({
@@ -20,7 +28,15 @@ export default function ExpertCouncilPanel({
   environmentalFrequencies,
   finalVectors,
   isPersonalVoid,
-  kpIndex
+  kpIndex,
+  xrayFlux,
+  magneticF,
+  magneticD,
+  magneticI,
+  hrv,
+  gsr,
+  ansLoad,
+  shieldCapacity
 }: ExpertCouncilPanelProps) {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState('');
@@ -35,15 +51,23 @@ export default function ExpertCouncilPanel({
     const prompt = `あなたは「気学・天体物理学・生体アルゴリズム・戦術司令官・データサイエンティスト」の5人の専門家からなる意思決定会議AIです。
 以下の現在の状況を示すデータセットに基づき、対象のアクション「${actionIntent}」を実行すべきか、あるいは避けるべきかについての5人の専門家の見解を簡潔にまとめてください。日本語で応答してください。
 
-【環境データ】
+【環境データ (Environmental Telemetry)】
 - 予定日: ${targetDate.toISOString().split('T')[0]}
 - 目的: ${actionIntent}
 - ユーザーの本命星: ${honmeiStar}
 - 天中殺（パーソナルヴォイド）: ${isPersonalVoid ? '警告（Yes）' : '安全（No）'}
 - 宇宙天気 (Kp-Index): ${kpIndex !== null ? kpIndex : '不明'}
+- 宇宙天気 (X-Ray Flux): ${xrayFlux || '不明'}
+- 局所地磁気 (WMM2020): F(強度)=${magneticF ? magneticF.toFixed(0) : '不明'}nT, D(偏角)=${magneticD ? magneticD.toFixed(2) : '不明'}°, I(伏角)=${magneticI ? magneticI.toFixed(2) : '不明'}°
 - 方位ごとのベクトル状態 (NOISE=危険, SAFE/OPTIMAL=安全):
 ${JSON.stringify(finalVectors, null, 2)}
 - 空間周波数（年/月/日）: ${environmentalFrequencies?.yearStar}/${environmentalFrequencies?.monthStar}/${environmentalFrequencies?.dayStar}
+
+【生体同期データ (Bio-Sync Diagnostics)】
+- HRV (心拍変動): ${hrv} ms
+- GSR (皮膚電気反応): ${gsr} μS
+- ANS Overload Index (自律神経負荷): ${ansLoad}%
+- Base Shield Cap (防御容量): ${shieldCapacity}%
 
 【出力形式の指定】
 必ず以下の5人の専門家のパラグラフを含めて、具体的な戦略分析を解説してください：
@@ -118,7 +142,16 @@ ${JSON.stringify(finalVectors, null, 2)}
 - HONMEI STAR: ${honmeiStar || 'UNDEFINED'}
 - PERSONAL VOID: ${isPersonalVoid ? 'YES (WARNING)' : 'NO (SAFE)'}
 - KP-INDEX: ${kpIndex !== null ? kpIndex : 'UNDEFINED'}
+- X-RAY FLUX: ${xrayFlux || 'UNDEFINED'}
+- MAGNETIC (F/D/I): ${magneticF ? magneticF.toFixed(0) : 'UD'}nT / ${magneticD ? magneticD.toFixed(2) : 'UD'}° / ${magneticI ? magneticI.toFixed(2) : 'UD'}°
 - FREQUENCIES: Y:${environmentalFrequencies?.yearStar || 'UD'} / M:${environmentalFrequencies?.monthStar || 'UD'} / D:${environmentalFrequencies?.dayStar || 'UD'}
+
+[BIO-SYNC DIAGNOSTICS]
+- HRV: ${hrv} ms
+- GSR: ${gsr} μS
+- ANS LOAD: ${ansLoad}%
+- SHIELD CAP: ${shieldCapacity}%
+
 - VECTOR STATE:`}
           <br/>{JSON.stringify(finalVectors, null, 2)}
         </div>
