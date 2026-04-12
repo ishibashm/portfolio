@@ -1,38 +1,56 @@
 import { NextResponse } from 'next/server';
+import { streamText } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createClient } from '@/utils/supabase/server';
+import { decrypt } from '@/utils/encryption';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { prompt, model = 'gemma4' } = body;
+    const supabase = await createClient();
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
 
-    const response = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        prompt,
-        stream: true,
-      }),
-    });
-
-    if (!response.ok) {
-      return NextResponse.json({ error: `Ollama API request failed: ${response.statusText}` }, { status: response.status });
+    if (!session || authError) {
+      return NextResponse.json({ error: 'Unauthorized. Please login first.' }, { status: 401 });
     }
 
-    // Proxy the stream back to the client directly
-    return new Response(response.body, {
-      headers: {
-        'Content-Type': 'text/plain',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
+    const body = await req.json();
+    const { prompt } = body;
+
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+    }
+
+    // Get the user's config to fetch the encrypted API key
+    const { data: userConfig, error: configError } = await supabase
+      .from('user_configs')
+      .select('encrypted_gemini_key')
+      .eq('user_email', session.user.email)
+      .single();
+
+    let apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+
+    if (userConfig?.encrypted_gemini_key) {
+      const decryptedKey = decrypt(userConfig.encrypted_gemini_key);
+      if (decryptedKey) apiKey = decryptedKey;
+    }
+
+    if (!apiKey) {
+      return NextResponse.json({ error: 'No Gemini API key found. Please configure it in your settings.' }, { status: 403 });
+    }
+
+    const google = createGoogleGenerativeAI({ apiKey });
+
+    const result = await streamText({
+      model: google('gemini-3.1-pro') as any,
+      prompt,
     });
+
+    return result.toTextStreamResponse();
   } catch (error) {
-    console.error('Expert API Proxy Error:', error);
-    return NextResponse.json({ error: 'Failed to contact local LLM. Make sure Ollama is running on port 11434.' }, { status: 500 });
+    console.error('Expert API Error:', error);
+    return NextResponse.json({ error: 'Failed to process request.' }, { status: 500 });
   }
 }
+

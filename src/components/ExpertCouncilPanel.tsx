@@ -58,11 +58,16 @@ ${JSON.stringify(finalVectors, null, 2)}
       const res = await fetch('/api/expert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, model: 'gemma4' })
+        body: JSON.stringify({ prompt })
       });
 
       if (!res.ok) {
-        throw new Error('LLM API Error');
+        let errStr = "LLM API Error";
+        try {
+          const errObj = await res.json();
+          if (errObj.error) errStr = errObj.error;
+        } catch(e) {}
+        throw new Error(errStr);
       }
 
       const reader = res.body?.getReader();
@@ -74,22 +79,12 @@ ${JSON.stringify(finalVectors, null, 2)}
           if (done) break;
           
           const chunkStr = decoder.decode(value, { stream: true });
-          const lines = chunkStr.split('\n').filter(l => l.trim() !== '');
-          for (const line of lines) {
-            try {
-              const data = JSON.parse(line);
-              if (data.response) {
-                setResponse(prev => prev + data.response);
-              }
-            } catch (e) {
-              // Ignore partial or malformed lines
-            }
-          }
+          setResponse(prev => prev + chunkStr);
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setResponse('**[System Error]** ローカルLLM（Ollama）への接続に失敗しました。Ollamaがポート11434で起動し、gemma4モデルが利用可能か確認してください。\n\n詳細なログ: ' + err);
+      setResponse(`**[System Error]** \n\n${err.message}\n\nSettings（Hardware Init）から Gemini API キーが正しく設定されているか、またはログインしているか確認してください。`);
     } finally {
       setLoading(false);
     }
@@ -110,7 +105,7 @@ ${JSON.stringify(finalVectors, null, 2)}
           {loading ? 'Analyzing...' : 'Consult / 諮問する'}
         </button>
       </div>
-      <p className="text-[10px] text-zinc-500 mb-2 h-4">ローカルLLMを呼び出し、現在のベクトル情報に関する5人の専門家の見解を生成します。</p>
+      <p className="text-[10px] text-zinc-500 mb-2 h-4">Gemini APIを利用し、現在のベクトル情報に関する5人の専門家の見解を生成します。</p>
       
       {expanded && (
         <div className="mt-3 pt-4 border-t border-zinc-800">
@@ -128,7 +123,7 @@ ${JSON.stringify(finalVectors, null, 2)}
                 {response}
               </ReactMarkdown>
             ) : (
-              <p className="text-zinc-500 italic text-center py-8 animate-pulse font-mono tracking-widest">Connecting to Local AI Interface...</p>
+              <p className="text-zinc-500 italic text-center py-8 animate-pulse font-mono tracking-widest">Connecting to Expert Council Interface...</p>
             )}
           </div>
         </div>

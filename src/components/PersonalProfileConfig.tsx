@@ -20,6 +20,8 @@ interface PersonalProfileProps {
   isLoggedIn?: boolean;
   voidZodiacOverride?: string;
   setVoidZodiacOverride?: (v: string) => void;
+  geminiKey?: string;
+  setGeminiKey?: (v: string) => void;
 }
 
 export function PersonalProfileConfig({
@@ -29,7 +31,8 @@ export function PersonalProfileConfig({
   baseLat, setBaseLat,
   baseLon, setBaseLon,
   onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn,
-  voidZodiacOverride, setVoidZodiacOverride
+  voidZodiacOverride, setVoidZodiacOverride,
+  geminiKey, setGeminiKey
 }: PersonalProfileProps) {
   
   return (
@@ -120,6 +123,23 @@ export function PersonalProfileConfig({
                  />
               </div>
               <div className="col-span-2 text-[7px] text-zinc-600 mt-0.5 text-justify">生まれた瞬間の磁場（磁束密度と伏角）がハードの防御力係数を決定。</div>
+           </div>
+
+           <div className="flex flex-col gap-1 mt-2">
+              <label className="text-[8px] text-zinc-500 uppercase flex items-center justify-between">
+                <span>Gemini API Key (Expert Council)</span>
+                <span className="text-[7px] text-zinc-600">※ 暗号化されてDBに保存されます</span>
+              </label>
+              <input 
+                type="password" 
+                value={geminiKey || ""}
+                onChange={(e) => setGeminiKey?.(e.target.value)}
+                placeholder="AI_..."
+                className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
+              />
+              <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">
+                Knowledge Baseとは異なり、こちらは高度推論用のため gemini-3.1-pro が指定されています。
+              </span>
            </div>
         </div>
 

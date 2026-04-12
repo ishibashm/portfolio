@@ -72,6 +72,7 @@ export const SolarTimeClock = () => {
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
   const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
+  const [geminiKey, setGeminiKey] = useState<string>("");
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -94,6 +95,7 @@ export const SolarTimeClock = () => {
         if (data.base_lat) setLat(data.base_lat);
         if (data.base_lon) setLon(data.base_lon);
         if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
+        if (data.gemini_key_exists) setGeminiKey("********");
         if (!silent) alert("ブラウザ環境から設定を復元しました。");
         return true;
       } catch (e) {
@@ -119,6 +121,19 @@ export const SolarTimeClock = () => {
         if (data.base_lat) setLat(data.base_lat);
         if (data.base_lon) setLon(data.base_lon);
         if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
+        if (data.encrypted_gemini_key) setGeminiKey("********");
+        
+        // ローカルにキャッシュ
+        localStorage.setItem('tactical_config_v1', JSON.stringify({
+          birth_date: data.birth_date || birthDate,
+          birth_lat: data.birth_lat || birthLat,
+          birth_lon: data.birth_lon || birthLon,
+          base_lat: data.base_lat || lat,
+          base_lon: data.base_lon || lon,
+          void_zodiac_override: data.void_zodiac_override || voidZodiacOverride,
+          gemini_key_exists: !!data.encrypted_gemini_key
+        }));
+        
         if (!silent) alert("クラウドから設定を同期しました。");
         return true;
       }
@@ -174,7 +189,8 @@ export const SolarTimeClock = () => {
         birth_lon: birthLon,
         base_lat: lat,
         base_lon: lon,
-        void_zodiac_override: voidZodiacOverride
+        void_zodiac_override: voidZodiacOverride,
+        gemini_key_exists: geminiKey && geminiKey !== ""
       };
 
       // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
@@ -183,15 +199,38 @@ export const SolarTimeClock = () => {
       // ログイン済みユーザーならクラウドにもバックアップ同期する
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await supabase
-          .from('user_configs')
-          .upsert({
-            user_email: session.user.email,
-            ...configToSave
-          }, { onConflict: 'user_email' });
+        const payload: any = {
+          birth_date: birthDate,
+          birth_lat: birthLat,
+          birth_lon: birthLon,
+          base_lat: lat,
+          base_lon: lon,
+          void_zodiac_override: voidZodiacOverride
+        };
+        
+        // ******** の場合は何もしない（変更なし）、それ以外なら保存用キーとして送る
+        if (geminiKey && geminiKey !== "********") {
+          payload.geminiKey = geminiKey;
+        } else if (geminiKey === "") {
+          payload.geminiKey = "";
+        }
+
+        const res = await fetch('/api/user-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.error || 'Failed to save via API');
+        }
       }
 
       alert("設定を保存しました（ブラウザ内にセキュアに記録されました）。");
+      if (geminiKey && geminiKey !== "") {
+        setGeminiKey("********");
+      }
     } catch (err: any) {
       console.error("Save Error:", err);
       alert(`保存に失敗しました: ${err.message}`);
@@ -634,6 +673,8 @@ export const SolarTimeClock = () => {
               isLoggedIn={isLoggedIn}
               voidZodiacOverride={voidZodiacOverride}
               setVoidZodiacOverride={setVoidZodiacOverride}
+              geminiKey={geminiKey}
+              setGeminiKey={setGeminiKey}
             />
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
