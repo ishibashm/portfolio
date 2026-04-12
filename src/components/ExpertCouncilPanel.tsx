@@ -8,6 +8,7 @@ interface ExpertCouncilPanelProps {
   targetDate: Date | null;
   honmeiStar: number | null;
   environmentalFrequencies: any;
+  birthFrequencies: any;
   finalVectors: Record<string, string>;
   isPersonalVoid: boolean;
   kpIndex: number | null;
@@ -26,6 +27,7 @@ export default function ExpertCouncilPanel({
   targetDate,
   honmeiStar,
   environmentalFrequencies,
+  birthFrequencies,
   finalVectors,
   isPersonalVoid,
   kpIndex,
@@ -61,6 +63,8 @@ export default function ExpertCouncilPanel({
 - 局所地磁気 (WMM2020): F(強度)=${magneticF ? magneticF.toFixed(0) : '不明'}nT, D(偏角)=${magneticD ? magneticD.toFixed(2) : '不明'}°, I(伏角)=${magneticI ? magneticI.toFixed(2) : '不明'}°
 - 方位ごとのベクトル状態 (NOISE=危険, SAFE/OPTIMAL=安全):
 ${JSON.stringify(finalVectors, null, 2)}
+- 現在の天体黄経 (Solar/Lunar/Jupiter/Node): ${environmentalFrequencies?.raw?.sunLon?.toFixed(2)}° / ${environmentalFrequencies?.raw?.moonLon?.toFixed(2)}° / ${environmentalFrequencies?.raw?.jupiterLon?.toFixed(2)}° / ${environmentalFrequencies?.raw?.lunarNode?.toFixed(2)}°
+- 出生時の天体黄経 (Birth Solar/Lunar/Jupiter): ${birthFrequencies?.raw?.sunLon?.toFixed(2)}° / ${birthFrequencies?.raw?.moonLon?.toFixed(2)}° / ${birthFrequencies?.raw?.jupiterLon?.toFixed(2)}°
 - 空間周波数（年/月/日）: ${environmentalFrequencies?.yearStar}/${environmentalFrequencies?.monthStar}/${environmentalFrequencies?.dayStar}
 
 【生体同期データ (Bio-Sync Diagnostics)】
@@ -145,6 +149,8 @@ ${JSON.stringify(finalVectors, null, 2)}
 - X-RAY FLUX: ${xrayFlux || 'UNDEFINED'}
 - MAGNETIC (F/D/I): ${magneticF ? magneticF.toFixed(0) : 'UD'}nT / ${magneticD ? magneticD.toFixed(2) : 'UD'}° / ${magneticI ? magneticI.toFixed(2) : 'UD'}°
 - FREQUENCIES: Y:${environmentalFrequencies?.yearStar || 'UD'} / M:${environmentalFrequencies?.monthStar || 'UD'} / D:${environmentalFrequencies?.dayStar || 'UD'}
+- EPHEMERIS (Lon): Sun:${environmentalFrequencies?.raw?.sunLon?.toFixed(2)}° / Jup:${environmentalFrequencies?.raw?.jupiterLon?.toFixed(2)}° / Node:${environmentalFrequencies?.raw?.lunarNode?.toFixed(2)}°
+- BIRTH EPHEMERIS: Jup:${birthFrequencies?.raw?.jupiterLon?.toFixed(2)}°
 
 [BIO-SYNC DIAGNOSTICS]
 - HRV: ${hrv} ms

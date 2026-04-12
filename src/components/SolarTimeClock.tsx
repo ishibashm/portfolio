@@ -692,6 +692,7 @@ export const SolarTimeClock = () => {
               targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
               honmeiStar={honmeiStar?.physical || null}
               environmentalFrequencies={env}
+              birthFrequencies={birthEnv}
               finalVectors={layers?.finalVectors || {}}
               isPersonalVoid={isPersonalVoid}
               kpIndex={spaceWeather?.kpIndex || null}
