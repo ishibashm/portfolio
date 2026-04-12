@@ -7,7 +7,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, ActionIntent, Direction } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction } from "../utils/ephemerisEngine";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { createClient } from '../utils/supabase/client';
@@ -71,8 +71,10 @@ export const SolarTimeClock = () => {
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
+  const [targetElevation, setTargetElevation] = useState<number | null>(null);
   const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
   const [geminiKey, setGeminiKey] = useState<string>("");
+  const [isAutoSearching, setIsAutoSearching] = useState(false);
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -239,6 +241,85 @@ export const SolarTimeClock = () => {
     }
   };
 
+  const getTargetDirection = () => {
+    if (targetLat !== null && targetLon !== null && lat && lon) {
+      const toRad = (val: number) => val * Math.PI / 180;
+      const toDeg = (val: number) => val * 180 / Math.PI;
+      const dLon = toRad(targetLon - lon);
+      const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
+      const x = Math.cos(toRad(lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(lat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
+      let brng = toDeg(Math.atan2(y, x));
+      brng = (brng + 360) % 360;
+      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      return dirs[Math.floor(((brng + 22.5) % 360) / 45)];
+    }
+    return null;
+  };
+
+  const handleAutoSearch = () => {
+    if (!baseTime || !honmeiStar) return;
+    setIsAutoSearching(true);
+    
+    const direction = getTargetDirection();
+
+    // UIをブロックしないようにsetTimeoutでバックグラウンド実行
+    setTimeout(() => {
+      let offset = timeOffsetDays + 1;
+      let foundOffset: number | null = null;
+      const MAX_SEARCH_DAYS = 365; // 最大1年先まで検索
+      
+      for (let i = 0; i < MAX_SEARCH_DAYS; i++) {
+        const testDate = new Date(baseTime.getTime() + offset * 86400000);
+        
+        // 1. 天中殺チェック (Global Time Check)
+        const cz = getCurrentZodiac(testDate);
+        if (personalVoidZodiac.includes(cz.yearZodiac) || personalVoidZodiac.includes(cz.monthZodiac) || personalVoidZodiac.includes(cz.dayZodiac)) {
+           offset++;
+           continue; // 天中殺（年・月・日）の期間はすべてスキップ
+        }
+        
+        // 2. 空間ベクトルチェック
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const yB = generateBoard(testEnv.yearStar);
+        const mB = generateBoard(testEnv.monthStar);
+        const dB = generateBoard(testEnv.dayStar);
+        
+        const vectorData = calculateVectorCollision(
+          honmeiStar.physical,
+          yB, mB, dB,
+          personalVoidZodiac,
+          testEnv.raw.lunarNode,
+          actionIntent
+        );
+        
+        if (direction) {
+           // 目的地がある場合、その方向が SAFE または OPTIMAL ならOK
+           const s = vectorData.finalVectors[direction];
+           if (s === 'SAFE' || s === 'OPTIMAL') {
+              foundOffset = offset;
+              break;
+           }
+        } else {
+           // 目的地がない場合、OPTIMAL が1つ以上ある日を探す
+           const hasOptimal = Object.values(vectorData.finalVectors).includes('OPTIMAL');
+           if (hasOptimal) {
+              foundOffset = offset;
+              break;
+           }
+        }
+        offset++;
+      }
+      
+      setIsAutoSearching(false);
+      
+      if (foundOffset !== null) {
+        setTimeOffsetDays(foundOffset);
+      } else {
+        alert("365日以内に完全に安全な移動タイミングが見つかりませんでした。目的（Action Intent）を変更して再検索するか、目的地を変えてください。");
+      }
+    }, 50);
+  };
+
   // Calculate Solar Data (Current & Birth)
   const birthSolarData = React.useMemo(() => {
     if (!birthDate || !birthLon) return null;
@@ -394,10 +475,15 @@ export const SolarTimeClock = () => {
     // Add GSR penalty (High sweat/stress = high load)
     currentLoad += gsr * 2;
 
+    // Add Elevation penalty (1000m以上で100mごとに+2%)
+    if (targetElevation !== null && targetElevation > 1000) {
+      currentLoad += Math.floor((targetElevation - 1000) / 100) * 2;
+    }
+
     // Shield mitigation
     const mitigatedLoad = currentLoad - capacity * 0.2;
     setAnsLoad(Math.round(Math.min(100, Math.max(0, mitigatedLoad))));
-  }, [hrv, gsr, baseSyncDays, spaceWeather]);
+  }, [hrv, gsr, baseSyncDays, spaceWeather, targetElevation]);
 
   if (!baseTime || !solarData)
     return (
@@ -417,25 +503,11 @@ export const SolarTimeClock = () => {
   else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
 
   // Destination Check Logic
-  let targetDirection = null;
+  const targetDirection = getTargetDirection();
   let targetVectorStatus = null;
   
-  if (targetLat !== null && targetLon !== null && lat && lon) {
-    const toRad = (val: number) => val * Math.PI / 180;
-    const toDeg = (val: number) => val * 180 / Math.PI;
-    const dLon = toRad(targetLon - lon);
-    const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
-    const x = Math.cos(toRad(lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(lat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
-    let brng = toDeg(Math.atan2(y, x));
-    brng = (brng + 360) % 360;
-    
-    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const i = Math.floor(((brng + 22.5) % 360) / 45);
-    targetDirection = dirs[i];
-    
-    if (layers && layers.finalVectors) {
-      targetVectorStatus = layers.finalVectors[targetDirection as Direction];
-    }
+  if (targetDirection && layers && layers.finalVectors) {
+    targetVectorStatus = layers.finalVectors[targetDirection as Direction];
   }
 
   // --- Helper for visually colorful board matrices ---
@@ -453,7 +525,10 @@ export const SolarTimeClock = () => {
     let bgClass = "bg-black/30 border border-transparent";
     let tooltip = noiseStr || "SAFE";
 
-    if (noiseStr?.startsWith('NOISE_VOID') || noiseStr?.startsWith('NOISE_NODE')) {
+    if (noiseStr?.startsWith('NOISE_VOID')) {
+      colorClass = "text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)]";
+      bgClass = "bg-zinc-950 border border-zinc-800/80 repeating-linear-gradient-45";
+    } else if (noiseStr?.startsWith('NOISE_NODE')) {
       colorClass = "text-yellow-400 font-bold";
       bgClass = "bg-yellow-500/10 border border-yellow-500/20";
     } else if (noiseStr?.startsWith('NOISE')) {
@@ -475,6 +550,13 @@ export const SolarTimeClock = () => {
     );
   };
 
+  const evalDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
+  const currentZodiac = getCurrentZodiac(evalDate);
+  const isYearVoid = personalVoidZodiac.includes(currentZodiac.yearZodiac);
+  const isMonthVoid = personalVoidZodiac.includes(currentZodiac.monthZodiac);
+  const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);
+  const isGlobalVoid = isYearVoid || isMonthVoid;
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
       {/* Background Grid Pattern */}
@@ -487,7 +569,22 @@ export const SolarTimeClock = () => {
         }}
       ></div>
 
-      <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up">
+      {isGlobalVoid && (
+        <div className="w-full max-w-5xl px-3 md:px-4 mt-2 animate-fade-in z-50">
+          <div className="bg-black border-2 border-red-500/50 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+              <h2 className="text-red-500 font-bold tracking-[0.2em] text-sm md:text-base uppercase">Global Time Check Error</h2>
+            </div>
+            <p className="text-zinc-300 text-xs md:text-sm font-mono leading-relaxed">
+              現在は<strong>「{isYearVoid ? '年の天中殺' : '月の天中殺'}」</strong>期間です。<br className="hidden md:block" />
+              空間の吉凶に関わらず、時間構造にノイズが発生しているため、能動的な大きな移動・決断は推奨されません。
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
         {/* Tab Navigation */}
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40">
           <button
@@ -1012,6 +1109,8 @@ export const SolarTimeClock = () => {
                           const getColor = (s: string) => {
                             if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
                             if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
+                            if (s === 'NOISE_VOID') return 'text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800';
+                            if (s === 'NOISE_NODE') return 'text-yellow-400 font-bold';
                             if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
                             return 'text-blue-400';
                           };
@@ -1019,6 +1118,8 @@ export const SolarTimeClock = () => {
                           const formatLabel = (s: string) => {
                              if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
                              if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
+                             if (s === 'NOISE_VOID') return 'VOID_ZONE';
+                             if (s === 'NOISE_NODE') return 'LUNAR_NODE';
                              return s;
                           };
 
@@ -1030,6 +1131,8 @@ export const SolarTimeClock = () => {
                              else if (status === 'NOISE_ANKEN') { title="🟥 非推奨ベクトル (TYPE I)"; desc="外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
                              else if (status === 'NOISE_HONMEI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
                              else if (status === 'NOISE_TEKI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+                             else if (status === 'NOISE_VOID') { title="⬛ 虚無・ボイド空間 (VOID ZONE)"; desc="あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
+                             else if (status === 'NOISE_NODE') { title="🟨 月交点 (LUNAR NODE)"; desc="日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
                              else if (status === 'OPTIMAL') { title="🟩 最適化ゾーン (OPTIMAL)"; desc="あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
                              
                              const label = formatLabel(status);
@@ -1204,25 +1307,34 @@ export const SolarTimeClock = () => {
                       />
                     </div>
 
-                    <div className="flex gap-2 relative z-10">
+                    <div className="flex gap-2 relative z-10 mt-1">
                       <input 
                         type="number" 
                         placeholder="Latitude" 
                         value={targetLat ?? ""} 
                         onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)} 
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono" 
                       />
                       <input 
                         type="number" 
                         placeholder="Longitude" 
                         value={targetLon ?? ""} 
                         onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)} 
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/2 transition-colors font-mono" 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono" 
+                      />
+                      <input 
+                        type="number" 
+                        placeholder="Elev(m)" 
+                        value={targetElevation ?? ""} 
+                        onChange={e => setTargetElevation(e.target.value ? Number(e.target.value) : null)} 
+                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono" 
                       />
                     </div>
                     {targetDirection && targetVectorStatus && (
                       <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
-                        targetVectorStatus.startsWith('NOISE_VOID') || targetVectorStatus.startsWith('NOISE_NODE')
+                        targetVectorStatus.startsWith('NOISE_VOID')
+                          ? 'bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45'
+                          : targetVectorStatus.startsWith('NOISE_NODE')
                           ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
                           : targetVectorStatus.startsWith('NOISE') 
                           ? 'bg-red-500/10 border-red-500/30 text-red-400' 

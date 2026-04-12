@@ -433,3 +433,31 @@ export function getPersonalVoidZodiac(birthDate: Date): string[] {
   }
 }
 
+/**
+ * 日付から、その時点の「年」と「月」の十二支（文字列）を取得する
+ */
+export function getCurrentZodiac(date: Date): { yearZodiac: string, monthZodiac: string, dayZodiac: string } {
+  const ZODIACS = ["亥", "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌"];
+  
+  // 年の干支: (西暦 - 3) % 12 
+  // 例: 2026年(丙午) -> 2023 % 12 = 7(午)
+  const yearZodiac = ZODIACS[(date.getFullYear() - 3) % 12];
+  
+  // 月の干支: 太陽黄経ベース（立春(315度)から寅月が始まる）
+  // 315〜345:寅(3), 345〜15:卯(4), 15〜45:辰(5)...
+  const sunLon = AstroEngine.getSolarLongitude(date);
+  const monthIndex = Math.floor(((sunLon + 45) % 360) / 30);
+  // monthIndex 0(立春〜):寅(3)
+  const monthZodiac = ZODIACS[(monthIndex + 3) % 12];
+  
+  // 日の干支
+  const jd = AstroEngine.getJulianDay(date);
+  const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
+  const zhi = ganZhiIndex % 12;
+  // zhi: 0=子, 1=丑, 2=寅 ... 11=亥
+  const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  const dayZodiac = ZODIACS_GANZHI[zhi];
+  
+  return { yearZodiac, monthZodiac, dayZodiac };
+}
+
