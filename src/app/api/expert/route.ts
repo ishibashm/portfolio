@@ -9,9 +9,9 @@ export const runtime = 'nodejs';
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!session || authError) {
+    if (!user || authError) {
       return NextResponse.json({ error: 'Unauthorized. Please login first.' }, { status: 401 });
     }
 
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const { data: userConfig, error: configError } = await supabase
       .from('user_configs')
       .select('encrypted_gemini_key')
-      .eq('user_email', session.user.email)
+      .eq('user_email', user.email)
       .single();
 
     let apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     const google = createGoogleGenerativeAI({ apiKey });
 
     const result = await streamText({
-      model: google('gemini-3.1-pro') as any,
+      model: google('gemini-2.5-pro') as any,
       prompt,
     });
 

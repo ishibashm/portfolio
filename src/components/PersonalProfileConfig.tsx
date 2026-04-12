@@ -138,7 +138,7 @@ export function PersonalProfileConfig({
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
               />
               <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">
-                Knowledge Baseとは異なり、こちらは高度推論用のため gemini-3.1-pro が指定されています。
+                Knowledge Baseとは異なり、こちらは高度推論用のため gemini-2.5-pro が指定されています。
               </span>
            </div>
         </div>

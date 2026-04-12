@@ -5,9 +5,9 @@ import { encrypt } from '@/utils/encryption';
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!session || authError) {
+    if (!user || authError) {
       return NextResponse.json({ error: 'Unauthorized. Please login first.' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     } = body;
 
     const upsertData: any = {
-      user_email: session.user.email,
+      user_email: user.email,
     };
 
     if (birth_date !== undefined) upsertData.birth_date = birth_date;
