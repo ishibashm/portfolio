@@ -105,8 +105,25 @@ ${JSON.stringify(finalVectors, null, 2)}
           {loading ? 'Analyzing...' : 'Consult / 諮問する'}
         </button>
       </div>
-      <p className="text-[10px] text-zinc-500 mb-2 h-4">Gemini APIを利用し、現在のベクトル情報に関する5人の専門家の見解を生成します。</p>
+      <p className="text-[10px] text-zinc-500 mb-3">Gemini APIを利用し、現在のベクトル情報に関する5人の専門家の見解を生成します。</p>
       
+      <details className="mb-2 group">
+        <summary className="text-[9px] text-zinc-500 cursor-pointer font-mono uppercase tracking-widest hover:text-zinc-400 transition-colors list-none flex items-center gap-1">
+          <span className="group-open:rotate-90 transition-transform">▶</span> Show Input Telemetry (送出データセット)
+        </summary>
+        <div className="mt-2 p-2 bg-black/50 border border-zinc-800 rounded-sm text-[8px] md:text-[9px] text-zinc-400 font-mono whitespace-pre-wrap break-all h-32 overflow-y-auto custom-scrollbar">
+          {`[ENVIRONMENTAL DATA]
+- TARGET DATE: ${targetDate ? targetDate.toISOString().split('T')[0] : 'UNDEFINED'}
+- ACTION INTENT: ${actionIntent}
+- HONMEI STAR: ${honmeiStar || 'UNDEFINED'}
+- PERSONAL VOID: ${isPersonalVoid ? 'YES (WARNING)' : 'NO (SAFE)'}
+- KP-INDEX: ${kpIndex !== null ? kpIndex : 'UNDEFINED'}
+- FREQUENCIES: Y:${environmentalFrequencies?.yearStar || 'UD'} / M:${environmentalFrequencies?.monthStar || 'UD'} / D:${environmentalFrequencies?.dayStar || 'UD'}
+- VECTOR STATE:`}
+          <br/>{JSON.stringify(finalVectors, null, 2)}
+        </div>
+      </details>
+
       {expanded && (
         <div className="mt-3 pt-4 border-t border-zinc-800">
           <div className="text-sm text-zinc-300 leading-relaxed max-h-[500px] overflow-y-auto pr-2 custom-scrollbar space-y-4">

@@ -594,8 +594,8 @@ export const SolarTimeClock = () => {
               actionIntent={actionIntent}
               targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
               honmeiStar={honmeiStar?.physical || null}
-              environmentalFrequencies={solarData.environmentalFrequencies}
-              finalVectors={solarData.vectors}
+              environmentalFrequencies={env}
+              finalVectors={layers?.finalVectors || {}}
               isPersonalVoid={isPersonalVoid}
               kpIndex={spaceWeather?.kpIndex || null}
             />
@@ -1149,6 +1149,7 @@ export const SolarTimeClock = () => {
                       <option value="DEFAULT">DEFAULT (通常行動)</option>
                       <option value="REST">REST (回復・静養)</option>
                       <option value="BUSINESS">BUSINESS (事業・拡張)</option>
+                      <option value="MIGRATION">MIGRATION (引越し・長期滞在)</option>
                     </select>
                   </div>
                   
