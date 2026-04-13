@@ -660,6 +660,17 @@ export const SolarTimeClock = () => {
       )}
 
       <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
+        
+        {/* Mission Objective Header */}
+        <div className="w-full max-w-4xl text-center mb-2 px-4">
+          <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+            Bio-Location Simulator
+          </h1>
+          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+            引越し・移住・長期滞在など、人生の大きな決断において<strong className="text-zinc-200">「最適な移動地（方位）」</strong>と<strong className="text-zinc-200">「最適なタイミング（時間）」</strong>を導き出すためのデータサイエンス・ダッシュボードです。
+          </p>
+        </div>
+
         {/* Tab Navigation */}
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40">
           <button
@@ -700,20 +711,20 @@ export const SolarTimeClock = () => {
           <div className="w-full flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-1/3 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
               <label className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
-                <span className="text-emerald-500">◆</span> Action Intent <span className="text-[8px] text-zinc-600">/ 目的設定</span>
+                <span className="text-emerald-500">◆</span> Action Intent <span className="text-[8px] text-zinc-600">/ 移住・移動の目的</span>
               </label>
               <select
                 value={actionIntent}
                 onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
                 className="w-full bg-black/50 border border-zinc-700 text-sm text-zinc-300 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               >
-                <option value="DEFAULT">Normal Ops (通常行動)</option>
-                <option value="REST">Rest & Recovery (休養・療養)</option>
-                <option value="BUSINESS">Business / Attack (交渉・勝負事)</option>
-                <option value="MIGRATION">Relocation (引越し・長期滞在)</option>
+                <option value="DEFAULT">Normal Ops (日常の行動・短期旅行)</option>
+                <option value="REST">Rest & Recovery (休養・療養を目的とした移動)</option>
+                <option value="BUSINESS">Business / Attack (交渉・ビジネスを目的とした移動)</option>
+                <option value="MIGRATION">Relocation (引越し・長期移住・拠点の変更)</option>
               </select>
               <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
-                現在の目的に応じて、空間ベクトル（方位）の吉凶判定アルゴリズムが最適化されます。
+                「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
               </p>
             </div>
             

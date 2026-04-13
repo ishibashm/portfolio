@@ -138,7 +138,10 @@ export function BioMagneticDashboard({
            {/* Output Load Calc */}
            <div className="flex flex-col justify-start sm:border-l sm:border-zinc-900/50 sm:pl-4 space-y-3 bg-zinc-900/30 p-2 border border-zinc-800/50">
               <div className="text-center">
-                 <div className="text-[10px] text-zinc-400 mb-1 uppercase tracking-widest border-b border-zinc-700/50 pb-1">ANS Overload Index</div>
+                 <div className="text-[10px] text-zinc-400 mb-1 uppercase tracking-widest border-b border-zinc-700/50 pb-1">
+                     ANS Overload Index
+                     <div className="text-[7px] text-zinc-500 normal-case mt-0.5 tracking-normal">※ 移住・移動先の環境に対するストレスダメージ予測</div>
+                 </div>
                  <div className={`text-4xl font-bold tracking-tighter ${getLoadColor(ansLoad)}`}>
                     {ansLoad}%
                  </div>
@@ -152,7 +155,10 @@ export function BioMagneticDashboard({
               <div className="flex-grow"></div>
 
               <div className="flex justify-between items-end mt-4">
-                 <div className="text-[9px] text-blue-500 uppercase tracking-widest">Base Shield Cap (防御容量)</div>
+                 <div className="flex flex-col">
+                    <div className="text-[9px] text-blue-500 uppercase tracking-widest">Base Shield Capacity</div>
+                    <div className="text-[7px] text-zinc-500 normal-case tracking-normal mt-0.5">※ 現地環境への順化度（防御力）</div>
+                 </div>
                  <div className="text-base font-bold text-zinc-200">{shieldCapacity}%</div>
               </div>
            </div>

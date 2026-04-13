@@ -202,27 +202,27 @@ export function SolarTimeTableComponent({
       <details className="mb-4 bg-zinc-950/50 border border-zinc-800 text-[9px] font-mono text-zinc-500 group">
          <summary className="p-2 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest">
             <div className="flex items-center gap-2">
-               <span className="text-blue-500 blur-[0.5px]">◆</span> [ DECRYPT ALGORITHM ] 算術フィルターの展開
+               <span className="text-blue-500 blur-[0.5px]">◆</span> [ ALGORITHM ] 最適タイミングの分析ロジック
             </div>
             <span className="group-open:rotate-180 transition-transform">▼</span>
          </summary>
-         <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[8px] leading-relaxed">
-           <div className="p-2 border border-blue-900/30">
-              <strong className="text-blue-500 block mb-1">=== ALGORITHM: KIGAKU ===</strong>
-              <p className="text-justify mb-1">
-                本マトリックスは完全な生体電磁気的適合性に基づく時間窓を設定する。均時差を補正し、経度に基づく「真太陽時」を算出。干支・九星・八門の各磁束フィルターを時間軸に適用。
+         <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
+           <div className="p-2 border border-blue-900/30 rounded-sm">
+              <strong className="text-blue-400 block mb-1 font-mono text-[9px]">◆ 1. 九星気学・環境方位</strong>
+              <p className="text-zinc-400 text-justify">
+                均時差を補正した「真太陽時」に基づき、その場所・その時間に流れる磁気的エネルギー（九星・八門）をリアルタイムに算出します。吉方位へ移動することで、引越し後の環境順化がスムーズになります。
               </p>
            </div>
-           <div className="p-2 border border-red-900/30">
-              <strong className="text-red-500 block mb-1">=== FILTER: VOID TIME ===</strong>
-              <p className="text-justify">
-                午刻 (11:00-13:00) および未刻 (13:00-15:00) は「天中殺帯」として処理。この位相では地球の磁気シールドが自律神経周波数と同調外れを起こす。磁力線を垂直に切る物理移動は細胞レベルの深刻な電圧ギャップを引き起こすため凍結する。
+           <div className="p-2 border border-red-900/30 rounded-sm">
+              <strong className="text-red-400 block mb-1 font-mono text-[9px]">◆ 2. VOID TIME（天中殺）</strong>
+              <p className="text-zinc-400 text-justify">
+                天中殺（午刻・未刻など）は地球の磁気シールドと生体リズムが同調外れを起こす時間帯です。この時間帯での物理的移動や重要な決断（契約など）は、細胞レベルでの強い自律神経ストレスを招くため避けるべきです。
               </p>
            </div>
-           <div className="p-2 border border-emerald-900/30">
-              <strong className="text-emerald-500 block mb-1">=== FILTER: OPTIMAL DETOX ===</strong>
-              <p className="text-justify">
-                緑色ハイライト：吉門（生/休/開）とあなたの本命星（固有周波数）が共鳴する時間帯パラメータ。この位相は生体共鳴に特化した最適な「電位デルタ」を発生させ、電気的デトックスを極限まで加速させる。
+           <div className="p-2 border border-emerald-900/30 rounded-sm">
+              <strong className="text-emerald-400 block mb-1 font-mono text-[9px]">◆ 3. OPTIMAL TIME（吉門）</strong>
+              <p className="text-zinc-400 text-justify">
+                緑色ハイライトは、吉門（生/休/開）とあなたの本命星が共鳴する「最適な移動タイミング」です。この時間帯に行動・移動を開始することで、肉体と環境の周波数が同調し、心身のデトックスと運気向上が見込めます。
               </p>
            </div>
          </div>
