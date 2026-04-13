@@ -86,7 +86,50 @@ export const SolarTimeClock = () => {
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
 
   const handleLoadConfig = async (silent = true) => {
-    // 1. ローカル環境（オフライン）からの復元を優先
+    // まずログイン状態を確認
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      setIsLoggedIn(true);
+      setUserEmail(session.user?.email || null);
+      
+      // ログイン済みなら常にクラウドからの同期を優先する（他デバイスとのデータ不整合を防ぐため）
+      try {
+        const { data, error } = await supabase
+          .from('user_configs')
+          .select('*')
+          .eq('user_email', session.user.email)
+          .single();
+
+        if (data && !error) {
+          if (data.birth_date) setBirthDate(data.birth_date);
+          if (data.birth_lat) setBirthLat(data.birth_lat);
+          if (data.birth_lon) setBirthLon(data.birth_lon);
+          if (data.base_lat) setLat(data.base_lat);
+          if (data.base_lon) setLon(data.base_lon);
+          if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
+          if (data.encrypted_gemini_key) setGeminiKey("********");
+          
+          // クラウドの最新データをローカルにもキャッシュ
+          localStorage.setItem('tactical_config_v1', JSON.stringify({
+            birth_date: data.birth_date || birthDate,
+            birth_lat: data.birth_lat || birthLat,
+            birth_lon: data.birth_lon || birthLon,
+            base_lat: data.base_lat || lat,
+            base_lon: data.base_lon || lon,
+            void_zodiac_override: data.void_zodiac_override || voidZodiacOverride,
+            gemini_key_exists: !!data.encrypted_gemini_key
+          }));
+          
+          if (!silent) alert("クラウドから設定を同期しました。");
+          return true;
+        }
+      } catch (err) {
+        console.error("Cloud fetch error", err);
+      }
+    }
+
+    // 未ログイン、またはクラウドにデータがない場合はローカル環境（オフライン）からの復元を試みる
     const localData = localStorage.getItem('tactical_config_v1');
     if (localData) {
       try {
@@ -98,46 +141,13 @@ export const SolarTimeClock = () => {
         if (data.base_lon) setLon(data.base_lon);
         if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
         if (data.gemini_key_exists) setGeminiKey("********");
-        if (!silent) alert("ブラウザ環境から設定を復元しました。");
+        if (!silent) {
+          if (session) alert("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
+          else alert("ブラウザ環境から設定を復元しました（未ログイン）。");
+        }
         return true;
       } catch (e) {
         console.error("LocalStorage parse error", e);
-      }
-    }
-
-    // 2. クラウド（Supabase）にログインしていれば探す
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      setIsLoggedIn(true);
-      setUserEmail(session.user?.email || null);
-      const { data, error } = await supabase
-        .from('user_configs')
-        .select('*')
-        .eq('user_email', session.user.email)
-        .single();
-
-      if (data && !error) {
-        if (data.birth_date) setBirthDate(data.birth_date);
-        if (data.birth_lat) setBirthLat(data.birth_lat);
-        if (data.birth_lon) setBirthLon(data.birth_lon);
-        if (data.base_lat) setLat(data.base_lat);
-        if (data.base_lon) setLon(data.base_lon);
-        if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
-        if (data.encrypted_gemini_key) setGeminiKey("********");
-        
-        // ローカルにキャッシュ
-        localStorage.setItem('tactical_config_v1', JSON.stringify({
-          birth_date: data.birth_date || birthDate,
-          birth_lat: data.birth_lat || birthLat,
-          birth_lon: data.birth_lon || birthLon,
-          base_lat: data.base_lat || lat,
-          base_lon: data.base_lon || lon,
-          void_zodiac_override: data.void_zodiac_override || voidZodiacOverride,
-          gemini_key_exists: !!data.encrypted_gemini_key
-        }));
-        
-        if (!silent) alert("クラウドから設定を同期しました。");
-        return true;
       }
     }
 
