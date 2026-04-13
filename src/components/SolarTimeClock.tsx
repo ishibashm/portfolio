@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
+import { calculateBioMetrics } from "../utils/bioModelingEngine";
 import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
@@ -466,34 +467,32 @@ export const SolarTimeClock = () => {
     }
   }, [lat, lon]);
 
-  // Calculate ANS Load & Shield Capacity
+  // Calculate ANS Load & Shield Capacity using the Bio-Modeling Engine
   useEffect(() => {
-    // Shield Capacity is based on Base Sync Days (max 60 days)
-    const capacity = Math.min(100, Math.max(0, (baseSyncDays / 60) * 100));
-    setShieldCapacity(Math.round(capacity));
-
-    // ANS Load calculation
-    // Base load from HRV (lower is worse, e.g. 20ms = high load 80%)
-    let currentLoad = 100 - Math.min(100, (hrv / 120) * 100);
-
-    // Add Kp Index penalty (Kp > 3 adds to load)
-    if (spaceWeather?.kpIndex) {
-      const kpPenalty = Math.max(0, (spaceWeather.kpIndex - 3) * 10);
-      currentLoad += kpPenalty;
+    if (!baseTime) return;
+    
+    // 太陽時（0-24）を算出
+    let solarHours = 12.0;
+    if (solarData?.solarTime) {
+      solarHours = solarData.solarTime.getHours() + solarData.solarTime.getMinutes() / 60;
     }
 
-    // Add GSR penalty (High sweat/stress = high load)
-    currentLoad += gsr * 2;
+    const metrics = calculateBioMetrics({
+      currentHRV: hrv,
+      currentGSR: gsr,
+      birthLat: birthLat,
+      birthLon: birthLon,
+      currentLat: targetLat || lat,
+      currentLon: targetLon || lon,
+      elevation: targetElevation || 0,
+      kpIndex: spaceWeather?.kpIndex || 2, // デフォルト平穏
+      solarTimeHours: solarHours,
+      baseSyncDays: baseSyncDays
+    });
 
-    // Add Elevation penalty (1000m以上で100mごとに+2%)
-    if (targetElevation !== null && targetElevation > 1000) {
-      currentLoad += Math.floor((targetElevation - 1000) / 100) * 2;
-    }
-
-    // Shield mitigation
-    const mitigatedLoad = currentLoad - capacity * 0.2;
-    setAnsLoad(Math.round(Math.min(100, Math.max(0, mitigatedLoad))));
-  }, [hrv, gsr, baseSyncDays, spaceWeather, targetElevation]);
+    setShieldCapacity(metrics.shieldCapacity);
+    setAnsLoad(metrics.ansLoad);
+  }, [hrv, gsr, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData]);
 
   if (!baseTime || !solarData)
     return (
