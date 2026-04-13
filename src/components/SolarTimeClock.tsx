@@ -37,7 +37,7 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"temporal" | "spatial" | "diagnostics">("temporal");
+  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult">("profile");
 
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -671,45 +671,55 @@ export const SolarTimeClock = () => {
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40">
+        {/* Tab Navigation (Customer Journey) */}
+        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
-            onClick={() => setActiveTab("temporal")}
-            className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "temporal"
-                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
+            onClick={() => setActiveTab("profile")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "profile"
+                ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            Temporal
+            1. Profile
           </button>
           <button
-            onClick={() => setActiveTab("spatial")}
-            className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "spatial"
+            onClick={() => setActiveTab("destination")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "destination"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            Spatial
+            2. Destination
           </button>
           <button
-            onClick={() => setActiveTab("diagnostics")}
-            className={`px-6 py-2 rounded-full text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "diagnostics"
-                ? "bg-purple-500/10 text-purple-500 border border-purple-500/30"
+            onClick={() => setActiveTab("timing")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "timing"
+                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
-            Diagnostics
+            3. Timing
+          </button>
+          <button
+            onClick={() => setActiveTab("consult")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "consult"
+                ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            4. Consult
           </button>
         </div>
 
-        {/* --- GLOBAL CONTROLS --- */}
-        <div className="w-full flex flex-col items-center space-y-4 animate-fade-in mt-4 mb-2 max-w-4xl">
-          {/* Tactical Action Command & Action Intent Selector */}
-          <div className="w-full flex flex-col md:flex-row gap-4">
-            <div className="w-full md:w-1/3 bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
+        {/* --- TAB CONTENT: 1. PROFILE --- */}
+        {activeTab === "profile" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-4xl">
+            {/* Action Intent Selector */}
+            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
               <label className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
                 <span className="text-emerald-500">◆</span> Action Intent <span className="text-[8px] text-zinc-600">/ 移住・移動の目的</span>
               </label>
@@ -727,124 +737,7 @@ export const SolarTimeClock = () => {
                 「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
               </p>
             </div>
-            
-            <div className="flex-1 w-full relative">
-              <TacticalActionCommand
-                kpIndex={spaceWeather?.kpIndex || null}
-                ansLoad={ansLoad}
-                isPersonalVoid={isPersonalVoid}
-                personalVoidZodiac={personalVoidZodiac}
-              />
-            </div>
-          </div>
 
-          {/* Temporal Navigation (Global) */}
-          <div className="w-full max-w-4xl grid grid-cols-1 gap-4">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group z-10">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-              <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
-                <span className="text-indigo-400 animate-pulse">▶</span>
-                <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Temporal Navigation <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 時間軸操作</span></h3>
-              </div>
-              <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
-                未来や過去へ時間をスライドし、実空間のエネルギー波長推移をシミュレーションします。
-              </p>
-              <div className="flex-1 w-full mt-auto">
-                <div className="flex justify-between items-end mb-2">
-                  <label className="text-xs text-indigo-400 uppercase tracking-widest font-mono">
-                    Time Offset
-                  </label>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[12px] text-zinc-400 font-mono mb-1">
-                      {baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short' }) : '...'}
-                    </span>
-                    <span className="text-lg font-mono font-bold text-zinc-300 leading-none">
-                      {timeOffsetDays === 0 ? "NOW" : timeOffsetDays > 0 ? `+${timeOffsetDays} DAYS` : `${timeOffsetDays} DAYS`}
-                    </span>
-                  </div>
-                </div>
-                <input 
-                  type="range" 
-                  min="-365" max="365" 
-                  value={timeOffsetDays} 
-                  onChange={(e) => setTimeOffsetDays(parseInt(e.target.value))}
-                  className="w-full accent-indigo-500 relative z-20"
-                />
-              </div>
-            </div>
-
-            <ExpertCouncilPanel
-              actionIntent={actionIntent}
-              targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
-              honmeiStar={honmeiStar?.physical || null}
-              environmentalFrequencies={env}
-              birthFrequencies={birthEnv}
-              finalVectors={layers?.finalVectors || {}}
-              isPersonalVoid={isPersonalVoid}
-              kpIndex={spaceWeather?.kpIndex || null}
-              xrayFlux={spaceWeather?.xrayFlux || null}
-              magneticF={geoData?.intensity || null}
-              magneticD={geoData?.declination || null}
-              magneticI={geoData?.inclination || null}
-              hrv={hrv}
-              gsr={gsr}
-              ansLoad={ansLoad}
-              shieldCapacity={shieldCapacity}
-            />
-          </div>
-        </div>
-
-        {/* --- TAB CONTENT: TEMPORAL --- */}
-        {activeTab === "temporal" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
-            {/* Temporal HUD (Main Clock Focus) */}
-            <ClockDisplay
-              kimon={kimon}
-              isVoidTime={isPersonalVoid}
-              solarTime={solarData.solarTime}
-              eot={solarData.equationOfTime}
-              longOffset={solarData.longitudeCorrection}
-            />
-
-            {/* Module 1 & 2: BioMagnetic Dashboard */}
-            <BioMagneticDashboard
-              kpIndex={spaceWeather?.kpIndex || null}
-              xrayFlux={spaceWeather?.xrayFlux || null}
-              magneticF={geoData?.intensity || null}
-              magneticD={geoData?.declination || null}
-              magneticI={geoData?.inclination || null}
-              eot={solarData.equationOfTime}
-              hrv={hrv}
-              setHrv={setHrv}
-              gsr={gsr}
-              setGsr={setGsr}
-              baseSyncDays={baseSyncDays}
-              setBaseSyncDays={setBaseSyncDays}
-              ansLoad={ansLoad}
-              shieldCapacity={shieldCapacity}
-            />
-
-            {/* Module 3: Temporal Filter Matrix */}
-            <SolarTimeTable
-              date={baseTime}
-              longitude={lon || 135.7681}
-              latitude={lat}
-              eot={solarData.equationOfTime}
-              kpIndex={spaceWeather?.kpIndex || null}
-              xrayFlux={spaceWeather?.xrayFlux || null}
-              ansLoad={ansLoad}
-              shieldCapacity={shieldCapacity}
-              vectors={activeVectors || null}
-              honmeiStar={honmeiStar}
-              envData={env}
-              userEmail={userEmail}
-            />
-          </div>
-        )}
-
-        {/* --- TAB CONTENT: DIAGNOSTICS --- */}
-        {activeTab === "diagnostics" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
             {/* Hardware Init & Anchor Config */}
             <PersonalProfileConfig
               birthDate={birthDate}
@@ -876,6 +769,105 @@ export const SolarTimeClock = () => {
               baseSyncTimestamp={baseSyncTimestamp}
               setBaseSyncTimestamp={setBaseSyncTimestamp}
             />
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: 2. DESTINATION --- */}
+        {activeTab === "destination" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
+            {/* BioMagnetic Dashboard (Load Prediction) */}
+            <div className="w-full max-w-4xl">
+              <BioMagneticDashboard
+                kpIndex={spaceWeather?.kpIndex || null}
+                xrayFlux={spaceWeather?.xrayFlux || null}
+                magneticF={geoData?.intensity || null}
+                magneticD={geoData?.declination || null}
+                magneticI={geoData?.inclination || null}
+                eot={solarData.equationOfTime}
+                hrv={hrv}
+                setHrv={setHrv}
+                gsr={gsr}
+                setGsr={setGsr}
+                baseSyncDays={baseSyncDays}
+                setBaseSyncDays={setBaseSyncDays}
+                ansLoad={ansLoad}
+                shieldCapacity={shieldCapacity}
+              />
+            </div>
+
+            {/* Module 3: Temporal Filter Matrix */}
+            <SolarTimeTable
+              date={baseTime}
+              longitude={lon || 135.7681}
+              latitude={lat}
+              eot={solarData.equationOfTime}
+              kpIndex={spaceWeather?.kpIndex || null}
+              xrayFlux={spaceWeather?.xrayFlux || null}
+              ansLoad={ansLoad}
+              shieldCapacity={shieldCapacity}
+              vectors={activeVectors || null}
+              honmeiStar={honmeiStar}
+              envData={env}
+              userEmail={userEmail}
+            />
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: 3. TIMING --- */}
+        {activeTab === "timing" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
+            {/* Temporal HUD (Main Clock Focus) */}
+            <ClockDisplay
+              kimon={kimon}
+              isVoidTime={isPersonalVoid}
+              solarTime={solarData.solarTime}
+              eot={solarData.equationOfTime}
+              longOffset={solarData.longitudeCorrection}
+            />
+
+            {/* Module 3: Temporal Filter Matrix */}
+            <SolarTimeTable
+              date={baseTime}
+              longitude={lon || 135.7681}
+              latitude={lat}
+              eot={solarData.equationOfTime}
+              kpIndex={spaceWeather?.kpIndex || null}
+              xrayFlux={spaceWeather?.xrayFlux || null}
+              ansLoad={ansLoad}
+              shieldCapacity={shieldCapacity}
+              vectors={activeVectors || null}
+              honmeiStar={honmeiStar}
+              envData={env}
+              userEmail={userEmail}
+            />
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: 4. CONSULT (AI & Telemetry) --- */}
+        {activeTab === "consult" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
+            
+            <div className="w-full max-w-4xl">
+              <ExpertCouncilPanel
+                actionIntent={actionIntent}
+                targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
+                honmeiStar={honmeiStar?.physical || null}
+                environmentalFrequencies={env}
+                birthFrequencies={birthEnv}
+                finalVectors={layers?.finalVectors || {}}
+                isPersonalVoid={isPersonalVoid}
+                kpIndex={spaceWeather?.kpIndex || null}
+                xrayFlux={spaceWeather?.xrayFlux || null}
+                magneticF={geoData?.intensity || null}
+                magneticD={geoData?.declination || null}
+                magneticI={geoData?.inclination || null}
+                hrv={hrv}
+                gsr={gsr}
+                ansLoad={ansLoad}
+                shieldCapacity={shieldCapacity}
+              />
+            </div>
+
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-400">
@@ -1327,9 +1319,9 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        {/* --- TAB CONTENT: SPATIAL --- */}
-        {activeTab === "spatial" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
+        {/* --- MAP CONTENT (Appended to DESTINATION tab) --- */}
+        {activeTab === "destination" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in mt-8">
             <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Spatial Targeting */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
