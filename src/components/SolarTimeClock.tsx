@@ -794,22 +794,6 @@ export const SolarTimeClock = () => {
                 shieldCapacity={shieldCapacity}
               />
             </div>
-
-            {/* Module 3: Temporal Filter Matrix */}
-            <SolarTimeTable
-              date={baseTime}
-              longitude={lon || 135.7681}
-              latitude={lat}
-              eot={solarData.equationOfTime}
-              kpIndex={spaceWeather?.kpIndex || null}
-              xrayFlux={spaceWeather?.xrayFlux || null}
-              ansLoad={ansLoad}
-              shieldCapacity={shieldCapacity}
-              vectors={activeVectors || null}
-              honmeiStar={honmeiStar}
-              envData={env}
-              userEmail={userEmail}
-            />
           </div>
         )}
 
