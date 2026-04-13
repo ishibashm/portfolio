@@ -60,6 +60,7 @@ export const SolarTimeClock = () => {
   const [hrv, setHrv] = useState(50);
   const [gsr, setGsr] = useState(5);
   const [baseSyncDays, setBaseSyncDays] = useState(30);
+  const [pressureDrop, setPressureDrop] = useState(0); // 過去3時間の気圧降下量 (hPa)
 
   // New Data Science Bio-Baselines
   const [baseSyncTimestamp, setBaseSyncTimestamp] = useState<string | null>(null);
@@ -528,6 +529,14 @@ export const SolarTimeClock = () => {
       solarHours = solarData.solarTime.getHours() + solarData.solarTime.getMinutes() / 60;
     }
 
+    // 簡易的な月齢（Lunar Phase）計算（0.0=新月, 0.5=満月, 1.0=次の新月）
+    // 基準新月: 2000年1月6日 18:14 UTC (Unix Epoch: 947182440000 ms)
+    const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
+    const KNOWN_NEW_MOON = 947182440000;
+    const diffMs = baseTime.getTime() - KNOWN_NEW_MOON;
+    let phase = (diffMs % LUNAR_MONTH) / LUNAR_MONTH;
+    if (phase < 0) phase += 1;
+
     const metrics = calculateBioMetrics({
       currentHRV: hrv,
       currentGSR: gsr,
@@ -542,12 +551,14 @@ export const SolarTimeClock = () => {
       elevation: targetElevation || 0,
       kpIndex: spaceWeather?.kpIndex || 2, // デフォルト平穏
       solarTimeHours: solarHours,
+      pressureDrop: pressureDrop, // モックまたは将来のAPI用
+      lunarPhase: phase,
       baseSyncDays: baseSyncDays
     });
 
     setShieldCapacity(metrics.shieldCapacity);
     setAnsLoad(metrics.ansLoad);
-  }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData]);
+  }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop]);
 
   if (!baseTime || !solarData)
     return (
