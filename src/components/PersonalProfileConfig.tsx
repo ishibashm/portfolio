@@ -22,6 +22,14 @@ interface PersonalProfileProps {
   setVoidZodiacOverride?: (v: string) => void;
   geminiKey?: string;
   setGeminiKey?: (v: string) => void;
+  baselineHrvMean?: number;
+  setBaselineHrvMean?: (v: number) => void;
+  baselineHrvStd?: number;
+  setBaselineHrvStd?: (v: number) => void;
+  baselineGsrMean?: number;
+  setBaselineGsrMean?: (v: number) => void;
+  baseSyncTimestamp?: string | null;
+  setBaseSyncTimestamp?: (v: string | null) => void;
 }
 
 export function PersonalProfileConfig({
@@ -32,7 +40,11 @@ export function PersonalProfileConfig({
   baseLon, setBaseLon,
   onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn,
   voidZodiacOverride, setVoidZodiacOverride,
-  geminiKey, setGeminiKey
+  geminiKey, setGeminiKey,
+  baselineHrvMean, setBaselineHrvMean,
+  baselineHrvStd, setBaselineHrvStd,
+  baselineGsrMean, setBaselineGsrMean,
+  baseSyncTimestamp, setBaseSyncTimestamp
 }: PersonalProfileProps) {
   
   return (
@@ -181,6 +193,38 @@ export function PersonalProfileConfig({
                  現在位置のGPS（{baseLat.toFixed(2)}, {baseLon.toFixed(2)}）を基準に、タクティカルマップの磁気偏角とベクトルがリアルタイム生成されています。
                </p>
              </div>
+           </div>
+
+           {/* Bio-Baseline Configuration */}
+           <div className="mt-4 pt-4 border-t border-zinc-900">
+             <div className="flex items-center justify-between mb-2">
+               <span className="text-[9px] text-zinc-400 tracking-wider font-bold">BIO-METRICS BASELINE (Z-Score)</span>
+               <span className="text-[7px] text-emerald-500">{baseSyncTimestamp ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}` : "Not Synced"}</span>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-2 mt-2">
+               <div className="flex flex-col gap-1">
+                 <label className="text-[8px] text-zinc-500 uppercase">HRV Mean (ms)</label>
+                 <input 
+                   type="number" step="0.1"
+                   value={baselineHrvMean || ""}
+                   onChange={(e) => setBaselineHrvMean?.(Number(e.target.value))}
+                   className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                 />
+               </div>
+               <div className="flex flex-col gap-1">
+                 <label className="text-[8px] text-zinc-500 uppercase">HRV StdDev</label>
+                 <input 
+                   type="number" step="0.1"
+                   value={baselineHrvStd || ""}
+                   onChange={(e) => setBaselineHrvStd?.(Number(e.target.value))}
+                   className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                 />
+               </div>
+             </div>
+             <p className="text-[7px] text-zinc-600 mt-1 text-justify">
+               あなたの直近1ヶ月のHRV（心拍変動）の平均値と標準偏差。Oura等のデータを入力することで、ANS LoadのZ-Score異常検知があなた専用にパーソナライズされます。
+             </p>
            </div>
 
          </div>

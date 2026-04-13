@@ -61,6 +61,13 @@ export const SolarTimeClock = () => {
   const [gsr, setGsr] = useState(5);
   const [baseSyncDays, setBaseSyncDays] = useState(30);
 
+  // New Data Science Bio-Baselines
+  const [baseSyncTimestamp, setBaseSyncTimestamp] = useState<string | null>(null);
+  const [baselineHrvMean, setBaselineHrvMean] = useState<number>(60);
+  const [baselineHrvStd, setBaselineHrvStd] = useState<number>(15);
+  const [baselineGsrMean, setBaselineGsrMean] = useState<number>(5);
+  const [baselineGsrStd, setBaselineGsrStd] = useState<number>(2);
+
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
@@ -110,6 +117,11 @@ export const SolarTimeClock = () => {
           if (data.base_lon) setLon(data.base_lon);
           if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
           if (data.encrypted_gemini_key) setGeminiKey("********");
+          if (data.baseline_hrv_mean) setBaselineHrvMean(data.baseline_hrv_mean);
+          if (data.baseline_hrv_std) setBaselineHrvStd(data.baseline_hrv_std);
+          if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
+          if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
+          if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
           
           // クラウドの最新データをローカルにもキャッシュ
           localStorage.setItem('tactical_config_v1', JSON.stringify({
@@ -119,7 +131,12 @@ export const SolarTimeClock = () => {
             base_lat: data.base_lat || lat,
             base_lon: data.base_lon || lon,
             void_zodiac_override: data.void_zodiac_override || voidZodiacOverride,
-            gemini_key_exists: !!data.encrypted_gemini_key
+            gemini_key_exists: !!data.encrypted_gemini_key,
+            baseline_hrv_mean: data.baseline_hrv_mean || baselineHrvMean,
+            baseline_hrv_std: data.baseline_hrv_std || baselineHrvStd,
+            baseline_gsr_mean: data.baseline_gsr_mean || baselineGsrMean,
+            baseline_gsr_std: data.baseline_gsr_std || baselineGsrStd,
+            base_sync_timestamp: data.base_sync_timestamp || baseSyncTimestamp
           }));
           
           if (!silent) alert("クラウドから設定を同期しました。");
@@ -142,6 +159,12 @@ export const SolarTimeClock = () => {
         if (data.base_lon) setLon(data.base_lon);
         if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
         if (data.gemini_key_exists) setGeminiKey("********");
+        if (data.baseline_hrv_mean) setBaselineHrvMean(data.baseline_hrv_mean);
+        if (data.baseline_hrv_std) setBaselineHrvStd(data.baseline_hrv_std);
+        if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
+        if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
+        if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
+        
         if (!silent) {
           if (session) alert("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
           else alert("ブラウザ環境から設定を復元しました（未ログイン）。");
@@ -181,7 +204,13 @@ export const SolarTimeClock = () => {
         (position) => {
           setLat(position.coords.latitude);
           setLon(position.coords.longitude);
-          alert("現在のGPS座標をBase座標としてセットしました。");
+          
+          // 拠点が変更されたら、現在時刻を新たな同期起点（タイムスタンプ）とする
+          const nowIso = new Date().toISOString();
+          setBaseSyncTimestamp(nowIso);
+          setBaseSyncDays(0);
+
+          alert("現在のGPS座標をBase座標としてセットし、環境順化（シールド）のタイムスタンプをリセットしました。");
         },
         (error) => {
           console.error("GPS Error:", error);
@@ -203,7 +232,12 @@ export const SolarTimeClock = () => {
         base_lat: lat,
         base_lon: lon,
         void_zodiac_override: voidZodiacOverride,
-        gemini_key_exists: geminiKey && geminiKey !== ""
+        gemini_key_exists: geminiKey && geminiKey !== "",
+        baseline_hrv_mean: baselineHrvMean,
+        baseline_hrv_std: baselineHrvStd,
+        baseline_gsr_mean: baselineGsrMean,
+        baseline_gsr_std: baselineGsrStd,
+        base_sync_timestamp: baseSyncTimestamp
       };
 
       // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
@@ -218,7 +252,12 @@ export const SolarTimeClock = () => {
           birth_lon: birthLon,
           base_lat: lat,
           base_lon: lon,
-          void_zodiac_override: voidZodiacOverride
+          void_zodiac_override: voidZodiacOverride,
+          baseline_hrv_mean: baselineHrvMean,
+          baseline_hrv_std: baselineHrvStd,
+          baseline_gsr_mean: baselineGsrMean,
+          baseline_gsr_std: baselineGsrStd,
+          base_sync_timestamp: baseSyncTimestamp
         };
         
         // ******** の場合は何もしない（変更なし）、それ以外なら保存用キーとして送る
@@ -467,6 +506,18 @@ export const SolarTimeClock = () => {
     }
   }, [lat, lon]);
 
+  // Update baseSyncDays automatically based on baseSyncTimestamp
+  useEffect(() => {
+    if (baseSyncTimestamp) {
+      const arrivedDate = new Date(baseSyncTimestamp);
+      const now = new Date();
+      const diffTime = now.getTime() - arrivedDate.getTime();
+      let diffDays = diffTime / (1000 * 3600 * 24);
+      diffDays = Math.max(0, diffDays);
+      setBaseSyncDays(Number(diffDays.toFixed(2))); // Update state with calculated days
+    }
+  }, [baseSyncTimestamp]);
+
   // Calculate ANS Load & Shield Capacity using the Bio-Modeling Engine
   useEffect(() => {
     if (!baseTime) return;
@@ -480,6 +531,10 @@ export const SolarTimeClock = () => {
     const metrics = calculateBioMetrics({
       currentHRV: hrv,
       currentGSR: gsr,
+      baselineHRVMean: baselineHrvMean,
+      baselineHRVStd: baselineHrvStd,
+      baselineGSRMean: baselineGsrMean,
+      baselineGSRStd: baselineGsrStd,
       birthLat: birthLat,
       birthLon: birthLon,
       currentLat: targetLat || lat,
@@ -492,7 +547,7 @@ export const SolarTimeClock = () => {
 
     setShieldCapacity(metrics.shieldCapacity);
     setAnsLoad(metrics.ansLoad);
-  }, [hrv, gsr, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData]);
+  }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData]);
 
   if (!baseTime || !solarData)
     return (
@@ -790,6 +845,14 @@ export const SolarTimeClock = () => {
               setVoidZodiacOverride={setVoidZodiacOverride}
               geminiKey={geminiKey}
               setGeminiKey={setGeminiKey}
+              baselineHrvMean={baselineHrvMean}
+              setBaselineHrvMean={setBaselineHrvMean}
+              baselineHrvStd={baselineHrvStd}
+              setBaselineHrvStd={setBaselineHrvStd}
+              baselineGsrMean={baselineGsrMean}
+              setBaselineGsrMean={setBaselineGsrMean}
+              baseSyncTimestamp={baseSyncTimestamp}
+              setBaseSyncTimestamp={setBaseSyncTimestamp}
             />
             <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
