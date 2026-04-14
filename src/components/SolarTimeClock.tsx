@@ -912,6 +912,7 @@ export const SolarTimeClock = () => {
               honmeiStar={honmeiStar}
               envData={env}
               userEmail={userEmail}
+              personalVoidZodiac={personalVoidZodiac}
             />
           </div>
         )}

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { getDailySolarSchedule, KimonScheduleItem } from "../utils/solarTime";
+import { getCurrentZodiac } from "../utils/ephemerisEngine";
 import { KigakuBoard } from "./KigakuBoard";
 import { BlockMath, InlineMath } from 'react-katex';
 
@@ -18,16 +19,23 @@ interface SolarTimeTableProps {
   honmeiStar?: { physical: number; classical: number } | null;
   envData?: any;
   userEmail?: string | null;
+  personalVoidZodiac?: string[];
 }
 
 export function SolarTimeTableComponent({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, userEmail
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, userEmail, personalVoidZodiac
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
     [date, longitude]
   );
   
+  const currentZodiac = useMemo(() => getCurrentZodiac(date), [date]);
+
+  const isYearVoid = personalVoidZodiac?.includes(currentZodiac.yearZodiac) || false;
+  const isMonthVoid = personalVoidZodiac?.includes(currentZodiac.monthZodiac) || false;
+  const isDayVoid = personalVoidZodiac?.includes(currentZodiac.dayZodiac) || false;
+
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
@@ -160,9 +168,9 @@ export function SolarTimeTableComponent({
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-800/80 pb-2">
         <div className="flex items-center gap-2">
            <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-zinc-400">
-             Temporal Filter Matrix / 時系空間フィルター
+             Temporal Filter Matrix
            </h2>
-           <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1 py-0.5 ml-2">v2.4.1</span>
+           <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1 py-0.5 ml-2">v2.4.2</span>
         </div>
         <div className="flex items-center gap-4">
            <div className="text-[8px] font-mono text-zinc-600 tracking-widest hidden md:block">
@@ -176,6 +184,54 @@ export function SolarTimeTableComponent({
                Review & Export AI Data
              </button>
            )}
+        </div>
+      </div>
+
+      {/* Global & Daily Phase Status */}
+      <div className="grid grid-cols-3 gap-2 mt-1 mb-2 font-mono text-[9px] sm:text-[10px]">
+        <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isYearVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
+           <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+             <span>YEAR PHASE</span>
+             <span className={isYearVoid ? 'text-red-400' : 'text-purple-400'}>{envData?.yearStar}</span>
+           </div>
+           <div className="flex items-baseline gap-2 mt-1">
+             <span className={`text-xl sm:text-2xl font-bold leading-none ${isYearVoid ? 'text-red-400' : 'text-zinc-300'}`}>{currentZodiac.yearZodiac}</span>
+             {isYearVoid ? (
+               <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">VOID / 天中殺</span>
+             ) : (
+               <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+             )}
+           </div>
+        </div>
+
+        <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
+           <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+             <span>MONTH PHASE</span>
+             <span className={isMonthVoid ? 'text-red-400' : 'text-amber-400'}>{envData?.monthStar}</span>
+           </div>
+           <div className="flex items-baseline gap-2 mt-1">
+             <span className={`text-xl sm:text-2xl font-bold leading-none ${isMonthVoid ? 'text-red-400' : 'text-zinc-300'}`}>{currentZodiac.monthZodiac}</span>
+             {isMonthVoid ? (
+               <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">VOID / 天中殺</span>
+             ) : (
+               <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+             )}
+           </div>
+        </div>
+
+        <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
+           <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+             <span>DAY PHASE</span>
+             <span className={isDayVoid ? 'text-red-400' : 'text-blue-400'}>{envData?.dayStar}</span>
+           </div>
+           <div className="flex items-baseline gap-2 mt-1">
+             <span className={`text-xl sm:text-2xl font-bold leading-none ${isDayVoid ? 'text-red-400' : 'text-zinc-300'}`}>{currentZodiac.dayZodiac}</span>
+             {isDayVoid ? (
+               <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">VOID / 天中殺</span>
+             ) : (
+               <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+             )}
+           </div>
         </div>
       </div>
 
