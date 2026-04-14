@@ -268,38 +268,34 @@ export const SolarTimeClock = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const payload: any = {
+          user_email: session.user.email,
           birth_date: birthDate,
           birth_lat: birthLat,
           birth_lon: birthLon,
           base_lat: lat,
           base_lon: lon,
-          void_zodiac_override: voidZodiacOverride,
           baseline_hrv_mean: baselineHrvMean,
           baseline_hrv_std: baselineHrvStd,
           baseline_gsr_mean: baselineGsrMean,
           baseline_gsr_std: baselineGsrStd,
-          base_sync_timestamp: baseSyncTimestamp,
-          use_psychology_scorer: usePsychologyScorer,
-          use_kigaku_scorer: useKigakuScorer,
-          use_astrology_scorer: useAstrologyScorer
+          base_sync_timestamp: baseSyncTimestamp ? new Date(baseSyncTimestamp).toISOString() : null,
+          updated_at: new Date().toISOString()
         };
         
         // ******** の場合は何もしない（変更なし）、それ以外なら保存用キーとして送る
         if (geminiKey && geminiKey !== "********") {
-          payload.geminiKey = geminiKey;
+          payload.encrypted_gemini_key = geminiKey;
         } else if (geminiKey === "") {
-          payload.geminiKey = "";
+          payload.encrypted_gemini_key = null;
         }
 
-        const res = await fetch('/api/user-config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        const { error } = await supabase
+          .from('user_configs')
+          .upsert(payload, { onConflict: 'user_email' });
 
-        if (!res.ok) {
-          const errorData = await res.json();
-          throw new Error(errorData.error || 'Failed to save via API');
+        if (error) {
+          console.error("Supabase Upsert Error:", error);
+          throw new Error(error.message || 'Failed to save to Supabase');
         }
       }
 
