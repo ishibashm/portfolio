@@ -9,6 +9,7 @@ import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
 import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction } from "../utils/ephemerisEngine";
+import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import { createClient } from '../utils/supabase/client';
@@ -84,6 +85,12 @@ export const SolarTimeClock = () => {
   const [voidZodiacOverride, setVoidZodiacOverride] = useState<string>("");
   const [geminiKey, setGeminiKey] = useState<string>("");
   const [isAutoSearching, setIsAutoSearching] = useState(false);
+
+  // Timing Optimizer Preferences & Results
+  const [usePsychologyScorer, setUsePsychologyScorer] = useState(true);
+  const [useKigakuScorer, setUseKigakuScorer] = useState(true);
+  const [useAstrologyScorer, setUseAstrologyScorer] = useState(true);
+  const [timingOptimization, setTimingOptimization] = useState<OptimizationResult | null>(null);
   
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
@@ -123,6 +130,9 @@ export const SolarTimeClock = () => {
           if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
           if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
           if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
+          if (data.use_psychology_scorer !== null) setUsePsychologyScorer(data.use_psychology_scorer);
+          if (data.use_kigaku_scorer !== null) setUseKigakuScorer(data.use_kigaku_scorer);
+          if (data.use_astrology_scorer !== null) setUseAstrologyScorer(data.use_astrology_scorer);
           
           // クラウドの最新データをローカルにもキャッシュ
           localStorage.setItem('tactical_config_v1', JSON.stringify({
@@ -137,7 +147,10 @@ export const SolarTimeClock = () => {
             baseline_hrv_std: data.baseline_hrv_std || baselineHrvStd,
             baseline_gsr_mean: data.baseline_gsr_mean || baselineGsrMean,
             baseline_gsr_std: data.baseline_gsr_std || baselineGsrStd,
-            base_sync_timestamp: data.base_sync_timestamp || baseSyncTimestamp
+            base_sync_timestamp: data.base_sync_timestamp || baseSyncTimestamp,
+            use_psychology_scorer: data.use_psychology_scorer ?? usePsychologyScorer,
+            use_kigaku_scorer: data.use_kigaku_scorer ?? useKigakuScorer,
+            use_astrology_scorer: data.use_astrology_scorer ?? useAstrologyScorer
           }));
           
           if (!silent) alert("クラウドから設定を同期しました。");
@@ -165,6 +178,9 @@ export const SolarTimeClock = () => {
         if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
         if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
         if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
+        if (data.use_psychology_scorer !== undefined) setUsePsychologyScorer(data.use_psychology_scorer);
+        if (data.use_kigaku_scorer !== undefined) setUseKigakuScorer(data.use_kigaku_scorer);
+        if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
         
         if (!silent) {
           if (session) alert("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
@@ -238,7 +254,10 @@ export const SolarTimeClock = () => {
         baseline_hrv_std: baselineHrvStd,
         baseline_gsr_mean: baselineGsrMean,
         baseline_gsr_std: baselineGsrStd,
-        base_sync_timestamp: baseSyncTimestamp
+        base_sync_timestamp: baseSyncTimestamp,
+        use_psychology_scorer: usePsychologyScorer,
+        use_kigaku_scorer: useKigakuScorer,
+        use_astrology_scorer: useAstrologyScorer
       };
 
       // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
@@ -258,7 +277,10 @@ export const SolarTimeClock = () => {
           baseline_hrv_std: baselineHrvStd,
           baseline_gsr_mean: baselineGsrMean,
           baseline_gsr_std: baselineGsrStd,
-          base_sync_timestamp: baseSyncTimestamp
+          base_sync_timestamp: baseSyncTimestamp,
+          use_psychology_scorer: usePsychologyScorer,
+          use_kigaku_scorer: useKigakuScorer,
+          use_astrology_scorer: useAstrologyScorer
         };
         
         // ******** の場合は何もしない（変更なし）、それ以外なら保存用キーとして送る
@@ -431,6 +453,8 @@ export const SolarTimeClock = () => {
       "Space_Kp_Index", "Space_Xray_Flux",
       "Geo_Magnetic_F", "Geo_Magnetic_D", "Geo_Magnetic_I",
       "Bio_HRV", "Bio_GSR", "Bio_ANS_Load", "Bio_Shield_Capacity",
+      "Timing_Optimal", "Timing_Score",
+      "Timing_Psychology", "Timing_Kigaku", "Timing_Astrology",
       "N_FinalVector", "NE_FinalVector", "E_FinalVector", "SE_FinalVector",
       "S_FinalVector", "SW_FinalVector", "W_FinalVector", "NW_FinalVector"
     ].join(",");
@@ -448,6 +472,11 @@ export const SolarTimeClock = () => {
       spaceWeather?.xrayFlux !== null ? spaceWeather?.xrayFlux : "",
       geoData?.intensity || "", geoData?.declination || "", geoData?.inclination || "",
       hrv, gsr, ansLoad, shieldCapacity,
+      timingOptimization?.isOptimal ? "YES" : "NO",
+      timingOptimization?.finalScore?.toFixed(4) || "",
+      timingOptimization?.details.find(d => d.name.includes('Psychology'))?.score?.toFixed(4) || "",
+      timingOptimization?.details.find(d => d.name.includes('Kigaku'))?.score?.toFixed(4) || "",
+      timingOptimization?.details.find(d => d.name.includes('Astrology'))?.score?.toFixed(4) || "",
       layers?.finalVectors?.N || "", layers?.finalVectors?.NE || "",
       layers?.finalVectors?.E || "", layers?.finalVectors?.SE || "",
       layers?.finalVectors?.S || "", layers?.finalVectors?.SW || "",
@@ -559,6 +588,56 @@ export const SolarTimeClock = () => {
     setShieldCapacity(metrics.shieldCapacity);
     setAnsLoad(metrics.ansLoad);
   }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop]);
+
+  // --- Timing Optimizer Execution ---
+  useEffect(() => {
+    if (!baseTime) return;
+
+    // 現在評価中の日時（オフセットを加味）
+    const targetDate = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
+
+    // アクションの種別を TimingOptimizer 用にマッピング
+    let timingActionType: 'focus' | 'creative' | 'social' | 'rest' = 'focus';
+    if (actionIntent === 'REST') timingActionType = 'rest';
+    if (actionIntent === 'BUSINESS') timingActionType = 'social';
+    // MIGRATION / DEFAULT は focus として扱う（仮）
+
+    // ファクトリーからオプティマイザを生成
+    const optimizer = createPersonalizedOptimizer({
+      usePsychology: usePsychologyScorer,
+      useEasternAstrology: useKigakuScorer,
+      useWesternAstrology: useAstrologyScorer,
+    });
+
+    // 九星気学の本命星番号へのマッピング（1〜9）
+    let userKigakuStar: number | undefined;
+    if (honmeiStar?.physical) {
+        if (typeof honmeiStar.physical === 'number') {
+             userKigakuStar = honmeiStar.physical;
+        } else if (typeof honmeiStar.physical === 'string') {
+            const match = String(honmeiStar.physical).match(/([一二三四五六七八九])/);
+            if (match) {
+                const numMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+                userKigakuStar = numMap[match[1]];
+            } else {
+                 const numMatch = String(honmeiStar.physical).match(/(\d)/);
+                 if (numMatch) userKigakuStar = parseInt(numMatch[1], 10);
+            }
+        }
+    }
+
+    const result = optimizer.evaluate({
+      targetDate,
+      userBirthDate: birthDate ? new Date(birthDate) : undefined,
+      userKigakuStar,
+      // 西洋占星術の正確な出生太陽星座はここでは計算が複雑なので仮のAriesとするか、未指定にする
+      actionType: timingActionType,
+      latitude: targetLat || lat,
+      longitude: targetLon || lon
+    });
+
+    setTimingOptimization(result);
+  }, [baseTime, timeOffsetDays, actionIntent, usePsychologyScorer, useKigakuScorer, useAstrologyScorer, honmeiStar, birthDate, targetLat, lat, targetLon, lon]);
 
   if (!baseTime || !solarData)
     return (
@@ -768,6 +847,12 @@ export const SolarTimeClock = () => {
               setBaselineGsrMean={setBaselineGsrMean}
               baseSyncTimestamp={baseSyncTimestamp}
               setBaseSyncTimestamp={setBaseSyncTimestamp}
+              usePsychologyScorer={usePsychologyScorer}
+              setUsePsychologyScorer={setUsePsychologyScorer}
+              useKigakuScorer={useKigakuScorer}
+              setUseKigakuScorer={setUseKigakuScorer}
+              useAstrologyScorer={useAstrologyScorer}
+              setUseAstrologyScorer={setUseAstrologyScorer}
             />
           </div>
         )}
@@ -792,6 +877,10 @@ export const SolarTimeClock = () => {
                 setBaseSyncDays={setBaseSyncDays}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
+                timingScore={timingOptimization?.finalScore}
+                timingDetails={timingOptimization?.details}
+                timingRecommendation={timingOptimization?.recommendationText}
+                isTimingOptimal={timingOptimization?.isOptimal}
               />
             </div>
           </div>
@@ -849,6 +938,10 @@ export const SolarTimeClock = () => {
                 gsr={gsr}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
+                timingScore={timingOptimization?.finalScore}
+                timingDetails={timingOptimization?.details}
+                timingRecommendation={timingOptimization?.recommendationText}
+                isTimingOptimal={timingOptimization?.isOptimal}
               />
             </div>
 

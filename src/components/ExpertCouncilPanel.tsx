@@ -20,6 +20,10 @@ interface ExpertCouncilPanelProps {
   gsr: number;
   ansLoad: number;
   shieldCapacity: number;
+  timingScore?: number;
+  timingDetails?: { name: string; score: number; reason: string }[];
+  timingRecommendation?: string;
+  isTimingOptimal?: boolean;
 }
 
 export default function ExpertCouncilPanel({
@@ -38,7 +42,11 @@ export default function ExpertCouncilPanel({
   hrv,
   gsr,
   ansLoad,
-  shieldCapacity
+  shieldCapacity,
+  timingScore,
+  timingDetails,
+  timingRecommendation,
+  isTimingOptimal
 }: ExpertCouncilPanelProps) {
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState('');
@@ -72,6 +80,12 @@ ${JSON.stringify(finalVectors, null, 2)}
 - GSR (皮膚電気反応): ${gsr} μS
 - ANS Overload Index (自律神経負荷): ${ansLoad}%
 - Base Shield Cap (防御容量): ${shieldCapacity}%
+
+【多次元タイミング最適化エンジンからの洞察 (Multi-Dimensional Timing Engine)】
+- 総合最適スコア: ${timingScore !== undefined ? Math.round(timingScore * 100) + '%' : '未計算'}
+- 最適判定: ${isTimingOptimal ? 'YES (絶好のタイミング)' : 'NO (標準または不適)'}
+- 各専門エンジンのスコアと理由:
+${timingDetails ? timingDetails.map(d => `  * [${d.name}]: スコア ${Math.round(d.score * 100)}%, 理由: ${d.reason}`).join('\n') : '  データなし'}
 
 【出力形式の指定】
 以下の構成で回答を出力してください。
@@ -163,6 +177,10 @@ ${JSON.stringify(finalVectors, null, 2)}
 - GSR: ${gsr} μS
 - ANS LOAD: ${ansLoad}%
 - SHIELD CAP: ${shieldCapacity}%
+
+[TIMING OPTIMIZER]
+- SCORE: ${timingScore !== undefined ? Math.round(timingScore * 100) + '%' : 'UD'}
+- OPTIMAL: ${isTimingOptimal ? 'YES' : 'NO'}
 
 - VECTOR STATE:`}
           <br/>{JSON.stringify(finalVectors, null, 2)}

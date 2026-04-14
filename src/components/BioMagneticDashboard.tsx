@@ -1,5 +1,5 @@
 import React from "react";
-import { Activity, Shield, Zap, Compass, Radio } from "lucide-react";
+import { Activity, Shield, Zap, Compass, Radio, Sparkles } from "lucide-react";
 import { InlineMath, BlockMath } from 'react-katex';
 
 interface DashboardProps {
@@ -17,12 +17,18 @@ interface DashboardProps {
   setBaseSyncDays: (val: number) => void;
   ansLoad: number;
   shieldCapacity: number;
+  // Timing Optimizer
+  timingScore?: number;
+  timingDetails?: { name: string; score: number; reason: string }[];
+  timingRecommendation?: string;
+  isTimingOptimal?: boolean;
 }
 
 export function BioMagneticDashboard({
   kpIndex, xrayFlux, magneticF, magneticD, magneticI, eot,
   hrv, setHrv, gsr, setGsr, baseSyncDays, setBaseSyncDays,
-  ansLoad, shieldCapacity
+  ansLoad, shieldCapacity,
+  timingScore, timingDetails, timingRecommendation, isTimingOptimal
 }: DashboardProps) {
 
   const getKpColor = (kp: number | null) => {
@@ -165,6 +171,71 @@ export function BioMagneticDashboard({
 
         </div>
       </div>
+
+      {/* Multi-Dimensional Timing Engine Insights */}
+      {timingScore !== undefined && (
+        <div className={`col-span-1 md:col-span-2 bg-zinc-950/80 border ${isTimingOptimal ? 'border-purple-500/50' : 'border-zinc-800/80'} p-4 rounded-sm shadow-2xl relative overflow-hidden group`}>
+           <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Sparkles size={80} className={isTimingOptimal ? 'text-purple-500' : 'text-zinc-600'} />
+           </div>
+           
+           <div className="flex items-center gap-2 mb-3 relative z-10 border-b border-zinc-800/50 pb-2">
+              <Sparkles size={14} className={`${isTimingOptimal ? 'text-purple-500 md:animate-pulse' : 'text-zinc-500'}`} />
+              <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
+                Multi-Dimensional Timing Insights / 最適タイミング分析
+              </h2>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10 font-mono text-xs">
+              <div className="flex flex-col justify-center items-center p-4 bg-zinc-900/30 border border-zinc-800/50 rounded-sm">
+                 <span className="text-[9px] text-zinc-500 mb-2 font-bold uppercase tracking-wider">Overall Sync Score</span>
+                 <div className="relative flex items-center justify-center">
+                    <svg className="w-20 h-20 transform -rotate-90">
+                       <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="transparent" className="text-zinc-800" />
+                       <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="4" fill="transparent" 
+                          strokeDasharray={36 * 2 * Math.PI} 
+                          strokeDashoffset={36 * 2 * Math.PI - (timingScore * 100 / 100) * (36 * 2 * Math.PI)}
+                          className={`${isTimingOptimal ? 'text-purple-500' : 'text-blue-500'} transition-all duration-1000`} 
+                       />
+                    </svg>
+                    <span className="absolute text-2xl font-bold tracking-tighter text-zinc-200">
+                       {Math.round(timingScore * 100)}<span className="text-[10px]">%</span>
+                    </span>
+                 </div>
+              </div>
+
+              <div className="col-span-1 md:col-span-3 flex flex-col gap-3">
+                 <div className="p-3 bg-zinc-900/50 border border-zinc-800/80 rounded-sm text-zinc-300 text-justify leading-relaxed flex flex-col gap-1">
+                    <span className="text-[9px] text-purple-400/80 uppercase font-bold tracking-wider mb-1">AI Actionable Insight</span>
+                    {timingRecommendation ? (
+                        timingRecommendation.split('\n').map((line, idx) => (
+                           <div key={idx} className="flex gap-2 items-start">
+                              <span className="text-purple-500/50 mt-0.5">&gt;</span>
+                              <span className="text-[10px] text-zinc-300">{line.replace('- [', '[').replace(']:', ']')}</span>
+                           </div>
+                        ))
+                    ) : (
+                       <span className="text-[10px] text-zinc-500">標準的なタイミングです。特筆すべきバフやデバフはありません。</span>
+                    )}
+                 </div>
+
+                 <div className="flex gap-2 flex-wrap">
+                    {timingDetails?.map((detail, idx) => (
+                       <div key={idx} className={`px-2 py-1 border rounded-sm text-[8px] uppercase tracking-wider flex items-center gap-1.5
+                          ${detail.score >= 0.7 ? 'border-purple-500/30 text-purple-300 bg-purple-500/10' : 
+                            detail.score <= 0.3 ? 'border-red-500/30 text-red-300 bg-red-500/10' : 
+                            'border-zinc-800 text-zinc-500 bg-zinc-900/30'}`}
+                       >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          {detail.name.split('(')[0].trim()} ({Math.round(detail.score * 100)}%)
+                       </div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 }

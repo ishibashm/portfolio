@@ -30,6 +30,13 @@ interface PersonalProfileProps {
   setBaselineGsrMean?: (v: number) => void;
   baseSyncTimestamp?: string | null;
   setBaseSyncTimestamp?: (v: string | null) => void;
+  // --- Timing Optimizer Preferences ---
+  usePsychologyScorer?: boolean;
+  setUsePsychologyScorer?: (v: boolean) => void;
+  useKigakuScorer?: boolean;
+  setUseKigakuScorer?: (v: boolean) => void;
+  useAstrologyScorer?: boolean;
+  setUseAstrologyScorer?: (v: boolean) => void;
 }
 
 export function PersonalProfileConfig({
@@ -44,7 +51,10 @@ export function PersonalProfileConfig({
   baselineHrvMean, setBaselineHrvMean,
   baselineHrvStd, setBaselineHrvStd,
   baselineGsrMean, setBaselineGsrMean,
-  baseSyncTimestamp, setBaseSyncTimestamp
+  baseSyncTimestamp, setBaseSyncTimestamp,
+  usePsychologyScorer, setUsePsychologyScorer,
+  useKigakuScorer, setUseKigakuScorer,
+  useAstrologyScorer, setUseAstrologyScorer
 }: PersonalProfileProps) {
   
   return (
@@ -225,6 +235,66 @@ export function PersonalProfileConfig({
              <p className="text-[7px] text-zinc-600 mt-1 text-justify">
                あなたの直近1ヶ月のHRV（心拍変動）の平均値と標準偏差。Oura等のデータを入力することで、ANS LoadのZ-Score異常検知があなた専用にパーソナライズされます。
              </p>
+           </div>
+
+           {/* Timing Optimizer Engine Configuration */}
+           <div className="mt-4 pt-4 border-t border-zinc-900">
+             <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-[9px] text-purple-400 tracking-wider font-bold uppercase">Multi-Dimensional Timing Engine</span>
+             </div>
+             
+             <div className="flex flex-col gap-3 mt-3">
+               {/* 心理学スコアラー */}
+               <div className="flex items-center justify-between">
+                 <div className="flex flex-col">
+                   <span className="text-[8px] text-zinc-400 font-bold uppercase">Behavioral Psychology (Fresh Start)</span>
+                   <span className="text-[7px] text-zinc-600">月初や月曜、誕生日などのモチベーションブーストを加味します</span>
+                 </div>
+                 <label className="relative inline-flex items-center cursor-pointer">
+                   <input 
+                     type="checkbox" 
+                     className="sr-only peer"
+                     checked={usePsychologyScorer ?? true}
+                     onChange={(e) => setUsePsychologyScorer?.(e.target.checked)}
+                   />
+                   <div className="w-7 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                 </label>
+               </div>
+
+               {/* 気学スコアラー */}
+               <div className="flex items-center justify-between">
+                 <div className="flex flex-col">
+                   <span className="text-[8px] text-zinc-400 font-bold uppercase">Oriental Astrology (Kigaku)</span>
+                   <span className="text-[7px] text-zinc-600">東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します</span>
+                 </div>
+                 <label className="relative inline-flex items-center cursor-pointer">
+                   <input 
+                     type="checkbox" 
+                     className="sr-only peer"
+                     checked={useKigakuScorer ?? true}
+                     onChange={(e) => setUseKigakuScorer?.(e.target.checked)}
+                   />
+                   <div className="w-7 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                 </label>
+               </div>
+
+               {/* 西洋占星術スコアラー */}
+               <div className="flex items-center justify-between">
+                 <div className="flex flex-col">
+                   <span className="text-[8px] text-zinc-400 font-bold uppercase">Western Astrology (Transits & Void)</span>
+                   <span className="text-[7px] text-zinc-600">月星座やボイドタイムによる警告と適性を判定します</span>
+                 </div>
+                 <label className="relative inline-flex items-center cursor-pointer">
+                   <input 
+                     type="checkbox" 
+                     className="sr-only peer"
+                     checked={useAstrologyScorer ?? true}
+                     onChange={(e) => setUseAstrologyScorer?.(e.target.checked)}
+                   />
+                   <div className="w-7 h-4 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                 </label>
+               </div>
+             </div>
            </div>
 
          </div>
