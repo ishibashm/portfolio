@@ -100,6 +100,7 @@ export const SolarTimeClock = () => {
   });
 
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
 
   const handleLoadConfig = async (silent = true) => {
     // まずログイン状態を確認
@@ -742,13 +743,64 @@ export const SolarTimeClock = () => {
         
         {/* Mission Objective Header */}
         <div className="w-full max-w-4xl text-center mb-2 px-4">
-          <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)]">
+          <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
           </h1>
-          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto">
+          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
             引越し・移住・長期滞在など、人生の大きな決断において<strong className="text-zinc-200">「最適な移動地（方位）」</strong>と<strong className="text-zinc-200">「最適なタイミング（時間）」</strong>を導き出すためのデータサイエンス・ダッシュボードです。
           </p>
+          <button 
+            onClick={() => setShowHowItWorks(!showHowItWorks)}
+            className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono uppercase tracking-widest border border-emerald-500/50 bg-emerald-950/20 px-4 py-1.5 transition-colors"
+          >
+            {showHowItWorks ? '[-] CLOSE ALGORITHM WORKFLOW' : '[?] どのように引越し方位とタイミングを割り出しているのか（統合ワークフロー）'}
+          </button>
         </div>
+
+        {/* How it works breakdown */}
+        {showHowItWorks && (
+          <div className="w-full max-w-4xl animate-fade-in px-4">
+            <div className="bg-zinc-950 border border-zinc-800 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-zinc-300 text-xs sm:text-sm font-sans leading-relaxed">
+              <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
+              <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-zinc-800 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                引越し・移住の「空間」と「時間」を統合する4つのステップ
+              </h2>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">STEP 1: ゼロポイント（現在地）と波長の特定</strong>
+                  <p className="text-[10px] sm:text-xs">
+                    「Profile」タブにて、あなたの生年月日と現在の拠点（緯度・経度）を入力します。生年月日からはあなたのベースとなる「本命星（固有周波数帯）」と、行動がエラーを起こしやすい「天中殺（VOID TIME）」が算出されます。現在地はすべての方位を割り出すための「原点（ゼロポイント）」となります。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">STEP 2: 干渉ノイズの排除（長・中・短期の合成）</strong>
+                  <p className="text-[10px] sm:text-xs">
+                    「Destination」タブにおいて、現在地から見た全方位の空間ベクトルを評価します。このダッシュボードでは、東洋暦（年盤・月盤・日盤）の3つのレイヤーを同時に重ね合わせ（Phase Interference Diagnosis）、五黄殺（致命的な環境ノイズ）や本命殺（あなたとの波長不一致）が1つでも含まれる方向をレッドゾーン（進入非推奨）として除外します。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">STEP 3: 相生（共鳴）する目的地・方位の決定</strong>
+                  <p className="text-[10px] sm:text-xs">
+                    ノイズの無いブルーゾーン（SAFE）の中から、さらに引越し先の空間周波数（九星）とあなたの本命星が「木火土金水」の陰陽五行理論で「相生（エネルギーを生み出す）」または「相比（同調する）」関係にある方向（OPTIMAL）を導き出し、目的地を確定させます。
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">STEP 4: 最終出発日時の確定（真太陽時と吉門）</strong>
+                  <p className="text-[10px] sm:text-xs">
+                    「Timing」タブでタイムラインを展開します。目的地が決まったら、今度は「その方位がOPTIMALになる日」を探します。そしてその日のリストの中から、「天中殺（VOID）」の時間帯を避け、かつ「八門（生・休・開）」のフィルターがオンになっている2時間を「家を出発する・契約印を押す」ためのゴールデンタイムとして確定します。
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-emerald-950/20 border border-emerald-900/50 p-3 mt-2 text-[10px] sm:text-[11px]">
+                <strong className="text-emerald-400 font-bold mb-1 block">なぜこの統合計算が必要なのか？</strong>
+                引越しなどの長距離・長期間の空間移動は、新しい土地の地球磁場とあなたの生体磁気が順応（シンクロ）するまでに膨大な自律神経のエネルギー（ANS Load）を消費します。空間（ノイズのない方位）と時間（天中殺ではない時間）を天文学的に一致させることで、この順応コストを最小限に抑え、新しい環境でのパフォーマンスを最大化することが本システムの目的です。
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tab Navigation (Customer Journey) */}
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
