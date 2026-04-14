@@ -224,15 +224,18 @@ export function getCurrentEnvironmentalFrequencies(date: Date) {
   const classY = getClassicalYearStar(date);
   const m = getMonthStar(date);
   const d = getDayStar(date);
+  const L0 = AstroEngine.getSolarLongitude(date);
+  const isYinPhase = (L0 >= 90 && L0 < 270);
   
   return {
     yearStar: physY,
     classicalYearStar: classY,
     monthStar: m,
     dayStar: d,
+    isYinPhase: isYinPhase,
     hourStar: 5 as StarFrequency,  // Placeholder
     raw: {
-      sunLon: AstroEngine.getSolarLongitude(date),
+      sunLon: L0,
       moonLon: AstroEngine.getLunarLongitude(date),
       jupiterLon: AstroEngine.getJupiterLongitude(date),
       lunarNode: AstroEngine.getLunarNodeLongitude(date)

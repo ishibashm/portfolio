@@ -268,7 +268,14 @@ export function SolarTimeTableComponent({
 
         <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
            <div className="flex justify-between items-center text-zinc-500 tracking-widest">
-             <span>DAY PHASE</span>
+             <div className="flex items-center gap-1">
+               <span>DAY PHASE</span>
+               {envData?.isYinPhase !== undefined && (
+                 <span className={`text-[8px] px-1 py-0.5 border ${envData.isYinPhase ? 'border-blue-500/30 text-blue-400 bg-blue-900/20' : 'border-amber-500/30 text-amber-400 bg-amber-900/20'}`}>
+                   {envData.isYinPhase ? '陰遁 (YIN)' : '陽遁 (YANG)'}
+                 </span>
+               )}
+             </div>
              <span className={isDayVoid ? 'text-red-400' : 'text-blue-400'}>{envData?.dayStar}</span>
            </div>
            <div className="flex items-baseline gap-2 mt-1">
@@ -279,7 +286,12 @@ export function SolarTimeTableComponent({
                <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
              )}
            </div>
-           <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">地球自転による短期の波長と日の干支</div>
+           <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">
+             地球自転による短期の波長と日の干支。
+             {envData?.isYinPhase !== undefined && (
+               <span className="block mt-0.5">※現在は{envData.isYinPhase ? '夏至〜冬至の「陰」' : '冬至〜夏至の「陽」'}のサイクル（エネルギーの{envData.isYinPhase ? '収束期' : '拡散期'}）です。</span>
+             )}
+           </div>
         </div>
       </div>
 
