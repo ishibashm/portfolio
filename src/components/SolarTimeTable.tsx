@@ -55,33 +55,78 @@ export function SolarTimeTableComponent({
     return item.japanese === "午" || item.japanese === "未"; // 11:00 - 15:00
   };
 
-  const isOptimalTimeHour = (item: KimonScheduleItem) => {
+  const getElementInfo = (starNum: number) => {
+     if (starNum === 1) return { id: 'Water', name: '水', color: 'text-blue-400' };
+     if ([2, 5, 8].includes(starNum)) return { id: 'Earth', name: '土', color: 'text-amber-600' };
+     if ([3, 4].includes(starNum)) return { id: 'Wood', name: '木', color: 'text-emerald-400' };
+     if ([6, 7].includes(starNum)) return { id: 'Metal', name: '金', color: 'text-zinc-300' };
+     if (starNum === 9) return { id: 'Fire', name: '火', color: 'text-red-500' };
+     return { id: 'Earth', name: '土', color: 'text-amber-600' }; // fallback
+  };
+
+  const evaluateTimePhase = (item: KimonScheduleItem) => {
     const isGoodGate = item.hachimon.auspicious; // 生, 休, 開
     
-    // Dynamic Element Resonance (相生/相比) based on user's Honmei Star
-    if (!honmeiStar || !honmeiStar.physical) return false;
+    if (!honmeiStar || !honmeiStar.physical) return { isOptimal: false, myElement: null, timeElement: null, relation: null };
     
-    const getElement = (starNum: number) => {
-       if (starNum === 1) return 'Water';
-       if ([2, 5, 8].includes(starNum)) return 'Earth';
-       if ([3, 4].includes(starNum)) return 'Wood';
-       if ([6, 7].includes(starNum)) return 'Metal';
-       if (starNum === 9) return 'Fire';
-       return 'Earth'; // fallback
-    };
+    const myElement = getElementInfo(honmeiStar.physical);
+    const timeElementNum = item.kyusei.number || parseInt(item.kyusei.japanese.substring(0,1)) || 3;
+    const timeElement = getElementInfo(timeElementNum);
     
-    const myElement = getElement(honmeiStar.physical);
-    const timeElement = getElement(item.kyusei.number || parseInt(item.kyusei.japanese.substring(0,1)) || 3);
-    
+    let relation = null;
     let isFavorable = false;
-    if (myElement === timeElement) isFavorable = true; // Same element (相比)
-    if (myElement === 'Wood' && ['Water', 'Fire'].includes(timeElement)) isFavorable = true;
-    if (myElement === 'Fire' && ['Wood', 'Earth'].includes(timeElement)) isFavorable = true;
-    if (myElement === 'Earth' && ['Fire', 'Metal'].includes(timeElement)) isFavorable = true;
-    if (myElement === 'Metal' && ['Earth', 'Water'].includes(timeElement)) isFavorable = true;
-    if (myElement === 'Water' && ['Metal', 'Wood'].includes(timeElement)) isFavorable = true;
 
-    return isGoodGate && isFavorable;
+    // 相生・相比・相剋の完全判定 (五行理論)
+    if (myElement.id === timeElement.id) {
+       relation = '相比 (比和: 同調)';
+       isFavorable = true;
+    }
+    // 木 (Wood)
+    else if (myElement.id === 'Wood' && timeElement.id === 'Water') { relation = '水生木 (相生: 吸収)'; isFavorable = true; }
+    else if (myElement.id === 'Wood' && timeElement.id === 'Fire') { relation = '木生火 (相生: 放出)'; isFavorable = true; }
+    else if (myElement.id === 'Wood' && timeElement.id === 'Earth') { relation = '木剋土 (相剋: 衝突)'; isFavorable = false; }
+    else if (myElement.id === 'Wood' && timeElement.id === 'Metal') { relation = '金剋木 (相剋: 破壊)'; isFavorable = false; }
+    // 火 (Fire)
+    else if (myElement.id === 'Fire' && timeElement.id === 'Wood') { relation = '木生火 (相生: 吸収)'; isFavorable = true; }
+    else if (myElement.id === 'Fire' && timeElement.id === 'Earth') { relation = '火生土 (相生: 放出)'; isFavorable = true; }
+    else if (myElement.id === 'Fire' && timeElement.id === 'Metal') { relation = '火剋金 (相剋: 衝突)'; isFavorable = false; }
+    else if (myElement.id === 'Fire' && timeElement.id === 'Water') { relation = '水剋火 (相剋: 破壊)'; isFavorable = false; }
+    // 土 (Earth)
+    else if (myElement.id === 'Earth' && timeElement.id === 'Fire') { relation = '火生土 (相生: 吸収)'; isFavorable = true; }
+    else if (myElement.id === 'Earth' && timeElement.id === 'Metal') { relation = '土生金 (相生: 放出)'; isFavorable = true; }
+    else if (myElement.id === 'Earth' && timeElement.id === 'Water') { relation = '土剋水 (相剋: 衝突)'; isFavorable = false; }
+    else if (myElement.id === 'Earth' && timeElement.id === 'Wood') { relation = '木剋土 (相剋: 破壊)'; isFavorable = false; }
+    // 金 (Metal)
+    else if (myElement.id === 'Metal' && timeElement.id === 'Earth') { relation = '土生金 (相生: 吸収)'; isFavorable = true; }
+    else if (myElement.id === 'Metal' && timeElement.id === 'Water') { relation = '金生水 (相生: 放出)'; isFavorable = true; }
+    else if (myElement.id === 'Metal' && timeElement.id === 'Wood') { relation = '金剋木 (相剋: 衝突)'; isFavorable = false; }
+    else if (myElement.id === 'Metal' && timeElement.id === 'Fire') { relation = '火剋金 (相剋: 破壊)'; isFavorable = false; }
+    // 水 (Water)
+    else if (myElement.id === 'Water' && timeElement.id === 'Metal') { relation = '金生水 (相生: 吸収)'; isFavorable = true; }
+    else if (myElement.id === 'Water' && timeElement.id === 'Wood') { relation = '水生木 (相生: 放出)'; isFavorable = true; }
+    else if (myElement.id === 'Water' && timeElement.id === 'Fire') { relation = '水剋火 (相剋: 衝突)'; isFavorable = false; }
+    else if (myElement.id === 'Water' && timeElement.id === 'Earth') { relation = '土剋水 (相剋: 破壊)'; isFavorable = false; }
+
+    return {
+      isOptimal: isGoodGate && isFavorable,
+      isFavorable,
+      isGoodGate,
+      myElement,
+      timeElement,
+      relation
+    };
+  };
+
+  const getGateDescription = (gateName: string) => {
+    if (gateName.includes('生')) return "新しい開始・生命力 (Start/Vitality)";
+    if (gateName.includes('休')) return "休息・回復・平和 (Rest/Peace)";
+    if (gateName.includes('開')) return "開拓・ビジネス・前進 (Open/Business)";
+    if (gateName.includes('傷')) return "挑戦・トラブル注意 (Challenge/Risk)";
+    if (gateName.includes('杜')) return "隠蔽・停滞・守り (Block/Defend)";
+    if (gateName.includes('景')) return "文書・契約・表面化 (Document/Reveal)";
+    if (gateName.includes('死')) return "停止・終わり・危険 (Stop/Danger)";
+    if (gateName.includes('驚')) return "驚き・議論・警戒 (Surprise/Argue)";
+    return "通常 (Normal)";
   };
 
   const generateCsvString = () => {
@@ -202,6 +247,7 @@ export function SolarTimeTableComponent({
                <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
              )}
            </div>
+           <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">長期的なベースとなる年の波長と干支</div>
         </div>
 
         <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
@@ -217,6 +263,7 @@ export function SolarTimeTableComponent({
                <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
              )}
            </div>
+           <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">潮汐力による中期の波長と月の干支</div>
         </div>
 
         <div className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? 'border-red-500/50 bg-red-950/20 shadow-inner' : 'border-zinc-800 bg-zinc-950/50'}`}>
@@ -232,6 +279,7 @@ export function SolarTimeTableComponent({
                <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
              )}
            </div>
+           <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">地球自転による短期の波長と日の干支</div>
         </div>
       </div>
 
@@ -262,105 +310,154 @@ export function SolarTimeTableComponent({
             </div>
             <span className="group-open:rotate-180 transition-transform">▼</span>
          </summary>
-         <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
-           <div className="p-2 border border-blue-900/30 rounded-sm">
-              <strong className="text-blue-400 block mb-1 font-mono text-[9px]">◆ 1. 九星気学・環境方位</strong>
-              <p className="text-zinc-400 text-justify">
-                均時差を補正した「真太陽時」に基づき、その場所・その時間に流れる磁気的エネルギー（九星・八門）をリアルタイムに算出します。吉方位へ移動することで、引越し後の環境順化がスムーズになります。
-              </p>
-           </div>
-           <div className="p-2 border border-red-900/30 rounded-sm">
-              <strong className="text-red-400 block mb-1 font-mono text-[9px]">◆ 2. VOID TIME（天中殺）</strong>
-              <p className="text-zinc-400 text-justify">
-                天中殺（午刻・未刻など）は地球の磁気シールドと生体リズムが同調外れを起こす時間帯です。この時間帯での物理的移動や重要な決断（契約など）は、細胞レベルでの強い自律神経ストレスを招くため避けるべきです。
-              </p>
-           </div>
-           <div className="p-2 border border-emerald-900/30 rounded-sm">
-              <strong className="text-emerald-400 block mb-1 font-mono text-[9px]">◆ 3. OPTIMAL TIME（吉門）</strong>
-              <p className="text-zinc-400 text-justify">
-                緑色ハイライトは、吉門（生/休/開）とあなたの本命星が共鳴する「最適な移動タイミング」です。この時間帯に行動・移動を開始することで、肉体と環境の周波数が同調し、心身のデトックスと運気向上が見込めます。
-              </p>
-           </div>
+         <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
+            <div className="p-2 border border-purple-900/30 rounded-sm">
+               <strong className="text-purple-400 block mb-1 font-mono text-[9px]">◆ 1. 陰陽五行・四柱推命</strong>
+               <p className="text-zinc-400 text-justify">
+                 宇宙のエネルギーを「木・火・土・金・水」の5つの属性（周波数）に分類し、互いに生み出す「相生」、打ち消し合う「相剋」の物理的相互作用として計算します。これに干支暦（四柱推命）の天体位相を組み合わせています。
+               </p>
+            </div>
+            <div className="p-2 border border-blue-900/30 rounded-sm">
+               <strong className="text-blue-400 block mb-1 font-mono text-[9px]">◆ 2. 九星気学・環境方位</strong>
+               <p className="text-zinc-400 text-justify">
+                 均時差を補正した「真太陽時」に基づき、その場所・時間に流れる磁気エネルギー（九星・八門）をリアルタイム算出します。五行理論と組み合わせ、あなたの「本命星」の周波数と共鳴する空間ベクトルを特定します。
+               </p>
+            </div>
+            <div className="p-2 border border-red-900/30 rounded-sm">
+               <strong className="text-red-400 block mb-1 font-mono text-[9px]">◆ 3. VOID TIME（天中殺）</strong>
+               <p className="text-zinc-400 text-justify">
+                 天中殺（空亡）は地球の磁気シールドと生体リズムが同調外れを起こす時間帯です。四柱推命の干支の組み合わせにおける「空白の位相」であり、この時間帯での物理的移動や決断は自律神経エラーを招くため避けるべきです。
+               </p>
+            </div>
+            <div className="p-2 border border-emerald-900/30 rounded-sm">
+               <strong className="text-emerald-400 block mb-1 font-mono text-[9px]">◆ 4. OPTIMAL TIME（吉門・相生）</strong>
+               <p className="text-zinc-400 text-justify">
+                 緑色ハイライトは、空間の「八門（生/休/開）」が開き、かつ九星の属性とあなたの属性が「相生（または相比）」関係にある完全同期状態です。肉体と環境の周波数が同調し、パフォーマンスが最大化されます。
+               </p>
+            </div>
          </div>
       </details>
 
       {/* Vertical Timeline Feed */}
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         {schedule.map((item, index) => {
            const now = new Date();
            const isCurrent = now >= item.startStandard && now < item.endStandard;
            const isExpanded = expandedIndex === index;
            const isVoid = isVoidTimeHour(item);
-           const isOptimal = isOptimalTimeHour(item);
+           const evalPhase = evaluateTimePhase(item);
+           const isOptimal = evalPhase.isOptimal;
            
            const cardClass = isVoid ? "border-red-900/50 bg-red-950/20" 
                                     : isOptimal ? "border-emerald-900/50 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
                                     : "border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 transition-colors";
            
            return (
-             <div key={index} className={`flex flex-col border ${cardClass} p-3 sm:p-5 rounded-md relative overflow-hidden`}>
+             <div key={index} className={`flex flex-col border ${cardClass} p-2 sm:p-3 rounded-md relative overflow-hidden group`}>
                 {/* Background Flavor text */}
-                <div className="absolute right-[-10%] top-[-30%] text-[100px] sm:text-[140px] font-bold text-black/30 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none">
+                <div className="absolute right-[-5%] top-[-10%] text-[60px] sm:text-[80px] font-bold text-black/20 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none">
                    {item.etoKanji}
                 </div>
                 
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between relative z-10 gap-4">
-                  <div className="flex flex-col">
-                     <span className="text-xl sm:text-3xl font-mono text-zinc-100 font-bold tracking-widest drop-shadow-md">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative z-10 gap-2 md:gap-4">
+                  {/* Time and Zodiac */}
+                  <div className="flex items-center gap-3 min-w-[200px]">
+                     <span className="text-sm sm:text-base font-mono text-zinc-100 font-bold tracking-widest drop-shadow-md whitespace-nowrap">
                        {formatTime(item.startStandard)} - {formatTime(item.endStandard)}
                      </span>
-                     <div className="flex items-center gap-3 mt-1 sm:mt-2">
-                        <span className={`text-lg sm:text-xl font-bold ${isVoid ? 'text-red-500' : 'text-zinc-400'}`}>{item.etoKanji}の刻</span>
-                        <span className="text-[10px] text-zinc-600 font-mono hidden sm:inline-block tracking-widest uppercase">[{item.reading}]</span>
+                     <div className="flex items-center gap-1">
+                        <span className={`text-sm font-bold ${isVoid ? 'text-red-500' : 'text-zinc-400'}`}>{item.etoKanji}の刻</span>
+                        <span className="text-[9px] text-zinc-600 font-mono hidden sm:inline-block tracking-widest uppercase">[{item.reading}]</span>
                      </div>
                   </div>
                   
-                  {/* Status Badge */}
-                  <div className="flex-shrink-0 flex flex-col items-start sm:items-end">
-                     {isVoid && <span className="bg-red-900/60 text-red-500 border border-red-500/80 px-4 py-1.5 font-bold text-sm sm:text-base tracking-widest md:animate-pulse shadow-md">[ NO-GO ] 行動凍結</span>}
-                     {!isVoid && isOptimal && <span className="bg-emerald-900/60 text-emerald-400 border border-emerald-500/80 px-4 py-1.5 font-bold text-sm sm:text-base tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">[ GO ] 行動推奨</span>}
-                     {!isVoid && !isOptimal && <span className="text-zinc-500 text-xs font-mono tracking-widest border border-zinc-800 px-3 py-1">ROUTINE (中立)</span>}
+                  {/* Kyusei and Hachimon Summaries */}
+                  <div className="flex flex-row items-center gap-2 md:gap-4 flex-1 text-[10px] sm:text-xs w-full">
+                    {/* 九星 */}
+                    <div className="flex flex-col w-1/3 md:w-auto">
+                       <span className="text-zinc-600 text-[8px] uppercase tracking-widest leading-none mb-1">Star(周波数)</span>
+                       <span className={`font-bold ${isVoid ? 'text-red-800' : 'text-zinc-300'}`}>{item.kyusei.japanese}</span>
+                    </div>
+                    {/* 八門 */}
+                    <div className="flex flex-col flex-1">
+                       <span className="text-zinc-600 text-[8px] uppercase tracking-widest leading-none mb-1">Gate(ゲート)</span>
+                       <div className="flex items-center gap-1.5">
+                         <span className={`font-bold ${isVoid ? 'text-red-800' : (item.hachimon.auspicious ? 'text-amber-400' : 'text-zinc-400')}`}>
+                           {item.hachimon.japanese}
+                         </span>
+                         <span className="text-[9px] text-zinc-500 hidden sm:inline-block border-l border-zinc-700 pl-1.5">
+                           {getGateDescription(item.hachimon.japanese)}
+                         </span>
+                       </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Sub-info layout */}
-                <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row flex-wrap gap-x-8 gap-y-3 relative z-10 text-[10px] sm:text-xs font-mono text-zinc-400">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-zinc-600 uppercase tracking-widest text-[8px] sm:text-[10px]">Star(Qi) / 九星</span> 
-                    <span className={`font-bold ${isVoid ? 'text-red-800' : 'text-zinc-300'}`}>{item.kyusei.japanese}</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-zinc-600 uppercase tracking-widest text-[8px] sm:text-[10px]">Gate(Filter) / 八門</span> 
-                    <span className={`font-bold ${isVoid ? 'text-red-800' : (item.hachimon.auspicious ? 'text-amber-400' : 'text-zinc-300')}`}>
-                      {item.hachimon.japanese}
-                    </span>
+                  
+                  {/* Status Badge & Toggle Button */}
+                  <div className="flex items-center justify-between w-full md:w-auto gap-2 mt-2 md:mt-0">
+                     <div className="flex-shrink-0">
+                        {isVoid && <span className="bg-red-900/60 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">[ NO-GO ] 凍結</span>}
+                        {!isVoid && isOptimal && <span className="bg-emerald-900/60 text-emerald-400 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">[ GO ] 推奨</span>}
+                        {!isVoid && !isOptimal && <span className="text-zinc-500 text-[10px] font-mono tracking-widest border border-zinc-800 px-2 py-0.5 bg-black/40">ROUTINE</span>}
+                     </div>
+                     <button onClick={() => toggleRow(index)} className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-zinc-950/50 px-2 py-1 border border-zinc-800 whitespace-nowrap">
+                       <span className={expandedIndex === index ? 'text-blue-500' : ''}>{expandedIndex === index ? '▲' : '▼'}</span>
+                       {expandedIndex === index ? 'HIDE' : 'EXAMINE'}
+                     </button>
                   </div>
                 </div>
                 
-                {/* Warning Text for Void Time */}
-                {isVoid && (
-                  <div className="mt-4 bg-red-950/40 p-3 sm:p-4 border-l-2 border-red-500/50 text-justify relative z-10 shadow-inner">
-                    <div className="text-[10px] sm:text-xs font-mono text-red-500 uppercase tracking-widest mb-1 md:animate-pulse">
-                       ⚠ SYSTEM SHIELD OFFLINE
-                    </div>
-                    <div className="text-[9px] sm:text-[10px] font-sans text-red-400/80 leading-relaxed">
-                       {item.japanese}の刻における強烈な電磁気定在波が地球共鳴と非同期状態です。物理移動・新規アクション・重要な決断の一切を停止し、安全なROUTINEタスクへ移行してください。
-                    </div>
-                  </div>
-                )}
-
-                {/* Decrypt Matrix Toggle */}
-                <div className="mt-4 relative z-10 flex justify-end">
-                   <button onClick={() => toggleRow(index)} className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-2 transition-colors uppercase tracking-widest font-bold bg-zinc-950/50 px-3 py-1.5 border border-zinc-800">
-                     <span className={expandedIndex === index ? 'text-blue-500' : ''}>{expandedIndex === index ? '▲' : '▼'}</span>
-                     {expandedIndex === index ? 'HIDE MATRIX' : 'DECRYPT MATRIX'}
-                   </button>
-                </div>
-                
+                {/* Expanded Details */}
                 {isExpanded && (
-                   <div className="mt-4 bg-black/80 p-4 border border-zinc-800 rounded-sm flex flex-col items-center relative z-10 shadow-inner">
-                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mb-3">Kigaku Compass Matrix</div>
-                      <div className="scale-90 opacity-90"><KigakuBoard centerStar={item.kyusei} /></div>
+                   <div className="mt-3 pt-3 border-t border-zinc-800/80 relative z-10 flex flex-col md:flex-row gap-4 bg-black/40 p-2 rounded-sm animate-fade-in">
+                      {/* Explain Phase */}
+                      <div className="flex-1 flex flex-col gap-2 text-[10px] text-zinc-400 leading-relaxed">
+                         {isVoid ? (
+                           <div className="bg-red-950/40 p-2 border-l-2 border-red-500/50 text-justify">
+                             <div className="font-mono text-red-500 uppercase tracking-widest mb-1 font-bold md:animate-pulse">⚠ SYSTEM SHIELD OFFLINE</div>
+                             <div className="text-red-400/80 leading-relaxed">
+                                {item.japanese}の刻は強烈な電磁気定在波により地球共鳴と非同期状態にあります。物理的な移動・新規アクション・重要な決断の一切を停止し、ROUTINEタスクへ移行してください。
+                             </div>
+                           </div>
+                         ) : (
+                           <div className="bg-zinc-950/80 p-2 border border-zinc-800/80 flex flex-col gap-2">
+                             <div>
+                               <strong className={`block mb-1 ${isOptimal ? 'text-emerald-400' : 'text-zinc-300'}`}>[ 空間評価 (Spatial Eval) ]</strong>
+                               {isOptimal ? "あなたの本命星と空間の周波数（九星）が共鳴し、さらに八門が吉方位を示しています。重要な決断や出発に最適なタイミングです。" : "通常の時間帯です。極端なノイズはないため、日常の業務や生活に問題はありません。"}
+                             </div>
+                             
+                             {evalPhase.myElement && evalPhase.timeElement && (
+                               <div className="border-t border-zinc-800/80 pt-2 mt-1">
+                                 <strong className="block mb-1 text-purple-400">[ 周波数共鳴解析 (Elemental Resonance) ]</strong>
+                                 <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
+                                   <span className="bg-black border border-zinc-800 px-1.5 py-0.5">My Base: <span className={`${evalPhase.myElement.color} font-bold`}>{evalPhase.myElement.name} ({evalPhase.myElement.id})</span></span>
+                                   <span className="text-zinc-600">×</span>
+                                   <span className="bg-black border border-zinc-800 px-1.5 py-0.5">Time Qi: <span className={`${evalPhase.timeElement.color} font-bold`}>{evalPhase.timeElement.name} ({evalPhase.timeElement.id})</span></span>
+                                 </div>
+                                 <div className="flex items-center gap-2">
+                                   <span className="text-zinc-500">Status:</span>
+                                   <span className={`font-bold ${evalPhase.isFavorable ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                                     {evalPhase.relation || "関係性なし (中立)"}
+                                   </span>
+                                 </div>
+                                 <p className="mt-1 text-[9px] opacity-80 text-justify">
+                                   陰陽五行説（木火土金水）と九星気学の数理モデルによる解析です。あなたの固有波長（本命星）と現在の空間波長（九星）の相性を計算しています。相生（生み出す関係）や相比（同じ属性）であれば、空間エネルギーを味方に付けやすくなります。
+                                 </p>
+                               </div>
+                             )}
+                           </div>
+                         )}
+                         <div className="bg-zinc-950/80 p-2 border border-zinc-800/80">
+                           <strong className="block mb-1 text-zinc-300">[ {item.hachimon.japanese}門の特性 (Gate Filter) ]</strong>
+                           <span className="text-amber-400/80">{getGateDescription(item.hachimon.japanese)}</span>
+                           <p className="mt-1 text-[9px] opacity-80 text-justify">特定の時間帯におけるエネルギーの「出口」や「傾向」を表すフィルターです。吉門であれば物事がスムーズに運び、凶門であれば予期せぬトラブルが生じやすくなります。</p>
+                         </div>
+                      </div>
+
+                      {/* Compass Matrix */}
+                      <div className="bg-black/80 p-2 border border-zinc-800 rounded-sm flex flex-col items-center justify-center min-w-[200px]">
+                         <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 font-bold">Kigaku Compass Matrix</div>
+                         <div className="scale-75 origin-top opacity-90"><KigakuBoard centerStar={item.kyusei} /></div>
+                      </div>
                    </div>
                 )}
              </div>
