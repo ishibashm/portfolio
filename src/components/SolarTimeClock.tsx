@@ -183,8 +183,8 @@ export const SolarTimeClock = () => {
         if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
         
         if (!silent) {
-          if (session) alert("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
-          else alert("ブラウザ環境から設定を復元しました（未ログイン）。");
+          if (session) console.log("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
+          else console.log("ブラウザ環境から設定を復元しました（未ログイン）。");
         }
         return true;
       } catch (e) {
