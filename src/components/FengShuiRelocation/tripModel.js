@@ -25,7 +25,7 @@ export const ENTITY_PAGE = {
 }
 
 const DEFAULT_SELECTION = { type: 'activity', id: 'thu-transit' }
-export const TRIP_DOCUMENT_STORAGE_KEY = 'trip-command-center/v4-public'
+export const TRIP_DOCUMENT_STORAGE_KEY = 'feng-shui-command-center/v1'
 export const VIEWER_PROFILE_STORAGE_KEY = 'trip-command-center/viewer/v4-public'
 const LEGACY_TRIP_DOCUMENT_STORAGE_KEYS = ['trip-command-center/v3-public', 'trip-command-center/v2', 'trip-command-center/v1']
 const LEGACY_VIEWER_PROFILE_STORAGE_KEYS = ['trip-command-center/viewer/v3-public', 'trip-command-center/viewer']
