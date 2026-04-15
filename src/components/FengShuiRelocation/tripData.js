@@ -153,12 +153,9 @@ export const MAP_FACILITIES = [
 ]
 
 export const NAV_ITEMS = [
-  { id: 'itinerary', label: 'Itinerary' },
-  { id: 'stay', label: 'Stay' },
-  { id: 'meals', label: 'Meals' },
-  { id: 'activities', label: 'Activities' },
-  { id: 'expenses', label: 'Expenses' },
-  { id: 'families', label: 'Families' },
+  { id: 'itinerary', label: 'Timeline & Map' },
+  { id: 'activities', label: 'Purification Tasks' },
+  { id: 'families', label: 'Members & Elements' },
 ]
 
 export const DAYS = [
