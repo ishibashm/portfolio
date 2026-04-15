@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
+    "@googlemaps/js-api-loader": "^2.0.2",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@sparticuz/chromium": "^143.0.4",
@@ -20,9 +21,11 @@
     "@types/pg": "^8.18.0",
     "ai": "^6.0.116",
     "astronomy-engine": "^2.1.19",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "defuddle": "^0.8.0",
     "dotenv": "^17.3.1",
+    "framer-motion": "^12.38.0",
     "geomagnetism": "^0.2.0",
     "jsdom": "^28.1.0",
     "katex": "^0.16.37",
@@ -37,6 +40,7 @@
     "react-katex": "^3.1.0",
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
+    "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
