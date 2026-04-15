@@ -1524,6 +1524,15 @@ function MissionFeedTray({ items, onActivateItem }) {
 }
 
 function SituationBoard({ context, onOpenEntity, onOpenBriefing }) {
+  const [timingData, setTimingData] = useState(null)
+  
+  useEffect(() => {
+    fetch('/api/relocation-timing')
+      .then(res => res.json())
+      .then(data => setTimingData(data))
+      .catch(err => console.error(err))
+  }, [])
+
   const sections = [
     { title: 'Live now', items: context.liveEntities, emptyLabel: 'Nothing active in this window.' },
     { title: 'Coming up', items: [...context.nextEntities, ...context.prepSoon].slice(0, 4), emptyLabel: 'No immediate follow-ups.' },
@@ -1531,6 +1540,22 @@ function SituationBoard({ context, onOpenEntity, onOpenBriefing }) {
 
   return (
     <div className="border border-[#30363D] bg-[#161b22]">
+      {timingData && (
+        <div className="border-b border-emerald-500/30 bg-emerald-900/10 p-5">
+           <div className="mb-2 text-[9px] font-black uppercase tracking-[0.22em] text-emerald-400">
+             Optimal Relocation Engine
+           </div>
+           <div className="text-[14px] font-bold text-emerald-200">
+             Best Direction: {timingData.bestDirection}
+           </div>
+           <div className="text-[12px] text-emerald-300/80 mt-1">
+             Timing: {new Date(timingData.timing).toLocaleString()} (Score: {timingData.score})
+           </div>
+           <div className="mt-3 text-[10px] leading-relaxed text-zinc-400">
+             {timingData.reason}
+           </div>
+        </div>
+      )}
       <div className="border-b border-[#30363D] bg-[#1f2a34]/30 p-5">
         <div className="mb-2 text-[9px] font-black uppercase tracking-[0.22em] text-[#58A6FF]">
           Current situation
