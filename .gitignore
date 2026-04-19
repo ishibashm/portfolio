@@ -79,3 +79,9 @@ public/sitemap*.xml
 public/robots.txt
 
 /src/generated/prisma
+
+# Text & Markdown Documents
+*.txt
+*.md
+!README.md
+!**/README.md

@@ -8,16 +8,19 @@
     "start": "next start",
     "lint": "eslint",
     "format": "prettier --write .",
-    "research": "npx tsx scripts/ai_quant_researcher.ts"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "research": "npx tsx scripts/ai_quant_researcher.ts",
+    "review-harness": "node scripts/review-harness.mjs"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.43",
+    "@ai-sdk/google": "^3.0.63",
     "@googlemaps/js-api-loader": "^2.0.2",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
     "@sparticuz/chromium": "^143.0.4",
     "@supabase/ssr": "^0.9.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/supabase-js": "^2.103.3",
     "@types/pg": "^8.18.0",
     "ai": "^6.0.116",
     "astronomy-engine": "^2.1.19",
@@ -27,7 +30,6 @@
     "dotenv": "^17.3.1",
     "framer-motion": "^12.38.0",
     "geomagnetism": "^0.2.0",
-    "jsdom": "^28.1.0",
     "katex": "^0.16.37",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.577.0",
@@ -41,10 +43,14 @@
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.5.0",
+    "twitter-api-v2": "^1.29.0",
+    "yahoo-finance2": "^3.14.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/babel__core": "^7.20.5",
     "@types/gensync": "^1.0.4",
     "@types/google.accounts": "^0.0.18",
@@ -59,13 +65,16 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/react-katex": "^3.0.4",
+    "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
+    "jsdom": "^27.0.1",
     "prettier": "^3.7.4",
     "prisma": "^7.6.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

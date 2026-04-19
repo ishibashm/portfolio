@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma"
 import { rental_propertiesModel as rental_properties, StockTargetModel as StockTarget, TimingAstrologyModel as TimingAstrology } from "@/generated/prisma/models"
 import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen } from "lucide-react"
 import Link from "next/link"
+import { TwitterFeed } from "@/components/twitter/TwitterFeed"
+import { FinanceWidget } from "@/components/finance/FinanceWidget"
 
 export const revalidate = 60 // Revalidate cache every minute
 
@@ -76,7 +78,14 @@ export default async function DashboardPage() {
               <h2 className="text-xl font-semibold tracking-tight text-gray-100">Quant Equities</h2>
             </div>
             
-            <div className="flex flex-col gap-4">
+            <FinanceWidget symbol="^N225" />
+            
+            <div className="mt-4 flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-semibold tracking-tight text-gray-100">Market Social Feed</h2>
+            </div>
+            <TwitterFeed initialQuery="(株 OR 日経 OR 投資) min_faves:50" type="search" />
+            
+            <div className="mt-6 flex flex-col gap-4">
               {stocks.length === 0 ? (
                 <div className="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md text-center">
                   <p className="text-gray-500 text-sm">No equity signals generated yet.</p>
