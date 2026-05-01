@@ -42,7 +42,7 @@ export async function GET(req: Request) {
       const call = response.toolCalls[0];
       if (call.toolName === 'get_kyusei_board') {
         // @ts-ignore: Next.js + Vercel AI SDK type definition conflict workaround
-        const args = call.args as { centerStarNumber: number };
+        const args = (call.args || {}) as { centerStarNumber?: number };
         
         // 3. あなたのアプリ側で実際の関数を叩く
         const centerStar = getKyusei(args.centerStarNumber || centerStarNum);

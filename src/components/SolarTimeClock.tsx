@@ -12,10 +12,9 @@ import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calcu
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
-import { createClient } from '../utils/supabase/client';
+import type { NBAData } from "./nba/NBADashboard";
 
-const supabase = createClient();
-
+const NBADashboard = dynamic(() => import("./nba/NBADashboard").then(mod => mod.NBADashboard), { ssr: false });
 const SolarTimeTable = dynamic(() => import("./SolarTimeTable").then(mod => mod.SolarTimeTable), { ssr: false });
 const TacticalActionCommand = dynamic(() => import("./TacticalActionCommand").then(mod => mod.TacticalActionCommand), { ssr: false });
 const BioMagneticDashboard = dynamic(() => import("./BioMagneticDashboard").then(mod => mod.BioMagneticDashboard), { ssr: false });
@@ -38,7 +37,10 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "nba">("profile");
+
+  // NBA State
+  const [nbaData, setNbaData] = useState<NBAData | null>(null);
 
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
@@ -73,8 +75,6 @@ export const SolarTimeClock = () => {
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
   
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
@@ -102,117 +102,85 @@ export const SolarTimeClock = () => {
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
-  const handleLoadConfig = async (silent = true) => {
-    // まずログイン状態を確認
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session) {
-      setIsLoggedIn(true);
-      setUserEmail(session.user?.email || null);
-      
-      // ログイン済みなら常にクラウドからの同期を優先する（他デバイスとのデータ不整合を防ぐため）
-      try {
-        const { data, error } = await supabase
-          .from('user_configs')
-          .select('*')
-          .eq('user_email', session.user.email)
-          .single();
+  const fetchNBAData = async () => {
+    try {
+      const res = await fetch("/api/nba");
+      if (!res.ok) throw new Error("Failed to fetch NBA data");
+      const json = await res.json();
+      if (json.success) {
+        setNbaData(json.data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-        if (data && !error) {
+  useEffect(() => {
+    fetchNBAData();
+  }, []);
+
+  const loadFromLocal = async () => {
+    try {
+      const res = await fetch('/api/user-config');
+      if (res.ok) {
+        const data = await res.json();
+        if (Object.keys(data).length > 0) {
           if (data.birth_date) setBirthDate(data.birth_date);
-          if (data.birth_lat) setBirthLat(data.birth_lat);
-          if (data.birth_lon) setBirthLon(data.birth_lon);
-          if (data.base_lat) setLat(data.base_lat);
-          if (data.base_lon) setLon(data.base_lon);
-          if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
-          if (data.encrypted_gemini_key) setGeminiKey("********");
-          if (data.baseline_hrv_mean) setBaselineHrvMean(data.baseline_hrv_mean);
-          if (data.baseline_hrv_std) setBaselineHrvStd(data.baseline_hrv_std);
-          if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
-          if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
-          if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
-          if (data.use_psychology_scorer !== null) setUsePsychologyScorer(data.use_psychology_scorer);
-          if (data.use_kigaku_scorer !== null) setUseKigakuScorer(data.use_kigaku_scorer);
-          if (data.use_astrology_scorer !== null) setUseAstrologyScorer(data.use_astrology_scorer);
-          
-          // クラウドの最新データをローカルにもキャッシュ
-          localStorage.setItem('tactical_config_v1', JSON.stringify({
-            birth_date: data.birth_date || birthDate,
-            birth_lat: data.birth_lat || birthLat,
-            birth_lon: data.birth_lon || birthLon,
-            base_lat: data.base_lat || lat,
-            base_lon: data.base_lon || lon,
-            void_zodiac_override: data.void_zodiac_override || voidZodiacOverride,
-            gemini_key_exists: !!data.encrypted_gemini_key,
-            baseline_hrv_mean: data.baseline_hrv_mean || baselineHrvMean,
-            baseline_hrv_std: data.baseline_hrv_std || baselineHrvStd,
-            baseline_gsr_mean: data.baseline_gsr_mean || baselineGsrMean,
-            baseline_gsr_std: data.baseline_gsr_std || baselineGsrStd,
-            base_sync_timestamp: data.base_sync_timestamp || baseSyncTimestamp,
-            use_psychology_scorer: data.use_psychology_scorer ?? usePsychologyScorer,
-            use_kigaku_scorer: data.use_kigaku_scorer ?? useKigakuScorer,
-            use_astrology_scorer: data.use_astrology_scorer ?? useAstrologyScorer
-          }));
-          
-          if (!silent) alert("クラウドから設定を同期しました。");
+          if (data.birth_lat !== undefined) setBirthLat(data.birth_lat);
+          if (data.birth_lon !== undefined) setBirthLon(data.birth_lon);
+          if (data.base_lat !== undefined) setLat(data.base_lat);
+          if (data.base_lon !== undefined) setLon(data.base_lon);
+          if (data.void_zodiac_override !== undefined) setVoidZodiacOverride(data.void_zodiac_override);
+          if (data.gemini_key_exists) setGeminiKey("********");
+          if (data.baseline_hrv_mean !== undefined) setBaselineHrvMean(data.baseline_hrv_mean);
+          if (data.baseline_hrv_std !== undefined) setBaselineHrvStd(data.baseline_hrv_std);
+          if (data.baseline_gsr_mean !== undefined) setBaselineGsrMean(data.baseline_gsr_mean);
+          if (data.baseline_gsr_std !== undefined) setBaselineGsrStd(data.baseline_gsr_std);
+          if (data.base_sync_timestamp !== undefined) setBaseSyncTimestamp(data.base_sync_timestamp);
+          if (data.use_psychology_scorer !== undefined) setUsePsychologyScorer(data.use_psychology_scorer);
+          if (data.use_kigaku_scorer !== undefined) setUseKigakuScorer(data.use_kigaku_scorer);
+          if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
           return true;
         }
-      } catch (err) {
-        console.error("Cloud fetch error", err);
       }
+    } catch (e) {
+      console.error("API config load error", e);
     }
 
-    // 未ログイン、またはクラウドにデータがない場合はローカル環境（オフライン）からの復元を試みる
     const localData = localStorage.getItem('tactical_config_v1');
     if (localData) {
       try {
         const data = JSON.parse(localData);
         if (data.birth_date) setBirthDate(data.birth_date);
-        if (data.birth_lat) setBirthLat(data.birth_lat);
-        if (data.birth_lon) setBirthLon(data.birth_lon);
-        if (data.base_lat) setLat(data.base_lat);
-        if (data.base_lon) setLon(data.base_lon);
-        if (data.void_zodiac_override) setVoidZodiacOverride(data.void_zodiac_override);
+        if (data.birth_lat !== undefined) setBirthLat(data.birth_lat);
+        if (data.birth_lon !== undefined) setBirthLon(data.birth_lon);
+        if (data.base_lat !== undefined) setLat(data.base_lat);
+        if (data.base_lon !== undefined) setLon(data.base_lon);
+        if (data.void_zodiac_override !== undefined) setVoidZodiacOverride(data.void_zodiac_override);
         if (data.gemini_key_exists) setGeminiKey("********");
-        if (data.baseline_hrv_mean) setBaselineHrvMean(data.baseline_hrv_mean);
-        if (data.baseline_hrv_std) setBaselineHrvStd(data.baseline_hrv_std);
-        if (data.baseline_gsr_mean) setBaselineGsrMean(data.baseline_gsr_mean);
-        if (data.baseline_gsr_std) setBaselineGsrStd(data.baseline_gsr_std);
-        if (data.base_sync_timestamp) setBaseSyncTimestamp(data.base_sync_timestamp);
+        if (data.baseline_hrv_mean !== undefined) setBaselineHrvMean(data.baseline_hrv_mean);
+        if (data.baseline_hrv_std !== undefined) setBaselineHrvStd(data.baseline_hrv_std);
+        if (data.baseline_gsr_mean !== undefined) setBaselineGsrMean(data.baseline_gsr_mean);
+        if (data.baseline_gsr_std !== undefined) setBaselineGsrStd(data.baseline_gsr_std);
+        if (data.base_sync_timestamp !== undefined) setBaseSyncTimestamp(data.base_sync_timestamp);
         if (data.use_psychology_scorer !== undefined) setUsePsychologyScorer(data.use_psychology_scorer);
         if (data.use_kigaku_scorer !== undefined) setUseKigakuScorer(data.use_kigaku_scorer);
         if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
-        
-        if (!silent) {
-          if (session) console.log("クラウドにデータが見つからなかったため、ブラウザ環境から設定を復元しました。");
-          else console.log("ブラウザ環境から設定を復元しました（未ログイン）。");
-        }
         return true;
       } catch (e) {
         console.error("LocalStorage parse error", e);
       }
     }
-
-    if (!silent) alert("保存された設定が見つかりませんでした。");
     return false;
   };
 
-  const handleAuth = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/`,
-      },
-    });
-
-    if (error) {
-      console.error("Auth Error:", error);
-      alert("認証システムへのパスが切断されました。");
-    }
+  const handleLoadConfig = async (silent = true) => {
+    const localFound = await loadFromLocal();
+    if (!localFound && !silent) alert("保存された設定が見つかりませんでした。");
+    return localFound;
   };
 
   useEffect(() => {
-    // Only fetch on mount silently
     handleLoadConfig(true);
   }, []);
 
@@ -223,7 +191,6 @@ export const SolarTimeClock = () => {
           setLat(position.coords.latitude);
           setLon(position.coords.longitude);
           
-          // 拠点が変更されたら、現在時刻を新たな同期起点（タイムスタンプ）とする
           const nowIso = new Date().toISOString();
           setBaseSyncTimestamp(nowIso);
           setBaseSyncDays(0);
@@ -261,45 +228,15 @@ export const SolarTimeClock = () => {
         use_astrology_scorer: useAstrologyScorer
       };
 
-      // ログイン不要で全員が使えるようにまずは LocalStorage に暗黙で保存
+      await fetch('/api/user-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configToSave)
+      });
+
       localStorage.setItem('tactical_config_v1', JSON.stringify(configToSave));
 
-      // ログイン済みユーザーならクラウドにもバックアップ同期する
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const payload: any = {
-          user_email: session.user.email,
-          birth_date: birthDate,
-          birth_lat: birthLat,
-          birth_lon: birthLon,
-          base_lat: lat,
-          base_lon: lon,
-          baseline_hrv_mean: baselineHrvMean,
-          baseline_hrv_std: baselineHrvStd,
-          baseline_gsr_mean: baselineGsrMean,
-          baseline_gsr_std: baselineGsrStd,
-          base_sync_timestamp: baseSyncTimestamp ? new Date(baseSyncTimestamp).toISOString() : null,
-          updated_at: new Date().toISOString()
-        };
-        
-        // ******** の場合は何もしない（変更なし）、それ以外なら保存用キーとして送る
-        if (geminiKey && geminiKey !== "********") {
-          payload.encrypted_gemini_key = geminiKey;
-        } else if (geminiKey === "") {
-          payload.encrypted_gemini_key = null;
-        }
-
-        const { error } = await supabase
-          .from('user_configs')
-          .upsert(payload, { onConflict: 'user_email' });
-
-        if (error) {
-          console.error("Supabase Upsert Error:", error);
-          throw new Error(error.message || 'Failed to save to Supabase');
-        }
-      }
-
-      alert("設定を保存しました（ブラウザ内にセキュアに記録されました）。");
+      alert("PC内のファイル (local_tactical_config.json) とブラウザに永久保存しました。");
       if (geminiKey && geminiKey !== "") {
         setGeminiKey("********");
       }
@@ -332,23 +269,20 @@ export const SolarTimeClock = () => {
     
     const direction = getTargetDirection();
 
-    // UIをブロックしないようにsetTimeoutでバックグラウンド実行
     setTimeout(() => {
       let offset = timeOffsetDays + 1;
       let foundOffset: number | null = null;
-      const MAX_SEARCH_DAYS = 365; // 最大1年先まで検索
+      const MAX_SEARCH_DAYS = 365;
       
       for (let i = 0; i < MAX_SEARCH_DAYS; i++) {
         const testDate = new Date(baseTime.getTime() + offset * 86400000);
         
-        // 1. 天中殺チェック (Global Time Check)
         const cz = getCurrentZodiac(testDate);
         if (personalVoidZodiac.includes(cz.yearZodiac) || personalVoidZodiac.includes(cz.monthZodiac) || personalVoidZodiac.includes(cz.dayZodiac)) {
            offset++;
-           continue; // 天中殺（年・月・日）の期間はすべてスキップ
+           continue;
         }
         
-        // 2. 空間ベクトルチェック
         const testEnv = getCurrentEnvironmentalFrequencies(testDate);
         const yB = generateBoard(testEnv.yearStar);
         const mB = generateBoard(testEnv.monthStar);
@@ -363,14 +297,12 @@ export const SolarTimeClock = () => {
         );
         
         if (direction) {
-           // 目的地がある場合、その方向が SAFE または OPTIMAL ならOK
            const s = vectorData.finalVectors[direction];
            if (s === 'SAFE' || s === 'OPTIMAL') {
               foundOffset = offset;
               break;
            }
         } else {
-           // 目的地がない場合、OPTIMAL が1つ以上ある日を探す
            const hasOptimal = Object.values(vectorData.finalVectors).includes('OPTIMAL');
            if (hasOptimal) {
               foundOffset = offset;
@@ -390,14 +322,11 @@ export const SolarTimeClock = () => {
     }, 50);
   };
 
-  // Calculate Solar Data (Current & Birth)
   const birthSolarData = React.useMemo(() => {
     if (!birthDate || !birthLon) return null;
     return calculateSolarTime(new Date(birthDate), birthLon);
   }, [birthDate, birthLon]);
 
-  // --- Environmental Context ---
-  // 物理モデルへの完全統合 & パフォーマンス最適化
   const env = React.useMemo(() => {
     if (!solarData?.solarTime) {
       if (!ephemerisTime) return null;
@@ -406,13 +335,11 @@ export const SolarTimeClock = () => {
     return getCurrentEnvironmentalFrequencies(solarData.solarTime);
   }, [ephemerisTime, solarData]);
 
-  // --- Hardware Init Context (Birth Data) ---
   const birthEnv = React.useMemo(() => {
     if (!birthSolarData) return null;
     return getCurrentEnvironmentalFrequencies(birthSolarData.solarTime);
   }, [birthSolarData]);
 
-  // --- Dynamic Ephemeris Calculation ---
   const honmeiStar = React.useMemo(() => {
     if (!birthSolarData?.solarTime) {
       if (!birthDate) return null;
@@ -450,10 +377,15 @@ export const SolarTimeClock = () => {
       "Space_Kp_Index", "Space_Xray_Flux",
       "Geo_Magnetic_F", "Geo_Magnetic_D", "Geo_Magnetic_I",
       "Bio_HRV", "Bio_GSR", "Bio_ANS_Load", "Bio_Shield_Capacity",
-      "Timing_Optimal", "Timing_Score",
+      "Timing_Target_Date", "Timing_Optimal", "Timing_Score",
       "Timing_Psychology", "Timing_Kigaku", "Timing_Astrology",
       "N_FinalVector", "NE_FinalVector", "E_FinalVector", "SE_FinalVector",
-      "S_FinalVector", "SW_FinalVector", "W_FinalVector", "NW_FinalVector"
+      "S_FinalVector", "SW_FinalVector", "W_FinalVector", "NW_FinalVector",
+      "NBA_Suggested_Action", "NBA_Expected_Reward", "NBA_Confidence",
+      "Micro_Stress", "Micro_Resilience",
+      "DS_Ephemeris_Source", "DS_Ephemeris_Detail",
+      "DS_Astrology_Source", "DS_Astrology_Detail",
+      "DS_RAG_Source", "DS_RAG_Detail"
     ].join(",");
 
     const row = [
@@ -469,6 +401,7 @@ export const SolarTimeClock = () => {
       spaceWeather?.xrayFlux !== null ? spaceWeather?.xrayFlux : "",
       geoData?.intensity || "", geoData?.declination || "", geoData?.inclination || "",
       hrv, gsr, ansLoad, shieldCapacity,
+      evalDate.toISOString().split('T')[0], // Timing_Target_Date (YYYY-MM-DD)
       timingOptimization?.isOptimal ? "YES" : "NO",
       timingOptimization?.finalScore?.toFixed(4) || "",
       timingOptimization?.details.find(d => d.name.includes('Psychology'))?.score?.toFixed(4) || "",
@@ -477,17 +410,53 @@ export const SolarTimeClock = () => {
       layers?.finalVectors?.N || "", layers?.finalVectors?.NE || "",
       layers?.finalVectors?.E || "", layers?.finalVectors?.SE || "",
       layers?.finalVectors?.S || "", layers?.finalVectors?.SW || "",
-      layers?.finalVectors?.W || "", layers?.finalVectors?.NW || ""
-    ].join(",");
+      layers?.finalVectors?.W || "", layers?.finalVectors?.NW || "",
+      nbaData?.nba.actionResult.suggestedAction || "",
+      nbaData?.nba.actionResult.expectedReward?.toFixed(4) || "",
+      nbaData?.nba.actionResult.confidence?.toFixed(4) || "",
+      nbaData?.micro.stress || "",
+      nbaData?.micro.resilience || "",
+      nbaData?.nba.stateVector.ephemerisData?.source || "", nbaData?.nba.stateVector.ephemerisData?.planetaryPositions || "",
+      nbaData?.nba.stateVector.astrologyData?.source || "", nbaData?.nba.stateVector.astrologyData?.transits || "",
+      nbaData?.nba.stateVector.ragContext?.source || "", nbaData?.nba.stateVector.ragContext?.classicalRules || ""
+    ].map(v => `"${v}"`).join(","); // wrap fields in quotes to prevent comma breaks
 
     const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + header + "\n" + row;
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ephemeris_engine_export_${Date.now()}.csv`);
+    link.setAttribute("download", `metaphysical_unified_export_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
+    // Export Unified JSON
+    const unifiedJson = {
+      ephemeris: {
+        timestamp: new Date().toISOString(),
+        location: { lat, lon },
+        birth: { date: birthDate, lat: birthLat, lon: birthLon },
+        stars: { physical: honmeiStar?.physical, classical: honmeiStar?.classical },
+        environment: env,
+        spaceWeather,
+        geoData,
+        vectors: layers?.finalVectors,
+        timingOptimization: {
+          ...timingOptimization,
+          targetDate: evalDate.toISOString().split('T')[0]
+        }
+      },
+      nba: nbaData
+    };
+    const jsonBlob = new Blob([JSON.stringify(unifiedJson, null, 2)], { type: "application/json" });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement("a");
+    jsonLink.setAttribute("href", jsonUrl);
+    jsonLink.setAttribute("download", `metaphysical_unified_state_${Date.now()}.json`);
+    document.body.appendChild(jsonLink);
+    jsonLink.click();
+    document.body.removeChild(jsonLink);
+    URL.revokeObjectURL(jsonUrl);
   };
 
   useEffect(() => {
@@ -495,9 +464,7 @@ export const SolarTimeClock = () => {
     setBaseTime(now);
     setEphemerisTime(now);
 
-    // Clock updates every minute to save React tree re-renders
     const fastTimer = setInterval(() => setBaseTime(new Date()), 60000);
-    // Ephemeris engine calculation runs only once a minute to prevent high CPU load
     const slowTimer = setInterval(() => setEphemerisTime(new Date()), 60000);
 
     return () => {
@@ -512,7 +479,6 @@ export const SolarTimeClock = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch Space Weather on mount
   useEffect(() => {
     fetchSpaceWeather().then((data) => setSpaceWeather(data));
   }, []);
@@ -524,7 +490,6 @@ export const SolarTimeClock = () => {
     }
   }, [baseTime, lon, timeOffsetDays, targetLon]);
 
-  // Fetch Geomagnetic Data (Server Action) ONLY when coordinates change!
   useEffect(() => {
     if (lat && lon) {
       getGeomagneticData(lat, lon, new Date().getTime()).then((data) =>
@@ -533,7 +498,6 @@ export const SolarTimeClock = () => {
     }
   }, [lat, lon]);
 
-  // Update baseSyncDays automatically based on baseSyncTimestamp
   useEffect(() => {
     if (baseSyncTimestamp) {
       const arrivedDate = new Date(baseSyncTimestamp);
@@ -541,22 +505,18 @@ export const SolarTimeClock = () => {
       const diffTime = now.getTime() - arrivedDate.getTime();
       let diffDays = diffTime / (1000 * 3600 * 24);
       diffDays = Math.max(0, diffDays);
-      setBaseSyncDays(Number(diffDays.toFixed(2))); // Update state with calculated days
+      setBaseSyncDays(Number(diffDays.toFixed(2)));
     }
   }, [baseSyncTimestamp]);
 
-  // Calculate ANS Load & Shield Capacity using the Bio-Modeling Engine
   useEffect(() => {
     if (!baseTime) return;
     
-    // 太陽時（0-24）を算出
     let solarHours = 12.0;
     if (solarData?.solarTime) {
       solarHours = solarData.solarTime.getHours() + solarData.solarTime.getMinutes() / 60;
     }
 
-    // 簡易的な月齢（Lunar Phase）計算（0.0=新月, 0.5=満月, 1.0=次の新月）
-    // 基準新月: 2000年1月6日 18:14 UTC (Unix Epoch: 947182440000 ms)
     const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
     const KNOWN_NEW_MOON = 947182440000;
     const diffMs = baseTime.getTime() - KNOWN_NEW_MOON;
@@ -575,9 +535,9 @@ export const SolarTimeClock = () => {
       currentLat: targetLat || lat,
       currentLon: targetLon || lon,
       elevation: targetElevation || 0,
-      kpIndex: spaceWeather?.kpIndex || 2, // デフォルト平穏
+      kpIndex: spaceWeather?.kpIndex || 2,
       solarTimeHours: solarHours,
-      pressureDrop: pressureDrop, // モックまたは将来のAPI用
+      pressureDrop: pressureDrop,
       lunarPhase: phase,
       baseSyncDays: baseSyncDays
     });
@@ -586,27 +546,21 @@ export const SolarTimeClock = () => {
     setAnsLoad(metrics.ansLoad);
   }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop]);
 
-  // --- Timing Optimizer Execution ---
   useEffect(() => {
     if (!baseTime) return;
 
-    // 現在評価中の日時（オフセットを加味）
     const targetDate = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
 
-    // アクションの種別を TimingOptimizer 用にマッピング
     let timingActionType: 'focus' | 'creative' | 'social' | 'rest' = 'focus';
     if (actionIntent === 'REST') timingActionType = 'rest';
     if (actionIntent === 'BUSINESS') timingActionType = 'social';
-    // MIGRATION / DEFAULT は focus として扱う（仮）
 
-    // ファクトリーからオプティマイザを生成
     const optimizer = createPersonalizedOptimizer({
       usePsychology: usePsychologyScorer,
       useEasternAstrology: useKigakuScorer,
       useWesternAstrology: useAstrologyScorer,
     });
 
-    // 九星気学の本命星番号へのマッピング（1〜9）
     let userKigakuStar: number | undefined;
     if (honmeiStar?.physical) {
         if (typeof honmeiStar.physical === 'number') {
@@ -627,7 +581,6 @@ export const SolarTimeClock = () => {
       targetDate,
       userBirthDate: birthDate ? new Date(birthDate) : undefined,
       userKigakuStar,
-      // 西洋占星術の正確な出生太陽星座はここでは計算が複雑なので仮のAriesとするか、未指定にする
       actionType: timingActionType,
       latitude: targetLat || lat,
       longitude: targetLon || lon
@@ -653,53 +606,12 @@ export const SolarTimeClock = () => {
   else if (activeLayerMode === 'month') activeVectors = layers?.monthLayer || {};
   else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
 
-  // Destination Check Logic
   const targetDirection = getTargetDirection();
   let targetVectorStatus = null;
   
   if (targetDirection && layers && layers.finalVectors) {
     targetVectorStatus = layers.finalVectors[targetDirection as Direction];
   }
-
-  // --- Helper for visually colorful board matrices ---
-  const renderMatrixCell = (dir: string, num: number | string, noiseStr?: string, isCenter = false) => {
-    if (isCenter) {
-      return (
-        <div className="p-1 flex flex-col items-center justify-center bg-black/40 border border-zinc-800/50">
-          <span className="text-[7px] text-zinc-600">C</span>
-          <span className="text-sm font-bold text-zinc-500">{num}</span>
-        </div>
-      );
-    }
-
-    let colorClass = "text-zinc-400";
-    let bgClass = "bg-black/30 border border-transparent";
-    let tooltip = noiseStr || "SAFE";
-
-    if (noiseStr?.startsWith('NOISE_VOID')) {
-      colorClass = "text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)]";
-      bgClass = "bg-zinc-950 border border-zinc-800/80 repeating-linear-gradient-45";
-    } else if (noiseStr?.startsWith('NOISE_NODE')) {
-      colorClass = "text-yellow-400 font-bold";
-      bgClass = "bg-yellow-500/10 border border-yellow-500/20";
-    } else if (noiseStr?.startsWith('NOISE')) {
-      colorClass = "text-red-400 font-bold";
-      bgClass = "bg-red-500/10 border border-red-500/20";
-    } else if (noiseStr === 'OPTIMAL') {
-      colorClass = "text-emerald-400 font-bold";
-      bgClass = "bg-emerald-500/10 border border-emerald-500/20";
-    } else if (noiseStr === 'SAFE' || !noiseStr) {
-      colorClass = "text-blue-400";
-      bgClass = "bg-blue-500/5 border border-blue-500/10";
-    }
-
-    return (
-      <div className={`p-0.5 sm:p-1 flex flex-col items-center justify-center ${bgClass}`} title={tooltip}>
-        <span className="text-[7px] text-zinc-500">{dir}</span>
-        <span className={colorClass}>{num}</span>
-      </div>
-    );
-  };
 
   const evalDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
   const currentZodiac = getCurrentZodiac(evalDate);
@@ -708,9 +620,31 @@ export const SolarTimeClock = () => {
   const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);
   const isGlobalVoid = isYearVoid || isMonthVoid;
 
+  const renderMatrixCell = (dir: string, star: any, status: any, isCenter: boolean = false) => {
+    const getColorClass = (s: string) => {
+      if (!s) return 'text-zinc-500';
+      if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return 'text-red-500 font-bold bg-red-950/30 border-red-900/50';
+      if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return 'text-[#a855f7] font-bold bg-[#a855f7]/10 border-[#a855f7]/30';
+      if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-900 border-zinc-700';
+      if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 font-bold bg-yellow-950/30 border-yellow-900/50';
+      if (s === 'OPTIMAL') return 'text-emerald-400 font-bold bg-emerald-950/30 border-emerald-900/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]';
+      return 'text-blue-400 bg-blue-950/10 border-blue-900/30';
+    };
+
+    const baseClass = isCenter ? 'bg-zinc-900/50 border-zinc-800 text-zinc-500' : 'bg-black/40 border-zinc-800/80';
+    const colorClass = isCenter ? '' : getColorClass(status);
+
+    return (
+      <div className={`p-1 flex flex-col items-center justify-center border rounded-sm transition-all ${baseClass} ${colorClass}`}>
+        <span className="text-[7px] text-zinc-500 uppercase tracking-widest">{dir}</span>
+        <span className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? 'text-zinc-600' : ''}`}>{star || '-'}</span>
+        {!isCenter && status && <span className="text-[5px] sm:text-[6px] uppercase tracking-tighter opacity-80 leading-none">{status.replace('NOISE_', '')}</span>}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
-      {/* Background Grid Pattern */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-10"
         style={{
@@ -737,7 +671,6 @@ export const SolarTimeClock = () => {
 
       <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
         
-        {/* Mission Objective Header */}
         <div className="w-full max-w-4xl text-center mb-2 px-4">
           <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
@@ -753,7 +686,6 @@ export const SolarTimeClock = () => {
           </button>
         </div>
 
-        {/* How it works breakdown */}
         {showHowItWorks && (
           <div className="w-full max-w-4xl animate-fade-in px-4">
             <div className="bg-zinc-950 border border-zinc-800 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-zinc-300 text-xs sm:text-sm font-sans leading-relaxed">
@@ -798,7 +730,6 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        {/* Tab Navigation (Customer Journey) */}
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
             onClick={() => setActiveTab("profile")}
@@ -839,6 +770,16 @@ export const SolarTimeClock = () => {
             }`}
           >
             4. Consult
+          </button>
+          <button
+            onClick={() => setActiveTab("nba")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "nba"
+                ? "bg-blue-500/10 text-blue-400 border border-blue-500/30"
+                : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            5. Agency (NBA)
           </button>
         </div>
 
@@ -881,8 +822,6 @@ export const SolarTimeClock = () => {
               isSaving={isSaving}
               onLoad={() => handleLoadConfig(false)}
               onGetGPS={handleGetGPS}
-              onAuth={handleAuth}
-              isLoggedIn={isLoggedIn}
               voidZodiacOverride={voidZodiacOverride}
               setVoidZodiacOverride={setVoidZodiacOverride}
               geminiKey={geminiKey}
@@ -959,7 +898,6 @@ export const SolarTimeClock = () => {
               vectors={activeVectors || null}
               honmeiStar={honmeiStar}
               envData={env}
-              userEmail={userEmail}
               personalVoidZodiac={personalVoidZodiac}
             />
           </div>
@@ -1651,6 +1589,13 @@ export const SolarTimeClock = () => {
                 setActiveLayerMode={setActiveLayerMode}
               />
             </div>
+          </div>
+        )}
+
+        {/* --- TAB CONTENT: 5. NBA DASHBOARD --- */}
+        {activeTab === "nba" && (
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-6xl mt-4">
+            <NBADashboard externalData={nbaData} onRefresh={fetchNBAData} />
           </div>
         )}
       </div>

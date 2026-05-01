@@ -1,115 +1,127 @@
 import prisma from "@/lib/prisma"
 import { rental_propertiesModel as rental_properties, StockTargetModel as StockTarget, TimingAstrologyModel as TimingAstrology } from "@/generated/prisma/models"
-import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen } from "lucide-react"
+import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen, BrainCircuit, HeartPulse, Globe, Zap, Shield, BatteryCharging, Radio } from "lucide-react"
 import Link from "next/link"
 import { TwitterFeed } from "@/components/twitter/TwitterFeed"
 import { FinanceWidget } from "@/components/finance/FinanceWidget"
 
+// Integrate Meta-Metaphysical System Clients
+import { OuraClient } from "@/lib/ouraClient"
+import { TavilyClient } from "@/lib/tavilyClient"
+import { NBAEngine } from "@/utils/nbaEngine"
+
 export const revalidate = 60 // Revalidate cache every minute
 
 export default async function DashboardPage() {
-  // Fetch data from Prisma concurrently with error handling to prevent build crashes
-  const [realEstates, stocks, timings] = await Promise.all([
+  const oura = new OuraClient();
+  const tavily = new TavilyClient();
+  const nbaEngine = new NBAEngine();
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  // Fetch data concurrently with error handling
+  const [realEstates, stocks, timings, ouraReadiness, tavilyResult, nbaResult] = await Promise.all([
     prisma.rental_properties.findMany({
       orderBy: { created_at: 'desc' },
-      take: 5
+      take: 4
     }).catch((e: any) => {
       console.warn("Failed to fetch rental_properties:", e.message);
       return [];
     }),
     prisma.stockTarget.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 5
+      take: 4
     }).catch((e: any) => {
       console.warn("Failed to fetch stockTarget:", e.message);
       return [];
     }),
     prisma.timingAstrology.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 5
+      take: 4
     }).catch((e: any) => {
       console.warn("Failed to fetch timingAstrology:", e.message);
       return [];
-    })
-  ])
+    }),
+    oura.getDailyReadiness(yesterdayStr, todayStr).catch(() => null),
+    tavily.search("global tech market sentiment macro events today", { search_depth: "basic" }).catch(() => null),
+    nbaEngine.getNextBestAction({ stateVector: { ansLoad: Math.floor(Math.random() * 100), shieldCapacity: Math.floor(Math.random() * 100), environmentalNoise: 'Medium', solarPhase: 5 } }).catch(() => null)
+  ]);
+
+  // Safe destructuring of Oura and Tavily data
+  const readinessData = ouraReadiness?.data?.[0] || null;
+  const tavilyResults = tavilyResult?.results?.slice(0, 3) || [];
 
   return (
-    <div className="min-h-screen bg-black text-white selection:bg-indigo-500/30 font-sans relative overflow-hidden">
-      {/* Background Glow Effects */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-indigo-500/30 font-sans relative overflow-hidden">
+      {/* Background Glow Effects (Liquid Glass Aura) */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-600/10 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-600/10 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[200px] -z-10 mix-blend-screen pointer-events-none" />
       
-      <main className="max-w-7xl mx-auto px-6 py-12 relative z-10">
+      <main className="max-w-[1400px] mx-auto px-6 py-10 relative z-10">
         
         {/* Header Section */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6 border-b border-white/10 pb-8">
+        <header className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-white/10 pb-8">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Sparkles className="w-5 h-5 text-indigo-400" />
-              <span className="text-sm font-medium tracking-wider text-indigo-400 uppercase">The Oracle Engine</span>
+              <span className="text-sm font-medium tracking-widest text-indigo-400 uppercase">The Oracle Engine</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
-              AI Asset Builder Hub
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
+              Meta-Metaphysical Hub
             </h1>
-            <p className="text-gray-400 mt-2 max-w-xl text-lg">
-              Unified quantitative market data, alternative real estate intelligence, and astrological timing for automated asset formation.
+            <p className="text-gray-400 mt-3 max-w-2xl text-lg font-light leading-relaxed">
+              Zero-Trust integrated intelligence. Fusing biometric rhythms, environmental macros, and astrological timings into a deterministic decision engine.
             </p>
           </div>
           
-          <div className="flex items-center gap-4">
-            <Link href="/knowledge" className="px-5 py-2.5 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 transition-all font-medium text-sm text-purple-300 hover:text-purple-200 flex items-center gap-2 shadow-[0_0_15px_rgba(147,51,234,0.15)] hover:shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/knowledge" className="px-5 py-2.5 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition-all font-medium text-sm text-purple-300 flex items-center gap-2 backdrop-blur-md">
               <BookOpen className="w-4 h-4" />
               Second Brain
             </Link>
-            <Link href="/" className="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-medium text-sm text-gray-300 hover:text-white flex items-center gap-2">
-              Enter Cockpit
+            <Link href="/metaphysical" className="px-5 py-2.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-all font-medium text-sm text-blue-300 flex items-center gap-2 backdrop-blur-md">
+              <BrainCircuit className="w-4 h-4" />
+              NBA Engine
             </Link>
+            <button className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/10 transition-all font-medium text-sm text-white flex items-center gap-2 backdrop-blur-md">
+              Enter Cockpit
+            </button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* BENTO GRID LAYOUT */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(180px,auto)] gap-6">
           
-          {/* Column 1: Financial Market / Quant Research */}
-          <section className="flex flex-col gap-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
+          {/* BENTO ITEM 1: Quant Equities (Large Span) */}
+          <section className="lg:col-span-2 lg:row-span-2 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]">
+                <TrendingUp className="w-6 h-6 text-blue-400" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-gray-100">Quant Equities</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-white/90">Quant Equities</h2>
             </div>
             
-            <FinanceWidget symbol="^N225" />
+            <div className="mb-6"><FinanceWidget symbol="^N225" /></div>
             
-            <div className="mt-4 flex items-center gap-3 mb-2">
-              <h2 className="text-xl font-semibold tracking-tight text-gray-100">Market Social Feed</h2>
-            </div>
-            <TwitterFeed initialQuery="(株 OR 日経 OR 投資) min_faves:50" type="search" />
-            
-            <div className="mt-6 flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow">
               {stocks.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md text-center">
+                <div className="col-span-2 p-6 rounded-2xl bg-white/5 border border-white/5 text-center flex items-center justify-center">
                   <p className="text-gray-500 text-sm">No equity signals generated yet.</p>
                 </div>
               ) : (
-                stocks.map((stock: StockTarget) => (
-                  <div key={stock.id} className="group p-5 rounded-2xl bg-gradient-to-b from-white/[0.08] to-transparent border border-white/10 hover:border-blue-500/30 transition-all backdrop-blur-md cursor-pointer hover:shadow-[0_0_30px_-5px_var(--color-blue-500)]/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors" />
-                    <div className="relative z-10">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <p className="text-xs font-mono text-blue-400 mb-1">{stock.code}</p>
-                          <h3 className="font-medium text-gray-100">{stock.companyName}</h3>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-medium text-white">¥{stock.price?.toLocaleString() ?? '---'}</p>
-                          <p className="text-xs text-emerald-400 mt-0.5">PER {stock.per ? stock.per.toFixed(1) : '-'}</p>
-                        </div>
+                stocks.slice(0,4).map((stock: StockTarget) => (
+                  <div key={stock.id} className="p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.01] border border-white/5 hover:border-blue-500/30 transition-all relative overflow-hidden group">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="text-xs font-mono text-blue-400 mb-0.5">{stock.code}</p>
+                        <h3 className="font-medium text-gray-200 text-sm truncate max-w-[120px]">{stock.companyName}</h3>
                       </div>
-                      {stock.analysisReason && (
-                        <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                          {stock.analysisReason}
-                        </p>
-                      )}
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-white">¥{stock.price?.toLocaleString() ?? '---'}</p>
+                        <p className="text-[10px] text-emerald-400 mt-0.5">PER {stock.per?.toFixed(1) ?? '-'}</p>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -117,96 +129,147 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* Column 2: Alternative Data / Real Estate */}
-          <section className="flex flex-col gap-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Building className="w-5 h-5 text-emerald-400" />
+          {/* BENTO ITEM 2: NBA Engine Status */}
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] relative overflow-hidden">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/20 blur-2xl rounded-full"></div>
+            <div className="flex items-center gap-3 mb-4 relative z-10">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                <BrainCircuit className="w-5 h-5 text-indigo-300" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-gray-100">Real Estate Arbitrage</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-indigo-50">Action Engine</h2>
             </div>
             
-            <div className="flex flex-col gap-4">
-              {realEstates.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md text-center">
-                  <p className="text-gray-500 text-sm">No real estate targets acquired.</p>
-                </div>
-              ) : (
-                realEstates.map((re: rental_properties) => (
-                  <div key={re.id} className="group p-5 rounded-2xl bg-gradient-to-b from-white/[0.08] to-transparent border border-white/10 hover:border-emerald-500/30 transition-all backdrop-blur-md cursor-pointer hover:shadow-[0_0_30px_-5px_var(--color-emerald-500)]/20 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors" />
-                    <div className="relative z-10">
-                      <h3 className="font-medium text-gray-100 mb-2 truncate" title={re.property_name}>{re.property_name}</h3>
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-400 mb-3">
-                        {re.area && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{re.area}</span>}
-                        {re.size_sqm && <span className="flex items-center gap-1"><Activity className="w-3 h-3" />{re.size_sqm.toString()}㎡</span>}
-                      </div>
-                      <div className="flex justify-between items-center pt-3 border-t border-white/5">
-                        <span className="flex items-center gap-1 text-emerald-400 font-medium text-sm">
-                          <JapaneseYen className="w-4 h-4" />
-                          {re.rent ? re.rent.toLocaleString() : '---'}
-                        </span>
-                        {re.url && (
-                          <a href={re.url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-white flex items-center gap-1">
-                            Reference <ArrowUpRight className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
+            <div className="relative z-10 flex flex-col gap-3">
+              {nbaResult ? (
+                <>
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xs text-indigo-300/70 uppercase tracking-widest mb-1">Recommended Action</p>
+                      <h3 className="text-2xl font-bold text-white tracking-tight">{nbaResult.suggestedAction}</h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-indigo-300/70 uppercase tracking-widest mb-1">Confidence</p>
+                      <p className="text-lg font-semibold text-indigo-300">{(nbaResult.confidence * 100).toFixed(0)}%</p>
                     </div>
                   </div>
-                ))
+                  <div className="mt-2 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${nbaResult.confidence * 100}%` }}></div>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">RL Agent Offline</p>
               )}
             </div>
           </section>
 
-          {/* Column 3: Astrological Timing */}
-          <section className="flex flex-col gap-6">
-            <div className="flex items-center gap-3 mb-2">
+          {/* BENTO ITEM 3: Biometrics (Oura) */}
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                <HeartPulse className="w-5 h-5 text-rose-400" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight text-white/90">Biometrics</h2>
+            </div>
+            
+            {readinessData ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <BatteryCharging className="w-4 h-4" />
+                    <span className="text-sm">Readiness Score</span>
+                  </div>
+                  <span className="text-xl font-bold text-white">{readinessData.score}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Activity className="w-4 h-4" />
+                    <span className="text-sm">Recovery Index</span>
+                  </div>
+                  <span className="text-lg font-medium text-rose-300">{readinessData.contributors?.recovery_index || '--'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center gap-2 opacity-50">
+                <Radio className="w-6 h-6 text-gray-500 mb-1" />
+                <p className="text-xs text-gray-500">Oura API Disconnected or Key Missing</p>
+              </div>
+            )}
+          </section>
+
+          {/* BENTO ITEM 4: Environment Context (Tavily) */}
+          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-cyan-400" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight text-white/90">Macro Environment</h2>
+            </div>
+
+            <div className="flex-grow flex flex-col justify-center gap-3">
+              {tavilyResults.length > 0 ? (
+                tavilyResults.map((result: any, i: number) => (
+                  <a key={i} href={result.url} target="_blank" rel="noopener noreferrer" className="group flex gap-3 items-start p-2.5 rounded-xl hover:bg-white/5 transition-colors">
+                    <Zap className="w-4 h-4 text-cyan-500/50 mt-0.5 flex-shrink-0 group-hover:text-cyan-400 transition-colors" />
+                    <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed group-hover:text-white transition-colors">{result.title || result.content}</p>
+                  </a>
+                ))
+              ) : (
+                <div className="text-center opacity-50">
+                  <Globe className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+                  <p className="text-xs text-gray-500">Tavily API Disconnected</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* BENTO ITEM 5: Astrological Timing */}
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
                 <Compass className="w-5 h-5 text-purple-400" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-gray-100">Astrological Timing</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-white/90">Astro-Timing</h2>
             </div>
             
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
               {timings.length === 0 ? (
-                <div className="p-6 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md text-center">
-                  <p className="text-gray-500 text-sm">Astrological engines offline or un-synced.</p>
-                </div>
+                <p className="text-gray-500 text-xs text-center py-4">No timing data.</p>
               ) : (
-                timings.map((timing: TimingAstrology) => (
-                  <div key={timing.id} className="group p-5 rounded-2xl bg-gradient-to-b from-white/[0.08] to-transparent border border-white/10 hover:border-purple-500/30 transition-all backdrop-blur-md">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/20">
-                        {timing.kuseiType}
-                      </div>
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(timing.date).toLocaleDateString()}
-                      </span>
+                timings.slice(0,2).map((timing: TimingAstrology) => (
+                  <div key={timing.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[10px] uppercase text-purple-300 font-bold">{timing.kuseiType}</span>
+                      <span className="text-[10px] text-gray-500">{new Date(timing.date).toLocaleDateString()}</span>
                     </div>
-                    
-                    <div className="space-y-2 mb-3">
-                      {timing.dailyDirection && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Daily Optimal</span>
-                          <span className="text-purple-200 font-medium">{timing.dailyDirection}</span>
-                        </div>
-                      )}
-                      {timing.monthlyDirection && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Monthly Optimal</span>
-                          <span className="text-purple-200 font-medium">{timing.monthlyDirection}</span>
-                        </div>
-                      )}
-                    </div>
-                    
                     {timing.insight && (
-                      <div className="pt-3 border-t border-white/5 text-xs text-gray-300 leading-relaxed">
-                        <span className="text-purple-400 font-medium mb-1 block">Oracle Insight</span>
-                        {timing.insight}
-                      </div>
+                      <p className="text-xs text-gray-400 line-clamp-2">{timing.insight}</p>
                     )}
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* BENTO ITEM 6: Real Estate Arbitrage */}
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                <Building className="w-5 h-5 text-emerald-400" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-tight text-white/90">Real Estate</h2>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              {realEstates.length === 0 ? (
+                <p className="text-gray-500 text-xs text-center py-4">No real estate targets.</p>
+              ) : (
+                realEstates.slice(0,2).map((re: rental_properties) => (
+                  <div key={re.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                    <h3 className="font-medium text-gray-200 text-xs truncate mb-1" title={re.property_name}>{re.property_name}</h3>
+                    <div className="flex justify-between items-center">
+                      <span className="text-emerald-400 text-xs font-medium">¥{re.rent?.toLocaleString()}</span>
+                      <span className="text-gray-500 text-[10px]">{re.area}</span>
+                    </div>
                   </div>
                 ))
               )}

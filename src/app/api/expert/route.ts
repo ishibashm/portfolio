@@ -3,6 +3,7 @@ import { streamText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createClient } from '@/utils/supabase/server';
 import { decrypt } from '@/utils/encryption';
+import { maskPII } from '@/utils/anonymizer';
 
 export const runtime = 'nodejs';
 
@@ -42,9 +43,11 @@ export async function POST(req: Request) {
 
     const google = createGoogleGenerativeAI({ apiKey });
 
+    const maskedPrompt = maskPII(prompt);
+
     const result = await streamText({
       model: google('gemini-2.5-pro') as any,
-      prompt,
+      prompt: maskedPrompt,
     });
 
     return result.toTextStreamResponse();

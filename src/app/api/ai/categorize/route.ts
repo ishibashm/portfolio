@@ -3,6 +3,7 @@ import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { createClient } from '@/utils/supabase/server';
 import { z } from 'zod';
+import { maskPII } from '@/utils/anonymizer';
 
 export const runtime = 'edge';
 
@@ -22,13 +23,15 @@ export async function POST(req: Request) {
     }
 
     // Auto-Categorization logic using Gemini (Vercel AI SDK)
+    const maskedContent = maskPII(content);
+
     const result = await generateObject({
       model: google('gemini-1.5-pro'),
       schema: z.object({
         tags: z.array(z.string()).describe('List of 3 to 5 highly relevant tags/categories for this document.'),
         summary: z.string().describe('A concise 1-2 sentence summary of the document.'),
       }),
-      prompt: `Please analyze the following markdown document and extract relevant tags and a short summary.\n\nDocument Content:\n${content}`,
+      prompt: `Please analyze the following markdown document and extract relevant tags and a short summary.\n\nDocument Content:\n${maskedContent}`,
     });
 
     return NextResponse.json(result.object);

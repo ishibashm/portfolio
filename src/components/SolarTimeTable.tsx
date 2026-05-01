@@ -18,12 +18,12 @@ interface SolarTimeTableProps {
   vectors?: Record<string, string> | null;
   honmeiStar?: { physical: number; classical: number } | null;
   envData?: any;
-  userEmail?: string | null;
   personalVoidZodiac?: string[];
+  nbaData?: any;
 }
 
 export function SolarTimeTableComponent({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, userEmail, personalVoidZodiac
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, personalVoidZodiac, nbaData
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -41,15 +41,20 @@ export function SolarTimeTableComponent({
   const [previewContent, setPreviewContent] = useState("");
 
   const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashim@gmail.com"; 
-  // 一時的なデバッグ措置：ログインしている（userEmailが存在する）状態であれば、一旦すべて表示するように制限を解除します。
-  // （後ほど、ご指定のメールアドレス判明後に厳密な制限に再度設定します）
-  const isAuthorized = process.env.NODE_ENV === 'development' || !!userEmail;
+  // 完全ローカル化に伴い、制限を解除し常にエクスポートを許可
+  const isAuthorized = true;
 
   const toggleRow = (index: number) => {
     setExpandedIndex(expandedIndex === index ? null : index);
   };
 
-  const formatTime = (d: Date) => d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+  const formatTime = (d: Date) => {
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    const time = d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit" });
+    return `${year}/${month}/${day} ${time}`;
+  };
 
   const isVoidTimeHour = (item: KimonScheduleItem) => {
     return item.japanese === "午" || item.japanese === "未"; // 11:00 - 15:00
@@ -142,6 +147,14 @@ export function SolarTimeTableComponent({
       "ANS Load %", ansLoad.toString(),
       "Shield Cap %", shieldCapacity.toString(),
       "---", "---",
+      "Year Phase", `${currentZodiac.yearZodiac} (${envData?.yearStar || "N/A"})`,
+      "Month Phase", `${currentZodiac.monthZodiac} (${envData?.monthStar || "N/A"})`,
+      "Day Phase", `${currentZodiac.dayZodiac} (${envData?.dayStar || "N/A"})`,
+      "Year Void", isYearVoid ? "Yes (DANGER)" : "No",
+      "Month Void", isMonthVoid ? "Yes (DANGER)" : "No",
+      "Day Void", isDayVoid ? "Yes (DANGER)" : "No",
+      "Yin/Yang Phase", envData?.isYinPhase !== undefined ? (envData.isYinPhase ? "Yin" : "Yang") : "N/A",
+      "---", "---",
       "Vector N", vectors?.[ "N" ] || "N/A",
       "Vector NE", vectors?.[ "NE" ] || "N/A",
       "Vector E", vectors?.[ "E" ] || "N/A",
@@ -157,6 +170,22 @@ export function SolarTimeTableComponent({
       "Lunar Lon", envData?.raw?.moonLon?.toFixed(2) || "N/A",
       "Solar Lon", envData?.raw?.sunLon?.toFixed(2) || "N/A",
       "---", "---",
+      "NBA Suggested Action", nbaData?.nba?.actionResult?.suggestedAction || "N/A",
+      "NBA Confidence", nbaData?.nba?.actionResult?.confidence?.toFixed(4) || "N/A",
+      "DS Ephemeris Source", nbaData?.nba?.stateVector?.ephemerisData?.source || "N/A",
+      "DS Ephemeris Detail", nbaData?.nba?.stateVector?.ephemerisData?.planetaryPositions || "N/A",
+      "DS Astrology Source", nbaData?.nba?.stateVector?.astrologyData?.source || "N/A",
+      "DS Astrology Detail", nbaData?.nba?.stateVector?.astrologyData?.transits || "N/A",
+      "DS RAG Source", nbaData?.nba?.stateVector?.ragContext?.source || "N/A",
+      "DS RAG Detail", nbaData?.nba?.stateVector?.ragContext?.classicalRules || "N/A",
+      "DS Oura Readiness", nbaData?.micro?.readiness?.toString() || "N/A",
+      "DS Oura Sleep", nbaData?.micro?.sleep?.toString() || "N/A",
+      "DS Oura Stress", nbaData?.micro?.stress?.toString() || "N/A",
+      "DS Oura Resilience", nbaData?.micro?.resilience?.toString() || "N/A",
+      "DS Tavily Noise", nbaData?.macro?.environmentalNoise || "N/A",
+      "NBA Env Risk", nbaData?.nba?.stateVector?.environmentalRisk?.toString() || "N/A",
+      "NBA Solar Phase", nbaData?.nba?.stateVector?.solarPhase?.toString() || "N/A",
+      "---", "---",
       "STS Method", "True Solar Time (Verified)",
       "Engine Version", "v2.5.0-Tactical"
     ];
@@ -165,22 +194,31 @@ export function SolarTimeTableComponent({
     const headers = [
       "Eto", "Branch Name", "Stem Name", "Reading", 
       "Nine Stars", "Eight Gates", "Auspicious Gate", 
-      "Void Time", "Standard Start", "Standard End"
+      "Void Time", "Standard Start", "Standard End",
+      "Optimal", "Favorable", "Relation", "Time Element", "My Element"
     ];
     
     // Rows
-    const rows = schedule.map((item) => [
-      item.etoKanji,
-      item.name,
-      item.stemName,
-      item.reading,
-      item.kyusei.japanese,
-      item.hachimon.japanese,
-      item.hachimon.auspicious ? "Yes" : "No",
-      isVoidTimeHour(item) ? "Yes (DANGER)" : "No",
-      formatTime(item.startStandard),
-      formatTime(item.endStandard),
-    ]);
+    const rows = schedule.map((item) => {
+      const phase = evaluateTimePhase(item);
+      return [
+        item.etoKanji,
+        item.name,
+        item.stemName,
+        item.reading,
+        item.kyusei.japanese,
+        item.hachimon.japanese,
+        item.hachimon.auspicious ? "Yes" : "No",
+        isVoidTimeHour(item) ? "Yes (DANGER)" : "No",
+        item.startStandard.toISOString(),
+        item.endStandard.toISOString(),
+        phase.isOptimal ? "Yes" : "No",
+        phase.isFavorable ? "Yes" : "No",
+        phase.relation || "Neutral",
+        phase.timeElement?.name || "N/A",
+        phase.myElement?.name || "N/A"
+      ];
+    });
 
     // CSV Content
     return "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
@@ -226,7 +264,7 @@ export function SolarTimeTableComponent({
                onClick={openPreview}
                className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
              >
-               Review & Export AI Data
+               Review & Export Telemetry
              </button>
            )}
         </div>
@@ -494,8 +532,8 @@ export function SolarTimeTableComponent({
             </div>
             
             <p className="text-zinc-400 text-xs font-mono mb-4 text-justify leading-relaxed">
-              以下のデータは生成AI（LLM）へのプロンプト入力として最適化されたフル・テレメトリーデータです。
-              本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければエクスポートしてAIプロンプトに貼り付けてください。
+              以下のデータは現在の生体・環境・メタフィジカル計算式をすべて統合したフル・テレメトリーデータです。
+              本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければアーカイブ用としてエクスポートしてください。
             </p>
 
             <div className="flex-grow overflow-auto border border-zinc-800 bg-black/50 p-4 mb-4">

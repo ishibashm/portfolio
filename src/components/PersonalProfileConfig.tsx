@@ -16,8 +16,6 @@ interface PersonalProfileProps {
   isSaving?: boolean;
   onLoad?: () => void;
   onGetGPS?: () => void;
-  onAuth?: () => void;
-  isLoggedIn?: boolean;
   voidZodiacOverride?: string;
   setVoidZodiacOverride?: (v: string) => void;
   geminiKey?: string;
@@ -45,7 +43,7 @@ export function PersonalProfileConfig({
   birthLon, setBirthLon,
   baseLat, setBaseLat,
   baseLon, setBaseLon,
-  onSave, isSaving, onLoad, onGetGPS, onAuth, isLoggedIn,
+  onSave, isSaving, onLoad, onGetGPS,
   voidZodiacOverride, setVoidZodiacOverride,
   geminiKey, setGeminiKey,
   baselineHrvMean, setBaselineHrvMean,
@@ -71,19 +69,10 @@ export function PersonalProfileConfig({
           </h2>
         </div>
         <div className="flex items-center">
-          {isLoggedIn ? (
-            <span className="text-[9px] font-mono text-emerald-500 tracking-widest flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 md:animate-pulse"></span>
-              LINK ESTABLISHED
-            </span>
-          ) : (
-            <button 
-              onClick={onAuth}
-              className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 hover:text-white hover:underline transition-all"
-            >
-              [ AUTHENTICATE ]
-            </button>
-          )}
+          <span className="text-[9px] font-mono text-emerald-500 tracking-widest flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 md:animate-pulse"></span>
+            LOCAL MODE ONLY
+          </span>
         </div>
       </div>
 
@@ -311,7 +300,7 @@ export function PersonalProfileConfig({
                  onClick={onLoad}
                  className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 transition-colors"
                >
-                 [ SYNC FROM CLOUD ]
+                 [ LOAD SAVED CONFIG ]
               </button>
             </div>
             <button

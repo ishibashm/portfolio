@@ -48,7 +48,8 @@ import {
   AstroTime, 
   Body, 
   Ecliptic, 
-  GeoVector 
+  GeoVector,
+  SiderealTime
 } from 'astronomy-engine';
 
 /**
@@ -74,12 +75,92 @@ export const AstroEngine = {
     return coords.elon;
   },
 
-  // 木星の黄経 (Ecliptic Longitude of Jupiter)
-  // 木星の公転周期は約11.86年であり、1サイクルが「年盤」の物理的基盤（地球上の巨大な磁気潮汐）となる。
+  // 水星の黄経
+  getMercuryLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Mercury, time, true));
+    return coords.elon;
+  },
+
+  // 金星の黄経
+  getVenusLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Venus, time, true));
+    return coords.elon;
+  },
+
+  // 火星の黄経
+  getMarsLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Mars, time, true));
+    return coords.elon;
+  },
+
+  // 木星の黄経
   getJupiterLongitude(date: Date): number {
     const time = new AstroTime(date);
     const coords = Ecliptic(GeoVector(Body.Jupiter, time, true));
     return coords.elon;
+  },
+
+  // 土星の黄経
+  getSaturnLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Saturn, time, true));
+    return coords.elon;
+  },
+
+  // 天王星の黄経
+  getUranusLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Uranus, time, true));
+    return coords.elon;
+  },
+
+  // 海王星の黄経
+  getNeptuneLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Neptune, time, true));
+    return coords.elon;
+  },
+
+  // 冥王星の黄経
+  getPlutoLongitude(date: Date): number {
+    const time = new AstroTime(date);
+    const coords = Ecliptic(GeoVector(Body.Pluto, time, true));
+    return coords.elon;
+  },
+
+  // 地方恒星時 (Local Sidereal Time)
+  getLocalSiderealTime(date: Date, lon: number): number {
+    const time = new AstroTime(date);
+    return SiderealTime(time) + (lon / 15);
+  },
+
+  /**
+   * アセンダント (Ascendant) の算出
+   * @param date 日時
+   * @param lat 緯度
+   * @param lon 経度
+   */
+  getAscendant(date: Date, lat: number, lon: number): number {
+    const lst = AstroEngine.getLocalSiderealTime(date, lon) * 15; // 時間(0-24)を角度(0-360)に変換
+    const lstRad = (lst * Math.PI) / 180;
+    const latRad = (lat * Math.PI) / 180;
+    
+    // 黄道傾斜角 (Obliquity of the Ecliptic) 約 23.44度
+    const epsilonRad = (23.4392911 * Math.PI) / 180;
+
+    const ascRad = Math.atan2(
+      Math.cos(lstRad),
+      -Math.sin(lstRad) * Math.cos(epsilonRad) - Math.tan(latRad) * Math.sin(epsilonRad)
+    );
+    
+    let ascDeg = (ascRad * 180) / Math.PI;
+    while (ascDeg < 0) ascDeg += 360;
+    while (ascDeg >= 360) ascDeg -= 360;
+    
+    return ascDeg;
   },
 
   // ドラゴンヘッド（月の昇交点）の黄経
@@ -127,66 +208,53 @@ export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, class
 
 /**
  * Long-term Wave (年盤) の算出：
- * これまでの暦法（カレンダー剰余）ではなく、太陽黄経（L0 = 315°）の完全な天体位相を基準とする。
+ * 設計書に基づく完全な天体物理モデリング。
  * 
  * 物理的根拠:
- * 太陽系の重心移動と地球の公転軌道上の特定位相（立春・黄経315度）をフラクタルな9年周期の起点と定義。
- * 古典暦の「2月4日」固定ではなく、実際の天体配置に基づく物理的な境界線を使用。
+ * 木星の公転周期は約11.86年であり、地球の磁気圏に巨大な重力・電磁波干渉を与えます。
+ * 年ごとのマトリクスの中心周波数は、この木星の黄経に直接依存して決定されます。
  */
 export function getYearStar(date: Date): StarFrequency {
-  const L0 = AstroEngine.getSolarLongitude(date);
-  const year = date.getFullYear();
+  const jupiterLon = AstroEngine.getJupiterLongitude(date);
   
-  // 太陽黄経が315度（極小位相ポイント・真の立春）未満であれば、天体位相的には前サイクルの影響下にある
-  const isPreviousCycle = (L0 < 315 && date.getMonth() < 3);
-  let calcYear = isPreviousCycle ? year - 1 : year;
-
-  let reduced = String(calcYear).split('').reduce((acc, val) => acc + Number(val), 0);
-  while (reduced > 9) {
-    reduced = String(reduced).split('').reduce((acc, val) => acc + Number(val), 0);
-  }
+  // 木星の黄経(0〜360度)を9つの周波数帯域(各40度)にマッピングする
+  const phaseIndex = Math.floor(jupiterLon / 40); // 0〜8
   
-  let star = 11 - reduced;
-  if (star > 9) star -= 9;
+  // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
+  let star = 9 - phaseIndex;
   if (star <= 0) star += 9;
+  if (star > 9) star %= 9;
+  if (star === 0) star = 9;
   
   return star as StarFrequency;
 }
 
 /**
  * Mid-term Wave (月盤) の算出：
- * 月の黄経（Moon Longitude）と太陽の黄経（Solar Longitude）の物理的・潮汐的干渉（Lunar-Solar Phase）から算出。
+ * 設計書に基づく完全な天体物理モデリング。
  * 
  * 物理的根拠:
- * 月の公転による潮汐力の変動と、地球の公転（太陽との相対位置）による季節的エネルギー変化の合成波。
- * 太陽黄経（季節）をキャリア波、月相（満ち欠け）をモジュレーション波としたAM変調モデルとして定義。
+ * 月の黄経と、太陽軌道の相対位相（太陽と月の位置関係）に依存して中心周波数を決定します。
+ * これにより、約29.5日の引力波のサイクルを計算します。
  */
 export function getMonthStar(date: Date): StarFrequency {
   const sunLon = AstroEngine.getSolarLongitude(date);
+  const moonLon = AstroEngine.getLunarLongitude(date);
   
-  // 節入り（立春: 315°）を基準とした月のインデックス (0 = 2月〜立春, 1 = 3月〜啓蟄...)
-  // 315°〜344.9° が インデックス0
-  const monthIndex = Math.floor(((sunLon + 45) % 360) / 30);
-  
-  // 物理的な年盤（木星黄経と太陽黄経の合成フラクタル）の星を取得
-  const physicalYearStar = getYearStar(date);
-  
-  // 年星ごとの月順ベースを算出
-  // グループ1 (1, 4, 7): ベース 8
-  // グループ2 (3, 6, 9): ベース 5
-  // グループ3 (2, 5, 8): ベース 2
-  let baseStar = 0;
-  if (physicalYearStar % 3 === 1) baseStar = 8;
-  else if (physicalYearStar % 3 === 0) baseStar = 5;
-  else if (physicalYearStar % 3 === 2) baseStar = 2;
-
-  // インデックス分だけ星を後退させる（毎月1つ減る）
-  let star = baseStar - monthIndex;
-  
-  // 1〜9の範囲に正規化
-  while (star <= 0) {
-    star += 9;
+  // 太陽と月の相対位相 (0〜360度)
+  let relativePhase = moonLon - sunLon;
+  if (relativePhase < 0) {
+    relativePhase += 360;
   }
+  
+  // 相対位相を9つの周波数帯域(各40度)にマッピングする
+  const phaseIndex = Math.floor(relativePhase / 40); // 0〜8
+  
+  // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
+  let star = 9 - phaseIndex;
+  if (star <= 0) star += 9;
+  if (star > 9) star %= 9;
+  if (star === 0) star = 9;
   
   return star as StarFrequency;
 }
@@ -219,13 +287,44 @@ export function getDayStar(date: Date): StarFrequency {
   return star as StarFrequency;
 }
 
-export function getCurrentEnvironmentalFrequencies(date: Date) {
+/**
+ * Micro-term Wave (時盤) の算出：
+ * プレースホルダーを廃止し、地方恒星時（Local Sidereal Time）を用いた物理モデリング。
+ * 
+ * 物理的根拠:
+ * 地球の自転に伴う、宇宙空間（銀河中心・恒星背景）に対する絶対的な向き（位相）。
+ * 恒星時（0〜24時）を12の位相帯域に分割し、日のサイクル（陽遁・陰遁）と合成する。
+ */
+export function getHourStar(date: Date, isYinPhase: boolean, lon: number = 139.6917): StarFrequency {
+  // 地方恒星時(Local Sidereal Time: 0〜24時間)
+  const lst = AstroEngine.getLocalSiderealTime(date, lon);
+  
+  // 2時間ごとのフェーズ(0〜11)に分割
+  const phaseIndex = Math.floor(lst / 2);
+  
+  // ベースとなる日のサイクル (Julian Day)
+  const jd = AstroEngine.getJulianDay(date);
+  const dayCycle = Math.floor(jd + 0.5) % 9;
+  
+  // 位相の合成（陽遁は加算、陰遁は減算で波をモジュレーション）
+  let star = isYinPhase ? (dayCycle - phaseIndex) : (dayCycle + phaseIndex);
+  
+  // 1〜9のフラクタルに丸め込み
+  while (star <= 0) star += 9;
+  star %= 9;
+  if (star === 0) star = 9;
+  
+  return star as StarFrequency;
+}
+
+export function getCurrentEnvironmentalFrequencies(date: Date, lon: number = 139.6917) {
   const physY = getYearStar(date);
   const classY = getClassicalYearStar(date);
   const m = getMonthStar(date);
   const d = getDayStar(date);
   const L0 = AstroEngine.getSolarLongitude(date);
   const isYinPhase = (L0 >= 90 && L0 < 270);
+  const h = getHourStar(date, isYinPhase, lon);
   
   return {
     yearStar: physY,
@@ -233,12 +332,13 @@ export function getCurrentEnvironmentalFrequencies(date: Date) {
     monthStar: m,
     dayStar: d,
     isYinPhase: isYinPhase,
-    hourStar: 5 as StarFrequency,  // Placeholder
+    hourStar: h,
     raw: {
       sunLon: L0,
       moonLon: AstroEngine.getLunarLongitude(date),
       jupiterLon: AstroEngine.getJupiterLongitude(date),
-      lunarNode: AstroEngine.getLunarNodeLongitude(date)
+      lunarNode: AstroEngine.getLunarNodeLongitude(date),
+      lst: AstroEngine.getLocalSiderealTime(date, lon)
     }
   };
 }
@@ -437,9 +537,9 @@ export function getPersonalVoidZodiac(birthDate: Date): string[] {
 }
 
 /**
- * 日付から、その時点の「年」と「月」の十二支（文字列）を取得する
+ * 日付と経度から、その時点の「年・月・日・時」の十二支（文字列）を天体物理学的に取得する
  */
-export function getCurrentZodiac(date: Date): { yearZodiac: string, monthZodiac: string, dayZodiac: string } {
+export function getCurrentZodiac(date: Date, lon: number = 139.6917): { yearZodiac: string, monthZodiac: string, dayZodiac: string, hourZodiac: string } {
   // 年の干支: 木星黄経ベース（物理モデル）
   // 木星の黄経（0〜360度）を12分割し、実際の天体位置から「年の干支」を算出する。
   // 黄道0度(春分点)付近を卯とし、30度ごとに進む。
@@ -464,6 +564,11 @@ export function getCurrentZodiac(date: Date): { yearZodiac: string, monthZodiac:
   const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   const dayZodiac = ZODIACS_GANZHI[zhi];
   
-  return { yearZodiac, monthZodiac, dayZodiac };
+  // 時の干支: 地方恒星時ベース
+  const lst = AstroEngine.getLocalSiderealTime(date, lon);
+  const hourIndex = Math.floor(lst / 2) % 12;
+  const hourZodiac = ZODIACS_GANZHI[hourIndex];
+  
+  return { yearZodiac, monthZodiac, dayZodiac, hourZodiac };
 }
 
