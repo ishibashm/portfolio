@@ -34,15 +34,15 @@ interface MapProps {
   kpIndex?: number | null;
   ansLoad?: number;
   shieldCapacity?: number;
-  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean };
-  toggleLayer?: (layer: 'terrain' | 'weather' | 'bio') => void;
+  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean };
+  toggleLayer?: (layer: 'terrain' | 'weather' | 'bio' | 'hazard') => void;
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
   setActiveLayerMode?: (mode: 'final' | 'year' | 'month' | 'day') => void;
 }
 
 export function TacticalMagneticMapComponent({ 
   lat, lon, declination, inclination, intensity, vectors, layers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100,
-  hudLayers = { terrain: true, weather: true, bio: true },
+  hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   toggleLayer,
   activeLayerMode = 'final',
   setActiveLayerMode
@@ -117,6 +117,13 @@ export function TacticalMagneticMapComponent({
                       title="BIO (生体共鳴・固有波長)"
                     >
                       BIO [生体波]
+                    </button>
+                    <button 
+                      onClick={() => toggleLayer?.('hazard')}
+                      className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-zinc-800 ${hudLayers.hazard ? 'text-red-500 bg-red-500/10 font-bold' : 'text-zinc-600'}`}
+                      title="HZD (ハザードマップ・外部GIS連携)"
+                    >
+                      HZD [災害域]
                     </button>
                   </div>
                   <button 

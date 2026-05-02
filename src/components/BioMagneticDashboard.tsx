@@ -18,17 +18,17 @@ interface DashboardProps {
   ansLoad: number;
   shieldCapacity: number;
   // Timing Optimizer
-  timingScore?: number;
-  timingDetails?: { name: string; score: number; reason: string }[];
+  
+  timingDetails?: { name: string; phenomenon: string; detail: string }[];
   timingRecommendation?: string;
-  isTimingOptimal?: boolean;
+  
 }
 
 export function BioMagneticDashboard({
   kpIndex, xrayFlux, magneticF, magneticD, magneticI, eot,
   hrv, setHrv, gsr, setGsr, baseSyncDays, setBaseSyncDays,
   ansLoad, shieldCapacity,
-  timingScore, timingDetails, timingRecommendation, isTimingOptimal
+  timingDetails, timingRecommendation
 }: DashboardProps) {
 
   // --- Animated Waveform State (Fake Data for UI Richness) ---
@@ -299,196 +299,6 @@ export function BioMagneticDashboard({
 
         </div>
       </div>
-
-      {/* 3. MULTI-DIMENSIONAL TIMING ENGINE INSIGHTS */}
-      {timingScore !== undefined && (
-        <div className={`col-span-1 md:col-span-2 bg-zinc-950 border ${isTimingOptimal ? 'border-purple-500/50 shadow-[0_0_30px_rgba(168,85,247,0.15)]' : 'border-zinc-800/80 shadow-2xl'} p-4 relative overflow-hidden group flex flex-col`}>
-           {/* Matrix Background */}
-           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#a855f7 1px, transparent 1px), linear-gradient(90deg, #a855f7 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-           
-           <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Sparkles size={120} className={isTimingOptimal ? 'text-purple-500' : 'text-zinc-600'} />
-           </div>
-           
-           <div className="flex items-center justify-between mb-4 relative z-10 border-b border-zinc-800/80 pb-2">
-              <div className="flex items-center gap-2">
-                 <Sparkles size={14} className={`${isTimingOptimal ? 'text-purple-500 md:animate-pulse' : 'text-zinc-500'}`} />
-                 <h2 className="text-[11px] uppercase font-mono tracking-widest text-zinc-200 font-bold">
-                   Multi-Dimensional Timing Engine <span className="text-zinc-600 font-normal">/ 最適タイミング統合分析</span>
-                 </h2>
-              </div>
-              <div className="flex gap-1">
-                 <span className="w-1 h-3 bg-zinc-700"></span>
-                 <span className="w-1 h-3 bg-zinc-700"></span>
-                 <span className="w-1 h-3 bg-zinc-700"></span>
-              </div>
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-12 gap-5 relative z-10 font-mono text-xs h-full">
-              
-              {/* Radar & Overall Score Section */}
-              <div className="md:col-span-4 flex flex-col justify-center items-center p-4 bg-black/40 border border-zinc-800/50 rounded-sm relative overflow-hidden">
-                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-purple-950/10 pointer-events-none"></div>
-                 
-                 <span className="text-[10px] text-zinc-400 mb-2 font-bold uppercase tracking-widest z-10">Overall Sync Status</span>
-                 
-                 <div className="relative flex items-center justify-center z-10 w-full aspect-square max-w-[200px] max-h-[200px]">
-                    {/* Background Radar Lines */}
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" className="absolute inset-0 opacity-20 transform -rotate-90">
-                       <polygon points="50,10 84.6,70 15.4,70" fill="none" stroke="#a855f7" strokeWidth="0.5" />
-                       <polygon points="50,30 67.3,60 32.7,60" fill="none" stroke="#a855f7" strokeWidth="0.5" />
-                       <line x1="50" y1="50" x2="50" y2="10" stroke="#a855f7" strokeWidth="0.5" />
-                       <line x1="50" y1="50" x2="84.6" y2="70" stroke="#a855f7" strokeWidth="0.5" />
-                       <line x1="50" y1="50" x2="15.4" y2="70" stroke="#a855f7" strokeWidth="0.5" />
-                       
-                       {/* Actual Data Radar Triangle */}
-                       {timingDetails && timingDetails.length >= 3 && (
-                          <polygon 
-                             points={timingDetails.slice(0, 3).map((d, i) => getRadarPoint(i, 3, d.score)).join(" ")} 
-                             fill="rgba(168,85,247,0.2)" 
-                             stroke="#a855f7" 
-                             strokeWidth="1.5" 
-                             className="transition-all duration-1000"
-                          />
-                       )}
-                    </svg>
-
-                    {/* Outer Circle Progress */}
-                    <svg className="w-full h-full transform -rotate-90 drop-shadow-2xl absolute inset-0 z-10" viewBox="0 0 100 100">
-                       <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-zinc-800/80" />
-                       <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="2" fill="transparent" 
-                          strokeDasharray={46 * 2 * Math.PI} 
-                          strokeDashoffset={46 * 2 * Math.PI - (timingScore * 100 / 100) * (46 * 2 * Math.PI)}
-                          strokeLinecap="round"
-                          className={`${isTimingOptimal ? 'text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]' : timingScore >= 0.5 ? 'text-blue-500' : 'text-amber-500'} transition-all duration-1000`} 
-                       />
-                    </svg>
-
-                    <div className="absolute flex flex-col items-center justify-center z-20">
-                       <span className={`text-4xl font-bold tracking-tighter ${isTimingOptimal ? 'text-zinc-100 drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]' : 'text-zinc-300'}`}>
-                          {Math.round(timingScore * 100)}<span className="text-sm opacity-50">%</span>
-                       </span>
-                    </div>
-                 </div>
-
-                 <div className="mt-2 z-10 flex flex-col items-center gap-1 w-full">
-                    <span className={`w-full text-center text-[10px] font-mono font-bold uppercase tracking-[0.2em] px-2 py-1.5 rounded-sm border ${
-                       isTimingOptimal 
-                          ? 'border-purple-500/50 text-purple-400 bg-purple-500/10' 
-                          : timingScore >= 0.5 
-                             ? 'border-blue-500/50 text-blue-400 bg-blue-500/10' 
-                             : 'border-amber-500/50 text-amber-400 bg-amber-500/10'
-                    }`}>
-                       {isTimingOptimal ? 'OPTIMAL SYNC' : timingScore >= 0.5 ? 'ACCEPTABLE PHASE' : 'SUB-OPTIMAL RANGE'}
-                    </span>
-                    <span className="text-[7px] text-zinc-600 font-mono tracking-widest mt-1">STATUS EVALUATION MATRIX</span>
-                 </div>
-              </div>
-
-              {/* Assessment Console & Engines Details */}
-              <div className="md:col-span-8 flex flex-col gap-4">
-                 {/* AI Insight Terminal */}
-                 <div className="bg-black/60 border border-zinc-800/80 rounded-sm overflow-hidden flex flex-col relative shadow-inner h-fit">
-                    <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"></div>
-                    <div className="bg-zinc-900/50 px-3 py-1.5 border-b border-zinc-800/80 flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-purple-500 rounded-sm animate-pulse"></span>
-                          <span className="text-[9px] text-purple-400/80 font-mono font-bold uppercase tracking-widest">Tactical AI Assessment</span>
-                       </div>
-                       <span className="text-[8px] text-zinc-600 font-mono tracking-widest">MDL: ORACLE-V2</span>
-                    </div>
-                    <div className="p-3 sm:p-4 text-zinc-300 text-justify leading-relaxed flex flex-col gap-1.5 font-sans bg-[url('/scanline.png')] bg-repeat">
-                       {timingRecommendation ? (
-                           timingRecommendation.split('\n').map((line, idx) => (
-                              <div key={idx} className="flex gap-2 items-start relative z-10">
-                                 <span className="text-purple-500/50 mt-1 text-[10px]">▶</span>
-                                 <span className="text-[11px] sm:text-xs text-zinc-300 leading-relaxed font-medium">{line.replace('- [', '[').replace(']:', ']')}</span>
-                              </div>
-                           ))
-                       ) : (
-                          <div className="flex items-center gap-2 text-zinc-500 text-[11px]">
-                            <span className="animate-pulse font-mono">_</span>
-                            <span>標準的なタイミングです。特筆すべきバフやデバフはありません。</span>
-                          </div>
-                       )}
-                    </div>
-                 </div>
-
-                 {/* Engines Parameter Graphs */}
-                 <div className="flex flex-col gap-2 grow">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-zinc-600 rounded-full"></span>
-                        Inference Engine Telemetry
-                      </span>
-                      <span className="text-[7px] text-zinc-600 font-mono tracking-widest">SUB-ROUTINE METRICS</span>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                      {timingDetails?.map((detail, idx) => {
-                         const scorePct = Math.round(detail.score * 100);
-                         const isHigh = detail.score >= 0.7;
-                         const isLow = detail.score <= 0.3;
-                         const colorClass = isHigh ? "bg-purple-500" : isLow ? "bg-red-500" : "bg-blue-500";
-                         const textColor = isHigh ? "text-purple-400" : isLow ? "text-red-400" : "text-blue-400";
-                         const borderColor = isHigh ? "border-purple-500/30" : isLow ? "border-red-500/30" : "border-blue-500/30";
-                         const bgColor = isHigh ? "bg-purple-500/5" : isLow ? "bg-red-500/5" : "bg-blue-500/5";
-                         const shadowColor = isHigh ? "shadow-[0_0_10px_rgba(168,85,247,0.15)]" : isLow ? "shadow-[0_0_10px_rgba(239,68,68,0.15)]" : "shadow-[0_0_10px_rgba(59,130,246,0.15)]";
-                         
-                         return (
-                            <div key={idx} className={`${bgColor} ${borderColor} ${shadowColor} border p-3 flex flex-col gap-2 rounded-sm relative overflow-hidden group/engine`}>
-                               {/* Background accent line */}
-                               <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorClass} opacity-50`}></div>
-                               
-                               <div className="flex justify-between items-start pl-2">
-                                  <div className="flex flex-col gap-0.5">
-                                     <span className={`text-[10px] font-bold uppercase tracking-wider ${textColor} flex items-center gap-1.5`}>
-                                        <span className={`w-1 h-1 rounded-full ${colorClass}`}></span>
-                                        {detail.name.split('(')[0].trim()}
-                                     </span>
-                                     <span className="text-[7px] text-zinc-500 font-mono">
-                                        MODULE_{idx + 1} | LATENCY: {Math.floor(10 + Math.random() * 40)}ms
-                                     </span>
-                                  </div>
-                                  <div className="flex items-baseline gap-0.5">
-                                     <span className={`text-xl font-mono font-bold tracking-tighter leading-none ${textColor}`}>{scorePct}</span>
-                                     <span className={`text-[9px] ${textColor} opacity-70`}>%</span>
-                                  </div>
-                               </div>
-
-                               <div className="flex flex-col gap-1.5 pl-2">
-                                  {/* Advanced Progress Bar */}
-                                  <div className="w-full relative h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800/80">
-                                     {/* Grid lines in background */}
-                                     <div className="absolute inset-0 flex justify-between px-0.5 pointer-events-none opacity-20">
-                                       {[...Array(10)].map((_, i) => (
-                                          <div key={i} className="w-px h-full bg-zinc-500"></div>
-                                       ))}
-                                     </div>
-                                     <div 
-                                        className={`h-full ${colorClass} transition-all duration-1000 relative`} 
-                                        style={{ width: `${scorePct}%` }}
-                                     >
-                                        <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-r from-transparent to-white/30"></div>
-                                     </div>
-                                  </div>
-                                  
-                                  {/* Reason Text */}
-                                  <div className="text-[8px] sm:text-[9px] text-zinc-400 leading-relaxed text-justify mt-1 border-t border-zinc-800/50 pt-1.5">
-                                     {detail.reason}
-                                  </div>
-                               </div>
-                            </div>
-                         );
-                      })}
-                    </div>
-                 </div>
-              </div>
-
-           </div>
-        </div>
-      )}
-
     </div>
   );
 }

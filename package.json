@@ -46,6 +46,7 @@
     "react-katex": "^3.1.0",
     "react-leaflet": "^5.0.0",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.8.1",
     "sweph-wasm": "^2.6.9",
     "tailwind-merge": "^3.5.0",
     "twitter-api-v2": "^1.29.0",

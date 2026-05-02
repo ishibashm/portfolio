@@ -24,19 +24,19 @@ export function createPersonalizedOptimizer(prefs: OptimizerPreferences): Timing
     const optimizer = new TimingOptimizer();
 
     // デフォルト（サーカディアンリズム）は常に有効（ベースライン）
-    optimizer.addScorer(new TimeOfDayScorer(), 1.0);
+    optimizer.addScorer(new TimeOfDayScorer());
 
     // ユーザーの好みに応じてスコアラーをプラグイン
     if (prefs.usePsychology) {
-        optimizer.addScorer(new FreshStartScorer(), 0.8);
+        optimizer.addScorer(new FreshStartScorer());
     }
     
     if (prefs.useEasternAstrology) {
-        optimizer.addScorer(new KigakuScorer(), 1.2); 
+        optimizer.addScorer(new KigakuScorer()); 
     }
     
     if (prefs.useWesternAstrology) {
-        optimizer.addScorer(new WesternAstrologyScorer(), 1.2);
+        optimizer.addScorer(new WesternAstrologyScorer());
     }
 
     return optimizer;

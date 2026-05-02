@@ -33,18 +33,18 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
       { data: { id: 'F4', label: `太陽位相\n${stateVector.solarPhase?.toFixed(1) || 0}°`, type: 'feature' } },
 
       // Output Actions
-      { data: { id: 'DEEP_REST', label: `休息\nQ:${qValues['DEEP_REST']?.toFixed(2)}\n${(probabilities['DEEP_REST']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'DEEP_REST' } },
-      { data: { id: 'SHIELD_UP', label: `防御\nQ:${qValues['SHIELD_UP']?.toFixed(2)}\n${(probabilities['SHIELD_UP']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'SHIELD_UP' } },
-      { data: { id: 'NORMAL_OPS', label: `通常\nQ:${qValues['NORMAL_OPS']?.toFixed(2)}\n${(probabilities['NORMAL_OPS']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'NORMAL_OPS' } },
-      { data: { id: 'HIGH_INTENSITY_EXECUTION', label: `実行\nQ:${qValues['HIGH_INTENSITY_EXECUTION']?.toFixed(2)}\n${(probabilities['HIGH_INTENSITY_EXECUTION']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'HIGH_INTENSITY_EXECUTION' } },
+      { data: { id: 'ABORT_AND_SHIELD', label: `休息\nQ:${qValues['ABORT_AND_SHIELD']?.toFixed(2)}\n${(probabilities['ABORT_AND_SHIELD']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'ABORT_AND_SHIELD' } },
+      { data: { id: 'GATHER_INTEL', label: `防御\nQ:${qValues['GATHER_INTEL']?.toFixed(2)}\n${(probabilities['GATHER_INTEL']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'GATHER_INTEL' } },
+      { data: { id: 'PREPARE_AND_WAIT', label: `通常\nQ:${qValues['PREPARE_AND_WAIT']?.toFixed(2)}\n${(probabilities['PREPARE_AND_WAIT']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'PREPARE_AND_WAIT' } },
+      { data: { id: 'EXECUTE_RELOCATION', label: `実行\nQ:${qValues['EXECUTE_RELOCATION']?.toFixed(2)}\n${(probabilities['EXECUTE_RELOCATION']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'EXECUTE_RELOCATION' } },
     ];
 
     // Define edges based on PolicyWeights
     const policyWeights: Record<string, { w_ans: number; w_shield: number; w_risk: number; w_solar: number }> = {
-      DEEP_REST: { w_ans: 0.6, w_shield: -0.5, w_risk: 0.2, w_solar: 0.0 },
-      SHIELD_UP: { w_ans: 0.2, w_shield: 0.1, w_risk: 0.7, w_solar: -0.2 },
-      NORMAL_OPS: { w_ans: -0.2, w_shield: 0.3, w_risk: -0.2, w_solar: 0.2 },
-      HIGH_INTENSITY_EXECUTION: { w_ans: -0.6, w_shield: 0.8, w_risk: -0.4, w_solar: 0.5 }
+      ABORT_AND_SHIELD: { w_ans: 0.6, w_shield: -0.5, w_risk: 0.2, w_solar: 0.0 },
+      GATHER_INTEL: { w_ans: 0.2, w_shield: 0.1, w_risk: 0.7, w_solar: -0.2 },
+      PREPARE_AND_WAIT: { w_ans: -0.2, w_shield: 0.3, w_risk: -0.2, w_solar: 0.2 },
+      EXECUTE_RELOCATION: { w_ans: -0.6, w_shield: 0.8, w_risk: -0.4, w_solar: 0.5 }
     };
 
     const edges: any[] = [];

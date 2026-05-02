@@ -5,19 +5,22 @@ import { OuraClient } from '@/lib/ouraClient';
 import { TavilyClient } from '@/lib/tavilyClient';
 import { IChingClient } from '@/lib/ichingClient';
 import { NBAEngine, NBAParams } from '@/utils/nbaEngine';
-import { AstroEngine, getCurrentZodiac } from '@/utils/ephemerisEngine';
+import { AstroEngine } from '@/utils/ephemerisEngine';
+import { baziEngine } from '@/utils/baziEngine';
 import { AspectEngine } from '@/utils/aspectEngine';
 import { VedicEngine } from '@/utils/vedicEngine';
 
 export async function GET() {
   try {
     const oura = new OuraClient();
-    const tavily = new TavilyClient();
     const iching = new IChingClient();
     const nbaEngine = new NBAEngine();
     const vedicEngine = new VedicEngine();
 
     const today = new Date();
+    // Default to Tokyo for longitude
+    const lon = 139.6917;
+
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
 
@@ -47,7 +50,9 @@ export async function GET() {
     const jupLon = AstroEngine.getJupiterLongitude(today);
     const satLon = AstroEngine.getSaturnLongitude(today);
     const nodeLon = AstroEngine.getLunarNodeLongitude(today);
-    const zodiacs = getCurrentZodiac(today);
+    
+    // Calculate detailed BaZi
+    const baziData = baziEngine.calculate(today, lon);
 
     // Calculate all major aspects using AspectEngine
     const allAspects = AspectEngine.calculateAspects(today);
@@ -78,12 +83,7 @@ export async function GET() {
         saturn: `${satLon.toFixed(2)}°`,
         lunarNode: `${nodeLon.toFixed(2)}°`
       },
-      bazi: {
-        year: zodiacs.yearZodiac,
-        month: zodiacs.monthZodiac,
-        day: zodiacs.dayZodiac,
-        hour: zodiacs.hourZodiac
-      },
+      bazi: baziData,
       westernAstrology: {
         aspects: aspectStrings.length > 0 ? aspectStrings : ["No Major Aspects Detected"],
         retrogrades: [] // Placeholder
@@ -97,6 +97,7 @@ export async function GET() {
         ayanamsa: vedicChart.ayanamsa.toFixed(4)
       }
     };
+
 
     const ephemerisData = { source: "astronomy-engine", status: "Active", planetaryPositions: macroContexts.ephemeris };
     const astrologyData = { source: "astronomy-engine", status: "Active", transits: macroContexts.westernAstrology.aspects };
@@ -112,7 +113,7 @@ export async function GET() {
     const shieldCapacity = sleepScore; 
 
     // Extract environmental risk mathematically
-    let baseEnvRisk = 50; 
+    const baseEnvRisk = 50; 
     let envRisk = baseEnvRisk + aspectRisk;
     envRisk = Math.max(0, Math.min(100, envRisk)); // Clamp 0-100
     
@@ -126,6 +127,7 @@ export async function GET() {
       ephemerisData,
       astrologyData,
       ragContext,
+      vedicAstrology: macroContexts.vedicAstrology,
       ichingHexagram: iching.calculateHexagram(ansLoad, shieldCapacity, envRisk, sunLon),
       environmentalNoise: 'Low' // Ensure required property is present
     };
@@ -135,10 +137,10 @@ export async function GET() {
 
     const responseData = {
       micro: {
-        readiness: readinessScore,
-        sleep: sleepScore,
-        stress: stressScore,
-        resilience: resilienceScore,
+        hrv: 50, // mock base
+        gsr: 5, // mock base
+        ansLoad: ansLoad,
+        shieldCapacity: shieldCapacity,
       },
       macro: {
         environmentalNoise: stateVector.environmentalNoise,

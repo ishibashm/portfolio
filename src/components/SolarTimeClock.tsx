@@ -1,4 +1,5 @@
 "use client";
+import TelemetryChart from "./TelemetryChart";
 
 import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
@@ -37,7 +38,8 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "nba">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "nba" | "history">("profile")
+;
 
   // NBA State
   const [nbaData, setNbaData] = useState<NBAData | null>(null);
@@ -79,6 +81,35 @@ export const SolarTimeClock = () => {
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
+  const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
+  
+  const exportFullState = () => {
+    const fullState = {
+      timestamp: new Date().toISOString(),
+      location: { lat, lon, targetLat, targetLon },
+      personalProfile: { birthDate, birthLat, birthLon, honmeiStar },
+      biometrics: { hrv, gsr, ansLoad, shieldCapacity },
+      baselines: { hrvMean: baselineHrvMean, hrvStd: baselineHrvStd, gsrMean: baselineGsrMean, gsrStd: baselineGsrStd },
+      geomagnetism: geoData,
+      spaceWeather: spaceWeather,
+      ephemeris: env,
+      birthEphemeris: birthEnv,
+      spatialVectors: layers,
+      timingOptimization: timingOptimization,
+      nbaEngine: nbaData,
+      actionIntent,
+      timeOffsetDays
+    };
+    const blob = new Blob([JSON.stringify(fullState, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `system-full-state-${new Date().getTime()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
   const [targetElevation, setTargetElevation] = useState<number | null>(null);
@@ -284,12 +315,12 @@ export const SolarTimeClock = () => {
         }
         
         const testEnv = getCurrentEnvironmentalFrequencies(testDate);
-        const yB = generateBoard(testEnv.yearStar);
+        const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(testEnv.monthStar);
         const dB = generateBoard(testEnv.dayStar);
         
         const vectorData = calculateVectorCollision(
-          honmeiStar.physical,
+          useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
           yB, mB, dB,
           personalVoidZodiac,
           testEnv.raw.lunarNode,
@@ -350,19 +381,19 @@ export const SolarTimeClock = () => {
 
   const { board, layers, yearBoard, monthBoard, dayBoard, classicalYearBoard } = React.useMemo(() => {
     if (!env || !honmeiStar) return { board: null, layers: null, yearBoard: null, monthBoard: null, dayBoard: null, classicalYearBoard: null };
-    const yB = generateBoard(env.yearStar);
+    const yB = generateBoard(useClassicalBoard ? env.classicalYearStar : env.yearStar);
     const mB = generateBoard(env.monthStar);
     const dB = generateBoard(env.dayStar);
     const cyB = generateBoard(env.classicalYearStar);
     const vectorData = calculateVectorCollision(
-      honmeiStar.physical, 
+      useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
       yB, mB, dB,
       voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate)),
       env.raw.lunarNode,
       actionIntent
     );
     return { board: dB, layers: vectorData, yearBoard: yB, monthBoard: mB, dayBoard: dB, classicalYearBoard: cyB };
-  }, [honmeiStar, env, birthDate, actionIntent, voidZodiacOverride]);
+  }, [honmeiStar, env, birthDate, actionIntent, voidZodiacOverride, useClassicalBoard]);
 
   const handleExportCSV = () => {
     const header = [
@@ -377,7 +408,7 @@ export const SolarTimeClock = () => {
       "Space_Kp_Index", "Space_Xray_Flux",
       "Geo_Magnetic_F", "Geo_Magnetic_D", "Geo_Magnetic_I",
       "Bio_HRV", "Bio_GSR", "Bio_ANS_Load", "Bio_Shield_Capacity",
-      "Timing_Target_Date", "Timing_Optimal", "Timing_Score",
+      "Timing_Target_Date",
       "Timing_Psychology", "Timing_Kigaku", "Timing_Astrology",
       "N_FinalVector", "NE_FinalVector", "E_FinalVector", "SE_FinalVector",
       "S_FinalVector", "SW_FinalVector", "W_FinalVector", "NW_FinalVector",
@@ -402,11 +433,9 @@ export const SolarTimeClock = () => {
       geoData?.intensity || "", geoData?.declination || "", geoData?.inclination || "",
       hrv, gsr, ansLoad, shieldCapacity,
       evalDate.toISOString().split('T')[0], // Timing_Target_Date (YYYY-MM-DD)
-      timingOptimization?.isOptimal ? "YES" : "NO",
-      timingOptimization?.finalScore?.toFixed(4) || "",
-      timingOptimization?.details.find(d => d.name.includes('Psychology'))?.score?.toFixed(4) || "",
-      timingOptimization?.details.find(d => d.name.includes('Kigaku'))?.score?.toFixed(4) || "",
-      timingOptimization?.details.find(d => d.name.includes('Astrology'))?.score?.toFixed(4) || "",
+      timingOptimization?.details.find(d => d.name.includes('Psychology'))?.phenomenon || "",
+      timingOptimization?.details.find(d => d.name.includes('Kigaku'))?.phenomenon || "",
+      timingOptimization?.details.find(d => d.name.includes('Astrology'))?.phenomenon || "",
       layers?.finalVectors?.N || "", layers?.finalVectors?.NE || "",
       layers?.finalVectors?.E || "", layers?.finalVectors?.SE || "",
       layers?.finalVectors?.S || "", layers?.finalVectors?.SW || "",
@@ -414,8 +443,8 @@ export const SolarTimeClock = () => {
       nbaData?.nba.actionResult.suggestedAction || "",
       nbaData?.nba.actionResult.expectedReward?.toFixed(4) || "",
       nbaData?.nba.actionResult.confidence?.toFixed(4) || "",
-      nbaData?.micro.stress || "",
-      nbaData?.micro.resilience || "",
+      nbaData?.micro.ansLoad || "",
+      nbaData?.micro.shieldCapacity || "",
       nbaData?.nba.stateVector.ephemerisData?.source || "", nbaData?.nba.stateVector.ephemerisData?.planetaryPositions || "",
       nbaData?.nba.stateVector.astrologyData?.source || "", nbaData?.nba.stateVector.astrologyData?.transits || "",
       nbaData?.nba.stateVector.ragContext?.source || "", nbaData?.nba.stateVector.ragContext?.classicalRules || ""
@@ -864,10 +893,8 @@ export const SolarTimeClock = () => {
                 setBaseSyncDays={setBaseSyncDays}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
-                timingScore={timingOptimization?.finalScore}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
-                isTimingOptimal={timingOptimization?.isOptimal}
               />
             </div>
           </div>
@@ -925,10 +952,8 @@ export const SolarTimeClock = () => {
                 gsr={gsr}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
-                timingScore={timingOptimization?.finalScore}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
-                isTimingOptimal={timingOptimization?.isOptimal}
               />
             </div>
 
@@ -1571,7 +1596,7 @@ export const SolarTimeClock = () => {
             {/* Module 4: Tactical Magnetic Map */}
             <div className="w-full max-w-4xl mt-0">
 
-              <TacticalMagneticMap
+              <div className="flex justify-end mb-2 w-full"><button onClick={() => setUseClassicalBoard(!useClassicalBoard)} className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-amber-500/20 text-amber-400 border-amber-500/50" : "bg-blue-500/20 text-blue-400 border-blue-500/50"}`}>Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}</button></div><TacticalMagneticMap
                 lat={lat || 35.0116}
                 lon={lon || 135.7681}
                 declination={geoData?.declination || 0}
@@ -1592,6 +1617,13 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
+        {/* --- TAB CONTENT: 6. INSIGHTS (HISTORY) --- */}
+        {activeTab === "history" && (
+          <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in mt-4">
+            <TelemetryChart />
+          </div>
+        )}
+
         {/* --- TAB CONTENT: 5. NBA DASHBOARD --- */}
         {activeTab === "nba" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-6xl mt-4">
@@ -1607,6 +1639,14 @@ export const SolarTimeClock = () => {
         declination={geoData?.declination || null} 
         env={env} 
       />
+
+      <button 
+        onClick={exportFullState} 
+        className="fixed bottom-6 left-6 z-50 px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        EXPORT MASTER STATE (ALL TABS)
+      </button>
     </div>
   );
 };

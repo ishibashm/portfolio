@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, Shield, CloudLightning, Compass, BrainCircuit, RefreshCcw, Download, TerminalSquare, BookOpen, AlertTriangle, Navigation } from "lucide-react";
 import { CytoscapeNetwork } from "./CytoscapeNetwork";
+import { BaziReport, BaziData } from "./BaziReport";
+
 export interface NBAData {
   micro: {
-    readiness: number;
-    sleep: number;
-    stress?: number;
-    resilience?: string;
+    hrv: number;
+    gsr: number;
+    ansLoad?: number;
+    shieldCapacity?: number;
   };
   macro: {
     environmentalNoise: string;
@@ -24,12 +26,7 @@ export interface NBAData {
         saturn: string;
         lunarNode: string;
       };
-      bazi: {
-        year: string;
-        month: string;
-        day: string;
-        hour: string;
-      };
+      bazi: BaziData;
       westernAstrology: {
         aspects: string[];
         retrogrades: string[];
@@ -152,12 +149,10 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
     const row = {
       timestamp: new Date().toISOString(),
       // Micro (Biometrics)
-      readiness: data.micro.readiness,
-      sleep: data.micro.sleep,
-      stress: data.micro.stress ?? '',
-      resilience: data.micro.resilience ?? '',
-      ansLoad: data.nba.stateVector.ansLoad ?? '',
-      shieldCapacity: data.nba.stateVector.shieldCapacity ?? '',
+      hrv: data.micro.hrv,
+      gsr: data.micro.gsr,
+      ansLoad: data.micro.ansLoad ?? '',
+      shieldCapacity: data.micro.shieldCapacity ?? '',
       
       // Macro (Ephemeris & Astrology)
       envRisk: data.nba.stateVector.environmentalRisk ?? 50,
@@ -166,9 +161,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
       ephemeris_moon: data.macro.streams?.ephemeris?.moon ?? '',
       ephemeris_jupiter: data.macro.streams?.ephemeris?.jupiter ?? '',
       ephemeris_lunarNode: data.macro.streams?.ephemeris?.lunarNode ?? '',
-      bazi_year: data.macro.streams?.bazi?.year ?? '',
-      bazi_month: data.macro.streams?.bazi?.month ?? '',
-      bazi_day: data.macro.streams?.bazi?.day ?? '',
+      bazi_dayMaster: data.macro.streams?.bazi?.summary?.dayMaster ?? '',
       western_aspects: data.macro.streams?.westernAstrology?.aspects?.join(' | ') ?? '',
       vedic_nakshatra: data.macro.streams?.vedicAstrology?.nakshatra ?? '',
       vedic_moon_progress: data.macro.streams?.vedicAstrology?.moonProgress ?? '',
@@ -187,14 +180,6 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
       suggestedAction: data.nba.actionResult.suggestedAction,
       confidence: data.nba.actionResult.confidence,
       expectedReward: data.nba.actionResult.expectedReward,
-      qValue_NORMAL: data.nba.actionResult.qValues?.['NORMAL_OPS'] ?? '',
-      qValue_REST: data.nba.actionResult.qValues?.['REST_AND_RECOVER'] ?? '',
-      qValue_SHIELD: data.nba.actionResult.qValues?.['SHIELD_UP'] ?? '',
-      qValue_HIGH_INTENSITY: data.nba.actionResult.qValues?.['HIGH_INTENSITY_EXECUTION'] ?? '',
-      prob_NORMAL: data.nba.actionResult.probabilities?.['NORMAL_OPS'] ?? '',
-      prob_REST: data.nba.actionResult.probabilities?.['REST_AND_RECOVER'] ?? '',
-      prob_SHIELD: data.nba.actionResult.probabilities?.['SHIELD_UP'] ?? '',
-      prob_HIGH_INTENSITY: data.nba.actionResult.probabilities?.['HIGH_INTENSITY_EXECUTION'] ?? '',
       
       // Full Logic Trace Array joined into one cell
       logicTrace: data.nba.actionResult.logicTrace?.join(' \n ') ?? ''
@@ -344,44 +329,36 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-400">コンディション</span>
-                  <span className="text-emerald-300 font-medium">{data.micro.readiness}</span>
+                  <span className="text-emerald-300 font-medium">{data.micro.hrv}</span>
                 </div>
                 <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${data.micro.readiness}%` }} />
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${data.micro.hrv}%` }} />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-gray-400">睡眠スコア</span>
-                  <span className="text-emerald-300 font-medium">{data.micro.sleep}</span>
+                  <span className="text-emerald-300 font-medium">{data.micro.gsr}</span>
                 </div>
                 <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${data.micro.sleep}%` }} />
+                  <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${data.micro.gsr}%` }} />
                 </div>
               </div>
-              {data.micro.stress !== undefined && (
+              {data.micro.ansLoad !== undefined && (
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-400">ストレスレベル</span>
-                    <span className="text-emerald-300 font-medium">{data.micro.stress}</span>
+                    <span className="text-emerald-300 font-medium">{data.micro.ansLoad}</span>
                   </div>
                   <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
-                    <div className="h-full bg-orange-400 rounded-full" style={{ width: `${data.micro.stress}%` }} />
-                  </div>
-                </div>
-              )}
-              {data.micro.resilience && (
-                <div className="mt-2 p-2 rounded-lg bg-black/30 border border-emerald-500/10">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">レジリエンス</span>
-                    <span className="text-emerald-300 font-medium capitalize">{data.micro.resilience}</span>
+                    <div className="h-full bg-orange-400 rounded-full" style={{ width: `${data.micro.ansLoad}%` }} />
                   </div>
                 </div>
               )}
             </div>
           </motion.div>
 
-          {/* Macro Environment - Tavily */}
+          {/* Macro Environment - Streams */}
           <motion.div 
             variants={itemVariants}
             className="md:col-span-1 p-6 rounded-[2rem] bg-gradient-to-b from-orange-500/10 to-transparent border border-orange-500/20 backdrop-blur-md flex flex-col max-h-[350px]"
@@ -409,12 +386,9 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-black/40 border border-emerald-500/20">
-                    <p className="text-[10px] text-emerald-400 uppercase font-bold mb-2">四柱推命 (Bazi Pillars)</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="text-gray-300"><span className="text-emerald-500/50 text-[10px] mr-1">年</span>{data.macro.streams.bazi.year}</div>
-                      <div className="text-gray-300"><span className="text-emerald-500/50 text-[10px] mr-1">月</span>{data.macro.streams.bazi.month}</div>
-                      <div className="text-gray-300"><span className="text-emerald-500/50 text-[10px] mr-1">日</span>{data.macro.streams.bazi.day}</div>
-                      <div className="text-gray-300"><span className="text-emerald-500/50 text-[10px] mr-1">時</span>{data.macro.streams.bazi.hour}</div>
+                    <p className="text-[10px] text-emerald-400 uppercase font-bold mb-2">四柱推命 (Bazi Summary)</p>
+                    <div className="text-xs text-gray-300 font-medium">
+                      日主: {data.macro.streams.bazi.summary.dayMaster} ({data.macro.streams.bazi.summary.dayMasterWuxing}) - {data.macro.streams.bazi.summary.strength}
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-black/40 border border-indigo-500/20">
@@ -423,53 +397,6 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                       {data.macro.streams.westernAstrology.aspects.map((asp, i) => (
                         <div key={i} className="text-gray-300 flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-indigo-500"></span>{asp}</div>
                       ))}
-                      <div className="text-indigo-300/80 mt-1">逆行: {data.macro.streams.westernAstrology.retrogrades.join(", ")}</div>
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-black/40 border border-purple-500/20">
-                    <p className="text-[10px] text-purple-400 uppercase font-bold mb-2">インド占星術 (Vedic Panchang)</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-3">
-                      <div className="text-gray-300"><span className="text-purple-500/50 text-[10px] mr-1">TI</span>{data.macro.streams.vedicAstrology.tithi}</div>
-                      {data.macro.streams.vedicAstrology.ayanamsa && (
-                        <div className="text-gray-300"><span className="text-purple-500/50 text-[10px] mr-1">Ayan</span>{data.macro.streams.vedicAstrology.ayanamsa}°</div>
-                      )}
-                    </div>
-                    
-                    {/* Nakshatras with Progress Bars */}
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between text-[10px] mb-1">
-                          <span className="text-gray-400">Moon (Janma)</span>
-                          <span className="text-purple-300 font-medium">{data.macro.streams.vedicAstrology.nakshatra}</span>
-                        </div>
-                        {data.macro.streams.vedicAstrology.moonProgress !== undefined && (
-                          <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${data.macro.streams.vedicAstrology.moonProgress * 100}%` }}
-                              className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full" 
-                            />
-                          </div>
-                        )}
-                      </div>
-                      
-                      {data.macro.streams.vedicAstrology.sunNakshatra && (
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1">
-                            <span className="text-gray-400">Sun (Surya)</span>
-                            <span className="text-orange-300 font-medium">{data.macro.streams.vedicAstrology.sunNakshatra}</span>
-                          </div>
-                          {data.macro.streams.vedicAstrology.sunProgress !== undefined && (
-                            <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden">
-                              <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: `${data.macro.streams.vedicAstrology.sunProgress * 100}%` }}
-                                className="h-full bg-gradient-to-r from-orange-600 to-orange-400 rounded-full" 
-                              />
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </>
@@ -480,6 +407,16 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
               )}
             </div>
           </motion.div>
+
+          {/* BaZi Detailed Report - Spans full width */}
+          {data.macro.streams?.bazi && (
+            <motion.div 
+              variants={itemVariants}
+              className="md:col-span-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md"
+            >
+              <BaziReport data={data.macro.streams.bazi} />
+            </motion.div>
+          )}
 
           {/* State Vector Details */}
           <motion.div 
@@ -514,32 +451,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                 <p className="text-lg md:text-xl font-mono text-emerald-400">+{data.nba.actionResult.expectedReward.toFixed(2)}</p>
               </div>
             </div>
-            
-            {/* I-Ching Divination Data */}
-            {data.nba.stateVector.ichingHexagram && (
-              <div className="mt-6 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xl font-bold text-indigo-300">
-                    第{data.nba.stateVector.ichingHexagram.number}卦: {data.nba.stateVector.ichingHexagram.name}
-                  </span>
-                </div>
-                <div className="flex gap-4 text-xs">
-                  <span className="text-gray-400">
-                    リスク補正値: <strong className={data.nba.stateVector.ichingHexagram.riskModifier < 0 ? "text-emerald-400" : "text-red-400"}>
-                      {data.nba.stateVector.ichingHexagram.riskModifier > 0 ? '+' : ''}{data.nba.stateVector.ichingHexagram.riskModifier}
-                    </strong>
-                  </span>
-                  <span className="text-gray-400">
-                    確信度ブースト: <strong className={data.nba.stateVector.ichingHexagram.confidenceBoost > 0 ? "text-emerald-400" : "text-red-400"}>
-                      {data.nba.stateVector.ichingHexagram.confidenceBoost > 0 ? '+' : ''}{(data.nba.stateVector.ichingHexagram.confidenceBoost * 100).toFixed(0)}%
-                    </strong>
-                  </span>
-                </div>
-              </div>
-            )}
           </motion.div>
-
-
 
           {/* System Logic Trace (因果推論ログ) */}
           {data.nba.actionResult.logicTrace && (

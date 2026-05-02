@@ -10,6 +10,6 @@ export interface EvaluationContext {
 
 export interface TimingScorer {
   name: string;
-  // そのタイミングがどれだけ適しているか（0.0〜1.0）と、その理由を返す
-  score(context: EvaluationContext): { value: number; reason: string };
+  // そのタイミングで観測された物理・天体現象とその解説をそのまま返す（スコア化・ブラックボックス化の排除）
+  observe(context: EvaluationContext): { phenomenon: string; detail: string };
 }

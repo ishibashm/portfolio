@@ -25,6 +25,14 @@ export interface NBAParams {
       source: string;
       classicalRules: any;
     };
+    vedicAstrology?: {
+      nakshatra: string;
+      moonProgress?: number;
+      sunNakshatra?: string;
+      sunProgress?: number;
+      tithi: string;
+      ayanamsa?: string;
+    };
     ichingHexagram?: {
       number: number;
       name: string;
@@ -35,45 +43,65 @@ export interface NBAParams {
   };
 }
 
-// Pre-defined Actions in our Markov Decision Process
-type ActionType = 'DEEP_REST' | 'SHIELD_UP' | 'NORMAL_OPS' | 'HIGH_INTENSITY_EXECUTION';
+// Pre-defined Actions in our Markov Decision Process (Relocation Context)
+type ActionType = 'EXECUTE_RELOCATION' | 'PREPARE_AND_WAIT' | 'GATHER_INTEL' | 'ABORT_AND_SHIELD';
 
 interface QWeights {
   w_ans: number;
   w_shield: number;
   w_risk: number;
   w_solar: number;
+  w_vedic: number;
+  w_ephem: number;
+  w_astro: number;
+  w_rag: number;
   bias: number;
 }
 
 // Weights mimicking a trained policy matrix (W^T * X + B)
 const PolicyWeights: Record<ActionType, QWeights> = {
-  DEEP_REST: {
-    w_ans: 0.6,      // High ANS Load strongly rewards rest
-    w_shield: -0.5,  // Low Shield Capacity strongly rewards rest
-    w_risk: 0.2,     // High risk slightly rewards rest
-    w_solar: 0.0,
-    bias: 0.4,
+  EXECUTE_RELOCATION: {
+    w_ans: -0.4,
+    w_shield: 0.8,
+    w_risk: -0.8,
+    w_solar: 0.3,
+    w_vedic: 0.5,
+    w_ephem: 0.4,
+    w_astro: 0.6,
+    w_rag: 0.5,
+    bias: -0.2,
   },
-  SHIELD_UP: {
-    w_ans: 0.2,
-    w_shield: 0.1,
-    w_risk: 0.7,     // High environmental risk strongly rewards shielding
-    w_solar: -0.2,   // Poor alignment rewards shielding
-    bias: 0.2,
-  },
-  NORMAL_OPS: {
-    w_ans: -0.2,
-    w_shield: 0.3,
-    w_risk: -0.2,
-    w_solar: 0.2,
+  PREPARE_AND_WAIT: {
+    w_ans: 0.3,
+    w_shield: -0.2,
+    w_risk: 0.4,
+    w_solar: -0.2,
+    w_vedic: -0.4,
+    w_ephem: -0.3,
+    w_astro: -0.2,
+    w_rag: -0.3,
     bias: 0.5,
   },
-  HIGH_INTENSITY_EXECUTION: {
-    w_ans: -0.6,     // Low ANS Load allows high intensity
-    w_shield: 0.8,   // High Shield Capacity allows high intensity
-    w_risk: -0.4,    // Low risk allows high intensity
-    w_solar: 0.5,    // Auspicious alignment strongly boosts high intensity
+  GATHER_INTEL: {
+    w_ans: -0.1,     
+    w_shield: 0.4,   
+    w_risk: 0.0,
+    w_solar: 0.1,
+    w_vedic: 0.1,
+    w_ephem: 0.2,
+    w_astro: 0.2,
+    w_rag: 0.1,
+    bias: 0.3,
+  },
+  ABORT_AND_SHIELD: {
+    w_ans: 0.8,
+    w_shield: -0.7,
+    w_risk: 0.9,
+    w_solar: 0.0,
+    w_vedic: -0.5,   
+    w_ephem: -0.8,
+    w_astro: -0.8,
+    w_rag: -0.6,     
     bias: 0.0,
   }
 };
@@ -85,7 +113,7 @@ export class NBAEngine {
    * preparing the architecture for integration with a d3rlpy Python microservice.
    */
   async getNextBestAction(params: NBAParams) {
-    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram } = params.stateVector;
+    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext } = params.stateVector;
     
     // Apply I-Ching metaphysical modifiers if available
     let finalRisk = environmentalRisk;
@@ -95,15 +123,65 @@ export class NBAEngine {
     // Clamp to 0-100 range
     finalRisk = Math.max(0, Math.min(100, finalRisk));
 
-    // Normalize State Features (0.0 to 1.0 range, except solarPhase -1.0 to 1.0)
+    // Normalize State Features (0.0 to 1.0 range, except solarPhase and vedic phase -1.0 to 1.0)
     const f1_ans = ansLoad / 100.0;
     const f2_shield = shieldCapacity / 100.0;
     const f3_risk = finalRisk / 100.0;
     // Map 0-360 degrees to a -1.0 to 1.0 alignment score (Cosine wave)
     const f4_solar = Math.cos((solarPhase * Math.PI) / 180.0);
 
+    // Vedic Phase Feature: map Tithi to -1.0 (New Moon) to 1.0 (Full Moon)
+    let f5_vedic = 0;
+    if (vedicAstrology && vedicAstrology.tithi) {
+      const match = vedicAstrology.tithi.match(/\d+/);
+      if (match) {
+        const tithiNum = parseInt(match[0], 10);
+        const tithiPhase = (tithiNum - 1) / 30; // 0.0 to approx 1.0
+        f5_vedic = -Math.cos(tithiPhase * 2 * Math.PI);
+        
+        // Add subtle transit dynamics using Nakshatra moon progress
+        if (vedicAstrology.moonProgress !== undefined) {
+          f5_vedic += (vedicAstrology.moonProgress - 0.5) * 0.2;
+          f5_vedic = Math.max(-1.0, Math.min(1.0, f5_vedic));
+        }
+      }
+    }
+
+    // Ephemeris Feature: Mars vs Saturn angular relationship as tension index
+    let f6_ephem = 0;
+    if (ephemerisData && ephemerisData.planetaryPositions) {
+      const mars = parseFloat(ephemerisData.planetaryPositions.mars);
+      const saturn = parseFloat(ephemerisData.planetaryPositions.saturn);
+      if (!isNaN(mars) && !isNaN(saturn)) {
+        // cosine of angle between Mars and Saturn
+        f6_ephem = Math.cos((mars - saturn) * Math.PI / 180.0);
+      }
+    }
+
+    // Astrology Transits Feature: Soft aspects (+1) vs Hard aspects (-1)
+    let f7_astro = 0;
+    if (astrologyData && astrologyData.transits && Array.isArray(astrologyData.transits)) {
+      const aspects = astrologyData.transits.join(' ').toUpperCase();
+      const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
+      const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
+      f7_astro = (soft - hard) * 0.25; // 0.25 weight per aspect
+      f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
+    }
+
+    // RAG/Classical Rules (Bazi) Feature: Strong vs Stable signs
+    let f8_rag = 0;
+    if (ragContext && ragContext.classicalRules) {
+      const rules = JSON.stringify(ragContext.classicalRules).toLowerCase();
+      // 'Dragon', 'Tiger', 'Horse' represent high energy execution
+      const strong = (rules.match(/dragon|tiger|horse/g) || []).length;
+      // 'Ox', 'Rabbit', 'Sheep' represent stable/conservative energy
+      const stable = (rules.match(/ox|rabbit|sheep/g) || []).length;
+      f8_rag = (strong - stable) * 0.3;
+      f8_rag = Math.max(-1.0, Math.min(1.0, f8_rag));
+    }
+
     const logicTrace: string[] = [];
-    logicTrace.push(`[INIT] Input Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR_ALIGNMENT=${f4_solar.toFixed(2)}`);
+    logicTrace.push(`[INIT] Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR=${f4_solar.toFixed(2)}, VEDIC=${f5_vedic.toFixed(2)}, EPHEM=${f6_ephem.toFixed(2)}, ASTRO=${f7_astro.toFixed(2)}, RAG=${f8_rag.toFixed(2)}`);
     if (ichingHexagram) {
       logicTrace.push(`[MODIFIER] I-Ching Hexagram ${ichingHexagram.number} applied: Risk Modifier ${ichingHexagram.riskModifier > 0 ? '+' : ''}${ichingHexagram.riskModifier}, Confidence Boost ${ichingHexagram.confidenceBoost > 0 ? '+' : ''}${ichingHexagram.confidenceBoost}`);
     }
@@ -113,7 +191,7 @@ export class NBAEngine {
     const actions = Object.keys(PolicyWeights) as ActionType[];
 
     let maxQ = -Infinity;
-    let bestAction: ActionType = 'NORMAL_OPS';
+    let bestAction: ActionType = 'PREPARE_AND_WAIT';
 
     for (const action of actions) {
       const W = PolicyWeights[action];
@@ -122,10 +200,14 @@ export class NBAEngine {
         (W.w_shield * f2_shield) + 
         (W.w_risk * f3_risk) + 
         (W.w_solar * f4_solar) + 
+        (W.w_vedic * f5_vedic) + 
+        (W.w_ephem * f6_ephem) + 
+        (W.w_astro * f7_astro) + 
+        (W.w_rag * f8_rag) + 
         W.bias;
 
       qValues[action] = q;
-      logicTrace.push(`[CALC] Q(${action}) = (${W.w_ans}*${f1_ans.toFixed(2)}) + (${W.w_shield}*${f2_shield.toFixed(2)}) + (${W.w_risk}*${f3_risk.toFixed(2)}) + (${W.w_solar}*${f4_solar.toFixed(2)}) + ${W.bias} = ${q.toFixed(3)}`);
+      logicTrace.push(`[CALC] Q(${action}) = (${W.w_ans}*${f1_ans.toFixed(2)}) + (${W.w_shield}*${f2_shield.toFixed(2)}) + (${W.w_risk}*${f3_risk.toFixed(2)}) + (${W.w_solar}*${f4_solar.toFixed(2)}) + (${W.w_vedic}*${f5_vedic.toFixed(2)}) + (${W.w_ephem}*${f6_ephem.toFixed(2)}) + (${W.w_astro}*${f7_astro.toFixed(2)}) + (${W.w_rag}*${f8_rag.toFixed(2)}) + ${W.bias} = ${q.toFixed(3)}`);
 
       if (q > maxQ) {
         maxQ = q;

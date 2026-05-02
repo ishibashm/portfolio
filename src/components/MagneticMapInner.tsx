@@ -28,7 +28,7 @@ interface MapInnerProps {
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
-  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean };
+  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean };
   isFullscreen?: boolean;
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
 }
@@ -76,7 +76,7 @@ function MapResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
 
 export default function MagneticMapInner({ 
   lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, 
-  hudLayers = { terrain: true, weather: true, bio: true },
+  hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   isFullscreen = false,
   activeLayerMode = 'final'
 }: MapInnerProps) {
@@ -301,6 +301,53 @@ export default function MagneticMapInner({
     });
   }, [boundaries, magNorthBearing, center, lat, lon]);
 
+  // 4. Mock Hazard Layer (Phase 2 GIS Integration)
+  const hazardLayer = React.useMemo(() => {
+    if (!hudLayers.hazard) return null;
+    
+    // Create some mock hazard zones (e.g., fault lines, flood zones) around the center
+    return (
+      <React.Fragment>
+        {/* Mock Fault Line */}
+        <Polyline 
+           positions={[
+             getDestination(lat, lon, 45, 100),
+             getDestination(lat, lon, 225, 100)
+           ]} 
+           color="#ef4444" 
+           weight={4} 
+           dashArray="10,10" 
+           opacity={0.8}
+        />
+        <Marker 
+          position={getDestination(lat, lon, 45, 100)} 
+          icon={L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="color: #ef4444; background: rgba(0,0,0,0.5); padding: 2px; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 10px;">[HZD] Fault Line (GIS)</div>`,
+            iconSize: [120, 20],
+            iconAnchor: [0, 10]
+          })}
+          interactive={false}
+        />
+        
+        {/* Mock Flood / Sinkhole Zone */}
+        <Circle 
+          center={getDestination(lat, lon, 135, 50)}
+          radius={20000} // 20km
+          pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.2, weight: 2, dashArray: '5,5' }}
+        >
+            <Tooltip className="custom-map-tooltip">
+               <div className="bg-zinc-950 text-red-400 p-2 font-mono text-[10px] border border-red-900 shadow-xl max-w-[200px]">
+                  [HAZARD ALERT]<br />
+                  Seismic Activity / Landslide Risk Area<br />
+                  (Mock GIS Data)
+               </div>
+            </Tooltip>
+        </Circle>
+      </React.Fragment>
+    );
+  }, [hudLayers.hazard, lat, lon]);
+
   // Concentric Rings for Shield Attenuation Theory (in meters)
   // Reduced max radius from 5000km to 1000km to prevent projection crashes on mobile devices
   const attenuationRings: number[] = [100000, 250000, 500000, 750000, 1000000];
@@ -344,8 +391,11 @@ export default function MagneticMapInner({
         {/* Draw Dynamic Sectors (Stars/Vectors) */}
         {vectorLayer}
 
-        {/* Draw Danger Zones (Red) at Boundaries */}
+{/* Draw Danger Zones (Red) at Boundaries */}
         {dangerLayer}
+
+        {/* Draw Hazard / GIS Overlay if enabled */}
+        {hazardLayer}
 
         {/* Concentric Distance Rings for Attenuation */}
         {attenuationRings.map((radiusMeters, i) => (
