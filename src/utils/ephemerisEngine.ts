@@ -230,6 +230,48 @@ export function getYearStar(date: Date): StarFrequency {
 }
 
 /**
+ * 古典月盤の算出（暦・節気基準）
+ */
+export function getClassicalMonthStar(date: Date): StarFrequency {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const isPreviousCycle = (month === 1) || (month === 2 && day < 4);
+  const calcYear = isPreviousCycle ? year - 1 : year;
+
+  // 太陽黄経ベースでの正確な節切りインデックス（0=寅月, 1=卯月...）
+  const sunLon = AstroEngine.getSolarLongitude(date);
+  const monthIndex = Math.floor(((sunLon + 45) % 360) / 30); 
+
+  // 年の干支によるベース星の決定
+  const branchIndex = Math.abs(calcYear - 4) % 12; // 0=子, 1=丑...
+  let baseStar = 8;
+  if (branchIndex % 3 === 1) baseStar = 5;
+  if (branchIndex % 3 === 2) baseStar = 2;
+  
+  let star = baseStar - monthIndex;
+  while (star <= 0) star += 9;
+  return star as StarFrequency;
+}
+
+/**
+ * 古典日盤の算出（ユリウス日と隠遁陽遁の簡易暦基準）
+ */
+export function getClassicalDayStar(date: Date): StarFrequency {
+  const jd = Math.floor(AstroEngine.getJulianDay(date));
+  const L0 = AstroEngine.getSolarLongitude(date);
+  const isYinPhase = (L0 >= 90 && L0 < 270);
+  
+  // 古典的な日家九星のサイクル近似
+  const cycle = jd % 9; 
+  let star = isYinPhase ? (9 - cycle) : (cycle + 1);
+  while (star <= 0) star += 9;
+  star %= 9;
+  if (star === 0) star = 9;
+  return star as StarFrequency;
+}
+
+/**
  * Mid-term Wave (月盤) の算出：
  * 設計書に基づく完全な天体物理モデリング。
  * 
@@ -320,6 +362,8 @@ export function getHourStar(date: Date, isYinPhase: boolean, lon: number = 139.6
 export function getCurrentEnvironmentalFrequencies(date: Date, lon: number = 139.6917) {
   const physY = getYearStar(date);
   const classY = getClassicalYearStar(date);
+  const classM = getClassicalMonthStar(date);
+  const classD = getClassicalDayStar(date);
   const m = getMonthStar(date);
   const d = getDayStar(date);
   const L0 = AstroEngine.getSolarLongitude(date);
@@ -329,6 +373,8 @@ export function getCurrentEnvironmentalFrequencies(date: Date, lon: number = 139
   return {
     yearStar: physY,
     classicalYearStar: classY,
+    classicalMonthStar: classM,
+    classicalDayStar: classD,
     monthStar: m,
     dayStar: d,
     isYinPhase: isYinPhase,
@@ -368,6 +414,58 @@ export function calculateVectorCollision(
   
   const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   
+  // 天中殺（Void Zodiac）の方位マッピング
+  const z2d: Record<string, Direction[]> = {
+    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+  };
+  const voidDirs = new Set<Direction>();
+  voidZodiacs.forEach(z => {
+    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  });
+
+  // ドラゴンヘッド/テールの侵犯方向
+  const nodeDirs = new Set<Direction>();
+  if (lunarNodeLon !== null) {
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const getBearing = (lon: number) => {
+      let b = (lon - 90) % 360; 
+      if (b < 0) b += 360;
+      b = 360 - b; 
+      const i = Math.floor(((b + 22.5) % 360) / 45);
+      return dirs[i];
+    };
+    nodeDirs.add(getBearing(lunarNodeLon));
+    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
+  }
+  
+  // 相生関係
+  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+    switch(star) {
+      case 1: return [6, 7, 3, 4]; 
+      case 2: return [9, 6, 7]; 
+      case 3: return [1, 9]; 
+      case 4: return [1, 9];
+      case 5: return [9, 6, 7];
+      case 6: return [2, 5, 8, 1]; 
+      case 7: return [2, 5, 8, 1];
+      case 8: return [9, 6, 7];
+      case 9: return [3, 4, 2, 5, 8]; 
+      default: return [];
+    }
+  };
+  
+  let compatibles = getCompatibleStars(personalStar);
+  
+  if (actionIntent === 'REST') {
+    if (personalStar === 3 || personalStar === 4) compatibles = [1];
+    else if (personalStar === 1) compatibles = [6, 7];
+  } else if (actionIntent === 'BUSINESS') {
+    if (personalStar === 1) compatibles = [3, 4];
+    else if (personalStar === 3 || personalStar === 4) compatibles = [9];
+  }
+
   const processLayer = (board: BoardLayout) => {
     const res: Partial<Record<Direction, string>> = {};
     directions.forEach(d => res[d] = 'SAFE');
@@ -398,6 +496,20 @@ export function calculateVectorCollision(
         break;
       }
     }
+
+    // 3. グローバルノイズと最適化の適用
+    for (const dir of directions) {
+      if (res[dir] === 'SAFE') {
+        if (voidDirs.has(dir)) {
+          res[dir] = 'NOISE_VOID';
+        } else if (nodeDirs.has(dir)) {
+          res[dir] = 'NOISE_NODE';
+        } else if (compatibles.includes(board[dir])) {
+          res[dir] = 'OPTIMAL';
+        }
+      }
+    }
+
     return res;
   };
 
@@ -406,81 +518,15 @@ export function calculateVectorCollision(
   const dayLayer = processLayer(dayBoard);
 
   const finalVectors: any = {};
-  
-  // 天中殺（Void Zodiac）の方位マッピング
-  // 子(N), 丑寅(NE), 卯(E), 辰巳(SE), 午(S), 未申(SW), 酉(W), 戌亥(NW)
-  const z2d: Record<string, Direction[]> = {
-    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
-    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
-    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
-  };
-  const voidDirs = new Set<Direction>();
-  voidZodiacs.forEach(z => {
-    (z2d[z] || []).forEach(d => voidDirs.add(d));
-  });
-
-  // ドラゴンヘッド/テールの侵犯方向 (交点から45度幅をノイズ帯とする)
-  const nodeDirs = new Set<Direction>();
-  if (lunarNodeLon !== null) {
-    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    // Ecliptic longitude to rough compass bearing (offset by 90 if N=0... usually 0 is E, 90 is N)
-    // ざっくり天球上の方向: 0=E, 90=N, 180=W, 270=Sとする（黄道基準のアバウトなマップ）
-    const getBearing = (lon: number) => {
-      let b = (lon - 90) % 360; 
-      if (b < 0) b += 360;
-      // b is 0 at N, 90 at E
-      b = 360 - b; 
-      // Simplified: Just match angle to 8 directions (45 deg sectors)
-      const i = Math.floor(((b + 22.5) % 360) / 45);
-      return dirs[i];
-    };
-    nodeDirs.add(getBearing(lunarNodeLon));
-    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
-  }
-  
-  // 相生関係
-  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-    switch(star) {
-      case 1: return [6, 7, 3, 4]; 
-      case 2: return [9, 6, 7]; 
-      case 3: return [1, 9]; 
-      case 4: return [1, 9];
-      case 5: return [9, 6, 7];
-      case 6: return [2, 5, 8, 1]; 
-      case 7: return [2, 5, 8, 1];
-      case 8: return [9, 6, 7];
-      case 9: return [3, 4, 2, 5, 8]; 
-      default: return [];
-    }
-  };
-  
-  let compatibles = getCompatibleStars(personalStar);
-  
-  // アクションインテントによる相生の再定義
-  if (actionIntent === 'REST') {
-    // 回復優先: 土や水など、自律神経を安定させる星を優先（簡易版）
-    if (personalStar === 3 || personalStar === 4) compatibles = [1];
-    else if (personalStar === 1) compatibles = [6, 7];
-    // 他はそのまま
-  } else if (actionIntent === 'BUSINESS') {
-    // 発展・闘争優先: 木や火など、活性化させる星を優先
-    if (personalStar === 1) compatibles = [3, 4];
-    else if (personalStar === 3 || personalStar === 4) compatibles = [9];
-  }
 
   for (const dir of directions) {
-    // 優先度：1(🟥) GOU/ANKEN > 2(🟪) HONMEI/TEKI > 3(🟨) NOISE_VOID/NODE > 4(🟩) OPTIMAL > 5(🟦) SAFE
     const yStatus = yearLayer[dir]!;
     const mStatus = monthLayer[dir]!;
     const dStatus = dayLayer[dir]!;
 
-    // Extract all noises across layers for priority sorting
     const layers = [yStatus, mStatus, dStatus];
     
-    // Check for Type I Noise (Red: Gou/Anken)
     const hasRedNoise = layers.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN');
-    
-    // Check for Type II Noise (Purple: Honmei/Teki)
     const hasPurpleNoise = layers.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
 
     if (hasRedNoise) {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,6 +22,16 @@ function MapEvents({ onSelect }: { onSelect: (lat: number, lng: number) => void 
   return null;
 }
 
+function SyncMapCenter({ markerPos }: { markerPos: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (markerPos) {
+      map.setView(markerPos, map.getZoom() < 6 ? 6 : map.getZoom());
+    }
+  }, [markerPos, map]);
+  return null;
+}
+
 interface LocationPickerInnerProps {
   initialLat: number;
   initialLon: number;
@@ -29,26 +39,44 @@ interface LocationPickerInnerProps {
 }
 
 export default function LocationPickerInner({ initialLat, initialLon, onSelect }: LocationPickerInnerProps) {
+  const [isMounted, setIsMounted] = useState(false);
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(
     (initialLat !== 0 || initialLon !== 0) ? [initialLat, initialLon] : null
   );
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSelect = (lat: number, lng: number) => {
     setMarkerPos([lat, lng]);
     onSelect(lat, lng);
   };
 
+  if (!isMounted) {
+    return (
+      <div className="w-full h-full bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600">
+        [ LOADING MAP ENGINE... ]
+      </div>
+    );
+  }
+
+  const initialCenter = markerPos || [35.6812, 139.7671];
+  const initialZoom = markerPos ? 6 : 4;
+
   return (
     <div className="w-full h-full relative border border-zinc-700 rounded overflow-hidden">
       <MapContainer 
-        center={markerPos || [35.6812, 139.7671]} 
-        zoom={markerPos ? 6 : 4} 
+        key="location-picker-map"
+        center={initialCenter} 
+        zoom={initialZoom} 
         style={{ height: '100%', width: '100%', background: '#09090b', zIndex: 0 }}
         attributionControl={false}
       >
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
+        <SyncMapCenter markerPos={markerPos} />
         <MapEvents onSelect={handleSelect} />
         {markerPos && <Marker position={markerPos} />}
       </MapContainer>

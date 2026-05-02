@@ -19,7 +19,8 @@ interface ExpertCouncilPanelProps {
   gsr: number;
   ansLoad: number;
   shieldCapacity: number;
-  
+  timingScore?: number;
+  isTimingOptimal?: boolean;
   timingDetails?: { name: string; phenomenon: string; detail: string }[];
   timingRecommendation?: string;
   
@@ -63,7 +64,7 @@ export default function ExpertCouncilPanel({
       description: "天体配置に基づく時間的最適性スコア (外部環境)",
       dataItems: [
         { label: "Optimal Score", value: timingScore !== undefined ? `${Math.round(timingScore * 100)}%` : '--' },
-        ...(timingDetails?.map(d => ({ label: d.name, value: `${Math.round(d.score * 100)}%` })) || [])
+        ...(timingDetails?.map(d => ({ label: d.name, value: d.phenomenon })) || [])
       ],
       status: 'OBSERVED'
     },

@@ -23,8 +23,13 @@ interface MapProps {
   declination: number | null;
   inclination: number | null;
   intensity: number | null;
-  vectors?: Record<string, string> | null;
-  layers?: {
+  physicalLayers?: {
+    yearLayer: Partial<Record<string, string>>;
+    monthLayer: Partial<Record<string, string>>;
+    dayLayer: Partial<Record<string, string>>;
+    finalVectors: Record<string, string>;
+  } | null;
+  classicalLayers?: {
     yearLayer: Partial<Record<string, string>>;
     monthLayer: Partial<Record<string, string>>;
     dayLayer: Partial<Record<string, string>>;
@@ -38,24 +43,29 @@ interface MapProps {
   toggleLayer?: (layer: 'terrain' | 'weather' | 'bio' | 'hazard') => void;
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
   setActiveLayerMode?: (mode: 'final' | 'year' | 'month' | 'day') => void;
+  activeModel?: 'physical' | 'classical';
 }
 
 export function TacticalMagneticMapComponent({ 
-  lat, lon, declination, inclination, intensity, vectors, layers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100,
+  lat, lon, declination, inclination, intensity, physicalLayers, classicalLayers, honmeiStar, kpIndex, ansLoad, shieldCapacity = 100,
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   toggleLayer,
   activeLayerMode = 'final',
-  setActiveLayerMode
+  setActiveLayerMode,
+  activeModel = 'physical'
 }: MapProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHUD, setShowHUD] = useState(true);
   const [activeDecryptTab, setActiveDecryptTab] = useState(1);
 
+  const isPhysical = activeModel === 'physical';
+  const borderColor = isPhysical ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-zinc-500/50 shadow-[0_0_15px_rgba(113,113,122,0.2)]';
+
   return (
     <div className={`w-full max-w-6xl mt-8 flex flex-col gap-4`}>
       
       {/* Map Container */}
-      <div className={`relative border border-zinc-800 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
+      <div className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
          <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex flex-col sm:flex-row justify-between items-start gap-2">
             <div className="flex items-center gap-2">
               <Crosshair size={14} className="text-blue-500 md:animate-pulse mt-1" />
@@ -157,13 +167,27 @@ export function TacticalMagneticMapComponent({
          </div>
          
          <div className="w-full h-full relative z-0 flex grow min-h-0 overflow-hidden bg-black">
+             {/* Model Indicator Watermark */}
+             <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 opacity-[0.03]">
+                <div className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? 'text-emerald-500' : 'text-zinc-500'}`}>
+                   {isPhysical ? '[ PHYSICAL MODEL ]' : '[ CLASSICAL MODEL ]'}
+                </div>
+             </div>
+             
+             {/* HUD Label Top Left */}
+             <div className="absolute top-16 left-2 pointer-events-none z-10">
+               <div className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/40 text-zinc-400 border-zinc-500/50'}`}>
+                 {isPhysical ? '▶ PHYSICAL MODEL ACTIVE' : '▶ CLASSICAL MODEL ACTIVE'}
+               </div>
+             </div>
+
              <MagneticMapInner
               lat={lat}
               lon={lon}
               declination={declination || 0}
               intensity={intensity || 50000}
-              vectors={vectors}
-              layers={layers}
+              vectors={isPhysical ? physicalLayers?.finalVectors : classicalLayers?.finalVectors}
+              layers={isPhysical ? physicalLayers : classicalLayers}
               honmeiStar={honmeiStar}
               kpIndex={kpIndex}
               ansLoad={ansLoad}

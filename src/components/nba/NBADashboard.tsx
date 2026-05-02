@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Activity, Shield, CloudLightning, Compass, BrainCircuit, RefreshCcw, Download, TerminalSquare, BookOpen, AlertTriangle, Navigation } from "lucide-react";
 import { CytoscapeNetwork } from "./CytoscapeNetwork";
 import { BaziReport, BaziData } from "./BaziReport";
+import { VedicReport, VedicData } from "./VedicReport";
 
 export interface NBAData {
   micro: {
@@ -31,16 +32,7 @@ export interface NBAData {
         aspects: string[];
         retrogrades: string[];
       };
-      vedicAstrology: {
-        nakshatra: string;
-        moonProgress?: number;
-        sunNakshatra?: string;
-        sunProgress?: number;
-        tithi: string;
-        ayanamsa?: string;
-        yoga?: string;
-        karana?: string;
-      };
+      vedicAstrology: VedicData;
     };
   };
   nba: {
@@ -219,26 +211,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
           >
             <RefreshCcw className={`w-5 h-5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
           </button>
-        {externalData === undefined && (
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={exportDataJSON}
-              disabled={!data}
-              className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors disabled:opacity-50 text-sm font-semibold"
-              title="状態ベクトルのエクスポート (JSON)"
-            >
-              JSON
-            </button>
-            <button 
-              onClick={exportDataCSV}
-              disabled={!data}
-              className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50 text-sm font-semibold"
-              title="状態ベクトルのエクスポート (CSV)"
-            >
-              CSV
-            </button>
-          </div>
-        )}
+        {/* Export buttons removed: unified globally in SolarTimeClock */}
         </div>
       </header>
 
@@ -415,6 +388,16 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
               className="md:col-span-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md"
             >
               <BaziReport data={data.macro.streams.bazi} />
+            </motion.div>
+          )}
+
+          {/* Vedic Astrology Detailed Report - Spans full width */}
+          {data.macro.streams?.vedicAstrology && (
+            <motion.div 
+              variants={itemVariants}
+              className="md:col-span-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md"
+            >
+              <VedicReport data={data.macro.streams.vedicAstrology} />
             </motion.div>
           )}
 
