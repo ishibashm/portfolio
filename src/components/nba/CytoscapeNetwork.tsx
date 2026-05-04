@@ -1,169 +1,149 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import cytoscape from 'cytoscape';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { ShieldAlert, Eye, Clock, Rocket, AlertTriangle, ShieldCheck, Sun, Activity } from 'lucide-react';
 
 export interface CytoscapeNetworkProps {
   nbaData: any;
 }
 
 export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const cyRef = useRef<cytoscape.Core | null>(null);
-  const [mounted, setMounted] = useState(false);
+  if (!nbaData?.actionResult || !nbaData?.stateVector) return null;
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { stateVector } = nbaData;
+  const { qValues, suggestedAction } = nbaData.actionResult;
 
-  useEffect(() => {
-    if (!mounted || !containerRef.current || !nbaData?.actionResult) return;
+  if (!qValues) return null;
 
-    const { stateVector } = nbaData;
-    const { qValues, probabilities, suggestedAction } = nbaData.actionResult;
+  // Define policy weights (same as the backend logic)
+  const policyWeights: Record<string, { w_ans: number; w_shield: number; w_risk: number; w_solar: number }> = {
+    ABORT_AND_SHIELD: { w_ans: 0.6, w_shield: -0.5, w_risk: 0.2, w_solar: 0.0 },
+    GATHER_INTEL: { w_ans: 0.2, w_shield: 0.1, w_risk: 0.7, w_solar: -0.2 },
+    PREPARE_AND_WAIT: { w_ans: -0.2, w_shield: 0.3, w_risk: -0.2, w_solar: 0.2 },
+    EXECUTE_RELOCATION: { w_ans: -0.6, w_shield: 0.8, w_risk: -0.4, w_solar: 0.5 }
+  };
 
-    if (!qValues || !probabilities) return;
+  const actionMeta: Record<string, { label: string; icon: React.ReactNode; desc: string }> = {
+    ABORT_AND_SHIELD: { label: '休息・撤退', icon: <ShieldAlert className="w-4 h-4" />, desc: '現状維持を諦め、早急に回復を図る行動' },
+    GATHER_INTEL: { label: '防御・様子見', icon: <Eye className="w-4 h-4" />, desc: '決定を保留し、周囲の情報を集める行動' },
+    PREPARE_AND_WAIT: { label: '通常進行', icon: <Clock className="w-4 h-4" />, desc: '予定通りに、ただし慎重に進める行動' },
+    EXECUTE_RELOCATION: { label: '実行・前進', icon: <Rocket className="w-4 h-4" />, desc: 'リソースを消費してでも強く前進する行動' },
+  };
 
-    // Define nodes
-    const nodes = [
-      // Input Features
-      { data: { id: 'F1', label: `自律神経\n${stateVector.ansLoad?.toFixed(1) || 0}`, type: 'feature' } },
-      { data: { id: 'F2', label: `シールド\n${stateVector.shieldCapacity?.toFixed(1) || 0}`, type: 'feature' } },
-      { data: { id: 'F3', label: `環境リスク\n${stateVector.environmentalRisk?.toFixed(1) || 50}`, type: 'feature' } },
-      { data: { id: 'F4', label: `太陽位相\n${stateVector.solarPhase?.toFixed(1) || 0}°`, type: 'feature' } },
+  const featureLabels = {
+    w_ans: { name: '自律神経負荷', value: stateVector.ansLoad, icon: <Activity className="w-3 h-3" /> },
+    w_shield: { name: 'シールド残量', value: stateVector.shieldCapacity, icon: <ShieldCheck className="w-3 h-3" /> },
+    w_risk: { name: '環境リスク', value: stateVector.environmentalRisk || 50, icon: <AlertTriangle className="w-3 h-3" /> },
+    w_solar: { name: '太陽位相', value: stateVector.solarPhase, icon: <Sun className="w-3 h-3" /> },
+  };
 
-      // Output Actions
-      { data: { id: 'ABORT_AND_SHIELD', label: `休息\nQ:${qValues['ABORT_AND_SHIELD']?.toFixed(2)}\n${(probabilities['ABORT_AND_SHIELD']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'ABORT_AND_SHIELD' } },
-      { data: { id: 'GATHER_INTEL', label: `防御\nQ:${qValues['GATHER_INTEL']?.toFixed(2)}\n${(probabilities['GATHER_INTEL']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'GATHER_INTEL' } },
-      { data: { id: 'PREPARE_AND_WAIT', label: `通常\nQ:${qValues['PREPARE_AND_WAIT']?.toFixed(2)}\n${(probabilities['PREPARE_AND_WAIT']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'PREPARE_AND_WAIT' } },
-      { data: { id: 'EXECUTE_RELOCATION', label: `実行\nQ:${qValues['EXECUTE_RELOCATION']?.toFixed(2)}\n${(probabilities['EXECUTE_RELOCATION']*100).toFixed(1)}%`, type: 'action', isBest: suggestedAction === 'EXECUTE_RELOCATION' } },
-    ];
+  const renderFactorBars = (actionId: string) => {
+    const weights = policyWeights[actionId];
+    if (!weights) return null;
 
-    // Define edges based on PolicyWeights
-    const policyWeights: Record<string, { w_ans: number; w_shield: number; w_risk: number; w_solar: number }> = {
-      ABORT_AND_SHIELD: { w_ans: 0.6, w_shield: -0.5, w_risk: 0.2, w_solar: 0.0 },
-      GATHER_INTEL: { w_ans: 0.2, w_shield: 0.1, w_risk: 0.7, w_solar: -0.2 },
-      PREPARE_AND_WAIT: { w_ans: -0.2, w_shield: 0.3, w_risk: -0.2, w_solar: 0.2 },
-      EXECUTE_RELOCATION: { w_ans: -0.6, w_shield: 0.8, w_risk: -0.4, w_solar: 0.5 }
-    };
-
-    const edges: any[] = [];
-    const featureMap = { F1: 'w_ans', F2: 'w_shield', F3: 'w_risk', F4: 'w_solar' };
-    
-    Object.keys(policyWeights).forEach(actionId => {
-      Object.entries(featureMap).forEach(([fId, wKey]) => {
-        const weight = policyWeights[actionId][wKey as keyof typeof policyWeights[typeof actionId]];
-        if (Math.abs(weight) > 0) { // Only draw significant weights
-          edges.push({
-            data: {
-              id: `${fId}-${actionId}`,
-              source: fId,
-              target: actionId,
-              weight: weight,
-              label: weight.toFixed(1)
-            }
-          });
-        }
-      });
-    });
-
-    if (cyRef.current) {
-      cyRef.current.destroy();
-    }
-
-    cyRef.current = cytoscape({
-      container: containerRef.current,
-      elements: [...nodes, ...edges],
-      style: [
-        {
-          selector: 'node[type="feature"]',
-          style: {
-            'background-color': '#1f2937',
-            'border-color': '#60a5fa',
-            'border-width': 2,
-            'color': '#9ca3af',
-            'label': 'data(label)',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'text-wrap': 'wrap',
-            'font-size': 10,
-            'width': 60,
-            'height': 60,
-            'shape': 'hexagon',
-          }
-        },
-        {
-          selector: 'node[type="action"]',
-          style: {
-            'background-color': '#111827',
-            'border-color': '#4b5563',
-            'border-width': 2,
-            'color': '#d1d5db',
-            'label': 'data(label)',
-            'text-valign': 'center',
-            'text-halign': 'center',
-            'text-wrap': 'wrap',
-            'font-size': 10,
-            'width': 70,
-            'height': 70,
-            'shape': 'round-rectangle',
-          }
-        },
-        {
-          selector: 'node[isBest]',
-          style: {
-            'border-color': '#10b981',
-            'border-width': 3,
-            'background-color': 'rgba(16, 185, 129, 0.1)',
-            'color': '#10b981',
-            'font-weight': 'bold',
-          }
-        },
-        {
-          selector: 'edge',
-          style: {
-            'width': 'mapData(weight, -1, 1, 1, 4)',
-            'line-color': (ele) => ele.data('weight') > 0 ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)',
-            'target-arrow-color': (ele) => ele.data('weight') > 0 ? 'rgba(52, 211, 153, 0.4)' : 'rgba(248, 113, 113, 0.4)',
-            'target-arrow-shape': 'triangle',
-            'curve-style': 'bezier',
-            'label': 'data(label)',
-            'font-size': 8,
-            'color': '#6b7280',
-            'text-rotation': 'autorotate',
-            'text-margin-y': -8
-          }
-        }
-      ],
-      layout: {
-        name: 'breadthfirst',
-        directed: true,
-        padding: 10,
-        spacingFactor: 1.2
-      },
-      userZoomingEnabled: false,
-      userPanningEnabled: false,
-    });
-
-    return () => {
-      if (cyRef.current) {
-        cyRef.current.destroy();
-      }
-    };
-  }, [mounted, nbaData]);
-
-  if (!mounted) return null;
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+        {(Object.entries(weights) as [keyof typeof featureLabels, number][]).map(([key, weight]) => {
+          if (weight === 0) return null;
+          
+          const isPositive = weight > 0;
+          const factor = featureLabels[key];
+          
+          return (
+            <div key={key} className="flex flex-col gap-1 bg-black/40 p-2 rounded-lg border border-white/5 relative overflow-hidden group">
+              <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+                {factor.icon}
+                <span className="truncate">{factor.name}</span>
+              </div>
+              <div className="flex justify-between items-end mt-1">
+                <span className="text-[10px] font-mono text-gray-500">Val: {factor.value?.toFixed(0)}</span>
+                <span className={`text-xs font-bold font-mono ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {isPositive ? '+' : ''}{(weight * 10).toFixed(1)}
+                </span>
+              </div>
+              {/* Progress Bar background */}
+              <div className="w-full h-1 bg-black/60 rounded-full mt-1.5 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full ${isPositive ? 'bg-emerald-500/80' : 'bg-red-500/80'}`} 
+                  style={{ width: `${Math.abs(weight) * 100}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
-    <div className="w-full h-[400px] relative bg-black/40 border border-zinc-800 rounded-xl overflow-hidden mt-4">
-      <div className="absolute top-2 left-3 z-10">
-        <h3 className="text-xs text-zinc-400 font-bold uppercase tracking-widest flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-          ポリシーネットワーク可視化 (Q値)
+    <div className="w-full flex flex-col mt-4">
+      <div className="mb-4">
+        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          AIの思考プロセス (要因影響度マトリクス)
         </h3>
-        <p className="text-[10px] text-zinc-500 mt-1">緑の線: 正の重み。 赤の線: 負の重み。</p>
+        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+          AIがそれぞれの行動を検討する際に、<strong className="text-emerald-400">どの入力データがプラス(後押し)</strong>に働き、<strong className="text-red-400">どれがマイナス(抑制)</strong>に働いたのかを可視化しています。<br/>
+          この総合的なバランスによって、最終的な最適解（★）が決定されています。
+        </p>
       </div>
-      <div ref={containerRef} className="w-full h-full" />
+
+      <div className="flex flex-col gap-3">
+        {Object.keys(policyWeights).map((actionId) => {
+          const isBest = suggestedAction === actionId;
+          const meta = actionMeta[actionId];
+          const qVal = qValues[actionId] || 0;
+
+          return (
+            <motion.div 
+              key={actionId}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-4 rounded-xl border relative overflow-hidden transition-all ${
+                isBest 
+                  ? 'bg-emerald-950/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]' 
+                  : 'bg-zinc-900/30 border-zinc-800/50 opacity-70 hover:opacity-100'
+              }`}
+            >
+              {isBest && (
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+              )}
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    {isBest && (
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500 text-white tracking-wider animate-pulse">
+                        ★ FINAL DECISION
+                      </span>
+                    )}
+                    <h4 className={`font-bold flex items-center gap-2 ${isBest ? 'text-emerald-400 text-lg' : 'text-zinc-300'}`}>
+                      {meta?.icon} {meta?.label}
+                    </h4>
+                  </div>
+                  <p className="text-[10px] text-zinc-500">{meta?.desc}</p>
+                </div>
+                
+                <div className="flex items-center gap-4 shrink-0">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Q-Value (期待値)</span>
+                    <span className={`text-xl font-mono font-bold ${qVal > 0 ? 'text-emerald-400' : qVal < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+                      {qVal > 0 ? '+' : ''}{qVal.toFixed(3)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 pt-2 border-t border-white/5 relative z-10">
+                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">評価要因 (Influence Factors)</span>
+                {renderFactorBars(actionId)}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
     </div>
   );
 };
+

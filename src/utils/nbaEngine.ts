@@ -55,6 +55,7 @@ interface QWeights {
   w_ephem: number;
   w_astro: number;
   w_rag: number;
+  w_personal: number;
   bias: number;
 }
 
@@ -69,6 +70,7 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_ephem: 0.4,
     w_astro: 0.6,
     w_rag: 0.5,
+    w_personal: 1.0,
     bias: -0.2,
   },
   PREPARE_AND_WAIT: {
@@ -80,6 +82,7 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_ephem: -0.3,
     w_astro: -0.2,
     w_rag: -0.3,
+    w_personal: 0.2,
     bias: 0.5,
   },
   GATHER_INTEL: {
@@ -91,6 +94,7 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_ephem: 0.2,
     w_astro: 0.2,
     w_rag: 0.1,
+    w_personal: 0.1,
     bias: 0.3,
   },
   ABORT_AND_SHIELD: {
@@ -102,6 +106,7 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_ephem: -0.8,
     w_astro: -0.8,
     w_rag: -0.6,     
+    w_personal: -1.0,
     bias: 0.0,
   }
 };
@@ -180,8 +185,64 @@ export class NBAEngine {
       f8_rag = Math.max(-1.0, Math.min(1.0, f8_rag));
     }
 
+    // Personal Metaphysics Feature: Void Zodiac & Compatibility
+    let f9_personal = 0;
+    let voidPenalty = 0;
+    let compatibilityScore = 0;
+    let personalLog = "";
+
+    if (ragContext && ragContext.personalBazi) {
+      const personalBazi = ragContext.personalBazi;
+      const envBazi = ragContext.classicalRules;
+      
+      // 1. Check Void (空亡)
+      if (personalBazi.voidZodiac && envBazi && envBazi.pillars) {
+        const voidZodiac = personalBazi.voidZodiac;
+        const currentYearZhi = envBazi.pillars.year?.zhi;
+        const currentMonthZhi = envBazi.pillars.month?.zhi;
+        const currentDayZhi = envBazi.pillars.day?.zhi;
+        
+        let voidLevel = 0;
+        let voidSources = [];
+        if (currentYearZhi && voidZodiac.includes(currentYearZhi)) { voidLevel += 0.5; voidSources.push("Year"); }
+        if (currentMonthZhi && voidZodiac.includes(currentMonthZhi)) { voidLevel += 0.3; voidSources.push("Month"); }
+        if (currentDayZhi && voidZodiac.includes(currentDayZhi)) { voidLevel += 0.2; voidSources.push("Day"); }
+        
+        if (voidLevel > 0) {
+          voidPenalty = -voidLevel;
+          personalLog += `Void detected (${voidSources.join(', ')}) Penalty: ${voidPenalty.toFixed(2)}. `;
+        }
+      }
+
+      // 2. Day Master Compatibility
+      if (personalBazi.summary?.dayMasterWuxing && envBazi?.summary?.dayMasterWuxing) {
+        const pm = personalBazi.summary.dayMasterWuxing;
+        const em = envBazi.summary.dayMasterWuxing;
+        const shengCycle: Record<string, string> = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+        if (pm === em) {
+          compatibilityScore = 0.2;
+          personalLog += `Compatibility: Same Element (+0.2). `;
+        } else if (shengCycle[pm] === em) {
+          compatibilityScore = 0.5;
+          personalLog += `Compatibility: You generate Env (+0.5). `;
+        } else if (shengCycle[em] === pm) {
+          compatibilityScore = 0.8;
+          personalLog += `Compatibility: Env generates You (+0.8). `;
+        } else {
+          compatibilityScore = -0.3;
+          personalLog += `Compatibility: Controlling/Conflict (-0.3). `;
+        }
+      }
+
+      f9_personal = voidPenalty !== 0 ? voidPenalty : compatibilityScore;
+      f9_personal = Math.max(-1.0, Math.min(1.0, f9_personal));
+    }
+
     const logicTrace: string[] = [];
-    logicTrace.push(`[INIT] Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR=${f4_solar.toFixed(2)}, VEDIC=${f5_vedic.toFixed(2)}, EPHEM=${f6_ephem.toFixed(2)}, ASTRO=${f7_astro.toFixed(2)}, RAG=${f8_rag.toFixed(2)}`);
+    logicTrace.push(`[INIT] Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR=${f4_solar.toFixed(2)}, VEDIC=${f5_vedic.toFixed(2)}, EPHEM=${f6_ephem.toFixed(2)}, ASTRO=${f7_astro.toFixed(2)}, RAG=${f8_rag.toFixed(2)}, PERSONAL=${f9_personal.toFixed(2)}`);
+    if (personalLog) {
+      logicTrace.push(`[PERSONAL] ${personalLog.trim()}`);
+    }
     if (ichingHexagram) {
       logicTrace.push(`[MODIFIER] I-Ching Hexagram ${ichingHexagram.number} applied: Risk Modifier ${ichingHexagram.riskModifier > 0 ? '+' : ''}${ichingHexagram.riskModifier}, Confidence Boost ${ichingHexagram.confidenceBoost > 0 ? '+' : ''}${ichingHexagram.confidenceBoost}`);
     }
@@ -204,10 +265,11 @@ export class NBAEngine {
         (W.w_ephem * f6_ephem) + 
         (W.w_astro * f7_astro) + 
         (W.w_rag * f8_rag) + 
+        (W.w_personal * f9_personal) + 
         W.bias;
 
       qValues[action] = q;
-      logicTrace.push(`[CALC] Q(${action}) = (${W.w_ans}*${f1_ans.toFixed(2)}) + (${W.w_shield}*${f2_shield.toFixed(2)}) + (${W.w_risk}*${f3_risk.toFixed(2)}) + (${W.w_solar}*${f4_solar.toFixed(2)}) + (${W.w_vedic}*${f5_vedic.toFixed(2)}) + (${W.w_ephem}*${f6_ephem.toFixed(2)}) + (${W.w_astro}*${f7_astro.toFixed(2)}) + (${W.w_rag}*${f8_rag.toFixed(2)}) + ${W.bias} = ${q.toFixed(3)}`);
+      logicTrace.push(`[CALC] Q(${action}) = (${W.w_ans}*${f1_ans.toFixed(2)}) + ... + (${W.w_personal}*${f9_personal.toFixed(2)}) + ${W.bias} = ${q.toFixed(3)}`);
 
       if (q > maxQ) {
         maxQ = q;

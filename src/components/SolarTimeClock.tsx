@@ -77,6 +77,7 @@ export const SolarTimeClock = () => {
   const [ansLoad, setAnsLoad] = useState(0);
   const [shieldCapacity, setShieldCapacity] = useState(100);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingLog, setIsSavingLog] = useState(false);
   
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
@@ -111,20 +112,40 @@ export const SolarTimeClock = () => {
 
   const fetchNBAData = async () => {
     try {
-      const res = await fetch("/api/nba");
-      if (!res.ok) throw new Error("Failed to fetch NBA data");
+      const payload = {
+        ansLoad,
+        shieldCapacity,
+        hrv,
+        gsr,
+        birthDate,
+        lon
+      };
+      const res = await fetch("/api/nba", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to fetch NBA data: ${res.status} ${res.statusText} - ${errorText}`);
+      }
       const json = await res.json();
       if (json.success) {
         setNbaData(json.data);
+      } else {
+        console.warn("[fetchNBAData] Server returned success: false", json.error);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("[fetchNBAData] POST Request Error:", err.message || err);
     }
   };
 
   useEffect(() => {
-    fetchNBAData();
-  }, []);
+    const timer = setTimeout(() => {
+      fetchNBAData();
+    }, 1000); // 1s debounce
+    return () => clearTimeout(timer);
+  }, [ansLoad, shieldCapacity, birthDate, lon]);
 
   const loadFromLocal = async () => {
     try {
@@ -147,6 +168,10 @@ export const SolarTimeClock = () => {
           if (data.use_psychology_scorer !== undefined) setUsePsychologyScorer(data.use_psychology_scorer);
           if (data.use_kigaku_scorer !== undefined) setUseKigakuScorer(data.use_kigaku_scorer);
           if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
+          if (data.hrv !== undefined) setHrv(data.hrv);
+          if (data.gsr !== undefined) setGsr(data.gsr);
+          if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
+          if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
           return true;
         }
       }
@@ -173,6 +198,10 @@ export const SolarTimeClock = () => {
         if (data.use_psychology_scorer !== undefined) setUsePsychologyScorer(data.use_psychology_scorer);
         if (data.use_kigaku_scorer !== undefined) setUseKigakuScorer(data.use_kigaku_scorer);
         if (data.use_astrology_scorer !== undefined) setUseAstrologyScorer(data.use_astrology_scorer);
+        if (data.hrv !== undefined) setHrv(data.hrv);
+        if (data.gsr !== undefined) setGsr(data.gsr);
+        if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
+        if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
         return true;
       } catch (e) {
         console.error("LocalStorage parse error", e);
@@ -232,7 +261,11 @@ export const SolarTimeClock = () => {
         base_sync_timestamp: baseSyncTimestamp,
         use_psychology_scorer: usePsychologyScorer,
         use_kigaku_scorer: useKigakuScorer,
-        use_astrology_scorer: useAstrologyScorer
+        use_astrology_scorer: useAstrologyScorer,
+        hrv,
+        gsr,
+        ansLoad,
+        shieldCapacity
       };
 
       await fetch('/api/user-config', {
@@ -472,7 +505,7 @@ export const SolarTimeClock = () => {
       nbaData?.macro.streams?.ephemeris?.moon ?? "",
       nbaData?.macro.streams?.ephemeris?.jupiter ?? "",
       nbaData?.macro.streams?.ephemeris?.lunarNode ?? "",
-      nbaData?.macro.streams?.bazi?.summary?.dayMaster ?? "",
+      nbaData?.macro.streams?.personalBazi?.summary?.dayMaster ?? nbaData?.macro.streams?.environmentalBazi?.summary?.dayMaster ?? "",
       nbaData?.macro.streams?.westernAstrology?.aspects?.join(' | ') ?? "",
       nbaData?.macro.streams?.vedicAstrology?.nakshatra ?? "",
       nbaData?.macro.streams?.vedicAstrology?.moonProgress ?? "",
@@ -525,6 +558,49 @@ export const SolarTimeClock = () => {
     jsonLink.click();
     document.body.removeChild(jsonLink);
     URL.revokeObjectURL(jsonUrl);
+  };
+
+  const handleSaveStateToDatabase = async () => {
+    if (!env || !layers) {
+      alert("保存するデータが準備されていません。");
+      return;
+    }
+    
+    setIsSavingLog(true);
+    try {
+      const payload = {
+        targetDate: baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toISOString() : new Date().toISOString(),
+        environmentalBazi: env,
+        personalBazi: honmeiStar,
+        physicalLayers: physicalLayers,
+        classicalLayers: classicalLayers,
+        ansLoad: ansLoad,
+        kpIndex: spaceWeather?.kpIndex || null,
+        metadata: {
+          actionIntent,
+          geoData,
+          shieldCapacity,
+          timeOffsetDays,
+        }
+      };
+
+      const res = await fetch('/api/metaphysical-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        throw new Error("APIエラーが発生しました");
+      }
+
+      alert("現在のステータスをデータベースに保存しました。");
+    } catch (err: any) {
+      console.error("Save Log Error:", err);
+      alert(`保存に失敗しました: ${err.message}`);
+    } finally {
+      setIsSavingLog(false);
+    }
   };
 
   useEffect(() => {
@@ -1935,13 +2011,30 @@ export const SolarTimeClock = () => {
         env={env} 
       />
 
-      <button 
-        onClick={exportMasterTelemetry} 
-        className="fixed bottom-6 left-6 z-50 px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        EXPORT MASTER STATE (ALL TABS)
-      </button>
+      <div className="fixed bottom-6 left-6 z-50 flex flex-col sm:flex-row gap-3">
+        <button 
+          onClick={handleSaveStateToDatabase}
+          disabled={isSavingLog}
+          className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-400/50 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSavingLog ? (
+            <span className="animate-pulse">SAVING...</span>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              SAVE TO DATABASE
+            </>
+          )}
+        </button>
+
+        <button 
+          onClick={exportMasterTelemetry} 
+          className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          EXPORT MASTER STATE (CSV/JSON)
+        </button>
+      </div>
     </div>
   );
 };

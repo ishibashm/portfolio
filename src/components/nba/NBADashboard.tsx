@@ -27,7 +27,8 @@ export interface NBAData {
         saturn: string;
         lunarNode: string;
       };
-      bazi: BaziData;
+      environmentalBazi?: BaziData & { context: string };
+      personalBazi?: (BaziData & { context: string; voidZodiac: string }) | null;
       westernAstrology: {
         aspects: string[];
         retrogrades: string[];
@@ -85,7 +86,11 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/nba");
+      const res = await fetch("/api/nba", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
       if (!res.ok) throw new Error("Failed to fetch NBA data");
       const json = await res.json();
       if (json.success) {
@@ -153,7 +158,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
       ephemeris_moon: data.macro.streams?.ephemeris?.moon ?? '',
       ephemeris_jupiter: data.macro.streams?.ephemeris?.jupiter ?? '',
       ephemeris_lunarNode: data.macro.streams?.ephemeris?.lunarNode ?? '',
-      bazi_dayMaster: data.macro.streams?.bazi?.summary?.dayMaster ?? '',
+      bazi_dayMaster: data.macro.streams?.personalBazi?.summary?.dayMaster ?? data.macro.streams?.environmentalBazi?.summary?.dayMaster ?? '',
       western_aspects: data.macro.streams?.westernAstrology?.aspects?.join(' | ') ?? '',
       vedic_nakshatra: data.macro.streams?.vedicAstrology?.nakshatra ?? '',
       vedic_moon_progress: data.macro.streams?.vedicAstrology?.moonProgress ?? '',
@@ -251,25 +256,37 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                 
                 {/* Q-Value and Probability Distribution Matrix */}
                 <div className="mt-6 p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/20 backdrop-blur-sm">
-                  <h4 className="text-[10px] text-indigo-300 uppercase font-bold mb-3 tracking-widest flex items-center gap-2">
-                    <BrainCircuit className="w-3 h-3" /> Policy Probability Matrix
-                  </h4>
-                  <div className="space-y-3">
-                    {Object.entries(data.nba.actionResult.probabilities || {}).sort(([,a], [,b]) => b - a).map(([action, prob]) => (
-                      <div key={action}>
-                        <div className="flex justify-between text-[10px] text-gray-300 mb-1 font-mono">
-                          <span>{action.replace('_', ' ')} (Q: {data.nba.actionResult.qValues?.[action]?.toFixed(3) || '0.000'})</span>
-                          <span className={prob === Math.max(...Object.values(data.nba.actionResult.probabilities || {})) ? "text-emerald-400 font-bold" : "text-gray-400"}>{(prob * 100).toFixed(1)}%</span>
+                  <div className="flex justify-between items-end mb-3">
+                    <h4 className="text-[10px] text-indigo-300 uppercase font-bold tracking-widest flex items-center gap-2">
+                      <BrainCircuit className="w-3 h-3" /> Policy Probability Matrix
+                    </h4>
+                    <span className="text-[8px] text-indigo-400/70 font-mono">Q = 期待報酬 / PROB = 選択確率</span>
+                  </div>
+                  <div className="space-y-2">
+                    {Object.entries(data.nba.actionResult.probabilities || {}).sort(([,a], [,b]) => b - a).map(([action, prob]) => {
+                      const qValue = data.nba.actionResult.qValues?.[action] || 0;
+                      const isMax = prob === Math.max(...Object.values(data.nba.actionResult.probabilities || {}));
+                      return (
+                        <div key={action} className={`p-2 rounded-lg transition-all ${isMax ? 'bg-white/5 border border-white/10' : 'bg-transparent border border-transparent'}`}>
+                          <div className="flex justify-between items-center text-[10px] font-mono mb-1.5">
+                            <div className="flex items-center gap-2">
+                              <span className={isMax ? "text-white font-bold tracking-wide" : "text-gray-400"}>{action.replace('_', ' ')}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-[8px] ${qValue > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : qValue < 0 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'}`}>
+                                Q: {qValue > 0 ? '+' : ''}{qValue.toFixed(3)}
+                              </span>
+                            </div>
+                            <span className={isMax ? "text-emerald-400 font-bold text-xs" : "text-gray-400"}>{(prob * 100).toFixed(1)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-black/50 rounded-full overflow-hidden flex">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${prob * 100}%` }}
+                              className={`h-full rounded-full ${isMax ? "bg-gradient-to-r from-emerald-500 to-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-indigo-500/50"}`}
+                            />
+                          </div>
                         </div>
-                        <div className="h-1.5 bg-black/50 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${prob * 100}%` }}
-                            className={`h-full rounded-full ${prob === Math.max(...Object.values(data.nba.actionResult.probabilities || {})) ? "bg-emerald-500" : "bg-indigo-500/50"}`}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -361,7 +378,10 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                   <div className="p-3 rounded-xl bg-black/40 border border-emerald-500/20">
                     <p className="text-[10px] text-emerald-400 uppercase font-bold mb-2">四柱推命 (Bazi Summary)</p>
                     <div className="text-xs text-gray-300 font-medium">
-                      日主: {data.macro.streams.bazi.summary.dayMaster} ({data.macro.streams.bazi.summary.dayMasterWuxing}) - {data.macro.streams.bazi.summary.strength}
+                      日主 (あなた): {data.macro.streams.personalBazi ? `${data.macro.streams.personalBazi.summary.dayMaster} (${data.macro.streams.personalBazi.summary.dayMasterWuxing}) - ${data.macro.streams.personalBazi.summary.strength}` : '未設定'}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-1">
+                      環境日盤: {data.macro.streams.environmentalBazi?.pillars?.day?.gan}{data.macro.streams.environmentalBazi?.pillars?.day?.zhi}
                     </div>
                   </div>
                   <div className="p-3 rounded-xl bg-black/40 border border-indigo-500/20">
@@ -382,12 +402,22 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
           </motion.div>
 
           {/* BaZi Detailed Report - Spans full width */}
-          {data.macro.streams?.bazi && (
+          {data.macro.streams?.personalBazi && (
             <motion.div 
               variants={itemVariants}
               className="md:col-span-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md"
             >
-              <BaziReport data={data.macro.streams.bazi} />
+              <h3 className="text-xl font-bold text-white mb-4">個人宿命 (Personal Natal)</h3>
+              <BaziReport data={data.macro.streams.personalBazi} />
+            </motion.div>
+          )}
+          {data.macro.streams?.environmentalBazi && (
+            <motion.div 
+              variants={itemVariants}
+              className="md:col-span-4 p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md"
+            >
+              <h3 className="text-xl font-bold text-white mb-4">環境位相 (Environmental Transit)</h3>
+              <BaziReport data={data.macro.streams.environmentalBazi} />
             </motion.div>
           )}
 

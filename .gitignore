@@ -85,3 +85,7 @@ public/robots.txt
 *.md
 !README.md
 !**/README.md
+
+# Data and Logs
+data/
+.gemini/

@@ -66,6 +66,7 @@ model User {
   Account       Account[]
   BlogPost      BlogPost[]
   Session       Session[]
+  MetaphysicalStateLog MetaphysicalStateLog[]
 }
 
 model VerificationToken {
@@ -164,4 +165,29 @@ model TelemetryLog {
   kpIndex           Float?
   isPersonalVoid    Boolean  @default(false)
   metadata          String?
+}
+
+model MetaphysicalStateLog {
+  id                  String   @id @default(cuid())
+  userId              String?
+  targetDate          DateTime
+
+  environmentalBazi   Json?
+  personalBazi        Json?
+  
+  physicalLayers      Json?
+  classicalLayers     Json?
+  
+  ansLoad             Float?
+  kpIndex             Float?
+
+  metadata            Json?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  User                User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([targetDate])
+  @@index([userId])
 }

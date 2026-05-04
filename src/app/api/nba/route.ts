@@ -5,13 +5,21 @@ import { OuraClient } from '@/lib/ouraClient';
 import { TavilyClient } from '@/lib/tavilyClient';
 import { IChingClient } from '@/lib/ichingClient';
 import { NBAEngine, NBAParams } from '@/utils/nbaEngine';
-import { AstroEngine } from '@/utils/ephemerisEngine';
+import { AstroEngine, getPersonalVoidZodiac } from '@/utils/ephemerisEngine';
 import { baziEngine } from '@/utils/baziEngine';
 import { AspectEngine } from '@/utils/aspectEngine';
 import { VedicEngine } from '@/utils/vedicEngine';
 
-export async function GET() {
+export async function POST(req: Request) {
   try {
+    let clientBody: any = {};
+    try {
+      clientBody = await req.json();
+    } catch (e) {
+      // Ignore if no JSON body
+    }
+    const { ansLoad: clientAnsLoad, shieldCapacity: clientShieldCapacity, hrv: clientHrv, gsr: clientGsr, birthDate: clientBirthDate, lon: clientLon } = clientBody;
+
     const oura = new OuraClient();
     const iching = new IChingClient();
     const nbaEngine = new NBAEngine();
@@ -19,7 +27,7 @@ export async function GET() {
 
     const today = new Date();
     // Default to Tokyo for longitude
-    const lon = 139.6917;
+    const lon = clientLon !== undefined ? clientLon : 139.6917;
 
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
@@ -27,18 +35,35 @@ export async function GET() {
     const startDate = yesterday.toISOString().split('T')[0];
     const endDate = today.toISOString().split('T')[0];
 
+    // Strictly prioritize clientBirthDate to fix state management cache bug
+    let birthDateStr: string | null = clientBirthDate || null;
+    if (!birthDateStr) {
+      try {
+        const configPath = path.join(process.cwd(), 'local_tactical_config.json');
+        const configContent = await fs.readFile(configPath, 'utf8');
+        const config = JSON.parse(configContent);
+        if (config.birth_date) {
+          birthDateStr = config.birth_date;
+        }
+      } catch (e) {
+        console.warn("Failed to read local_tactical_config.json, personal natal data will be omitted.");
+      }
+    }
+
     // 1. Fetch Micro Environment Data (Oura)
     let readinessData = null;
     let sleepData = null;
     let stressData = null;
     let resilienceData = null;
-    try {
-      readinessData = await oura.getDailyReadiness(startDate, endDate);
-      sleepData = await oura.getDailySleep(startDate, endDate);
-      stressData = await oura.getDailyStress(startDate, endDate);
-      resilienceData = await oura.getDailyResilience(startDate, endDate);
-    } catch (e) {
-      console.warn("Failed to fetch Oura data. Mocking micro data.", e);
+    if (clientAnsLoad === undefined || clientShieldCapacity === undefined) {
+      try {
+        readinessData = await oura.getDailyReadiness(startDate, endDate);
+        sleepData = await oura.getDailySleep(startDate, endDate);
+        stressData = await oura.getDailyStress(startDate, endDate);
+        resilienceData = await oura.getDailyResilience(startDate, endDate);
+      } catch (e) {
+        console.warn("Failed to fetch Oura data. Mocking micro data.", e);
+      }
     }
 
     // 2. Fetch Macro Environment Data (Structured Raw Data from Astronomy Engine)
@@ -52,7 +77,9 @@ export async function GET() {
     const nodeLon = AstroEngine.getLunarNodeLongitude(today);
     
     // Calculate detailed BaZi
-    const baziData = baziEngine.calculate(today, lon);
+    const environmentalBaziData = baziEngine.calculate(today, lon);
+    const personalBaziData = birthDateStr ? baziEngine.calculate(new Date(birthDateStr), lon) : null;
+    const voidZodiacArray = birthDateStr ? getPersonalVoidZodiac(new Date(birthDateStr)) : [];
 
     // Calculate all major aspects using AspectEngine
     const allAspects = AspectEngine.calculateAspects(today);
@@ -83,7 +110,15 @@ export async function GET() {
         saturn: `${satLon.toFixed(2)}°`,
         lunarNode: `${nodeLon.toFixed(2)}°`
       },
-      bazi: baziData,
+      environmentalBazi: {
+        context: "CURRENT_TIME",
+        ...environmentalBaziData
+      },
+      personalBazi: personalBaziData ? {
+        context: "USER_NATAL",
+        ...personalBaziData,
+        voidZodiac: voidZodiacArray.join("")
+      } : null,
       westernAstrology: {
         aspects: aspectStrings.length > 0 ? aspectStrings : ["No Major Aspects Detected"],
         retrogrades: [] // Placeholder
@@ -101,7 +136,12 @@ export async function GET() {
 
     const ephemerisData = { source: "astronomy-engine", status: "Active", planetaryPositions: macroContexts.ephemeris };
     const astrologyData = { source: "astronomy-engine", status: "Active", transits: macroContexts.westernAstrology.aspects };
-    const ragContext = { source: "Local Deterministic Model", status: "Active", classicalRules: macroContexts.bazi };
+    const ragContext = { 
+      source: "Local Deterministic Model", 
+      status: "Active", 
+      classicalRules: macroContexts.environmentalBazi,
+      personalBazi: macroContexts.personalBazi 
+    };
 
     // 3. Map Data to NBA State Vector
     const readinessScore = readinessData?.data?.[0]?.score ?? 50; 
@@ -109,8 +149,8 @@ export async function GET() {
     const stressScore = stressData?.data?.[0]?.day_summary ?? 50;
     const resilienceScore = resilienceData?.data?.[0]?.level ?? 'adequate';
     
-    const ansLoad = 100 - readinessScore; 
-    const shieldCapacity = sleepScore; 
+    const ansLoad = clientAnsLoad !== undefined ? clientAnsLoad : (100 - readinessScore); 
+    const shieldCapacity = clientShieldCapacity !== undefined ? clientShieldCapacity : sleepScore; 
 
     // Extract environmental risk mathematically
     const baseEnvRisk = 50; 
@@ -178,3 +218,4 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
