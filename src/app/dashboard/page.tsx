@@ -21,7 +21,7 @@ export default async function DashboardPage() {
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
   // Fetch data concurrently with error handling
-  const [realEstates, stocks, timings, ouraReadiness, tavilyResult, nbaResult] = await Promise.all([
+  const [realEstates, stocks, timings, ouraReadiness, tavilyResult, nbaResult, wealthData] = await Promise.all([
     prisma.rental_properties.findMany({
       orderBy: { created_at: 'desc' },
       take: 4
@@ -45,7 +45,14 @@ export default async function DashboardPage() {
     }),
     oura.getDailyReadiness(yesterdayStr, todayStr).catch(() => null),
     tavily.search("global tech market sentiment macro events today", { search_depth: "basic" }).catch(() => null),
-    nbaEngine.getNextBestAction({ stateVector: { ansLoad: Math.floor(Math.random() * 100), shieldCapacity: Math.floor(Math.random() * 100), environmentalNoise: 'Medium', solarPhase: 5 } }).catch(() => null)
+    nbaEngine.getNextBestAction({ stateVector: { ansLoad: Math.floor(Math.random() * 100), shieldCapacity: Math.floor(Math.random() * 100), environmentalNoise: 'Medium', solarPhase: 5 } }).catch(() => null),
+    prisma.municipalityWealth.findMany({
+      orderBy: { incomePerCapita: 'desc' },
+      take: 3
+    }).catch((e: any) => {
+      console.warn("Failed to fetch municipalityWealth:", e.message);
+      return [];
+    })
   ]);
 
   // Safe destructuring of Oura and Tavily data
@@ -252,11 +259,13 @@ export default async function DashboardPage() {
 
           {/* BENTO ITEM 6: Real Estate Arbitrage */}
           <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                <Building className="w-5 h-5 text-emerald-400" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <Building className="w-5 h-5 text-emerald-400" />
+                </div>
+                <h2 className="text-lg font-semibold tracking-tight text-white/90">Real Estate</h2>
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-white/90">Real Estate</h2>
             </div>
             
             <div className="flex flex-col gap-3">
@@ -270,6 +279,40 @@ export default async function DashboardPage() {
                       <span className="text-emerald-400 text-xs font-medium">¥{re.rent?.toLocaleString()}</span>
                       <span className="text-gray-500 text-[10px]">{re.area}</span>
                     </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          {/* BENTO ITEM 7: Regional Wealth & Relocation */}
+          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-amber-400" />
+                </div>
+                <h2 className="text-lg font-semibold tracking-tight text-white/90">Wealth & Relocation</h2>
+              </div>
+              <Link href="/relocation/wealth" className="p-2 rounded-full hover:bg-white/10 transition-colors group">
+                <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-amber-400" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-grow">
+              {wealthData.length === 0 ? (
+                <div className="col-span-3 p-4 rounded-xl bg-white/5 border border-white/5 text-center flex items-center justify-center">
+                  <p className="text-gray-500 text-xs">No wealth data available.</p>
+                </div>
+              ) : (
+                wealthData.map((w: any, idx: number) => (
+                  <div key={w.id} className="p-4 rounded-xl bg-gradient-to-b from-white/[0.06] to-white/[0.01] border border-white/5 flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">#{idx + 1}</span>
+                      <span className="text-[10px] text-gray-500">{w.dataYear}</span>
+                    </div>
+                    <h3 className="font-medium text-gray-200 text-sm truncate mb-1">{w.areaName}</h3>
+                    <p className="text-amber-400 text-xs font-mono">¥{(w.incomePerCapita / 10000).toFixed(0)}万/人</p>
                   </div>
                 ))
               )}

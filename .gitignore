@@ -89,3 +89,9 @@ public/robots.txt
 # Data and Logs
 data/
 .gemini/
+
+# Personal and Config Information
+local_tactical_config.json
+metaphysical_*.json
+docs/metaphysical_*.json
+

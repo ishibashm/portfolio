@@ -1,0 +1,26 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.git/
+*.log
+*.zip
+*.tar.gz
+
+# --- Added to reduce Gemini Code Assist load ---
+# Large data files
+*.jsonl
+*.csv
+*.db
+*.sqlite
+data/
+
+# Media files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.webp
+*.svg
