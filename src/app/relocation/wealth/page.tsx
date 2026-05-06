@@ -13,7 +13,7 @@ import {
   Scatter,
   ZAxis,
 } from "recharts";
-import { TrendingUp, Users, MapPin, Compass, Settings2, Loader2, ArrowRight, ArrowLeft, LocateFixed, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingUp, Users, MapPin, Compass, Settings2, Loader2, ArrowRight, ArrowLeft, LocateFixed, Download, ChevronLeft, ChevronRight, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
 
@@ -51,8 +51,10 @@ export default function RegionalWealthPage() {
   const [layerMode, setLayerMode] = useState("final");
   const [sortBy, setSortBy] = useState<'astrology' | 'income' | 'cospa' | 'distance'>('astrology');
 
-  // Pagination state
+  // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
+  const [filterName, setFilterName] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
   const itemsPerPage = 50;
 
   const fetchData = async (overrideParams?: any) => {
@@ -185,9 +187,39 @@ export default function RegionalWealthPage() {
     status: d.astrologyStatus
   }));
 
+  // Apply filtering before sorting and pagination
+  const filteredData = safeData.filter(d => {
+    if (filterStatus !== "ALL" && !d.astrologyStatus.includes(filterStatus)) {
+      return false;
+    }
+    if (filterName) {
+      const terms = filterName.trim().split(/\s+/);
+      const areaNameLower = d.areaName.toLowerCase();
+      
+      for (const term of terms) {
+        if (!term) continue;
+        
+        const isExclude = term.startsWith('-') || term.startsWith('!');
+        const actualTerm = isExclude ? term.substring(1).toLowerCase() : term.toLowerCase();
+        
+        if (!actualTerm) continue;
+
+        const contains = areaNameLower.includes(actualTerm);
+        
+        if (isExclude && contains) {
+          return false; // Failed exclusion
+        }
+        if (!isExclude && !contains) {
+          return false; // Failed inclusion
+        }
+      }
+    }
+    return true;
+  });
+
   const handleExportCSV = () => {
-    // Sort data identically to the table
-    const sortedData = [...safeData].sort((a, b) => {
+    // Sort filtered data identically to the table
+    const sortedData = [...filteredData].sort((a, b) => {
       if (sortBy === 'astrology') return b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
       if (sortBy === 'cospa') return (b.cospaIndex || 0) - (a.cospaIndex || 0);
       if (sortBy === 'distance') return (a.distanceKm || 0) - (b.distanceKm || 0);
@@ -221,7 +253,7 @@ export default function RegionalWealthPage() {
   };
 
   // Sorted and Paginated Data for the table
-  const sortedTableData = [...safeData].sort((a, b) => {
+  const sortedTableData = [...filteredData].sort((a, b) => {
     if (sortBy === 'astrology') return b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
     if (sortBy === 'cospa') return (b.cospaIndex || 0) - (a.cospaIndex || 0);
     if (sortBy === 'distance') return (a.distanceKm || 0) - (b.distanceKm || 0);
@@ -234,6 +266,16 @@ export default function RegionalWealthPage() {
   const handleSortChange = (newSort: typeof sortBy) => {
     setSortBy(newSort);
     setCurrentPage(1); // Reset to first page when sorting changes
+  };
+
+  const handleFilterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterName(e.target.value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterStatus(e.target.value);
+    setCurrentPage(1);
   };
 
   return (
@@ -485,48 +527,81 @@ export default function RegionalWealthPage() {
         </div>
 
         {/* Table Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-800">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-indigo-500" />
-              詳細データ （安全方位のみ: 全 {sortedTableData.length} 件）
-            </h2>
-            <div className="flex gap-2 flex-wrap items-center">
-              <button 
-                onClick={() => handleSortChange('astrology')}
-                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'astrology' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-              >
-                方位優先
-              </button>
-              <button 
-                onClick={() => handleSortChange('income')}
-                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'income' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-              >
-                所得優先
-              </button>
-              <button 
-                onClick={() => handleSortChange('cospa')}
-                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'cospa' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                title="所得 / 地価 (高いほど地価に対して所得が高い)"
-              >
-                コスパ優先
-              </button>
-              <button 
-                onClick={() => handleSortChange('distance')}
-                className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'distance' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                title="基準地からの距離が近い順"
-              >
-                近距離優先
-              </button>
-              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
-              <button 
-                onClick={handleExportCSV}
-                className="px-3 py-1 text-xs rounded-full font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
-                title="現在の検索条件でCSVダウンロード"
-              >
-                <Download className="w-3 h-3" />
-                CSV出力
-              </button>
+        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-800 flex flex-col">
+          <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-indigo-500" />
+                詳細データ （安全方位のみ: 全 {sortedTableData.length} 件）
+              </h2>
+              <div className="flex gap-2 flex-wrap items-center">
+                <button 
+                  onClick={() => handleSortChange('astrology')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'astrology' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                >
+                  方位優先
+                </button>
+                <button 
+                  onClick={() => handleSortChange('income')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'income' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                >
+                  所得優先
+                </button>
+                <button 
+                  onClick={() => handleSortChange('cospa')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'cospa' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                  title="所得 / 地価 (高いほど地価に対して所得が高い)"
+                >
+                  コスパ優先
+                </button>
+                <button 
+                  onClick={() => handleSortChange('distance')}
+                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'distance' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                  title="基準地からの距離が近い順"
+                >
+                  近距離優先
+                </button>
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+                <button 
+                  onClick={handleExportCSV}
+                  className="px-3 py-1 text-xs rounded-full font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
+                  title="現在の検索条件でCSVダウンロード"
+                >
+                  <Download className="w-3 h-3" />
+                  CSV出力
+                </button>
+              </div>
+            </div>
+            
+            {/* Filter Row */}
+            <div className="flex flex-wrap gap-4 items-center pt-2">
+               <div className="relative">
+                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                   <Search className="h-4 w-4 text-gray-400" />
+                 </div>
+                 <input
+                   type="text"
+                   placeholder="エリア名で絞り込み..."
+                   value={filterName}
+                   onChange={handleFilterNameChange}
+                   className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-64"
+                 />
+               </div>
+               <div className="flex items-center gap-2">
+                 <Filter className="h-4 w-4 text-gray-400" />
+                 <select
+                   value={filterStatus}
+                   onChange={handleFilterStatusChange}
+                   className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                 >
+                   <option value="ALL">すべてのステータス</option>
+                   <option value="OPTIMAL">OPTIMAL (大吉)</option>
+                   <option value="SAFE">SAFE (吉)</option>
+                   <option value="NOISE">NOISE (凶・無効)</option>
+                   <option value="JUPITER">JUPITER (木星ボーナス)</option>
+                   <option value="VENUS">VENUS (金星ボーナス)</option>
+                 </select>
+               </div>
             </div>
           </div>
 
