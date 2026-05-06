@@ -41,6 +41,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { GlobalSidebar } from "@/components/GlobalSidebar";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,9 +53,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} antialiased bg-black text-white`}
       >
-        <main className="min-h-screen">
-          {children}
-        </main>
+        <div className="flex min-h-screen">
+          <GlobalSidebar />
+          <main className="flex-1 lg:ml-64 w-full">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   );

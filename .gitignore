@@ -95,3 +95,13 @@ local_tactical_config.json
 metaphysical_*.json
 docs/metaphysical_*.json
 
+
+# Ignore test and debug scripts
+check_*.ts
+test_*.ts
+export_*.ts
+scratch/
+
+# Ignore generated CSVs
+docs/*.csv
+

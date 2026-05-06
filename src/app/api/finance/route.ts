@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import yahooFinance from 'yahoo-finance2';
+import yahooFinanceModule from 'yahoo-finance2';
 
+// yahoo-finance2のデフォルトエクスポートはクラス/インスタンスとして機能します
+const yahooFinance = typeof yahooFinanceModule === 'function' ? new (yahooFinanceModule as any)() : yahooFinanceModule;
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const ticker = searchParams.get('ticker');

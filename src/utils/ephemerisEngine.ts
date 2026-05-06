@@ -131,10 +131,14 @@ export const AstroEngine = {
     return coords.elon;
   },
 
+  // グリニッジ恒星時 (Greenwich Sidereal Time)
+  getGreenwichSiderealTime(date: Date): number {
+    return SiderealTime(new AstroTime(date));
+  },
+
   // 地方恒星時 (Local Sidereal Time)
   getLocalSiderealTime(date: Date, lon: number): number {
-    const time = new AstroTime(date);
-    return SiderealTime(time) + (lon / 15);
+    return AstroEngine.getGreenwichSiderealTime(date) + (lon / 15);
   },
 
   /**
@@ -143,8 +147,9 @@ export const AstroEngine = {
    * @param lat 緯度
    * @param lon 経度
    */
-  getAscendant(date: Date, lat: number, lon: number): number {
-    const lst = AstroEngine.getLocalSiderealTime(date, lon) * 15; // 時間(0-24)を角度(0-360)に変換
+  getAscendant(date: Date, lat: number, lon: number, gst?: number): number {
+    const sidereal = gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
+    const lst = (sidereal + (lon / 15)) * 15; // 時間(0-24)を角度(0-360)に変換
     const lstRad = (lst * Math.PI) / 180;
     const latRad = (lat * Math.PI) / 180;
     
@@ -161,6 +166,34 @@ export const AstroEngine = {
     while (ascDeg >= 360) ascDeg -= 360;
     
     return ascDeg;
+  },
+
+  /**
+   * ミッドヘブン (Midheaven / MC) の算出
+   * MCは緯度に依存せず、地方恒星時と黄道傾斜角のみで決まります。
+   */
+  getMidheaven(date: Date, lon: number, gst?: number): number {
+    const sidereal = gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
+    const lst = (sidereal + (lon / 15)) * 15;
+    const lstRad = (lst * Math.PI) / 180;
+    
+    // 黄道傾斜角 (Obliquity of the Ecliptic) 約 23.44度
+    const epsilonRad = (23.4392911 * Math.PI) / 180;
+    
+    const mcRad = Math.atan2(Math.tan(lstRad), Math.cos(epsilonRad));
+    let mcDeg = (mcRad * 180) / Math.PI;
+    
+    // atan2の性質上、LSTの象限に合わせる補正が必要
+    if (lst >= 90 && lst < 270) {
+       mcDeg += 180;
+    } else if (lst >= 270 && lst < 360) {
+       mcDeg += 360;
+    }
+    
+    while (mcDeg < 0) mcDeg += 360;
+    while (mcDeg >= 360) mcDeg -= 360;
+    
+    return mcDeg;
   },
 
   // ドラゴンヘッド（月の昇交点）の黄経

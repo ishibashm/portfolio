@@ -38,8 +38,7 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "nba" | "history">("profile")
-;
+  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "history">("profile");
 
   // NBA State
   const [nbaData, setNbaData] = useState<NBAData | null>(null);
@@ -918,16 +917,6 @@ export const SolarTimeClock = () => {
             }`}
           >
             4. Consult
-          </button>
-          <button
-            onClick={() => setActiveTab("nba")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "nba"
-                ? "bg-blue-500/10 text-blue-400 border border-blue-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
-          >
-            5. Agency (NBA)
           </button>
         </div>
 
@@ -1995,12 +1984,6 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        {/* --- TAB CONTENT: 5. NBA DASHBOARD --- */}
-        {activeTab === "nba" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-6xl mt-4">
-            <NBADashboard externalData={nbaData} onRefresh={fetchNBAData} />
-          </div>
-        )}
       </div>
       {/* Telemetry and Audit Log */}
       <SystemTelemetryLog 

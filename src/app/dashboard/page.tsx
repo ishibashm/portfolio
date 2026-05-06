@@ -4,11 +4,13 @@ import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, Japanese
 import Link from "next/link"
 import { TwitterFeed } from "@/components/twitter/TwitterFeed"
 import { FinanceWidget } from "@/components/finance/FinanceWidget"
+import { RealEstateWidget } from "@/components/realestate/RealEstateWidget"
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient"
 import { TavilyClient } from "@/lib/tavilyClient"
 import { NBAEngine } from "@/utils/nbaEngine"
+import { AstroEngine } from "@/utils/ephemerisEngine"
 
 export const revalidate = 60 // Revalidate cache every minute
 
@@ -21,7 +23,7 @@ export default async function DashboardPage() {
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
   // Fetch data concurrently with error handling
-  const [realEstates, stocks, timings, ouraReadiness, tavilyResult, nbaResult, wealthData] = await Promise.all([
+  const [realEstates, stocks, timings, ouraReadiness, tavilyResult, wealthData] = await Promise.all([
     prisma.rental_properties.findMany({
       orderBy: { created_at: 'desc' },
       take: 4
@@ -45,7 +47,6 @@ export default async function DashboardPage() {
     }),
     oura.getDailyReadiness(yesterdayStr, todayStr).catch(() => null),
     tavily.search("global tech market sentiment macro events today", { search_depth: "basic" }).catch(() => null),
-    nbaEngine.getNextBestAction({ stateVector: { ansLoad: Math.floor(Math.random() * 100), shieldCapacity: Math.floor(Math.random() * 100), environmentalNoise: 'Medium', solarPhase: 5 } }).catch(() => null),
     prisma.municipalityWealth.findMany({
       orderBy: { incomePerCapita: 'desc' },
       take: 3
@@ -58,6 +59,52 @@ export default async function DashboardPage() {
   // Safe destructuring of Oura and Tavily data
   const readinessData = ouraReadiness?.data?.[0] || null;
   const tavilyResults = tavilyResult?.results?.slice(0, 3) || [];
+
+  // 1. Process Oura Biometrics
+  let ansLoad = 50; 
+  let shieldCapacity = 50;
+  if (readinessData) {
+    ansLoad = Math.max(0, 100 - readinessData.score);
+    shieldCapacity = readinessData.contributors?.recovery_index || readinessData.score;
+  }
+
+  // 2. Process Tavily Macro Sentiment
+  let environmentalRisk = 50;
+  let noise = "Medium";
+  if (tavilyResults.length > 0) {
+    const text = tavilyResults.map((r: any) => r.content).join(' ').toLowerCase();
+    const riskCount = (text.match(/risk|crash|down|bear|crisis|warning/g) || []).length;
+    const safeCount = (text.match(/safe|bull|up|growth|boom|stable/g) || []).length;
+    environmentalRisk = Math.max(0, Math.min(100, 50 + (riskCount - safeCount) * 10));
+    noise = riskCount > safeCount ? "High" : "Low";
+  }
+
+  // 3. Process Astrology / Ephemeris (Physical Engine)
+  const now = new Date();
+  const solarPhase = AstroEngine.getSolarLongitude(now);
+  const marsLon = AstroEngine.getMarsLongitude(now);
+  const saturnLon = AstroEngine.getSaturnLongitude(now);
+
+  // 4. Calculate Next Best Action deterministically
+  const nbaResult = await nbaEngine.getNextBestAction({ 
+    stateVector: { 
+      ansLoad, 
+      shieldCapacity, 
+      environmentalNoise: noise, 
+      environmentalRisk,
+      solarPhase,
+      ephemerisData: {
+        source: "AstroEngine",
+        planetaryPositions: {
+          mars: marsLon,
+          saturn: saturnLon
+        }
+      }
+    } 
+  }).catch((e: any) => {
+    console.error("NBA Engine Error:", e.message);
+    return null;
+  });
 
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-indigo-500/30 font-sans relative overflow-hidden">
@@ -258,32 +305,9 @@ export default async function DashboardPage() {
           </section>
 
           {/* BENTO ITEM 6: Real Estate Arbitrage */}
-          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                  <Building className="w-5 h-5 text-emerald-400" />
-                </div>
-                <h2 className="text-lg font-semibold tracking-tight text-white/90">Real Estate</h2>
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-3">
-              {realEstates.length === 0 ? (
-                <p className="text-gray-500 text-xs text-center py-4">No real estate targets.</p>
-              ) : (
-                realEstates.slice(0,2).map((re: rental_properties) => (
-                  <div key={re.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
-                    <h3 className="font-medium text-gray-200 text-xs truncate mb-1" title={re.property_name}>{re.property_name}</h3>
-                    <div className="flex justify-between items-center">
-                      <span className="text-emerald-400 text-xs font-medium">¥{re.rent?.toLocaleString()}</span>
-                      <span className="text-gray-500 text-[10px]">{re.area}</span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
+          <div className="lg:col-span-1 lg:row-span-1">
+            <RealEstateWidget data={realEstates} />
+          </div>
 
           {/* BENTO ITEM 7: Regional Wealth & Relocation */}
           <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">

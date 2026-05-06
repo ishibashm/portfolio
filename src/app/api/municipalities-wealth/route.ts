@@ -8,8 +8,11 @@ import {
   generateBoard, 
   calculateVectorCollision, 
   getPersonalVoidZodiac,
-  Direction
+  Direction,
+  AstroEngine
 } from '@/utils/ephemerisEngine';
+
+export const dynamic = 'force-dynamic';
 
 function getBearingDirection(lat1: number, lon1: number, lat2: number, lon2: number): Direction {
   const toRad = (val: number) => val * Math.PI / 180;
@@ -23,6 +26,26 @@ function getBearingDirection(lat1: number, lon1: number, lat2: number, lon2: num
   return dirs[Math.floor(((brng + 22.5) % 360) / 45)];
 }
 
+// 角度の差を計算する関数（円弧上の最短距離）
+function getAngleDiff(a: number, b: number): number {
+  let diff = Math.abs(a - b) % 360;
+  return diff > 180 ? 360 - diff : diff;
+}
+
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limit = parseInt(searchParams.get('limit') || '100', 10);
@@ -30,6 +53,8 @@ export async function GET(request: Request) {
   
   let baseLat = parseFloat(searchParams.get('baseLat') || 'NaN');
   let baseLon = parseFloat(searchParams.get('baseLon') || 'NaN');
+  let birthLat = parseFloat(searchParams.get('birthLat') || 'NaN');
+  let birthLon = parseFloat(searchParams.get('birthLon') || 'NaN');
   let targetDateStr = searchParams.get('targetDate');
   let birthDateStr = searchParams.get('birthDate');
   const engineType = searchParams.get('engineType') || 'physical'; // 'physical' or 'classical'
@@ -43,6 +68,8 @@ export async function GET(request: Request) {
     
     if (isNaN(baseLat) && config.base_lat !== undefined) baseLat = config.base_lat;
     if (isNaN(baseLon) && config.base_lon !== undefined) baseLon = config.base_lon;
+    if (isNaN(birthLat) && config.birth_lat !== undefined) birthLat = config.birth_lat;
+    if (isNaN(birthLon) && config.birth_lon !== undefined) birthLon = config.birth_lon;
     if (!birthDateStr && config.birth_date) birthDateStr = config.birth_date;
   } catch (e) {
     // Ignore config read error
@@ -51,54 +78,68 @@ export async function GET(request: Request) {
   // Default to Tokyo if still missing
   if (isNaN(baseLat)) baseLat = 35.6895;
   if (isNaN(baseLon)) baseLon = 139.6917;
-  if (!birthDateStr) birthDateStr = '2000-01-01'; // Default birth date to avoid UNKNOWN status
   
+  // 生年月日が無い場合は安全のためダミー値をセット
+  if (!birthDateStr) birthDateStr = '2000-01-01T12:00'; 
+  
+  // datetime-localが秒を含まない場合があるため、有効なDate形式にする
+  const bDate = new Date(birthDateStr);
+  if (isNaN(bDate.getTime())) {
+    return NextResponse.json({ success: false, error: 'Invalid birthDate' }, { status: 400 });
+  }
+
   const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+
+  // AstroCartoGraphy: ネイタルの木星・金星の黄経を取得
+  const natalJupiter = AstroEngine.getJupiterLongitude(bDate);
+  const natalVenus = AstroEngine.getVenusLongitude(bDate);
+
+  // パフォーマンス最適化：2000件のループ内で天文学計算（JulianDay等）を繰り返さないよう、GSTをキャッシュ
+  let birthGst: number | undefined;
+  if (!isNaN(birthLat) && !isNaN(birthLon)) {
+     birthGst = AstroEngine.getGreenwichSiderealTime(bDate);
+  }
 
   let activeVectors: Partial<Record<Direction, string>> | null = null;
   
-  if (birthDateStr) {
-    const bDate = new Date(birthDateStr);
-    const honmeiStar = getHonmeiStar(bDate);
-    const env = getCurrentEnvironmentalFrequencies(targetDate);
-    const voidZodiacs = getPersonalVoidZodiac(bDate);
-    
-    const useClassical = engineType === 'classical';
-    
-    const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
-    const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
-    const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
-    
-    const vectorData = calculateVectorCollision(
-      useClassical ? honmeiStar.classical : honmeiStar.physical,
-      yB, mB, dB,
-      voidZodiacs,
-      env.raw.lunarNode,
-      'MIGRATION' // Action intent for relocation
-    );
-    
-    if (layerMode === 'year') activeVectors = vectorData.yearLayer;
-    else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
-    else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
-    else activeVectors = vectorData.finalVectors;
-  }
+  const honmeiStar = getHonmeiStar(bDate);
+  const env = getCurrentEnvironmentalFrequencies(targetDate);
+  const voidZodiacs = getPersonalVoidZodiac(bDate);
+  
+  const useClassical = engineType === 'classical';
+  
+  const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
+  const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
+  const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
+  
+  const vectorData = calculateVectorCollision(
+    useClassical ? honmeiStar.classical : honmeiStar.physical,
+    yB, mB, dB,
+    voidZodiacs,
+    env.raw.lunarNode,
+    'MIGRATION' // Action intent for relocation
+  );
+  
+  if (layerMode === 'year') activeVectors = vectorData.yearLayer;
+  else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
+  else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
+  else activeVectors = vectorData.finalVectors;
 
   try {
     const municipalities = await prisma.municipalityWealth.findMany({
       take: limit,
-      orderBy: {
-        incomePerCapita: sort === 'asc' ? 'asc' : 'desc',
-      },
     });
 
     const scoredData = municipalities.map(m => {
       let astrologyScore = 50; // Neutral default
       let astrologyStatus = 'UNKNOWN';
       let direction: Direction | null = null;
+      let astroFlags: string[] = [];
 
       if (m.lat && m.lon) {
         direction = getBearingDirection(baseLat, baseLon, m.lat, m.lon);
         
+        // 1. 九星気学による方位スコア計算
         if (activeVectors && direction) {
           astrologyStatus = activeVectors[direction] || 'UNKNOWN';
           switch (astrologyStatus) {
@@ -113,14 +154,63 @@ export async function GET(request: Request) {
             default: astrologyScore = 50; break;
           }
         }
+
+        // 2. AstroCartoGraphy（リロケーション占星術）ボーナス
+        if (!isNaN(birthLat) && !isNaN(birthLon)) {
+          // ターゲット市区町村における出生時間のASCとMC
+          const relocatedASC = AstroEngine.getAscendant(bDate, m.lat, m.lon, birthGst);
+          const relocatedMC = AstroEngine.getMidheaven(bDate, m.lon, birthGst);
+          
+          // オーブ（許容度）はタイトに5度とする
+          const ORB = 5;
+
+          // 木星とASC/MCのコンジャンクション（強力な財運・成功ライン）
+          if (getAngleDiff(relocatedASC, natalJupiter) <= ORB) {
+            astrologyScore += 30;
+            astroFlags.push("JUPITER_ASC");
+          } else if (getAngleDiff(relocatedMC, natalJupiter) <= ORB) {
+            astrologyScore += 30;
+            astroFlags.push("JUPITER_MC");
+          }
+
+          // 金星とASC/MCのコンジャンクション（豊かさ・愛情ライン）
+          if (getAngleDiff(relocatedASC, natalVenus) <= ORB) {
+            astrologyScore += 15;
+            astroFlags.push("VENUS_ASC");
+          } else if (getAngleDiff(relocatedMC, natalVenus) <= ORB) {
+            astrologyScore += 15;
+            astroFlags.push("VENUS_MC");
+          }
+          
+          // スコアの上限クリッピング（最大100だが、ボーナスで突き抜ける場合は120まで許容するなどしても面白い。ここでは最大100に制限）
+          if (astrologyScore > 100) astrologyScore = 100;
+        }
+      }
+
+      let cospaIndex: number | null = null;
+      if (m.landPricePerSqm && m.landPricePerSqm > 0) {
+        cospaIndex = m.incomePerCapita / m.landPricePerSqm;
+      }
+
+      let distanceKm: number | null = null;
+      if (m.lat && m.lon && !isNaN(baseLat) && !isNaN(baseLon)) {
+        distanceKm = getDistance(baseLat, baseLon, m.lat, m.lon);
       }
 
       return {
         ...m,
         astrologyScore,
-        astrologyStatus,
-        direction
+        astrologyStatus: astroFlags.length > 0 ? `${astrologyStatus} + ${astroFlags.join(',')}` : astrologyStatus,
+        direction,
+        cospaIndex,
+        distanceKm
       };
+    });
+
+    // ここで動的にソート（ボーナス加算後のスコア考慮）
+    scoredData.sort((a, b) => {
+      if (sort === 'asc') return a.incomePerCapita - b.incomePerCapita;
+      return b.incomePerCapita - a.incomePerCapita;
     });
 
     return NextResponse.json({
@@ -130,8 +220,10 @@ export async function GET(request: Request) {
       metadata: {
         baseLat,
         baseLon,
+        birthLat,
+        birthLon,
         targetDate,
-        birthDate: birthDateStr || null,
+        birthDate: bDate.toISOString(),
         engineType,
         layerMode,
         vectors: activeVectors
