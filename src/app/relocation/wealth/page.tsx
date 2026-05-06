@@ -13,7 +13,7 @@ import {
   Scatter,
   ZAxis,
 } from "recharts";
-import { TrendingUp, Users, MapPin, Compass, Settings2, Loader2, ArrowRight, ArrowLeft, LocateFixed, Download, ChevronLeft, ChevronRight, Search, Filter } from "lucide-react";
+import { TrendingUp, Users, MapPin, Compass, Settings2, Loader2, ArrowRight, ArrowLeft, LocateFixed, Download, ChevronLeft, ChevronRight, Search, Filter, Bookmark, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
 
@@ -33,6 +33,19 @@ interface MunicipalityWealth {
   landPricePerSqm?: number;
   cospaIndex?: number;
   distanceKm?: number;
+}
+
+interface SavedPreset {
+  id: string;
+  name: string;
+  targetDate: string;
+  birthDate: string;
+  baseLat: string;
+  baseLon: string;
+  birthLat: string;
+  birthLon: string;
+  engineType: string;
+  layerMode: string;
 }
 
 export default function RegionalWealthPage() {
@@ -57,17 +70,25 @@ export default function RegionalWealthPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const itemsPerPage = 50;
 
+  // Preset state
+  const [presets, setPresets] = useState<SavedPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+  const [newPresetName, setNewPresetName] = useState<string>("");
+
   const fetchData = async (overrideParams?: any) => {
     setLoading(true);
     setCurrentPage(1); // Reset page on new fetch
 
+    const currentTargetDate = overrideParams?.targetDate !== undefined ? overrideParams.targetDate : targetDate;
     const currentBirthDate = overrideParams?.birthDate !== undefined ? overrideParams.birthDate : birthDate;
     const currentBirthLat = overrideParams?.birthLat !== undefined ? overrideParams.birthLat : birthLat;
     const currentBirthLon = overrideParams?.birthLon !== undefined ? overrideParams.birthLon : birthLon;
     const currentBaseLat = overrideParams?.baseLat !== undefined ? overrideParams.baseLat : baseLat;
     const currentBaseLon = overrideParams?.baseLon !== undefined ? overrideParams.baseLon : baseLon;
+    const currentEngineType = overrideParams?.engineType !== undefined ? overrideParams.engineType : engineType;
+    const currentLayerMode = overrideParams?.layerMode !== undefined ? overrideParams.layerMode : layerMode;
 
-    // Save to localStorage
+    // Save to localStorage (fallback generic slots)
     if (typeof window !== 'undefined') {
       localStorage.setItem('wealth_birthDate', currentBirthDate);
       localStorage.setItem('wealth_birthLat', currentBirthLat);
@@ -79,14 +100,14 @@ export default function RegionalWealthPage() {
     try {
       const params = new URLSearchParams();
       params.append("limit", "2000"); // Load all municipalities for the map
-      if (targetDate) params.append("targetDate", targetDate);
+      if (currentTargetDate) params.append("targetDate", currentTargetDate);
       if (currentBirthDate) params.append("birthDate", currentBirthDate);
       if (currentBirthLat) params.append("birthLat", currentBirthLat);
       if (currentBirthLon) params.append("birthLon", currentBirthLon);
       if (currentBaseLat) params.append("baseLat", currentBaseLat);
       if (currentBaseLon) params.append("baseLon", currentBaseLon);
-      if (engineType) params.append("engineType", engineType);
-      if (layerMode) params.append("layerMode", layerMode);
+      if (currentEngineType) params.append("engineType", currentEngineType);
+      if (currentLayerMode) params.append("layerMode", currentLayerMode);
 
       const res = await fetch(`/api/municipalities-wealth?${params.toString()}`);
       if (!res.ok) throw new Error("データの取得に失敗しました");
@@ -136,8 +157,16 @@ export default function RegionalWealthPage() {
     }
   };
 
+  // Load Presets & Last Config
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const savedPresetsStr = localStorage.getItem('wealth_presets');
+      if (savedPresetsStr) {
+        try {
+          setPresets(JSON.parse(savedPresetsStr));
+        } catch(e) {}
+      }
+
       const savedBirthDate = localStorage.getItem('wealth_birthDate') || "";
       const savedBirthLat = localStorage.getItem('wealth_birthLat') || "";
       const savedBirthLon = localStorage.getItem('wealth_birthLon') || "";
@@ -161,6 +190,72 @@ export default function RegionalWealthPage() {
       fetchData();
     }
   }, []);
+
+  const handleSavePreset = () => {
+    if (!newPresetName.trim()) {
+      alert("プリセット名を入力してください。");
+      return;
+    }
+    const newPreset: SavedPreset = {
+      id: Date.now().toString(),
+      name: newPresetName.trim(),
+      targetDate,
+      birthDate,
+      baseLat,
+      baseLon,
+      birthLat,
+      birthLon,
+      engineType,
+      layerMode
+    };
+    const updatedPresets = [...presets, newPreset];
+    setPresets(updatedPresets);
+    setSelectedPresetId(newPreset.id);
+    setNewPresetName("");
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wealth_presets', JSON.stringify(updatedPresets));
+    }
+  };
+
+  const handleLoadPreset = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const pId = e.target.value;
+    setSelectedPresetId(pId);
+    if (!pId) return;
+
+    const preset = presets.find(p => p.id === pId);
+    if (preset) {
+      setTargetDate(preset.targetDate);
+      setBirthDate(preset.birthDate);
+      setBaseLat(preset.baseLat);
+      setBaseLon(preset.baseLon);
+      setBirthLat(preset.birthLat);
+      setBirthLon(preset.birthLon);
+      setEngineType(preset.engineType);
+      setLayerMode(preset.layerMode);
+      
+      // Auto fetch with new preset params
+      fetchData({
+        targetDate: preset.targetDate,
+        birthDate: preset.birthDate,
+        baseLat: preset.baseLat,
+        baseLon: preset.baseLon,
+        birthLat: preset.birthLat,
+        birthLon: preset.birthLon,
+        engineType: preset.engineType,
+        layerMode: preset.layerMode
+      });
+    }
+  };
+
+  const handleDeletePreset = () => {
+    if (!selectedPresetId) return;
+    const updatedPresets = presets.filter(p => p.id !== selectedPresetId);
+    setPresets(updatedPresets);
+    setSelectedPresetId("");
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wealth_presets', JSON.stringify(updatedPresets));
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("ja-JP", {
@@ -304,6 +399,49 @@ export default function RegionalWealthPage() {
 
         {/* Controls Section */}
         <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-5">
+          
+          {/* Presets Row */}
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex flex-wrap items-center gap-2">
+              <Bookmark className="w-4 h-4 text-indigo-500" />
+              <select
+                value={selectedPresetId}
+                onChange={handleLoadPreset}
+                className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48 md:w-64"
+              >
+                <option value="">カスタム設定...</option>
+                {presets.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {selectedPresetId && (
+                <button
+                  onClick={handleDeletePreset}
+                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                  title="このプリセットを削除"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <input
+                type="text"
+                placeholder="新しい設定の名前..."
+                value={newPresetName}
+                onChange={e => setNewPresetName(e.target.value)}
+                className="flex-1 md:w-48 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              />
+              <button
+                onClick={handleSavePreset}
+                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg flex items-center gap-1 transition-colors shrink-0"
+              >
+                <Save className="w-4 h-4" />
+                保存
+              </button>
+            </div>
+          </div>
+
           {/* Top Row: General Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
@@ -311,7 +449,7 @@ export default function RegionalWealthPage() {
               <input 
                 type="date" 
                 value={targetDate} 
-                onChange={e => setTargetDate(e.target.value)}
+                onChange={e => { setTargetDate(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
             </div>
@@ -320,7 +458,7 @@ export default function RegionalWealthPage() {
               <input 
                 type="datetime-local" 
                 value={birthDate} 
-                onChange={e => setBirthDate(e.target.value)}
+                onChange={e => { setBirthDate(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 title="出生時間が不明な場合は 12:00 等を入力してください"
               />
@@ -329,7 +467,7 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">エンジン (Engine)</label>
               <select 
                 value={engineType} 
-                onChange={e => setEngineType(e.target.value)}
+                onChange={e => { setEngineType(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="physical">Physical (天体軌道)</option>
@@ -340,7 +478,7 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">レイヤー (Layer)</label>
               <select 
                 value={layerMode} 
-                onChange={e => setLayerMode(e.target.value)}
+                onChange={e => { setLayerMode(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="final">Final (統合ベクター)</option>
@@ -363,14 +501,14 @@ export default function RegionalWealthPage() {
                    <input 
                      type="number" 
                      value={birthLat || ""} 
-                     onChange={e => setBirthLat(e.target.value)}
+                     onChange={e => { setBirthLat(e.target.value); setSelectedPresetId(""); }}
                      className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                      placeholder="Lat: 35.6"
                    />
                    <input 
                      type="number" 
                      value={birthLon || ""} 
-                     onChange={e => setBirthLon(e.target.value)}
+                     onChange={e => { setBirthLon(e.target.value); setSelectedPresetId(""); }}
                      className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                      placeholder="Lon: 139.6"
                    />
@@ -386,19 +524,19 @@ export default function RegionalWealthPage() {
                    <input 
                      type="number" 
                      value={baseLat} 
-                     onChange={e => setBaseLat(e.target.value)}
+                     onChange={e => { setBaseLat(e.target.value); setSelectedPresetId(""); }}
                      className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                      placeholder="Lat"
                    />
                    <input 
                      type="number"
                      value={baseLon} 
-                     onChange={e => setBaseLon(e.target.value)}
+                     onChange={e => { setBaseLon(e.target.value); setSelectedPresetId(""); }}
                      className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                      placeholder="Lon"
                    />
                    <button
-                     onClick={handleGetGPS}
+                     onClick={() => { handleGetGPS(); setSelectedPresetId(""); }}
                      title="現在地をGPSで取得"
                      className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors shrink-0"
                    >
@@ -667,6 +805,13 @@ export default function RegionalWealthPage() {
                     </td>
                   </tr>
                 ))}
+                {currentTableData.length === 0 && (
+                  <tr>
+                    <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
+                      条件に一致するデータが見つかりませんでした。
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -707,4 +852,3 @@ export default function RegionalWealthPage() {
     </div>
   );
 }
-
