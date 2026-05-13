@@ -5,12 +5,12 @@ on:
     branches: [master]
 
 env:
-  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  REGION: ${{ vars.GCP_REGION }}
-  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME }}
-  GAR_LOCATION: ${{ vars.GCP_REGION }}-docker.pkg.dev
-  REPOSITORY: ${{ vars.GCP_REPOSITORY }}
-  IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
+  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
+  GAR_LOCATION: ${{ vars.GCP_REGION || 'us-central1' }}-docker.pkg.dev
+  REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
+  IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME || 'portfolio-app' }}
 
 jobs:
   deploy:
