@@ -1,5 +1,5 @@
 import { Building, Activity, Database, CheckCircle2 } from "lucide-react";
-import { rental_propertiesModel as rental_properties } from "@/generated/prisma/models";
+import { rental_properties } from "@prisma/client";
 
 export function RealEstateWidget({ data }: { data: rental_properties[] }) {
   // Use a deterministic pseudo-random function or simple hash based on property ID for the yield
