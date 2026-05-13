@@ -36,7 +36,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({ lat, lon, solarTi
     if (!lat || !lon) return;
     
     setLogs([]); // Reset on major change
-    let step = 0;
+    const step = 0;
     
     addLog(`INITIALIZING TELEMETRY STREAM...`, 'INFO');
     

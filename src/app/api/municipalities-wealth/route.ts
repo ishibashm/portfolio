@@ -20,7 +20,7 @@ function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): num
   const dLon = toRad(lon2 - lon1);
   const y = Math.sin(dLon) * Math.cos(toRad(lat2));
   const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-  let brng = toDeg(Math.atan2(y, x));
+  const brng = toDeg(Math.atan2(y, x));
   return (brng + 360) % 360;
 }
 
@@ -31,7 +31,7 @@ function getDirectionFromBearing(brng: number): Direction {
 
 // 角度の差を計算する関数（円弧上の最短距離）
 function getAngleDiff(a: number, b: number): number {
-  let diff = Math.abs(a - b) % 360;
+  const diff = Math.abs(a - b) % 360;
   return diff > 180 ? 360 - diff : diff;
 }
 
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   let baseLon = parseFloat(searchParams.get('baseLon') || 'NaN');
   let birthLat = parseFloat(searchParams.get('birthLat') || 'NaN');
   let birthLon = parseFloat(searchParams.get('birthLon') || 'NaN');
-  let targetDateStr = searchParams.get('targetDate');
+  const targetDateStr = searchParams.get('targetDate');
   let birthDateStr = searchParams.get('birthDate');
   const engineType = searchParams.get('engineType') || 'physical'; // 'physical' or 'classical'
   const layerMode = searchParams.get('layerMode') || 'final'; // 'final', 'year', 'month', 'day'
@@ -141,7 +141,7 @@ export async function GET(request: Request) {
       let trueBearing: number | null = null;
       let magneticBearing: number | null = null;
       let magneticDirection: Direction | null = null;
-      let astroFlags: string[] = [];
+      const astroFlags: string[] = [];
 
       if (m.lat && m.lon) {
         trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);

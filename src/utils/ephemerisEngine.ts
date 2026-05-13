@@ -27,7 +27,7 @@ export type BoardLayout = Record<Direction, StarFrequency>;
  */
 export function generateBoard(centerStar: StarFrequency): BoardLayout {
   const calc = (offset: number) => {
-    let val = (centerStar + offset) % 9;
+    const val = (centerStar + offset) % 9;
     return (val === 0 ? 9 : val) as StarFrequency;
   };
 
@@ -200,7 +200,7 @@ export const AstroEngine = {
   getLunarNodeLongitude(date: Date): number {
     const jd = AstroEngine.getJulianDay(date);
     const T = (jd - 2451545.0) / 36525;
-    let node = (125.04452 - 1934.136261 * T) % 360;
+    const node = (125.04452 - 1934.136261 * T) % 360;
     return node < 0 ? node + 360 : node;
   }
 };
@@ -217,7 +217,7 @@ export function getClassicalYearStar(date: Date): StarFrequency {
   
   // 一般的な暦（カレンダー）では2月4日を立春として年を切り替える
   const isPreviousCycle = (month === 1) || (month === 2 && day < 4);
-  let calcYear = isPreviousCycle ? year - 1 : year;
+  const calcYear = isPreviousCycle ? year - 1 : year;
 
   // フラクタル周波数への圧縮（Harmonic Reduction）
   let reduced = String(calcYear).split('').reduce((acc, val) => acc + Number(val), 0);

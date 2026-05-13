@@ -204,7 +204,7 @@ export class NBAEngine {
         const currentDayZhi = envBazi.pillars.day?.zhi;
         
         let voidLevel = 0;
-        let voidSources = [];
+        const voidSources = [];
         if (currentYearZhi && voidZodiac.includes(currentYearZhi)) { voidLevel += 0.5; voidSources.push("Year"); }
         if (currentMonthZhi && voidZodiac.includes(currentMonthZhi)) { voidLevel += 0.3; voidSources.push("Month"); }
         if (currentDayZhi && voidZodiac.includes(currentDayZhi)) { voidLevel += 0.2; voidSources.push("Day"); }

@@ -39,6 +39,12 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy .env file if it exists so runtime environment variables are available
+COPY --from=builder --chown=nextjs:nodejs /app/.env* ./
+
+# Copy Prisma schema and engine to ensure it runs correctly in standalone mode
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+
 USER nextjs
 
 EXPOSE 3000

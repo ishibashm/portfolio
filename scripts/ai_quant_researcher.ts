@@ -38,7 +38,7 @@ async function main() {
     
     console.log(`📑 Fetching financial statements for ${TARGET_CODE}...`);
     // Not filtering by date so it gets recent ones (JQuants returns multiple past quarters if we don't filter carefully)
-    let statements = await getFinancialStatements(TARGET_CODE, undefined, apiKey);
+    const statements = await getFinancialStatements(TARGET_CODE, undefined, apiKey);
     // Grab the last 4 quarters to give the AI context of growth
     const recentStatements = statements.slice(-4);
 

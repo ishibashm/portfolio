@@ -51,7 +51,7 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
 
   useEffect(() => {
     fetchQuote(symbol);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [symbol]);
 
   const handleSearch = (e: React.FormEvent) => {

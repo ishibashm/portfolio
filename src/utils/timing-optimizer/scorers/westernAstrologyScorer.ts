@@ -5,7 +5,7 @@ export class WesternAstrologyScorer implements TimingScorer {
   name = "Western Astrology (Transits & Moon Signs)";
 
   observe(ctx: EvaluationContext) {
-    let details: string[] = [];
+    const details: string[] = [];
     let phenomenonName = "Standard Transit";
 
     // ムーンボイドタイムの判定 (暫定モック: 後日AstroEngineのアスペクト計算に置換可能)
