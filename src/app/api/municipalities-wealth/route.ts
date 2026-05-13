@@ -14,14 +14,17 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-function getBearingDirection(lat1: number, lon1: number, lat2: number, lon2: number): Direction {
+function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (val: number) => val * Math.PI / 180;
   const toDeg = (val: number) => val * 180 / Math.PI;
   const dLon = toRad(lon2 - lon1);
   const y = Math.sin(dLon) * Math.cos(toRad(lat2));
   const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
   let brng = toDeg(Math.atan2(y, x));
-  brng = (brng + 360) % 360;
+  return (brng + 360) % 360;
+}
+
+function getDirectionFromBearing(brng: number): Direction {
   const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   return dirs[Math.floor(((brng + 22.5) % 360) / 45)];
 }
@@ -59,6 +62,7 @@ export async function GET(request: Request) {
   let birthDateStr = searchParams.get('birthDate');
   const engineType = searchParams.get('engineType') || 'physical'; // 'physical' or 'classical'
   const layerMode = searchParams.get('layerMode') || 'final'; // 'final', 'year', 'month', 'day'
+  const useTrueNorth = searchParams.get('useTrueNorth') === 'true';
 
   // Fallback to local config if parameters are missing
   try {
@@ -134,14 +138,24 @@ export async function GET(request: Request) {
       let astrologyScore = 50; // Neutral default
       let astrologyStatus = 'UNKNOWN';
       let direction: Direction | null = null;
+      let trueBearing: number | null = null;
+      let magneticBearing: number | null = null;
+      let magneticDirection: Direction | null = null;
       let astroFlags: string[] = [];
 
       if (m.lat && m.lon) {
-        direction = getBearingDirection(baseLat, baseLon, m.lat, m.lon);
+        trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);
+        direction = getDirectionFromBearing(trueBearing); // True direction (地図上の方位)
         
+        // 偏角の補正 (-8.2度)
+        const declination = -8.2;
+        magneticBearing = (trueBearing - declination + 360) % 360;
+        magneticDirection = getDirectionFromBearing(magneticBearing);
+
         // 1. 九星気学による方位スコア計算
-        if (activeVectors && direction) {
-          astrologyStatus = activeVectors[direction] || 'UNKNOWN';
+        const targetDirection = useTrueNorth ? direction : magneticDirection;
+        if (activeVectors && targetDirection) {
+          astrologyStatus = activeVectors[targetDirection] || 'UNKNOWN';
           switch (astrologyStatus) {
             case 'OPTIMAL': astrologyScore = 100; break;
             case 'SAFE': astrologyScore = 80; break;
@@ -152,6 +166,11 @@ export async function GET(request: Request) {
             case 'NOISE_GOU':
             case 'NOISE_ANKEN': astrologyScore = 10; break;
             default: astrologyScore = 50; break;
+          }
+          
+          // 境界線アラート: 真北のセクターと磁北のセクターが異なる場合 (e.g., 地図では北東だが、磁北では北など)
+          if (!useTrueNorth && direction !== magneticDirection && (astrologyScore < 80)) {
+             astroFlags.push("DECLINATION_WARNING");
           }
         }
 
@@ -202,6 +221,9 @@ export async function GET(request: Request) {
         astrologyScore,
         astrologyStatus: astroFlags.length > 0 ? `${astrologyStatus} + ${astroFlags.join(',')}` : astrologyStatus,
         direction,
+        magneticDirection,
+        trueBearing,
+        magneticBearing,
         cospaIndex,
         distanceKm
       };

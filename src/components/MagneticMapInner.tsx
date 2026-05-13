@@ -29,8 +29,8 @@ interface MapInnerProps {
   kpIndex?: number | null;
   ansLoad?: number;
   hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean };
-  isFullscreen?: boolean;
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
+  useTrueNorth?: boolean;
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -62,23 +62,11 @@ function SyncMapCenter({ lat, lon }: { lat: number, lon: number }) {
   return null;
 }
 
-function MapResizeHandler({ isFullscreen }: { isFullscreen: boolean }) {
-  const map = useMap();
-  React.useEffect(() => {
-    // Small delay to ensure CSS transition/layout is complete
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [isFullscreen, map]);
-  return null;
-}
-
 export default function MagneticMapInner({ 
   lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, 
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
-  isFullscreen = false,
-  activeLayerMode = 'final'
+  activeLayerMode = 'final',
+  useTrueNorth = false
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => {
@@ -88,7 +76,7 @@ export default function MagneticMapInner({
   const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
   
   // Calculate bearings based on TRUE NORTH (0) + Magnetic Declination
-  const magNorthBearing = React.useMemo(() => declination, [declination]);
+  const magNorthBearing = React.useMemo(() => useTrueNorth ? 0 : declination, [declination, useTrueNorth]);
   
   // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
@@ -117,36 +105,31 @@ export default function MagneticMapInner({
     });
   }, [vectors, layers, activeLayerMode]);
 
-  // 1. Memoize boundaries - only depends on declination and intensity
+  // 1. Memoize boundaries
   const boundaries = React.useMemo(() => {
-    const distortionFactor = Math.max(-0.25, Math.min(0.25, (intensity - 50000) / 100000));
-    return [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5].map(b => {
-      const shift = Math.sin((b - declination) * (Math.PI / 180)) * distortionFactor * 45;
-      return b + shift;
-    });
-  }, [declination, intensity]);
+    return [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5];
+  }, []);
 
   // 2. Memoize vector styles based on status and kpIndex
   const getStyleForVector = React.useCallback((status: string) => {
     const baseKp = kpIndex || 0;
-    // Stroke weight is increased for NOISE to make dash patterns visible
-    const weight = status.startsWith('NOISE') ? (baseKp >= 4 ? 3 : 2) : 1;
+    const weight = status.startsWith('NOISE') ? (baseKp >= 4 ? 2 : 1) : 0.5;
 
     let style;
     let dashArray;
     switch (status) {
-      case 'OPTIMAL': style = { color: "#10b981", opacity: 0.6 }; dashArray = undefined; break;
-      case 'SAFE': style = { color: "#3b82f6", opacity: 0.15 }; dashArray = undefined; break;
-      case 'NOISE_GOU': style = { color: "#ef4444", opacity: 0.8 }; dashArray = "10,5"; break;
-      case 'NOISE_ANKEN': style = { color: "#f43f5e", opacity: 0.8 }; dashArray = "5,5"; break;
-      case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: 0.8 }; dashArray = "15,10,5,10"; break;
-      case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.8 }; dashArray = "15,15"; break;
-      case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.5 }; dashArray = "1,5"; break;
-      case 'NOISE_NODE': style = { color: "#f59e0b", opacity: 0.5 }; dashArray = "4,4"; break;
-      case 'NOISE': style = { color: "#ef4444", opacity: 0.8 }; dashArray = "10,10"; break;
-      default: style = { color: "#3f3f46", opacity: 0.3 }; dashArray = "1,4";
+      case 'OPTIMAL': style = { color: "#10b981", opacity: 0.4 }; dashArray = undefined; break;
+      case 'SAFE': style = { color: "#3b82f6", opacity: 0.1 }; dashArray = undefined; break;
+      case 'NOISE_GOU': style = { color: "#ef4444", opacity: 0.6 }; dashArray = "10,5"; break;
+      case 'NOISE_ANKEN': style = { color: "#f43f5e", opacity: 0.6 }; dashArray = "5,5"; break;
+      case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: 0.6 }; dashArray = "15,10,5,10"; break;
+      case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.6 }; dashArray = "15,15"; break;
+      case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.4 }; dashArray = "1,5"; break;
+      case 'NOISE_NODE': style = { color: "#f59e0b", opacity: 0.4 }; dashArray = "4,4"; break;
+      case 'NOISE': style = { color: "#ef4444", opacity: 0.6 }; dashArray = "10,10"; break;
+      default: style = { color: "#3f3f46", opacity: 0.2 }; dashArray = "1,4";
     }
-    return { ...style, weight: status === 'SAFE' ? 1 : weight, dashArray };
+    return { ...style, weight: status === 'SAFE' ? 0.5 : weight, dashArray };
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
@@ -174,8 +157,7 @@ export default function MagneticMapInner({
       const baseBearing = magNorthBearing + d.deg;
       
       const points: [number, number][] = [center];
-      for (let offset = -10; offset <= 10; offset += 1) {
-        // Reduced from 5000km to 1000km bounds to save mobile memory
+      for (let offset = -15; offset <= 15; offset += 5) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
 
@@ -183,13 +165,13 @@ export default function MagneticMapInner({
       const labelPos = getDestination(lat, lon, baseBearing, 3000);
 
       const getStatusLabel = (status: string) => {
-        if (status === 'NOISE_GOU') return '五';
-        if (status === 'NOISE_ANKEN') return '暗';
-        if (status === 'NOISE_HONMEI') return '本';
-        if (status === 'NOISE_TEKI') return '的';
-        if (status === 'NOISE_VOID') return '空';
-        if (status === 'NOISE_NODE') return '交';
-        if (status === 'OPTIMAL') return '吉';
+        if (status === 'NOISE_GOU') return '五黄';
+        if (status === 'NOISE_ANKEN') return '暗剣';
+        if (status === 'NOISE_HONMEI') return '本命';
+        if (status === 'NOISE_TEKI') return '的殺';
+        if (status === 'NOISE_VOID') return 'ボイド';
+        if (status === 'NOISE_NODE') return '交点';
+        if (status === 'OPTIMAL') return '大吉';
         return '';
       };
 
@@ -201,18 +183,18 @@ export default function MagneticMapInner({
       const dLayer = layers?.dayLayer[d.dir] || 'SAFE';
 
       const formatLayer = (s: string) => {
-        if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return '危険 (宇宙嵐)';
-        if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return '不調 (体質不適合)';
-        if (s === 'OPTIMAL') return '良好 (位相同期)';
+        if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return '危険';
+        if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return '不調';
+        if (s === 'OPTIMAL') return '良好';
         return '平穏';
       };
 
       const getActionSuggest = (status: string) => {
-        if (status.startsWith('NOISE_GOU') || status.startsWith('NOISE_ANKEN')) return '【退避推奨】致命的な物理エラー発生域。迂回が必要です';
-        if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI')) return '【警戒】主観的エラー・判断ミスが頻発する帯域です';
-        if (status.includes('VOID') || status.includes('NODE')) return '【警告】システムバグ領域。重大な決行は保留してください';
-        if (status === 'OPTIMAL') return '【推奨】最適化ゾーン。積極的な行動がリターンを生みます';
-        return '【中立】平穏な環境です。現状のルーティンを維持';
+        if (status.startsWith('NOISE_GOU') || status.startsWith('NOISE_ANKEN')) return '【退避】致命的な環境エラー域です';
+        if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI')) return '【警戒】主観的エラーが頻発する帯域です';
+        if (status.includes('VOID') || status.includes('NODE')) return '【警告】重大な決断は保留してください';
+        if (status === 'OPTIMAL') return '【推奨】最適化ゾーン。積極的な行動を';
+        return '【中立】平穏な環境です';
       };
 
       return (
@@ -229,22 +211,18 @@ export default function MagneticMapInner({
             <Tooltip className="custom-map-tooltip">
               <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl max-w-[200px]">
                 <div className="text-blue-400 border-b border-zinc-800 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
-                  <span>{d.dir} Sector Analysis</span>
-                  <span className="text-zinc-600 font-normal">{(dashArray ? '破線' : '実線')}</span>
+                  <span>{d.dir} Sector</span>
+                  <span className="text-zinc-600 font-normal">Analysis {(dashArray ? '(破線)' : '(実線)')}</span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">川 (地磁気ベース):</span>
-                    <span className="text-emerald-500">平滑</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">天気 (天体サイクル):</span>
+                    <span className="text-zinc-500">環境:</span>
                     <span className={y.includes('NOISE') || m.includes('NOISE') || dLayer.includes('NOISE') ? 'text-red-500' : 'text-emerald-500'}>
                       {formatLayer(y)} / {formatLayer(m)}
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">体質 (個人相性):</span>
+                    <span className="text-zinc-500">個人:</span>
                     <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#a855f7]' : 'text-emerald-500'}>
                       {formatLayer(dLayer)}
                     </span>
@@ -269,9 +247,9 @@ export default function MagneticMapInner({
               position={labelPos} 
               icon={L.divIcon({
                 className: 'custom-div-icon',
-                html: `<div style="color: ${color}; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 14px;">${label}</div>`,
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
+                html: `<div style="color: ${color}; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 11px; white-space: nowrap;">${label}</div>`,
+                iconSize: [40, 20],
+                iconAnchor: [20, 10]
               })}
               interactive={false}
             />
@@ -289,13 +267,13 @@ export default function MagneticMapInner({
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
       return (
-        <Polygon 
+        <Polygon
           key={`danger-${idx}`}
-          positions={points} 
-          color="#ef4444" 
+          positions={points}
+          color="#ef4444"
           fillColor="#ef4444" 
-          fillOpacity={0.4} 
-          weight={0} 
+          fillOpacity={0.4}
+          weight={0}
         />
       );
     });
@@ -315,56 +293,39 @@ export default function MagneticMapInner({
              getDestination(lat, lon, 225, 100)
            ]} 
            color="#ef4444" 
-           weight={4} 
-           dashArray="10,10" 
-           opacity={0.8}
+           weight={2} 
+           dashArray="5,5" 
+           opacity={0.6}
         />
         <Marker 
           position={getDestination(lat, lon, 45, 100)} 
           icon={L.divIcon({
             className: 'custom-div-icon',
-            html: `<div style="color: #ef4444; background: rgba(0,0,0,0.5); padding: 2px; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 10px;">[HZD] Fault Line (GIS)</div>`,
-            iconSize: [120, 20],
+            html: `<div style="color: #ef4444; background: rgba(0,0,0,0.5); padding: 2px; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 9px;">[HZD] Fault Line</div>`,
+            iconSize: [80, 20],
             iconAnchor: [0, 10]
           })}
           interactive={false}
         />
-        
-        {/* Mock Flood / Sinkhole Zone */}
-        <Circle 
-          center={getDestination(lat, lon, 135, 50)}
-          radius={20000} // 20km
-          pathOptions={{ color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.2, weight: 2, dashArray: '5,5' }}
-        >
-            <Tooltip className="custom-map-tooltip">
-               <div className="bg-zinc-950 text-red-400 p-2 font-mono text-[10px] border border-red-900 shadow-xl max-w-[200px]">
-                  [HAZARD ALERT]<br />
-                  Seismic Activity / Landslide Risk Area<br />
-                  (Mock GIS Data)
-               </div>
-            </Tooltip>
-        </Circle>
       </React.Fragment>
     );
   }, [hudLayers.hazard, lat, lon]);
 
   // Concentric Rings for Shield Attenuation Theory (in meters)
-  // Reduced max radius from 5000km to 1000km to prevent projection crashes on mobile devices
-  const attenuationRings: number[] = [100000, 250000, 500000, 750000, 1000000];
+  const attenuationRings: number[] = [250000, 500000, 1000000];
 
   if (!mounted) {
     return (
       <div className="w-full h-full bg-zinc-950 flex shadow-inner border border-zinc-900 items-center justify-center font-mono text-[10px] text-zinc-800">
-        [ SYNCING SPATIAL ASYNC... ]
+        [ SYNCING SPATIAL... ]
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+    <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80">
         <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
             <SyncMapCenter lat={lat} lon={lon} />
-            <MapResizeHandler isFullscreen={isFullscreen} />
             <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -372,30 +333,31 @@ export default function MagneticMapInner({
         
         <Marker position={center} />
         
+        {/* Draw Dynamic Sectors (Stars/Vectors) */}
+        {vectorLayer}
+
+        {/* Draw Danger Zones (Red) at Boundaries */}
+        {dangerLayer}
+
+        {/* Draw Hazard / GIS Overlay if enabled */}
+        {hazardLayer}
+
         {/* Draw True North Line (Geographic) */}
         <Polyline 
            positions={[center, getDestination(lat, lon, 0, 1000)]} 
            color="#10b981" 
            weight={3} 
-           dashArray="10,10" 
-           opacity={0.8}
+           dashArray="8,8" 
+           opacity={0.9}
         />
 
         {/* Draw Magnetic North Line */}
         <Polyline 
           positions={[center, getDestination(lat, lon, magNorthBearing, 1000)]} 
           color="#3b82f6" 
-          weight={4} 
+          weight={3} 
+          opacity={0.9}
         />
-
-        {/* Draw Dynamic Sectors (Stars/Vectors) */}
-        {vectorLayer}
-
-{/* Draw Danger Zones (Red) at Boundaries */}
-        {dangerLayer}
-
-        {/* Draw Hazard / GIS Overlay if enabled */}
-        {hazardLayer}
 
         {/* Concentric Distance Rings for Attenuation */}
         {attenuationRings.map((radiusMeters, i) => (
@@ -403,48 +365,70 @@ export default function MagneticMapInner({
              key={`ring-${radiusMeters}`}
              center={center}
              radius={radiusMeters}
-             pathOptions={{ color: '#71717a', weight: 1, dashArray: '4,8', fill: false, opacity: 0.5 - (i * 0.1) }}
+             pathOptions={{ color: '#71717a', weight: 1, dashArray: '2,10', fill: false, opacity: 0.3 - (i * 0.05) }}
            />
         ))}
       </MapContainer>
       
       {/* UI Overlay */}
-      <div className="absolute top-4 left-4 z-1000 pointer-events-none">
-        <div className="bg-zinc-950/80 md:backdrop-blur-md px-3 py-2 border border-blue-500/30 rounded-sm">
-          <div className="text-[9px] uppercase font-mono tracking-widest text-blue-400">磁北 (WMM2020)</div>
-          <div className="text-xs font-mono text-zinc-300">現在地偏差: {declination.toFixed(2)}°</div>
+      <div className="absolute top-16 right-4 z-[1000] pointer-events-none">
+        <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-blue-500/30 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
+          <div className="flex items-center gap-2 mb-1 justify-end">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-400">真北 (Geographic North)</div>
+            <div className="w-4 border-t-2 border-emerald-500 border-dashed"></div>
+          </div>
+          <div className="flex items-center gap-2 justify-end">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-blue-400">磁北 (Magnetic North)</div>
+            <div className="w-4 border-t-[3px] border-blue-500"></div>
+          </div>
+          <div className="text-xs font-mono text-zinc-300 mt-1 pt-1 border-t border-zinc-800 w-full">
+            現在地偏角 (WMM2020): {declination > 0 ? '東偏' : '西偏'}{Math.abs(declination).toFixed(2)}°
+          </div>
+          <div className="text-[9px] text-zinc-500 mt-0.5 leading-tight max-w-[200px]">
+            ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。
+          </div>
         </div>
       </div>
       
-      <div className="absolute bottom-4 right-4 z-1000 pointer-events-none">
-        <div className="bg-zinc-950/80 md:backdrop-blur-md px-3 py-2 border border-emerald-500/30 rounded-sm text-right">
-          <div className="text-[10px] uppercase font-mono tracking-widest text-zinc-300 border-b border-zinc-800 pb-1 mb-1 font-bold">
-            [{activeLayerMode.toUpperCase()} LAYER DISPLAY]
+      <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
+        <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-zinc-800 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
+          <div className="text-zinc-500 font-mono uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between gap-4">
+            <span>Legend</span>
+            <span className="text-emerald-500">[{activeLayerMode.toUpperCase()}]</span>
           </div>
-          {honmeiStar && <div className="text-[10px] uppercase font-mono tracking-widest text-[#a855f7] mt-1 pt-1 border-t border-zinc-800">[Hardware Init同期] 固有波長: {honmeiStar.physical}</div>}
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#10b981] mt-1 pt-1 border-t border-zinc-800">最適化ゾーン (緑)</div>
-          <div className="text-[8px] font-sans text-zinc-400">行動パフォーマンス最大化帯</div>
           
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#3b82f6] mt-1">通常ゾーン (青)</div>
-          <div className="text-[8px] font-sans text-zinc-400">標準的な環境負荷</div>
-
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#eab308] mt-1 pt-1 border-t border-zinc-800">特異点・構造バグ (黄)</div>
-          <div className="text-[8px] font-sans text-zinc-400">時空間の特異点帯 (天中殺/月交点)</div>
-          
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#d946ef] mt-1">生体警告ベクトル (紫)</div>
-          <div className="text-[8px] font-sans text-zinc-400">パーソナル波長との強干渉領域 (本命殺/的殺)</div>
-          
-          <div className="text-[9px] uppercase font-mono tracking-widest text-[#ef4444] mt-1">凶殺ベクトル (赤)</div>
-          <div className="text-[8px] font-sans text-zinc-400">物理的な磁気異常ノイズ (五黄殺/暗剣殺)</div>
-          
-          <div className="flex justify-end items-center gap-1 mt-1 pt-1 border-t border-zinc-800">
-             <div className="w-3 border-t-2 border-dashed border-red-500"></div>
-             <div className="text-[9px] uppercase font-mono tracking-widest text-red-500">危険境界</div>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
+              <span className="text-zinc-300">大吉 (Optimal)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
+              <span className="text-zinc-300">危険 (Noise)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
+              <span className="text-zinc-300">通常 (Safe)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#d946ef]"></span>
+              <span className="text-zinc-300">個人不調 (Bio)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#eab308]"></span>
+              <span className="text-zinc-300">特異点 (Void)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+               <div className="w-3 border-t border-dashed border-zinc-500"></div>
+               <span className="text-zinc-500">距離リング</span>
+            </div>
           </div>
-          <div className="flex justify-end items-center gap-1 mt-1">
-             <div className="w-3 border-t border-dashed border-zinc-500"></div>
-             <div className="text-[9px] uppercase font-mono tracking-widest text-zinc-500">距離リング (空間スケール)</div>
-          </div>
+          
+          {honmeiStar && (
+            <div className="text-[8px] text-[#a855f7] border-t border-zinc-900 pt-1 mt-1 font-mono">
+              HARDWARE SYNC: {honmeiStar.physical}
+            </div>
+          )}
         </div>
       </div>
     </div>

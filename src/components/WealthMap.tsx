@@ -22,15 +22,19 @@ interface MunicipalityData {
   astrologyScore: number;
   astrologyStatus: string;
   direction: string | null;
+  magneticDirection?: string | null;
+  trueBearing?: number | null;
+  magneticBearing?: number | null;
 }
 
 interface WealthMapProps {
   data: MunicipalityData[];
   baseLat?: number;
   baseLon?: number;
+  useTrueNorth?: boolean;
 }
 
-export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: WealthMapProps) {
+export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrueNorth = false }: WealthMapProps) {
   const [tooltipContent, setTooltipContent] = useState("");
 
   // Create color scale for income
@@ -94,13 +98,14 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: Wealt
             if (!m.lon || !m.lat) return null;
             
             // Highlight optimal directions
-            const isOptimal = m.astrologyStatus === 'OPTIMAL';
-            const isSafe = m.astrologyStatus === 'SAFE';
-            const isNoise = m.astrologyStatus?.startsWith('NOISE');
+            const isOptimal = m.astrologyStatus.includes('OPTIMAL');
+            const isSafe = m.astrologyStatus.includes('SAFE');
+            const isNoise = m.astrologyStatus?.includes('NOISE') && !m.astrologyStatus?.includes('WARNING');
+            const hasWarning = m.astrologyStatus.includes('DECLINATION_WARNING');
             
             if (isNoise) return null; // Hide bad directions to reduce clutter
             
-            const radius = isOptimal ? 6 : isSafe ? 4 : 2;
+            const radius = isOptimal ? 6 : isSafe ? 4 : hasWarning ? 3 : 2;
             const opacity = isOptimal ? 0.9 : 0.6;
             
             return (
@@ -108,7 +113,10 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: Wealt
                 key={m.id} 
                 coordinates={[m.lon, m.lat]}
                 onMouseEnter={() => {
-                  setTooltipContent(`${m.areaName}: ${Math.round(m.incomePerCapita/10000)}万円 (${m.direction} - ${m.astrologyStatus})`);
+                  const dirStr = useTrueNorth 
+                    ? `${m.direction}(真北)` 
+                    : (m.direction !== m.magneticDirection ? `${m.direction}(真)→${m.magneticDirection}(磁)` : `${m.direction}(一致)`);
+                  setTooltipContent(`${m.areaName}: ${Math.round(m.incomePerCapita/10000)}万円 (${dirStr} - ${m.astrologyStatus})`);
                 }}
                 onMouseLeave={() => {
                   setTooltipContent("");
@@ -116,10 +124,10 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: Wealt
               >
                 <circle
                   r={radius}
-                  fill={colorScale(m.incomePerCapita)}
+                  fill={hasWarning ? "#fbbf24" : colorScale(m.incomePerCapita)}
                   fillOpacity={opacity}
-                  stroke={isOptimal ? "#fff" : "none"}
-                  strokeWidth={isOptimal ? 1 : 0}
+                  stroke={isOptimal ? "#fff" : hasWarning ? "#f59e0b" : "none"}
+                  strokeWidth={isOptimal || hasWarning ? 1 : 0}
                   className="transition-all duration-300 hover:r-8 cursor-pointer"
                 />
               </Marker>
@@ -130,7 +138,7 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: Wealt
       
       {/* Legend / Tooltip Overlay */}
       {tooltipContent && (
-        <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10">
+        <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
           {tooltipContent}
         </div>
       )}
@@ -149,6 +157,9 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917 }: Wealt
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-rose-500"></span> 吉 (SAFE)
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full border border-amber-500 bg-amber-400"></span> 偏角警告 (磁北ズレ)
         </div>
       </div>
     </div>

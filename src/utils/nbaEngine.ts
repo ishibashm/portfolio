@@ -24,6 +24,7 @@ export interface NBAParams {
     ragContext?: {
       source: string;
       classicalRules: any;
+      personalBazi?: any;
     };
     vedicAstrology?: {
       nakshatra: string;

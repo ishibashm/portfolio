@@ -40,7 +40,7 @@ export function SolarTimeTableComponent({
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
 
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashim@gmail.com"; 
+  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || ""; 
   // 完全ローカル化に伴い、制限を解除し常にエクスポートを許可
   const isAuthorized = true;
 

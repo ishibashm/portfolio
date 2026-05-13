@@ -287,17 +287,24 @@ export const SolarTimeClock = () => {
     }
   };
 
-  const getTargetDirection = () => {
+  const getTargetDirectionInfo = () => {
     if (targetLat !== null && targetLon !== null && lat && lon) {
       const toRad = (val: number) => val * Math.PI / 180;
       const toDeg = (val: number) => val * 180 / Math.PI;
       const dLon = toRad(targetLon - lon);
       const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
       const x = Math.cos(toRad(lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(lat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
-      let brng = toDeg(Math.atan2(y, x));
-      brng = (brng + 360) % 360;
+      let trueBrng = toDeg(Math.atan2(y, x));
+      trueBrng = (trueBrng + 360) % 360;
+      
+      const declination = geoData?.declination ?? -8.2;
+      const magBrng = (trueBrng - declination + 360) % 360;
+
       const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-      return dirs[Math.floor(((brng + 22.5) % 360) / 45)];
+      return {
+         trueDirection: dirs[Math.floor(((trueBrng + 22.5) % 360) / 45)],
+         magneticDirection: dirs[Math.floor(((magBrng + 22.5) % 360) / 45)]
+      };
     }
     return null;
   };
@@ -306,7 +313,7 @@ export const SolarTimeClock = () => {
     if (!baseTime || !honmeiStar) return;
     setIsAutoSearching(true);
     
-    const direction = getTargetDirection();
+    const targetDirInfo = getTargetDirectionInfo();
 
     setTimeout(() => {
       let offset = timeOffsetDays + 1;
@@ -335,8 +342,8 @@ export const SolarTimeClock = () => {
           actionIntent
         );
         
-        if (direction) {
-           const s = vectorData.finalVectors[direction];
+        if (targetDirInfo) {
+           const s = vectorData.finalVectors[targetDirInfo.magneticDirection];
            if (s === 'SAFE' || s === 'OPTIMAL') {
               foundOffset = offset;
               break;
@@ -749,11 +756,11 @@ export const SolarTimeClock = () => {
   else if (activeLayerMode === 'month') activeVectors = layers?.monthLayer || {};
   else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
 
-  const targetDirection = getTargetDirection();
+  const targetDirInfo = getTargetDirectionInfo();
   let targetVectorStatus = null;
   
-  if (targetDirection && activeVectors) {
-    targetVectorStatus = activeVectors[targetDirection as Direction];
+  if (targetDirInfo && activeVectors) {
+    targetVectorStatus = activeVectors[targetDirInfo.magneticDirection as Direction];
   }
 
   const evalDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
@@ -983,7 +990,7 @@ export const SolarTimeClock = () => {
 
         {/* --- TAB CONTENT: 2. DESTINATION --- */}
         {activeTab === "destination" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
+          <div className="w-full flex flex-col items-center space-y-8">
             {/* BioMagnetic Dashboard (Load Prediction) */}
             <div className="w-full max-w-4xl">
               <BioMagneticDashboard
@@ -1648,7 +1655,7 @@ export const SolarTimeClock = () => {
 
         {/* --- MAP CONTENT (Appended to DESTINATION tab) --- */}
         {activeTab === "destination" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in mt-8">
+          <div className="w-full flex flex-col items-center space-y-8 mt-8">
             <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Spatial Targeting */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
@@ -1764,7 +1771,7 @@ export const SolarTimeClock = () => {
                           🗺️ OPEN IN GOOGLE MAPS
                         </a>
                       </div>
-                    )}                    {targetDirection && targetVectorStatus && (
+                    )}                    {targetDirInfo && targetVectorStatus && (
                       <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
                         targetVectorStatus.startsWith('NOISE_VOID')
                           ? 'bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45'
@@ -1777,7 +1784,8 @@ export const SolarTimeClock = () => {
                           : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                       }`}>
                         <div className="flex items-center gap-2">
-                           <span className="font-bold border border-current px-1">{targetDirection}</span>
+                           <span className="font-bold border border-current px-1 text-zinc-500" title="真北基準">真北: {targetDirInfo.trueDirection}</span>
+                           <span className="font-bold border border-current px-1 text-emerald-400" title="磁北基準">磁北: {targetDirInfo.magneticDirection}</span>
                            <span>{targetVectorStatus}</span>
                         </div>
                         <span className="text-[8px] opacity-70">TARGET EVAL</span>
@@ -1994,7 +2002,7 @@ export const SolarTimeClock = () => {
         env={env} 
       />
 
-      <div className="fixed bottom-6 left-6 z-50 flex flex-col sm:flex-row gap-3">
+      <div className="fixed bottom-6 left-6 lg:left-72 z-50 flex flex-col sm:flex-row gap-3">
         <button 
           onClick={handleSaveStateToDatabase}
           disabled={isSavingLog}

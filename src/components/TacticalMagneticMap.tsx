@@ -54,9 +54,10 @@ export function TacticalMagneticMapComponent({
   setActiveLayerMode,
   activeModel = 'physical'
 }: MapProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showHUD, setShowHUD] = useState(true);
+  const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [activeDecryptTab, setActiveDecryptTab] = useState(1);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const isPhysical = activeModel === 'physical';
   const borderColor = isPhysical ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-zinc-500/50 shadow-[0_0_15px_rgba(113,113,122,0.2)]';
@@ -65,7 +66,10 @@ export function TacticalMagneticMapComponent({
     <div className={`w-full max-w-6xl mt-8 flex flex-col gap-4`}>
       
       {/* Map Container */}
-      <div className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col ${isFullscreen ? "fixed inset-0 z-100 bg-black h-screen" : "h-[400px] md:h-[600px] lg:h-[700px]"}`}>
+      <div 
+        ref={mapContainerRef}
+        className={`relative border ${borderColor} transition-all duration-500 shadow-2xl w-full flex flex-col h-[400px] md:h-[600px] lg:h-[700px]`}
+      >
          <div className="absolute top-0 left-0 w-full p-2 z-10 bg-linear-to-b from-black/80 to-transparent pointer-events-none flex flex-col sm:flex-row justify-between items-start gap-2">
             <div className="flex items-center gap-2">
               <Crosshair size={14} className="text-blue-500 md:animate-pulse mt-1" />
@@ -137,6 +141,13 @@ export function TacticalMagneticMapComponent({
                     </button>
                   </div>
                   <button 
+                    onClick={() => setUseTrueNorth(!useTrueNorth)}
+                    className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? 'border-emerald-500 text-emerald-400' : 'border-blue-500 text-blue-400'}`}
+                    title="Toggle True/Magnetic North Base"
+                  >
+                    基準: {useTrueNorth ? '真北' : '磁北'}
+                  </button>
+                  <button 
                     onClick={() => setShowHUD(!showHUD)}
                     className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? 'border-blue-500 text-blue-400' : 'border-zinc-700'}`}
                     title="Toggle 3D HUD"
@@ -150,13 +161,6 @@ export function TacticalMagneticMapComponent({
                   >
                     <Download size={10} />
                     KML Export
-                  </button>
-                  <button 
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                    className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-3 py-1.5 md:px-2 md:py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
-                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
-                  >
-                    {isFullscreen ? <Minimize size={10} /> : <Maximize size={10} />}
                   </button>
                </div>
                <div className="text-[10px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
@@ -180,7 +184,6 @@ export function TacticalMagneticMapComponent({
                  {isPhysical ? '▶ PHYSICAL MODEL ACTIVE' : '▶ CLASSICAL MODEL ACTIVE'}
                </div>
              </div>
-
              <MagneticMapInner
               lat={lat}
               lon={lon}
@@ -192,8 +195,8 @@ export function TacticalMagneticMapComponent({
               kpIndex={kpIndex}
               ansLoad={ansLoad}
               hudLayers={hudLayers}
-              isFullscreen={isFullscreen}
               activeLayerMode={activeLayerMode}
+              useTrueNorth={useTrueNorth}
              />
          </div>
 
@@ -204,55 +207,39 @@ export function TacticalMagneticMapComponent({
              inclination={inclination || 0}
              kpIndex={kpIndex || 0}
              shieldCapacity={shieldCapacity}
-             size={isFullscreen ? 280 : 180}
+             size={180}
            />
-         </div>
-         
-          {/* Overlays */}
-          <div className="absolute bottom-4 left-4 z-10 pointer-events-none">
-             <div className="bg-black/90 border border-zinc-800 p-2 font-mono text-[11px] leading-tight text-zinc-400 md:backdrop-blur-sm shadow-xl drop-shadow-[0_0_5px_rgba(0,0,0,0.8)]">
-                <div className="text-emerald-500 font-bold mb-1">[ Geo_N ] 地図上の真北</div>
-                <div className="text-blue-500 font-bold">[ Mag_N ] 実際の磁北 (WMM2020)</div>
-                <div className="mt-2 text-zinc-400 text-[10px] flex flex-col gap-0.5">
-                   <span>* 動的算出された最適化ベクトルとサジェスト</span>
-                  <span>* <span className="text-emerald-500 font-bold">緑の帯</span>: パフォーマンス最大化ゾーン [&gt;推奨]</span>
-                  <span>* <span className="text-red-500 font-bold">赤の帯</span> / <span className="text-red-400 font-bold underline decoration-red-500/50 decoration-dashed">破線</span>: エラー誘発ノイズ [&gt;回避]</span>
-                  <span>* <span className="text-fuchsia-500 font-bold">紫の帯</span> / <span className="text-fuchsia-400 font-bold underline decoration-fuchsia-500/50 decoration-dashed">複破線</span>: 生体波長の干渉 [&gt;警戒]</span>
-               </div>
-            </div>
          </div>
       </div>
       {/* Theoretical Info Panel -> Compact Algorithm Info */}
-      {!isFullscreen && (
-         <details className="mt-4 bg-zinc-950/50 border border-zinc-800 text-[10px] font-mono text-zinc-400 w-full group">
-            <summary className="p-3 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest font-bold">
-               <div className="flex items-center gap-2">
-                  <span className="text-red-500 blur-[0.5px]">◆</span> [ ALGORITHM ] 吉凶方位の分析ロジック（空間ベクトル）
-               </div>
-               <span className="group-open:rotate-180 transition-transform text-zinc-500">▼</span>
-            </summary>
-            <div className="p-3 sm:p-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
-              <div className="p-2 sm:p-3 border border-red-900/30 rounded-sm">
-                 <strong className="text-red-400 block mb-1 font-mono text-[9px] uppercase">◆ 1. 凶殺ベクトル (NOISE)</strong>
-                 <p className="text-zinc-400 text-justify mt-1">
-                   地図上の<strong className="text-red-500 font-bold">赤い破線</strong>や<strong className="text-fuchsia-500 font-bold">紫の複破線</strong>は、宇宙天気や地球磁場の乱れ、またはあなたの固有波長（本命星）と強干渉を起こす危険方位（五黄殺・本命殺など）です。引越しや長期滞在先としては絶対に避けるべきルートです。
-                 </p>
-              </div>
-              <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
-                 <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">◆ 2. 警告ゾーン (VOID)</strong>
-                 <p className="text-zinc-400 text-justify mt-1">
-                   <strong className="text-yellow-500 font-bold">黄色の点線</strong>は、空間の磁気フレームワークが崩壊している「天中殺・歳破」の方向です。この方位への移動は、予測不可能なトラブルや自律神経の不調を招きやすいため、重要な決断・移動は保留を推奨します。
-                 </p>
-              </div>
-              <div className="p-2 sm:p-3 border border-emerald-900/30 rounded-sm">
-                 <strong className="text-emerald-400 block mb-1 font-mono text-[9px] uppercase">◆ 3. 最適化ゾーン (OPTIMAL)</strong>
-                 <p className="text-zinc-400 text-justify mt-1">
-                   <strong className="text-emerald-500 font-bold">緑の実線</strong>は、すべてのノイズレイヤーをクリアし、かつあなたの目的（引越し・療養など）と完全に共鳴する「大吉方位」です。この方位へ移動することで、環境ストレスが最小化され、生体リズムが整います。
-                 </p>
-              </div>
+      <details className="mt-4 bg-zinc-950/50 border border-zinc-800 text-[10px] font-mono text-zinc-400 w-full group">
+         <summary className="p-3 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest font-bold">
+            <div className="flex items-center gap-2">
+               <span className="text-red-500 blur-[0.5px]">◆</span> [ ALGORITHM ] 吉凶方位の分析ロジック（空間ベクトル）
             </div>
-         </details>
-      )}
+            <span className="group-open:rotate-180 transition-transform text-zinc-500">▼</span>
+         </summary>
+         <div className="p-3 sm:p-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
+           <div className="p-2 sm:p-3 border border-red-900/30 rounded-sm">
+              <strong className="text-red-400 block mb-1 font-mono text-[9px] uppercase">◆ 1. 凶殺ベクトル (NOISE)</strong>
+              <p className="text-zinc-400 text-justify mt-1">
+                地図上の<strong className="text-red-500 font-bold">赤い破線</strong>や<strong className="text-fuchsia-500 font-bold">紫の複破線</strong>は、宇宙天気や地球磁場の乱れ、またはあなたの固有波長（本命星）と強干渉を起こす危険方位（五黄殺・本命殺など）です。引越しや長期滞在先としては絶対に避けるべきルートです。
+              </p>
+           </div>
+           <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
+              <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">◆ 2. 警告ゾーン (VOID)</strong>
+              <p className="text-zinc-400 text-justify mt-1">
+                <strong className="text-yellow-500 font-bold">黄色の点線</strong>は、空間の磁気フレームワークが崩壊している「天中殺・歳破」の方向です。この方位への移動は、予測不可能なトラブルや自律神経の不調を招きやすいため、重要な決断・移動は保留を推奨します。
+              </p>
+           </div>
+           <div className="p-2 sm:p-3 border border-emerald-900/30 rounded-sm">
+              <strong className="text-emerald-400 block mb-1 font-mono text-[9px] uppercase">◆ 3. 最適化ゾーン (OPTIMAL)</strong>
+              <p className="text-zinc-400 text-justify mt-1">
+                <strong className="text-emerald-500 font-bold">緑の実線</strong>は、すべてのノイズレイヤーをクリアし、かつあなたの目的（引越し・療養など）と完全に共鳴する「大吉方位」です。この方位へ移動することで、環境ストレスが最小化され、生体リズムが整います。
+              </p>
+           </div>
+         </div>
+      </details>
     </div>
   );
 }

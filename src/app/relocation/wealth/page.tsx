@@ -27,8 +27,12 @@ interface MunicipalityWealth {
   incomePerCapita: number;
   lat: number | null;
   lon: number | null;
+  astrologyScore: number;
   astrologyStatus: string;
   direction: string | null;
+  magneticDirection?: string | null;
+  trueBearing?: number | null;
+  magneticBearing?: number | null;
   dataYear: string;
   landPricePerSqm?: number;
   cospaIndex?: number;
@@ -62,7 +66,9 @@ export default function RegionalWealthPage() {
   const [birthLon, setBirthLon] = useState("");
   const [engineType, setEngineType] = useState("physical");
   const [layerMode, setLayerMode] = useState("final");
-  const [sortBy, setSortBy] = useState<'astrology' | 'income' | 'cospa' | 'distance'>('astrology');
+  const [useTrueNorth, setUseTrueNorth] = useState(false);
+  const [sortBy, setSortBy] = useState<'astrology' | 'income' | 'cospa' | 'distance' | 'areaName' | 'landPrice' | 'population'>('astrology');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,6 +93,7 @@ export default function RegionalWealthPage() {
     const currentBaseLon = overrideParams?.baseLon !== undefined ? overrideParams.baseLon : baseLon;
     const currentEngineType = overrideParams?.engineType !== undefined ? overrideParams.engineType : engineType;
     const currentLayerMode = overrideParams?.layerMode !== undefined ? overrideParams.layerMode : layerMode;
+    const currentUseTrueNorth = overrideParams?.useTrueNorth !== undefined ? overrideParams.useTrueNorth : useTrueNorth;
 
     // Save to localStorage (fallback generic slots)
     if (typeof window !== 'undefined') {
@@ -108,6 +115,7 @@ export default function RegionalWealthPage() {
       if (currentBaseLon) params.append("baseLon", currentBaseLon);
       if (currentEngineType) params.append("engineType", currentEngineType);
       if (currentLayerMode) params.append("layerMode", currentLayerMode);
+      if (currentUseTrueNorth) params.append("useTrueNorth", "true");
 
       const res = await fetch(`/api/municipalities-wealth?${params.toString()}`);
       if (!res.ok) throw new Error("データの取得に失敗しました");
@@ -349,17 +357,25 @@ export default function RegionalWealthPage() {
 
   // Sorted and Paginated Data for the table
   const sortedTableData = [...filteredData].sort((a, b) => {
-    if (sortBy === 'astrology') return b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
-    if (sortBy === 'cospa') return (b.cospaIndex || 0) - (a.cospaIndex || 0);
-    if (sortBy === 'distance') return (a.distanceKm || 0) - (b.distanceKm || 0);
-    return b.incomePerCapita - a.incomePerCapita;
+    let result = 0;
+    if (sortBy === 'astrology') result = b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
+    else if (sortBy === 'cospa') result = (b.cospaIndex || 0) - (a.cospaIndex || 0);
+    else if (sortBy === 'distance') result = (a.distanceKm || 0) - (b.distanceKm || 0);
+    else result = b.incomePerCapita - a.incomePerCapita;
+    
+    return sortOrder === 'desc' ? result : -result;
   });
 
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
   const currentTableData = sortedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const handleSortChange = (newSort: typeof sortBy) => {
-    setSortBy(newSort);
+    if (sortBy === newSort) {
+      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(newSort);
+      setSortOrder('desc'); // Default to desc when changing sort type
+    }
     setCurrentPage(1); // Reset to first page when sorting changes
   };
 
@@ -390,9 +406,19 @@ export default function RegionalWealthPage() {
                 <Compass className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                 吉方位 × 裕福度 分析ダッシュボード
               </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
-              天体物理モデルと一人あたり所得を掛け合わせ、最適な引越し先・拠点を探します。
-            </p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                天体物理モデル（磁北偏角補正対応）と一人あたり所得・地価データを掛け合わせ、最適な引越し先・拠点を探します。
+              </p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                  データソース: 国交省 不動産情報ライブラリ (MLIT)
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                  構造化データ: FUDOSAN DB
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -443,7 +469,7 @@ export default function RegionalWealthPage() {
           </div>
 
           {/* Top Row: General Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">目標日 (Target Date)</label>
               <input 
@@ -485,6 +511,17 @@ export default function RegionalWealthPage() {
                 <option value="year">Year (年盤のみ)</option>
                 <option value="month">Month (月盤のみ)</option>
                 <option value="day">Day (日盤のみ)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">基準方位 (North)</label>
+              <select 
+                value={useTrueNorth ? "true" : "false"} 
+                onChange={e => { setUseTrueNorth(e.target.value === "true"); setSelectedPresetId(""); }}
+                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              >
+                <option value="false">磁北 (Magnetic)</option>
+                <option value="true">真北 (True)</option>
               </select>
             </div>
           </div>
@@ -586,6 +623,7 @@ export default function RegionalWealthPage() {
                 data={data} 
                 baseLat={metadata?.baseLat} 
                 baseLon={metadata?.baseLon} 
+                useTrueNorth={useTrueNorth}
               />
             </div>
           </div>
@@ -661,6 +699,39 @@ export default function RegionalWealthPage() {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {/* Data Source Information Card */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 border border-gray-200 dark:border-gray-800 shrink-0">
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3 text-gray-900 dark:text-gray-100">
+                <svg className="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                データインテリジェンス基盤
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+                本システムは、占術モデルによる方位スコア（アストロカートグラフィ・九星気学）に加え、日本の最も信頼性が高い公的不動産データを統合し、各地域の「投資対効果（コスパ）」と「富裕度」をシミュレーションしています。
+              </p>
+              
+              <div className="space-y-3">
+                <a href="https://www.reinfolib.mlit.go.jp/" target="_blank" rel="noopener noreferrer" className="block group">
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-gray-900 dark:text-gray-100">国土交通省 不動産情報ライブラリ</span>
+                      <svg className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                    </div>
+                    <p className="text-[10px] text-gray-500 leading-tight">620万件超の不動産取引データ、地価公示情報をベースにした公式統計値を用いています。</p>
+                  </div>
+                </a>
+                
+                <a href="https://fudosandb.jp" target="_blank" rel="noopener noreferrer" className="block group">
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-gray-900 dark:text-gray-100">FUDOSAN DB</span>
+                      <svg className="w-3 h-3 text-gray-400 group-hover:text-purple-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                    </div>
+                    <p className="text-[10px] text-gray-500 leading-tight">AIによる構造化・賃料推定が可能な商用DBの概念を応用し、「コスパ指数（所得/地価）」を導出しています。</p>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -673,33 +744,6 @@ export default function RegionalWealthPage() {
                 詳細データ （安全方位のみ: 全 {sortedTableData.length} 件）
               </h2>
               <div className="flex gap-2 flex-wrap items-center">
-                <button 
-                  onClick={() => handleSortChange('astrology')}
-                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'astrology' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                >
-                  方位優先
-                </button>
-                <button 
-                  onClick={() => handleSortChange('income')}
-                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'income' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                >
-                  所得優先
-                </button>
-                <button 
-                  onClick={() => handleSortChange('cospa')}
-                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'cospa' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                  title="所得 / 地価 (高いほど地価に対して所得が高い)"
-                >
-                  コスパ優先
-                </button>
-                <button 
-                  onClick={() => handleSortChange('distance')}
-                  className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${sortBy === 'distance' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
-                  title="基準地からの距離が近い順"
-                >
-                  近距離優先
-                </button>
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
                 <button 
                   onClick={handleExportCSV}
                   className="px-3 py-1 text-xs rounded-full font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
@@ -747,14 +791,28 @@ export default function RegionalWealthPage() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th scope="col" className="px-6 py-4 rounded-tl-lg">エリア名</th>
+                  <th scope="col" className="px-6 py-4 rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('areaName')}>
+                    エリア名 <span className={`inline-block w-3 ${sortBy === 'areaName' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
                   <th scope="col" className="px-6 py-4">方位 / ステータス</th>
-                  <th scope="col" className="px-6 py-4 text-center">方位スコア</th>
-                  <th scope="col" className="px-6 py-4 text-right">距離 (km)</th>
-                  <th scope="col" className="px-6 py-4 text-right">1人あたり平均所得</th>
-                  <th scope="col" className="px-6 py-4 text-right">平均地価 (㎡)</th>
-                  <th scope="col" className="px-6 py-4 text-right">コスパ指数</th>
-                  <th scope="col" className="px-6 py-4 text-right">納税義務者数</th>
+                  <th scope="col" className="px-6 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('astrology')}>
+                    方位スコア <span className={`inline-block w-3 ${sortBy === 'astrology' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('distance')}>
+                    距離 (km) <span className={`inline-block w-3 ${sortBy === 'distance' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('income')}>
+                    1人あたり平均所得 <span className={`inline-block w-3 ${sortBy === 'income' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('landPrice')}>
+                    平均地価 (㎡) <span className={`inline-block w-3 ${sortBy === 'landPrice' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('cospa')}>
+                    コスパ指数 <span className={`inline-block w-3 ${sortBy === 'cospa' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none rounded-tr-lg" onClick={() => handleSortChange('population')}>
+                    納税義務者数 <span className={`inline-block w-3 ${sortBy === 'population' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -767,9 +825,19 @@ export default function RegionalWealthPage() {
                       {item.areaName}
                     </td>
                     <td className="px-6 py-4">
-                       <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-gray-500">{item.direction}</span>
-                          <span className="text-xs uppercase tracking-wider text-gray-400">{item.astrologyStatus}</span>
+                       <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-gray-500">
+                              {item.direction !== item.magneticDirection ? (
+                                <span title={`真北: ${item.direction} / 磁北: ${item.magneticDirection}`}>
+                                  {item.direction} <span className="text-amber-500 text-xs">({item.magneticDirection})</span>
+                                </span>
+                              ) : (
+                                item.direction
+                              )}
+                            </span>
+                            <span className="text-xs uppercase tracking-wider text-gray-400">{item.astrologyStatus.replace('DECLINATION_WARNING', '⚠️ズレ')}</span>
+                          </div>
                        </div>
                     </td>
                     <td className="px-6 py-4 text-center">

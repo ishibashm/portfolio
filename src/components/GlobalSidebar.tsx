@@ -97,7 +97,7 @@ export function GlobalSidebar() {
         </nav>
 
         {/* Footer Area */}
-        <div className="p-4 border-t border-white/5">
+        <div className="p-4 border-t border-white/5 bg-zinc-950 z-10 shrink-0">
           <div className="px-3 py-3 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs text-zinc-400 font-medium tracking-widest uppercase">System Online</span>
