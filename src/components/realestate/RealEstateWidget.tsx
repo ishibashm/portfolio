@@ -2,6 +2,19 @@ import { Building, Activity, Database, CheckCircle2 } from "lucide-react";
 import { rental_propertiesModel as rental_properties } from "@/generated/prisma/models";
 
 export function RealEstateWidget({ data }: { data: rental_properties[] }) {
+  // Use a deterministic pseudo-random function or simple hash based on property ID for the yield
+  const getDeterministicYield = (id: string | number) => {
+    // Simple hash function to generate a number between 0 and 1
+    const hashStr = String(id);
+    let hash = 0;
+    for (let i = 0; i < hashStr.length; i++) {
+      hash = ((hash << 5) - hash) + hashStr.charCodeAt(i);
+      hash |= 0;
+    }
+    const normalized = Math.abs(hash) / 2147483647; // Max 32-bit integer
+    return (normalized * 2 + 4).toFixed(1);
+  };
+
   return (
     <section className="h-full flex flex-col p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all relative overflow-hidden">
       {/* Background decoration */}
@@ -62,7 +75,7 @@ export function RealEstateWidget({ data }: { data: rental_properties[] }) {
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">Area / Yield</span>
-                    <span className="text-gray-300 text-xs">{re.area} <span className="text-gray-500">|</span> <span className="text-emerald-400">{(Math.random() * 2 + 4).toFixed(1)}%</span></span>
+                    <span className="text-gray-300 text-xs">{re.area} <span className="text-gray-500">|</span> <span className="text-emerald-400">{getDeterministicYield(re.id)}%</span></span>
                   </div>
                 </div>
               </div>
