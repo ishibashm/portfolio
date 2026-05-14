@@ -1,0 +1,31 @@
+name: Setup Database Schema and Seed Data
+
+on:
+  workflow_dispatch: # 手動で実行するためのトリガー
+
+jobs:
+  setup-db:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Push Prisma Schema to Database
+        run: npx prisma db push
+
+      - name: Run Data Import Scripts
+        run: |
+          npx tsx scripts/import_municipalities_wealth.ts
+          npx tsx scripts/update_municipalities_coords.ts
+          npx tsx scripts/import_land_prices.ts
