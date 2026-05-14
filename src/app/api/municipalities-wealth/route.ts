@@ -254,7 +254,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching municipalities wealth data:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch data' },
+      { success: false, error: 'Failed to fetch data', message: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

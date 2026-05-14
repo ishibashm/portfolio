@@ -118,7 +118,14 @@ export default function RegionalWealthPage() {
       if (currentUseTrueNorth) params.append("useTrueNorth", "true");
 
       const res = await fetch(`/api/municipalities-wealth?${params.toString()}`);
-      if (!res.ok) throw new Error("データの取得に失敗しました");
+      if (!res.ok) {
+        let errMsg = "データの取得に失敗しました";
+        try {
+          const errJson = await res.json();
+          if (errJson.message) errMsg = errJson.message;
+        } catch(e) {}
+        throw new Error(errMsg);
+      }
       const json = await res.json();
       setData(json.data);
       if (json.metadata) {
