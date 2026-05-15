@@ -20,6 +20,18 @@ jobs:
       - name: Create .env from Secret
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
+          
+      - name: Auto-generate DIRECT_URL
+        run: |
+          # 既存のDATABASE_URLから、ポート6543を5432に置換し、DIRECT_URLを自動生成する
+          DB_URL=$(grep '^DATABASE_URL=' .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+          if [[ -n "$DB_URL" ]]; then
+            DIR_URL=$(echo "$DB_URL" | sed 's/:6543\//:5432\//' | sed 's/?.*//')
+            echo "DIRECT_URL=\"$DIR_URL\"" >> .env
+            echo "Successfully generated DIRECT_URL."
+          else
+            echo "DATABASE_URL not found in .env"
+          fi
 
       - name: Push Prisma Schema to Database
         run: npx prisma db push
