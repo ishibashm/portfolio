@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Actions & Prisma / Supabase データベースセットアップの解決ログ</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #24292e;
+            border-bottom: 2px solid #eaecef;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #0366d6;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #24292e;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+        }
+        .error-block {
+            background-color: #ffeef0;
+            border-left: 4px solid #d73a49;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success-block {
+            background-color: #e6ffed;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .code-block {
+            background-color: #f6f8fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            font-size: 85%;
+        }
+        .step {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaecef;
+        }
+        .step:last-child {
+            border-bottom: none;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #d73a49;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GitHub ActionsでのPrisma×Supabaseマイグレーション エラー解決の全記録</h1>
+        <p><strong>日付:</strong> 2026年5月15日</p>
+        <p><strong>概要:</strong> GitHub Actions上で <code>npx prisma db push</code> を実行し、Supabaseにデータをシード（初期データ投入）する際に発生した一連のエラーとその解決策をまとめたドキュメントです。</p>
+
+        <div class="step">
+            <h2>第1のエラー: GitHub Actionsが6時間ハングアップ（タイムアウト）</h2>
+            <div class="error-block">
+                <strong>症状:</strong><br>
+                <code>npx prisma db push</code> を実行した際、ログが <code>Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-southeast-2.pooler.supabase.com:6543"</code> で停止し、そのまま6時間経過してキャンセルされた。
+            </div>
+            <h3>原因</h3>
+            <p>Supabaseの <strong>ポート6543（コネクションプーラー: pgBouncer）</strong> を経由してPrismaのマイグレーション（スキーマ変更）を行おうとしたためです。<br>
+            スキーマ変更にはデータベースのロック等が必要ですが、プーラー経由ではそれがサポートされておらず、接続が無期限に待機状態になっていました。</p>
+            
+            <h3>解決策</h3>
+            <p>マイグレーション用には <strong>ポート5432（直接接続）</strong> を使用する必要があります。<br>
+            <code>.github/workflows/run-seed.yml</code> を修正し、<code>db push</code> 実行時のみ強制的に <code>DIRECT_URL</code>（ポート5432のURL）を使用するように書き換えました。</p>
+            <div class="code-block">
+# 修正後の該当箇所
+DATABASE_URL="$DIRECT_URL" npx prisma db push
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>第2のエラー: データ消失防止機能（Safe Check）による停止</h2>
+            <div class="error-block">
+                <strong>症状:</strong><br>
+                ポート5432での接続には成功したが、<br>
+                <code>⚠️ You are about to drop the KnowledgeDocument table, which is not empty (1848 rows).</code><br>
+                という警告が出て、Exit Code 1 で処理が中断された。
+            </div>
+            <h3>原因</h3>
+            <p>現在のプロジェクトの <code>schema.prisma</code> に <code>KnowledgeDocument</code> というテーブルが定義されていないため、Prismaが「このテーブルは不要になったのでクラウドから削除しようとしている」と判断しました。<br>
+            しかし、そのテーブルにはすでに1848件のデータが入っていたため、安全のために自動停止しました。</p>
+            
+            <h3>解決策</h3>
+            <p>クラウド上の不要なテーブルとデータを削除してよいという判断のもと、強制的に上書きを許可する <strong><code>--accept-data-loss</code></strong> フラグをコマンドに追加しました。</p>
+            <div class="code-block">
+# 修正後の該当箇所
+DATABASE_URL="$DIRECT_URL" npx prisma db push --accept-data-loss
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>第3のエラー: P1013 Invalid database URL（不正なポート番号）</h2>
+            <div class="error-block">
+                <strong>症状:</strong><br>
+                <code>Error: P1013: The provided database string is invalid. invalid port number in database URL.</code>
+            </div>
+            <h3>原因</h3>
+            <p>Supabaseのデータベースパスワードの中に、特殊文字（<code>@</code> や <code>:</code> など）が含まれていたことが原因です。<br>
+            Prismaは <code>DATABASE_URL</code> を読み解く際、<code>@</code> を「パスワードとホスト名の区切り」、<code>:</code> を「ポート番号の区切り」として認識します。パスワード内にこれらの記号があるとパース（解析）に失敗し、パスワードの一部をポート番号だと誤認してしまいます。</p>
+            
+            <h3>解決策</h3>
+            <p>Supabaseのダッシュボードでデータベースのパスワードを再設定（リセット）し、<strong>英字（アルファベット）と数字のみで構成されたパスワード</strong> に変更しました。その後、GitHubの <code>ENV_FILE</code> シークレットを新しいパスワードで上書き更新しました。</p>
+        </div>
+
+        <div class="step">
+            <h2>第4のエラー: Cannot find module '.prisma/client/default'</h2>
+            <div class="error-block">
+                <strong>症状:</strong><br>
+                テーブル作成（<code>db push</code>）は成功した直後、データの流し込みスクリプト（<code>import_municipalities_wealth.ts</code>）を実行しようとした際に発生。<br>
+                <code>Error: Cannot find module '.prisma/client/default'</code>
+            </div>
+            <h3>原因</h3>
+            <p>TypeScriptのプログラムがデータベースにアクセスするための「Prisma Client」が生成されていませんでした。<br>
+            ローカル環境では通常自動生成されますが、GitHub Actionsのまっさらなコンテナ上では明示的に生成コマンドを叩く必要があります。</p>
+            
+            <h3>解決策</h3>
+            <p><code>run-seed.yml</code> に Prisma Client を生成するステップ（<code>npx prisma generate</code>）を追記しました。</p>
+            <div class="code-block">
+# 追記したステップ
+- name: Generate Prisma Client
+  run: npx prisma generate
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>最終的な成果</h2>
+            <div class="success-block">
+                <strong>解決！</strong><br>
+                これらすべての修正により、GitHub Actionsからの全自動データベースセットアップ（テーブルの作成から、e-Stat等からのデータダウンロード、そしてSupabaseへのシードデータの投入）が正常に完走するようになりました。
+            </div>
+            <p><strong>現在の <code>run-seed.yml</code> の主要な流れ:</strong></p>
+            <ol>
+                <li>依存関係のインストール (<code>npm ci</code>)</li>
+                <li>GitHub Secretから <code>.env</code> ファイルを生成</li>
+                <li><code>DATABASE_URL="$DIRECT_URL"</code> を利用して <code>db push --accept-data-loss</code> でスキーマを強制同期</li>
+                <li><code>npx prisma generate</code> で Prisma Client を生成</li>
+                <li><code>npx tsx scripts/...</code> で各種シードスクリプトを実行しデータを投入</li>
+            </ol>
+        </div>
+    </div>
+</body>
+</html>
