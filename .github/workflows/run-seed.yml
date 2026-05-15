@@ -34,7 +34,10 @@ jobs:
           fi
 
       - name: Push Prisma Schema to Database
-        run: npx prisma db push
+        run: |
+          source .env
+          # Force Prisma to use the direct connection (5432) for db push by overriding DATABASE_URL
+          DATABASE_URL="$DIRECT_URL" npx prisma db push
 
       - name: Run Data Import Scripts
         run: |
