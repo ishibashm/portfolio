@@ -44,6 +44,7 @@ interface MapProps {
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
   setActiveLayerMode?: (mode: 'final' | 'year' | 'month' | 'day') => void;
   activeModel?: 'physical' | 'classical';
+  properties?: any[];
 }
 
 export function TacticalMagneticMapComponent({ 
@@ -52,7 +53,8 @@ export function TacticalMagneticMapComponent({
   toggleLayer,
   activeLayerMode = 'final',
   setActiveLayerMode,
-  activeModel = 'physical'
+  activeModel = 'physical',
+  properties = []
 }: MapProps) {
   const [showHUD, setShowHUD] = useState(true);
   const [useTrueNorth, setUseTrueNorth] = useState(false);
@@ -197,6 +199,7 @@ export function TacticalMagneticMapComponent({
               hudLayers={hudLayers}
               activeLayerMode={activeLayerMode}
               useTrueNorth={useTrueNorth}
+              properties={properties}
              />
          </div>
 

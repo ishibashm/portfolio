@@ -1,5 +1,5 @@
 import React from "react";
-import { Database, MapPin, CalendarClock, Crosshair } from "lucide-react";
+import { Database, MapPin, CalendarClock, Crosshair, Fingerprint } from "lucide-react";
 
 interface PersonalProfileProps {
   birthDate: string;
@@ -26,6 +26,8 @@ interface PersonalProfileProps {
   setBaselineHrvStd?: (v: number) => void;
   baselineGsrMean?: number;
   setBaselineGsrMean?: (v: number) => void;
+  baselineGsrStd?: number;
+  setBaselineGsrStd?: (v: number) => void;
   baseSyncTimestamp?: string | null;
   setBaseSyncTimestamp?: (v: string | null) => void;
   // --- Timing Optimizer Preferences ---
@@ -35,6 +37,9 @@ interface PersonalProfileProps {
   setUseKigakuScorer?: (v: boolean) => void;
   useAstrologyScorer?: boolean;
   setUseAstrologyScorer?: (v: boolean) => void;
+  // --- Derived Metrics (Read-only feedback) ---
+  derivedHonmeiStar?: { physical: number | string, classical: number | string } | null;
+  derivedPersonalVoid?: string[];
 }
 
 export function PersonalProfileConfig({
@@ -49,10 +54,12 @@ export function PersonalProfileConfig({
   baselineHrvMean, setBaselineHrvMean,
   baselineHrvStd, setBaselineHrvStd,
   baselineGsrMean, setBaselineGsrMean,
+  baselineGsrStd, setBaselineGsrStd,
   baseSyncTimestamp, setBaseSyncTimestamp,
   usePsychologyScorer, setUsePsychologyScorer,
   useKigakuScorer, setUseKigakuScorer,
-  useAstrologyScorer, setUseAstrologyScorer
+  useAstrologyScorer, setUseAstrologyScorer,
+  derivedHonmeiStar, derivedPersonalVoid
 }: PersonalProfileProps) {
   
   return (
@@ -94,6 +101,28 @@ export function PersonalProfileConfig({
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full"
               />
               <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">自律神経の初期ベースライン（本命星システム）を設定。</span>
+           </div>
+
+           {/* Derived Identity Summary Box */}
+           <div className="bg-blue-900/10 border border-blue-900/30 p-2.5 rounded-sm mt-2">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Fingerprint size={12} className="text-blue-400" />
+                <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest">Derived Identity Identity / 算出された波長特性</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <div>
+                  <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Honmei Star (Physical)</span>
+                  <span className="text-sm text-emerald-400 font-bold">{derivedHonmeiStar?.physical || "---"}</span>
+                </div>
+                <div>
+                  <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Honmei Star (Classical)</span>
+                  <span className="text-sm text-zinc-400 font-bold">{derivedHonmeiStar?.classical || "---"}</span>
+                </div>
+                <div className="col-span-2 border-t border-blue-900/20 pt-1 mt-1">
+                  <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Void Zodiac (天中殺)</span>
+                  <span className="text-xs text-red-400 font-bold tracking-widest">{derivedPersonalVoid?.join("・") || "---"}</span>
+                </div>
+              </div>
            </div>
 
            <div className="flex flex-col gap-1 mt-2">

@@ -77,6 +77,16 @@ model VerificationToken {
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model ScrapeTask {
+  id          String    @id @default(cuid())
+  url         String    @unique
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, ERROR
+  last_page   Int       @default(1)
+  total_pages Int?
+  updated_at  DateTime  @updatedAt
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rental_properties {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   property_name      String
@@ -91,7 +101,13 @@ model rental_properties {
   last_seen_at       DateTime? @default(now()) @db.Timestamptz(6)
   source_emails      String[]
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
-  url                String?
+  url                String?   @unique
+  address            String?
+  lat                Float?
+  lon                Float?
+  building_age       Int?
+  floor              String?
+  source_scraper     String?   @default("email")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.

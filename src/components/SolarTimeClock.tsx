@@ -23,6 +23,7 @@ const TacticalMagneticMap = dynamic(() => import("./TacticalMagneticMap").then(m
 const PersonalProfileConfig = dynamic(() => import("./PersonalProfileConfig").then(mod => mod.PersonalProfileConfig), { ssr: false });
 const SystemTelemetryLog = dynamic(() => import("./SystemTelemetryLog").then(mod => mod.SystemTelemetryLog), { ssr: false });
 const ExpertCouncilPanel = dynamic(() => import("./ExpertCouncilPanel"), { ssr: false });
+const TenchusatsuVisualizer = dynamic(() => import("./TenchusatsuVisualizer").then(mod => mod.TenchusatsuVisualizer), { ssr: false });
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -61,20 +62,20 @@ export const SolarTimeClock = () => {
   const [birthLon, setBirthLon] = useState<number>(139.6917);
 
   // Bio-Sync State
-  const [hrv, setHrv] = useState(50);
-  const [gsr, setGsr] = useState(5);
+  const [hrv, setHrv] = useState(30);
+  const [gsr, setGsr] = useState(1.8);
   const [baseSyncDays, setBaseSyncDays] = useState(30);
   const [pressureDrop, setPressureDrop] = useState(0); // 過去3時間の気圧降下量 (hPa)
 
   // New Data Science Bio-Baselines
   const [baseSyncTimestamp, setBaseSyncTimestamp] = useState<string | null>(null);
-  const [baselineHrvMean, setBaselineHrvMean] = useState<number>(60);
-  const [baselineHrvStd, setBaselineHrvStd] = useState<number>(15);
-  const [baselineGsrMean, setBaselineGsrMean] = useState<number>(5);
-  const [baselineGsrStd, setBaselineGsrStd] = useState<number>(2);
+  const [baselineHrvMean, setBaselineHrvMean] = useState<number>(38);
+  const [baselineHrvStd, setBaselineHrvStd] = useState<number>(6.5);
+  const [baselineGsrMean, setBaselineGsrMean] = useState<number>(4.5);
+  const [baselineGsrStd, setBaselineGsrStd] = useState<number>(1.5);
 
-  const [ansLoad, setAnsLoad] = useState(0);
-  const [shieldCapacity, setShieldCapacity] = useState(100);
+  const [ansLoad, setAnsLoad] = useState(22);
+  const [shieldCapacity, setShieldCapacity] = useState(15);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingLog, setIsSavingLog] = useState(false);
   
@@ -539,21 +540,43 @@ export const SolarTimeClock = () => {
     const fullState = {
       timestamp: new Date().toISOString(),
       location: { lat, lon, targetLat, targetLon },
-      personalProfile: { birthDate, birthLat, birthLon, honmeiStar },
+      personalProfile: { birthDate, birthLat, birthLon, honmeiStar, personalVoidZodiac },
       biometrics: { hrv, gsr, ansLoad, shieldCapacity },
       baselines: { hrvMean: baselineHrvMean, hrvStd: baselineHrvStd, gsrMean: baselineGsrMean, gsrStd: baselineGsrStd },
       geomagnetism: geoData,
       spaceWeather: spaceWeather,
       ephemeris: env,
       birthEphemeris: birthEnv,
+      solarData: solarData,
       spatialVectors: {
         physical: physicalLayers,
-        classical: classicalLayers
+        classical: classicalLayers,
+        activeModel: useClassicalBoard ? 'classical' : 'physical',
+        activeLayerMode: activeLayerMode
       },
       timingOptimization: timingOptimization,
+      optimizerPreferences: {
+        usePsychologyScorer,
+        useKigakuScorer,
+        useAstrologyScorer
+      },
       nbaEngine: nbaData,
       actionIntent,
-      timeOffsetDays
+      timeOffsetDays,
+      targetEvaluation: {
+        evalDate: evalDate.toISOString(),
+        targetDirInfo,
+        targetVectorStatus
+      },
+      voidTimeDiagnostics: {
+        kimon,
+        currentZodiac,
+        isPersonalVoid,
+        isYearVoid,
+        isMonthVoid,
+        isDayVoid,
+        isGlobalVoid
+      }
     };
     const jsonBlob = new Blob([JSON.stringify(fullState, null, 2)], { type: "application/json" });
     const jsonUrl = URL.createObjectURL(jsonBlob);
@@ -984,7 +1007,10 @@ export const SolarTimeClock = () => {
               setUseKigakuScorer={setUseKigakuScorer}
               useAstrologyScorer={useAstrologyScorer}
               setUseAstrologyScorer={setUseAstrologyScorer}
+              derivedHonmeiStar={honmeiStar}
+              derivedPersonalVoid={personalVoidZodiac}
             />
+            <TenchusatsuVisualizer birthDateStr={birthDate} />
           </div>
         )}
 
@@ -1902,7 +1928,21 @@ export const SolarTimeClock = () => {
             {/* Module 4: Tactical Magnetic Map */}
             <div className="w-full max-w-4xl mt-0">
 
-              <div className="flex justify-end mb-2 w-full"><button onClick={() => setUseClassicalBoard(!useClassicalBoard)} className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}>Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}</button></div><TacticalMagneticMap
+              <div className="flex justify-end mb-2 w-full gap-2">
+                <button 
+                  onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)} 
+                  className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
+                >
+                  {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
+                </button>
+                <button 
+                  onClick={() => setUseClassicalBoard(!useClassicalBoard)} 
+                  className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}
+                >
+                  Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}
+                </button>
+              </div>
+              <TacticalMagneticMap
                 lat={lat || 35.0116}
                 lon={lon || 135.7681}
                 declination={geoData?.declination || 0}
@@ -1919,6 +1959,7 @@ export const SolarTimeClock = () => {
                 toggleLayer={(layer: 'terrain' | 'weather' | 'bio' | 'hazard') => setHudLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
                 activeLayerMode={activeLayerMode}
                 setActiveLayerMode={setActiveLayerMode}
+                properties={showOnlyNewBuild ? mapProperties.filter(p => p.is_new_build) : mapProperties}
               />
             </div>
 

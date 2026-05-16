@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma"
 import { rental_properties, StockTarget, TimingAstrology } from "@prisma/client"
-import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen, BrainCircuit, HeartPulse, Globe, Zap, Shield, BatteryCharging, Radio } from "lucide-react"
+import { Building, TrendingUp, Compass, ArrowUpRight, Activity, MapPin, JapaneseYen, Clock, Sparkles, BookOpen, BrainCircuit, HeartPulse, Globe, Zap, Shield, BatteryCharging, Radio, Moon } from "lucide-react"
 import Link from "next/link"
 import { TwitterFeed } from "@/components/twitter/TwitterFeed"
 import { FinanceWidget } from "@/components/finance/FinanceWidget"
@@ -11,6 +11,7 @@ import { OuraClient } from "@/lib/ouraClient"
 import { TavilyClient } from "@/lib/tavilyClient"
 import { NBAEngine } from "@/utils/nbaEngine"
 import { AstroEngine } from "@/utils/ephemerisEngine"
+import { Lunar } from "lunar-javascript"
 
 export const revalidate = 60 // Revalidate cache every minute
 
@@ -61,8 +62,8 @@ export default async function DashboardPage() {
   const tavilyResults = tavilyResult?.results?.slice(0, 3) || [];
 
   // 1. Process Oura Biometrics
-  let ansLoad = 50; 
-  let shieldCapacity = 50;
+  let ansLoad = 22; 
+  let shieldCapacity = 15;
   if (readinessData) {
     ansLoad = Math.max(0, 100 - readinessData.score);
     shieldCapacity = readinessData.contributors?.recovery_index || readinessData.score;
@@ -84,6 +85,16 @@ export default async function DashboardPage() {
   const solarPhase = AstroEngine.getSolarLongitude(now);
   const marsLon = AstroEngine.getMarsLongitude(now);
   const saturnLon = AstroEngine.getSaturnLongitude(now);
+
+  // --- LUNAR & ROKUYO LOGIC ---
+  const lunarDate = Lunar.fromDate(now);
+  const ROKUYO_MAP = ["大安 (Taian)", "赤口 (Shakku)", "先勝 (Sensho)", "友引 (Tomobiki)", "先負 (Sakimake)", "仏滅 (Butsumetsu)"];
+  // Note: getMonth() / getDay() typically return absolute month/day numbers in lunar-javascript
+  const lunarMonth = lunarDate.getMonth(); 
+  const lunarDay = lunarDate.getDay();
+  const rokuyoName = ROKUYO_MAP[(lunarMonth + lunarDay) % 6];
+  const yueXiang = lunarDate.getYueXiang(); // Phase name
+  const lunarDateString = `旧暦 ${lunarMonth}月${lunarDay}日`;
 
   // 4. Calculate Next Best Action deterministically
   const nbaResult = await nbaEngine.getNextBestAction({ 
@@ -276,8 +287,8 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* BENTO ITEM 5: Astrological Timing */}
-          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
+          {/* BENTO ITEM 5: Astrological Timing (Updated with Lunar Phase & Rokuyo) */}
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
                 <Compass className="w-5 h-5 text-purple-400" />
@@ -285,18 +296,33 @@ export default async function DashboardPage() {
               <h2 className="text-lg font-semibold tracking-tight text-white/90">Astro-Timing</h2>
             </div>
             
-            <div className="flex flex-col gap-3">
+            {/* Lunar & Rokuyo Highlight */}
+            <div className="mb-4 bg-gradient-to-r from-purple-900/20 to-transparent p-3 rounded-xl border border-purple-500/20">
+              <div className="flex justify-between items-center mb-1">
+                <div className="flex items-center gap-2">
+                  <Moon className="w-4 h-4 text-purple-300" />
+                  <span className="text-xs text-purple-300 font-medium">Lunar Phase</span>
+                </div>
+                <span className="text-[10px] text-gray-400">{lunarDateString}</span>
+              </div>
+              <div className="flex justify-between items-end mt-2">
+                <span className="text-xl font-bold text-white tracking-widest">{rokuyoName.split(' ')[0]}</span>
+                <span className="text-sm text-purple-200">月相: {yueXiang}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 flex-grow">
               {timings.length === 0 ? (
-                <p className="text-gray-500 text-xs text-center py-4">No timing data.</p>
+                <p className="text-gray-500 text-xs text-center py-2 opacity-60">No future timing data.</p>
               ) : (
                 timings.slice(0,2).map((timing: TimingAstrology) => (
-                  <div key={timing.id} className="p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div key={timing.id} className="p-2.5 rounded-xl bg-white/5 border border-white/5">
                     <div className="flex justify-between items-center mb-1">
                       <span className="text-[10px] uppercase text-purple-300 font-bold">{timing.kuseiType}</span>
-                      <span className="text-[10px] text-gray-500">{new Date(timing.date).toLocaleDateString()}</span>
+                      <span className="text-[9px] text-gray-500">{new Date(timing.date).toLocaleDateString()}</span>
                     </div>
                     {timing.insight && (
-                      <p className="text-xs text-gray-400 line-clamp-2">{timing.insight}</p>
+                      <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{timing.insight}</p>
                     )}
                   </div>
                 ))

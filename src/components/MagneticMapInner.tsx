@@ -66,7 +66,8 @@ export default function MagneticMapInner({
   lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, 
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   activeLayerMode = 'final',
-  useTrueNorth = false
+  useTrueNorth = false,
+  properties = []
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => {
@@ -367,6 +368,32 @@ export default function MagneticMapInner({
              radius={radiusMeters}
              pathOptions={{ color: '#71717a', weight: 1, dashArray: '2,10', fill: false, opacity: 0.3 - (i * 0.05) }}
            />
+        ))}
+
+        {/* Real Estate Properties */}
+        {properties?.map(prop => (
+          prop.lat && prop.lon ? (
+             <CircleMarker 
+               key={prop.id || prop.url}
+               center={[prop.lat, prop.lon]}
+               radius={prop.is_new_build ? 5 : 3}
+               pathOptions={{ 
+                 color: prop.is_new_build ? '#10b981' : '#3b82f6', 
+                 fillColor: prop.is_new_build ? '#10b981' : '#3b82f6', 
+                 fillOpacity: 0.8,
+                 weight: 1
+               }}
+             >
+               <Tooltip>
+                 <div className="font-mono text-xs text-zinc-800 p-1">
+                   <div className="font-bold">{prop.property_name}</div>
+                   {prop.is_new_build && <div className="text-emerald-600 font-bold">[新築]</div>}
+                   <div>家賃: {prop.rent ? `${(prop.rent / 10000).toFixed(1)}万円` : '不明'}</div>
+                   <div>{prop.address}</div>
+                 </div>
+               </Tooltip>
+             </CircleMarker>
+          ) : null
         ))}
       </MapContainer>
       

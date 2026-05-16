@@ -1,87 +1,75 @@
 "use client";
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import { calculateTenchusatsu } from '../utils/tenchusatsu';
 
-/**
- * Tenchusatsu Visualizer
- * 
- * Visualizes the 12-year cycle and the "Void" periods.
- * Specifically highlights:
- * - Mother's Birth: 1957-11-30 (Day Pillar: Hei-Uma / Cycle 42)
- * - Group: Tora-U (Tiger-Rabbit)
- * - Void Years: 2022 (Tiger), 2023 (Rabbit)
- * - Current Year: 2026 (Horse) -> Released!
- */
-export const TenchusatsuVisualizer: React.FC = () => {
-  // Hardcoded for Demo (Mother's Data)
-  // In a real app, this would take props or use the utility.
-  // We will display the logic clearly.
-  
-  const birthDate = "1957-11-30";
-  const dayPillar = "丙午 (Hei-Uma)";
-  const tenchusatsuGroup = "寅卯 (Tiger-Rabbit)";
-  
-  const years = [
-    { year: 2022, eto: "寅 (Tiger)", status: "VOID", label: "Year Tenchusatsu (Start)" },
-    { year: 2023, eto: "卯 (Rabbit)", status: "VOID", label: "Year Tenchusatsu (End)" },
-    { year: 2024, eto: "辰 (Dragon)", status: "VOID-S", label: "After-Burn (Month Void)" },
-    { year: 2025, eto: "巳 (Snake)", status: "VOID-S", label: "After-Burn (Month Void)" },
-    { year: 2026, eto: "午 (Horse)", status: "CLEAR", label: "DAWN (Release!)" },
-    { year: 2027, eto: "未 (Sheep)", status: "CLEAR", label: "Growth" },
-  ];
+interface TenchusatsuVisualizerProps {
+  birthDateStr: string;
+}
+
+export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({ birthDateStr }) => {
+  const data = useMemo(() => {
+    try {
+      const bDate = new Date(birthDateStr);
+      if (isNaN(bDate.getTime())) return null;
+      // Calculate for a 12-year window around the current year
+      const currentYear = new Date().getFullYear();
+      return calculateTenchusatsu(bDate, currentYear);
+    } catch (e) {
+      return null;
+    }
+  }, [birthDateStr]);
+
+  if (!data) return null;
+
+  const currentYear = new Date().getFullYear();
+  const baseYear = currentYear - 3;
+  const years = Array.from({ length: 8 }).map((_, i) => {
+    const y = baseYear + i;
+    const isVoid = data.previousVoidYears.includes(y) || (y === currentYear && data.isYearTenchusatsu);
+    return {
+      year: y,
+      status: isVoid ? "VOID" : "CLEAR"
+    };
+  });
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 max-w-4xl mx-auto my-8">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">
-        Logic Visualization: Why Move in 2026?
+    <div className="bg-zinc-950/80 rounded-sm shadow-lg border border-zinc-800/80 p-4 max-w-4xl mt-4 w-full">
+      <h3 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400 mb-4 border-b border-zinc-800 pb-2 flex items-center gap-2">
+        <span className="text-red-500 blur-[0.5px]">◆</span> Tenchusatsu (Void) Cycle Diagnostics / 天中殺周期の解読
       </h3>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Profile */}
-        <div className="bg-indigo-50 p-4 rounded-lg">
-          <h4 className="font-semibold text-indigo-800 mb-2">Subject Profile (Mother)</h4>
-          <dl className="space-y-1 text-sm">
-            <div className="flex justify-between"><dt>Birth Date:</dt><dd>{birthDate}</dd></div>
-            <div className="flex justify-between"><dt>Day Pillar:</dt><dd className="font-mono font-bold">{dayPillar}</dd></div>
-            <div className="flex justify-between"><dt>Tenchusatsu Group:</dt><dd className="text-red-600 font-bold">{tenchusatsuGroup}</dd></div>
+        <div className="bg-black/50 p-3 rounded-sm border border-zinc-900 flex flex-col justify-center">
+          <h4 className="font-semibold text-[9px] text-zinc-500 uppercase tracking-widest mb-2 border-b border-zinc-900 pb-1">Base Imprint (日干支)</h4>
+          <dl className="space-y-1 text-sm font-mono">
+            <div className="flex justify-between items-center"><dt className="text-zinc-500 text-[10px]">Birth Date:</dt><dd className="text-zinc-300">{birthDateStr}</dd></div>
+            <div className="flex justify-between items-center"><dt className="text-zinc-500 text-[10px]">Day Pillar (干支):</dt><dd className="font-bold text-zinc-300">{data.ganZhi}</dd></div>
+            <div className="flex justify-between items-center"><dt className="text-zinc-500 text-[10px]">Void Zodiac Group:</dt><dd className="text-red-500 font-bold tracking-widest">{data.tenchusatsu.name}</dd></div>
           </dl>
-          <div className="mt-4 text-xs text-indigo-600">
-            * Calculated from Day Pillar (Gan-Zhi Index 42).
+          <div className="mt-3 text-[9px] text-zinc-600 leading-tight">
+            * 算出された日干支から、あなたの人生におけるエネルギー欠落周期（天中殺）を特定しました。
           </div>
         </div>
 
-        {/* Timeline */}
-        <div>
-          <h4 className="font-semibold text-gray-700 mb-2">Strategic Timeline</h4>
-          <div className="space-y-2">
-            {years.map((y) => (
-              <div 
-                key={y.year} 
-                className={`flex items-center p-2 rounded border ${
-                  y.year === 2026 
-                    ? "bg-yellow-100 border-yellow-400 ring-2 ring-yellow-400" 
-                    : y.status.startsWith("VOID")
-                      ? "bg-gray-100 border-gray-300 opacity-70"
-                      : "bg-green-50 border-green-200"
-                }`}
-              >
-                <div className="w-16 font-bold text-gray-600">{y.year}</div>
-                <div className="w-24 text-sm text-gray-500">{y.eto}</div>
-                <div className="flex-1 font-semibold">
-                  {y.status === "VOID" && <span className="text-gray-500">⚠ Void (Tenchusatsu)</span>}
-                  {y.status === "VOID-S" && <span className="text-gray-400">⚠ Unstable</span>}
-                  {y.status === "CLEAR" && <span className="text-green-600">◎ GO! (Clear)</span>}
-                </div>
-              </div>
-            ))}
+        {/* Status */}
+        <div className="flex flex-col justify-center">
+          <div className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? 'bg-red-950/20 border-red-500/50' : 'bg-emerald-950/20 border-emerald-500/50'} text-center flex flex-col gap-2`}>
+            <span className="text-[10px] tracking-widest uppercase font-bold text-zinc-500">Current Year Status ({currentYear})</span>
+            {data.isYearTenchusatsu ? (
+              <>
+                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-500 animate-pulse">VOID PHASE</span>
+                <span className="text-[10px] text-red-400/80">現在は年の天中殺期間です。能動的な行動はリセットされやすい状態です。</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-emerald-500">CLEAR PHASE</span>
+                <span className="text-[10px] text-emerald-400/80">今年は天中殺の年ではありません。空間的な年単位の制約はクリアです。</span>
+              </>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 bg-green-50 p-4 rounded text-sm text-green-800">
-        <strong>Conclusion:</strong> 
-        The subject has exited the "Tiger-Rabbit" void period (2022-2023) and the subsequent buffer years. 
-        2026 (Horse) is the <strong>First Favorable Year</strong> for major life changes (Relocation).
       </div>
     </div>
   );
