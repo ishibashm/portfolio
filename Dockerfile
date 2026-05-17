@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
@@ -19,8 +20,8 @@ COPY . .
 # Next.js telemetry is disabled
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npx prisma generate
-RUN npm run build
+RUN --mount=type=secret,id=env,target=.env npx prisma generate
+RUN --mount=type=secret,id=env,target=.env npm run build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -38,9 +39,6 @@ COPY --from=builder /app/public ./public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Copy .env file if it exists so runtime environment variables are available
-COPY --from=builder --chown=nextjs:nodejs /app/.env* ./
 
 # Copy Prisma schema and engine to ensure it runs correctly in standalone mode
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
