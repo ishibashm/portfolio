@@ -16,6 +16,16 @@ import {
 import { TrendingUp, Users, MapPin, Compass, Settings2, Loader2, ArrowRight, ArrowLeft, LocateFixed, Download, ChevronLeft, ChevronRight, Search, Filter, Bookmark, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
+import dynamic from "next/dynamic";
+
+const LocationPickerInner = dynamic(() => import("@/components/LocationPickerInner"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
+      Loading map...
+    </div>
+  ),
+});
 
 interface MunicipalityWealth {
   id: string;
@@ -81,6 +91,10 @@ export default function RegionalWealthPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [newPresetName, setNewPresetName] = useState<string>("");
 
+  // Map Picker State
+  const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
+  const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
+
   const fetchData = async (overrideParams?: any) => {
     setLoading(true);
     setCurrentPage(1); // Reset page on new fetch
@@ -123,7 +137,7 @@ export default function RegionalWealthPage() {
         try {
           const errJson = await res.json();
           if (errJson.message) errMsg = errJson.message;
-        } catch(e) {}
+        } catch (e) { }
         throw new Error(errMsg);
       }
       const json = await res.json();
@@ -139,13 +153,13 @@ export default function RegionalWealthPage() {
         // Handle datetime-local which expects "YYYY-MM-DDTHH:mm" format
         if (!birthDate && json.metadata.birthDate) {
           try {
-             const d = new Date(json.metadata.birthDate);
-             if (!isNaN(d.getTime())) {
-                const tzoffset = d.getTimezoneOffset() * 60000;
-                const localISOTime = (new Date(d.getTime() - tzoffset)).toISOString().slice(0,16);
-                setBirthDate(localISOTime);
-             }
-          } catch(e) {}
+            const d = new Date(json.metadata.birthDate);
+            if (!isNaN(d.getTime())) {
+              const tzoffset = d.getTimezoneOffset() * 60000;
+              const localISOTime = (new Date(d.getTime() - tzoffset)).toISOString().slice(0, 16);
+              setBirthDate(localISOTime);
+            }
+          } catch (e) { }
         }
       }
     } catch (err: any) {
@@ -179,27 +193,47 @@ export default function RegionalWealthPage() {
       if (savedPresetsStr) {
         try {
           setPresets(JSON.parse(savedPresetsStr));
-        } catch(e) {}
+        } catch (e) { }
       }
 
-      const savedBirthDate = localStorage.getItem('wealth_birthDate') || "";
-      const savedBirthLat = localStorage.getItem('wealth_birthLat') || "";
-      const savedBirthLon = localStorage.getItem('wealth_birthLon') || "";
-      const savedBaseLat = localStorage.getItem('wealth_baseLat') || "";
-      const savedBaseLon = localStorage.getItem('wealth_baseLon') || "";
+      let bDate = "";
+      let bLat = "";
+      let bLon = "";
+      let bsLat = "";
+      let bsLon = "";
 
-      if (savedBirthDate) setBirthDate(savedBirthDate);
-      if (savedBirthLat) setBirthLat(savedBirthLat);
-      if (savedBirthLon) setBirthLon(savedBirthLon);
-      if (savedBaseLat) setBaseLat(savedBaseLat);
-      if (savedBaseLon) setBaseLon(savedBaseLon);
+      // 1. Try to load from unified tactical config (Sync with SolarTimeClock)
+      const tacticalConfig = localStorage.getItem('tactical_config_v1');
+      if (tacticalConfig) {
+        try {
+          const config = JSON.parse(tacticalConfig);
+          if (config.birth_date) bDate = config.birth_date;
+          if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
+          if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
+          if (config.base_lat !== undefined) bsLat = config.base_lat.toString();
+          if (config.base_lon !== undefined) bsLon = config.base_lon.toString();
+        } catch (e) { }
+      }
+
+      // 2. Fallback to specific slots if unified config doesn't have them
+      if (!bDate) bDate = localStorage.getItem('wealth_birthDate') || "";
+      if (!bLat) bLat = localStorage.getItem('wealth_birthLat') || "";
+      if (!bLon) bLon = localStorage.getItem('wealth_birthLon') || "";
+      if (!bsLat) bsLat = localStorage.getItem('wealth_baseLat') || "";
+      if (!bsLon) bsLon = localStorage.getItem('wealth_baseLon') || "";
+
+      if (bDate) setBirthDate(bDate);
+      if (bLat) setBirthLat(bLat);
+      if (bLon) setBirthLon(bLon);
+      if (bsLat) setBaseLat(bsLat);
+      if (bsLon) setBaseLon(bsLon);
 
       fetchData({
-        birthDate: savedBirthDate,
-        birthLat: savedBirthLat,
-        birthLon: savedBirthLon,
-        baseLat: savedBaseLat,
-        baseLon: savedBaseLon
+        birthDate: bDate,
+        birthLat: bLat,
+        birthLon: bLon,
+        baseLat: bsLat,
+        baseLon: bsLon
       });
     } else {
       fetchData();
@@ -247,7 +281,7 @@ export default function RegionalWealthPage() {
       setBirthLon(preset.birthLon);
       setEngineType(preset.engineType);
       setLayerMode(preset.layerMode);
-      
+
       // Auto fetch with new preset params
       fetchData({
         targetDate: preset.targetDate,
@@ -305,17 +339,17 @@ export default function RegionalWealthPage() {
     if (filterName) {
       const terms = filterName.trim().split(/\s+/);
       const areaNameLower = d.areaName.toLowerCase();
-      
+
       for (const term of terms) {
         if (!term) continue;
-        
+
         const isExclude = term.startsWith('-') || term.startsWith('!');
         const actualTerm = isExclude ? term.substring(1).toLowerCase() : term.toLowerCase();
-        
+
         if (!actualTerm) continue;
 
         const contains = areaNameLower.includes(actualTerm);
-        
+
         if (isExclude && contains) {
           return false; // Failed exclusion
         }
@@ -369,7 +403,7 @@ export default function RegionalWealthPage() {
     else if (sortBy === 'cospa') result = (b.cospaIndex || 0) - (a.cospaIndex || 0);
     else if (sortBy === 'distance') result = (a.distanceKm || 0) - (b.distanceKm || 0);
     else result = b.incomePerCapita - a.incomePerCapita;
-    
+
     return sortOrder === 'desc' ? result : -result;
   });
 
@@ -402,8 +436,8 @@ export default function RegionalWealthPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link 
-              href="/dashboard" 
+            <Link
+              href="/dashboard"
               className="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm transition-all"
             >
               <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -411,10 +445,10 @@ export default function RegionalWealthPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                 <Compass className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-                吉方位 × 裕福度 分析ダッシュボード
+                吉方位 × エリア経済力 分析ダッシュボード
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
-                天体物理モデル（磁北偏角補正対応）と一人あたり所得・地価データを掛け合わせ、最適な引越し先・拠点を探します。
+                天体物理モデル（磁北偏角補正対応）と一人あたり所得・地価データを掛け合わせ、最適な引越し先やビジネス拠点を探します。
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
@@ -432,7 +466,7 @@ export default function RegionalWealthPage() {
 
         {/* Controls Section */}
         <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-5">
-          
+
           {/* Presets Row */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
             <div className="flex flex-wrap items-center gap-2">
@@ -479,18 +513,18 @@ export default function RegionalWealthPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">目標日 (Target Date)</label>
-              <input 
-                type="date" 
-                value={targetDate} 
+              <input
+                type="date"
+                value={targetDate}
                 onChange={e => { setTargetDate(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">生年月日 (Natal)</label>
-              <input 
-                type="datetime-local" 
-                value={birthDate} 
+              <input
+                type="datetime-local"
+                value={birthDate}
                 onChange={e => { setBirthDate(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 title="出生時間が不明な場合は 12:00 等を入力してください"
@@ -498,8 +532,8 @@ export default function RegionalWealthPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">エンジン (Engine)</label>
-              <select 
-                value={engineType} 
+              <select
+                value={engineType}
                 onChange={e => { setEngineType(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
@@ -509,8 +543,8 @@ export default function RegionalWealthPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">レイヤー (Layer)</label>
-              <select 
-                value={layerMode} 
+              <select
+                value={layerMode}
                 onChange={e => { setLayerMode(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
@@ -522,8 +556,8 @@ export default function RegionalWealthPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">基準方位 (North)</label>
-              <select 
-                value={useTrueNorth ? "true" : "false"} 
+              <select
+                value={useTrueNorth ? "true" : "false"}
                 onChange={e => { setUseTrueNorth(e.target.value === "true"); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
@@ -535,63 +569,103 @@ export default function RegionalWealthPage() {
 
           {/* Bottom Row: Coordinates & Action */}
           <div className="flex flex-col md:flex-row gap-4 justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex flex-wrap gap-4 md:gap-8 items-end w-full md:w-auto">
-               {/* Birth Coordinates */}
-               <div className="flex flex-col gap-1">
-                 <label className="block text-xs font-semibold text-indigo-500 uppercase flex items-center gap-1">
-                   <Compass className="w-3 h-3" /> 出生地 (Birth Geo)
-                 </label>
-                 <div className="flex gap-2">
-                   <input 
-                     type="number" 
-                     value={birthLat || ""} 
-                     onChange={e => { setBirthLat(e.target.value); setSelectedPresetId(""); }}
-                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                     placeholder="Lat: 35.6"
-                   />
-                   <input 
-                     type="number" 
-                     value={birthLon || ""} 
-                     onChange={e => { setBirthLon(e.target.value); setSelectedPresetId(""); }}
-                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                     placeholder="Lon: 139.6"
-                   />
-                 </div>
-               </div>
+            <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-end w-full md:w-auto">
+              {/* Birth Coordinates */}
+              <div className="flex flex-col gap-1 w-full md:w-auto">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-indigo-500 uppercase flex items-center gap-1">
+                    <Compass className="w-3 h-3" /> 出生地 (Birth Geo)
+                  </label>
+                  <button
+                    onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                  >
+                    {showBirthMapPicker ? 'CLOSE MAP' : 'MAP SEARCH'}
+                  </button>
+                </div>
+                {showBirthMapPicker && (
+                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-gray-700">
+                    <LocationPickerInner
+                      initialLat={Number(birthLat) || 35.6895}
+                      initialLon={Number(birthLon) || 139.6917}
+                      onSelect={(newLat: number, newLon: number) => {
+                        setBirthLat(newLat.toFixed(5));
+                        setBirthLon(newLon.toFixed(5));
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={birthLat || ""}
+                    onChange={e => { setBirthLat(e.target.value); setSelectedPresetId(""); }}
+                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Lat: 35.6"
+                  />
+                  <input
+                    type="number"
+                    value={birthLon || ""}
+                    onChange={e => { setBirthLon(e.target.value); setSelectedPresetId(""); }}
+                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    placeholder="Lon: 139.6"
+                  />
+                </div>
+              </div>
 
-               {/* Base Coordinates */}
-               <div className="flex flex-col gap-1">
-                 <label className="block text-xs font-semibold text-emerald-500 uppercase flex items-center gap-1">
-                   <MapPin className="w-3 h-3" /> 基準地 (Base Geo)
-                 </label>
-                 <div className="flex gap-2">
-                   <input 
-                     type="number" 
-                     value={baseLat} 
-                     onChange={e => { setBaseLat(e.target.value); setSelectedPresetId(""); }}
-                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                     placeholder="Lat"
-                   />
-                   <input 
-                     type="number"
-                     value={baseLon} 
-                     onChange={e => { setBaseLon(e.target.value); setSelectedPresetId(""); }}
-                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                     placeholder="Lon"
-                   />
-                   <button
-                     onClick={() => { handleGetGPS(); setSelectedPresetId(""); }}
-                     title="現在地をGPSで取得"
-                     className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors shrink-0"
-                   >
-                     <LocateFixed className="w-4 h-4" />
-                   </button>
-                 </div>
-               </div>
+              {/* Base Coordinates */}
+              <div className="flex flex-col gap-1 w-full md:w-auto">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-emerald-500 uppercase flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> 基準地 (Base Geo)
+                  </label>
+                  <button
+                    onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                  >
+                    {showBaseMapPicker ? 'CLOSE MAP' : 'MAP SEARCH'}
+                  </button>
+                </div>
+                {showBaseMapPicker && (
+                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-gray-700">
+                    <LocationPickerInner
+                      initialLat={Number(baseLat) || 35.6895}
+                      initialLon={Number(baseLon) || 139.6917}
+                      onSelect={(newLat: number, newLon: number) => {
+                        setBaseLat(newLat.toFixed(5));
+                        setBaseLon(newLon.toFixed(5));
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    value={baseLat}
+                    onChange={e => { setBaseLat(e.target.value); setSelectedPresetId(""); }}
+                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    placeholder="Lat"
+                  />
+                  <input
+                    type="number"
+                    value={baseLon}
+                    onChange={e => { setBaseLon(e.target.value); setSelectedPresetId(""); }}
+                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    placeholder="Lon"
+                  />
+                  <button
+                    onClick={() => { handleGetGPS(); setSelectedPresetId(""); }}
+                    title="現在地をGPSで取得"
+                    className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors shrink-0"
+                  >
+                    <LocateFixed className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Submit Button */}
-            <button 
+            <button
               onClick={() => fetchData()}
               disabled={loading}
               className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-8 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 h-10 shrink-0 shadow-md shadow-indigo-500/20"
@@ -623,13 +697,13 @@ export default function RegionalWealthPage() {
             <div className="flex-1 relative rounded-b-2xl overflow-hidden p-2">
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
-                   <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
               ) : null}
-              <WealthMap 
-                data={data} 
-                baseLat={metadata?.baseLat} 
-                baseLon={metadata?.baseLon} 
+              <WealthMap
+                data={data}
+                baseLat={metadata?.baseLat}
+                baseLon={metadata?.baseLon}
                 useTrueNorth={useTrueNorth}
               />
             </div>
@@ -639,16 +713,16 @@ export default function RegionalWealthPage() {
           <div className="w-full lg:w-1/3 flex flex-col gap-6 lg:h-full lg:overflow-y-auto">
             {/* Top Recommended */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-6 border border-gray-200 dark:border-gray-800">
-               <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
-                 <ArrowRight className="w-5 h-5 text-emerald-500" />
-                 最強の引越し先 候補
-               </h2>
-               <div className="space-y-4">
-                 {safeData.filter(d => d.astrologyStatus === 'OPTIMAL' || d.astrologyStatus === 'SAFE')
-                          .sort((a,b) => b.incomePerCapita - a.incomePerCapita)
-                          .slice(0, 5)
-                          .map((item, i) => (
-                   <div key={item.id} className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
+              <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                <ArrowRight className="w-5 h-5 text-emerald-500" />
+                最強の引越し先 候補
+              </h2>
+              <div className="space-y-4">
+                {safeData.filter(d => d.astrologyStatus === 'OPTIMAL' || d.astrologyStatus === 'SAFE')
+                  .sort((a, b) => b.incomePerCapita - a.incomePerCapita)
+                  .slice(0, 5)
+                  .map((item, i) => (
+                    <div key={item.id} className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800">
                       <div>
                         <div className="font-bold text-gray-900 dark:text-gray-100">{item.areaName}</div>
                         <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
@@ -657,14 +731,14 @@ export default function RegionalWealthPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{Math.round(item.incomePerCapita/10000)}万円</div>
+                        <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">{Math.round(item.incomePerCapita / 10000)}万円</div>
                       </div>
-                   </div>
-                 ))}
-                 {safeData.length === 0 && !loading && (
-                   <div className="text-sm text-gray-500 text-center py-4">条件に合う安全な方位が見つかりませんでした</div>
-                 )}
-               </div>
+                    </div>
+                  ))}
+                {safeData.length === 0 && !loading && (
+                  <div className="text-sm text-gray-500 text-center py-4">条件に合う安全な方位が見つかりませんでした</div>
+                )}
+              </div>
             </div>
 
             {/* Scatter Chart Section */}
@@ -677,22 +751,22 @@ export default function RegionalWealthPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis 
-                      type="number" 
-                      dataKey="astrologyScore" 
-                      name="方位スコア" 
-                      domain={[0, 100]} 
+                    <XAxis
+                      type="number"
+                      dataKey="astrologyScore"
+                      name="方位スコア"
+                      domain={[0, 100]}
                       tick={{ fill: '#6B7280', fontSize: 10 }}
                     />
-                    <YAxis 
-                      type="number" 
-                      dataKey="income" 
-                      name="所得" 
+                    <YAxis
+                      type="number"
+                      dataKey="income"
+                      name="所得"
                       tick={{ fill: '#6B7280', fontSize: 10 }}
                       tickFormatter={(value) => `${value}万`}
                       width={40}
                     />
-                    <Tooltip 
+                    <Tooltip
                       cursor={{ strokeDasharray: '3 3' }}
                       contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3)', backgroundColor: '#1f2937', color: '#f3f4f6' }}
                       formatter={(value, name) => {
@@ -710,29 +784,29 @@ export default function RegionalWealthPage() {
             {/* Data Source Information Card */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 border border-gray-200 dark:border-gray-800 shrink-0">
               <h2 className="text-sm font-semibold flex items-center gap-2 mb-3 text-gray-900 dark:text-gray-100">
-                <svg className="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                <svg className="w-4 h-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg>
                 データインテリジェンス基盤
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
                 本システムは、占術モデルによる方位スコア（アストロカートグラフィ・九星気学）に加え、日本の最も信頼性が高い公的不動産データを統合し、各地域の「投資対効果（コスパ）」と「富裕度」をシミュレーションしています。
               </p>
-              
+
               <div className="space-y-3">
                 <a href="https://www.reinfolib.mlit.go.jp/" target="_blank" rel="noopener noreferrer" className="block group">
                   <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-gray-900 dark:text-gray-100">国土交通省 不動産情報ライブラリ</span>
-                      <svg className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                      <svg className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" x2="21" y1="14" y2="3" /></svg>
                     </div>
                     <p className="text-[10px] text-gray-500 leading-tight">620万件超の不動産取引データ、地価公示情報をベースにした公式統計値を用いています。</p>
                   </div>
                 </a>
-                
+
                 <a href="https://fudosandb.jp" target="_blank" rel="noopener noreferrer" className="block group">
                   <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-bold text-gray-900 dark:text-gray-100">FUDOSAN DB</span>
-                      <svg className="w-3 h-3 text-gray-400 group-hover:text-purple-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                      <svg className="w-3 h-3 text-gray-400 group-hover:text-purple-500 transition-colors" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" x2="21" y1="14" y2="3" /></svg>
                     </div>
                     <p className="text-[10px] text-gray-500 leading-tight">AIによる構造化・賃料推定が可能な商用DBの概念を応用し、「コスパ指数（所得/地価）」を導出しています。</p>
                   </div>
@@ -751,7 +825,7 @@ export default function RegionalWealthPage() {
                 詳細データ （安全方位のみ: 全 {sortedTableData.length} 件）
               </h2>
               <div className="flex gap-2 flex-wrap items-center">
-                <button 
+                <button
                   onClick={handleExportCSV}
                   className="px-3 py-1 text-xs rounded-full font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
                   title="現在の検索条件でCSVダウンロード"
@@ -761,36 +835,36 @@ export default function RegionalWealthPage() {
                 </button>
               </div>
             </div>
-            
+
             {/* Filter Row */}
             <div className="flex flex-wrap gap-4 items-center pt-2">
-               <div className="relative">
-                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                   <Search className="h-4 w-4 text-gray-400" />
-                 </div>
-                 <input
-                   type="text"
-                   placeholder="エリア名で絞り込み..."
-                   value={filterName}
-                   onChange={handleFilterNameChange}
-                   className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-64"
-                 />
-               </div>
-               <div className="flex items-center gap-2">
-                 <Filter className="h-4 w-4 text-gray-400" />
-                 <select
-                   value={filterStatus}
-                   onChange={handleFilterStatusChange}
-                   className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                 >
-                   <option value="ALL">すべてのステータス</option>
-                   <option value="OPTIMAL">OPTIMAL (大吉)</option>
-                   <option value="SAFE">SAFE (吉)</option>
-                   <option value="NOISE">NOISE (凶・無効)</option>
-                   <option value="JUPITER">JUPITER (木星ボーナス)</option>
-                   <option value="VENUS">VENUS (金星ボーナス)</option>
-                 </select>
-               </div>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  placeholder="エリア名で絞り込み..."
+                  value={filterName}
+                  onChange={handleFilterNameChange}
+                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-64"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-gray-400" />
+                <select
+                  value={filterStatus}
+                  onChange={handleFilterStatusChange}
+                  className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="ALL">すべてのステータス</option>
+                  <option value="OPTIMAL">OPTIMAL (大吉)</option>
+                  <option value="SAFE">SAFE (吉)</option>
+                  <option value="NOISE">NOISE (凶・無効)</option>
+                  <option value="JUPITER">JUPITER (木星ボーナス)</option>
+                  <option value="VENUS">VENUS (金星ボーナス)</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -824,7 +898,7 @@ export default function RegionalWealthPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                 {currentTableData.map((item) => (
-                  <tr 
+                  <tr
                     key={item.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
@@ -832,27 +906,26 @@ export default function RegionalWealthPage() {
                       {item.areaName}
                     </td>
                     <td className="px-6 py-4">
-                       <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-gray-500">
-                              {item.direction !== item.magneticDirection ? (
-                                <span title={`真北: ${item.direction} / 磁北: ${item.magneticDirection}`}>
-                                  {item.direction} <span className="text-amber-500 text-xs">({item.magneticDirection})</span>
-                                </span>
-                              ) : (
-                                item.direction
-                              )}
-                            </span>
-                            <span className="text-xs uppercase tracking-wider text-gray-400">{item.astrologyStatus.replace('DECLINATION_WARNING', '⚠️ズレ')}</span>
-                          </div>
-                       </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-gray-500">
+                            {item.direction !== item.magneticDirection ? (
+                              <span title={`真北: ${item.direction} / 磁北: ${item.magneticDirection}`}>
+                                {item.direction} <span className="text-amber-500 text-xs">({item.magneticDirection})</span>
+                              </span>
+                            ) : (
+                              item.direction
+                            )}
+                          </span>
+                          <span className="text-xs uppercase tracking-wider text-gray-400">{item.astrologyStatus.replace('DECLINATION_WARNING', '⚠️ズレ')}</span>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        item.astrologyScore >= 80 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-                        item.astrologyScore >= 60 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
-                        'bg-gray-500/10 text-gray-600 dark:text-gray-400'
-                      }`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${item.astrologyScore >= 80 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
+                          item.astrologyScore >= 60 ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' :
+                            'bg-gray-500/10 text-gray-600 dark:text-gray-400'
+                        }`}>
                         {item.astrologyScore}
                       </span>
                     </td>
@@ -895,8 +968,8 @@ export default function RegionalWealthPage() {
           {totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                全 <span className="font-medium text-gray-900 dark:text-gray-100">{sortedTableData.length}</span> 件中 
-                <span className="font-medium text-gray-900 dark:text-gray-100 ml-2">{(currentPage - 1) * itemsPerPage + 1}</span> - 
+                全 <span className="font-medium text-gray-900 dark:text-gray-100">{sortedTableData.length}</span> 件中
+                <span className="font-medium text-gray-900 dark:text-gray-100 ml-2">{(currentPage - 1) * itemsPerPage + 1}</span> -
                 <span className="font-medium text-gray-900 dark:text-gray-100 ml-1">{Math.min(currentPage * itemsPerPage, sortedTableData.length)}</span> 件を表示
               </div>
               <div className="flex gap-2">
