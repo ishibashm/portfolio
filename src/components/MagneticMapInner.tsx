@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, useMap, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, CircleMarker, useMap, Tooltip } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -31,6 +31,7 @@ interface MapInnerProps {
   hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean };
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
   useTrueNorth?: boolean;
+  properties?: any[];
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -371,7 +372,7 @@ export default function MagneticMapInner({
         ))}
 
         {/* Real Estate Properties */}
-        {properties?.map(prop => (
+        {properties?.map((prop: any) => (
           prop.lat && prop.lon ? (
              <CircleMarker 
                key={prop.id || prop.url}

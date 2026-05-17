@@ -780,7 +780,7 @@ export const SolarTimeClock = () => {
   else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
 
   const targetDirInfo = getTargetDirectionInfo();
-  let targetVectorStatus = null;
+  let targetVectorStatus: string | null = null;
   
   if (targetDirInfo && activeVectors) {
     targetVectorStatus = activeVectors[targetDirInfo.magneticDirection as Direction];
@@ -1959,7 +1959,7 @@ export const SolarTimeClock = () => {
                 toggleLayer={(layer: 'terrain' | 'weather' | 'bio' | 'hazard') => setHudLayers(prev => ({ ...prev, [layer]: !prev[layer] }))}
                 activeLayerMode={activeLayerMode}
                 setActiveLayerMode={setActiveLayerMode}
-                properties={showOnlyNewBuild ? mapProperties.filter(p => p.is_new_build) : mapProperties}
+                properties={showOnlyNewBuild ? mapProperties.filter((p: any) => p.is_new_build) : mapProperties}
               />
             </div>
 

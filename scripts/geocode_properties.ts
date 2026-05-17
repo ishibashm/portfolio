@@ -3,15 +3,24 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { normalize } from '@geolonia/normalize-japanese-addresses';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
-dotenv.config();
+const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
+  ? path.resolve(process.cwd(), '.env')
+  : path.resolve(process.cwd(), '../.env');
+dotenv.config({ path: envPath });
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set. Please ensure your .env file exists and contains DATABASE_URL.");
+}
 
 async function geocodeAddress(address: string): Promise<{ lat: number, lon: number } | null> {
   try {
     // 住所の正規化とジオコーディングを同時に行う（API通信なしでローカル辞書ベースで高速・高精度に処理されます）
     // 例: "東京都港区新橋６丁目1-2 マンション名" -> "東京都", "港区", "新橋六丁目" を抽出し、丁目の中心座標を返します
     const result = await normalize(address);
-    
+
     // レベル3（町名・丁目）以上の精度で座標が取得できた場合のみ採用
     if (result.point && result.point.lat && result.point.lng) {
       return {
@@ -28,7 +37,7 @@ async function geocodeAddress(address: string): Promise<{ lat: number, lon: numb
 }
 
 async function main() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter } as any);
 
@@ -75,9 +84,9 @@ async function main() {
         console.log(`❌ [Failed] Could not find coordinates for: ${prop.address}`);
         failCount++;
       }
-      
+
       // Geoloniaの正規化はAPIリクエストを伴わないため、待機時間は最小限でOKです
-      await new Promise(res => setTimeout(res, 50)); 
+      await new Promise(res => setTimeout(res, 50));
     }
 
     console.log(`\n======================================================`);
@@ -90,6 +99,7 @@ async function main() {
     console.error('Fatal error during geocoding:', e);
   } finally {
     await prisma.$disconnect();
+    await pool.end();
   }
 }
 

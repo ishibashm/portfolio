@@ -33,7 +33,7 @@ export default function CeremonialSamplePage() {
 
         {/* The Logic Component */}
         <WeddingDateSelector />
-        <TenchusatsuVisualizer />
+        <TenchusatsuVisualizer birthDateStr="1990-01-01" />
 
         {/* Technical Explanation Section */}
         <div className="bg-white shadow overflow-hidden sm:rounded-lg mt-12 max-w-4xl mx-auto">

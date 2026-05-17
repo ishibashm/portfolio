@@ -1,13 +1,25 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as dotenv from "dotenv";
 
-dotenv.config();
-dotenv.config({ path: '.env.local' });
+const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
+  ? path.resolve(process.cwd(), '.env')
+  : path.resolve(process.cwd(), '../.env');
+dotenv.config({ path: envPath });
+const localEnvPath = envPath + '.local';
+if (fs.existsSync(localEnvPath)) {
+  dotenv.config({ path: localEnvPath, override: true });
+}
 
 import { PrismaClient } from "@prisma/client";
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not set. Please ensure your .env file exists and contains DATABASE_URL.");
+}
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
@@ -60,7 +72,7 @@ async function main() {
             "Accept": "*/*"
           }
         });
-        
+
         if (res.status === 404) {
           // タイルにデータがない場合
           geojsonData = { features: [] };
@@ -119,7 +131,7 @@ async function main() {
     } else {
       console.log(`No land price points found for ${m.areaName} in tile ${tileKey}.`);
     }
-    
+
     // 定期的な進捗報告
     if ((i + 1) % 100 === 0) {
       console.log(`Progress: ${i + 1} / ${municipalities.length} ...`);
@@ -136,4 +148,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

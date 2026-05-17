@@ -105,3 +105,20 @@ scratch/
 # Ignore generated CSVs
 docs/*.csv
 
+# Python / Scraper
+__pycache__/
+venv/
+.venv/
+scraper_state.json
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Generated reports and exports
+docs/*.json
+docs/*.html
+*export*.json
+nifty_*.html
+*_properties.json

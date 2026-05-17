@@ -5,3 +5,15 @@ npm-debug.log
 README.md
 .next
 .git
+.env
+.env.*
+scraper_state.json
+
+# Python
+__pycache__
+venv
+.venv
+
+# Playwright
+playwright-report
+test-results
