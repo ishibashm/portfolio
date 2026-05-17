@@ -1207,6 +1207,7 @@ export const SolarTimeClock = () => {
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
                 timingScore={timingOptimization?.score}
+                timingScore={(timingOptimization as any)?.score}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
               />
