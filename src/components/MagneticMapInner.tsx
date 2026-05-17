@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, CircleMarker, useMap, Tooltip } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, Circle, CircleMarker, useMap, Tooltip, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
@@ -45,7 +45,7 @@ function getDestination(lat: number, lon: number, bearing: number, distanceKm: n
     Math.sin(lat1) * Math.cos(distanceKm / R) +
     Math.cos(lat1) * Math.sin(distanceKm / R) * Math.cos(brng)
   );
-  
+
   const lon2 = lon1 + Math.atan2(
     Math.sin(brng) * Math.sin(distanceKm / R) * Math.cos(lat1),
     Math.cos(distanceKm / R) - Math.sin(lat1) * Math.sin(lat2)
@@ -63,23 +63,33 @@ function SyncMapCenter({ lat, lon }: { lat: number, lon: number }) {
   return null;
 }
 
-export default function MagneticMapInner({ 
-  lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0, 
+function ClickEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
+export default function MagneticMapInner({
+  lat, lon, declination, intensity = 50000, vectors, layers, honmeiStar, kpIndex, ansLoad = 0,
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   activeLayerMode = 'final',
   useTrueNorth = false,
   properties = []
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
+  const [clickedPos, setClickedPos] = React.useState<[number, number] | null>(null);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
-  
+
   // Calculate bearings based on TRUE NORTH (0) + Magnetic Declination
   const magNorthBearing = React.useMemo(() => useTrueNorth ? 0 : declination, [declination, useTrueNorth]);
-  
+
   // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
     const dirMap = [
@@ -141,7 +151,7 @@ export default function MagneticMapInner({
       const hasTerrainNoise = d.status === 'NOISE';
       const hasBioNoise = d.status.includes('HONMEI') || d.status.includes('TEKI');
       const hasWeatherNoise = d.status.includes('NOISE') && !hasBioNoise && !hasTerrainNoise;
-      
+
       // Filter logic: If a layer is OFF, ignore its noise contribution for the VISUAL display
       let displayStatus = 'SAFE';
 
@@ -157,7 +167,7 @@ export default function MagneticMapInner({
 
       const { color, opacity, weight, dashArray } = getStyleForVector(displayStatus);
       const baseBearing = magNorthBearing + d.deg;
-      
+
       const points: [number, number][] = [center];
       for (let offset = -15; offset <= 15; offset += 5) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
@@ -201,10 +211,10 @@ export default function MagneticMapInner({
 
       return (
         <React.Fragment key={`sector-group-${d.dir}-${activeLayerMode}`}>
-          <Polygon 
-            positions={points} 
-            color={color} 
-            fillColor={color} 
+          <Polygon
+            positions={points}
+            color={color}
+            fillColor={color}
             fillOpacity={opacity}
             weight={weight}
             dashArray={dashArray}
@@ -231,13 +241,13 @@ export default function MagneticMapInner({
                   </div>
                   <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
-                       <span className="text-zinc-400">STATUS: </span>
-                       <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('ef4444') || color.includes('f43f5e') ? 'text-red-500' : color.includes('d946ef') || color.includes('c026d3') ? 'text-[#d946ef]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
-                         {d.status}
-                       </span>
+                      <span className="text-zinc-400">STATUS: </span>
+                      <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('ef4444') || color.includes('f43f5e') ? 'text-red-500' : color.includes('d946ef') || color.includes('c026d3') ? 'text-[#d946ef]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
+                        {d.status}
+                      </span>
                     </div>
                     <div className="text-zinc-300 font-bold bg-zinc-900/50 p-1 border-l-2 border-zinc-600 mt-1">
-                       {getActionSuggest(d.status)}
+                      {getActionSuggest(d.status)}
                     </div>
                   </div>
                 </div>
@@ -245,8 +255,8 @@ export default function MagneticMapInner({
             </Tooltip>
           </Polygon>
           {label && (
-            <Marker 
-              position={labelPos} 
+            <Marker
+              position={labelPos}
               icon={L.divIcon({
                 className: 'custom-div-icon',
                 html: `<div style="color: ${color}; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 11px; white-space: nowrap;">${label}</div>`,
@@ -273,7 +283,7 @@ export default function MagneticMapInner({
           key={`danger-${idx}`}
           positions={points}
           color="#ef4444"
-          fillColor="#ef4444" 
+          fillColor="#ef4444"
           fillOpacity={0.4}
           weight={0}
         />
@@ -284,23 +294,23 @@ export default function MagneticMapInner({
   // 4. Mock Hazard Layer (Phase 2 GIS Integration)
   const hazardLayer = React.useMemo(() => {
     if (!hudLayers.hazard) return null;
-    
+
     // Create some mock hazard zones (e.g., fault lines, flood zones) around the center
     return (
       <React.Fragment>
         {/* Mock Fault Line */}
-        <Polyline 
-           positions={[
-             getDestination(lat, lon, 45, 100),
-             getDestination(lat, lon, 225, 100)
-           ]} 
-           color="#ef4444" 
-           weight={2} 
-           dashArray="5,5" 
-           opacity={0.6}
+        <Polyline
+          positions={[
+            getDestination(lat, lon, 45, 100),
+            getDestination(lat, lon, 225, 100)
+          ]}
+          color="#ef4444"
+          weight={2}
+          dashArray="5,5"
+          opacity={0.6}
         />
-        <Marker 
-          position={getDestination(lat, lon, 45, 100)} 
+        <Marker
+          position={getDestination(lat, lon, 45, 100)}
           icon={L.divIcon({
             className: 'custom-div-icon',
             html: `<div style="color: #ef4444; background: rgba(0,0,0,0.5); padding: 2px; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 9px;">[HZD] Fault Line</div>`,
@@ -326,15 +336,24 @@ export default function MagneticMapInner({
 
   return (
     <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80">
-        <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
-            <SyncMapCenter lat={lat} lon={lon} />
-            <TileLayer
+      <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
+        <SyncMapCenter lat={lat} lon={lon} />
+        <ClickEvents onMapClick={(lat, lng) => setClickedPos([lat, lng])} />
+        <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
         />
-        
+
+        {clickedPos && (
+          <Marker position={clickedPos}>
+            <Tooltip permanent direction="top" offset={[0, -10]}>
+              <div className="font-mono text-[10px] text-zinc-800 font-bold">Selected Target</div>
+            </Tooltip>
+          </Marker>
+        )}
+
         <Marker position={center} />
-        
+
         {/* Draw Dynamic Sectors (Stars/Vectors) */}
         {vectorLayer}
 
@@ -345,59 +364,59 @@ export default function MagneticMapInner({
         {hazardLayer}
 
         {/* Draw True North Line (Geographic) */}
-        <Polyline 
-           positions={[center, getDestination(lat, lon, 0, 1000)]} 
-           color="#10b981" 
-           weight={3} 
-           dashArray="8,8" 
-           opacity={0.9}
+        <Polyline
+          positions={[center, getDestination(lat, lon, 0, 1000)]}
+          color="#10b981"
+          weight={3}
+          dashArray="8,8"
+          opacity={0.9}
         />
 
         {/* Draw Magnetic North Line */}
-        <Polyline 
-          positions={[center, getDestination(lat, lon, magNorthBearing, 1000)]} 
-          color="#3b82f6" 
-          weight={3} 
+        <Polyline
+          positions={[center, getDestination(lat, lon, magNorthBearing, 1000)]}
+          color="#3b82f6"
+          weight={3}
           opacity={0.9}
         />
 
         {/* Concentric Distance Rings for Attenuation */}
         {attenuationRings.map((radiusMeters, i) => (
-           <Circle 
-             key={`ring-${radiusMeters}`}
-             center={center}
-             radius={radiusMeters}
-             pathOptions={{ color: '#71717a', weight: 1, dashArray: '2,10', fill: false, opacity: 0.3 - (i * 0.05) }}
-           />
+          <Circle
+            key={`ring-${radiusMeters}`}
+            center={center}
+            radius={radiusMeters}
+            pathOptions={{ color: '#71717a', weight: 1, dashArray: '2,10', fill: false, opacity: 0.3 - (i * 0.05) }}
+          />
         ))}
 
         {/* Real Estate Properties */}
         {properties?.map((prop: any) => (
           prop.lat && prop.lon ? (
-             <CircleMarker 
-               key={prop.id || prop.url}
-               center={[prop.lat, prop.lon]}
-               radius={prop.is_new_build ? 5 : 3}
-               pathOptions={{ 
-                 color: prop.is_new_build ? '#10b981' : '#3b82f6', 
-                 fillColor: prop.is_new_build ? '#10b981' : '#3b82f6', 
-                 fillOpacity: 0.8,
-                 weight: 1
-               }}
-             >
-               <Tooltip>
-                 <div className="font-mono text-xs text-zinc-800 p-1">
-                   <div className="font-bold">{prop.property_name}</div>
-                   {prop.is_new_build && <div className="text-emerald-600 font-bold">[新築]</div>}
-                   <div>家賃: {prop.rent ? `${(prop.rent / 10000).toFixed(1)}万円` : '不明'}</div>
-                   <div>{prop.address}</div>
-                 </div>
-               </Tooltip>
-             </CircleMarker>
+            <CircleMarker
+              key={prop.id || prop.url}
+              center={[prop.lat, prop.lon]}
+              radius={prop.is_new_build ? 5 : 3}
+              pathOptions={{
+                color: prop.is_new_build ? '#10b981' : '#3b82f6',
+                fillColor: prop.is_new_build ? '#10b981' : '#3b82f6',
+                fillOpacity: 0.8,
+                weight: 1
+              }}
+            >
+              <Tooltip>
+                <div className="font-mono text-xs text-zinc-800 p-1">
+                  <div className="font-bold">{prop.property_name}</div>
+                  {prop.is_new_build && <div className="text-emerald-600 font-bold">[新築]</div>}
+                  <div>家賃: {prop.rent ? `${(prop.rent / 10000).toFixed(1)}万円` : '不明'}</div>
+                  <div>{prop.address}</div>
+                </div>
+              </Tooltip>
+            </CircleMarker>
           ) : null
         ))}
       </MapContainer>
-      
+
       {/* UI Overlay */}
       <div className="absolute top-16 right-4 z-[1000] pointer-events-none">
         <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-blue-500/30 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
@@ -417,14 +436,14 @@ export default function MagneticMapInner({
           </div>
         </div>
       </div>
-      
+
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
         <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-zinc-800 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
           <div className="text-zinc-500 font-mono uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between gap-4">
             <span>Legend</span>
             <span className="text-emerald-500">[{activeLayerMode.toUpperCase()}]</span>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
@@ -447,11 +466,11 @@ export default function MagneticMapInner({
               <span className="text-zinc-300">特異点 (Void)</span>
             </div>
             <div className="flex items-center gap-1.5">
-               <div className="w-3 border-t border-dashed border-zinc-500"></div>
-               <span className="text-zinc-500">距離リング</span>
+              <div className="w-3 border-t border-dashed border-zinc-500"></div>
+              <span className="text-zinc-500">距離リング</span>
             </div>
           </div>
-          
+
           {honmeiStar && (
             <div className="text-[8px] text-[#a855f7] border-t border-zinc-900 pt-1 mt-1 font-mono">
               HARDWARE SYNC: {honmeiStar.physical}
@@ -459,6 +478,38 @@ export default function MagneticMapInner({
           )}
         </div>
       </div>
+
+      {/* UI Overlay - Clicked Position */}
+      {clickedPos && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
+          <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-emerald-500/50 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
+            <div className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between gap-4">
+              <span>Target Coordinates</span>
+              <button
+                onClick={() => setClickedPos(null)}
+                className="text-zinc-500 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col text-[10px] font-mono text-zinc-300">
+                <span>Lat: {clickedPos[0].toFixed(5)}</span>
+                <span>Lon: {clickedPos[1].toFixed(5)}</span>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`);
+                  alert(`座標をコピーしました: ${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`);
+                }}
+                className="bg-emerald-900/40 text-emerald-400 border border-emerald-500/50 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
+              >
+                📋 COPY
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

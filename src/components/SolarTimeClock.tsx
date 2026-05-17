@@ -83,9 +83,13 @@ export const SolarTimeClock = () => {
 
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playSpeedDays, setPlaySpeedDays] = useState(1);
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
 
+  const [heatmapMode, setHeatmapMode] = useState<'none' | '30days' | '12months'>('none');
+  const [heatmapData, setHeatmapData] = useState<any[]>([]);
 
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
@@ -114,13 +118,15 @@ export const SolarTimeClock = () => {
 
   const fetchNBAData = async () => {
     try {
+      const targetDateStr = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toISOString() : new Date().toISOString();
       const payload = {
         ansLoad,
         shieldCapacity,
         hrv,
         gsr,
         birthDate,
-        lon
+        lon,
+        targetDate: targetDateStr
       };
       const res = await fetch("/api/nba", {
         method: 'POST',
@@ -147,7 +153,17 @@ export const SolarTimeClock = () => {
       fetchNBAData();
     }, 1000); // 1s debounce
     return () => clearTimeout(timer);
-  }, [ansLoad, shieldCapacity, birthDate, lon]);
+  }, [ansLoad, shieldCapacity, birthDate, lon, timeOffsetDays, baseTime]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setTimeOffsetDays((prev) => prev + playSpeedDays);
+      }, 500); // 0.5s per tick
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, playSpeedDays]);
 
   const loadFromLocal = async () => {
     let isLoaded = false
@@ -470,6 +486,73 @@ export const SolarTimeClock = () => {
     return { board: dB, layers: vectorData, physicalLayers: physicalVectorData, classicalLayers: classicalVectorData, physicalYearBoard: pyB, physicalMonthBoard: pmB, physicalDayBoard: pdB, classicalYearBoard: cyB, classicalMonthBoard: cmB, classicalDayBoard: cdB };
   }, [honmeiStar, env, birthDate, actionIntent, voidZodiacOverride, useClassicalBoard]);
 
+  useEffect(() => {
+    if (heatmapMode === 'none' || !baseTime || !honmeiStar || !env) return;
+
+    const data = [];
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+
+    if (heatmapMode === '30days') {
+      for (let i = 0; i < 30; i++) {
+        const testDate = new Date(baseTime.getTime() + (timeOffsetDays + i) * 86400000);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
+        const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
+        const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
+
+        const vectorData = calculateVectorCollision(
+          useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+          yB, mB, dB,
+          voidZodiacArray,
+          testEnv.raw.lunarNode,
+          actionIntent
+        );
+        data.push({
+          label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
+          vectors: vectorData.finalVectors,
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac, getCurrentZodiac(testDate).dayZodiac].includes(z))
+        });
+      }
+    } else if (heatmapMode === '12months') {
+      for (let i = 0; i < 12; i++) {
+        const testDate = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
+        testDate.setMonth(testDate.getMonth() + i);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
+        const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
+
+        const vectorData = calculateVectorCollision(
+          useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+          yB, mB, yB,
+          voidZodiacArray,
+          testEnv.raw.lunarNode,
+          actionIntent
+        );
+
+        const mergedVectors: Record<string, string> = {};
+        for (const dir of dirs) {
+          const y = vectorData.yearLayer[dir] || 'SAFE';
+          const m = vectorData.monthLayer[dir] || 'SAFE';
+          if (y.startsWith('NOISE_GOU') || y.startsWith('NOISE_ANKEN') || m.startsWith('NOISE_GOU') || m.startsWith('NOISE_ANKEN')) {
+            mergedVectors[dir] = y.startsWith('NOISE_GOU') ? y : m.startsWith('NOISE_GOU') ? m : y.startsWith('NOISE_ANKEN') ? y : m;
+          } else if (y.startsWith('NOISE') || m.startsWith('NOISE')) {
+            mergedVectors[dir] = y.startsWith('NOISE') ? y : m;
+          } else {
+            mergedVectors[dir] = (y === 'OPTIMAL' || m === 'OPTIMAL') ? 'OPTIMAL' : 'SAFE';
+          }
+        }
+
+        data.push({
+          label: `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}`,
+          vectors: mergedVectors,
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac].includes(z))
+        });
+      }
+    }
+    setHeatmapData(data);
+  }, [heatmapMode, baseTime, timeOffsetDays, honmeiStar, actionIntent, useClassicalBoard, voidZodiacOverride, birthDate, env]);
+
   const exportMasterTelemetry = () => {
     const timestampStr = new Date().getTime();
     const header = [
@@ -693,22 +776,23 @@ export const SolarTimeClock = () => {
 
   useEffect(() => {
     if (lat && lon) {
-      getGeomagneticData(lat, lon, new Date().getTime()).then((data) =>
+      const targetTime = baseTime ? baseTime.getTime() + timeOffsetDays * 86400000 : new Date().getTime();
+      getGeomagneticData(lat, lon, targetTime).then((data) =>
         setGeoData(data),
       );
     }
-  }, [lat, lon]);
+  }, [lat, lon, baseTime, timeOffsetDays]);
 
   useEffect(() => {
     if (baseSyncTimestamp) {
       const arrivedDate = new Date(baseSyncTimestamp);
-      const now = new Date();
-      const diffTime = now.getTime() - arrivedDate.getTime();
+      const targetDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
+      const diffTime = targetDate.getTime() - arrivedDate.getTime();
       let diffDays = diffTime / (1000 * 3600 * 24);
       diffDays = Math.max(0, diffDays);
       setBaseSyncDays(Number(diffDays.toFixed(2)));
     }
-  }, [baseSyncTimestamp]);
+  }, [baseSyncTimestamp, baseTime, timeOffsetDays]);
 
   useEffect(() => {
     if (!baseTime) return;
@@ -720,7 +804,8 @@ export const SolarTimeClock = () => {
 
     const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
     const KNOWN_NEW_MOON = 947182440000;
-    const diffMs = baseTime.getTime() - KNOWN_NEW_MOON;
+    const targetDate = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
+    const diffMs = targetDate.getTime() - KNOWN_NEW_MOON;
     let phase = (diffMs % LUNAR_MONTH) / LUNAR_MONTH;
     if (phase < 0) phase += 1;
 
@@ -745,7 +830,7 @@ export const SolarTimeClock = () => {
 
     setShieldCapacity(metrics.shieldCapacity);
     setAnsLoad(metrics.ansLoad);
-  }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop]);
+  }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop, baseTime, timeOffsetDays]);
 
   useEffect(() => {
     if (!baseTime) return;
@@ -1075,11 +1160,12 @@ export const SolarTimeClock = () => {
               solarTime={solarData.solarTime}
               eot={solarData.equationOfTime}
               longOffset={solarData.longitudeCorrection}
+              targetDate={evalDate}
             />
 
             {/* Module 3: Temporal Filter Matrix */}
             <SolarTimeTable
-              date={baseTime}
+              date={evalDate}
               longitude={lon || 135.7681}
               latitude={lat}
               eot={solarData.equationOfTime}
@@ -1108,6 +1194,9 @@ export const SolarTimeClock = () => {
                 birthFrequencies={birthEnv}
                 finalVectors={layers?.finalVectors || {}}
                 isPersonalVoid={isPersonalVoid}
+                isYearVoid={isYearVoid}
+                isMonthVoid={isMonthVoid}
+                isDayVoid={isDayVoid}
                 kpIndex={spaceWeather?.kpIndex || null}
                 xrayFlux={spaceWeather?.xrayFlux || null}
                 magneticF={geoData?.intensity || null}
@@ -1117,6 +1206,7 @@ export const SolarTimeClock = () => {
                 gsr={gsr}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
+                timingScore={timingOptimization?.score}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
               />
@@ -1735,6 +1825,69 @@ export const SolarTimeClock = () => {
                     </select>
                   </div>
 
+                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
+                    <div className="flex flex-col">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Target Date</label>
+                      <span className="text-[8px] text-zinc-600">評価する目標日を指定します</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleAutoSearch}
+                        disabled={isAutoSearching}
+                        className="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-950/20 px-2 py-1 rounded-sm hover:bg-emerald-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                      >
+                        {isAutoSearching ? 'SEARCHING...' : 'AUTO SEARCH'}
+                      </button>
+                      <input
+                        type="date"
+                        value={`${evalDate.getFullYear()}-${String(evalDate.getMonth() + 1).padStart(2, '0')}-${String(evalDate.getDate()).padStart(2, '0')}`}
+                        onChange={(e) => {
+                          if (!e.target.value) return;
+                          const selectedDate = new Date(e.target.value);
+                          const base = baseTime || new Date();
+                          selectedDate.setHours(12, 0, 0, 0);
+                          const baseCopy = new Date(base.getTime());
+                          baseCopy.setHours(12, 0, 0, 0);
+                          const diffDays = Math.round((selectedDate.getTime() - baseCopy.getTime()) / 86400000);
+                          setTimeOffsetDays(diffDays);
+                        }}
+                        className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 bg-black/40 p-0.5 border border-zinc-800/80 rounded-sm">
+                      <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? 'bg-amber-950/40 text-amber-400 border-amber-500/50 hover:bg-amber-900/60 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-blue-950/40 text-blue-400 border-blue-500/50 hover:bg-blue-900/60 shadow-[0_0_8px_rgba(59,130,246,0.2)]'}`}
+                      >
+                        {isPlaying ? '⏸ PAUSE' : '▶ PLAY'}
+                      </button>
+                      <select
+                        value={playSpeedDays}
+                        onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
+                        disabled={isPlaying}
+                        className="bg-transparent text-zinc-400 text-[8px] font-mono outline-none cursor-pointer"
+                      >
+                        <option value={1}>1D/tick</option>
+                        <option value={7}>1W/tick</option>
+                        <option value={30}>1M/tick</option>
+                        <option value={365}>1Y/tick</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-end gap-1 flex-wrap items-center">
+                      <button onClick={() => setTimeOffsetDays(prev => prev - 1)} className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400" title="Previous Day">◀</button>
+                      <button onClick={() => setTimeOffsetDays(prev => prev + 1)} className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400" title="Next Day">▶</button>
+                      <div className="w-px h-3 bg-zinc-800 my-auto mx-0.5"></div>
+                      <button onClick={() => setTimeOffsetDays(0)} className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400'}`}>TODAY</button>
+                      <button onClick={() => setTimeOffsetDays(30)} className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400'}`}>+30D</button>
+                      <button onClick={() => setTimeOffsetDays(90)} className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400'}`}>+90D</button>
+                      <button onClick={() => setTimeOffsetDays(180)} className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400'}`}>+180D</button>
+                      <button onClick={() => setTimeOffsetDays(365)} className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400'}`}>+1Y</button>
+                    </div>
+                  </div>
+
                   <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
@@ -1764,11 +1917,12 @@ export const SolarTimeClock = () => {
                     <div className="w-full relative z-10 flex gap-1 mb-1">
                       <input
                         type="text"
-                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)"
+                        placeholder="Paste Coords or Google Maps URL... (e.g. 35.68, 139.76)"
                         className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
                         onChange={(e) => {
-                          const url = e.target.value;
-                          const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                          const val = e.target.value;
+                          // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
+                          const match = val.match(/(?:@|^|\s)(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
                           if (match) {
                             setTargetLat(Number(parseFloat(match[1]).toFixed(5)));
                             setTargetLon(Number(parseFloat(match[2]).toFixed(5)));
@@ -1958,6 +2112,72 @@ export const SolarTimeClock = () => {
                       })();
                     })()}
                   </div>
+
+                  <div className="flex justify-between items-center mt-4 border-t border-zinc-800/50 pt-3">
+                    <div className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                      <span className="text-purple-500">◆</span> TREND ANALYTICS
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setHeatmapMode(prev => prev === '30days' ? 'none' : '30days')}
+                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border ${heatmapMode === '30days' ? 'bg-purple-950/40 text-purple-400 border-purple-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400'}`}
+                      >
+                        30 DAYS
+                      </button>
+                      <button
+                        onClick={() => setHeatmapMode(prev => prev === '12months' ? 'none' : '12months')}
+                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border ${heatmapMode === '12months' ? 'bg-purple-950/40 text-purple-400 border-purple-500/50' : 'bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400'}`}
+                      >
+                        12 MONTHS
+                      </button>
+                    </div>
+                  </div>
+
+                  {heatmapMode !== 'none' && heatmapData.length > 0 && (
+                    <div className="mt-3 bg-black/50 p-2 border border-zinc-800/50 rounded-sm overflow-x-auto custom-scrollbar animate-fade-in-up">
+                      <table className="w-full text-center border-collapse">
+                        <thead>
+                          <tr>
+                            <th className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-500 w-8 bg-zinc-950 sticky left-0 z-10">DIR</th>
+                            {heatmapData.map((d, i) => (
+                              <th key={i} className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap ${d.isVoid ? 'text-red-500 bg-red-950/20' : 'text-zinc-500 bg-zinc-900/30'}`}>
+                                {d.label}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const).map(dir => (
+                            <tr key={dir}>
+                              <td className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-400 font-bold bg-zinc-950 sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">{dir}</td>
+                              {heatmapData.map((d, i) => {
+                                let st = d.vectors[dir];
+                                let bgClass = 'bg-zinc-900/30';
+                                if (st === 'OPTIMAL') bgClass = 'bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative';
+                                else if (st === 'SAFE') bgClass = 'bg-blue-500/20';
+                                else if (st?.startsWith('NOISE_GOU') || st?.startsWith('NOISE_ANKEN')) bgClass = 'bg-red-500/80';
+                                else if (st?.startsWith('NOISE_HONMEI') || st?.startsWith('NOISE_TEKI')) bgClass = 'bg-purple-500/80';
+                                else if (st?.startsWith('NOISE_VOID') || st?.startsWith('NOISE_NODE')) bgClass = 'bg-yellow-500/80';
+
+                                return (
+                                  <td key={i} className={`p-0 border border-zinc-800 ${bgClass}`} title={`${d.label} ${dir}: ${st}`}>
+                                    <div className="w-5 h-5 mx-auto"></div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-500 justify-center flex-wrap">
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500/80"></div> OPTIMAL</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500/20 border border-zinc-700"></div> SAFE</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500/80"></div> TYPE I (Gou/Anken)</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-yellow-500/80"></div> VOID/NODE</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -2104,6 +2324,6 @@ export const SolarTimeClock = () => {
           EXPORT MASTER STATE (CSV/JSON)
         </button>
       </div>
-    </div>
+    </div >
   );
 };

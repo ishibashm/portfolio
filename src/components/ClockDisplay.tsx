@@ -9,9 +9,10 @@ interface ClockDisplayProps {
   solarTime: Date;
   eot: number;
   longOffset: number;
+  targetDate?: Date;
 }
 
-export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: ClockDisplayProps) {
+export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, targetDate = new Date() }: ClockDisplayProps) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -21,10 +22,13 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
 
   const formatTime = (date: Date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
-  // Calculate Lunar & Rokuyo from standard JST time (or solar time, depending on preference. Standard calendar is better for Rokuyo)
-  const lunarDate = Lunar.fromDate(now);
+  // Calculate Lunar & Rokuyo from targetDate (evaluation date) instead of now
+  const displayDate = new Date(targetDate);
+  displayDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+
+  const lunarDate = Lunar.fromDate(displayDate);
   const ROKUYO_MAP = ["大安 (Taian)", "赤口 (Shakku)", "先勝 (Sensho)", "友引 (Tomobiki)", "先負 (Sakimake)", "仏滅 (Butsumetsu)"];
-  const lunarMonth = lunarDate.getMonth(); 
+  const lunarMonth = lunarDate.getMonth();
   const lunarDay = lunarDate.getDay();
   const rokuyoName = ROKUYO_MAP[(lunarMonth + lunarDay) % 6];
   const yueXiang = lunarDate.getYueXiang(); // Phase name
@@ -74,22 +78,22 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset }: 
 
       {/* 3. Temporal Phase (Time) */}
       <div className="flex flex-col items-center md:items-end space-y-3 w-1/3">
-         <div className="text-right">
-            <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">True Solar Time</div>
-            <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-400">
-              {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
-            </div>
-         </div>
-         <div className="text-right">
-            <div className="text-[9px] uppercase tracking-widest text-zinc-600 font-mono">Standard JST</div>
-            <div className="text-lg font-mono font-light text-zinc-500">
-              {formatTime(now)}
-            </div>
-         </div>
-         <div className="text-[8px] font-mono text-zinc-600 gap-2 flex justify-end">
-            <span>EOT:{eot.toFixed(1)}m</span>
-            <span>OS:{longOffset.toFixed(1)}m</span>
-         </div>
+        <div className="text-right">
+          <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">True Solar Time</div>
+          <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-400">
+            {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[9px] uppercase tracking-widest text-zinc-600 font-mono">Standard JST</div>
+          <div className="text-lg font-mono font-light text-zinc-500">
+            {formatTime(now)}
+          </div>
+        </div>
+        <div className="text-[8px] font-mono text-zinc-600 gap-2 flex justify-end">
+          <span>EOT:{eot.toFixed(1)}m</span>
+          <span>OS:{longOffset.toFixed(1)}m</span>
+        </div>
       </div>
     </div>
   );
