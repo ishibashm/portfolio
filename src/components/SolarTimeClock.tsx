@@ -47,6 +47,8 @@ export const SolarTimeClock = () => {
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [activeLayerMode, setActiveLayerMode] = useState<'final' | 'year' | 'month' | 'day'>('final');
+  const [showOnlyNewBuild, setShowOnlyNewBuild] = useState(false);
+  const [mapProperties, setMapProperties] = useState<any[]>([]);
 
   // Geo & Environment State (Default: Tokyo)
   const [lat, setLat] = useState<number>(35.6895);
@@ -78,12 +80,12 @@ export const SolarTimeClock = () => {
   const [shieldCapacity, setShieldCapacity] = useState(15);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingLog, setIsSavingLog] = useState(false);
-  
+
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
-  
+
 
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
@@ -98,7 +100,7 @@ export const SolarTimeClock = () => {
   const [useKigakuScorer, setUseKigakuScorer] = useState(true);
   const [useAstrologyScorer, setUseAstrologyScorer] = useState(true);
   const [timingOptimization, setTimingOptimization] = useState<OptimizationResult | null>(null);
-  
+
   // HUD Layer Visibility (Idea 3)
   const [hudLayers, setHudLayers] = useState({
     terrain: true,
@@ -226,7 +228,7 @@ export const SolarTimeClock = () => {
         (position) => {
           setLat(position.coords.latitude);
           setLon(position.coords.longitude);
-          
+
           const nowIso = new Date().toISOString();
           setBaseSyncTimestamp(nowIso);
           setBaseSyncDays(0);
@@ -297,14 +299,14 @@ export const SolarTimeClock = () => {
       const x = Math.cos(toRad(lat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(lat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
       let trueBrng = toDeg(Math.atan2(y, x));
       trueBrng = (trueBrng + 360) % 360;
-      
+
       const declination = geoData?.declination ?? -8.2;
       const magBrng = (trueBrng - declination + 360) % 360;
 
       const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
       return {
-         trueDirection: dirs[Math.floor(((trueBrng + 22.5) % 360) / 45)],
-         magneticDirection: dirs[Math.floor(((magBrng + 22.5) % 360) / 45)]
+        trueDirection: dirs[Math.floor(((trueBrng + 22.5) % 360) / 45)],
+        magneticDirection: dirs[Math.floor(((magBrng + 22.5) % 360) / 45)]
       };
     }
     return null;
@@ -313,28 +315,28 @@ export const SolarTimeClock = () => {
   const handleAutoSearch = () => {
     if (!baseTime || !honmeiStar) return;
     setIsAutoSearching(true);
-    
+
     const targetDirInfo = getTargetDirectionInfo();
 
     setTimeout(() => {
       let offset = timeOffsetDays + 1;
       let foundOffset: number | null = null;
       const MAX_SEARCH_DAYS = 365;
-      
+
       for (let i = 0; i < MAX_SEARCH_DAYS; i++) {
         const testDate = new Date(baseTime.getTime() + offset * 86400000);
-        
+
         const cz = getCurrentZodiac(testDate);
         if (personalVoidZodiac.includes(cz.yearZodiac) || personalVoidZodiac.includes(cz.monthZodiac) || personalVoidZodiac.includes(cz.dayZodiac)) {
-           offset++;
-           continue;
+          offset++;
+          continue;
         }
-        
+
         const testEnv = getCurrentEnvironmentalFrequencies(testDate);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(testEnv.monthStar);
         const dB = generateBoard(testEnv.dayStar);
-        
+
         const vectorData = calculateVectorCollision(
           useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
           yB, mB, dB,
@@ -342,25 +344,25 @@ export const SolarTimeClock = () => {
           testEnv.raw.lunarNode,
           actionIntent
         );
-        
+
         if (targetDirInfo) {
-           const s = vectorData.finalVectors[targetDirInfo.magneticDirection];
-           if (s === 'SAFE' || s === 'OPTIMAL') {
-              foundOffset = offset;
-              break;
-           }
+          const s = vectorData.finalVectors[targetDirInfo.magneticDirection];
+          if (s === 'SAFE' || s === 'OPTIMAL') {
+            foundOffset = offset;
+            break;
+          }
         } else {
-           const hasOptimal = Object.values(vectorData.finalVectors).includes('OPTIMAL');
-           if (hasOptimal) {
-              foundOffset = offset;
-              break;
-           }
+          const hasOptimal = Object.values(vectorData.finalVectors).includes('OPTIMAL');
+          if (hasOptimal) {
+            foundOffset = offset;
+            break;
+          }
         }
         offset++;
       }
-      
+
       setIsAutoSearching(false);
-      
+
       if (foundOffset !== null) {
         setTimeOffsetDays(foundOffset);
       } else {
@@ -397,12 +399,12 @@ export const SolarTimeClock = () => {
 
   const { board, layers, physicalLayers, classicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard } = React.useMemo(() => {
     if (!env || !honmeiStar) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
-    
+
     // Boards for internal calculation based on user preference toggle
     const yB = generateBoard(useClassicalBoard ? env.classicalYearStar : env.yearStar);
     const mB = generateBoard(useClassicalBoard ? env.classicalMonthStar : env.monthStar);
     const dB = generateBoard(useClassicalBoard ? env.classicalDayStar : env.dayStar);
-    
+
     // Strict Physical boards for UI display
     const pyB = generateBoard(env.yearStar);
     const pmB = generateBoard(env.monthStar);
@@ -594,7 +596,7 @@ export const SolarTimeClock = () => {
       alert("保存するデータが準備されていません。");
       return;
     }
-    
+
     setIsSavingLog(true);
     try {
       const payload = {
@@ -684,7 +686,7 @@ export const SolarTimeClock = () => {
 
   useEffect(() => {
     if (!baseTime) return;
-    
+
     let solarHours = 12.0;
     if (solarData?.solarTime) {
       solarHours = solarData.solarTime.getHours() + solarData.solarTime.getMinutes() / 60;
@@ -736,18 +738,18 @@ export const SolarTimeClock = () => {
 
     let userKigakuStar: number | undefined;
     if (honmeiStar?.physical) {
-        if (typeof honmeiStar.physical === 'number') {
-             userKigakuStar = honmeiStar.physical;
-        } else if (typeof honmeiStar.physical === 'string') {
-            const match = String(honmeiStar.physical).match(/([一二三四五六七八九])/);
-            if (match) {
-                const numMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
-                userKigakuStar = numMap[match[1]];
-            } else {
-                 const numMatch = String(honmeiStar.physical).match(/(\d)/);
-                 if (numMatch) userKigakuStar = parseInt(numMatch[1], 10);
-            }
+      if (typeof honmeiStar.physical === 'number') {
+        userKigakuStar = honmeiStar.physical;
+      } else if (typeof honmeiStar.physical === 'string') {
+        const match = String(honmeiStar.physical).match(/([一二三四五六七八九])/);
+        if (match) {
+          const numMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
+          userKigakuStar = numMap[match[1]];
+        } else {
+          const numMatch = String(honmeiStar.physical).match(/(\d)/);
+          if (numMatch) userKigakuStar = parseInt(numMatch[1], 10);
         }
+      }
     }
 
     const result = optimizer.evaluate({
@@ -781,7 +783,7 @@ export const SolarTimeClock = () => {
 
   const targetDirInfo = getTargetDirectionInfo();
   let targetVectorStatus: string | null = null;
-  
+
   if (targetDirInfo && activeVectors) {
     targetVectorStatus = activeVectors[targetDirInfo.magneticDirection as Direction];
   }
@@ -847,7 +849,7 @@ export const SolarTimeClock = () => {
       )}
 
       <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
-        
+
         <div className="w-full max-w-4xl text-center mb-2 px-4">
           <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
@@ -855,7 +857,7 @@ export const SolarTimeClock = () => {
           <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
             引越し・移住・長期滞在など、人生の大きな決断において<strong className="text-zinc-200">「最適な移動地（方位）」</strong>と<strong className="text-zinc-200">「最適なタイミング（時間）」</strong>を導き出すためのデータサイエンス・ダッシュボードです。
           </p>
-          <button 
+          <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
             className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono uppercase tracking-widest border border-emerald-500/50 bg-emerald-950/20 px-4 py-1.5 transition-colors"
           >
@@ -871,7 +873,7 @@ export const SolarTimeClock = () => {
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 引越し・移住の「空間」と「時間」を統合する4つのステップ
               </h2>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">STEP 1: ゼロポイント（現在地）と波長の特定</strong>
@@ -910,41 +912,37 @@ export const SolarTimeClock = () => {
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
             onClick={() => setActiveTab("profile")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "profile"
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "profile"
                 ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
-            }`}
+              }`}
           >
             1. Profile
           </button>
           <button
             onClick={() => setActiveTab("destination")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "destination"
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "destination"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
-            }`}
+              }`}
           >
             2. Destination
           </button>
           <button
             onClick={() => setActiveTab("timing")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "timing"
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "timing"
                 ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
-            }`}
+              }`}
           >
             3. Timing
           </button>
           <button
             onClick={() => setActiveTab("consult")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
-              activeTab === "consult"
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "consult"
                 ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
                 : "text-zinc-500 hover:text-zinc-300"
-            }`}
+              }`}
           >
             4. Consult
           </button>
@@ -1074,7 +1072,7 @@ export const SolarTimeClock = () => {
         {/* --- TAB CONTENT: 4. CONSULT (AI & Telemetry) --- */}
         {activeTab === "consult" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
-            
+
             <div className="w-full max-w-4xl">
               <ExpertCouncilPanel
                 actionIntent={actionIntent}
@@ -1105,9 +1103,9 @@ export const SolarTimeClock = () => {
                 </h2>
 
               </div>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                
+
                 {/* Birth Imprint Data (Hardware Init) */}
                 <div className="border border-zinc-800 bg-zinc-950/50 p-4 flex flex-col gap-4 relative overflow-hidden group">
                   {/* Decorative background element */}
@@ -1163,7 +1161,7 @@ export const SolarTimeClock = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Raw Birth Orbital Parameters */}
                   {birthEnv?.raw && (
                     <div className="mt-auto pt-3 border-t border-zinc-900">
@@ -1206,8 +1204,8 @@ export const SolarTimeClock = () => {
                         <span className="text-emerald-500">▶</span> Live Environment
                       </div>
                       <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-sm">
-                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                         <span className="text-[8px] text-emerald-400 font-mono tracking-widest">TRACKING</span>
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span className="text-[8px] text-emerald-400 font-mono tracking-widest">TRACKING</span>
                       </div>
                     </div>
                     <div className="text-[9px] text-zinc-500 font-sans leading-tight">
@@ -1241,32 +1239,32 @@ export const SolarTimeClock = () => {
 
                   {/* Raw Current Orbital Parameters */}
                   {env?.raw && (
-                     <div className="mt-auto pt-3 border-t border-zinc-900">
-                     <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                       <span>Live Orbital Matrix</span>
-                       <div className="h-px bg-zinc-800 grow"></div>
-                     </div>
-                     <div className="grid grid-cols-3 gap-2">
-                       <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
-                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
-                           JUPITER <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5 animate-pulse">Y</span>
-                         </span>
-                         <span className="text-sm font-mono text-purple-300 mt-1">{env.raw.jupiterLon.toFixed(2)}°</span>
-                       </div>
-                       <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
-                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
-                           LUNAR <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5 animate-pulse">M</span>
-                         </span>
-                         <span className="text-sm font-mono text-amber-300 mt-1">{env.raw.moonLon.toFixed(2)}°</span>
-                       </div>
-                       <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
-                         <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
-                           SOLAR <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5 animate-pulse">D</span>
-                         </span>
-                         <span className="text-sm font-mono text-blue-300 mt-1">{env.raw.sunLon.toFixed(2)}°</span>
-                       </div>
-                     </div>
-                   </div>
+                    <div className="mt-auto pt-3 border-t border-zinc-900">
+                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <span>Live Orbital Matrix</span>
+                        <div className="h-px bg-zinc-800 grow"></div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            JUPITER <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5 animate-pulse">Y</span>
+                          </span>
+                          <span className="text-sm font-mono text-purple-300 mt-1">{env.raw.jupiterLon.toFixed(2)}°</span>
+                        </div>
+                        <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            LUNAR <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5 animate-pulse">M</span>
+                          </span>
+                          <span className="text-sm font-mono text-amber-300 mt-1">{env.raw.moonLon.toFixed(2)}°</span>
+                        </div>
+                        <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                            SOLAR <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5 animate-pulse">D</span>
+                          </span>
+                          <span className="text-sm font-mono text-blue-300 mt-1">{env.raw.sunLon.toFixed(2)}°</span>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1278,164 +1276,164 @@ export const SolarTimeClock = () => {
                   </div>
                   <span className="group-open:rotate-180 transition-transform">▼</span>
                 </summary>
-                
+
                 <div className="p-3 border-t border-zinc-800 bg-black/50">
                   <div className="mb-4 p-2 bg-zinc-950/80 border border-zinc-800 text-[9px] sm:text-[10px] text-zinc-400 font-mono leading-relaxed">
-                    <strong>[ 進入可能方位とノイズの解読法則 ]</strong><br/>
-                    気学の理論と引力モデルに基づき、盤面と本命星を重ね合わせます。<br/>
-                    <span className="text-red-400 font-bold">赤色(NOISE)</span> のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。<br/>
-                    <span className="text-yellow-400 font-bold">黄色(WARNING)</span> は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。<br/>
-                    <span className="text-emerald-400 font-bold">緑色(OPTIMAL)</span> は生体波長と完全にシンクロし能力が増幅されるゾーン、<span className="text-blue-400 font-bold">青(SAFE)</span> は異常干渉のない安定ゾーンです。<br/>
-                    <em>※FINALマップでは、以下の年・月・日のいずれかのレイヤーで赤・黄色があると優先してブロック（警告色）が表示されます。<br/>
-                    ※緑(OPTIMAL)は、全レイヤーがクリアでかつ目的とあなたの波長が完全一致した場合のみ出現します（条件が厳しいため表示されないことも多々あります）。</em>
+                    <strong>[ 進入可能方位とノイズの解読法則 ]</strong><br />
+                    気学の理論と引力モデルに基づき、盤面と本命星を重ね合わせます。<br />
+                    <span className="text-red-400 font-bold">赤色(NOISE)</span> のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。<br />
+                    <span className="text-yellow-400 font-bold">黄色(WARNING)</span> は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。<br />
+                    <span className="text-emerald-400 font-bold">緑色(OPTIMAL)</span> は生体波長と完全にシンクロし能力が増幅されるゾーン、<span className="text-blue-400 font-bold">青(SAFE)</span> は異常干渉のない安定ゾーンです。<br />
+                    <em>※FINALマップでは、以下の年・月・日のいずれかのレイヤーで赤・黄色があると優先してブロック（警告色）が表示されます。<br />
+                      ※緑(OPTIMAL)は、全レイヤーがクリアでかつ目的とあなたの波長が完全一致した場合のみ出現します（条件が厳しいため表示されないことも多々あります）。</em>
                   </div>
 
                   <div className="flex flex-col gap-4">
                     {/* Physical Model Section */}
                     <div className={`transition-all duration-300 ${!useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
                       <div className={`text-emerald-400 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 flex items-center gap-2 ${!useClassicalBoard ? 'drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]' : ''}`}>
-                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                         PHYSICAL MODEL (天体位相・物理基準)
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        PHYSICAL MODEL (天体位相・物理基準)
                       </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
-                      <div className="bg-black/50 border border-purple-900/30 p-2">
-                        <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>物理年盤</span>
-                          <span className="text-[7px] text-zinc-500">YEAR LAYER</span>
-                        </div>
-                        {physicalYearBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', physicalYearBoard.SE, physicalLayers?.yearLayer?.SE)}
-                            {renderMatrixCell('S', physicalYearBoard.S, physicalLayers?.yearLayer?.S)}
-                            {renderMatrixCell('SW', physicalYearBoard.SW, physicalLayers?.yearLayer?.SW)}
-                            {renderMatrixCell('E', physicalYearBoard.E, physicalLayers?.yearLayer?.E)}
-                            {renderMatrixCell('C', physicalYearBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', physicalYearBoard.W, physicalLayers?.yearLayer?.W)}
-                            {renderMatrixCell('NE', physicalYearBoard.NE, physicalLayers?.yearLayer?.NE)}
-                            {renderMatrixCell('N', physicalYearBoard.N, physicalLayers?.yearLayer?.N)}
-                            {renderMatrixCell('NW', physicalYearBoard.NW, physicalLayers?.yearLayer?.NW)}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
+                        <div className="bg-black/50 border border-purple-900/30 p-2">
+                          <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>物理年盤</span>
+                            <span className="text-[7px] text-zinc-500">YEAR LAYER</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">太陽黄経(立春起点)に基づく真の物理的位相。</div>
-                      </div>
+                          {physicalYearBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', physicalYearBoard.SE, physicalLayers?.yearLayer?.SE)}
+                              {renderMatrixCell('S', physicalYearBoard.S, physicalLayers?.yearLayer?.S)}
+                              {renderMatrixCell('SW', physicalYearBoard.SW, physicalLayers?.yearLayer?.SW)}
+                              {renderMatrixCell('E', physicalYearBoard.E, physicalLayers?.yearLayer?.E)}
+                              {renderMatrixCell('C', physicalYearBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', physicalYearBoard.W, physicalLayers?.yearLayer?.W)}
+                              {renderMatrixCell('NE', physicalYearBoard.NE, physicalLayers?.yearLayer?.NE)}
+                              {renderMatrixCell('N', physicalYearBoard.N, physicalLayers?.yearLayer?.N)}
+                              {renderMatrixCell('NW', physicalYearBoard.NW, physicalLayers?.yearLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">太陽黄経(立春起点)に基づく真の物理的位相。</div>
+                        </div>
 
-                      <div className="bg-black/50 border border-amber-900/30 p-2">
-                        <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>物理月盤</span>
-                          <span className="text-[7px] text-zinc-500">MONTH LAYER</span>
-                        </div>
-                        {physicalMonthBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', physicalMonthBoard.SE, physicalLayers?.monthLayer?.SE)}
-                            {renderMatrixCell('S', physicalMonthBoard.S, physicalLayers?.monthLayer?.S)}
-                            {renderMatrixCell('SW', physicalMonthBoard.SW, physicalLayers?.monthLayer?.SW)}
-                            {renderMatrixCell('E', physicalMonthBoard.E, physicalLayers?.monthLayer?.E)}
-                            {renderMatrixCell('C', physicalMonthBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', physicalMonthBoard.W, physicalLayers?.monthLayer?.W)}
-                            {renderMatrixCell('NE', physicalMonthBoard.NE, physicalLayers?.monthLayer?.NE)}
-                            {renderMatrixCell('N', physicalMonthBoard.N, physicalLayers?.monthLayer?.N)}
-                            {renderMatrixCell('NW', physicalMonthBoard.NW, physicalLayers?.monthLayer?.NW)}
+                        <div className="bg-black/50 border border-amber-900/30 p-2">
+                          <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>物理月盤</span>
+                            <span className="text-[7px] text-zinc-500">MONTH LAYER</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">太陽と月の相対位相（月相）モデル。</div>
-                      </div>
+                          {physicalMonthBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', physicalMonthBoard.SE, physicalLayers?.monthLayer?.SE)}
+                              {renderMatrixCell('S', physicalMonthBoard.S, physicalLayers?.monthLayer?.S)}
+                              {renderMatrixCell('SW', physicalMonthBoard.SW, physicalLayers?.monthLayer?.SW)}
+                              {renderMatrixCell('E', physicalMonthBoard.E, physicalLayers?.monthLayer?.E)}
+                              {renderMatrixCell('C', physicalMonthBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', physicalMonthBoard.W, physicalLayers?.monthLayer?.W)}
+                              {renderMatrixCell('NE', physicalMonthBoard.NE, physicalLayers?.monthLayer?.NE)}
+                              {renderMatrixCell('N', physicalMonthBoard.N, physicalLayers?.monthLayer?.N)}
+                              {renderMatrixCell('NW', physicalMonthBoard.NW, physicalLayers?.monthLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">太陽と月の相対位相（月相）モデル。</div>
+                        </div>
 
-                      <div className="bg-black/50 border border-blue-900/30 p-2">
-                        <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>物理日盤</span>
-                          <span className="text-[7px] text-zinc-500">DAY LAYER</span>
-                        </div>
-                        {physicalDayBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', physicalDayBoard.SE, physicalLayers?.dayLayer?.SE)}
-                            {renderMatrixCell('S', physicalDayBoard.S, physicalLayers?.dayLayer?.S)}
-                            {renderMatrixCell('SW', physicalDayBoard.SW, physicalLayers?.dayLayer?.SW)}
-                            {renderMatrixCell('E', physicalDayBoard.E, physicalLayers?.dayLayer?.E)}
-                            {renderMatrixCell('C', physicalDayBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', physicalDayBoard.W, physicalLayers?.dayLayer?.W)}
-                            {renderMatrixCell('NE', physicalDayBoard.NE, physicalLayers?.dayLayer?.NE)}
-                            {renderMatrixCell('N', physicalDayBoard.N, physicalLayers?.dayLayer?.N)}
-                            {renderMatrixCell('NW', physicalDayBoard.NW, physicalLayers?.dayLayer?.NW)}
+                        <div className="bg-black/50 border border-blue-900/30 p-2">
+                          <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>物理日盤</span>
+                            <span className="text-[7px] text-zinc-500">DAY LAYER</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">地球の自転(JD)と至点による物理反転モデル。</div>
+                          {physicalDayBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', physicalDayBoard.SE, physicalLayers?.dayLayer?.SE)}
+                              {renderMatrixCell('S', physicalDayBoard.S, physicalLayers?.dayLayer?.S)}
+                              {renderMatrixCell('SW', physicalDayBoard.SW, physicalLayers?.dayLayer?.SW)}
+                              {renderMatrixCell('E', physicalDayBoard.E, physicalLayers?.dayLayer?.E)}
+                              {renderMatrixCell('C', physicalDayBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', physicalDayBoard.W, physicalLayers?.dayLayer?.W)}
+                              {renderMatrixCell('NE', physicalDayBoard.NE, physicalLayers?.dayLayer?.NE)}
+                              {renderMatrixCell('N', physicalDayBoard.N, physicalLayers?.dayLayer?.N)}
+                              {renderMatrixCell('NW', physicalDayBoard.NW, physicalLayers?.dayLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">地球の自転(JD)と至点による物理反転モデル。</div>
+                        </div>
                       </div>
-                    </div>
                     </div>
 
                     {/* Classical Model Section */}
                     <div className={`transition-all duration-300 mt-4 ${useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
                       <div className={`text-zinc-300 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 flex items-center gap-2 ${useClassicalBoard ? 'drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]' : ''}`}>
-                         <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
-                         CLASSICAL MODEL (節切り・暦基準)
+                        <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
+                        CLASSICAL MODEL (節切り・暦基準)
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300 mt-2">
-                      <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                        <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>古典年盤</span>
-                          <span className="text-[7px]">CLASSICAL YEAR</span>
-                        </div>
-                        {classicalYearBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', classicalYearBoard.SE, classicalLayers?.yearLayer?.SE)}
-                            {renderMatrixCell('S', classicalYearBoard.S, classicalLayers?.yearLayer?.S)}
-                            {renderMatrixCell('SW', classicalYearBoard.SW, classicalLayers?.yearLayer?.SW)}
-                            {renderMatrixCell('E', classicalYearBoard.E, classicalLayers?.yearLayer?.E)}
-                            {renderMatrixCell('C', classicalYearBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', classicalYearBoard.W, classicalLayers?.yearLayer?.W)}
-                            {renderMatrixCell('NE', classicalYearBoard.NE, classicalLayers?.yearLayer?.NE)}
-                            {renderMatrixCell('N', classicalYearBoard.N, classicalLayers?.yearLayer?.N)}
-                            {renderMatrixCell('NW', classicalYearBoard.NW, classicalLayers?.yearLayer?.NW)}
+                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
+                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>古典年盤</span>
+                            <span className="text-[7px]">CLASSICAL YEAR</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">一般的な書籍・暦に基づく盤面。</div>
-                      </div>
+                          {classicalYearBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', classicalYearBoard.SE, classicalLayers?.yearLayer?.SE)}
+                              {renderMatrixCell('S', classicalYearBoard.S, classicalLayers?.yearLayer?.S)}
+                              {renderMatrixCell('SW', classicalYearBoard.SW, classicalLayers?.yearLayer?.SW)}
+                              {renderMatrixCell('E', classicalYearBoard.E, classicalLayers?.yearLayer?.E)}
+                              {renderMatrixCell('C', classicalYearBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', classicalYearBoard.W, classicalLayers?.yearLayer?.W)}
+                              {renderMatrixCell('NE', classicalYearBoard.NE, classicalLayers?.yearLayer?.NE)}
+                              {renderMatrixCell('N', classicalYearBoard.N, classicalLayers?.yearLayer?.N)}
+                              {renderMatrixCell('NW', classicalYearBoard.NW, classicalLayers?.yearLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">一般的な書籍・暦に基づく盤面。</div>
+                        </div>
 
-                      <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                        <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>古典月盤</span>
-                          <span className="text-[7px]">CLASSICAL MONTH</span>
-                        </div>
-                        {classicalMonthBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', classicalMonthBoard.SE, classicalLayers?.monthLayer?.SE)}
-                            {renderMatrixCell('S', classicalMonthBoard.S, classicalLayers?.monthLayer?.S)}
-                            {renderMatrixCell('SW', classicalMonthBoard.SW, classicalLayers?.monthLayer?.SW)}
-                            {renderMatrixCell('E', classicalMonthBoard.E, classicalLayers?.monthLayer?.E)}
-                            {renderMatrixCell('C', classicalMonthBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', classicalMonthBoard.W, classicalLayers?.monthLayer?.W)}
-                            {renderMatrixCell('NE', classicalMonthBoard.NE, classicalLayers?.monthLayer?.NE)}
-                            {renderMatrixCell('N', classicalMonthBoard.N, classicalLayers?.monthLayer?.N)}
-                            {renderMatrixCell('NW', classicalMonthBoard.NW, classicalLayers?.monthLayer?.NW)}
+                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
+                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>古典月盤</span>
+                            <span className="text-[7px]">CLASSICAL MONTH</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">節気ごとのカレンダー切り替え。</div>
-                      </div>
+                          {classicalMonthBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', classicalMonthBoard.SE, classicalLayers?.monthLayer?.SE)}
+                              {renderMatrixCell('S', classicalMonthBoard.S, classicalLayers?.monthLayer?.S)}
+                              {renderMatrixCell('SW', classicalMonthBoard.SW, classicalLayers?.monthLayer?.SW)}
+                              {renderMatrixCell('E', classicalMonthBoard.E, classicalLayers?.monthLayer?.E)}
+                              {renderMatrixCell('C', classicalMonthBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', classicalMonthBoard.W, classicalLayers?.monthLayer?.W)}
+                              {renderMatrixCell('NE', classicalMonthBoard.NE, classicalLayers?.monthLayer?.NE)}
+                              {renderMatrixCell('N', classicalMonthBoard.N, classicalLayers?.monthLayer?.N)}
+                              {renderMatrixCell('NW', classicalMonthBoard.NW, classicalLayers?.monthLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">節気ごとのカレンダー切り替え。</div>
+                        </div>
 
-                      <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                        <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
-                          <span>古典日盤</span>
-                          <span className="text-[7px]">CLASSICAL DAY</span>
-                        </div>
-                        {classicalDayBoard && (
-                          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
-                            {renderMatrixCell('SE', classicalDayBoard.SE, classicalLayers?.dayLayer?.SE)}
-                            {renderMatrixCell('S', classicalDayBoard.S, classicalLayers?.dayLayer?.S)}
-                            {renderMatrixCell('SW', classicalDayBoard.SW, classicalLayers?.dayLayer?.SW)}
-                            {renderMatrixCell('E', classicalDayBoard.E, classicalLayers?.dayLayer?.E)}
-                            {renderMatrixCell('C', classicalDayBoard.CENTER, undefined, true)}
-                            {renderMatrixCell('W', classicalDayBoard.W, classicalLayers?.dayLayer?.W)}
-                            {renderMatrixCell('NE', classicalDayBoard.NE, classicalLayers?.dayLayer?.NE)}
-                            {renderMatrixCell('N', classicalDayBoard.N, classicalLayers?.dayLayer?.N)}
-                            {renderMatrixCell('NW', classicalDayBoard.NW, classicalLayers?.dayLayer?.NW)}
+                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
+                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                            <span>古典日盤</span>
+                            <span className="text-[7px]">CLASSICAL DAY</span>
                           </div>
-                        )}
-                        <div className="mt-2 text-[8px] text-zinc-600 leading-tight">隠遁・陽遁と日家九星の近似。</div>
-                      </div>
-                    </div>
+                          {classicalDayBoard && (
+                            <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
+                              {renderMatrixCell('SE', classicalDayBoard.SE, classicalLayers?.dayLayer?.SE)}
+                              {renderMatrixCell('S', classicalDayBoard.S, classicalLayers?.dayLayer?.S)}
+                              {renderMatrixCell('SW', classicalDayBoard.SW, classicalLayers?.dayLayer?.SW)}
+                              {renderMatrixCell('E', classicalDayBoard.E, classicalLayers?.dayLayer?.E)}
+                              {renderMatrixCell('C', classicalDayBoard.CENTER, undefined, true)}
+                              {renderMatrixCell('W', classicalDayBoard.W, classicalLayers?.dayLayer?.W)}
+                              {renderMatrixCell('NE', classicalDayBoard.NE, classicalLayers?.dayLayer?.NE)}
+                              {renderMatrixCell('N', classicalDayBoard.N, classicalLayers?.dayLayer?.N)}
+                              {renderMatrixCell('NW', classicalDayBoard.NW, classicalLayers?.dayLayer?.NW)}
+                            </div>
+                          )}
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">隠遁・陽遁と日家九星の近似。</div>
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
               </details>
 
               {/* Final Vector Calculation Visualization */}
@@ -1459,9 +1457,9 @@ export const SolarTimeClock = () => {
                         <thead className="border-b border-zinc-800 text-zinc-500 text-[9px] uppercase tracking-wider">
                           <tr>
                             <th className="pb-2 pr-2 font-normal align-bottom">Dir</th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Year Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【長期的影響】</span></th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Month Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【中期的影響】</span></th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Day Layer<br/><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【短期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Year Layer<br /><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【長期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Month Layer<br /><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【中期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Day Layer<br /><span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">【短期的影響】</span></th>
                             <th className="pb-2 pl-2 font-bold text-zinc-300 align-bottom">Final Vector</th>
                           </tr>
                         </thead>
@@ -1493,13 +1491,13 @@ export const SolarTimeClock = () => {
                               const star = board ? board[dir] : '?';
                               let title = "🟦 通常ゾーン (SAFE)";
                               let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
-                              if (status === 'NOISE_GOU') { title="🟥 非推奨ベクトル (TYPE I)"; desc="強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
-                              else if (status === 'NOISE_ANKEN') { title="🟥 非推奨ベクトル (TYPE I)"; desc="外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
-                              else if (status === 'NOISE_HONMEI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
-                              else if (status === 'NOISE_TEKI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
-                              else if (status === 'NOISE_VOID') { title="⬛ 虚無・ボイド空間 (VOID ZONE)"; desc="あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
-                              else if (status === 'NOISE_NODE') { title="🟨 月交点 (LUNAR NODE)"; desc="日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
-                              else if (status === 'OPTIMAL') { title="🟩 最適化ゾーン (OPTIMAL)"; desc="あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
+                              if (status === 'NOISE_GOU') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
+                              else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
+                              else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
+                              else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+                              else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
+                              else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
+                              else if (status === 'OPTIMAL') { title = "🟩 最適化ゾーン (OPTIMAL)"; desc = "あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
 
                               const label = formatLabel(status);
 
@@ -1539,9 +1537,9 @@ export const SolarTimeClock = () => {
                         <thead className="border-b border-zinc-800 text-zinc-600 text-[9px] uppercase tracking-wider">
                           <tr>
                             <th className="pb-2 pr-2 font-normal align-bottom">Dir</th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Year Layer<br/><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【長期的影響】</span></th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Month Layer<br/><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【中期的影響】</span></th>
-                            <th className="pb-2 px-1 font-normal align-bottom">Day Layer<br/><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【短期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Year Layer<br /><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【長期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Month Layer<br /><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【中期的影響】</span></th>
+                            <th className="pb-2 px-1 font-normal align-bottom">Day Layer<br /><span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">【短期的影響】</span></th>
                             <th className="pb-2 pl-2 font-bold text-zinc-500 align-bottom">Final Vector</th>
                           </tr>
                         </thead>
@@ -1573,13 +1571,13 @@ export const SolarTimeClock = () => {
                               const star = board ? board[dir] : '?';
                               let title = "🟦 通常ゾーン (SAFE)";
                               let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
-                              if (status === 'NOISE_GOU') { title="🟥 非推奨ベクトル (TYPE I)"; desc="強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
-                              else if (status === 'NOISE_ANKEN') { title="🟥 非推奨ベクトル (TYPE I)"; desc="外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
-                              else if (status === 'NOISE_HONMEI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
-                              else if (status === 'NOISE_TEKI') { title="🟥 非推奨ベクトル (TYPE II)"; desc="目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
-                              else if (status === 'NOISE_VOID') { title="⬛ 虚無・ボイド空間 (VOID ZONE)"; desc="あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
-                              else if (status === 'NOISE_NODE') { title="🟨 月交点 (LUNAR NODE)"; desc="日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
-                              else if (status === 'OPTIMAL') { title="🟩 最適化ゾーン (OPTIMAL)"; desc="あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
+                              if (status === 'NOISE_GOU') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
+                              else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
+                              else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
+                              else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+                              else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
+                              else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
+                              else if (status === 'OPTIMAL') { title = "🟩 最適化ゾーン (OPTIMAL)"; desc = "あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
 
                               const label = formatLabel(status);
 
@@ -1615,63 +1613,63 @@ export const SolarTimeClock = () => {
               {/* Theory & Model Explanation */}
               <div className="mt-4 bg-zinc-900/30 border border-zinc-800 p-3 w-full">
                 <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2">
-                   <div className="text-blue-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
-                     <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
-                     Astrophysical Core Logic (Theory & Model)
-                   </div>
-                   <button 
-                      onClick={() => setShowAstrophysicalLogic(!showAstrophysicalLogic)}
-                      className="text-[9px] font-mono text-zinc-400 hover:text-white bg-zinc-950 px-2 py-1 border border-zinc-700 hover:border-zinc-500 transition-colors uppercase tracking-widest"
-                   >
-                     {showAstrophysicalLogic ? '[-] CLOSE TERMINAL' : '[+] EXAMINE LOGIC'}
-                   </button>
+                  <div className="text-blue-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
+                    Astrophysical Core Logic (Theory & Model)
+                  </div>
+                  <button
+                    onClick={() => setShowAstrophysicalLogic(!showAstrophysicalLogic)}
+                    className="text-[9px] font-mono text-zinc-400 hover:text-white bg-zinc-950 px-2 py-1 border border-zinc-700 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                  >
+                    {showAstrophysicalLogic ? '[-] CLOSE TERMINAL' : '[+] EXAMINE LOGIC'}
+                  </button>
                 </div>
-                
+
                 {showAstrophysicalLogic && (
-                   <div className="animate-fade-in border-l-2 border-blue-500 pl-3 mt-3">
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                       <div className="flex flex-col gap-2">
-                         <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2 bg-purple-950/20 py-0.5">YEAR: JUPITER RESONANCE</span>
-                         <p className="text-[8px] text-zinc-500 leading-relaxed">
-                           木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
-                         </p>
-                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
-                           <InlineMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
-                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
-                             <InlineMath math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`} /> (Jupiter Lon)
-                           </div>
-                         </div>
-                       </div>
-                       <div className="flex flex-col gap-2">
-                         <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2 bg-amber-950/20 py-0.5">MONTH: TIDAL INTERFERENCE</span>
-                         <p className="text-[8px] text-zinc-500 leading-relaxed">
-                           太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
-                         </p>
-                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
-                           <InlineMath math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`} />
-                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
-                             <InlineMath math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`} /> (Phase)
-                           </div>
-                         </div>
-                       </div>
-                       <div className="flex flex-col gap-2">
-                         <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2 bg-blue-950/20 py-0.5">DAY: ROTATIONAL FLUX</span>
-                         <p className="text-[8px] text-zinc-500 leading-relaxed">
-                           地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
-                         </p>
-                         <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
-                           <InlineMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`} />
-                           <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1 italic">JD: Julian Day Baseline</div>
-                         </div>
-                       </div>
-                     </div>
-                     <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
-                       <div className="text-[8px] text-zinc-600 italic">
-                         ※ 本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
-                         古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
-                       </div>
-                     </div>
-                   </div>
+                  <div className="animate-fade-in border-l-2 border-blue-500 pl-3 mt-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2 bg-purple-950/20 py-0.5">YEAR: JUPITER RESONANCE</span>
+                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                          木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
+                        </p>
+                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                          <InlineMath math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`} />
+                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                            <InlineMath math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`} /> (Jupiter Lon)
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2 bg-amber-950/20 py-0.5">MONTH: TIDAL INTERFERENCE</span>
+                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                          太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
+                        </p>
+                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                          <InlineMath math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`} />
+                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                            <InlineMath math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`} /> (Phase)
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2 bg-blue-950/20 py-0.5">DAY: ROTATIONAL FLUX</span>
+                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                          地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
+                        </p>
+                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                          <InlineMath math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`} />
+                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1 italic">JD: Julian Day Baseline</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
+                      <div className="text-[8px] text-zinc-600 italic">
+                        ※ 本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
+                        古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -1699,8 +1697,8 @@ export const SolarTimeClock = () => {
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest">Action Intent</label>
                       <span className="text-[8px] text-zinc-600">行動の性質により吉凶の計算結果が変わります</span>
                     </div>
-                    <select 
-                      value={actionIntent} 
+                    <select
+                      value={actionIntent}
                       onChange={(e) => setActionIntent(e.target.value as ActionIntent)}
                       className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right"
                     >
@@ -1710,37 +1708,37 @@ export const SolarTimeClock = () => {
                       <option value="MIGRATION">MIGRATION (引越し・長期滞在)</option>
                     </select>
                   </div>
-                  
+
                   <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
                         Destination <span className="text-[9px] text-zinc-600">Lat/Lon</span>
                       </label>
-                      <button 
+                      <button
                         onClick={() => setShowMapPicker(!showMapPicker)}
                         className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
                       >
                         [ MAP SEARCH ]
                       </button>
                     </div>
-                    
+
                     {showMapPicker && (
                       <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20">
-                        <LocationPickerInner 
-                          initialLat={targetLat || lat} 
-                          initialLon={targetLon || lon} 
+                        <LocationPickerInner
+                          initialLat={targetLat || lat}
+                          initialLon={targetLon || lon}
                           onSelect={(newLat: number, newLon: number) => {
                             setTargetLat(Number(newLat.toFixed(5)));
                             setTargetLon(Number(newLon.toFixed(5)));
-                          }} 
+                          }}
                         />
                       </div>
                     )}
-                    
+
                     <div className="w-full relative z-10 flex gap-1 mb-1">
-                      <input 
-                        type="text" 
-                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)" 
+                      <input
+                        type="text"
+                        placeholder="Paste Google Maps URL here... (e.g. @35.68,139.76)"
                         className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
                         onChange={(e) => {
                           const url = e.target.value;
@@ -1798,21 +1796,20 @@ export const SolarTimeClock = () => {
                         </a>
                       </div>
                     )}                    {targetDirInfo && targetVectorStatus && (
-                      <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
-                        targetVectorStatus.startsWith('NOISE_VOID')
+                      <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${targetVectorStatus.startsWith('NOISE_VOID')
                           ? 'bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45'
                           : targetVectorStatus.startsWith('NOISE_NODE')
-                          ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                          : targetVectorStatus.startsWith('NOISE') 
-                          ? 'bg-red-500/10 border-red-500/30 text-red-400' 
-                          : targetVectorStatus === 'OPTIMAL'
-                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                          : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                      }`}>
+                            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                            : targetVectorStatus.startsWith('NOISE')
+                              ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                              : targetVectorStatus === 'OPTIMAL'
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                                : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        }`}>
                         <div className="flex items-center gap-2">
-                           <span className="font-bold border border-current px-1 text-zinc-500" title="真北基準">真北: {targetDirInfo.trueDirection}</span>
-                           <span className="font-bold border border-current px-1 text-emerald-400" title="磁北基準">磁北: {targetDirInfo.magneticDirection}</span>
-                           <span>{targetVectorStatus}</span>
+                          <span className="font-bold border border-current px-1 text-zinc-500" title="真北基準">真北: {targetDirInfo.trueDirection}</span>
+                          <span className="font-bold border border-current px-1 text-emerald-400" title="磁北基準">磁北: {targetDirInfo.magneticDirection}</span>
+                          <span>{targetVectorStatus}</span>
                         </div>
                         <span className="text-[8px] opacity-70">TARGET EVAL</span>
                       </div>
@@ -1830,27 +1827,27 @@ export const SolarTimeClock = () => {
                     <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Zone Classification <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間分類</span></h3>
                   </div>
                   <div className="flex-1 mt-2 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
-                   {(() => {
-                     const renderZone = (fv: any, title: string, subtitle: string, badgeColor: string) => {
-                       if (!fv) return null;
-                       const allDirs = ['N','NE','E','SE','S','SW','W','NW'];
-                       const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
-                          const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                    {(() => {
+                      const renderZone = (fv: any, title: string, subtitle: string, badgeColor: string) => {
+                        if (!fv) return null;
+                        const allDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+                        const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
+                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
                           return map[k] || k;
-                       });
-                       const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
-                          const map:any = {N:'北',NE:'北東',E:'東',SE:'南東',S:'南',SW:'南西',W:'西',NW:'北西'};
+                        });
+                        const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
+                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
                           return map[k] || k;
-                       });
-                       
-                       return (
-                         <div className="flex flex-col gap-2">
-                           <div className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 ${badgeColor}`}>
-                             <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                             {title} <span className="text-[8px] opacity-70 font-normal">{subtitle}</span>
-                           </div>
-                           {optimals.length > 0 && (
-                             <div className="bg-emerald-950/40 border-l-2 border-emerald-500 p-2 sm:p-3 rounded-r-md">
+                        });
+
+                        return (
+                          <div className="flex flex-col gap-2">
+                            <div className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 ${badgeColor}`}>
+                              <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                              {title} <span className="text-[8px] opacity-70 font-normal">{subtitle}</span>
+                            </div>
+                            {optimals.length > 0 && (
+                              <div className="bg-emerald-950/40 border-l-2 border-emerald-500 p-2 sm:p-3 rounded-r-md">
                                 <div className="text-emerald-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                                   [ GO ] 推奨方位
@@ -1858,10 +1855,10 @@ export const SolarTimeClock = () => {
                                 <div className="text-emerald-400 font-bold text-xl sm:text-2xl tracking-widest">
                                   {optimals.join(' / ')}
                                 </div>
-                             </div>
-                           )}
-                           {safes.length > 0 && (
-                             <div className="bg-blue-950/40 border-l-2 border-blue-500 p-2 sm:p-3 rounded-r-md">
+                              </div>
+                            )}
+                            {safes.length > 0 && (
+                              <div className="bg-blue-950/40 border-l-2 border-blue-500 p-2 sm:p-3 rounded-r-md">
                                 <div className="text-blue-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
                                   [ SAFE ] 進入可能方位
@@ -1869,10 +1866,10 @@ export const SolarTimeClock = () => {
                                 <div className="text-blue-400 font-bold text-xl sm:text-2xl tracking-widest">
                                   {safes.join(' / ')}
                                 </div>
-                             </div>
-                           )}
-                           {optimals.length === 0 && safes.length === 0 && (
-                             <div className="bg-red-950/40 border-l-2 border-red-500 p-2 sm:p-3 rounded-r-md">
+                              </div>
+                            )}
+                            {optimals.length === 0 && safes.length === 0 && (
+                              <div className="bg-red-950/40 border-l-2 border-red-500 p-2 sm:p-3 rounded-r-md">
                                 <div className="text-red-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
                                   [ ALERT ]
@@ -1880,46 +1877,46 @@ export const SolarTimeClock = () => {
                                 <div className="text-red-500 font-bold text-lg sm:text-xl tracking-widest">
                                   全方位 進入非推奨 (待機)
                                 </div>
-                             </div>
-                           )}
-                         </div>
-                       );
-                     };
+                              </div>
+                            )}
+                          </div>
+                        );
+                      };
 
-                     return (() => {
-                       let physVectors, classVectors;
-                       let titleSuffix = 'FINAL LAYER (統合)';
+                      return (() => {
+                        let physVectors, classVectors;
+                        let titleSuffix = 'FINAL LAYER (統合)';
 
-                       if (activeLayerMode === 'year') {
-                         physVectors = physicalLayers?.yearLayer;
-                         classVectors = classicalLayers?.yearLayer;
-                         titleSuffix = 'YEAR LAYER (年盤)';
-                       } else if (activeLayerMode === 'month') {
-                         physVectors = physicalLayers?.monthLayer;
-                         classVectors = classicalLayers?.monthLayer;
-                         titleSuffix = 'MONTH LAYER (月盤)';
-                       } else if (activeLayerMode === 'day') {
-                         physVectors = physicalLayers?.dayLayer;
-                         classVectors = classicalLayers?.dayLayer;
-                         titleSuffix = 'DAY LAYER (日盤)';
-                       } else {
-                         physVectors = physicalLayers?.finalVectors;
-                         classVectors = classicalLayers?.finalVectors;
-                       }
+                        if (activeLayerMode === 'year') {
+                          physVectors = physicalLayers?.yearLayer;
+                          classVectors = classicalLayers?.yearLayer;
+                          titleSuffix = 'YEAR LAYER (年盤)';
+                        } else if (activeLayerMode === 'month') {
+                          physVectors = physicalLayers?.monthLayer;
+                          classVectors = classicalLayers?.monthLayer;
+                          titleSuffix = 'MONTH LAYER (月盤)';
+                        } else if (activeLayerMode === 'day') {
+                          physVectors = physicalLayers?.dayLayer;
+                          classVectors = classicalLayers?.dayLayer;
+                          titleSuffix = 'DAY LAYER (日盤)';
+                        } else {
+                          physVectors = physicalLayers?.finalVectors;
+                          classVectors = classicalLayers?.finalVectors;
+                        }
 
-                       return (
-                         <div className="flex flex-col gap-4">
-                           <div className={`transition-all duration-300 ${!useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
-                             {renderZone(physVectors, `PHYSICAL - ${titleSuffix}`, '(天体位相・物理基準)', 'text-emerald-500')}
-                           </div>
-                           <div className="h-px bg-zinc-800/50 w-full my-1"></div>
-                           <div className={`transition-all duration-300 ${useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
-                             {renderZone(classVectors, `CLASSICAL - ${titleSuffix}`, '(節切り・暦基準)', 'text-zinc-400')}
-                           </div>
-                         </div>
-                       );
-                     })();
-                   })()}
+                        return (
+                          <div className="flex flex-col gap-4">
+                            <div className={`transition-all duration-300 ${!useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
+                              {renderZone(physVectors, `PHYSICAL - ${titleSuffix}`, '(天体位相・物理基準)', 'text-emerald-500')}
+                            </div>
+                            <div className="h-px bg-zinc-800/50 w-full my-1"></div>
+                            <div className={`transition-all duration-300 ${useClassicalBoard ? 'opacity-100' : 'opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none'}`}>
+                              {renderZone(classVectors, `CLASSICAL - ${titleSuffix}`, '(節切り・暦基準)', 'text-zinc-400')}
+                            </div>
+                          </div>
+                        );
+                      })();
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1929,14 +1926,14 @@ export const SolarTimeClock = () => {
             <div className="w-full max-w-4xl mt-0">
 
               <div className="flex justify-end mb-2 w-full gap-2">
-                <button 
-                  onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)} 
+                <button
+                  onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
                   className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
                 >
                   {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
                 </button>
-                <button 
-                  onClick={() => setUseClassicalBoard(!useClassicalBoard)} 
+                <button
+                  onClick={() => setUseClassicalBoard(!useClassicalBoard)}
                   className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}
                 >
                   Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}
@@ -1971,7 +1968,7 @@ export const SolarTimeClock = () => {
                   [ SYSTEM MANUAL ] 判定基準とモデル・ゾーンの仕様
                 </summary>
                 <div className="mt-4 text-xs sm:text-sm text-zinc-300 font-mono leading-relaxed space-y-6 cursor-text">
-                  
+
                   {/* Model Differences */}
                   <div className="space-y-2">
                     <h3 className="text-emerald-400 font-bold border-b border-zinc-800 pb-1">■ 演算モデルの違い (PHYSICAL vs CLASSICAL)</h3>
@@ -1979,14 +1976,14 @@ export const SolarTimeClock = () => {
                       <div className="bg-zinc-900/50 p-3 border-l-2 border-emerald-500">
                         <div className="text-emerald-500 font-bold mb-1">PHYSICAL MODEL (天体位相・物理基準)</div>
                         <p className="text-zinc-400 text-[10px] sm:text-xs">
-                          宇宙のリアルタイムな物理データ（NASA/Swiss Ephemeris）を使用。木星の正確な黄経や、太陽・月のリアルな重力・磁場位相からダイレクトに空間の周波数を割り出します。<br/><br/>
+                          宇宙のリアルタイムな物理データ（NASA/Swiss Ephemeris）を使用。木星の正確な黄経や、太陽・月のリアルな重力・磁場位相からダイレクトに空間の周波数を割り出します。<br /><br />
                           <span className="text-zinc-300">推奨用途:</span> 今日の体調管理、集中力の最大化、リアルな環境干渉（自律神経への影響）の回避など。
                         </p>
                       </div>
                       <div className="bg-zinc-900/50 p-3 border-l-2 border-zinc-500">
                         <div className="text-zinc-400 font-bold mb-1">CLASSICAL MODEL (節切り・暦基準)</div>
                         <p className="text-zinc-400 text-[10px] sm:text-xs">
-                          伝統的な九星気学や東洋占星術のカレンダーを使用。「立春」などの二十四節気を基準とし、過去数千年の統計データや解釈と完全に一致するルールベースのモデルです。<br/><br/>
+                          伝統的な九星気学や東洋占星術のカレンダーを使用。「立春」などの二十四節気を基準とし、過去数千年の統計データや解釈と完全に一致するルールベースのモデルです。<br /><br />
                           <span className="text-zinc-300">推奨用途:</span> 対人交渉、引っ越し、大きな契約など、社会的なタイミングやバイオリズムの周期性を読む場合。
                         </p>
                       </div>
@@ -2003,7 +2000,7 @@ export const SolarTimeClock = () => {
                           [ GO ] 推奨方位 (OPTIMAL)
                         </div>
                         <p className="text-zinc-400 text-[10px] sm:text-xs">
-                          有害なノイズ（凶殺）が一切存在しないことに加え、ユーザーの「本命星」とその方位の星が『相生（互いにエネルギーを与え合う関係）』になっています。<br/><br/>
+                          有害なノイズ（凶殺）が一切存在しないことに加え、ユーザーの「本命星」とその方位の星が『相生（互いにエネルギーを与え合う関係）』になっています。<br /><br />
                           <span className="text-zinc-300">意味:</span> リスクがないだけでなく、行くことで「エネルギー的なバフ（運気・活力の向上）」が得られる、システムが最も推奨するベストな方位です。
                         </p>
                       </div>
@@ -2013,7 +2010,7 @@ export const SolarTimeClock = () => {
                           [ SAFE ] 進入可能方位
                         </div>
                         <p className="text-zinc-400 text-[10px] sm:text-xs">
-                          五黄殺、暗剣殺、天中殺といったあらゆる有害なノイズが一切存在しない方位です。<br/><br/>
+                          五黄殺、暗剣殺、天中殺といったあらゆる有害なノイズが一切存在しない方位です。<br /><br />
                           <span className="text-zinc-300">意味:</span> 行ってもマイナス（ペナルティ）を受けることはありませんが、特別なボーナスも得られない「無害なニュートラルゾーン（安全地帯）」です。
                         </p>
                       </div>
@@ -2035,16 +2032,16 @@ export const SolarTimeClock = () => {
 
       </div>
       {/* Telemetry and Audit Log */}
-      <SystemTelemetryLog 
-        lat={lat} 
-        lon={lon} 
-        solarTime={solarData?.solarTime} 
-        declination={geoData?.declination || null} 
-        env={env} 
+      <SystemTelemetryLog
+        lat={lat}
+        lon={lon}
+        solarTime={solarData?.solarTime}
+        declination={geoData?.declination || null}
+        env={env}
       />
 
       <div className="fixed bottom-6 left-6 lg:left-72 z-50 flex flex-col sm:flex-row gap-3">
-        <button 
+        <button
           onClick={handleSaveStateToDatabase}
           disabled={isSavingLog}
           className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-400/50 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -2053,17 +2050,17 @@ export const SolarTimeClock = () => {
             <span className="animate-pulse">SAVING...</span>
           ) : (
             <>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
               SAVE TO DATABASE
             </>
           )}
         </button>
 
-        <button 
-          onClick={exportMasterTelemetry} 
+        <button
+          onClick={exportMasterTelemetry}
           className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
           EXPORT MASTER STATE (CSV/JSON)
         </button>
       </div>
