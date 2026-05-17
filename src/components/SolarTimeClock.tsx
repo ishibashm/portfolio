@@ -150,6 +150,7 @@ export const SolarTimeClock = () => {
   }, [ansLoad, shieldCapacity, birthDate, lon]);
 
   const loadFromLocal = async () => {
+    let isLoaded = false
     try {
       const res = await fetch('/api/user-config');
       if (res.ok) {
@@ -174,7 +175,7 @@ export const SolarTimeClock = () => {
           if (data.gsr !== undefined) setGsr(data.gsr);
           if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
           if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
-          return true;
+          isLoaded = true;
         }
       }
     } catch (e) {
@@ -204,12 +205,28 @@ export const SolarTimeClock = () => {
         if (data.gsr !== undefined) setGsr(data.gsr);
         if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
         if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
-        return true;
+        isLoaded = true;
       } catch (e) {
         console.error("LocalStorage parse error", e);
       }
     }
-    return false;
+
+    // Sync from Relocation Matrix Dashboard if available
+    if (typeof window !== 'undefined') {
+      const wBirthDate = localStorage.getItem('wealth_birthDate');
+      const wBirthLat = localStorage.getItem('wealth_birthLat');
+      const wBirthLon = localStorage.getItem('wealth_birthLon');
+      const wBaseLat = localStorage.getItem('wealth_baseLat');
+      const wBaseLon = localStorage.getItem('wealth_baseLon');
+
+      if (wBirthDate) { setBirthDate(wBirthDate); isLoaded = true; }
+      if (wBirthLat) { setBirthLat(Number(wBirthLat)); isLoaded = true; }
+      if (wBirthLon) { setBirthLon(Number(wBirthLon)); isLoaded = true; }
+      if (wBaseLat) { setLat(Number(wBaseLat)); isLoaded = true; }
+      if (wBaseLon) { setLon(Number(wBaseLon)); isLoaded = true; }
+    }
+
+    return isLoaded;
   };
 
   const handleLoadConfig = async (silent = true) => {
@@ -277,6 +294,15 @@ export const SolarTimeClock = () => {
       });
 
       localStorage.setItem('tactical_config_v1', JSON.stringify(configToSave));
+
+      // Sync back to Relocation Matrix Dashboard
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('wealth_birthDate', birthDate);
+        localStorage.setItem('wealth_birthLat', birthLat.toString());
+        localStorage.setItem('wealth_birthLon', birthLon.toString());
+        localStorage.setItem('wealth_baseLat', lat.toString());
+        localStorage.setItem('wealth_baseLon', lon.toString());
+      }
 
       alert("PC内のファイル (local_tactical_config.json) とブラウザに永久保存しました。");
       if (geminiKey && geminiKey !== "") {
@@ -913,8 +939,8 @@ export const SolarTimeClock = () => {
           <button
             onClick={() => setActiveTab("profile")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "profile"
-                ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
+              : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
             1. Profile
@@ -922,8 +948,8 @@ export const SolarTimeClock = () => {
           <button
             onClick={() => setActiveTab("destination")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "destination"
-                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
+              : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
             2. Destination
@@ -931,8 +957,8 @@ export const SolarTimeClock = () => {
           <button
             onClick={() => setActiveTab("timing")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "timing"
-                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
+              : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
             3. Timing
@@ -940,8 +966,8 @@ export const SolarTimeClock = () => {
           <button
             onClick={() => setActiveTab("consult")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "consult"
-                ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+              ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
+              : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
             4. Consult
@@ -1797,14 +1823,14 @@ export const SolarTimeClock = () => {
                       </div>
                     )}                    {targetDirInfo && targetVectorStatus && (
                       <div className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${targetVectorStatus.startsWith('NOISE_VOID')
-                          ? 'bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45'
-                          : targetVectorStatus.startsWith('NOISE_NODE')
-                            ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
-                            : targetVectorStatus.startsWith('NOISE')
-                              ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                              : targetVectorStatus === 'OPTIMAL'
-                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                                : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        ? 'bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45'
+                        : targetVectorStatus.startsWith('NOISE_NODE')
+                          ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
+                          : targetVectorStatus.startsWith('NOISE')
+                            ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                            : targetVectorStatus === 'OPTIMAL'
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                         }`}>
                         <div className="flex items-center gap-2">
                           <span className="font-bold border border-current px-1 text-zinc-500" title="真北基準">真北: {targetDirInfo.trueDirection}</span>
@@ -1825,6 +1851,20 @@ export const SolarTimeClock = () => {
                   <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
                     <span className="text-zinc-500 animate-pulse">◆</span>
                     <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Zone Classification <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間分類</span></h3>
+                  </div>
+                  <div className="flex flex-col gap-1.5 mb-2 bg-black/50 p-2.5 rounded-sm border border-zinc-800/50 shadow-inner">
+                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center border-b border-zinc-800/50 pb-1">
+                      <span>BASE GEO (基準地)</span>
+                      <span className="text-zinc-300 font-bold">{lat?.toFixed(4)}N, {lon?.toFixed(4)}E</span>
+                    </div>
+                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center border-b border-zinc-800/50 pb-1">
+                      <span>TARGET DATE (目標日)</span>
+                      <span className="text-emerald-400 font-bold">{evalDate.toLocaleDateString()} <span className="text-zinc-600 font-normal ml-1">({timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}d)</span></span>
+                    </div>
+                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center">
+                      <span>SUBJECT (対象波長)</span>
+                      <span className="text-purple-400 font-bold">{honmeiStar ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}` : 'Unset'} <span className="text-zinc-600 font-normal ml-1">({birthDate.split('T')[0]})</span></span>
+                    </div>
                   </div>
                   <div className="flex-1 mt-2 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
                     {(() => {
