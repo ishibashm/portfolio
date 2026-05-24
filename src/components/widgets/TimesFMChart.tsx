@@ -1,5 +1,5 @@
-import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import React, { useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
 export interface ForecastDataPoint {
@@ -15,19 +15,21 @@ interface TimesFMChartProps {
 }
 
 export const TimesFMChart = ({ forecastData, ticker = "AAPL" }: TimesFMChartProps) => {
-  // もしデータがない場合のモックデータ生成
-  const data = forecastData && forecastData.length > 0 ? forecastData : Array.from({ length: 30 }).map((_, i) => {
-    const base = 150 + i * 0.5 + Math.random() * 2;
-    const margin = (i + 1) * 0.3;
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    return {
-      date: d.toISOString(),
-      mean: Number(base.toFixed(2)),
-      lower_bound_95: Number((base - margin).toFixed(2)),
-      upper_bound_95: Number((base + margin).toFixed(2)),
-    };
-  });
+  // もしデータがない場合のモックデータ生成 (useMemoを使用して純粋関数にする)
+  const data = useMemo(() => {
+    return forecastData && forecastData.length > 0 ? forecastData : Array.from({ length: 30 }).map((_, i) => {
+      const base = 150 + i * 0.5 + Math.random() * 2;
+      const margin = (i + 1) * 0.3;
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      return {
+        date: d.toISOString(),
+        mean: Number(base.toFixed(2)),
+        lower_bound_95: Number((base - margin).toFixed(2)),
+        upper_bound_95: Number((base + margin).toFixed(2)),
+      };
+    });
+  }, [forecastData]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
