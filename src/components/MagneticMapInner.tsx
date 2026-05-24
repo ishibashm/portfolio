@@ -63,6 +63,47 @@ function SyncMapCenter({ lat, lon }: { lat: number, lon: number }) {
   return null;
 }
 
+function InvalidateMapSize() {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+    
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timer);
+    };
+  }, [map]);
+
+  return null;
+}
+
+function ZoomListener({ onChangeZoom }: { onChangeZoom: (zoom: number) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    onChangeZoom(map.getZoom());
+    const handleZoom = () => {
+      onChangeZoom(map.getZoom());
+    };
+    map.on("zoomend", handleZoom);
+    return () => {
+      map.off("zoomend", handleZoom);
+    };
+  }, [map, onChangeZoom]);
+
+  return null;
+}
+
+
+
 function ClickEvents({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -81,6 +122,7 @@ export default function MagneticMapInner({
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   const [clickedPos, setClickedPos] = React.useState<[number, number] | null>(null);
+  const [zoom, setZoom] = React.useState(13);
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -119,7 +161,7 @@ export default function MagneticMapInner({
 
   // 1. Memoize boundaries
   const boundaries = React.useMemo(() => {
-    return [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5];
+    return [15, 75, 105, 165, 195, 255, 285, 345];
   }, []);
 
   // 2. Memoize vector styles based on status and kpIndex
@@ -171,12 +213,21 @@ export default function MagneticMapInner({
       const baseBearing = magNorthBearing + d.deg;
 
       const points: [number, number][] = [center];
-      for (let offset = -15; offset <= 15; offset += 5) {
+      const isCorner = ['NE', 'SE', 'SW', 'NW'].includes(d.dir);
+      const halfWidth = isCorner ? 30 : 15;
+      for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
 
-      // Calculate label position (approx 3km out)
-      const labelPos = getDestination(lat, lon, baseBearing, 3000);
+      // Calculate label position dynamically based on zoom level
+      let labelDistance = 15;
+      if (zoom >= 13) labelDistance = 3;
+      else if (zoom >= 11) labelDistance = 10;
+      else if (zoom >= 9) labelDistance = 35;
+      else if (zoom >= 7) labelDistance = 90;
+      else if (zoom >= 5) labelDistance = 180;
+      else labelDistance = 300;
+      const labelPos = getDestination(lat, lon, baseBearing, labelDistance);
 
       const getStatusLabel = (status: string) => {
         if (status === 'NOISE_GOU') return '五黄';
@@ -273,7 +324,7 @@ export default function MagneticMapInner({
         </React.Fragment>
       );
     });
-  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers, activeLayerMode]);
+  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers, activeLayerMode, zoom]);
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {
@@ -342,6 +393,8 @@ export default function MagneticMapInner({
     <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80">
       <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
         <SyncMapCenter lat={lat} lon={lon} />
+        <InvalidateMapSize />
+        <ZoomListener onChangeZoom={setZoom} />
         <ClickEvents onMapClick={(lat, lng) => setClickedPos([lat, lng])} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

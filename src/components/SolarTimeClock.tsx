@@ -111,12 +111,18 @@ const getVectorBreakdown = (
 
   if (lunarNodeLon !== null) {
     const getBearing = (lon: number) => {
-      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
       let b = (lon - 90) % 360; 
       if (b < 0) b += 360;
       b = 360 - b; 
-      const i = Math.floor(((b + 22.5) % 360) / 45);
-      return dirs[i];
+      const val = (b % 360 + 360) % 360;
+      if (val >= 345 || val < 15) return 'N';
+      if (val >= 15 && val < 75) return 'NE';
+      if (val >= 75 && val < 105) return 'E';
+      if (val >= 105 && val < 165) return 'SE';
+      if (val >= 165 && val < 195) return 'S';
+      if (val >= 195 && val < 255) return 'SW';
+      if (val >= 255 && val < 285) return 'W';
+      return 'NW';
     };
     const nodeDir = getBearing(lunarNodeLon);
     const oppNodeDir = getBearing((lunarNodeLon + 180) % 360);
@@ -159,44 +165,40 @@ const getVectorBreakdown = (
   return { environmental, personal };
 };
 
-const filterVectors = (
-  vectorData: {
+const filterLayerData = (
+  layer: {
     yearLayer: Partial<Record<Direction, string>>;
     monthLayer: Partial<Record<Direction, string>>;
     dayLayer: Partial<Record<Direction, string>>;
     finalVectors: Record<Direction, string>;
+    tendoDirection?: Direction;
+    doyouState?: any;
   },
   personalStar: StarFrequency,
-  voidZodiacs: string[],
-  lunarNodeLon: number | null,
-  yB: any,
-  mB: any,
-  dB: any,
-  mode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
-  getsuMeiStar: StarFrequency | null = null,
-  activeLayerMode: 'final' | 'year' | 'month' | 'day' = 'final'
-): Record<Direction, string> => {
-  if (mode === 'composite') {
-    if (activeLayerMode === 'year') return vectorData.yearLayer as Record<Direction, string>;
-    if (activeLayerMode === 'month') return vectorData.monthLayer as Record<Direction, string>;
-    if (activeLayerMode === 'day') return vectorData.dayLayer as Record<Direction, string>;
-    return vectorData.finalVectors as Record<Direction, string>;
+  getsuMeiStar: StarFrequency | null,
+  voidZodiacArray: string[],
+  directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
+  yBoard: any,
+  mBoard: any,
+  dBoard: any
+) => {
+  if (directionFilterMode === 'composite') {
+    return layer;
   }
 
   const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const res: Record<Direction, string> = {} as any;
 
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
     switch(star) {
-      case 1: return [6, 7, 3, 4]; 
-      case 2: return [9, 6, 7]; 
-      case 3: return [1, 9]; 
+      case 1: return [6, 7, 3, 4];
+      case 2: return [9, 6, 7];
+      case 3: return [1, 9];
       case 4: return [1, 9];
       case 5: return [9, 6, 7];
-      case 6: return [2, 5, 8, 1]; 
+      case 6: return [2, 5, 8, 1];
       case 7: return [2, 5, 8, 1];
       case 8: return [9, 6, 7];
-      case 9: return [3, 4, 2, 5, 8]; 
+      case 9: return [3, 4, 2, 5, 8];
       default: return [];
     }
   };
@@ -223,23 +225,9 @@ const filterVectors = (
     '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
   };
   const voidDirs = new Set<Direction>();
-  voidZodiacs.forEach(z => {
+  voidZodiacArray.forEach(z => {
     (z2d[z] || []).forEach(d => voidDirs.add(d));
   });
-
-  const nodeDirs = new Set<Direction>();
-  if (lunarNodeLon !== null) {
-    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const getBearing = (lon: number) => {
-      let b = (lon - 90) % 360; 
-      if (b < 0) b += 360;
-      b = 360 - b; 
-      const i = Math.floor(((b + 22.5) % 360) / 45);
-      return dirs[i];
-    };
-    nodeDirs.add(getBearing(lunarNodeLon));
-    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
-  }
 
   const getOpposite = (d: Direction): Direction => {
     const opposites: Record<string, Direction> = {
@@ -249,61 +237,127 @@ const filterVectors = (
     return opposites[d];
   };
 
-  directions.forEach(d => {
-    const y = vectorData.yearLayer[d];
-    const m = vectorData.monthLayer[d];
-    const daySt = vectorData.dayLayer[d];
-    
-    let list: string[] = [];
-    let activeBoard: any = dB;
-    if (activeLayerMode === 'year') {
-      list = [y || 'SAFE'];
-      activeBoard = yB;
-    } else if (activeLayerMode === 'month') {
-      list = [m || 'SAFE'];
-      activeBoard = mB;
-    } else if (activeLayerMode === 'day') {
-      list = [daySt || 'SAFE'];
-      activeBoard = dB;
-    } else {
-      list = [y || 'SAFE', m || 'SAFE', daySt || 'SAFE'];
-      activeBoard = dB;
-    }
-
-    if (mode === 'personal_kigaku') {
-      const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
-      if (hasPurple) {
-        res[d] = hasPurple;
-      } else {
-        if (activeLayerMode === 'final') {
-          const hasOpt = list.includes('OPTIMAL');
-          const hasOptReg = list.includes('OPTIMAL_REGULAR');
-          if (hasOpt) res[d] = 'OPTIMAL';
-          else if (hasOptReg) res[d] = 'OPTIMAL_REGULAR';
-          else res[d] = 'SAFE';
-        } else {
-          res[d] = getOptimalStatus(activeBoard ? activeBoard[d] : 1);
+  const filterStatus = (status: string | undefined, dir: Direction, activeBoard: any) => {
+    if (!status) return 'SAFE';
+    if (directionFilterMode === 'personal_kigaku') {
+      let honmeiD: Direction | null = null;
+      directions.forEach(d => {
+        if (activeBoard && activeBoard[d] === personalStar) {
+          honmeiD = d;
         }
-      }
-    } else if (mode === 'personal_bazi') {
-      if (voidDirs.has(d)) {
-        res[d] = 'NOISE_VOID';
-      } else {
-        res[d] = 'SAFE';
-      }
+      });
+      if (dir === honmeiD) return 'NOISE_HONMEI';
+      if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
+      const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+      return optStatus;
+    } else if (directionFilterMode === 'personal_bazi') {
+      if (voidDirs.has(dir)) return 'NOISE_VOID';
+      return 'SAFE';
     } else {
-      const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
-      if (hasRed) {
-        res[d] = hasRed;
-      } else if (nodeDirs.has(d)) {
-        res[d] = 'NOISE_NODE';
-      } else {
-        res[d] = 'SAFE';
+      let isGou = false;
+      let isAnken = false;
+      if (activeBoard) {
+        directions.forEach(d => {
+          if (activeBoard[d] === 5) {
+            if (d === dir) isGou = true;
+            if (getOpposite(d) === dir) isAnken = true;
+          }
+        });
       }
+      if (isGou) return 'NOISE_GOU';
+      if (isAnken) return 'NOISE_ANKEN';
+      if (status === 'NOISE_HA') return 'NOISE_HA';
+      if (status === 'NOISE_NODE') return 'NOISE_NODE';
+      return 'SAFE';
+    }
+  };
+
+  const newYearLayer: any = {};
+  const newMonthLayer: any = {};
+  const newDayLayer: any = {};
+  const newFinalVectors: any = {};
+
+  directions.forEach(d => {
+    newYearLayer[d] = filterStatus(layer.yearLayer[d], d, yBoard);
+    newMonthLayer[d] = filterStatus(layer.monthLayer[d], d, mBoard);
+    newDayLayer[d] = filterStatus(layer.dayLayer[d], d, dBoard);
+    
+    if (directionFilterMode === 'personal_kigaku') {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
+      const hasOpt = list.find(s => s === 'OPTIMAL');
+      const hasOptReg = list.find(s => s === 'OPTIMAL_REGULAR');
+
+      if (hasPurple) newFinalVectors[d] = hasPurple;
+      else if (hasOpt) newFinalVectors[d] = 'OPTIMAL';
+      else if (hasOptReg) newFinalVectors[d] = 'OPTIMAL_REGULAR';
+      else newFinalVectors[d] = 'SAFE';
+    } else if (directionFilterMode === 'personal_bazi') {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasVoid = list.find(s => s === 'NOISE_VOID');
+      if (hasVoid) newFinalVectors[d] = 'NOISE_VOID';
+      else newFinalVectors[d] = 'SAFE';
+    } else {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
+      const hasNode = list.find(s => s === 'NOISE_NODE');
+
+      if (hasRed) newFinalVectors[d] = hasRed;
+      else if (hasNode) newFinalVectors[d] = hasNode;
+      else newFinalVectors[d] = 'SAFE';
     }
   });
 
-  return res;
+  return {
+    ...layer,
+    yearLayer: newYearLayer,
+    monthLayer: newMonthLayer,
+    dayLayer: newDayLayer,
+    finalVectors: newFinalVectors
+  };
+};
+
+const filterVectors = (
+  vectorData: {
+    yearLayer: Partial<Record<Direction, string>>;
+    monthLayer: Partial<Record<Direction, string>>;
+    dayLayer: Partial<Record<Direction, string>>;
+    finalVectors: Record<Direction, string>;
+  },
+  personalStar: StarFrequency,
+  voidZodiacs: string[],
+  lunarNodeLon: number | null,
+  yB: any,
+  mB: any,
+  dB: any,
+  mode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
+  getsuMeiStar: StarFrequency | null = null,
+  activeLayerMode: 'final' | 'year' | 'month' | 'day' = 'final'
+): Record<Direction, string> => {
+  const filtered = filterLayerData(
+    vectorData,
+    personalStar,
+    getsuMeiStar,
+    voidZodiacs,
+    mode,
+    yB,
+    mB,
+    dB
+  );
+
+  if (activeLayerMode === 'year') return filtered.yearLayer as Record<Direction, string>;
+  if (activeLayerMode === 'month') return filtered.monthLayer as Record<Direction, string>;
+  if (activeLayerMode === 'day') return filtered.dayLayer as Record<Direction, string>;
+  return filtered.finalVectors as Record<Direction, string>;
 };
 
 export const SolarTimeClock = () => {
@@ -621,10 +675,21 @@ export const SolarTimeClock = () => {
       const declination = geoData?.declination ?? -8.2;
       const magBrng = (trueBrng - declination + 360) % 360;
 
-      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const getDir = (bearing: number): Direction => {
+        const b = (bearing % 360 + 360) % 360;
+        if (b >= 345 || b < 15) return 'N';
+        if (b >= 15 && b < 75) return 'NE';
+        if (b >= 75 && b < 105) return 'E';
+        if (b >= 105 && b < 165) return 'SE';
+        if (b >= 165 && b < 195) return 'S';
+        if (b >= 195 && b < 255) return 'SW';
+        if (b >= 255 && b < 285) return 'W';
+        return 'NW';
+      };
+
       return {
-        trueDirection: dirs[Math.floor(((trueBrng + 22.5) % 360) / 45)],
-        magneticDirection: dirs[Math.floor(((magBrng + 22.5) % 360) / 45)]
+        trueDirection: getDir(trueBrng),
+        magneticDirection: getDir(magBrng)
       };
     }
     return null;
@@ -652,15 +717,18 @@ export const SolarTimeClock = () => {
 
         const testEnv = getCurrentEnvironmentalFrequencies(testDate);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
-        const mB = generateBoard(testEnv.monthStar);
-        const dB = generateBoard(testEnv.dayStar);
+        const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
+        const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
 
         const vectorData = calculateVectorCollision(
           useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
           yB, mB, dB,
           personalVoidZodiac,
           testEnv.raw.lunarNode,
-          actionIntent
+          actionIntent,
+          testDate,
+          lon || 139.6917,
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
         );
 
         if (targetDirInfo) {
@@ -749,7 +817,7 @@ export const SolarTimeClock = () => {
       env.raw.lunarNode,
       actionIntent,
       tDate,
-      139.6917,
+      lon || 139.6917,
       useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
     );
 
@@ -760,7 +828,7 @@ export const SolarTimeClock = () => {
       env.raw.lunarNode,
       actionIntent,
       tDate,
-      139.6917,
+      lon || 139.6917,
       undefined
     );
 
@@ -771,7 +839,7 @@ export const SolarTimeClock = () => {
       env.raw.lunarNode,
       actionIntent,
       tDate,
-      139.6917,
+      lon || 139.6917,
       getsuMeiStar || undefined
     );
 
@@ -782,157 +850,41 @@ export const SolarTimeClock = () => {
     if (!rawLayers || !rawPhysicalLayers || !rawClassicalLayers || !honmeiStar) {
       return { layers: null, physicalLayers: null, classicalLayers: null };
     }
-    if (directionFilterMode === 'composite') {
-      return { layers: rawLayers, physicalLayers: rawPhysicalLayers, classicalLayers: rawClassicalLayers };
-    }
 
-    const filterLayer = (layer: any, yBoard: any, mBoard: any, dBoard: any) => {
-      const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-      const personalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
-      const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
-
-      const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-        switch(star) {
-          case 1: return [6, 7, 3, 4];
-          case 2: return [9, 6, 7];
-          case 3: return [1, 9];
-          case 4: return [1, 9];
-          case 5: return [9, 6, 7];
-          case 6: return [2, 5, 8, 1];
-          case 7: return [2, 5, 8, 1];
-          case 8: return [9, 6, 7];
-          case 9: return [3, 4, 2, 5, 8];
-          default: return [];
-        }
-      };
-      const compatiblesHonmei = getCompatibleStars(personalStar);
-      const compatiblesGetsumei = useClassicalBoard && getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
-
-      const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
-        const isHonmeiComp = compatiblesHonmei.includes(starNum);
-        if (!useClassicalBoard || !getsuMeiStar) {
-          return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
-        }
-        const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
-        if (isHonmeiComp && isGetsumeiComp) {
-          return 'OPTIMAL';
-        } else if (isHonmeiComp) {
-          return 'OPTIMAL_REGULAR';
-        }
-        return 'SAFE';
-      };
-
-      const z2d: Record<string, Direction[]> = {
-        '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
-        '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
-        '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
-      };
-      const voidDirs = new Set<Direction>();
-      voidZodiacArray.forEach(z => {
-        (z2d[z] || []).forEach(d => voidDirs.add(d));
-      });
-
-      const getOpposite = (d: Direction): Direction => {
-        const opposites: Record<string, Direction> = {
-          'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
-          'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
-        };
-        return opposites[d];
-      };
-
-      const filterStatus = (status: string, dir: Direction, activeBoard: any) => {
-        if (!status) return 'SAFE';
-        if (directionFilterMode === 'personal_kigaku') {
-          let honmeiD: Direction | null = null;
-          directions.forEach(d => {
-            if (activeBoard && activeBoard[d] === personalStar) {
-              honmeiD = d;
-            }
-          });
-          if (dir === honmeiD) return 'NOISE_HONMEI';
-          if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
-          const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
-          return optStatus;
-        } else if (directionFilterMode === 'personal_bazi') {
-          if (voidDirs.has(dir)) return 'NOISE_VOID';
-          return 'SAFE';
-        } else {
-          let isGou = false;
-          let isAnken = false;
-          if (activeBoard) {
-            directions.forEach(d => {
-              if (activeBoard[d] === 5) {
-                if (d === dir) isGou = true;
-                if (getOpposite(d) === dir) isAnken = true;
-              }
-            });
-          }
-          if (isGou) return 'NOISE_GOU';
-          if (isAnken) return 'NOISE_ANKEN';
-          if (status === 'NOISE_HA') return 'NOISE_HA';
-          if (status === 'NOISE_NODE') return 'NOISE_NODE';
-          return 'SAFE';
-        }
-      };
-
-      const newYearLayer: any = {};
-      const newMonthLayer: any = {};
-      const newDayLayer: any = {};
-      const newFinalVectors: any = {};
-
-      directions.forEach(d => {
-        newYearLayer[d] = filterStatus(layer.yearLayer[d], d, yBoard);
-        newMonthLayer[d] = filterStatus(layer.monthLayer[d], d, mBoard);
-        newDayLayer[d] = filterStatus(layer.dayLayer[d], d, dBoard);
-        
-        if (directionFilterMode === 'personal_kigaku') {
-          const y = newYearLayer[d];
-          const m = newMonthLayer[d];
-          const dStatus = newDayLayer[d];
-          const list = [y, m, dStatus];
-          const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
-          const hasOpt = list.find(s => s === 'OPTIMAL');
-          const hasOptReg = list.find(s => s === 'OPTIMAL_REGULAR');
-
-          if (hasPurple) newFinalVectors[d] = hasPurple;
-          else if (hasOpt) newFinalVectors[d] = 'OPTIMAL';
-          else if (hasOptReg) newFinalVectors[d] = 'OPTIMAL_REGULAR';
-          else newFinalVectors[d] = 'SAFE';
-        } else if (directionFilterMode === 'personal_bazi') {
-          const y = newYearLayer[d];
-          const m = newMonthLayer[d];
-          const dStatus = newDayLayer[d];
-          const list = [y, m, dStatus];
-          const hasVoid = list.find(s => s === 'NOISE_VOID');
-          if (hasVoid) newFinalVectors[d] = 'NOISE_VOID';
-          else newFinalVectors[d] = 'SAFE';
-        } else {
-          const y = newYearLayer[d];
-          const m = newMonthLayer[d];
-          const dStatus = newDayLayer[d];
-          const list = [y, m, dStatus];
-          const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
-          const hasNode = list.find(s => s === 'NOISE_NODE');
-
-          if (hasRed) newFinalVectors[d] = hasRed;
-          else if (hasNode) newFinalVectors[d] = hasNode;
-          else newFinalVectors[d] = 'SAFE';
-        }
-      });
-
-      return {
-        ...layer,
-        yearLayer: newYearLayer,
-        monthLayer: newMonthLayer,
-        dayLayer: newDayLayer,
-        finalVectors: newFinalVectors
-      };
-    };
+    const personalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
 
     return {
-      layers: filterLayer(rawLayers, useClassicalBoard ? classicalYearBoard : physicalYearBoard, useClassicalBoard ? classicalMonthBoard : physicalMonthBoard, useClassicalBoard ? classicalDayBoard : physicalDayBoard),
-      physicalLayers: filterLayer(rawPhysicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard),
-      classicalLayers: filterLayer(rawClassicalLayers, classicalYearBoard, classicalMonthBoard, classicalDayBoard)
+      layers: filterLayerData(
+        rawLayers,
+        personalStar,
+        useClassicalBoard ? getsuMeiStar : null,
+        voidZodiacArray,
+        directionFilterMode,
+        useClassicalBoard ? classicalYearBoard : physicalYearBoard,
+        useClassicalBoard ? classicalMonthBoard : physicalMonthBoard,
+        useClassicalBoard ? classicalDayBoard : physicalDayBoard
+      ),
+      physicalLayers: filterLayerData(
+        rawPhysicalLayers,
+        honmeiStar.physical,
+        null,
+        voidZodiacArray,
+        directionFilterMode,
+        physicalYearBoard,
+        physicalMonthBoard,
+        physicalDayBoard
+      ),
+      classicalLayers: filterLayerData(
+        rawClassicalLayers,
+        honmeiStar.classical,
+        getsuMeiStar,
+        voidZodiacArray,
+        directionFilterMode,
+        classicalYearBoard,
+        classicalMonthBoard,
+        classicalDayBoard
+      )
     };
   }, [rawLayers, rawPhysicalLayers, rawClassicalLayers, directionFilterMode, useClassicalBoard, honmeiStar, getsuMeiStar, voidZodiacOverride, birthDate, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard]);
 
@@ -949,8 +901,10 @@ export const SolarTimeClock = () => {
 
     if (heatmapMode === '30days') {
       for (let i = 0; i < 30; i++) {
-        const testDate = new Date(baseTime.getTime() + (timeOffsetDays + i) * 86400000);
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const testDateLocal = new Date(baseTime.getTime() + (timeOffsetDays + i) * 86400000);
+        const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
+        const testDate = testDateSolar.solarTime;
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
         const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -960,10 +914,13 @@ export const SolarTimeClock = () => {
           yB, mB, dB,
           voidZodiacArray,
           testEnv.raw.lunarNode,
-          actionIntent
+          actionIntent,
+          testDate,
+          lon || 139.6917,
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
         );
 
-          const filteredV = filterVectors(
+        const filteredV = filterVectors(
           vectorData,
           useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
           voidZodiacArray,
@@ -977,177 +934,100 @@ export const SolarTimeClock = () => {
         data.push({
           label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
           vectors: filteredV,
-          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac, getCurrentZodiac(testDate).dayZodiac].includes(z))
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac, getCurrentZodiac(testDate).dayZodiac].includes(z)),
+          offsetDays: timeOffsetDays + i
         });
       }
     } else if (heatmapMode === '12months') {
       for (let i = 0; i < 12; i++) {
-        const testDate = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
-        testDate.setMonth(testDate.getMonth() + i);
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const testDateLocal = new Date(baseTime.getTime() + timeOffsetDays * 86400000);
+        testDateLocal.setDate(15); // 月末の月またぎバグを防ぐため、常にその月の中旬を基準にする
+        testDateLocal.setMonth(testDateLocal.getMonth() + i);
+        const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
+        const testDate = testDateSolar.solarTime;
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
+        const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
 
         const vectorData = calculateVectorCollision(
           useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
-          yB, mB, yB,
+          yB, mB, dB,
           voidZodiacArray,
           testEnv.raw.lunarNode,
-          actionIntent
+          actionIntent,
+          testDate,
+          lon || 139.6917,
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
         );
 
-        const testPersonalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
+        const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        const tendoDir = vectorData.tendoDirection;
 
-        const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-          switch(star) {
-            case 1: return [6, 7, 3, 4]; 
-            case 2: return [9, 6, 7]; 
-            case 3: return [1, 9]; 
-            case 4: return [1, 9];
-            case 5: return [9, 6, 7];
-            case 6: return [2, 5, 8, 1]; 
-            case 7: return [2, 5, 8, 1];
-            case 8: return [9, 6, 7];
-            case 9: return [3, 4, 2, 5, 8]; 
-            default: return [];
+        const getLayerScore = (status: string): number => {
+          switch (status) {
+            case 'OPTIMAL': return 100;
+            case 'OPTIMAL_REGULAR': return 50;
+            case 'SAFE': return 0;
+            case 'NOISE_HONMEI': return -30;
+            case 'NOISE_TEKI': return -30;
+            case 'NOISE_NODE': return -40;
+            case 'NOISE_VOID': return -80;
+            case 'NOISE_GOU': return -100;
+            case 'NOISE_ANKEN': return -100;
+            case 'NOISE_HA': return -100;
+            default: return 0;
           }
         };
-        const compatibles = getCompatibleStars(testPersonalStar);
 
-        const z2d: Record<string, Direction[]> = {
-          '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
-          '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
-          '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
-        };
-        const voidDirs = new Set<Direction>();
-        voidZodiacArray.forEach(z => {
-          (z2d[z] || []).forEach(d => voidDirs.add(d));
+        dirs.forEach(dir => {
+          vectorData.dayLayer[dir] = 'SAFE'; // 12ヶ月モードでは日盤のノイズを除外
+          const y = vectorData.yearLayer[dir] || 'SAFE';
+          const m = vectorData.monthLayer[dir] || 'SAFE';
+          const d = 'SAFE';
+
+          const totalScore = getLayerScore(y) + getLayerScore(m) + getLayerScore(d);
+          
+          if (totalScore < 0) {
+            const layersList = [y, m, d];
+            const hasRed = layersList.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
+            if (hasRed) {
+              vectorData.finalVectors[dir] = hasRed as any;
+            } else {
+              const hasVoid = layersList.find(s => s === 'NOISE_VOID');
+              if (hasVoid) {
+                vectorData.finalVectors[dir] = 'NOISE_VOID' as any;
+              } else {
+                const hasMinor = layersList.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+                vectorData.finalVectors[dir] = (hasMinor || 'SAFE') as any;
+              }
+            }
+          } else if (totalScore === 0) {
+            vectorData.finalVectors[dir] = 'SAFE';
+          } else {
+            const layersList = [y, m, d];
+            const hasOpt = layersList.includes('OPTIMAL');
+            vectorData.finalVectors[dir] = (hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR') as any;
+          }
         });
 
-        const nodeDirs = new Set<Direction>();
-        if (testEnv.raw.lunarNode !== null) {
-          const getBearing = (lon: number) => {
-            const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-            let b = (lon - 90) % 360; 
-            if (b < 0) b += 360;
-            b = 360 - b; 
-            const i = Math.floor(((b + 22.5) % 360) / 45);
-            return dirs[i];
-          };
-          nodeDirs.add(getBearing(testEnv.raw.lunarNode));
-          nodeDirs.add(getBearing((testEnv.raw.lunarNode + 180) % 360));
-        }
+        const filteredV = filterVectors(
+          vectorData,
+          useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+          voidZodiacArray,
+          testEnv.raw.lunarNode,
+          yB, mB, dB,
+          directionFilterMode,
+          useClassicalBoard ? getsuMeiStar : null,
+          activeLayerMode === 'day' ? 'month' : activeLayerMode
+        );
 
-        const getOpposite = (d: Direction): Direction => {
-          const opposites: Record<string, Direction> = {
-            'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
-            'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
-          };
-          return opposites[d];
-        };
-
-        const filterSingleLayer = (status: string, dir: Direction, activeBoard: any) => {
-          if (directionFilterMode === 'composite') return status;
-          if (!status) return 'SAFE';
-          
-          const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-            switch(star) {
-              case 1: return [6, 7, 3, 4];
-              case 2: return [9, 6, 7];
-              case 3: return [1, 9];
-              case 4: return [1, 9];
-              case 5: return [9, 6, 7];
-              case 6: return [2, 5, 8, 1];
-              case 7: return [2, 5, 8, 1];
-              case 8: return [9, 6, 7];
-              case 9: return [3, 4, 2, 5, 8];
-              default: return [];
-            }
-          };
-          const compatiblesHonmei = getCompatibleStars(testPersonalStar);
-          const compatiblesGetsumei = useClassicalBoard && getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
-
-          const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
-            const isHonmeiComp = compatiblesHonmei.includes(starNum);
-            if (!useClassicalBoard || !getsuMeiStar) {
-              return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
-            }
-            const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
-            if (isHonmeiComp && isGetsumeiComp) {
-              return 'OPTIMAL';
-            } else if (isHonmeiComp) {
-              return 'OPTIMAL_REGULAR';
-            }
-            return 'SAFE';
-          };
-
-          if (directionFilterMode === 'personal_kigaku') {
-            let honmeiD: Direction | null = null;
-            dirs.forEach(d => {
-              if (activeBoard && activeBoard[d] === testPersonalStar) {
-                honmeiD = d;
-              }
-            });
-            if (dir === honmeiD) return 'NOISE_HONMEI';
-            if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
-            const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
-            return optStatus;
-          } else if (directionFilterMode === 'personal_bazi') {
-            if (voidDirs.has(dir)) return 'NOISE_VOID';
-            return 'SAFE';
-          } else {
-            let isGou = false;
-            let isAnken = false;
-            if (activeBoard) {
-              dirs.forEach(d => {
-                if (activeBoard[d] === 5) {
-                  if (d === dir) isGou = true;
-                  if (getOpposite(d) === dir) isAnken = true;
-                }
-              });
-            }
-            if (isGou) return 'NOISE_GOU';
-            if (isAnken) return 'NOISE_ANKEN';
-            if (status === 'NOISE_HA') return 'NOISE_HA';
-            if (status === 'NOISE_NODE') return 'NOISE_NODE';
-            return 'SAFE';
-          }
-        };
-
-        const filteredYearLayer: Record<string, string> = {};
-        const filteredMonthLayer: Record<string, string> = {};
-        for (const dir of dirs) {
-          filteredYearLayer[dir] = filterSingleLayer(vectorData.yearLayer[dir] || 'SAFE', dir, yB);
-          filteredMonthLayer[dir] = filterSingleLayer(vectorData.monthLayer[dir] || 'SAFE', dir, mB);
-        }
-
-        const mergedVectors: Record<string, string> = {};
-        for (const dir of dirs) {
-          const y = filteredYearLayer[dir] || 'SAFE';
-          const m = filteredMonthLayer[dir] || 'SAFE';
-          
-          if (activeLayerMode === 'year') {
-            mergedVectors[dir] = y;
-          } else if (activeLayerMode === 'month') {
-            mergedVectors[dir] = m;
-          } else if (activeLayerMode === 'day') {
-            // Day mode is not supported for 12 months, fallback to month
-            mergedVectors[dir] = m;
-          } else {
-            if (y.startsWith('NOISE_GOU') || y.startsWith('NOISE_ANKEN') || m.startsWith('NOISE_GOU') || m.startsWith('NOISE_ANKEN')) {
-              mergedVectors[dir] = y.startsWith('NOISE_GOU') ? y : m.startsWith('NOISE_GOU') ? m : y.startsWith('NOISE_ANKEN') ? y : m;
-            } else if (y.startsWith('NOISE') || m.startsWith('NOISE')) {
-              mergedVectors[dir] = y.startsWith('NOISE') ? y : m;
-            } else {
-              mergedVectors[dir] = (y === 'OPTIMAL' || m === 'OPTIMAL') ? 'OPTIMAL' : (y === 'OPTIMAL_REGULAR' || m === 'OPTIMAL_REGULAR') ? 'OPTIMAL_REGULAR' : 'SAFE';
-            }
-          }
-        }
-
+        const diffDays = Math.round((testDate.getTime() - baseTime.getTime()) / 86400000);
         data.push({
           label: `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}`,
-          vectors: mergedVectors,
-          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac].includes(z))
+          vectors: filteredV,
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac].includes(z)),
+          offsetDays: diffDays
         });
       }
     }
@@ -1561,6 +1441,7 @@ export const SolarTimeClock = () => {
       if (s === 'NOISE_HA') return 'text-rose-400 font-bold';
       if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
       if (s === 'OPTIMAL_REGULAR') return 'text-emerald-500 font-medium drop-shadow-[0_0_2px_rgba(16,185,129,0.4)]';
+      if (s === 'WARNING') return 'text-orange-400 font-bold';
       return 'text-blue-400';
     };
 
@@ -1571,6 +1452,7 @@ export const SolarTimeClock = () => {
       if (s === 'NOISE_NODE') return 'LUNAR_NODE';
       if (s === 'NOISE_HA') return 'CLASH_HA';
       if (s === 'OPTIMAL_REGULAR') return 'LUCKY_ZONE';
+      if (s === 'WARNING') return 'WARNING_ZONE';
       return s;
     };
 
@@ -1588,6 +1470,7 @@ export const SolarTimeClock = () => {
     else if (status === 'NOISE_HA') { title = "🟥 破壊ノイズ・破 (CLASH HA)"; desc = "十二支の対衝（対向）位置による強力な不整合波。「歳破」「月破」「日破」のいずれかに該当し、行動や進捗を破壊・頓挫させる極めて危険なユニバーサルノイズです。"; }
     else if (status === 'OPTIMAL') { title = "🌟 最大吉方位 (MAX OPTIMAL)"; desc = "本命星と月命星の双方が相生・比和する最強の開運方位です。"; }
     else if (status === 'OPTIMAL_REGULAR') { title = "🟢 吉方位 (LUCKY)"; desc = "あなたの本命星と相生・比和する、運気を高める良好な方位です。"; }
+    else if (status === 'WARNING') { title = "🟧 警告・調整ゾーン (WARNING)"; desc = "環境ノイズ（五黄殺等）が観測されていますが、天道効果により部分的に相殺・緩和されています。注意して選択してください。"; }
 
     const isTendoDir = (isClassical ? classicalLayers : physicalLayers)?.tendoDirection === dir;
 
@@ -2404,7 +2287,7 @@ export const SolarTimeClock = () => {
         {/* --- MAP CONTENT (Appended to DESTINATION tab) --- */}
         {activeTab === "destination" && (
           <div className="w-full flex flex-col items-center space-y-8 mt-8">
-            <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {/* Spatial Targeting */}
               <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -2632,73 +2515,59 @@ export const SolarTimeClock = () => {
                     {(() => {
                       const renderZone = (fv: any, title: string, subtitle: string, badgeColor: string) => {
                         if (!fv) return null;
-                        const allDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-                        const optimals = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL').map(k => {
-                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
-                          return map[k] || k;
-                        });
-                        const regulars = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL_REGULAR').map(k => {
-                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
-                          return map[k] || k;
-                        });
-                        const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL' && fv[k] !== 'OPTIMAL_REGULAR').map(k => {
-                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
-                          return map[k] || k;
-                        });
+                        const allDirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
+                        const map: Record<string, string> = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
 
                         return (
                           <div className="flex flex-col gap-2">
                             <div className={`text-[10px] font-bold tracking-widest uppercase flex items-center gap-2 ${badgeColor}`}>
-                              <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
                               {title} <span className="text-[8px] opacity-70 font-normal">{subtitle}</span>
                             </div>
-                            {optimals.length > 0 && (
-                              <div className="bg-emerald-950/40 border-l-2 border-emerald-500 p-2 sm:p-3 rounded-r-md">
-                                <div className="text-emerald-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                                  [ GO ] 推奨方位
-                                </div>
-                                <div className="text-emerald-400 font-bold text-xl sm:text-2xl tracking-widest">
-                                  {optimals.join(' / ')}
-                                </div>
-                              </div>
-                            )}
-                            {regulars.length > 0 && (
-                              <div className="bg-emerald-900/20 border-l-2 border-emerald-600/50 p-2 sm:p-3 rounded-r-md">
-                                <div className="text-emerald-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
-                                  [ OK ] 吉方 (REGULAR)
-                                </div>
-                                <div className="text-emerald-400/80 font-bold text-lg sm:text-xl tracking-widest">
-                                  {regulars.join(' / ')}
-                                </div>
-                              </div>
-                            )}
-                            {safes.length > 0 && (
-                              <div className="bg-blue-950/40 border-l-2 border-blue-500 p-2 sm:p-3 rounded-r-md">
-                                <div className="text-blue-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                                  [ SAFE ] 進入可能方位
-                                </div>
-                                <div className="text-blue-400 font-bold text-xl sm:text-2xl tracking-widest">
-                                  {safes.join(' / ')}
-                                </div>
-                              </div>
-                            )}
-                            {optimals.length === 0 && regulars.length === 0 && safes.length === 0 && (
-                              <div className="bg-red-950/40 border-l-2 border-red-500 p-2 sm:p-3 rounded-r-md">
-                                <div className="text-red-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
-                                  [ ALERT ]
-                                </div>
-                                <div className="text-red-500 font-bold text-lg sm:text-xl tracking-widest">
-                                  全方位 進入非推奨 (待機)
-                                </div>
-                              </div>
-                            )}
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {allDirs.map(dir => {
+                                const val = fv[dir];
+                                let bgClass = 'bg-blue-950/20 border-blue-500/30 text-blue-400';
+                                let statusLabel = 'SAFE';
+
+                                if (val === 'OPTIMAL') {
+                                  bgClass = 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]';
+                                  statusLabel = 'GO';
+                                } else if (val === 'OPTIMAL_REGULAR') {
+                                  bgClass = 'bg-emerald-900/10 border-emerald-600/30 text-emerald-400/80';
+                                  statusLabel = 'OK';
+                                } else if (val === 'WARNING') {
+                                  bgClass = 'bg-orange-950/30 border-orange-500/40 text-orange-400';
+                                  statusLabel = 'WARN';
+                                } else if ((val || '').startsWith('NOISE')) {
+                                  bgClass = 'bg-red-950/15 border-red-900/30 text-red-400/60';
+                                  statusLabel = 'ALERT';
+                                }
+
+                                const isTarget = targetDirInfo && targetDirInfo.magneticDirection === dir;
+
+                                return (
+                                  <div
+                                    key={dir}
+                                    className={`border p-1.5 rounded flex flex-col items-center justify-center text-center transition-all duration-300 ${
+                                      isTarget
+                                        ? 'ring-1.5 ring-emerald-400/70 scale-[1.03] border-emerald-400 z-10 shadow-[0_0_12px_rgba(52,211,153,0.35)] font-bold'
+                                        : 'hover:scale-[1.02] hover:bg-opacity-80'
+                                    } ${bgClass}`}
+                                  >
+                                    <div className="flex items-center gap-0.5">
+                                      {isTarget && <span className="text-[8px] animate-pulse">🎯</span>}
+                                      <span className="text-[10px] font-bold tracking-wider">{map[dir]}</span>
+                                    </div>
+                                    <span className="text-[7px] font-mono opacity-80 mt-0.5 whitespace-nowrap">{statusLabel}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       };
+
 
                       return (() => {
                         let physVectors, classVectors;
@@ -2763,7 +2632,12 @@ export const SolarTimeClock = () => {
                           <tr>
                             <th className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-500 w-8 bg-zinc-950 sticky left-0 z-10">DIR</th>
                             {heatmapData.map((d, i) => (
-                              <th key={i} className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap ${d.isVoid ? 'text-red-500 bg-red-950/20' : 'text-zinc-500 bg-zinc-900/30'}`}>
+                              <th 
+                                key={i} 
+                                className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap cursor-pointer hover:bg-zinc-800 transition-colors ${d.isVoid ? 'text-red-500 bg-red-950/20' : 'text-zinc-500 bg-zinc-900/30'}`}
+                                onClick={() => setTimeOffsetDays(d.offsetDays)}
+                                title="クリックでこの日に移動"
+                              >
                                 {d.label}
                               </th>
                             ))}
@@ -2779,12 +2653,18 @@ export const SolarTimeClock = () => {
                                 if (st === 'OPTIMAL') bgClass = 'bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative';
                                 else if (st === 'OPTIMAL_REGULAR') bgClass = 'bg-emerald-500/35 border border-emerald-500/50';
                                 else if (st === 'SAFE') bgClass = 'bg-blue-500/20';
-                                else if (st?.startsWith('NOISE_GOU') || st?.startsWith('NOISE_ANKEN')) bgClass = 'bg-red-500/80';
+                                else if (st?.startsWith('NOISE_GOU') || st?.startsWith('NOISE_ANKEN') || st === 'NOISE_HA') bgClass = 'bg-red-500/80';
                                 else if (st?.startsWith('NOISE_HONMEI') || st?.startsWith('NOISE_TEKI')) bgClass = 'bg-purple-500/80';
                                 else if (st?.startsWith('NOISE_VOID') || st?.startsWith('NOISE_NODE')) bgClass = 'bg-yellow-500/80';
+                                else if (st === 'WARNING') bgClass = 'bg-orange-500/80';
 
                                 return (
-                                  <td key={i} className={`p-0 border border-zinc-800 ${bgClass}`} title={`${d.label} ${dir}: ${st}`}>
+                                  <td 
+                                    key={i} 
+                                    className={`p-0 border border-zinc-800 cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`} 
+                                    title={`${d.label} ${dir}: ${st} (クリックで移動)`}
+                                    onClick={() => setTimeOffsetDays(d.offsetDays)}
+                                  >
                                     <div className="w-5 h-5 mx-auto"></div>
                                   </td>
                                 );
@@ -2796,9 +2676,10 @@ export const SolarTimeClock = () => {
                       <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-500 justify-center flex-wrap">
                         <span className="flex items-center gap-1"><div className="w-2 h-2 bg-emerald-500/80"></div> OPTIMAL</span>
                         <span className="flex items-center gap-1"><div className="w-2 h-2 bg-blue-500/20 border border-zinc-700"></div> SAFE</span>
-                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500/80"></div> TYPE I (Gou/Anken)</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-red-500/80"></div> TYPE I (Gou/Anken/Ha)</span>
                         <span className="flex items-center gap-1"><div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)</span>
                         <span className="flex items-center gap-1"><div className="w-2 h-2 bg-yellow-500/80"></div> VOID/NODE</span>
+                        <span className="flex items-center gap-1"><div className="w-2 h-2 bg-orange-500/80"></div> WARNING</span>
                       </div>
                     </div>
                   )}

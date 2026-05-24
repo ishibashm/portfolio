@@ -453,12 +453,19 @@ export function calculateVectorCollision(
   const nodeDirs = new Set<Direction>();
   if (lunarNodeLon !== null) {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    const getBearing = (lon: number) => {
+    const getBearing = (lon: number): Direction => {
       let b = (lon - 90) % 360; 
       if (b < 0) b += 360;
       b = 360 - b; 
-      const i = Math.floor(((b + 22.5) % 360) / 45);
-      return dirs[i];
+      const val = (b % 360 + 360) % 360;
+      if (val >= 345 || val < 15) return 'N';
+      if (val >= 15 && val < 75) return 'NE';
+      if (val >= 75 && val < 105) return 'E';
+      if (val >= 105 && val < 165) return 'SE';
+      if (val >= 165 && val < 195) return 'S';
+      if (val >= 195 && val < 255) return 'SW';
+      if (val >= 255 && val < 285) return 'W';
+      return 'NW';
     };
     nodeDirs.add(getBearing(lunarNodeLon));
     nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
@@ -661,27 +668,26 @@ export function calculateVectorCollision(
     }
     */
 
-    const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus) + (isTendo ? 100 : 0);
+    const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus);
 
     if (totalScore < 0) {
-      // If there's red noise but partially offset by Tendo, downgrade to 'WARNING'
-      // If not offset at all (no Tendo), keep the original strongest noise
       const hasRed = layers.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
       if (hasRed) {
-        finalVectors[dir] = isTendo ? 'WARNING' : hasRed;
+        finalVectors[dir] = hasRed;
       } else {
         const hasVoid = layers.find(s => s === 'NOISE_VOID');
         if (hasVoid) {
-          finalVectors[dir] = isTendo ? 'WARNING' : 'NOISE_VOID';
+          finalVectors[dir] = 'NOISE_VOID';
         } else {
           const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
-          finalVectors[dir] = hasMinor || 'WARNING';
+          finalVectors[dir] = hasMinor || 'SAFE';
         }
       }
     } else if (totalScore === 0) {
       finalVectors[dir] = 'SAFE';
     } else {
-      finalVectors[dir] = isTendo ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+      const hasOpt = layers.includes('OPTIMAL');
+      finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
     }
   }
 

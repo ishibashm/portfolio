@@ -25,8 +25,15 @@ function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): num
 }
 
 function getDirectionFromBearing(brng: number): Direction {
-  const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  return dirs[Math.floor(((brng + 22.5) % 360) / 45)];
+  const b = (brng % 360 + 360) % 360;
+  if (b >= 345 || b < 15) return 'N';
+  if (b >= 15 && b < 75) return 'NE';
+  if (b >= 75 && b < 105) return 'E';
+  if (b >= 105 && b < 165) return 'SE';
+  if (b >= 165 && b < 195) return 'S';
+  if (b >= 195 && b < 255) return 'SW';
+  if (b >= 255 && b < 285) return 'W';
+  return 'NW';
 }
 
 // 角度の差を計算する関数（円弧上の最短距離）

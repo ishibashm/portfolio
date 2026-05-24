@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getSystemEnvironment, getHonmeiStar, generateBoard, calculateVectorCollision } from '@/utils/bioModelingEngine';
-import { getDistance, Direction } from '@/utils/geomagnetism';
-import * as AstroEngine from '@/utils/ephemerisEngine';
-import * as solarTime from '@/utils/solarTime';
+import { 
+  getHonmeiStar, 
+  getCurrentEnvironmentalFrequencies as getSystemEnvironment, 
+  generateBoard, 
+  calculateVectorCollision,
+  getPersonalVoidZodiac,
+  Direction,
+  AstroEngine
+} from '@/utils/ephemerisEngine';
 
 // 偏差値計算用のヘルパー
 function calculateZScore(value: number, mean: number, stdDev: number) {
@@ -21,10 +26,30 @@ function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): num
   return (brng + 360) % 360;
 }
 
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  const d = R * c; // Distance in km
+  return d;
+}
+
 function getDirectionFromBearing(bearing: number): Direction {
-  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const index = Math.round(((bearing %= 360) < 0 ? bearing + 360 : bearing) / 45) % 8;
-  return directions[index];
+  const b = (bearing % 360 + 360) % 360;
+  if (b >= 345 || b < 15) return 'N';
+  if (b >= 15 && b < 75) return 'NE';
+  if (b >= 75 && b < 105) return 'E';
+  if (b >= 105 && b < 165) return 'SE';
+  if (b >= 165 && b < 195) return 'S';
+  if (b >= 195 && b < 255) return 'SW';
+  if (b >= 255 && b < 285) return 'W';
+  return 'NW';
 }
 
 export async function GET(request: Request) {
@@ -60,16 +85,14 @@ export async function GET(request: Request) {
   
   if (!isNaN(birthLat) && !isNaN(birthLon)) {
     birthGst = AstroEngine.getGreenwichSiderealTime(bDate);
-    const birthJd = AstroEngine.getJulianDay(bDate);
     sunLon = AstroEngine.getSolarLongitude(bDate);
-    const planets = AstroEngine.calculatePlanets(bDate);
-    venusLon = planets.find(p => p.name === 'Venus')?.lon || 0;
-    jupiterLon = planets.find(p => p.name === 'Jupiter')?.lon || 0;
+    venusLon = AstroEngine.getVenusLongitude(bDate);
+    jupiterLon = AstroEngine.getJupiterLongitude(bDate);
   }
 
   // 九星気学のベクトル計算
   const honmeiStar = getHonmeiStar(bDate);
-  const voidZodiacs = solarTime.getTenchusatsu(bDate).zodiacs;
+  const voidZodiacs = getPersonalVoidZodiac(bDate);
   
   const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
   const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
@@ -83,7 +106,7 @@ export async function GET(request: Request) {
     'MIGRATION'
   );
   
-  let activeVectors: Record<Direction, string>;
+  let activeVectors: Partial<Record<Direction, string>>;
   if (layerMode === 'year') activeVectors = vectorData.yearLayer;
   else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
   else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
@@ -155,7 +178,7 @@ export async function GET(request: Request) {
         // リロケーション占星術（AstroCartoGraphy）
         if (!isNaN(birthLat) && !isNaN(birthLon)) {
           const relocatedASC = AstroEngine.getAscendant(bDate, p.lat, p.lon, birthGst);
-          const relocatedMC = AstroEngine.getMidheaven(p.lat, p.lon, birthGst);
+          const relocatedMC = AstroEngine.getMidheaven(bDate, p.lon, birthGst);
           
           const isSunLine = Math.abs(relocatedMC - sunLon) < 5 || Math.abs(relocatedASC - sunLon) < 5;
           const isVenusLine = Math.abs(relocatedMC - venusLon) < 5 || Math.abs(relocatedASC - venusLon) < 5;
