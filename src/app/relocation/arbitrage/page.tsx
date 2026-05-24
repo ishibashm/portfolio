@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, Search } from "lucide-react";
 import { format } from 'date-fns';
-import WealthMap from "@/components/WealthMap";
+import { WealthMap } from "@/components/WealthMap";
 
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);

@@ -1,14 +1,30 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSystemEnvironment, getHonmeiStar, generateBoard, calculateVectorCollision } from '@/utils/bioModelingEngine';
-import { getDistance, getBearing, getDirectionFromBearing, Direction } from '@/utils/geomagnetism';
-import AstroEngine from '@/utils/ephemerisEngine';
+import { getDistance, Direction } from '@/utils/geomagnetism';
+import * as AstroEngine from '@/utils/ephemerisEngine';
 import * as solarTime from '@/utils/solarTime';
 
 // 偏差値計算用のヘルパー
 function calculateZScore(value: number, mean: number, stdDev: number) {
   if (stdDev === 0) return 50;
   return ((value - mean) / stdDev) * 10 + 50;
+}
+
+function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const l1 = lat1 * (Math.PI / 180);
+  const l2 = lat2 * (Math.PI / 180);
+  const y = Math.sin(dLon) * Math.cos(l2);
+  const x = Math.cos(l1) * Math.sin(l2) - Math.sin(l1) * Math.cos(l2) * Math.cos(dLon);
+  const brng = (Math.atan2(y, x) * 180) / Math.PI;
+  return (brng + 360) % 360;
+}
+
+function getDirectionFromBearing(bearing: number): Direction {
+  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const index = Math.round(((bearing %= 360) < 0 ? bearing + 360 : bearing) / 45) % 8;
+  return directions[index];
 }
 
 export async function GET(request: Request) {
