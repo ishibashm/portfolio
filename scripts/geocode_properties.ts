@@ -42,57 +42,71 @@ async function main() {
   const prisma = new PrismaClient({ adapter } as any);
 
   try {
-    // 緯度経度がまだ設定されていない物件を取得
-    const unmappedProperties = await prisma.rental_properties.findMany({
-      where: {
-        lat: null,
-        lon: null,
-        address: { not: null, not: '' }
-      },
-      orderBy: { created_at: 'desc' },
-      take: 1000 // 一度に処理する件数
-    });
+    let totalSuccess = 0;
+    let totalFail = 0;
+    let batchNumber = 1;
 
-    console.log(`\n======================================================`);
-    console.log(`🚀 Found ${unmappedProperties.length} properties to geocode.`);
-    console.log(`======================================================\n`);
+    while (true) {
+      // 緯度経度がまだ設定されていない物件を取得
+      const unmappedProperties = await prisma.rental_properties.findMany({
+        where: {
+          lat: null,
+          lon: null,
+          address: { not: null, not: '' }
+        },
+        orderBy: { created_at: 'desc' },
+        take: 1000 // 一度に処理する件数
+      });
 
-    if (unmappedProperties.length === 0) {
-      console.log('🎉 No properties left to geocode. All done!');
-      return;
-    }
-
-    let successCount = 0;
-    let failCount = 0;
-
-    for (const prop of unmappedProperties) {
-      if (!prop.address) continue;
-
-      const coords = await geocodeAddress(prop.address);
-
-      if (coords) {
-        await prisma.rental_properties.update({
-          where: { id: prop.id },
-          data: {
-            lat: coords.lat,
-            lon: coords.lon
-          }
-        });
-        console.log(`✅ [Success] ${prop.address} -> (${coords.lat}, ${coords.lon})`);
-        successCount++;
-      } else {
-        console.log(`❌ [Failed] Could not find coordinates for: ${prop.address}`);
-        failCount++;
+      if (unmappedProperties.length === 0) {
+        console.log(`\n🎉 No more properties left to geocode. All done!`);
+        break;
       }
 
-      // Geoloniaの正規化はAPIリクエストを伴わないため、待機時間は最小限でOKです
-      await new Promise(res => setTimeout(res, 50));
+      console.log(`\n======================================================`);
+      console.log(`🚀 Batch #${batchNumber}: Found ${unmappedProperties.length} properties to geocode.`);
+      console.log(`======================================================\n`);
+
+      let batchSuccessCount = 0;
+      let batchFailCount = 0;
+
+      for (const prop of unmappedProperties) {
+        if (!prop.address) continue;
+
+        const coords = await geocodeAddress(prop.address);
+
+        if (coords) {
+          await prisma.rental_properties.update({
+            where: { id: prop.id },
+            data: {
+              lat: coords.lat,
+              lon: coords.lon
+            }
+          });
+          console.log(`✅ [Success] ${prop.address} -> (${coords.lat}, ${coords.lon})`);
+          batchSuccessCount++;
+          totalSuccess++;
+        } else {
+          console.log(`❌ [Failed] Could not find coordinates for: ${prop.address}`);
+          batchFailCount++;
+          totalFail++;
+        }
+
+        // Geoloniaの正規化はAPIリクエストを伴わないため、待機時間は最小限でOKです
+        await new Promise(res => setTimeout(res, 50));
+      }
+
+      console.log(`\n📊 Batch #${batchNumber} Results:`);
+      console.log(`   - Successfully updated: ${batchSuccessCount}`);
+      console.log(`   - Failed to locate: ${batchFailCount}`);
+      
+      batchNumber++;
     }
 
     console.log(`\n======================================================`);
-    console.log(`📊 Geocoding Results (Powered by Geolonia):`);
-    console.log(`   - Successfully updated: ${successCount}`);
-    console.log(`   - Failed to locate: ${failCount}`);
+    console.log(`🏆 Final Geocoding Results (Powered by Geolonia):`);
+    console.log(`   - Total successfully updated: ${totalSuccess}`);
+    console.log(`   - Total failed to locate: ${totalFail}`);
     console.log(`======================================================\n`);
 
   } catch (e) {

@@ -121,8 +121,8 @@ export default function RentalsDashboard() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-300 p-8 flex items-center justify-center">
       <div className="text-center">
-        <h1 className="text-3xl text-zinc-100 font-light mb-4">Rentals Dashboard</h1>
-        <p className="text-zinc-400">This feature is currently under construction and is hidden from public view.</p>
+        <h1 className="text-3xl text-zinc-100 font-light mb-4">賃貸物件ダッシュボード</h1>
+        <p className="text-zinc-400">この機能は現在開発中であり、一般公開されていません。</p>
       </div>
     </div>
   );

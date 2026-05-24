@@ -1,12 +1,5 @@
-/**
- * Simple Lunar Calendar & Rokuyo Logic for 2024-2030
- * 
- * "Plan B" Demo: Demonstrating the ability to implement complex calendar logic
- * that Low-code platforms (WebPerformer) might struggle with.
- * 
- * note: reliable Qreki conversion requires a massive lookup table.
- * For this demo, we use a compressed definitions for 2025-2027 to ensure accuracy for the target period.
- */
+import { Solar } from 'lunar-javascript';
+import { getZonedDateTimeFields } from './solarTime';
 
 // Rokuyo Constants
 export const ROKUYO = [
@@ -18,14 +11,9 @@ export const ROKUYO = [
   "仏滅 (Butsumetsu)",  // 5 - Least Auspicious
 ];
 
+/* ORIGINAL CUSTOM DATA & LOGIC (Preserved for reference):
 // Definition of Lunar Months for 2025-2027 (Target Interview Period)
 // Format: [NewMoonTimestamp, IsLeapMonth, LunarMonthNumber, DaysInMonth]
-// This is a simplified "sparse" table for the demo. 
-// Real implementation would use full Qreki library or larger table.
-//
-// 2026 Qreki Data (Approximation/Snippet for Demo)
-// 2026/1/1 (New) -> Lunar 2025/12/1 (Snake) ?
-// 2026/2/17 is Lunar New Year (2026/1/1)
 const LUNAR_DATA_2026 = [
   { solar: '2026-01-01', lunarMonth: 11, lunarDay: 13 }, // Offset start
   { solar: '2026-02-17', lunarMonth: 1, lunarDay: 1 },   // Lunar NY
@@ -41,39 +29,8 @@ const LUNAR_DATA_2026 = [
   { solar: '2026-12-09', lunarMonth: 11, lunarDay: 1 },
 ];
 
-/**
- * Get Rokuyo for a given Solar Date
- * Logic: (LunarMonth + LunarDay) % 6
- * Remainder mapping depends on the definition.
- * Standard:
- * 0=Taian, 1=Shakku, 2=Sensho, 3=Tomobiki, 4=Sakimake, 5=Butsumetsu
- */
-export function getRokuyo(date: Date): string {
-    const { month, day } = getApproximateLunarDate(date);
-    
-    // Formula: (Month + Day) % 6
-    // Note: Month and Day must be 1-indexed.
-    const sum = month + day;
-    const rem = sum % 6;
-
-    // Mapping
-    // 0: Taian
-    // 1: Shakku
-    // 2: Sensho
-    // 3: Tomobiki
-    // 4: Sakimake
-    // 5: Butsumetsu
-    return ROKUYO[rem];
-}
-
-/**
- * Approximates Lunar Date for 2026
- * Falls back to a simple "Moon Phase" calc if out of range, just for demo stability.
- */
-function getApproximateLunarDate(date: Date): { month: number, day: number } {
+function getApproximateLunarDateOriginal(date: Date): { month: number, day: number } {
     const targetTime = date.getTime();
-    
-    // Find the latest lunar start date before the target
     let lastUnk = LUNAR_DATA_2026[0];
     for (const d of LUNAR_DATA_2026) {
         if (new Date(d.solar).getTime() <= targetTime) {
@@ -82,17 +39,39 @@ function getApproximateLunarDate(date: Date): { month: number, day: number } {
             break;
         }
     }
-
     const startSolar = new Date(lastUnk.solar);
     const diffTime = targetTime - startSolar.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
     return {
         month: lastUnk.lunarMonth,
-        day: lastUnk.lunarDay + diffDays // Rough addition. 
-        // Real logic would handle "Days in Lunar Month" (29 or 30).
-        // For this demo (showing LOGIC capability), this linear approx is sufficient
-        // as long as we don't cross month boundaries incorrectly in the view.
+        day: lastUnk.lunarDay + diffDays
+    };
+}
+*/
+
+/**
+ * Get Rokuyo for a given Solar Date using lunar-javascript (JST aligned)
+ * Formula: (LunarMonth + LunarDay) % 6
+ * Standard:
+ * 0=Taian, 1=Shakku, 2=Sensho, 3=Tomobiki, 4=Sakimake, 5=Butsumetsu
+ */
+export function getRokuyo(date: Date): string {
+    const { month, day } = getLunarDate(date);
+    const sum = month + day;
+    const rem = sum % 6;
+    return ROKUYO[rem];
+}
+
+/**
+ * Gets the actual Lunar Month and Day from lunar-javascript, JST-aligned.
+ */
+function getLunarDate(date: Date): { month: number, day: number } {
+    const fields = getZonedDateTimeFields(date, 9);
+    const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+    const lunar = solar.getLunar();
+    return {
+        month: lunar.getMonth(),
+        day: lunar.getDay()
     };
 }
 
@@ -121,3 +100,4 @@ export function getWeedingScore(date: Date, rokuyo: string): number {
 
     return score;
 }
+

@@ -129,6 +129,37 @@ export class SwissEphemerisEngine {
   }
 
   /**
+   * Calculates longitude speed in degrees per day using 12-hour delta-t sampling.
+   */
+  public getPlanetSpeed(date: Date, body: CelestialBody): number {
+    const astroBody = this.getAstroBody(body);
+    if (!astroBody) return 0;
+    
+    // Sample coordinates at date - 6 hours and date + 6 hours
+    const dt = 0.5; // Total difference of 12 hours = 0.5 days
+    const t1 = new Date(date.getTime() - 6 * 60 * 60 * 1000);
+    const t2 = new Date(date.getTime() + 6 * 60 * 60 * 1000);
+    
+    const observer = new Observer(0, 0, 0); // Geocentric
+    
+    const eq1 = Equator(astroBody, t1, observer, true, true);
+    const ecl1 = Ecliptic(eq1.vec);
+    let lon1 = ecl1.elon;
+    if (lon1 < 0) lon1 += 360;
+    
+    const eq2 = Equator(astroBody, t2, observer, true, true);
+    const ecl2 = Ecliptic(eq2.vec);
+    let lon2 = ecl2.elon;
+    if (lon2 < 0) lon2 += 360;
+    
+    let diff = lon2 - lon1;
+    if (diff > 180) diff -= 360;
+    if (diff < -180) diff += 360;
+    
+    return diff / dt; // Speed in degrees per day
+  }
+
+  /**
    * Calculates high-precision planetary coordinates
    * @param sidereal If true, subtracts Ayanamsa to return sidereal (Vedic) coordinates
    */
@@ -157,12 +188,13 @@ export class SwissEphemerisEngine {
     }
 
     const signIndex = Math.floor(lon / 30);
+    const speed = this.getPlanetSpeed(date, body);
 
     return {
       longitude: lon,
       latitude: ecl.elat,
       distance: eq.vec.Length(), // Vector length in AU
-      speed: 0, // Speed calculation requires delta-t sampling
+      speed,
       zodiacSign: ZODIAC_SIGNS[signIndex]
     };
   }

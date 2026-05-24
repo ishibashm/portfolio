@@ -22,22 +22,22 @@ const shipporiMincho = Shippori_Mincho({
 
 export const metadata: Metadata = {
   title: {
-    default: "Solar Time Clock | Zen Mode",
-    template: "%s | Solar Time Clock",
+    default: "真太陽時クロック | 禅モード",
+    template: "%s | 真太陽時クロック",
   },
-  description: "A minimal True Solar Time clock for precise auspicious actions.",
+  description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
   openGraph: {
-    title: "Solar Time Clock",
-    description: "A minimal True Solar Time clock for precise auspicious actions.",
+    title: "真太陽時クロック",
+    description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
     url: "https://example.com", 
-    siteName: "Solar Time Clock",
+    siteName: "真太陽時クロック",
     locale: "ja_JP",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Solar Time Clock",
-    description: "A minimal True Solar Time clock for precise auspicious actions.",
+    title: "真太陽時クロック",
+    description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
   },
 };
 
@@ -55,7 +55,7 @@ export default function RootLayout({
       >
         <div className="flex min-h-screen">
           <GlobalSidebar />
-          <main className="flex-1 lg:ml-64 w-full">
+          <main className="flex-1 w-full min-w-0">
             {children}
           </main>
         </div>

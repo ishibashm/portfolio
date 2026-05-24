@@ -26,13 +26,13 @@ export function RealEstateWidget({ data }: { data: rental_properties[] }) {
             <Building className="w-5 h-5 text-emerald-400" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-white/90">Real Estate Market</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-white/90">不動産マーケット</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <p className="text-[10px] text-emerald-400/80 font-mono tracking-wider uppercase">FUDOSAN DB / MLIT connected</p>
+              <p className="text-[10px] text-emerald-400/80 font-mono tracking-wider uppercase">FUDOSAN DB / 国土交通省 接続済</p>
             </div>
           </div>
         </div>
@@ -42,20 +42,20 @@ export function RealEstateWidget({ data }: { data: rental_properties[] }) {
         <div className="grid grid-cols-2 gap-2 mb-2">
           <div className="bg-white/5 rounded-lg p-2 border border-white/5 flex flex-col items-center justify-center text-center">
             <Database className="w-4 h-4 text-emerald-400 mb-1" />
-            <span className="text-[10px] text-gray-400 uppercase tracking-wider">MLIT ReinfoLib</span>
-            <span className="text-xs font-semibold text-emerald-300">Active</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider">国交省 統合情報ライブラリ</span>
+            <span className="text-xs font-semibold text-emerald-300">アクティブ</span>
           </div>
           <div className="bg-white/5 rounded-lg p-2 border border-white/5 flex flex-col items-center justify-center text-center">
             <Activity className="w-4 h-4 text-emerald-400 mb-1" />
-            <span className="text-[10px] text-gray-400 uppercase tracking-wider">FUDOSAN MCP</span>
-            <span className="text-xs font-semibold text-emerald-300">Syncing</span>
+            <span className="text-[10px] text-gray-400 uppercase tracking-wider">不動産 MCP同期</span>
+            <span className="text-xs font-semibold text-emerald-300">同期中</span>
           </div>
         </div>
 
         <div className="flex-grow flex flex-col gap-2">
           {data.length === 0 ? (
             <div className="h-full min-h-[60px] flex items-center justify-center rounded-xl bg-white/5 border border-white/5">
-              <p className="text-gray-500 text-xs">No target properties found.</p>
+              <p className="text-gray-500 text-xs">該当する物件が見つかりません</p>
             </div>
           ) : (
             data.slice(0, 2).map((re) => (
@@ -65,16 +65,16 @@ export function RealEstateWidget({ data }: { data: rental_properties[] }) {
                     {re.property_name}
                   </h3>
                   <div className="bg-emerald-500/20 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded font-mono border border-emerald-500/20">
-                    MATCH
+                    適合
                   </div>
                 </div>
                 <div className="flex justify-between items-end mt-2">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">Est. Value</span>
+                    <span className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">想定賃料</span>
                     <span className="text-emerald-400 text-sm font-medium font-mono">¥{re.rent?.toLocaleString()}</span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">Area / Yield</span>
+                    <span className="text-[10px] text-gray-500 mb-0.5 uppercase tracking-wider">エリア / 想定利回り</span>
                     <span className="text-gray-300 text-xs">{re.area} <span className="text-gray-500">|</span> <span className="text-emerald-400">{getDeterministicYield(re.id)}%</span></span>
                   </div>
                 </div>

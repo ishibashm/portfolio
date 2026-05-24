@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "Metaphysical System | NBA Engine",
-  description: "Next Best Action engine using environmental and biometric data.",
+  title: "メタフィジカル・システム | NBA意思決定エンジン",
+  description: "生体データとマクロ環境データを統合した意思決定（次善行動）エンジン",
 };
 
 export default function MetaphysicalPage() {
@@ -20,7 +20,7 @@ export default function MetaphysicalPage() {
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Hub
+          ハブに戻る
         </Link>
       </nav>
 

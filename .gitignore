@@ -122,3 +122,5 @@ docs/*.html
 *export*.json
 nifty_*.html
 *_properties.json
+x_downloads/
+download/

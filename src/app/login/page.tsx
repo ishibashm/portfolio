@@ -21,9 +21,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4">
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-8 flex flex-col items-center shadow-xl">
-        <h1 className="text-3xl font-bold mb-2">Real Estate Dashboard</h1>
+        <h1 className="text-3xl font-bold mb-2">不動産ダッシュボード</h1>
         <p className="text-zinc-400 text-center mb-8">
-          Sign in to access your automated rental property tracking system.
+          自動賃貸物件追跡システムにアクセスするためにサインインしてください。
         </p>
 
         <button
@@ -37,7 +37,7 @@ export default function LoginPage() {
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 15.02 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             <path d="M1 1h22v22H1z" fill="none"/>
           </svg>
-          Continue with Google
+          Googleでログイン
         </button>
       </div>
     </div>

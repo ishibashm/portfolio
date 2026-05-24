@@ -118,16 +118,38 @@ async function extractPropertiesFromPage(page: Page) {
   }
 }
 
-async function scrapeArea(page: Page, prisma: PrismaClient, prefAlpha: string, cityAlpha: string) {
-  let currentPage = 1;
+async function scrapeArea(browser: any, prisma: PrismaClient, prefAlpha: string, cityAlpha: string, startPage: number = 1) {
+  let currentPage = startPage;
   const allProperties: any[] = [];
   const seenIds = new Set<string>();
 
-  while (true) {
+  let context = await browser.newContext(CONTEXT_OPTIONS);
+  let page = await context.newPage();
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+  });
+
+  try {
+    while (true) {
+      // メモリ対策: 10ページ進むごとにタブを作り直してメモリを解放（Page crashed対策）
+      if (currentPage > startPage && currentPage % 10 === 0) {
+        console.log('🔄 Recreating browser page to prevent memory leak...');
+        await page.close();
+        await context.close();
+        context = await browser.newContext(CONTEXT_OPTIONS);
+        page = await context.newPage();
+        await page.addInitScript(() => {
+          Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        });
+      }
+
     const url = currentPage === 1
       ? `https://myhome.nifty.com/rent/${prefAlpha}/${cityAlpha}_ct/`
       : `https://myhome.nifty.com/rent/${prefAlpha}/${cityAlpha}_ct/${currentPage}/`;
     console.log(`Navigating to ${url}`);
+
+    // ここでステートを保存（途中で落ちてもこのページから再開できるようにする）
+    saveState(prefAlpha, cityAlpha, currentPage);
 
     await page.goto(url, { waitUntil: 'domcontentloaded' });
 
@@ -171,12 +193,18 @@ async function scrapeArea(page: Page, prisma: PrismaClient, prefAlpha: string, c
     await saveToDatabase(prisma, props);
 
     // [重要: サーバーに負荷をかけないためのマナー（Polite Scraping）]
-    // 相手サーバーへの過剰なリクエストを防ぐため、ページ間に長めの待機時間（5〜10秒）を設けます。
-    const delayMs = 5000 + Math.floor(Math.random() * 5000);
+    // 相手サーバーへの負荷を考慮しつつ、待機時間を少し短縮（2〜4秒）
+    const delayMs = 2000 + Math.floor(Math.random() * 2000);
     console.log(`Polite delay: Waiting for ${Math.round(delayMs / 1000)} seconds...`);
     await new Promise(res => setTimeout(res, delayMs));
 
     currentPage++;
+  }
+  } finally {
+    try {
+      await page.close();
+      await context.close();
+    } catch (_) {}
   }
 
   return allProperties;
@@ -213,23 +241,24 @@ const PREFECTURES = [
   'fukuoka', 'saga', 'nagasaki', 'kumamoto', 'oita', 'miyazaki', 'kagoshima', 'okinawa'
 ];
 
-const STATE_FILE = 'scraper_state.json';
+const STATE_FILE = path.join(__dirname, 'scraper_state.json');
 
-function loadState(): { pref: string | null, city: string | null } {
+function loadState(): { pref: string | null, city: string | null, page: number } {
   try {
     if (fs.existsSync(STATE_FILE)) {
       const data = fs.readFileSync(STATE_FILE, 'utf-8');
-      return JSON.parse(data);
+      const parsed = JSON.parse(data);
+      return { pref: parsed.pref || null, city: parsed.city || null, page: parsed.page || 1 };
     }
   } catch (e) {
     console.warn("Failed to load state, starting from beginning.");
   }
-  return { pref: null, city: null };
+  return { pref: null, city: null, page: 1 };
 }
 
-function saveState(pref: string, city: string) {
+function saveState(pref: string, city: string, page: number = 1) {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify({ pref, city }, null, 2));
+    fs.writeFileSync(STATE_FILE, JSON.stringify({ pref, city, page }, null, 2));
   } catch (e) {
     console.error("Failed to save state:", e);
   }
@@ -241,12 +270,6 @@ async function main() {
   const prisma = new PrismaClient({ adapter } as any);
 
   const browser = await chromium.launch(BROWSER_OPTIONS);
-  const context = await browser.newContext(CONTEXT_OPTIONS);
-  const page = await context.newPage();
-
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-  });
 
   try {
     // ターゲット都道府県（現在は全国47都道府県）
@@ -257,9 +280,9 @@ async function main() {
     let skipPref = !!state.pref;
     let skipCity = !!state.city;
 
-    if (state.pref || state.city) {
+    if (state.pref || state.city || state.page > 1) {
       console.log(`\n======================================================`);
-      console.log(`🔄 RESUMING FROM SAVED STATE: ${state.pref} - ${state.city}`);
+      console.log(`🔄 RESUMING FROM SAVED STATE: ${state.pref} - ${state.city} (Page ${state.page})`);
       console.log(`======================================================\n`);
     }
 
@@ -270,10 +293,21 @@ async function main() {
       }
       skipPref = false; // 目的の県に到達したので、これ以降の県はスキップしない
 
+      // 都道府県の都市一覧を取得するためにページを作成
+      let context = await browser.newContext(CONTEXT_OPTIONS);
+      let page = await context.newPage();
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+      });
+
       const cities = await fetchCitiesForPrefecture(page, pref);
+      
+      // 用が済んだら一度閉じてメモリを解放する
+      await page.close();
+      await context.close();
 
       // ランダムに待機して負荷分散
-      await new Promise(res => setTimeout(res, 3000 + Math.random() * 3000));
+      await new Promise(res => setTimeout(res, 1500 + Math.random() * 1500));
 
       for (const city of cities) {
         if (skipCity && city !== state.city) {
@@ -282,14 +316,19 @@ async function main() {
         }
         skipCity = false; // 目的の市に到達したので、これ以降の市はスキップしない
 
-        // 現在の進行状況を保存
-        saveState(pref, city);
-
         console.log(`\n======================================================`);
         console.log(` Starting extraction for ${pref} - ${city}`);
         console.log(`======================================================\n`);
 
-        await scrapeArea(page, prisma, pref, city);
+        try {
+          // 目的の市に到達したばかりなら保存されているページ数から、それ以降は1ページ目から開始
+          const startPage = (pref === state.pref && city === state.city) ? state.page : 1;
+          await scrapeArea(browser, prisma, pref, city, startPage);
+        } catch (error: any) {
+          console.error(`Error during extraction for ${city}:`, error.message);
+          // 万が一クラッシュしてもスクリプト全体が止まらないようにし、少し待機して休ませる
+          await new Promise(res => setTimeout(res, 10000));
+        }
       }
     }
 

@@ -9,7 +9,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency } from "../utils/ephemerisEngine";
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
@@ -33,6 +33,278 @@ const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
     </div>
   ),
 });
+
+const getVectorBreakdown = (
+  dir: Direction,
+  board: any,
+  personalStar: StarFrequency,
+  personalVoidZodiac: string[],
+  layerType: 'year' | 'month' | 'day' | 'final',
+  currentZodiac: { yearZodiac: string; monthZodiac: string; dayZodiac: string; hourZodiac: string; },
+  lunarNodeLon: number | null
+): { environmental: string; personal: string; } => {
+  const getOpposite = (d: Direction): Direction => {
+    const opposites: Record<string, Direction> = {
+      'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
+      'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+    };
+    return opposites[d];
+  };
+
+  const clashMap: Record<string, string> = {
+    '子': '午', '丑': '未', '寅': '申', '卯': '酉',
+    '辰': '戌', '巳': '亥', '午': '子', '未': '丑',
+    '申': '寅', '酉': '卯', '戌': '辰', '亥': '巳'
+  };
+
+  const z2d: Record<string, Direction[]> = {
+    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+  };
+
+  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+    switch(star) {
+      case 1: return [6, 7, 3, 4]; 
+      case 2: return [9, 6, 7]; 
+      case 3: return [1, 9]; 
+      case 4: return [1, 9];
+      case 5: return [9, 6, 7];
+      case 6: return [2, 5, 8, 1]; 
+      case 7: return [2, 5, 8, 1];
+      case 8: return [9, 6, 7];
+      case 9: return [3, 4, 2, 5, 8]; 
+      default: return [];
+    }
+  };
+
+  const envFactors: string[] = [];
+  
+  if (board) {
+    if (board[dir] === 5) {
+      envFactors.push("五黄殺");
+    }
+    const oppositeDir = getOpposite(dir);
+    if (board[oppositeDir] === 5) {
+      envFactors.push("暗剣殺");
+    }
+  }
+
+  const checkHa = (zodiac: string) => {
+    const clashZodiac = clashMap[zodiac];
+    if (clashZodiac) {
+      const dirs = z2d[clashZodiac] || [];
+      return dirs.includes(dir);
+    }
+    return false;
+  };
+
+  if (layerType === 'year' || layerType === 'final') {
+    if (checkHa(currentZodiac.yearZodiac)) envFactors.push("歳破");
+  }
+  if (layerType === 'month' || layerType === 'final') {
+    if (checkHa(currentZodiac.monthZodiac)) envFactors.push("月破");
+  }
+  if (layerType === 'day' || layerType === 'final') {
+    if (checkHa(currentZodiac.dayZodiac)) envFactors.push("日破");
+  }
+
+  if (lunarNodeLon !== null) {
+    const getBearing = (lon: number) => {
+      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      let b = (lon - 90) % 360; 
+      if (b < 0) b += 360;
+      b = 360 - b; 
+      const i = Math.floor(((b + 22.5) % 360) / 45);
+      return dirs[i];
+    };
+    const nodeDir = getBearing(lunarNodeLon);
+    const oppNodeDir = getBearing((lunarNodeLon + 180) % 360);
+    if (dir === nodeDir || dir === oppNodeDir) {
+      envFactors.push("月交点");
+    }
+  }
+
+  const environmental = envFactors.length > 0 ? envFactors.join("・") : "通常 (SAFE)";
+
+  const persFactors: string[] = [];
+  
+  if (board) {
+    if (board[dir] === personalStar) {
+      persFactors.push("本命殺");
+    }
+    const oppositeDir = getOpposite(dir);
+    if (board[oppositeDir] === personalStar) {
+      persFactors.push("的殺");
+    }
+  }
+
+  const personalVoidDirs = new Set<Direction>();
+  personalVoidZodiac.forEach(z => {
+    (z2d[z] || []).forEach(d => personalVoidDirs.add(d));
+  });
+  if (personalVoidDirs.has(dir)) {
+    persFactors.push("天中殺");
+  }
+
+  if (board && persFactors.length === 0) {
+    const compatibles = getCompatibleStars(personalStar);
+    if (compatibles.includes(board[dir])) {
+      persFactors.push("吉方位");
+    }
+  }
+
+  const personal = persFactors.length > 0 ? persFactors.join("・") : "通常 (SAFE)";
+
+  return { environmental, personal };
+};
+
+const filterVectors = (
+  vectorData: {
+    yearLayer: Partial<Record<Direction, string>>;
+    monthLayer: Partial<Record<Direction, string>>;
+    dayLayer: Partial<Record<Direction, string>>;
+    finalVectors: Record<Direction, string>;
+  },
+  personalStar: StarFrequency,
+  voidZodiacs: string[],
+  lunarNodeLon: number | null,
+  yB: any,
+  mB: any,
+  dB: any,
+  mode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
+  getsuMeiStar: StarFrequency | null = null,
+  activeLayerMode: 'final' | 'year' | 'month' | 'day' = 'final'
+): Record<Direction, string> => {
+  if (mode === 'composite') {
+    if (activeLayerMode === 'year') return vectorData.yearLayer as Record<Direction, string>;
+    if (activeLayerMode === 'month') return vectorData.monthLayer as Record<Direction, string>;
+    if (activeLayerMode === 'day') return vectorData.dayLayer as Record<Direction, string>;
+    return vectorData.finalVectors as Record<Direction, string>;
+  }
+
+  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const res: Record<Direction, string> = {} as any;
+
+  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+    switch(star) {
+      case 1: return [6, 7, 3, 4]; 
+      case 2: return [9, 6, 7]; 
+      case 3: return [1, 9]; 
+      case 4: return [1, 9];
+      case 5: return [9, 6, 7];
+      case 6: return [2, 5, 8, 1]; 
+      case 7: return [2, 5, 8, 1];
+      case 8: return [9, 6, 7];
+      case 9: return [3, 4, 2, 5, 8]; 
+      default: return [];
+    }
+  };
+  const compatiblesHonmei = getCompatibleStars(personalStar);
+  const compatiblesGetsumei = getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+
+  const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+    const isHonmeiComp = compatiblesHonmei.includes(starNum);
+    if (!getsuMeiStar) {
+      return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+    }
+    const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
+    if (isHonmeiComp && isGetsumeiComp) {
+      return 'OPTIMAL';
+    } else if (isHonmeiComp) {
+      return 'OPTIMAL_REGULAR';
+    }
+    return 'SAFE';
+  };
+
+  const z2d: Record<string, Direction[]> = {
+    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+  };
+  const voidDirs = new Set<Direction>();
+  voidZodiacs.forEach(z => {
+    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  });
+
+  const nodeDirs = new Set<Direction>();
+  if (lunarNodeLon !== null) {
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const getBearing = (lon: number) => {
+      let b = (lon - 90) % 360; 
+      if (b < 0) b += 360;
+      b = 360 - b; 
+      const i = Math.floor(((b + 22.5) % 360) / 45);
+      return dirs[i];
+    };
+    nodeDirs.add(getBearing(lunarNodeLon));
+    nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
+  }
+
+  const getOpposite = (d: Direction): Direction => {
+    const opposites: Record<string, Direction> = {
+      'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
+      'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+    };
+    return opposites[d];
+  };
+
+  directions.forEach(d => {
+    const y = vectorData.yearLayer[d];
+    const m = vectorData.monthLayer[d];
+    const daySt = vectorData.dayLayer[d];
+    
+    let list: string[] = [];
+    let activeBoard: any = dB;
+    if (activeLayerMode === 'year') {
+      list = [y || 'SAFE'];
+      activeBoard = yB;
+    } else if (activeLayerMode === 'month') {
+      list = [m || 'SAFE'];
+      activeBoard = mB;
+    } else if (activeLayerMode === 'day') {
+      list = [daySt || 'SAFE'];
+      activeBoard = dB;
+    } else {
+      list = [y || 'SAFE', m || 'SAFE', daySt || 'SAFE'];
+      activeBoard = dB;
+    }
+
+    if (mode === 'personal_kigaku') {
+      const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
+      if (hasPurple) {
+        res[d] = hasPurple;
+      } else {
+        if (activeLayerMode === 'final') {
+          const hasOpt = list.includes('OPTIMAL');
+          const hasOptReg = list.includes('OPTIMAL_REGULAR');
+          if (hasOpt) res[d] = 'OPTIMAL';
+          else if (hasOptReg) res[d] = 'OPTIMAL_REGULAR';
+          else res[d] = 'SAFE';
+        } else {
+          res[d] = getOptimalStatus(activeBoard ? activeBoard[d] : 1);
+        }
+      }
+    } else if (mode === 'personal_bazi') {
+      if (voidDirs.has(d)) {
+        res[d] = 'NOISE_VOID';
+      } else {
+        res[d] = 'SAFE';
+      }
+    } else {
+      const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
+      if (hasRed) {
+        res[d] = hasRed;
+      } else if (nodeDirs.has(d)) {
+        res[d] = 'NOISE_NODE';
+      } else {
+        res[d] = 'SAFE';
+      }
+    }
+  });
+
+  return res;
+};
 
 export const SolarTimeClock = () => {
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -78,6 +350,9 @@ export const SolarTimeClock = () => {
 
   const [ansLoad, setAnsLoad] = useState(22);
   const [shieldCapacity, setShieldCapacity] = useState(15);
+  const [zScoreHRV, setZScoreHRV] = useState(0);
+  const [hardwareDisplacementPenalty, setHardwareDisplacementPenalty] = useState(0);
+  const [circadianMultiplier, setCircadianMultiplier] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingLog, setIsSavingLog] = useState(false);
 
@@ -90,6 +365,7 @@ export const SolarTimeClock = () => {
 
   const [heatmapMode, setHeatmapMode] = useState<'none' | '30days' | '12months'>('none');
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
+  const [directionFilterMode, setDirectionFilterMode] = useState<'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental'>('composite');
 
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
@@ -439,7 +715,13 @@ export const SolarTimeClock = () => {
     return getHonmeiStar(birthSolarData.solarTime);
   }, [birthDate, birthSolarData]);
 
-  const { board, layers, physicalLayers, classicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard } = React.useMemo(() => {
+  const getsuMeiStar = React.useMemo(() => {
+    if (!birthDate) return null;
+    const bDate = birthSolarData?.solarTime ? new Date(birthSolarData.solarTime) : new Date(birthDate);
+    return getClassicalMonthStar(bDate);
+  }, [birthDate, birthSolarData]);
+
+  const { board, layers: rawLayers, physicalLayers: rawPhysicalLayers, classicalLayers: rawClassicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard } = React.useMemo(() => {
     if (!env || !honmeiStar) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
 
     // Boards for internal calculation based on user preference toggle
@@ -458,13 +740,17 @@ export const SolarTimeClock = () => {
     const cdB = generateBoard(env.classicalDayStar);
 
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    const tDate = solarData?.solarTime || ephemerisTime || new Date();
 
     const vectorData = calculateVectorCollision(
       useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
       yB, mB, dB,
       voidZodiacArray,
       env.raw.lunarNode,
-      actionIntent
+      actionIntent,
+      tDate,
+      139.6917,
+      useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
     );
 
     const physicalVectorData = calculateVectorCollision(
@@ -472,7 +758,10 @@ export const SolarTimeClock = () => {
       pyB, pmB, pdB,
       voidZodiacArray,
       env.raw.lunarNode,
-      actionIntent
+      actionIntent,
+      tDate,
+      139.6917,
+      undefined
     );
 
     const classicalVectorData = calculateVectorCollision(
@@ -480,11 +769,176 @@ export const SolarTimeClock = () => {
       cyB, cmB, cdB,
       voidZodiacArray,
       env.raw.lunarNode,
-      actionIntent
+      actionIntent,
+      tDate,
+      139.6917,
+      getsuMeiStar || undefined
     );
 
     return { board: dB, layers: vectorData, physicalLayers: physicalVectorData, classicalLayers: classicalVectorData, physicalYearBoard: pyB, physicalMonthBoard: pmB, physicalDayBoard: pdB, classicalYearBoard: cyB, classicalMonthBoard: cmB, classicalDayBoard: cdB };
-  }, [honmeiStar, env, birthDate, actionIntent, voidZodiacOverride, useClassicalBoard]);
+  }, [honmeiStar, getsuMeiStar, env, birthDate, actionIntent, voidZodiacOverride, useClassicalBoard, solarData, ephemerisTime]);
+
+  const filteredLayers = React.useMemo(() => {
+    if (!rawLayers || !rawPhysicalLayers || !rawClassicalLayers || !honmeiStar) {
+      return { layers: null, physicalLayers: null, classicalLayers: null };
+    }
+    if (directionFilterMode === 'composite') {
+      return { layers: rawLayers, physicalLayers: rawPhysicalLayers, classicalLayers: rawClassicalLayers };
+    }
+
+    const filterLayer = (layer: any, yBoard: any, mBoard: any, dBoard: any) => {
+      const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const personalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
+      const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+
+      const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+        switch(star) {
+          case 1: return [6, 7, 3, 4];
+          case 2: return [9, 6, 7];
+          case 3: return [1, 9];
+          case 4: return [1, 9];
+          case 5: return [9, 6, 7];
+          case 6: return [2, 5, 8, 1];
+          case 7: return [2, 5, 8, 1];
+          case 8: return [9, 6, 7];
+          case 9: return [3, 4, 2, 5, 8];
+          default: return [];
+        }
+      };
+      const compatiblesHonmei = getCompatibleStars(personalStar);
+      const compatiblesGetsumei = useClassicalBoard && getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+
+      const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+        const isHonmeiComp = compatiblesHonmei.includes(starNum);
+        if (!useClassicalBoard || !getsuMeiStar) {
+          return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+        }
+        const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
+        if (isHonmeiComp && isGetsumeiComp) {
+          return 'OPTIMAL';
+        } else if (isHonmeiComp) {
+          return 'OPTIMAL_REGULAR';
+        }
+        return 'SAFE';
+      };
+
+      const z2d: Record<string, Direction[]> = {
+        '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+        '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+        '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+      };
+      const voidDirs = new Set<Direction>();
+      voidZodiacArray.forEach(z => {
+        (z2d[z] || []).forEach(d => voidDirs.add(d));
+      });
+
+      const getOpposite = (d: Direction): Direction => {
+        const opposites: Record<string, Direction> = {
+          'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
+          'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+        };
+        return opposites[d];
+      };
+
+      const filterStatus = (status: string, dir: Direction, activeBoard: any) => {
+        if (!status) return 'SAFE';
+        if (directionFilterMode === 'personal_kigaku') {
+          let honmeiD: Direction | null = null;
+          directions.forEach(d => {
+            if (activeBoard && activeBoard[d] === personalStar) {
+              honmeiD = d;
+            }
+          });
+          if (dir === honmeiD) return 'NOISE_HONMEI';
+          if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
+          const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+          return optStatus;
+        } else if (directionFilterMode === 'personal_bazi') {
+          if (voidDirs.has(dir)) return 'NOISE_VOID';
+          return 'SAFE';
+        } else {
+          let isGou = false;
+          let isAnken = false;
+          if (activeBoard) {
+            directions.forEach(d => {
+              if (activeBoard[d] === 5) {
+                if (d === dir) isGou = true;
+                if (getOpposite(d) === dir) isAnken = true;
+              }
+            });
+          }
+          if (isGou) return 'NOISE_GOU';
+          if (isAnken) return 'NOISE_ANKEN';
+          if (status === 'NOISE_HA') return 'NOISE_HA';
+          if (status === 'NOISE_NODE') return 'NOISE_NODE';
+          return 'SAFE';
+        }
+      };
+
+      const newYearLayer: any = {};
+      const newMonthLayer: any = {};
+      const newDayLayer: any = {};
+      const newFinalVectors: any = {};
+
+      directions.forEach(d => {
+        newYearLayer[d] = filterStatus(layer.yearLayer[d], d, yBoard);
+        newMonthLayer[d] = filterStatus(layer.monthLayer[d], d, mBoard);
+        newDayLayer[d] = filterStatus(layer.dayLayer[d], d, dBoard);
+        
+        if (directionFilterMode === 'personal_kigaku') {
+          const y = newYearLayer[d];
+          const m = newMonthLayer[d];
+          const dStatus = newDayLayer[d];
+          const list = [y, m, dStatus];
+          const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
+          const hasOpt = list.find(s => s === 'OPTIMAL');
+          const hasOptReg = list.find(s => s === 'OPTIMAL_REGULAR');
+
+          if (hasPurple) newFinalVectors[d] = hasPurple;
+          else if (hasOpt) newFinalVectors[d] = 'OPTIMAL';
+          else if (hasOptReg) newFinalVectors[d] = 'OPTIMAL_REGULAR';
+          else newFinalVectors[d] = 'SAFE';
+        } else if (directionFilterMode === 'personal_bazi') {
+          const y = newYearLayer[d];
+          const m = newMonthLayer[d];
+          const dStatus = newDayLayer[d];
+          const list = [y, m, dStatus];
+          const hasVoid = list.find(s => s === 'NOISE_VOID');
+          if (hasVoid) newFinalVectors[d] = 'NOISE_VOID';
+          else newFinalVectors[d] = 'SAFE';
+        } else {
+          const y = newYearLayer[d];
+          const m = newMonthLayer[d];
+          const dStatus = newDayLayer[d];
+          const list = [y, m, dStatus];
+          const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
+          const hasNode = list.find(s => s === 'NOISE_NODE');
+
+          if (hasRed) newFinalVectors[d] = hasRed;
+          else if (hasNode) newFinalVectors[d] = hasNode;
+          else newFinalVectors[d] = 'SAFE';
+        }
+      });
+
+      return {
+        ...layer,
+        yearLayer: newYearLayer,
+        monthLayer: newMonthLayer,
+        dayLayer: newDayLayer,
+        finalVectors: newFinalVectors
+      };
+    };
+
+    return {
+      layers: filterLayer(rawLayers, useClassicalBoard ? classicalYearBoard : physicalYearBoard, useClassicalBoard ? classicalMonthBoard : physicalMonthBoard, useClassicalBoard ? classicalDayBoard : physicalDayBoard),
+      physicalLayers: filterLayer(rawPhysicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard),
+      classicalLayers: filterLayer(rawClassicalLayers, classicalYearBoard, classicalMonthBoard, classicalDayBoard)
+    };
+  }, [rawLayers, rawPhysicalLayers, rawClassicalLayers, directionFilterMode, useClassicalBoard, honmeiStar, getsuMeiStar, voidZodiacOverride, birthDate, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard]);
+
+  const layers = filteredLayers.layers;
+  const physicalLayers = filteredLayers.physicalLayers;
+  const classicalLayers = filteredLayers.classicalLayers;
 
   useEffect(() => {
     if (heatmapMode === 'none' || !baseTime || !honmeiStar || !env) return;
@@ -508,9 +962,21 @@ export const SolarTimeClock = () => {
           testEnv.raw.lunarNode,
           actionIntent
         );
+
+          const filteredV = filterVectors(
+          vectorData,
+          useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+          voidZodiacArray,
+          testEnv.raw.lunarNode,
+          yB, mB, dB,
+          directionFilterMode,
+          useClassicalBoard ? getsuMeiStar : null,
+          activeLayerMode
+        );
+
         data.push({
           label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
-          vectors: vectorData.finalVectors,
+          vectors: filteredV,
           isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac, getCurrentZodiac(testDate).dayZodiac].includes(z))
         });
       }
@@ -530,16 +996,151 @@ export const SolarTimeClock = () => {
           actionIntent
         );
 
+        const testPersonalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
+
+        const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+          switch(star) {
+            case 1: return [6, 7, 3, 4]; 
+            case 2: return [9, 6, 7]; 
+            case 3: return [1, 9]; 
+            case 4: return [1, 9];
+            case 5: return [9, 6, 7];
+            case 6: return [2, 5, 8, 1]; 
+            case 7: return [2, 5, 8, 1];
+            case 8: return [9, 6, 7];
+            case 9: return [3, 4, 2, 5, 8]; 
+            default: return [];
+          }
+        };
+        const compatibles = getCompatibleStars(testPersonalStar);
+
+        const z2d: Record<string, Direction[]> = {
+          '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+          '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+          '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+        };
+        const voidDirs = new Set<Direction>();
+        voidZodiacArray.forEach(z => {
+          (z2d[z] || []).forEach(d => voidDirs.add(d));
+        });
+
+        const nodeDirs = new Set<Direction>();
+        if (testEnv.raw.lunarNode !== null) {
+          const getBearing = (lon: number) => {
+            const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            let b = (lon - 90) % 360; 
+            if (b < 0) b += 360;
+            b = 360 - b; 
+            const i = Math.floor(((b + 22.5) % 360) / 45);
+            return dirs[i];
+          };
+          nodeDirs.add(getBearing(testEnv.raw.lunarNode));
+          nodeDirs.add(getBearing((testEnv.raw.lunarNode + 180) % 360));
+        }
+
+        const getOpposite = (d: Direction): Direction => {
+          const opposites: Record<string, Direction> = {
+            'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
+            'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+          };
+          return opposites[d];
+        };
+
+        const filterSingleLayer = (status: string, dir: Direction, activeBoard: any) => {
+          if (directionFilterMode === 'composite') return status;
+          if (!status) return 'SAFE';
+          
+          const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+            switch(star) {
+              case 1: return [6, 7, 3, 4];
+              case 2: return [9, 6, 7];
+              case 3: return [1, 9];
+              case 4: return [1, 9];
+              case 5: return [9, 6, 7];
+              case 6: return [2, 5, 8, 1];
+              case 7: return [2, 5, 8, 1];
+              case 8: return [9, 6, 7];
+              case 9: return [3, 4, 2, 5, 8];
+              default: return [];
+            }
+          };
+          const compatiblesHonmei = getCompatibleStars(testPersonalStar);
+          const compatiblesGetsumei = useClassicalBoard && getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+
+          const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+            const isHonmeiComp = compatiblesHonmei.includes(starNum);
+            if (!useClassicalBoard || !getsuMeiStar) {
+              return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+            }
+            const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
+            if (isHonmeiComp && isGetsumeiComp) {
+              return 'OPTIMAL';
+            } else if (isHonmeiComp) {
+              return 'OPTIMAL_REGULAR';
+            }
+            return 'SAFE';
+          };
+
+          if (directionFilterMode === 'personal_kigaku') {
+            let honmeiD: Direction | null = null;
+            dirs.forEach(d => {
+              if (activeBoard && activeBoard[d] === testPersonalStar) {
+                honmeiD = d;
+              }
+            });
+            if (dir === honmeiD) return 'NOISE_HONMEI';
+            if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
+            const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+            return optStatus;
+          } else if (directionFilterMode === 'personal_bazi') {
+            if (voidDirs.has(dir)) return 'NOISE_VOID';
+            return 'SAFE';
+          } else {
+            let isGou = false;
+            let isAnken = false;
+            if (activeBoard) {
+              dirs.forEach(d => {
+                if (activeBoard[d] === 5) {
+                  if (d === dir) isGou = true;
+                  if (getOpposite(d) === dir) isAnken = true;
+                }
+              });
+            }
+            if (isGou) return 'NOISE_GOU';
+            if (isAnken) return 'NOISE_ANKEN';
+            if (status === 'NOISE_HA') return 'NOISE_HA';
+            if (status === 'NOISE_NODE') return 'NOISE_NODE';
+            return 'SAFE';
+          }
+        };
+
+        const filteredYearLayer: Record<string, string> = {};
+        const filteredMonthLayer: Record<string, string> = {};
+        for (const dir of dirs) {
+          filteredYearLayer[dir] = filterSingleLayer(vectorData.yearLayer[dir] || 'SAFE', dir, yB);
+          filteredMonthLayer[dir] = filterSingleLayer(vectorData.monthLayer[dir] || 'SAFE', dir, mB);
+        }
+
         const mergedVectors: Record<string, string> = {};
         for (const dir of dirs) {
-          const y = vectorData.yearLayer[dir] || 'SAFE';
-          const m = vectorData.monthLayer[dir] || 'SAFE';
-          if (y.startsWith('NOISE_GOU') || y.startsWith('NOISE_ANKEN') || m.startsWith('NOISE_GOU') || m.startsWith('NOISE_ANKEN')) {
-            mergedVectors[dir] = y.startsWith('NOISE_GOU') ? y : m.startsWith('NOISE_GOU') ? m : y.startsWith('NOISE_ANKEN') ? y : m;
-          } else if (y.startsWith('NOISE') || m.startsWith('NOISE')) {
-            mergedVectors[dir] = y.startsWith('NOISE') ? y : m;
+          const y = filteredYearLayer[dir] || 'SAFE';
+          const m = filteredMonthLayer[dir] || 'SAFE';
+          
+          if (activeLayerMode === 'year') {
+            mergedVectors[dir] = y;
+          } else if (activeLayerMode === 'month') {
+            mergedVectors[dir] = m;
+          } else if (activeLayerMode === 'day') {
+            // Day mode is not supported for 12 months, fallback to month
+            mergedVectors[dir] = m;
           } else {
-            mergedVectors[dir] = (y === 'OPTIMAL' || m === 'OPTIMAL') ? 'OPTIMAL' : 'SAFE';
+            if (y.startsWith('NOISE_GOU') || y.startsWith('NOISE_ANKEN') || m.startsWith('NOISE_GOU') || m.startsWith('NOISE_ANKEN')) {
+              mergedVectors[dir] = y.startsWith('NOISE_GOU') ? y : m.startsWith('NOISE_GOU') ? m : y.startsWith('NOISE_ANKEN') ? y : m;
+            } else if (y.startsWith('NOISE') || m.startsWith('NOISE')) {
+              mergedVectors[dir] = y.startsWith('NOISE') ? y : m;
+            } else {
+              mergedVectors[dir] = (y === 'OPTIMAL' || m === 'OPTIMAL') ? 'OPTIMAL' : (y === 'OPTIMAL_REGULAR' || m === 'OPTIMAL_REGULAR') ? 'OPTIMAL_REGULAR' : 'SAFE';
+            }
           }
         }
 
@@ -551,7 +1152,7 @@ export const SolarTimeClock = () => {
       }
     }
     setHeatmapData(data);
-  }, [heatmapMode, baseTime, timeOffsetDays, honmeiStar, actionIntent, useClassicalBoard, voidZodiacOverride, birthDate, env]);
+  }, [heatmapMode, baseTime, timeOffsetDays, honmeiStar, getsuMeiStar, actionIntent, useClassicalBoard, voidZodiacOverride, birthDate, env, directionFilterMode, activeLayerMode]);
 
   const exportMasterTelemetry = () => {
     const timestampStr = new Date().getTime();
@@ -652,7 +1253,7 @@ export const SolarTimeClock = () => {
       timestamp: new Date().toISOString(),
       location: { lat, lon, targetLat, targetLon },
       personalProfile: { birthDate, birthLat, birthLon, honmeiStar, personalVoidZodiac },
-      biometrics: { hrv, gsr, ansLoad, shieldCapacity },
+      biometrics: { hrv, gsr, ansLoad, shieldCapacity, zScoreHRV, hardwareDisplacementPenalty, circadianMultiplier },
       baselines: { hrvMean: baselineHrvMean, hrvStd: baselineHrvStd, gsrMean: baselineGsrMean, gsrStd: baselineGsrStd },
       geomagnetism: geoData,
       spaceWeather: spaceWeather,
@@ -830,6 +1431,9 @@ export const SolarTimeClock = () => {
 
     setShieldCapacity(metrics.shieldCapacity);
     setAnsLoad(metrics.ansLoad);
+    setZScoreHRV(metrics.zScoreHRV);
+    setHardwareDisplacementPenalty(metrics.hardwareDisplacementPenalty);
+    setCircadianMultiplier(metrics.circadianMultiplier);
   }, [hrv, gsr, baselineHrvMean, baselineHrvStd, baselineGsrMean, baselineGsrStd, baseSyncDays, spaceWeather, targetElevation, targetLat, targetLon, lat, lon, birthLat, birthLon, solarData, pressureDrop, baseTime, timeOffsetDays]);
 
   useEffect(() => {
@@ -918,6 +1522,7 @@ export const SolarTimeClock = () => {
       if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-900 border-zinc-700';
       if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 font-bold bg-yellow-950/30 border-yellow-900/50';
       if (s === 'OPTIMAL') return 'text-emerald-400 font-bold bg-emerald-950/30 border-emerald-900/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]';
+      if (s === 'OPTIMAL_REGULAR') return 'text-emerald-500 font-bold bg-emerald-950/15 border-emerald-900/30 shadow-[0_0_4px_rgba(16,185,129,0.1)]';
       return 'text-blue-400 bg-blue-950/10 border-blue-900/30';
     };
 
@@ -929,6 +1534,95 @@ export const SolarTimeClock = () => {
         <span className="text-[7px] text-zinc-500 uppercase tracking-widest">{dir}</span>
         <span className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? 'text-zinc-600' : ''}`}>{star || '-'}</span>
         {!isCenter && status && <span className="text-[5px] sm:text-[6px] uppercase tracking-tighter opacity-80 leading-none">{status.replace('NOISE_', '')}</span>}
+      </div>
+    );
+  };
+
+  const TooltipCell = ({ 
+    status, 
+    board, 
+    isFinal, 
+    layerType, 
+    dir, 
+    isClassical 
+  }: { 
+    status: string, 
+    board: any, 
+    isFinal?: boolean, 
+    layerType: 'year' | 'month' | 'day' | 'final', 
+    dir: Direction, 
+    isClassical: boolean 
+  }) => {
+    const getColor = (s: string) => {
+      if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
+      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
+      if (s === 'NOISE_VOID') return 'text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800';
+      if (s === 'NOISE_NODE') return 'text-yellow-400 font-bold';
+      if (s === 'NOISE_HA') return 'text-rose-400 font-bold';
+      if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
+      if (s === 'OPTIMAL_REGULAR') return 'text-emerald-500 font-medium drop-shadow-[0_0_2px_rgba(16,185,129,0.4)]';
+      return 'text-blue-400';
+    };
+
+    const formatLabel = (s: string) => {
+      if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
+      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
+      if (s === 'NOISE_VOID') return 'VOID_ZONE';
+      if (s === 'NOISE_NODE') return 'LUNAR_NODE';
+      if (s === 'NOISE_HA') return 'CLASH_HA';
+      if (s === 'OPTIMAL_REGULAR') return 'LUCKY_ZONE';
+      return s;
+    };
+
+    const label = formatLabel(status);
+    if (!honmeiStar) return <span>{label}</span>;
+    const star = board ? board[dir] : '?';
+    let title = "🟦 通常ゾーン (SAFE)";
+    let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
+    if (status === 'NOISE_GOU') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
+    else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
+    else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
+    else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+    else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
+    else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
+    else if (status === 'NOISE_HA') { title = "🟥 破壊ノイズ・破 (CLASH HA)"; desc = "十二支の対衝（対向）位置による強力な不整合波。「歳破」「月破」「日破」のいずれかに該当し、行動や進捗を破壊・頓挫させる極めて危険なユニバーサルノイズです。"; }
+    else if (status === 'OPTIMAL') { title = "🌟 最大吉方位 (MAX OPTIMAL)"; desc = "本命星と月命星の双方が相生・比和する最強の開運方位です。"; }
+    else if (status === 'OPTIMAL_REGULAR') { title = "🟢 吉方位 (LUCKY)"; desc = "あなたの本命星と相生・比和する、運気を高める良好な方位です。"; }
+
+    const isTendoDir = (isClassical ? classicalLayers : physicalLayers)?.tendoDirection === dir;
+
+    return (
+      <div className="group relative cursor-help inline-block">
+        <span className={`${getColor(status)} border-b border-zinc-700/50 hover:border-current`}>{label}</span>
+        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-950 border border-zinc-700 text-zinc-300 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
+          <div className={`font-bold mb-1 border-b border-zinc-800 pb-1 ${getColor(status)}`}>{title}</div>
+          <div className="text-zinc-400 mb-1 leading-tight">{desc}</div>
+          {isTendoDir && (
+            <div className="text-[8px] text-emerald-400 font-bold mb-1 bg-emerald-950/50 p-1 border border-emerald-900/30 rounded-xs">
+              ✨ 天道波動重畳中 (吉殺効果により本命殺・的殺等の個人的凶殺を無害化)
+            </div>
+          )}
+          {(() => {
+            const activeBoardForBreakdown = isFinal 
+              ? (useClassicalBoard ? classicalDayBoard : physicalDayBoard)
+              : board;
+            const br = getVectorBreakdown(
+              dir,
+              activeBoardForBreakdown,
+              useClassicalBoard ? honmeiStar!.classical : honmeiStar!.physical,
+              personalVoidZodiac,
+              layerType,
+              currentZodiac,
+              env?.raw?.lunarNode ?? null
+            );
+            return (
+              <div className="text-[7.5px] text-zinc-500 font-mono mt-1.5 pt-1.5 border-t border-zinc-800 space-y-0.5">
+                <div className="flex justify-between"><span>【環境要因】:</span> <span className={br.environmental.includes('通常') ? 'text-blue-400' : 'text-rose-400 font-bold'}>{br.environmental}</span></div>
+                <div className="flex justify-between"><span>【生体相性】:</span> <span className={br.personal.includes('通常') ? 'text-zinc-500' : br.personal.includes('吉') ? 'text-emerald-400 font-bold' : 'text-purple-400 font-bold'}>{br.personal}</span></div>
+              </div>
+            );
+          })()}
+        </div>
       </div>
     );
   };
@@ -1028,7 +1722,7 @@ export const SolarTimeClock = () => {
               : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
-            1. Profile
+            1. プロフィール
           </button>
           <button
             onClick={() => setActiveTab("destination")}
@@ -1037,7 +1731,7 @@ export const SolarTimeClock = () => {
               : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
-            2. Destination
+            2. 目的地/健康
           </button>
           <button
             onClick={() => setActiveTab("timing")}
@@ -1046,7 +1740,7 @@ export const SolarTimeClock = () => {
               : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
-            3. Timing
+            3. タイミング
           </button>
           <button
             onClick={() => setActiveTab("consult")}
@@ -1055,7 +1749,7 @@ export const SolarTimeClock = () => {
               : "text-zinc-500 hover:text-zinc-300"
               }`}
           >
-            4. Consult
+            4. AI相談
           </button>
         </div>
 
@@ -1229,7 +1923,7 @@ export const SolarTimeClock = () => {
 
                   <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
                     <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center gap-2">
-                      <span className="text-purple-500">▶</span> Hardware Init <span className="text-zinc-500 font-normal">(Birth Vector)</span>
+                      <span className="text-purple-500">▶</span> 初期設定 <span className="text-zinc-500 font-normal">(出生ベクトル / Birth Vector)</span>
                     </div>
                     <div className="text-[9px] text-zinc-500 font-sans leading-tight">
                       生年月日から算出されたあなた固有のベース波長（初期設定）
@@ -1317,9 +2011,9 @@ export const SolarTimeClock = () => {
                   <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
                     <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-emerald-500">▶</span> Live Environment
+                        <span className="text-emerald-500">▶</span> リアルタイム環境計測
                       </div>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded-sm">
+                      <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-sm px-2 py-0.5">
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                         <span className="text-[8px] text-emerald-400 font-mono tracking-widest">TRACKING</span>
                       </div>
@@ -1357,7 +2051,7 @@ export const SolarTimeClock = () => {
                   {env?.raw && (
                     <div className="mt-auto pt-3 border-t border-zinc-900">
                       <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                        <span>Live Orbital Matrix</span>
+                        <span>リアルタイム天体軌道マトリクス</span>
                         <div className="h-px bg-zinc-800 grow"></div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -1544,7 +2238,7 @@ export const SolarTimeClock = () => {
                               {renderMatrixCell('NW', classicalDayBoard.NW, classicalLayers?.dayLayer?.NW)}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">隠遁・陽遁と日家九星の近似。</div>
+                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">精密日家九星・隠遁陽遁サイクル。</div>
                         </div>
                       </div>
                     </div>
@@ -1556,7 +2250,7 @@ export const SolarTimeClock = () => {
               {env && layers && (
                 <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
                   <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
-                    <span>Phase Interference Diagnosis</span>
+                    <span>干渉波・位相干渉診断</span>
                     <span className="text-zinc-500 text-[8px]">( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt; 🟩 波長共鳴 &gt; 🟦 無干渉(青) )</span>
                   </div>
                   <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
@@ -1586,56 +2280,13 @@ export const SolarTimeClock = () => {
                             const d = physicalLayers?.dayLayer[dir] || 'SAFE';
                             const final = physicalLayers?.finalVectors[dir] || 'SAFE';
 
-                            const getColor = (s: string) => {
-                              if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-                              if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
-                              if (s === 'NOISE_VOID') return 'text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800';
-                              if (s === 'NOISE_NODE') return 'text-yellow-400 font-bold';
-                              if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
-                              return 'text-blue-400';
-                            };
-
-                            const formatLabel = (s: string) => {
-                              if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
-                              if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
-                              if (s === 'NOISE_VOID') return 'VOID_ZONE';
-                              if (s === 'NOISE_NODE') return 'LUNAR_NODE';
-                              return s;
-                            };
-
-                            const TooltipCell = ({ status, board, isFinal }: { status: string, board: any, isFinal?: boolean }) => {
-                              const star = board ? board[dir] : '?';
-                              let title = "🟦 通常ゾーン (SAFE)";
-                              let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
-                              if (status === 'NOISE_GOU') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
-                              else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
-                              else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
-                              else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
-                              else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
-                              else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
-                              else if (status === 'OPTIMAL') { title = "🟩 最適化ゾーン (OPTIMAL)"; desc = "あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
-
-                              const label = formatLabel(status);
-
-                              return (
-                                <div className="group relative cursor-help inline-block">
-                                  <span className={`${getColor(status)} border-b border-zinc-700/50 hover:border-current`}>{label}</span>
-                                  <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-950 border border-zinc-700 text-zinc-300 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
-                                    <div className={`font-bold mb-1 border-b border-zinc-800 pb-1 ${getColor(status)}`}>{title}</div>
-                                    <div className="text-zinc-400 mb-1 leading-tight">{desc}</div>
-                                    {!isFinal && <div className="text-[9px] text-zinc-500 font-mono mt-1 pt-1 border-t border-zinc-800">配置星: {star} / My: {honmeiStar?.physical}</div>}
-                                  </div>
-                                </div>
-                              );
-                            };
-
                             return (
                               <tr key={dir} className="hover:bg-zinc-900/30 transition-colors">
                                 <td className="py-2.5 pr-2 text-zinc-400 font-bold align-middle">{dir}</td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={y} board={physicalYearBoard} /></td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={m} board={physicalMonthBoard} /></td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={d} board={physicalDayBoard} /></td>
-                                <td className="py-2.5 pl-2 align-middle bg-zinc-950/50"><TooltipCell status={final} board={null} isFinal={true} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={y} board={physicalYearBoard} layerType="year" dir={dir} isClassical={false} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={m} board={physicalMonthBoard} layerType="month" dir={dir} isClassical={false} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={d} board={physicalDayBoard} layerType="day" dir={dir} isClassical={false} /></td>
+                                <td className="py-2.5 pl-2 align-middle bg-zinc-950/50"><TooltipCell status={final} board={null} isFinal={true} layerType="final" dir={dir} isClassical={false} /></td>
                               </tr>
                             );
                           })}
@@ -1666,56 +2317,13 @@ export const SolarTimeClock = () => {
                             const d = classicalLayers?.dayLayer[dir] || 'SAFE';
                             const final = classicalLayers?.finalVectors[dir] || 'SAFE';
 
-                            const getColor = (s: string) => {
-                              if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-                              if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
-                              if (s === 'NOISE_VOID') return 'text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800';
-                              if (s === 'NOISE_NODE') return 'text-yellow-400 font-bold';
-                              if (s === 'OPTIMAL') return 'text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]';
-                              return 'text-blue-400';
-                            };
-
-                            const formatLabel = (s: string) => {
-                              if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
-                              if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
-                              if (s === 'NOISE_VOID') return 'VOID_ZONE';
-                              if (s === 'NOISE_NODE') return 'LUNAR_NODE';
-                              return s;
-                            };
-
-                            const TooltipCell = ({ status, board, isFinal }: { status: string, board: any, isFinal?: boolean }) => {
-                              const star = board ? board[dir] : '?';
-                              let title = "🟦 通常ゾーン (SAFE)";
-                              let desc = "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
-                              if (status === 'NOISE_GOU') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。"; }
-                              else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
-                              else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
-                              else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
-                              else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
-                              else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
-                              else if (status === 'OPTIMAL') { title = "🟩 最適化ゾーン (OPTIMAL)"; desc = "あなたの波長と環境波長が完全に同期し、パフォーマンスを最大化させます。"; }
-
-                              const label = formatLabel(status);
-
-                              return (
-                                <div className="group relative cursor-help inline-block">
-                                  <span className={`${getColor(status)} border-b border-zinc-700/50 hover:border-current`}>{label}</span>
-                                  <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-950 border border-zinc-700 text-zinc-300 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
-                                    <div className={`font-bold mb-1 border-b border-zinc-800 pb-1 ${getColor(status)}`}>{title}</div>
-                                    <div className="text-zinc-400 mb-1 leading-tight">{desc}</div>
-                                    {!isFinal && <div className="text-[9px] text-zinc-500 font-mono mt-1 pt-1 border-t border-zinc-800">配置星: {star} / My: {honmeiStar?.classical}</div>}
-                                  </div>
-                                </div>
-                              );
-                            };
-
                             return (
                               <tr key={dir} className="hover:bg-zinc-900/30 transition-colors">
                                 <td className="py-2.5 pr-2 text-zinc-500 font-bold align-middle">{dir}</td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={y} board={classicalYearBoard} /></td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={m} board={classicalMonthBoard} /></td>
-                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={d} board={classicalDayBoard} /></td>
-                                <td className="py-2.5 pl-2 align-middle bg-zinc-900/20"><TooltipCell status={final} board={null} isFinal={true} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={y} board={classicalYearBoard} layerType="year" dir={dir} isClassical={true} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={m} board={classicalMonthBoard} layerType="month" dir={dir} isClassical={true} /></td>
+                                <td className="py-2.5 px-1 align-middle"><TooltipCell status={d} board={classicalDayBoard} layerType="day" dir={dir} isClassical={true} /></td>
+                                <td className="py-2.5 pl-2 align-middle bg-zinc-900/20"><TooltipCell status={final} board={null} isFinal={true} layerType="final" dir={dir} isClassical={true} /></td>
                               </tr>
                             );
                           })}
@@ -1731,7 +2339,7 @@ export const SolarTimeClock = () => {
                 <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2">
                   <div className="text-blue-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
-                    Astrophysical Core Logic (Theory & Model)
+                    天体物理コアロジック (理論と数理モデル)
                   </div>
                   <button
                     onClick={() => setShowAstrophysicalLogic(!showAstrophysicalLogic)}
@@ -1836,7 +2444,7 @@ export const SolarTimeClock = () => {
                         disabled={isAutoSearching}
                         className="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-950/20 px-2 py-1 rounded-sm hover:bg-emerald-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                       >
-                        {isAutoSearching ? 'SEARCHING...' : 'AUTO SEARCH'}
+                        {isAutoSearching ? '検索中...' : '自動検索'}
                       </button>
                       <input
                         type="date"
@@ -1862,7 +2470,7 @@ export const SolarTimeClock = () => {
                         onClick={() => setIsPlaying(!isPlaying)}
                         className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? 'bg-amber-950/40 text-amber-400 border-amber-500/50 hover:bg-amber-900/60 shadow-[0_0_8px_rgba(245,158,11,0.2)]' : 'bg-blue-950/40 text-blue-400 border-blue-500/50 hover:bg-blue-900/60 shadow-[0_0_8px_rgba(59,130,246,0.2)]'}`}
                       >
-                        {isPlaying ? '⏸ PAUSE' : '▶ PLAY'}
+                        {isPlaying ? '⏸ 一時停止' : '▶ 再生'}
                       </button>
                       <select
                         value={playSpeedDays}
@@ -1891,13 +2499,13 @@ export const SolarTimeClock = () => {
                   <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
                     <div className="flex items-center justify-between">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
-                        Destination <span className="text-[9px] text-zinc-600">Lat/Lon</span>
+                        目的地座標 <span className="text-[9px] text-zinc-600">緯度/経度</span>
                       </label>
                       <button
                         onClick={() => setShowMapPicker(!showMapPicker)}
                         className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
                       >
-                        [ MAP SEARCH ]
+                        [ 地図検索 ]
                       </button>
                     </div>
 
@@ -1917,7 +2525,7 @@ export const SolarTimeClock = () => {
                     <div className="w-full relative z-10 flex gap-1 mb-1">
                       <input
                         type="text"
-                        placeholder="Paste Coords or Google Maps URL... (e.g. 35.68, 139.76)"
+                        placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
                         className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
                         onChange={(e) => {
                           const val = e.target.value;
@@ -1935,21 +2543,21 @@ export const SolarTimeClock = () => {
                     <div className="flex gap-2 relative z-10 mt-1">
                       <input
                         type="number"
-                        placeholder="Latitude"
+                        placeholder="緯度"
                         value={targetLat ?? ""}
                         onChange={e => setTargetLat(e.target.value ? Number(e.target.value) : null)}
                         className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
                       />
                       <input
                         type="number"
-                        placeholder="Longitude"
+                        placeholder="経度"
                         value={targetLon ?? ""}
                         onChange={e => setTargetLon(e.target.value ? Number(e.target.value) : null)}
                         className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
                       />
                       <input
                         type="number"
-                        placeholder="Elev(m)"
+                        placeholder="標高(m)"
                         value={targetElevation ?? ""}
                         onChange={e => setTargetElevation(e.target.value ? Number(e.target.value) : null)}
                         className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
@@ -1964,7 +2572,7 @@ export const SolarTimeClock = () => {
                           }}
                           className="flex-1 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors"
                         >
-                          📋 COPY COORDS
+                          📋 座標をコピー
                         </button>
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${targetLat},${targetLon}`}
@@ -1972,7 +2580,7 @@ export const SolarTimeClock = () => {
                           rel="noopener noreferrer"
                           className="flex-1 bg-blue-900/30 text-blue-400 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors text-center block"
                         >
-                          🗺️ OPEN IN GOOGLE MAPS
+                          🗺️ Googleマップで開く
                         </a>
                       </div>
                     )}                    {targetDirInfo && targetVectorStatus && (
@@ -1982,7 +2590,7 @@ export const SolarTimeClock = () => {
                           ? 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400'
                           : targetVectorStatus.startsWith('NOISE')
                             ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                            : targetVectorStatus === 'OPTIMAL'
+                            : targetVectorStatus === 'OPTIMAL' || targetVectorStatus === 'OPTIMAL_REGULAR'
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                               : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                         }`}>
@@ -2004,7 +2612,7 @@ export const SolarTimeClock = () => {
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
                   <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
                     <span className="text-zinc-500 animate-pulse">◆</span>
-                    <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">Zone Classification <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間分類</span></h3>
+                    <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">ゾーン分類 <span className="text-[9px] text-zinc-500 font-normal ml-1">/ 空間分類</span></h3>
                   </div>
                   <div className="flex flex-col gap-1.5 mb-2 bg-black/50 p-2.5 rounded-sm border border-zinc-800/50 shadow-inner">
                     <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center border-b border-zinc-800/50 pb-1">
@@ -2029,7 +2637,11 @@ export const SolarTimeClock = () => {
                           const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
                           return map[k] || k;
                         });
-                        const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL').map(k => {
+                        const regulars = Object.keys(fv).filter(k => fv[k] === 'OPTIMAL_REGULAR').map(k => {
+                          const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
+                          return map[k] || k;
+                        });
+                        const safes = allDirs.filter(k => !(fv[k] || '').startsWith('NOISE') && fv[k] !== 'OPTIMAL' && fv[k] !== 'OPTIMAL_REGULAR').map(k => {
                           const map: any = { N: '北', NE: '北東', E: '東', SE: '南東', S: '南', SW: '南西', W: '西', NW: '北西' };
                           return map[k] || k;
                         });
@@ -2051,6 +2663,17 @@ export const SolarTimeClock = () => {
                                 </div>
                               </div>
                             )}
+                            {regulars.length > 0 && (
+                              <div className="bg-emerald-900/20 border-l-2 border-emerald-600/50 p-2 sm:p-3 rounded-r-md">
+                                <div className="text-emerald-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
+                                  <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full"></span>
+                                  [ OK ] 吉方 (REGULAR)
+                                </div>
+                                <div className="text-emerald-400/80 font-bold text-lg sm:text-xl tracking-widest">
+                                  {regulars.join(' / ')}
+                                </div>
+                              </div>
+                            )}
                             {safes.length > 0 && (
                               <div className="bg-blue-950/40 border-l-2 border-blue-500 p-2 sm:p-3 rounded-r-md">
                                 <div className="text-blue-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
@@ -2062,7 +2685,7 @@ export const SolarTimeClock = () => {
                                 </div>
                               </div>
                             )}
-                            {optimals.length === 0 && safes.length === 0 && (
+                            {optimals.length === 0 && regulars.length === 0 && safes.length === 0 && (
                               <div className="bg-red-950/40 border-l-2 border-red-500 p-2 sm:p-3 rounded-r-md">
                                 <div className="text-red-500 font-bold text-[9px] md:text-[10px] uppercase tracking-widest mb-1 flex items-center gap-2">
                                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
@@ -2154,6 +2777,7 @@ export const SolarTimeClock = () => {
                                 let st = d.vectors[dir];
                                 let bgClass = 'bg-zinc-900/30';
                                 if (st === 'OPTIMAL') bgClass = 'bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative';
+                                else if (st === 'OPTIMAL_REGULAR') bgClass = 'bg-emerald-500/35 border border-emerald-500/50';
                                 else if (st === 'SAFE') bgClass = 'bg-blue-500/20';
                                 else if (st?.startsWith('NOISE_GOU') || st?.startsWith('NOISE_ANKEN')) bgClass = 'bg-red-500/80';
                                 else if (st?.startsWith('NOISE_HONMEI') || st?.startsWith('NOISE_TEKI')) bgClass = 'bg-purple-500/80';
@@ -2185,20 +2809,100 @@ export const SolarTimeClock = () => {
             {/* Module 4: Tactical Magnetic Map */}
             <div className="w-full max-w-4xl mt-0">
 
-              <div className="flex justify-end mb-2 w-full gap-2">
-                <button
-                  onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
-                  className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
-                >
-                  {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
-                </button>
-                <button
-                  onClick={() => setUseClassicalBoard(!useClassicalBoard)}
-                  className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}
-                >
-                  Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}
-                </button>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
+                {/* Cyberpunk Filter Selector */}
+                <div className="flex items-center gap-1.5 bg-zinc-950 p-1 border border-zinc-800 rounded-sm">
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider px-1">Filter:</span>
+                  <button
+                    onClick={() => setDirectionFilterMode('composite')}
+                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                      directionFilterMode === 'composite'
+                        ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500/50 shadow-[0_0_5px_rgba(16,185,129,0.2)]'
+                        : 'bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50'
+                    }`}
+                  >
+                    🪐 総合判定
+                  </button>
+                  <button
+                    onClick={() => setDirectionFilterMode('personal_kigaku')}
+                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                      directionFilterMode === 'personal_kigaku'
+                        ? 'bg-purple-950/40 text-purple-400 border-purple-500/50 shadow-[0_0_5px_rgba(168,85,247,0.2)]'
+                        : 'bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50'
+                    }`}
+                  >
+                    👤 個人吉凶 (九星)
+                  </button>
+                  <button
+                    onClick={() => setDirectionFilterMode('personal_bazi')}
+                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                      directionFilterMode === 'personal_bazi'
+                        ? 'bg-yellow-950/40 text-yellow-400 border-yellow-500/50 shadow-[0_0_5px_rgba(234,179,8,0.2)]'
+                        : 'bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50'
+                    }`}
+                  >
+                    ☯ 個人天中殺 (四柱)
+                  </button>
+                  <button
+                    onClick={() => setDirectionFilterMode('environmental')}
+                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                      directionFilterMode === 'environmental'
+                        ? 'bg-rose-950/40 text-rose-400 border-rose-500/50 shadow-[0_0_5px_rgba(244,63,94,0.2)]'
+                        : 'bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50'
+                    }`}
+                  >
+                    🌍 環境方位のみ
+                  </button>
+                </div>
+
+                <div className="flex gap-2 self-stretch md:self-auto justify-end">
+                  <button
+                    onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
+                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
+                  >
+                    {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
+                  </button>
+                  <button
+                    onClick={() => setUseClassicalBoard(!useClassicalBoard)}
+                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}
+                  >
+                    Model: {useClassicalBoard ? "Classical (暦基準)" : "Physical (木星黄経基準)"}
+                  </button>
+                </div>
               </div>
+
+              {/* Warning Banner */}
+              {directionFilterMode !== 'composite' && (
+                <div className={`mb-3 p-2 border text-[10px] font-mono leading-tight flex items-start gap-2 ${
+                  directionFilterMode === 'personal_kigaku'
+                    ? 'bg-purple-950/20 border-purple-500/30 text-purple-400'
+                    : directionFilterMode === 'personal_bazi'
+                      ? 'bg-yellow-950/20 border-yellow-500/30 text-yellow-400'
+                      : 'bg-rose-950/20 border-rose-500/30 text-rose-400'
+                }`}>
+                  <span className="text-xs">⚠️</span>
+                  <div>
+                    {directionFilterMode === 'personal_kigaku' && (
+                      <>
+                        <span className="font-bold">【個人九星気学表示モード】</span>
+                        本命星・月命星による吉凶方位のみをマッピングしています（天中殺および万人共通の環境凶殺は非表示）。実際の移動にあたっては必ず総合判定を確認してください。
+                      </>
+                    )}
+                    {directionFilterMode === 'personal_bazi' && (
+                      <>
+                        <span className="font-bold">【個人天中殺表示モード】</span>
+                        四柱推命の生年月日（日柱干支・年柱干支）から算出される天中殺（空亡）方位のみをマッピングしています（九星吉凶および環境凶殺は非表示）。
+                      </>
+                    )}
+                    {directionFilterMode === 'environmental' && (
+                      <>
+                        <span className="font-bold">【環境方位表示モード】</span>
+                        空間全体の定在波（五黄殺・暗剣殺）および「破」などの環境凶殺のみをマッピングしています。あなた自身の本命殺・的殺や、相生による吉方位は非表示になっています。実際の移動にあたっては必ず総合判定を確認してください。
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
               <TacticalMagneticMap
                 lat={lat || 35.0116}
                 lon={lon || 135.7681}
@@ -2307,11 +3011,11 @@ export const SolarTimeClock = () => {
           className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-400/50 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSavingLog ? (
-            <span className="animate-pulse">SAVING...</span>
+            <span className="animate-pulse">保存中...</span>
           ) : (
             <>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>
-              SAVE TO DATABASE
+              データベースに保存
             </>
           )}
         </button>
@@ -2321,7 +3025,7 @@ export const SolarTimeClock = () => {
           className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-          EXPORT MASTER STATE (CSV/JSON)
+          マスター状態を出力 (CSV/JSON)
         </button>
       </div>
     </div >

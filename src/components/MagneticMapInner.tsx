@@ -131,9 +131,11 @@ export default function MagneticMapInner({
     let dashArray;
     switch (status) {
       case 'OPTIMAL': style = { color: "#10b981", opacity: 0.4 }; dashArray = undefined; break;
+      case 'OPTIMAL_REGULAR': style = { color: "#34d399", opacity: 0.3 }; dashArray = "5,2"; break;
       case 'SAFE': style = { color: "#3b82f6", opacity: 0.1 }; dashArray = undefined; break;
       case 'NOISE_GOU': style = { color: "#ef4444", opacity: 0.6 }; dashArray = "10,5"; break;
       case 'NOISE_ANKEN': style = { color: "#f43f5e", opacity: 0.6 }; dashArray = "5,5"; break;
+      case 'NOISE_HA': style = { color: "#f43f5e", opacity: 0.6 }; dashArray = "3,3"; break;
       case 'NOISE_HONMEI': style = { color: "#d946ef", opacity: 0.6 }; dashArray = "15,10,5,10"; break;
       case 'NOISE_TEKI': style = { color: "#c026d3", opacity: 0.6 }; dashArray = "15,15"; break;
       case 'NOISE_VOID': style = { color: "#eab308", opacity: 0.4 }; dashArray = "1,5"; break;
@@ -141,7 +143,7 @@ export default function MagneticMapInner({
       case 'NOISE': style = { color: "#ef4444", opacity: 0.6 }; dashArray = "10,10"; break;
       default: style = { color: "#3f3f46", opacity: 0.2 }; dashArray = "1,4";
     }
-    return { ...style, weight: status === 'SAFE' ? 0.5 : weight, dashArray };
+    return { ...style, weight: (status === 'SAFE' || status === 'OPTIMAL_REGULAR') ? 0.5 : weight, dashArray };
   }, [kpIndex]);
 
   // 3. Memoize the entire vector/sector layer to avoid re-calculating points unless inputs change
@@ -179,11 +181,13 @@ export default function MagneticMapInner({
       const getStatusLabel = (status: string) => {
         if (status === 'NOISE_GOU') return '五黄';
         if (status === 'NOISE_ANKEN') return '暗剣';
+        if (status === 'NOISE_HA') return '破';
         if (status === 'NOISE_HONMEI') return '本命';
         if (status === 'NOISE_TEKI') return '的殺';
         if (status === 'NOISE_VOID') return 'ボイド';
         if (status === 'NOISE_NODE') return '交点';
         if (status === 'OPTIMAL') return '大吉';
+        if (status === 'OPTIMAL_REGULAR') return '吉';
         return '';
       };
 
@@ -242,7 +246,7 @@ export default function MagneticMapInner({
                   <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
                       <span className="text-zinc-400">STATUS: </span>
-                      <span className={color.includes('10b981') ? 'text-emerald-500' : color.includes('ef4444') || color.includes('f43f5e') ? 'text-red-500' : color.includes('d946ef') || color.includes('c026d3') ? 'text-[#d946ef]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
+                      <span className={(color.includes('10b981') || color.includes('34d399')) ? 'text-emerald-500' : color.includes('ef4444') || color.includes('f43f5e') ? 'text-red-500' : color.includes('d946ef') || color.includes('c026d3') ? 'text-[#d946ef]' : color.includes('eab308') || color.includes('f59e0b') ? 'text-[#eab308]' : 'text-blue-500'}>
                         {d.status}
                       </span>
                     </div>

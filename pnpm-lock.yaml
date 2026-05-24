@@ -208,7 +208,7 @@ importers:
         specifier: ^5.5.4
         version: 5.5.5(eslint-config-prettier@10.1.8(eslint@9.39.3(jiti@2.6.1)))(eslint@9.39.3(jiti@2.6.1))(prettier@3.8.1)
       jsdom:
-        specifier: ^27.0.1
+        specifier: ^27.4.0
         version: 27.4.0
       playwright:
         specifier: ^1.60.0

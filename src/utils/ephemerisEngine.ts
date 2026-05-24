@@ -51,6 +51,8 @@ import {
   GeoVector,
   SiderealTime
 } from 'astronomy-engine';
+import { Solar, Lunar } from 'lunar-javascript';
+import { getZonedDateTimeFields } from './solarTime';
 
 /**
  * Astronomical Engine: Validated Physical Orbital Coordinates
@@ -207,31 +209,19 @@ export const AstroEngine = {
 
 /**
  * 固有周波数（本命星）の算出：
- * 古典的な「立春」による新年切り替えも、実際には「太陽黄経(L0) = 315度」に相当。
- * 単なるカレンダーではなく、生誕時の地球と太陽の幾何学的位相から天体学的に判定する物理モデル。
+ * 伝統的な暦（立春）に基づく精密な九星判定。
  */
 export function getClassicalYearStar(date: Date): StarFrequency {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1; // 1-12
-  const day = date.getDate();
-  
-  // 一般的な暦（カレンダー）では2月4日を立春として年を切り替える
-  const isPreviousCycle = (month === 1) || (month === 2 && day < 4);
-  const calcYear = isPreviousCycle ? year - 1 : year;
-
-  // フラクタル周波数への圧縮（Harmonic Reduction）
-  let reduced = String(calcYear).split('').reduce((acc, val) => acc + Number(val), 0);
-  while (reduced > 9) {
-    reduced = String(reduced).split('').reduce((acc, val) => acc + Number(val), 0);
-  }
-  
-  let star = 11 - reduced;
-  if (star > 9) star -= 9;
-  if (star <= 0) star += 9;
-  
-  return star as StarFrequency;
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  return (lunar.getYearNineStar().getIndex() + 1) as StarFrequency;
 }
 
+/**
+ * 本命星の取得（物理モデルと古典モデルの両方を返す）：
+ * - 物理モデル：生誕時の地球と太陽の幾何学的位相から天体学的に判定する物理モデル。
+ * - 古典モデル：伝統的な暦（立春）に基づく精密な九星判定。
+ */
 export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, classical: StarFrequency } {
   return {
     physical: getYearStar(birthDate),
@@ -266,42 +256,18 @@ export function getYearStar(date: Date): StarFrequency {
  * 古典月盤の算出（暦・節気基準）
  */
 export function getClassicalMonthStar(date: Date): StarFrequency {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const isPreviousCycle = (month === 1) || (month === 2 && day < 4);
-  const calcYear = isPreviousCycle ? year - 1 : year;
-
-  // 太陽黄経ベースでの正確な節切りインデックス（0=寅月, 1=卯月...）
-  const sunLon = AstroEngine.getSolarLongitude(date);
-  const monthIndex = Math.floor(((sunLon + 45) % 360) / 30); 
-
-  // 年の干支によるベース星の決定
-  const branchIndex = Math.abs(calcYear - 4) % 12; // 0=子, 1=丑...
-  let baseStar = 8;
-  if (branchIndex % 3 === 1) baseStar = 5;
-  if (branchIndex % 3 === 2) baseStar = 2;
-  
-  let star = baseStar - monthIndex;
-  while (star <= 0) star += 9;
-  return star as StarFrequency;
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  return (lunar.getMonthNineStar().getIndex() + 1) as StarFrequency;
 }
 
 /**
  * 古典日盤の算出（ユリウス日と隠遁陽遁の簡易暦基準）
  */
 export function getClassicalDayStar(date: Date): StarFrequency {
-  const jd = Math.floor(AstroEngine.getJulianDay(date));
-  const L0 = AstroEngine.getSolarLongitude(date);
-  const isYinPhase = (L0 >= 90 && L0 < 270);
-  
-  // 古典的な日家九星のサイクル近似
-  const cycle = jd % 9; 
-  let star = isYinPhase ? (9 - cycle) : (cycle + 1);
-  while (star <= 0) star += 9;
-  star %= 9;
-  if (star === 0) star = 9;
-  return star as StarFrequency;
+  const solar = Solar.fromDate(date);
+  const lunar = solar.getLunar();
+  return (lunar.getDayNineStar().getIndex() + 1) as StarFrequency;
 }
 
 /**
@@ -422,6 +388,21 @@ export function getCurrentEnvironmentalFrequencies(date: Date, lon: number = 139
   };
 }
 
+const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+  switch(star) {
+    case 1: return [6, 7, 3, 4];
+    case 2: return [9, 6, 7];
+    case 3: return [1, 9];
+    case 4: return [1, 9];
+    case 5: return [9, 6, 7];
+    case 6: return [2, 5, 8, 1];
+    case 7: return [2, 5, 8, 1];
+    case 8: return [9, 6, 7];
+    case 9: return [3, 4, 2, 5, 8];
+    default: return [];
+  }
+};
+
 /**
  * アクション目的に応じた最適化フラグ
  */
@@ -437,12 +418,22 @@ export function calculateVectorCollision(
   dayBoard: BoardLayout,
   voidZodiacs: string[] = [],
   lunarNodeLon: number | null = null,
-  actionIntent: ActionIntent = 'DEFAULT'
+  actionIntent: ActionIntent = 'DEFAULT',
+  targetDate?: Date,
+  lon: number = 139.6917,
+  getsuMeiStar?: StarFrequency
 ): {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, 'OPTIMAL' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE'>;
+  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
+  tendoDirection?: Direction;
+  doyouState?: {
+    inDoyou: boolean;
+    doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null;
+    isMabi: boolean;
+    isDoyouHazard: boolean;
+  };
 } {
   
   const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -473,30 +464,68 @@ export function calculateVectorCollision(
     nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
   }
   
-  // 相生関係
-  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-    switch(star) {
-      case 1: return [6, 7, 3, 4]; 
-      case 2: return [9, 6, 7]; 
-      case 3: return [1, 9]; 
-      case 4: return [1, 9];
-      case 5: return [9, 6, 7];
-      case 6: return [2, 5, 8, 1]; 
-      case 7: return [2, 5, 8, 1];
-      case 8: return [9, 6, 7];
-      case 9: return [3, 4, 2, 5, 8]; 
-      default: return [];
-    }
-  };
-  
-  let compatibles = getCompatibleStars(personalStar);
+  let compatiblesHonmei = getCompatibleStars(personalStar);
   
   if (actionIntent === 'REST') {
-    if (personalStar === 3 || personalStar === 4) compatibles = [1];
-    else if (personalStar === 1) compatibles = [6, 7];
+    if (personalStar === 3 || personalStar === 4) compatiblesHonmei = [1];
+    else if (personalStar === 1) compatiblesHonmei = [6, 7];
   } else if (actionIntent === 'BUSINESS') {
-    if (personalStar === 1) compatibles = [3, 4];
-    else if (personalStar === 3 || personalStar === 4) compatibles = [9];
+    if (personalStar === 1) compatiblesHonmei = [3, 4];
+    else if (personalStar === 3 || personalStar === 4) compatiblesHonmei = [9];
+  }
+
+  const compatiblesGetsumei = getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+
+  const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+    const isHonmeiComp = compatiblesHonmei.includes(starNum);
+    if (!getsuMeiStar) {
+      return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+    }
+    const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
+    if (isHonmeiComp && isGetsumeiComp) {
+      return 'OPTIMAL'; // Max lucky
+    } else if (isHonmeiComp) {
+      return 'OPTIMAL_REGULAR'; // Regular lucky
+    }
+    return 'SAFE';
+  };
+
+  // 十二支情報・天道・土用の計算
+  const zodiacs = targetDate ? getCurrentZodiac(targetDate, lon) : null;
+  
+  // 天道 (Tendo)
+  const monthlyTendoMap: Record<string, Direction> = {
+    '寅': 'S', '卯': 'SW', '辰': 'N', '巳': 'W',
+    '午': 'NW', '未': 'E', '申': 'N', '酉': 'NE',
+    '戌': 'S', '亥': 'E', '子': 'SE', '丑': 'W'
+  };
+  const tendoDir = zodiacs?.monthZodiac ? monthlyTendoMap[zodiacs.monthZodiac] : undefined;
+
+  // 土用 (Doyou) & 間日 (Mabi)
+  let doyouState: any = undefined;
+  if (targetDate) {
+    const L0 = AstroEngine.getSolarLongitude(targetDate);
+    let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
+    if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
+    else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
+    else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
+    else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+
+    const inDoyou = doyouType !== null;
+    let isMabi = false;
+    if (zodiacs?.dayZodiac) {
+      if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
+      else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
+      else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
+      else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+    }
+    
+    doyouState = {
+      inDoyou,
+      doyouType,
+      isMabi,
+      isDoyouHazard: inDoyou && !isMabi
+    };
   }
 
   const processLayer = (board: BoardLayout) => {
@@ -537,8 +566,11 @@ export function calculateVectorCollision(
           res[dir] = 'NOISE_VOID';
         } else if (nodeDirs.has(dir)) {
           res[dir] = 'NOISE_NODE';
-        } else if (compatibles.includes(board[dir])) {
-          res[dir] = 'OPTIMAL';
+        } else {
+          const optStatus = getOptimalStatus(board[dir]);
+          if (optStatus !== 'SAFE') {
+            res[dir] = optStatus;
+          }
         }
       }
     }
@@ -547,10 +579,52 @@ export function calculateVectorCollision(
   };
 
   const yearLayer = processLayer(yearBoard);
+  // Apply 歳破 (Saiha)
+  if (zodiacs?.yearZodiac) {
+    const clashZodiac = clashMap[zodiacs.yearZodiac];
+    const clashDirs = z2d[clashZodiac] || [];
+    clashDirs.forEach(d => {
+      yearLayer[d] = 'NOISE_HA';
+    });
+  }
+
   const monthLayer = processLayer(monthBoard);
+  // Apply 月破 (Geppa)
+  if (zodiacs?.monthZodiac) {
+    const clashZodiac = clashMap[zodiacs.monthZodiac];
+    const clashDirs = z2d[clashZodiac] || [];
+    clashDirs.forEach(d => {
+      monthLayer[d] = 'NOISE_HA';
+    });
+  }
+
   const dayLayer = processLayer(dayBoard);
+  // Apply 日破 (Nippa)
+  if (zodiacs?.dayZodiac) {
+    const clashZodiac = clashMap[zodiacs.dayZodiac];
+    const clashDirs = z2d[clashZodiac] || [];
+    clashDirs.forEach(d => {
+      dayLayer[d] = 'NOISE_HA';
+    });
+  }
 
   const finalVectors: any = {};
+
+  function getLayerScore(status: string): number {
+    switch (status) {
+      case 'OPTIMAL': return 100;
+      case 'OPTIMAL_REGULAR': return 50;
+      case 'SAFE': return 0;
+      case 'NOISE_HONMEI': return -30;
+      case 'NOISE_TEKI': return -30;
+      case 'NOISE_NODE': return -40;
+      case 'NOISE_VOID': return -80;
+      case 'NOISE_GOU': return -100;
+      case 'NOISE_ANKEN': return -100;
+      case 'NOISE_HA': return -100;
+      default: return 0;
+    }
+  }
 
   for (const dir of directions) {
     const yStatus = yearLayer[dir]!;
@@ -558,22 +632,56 @@ export function calculateVectorCollision(
     const dStatus = dayLayer[dir]!;
 
     const layers = [yStatus, mStatus, dStatus];
-    
-    const hasRedNoise = layers.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN');
+    const isTendo = (tendoDir && dir === tendoDir);
+    /* ORIGINAL OVERRIDE LOGIC (Preserved for reference):
+    const hasRedNoise = layers.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
     const hasPurpleNoise = layers.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
-
     if (hasRedNoise) {
       finalVectors[dir] = hasRedNoise as any;
     } else if (hasPurpleNoise) {
-      finalVectors[dir] = hasPurpleNoise as any;
+      if (isTendo) {
+        finalVectors[dir] = 'OPTIMAL'; // Tendo overrides minor personal noise
+      } else {
+        finalVectors[dir] = hasPurpleNoise as any;
+      }
     } else if (voidDirs.has(dir)) {
       finalVectors[dir] = 'NOISE_VOID';
     } else if (nodeDirs.has(dir)) {
       finalVectors[dir] = 'NOISE_NODE';
-    } else if (compatibles.includes(dayBoard[dir])) {
-      finalVectors[dir] = 'OPTIMAL';
     } else {
+      const hasOpt = layers.includes('OPTIMAL');
+      const hasOptReg = layers.includes('OPTIMAL_REGULAR');
+      if (hasOpt || isTendo) {
+        finalVectors[dir] = 'OPTIMAL';
+      } else if (hasOptReg) {
+        finalVectors[dir] = 'OPTIMAL_REGULAR';
+      } else {
+        finalVectors[dir] = 'SAFE';
+      }
+    }
+    */
+
+    const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus) + (isTendo ? 100 : 0);
+
+    if (totalScore < 0) {
+      // If there's red noise but partially offset by Tendo, downgrade to 'WARNING'
+      // If not offset at all (no Tendo), keep the original strongest noise
+      const hasRed = layers.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
+      if (hasRed) {
+        finalVectors[dir] = isTendo ? 'WARNING' : hasRed;
+      } else {
+        const hasVoid = layers.find(s => s === 'NOISE_VOID');
+        if (hasVoid) {
+          finalVectors[dir] = isTendo ? 'WARNING' : 'NOISE_VOID';
+        } else {
+          const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+          finalVectors[dir] = hasMinor || 'WARNING';
+        }
+      }
+    } else if (totalScore === 0) {
       finalVectors[dir] = 'SAFE';
+    } else {
+      finalVectors[dir] = isTendo ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
     }
   }
 
@@ -581,7 +689,9 @@ export function calculateVectorCollision(
     yearLayer,
     monthLayer,
     dayLayer,
-    finalVectors
+    finalVectors,
+    tendoDirection: tendoDir,
+    doyouState
   };
 }
 
@@ -590,18 +700,35 @@ export function calculateVectorCollision(
  * （2024年1月1日を甲子＝インデックス0とする近似ロジック）
  */
 export function getPersonalVoidZodiac(birthDate: Date): string[] {
+  /* ORIGINAL FORMULA (Preserved for reference):
   // ユリウス日を用いて日本時間の干支を正確に算出する
   // 2024年1月1日(甲子=0) の JD は約 2460310.125 (JST 0:00)
   // Math.floor(JD + 0.5) = 2460310。 2460310 % 60 = 10。
   // したがって、(Math.floor(JD + 0.5) + 50) % 60 が干支インデックスとなる。
-  
   const jd = AstroEngine.getJulianDay(birthDate);
   const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
-  
   const gan = ganZhiIndex % 10;
   const zhi = ganZhiIndex % 12;
+  const voidDiff = (zhi - gan + 12) % 12;
+  */
+
+  const fields = getZonedDateTimeFields(birthDate, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+  const eightChar = lunar.getEightChar();
+  const dayGan = eightChar.getDayGan();
+  const dayZhi = eightChar.getDayZhi();
   
-  // 天中殺グループの判定 (支 - 干)
+  const JIKKAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  const JUNISHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  
+  const gan = JIKKAN.indexOf(dayGan);
+  const zhi = JUNISHI.indexOf(dayZhi);
+  
+  if (gan === -1 || zhi === -1) {
+    return ["午", "未"]; // Fallback
+  }
+  
   const voidDiff = (zhi - gan + 12) % 12;
   
   switch (voidDiff) {
@@ -637,17 +764,79 @@ export function getCurrentZodiac(date: Date, lon: number = 139.6917): { yearZodi
   const monthZodiac = ZODIACS_MONTH[(monthIndex + 3) % 12];
   
   // 日の干支: ユリウス日ベース
+  /* ORIGINAL FORMULA (Preserved for reference):
   const jd = AstroEngine.getJulianDay(date);
   const ganZhiIndex = (Math.floor(jd + 0.5) + 50) % 60;
   const zhi = ganZhiIndex % 12;
   const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   const dayZodiac = ZODIACS_GANZHI[zhi];
+  */
+  const fields = getZonedDateTimeFields(date, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+  const eightChar = lunar.getEightChar();
+  const dayZodiac = eightChar.getDayZhi();
   
   // 時の干支: 地方恒星時ベース
+  const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   const lst = AstroEngine.getLocalSiderealTime(date, lon);
   const hourIndex = Math.floor(lst / 2) % 12;
   const hourZodiac = ZODIACS_GANZHI[hourIndex];
   
   return { yearZodiac, monthZodiac, dayZodiac, hourZodiac };
 }
+
+/**
+ * Calculates the lunar distance in kilometers using astronomy-engine's GeoVector.
+ */
+export function getLunarDistance(date: Date): number {
+  const time = new AstroTime(date);
+  const vec = GeoVector(Body.Moon, time, true);
+  if (!vec) return 384400; // Fallback to average distance
+  const dist_au = Math.sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+  return dist_au * 149597870.7; // AU to km
+}
+
+/**
+ * Calculates a gravitational tide intensity and score (0 to 20) based on lunar phase alignment and distance closeness.
+ */
+export function calculateTideScore(date: Date): { tideIntensity: number; distanceCloseness: number; gravitationalTideScore: number } {
+  const sunLon = AstroEngine.getSolarLongitude(date);
+  const moonLon = AstroEngine.getLunarLongitude(date);
+  const distance_km = getLunarDistance(date);
+
+  // Lunar Phase (0.0 to 1.0)
+  const lunarPhase = ((moonLon - sunLon + 360) % 360) / 360.0;
+  
+  // Closeness to extreme (Spring Tide alignment at 0.0, 0.5, 1.0)
+  const closenessToExtreme = Math.min(lunarPhase, Math.abs(lunarPhase - 0.5), 1.0 - lunarPhase);
+  
+  // Normalized tide intensity (1.0 at full/new moon, 0.0 at quarter moon)
+  const tideIntensity = (0.25 - closenessToExtreme) / 0.25;
+
+  // Closeness to perigee (closest point: 356,400km is 1.0, apogee: 406,700km is 0.0)
+  const distanceCloseness = Math.max(0, Math.min(1, (406700 - distance_km) / (406700 - 356400)));
+
+  // Combine both factors to form score out of 20
+  const gravitationalTideScore = (tideIntensity * 10) + (distanceCloseness * 10);
+
+  return {
+    tideIntensity: parseFloat(tideIntensity.toFixed(3)),
+    distanceCloseness: parseFloat(distanceCloseness.toFixed(3)),
+    gravitationalTideScore: parseFloat(gravitationalTideScore.toFixed(3))
+  };
+}
+
+/**
+ * Opposite branches for Conflict Day calculation.
+ */
+export const clashMap: Record<string, string> = {
+  "子": "午", "午": "子",
+  "丑": "未", "未": "丑",
+  "寅": "申", "申": "寅",
+  "卯": "酉", "酉": "卯",
+  "辰": "戌", "戌": "辰",
+  "巳": "亥", "亥": "巳"
+};
+
 

@@ -1,4 +1,22 @@
 import { getHourlyKyusei, getHourlyHachimon, KYUSEI, HACHIMON } from './kigaku';
+import { Solar } from 'lunar-javascript';
+
+/**
+ * Helper to extract local date fields in a specific timezone offset (in hours).
+ * Returns year, month (1-indexed), day, hours, minutes, seconds.
+ * Independent of the system timezone of the runtime environment.
+ */
+export function getZonedDateTimeFields(date: Date, offsetHours: number = 9) {
+  const shiftedDate = new Date(date.getTime() + offsetHours * 3600000);
+  return {
+    year: shiftedDate.getUTCFullYear(),
+    month: shiftedDate.getUTCMonth() + 1, // 1-indexed
+    day: shiftedDate.getUTCDate(),
+    hours: shiftedDate.getUTCHours(),
+    minutes: shiftedDate.getUTCMinutes(),
+    seconds: shiftedDate.getUTCSeconds()
+  };
+}
 
 /**
  * Solar Time Calculation Logic
@@ -81,15 +99,21 @@ const JIKKAN = [
  * Jan 1, 2000 was 'Tsuchinoe-Uma' (Stem 4, Branch 6).
  */
 function getDayStemIndex(date: Date): number {
+  /* ORIGINAL FORMULA (Preserved for reference):
   const base = new Date(2000, 0, 1); // Jan 1 2000
   const diff = date.getTime() - base.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  // 4 is Tsuchinoe
-  // We need to handle negative dates correctly if needed, but for now assuming post-2000 or using modulo math carefully.
-  // Modulo in JS can be negative.
   let idx = (4 + days) % 10;
   if (idx < 0) idx += 10;
   return idx;
+  */
+  const fields = getZonedDateTimeFields(date, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+  const eightChar = lunar.getEightChar();
+  const dayGan = eightChar.getDayGan();
+  const JIKKAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  return JIKKAN.indexOf(dayGan);
 }
 
 /**
@@ -226,20 +250,18 @@ export function getDailySolarSchedule(
 }
 
 // --- Helper for Day Junishi ---
-// Simple calculation based on a known base date
-// Base: Jan 1 2024 was 甲子 (Kinoe-Ne)? No.
-// Let's use a known epoch.
-// 2000-01-01 was Saturday.
-// Jan 1 2024: 
-// Better: Use a simple function.
 function getDayJunishiIndex(date: Date): number {
-    // Known base: 2024-01-01 was Kinoe-Ne (0,0) ?
-    // 2024 is Dragon year.
-    // Let's use the same logic as getDayStemIndex but mod 12.
-    // Base: 2024-01-01.
-    // 2024-01-01 was 甲子 (Kinoe Ne). Stem=0, Branch=0.
-    const base = new Date(2024, 0, 1); // Jan 1 2024
-    const diff = date.getTime() - base.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    return ((days % 12) + 12) % 12; 
+  /* ORIGINAL FORMULA (Preserved for reference):
+  const base = new Date(2024, 0, 1); // Jan 1 2024
+  const diff = date.getTime() - base.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return ((days % 12) + 12) % 12; 
+  */
+  const fields = getZonedDateTimeFields(date, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+  const eightChar = lunar.getEightChar();
+  const dayZhi = eightChar.getDayZhi();
+  const JUNISHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  return JUNISHI.indexOf(dayZhi);
 }

@@ -38,27 +38,28 @@ export async function updateSession(request: NextRequest) {
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAuthorized = !adminEmail || user?.email === adminEmail;
 
-  /* TEMPORARILY DISABLED REDIRECTS FOR "UNDER CONSTRUCTION" MODE
+  const protectedRoutes = ['/rentals', '/dashboard', '/omni', '/knowledge', '/metaphysical', '/x-viewer', '/relocation', '/research', '/visualizer'];
+  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+
   // If the user is unauthenticated and they are trying to access a protected route
-  if (!user && request.nextUrl.pathname.startsWith('/rentals')) {
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 
   // If the user is logged in, but their email does NOT match the owner's ADMIN_EMAIL
-  if (user && !isAuthorized && request.nextUrl.pathname.startsWith('/rentals')) {
+  if (user && !isAuthorized && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('error', 'Unauthorized access.');
     return NextResponse.redirect(url);
   }
-  */
 
-  // If authorized user is logged in, and tries to visit login page, redirect to rentals
+  // If authorized user is logged in, and tries to visit login page, redirect to dashboard
   if (user && isAuthorized && request.nextUrl.pathname === '/login') {
       const url = request.nextUrl.clone();
-      url.pathname = '/rentals';
+      url.pathname = '/dashboard';
       return NextResponse.redirect(url);
   }
 

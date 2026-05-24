@@ -1,6 +1,7 @@
 export interface SpaceWeatherData {
   kpIndex: number | null;
   xrayFlux: string | null;
+  solarWindSpeed: number | null;
   timestamp: string | null;
 }
 
@@ -44,13 +45,26 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
       }
     }
 
+    // Fetch Solar Wind Speed
+    const windResponse = await fetch('https://services.swpc.noaa.gov/products/summary/solar-wind-speed.json', { next: { revalidate: 300 } });
+    let solarWindSpeed: number | null = null;
+
+    if (windResponse.ok) {
+      const windData = await windResponse.json();
+      if (windData && windData.length > 0 && typeof windData[0].proton_speed === 'number') {
+        solarWindSpeed = windData[0].proton_speed;
+      }
+    }
+
     return {
       kpIndex,
       xrayFlux,
+      solarWindSpeed,
       timestamp
     };
   } catch (error) {
     console.error('Error fetching space weather:', error);
-    return { kpIndex: null, xrayFlux: null, timestamp: null };
+    return { kpIndex: null, xrayFlux: null, solarWindSpeed: null, timestamp: null };
   }
 }
+

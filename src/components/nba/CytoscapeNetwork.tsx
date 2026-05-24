@@ -21,6 +21,7 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
     ABORT_AND_SHIELD: { w_ans: 0.6, w_shield: -0.5, w_risk: 0.2, w_solar: 0.0 },
     GATHER_INTEL: { w_ans: 0.2, w_shield: 0.1, w_risk: 0.7, w_solar: -0.2 },
     PREPARE_AND_WAIT: { w_ans: -0.2, w_shield: 0.3, w_risk: -0.2, w_solar: 0.2 },
+    EXECUTE_PURGE_RELOCATION: { w_ans: -0.2, w_shield: 1.0, w_risk: -0.4, w_solar: 0.2 },
     EXECUTE_RELOCATION: { w_ans: -0.6, w_shield: 0.8, w_risk: -0.4, w_solar: 0.5 }
   };
 
@@ -28,6 +29,7 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
     ABORT_AND_SHIELD: { label: '休息・撤退', icon: <ShieldAlert className="w-4 h-4" />, desc: '現状維持を諦め、早急に回復を図る行動' },
     GATHER_INTEL: { label: '防御・様子見', icon: <Eye className="w-4 h-4" />, desc: '決定を保留し、周囲の情報を集める行動' },
     PREPARE_AND_WAIT: { label: '通常進行', icon: <Clock className="w-4 h-4" />, desc: '予定通りに、ただし慎重に進める行動' },
+    EXECUTE_PURGE_RELOCATION: { label: '浄化・受動的移住', icon: <Rocket className="w-4 h-4" />, desc: '天中殺時の例外的な受け身の移動' },
     EXECUTE_RELOCATION: { label: '実行・前進', icon: <Rocket className="w-4 h-4" />, desc: 'リソースを消費してでも強く前進する行動' },
   };
 
@@ -92,8 +94,14 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
       <div className="flex flex-col gap-3">
         {Object.keys(policyWeights).map((actionId) => {
           const isBest = suggestedAction === actionId;
-          const meta = actionMeta[actionId];
           const qVal = qValues[actionId] || 0;
+          
+          // Dynamically adjust meta based on Q-Value
+          const meta = { ...actionMeta[actionId] };
+          if (actionId === 'PREPARE_AND_WAIT' && qVal < 0) {
+            meta.label = '警戒待機（マイナス回避）';
+            meta.desc = 'すべての選択肢がマイナス期待値のため、被害を最小限に抑える行動';
+          }
 
           return (
             <motion.div 

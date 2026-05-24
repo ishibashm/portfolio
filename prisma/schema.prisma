@@ -57,15 +57,16 @@ model Session {
 }
 
 model User {
-  id            String     @id
-  name          String?
-  email         String     @unique
-  emailVerified DateTime?
-  image         String?
-  Account       Account[]
-  BlogPost      BlogPost[]
-  Session       Session[]
+  id                   String                 @id
+  name                 String?
+  email                String                 @unique
+  emailVerified        DateTime?
+  image                String?
+  Account              Account[]
+  BlogPost             BlogPost[]
+  Session              Session[]
   MetaphysicalStateLog MetaphysicalStateLog[]
+  KnowledgeDocument    KnowledgeDocument[]
 }
 
 model VerificationToken {
@@ -76,17 +77,15 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ScrapeTask {
-  id          String    @id @default(cuid())
-  url         String    @unique
-  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, ERROR
-  last_page   Int       @default(1)
+  id          String   @id @default(cuid())
+  url         String   @unique
+  status      String   @default("PENDING")
+  last_page   Int      @default(1)
   total_pages Int?
-  updated_at  DateTime  @updatedAt
+  updated_at  DateTime @updatedAt
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rental_properties {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   property_name      String
@@ -110,7 +109,6 @@ model rental_properties {
   source_scraper     String?   @default("email")
 }
 
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model user_configs {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_email           String    @unique
@@ -183,25 +181,25 @@ model TelemetryLog {
 }
 
 model MetaphysicalStateLog {
-  id                  String   @id @default(cuid())
-  userId              String?
-  targetDate          DateTime
+  id         String   @id @default(cuid())
+  userId     String?
+  targetDate DateTime
 
-  environmentalBazi   Json?
-  personalBazi        Json?
-  
-  physicalLayers      Json?
-  classicalLayers     Json?
-  
-  ansLoad             Float?
-  kpIndex             Float?
+  environmentalBazi Json?
+  personalBazi      Json?
 
-  metadata            Json?
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  physicalLayers  Json?
+  classicalLayers Json?
 
-  User                User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ansLoad Float?
+  kpIndex Float?
+
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  User User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([targetDate])
   @@index([userId])
@@ -221,4 +219,123 @@ model MunicipalityWealth {
   landPricePerSqm          Float?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
+}
+
+model KnowledgeDocument {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kb_id      Int      @unique @default(autoincrement()) // Base for generating tickets like KB000123
+  status     String   @default("Draft")
+  priority   String   @default("Medium")
+  type       String   @default("Note")
+  user_id    String?
+  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  tags       String[]
+  domain     String?
+  category   String?
+  embedding  Json?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id])
+}
+
+model XPost {
+  id            String   @id
+  url           String
+  authorHandle  String
+  authorDisplay String
+  datetime      DateTime
+  text          String
+  quotedUrls    String[]
+  externalLinks String[]
+  savedMedia    String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([authorHandle])
+  @@index([datetime])
+}
+
+model VisualizedComponent {
+  id        String   @id @default(cuid())
+  title     String
+  style     String
+  inputData Json
+  cleanHtml String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// =====================================================
+// IR Analysis Models (Imported from ir_analyses)
+// =====================================================
+
+model Company {
+  company_id    Int       @id @default(autoincrement())
+  edinet_code   String    @unique @db.VarChar(6)
+  security_code String?   @db.VarChar(5)
+  company_name  String    @db.VarChar(200)
+  industry_code String?   @db.VarChar(10)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+
+  FinancialReports FinancialReport[]
+
+  @@map("companies")
+}
+
+model FinancialItem {
+  item_id    Int       @id @default(autoincrement())
+  element_id String    @unique @db.VarChar(300)
+  item_name  String    @db.VarChar(300)
+  category   String?   @db.VarChar(50)
+  unit_type  String?   @db.VarChar(20)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+
+  FinancialData FinancialData[]
+
+  @@map("financial_items")
+}
+
+model FinancialReport {
+  report_id       Int       @id @default(autoincrement())
+  company_id      Int
+  document_type   String    @db.VarChar(50)
+  fiscal_year     String    @db.VarChar(4)
+  quarter_type    String?   @db.VarChar(10)
+  fiscal_year_end DateTime  @db.Date
+  filing_date     DateTime? @db.Date
+  created_at      DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime? @default(now()) @db.Timestamptz(6)
+
+  Company       Company         @relation(fields: [company_id], references: [company_id], onDelete: Cascade)
+  FinancialData FinancialData[]
+
+  @@index([company_id, fiscal_year])
+  @@map("financial_reports")
+}
+
+model FinancialData {
+  data_id           BigInt    @id @default(autoincrement())
+  report_id         Int
+  item_id           Int
+  context_id        String?   @db.VarChar(300)
+  period_type       String    @db.VarChar(50)
+  consolidated_type String    @db.VarChar(10)
+  duration_type     String    @db.VarChar(10)
+  value             Decimal?  @db.Decimal(20, 0)
+  value_text        String?
+  is_numeric        Boolean?  @default(true)
+  created_at        DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime? @default(now()) @db.Timestamptz(6)
+
+  FinancialReport FinancialReport @relation(fields: [report_id], references: [report_id], onDelete: Cascade)
+  FinancialItem   FinancialItem   @relation(fields: [item_id], references: [item_id], onDelete: Cascade)
+
+  @@index([period_type, consolidated_type])
+  @@index([report_id, item_id])
+  @@map("financial_data")
 }

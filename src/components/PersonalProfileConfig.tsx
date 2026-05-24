@@ -96,7 +96,7 @@ export function PersonalProfileConfig({
         <div className="flex items-center gap-2">
           <Database size={14} className="text-blue-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-zinc-400">
-            Hardware Initialization & Anchor Sync / 初期設定・ベース同期座標
+            初期設定・ベース同期座標
           </h2>
         </div>
         <div className="flex items-center">
@@ -113,11 +113,11 @@ export function PersonalProfileConfig({
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-zinc-900 pb-1">
             <CalendarClock size={12} className="text-zinc-500" />
-            <span className="text-[9px] text-zinc-400 tracking-wider">HARDWARE INIT (生年月日・出生地)</span>
+            <span className="text-[9px] text-zinc-400 tracking-wider">ハードウェア初期値 (生年月日・出生地)</span>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[8px] text-zinc-500 uppercase">Birth Timestamp / 宇宙エネルギー初期入力値</label>
+            <label className="text-[8px] text-zinc-500 uppercase">生年月日・出生時間 (Birth Timestamp)</label>
             <input
               type="datetime-local"
               value={birthDate}
@@ -131,7 +131,7 @@ export function PersonalProfileConfig({
           <div className="bg-blue-900/10 border border-blue-900/30 p-2.5 rounded-sm mt-2">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Fingerprint size={12} className="text-blue-400" />
-              <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest">Derived Identity Identity / 算出された波長特性</span>
+              <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest">算出された特性 (Derived Identity)</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div>
@@ -156,7 +156,7 @@ export function PersonalProfileConfig({
               onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
               className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
             >
-              <option value="">Auto-calculate from Birth Timestamp</option>
+              <option value="">生年月日から自動計算</option>
               <option value="戌亥">戌亥 (Inui)</option>
               <option value="申酉">申酉 (Sarutori)</option>
               <option value="午未">午未 (Umapi)</option>
@@ -169,12 +169,12 @@ export function PersonalProfileConfig({
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center justify-between">
-              <label className="text-[8px] text-zinc-500 uppercase">Birth Geo (緯度・経度)</label>
+              <label className="text-[8px] text-zinc-500 uppercase">出生地座標 (緯度・経度)</label>
               <button
                 onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
                 className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
               >
-                {showBirthMapPicker ? '[ CLOSE MAP ]' : '[ MAP SEARCH ]'}
+                {showBirthMapPicker ? '[ 地図を閉じる ]' : '[ 地図検索 ]'}
               </button>
             </div>
             {showBirthMapPicker && (
@@ -230,17 +230,17 @@ export function PersonalProfileConfig({
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-zinc-900 pb-1">
             <Crosshair size={12} className="text-zinc-500" />
-            <span className="text-[9px] text-zinc-400 tracking-wider">CURRENT ANCHOR (現在の居住地・±0V基準)</span>
+            <span className="text-[9px] text-zinc-400 tracking-wider">現在の居住地 (基準座標・±0V基準)</span>
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center justify-between">
-              <label className="text-[8px] text-zinc-500 uppercase">Current Base Geo (緯度・経度)</label>
+              <label className="text-[8px] text-zinc-500 uppercase">現在地の座標 (緯度・経度)</label>
               <button
                 onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
                 className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
               >
-                {showBaseMapPicker ? '[ CLOSE MAP ]' : '[ MAP SEARCH ]'}
+                {showBaseMapPicker ? '[ 地図を閉じる ]' : '[ 地図検索 ]'}
               </button>
             </div>
             {showBaseMapPicker && (
@@ -288,7 +288,7 @@ export function PersonalProfileConfig({
           {/* Bio-Baseline Configuration */}
           <div className="mt-4 pt-4 border-t border-zinc-900">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] text-zinc-400 tracking-wider font-bold">BIO-METRICS BASELINE (Z-Score)</span>
+              <span className="text-[9px] text-zinc-400 tracking-wider font-bold">生体情報ベースライン (Z-Score)</span>
               <span className="text-[7px] text-emerald-500">{baseSyncTimestamp ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}` : "Not Synced"}</span>
             </div>
 
@@ -385,13 +385,13 @@ export function PersonalProfileConfig({
               onClick={onGetGPS}
               className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
             >
-              [ GET DEVICE GPS ]
+              [ デバイスのGPSを取得 ]
             </button>
             <button
               onClick={onLoad}
               className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 transition-colors"
             >
-              [ LOAD SAVED CONFIG ]
+              [ 保存された設定を読込 ]
             </button>
             {presets.length > 0 && (
               <select
@@ -410,7 +410,7 @@ export function PersonalProfileConfig({
                   e.target.value = ""; // Reset after load
                 }}
               >
-                <option value="">[ LOAD DASHBOARD PRESET... ]</option>
+                <option value="">[ プリセットを読込... ]</option>
                 {presets.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
@@ -425,7 +425,7 @@ export function PersonalProfileConfig({
               : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
               }`}
           >
-            {isSaving ? "[ SYNCING... ]" : "[ COMMIT PERSISTENCE ]"}
+            {isSaving ? "[ 同期中... ]" : "[ 設定をローカルに永久保存 ]"}
             <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
           </button>
         </div>

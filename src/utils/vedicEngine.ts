@@ -22,6 +22,7 @@ export interface VedicChartData {
   moonNakshatra: NakshatraData;
   sunNakshatra: NakshatraData;
   ascendantNakshatra?: NakshatraData; // If time/location is precise
+  planetaryNakshatras: Record<string, NakshatraData>;
 }
 
 export class VedicEngine {
@@ -72,12 +73,32 @@ export class VedicEngine {
     const moonNakshatra = this.getNakshatra(moonPos.longitude);
     const sunNakshatra = this.getNakshatra(sunPos.longitude);
 
+    const planetaryNakshatras: Record<string, NakshatraData> = {};
+    const bodies = [
+      { name: 'Sun', body: CelestialBody.Sun },
+      { name: 'Moon', body: CelestialBody.Moon },
+      { name: 'Mercury', body: CelestialBody.Mercury },
+      { name: 'Venus', body: CelestialBody.Venus },
+      { name: 'Mars', body: CelestialBody.Mars },
+      { name: 'Jupiter', body: CelestialBody.Jupiter },
+      { name: 'Saturn', body: CelestialBody.Saturn },
+      { name: 'Uranus', body: CelestialBody.Uranus },
+      { name: 'Neptune', body: CelestialBody.Neptune },
+      { name: 'Pluto', body: CelestialBody.Pluto }
+    ];
+
+    for (const b of bodies) {
+      const pos = this.swissEngine.getPlanetCoordinates(date, b.body, true);
+      planetaryNakshatras[b.name] = this.getNakshatra(pos.longitude);
+    }
+
     return {
       date,
       ayanamsa,
       ayanamsaSystem: system,
       moonNakshatra,
-      sunNakshatra
+      sunNakshatra,
+      planetaryNakshatras
     };
   }
 }

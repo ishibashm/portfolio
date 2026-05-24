@@ -1,8 +1,5 @@
-/**
- * Tenchusatsu (Heavenly Void) Calculation Logic
- * 
- * Used to determine the "Void" periods based on Birth Date (Day Pillar).
- */
+import { Solar } from 'lunar-javascript';
+import { getZonedDateTimeFields } from './solarTime';
 
 export const JIKKAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
 export const JUNISHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
@@ -26,18 +23,9 @@ export interface TenchusatsuResult {
 
 /**
  * Calculate GanZhi (Day Pillar) and Tenchusatsu
- * Base Date: 1900-01-01 (Known reference, but let's use a closer robust base)
- * 2024-01-01 was Kinoe-Ne (0).
  */
 export function calculateTenchusatsu(birthDate: Date, targetYear: number = 2026): TenchusatsuResult {
-  // Base: 2024-01-01 was Kinoe-Ne (Index 0 in 60-cycle of DAYS?)
-  // Wait, let's verify 2024-01-01 Day Pillar.
-  // 2024-01-01 was "Kinoe-Ne"? checking... 
-  // Actually, standard reference: 1900-01-01 (Jan 1) -> Monday. 
-  // Let's use the code I verified in the node script:
-  // "2024-01-01" as Base provided correct result for 1957-11-30 (Hei-Uma).
-  // So assuming 2024-01-01 is Index 0 (Kinoe-Ne) for DAYS is Correct.
-  
+  /* ORIGINAL FORMULA (Preserved for reference):
   const baseDate = new Date('2024-01-01T00:00:00Z');
   const target = new Date(Date.UTC(birthDate.getFullYear(), birthDate.getMonth(), birthDate.getDate()));
   
@@ -51,52 +39,38 @@ export function calculateTenchusatsu(birthDate: Date, targetYear: number = 2026)
   const stem = JIKKAN[cycle % 10];
   const branch = JUNISHI[cycle % 12];
   
-  // Tenchusatsu Group Calculation
-  // Logic: (BranchIdx - StemIdx) / 2 ... approx.
-  // Using the verified lookup from script:
-  // Group 0 (Inu-I) is Cycle 0-9
-  // Group 1 (Saru-Tori) is Cycle 10-19
-  // ...
-  // Wait, my script said:
-  // Cycle 0 (Kinoe-Ne) -> Inu-I (Group 0).
-  // Yes.
-  // 0-9: Inu-I
-  // 10-19: Saru-Tori
-  // 20-29: Uma-Hitsuji
-  // 30-39: Tatsu-Mi
-  // 40-49: Tora-U
-  // 50-59: Ne-Ushi
+  const groupIdx = Math.floor((cycle - (cycle % 10)) / 10);
+  */
+
+  const fields = getZonedDateTimeFields(birthDate, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+  const eightChar = lunar.getEightChar();
+  const dayGan = eightChar.getDayGan();
+  const dayZhi = eightChar.getDayZhi();
   
-  // But wait!
-  // 1957-11-30 was cycle 42 (Hei-Uma).
-  // 42 is in 40-49 range.
-  // My script said: Group 4 (Tora-U).
-  // Let's verify:
-  // Tora-U group stems from Kinoe-Tora (Index 40).
-  // 40 (Kinoe-Tora) ... Tenchusatsu is Ne-Ushi? No.
-  // Tenchusatsu rules:
-  // Kinoe-Ne (0): Inu-I void.
-  // Kinoe-Tora (12? No, 0+12=12 is Hinoe-Ne? No.)
-  // Let's stick to the script's verified output for 1957-11-30 -> Tora-U.
-  // Script logic: group = floor( (cycle - (cycle%10))/10 ).
-  // if group=0 -> Inu-I.
-  // if group=4 -> Tora-U.
+  const ganIdx = JIKKAN.indexOf(dayGan);
+  const zhiIdx = JUNISHI.indexOf(dayZhi);
+  
+  let cycle = -1;
+  for (let i = 0; i < 60; i++) {
+    if (i % 10 === ganIdx && i % 12 === zhiIdx) {
+      cycle = i;
+      break;
+    }
+  }
+  
+  if (cycle === -1) {
+    cycle = 20; // Fallback
+  }
+  
+  const stem = JIKKAN[cycle % 10];
+  const branch = JUNISHI[cycle % 12];
   
   const groupIdx = Math.floor((cycle - (cycle % 10)) / 10);
-  
-  // Mapping based on the script logic which seemed correct for 1957.
-  // 0: Inu-I
-  // 1: Saru-Tori
-  // 2: Uma-Hitsuji
-  // 3: Tatsu-Mi
-  // 4: Tora-U
-  // 5: Ne-Ushi
-  
   const tenchusatsu = TENCHUSATSU_GROUPS[groupIdx];
   
   // Check if target year (2026) is void
-  // 2026 is Horse (Uma).
-  // If tenchusatsu contains "Uma", then true.
   const isYearTenchusatsu = tenchusatsu.voidBranches.includes(getYearBranch(targetYear));
 
   return {
@@ -109,17 +83,7 @@ export function calculateTenchusatsu(birthDate: Date, targetYear: number = 2026)
 }
 
 function getYearBranch(year: number): string {
-    // 2026 is Uma (Horse).
-    // 2026 % 12 = ?
-    // 2008 = Ne (Rat). 2008 % 12 = 4.
-    // Let's use array. 
-    // 0=申(Monkey)? 
-    // 4=Rat(Ne) -> 4-4=0.
-    // 2026 - 2008 = 18. 18 % 12 = 6. 
-    // Ne(0), Ushi(1), Tora(2), U(3), Tatsu(4), Mi(5), Uma(6).
-    // So 2026 is Uma.
     const branches = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-    // Offset: 2008 is Ne (Index 0).
     const idx = ((year - 2008) % 12 + 12) % 12;
     return branches[idx];
 }

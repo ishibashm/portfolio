@@ -1,5 +1,5 @@
 import { Lunar, Solar } from 'lunar-javascript';
-import { calculateSolarTime } from './solarTime';
+import { calculateSolarTime, getZonedDateTimeFields } from './solarTime';
 
 /**
  * BaZi (Four Pillars of Destiny) Engine
@@ -56,7 +56,11 @@ export class BaziEngine {
     const solarTime = solarResult.solarTime;
 
     // 2. Initialize Lunar/EightChar
+    /* ORIGINAL LOGIC (Preserved for reference):
     const solar = Solar.fromDate(solarTime);
+    */
+    const fields = getZonedDateTimeFields(solarTime, 9);
+    const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
     const lunar = solar.getLunar();
     const eightChar = lunar.getEightChar();
 

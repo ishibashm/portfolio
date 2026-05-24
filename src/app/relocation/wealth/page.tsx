@@ -22,7 +22,7 @@ const LocationPickerInner = dynamic(() => import("@/components/LocationPickerInn
   ssr: false,
   loading: () => (
     <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
-      Loading map...
+      マップを読み込み中...
     </div>
   ),
 });
@@ -77,13 +77,17 @@ export default function RegionalWealthPage() {
   const [engineType, setEngineType] = useState("physical");
   const [layerMode, setLayerMode] = useState("final");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
-  const [sortBy, setSortBy] = useState<'astrology' | 'income' | 'cospa' | 'distance' | 'areaName' | 'landPrice' | 'population'>('astrology');
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  type SortColumn = 'astrology' | 'income' | 'cospa' | 'distance' | 'areaName' | 'landPrice' | 'population';
+  interface SortConfig { key: SortColumn; direction: 'desc' | 'asc' }
+  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([{ key: 'astrology', direction: 'desc' }]);
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
   const [filterName, setFilterName] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterMinIncome, setFilterMinIncome] = useState<string>("");
+  const [filterMaxDistance, setFilterMaxDistance] = useState<string>("");
+  const [filterMinScore, setFilterMinScore] = useState<string>("");
   const itemsPerPage = 50;
 
   // Preset state
@@ -317,25 +321,27 @@ export default function RegionalWealthPage() {
   // Filter out noise data for charts to make them cleaner
   const safeData = data.filter(d => d.astrologyScore >= 50);
 
-  const chartData = safeData.slice(0, 10).map((d) => ({
-    name: d.areaName.split(" ").pop() || d.areaName,
-    income: d.incomePerCapita,
-  }));
-
-  const scatterData = safeData.map((d) => ({
-    name: d.areaName,
-    income: Math.round(d.incomePerCapita / 10000), // 万円単位
-    astrologyScore: d.astrologyScore,
-    population: d.taxpayersCount,
-    direction: d.direction,
-    status: d.astrologyStatus
-  }));
-
   // Apply filtering before sorting and pagination
   const filteredData = safeData.filter(d => {
     if (filterStatus !== "ALL" && !d.astrologyStatus.includes(filterStatus)) {
       return false;
     }
+
+    if (filterMinIncome) {
+      const minIncome = Number(filterMinIncome) * 10000;
+      if (d.incomePerCapita < minIncome) return false;
+    }
+
+    if (filterMaxDistance) {
+      const maxDist = Number(filterMaxDistance);
+      if (!d.distanceKm || d.distanceKm > maxDist) return false;
+    }
+
+    if (filterMinScore) {
+      const minScore = Number(filterMinScore);
+      if (d.astrologyScore < minScore) return false;
+    }
+
     if (filterName) {
       const terms = filterName.trim().split(/\s+/);
       const areaNameLower = d.areaName.toLowerCase();
@@ -361,13 +367,43 @@ export default function RegionalWealthPage() {
     return true;
   });
 
+  const chartData = filteredData.slice(0, 10).map((d) => ({
+    name: d.areaName.split(" ").pop() || d.areaName,
+    income: d.incomePerCapita,
+  }));
+
+  const scatterData = filteredData.map((d) => ({
+    name: d.areaName,
+    income: Math.round(d.incomePerCapita / 10000), // 万円単位
+    astrologyScore: d.astrologyScore,
+    population: d.taxpayersCount,
+    direction: d.direction,
+    status: d.astrologyStatus
+  }));
+
   const handleExportCSV = () => {
     // Sort filtered data identically to the table
     const sortedData = [...filteredData].sort((a, b) => {
-      if (sortBy === 'astrology') return b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
-      if (sortBy === 'cospa') return (b.cospaIndex || 0) - (a.cospaIndex || 0);
-      if (sortBy === 'distance') return (a.distanceKm || 0) - (b.distanceKm || 0);
-      return b.incomePerCapita - a.incomePerCapita;
+      for (const config of sortConfigs) {
+        let result = 0;
+        const key = config.key;
+        if (key === 'astrology') result = b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
+        else if (key === 'cospa') result = (b.cospaIndex || 0) - (a.cospaIndex || 0);
+        else if (key === 'distance') {
+          const aDist = a.distanceKm ?? Number.MAX_VALUE;
+          const bDist = b.distanceKm ?? Number.MAX_VALUE;
+          result = aDist - bDist;
+        }
+        else if (key === 'areaName') result = b.areaName.localeCompare(a.areaName); // 'desc' will make Z-A
+        else if (key === 'landPrice') result = (b.landPricePerSqm || 0) - (a.landPricePerSqm || 0);
+        else if (key === 'population') result = (b.taxpayersCount || 0) - (a.taxpayersCount || 0);
+        else if (key === 'income') result = (b.incomePerCapita || 0) - (a.incomePerCapita || 0);
+
+        if (result !== 0) {
+          return config.direction === 'desc' ? result : -result;
+        }
+      }
+      return 0;
     });
 
     const header = ['エリア名', '方位', 'ステータス', '方位スコア', '距離(km)', '1人あたり平均所得(円)', '平均地価(円/㎡)', 'コスパ指数', '納税義務者数(人)'];
@@ -398,25 +434,62 @@ export default function RegionalWealthPage() {
 
   // Sorted and Paginated Data for the table
   const sortedTableData = [...filteredData].sort((a, b) => {
-    let result = 0;
-    if (sortBy === 'astrology') result = b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
-    else if (sortBy === 'cospa') result = (b.cospaIndex || 0) - (a.cospaIndex || 0);
-    else if (sortBy === 'distance') result = (a.distanceKm || 0) - (b.distanceKm || 0);
-    else result = b.incomePerCapita - a.incomePerCapita;
+    for (const config of sortConfigs) {
+      let result = 0;
+      const key = config.key;
+      if (key === 'astrology') result = b.astrologyScore - a.astrologyScore || b.incomePerCapita - a.incomePerCapita;
+      else if (key === 'cospa') result = (b.cospaIndex || 0) - (a.cospaIndex || 0);
+      else if (key === 'distance') {
+        const aDist = a.distanceKm ?? Number.MAX_VALUE;
+        const bDist = b.distanceKm ?? Number.MAX_VALUE;
+        result = aDist - bDist;
+      }
+      else if (key === 'areaName') result = b.areaName.localeCompare(a.areaName); // 'desc' will make Z-A
+      else if (key === 'landPrice') result = (b.landPricePerSqm || 0) - (a.landPricePerSqm || 0);
+      else if (key === 'population') result = (b.taxpayersCount || 0) - (a.taxpayersCount || 0);
+      else if (key === 'income') result = (b.incomePerCapita || 0) - (a.incomePerCapita || 0);
 
-    return sortOrder === 'desc' ? result : -result;
+      if (result !== 0) {
+        return config.direction === 'desc' ? result : -result;
+      }
+    }
+    return 0;
   });
 
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
   const currentTableData = sortedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const handleSortChange = (newSort: typeof sortBy) => {
-    if (sortBy === newSort) {
-      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
-    } else {
-      setSortBy(newSort);
-      setSortOrder('desc'); // Default to desc when changing sort type
-    }
+  const handleSortChange = (newSort: SortColumn, e: React.MouseEvent) => {
+    setSortConfigs(prev => {
+      const isMultiSort = e.shiftKey;
+      const existingSortIndex = prev.findIndex(config => config.key === newSort);
+      
+      let newConfigs = [...prev];
+
+      if (isMultiSort) {
+        if (existingSortIndex >= 0) {
+          if (newConfigs[existingSortIndex].direction === 'desc') {
+            newConfigs[existingSortIndex].direction = 'asc';
+          } else {
+            newConfigs.splice(existingSortIndex, 1);
+          }
+        } else {
+          newConfigs.push({ key: newSort, direction: 'desc' });
+        }
+      } else {
+        if (existingSortIndex >= 0 && prev.length === 1) {
+          newConfigs = [{ key: newSort, direction: prev[0].direction === 'desc' ? 'asc' : 'desc' }];
+        } else {
+          newConfigs = [{ key: newSort, direction: 'desc' }];
+        }
+      }
+
+      if (newConfigs.length === 0) {
+         newConfigs = [{ key: 'astrology', direction: 'desc' }];
+      }
+
+      return newConfigs;
+    });
     setCurrentPage(1); // Reset to first page when sorting changes
   };
 
@@ -428,6 +501,20 @@ export default function RegionalWealthPage() {
   const handleFilterStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFilterStatus(e.target.value);
     setCurrentPage(1);
+  };
+
+  const renderSortIndicator = (key: SortColumn) => {
+    const configIndex = sortConfigs.findIndex(c => c.key === key);
+    if (configIndex === -1) {
+      return <span className="inline-block w-4 text-transparent group-hover:text-gray-400">↑</span>;
+    }
+    const config = sortConfigs[configIndex];
+    return (
+      <span className="inline-flex items-center text-indigo-500">
+        <span className="w-3">{config.direction === 'desc' ? '↓' : '↑'}</span>
+        {sortConfigs.length > 1 && <span className="text-[10px] ml-0.5 opacity-70 font-mono">{configIndex + 1}</span>}
+      </span>
+    );
   };
 
   return (
@@ -445,10 +532,10 @@ export default function RegionalWealthPage() {
             <div>
               <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
                 <Compass className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-                吉方位 × エリア経済力 分析ダッシュボード
+                Relocation & Wealth Matrix Dashboard
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">
-                天体物理モデル（磁北偏角補正対応）と一人あたり所得・地価データを掛け合わせ、最適な引越し先やビジネス拠点を探します。
+                Combining astrophysical models (with magnetic declination correction) and per-capita income/land price data to find the optimal relocation destination or business base.
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
@@ -512,7 +599,7 @@ export default function RegionalWealthPage() {
           {/* Top Row: General Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">目標日 (Target Date)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">目標日</label>
               <input
                 type="date"
                 value={targetDate}
@@ -521,7 +608,7 @@ export default function RegionalWealthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">生年月日 (Natal)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">生年月日 (出生チャート)</label>
               <input
                 type="datetime-local"
                 value={birthDate}
@@ -531,31 +618,31 @@ export default function RegionalWealthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">エンジン (Engine)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">方位計算エンジン</label>
               <select
                 value={engineType}
                 onChange={e => { setEngineType(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
-                <option value="physical">Physical (天体軌道)</option>
-                <option value="classical">Classical (古典暦)</option>
+                <option value="physical">天体軌道モデル (Physical)</option>
+                <option value="classical">節切り暦モデル (Classical)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">レイヤー (Layer)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">方位計算レイヤー</label>
               <select
                 value={layerMode}
                 onChange={e => { setLayerMode(e.target.value); setSelectedPresetId(""); }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
-                <option value="final">Final (統合ベクター)</option>
+                <option value="final">統合ベクター (Final)</option>
                 <option value="year">Year (年盤のみ)</option>
                 <option value="month">Month (月盤のみ)</option>
                 <option value="day">Day (日盤のみ)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">基準方位 (North)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">北基準方位</label>
               <select
                 value={useTrueNorth ? "true" : "false"}
                 onChange={e => { setUseTrueNorth(e.target.value === "true"); setSelectedPresetId(""); }}
@@ -573,14 +660,14 @@ export default function RegionalWealthPage() {
               {/* Birth Coordinates */}
               <div className="flex flex-col gap-1 w-full md:w-auto">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-indigo-500 uppercase flex items-center gap-1">
-                    <Compass className="w-3 h-3" /> 出生地 (Birth Geo)
+                  <label className="block text-xs font-semibold text-indigo-500 flex items-center gap-1">
+                    <Compass className="w-3 h-3" /> 出生地座標
                   </label>
                   <button
                     onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
                     className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
                   >
-                    {showBirthMapPicker ? 'CLOSE MAP' : 'MAP SEARCH'}
+                    {showBirthMapPicker ? '地図を閉じる' : '地図検索'}
                   </button>
                 </div>
                 {showBirthMapPicker && (
@@ -601,14 +688,14 @@ export default function RegionalWealthPage() {
                     value={birthLat || ""}
                     onChange={e => { setBirthLat(e.target.value); setSelectedPresetId(""); }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Lat: 35.6"
+                    placeholder="緯度: 35.6"
                   />
                   <input
                     type="number"
                     value={birthLon || ""}
                     onChange={e => { setBirthLon(e.target.value); setSelectedPresetId(""); }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="Lon: 139.6"
+                    placeholder="経度: 139.6"
                   />
                 </div>
               </div>
@@ -616,14 +703,14 @@ export default function RegionalWealthPage() {
               {/* Base Coordinates */}
               <div className="flex flex-col gap-1 w-full md:w-auto">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-emerald-500 uppercase flex items-center gap-1">
-                    <MapPin className="w-3 h-3" /> 基準地 (Base Geo)
+                  <label className="block text-xs font-semibold text-emerald-500 flex items-center gap-1">
+                    <MapPin className="w-3 h-3" /> 基準地座標
                   </label>
                   <button
                     onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
                     className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
                   >
-                    {showBaseMapPicker ? 'CLOSE MAP' : 'MAP SEARCH'}
+                    {showBaseMapPicker ? '地図を閉じる' : '地図検索'}
                   </button>
                 </div>
                 {showBaseMapPicker && (
@@ -644,14 +731,14 @@ export default function RegionalWealthPage() {
                     value={baseLat}
                     onChange={e => { setBaseLat(e.target.value); setSelectedPresetId(""); }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                    placeholder="Lat"
+                    placeholder="緯度"
                   />
                   <input
                     type="number"
                     value={baseLon}
                     onChange={e => { setBaseLon(e.target.value); setSelectedPresetId(""); }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                    placeholder="Lon"
+                    placeholder="経度"
                   />
                   <button
                     onClick={() => { handleGetGPS(); setSelectedPresetId(""); }}
@@ -701,7 +788,7 @@ export default function RegionalWealthPage() {
                 </div>
               ) : null}
               <WealthMap
-                data={data}
+                data={filteredData}
                 baseLat={metadata?.baseLat}
                 baseLon={metadata?.baseLon}
                 useTrueNorth={useTrueNorth}
@@ -718,7 +805,7 @@ export default function RegionalWealthPage() {
                 最強の引越し先 候補
               </h2>
               <div className="space-y-4">
-                {safeData.filter(d => d.astrologyStatus === 'OPTIMAL' || d.astrologyStatus === 'SAFE')
+                {filteredData.filter(d => d.astrologyStatus === 'OPTIMAL' || d.astrologyStatus === 'SAFE')
                   .sort((a, b) => b.incomePerCapita - a.incomePerCapita)
                   .slice(0, 5)
                   .map((item, i) => (
@@ -735,7 +822,7 @@ export default function RegionalWealthPage() {
                       </div>
                     </div>
                   ))}
-                {safeData.length === 0 && !loading && (
+                {filteredData.length === 0 && !loading && (
                   <div className="text-sm text-gray-500 text-center py-4">条件に合う安全な方位が見つかりませんでした</div>
                 )}
               </div>
@@ -837,7 +924,7 @@ export default function RegionalWealthPage() {
             </div>
 
             {/* Filter Row */}
-            <div className="flex flex-wrap gap-4 items-center pt-2">
+            <div className="flex flex-wrap gap-3 items-center pt-2">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-gray-400" />
@@ -847,7 +934,7 @@ export default function RegionalWealthPage() {
                   placeholder="エリア名で絞り込み..."
                   value={filterName}
                   onChange={handleFilterNameChange}
-                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-64"
+                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -857,42 +944,72 @@ export default function RegionalWealthPage() {
                   onChange={handleFilterStatusChange}
                   className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 >
-                  <option value="ALL">すべてのステータス</option>
+                  <option value="ALL">全ステータス</option>
                   <option value="OPTIMAL">OPTIMAL (大吉)</option>
                   <option value="SAFE">SAFE (吉)</option>
                   <option value="NOISE">NOISE (凶・無効)</option>
-                  <option value="JUPITER">JUPITER (木星ボーナス)</option>
-                  <option value="VENUS">VENUS (金星ボーナス)</option>
+                  <option value="JUPITER">JUPITER (木星)</option>
+                  <option value="VENUS">VENUS (金星)</option>
                 </select>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">所得(万円)≧</span>
+                <input
+                  type="number"
+                  placeholder="例: 300"
+                  value={filterMinIncome}
+                  onChange={e => { setFilterMinIncome(e.target.value); setCurrentPage(1); }}
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">距離(km)≦</span>
+                <input
+                  type="number"
+                  placeholder="例: 50"
+                  value={filterMaxDistance}
+                  onChange={e => { setFilterMaxDistance(e.target.value); setCurrentPage(1); }}
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">スコア≧</span>
+                <input
+                  type="number"
+                  placeholder="例: 80"
+                  value={filterMinScore}
+                  onChange={e => { setFilterMinScore(e.target.value); setCurrentPage(1); }}
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                />
               </div>
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-900/50">
                 <tr>
-                  <th scope="col" className="px-6 py-4 rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('areaName')}>
-                    エリア名 <span className={`inline-block w-3 ${sortBy === 'areaName' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('areaName', e)}>
+                    エリア名 {renderSortIndicator('areaName')}
                   </th>
                   <th scope="col" className="px-6 py-4">方位 / ステータス</th>
-                  <th scope="col" className="px-6 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('astrology')}>
-                    方位スコア <span className={`inline-block w-3 ${sortBy === 'astrology' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('astrology', e)}>
+                    方位スコア {renderSortIndicator('astrology')}
                   </th>
-                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('distance')}>
-                    距離 (km) <span className={`inline-block w-3 ${sortBy === 'distance' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('distance', e)}>
+                    距離 (km) {renderSortIndicator('distance')}
                   </th>
-                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('income')}>
-                    1人あたり平均所得 <span className={`inline-block w-3 ${sortBy === 'income' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('income', e)}>
+                    1人あたり平均所得 {renderSortIndicator('income')}
                   </th>
-                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('landPrice')}>
-                    平均地価 (㎡) <span className={`inline-block w-3 ${sortBy === 'landPrice' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('landPrice', e)}>
+                    平均地価 (㎡) {renderSortIndicator('landPrice')}
                   </th>
-                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={() => handleSortChange('cospa')}>
-                    コスパ指数 <span className={`inline-block w-3 ${sortBy === 'cospa' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none" onClick={(e) => handleSortChange('cospa', e)}>
+                    コスパ指数 {renderSortIndicator('cospa')}
                   </th>
-                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none rounded-tr-lg" onClick={() => handleSortChange('population')}>
-                    納税義務者数 <span className={`inline-block w-3 ${sortBy === 'population' ? 'text-indigo-500' : 'text-transparent group-hover:text-gray-400'}`}>{sortOrder === 'desc' ? '↓' : '↑'}</span>
+                  <th scope="col" className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none rounded-tr-lg" onClick={(e) => handleSortChange('population', e)}>
+                    納税義務者数 {renderSortIndicator('population')}
                   </th>
                 </tr>
               </thead>

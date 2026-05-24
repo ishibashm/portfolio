@@ -47,14 +47,14 @@ export const WeddingDateSelector: React.FC = () => {
       
       // 3. Recommendation Label
       let label = "";
-      if (score >= 8) label = "◎ Highly Recommended";
-      else if (score >= 5) label = "○ Recommended";
-      else if (score >= 3) label = "△ Possible";
-      else label = "× Avoid";
+      if (score >= 8) label = "◎ 大変おすすめ";
+      else if (score >= 5) label = "○ おすすめ";
+      else if (score >= 3) label = "△ 挙行可能";
+      else label = "× 避けるべき";
 
       list.push({
         date: date,
-        dayOfWeek: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        dayOfWeek: ['日', '月', '火', '水', '木', '金', '土'][date.getDay()],
         rokuyo: rokuyo,
         score: score,
         label: label,
@@ -68,10 +68,10 @@ export const WeddingDateSelector: React.FC = () => {
     <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 max-w-4xl mx-auto my-8">
       <div className="mb-8 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          💒 Wedding Date Selector
+          💒 結婚式吉日セレクター
         </h2>
         <p className="text-gray-500 text-sm">
-          "Plan B" Demo: Calculating Auspicious Dates with Complex Logic
+          「プランB」デモ: 複雑なビジネスルールに基づく吉日選択シミュレーション
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export const WeddingDateSelector: React.FC = () => {
           className="px-4 py-2 border rounded-lg bg-gray-50 hover:bg-white transition-colors cursor-pointer"
         >
           {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-            <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('en-US', { month: 'long' })}</option>
+            <option key={m} value={m}>{m}月</option>
           ))}
         </select>
       </div>
@@ -103,11 +103,11 @@ export const WeddingDateSelector: React.FC = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 text-gray-600 border-b">
-              <th className="p-4 font-semibold">Date</th>
-              <th className="p-4 font-semibold">Day</th>
-              <th className="p-4 font-semibold">Rokuyo (Six Labels)</th>
-              <th className="p-4 font-semibold">Score</th>
-              <th className="p-4 font-semibold">Recommendation</th>
+              <th className="p-4 font-semibold">日付</th>
+              <th className="p-4 font-semibold">曜日</th>
+              <th className="p-4 font-semibold">六曜</th>
+              <th className="p-4 font-semibold">スコア</th>
+              <th className="p-4 font-semibold">推奨度</th>
             </tr>
           </thead>
           <tbody>
@@ -119,7 +119,7 @@ export const WeddingDateSelector: React.FC = () => {
                 <td className="p-4 text-gray-800">
                   {item.date.getDate()}
                 </td>
-                <td className={`p-4 font-medium ${item.dayOfWeek === 'Sun' ? 'text-red-500' : item.dayOfWeek === 'Sat' ? 'text-blue-500' : 'text-gray-600'}`}>
+                <td className={`p-4 font-medium ${item.dayOfWeek === '日' ? 'text-red-500' : item.dayOfWeek === '土' ? 'text-blue-500' : 'text-gray-600'}`}>
                   {item.dayOfWeek}
                 </td>
                 <td className="p-4">
@@ -150,7 +150,7 @@ export const WeddingDateSelector: React.FC = () => {
       </div>
       
       <div className="mt-6 text-xs text-gray-400 text-center">
-        * Logic implemented: (Solar Date &rarr; Approx Lunar Date &rarr; Rokuyo Index) + Weekend Weighting
+        ※実装ロジック: (太陽暦 &rarr; 簡易旧暦計算 &rarr; 六曜算出) + 土日祝ウェイト
       </div>
     </div>
   );
