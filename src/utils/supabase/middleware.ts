@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   const adminEmail = process.env.ADMIN_EMAIL;
   const isAuthorized = !adminEmail || user?.email === adminEmail;
 
-  const protectedRoutes = ['/rentals', '/dashboard', '/omni', '/knowledge', '/metaphysical', '/x-viewer', '/relocation', '/research', '/visualizer'];
+  const protectedRoutes = ['/research', '/knowledge', '/x-viewer', '/visualizer', '/omni'];
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
   // If the user is unauthenticated and they are trying to access a protected route

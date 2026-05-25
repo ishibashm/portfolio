@@ -68,6 +68,8 @@ export async function GET(request: Request) {
 
   const useClassical = useClassicalStr === 'true';
   const useTrueNorth = useTrueNorthStr === 'true';
+  const radiusKmStr = searchParams.get('radiusKm') || '10';
+  const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
 
   // 1. 環境・運気エンジンの初期化
   const env = getSystemEnvironment(new Date());
@@ -114,13 +116,29 @@ export async function GET(request: Request) {
 
   try {
     // 2. DBから物件データを取得 (緯度経度があるもの)
+    // ユーザー座標指定かつradiusKm指定がある場合はバウンディングボックスによる近接フィルタを適用
+    const whereClause: any = {
+      lat: { not: null },
+      lon: { not: null },
+      rent: { not: null },
+      size_sqm: { not: null }
+    };
+
+    if (radiusKm > 0 && !isNaN(baseLat) && !isNaN(baseLon)) {
+      const deltaLat = radiusKm / 111.0;
+      const deltaLon = radiusKm / (111.0 * Math.cos(baseLat * Math.PI / 180.0));
+      whereClause.lat = {
+        gte: baseLat - deltaLat,
+        lte: baseLat + deltaLat
+      };
+      whereClause.lon = {
+        gte: baseLon - deltaLon,
+        lte: baseLon + deltaLon
+      };
+    }
+
     const properties = await prisma.rental_properties.findMany({
-      where: {
-        lat: { not: null },
-        lon: { not: null },
-        rent: { not: null },
-        size_sqm: { not: null }
-      },
+      where: whereClause,
       take: limit,
       orderBy: { created_at: 'desc' }
     });
@@ -227,7 +245,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ 
       properties: scoredProperties,
       metadata: {
-        baseLat, baseLon, layerMode, useClassical, useTrueNorth,
+        baseLat, baseLon, radiusKm, layerMode, useClassical, useTrueNorth,
         meanSqmRent,
         stdDevSqmRent,
         totalAnalyzed: properties.length
