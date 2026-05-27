@@ -22,15 +22,19 @@ export default function RentalsDashboard() {
   const [search, setSearch] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const supabase = useMemo(() => createClient(), []);
+  const [supabase, setSupabase] = useState<any>(null);
 
   useEffect(() => {
-    fetchProperties();
+    const client = createClient();
+    setSupabase(client);
+    fetchProperties(client);
   }, []);
 
-  async function fetchProperties() {
+  async function fetchProperties(clientInstance?: any) {
+    const activeClient = clientInstance || supabase;
+    if (!activeClient) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await activeClient
       .from("rental_properties")
       .select("*")
       .order("first_seen_at", { ascending: false });
