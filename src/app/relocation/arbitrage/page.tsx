@@ -19,9 +19,9 @@ export default function ArbitrageScannerPage() {
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   // Relocation & Fortune Settings States
-  const [baseLat, setBaseLat] = useState("35.6895"); // Default Tokyo
-  const [baseLon, setBaseLon] = useState("139.6917");
-  const [birthDate, setBirthDate] = useState("1995-05-05"); // Default Birth Date
+  const [baseLat, setBaseLat] = useState("34.9911"); // Default Kyoto
+  const [baseLon, setBaseLon] = useState("135.7248");
+  const [birthDate, setBirthDate] = useState("1988-11-25"); // Default Birth Date
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
   const [useClassical, setUseClassical] = useState(false);
@@ -29,9 +29,9 @@ export default function ArbitrageScannerPage() {
   const [useTrueNorth, setUseTrueNorth] = useState(false);
 
   // Temporary local inputs to avoid API hammering during typing
-  const [localLat, setLocalLat] = useState("35.6895");
-  const [localLon, setLocalLon] = useState("139.6917");
-  const [localBirthDate, setLocalBirthDate] = useState("1995-05-05");
+  const [localLat, setLocalLat] = useState("34.9911");
+  const [localLon, setLocalLon] = useState("135.7248");
+  const [localBirthDate, setLocalBirthDate] = useState("1988-11-25");
   const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
 
   // Pagination & Filtering state
