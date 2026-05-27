@@ -71,8 +71,17 @@ export async function GET(request: Request) {
   const radiusKmStr = searchParams.get('radiusKm') || '10';
   const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
 
+  const targetDateStr = searchParams.get('targetDate') || '';
+  let targetDate = new Date();
+  if (targetDateStr) {
+    const parsedDate = new Date(targetDateStr);
+    if (!isNaN(parsedDate.getTime())) {
+      targetDate = parsedDate;
+    }
+  }
+
   // 1. 環境・運気エンジンの初期化
-  const env = getSystemEnvironment(new Date());
+  const env = getSystemEnvironment(targetDate);
   
   let bDate = new Date();
   if (birthDateStr) {
@@ -246,6 +255,7 @@ export async function GET(request: Request) {
       properties: scoredProperties,
       metadata: {
         baseLat, baseLon, radiusKm, layerMode, useClassical, useTrueNorth,
+        targetDate: targetDate.toISOString().split('T')[0],
         meanSqmRent,
         stdDevSqmRent,
         totalAnalyzed: properties.length

@@ -23,13 +23,16 @@ import {
   LogOut
 } from 'lucide-react';
 
-const NAV_ITEMS = [
+const PUBLIC_ITEMS = [
   { href: '/', icon: Clock, label: 'Portal' },
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Oracle Hub' },
-  { href: '/research', icon: Database, label: 'Data Engine' },
+];
+
+const PROTECTED_ITEMS = [
   { href: '/relocation/wealth', icon: Map, label: 'Relocation Matrix' },
   { href: '/relocation/arbitrage', icon: TrendingUp, label: 'Real Estate Arbitrage' },
   { href: '/metaphysical', icon: Compass, label: 'Metaphysical Engine' },
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Oracle Hub' },
+  { href: '/research', icon: Database, label: 'Data Engine' },
   { href: '/knowledge', icon: BookOpen, label: 'Second Brain' },
   { href: '/x-viewer', icon: Twitter, label: 'X Archive' },
   { href: '/visualizer', icon: Palette, label: 'AI Visualizer' },
@@ -58,6 +61,34 @@ export function GlobalSidebar() {
   if (pathname?.startsWith('/visualizer/share/')) {
     return null;
   }
+
+  const renderNavItem = (item: typeof PUBLIC_ITEMS[0]) => {
+    const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
+    const Icon = item.icon;
+    
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={closeSidebar}
+        title={isCollapsed ? item.label : undefined}
+        className={`
+          flex items-center justify-between px-3 py-3 rounded-xl transition-all group
+          ${isActive 
+            ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20' 
+            : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent'
+          }
+          ${isCollapsed ? 'justify-center' : ''}
+        `}
+      >
+        <div className="flex items-center gap-3">
+          <Icon size={18} className={`shrink-0 ${isActive ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
+          {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>}
+        </div>
+        {!isCollapsed && isActive && <ChevronRight size={16} className="text-indigo-400/50 shrink-0" />}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -99,33 +130,22 @@ export function GlobalSidebar() {
 
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/' && pathname?.startsWith(item.href));
-            const Icon = item.icon;
-            
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={closeSidebar}
-                title={isCollapsed ? item.label : undefined}
-                className={`
-                  flex items-center justify-between px-3 py-3 rounded-xl transition-all group
-                  ${isActive 
-                    ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20' 
-                    : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent'
-                  }
-                  ${isCollapsed ? 'justify-center' : ''}
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon size={18} className={`shrink-0 ${isActive ? 'text-indigo-400' : 'text-zinc-500 group-hover:text-zinc-300'}`} />
-                  {!isCollapsed && <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>}
-                </div>
-                {!isCollapsed && isActive && <ChevronRight size={16} className="text-indigo-400/50 shrink-0" />}
-              </Link>
-            );
-          })}
+          {/* Public Space */}
+          {!isCollapsed && (
+            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+              Public Space
+            </div>
+          )}
+          {PUBLIC_ITEMS.map(renderNavItem)}
+
+          {/* Secure Engine Space */}
+          <div className="my-4 border-t border-white/5" />
+          {!isCollapsed && (
+            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+              Secure Engines
+            </div>
+          )}
+          {PROTECTED_ITEMS.map(renderNavItem)}
         </nav>
 
         {/* Footer Area */}
@@ -155,6 +175,13 @@ export function GlobalSidebar() {
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {!isCollapsed && <span className="text-[10px] text-zinc-400 font-medium tracking-widest uppercase whitespace-nowrap">システム稼働中</span>}
           </div>
+
+          {/* Creator Signature */}
+          {!isCollapsed && (
+            <div className="text-[9px] text-zinc-600 font-mono text-center tracking-wider mt-1 select-none">
+              Engineered by <span className="text-zinc-500 font-medium hover:text-indigo-400 transition-colors">M. Ishibashi</span>
+            </div>
+          )}
         </div>
       </aside>
 

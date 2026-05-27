@@ -4,6 +4,14 @@ import { useEffect, useState, useMemo } from "react";
 import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, Search, Settings, RefreshCw } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 
+const getTodayString = () => {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,6 +22,7 @@ export default function ArbitrageScannerPage() {
   const [baseLat, setBaseLat] = useState("35.6895"); // Default Tokyo
   const [baseLon, setBaseLon] = useState("139.6917");
   const [birthDate, setBirthDate] = useState("1995-05-05"); // Default Birth Date
+  const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
@@ -23,6 +32,7 @@ export default function ArbitrageScannerPage() {
   const [localLat, setLocalLat] = useState("35.6895");
   const [localLon, setLocalLon] = useState("139.6917");
   const [localBirthDate, setLocalBirthDate] = useState("1995-05-05");
+  const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,6 +40,7 @@ export default function ArbitrageScannerPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMinYield, setFilterMinYield] = useState<string>("");
+  const [filterMaxAge, setFilterMaxAge] = useState<string>("");
   const itemsPerPage = 50;
 
   // Sorting state
@@ -42,6 +53,7 @@ export default function ArbitrageScannerPage() {
     const storedLat = localStorage.getItem("arb_baseLat");
     const storedLon = localStorage.getItem("arb_baseLon");
     const storedBirth = localStorage.getItem("arb_birthDate");
+    const storedTarget = localStorage.getItem("arb_targetDate");
     const storedRadius = localStorage.getItem("arb_radiusKm");
     const storedClassical = localStorage.getItem("arb_useClassical");
     const storedLayer = localStorage.getItem("arb_layerMode");
@@ -50,6 +62,7 @@ export default function ArbitrageScannerPage() {
     if (storedLat) { setBaseLat(storedLat); setLocalLat(storedLat); }
     if (storedLon) { setBaseLon(storedLon); setLocalLon(storedLon); }
     if (storedBirth) { setBirthDate(storedBirth); setLocalBirthDate(storedBirth); }
+    if (storedTarget) { setTargetDate(storedTarget); setLocalTargetDate(storedTarget); }
     if (storedRadius) setRadiusKm(storedRadius);
     if (storedClassical) setUseClassical(storedClassical === "true");
     if (storedLayer) setLayerMode(storedLayer);
@@ -69,6 +82,7 @@ export default function ArbitrageScannerPage() {
       params.append("birthLat", baseLat); // Fallback: birth location matches base location for ACD calculations
       params.append("birthLon", baseLon);
       if (birthDate) params.append("birthDate", birthDate);
+      if (targetDate) params.append("targetDate", targetDate);
       params.append("radiusKm", radiusKm);
       params.append("useClassical", useClassical.toString());
       params.append("layerMode", layerMode);
@@ -92,7 +106,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, radiusKm, useClassical, layerMode, useTrueNorth, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, useClassical, layerMode, useTrueNorth, initialLoaded]);
 
   // Handle manual submit of location/birth date
   const handleSettingsSubmit = (e: React.FormEvent) => {
@@ -100,10 +114,12 @@ export default function ArbitrageScannerPage() {
     setBaseLat(localLat);
     setBaseLon(localLon);
     setBirthDate(localBirthDate);
+    setTargetDate(localTargetDate);
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
     localStorage.setItem("arb_birthDate", localBirthDate);
+    localStorage.setItem("arb_targetDate", localTargetDate);
   };
 
   // Sync radius changes instantly
@@ -179,6 +195,11 @@ export default function ArbitrageScannerPage() {
     if (filterMinYield) {
       const minYield = Number(filterMinYield);
       if (d.yieldScore < minYield) return false;
+    }
+
+    if (filterMaxAge) {
+      const maxAge = Number(filterMaxAge);
+      if (d.building_age === null || d.building_age === undefined || d.building_age > maxAge) return false;
     }
 
     if (filterName) {
@@ -282,9 +303,9 @@ export default function ArbitrageScannerPage() {
             </h2>
           </div>
           
-          <form onSubmit={handleSettingsSubmit} className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 items-end">
+          <form onSubmit={handleSettingsSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
             {/* Base Lat/Lon */}
-            <div className="space-y-1.5 col-span-1 md:col-span-2 grid grid-cols-2 gap-2">
+            <div className="space-y-1.5 col-span-1 sm:col-span-2 grid grid-cols-2 gap-2">
               <div className="col-span-2 flex justify-between items-center">
                 <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
                   スキャン中心座標 (緯度 / 経度)
@@ -332,13 +353,26 @@ export default function ArbitrageScannerPage() {
               />
             </div>
 
+            {/* Target Date */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
+                目標日 (方位盤基準日)
+              </label>
+              <input
+                type="date"
+                value={localTargetDate}
+                onChange={e => setLocalTargetDate(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
+              />
+            </div>
+
             {/* Submit Button */}
             <div>
               <button
                 type="submit"
                 className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-bold rounded-xl text-sm transition-colors cursor-pointer"
               >
-                中心座標・生年月日を更新
+                スキャン条件を更新
               </button>
             </div>
 
@@ -378,7 +412,7 @@ export default function ArbitrageScannerPage() {
             </div>
 
             {/* Toggles */}
-            <div className="col-span-1 md:col-span-2 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 md:pt-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0">
               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -513,6 +547,17 @@ export default function ArbitrageScannerPage() {
                   className="w-16 px-2 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm outline-none"
                 />
                 <span className="text-xs text-gray-500">万円</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-gray-500">築年数≦</span>
+                <input
+                  type="number"
+                  placeholder="例: 15"
+                  value={filterMaxAge}
+                  onChange={e => { setFilterMaxAge(e.target.value); setCurrentPage(1); }}
+                  className="w-16 px-2 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm outline-none"
+                />
+                <span className="text-xs text-gray-500">年</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-gray-500">利回り偏差値≧</span>
