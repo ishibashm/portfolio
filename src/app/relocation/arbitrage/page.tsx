@@ -390,6 +390,9 @@ export default function ArbitrageScannerPage() {
                 <option value="5">5 km</option>
                 <option value="10">10 km (標準)</option>
                 <option value="20">20 km</option>
+                <option value="50">50 km</option>
+                <option value="100">100 km</option>
+                <option value="300">300 km</option>
                 <option value="all">制限なし (全件最新)</option>
               </select>
             </div>
