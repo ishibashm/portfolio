@@ -63,3 +63,8 @@ jobs:
             --min-instances=0
             --concurrency=80
             --allow-unauthenticated
+
+      - name: Debug Cloud Run Env Vars
+        run: |
+          gcloud run services describe ${{ env.SERVICE_NAME }} --region=${{ env.REGION }} --format="yaml(spec.template.spec.containers[0].env)"
+
