@@ -126,4 +126,5 @@ x_downloads/
 download/
 /tools/
 
-
+# Environment configurations
+env.json

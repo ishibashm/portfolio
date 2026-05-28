@@ -10,6 +10,15 @@ import {
   AstroEngine
 } from '@/utils/ephemerisEngine';
 
+// 物件名から不要な階数や築年数表現を除去するクレンジング関数
+function cleanPropertyName(name: string): string {
+  if (!name) return '';
+  return name
+    .replace(/[\s　]*(?:地下)?\d+階[\s　]+(?:築\d+年(?:[0-9]+ヶ月)?|新築)の賃貸物件$/, '')
+    .replace(/[\s　]*(?:築\d+年(?:[0-9]+ヶ月)?|新築)の賃貸物件$/, '')
+    .trim();
+}
+
 // 偏差値計算用のヘルパー
 function calculateZScore(value: number, mean: number, stdDev: number) {
   if (stdDev === 0) return 50;
@@ -243,6 +252,7 @@ export async function GET(request: Request) {
 
       return {
         ...p,
+        property_name: cleanPropertyName(p.property_name || ''),
         totalRent,
         propSqmRent,
         distanceKm,
