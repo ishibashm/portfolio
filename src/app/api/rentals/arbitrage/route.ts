@@ -70,6 +70,7 @@ export async function GET(request: Request) {
   const useTrueNorth = useTrueNorthStr === 'true';
   const radiusKmStr = searchParams.get('radiusKm') || '10';
   const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
+  const prefecture = searchParams.get('prefecture') || 'all';
 
   const targetDateStr = searchParams.get('targetDate') || '';
   let targetDate = new Date();
@@ -143,6 +144,12 @@ export async function GET(request: Request) {
       whereClause.lon = {
         gte: baseLon - deltaLon,
         lte: baseLon + deltaLon
+      };
+    }
+
+    if (prefecture && prefecture !== 'all') {
+      whereClause.address = {
+        contains: prefecture
       };
     }
 
@@ -254,7 +261,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ 
       properties: scoredProperties,
       metadata: {
-        baseLat, baseLon, radiusKm, layerMode, useClassical, useTrueNorth,
+        baseLat, baseLon, radiusKm, prefecture, layerMode, useClassical, useTrueNorth,
         targetDate: targetDate.toISOString().split('T')[0],
         meanSqmRent,
         stdDevSqmRent,

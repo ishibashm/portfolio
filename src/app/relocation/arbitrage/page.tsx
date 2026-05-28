@@ -24,6 +24,7 @@ export default function ArbitrageScannerPage() {
   const [birthDate, setBirthDate] = useState("1988-11-25"); // Default Birth Date
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
+  const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
@@ -55,6 +56,7 @@ export default function ArbitrageScannerPage() {
     const storedBirth = localStorage.getItem("arb_birthDate");
     const storedTarget = localStorage.getItem("arb_targetDate");
     const storedRadius = localStorage.getItem("arb_radiusKm");
+    const storedPrefecture = localStorage.getItem("arb_prefecture");
     const storedClassical = localStorage.getItem("arb_useClassical");
     const storedLayer = localStorage.getItem("arb_layerMode");
     const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
@@ -64,6 +66,7 @@ export default function ArbitrageScannerPage() {
     if (storedBirth) { setBirthDate(storedBirth); setLocalBirthDate(storedBirth); }
     if (storedTarget) { setTargetDate(storedTarget); setLocalTargetDate(storedTarget); }
     if (storedRadius) setRadiusKm(storedRadius);
+    if (storedPrefecture) setPrefecture(storedPrefecture);
     if (storedClassical) setUseClassical(storedClassical === "true");
     if (storedLayer) setLayerMode(storedLayer);
     if (storedTrueNorth) setUseTrueNorth(storedTrueNorth === "true");
@@ -84,6 +87,7 @@ export default function ArbitrageScannerPage() {
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
       params.append("radiusKm", radiusKm);
+      params.append("prefecture", prefecture);
       params.append("useClassical", useClassical.toString());
       params.append("layerMode", layerMode);
       params.append("useTrueNorth", useTrueNorth.toString());
@@ -106,7 +110,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, useClassical, layerMode, useTrueNorth, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, initialLoaded]);
 
   // Handle manual submit of location/birth date
   const handleSettingsSubmit = (e: React.FormEvent) => {
@@ -126,6 +130,25 @@ export default function ArbitrageScannerPage() {
   const handleRadiusChange = (newRadius: string) => {
     setRadiusKm(newRadius);
     localStorage.setItem("arb_radiusKm", newRadius);
+    setCurrentPage(1);
+  };
+
+  // Sync prefecture changes instantly
+  const handlePrefectureChange = (newPref: string) => {
+    setPrefecture(newPref);
+    localStorage.setItem("arb_prefecture", newPref);
+    setCurrentPage(1);
+  };
+
+  const applyPreset = (presetName: string, lat: string, lon: string, pref: string) => {
+    setLocalLat(lat);
+    setLocalLon(lon);
+    setBaseLat(lat);
+    setBaseLon(lon);
+    setPrefecture(pref);
+    localStorage.setItem("arb_baseLat", lat);
+    localStorage.setItem("arb_baseLon", lon);
+    localStorage.setItem("arb_prefecture", pref);
     setCurrentPage(1);
   };
 
@@ -296,11 +319,21 @@ export default function ArbitrageScannerPage() {
 
         {/* Astro & Proximity Control Panel */}
         <div className="bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-3">
-            <Settings className="w-5 h-5 text-indigo-500" />
-            <h2 className="text-md font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              スキャナー設定 (吉方位・リロケーション条件)
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-800 pb-3">
+            <div className="flex items-center gap-2">
+              <Settings className="w-5 h-5 text-indigo-500" />
+              <h2 className="text-md font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                スキャナー設定 (吉方位・リロケーション条件)
+              </h2>
+            </div>
+            {/* Presets */}
+            <div className="flex flex-wrap gap-1.5 items-center text-xs">
+              <span className="font-semibold text-gray-500 mr-1">エリア選択プリセット:</span>
+              <button type="button" onClick={() => applyPreset("京都", "34.9911", "135.7248", "滋賀県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">京都 (滋賀近隣)</button>
+              <button type="button" onClick={() => applyPreset("名古屋", "35.1815", "136.9064", "愛知県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">名古屋 (愛知)</button>
+              <button type="button" onClick={() => applyPreset("岐阜", "35.4233", "136.7607", "岐阜県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">岐阜 (岐阜)</button>
+              <button type="button" onClick={() => applyPreset("大津", "35.0178", "135.8547", "滋賀県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">大津 (滋賀)</button>
+            </div>
           </div>
           
           <form onSubmit={handleSettingsSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
@@ -397,6 +430,23 @@ export default function ArbitrageScannerPage() {
               </select>
             </div>
 
+            {/* Target Prefecture */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
+                対象都道府県 (DBフィルタ)
+              </label>
+              <select
+                value={prefecture}
+                onChange={e => handlePrefectureChange(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none cursor-pointer"
+              >
+                <option value="all">全国 / すべて</option>
+                <option value="愛知県">愛知県 (42,641件)</option>
+                <option value="岐阜県">岐阜県 (26,623件)</option>
+                <option value="滋賀県">滋賀県 (29,284件)</option>
+              </select>
+            </div>
+
             {/* Layer Mode */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
@@ -415,7 +465,7 @@ export default function ArbitrageScannerPage() {
             </div>
 
             {/* Toggles */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0">
               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
