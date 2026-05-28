@@ -29,6 +29,9 @@ jobs:
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
 
+      - name: Convert .env to env.json for Cloud Run
+        run: python scripts/convert_env.py
+
       - name: Auth with GCP By Service Account
         uses: google-github-actions/auth@v2
         with:
@@ -55,7 +58,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          env_vars_file: .env
+          env_vars_file: env.json
           flags: >-
             --cpu=1
             --memory=512Mi
