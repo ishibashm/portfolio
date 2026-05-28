@@ -39,10 +39,11 @@ function parseSize(sizeStr: string): number {
   return isNaN(num) ? 0 : num;
 }
 
-// Map Nifty age string (e.g. "新築", "築10年") to integer
+// Map Nifty age string (e.g. "新築", "築10年", "1年4ヶ月") to integer
 function parseAge(ageStr: string): number {
   if (!ageStr || ageStr === '-' || ageStr === '新築') return 0;
-  const match = ageStr.match(/築(\d+)年/);
+  // 「築」があってもなくても、数字の後に「年」が続くパターンにマッチさせます
+  const match = ageStr.match(/(?:築)?(\d+)年/);
   return match ? parseInt(match[1], 10) : 0;
 }
 
