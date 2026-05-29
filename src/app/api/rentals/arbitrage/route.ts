@@ -8,7 +8,8 @@ import {
   getPersonalVoidZodiac,
   Direction,
   AstroEngine,
-  getUpcomingDoyouPeriod
+  getUpcomingDoyouPeriod,
+  calculateLunarPhaseCondition
 } from '@/utils/ephemerisEngine';
 import { getGeomagneticData } from '@/utils/geomagnetism';
 
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
   const useTrueNorthStr = searchParams.get('useTrueNorth');
   const nodeMapping = (searchParams.get('nodeMapping') || 'traditional') as 'traditional' | 'physical';
   const limit = parseInt(searchParams.get('limit') || '500');
+  const lunarPhaseModifier = searchParams.get('lunarPhaseModifier') !== 'false';
 
   const useClassical = useClassicalStr === 'true';
   const useTrueNorth = useTrueNorthStr === 'true';
@@ -91,6 +93,17 @@ export async function GET(request: Request) {
     if (!isNaN(parsedDate.getTime())) {
       targetDate = parsedDate;
     }
+  }
+
+  // 月相コンディションの計算
+  let lunarPhaseScore = 0;
+  let lunarPhaseAdvice = '';
+  let lunarPhaseLabel = '';
+  if (lunarPhaseModifier) {
+    const lpCond = calculateLunarPhaseCondition(targetDate, 'MIGRATION');
+    lunarPhaseScore = lpCond.scoreModifier;
+    lunarPhaseAdvice = lpCond.adviceText;
+    lunarPhaseLabel = lpCond.phaseLabel;
   }
 
   // 1. 環境・運気エンジンの初期化
@@ -139,6 +152,8 @@ export async function GET(request: Request) {
   else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
   else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
   else activeVectors = vectorData.finalVectors;
+
+  const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
 
   // 動的偏角の取得
   let declination = -8.2;
@@ -228,10 +243,18 @@ export async function GET(request: Request) {
             case 'NOISE_VOID': 
             case 'NOISE_NODE': astrologyScore = 40; break;
             case 'NOISE_HONMEI':
-            case 'NOISE_TEKI': astrologyScore = 20; break;
+            case 'NOISE_TEKI':
+            case 'NOISE_GETSUMEI':
+            case 'NOISE_GETSUTEKI': astrologyScore = 20; break;
             case 'NOISE_GOU':
-            case 'NOISE_ANKEN': astrologyScore = 10; break;
+            case 'NOISE_ANKEN':
+            case 'NOISE_HA': astrologyScore = 10; break;
             default: astrologyScore = 50; break;
+          }
+          
+          // 境界線アラート: 真北のセクターと磁北のセクターが異なる場合
+          if (!useTrueNorth && direction !== magneticDirection && (astrologyScore < 80)) {
+            astroFlags.push("DECLINATION_WARNING");
           }
         }
 
@@ -254,6 +277,25 @@ export async function GET(request: Request) {
             if (astrologyScore >= 50) astrologyScore += 20;
           }
         }
+
+        // 2.5. 月相コンディション（日単位補正）
+        if (lunarPhaseModifier) {
+          astrologyScore += lunarPhaseScore;
+          if (lunarPhaseScore > 0) {
+            astroFlags.push("LUNAR_BOOST");
+          } else if (lunarPhaseScore < 0) {
+            astroFlags.push("LUNAR_PENALTY");
+          }
+        }
+
+        // 2.6. 土用期間のペナルティ
+        if (isDoyouHazard) {
+          astrologyScore -= 30;
+          astroFlags.push("DOYOU_HAZARD");
+        }
+
+        // Clip final score to [0, 100]
+        astrologyScore = Math.max(0, Math.min(100, astrologyScore));
       }
 
       // --- アービトラージスコア計算 ---
@@ -295,7 +337,13 @@ export async function GET(request: Request) {
         meanSqmRent,
         stdDevSqmRent,
         totalAnalyzed: properties.length,
-        upcomingDoyou
+        upcomingDoyou,
+        lunarPhase: {
+          label: lunarPhaseLabel,
+          scoreModifier: lunarPhaseScore,
+          adviceText: lunarPhaseAdvice,
+          lunarPhaseModifier
+        }
       }
     });
 

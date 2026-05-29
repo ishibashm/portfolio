@@ -39,35 +39,38 @@ function generateCircleCoords(lat: number, lon: number, radiusKm: number): strin
   return coords.join(' ');
 }
 
-export function generateMagneticMapKML(lat: number, lon: number, declination: number): string {
-  const magNorthBearing = declination;
+export function generateMagneticMapKML(
+  lat: number,
+  lon: number,
+  declination: number,
+  useTrueNorth: boolean = false,
+  vectors?: Record<string, string>
+): string {
+  const magNorthBearing = useTrueNorth ? 0 : declination;
   const maxRadiusKm = 5000;
 
-  // Safe Zones (N, E, S, W)
-  const safeZonesList = [0, 90, 180, 270];
-  let safeZonesKML = '';
-  safeZonesList.forEach((az) => {
-    const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + az, 10, maxRadiusKm);
-    safeZonesKML += `
-      <Placemark>
-        <name>Safe Vector (${az}° Mag)</name>
-        <styleUrl>#safeZoneStyle</styleUrl>
-        <Polygon>
-          <tessellate>1</tessellate>
-          <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
-        </Polygon>
-      </Placemark>`;
-  });
+  // Directions mapping
+  const directions = [
+    { dir: 'N', deg: 0, isCorner: false },
+    { dir: 'NE', deg: 45, isCorner: true },
+    { dir: 'E', deg: 90, isCorner: false },
+    { dir: 'SE', deg: 135, isCorner: true },
+    { dir: 'S', deg: 180, isCorner: false },
+    { dir: 'SW', deg: 225, isCorner: true },
+    { dir: 'W', deg: 270, isCorner: false },
+    { dir: 'NW', deg: 315, isCorner: true },
+  ];
 
-  // Noise Borders
-  const boundariesList = [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5];
-  let noiseZonesKML = '';
-  boundariesList.forEach((az) => {
-    const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + az, 7.5, maxRadiusKm);
-    noiseZonesKML += `
+  let sectorsKML = '';
+  directions.forEach((d) => {
+    const status = vectors ? (vectors[d.dir] || 'SAFE') : 'SAFE';
+    const spread = d.isCorner ? 30 : 15;
+    const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + d.deg, spread, maxRadiusKm);
+    
+    sectorsKML += `
       <Placemark>
-        <name>Noise Vector (${az}° Mag)</name>
-        <styleUrl>#noiseZoneStyle</styleUrl>
+        <name>Sector ${d.dir} (${status})</name>
+        <styleUrl>#style_${status}</styleUrl>
         <Polygon>
           <tessellate>1</tessellate>
           <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
@@ -104,7 +107,7 @@ export function generateMagneticMapKML(lat: number, lon: number, declination: nu
     </Placemark>`;
 
   // Magnetic North Line
-  const [mnLon, mnLat] = getDestinationKML(lat, lon, magNorthBearing, maxRadiusKm);
+  const [mnLon, mnLat] = getDestinationKML(lat, lon, declination, maxRadiusKm);
   const magNorthKML = `
     <Placemark>
       <name>Magnetic North Vector (WMM)</name>
@@ -115,22 +118,64 @@ export function generateMagneticMapKML(lat: number, lon: number, declination: nu
       </LineString>
     </Placemark>`;
 
-
-  // Compose the KML
   const kmlString = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>Bio-Magnetic Spatial System</name>
-    <description>Generated vector data for True North, WMM2020 Magnetic North, Safe Zones, and Noise Vectors.</description>
+    <description>Generated sector data aligned with current active evaluations.</description>
     
-    <Style id="safeZoneStyle">
-      <LineStyle><color>ff50c878</color><width>1</width></LineStyle>
-      <PolyStyle><color>3350c878</color></PolyStyle>
+    <!-- Style definitions mapping to status colors -->
+    <Style id="style_OPTIMAL">
+      <LineStyle><color>ff81b910</color><width>2</width></LineStyle>
+      <PolyStyle><color>6681b910</color></PolyStyle>
     </Style>
-    
-    <Style id="noiseZoneStyle">
-      <LineStyle><color>ff0000ff</color><width>1</width></LineStyle>
-      <PolyStyle><color>550000ff</color></PolyStyle>
+    <Style id="style_OPTIMAL_REGULAR">
+      <LineStyle><color>ff99d334</color><width>1</width></LineStyle>
+      <PolyStyle><color>5599d334</color></PolyStyle>
+    </Style>
+    <Style id="style_SAFE">
+      <LineStyle><color>fff6823b</color><width>1</width></LineStyle>
+      <PolyStyle><color>22f6823b</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_GOU">
+      <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
+      <PolyStyle><color>994444ef</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_ANKEN">
+      <LineStyle><color>ff5e3ff4</color><width>2</width></LineStyle>
+      <PolyStyle><color>995e3ff4</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_HA">
+      <LineStyle><color>ff5e3ff4</color><width>2</width></LineStyle>
+      <PolyStyle><color>995e3ff4</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_HONMEI">
+      <LineStyle><color>ffef46d9</color><width>2</width></LineStyle>
+      <PolyStyle><color>99ef46d9</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_TEKI">
+      <LineStyle><color>ffd326c0</color><width>2</width></LineStyle>
+      <PolyStyle><color>99d326c0</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_GETSUMEI">
+      <LineStyle><color>ffd326c0</color><width>2</width></LineStyle>
+      <PolyStyle><color>99d326c0</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_GETSUTEKI">
+      <LineStyle><color>ffd326c0</color><width>2</width></LineStyle>
+      <PolyStyle><color>99d326c0</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_VOID">
+      <LineStyle><color>ff08b3ea</color><width>2</width></LineStyle>
+      <PolyStyle><color>6608b3ea</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE_NODE">
+      <LineStyle><color>ff0b9ef5</color><width>2</width></LineStyle>
+      <PolyStyle><color>660b9ef5</color></PolyStyle>
+    </Style>
+    <Style id="style_NOISE">
+      <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
+      <PolyStyle><color>994444ef</color></PolyStyle>
     </Style>
 
     <Style id="ringStyle">
@@ -160,13 +205,8 @@ export function generateMagneticMapKML(lat: number, lon: number, declination: nu
     </Folder>
 
     <Folder>
-      <name>Safe Zones (Green)</name>
-      ${safeZonesKML}
-    </Folder>
-
-    <Folder>
-      <name>Noise Borders (Red)</name>
-      ${noiseZonesKML}
+      <name>Evaluated Sectors (30/60 Degree)</name>
+      ${sectorsKML}
     </Folder>
 
     <Folder>
@@ -179,8 +219,14 @@ export function generateMagneticMapKML(lat: number, lon: number, declination: nu
   return kmlString;
 }
 
-export function downloadKML(lat: number, lon: number, declination: number) {
-  const kmlString = generateMagneticMapKML(lat, lon, declination);
+export function downloadKML(
+  lat: number,
+  lon: number,
+  declination: number,
+  useTrueNorth: boolean = false,
+  vectors?: Record<string, string>
+) {
+  const kmlString = generateMagneticMapKML(lat, lon, declination, useTrueNorth, vectors);
   const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

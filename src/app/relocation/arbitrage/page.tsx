@@ -28,6 +28,7 @@ export default function ArbitrageScannerPage() {
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
+  const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
 
   // Temporary local inputs to avoid API hammering during typing
   const [localLat, setLocalLat] = useState("34.9911");
@@ -91,6 +92,7 @@ export default function ArbitrageScannerPage() {
       params.append("useClassical", useClassical.toString());
       params.append("layerMode", layerMode);
       params.append("useTrueNorth", useTrueNorth.toString());
+      params.append("lunarPhaseModifier", lunarPhaseModifier.toString());
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -110,7 +112,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, initialLoaded]);
 
   // Handle manual submit of location/birth date
   const handleSettingsSubmit = (e: React.FormEvent) => {
@@ -465,7 +467,7 @@ export default function ArbitrageScannerPage() {
             </div>
 
             {/* Toggles */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0 col-span-full">
               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -483,6 +485,18 @@ export default function ArbitrageScannerPage() {
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
                 />
                 古典節気を使用 (九星気学用)
+              </label>
+              <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={lunarPhaseModifier}
+                  onChange={e => {
+                    setLunarPhaseModifier(e.target.checked);
+                    setCurrentPage(1);
+                  }}
+                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                />
+                月相タイミング補正 (日単位 +/-10点)
               </label>
             </div>
           </form>
@@ -672,12 +686,22 @@ export default function ArbitrageScannerPage() {
                         <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">{item.address || '住所情報なし'}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`w-2.5 h-2.5 rounded-full ${
-                            item.astrologyStatus.includes('OPTIMAL') ? 'bg-emerald-500' : 
-                            item.astrologyStatus.includes('SAFE') ? 'bg-blue-400' : 'bg-red-400'
-                          }`}></span>
-                          {item.direction} ({item.astrologyScore})
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-2.5 h-2.5 rounded-full ${
+                              item.astrologyStatus.includes('OPTIMAL') ? 'bg-emerald-500' : 
+                              item.astrologyStatus.includes('SAFE') ? 'bg-blue-400' : 'bg-red-400'
+                            }`}></span>
+                            <span className="font-semibold">{item.direction} ({item.astrologyScore}点)</span>
+                          </div>
+                          {item.astrologyStatus.includes('DECLINATION_WARNING') && (
+                            <span 
+                              className="text-[10px] text-amber-500 font-bold cursor-help w-max"
+                              title="偏角影響警告: 真北と磁北で判定する方位セクターが異なっています。境界線上にあるため、選択基準によって吉凶評価がシフトする可能性があります。"
+                            >
+                              ⚠️偏角ズレ警告
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right font-mono">

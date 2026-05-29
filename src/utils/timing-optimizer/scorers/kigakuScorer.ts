@@ -1,5 +1,5 @@
 import { EvaluationContext, TimingScorer } from '../types';
-import { getDayStar, getYearStar, getMonthStar } from '../../ephemerisEngine';
+import { getDayStar, getYearStar, getMonthStar, getCurrentZodiac, AstroEngine } from '../../ephemerisEngine';
 
 export class KigakuScorer implements TimingScorer {
   name = "Kigaku (Oriental Astrology)";
@@ -46,17 +46,42 @@ export class KigakuScorer implements TimingScorer {
 
     const isGood = (p: string) => p === '比和' || p === '相生';
     const overallGood = isGood(yPhase) && isGood(mPhase) && isGood(dPhase);
+
+    // Doyou (土用) & Mabi (間日) Check
+    const L0 = AstroEngine.getSolarLongitude(ctx.targetDate);
+    let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
+    if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
+    else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
+    else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
+    else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+
+    const inDoyou = doyouType !== null;
+    let isMabi = false;
+    if (inDoyou) {
+      const zodiacs = getCurrentZodiac(ctx.targetDate, ctx.longitude || 139.6917);
+      if (zodiacs?.dayZodiac) {
+        if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
+        else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
+        else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
+        else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+      }
+    }
+    const isDoyouHazard = inDoyou && !isMabi;
     
     let mainPhenomenon = "";
-    if (overallGood) {
+    if (isDoyouHazard) {
+      mainPhenomenon = `土用殺 (Doyou Hazard)`;
+    } else if (overallGood) {
       mainPhenomenon = `完全共鳴 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     } else {
       mainPhenomenon = `混在干渉 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     }
 
+    let doyouDetail = isDoyouHazard ? `【大凶・土用殺 (${doyouType === 'SPRING' ? '春土用' : doyouType === 'SUMMER' ? '夏土用' : doyouType === 'AUTUMN' ? '秋土用' : '冬土用'})】土地の契約、引越しなどの基礎に関わる活動は避けてください。 ` : "";
+
     return { 
       phenomenon: mainPhenomenon, 
-      detail: `[年:${yearStar}(${yPhase})] [月:${monthStar}(${mPhase})] [日:${dailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
+      detail: doyouDetail + `[年:${yearStar}(${yPhase})] [月:${monthStar}(${mPhase})] [日:${dailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
     };
   }
 }

@@ -416,6 +416,8 @@ export const SolarTimeClock = () => {
   const [playSpeedDays, setPlaySpeedDays] = useState(1);
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
+  const [useTrueNorth, setUseTrueNorth] = useState<boolean>(false);
+  const [lunarPhaseModifier, setLunarPhaseModifier] = useState<boolean>(true);
 
   const [heatmapMode, setHeatmapMode] = useState<'none' | '30days' | '12months'>('none');
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
@@ -733,7 +735,7 @@ export const SolarTimeClock = () => {
         );
 
         if (targetDirInfo) {
-          const s = vectorData.finalVectors[targetDirInfo.magneticDirection];
+          const s = vectorData.finalVectors[(useTrueNorth ? targetDirInfo.trueDirection : targetDirInfo.magneticDirection) as Direction];
           if (s === 'SAFE' || s === 'OPTIMAL') {
             foundOffset = offset;
             break;
@@ -977,6 +979,8 @@ export const SolarTimeClock = () => {
             case 'SAFE': return 0;
             case 'NOISE_HONMEI': return -30;
             case 'NOISE_TEKI': return -30;
+            case 'NOISE_GETSUMEI': return -30;
+            case 'NOISE_GETSUTEKI': return -30;
             case 'NOISE_NODE': return -40;
             case 'NOISE_VOID': return -80;
             case 'NOISE_GOU': return -100;
@@ -1004,7 +1008,7 @@ export const SolarTimeClock = () => {
               if (hasVoid) {
                 vectorData.finalVectors[dir] = 'NOISE_VOID' as any;
               } else {
-                const hasMinor = layersList.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+                const hasMinor = layersList.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
                 vectorData.finalVectors[dir] = (hasMinor || 'SAFE') as any;
               }
             }
@@ -1386,7 +1390,7 @@ export const SolarTimeClock = () => {
   let targetVectorStatus: string | null = null;
 
   if (targetDirInfo && activeVectors) {
-    targetVectorStatus = activeVectors[targetDirInfo.magneticDirection as Direction];
+    targetVectorStatus = activeVectors[(useTrueNorth ? targetDirInfo.trueDirection : targetDirInfo.magneticDirection) as Direction];
   }
 
   const evalDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
@@ -1404,7 +1408,7 @@ export const SolarTimeClock = () => {
     const getColorClass = (s: string) => {
       if (!s) return 'text-zinc-500';
       if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return 'text-red-500 font-bold bg-red-950/30 border-red-900/50';
-      if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return 'text-[#a855f7] font-bold bg-[#a855f7]/10 border-[#a855f7]/30';
+      if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI') || s.startsWith('NOISE_GETSUMEI') || s.startsWith('NOISE_GETSUTEKI')) return 'text-[#a855f7] font-bold bg-[#a855f7]/10 border-[#a855f7]/30';
       if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-900 border-zinc-700';
       if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 font-bold bg-yellow-950/30 border-yellow-900/50';
       if (s === 'OPTIMAL') return 'text-emerald-400 font-bold bg-emerald-950/30 border-emerald-900/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]';
@@ -1441,7 +1445,7 @@ export const SolarTimeClock = () => {
   }) => {
     const getColor = (s: string) => {
       if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'text-red-500 font-bold';
-      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'text-[#a855f7] font-bold';
+      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI' || s === 'NOISE_GETSUMEI' || s === 'NOISE_GETSUTEKI') return 'text-[#a855f7] font-bold';
       if (s === 'NOISE_VOID') return 'text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800';
       if (s === 'NOISE_NODE') return 'text-yellow-400 font-bold';
       if (s === 'NOISE_HA') return 'text-rose-400 font-bold';
@@ -1453,7 +1457,7 @@ export const SolarTimeClock = () => {
 
     const formatLabel = (s: string) => {
       if (s === 'NOISE_GOU' || s === 'NOISE_ANKEN') return 'TYPE_I_NOISE';
-      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI') return 'TYPE_II_NOISE';
+      if (s === 'NOISE_HONMEI' || s === 'NOISE_TEKI' || s === 'NOISE_GETSUMEI' || s === 'NOISE_GETSUTEKI') return 'TYPE_II_NOISE';
       if (s === 'NOISE_VOID') return 'VOID_ZONE';
       if (s === 'NOISE_NODE') return 'LUNAR_NODE';
       if (s === 'NOISE_HA') return 'CLASH_HA';
@@ -1471,6 +1475,8 @@ export const SolarTimeClock = () => {
     else if (status === 'NOISE_ANKEN') { title = "🟥 非推奨ベクトル (TYPE I)"; desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。"; }
     else if (status === 'NOISE_HONMEI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。"; }
     else if (status === 'NOISE_TEKI') { title = "🟥 非推奨ベクトル (TYPE II)"; desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。"; }
+    else if (status === 'NOISE_GETSUMEI') { title = "🟪 月命殺 (GETSUMEI)"; desc = "あなたの月命星との共鳴干渉エリアです。身体や精神に微細な不協和音を招きやすいノイズ帯です。"; }
+    else if (status === 'NOISE_GETSUTEKI') { title = "🟪 月的殺 (GETSUTEKI)"; desc = "あなたの月命星の対向位置にあたる干渉エリアです。目標設定や契約に微妙な混乱を招きやすいノイズ帯です。"; }
     else if (status === 'NOISE_VOID') { title = "⬛ 虚無・ボイド空間 (VOID ZONE)"; desc = "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。"; }
     else if (status === 'NOISE_NODE') { title = "🟨 月交点 (LUNAR NODE)"; desc = "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。"; }
     else if (status === 'NOISE_HA') { title = "🟥 破壊ノイズ・破 (CLASH HA)"; desc = "十二支の対衝（対向）位置による強力な不整合波。「歳破」「月破」「日破」のいずれかに該当し、行動や進捗を破壊・頓挫させる極めて危険なユニバーサルノイズです。"; }
@@ -2485,9 +2491,17 @@ export const SolarTimeClock = () => {
                               : 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                         }`}>
                         <div className="flex items-center gap-2">
-                          <span className="font-bold border border-current px-1 text-zinc-500" title="真北基準">真北: {targetDirInfo.trueDirection}</span>
-                          <span className="font-bold border border-current px-1 text-emerald-400" title="磁北基準">磁北: {targetDirInfo.magneticDirection}</span>
+                          <span className={`font-bold border px-1 ${useTrueNorth ? 'text-emerald-400 border-emerald-500/50' : 'text-zinc-500 border-zinc-700/50'}`} title="真北基準">真北: {targetDirInfo.trueDirection}</span>
+                          <span className={`font-bold border px-1 ${!useTrueNorth ? 'text-emerald-400 border-emerald-500/50' : 'text-zinc-500 border-zinc-700/50'}`} title="磁北基準">磁北: {targetDirInfo.magneticDirection}</span>
                           <span>{targetVectorStatus}</span>
+                          {targetDirInfo.trueDirection !== targetDirInfo.magneticDirection && (
+                            <span 
+                              className="text-[9px] text-amber-500 border border-amber-500/30 px-1 py-0.5 rounded bg-amber-500/5 animate-pulse cursor-help font-bold font-mono"
+                              title="【境界線偏角アラート】真北と磁北で判定する方位セクターが異なっています。基準北トグルの切り替えにより方位評価が変化します。"
+                            >
+                              ⚠️偏角ズレ
+                            </span>
+                          )}
                         </div>
                         <span className="text-[8px] opacity-70">TARGET EVAL</span>
                       </div>
@@ -2661,7 +2675,7 @@ export const SolarTimeClock = () => {
                                 else if (st === 'OPTIMAL_REGULAR') bgClass = 'bg-emerald-500/35 border border-emerald-500/50';
                                 else if (st === 'SAFE') bgClass = 'bg-blue-500/20';
                                 else if (st?.startsWith('NOISE_GOU') || st?.startsWith('NOISE_ANKEN') || st === 'NOISE_HA') bgClass = 'bg-red-500/80';
-                                else if (st?.startsWith('NOISE_HONMEI') || st?.startsWith('NOISE_TEKI')) bgClass = 'bg-purple-500/80';
+                                else if (st?.startsWith('NOISE_HONMEI') || st?.startsWith('NOISE_TEKI') || st?.startsWith('NOISE_GETSUMEI') || st?.startsWith('NOISE_GETSUTEKI')) bgClass = 'bg-purple-500/80';
                                 else if (st?.startsWith('NOISE_VOID') || st?.startsWith('NOISE_NODE')) bgClass = 'bg-yellow-500/80';
                                 else if (st === 'WARNING') bgClass = 'bg-orange-500/80';
 
@@ -2809,6 +2823,8 @@ export const SolarTimeClock = () => {
                 activeLayerMode={activeLayerMode}
                 setActiveLayerMode={setActiveLayerMode}
                 properties={showOnlyNewBuild ? mapProperties.filter((p: any) => p.is_new_build) : mapProperties}
+                useTrueNorth={useTrueNorth}
+                setUseTrueNorth={setUseTrueNorth}
               />
             </div>
 

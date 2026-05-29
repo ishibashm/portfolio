@@ -279,6 +279,29 @@ export function getClassicalDayStar(date: Date): StarFrequency {
  * これにより、約29.5日の引力波のサイクルを計算します。
  */
 export function getMonthStar(date: Date): StarFrequency {
+  const L0 = AstroEngine.getSolarLongitude(date);
+  
+  // 地球の太陽黄経 (0〜360度) を12の位相帯域 (各30度) にマッピングする
+  const phaseIndex = Math.floor(L0 / 30); // 0〜11
+  
+  // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
+  let star = 9 - phaseIndex;
+  while (star <= 0) star += 9;
+  star %= 9;
+  if (star === 0) star = 9;
+  
+  return star as StarFrequency;
+}
+
+/**
+ * Calculates a daily timing modifier based on the lunar phase.
+ * Returns a scoreModifier (+/- 10 points) and custom advice text.
+ */
+export function calculateLunarPhaseCondition(date: Date, actionIntent: ActionIntent = 'DEFAULT'): {
+  scoreModifier: number;
+  phaseLabel: string;
+  adviceText: string;
+} {
   const sunLon = AstroEngine.getSolarLongitude(date);
   const moonLon = AstroEngine.getLunarLongitude(date);
   
@@ -288,16 +311,60 @@ export function getMonthStar(date: Date): StarFrequency {
     relativePhase += 360;
   }
   
-  // 相対位相を9つの周波数帯域(各40度)にマッピングする
-  const phaseIndex = Math.floor(relativePhase / 40); // 0〜8
+  let phaseLabel = "Waning Moon (欠けていく月)";
+  let scoreModifier = 0;
+  let adviceText = "月相のバイオリズムは標準的です。通常の行動計画に支障はありません。";
+
+  if (relativePhase >= 345 || relativePhase < 15) {
+    phaseLabel = "New Moon (新月)";
+    if (actionIntent === 'REST') {
+      scoreModifier = 10;
+      adviceText = "新月です。浄化とリセット、休息に最適なタイミングです。エネルギーを充電してください。";
+    } else if (actionIntent === 'BUSINESS' || actionIntent === 'MIGRATION') {
+      scoreModifier = -10;
+      adviceText = "新月です。新しいプロジェクトの本格始動や大きな移動には、エネルギー不足を伴う可能性があります。";
+    } else {
+      scoreModifier = -5;
+      adviceText = "新月です。内省や計画立案に適した静かなフェーズです。大きな対外活動は控えめが吉。";
+    }
+  } else if (relativePhase >= 15 && relativePhase < 75) {
+    phaseLabel = "Waxing Crescent (満ちていく月)";
+    scoreModifier = 5;
+    adviceText = "満ちていく月です。新たな目標に向けて行動を少しずつ進めるのに適しています。";
+  } else if (relativePhase >= 75 && relativePhase < 105) {
+    phaseLabel = "First Quarter (上弦の月)";
+    scoreModifier = 8;
+    adviceText = "上弦 of the Moon. 成長と発展のエネルギーが高まっています。決断と実行の好機です。";
+  } else if (relativePhase >= 105 && relativePhase < 165) {
+    phaseLabel = "Waxing Gibbous (満月へ向かう月)";
+    scoreModifier = 5;
+    adviceText = "満月に近づく月です。これまでの努力が形になり始める活動的なフェーズです。";
+  } else if (relativePhase >= 165 && relativePhase < 195) {
+    phaseLabel = "Full Moon (満月)";
+    if (actionIntent === 'REST') {
+      scoreModifier = -10;
+      adviceText = "満月です。エネルギーが最大化し感情や自律神経が昂ぶりやすいため、深いリラックスは困難です。";
+    } else if (actionIntent === 'BUSINESS' || actionIntent === 'MIGRATION') {
+      scoreModifier = 10;
+      adviceText = "満月です。引き寄せの力が最大化し、契約や門出に大吉のタイミングです。自信を持って行動を。";
+    } else {
+      scoreModifier = 10;
+      adviceText = "満月です。エネルギーがピークに達しています。社交的な集まりや決断に非常に適しています。";
+    }
+  } else if (relativePhase >= 195 && relativePhase < 255) {
+    phaseLabel = "Waning Gibbous (下弦へ向かう月)";
+    scoreModifier = 0;
+    adviceText = "欠けていく月です。物事の整理や、不要な習慣の手放し、整理整頓に適しています。";
+  } else if (relativePhase >= 255 && relativePhase < 285) {
+    phaseLabel = "Last Quarter (下弦の月)";
+    scoreModifier = -5;
+    if (actionIntent === 'REST') {
+      scoreModifier = 5;
+    }
+    adviceText = "下弦の月です。デトックスや心身の整理に適したクールダウン期です。";
+  }
   
-  // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
-  let star = 9 - phaseIndex;
-  if (star <= 0) star += 9;
-  if (star > 9) star %= 9;
-  if (star === 0) star = 9;
-  
-  return star as StarFrequency;
+  return { scoreModifier, phaseLabel, adviceText };
 }
 
 /**
@@ -427,7 +494,7 @@ export function calculateVectorCollision(
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
+  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_GETSUMEI' | 'NOISE_GETSUTEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
   tendoDirection?: Direction;
   doyouState?: {
     inDoyou: boolean;
@@ -574,6 +641,18 @@ export function calculateVectorCollision(
       }
     }
 
+    // 2.5. 月命殺・月的殺
+    if (getsuMeiStar) {
+      for (const dir of directions) {
+        if (board[dir] === getsuMeiStar) {
+          if (res[dir] === 'SAFE') res[dir] = 'NOISE_GETSUMEI';
+          const opp = getOpposite(dir);
+          if (res[opp] === 'SAFE') res[opp] = 'NOISE_GETSUTEKI';
+          break;
+        }
+      }
+    }
+
     // 3. グローバルノイズと最適化の適用
     for (const dir of directions) {
       if (res[dir] === 'SAFE') {
@@ -632,6 +711,8 @@ export function calculateVectorCollision(
       case 'SAFE': return 0;
       case 'NOISE_HONMEI': return -30;
       case 'NOISE_TEKI': return -30;
+      case 'NOISE_GETSUMEI': return -30;
+      case 'NOISE_GETSUTEKI': return -30;
       case 'NOISE_NODE': return -40;
       case 'NOISE_VOID': return -80;
       case 'NOISE_GOU': return -100;
@@ -642,39 +723,20 @@ export function calculateVectorCollision(
   }
 
   for (const dir of directions) {
-    const yStatus = yearLayer[dir]!;
-    const mStatus = monthLayer[dir]!;
-    const dStatus = dayLayer[dir]!;
+    let yStatus = yearLayer[dir]!;
+    let mStatus = monthLayer[dir]!;
+    let dStatus = dayLayer[dir]!;
+
+    const isTendo = (tendoDir && dir === tendoDir);
+    
+    // Tendo overrides minor personal noise on any layer
+    if (isTendo) {
+      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(yStatus)) yStatus = 'OPTIMAL';
+      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(mStatus)) mStatus = 'OPTIMAL';
+      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(dStatus)) dStatus = 'OPTIMAL';
+    }
 
     const layers = [yStatus, mStatus, dStatus];
-    const isTendo = (tendoDir && dir === tendoDir);
-    /* ORIGINAL OVERRIDE LOGIC (Preserved for reference):
-    const hasRedNoise = layers.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
-    const hasPurpleNoise = layers.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
-    if (hasRedNoise) {
-      finalVectors[dir] = hasRedNoise as any;
-    } else if (hasPurpleNoise) {
-      if (isTendo) {
-        finalVectors[dir] = 'OPTIMAL'; // Tendo overrides minor personal noise
-      } else {
-        finalVectors[dir] = hasPurpleNoise as any;
-      }
-    } else if (voidDirs.has(dir)) {
-      finalVectors[dir] = 'NOISE_VOID';
-    } else if (nodeDirs.has(dir)) {
-      finalVectors[dir] = 'NOISE_NODE';
-    } else {
-      const hasOpt = layers.includes('OPTIMAL');
-      const hasOptReg = layers.includes('OPTIMAL_REGULAR');
-      if (hasOpt || isTendo) {
-        finalVectors[dir] = 'OPTIMAL';
-      } else if (hasOptReg) {
-        finalVectors[dir] = 'OPTIMAL_REGULAR';
-      } else {
-        finalVectors[dir] = 'SAFE';
-      }
-    }
-    */
 
     if (actionIntent === 'MIGRATION') {
       // For relocation, Year and Month layers are extremely critical, Day is short-term
@@ -699,14 +761,24 @@ export function calculateVectorCollision(
           if (hasVoid) {
             finalVectors[dir] = 'NOISE_VOID';
           } else {
-            const hasMinor = [yStatus, mStatus].find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+            const hasMinor = [yStatus, mStatus].find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
             finalVectors[dir] = (hasMinor || 'SAFE') as any;
           }
         } else if (totalScore === 0) {
           finalVectors[dir] = 'SAFE';
         } else {
           const hasOpt = [yStatus, mStatus].includes('OPTIMAL');
-          finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+          let val = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+          
+          // Tenchusatsu / Node conflict downgrade
+          const hasVoid = [yStatus, mStatus].includes('NOISE_VOID');
+          const hasNode = [yStatus, mStatus].includes('NOISE_NODE');
+          if (hasVoid) {
+            val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+          } else if (hasNode) {
+            val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+          }
+          finalVectors[dir] = val as any;
         }
       }
     } else {
@@ -721,7 +793,7 @@ export function calculateVectorCollision(
           if (hasVoid) {
             finalVectors[dir] = 'NOISE_VOID';
           } else {
-            const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+            const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
             finalVectors[dir] = (hasMinor || 'SAFE') as any;
           }
         }
@@ -729,7 +801,17 @@ export function calculateVectorCollision(
         finalVectors[dir] = 'SAFE';
       } else {
         const hasOpt = layers.includes('OPTIMAL');
-        finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+        let val = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+        
+        // Tenchusatsu / Node conflict downgrade
+        const hasVoid = layers.includes('NOISE_VOID');
+        const hasNode = layers.includes('NOISE_NODE');
+        if (hasVoid) {
+          val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+        } else if (hasNode) {
+          val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+        }
+        finalVectors[dir] = val as any;
       }
     }
   }
@@ -743,6 +825,7 @@ export function calculateVectorCollision(
     doyouState
   };
 }
+
 
 /**
  * 生年月日の「日干支」から個人の天中殺（Void Zodiac）を算出する。

@@ -62,6 +62,16 @@ export function TacticalMagneticMapComponent({
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const isPhysical = activeModel === 'physical';
+  const activeLayers = isPhysical ? physicalLayers : classicalLayers;
+  const activeVectors = React.useMemo(() => {
+    if (!activeLayers) return {};
+    if (activeLayerMode === 'final') return activeLayers.finalVectors || {};
+    if (activeLayerMode === 'year') return activeLayers.yearLayer || {};
+    if (activeLayerMode === 'month') return activeLayers.monthLayer || {};
+    if (activeLayerMode === 'day') return activeLayers.dayLayer || {};
+    return {};
+  }, [activeLayers, activeLayerMode]);
+
   const borderColor = isPhysical ? 'border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'border-zinc-500/50 shadow-[0_0_15px_rgba(113,113,122,0.2)]';
 
   return (
@@ -158,7 +168,7 @@ export function TacticalMagneticMapComponent({
                     HUD: {showHUD ? 'ON' : 'OFF'}
                   </button>
                   <button 
-                    onClick={() => downloadKML(lat, lon, declination || 0)}
+                    onClick={() => downloadKML(lat, lon, declination || 0, useTrueNorth, activeVectors as Record<string, string>)}
                     className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
                   >
                     <Download size={10} />

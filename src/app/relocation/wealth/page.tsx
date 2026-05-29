@@ -77,6 +77,7 @@ export default function RegionalWealthPage() {
   const [engineType, setEngineType] = useState("physical");
   const [layerMode, setLayerMode] = useState("final");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
+  const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
   type SortColumn = 'astrology' | 'income' | 'cospa' | 'distance' | 'areaName' | 'landPrice' | 'population';
   interface SortConfig { key: SortColumn; direction: 'desc' | 'asc' }
   const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([{ key: 'astrology', direction: 'desc' }]);
@@ -112,6 +113,7 @@ export default function RegionalWealthPage() {
     const currentEngineType = overrideParams?.engineType !== undefined ? overrideParams.engineType : engineType;
     const currentLayerMode = overrideParams?.layerMode !== undefined ? overrideParams.layerMode : layerMode;
     const currentUseTrueNorth = overrideParams?.useTrueNorth !== undefined ? overrideParams.useTrueNorth : useTrueNorth;
+    const currentLunarPhaseModifier = overrideParams?.lunarPhaseModifier !== undefined ? overrideParams.lunarPhaseModifier : lunarPhaseModifier;
 
     // Save to localStorage (fallback generic slots)
     if (typeof window !== 'undefined') {
@@ -134,6 +136,7 @@ export default function RegionalWealthPage() {
       if (currentEngineType) params.append("engineType", currentEngineType);
       if (currentLayerMode) params.append("layerMode", currentLayerMode);
       if (currentUseTrueNorth) params.append("useTrueNorth", "true");
+      params.append("lunarPhaseModifier", currentLunarPhaseModifier.toString());
 
       const res = await fetch(`/api/municipalities-wealth?${params.toString()}`);
       if (!res.ok) {
@@ -295,7 +298,8 @@ export default function RegionalWealthPage() {
         birthLat: preset.birthLat,
         birthLon: preset.birthLon,
         engineType: preset.engineType,
-        layerMode: preset.layerMode
+        layerMode: preset.layerMode,
+        lunarPhaseModifier: lunarPhaseModifier
       });
     }
   };
@@ -597,7 +601,7 @@ export default function RegionalWealthPage() {
           </div>
 
           {/* Top Row: General Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-500 mb-1">目標日</label>
               <input
@@ -650,6 +654,17 @@ export default function RegionalWealthPage() {
               >
                 <option value="false">磁北 (Magnetic)</option>
                 <option value="true">真北 (True)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">月相タイミング補正</label>
+              <select
+                value={lunarPhaseModifier ? "true" : "false"}
+                onChange={e => { setLunarPhaseModifier(e.target.value === "true"); setSelectedPresetId(""); }}
+                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+              >
+                <option value="true">有効 (+/- 10点補正)</option>
+                <option value="false">無効 (古典評価)</option>
               </select>
             </div>
           </div>
@@ -1034,7 +1049,18 @@ export default function RegionalWealthPage() {
                               item.direction
                             )}
                           </span>
-                          <span className="text-xs uppercase tracking-wider text-gray-400">{item.astrologyStatus.replace('DECLINATION_WARNING', '⚠️ズレ')}</span>
+                          {item.astrologyStatus.includes('DECLINATION_WARNING') ? (
+                            <span 
+                              className="text-[10px] text-amber-500 font-bold cursor-help"
+                              title="偏角影響警告: 真北と磁北で判定する方位セクターが異なっています。境界線上にあるため、選択基準によって吉凶評価がシフトする可能性があります。"
+                            >
+                              ⚠️偏角ズレ警告
+                            </span>
+                          ) : (
+                            <span className="text-xs uppercase tracking-wider text-gray-400">
+                              {item.astrologyStatus}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
