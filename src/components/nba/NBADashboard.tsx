@@ -1,5 +1,13 @@
 "use client";
 
+/*
+  METAPHYSICAL MATRIX RENDERING FIX:
+  - Resolved rendering issue in the 占術・易学・算術マトリクス (Metaphysical Matrix) and 総合環境テレメトリ (Telemetry) tabs.
+  - Replaced unsafe direct property accesses on data.macro.streams with secure optional chaining.
+  - Added optional chaining safeguards to all dynamic string .split(" ") and array .map() / .join() operations 
+    to prevent TypeError render crashes when data streams or sub-properties are undefined or during initialization.
+*/
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -461,15 +469,15 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                 <div className="w-full space-y-2.5 mt-2">
                   <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
                     <span className="flex items-center gap-1"><CloudLightning className="w-3 h-3 text-orange-400" /> 宇宙天気 (40%)</span>
-                    <span className="text-white font-bold">{data.macro.streams?.spaceWeather?.riskScore ? data.macro.streams.spaceWeather.riskScore.toFixed(0) : '0'}%</span>
+                    <span className="text-white font-bold">{data?.macro.streams?.spaceWeather?.riskScore ? data.macro.streams.spaceWeather.riskScore.toFixed(0) : '0'}%</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
                     <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-blue-400" /> マクロ経済 (40%)</span>
-                    <span className="text-white font-bold">{data.macro.streams?.macroEconomics?.riskScore ? data.macro.streams.macroEconomics.riskScore.toFixed(0) : '0'}%</span>
+                    <span className="text-white font-bold">{data?.macro.streams?.macroEconomics?.riskScore ? data.macro.streams.macroEconomics.riskScore.toFixed(0) : '0'}%</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
                     <span className="flex items-center gap-1"><Moon className="w-3 h-3 text-indigo-400" /> 月面重力干渉 (20%)</span>
-                    <span className="text-white font-bold">{data.macro.streams?.lunarTide?.riskScore ? data.macro.streams.lunarTide.riskScore.toFixed(0) : '0'}%</span>
+                    <span className="text-white font-bold">{data?.macro.streams?.lunarTide?.riskScore ? data.macro.streams.lunarTide.riskScore.toFixed(0) : '0'}%</span>
                   </div>
                 </div>
               </div>
@@ -491,11 +499,11 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                     <div>
                       <div className="flex justify-between text-xs mb-1">
                         <span className="text-gray-400 font-medium">地磁気活動指数 (Kp Index)</span>
-                        <span className="text-white font-mono font-bold">{data.macro.streams?.spaceWeather?.kpIndex ?? 'N/A'}/9</span>
+                        <span className="text-white font-mono font-bold">{data?.macro.streams?.spaceWeather?.kpIndex ?? 'N/A'}/9</span>
                       </div>
                       <div className="grid grid-cols-9 gap-1 h-2">
                         {Array.from({ length: 9 }).map((_, i) => {
-                          const kp = data.macro.streams?.spaceWeather?.kpIndex ?? 3;
+                          const kp = data?.macro.streams?.spaceWeather?.kpIndex ?? 3;
                           const active = i < kp;
                           let color = "bg-white/10";
                           if (active) {
@@ -509,25 +517,25 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                     <div>
                       <div className="flex justify-between text-xs mb-1.5">
                         <span className="text-gray-400 font-medium">太陽風速度 (Solar Wind Speed)</span>
-                        <span className="text-white font-mono font-bold">{data.macro.streams?.spaceWeather?.solarWindSpeed ?? 'N/A'} km/s</span>
+                        <span className="text-white font-mono font-bold">{data?.macro.streams?.spaceWeather?.solarWindSpeed ?? 'N/A'} km/s</span>
                       </div>
                       <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-orange-400 rounded-full" 
-                          style={{ width: `${Math.min(100, (((data.macro.streams?.spaceWeather?.solarWindSpeed ?? 300) - 300) / 500) * 100)}%` }} 
+                          style={{ width: `${Math.min(100, (((data?.macro.streams?.spaceWeather?.solarWindSpeed ?? 300) - 300) / 500) * 100)}%` }} 
                         />
                       </div>
                     </div>
 
                     <div className="flex justify-between items-center text-xs p-2.5 rounded-xl bg-black/30 border border-white/5">
                       <span className="text-gray-400 font-medium">X線太陽フラックス (X-Ray Flux)</span>
-                      <span className="text-white font-mono font-bold bg-white/5 px-2 py-0.5 rounded border border-white/10">{data.macro.streams?.spaceWeather?.xrayFlux ?? 'N/A'}</span>
+                      <span className="text-white font-mono font-bold bg-white/5 px-2 py-0.5 rounded border border-white/10">{data?.macro.streams?.spaceWeather?.xrayFlux ?? 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="text-[8px] text-gray-500 font-mono text-right mt-4">
-                  Last sync: {data.macro.streams?.spaceWeather?.timestamp ? new Date(data.macro.streams.spaceWeather.timestamp).toLocaleTimeString() : 'N/A'}
+                  Last sync: {data?.macro.streams?.spaceWeather?.timestamp ? new Date(data.macro.streams.spaceWeather.timestamp).toLocaleTimeString() : 'N/A'}
                 </div>
               </div>
 
@@ -550,8 +558,8 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                         <p className="text-gray-400 font-medium">市場ボラティリティ指数 (VIX)</p>
                         <p className="text-[10px] text-gray-500">恐怖指数ゲージ</p>
                       </div>
-                      <span className={`text-xl font-black font-mono ${data.macro.streams?.macroEconomics?.vix && data.macro.streams.macroEconomics.vix > 25 ? 'text-red-400' : 'text-emerald-400'}`}>
-                        {data.macro.streams?.macroEconomics?.vix ? data.macro.streams.macroEconomics.vix.toFixed(2) : '18.00'}
+                      <span className={`text-xl font-black font-mono ${(data?.macro.streams?.macroEconomics?.vix ?? 0) > 25 ? 'text-red-400' : 'text-emerald-400'}`}>
+                        {data?.macro.streams?.macroEconomics?.vix ? data.macro.streams.macroEconomics.vix.toFixed(2) : '18.00'}
                       </span>
                     </div>
 
@@ -561,7 +569,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                         <p className="text-[10px] text-gray-500">社債デフォルトリスク指標</p>
                       </div>
                       <span className="text-xl font-black font-mono text-blue-300">
-                        {data.macro.streams?.macroEconomics?.creditSpread ? data.macro.streams.macroEconomics.creditSpread.toFixed(2) : '4.20'}%
+                        {data?.macro.streams?.macroEconomics?.creditSpread ? data.macro.streams.macroEconomics.creditSpread.toFixed(2) : '4.20'}%
                       </span>
                     </div>
 
@@ -596,7 +604,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-gray-400 font-medium">月・地球間距離 (Moon-Earth Distance)</span>
                       <span className="text-white font-mono font-bold">
-                        {data.macro.streams?.lunarTide?.distanceKm ? data.macro.streams.lunarTide.distanceKm.toLocaleString() : '384,400'} km
+                        {data?.macro.streams?.lunarTide?.distanceKm ? data.macro.streams.lunarTide.distanceKm.toLocaleString() : '384,400'} km
                       </span>
                     </div>
                     
@@ -604,13 +612,13 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                       <div className="flex justify-between text-xs mb-1.5">
                         <span className="text-gray-400 font-medium">重力引力強度 (Gravitational Pull)</span>
                         <span className="text-indigo-300 font-mono font-bold">
-                          {data.macro.streams?.lunarTide?.gravitationalTideScore ?? '10'}/20
+                          {data?.macro.streams?.lunarTide?.gravitationalTideScore ?? '10'}/20
                         </span>
                       </div>
                       <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-gradient-to-r from-indigo-500 to-purple-400 rounded-full" 
-                          style={{ width: `${((data.macro.streams?.lunarTide?.gravitationalTideScore ?? 10) / 20) * 100}%` }} 
+                          style={{ width: `${((data?.macro.streams?.lunarTide?.gravitationalTideScore ?? 10) / 20) * 100}%` }} 
                         />
                       </div>
                     </div>
@@ -619,13 +627,13 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                       <div className="p-2.5 rounded-xl bg-black/30 border border-white/5 text-center">
                         <p className="text-[9px] text-gray-500 uppercase">潮汐状態 (Tide State)</p>
                         <p className="text-xs font-bold text-white mt-0.5">
-                          {data.macro.streams?.lunarTide?.tideIntensity && data.macro.streams.lunarTide.tideIntensity > 0.7 ? "大潮 (SPRING TIDE)" : "小潮 (NEAP TIDE)"}
+                          {(data?.macro.streams?.lunarTide?.tideIntensity ?? 0) > 0.7 ? "大潮 (SPRING TIDE)" : "小潮 (NEAP TIDE)"}
                         </p>
                       </div>
                       <div className="p-2.5 rounded-xl bg-black/30 border border-white/5 text-center">
                         <p className="text-[9px] text-gray-500 uppercase">軌道位置 (Orbit Position)</p>
                         <p className="text-xs font-bold text-white mt-0.5">
-                          {data.macro.streams?.lunarTide?.distanceCloseness && data.macro.streams.lunarTide.distanceCloseness > 0.7 ? "近地点 (PERIGEE)" : "遠地点 (APOGEE)"}
+                          {(data?.macro.streams?.lunarTide?.distanceCloseness ?? 0) > 0.7 ? "近地点 (PERIGEE)" : "遠地点 (APOGEE)"}
                         </p>
                       </div>
                     </div>
@@ -760,11 +768,11 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <p className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-1">
                             <Compass className="w-3 h-3" /> 西洋占星術 (Western Transits)
                           </p>
-                          <span className="text-[8px] text-gray-500">{data.macro.streams?.metaphysical?.astrologyApi?.sourceInfo.split(" ")[0] || 'AstrologyAPI'}</span>
+                          <span className="text-[8px] text-gray-500">{data.macro.streams?.metaphysical?.astrologyApi?.sourceInfo?.split(" ")[0] || 'AstrologyAPI'}</span>
                         </div>
                         <div className="text-xs space-y-1 max-h-[100px] overflow-y-auto pr-1 custom-scrollbar">
                           {data.macro.streams?.metaphysical?.astrologyApi?.aspects ? (
-                            data.macro.streams.metaphysical.astrologyApi.aspects.map((asp, idx) => (
+                            data?.macro.streams?.metaphysical?.astrologyApi?.aspects?.map((asp, idx) => (
                               <div key={idx} className="flex justify-between items-center text-gray-300 py-0.5">
                                 <span>{asp.aspect}</span>
                                 <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
@@ -793,15 +801,15 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                         <div className="space-y-2.5 text-xs text-gray-300">
                           <div>
                             <span className="text-gray-500 block text-[9px] uppercase">現在のアクティブなダシャー周期 (Active Dasha)</span>
-                            <span className="font-bold text-white">{data.macro.streams?.metaphysical?.vedAstro?.activeDasha ?? 'Jupiter-Saturn'}</span>
+                            <span className="font-bold text-white">{data?.macro?.streams?.metaphysical?.vedAstro?.activeDasha ?? 'Jupiter-Saturn'}</span>
                           </div>
                           <div>
                             <span className="text-gray-500 block text-[9px] uppercase">惑星の強さ (Shadbala)</span>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-1 text-[10px]">
-                              {Object.entries(data.macro.streams?.metaphysical?.vedAstro?.planetaryStrengths || {}).map(([planet, val]) => (
+                              {Object.entries(data?.macro?.streams?.metaphysical?.vedAstro?.planetaryStrengths || {}).map(([planet, val]) => (
                                 <div key={planet} className="flex items-center justify-between">
                                   <span className="text-gray-400">{planet}</span>
-                                  <span className="font-mono text-indigo-300 font-bold">{val.toFixed(2)}x</span>
+                                  <span className="font-mono text-indigo-300 font-bold">{(val as number).toFixed(2)}x</span>
                                 </div>
                               ))}
                             </div>
@@ -810,7 +818,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                       </div>
 
                       {/* Zi Wei Dou Shu (紫微斗数) */}
-                      {data.macro.streams?.metaphysical?.ziWeiDouShu && (
+                      {data?.macro?.streams?.metaphysical?.ziWeiDouShu && (
                         <div className="p-3 rounded-xl bg-black/40 border border-white/5">
                           <div className="flex justify-between items-baseline mb-2">
                             <p className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest flex items-center gap-1">
@@ -850,18 +858,18 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-1.5 text-xs text-gray-300">
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">タイプとプロファイル</span>
-                              <span className="font-bold text-white text-[10px]">{data.macro.streams.metaphysical.humanDesign.chartType} ({data.macro.streams.metaphysical.humanDesign.profile})</span>
+                              <span className="font-bold text-white text-[10px]">{data?.macro.streams?.metaphysical?.humanDesign?.chartType} ({data?.macro.streams?.metaphysical?.humanDesign?.profile})</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">権威 (Authority)</span>
-                              <span className="text-indigo-300 font-bold text-[10px]">{data.macro.streams.metaphysical.humanDesign.authority}</span>
+                              <span className="text-indigo-300 font-bold text-[10px]">{data?.macro.streams?.metaphysical?.humanDesign?.authority}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">アクティブチャネル</span>
-                              <span className="text-white font-mono text-[10px]">{data.macro.streams.metaphysical.humanDesign.activeChannels.join(", ")}</span>
+                              <span className="text-white font-mono text-[10px]">{data?.macro.streams?.metaphysical?.humanDesign?.activeChannels?.join(", ")}</span>
                             </div>
                             <p className="text-[9px] text-gray-400 italic mt-1 border-t border-white/5 pt-1">
-                              ゲート: {data.macro.streams.metaphysical.humanDesign.dailyGateActivation}
+                              ゲート: {data?.macro.streams?.metaphysical?.humanDesign?.dailyGateActivation}
                             </p>
                           </div>
                         </div>
@@ -918,10 +926,10 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                               <span className="text-gray-500 block text-[9px] uppercase mb-1">現在の大運 (Active Luck Pillar)</span>
                               <div className="p-2 rounded-lg bg-white/5 border border-white/5">
                                 <div className="flex justify-between font-bold text-white">
-                                  <span>{data.macro.streams.metaphysical.chineseMetasoft.daYunPillar.pillar}</span>
-                                  <span>年齢: {data.macro.streams.metaphysical.chineseMetasoft.daYunPillar.startAge}-{data.macro.streams.metaphysical.chineseMetasoft.daYunPillar.endAge}</span>
+                                  <span>{data?.macro.streams?.metaphysical?.chineseMetasoft?.daYunPillar?.pillar}</span>
+                                  <span>年齢: {data?.macro.streams?.metaphysical?.chineseMetasoft?.daYunPillar?.startAge}-{data?.macro.streams?.metaphysical?.chineseMetasoft?.daYunPillar?.endAge}</span>
                                 </div>
-                                <p className="text-[9px] text-gray-400 mt-1">{data.macro.streams.metaphysical.chineseMetasoft.daYunPillar.description}</p>
+                                <p className="text-[9px] text-gray-400 mt-1">{data?.macro.streams?.metaphysical?.chineseMetasoft?.daYunPillar?.description}</p>
                               </div>
                             </div>
                           ) : (
@@ -980,18 +988,18 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-1.5 text-xs text-gray-300">
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">年盤 / 月盤</span>
-                              <span className="font-bold text-white text-[10px]">{data.macro.streams.metaphysical.nineStarKi.yearStar.split(" ")[0]} / {data.macro.streams.metaphysical.nineStarKi.monthStar.split(" ")[0]}</span>
+                              <span className="font-bold text-white text-[10px]">{data?.macro.streams?.metaphysical?.nineStarKi?.yearStar?.split(" ")[0]} / {data?.macro.streams?.metaphysical?.nineStarKi?.monthStar?.split(" ")[0]}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">日盤</span>
-                              <span className="text-amber-300 font-bold text-[10px]">{data.macro.streams.metaphysical.nineStarKi.dayStar.split(" ")[0]}</span>
+                              <span className="text-amber-300 font-bold text-[10px]">{data?.macro.streams?.metaphysical?.nineStarKi?.dayStar?.split(" ")[0]}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">現在の方位</span>
-                              <span className="text-white font-medium text-[10px]">{data.macro.streams.metaphysical.nineStarKi.magicSquareLocation}</span>
+                              <span className="text-white font-medium text-[10px]">{data?.macro.streams?.metaphysical?.nineStarKi?.magicSquareLocation}</span>
                             </div>
                             <p className="text-[9px] text-gray-400 italic mt-1 border-t border-white/5 pt-1 leading-normal">
-                              {data.macro.streams.metaphysical.nineStarKi.dailyDirectionSafety}
+                              {data?.macro.streams?.metaphysical?.nineStarKi?.dailyDirectionSafety}
                             </p>
                           </div>
                         </div>
@@ -1009,21 +1017,21 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-1.5 text-xs text-gray-300">
                             <div className="flex justify-between items-center">
                               <span className="text-gray-500 text-[9px]">キンナンバー</span>
-                              <span className="text-base font-black text-amber-400 font-mono">Kin {data.macro.streams.metaphysical.mayaTzolkin.kinNumber}</span>
+                              <span className="text-base font-black text-amber-400 font-mono">Kin {data?.macro.streams?.metaphysical?.mayaTzolkin?.kinNumber}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-gray-500 text-[9px]">太陽の紋章 (Solar Seal)</span>
                               <span className="font-bold text-white flex items-center gap-1 text-[10px]">
-                                <span className="text-sm">{data.macro.streams.metaphysical.mayaTzolkin.solarSeal.glyph}</span>
-                                {data.macro.streams.metaphysical.mayaTzolkin.solarSeal.name}
+                                <span className="text-sm">{data?.macro.streams?.metaphysical?.mayaTzolkin?.solarSeal?.glyph}</span>
+                                {data?.macro.streams?.metaphysical?.mayaTzolkin?.solarSeal?.name}
                               </span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">銀河の音 (Galactic Tone)</span>
-                              <span className="text-white font-medium text-[10px]">{data.macro.streams.metaphysical.mayaTzolkin.galacticTone.tone} ({data.macro.streams.metaphysical.mayaTzolkin.galacticTone.name})</span>
+                              <span className="text-white font-medium text-[10px]">{data?.macro.streams?.metaphysical?.mayaTzolkin?.galacticTone?.tone} ({data?.macro.streams?.metaphysical?.mayaTzolkin?.galacticTone?.name})</span>
                             </div>
                             <p className="text-[9px] text-gray-400 leading-normal border-t border-white/5 pt-1">
-                              {data.macro.streams.metaphysical.mayaTzolkin.galacticTone.power}
+                              {data?.macro.streams?.metaphysical?.mayaTzolkin?.galacticTone?.power}
                             </p>
                           </div>
                         </div>
@@ -1041,25 +1049,25 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-1.5 text-xs text-gray-300">
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">アクティブ・セフィラ</span>
-                              <span className="font-bold text-white text-[10px]">{data.macro.streams.metaphysical.kabbalahTree.activeSephirah}</span>
+                              <span className="font-bold text-white text-[10px]">{data?.macro.streams?.metaphysical?.kabbalahTree?.activeSephirah}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">共鳴のパス (Path of Resonance)</span>
-                              <span className="text-amber-300 font-bold text-[10px]">{data.macro.streams.metaphysical.kabbalahTree.pathOfResonance}</span>
+                              <span className="text-amber-300 font-bold text-[10px]">{data?.macro.streams?.metaphysical?.kabbalahTree?.pathOfResonance}</span>
                             </div>
                             
                             <div>
                               <div className="flex justify-between text-[9px] text-gray-500 mb-1">
                                 <span>共鳴強度 (Resonance Intensity)</span>
-                                <span className="text-white font-bold">{data.macro.streams.metaphysical.kabbalahTree.dailyVibrationScore}%</span>
+                                <span className="text-white font-bold">{data?.macro.streams?.metaphysical?.kabbalahTree?.dailyVibrationScore}%</span>
                               </div>
                               <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-amber-400" style={{ width: `${data.macro.streams.metaphysical.kabbalahTree.dailyVibrationScore}%` }} />
+                                <div className="h-full bg-amber-400" style={{ width: `${data?.macro.streams?.metaphysical?.kabbalahTree?.dailyVibrationScore ?? 0}%` }} />
                               </div>
                             </div>
                             
                             <p className="text-[9px] text-gray-400 italic mt-1 border-t border-white/5 pt-1 leading-normal">
-                              {data.macro.streams.metaphysical.kabbalahTree.insight}
+                              {data?.macro.streams?.metaphysical?.kabbalahTree?.insight}
                             </p>
                           </div>
                         </div>
@@ -1117,10 +1125,10 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-2 text-xs">
                             <div className="flex justify-between items-start gap-4">
                               <div className="space-y-1.5 flex flex-col justify-center items-center py-1">
-                                {data.macro.streams.metaphysical.roxyApi.ichingCast.lines.slice().reverse().map((line, idx) => {
+                                {data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.lines?.slice()?.reverse()?.map((line, idx) => {
                                   // 6 lines drawn from top to bottom
                                   const keyIdx = 5 - idx;
-                                  const isChanging = data.macro.streams!.metaphysical!.roxyApi.ichingCast.changingLines.includes(keyIdx + 1);
+                                  const isChanging = data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.changingLines?.includes(keyIdx + 1);
                                   const isYang = line === 7 || line === 9;
                                   
                                   return (
@@ -1141,18 +1149,18 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
 
                               <div className="flex-1 space-y-1">
                                 <span className="text-gray-500 block text-[9px] uppercase">得卦 (Cast Hexagram)</span>
-                                <span className="font-bold text-white block truncate text-[10px]">{data.macro.streams.metaphysical.roxyApi.ichingCast.name}</span>
-                                {data.macro.streams.metaphysical.roxyApi.ichingCast.relatingHexagram && (
+                                <span className="font-bold text-white block truncate text-[10px]">{data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.name}</span>
+                                {data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.relatingHexagram && (
                                   <div className="mt-1">
                                     <span className="text-gray-500 text-[8px] block uppercase">之卦/変卦 (Relating)</span>
-                                    <span className="text-gray-300 block text-[9px] truncate">{data.macro.streams.metaphysical.roxyApi.ichingCast.relatingHexagram.name}</span>
+                                    <span className="text-gray-300 block text-[9px] truncate">{data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.relatingHexagram?.name}</span>
                                   </div>
                                 )}
                               </div>
                             </div>
                             
                             <p className="text-[9px] text-gray-400 leading-normal p-2 rounded bg-black/30 border border-white/5 italic">
-                              {data.macro.streams.metaphysical.roxyApi.ichingCast.interpretation}
+                              {data?.macro.streams?.metaphysical?.roxyApi?.ichingCast?.interpretation}
                             </p>
                           </div>
                         ) : (
@@ -1169,7 +1177,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <span className="text-[8px] text-gray-500">DivineAPI</span>
                         </div>
                         
-                        {data.macro.streams?.metaphysical?.divineApi?.tarot ? (
+                        {data?.macro.streams?.metaphysical?.divineApi?.tarot ? (
                           <div className="flex items-center gap-4">
                             <motion.div 
                               whileHover={{ rotateY: 15, scale: 1.05 }}
@@ -1177,28 +1185,28 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                               className="w-16 h-28 shrink-0 rounded-lg bg-gradient-to-b from-indigo-950 via-purple-950 to-black border-2 border-amber-500/40 flex flex-col items-center justify-between p-2 text-center shadow-lg cursor-default relative overflow-hidden"
                             >
                               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 via-transparent to-transparent opacity-75" />
-                              <span className="text-[6px] text-amber-500/70 font-extrabold uppercase tracking-widest">{data.macro.streams.metaphysical.divineApi.tarot.arcana}</span>
+                              <span className="text-[6px] text-amber-500/70 font-extrabold uppercase tracking-widest">{data?.macro.streams?.metaphysical?.divineApi?.tarot?.arcana}</span>
                               <div className="p-1 rounded-full bg-white/5 border border-white/10">
                                 <Sparkles className="w-4 h-4 text-amber-400" />
                               </div>
-                              <span className="text-[8px] font-black text-white leading-tight break-words truncate w-full">{data.macro.streams.metaphysical.divineApi.tarot.name}</span>
+                              <span className="text-[8px] font-black text-white leading-tight break-words truncate w-full">{data?.macro.streams?.metaphysical?.divineApi?.tarot?.name}</span>
                               <span className="text-[6px] text-gray-400 truncate w-full">
-                                {data.macro.streams.metaphysical.divineApi.tarot.orientation}
+                                {data?.macro.streams?.metaphysical?.divineApi?.tarot?.orientation}
                               </span>
                             </motion.div>
 
                             <div className="flex-1 space-y-1">
                               <span className="text-gray-500 block text-[9px] uppercase">カードの意味 (Draw Meaning)</span>
-                              <p className="text-[10px] text-gray-300 leading-normal font-medium">{data.macro.streams.metaphysical.divineApi.tarot.meaning}</p>
+                              <p className="text-[10px] text-gray-300 leading-normal font-medium">{data?.macro.streams?.metaphysical?.divineApi?.tarot?.meaning}</p>
                               
                               <div className="mt-2.5">
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-extrabold border ${
-                                  data.macro.streams.metaphysical.divineApi.tarot.riskModifier < 0 
+                                  (data?.macro.streams?.metaphysical?.divineApi?.tarot?.riskModifier ?? 0) < 0 
                                     ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
                                     : 'bg-red-500/10 text-red-400 border-red-500/20'
                                 }`}>
                                   <Shield className="w-2.5 h-2.5" />
-                                  Q-Mod: {data.macro.streams.metaphysical.divineApi.tarot.riskModifier > 0 ? '+' : ''}{data.macro.streams.metaphysical.divineApi.tarot.riskModifier}% Risk
+                                  Q-Mod: {(data?.macro.streams?.metaphysical?.divineApi?.tarot?.riskModifier ?? 0) > 0 ? '+' : ''}{data?.macro.streams?.metaphysical?.divineApi?.tarot?.riskModifier}% Risk
                                 </span>
                               </div>
                             </div>
@@ -1220,7 +1228,7 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           
                           <div className="flex items-center gap-4 text-xs">
                             <div className="flex flex-col items-center gap-1 bg-black/60 p-2 rounded border border-white/10 w-12 shrink-0 py-2">
-                              {data.macro.streams.metaphysical.geomancy.binaryPoints.map((val, idx) => (
+                              {data?.macro.streams?.metaphysical?.geomancy?.binaryPoints?.map((val, idx) => (
                                 <div key={idx} className="flex justify-center gap-1 h-2 items-center">
                                   {val === 1 ? (
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_4px_rgba(192,132,252,0.8)]" />
@@ -1236,12 +1244,12 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
 
                             <div className="flex-1 space-y-1">
                               <div className="flex justify-between items-baseline">
-                                <span className="font-bold text-white text-[12px]">{data.macro.streams.metaphysical.geomancy.figureName}</span>
-                                <span className="text-[8px] text-purple-300 uppercase px-1 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">{data.macro.streams.metaphysical.geomancy.element}</span>
+                                <span className="font-bold text-white text-[12px]">{data?.macro.streams?.metaphysical?.geomancy?.figureName}</span>
+                                <span className="text-[8px] text-purple-300 uppercase px-1 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">{data?.macro.streams?.metaphysical?.geomancy?.element}</span>
                               </div>
-                              <span className="text-gray-500 block text-[9px] uppercase text-[9px]">Astro: {data.macro.streams.metaphysical.geomancy.astrologicalAssociation}</span>
+                              <span className="text-gray-500 block text-[9px] uppercase text-[9px]">Astro: {data?.macro.streams?.metaphysical?.geomancy?.astrologicalAssociation}</span>
                               <p className="text-[9px] text-gray-400 italic leading-normal border-t border-white/5 pt-1">
-                                {data.macro.streams.metaphysical.geomancy.interpretation}
+                                {data?.macro.streams?.metaphysical?.geomancy?.interpretation}
                               </p>
                             </div>
                           </div>
