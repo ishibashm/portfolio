@@ -668,26 +668,61 @@ export function calculateVectorCollision(
     }
     */
 
-    const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus);
+    if (actionIntent === 'MIGRATION') {
+      // For relocation, Year and Month layers are extremely critical, Day is short-term
+      const yRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(yStatus);
+      const mRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus);
+      const dRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(dStatus);
 
-    if (totalScore < 0) {
-      const hasRed = layers.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
-      if (hasRed) {
-        finalVectors[dir] = hasRed;
+      if (yRed) {
+        finalVectors[dir] = yStatus as any; // Year red noise is absolute blocker
+      } else if (mRed) {
+        finalVectors[dir] = mStatus as any; // Month red noise is absolute blocker
+      } else if (dRed) {
+        // If Year/Month are safe or lucky, but only Day has red noise, downgrade to WARNING
+        finalVectors[dir] = 'WARNING';
       } else {
-        const hasVoid = layers.find(s => s === 'NOISE_VOID');
-        if (hasVoid) {
-          finalVectors[dir] = 'NOISE_VOID';
+        const yScore = getLayerScore(yStatus);
+        const mScore = getLayerScore(mStatus);
+        const totalScore = yScore + mScore;
+
+        if (totalScore < 0) {
+          const hasVoid = [yStatus, mStatus].find(s => s === 'NOISE_VOID');
+          if (hasVoid) {
+            finalVectors[dir] = 'NOISE_VOID';
+          } else {
+            const hasMinor = [yStatus, mStatus].find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+            finalVectors[dir] = (hasMinor || 'SAFE') as any;
+          }
+        } else if (totalScore === 0) {
+          finalVectors[dir] = 'SAFE';
         } else {
-          const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
-          finalVectors[dir] = hasMinor || 'SAFE';
+          const hasOpt = [yStatus, mStatus].includes('OPTIMAL');
+          finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
         }
       }
-    } else if (totalScore === 0) {
-      finalVectors[dir] = 'SAFE';
     } else {
-      const hasOpt = layers.includes('OPTIMAL');
-      finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+      const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus);
+
+      if (totalScore < 0) {
+        const hasRed = layers.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
+        if (hasRed) {
+          finalVectors[dir] = hasRed as any;
+        } else {
+          const hasVoid = layers.find(s => s === 'NOISE_VOID');
+          if (hasVoid) {
+            finalVectors[dir] = 'NOISE_VOID';
+          } else {
+            const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_NODE'].includes(s));
+            finalVectors[dir] = (hasMinor || 'SAFE') as any;
+          }
+        }
+      } else if (totalScore === 0) {
+        finalVectors[dir] = 'SAFE';
+      } else {
+        const hasOpt = layers.includes('OPTIMAL');
+        finalVectors[dir] = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
+      }
     }
   }
 
