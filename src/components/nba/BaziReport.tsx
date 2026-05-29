@@ -59,7 +59,7 @@ export const BaziReport = ({ data }: { data: BaziData }) => {
       <div className="w-full space-y-2 border-t border-white/5 pt-3">
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-gray-500">蔵干</span>
-          <span className="text-gray-300 font-mono">{pillar.hiddenStems.join(', ')}</span>
+          <span className="text-gray-300 font-mono">{pillar.hiddenStems?.join(', ')}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
           <span className="text-gray-500">十二運</span>
@@ -113,7 +113,7 @@ export const BaziReport = ({ data }: { data: BaziData }) => {
             <div className="pt-4 border-t border-white/5">
                 <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">神殺 / 特殊星</p>
                 <div className="flex flex-wrap gap-2">
-                    {data.shenSha.map(s => (
+                    {data.shenSha?.map(s => (
                         <span key={s} className="px-2 py-1 rounded-md bg-black/40 border border-white/10 text-[10px] text-amber-300">
                             {s}
                         </span>
@@ -160,10 +160,10 @@ export const BaziReport = ({ data }: { data: BaziData }) => {
              二十四節気 (Solar Terms)
           </h4>
           <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
-            {Object.entries(data.solarTerms).map(([term, time]) => (
+            {Object.entries(data.solarTerms || {}).map(([term, time]) => (
               <div key={term} className="flex justify-between border-b border-white/5 pb-1">
                 <span className="text-emerald-400">{term}</span>
-                <span className="text-gray-500">{time.split(' ')[0]}</span>
+                <span className="text-gray-500">{time?.split(' ')[0]}</span>
               </div>
             ))}
           </div>
@@ -193,7 +193,7 @@ export const BaziReport = ({ data }: { data: BaziData }) => {
           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">大運サイクル (Da Yun)</h4>
           <div className="overflow-x-auto custom-scrollbar">
               <div className="flex gap-4 pb-2">
-                  {data.luckCycles.map((cycle, i) => (
+                  {data.luckCycles?.map((cycle, i) => (
                       <div key={i} className="flex-shrink-0 w-24 p-3 rounded-xl bg-black/40 border border-white/5 text-center">
                           <p className="text-[10px] text-gray-500 mb-1">{cycle.startYear} -</p>
                           <p className="text-xl font-bold text-white mb-1">{cycle.ganZhi}</p>

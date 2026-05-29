@@ -829,15 +829,15 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                           <div className="space-y-1.5 text-xs text-gray-300">
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">命宮 (Self Palace)</span>
-                              <span className="font-bold text-white text-[10px] truncate max-w-[120px]">{data.macro.streams.metaphysical.ziWeiDouShu.selfPalaceStar.split(" ")[0]}</span>
+                              <span className="font-bold text-white text-[10px] truncate max-w-[120px]">{data.macro.streams.metaphysical.ziWeiDouShu.selfPalaceStar?.split(" ")[0]}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">身宮 (Body Palace)</span>
-                              <span className="font-bold text-white text-[10px] truncate max-w-[120px]">{data.macro.streams.metaphysical.ziWeiDouShu.bodyPalaceStar.split(" ")[0]}</span>
+                              <span className="font-bold text-white text-[10px] truncate max-w-[120px]">{data.macro.streams.metaphysical.ziWeiDouShu.bodyPalaceStar?.split(" ")[0]}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-500 text-[9px]">飛星 (Active Flying Star)</span>
-                              <span className="text-indigo-300 font-bold text-[10px]">{data.macro.streams.metaphysical.ziWeiDouShu.activeFlyingStar.split(" ")[0]}</span>
+                              <span className="text-indigo-300 font-bold text-[10px]">{data.macro.streams.metaphysical.ziWeiDouShu.activeFlyingStar?.split(" ")[0]}</span>
                             </div>
                             <p className="text-[9px] text-gray-400 italic mt-1 border-t border-white/5 pt-1">
                               {data.macro.streams.metaphysical.ziWeiDouShu.dailyInsight}
