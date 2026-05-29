@@ -7,8 +7,10 @@ import {
   calculateVectorCollision,
   getPersonalVoidZodiac,
   Direction,
-  AstroEngine
+  AstroEngine,
+  getUpcomingDoyouPeriod
 } from '@/utils/ephemerisEngine';
+import { getGeomagneticData } from '@/utils/geomagnetism';
 
 // 物件名から不要な階数や築年数表現を除去するクレンジング関数
 function cleanPropertyName(name: string): string {
@@ -73,6 +75,7 @@ export async function GET(request: Request) {
   const useClassicalStr = searchParams.get('useClassical');
   const layerMode = searchParams.get('layerMode') || 'year';
   const useTrueNorthStr = searchParams.get('useTrueNorth');
+  const nodeMapping = (searchParams.get('nodeMapping') || 'traditional') as 'traditional' | 'physical';
   const limit = parseInt(searchParams.get('limit') || '500');
 
   const useClassical = useClassicalStr === 'true';
@@ -124,7 +127,11 @@ export async function GET(request: Request) {
     yB, mB, dB,
     voidZodiacs,
     env.raw.lunarNode,
-    'MIGRATION'
+    'MIGRATION',
+    targetDate,
+    baseLon,
+    undefined,
+    nodeMapping
   );
   
   let activeVectors: Partial<Record<Direction, string>>;
@@ -132,6 +139,17 @@ export async function GET(request: Request) {
   else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
   else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
   else activeVectors = vectorData.finalVectors;
+
+  // 動的偏角の取得
+  let declination = -8.2;
+  try {
+    const geoData = await getGeomagneticData(baseLat, baseLon, targetDate.getTime());
+    if (geoData && typeof geoData.declination === 'number') {
+      declination = geoData.declination;
+    }
+  } catch (err) {
+    console.error('Error fetching dynamic declination in rentals arbitrage API:', err);
+  }
 
   try {
     // 2. DBから物件データを取得 (緯度経度があるもの)
@@ -197,8 +215,7 @@ export async function GET(request: Request) {
         trueBearing = getBearing(baseLat, baseLon, p.lat, p.lon);
         direction = getDirectionFromBearing(trueBearing);
         
-        // 偏角の補正 (-8.2度)
-        const declination = -8.2;
+        // 偏角の補正 (動的に取得した値を使用)
         const magneticBearing = (trueBearing - declination + 360) % 360;
         const magneticDirection = getDirectionFromBearing(magneticBearing);
 
@@ -268,14 +285,17 @@ export async function GET(request: Request) {
     // スコア順にソート
     scoredProperties.sort((a, b) => b.arbitrageScore - a.arbitrageScore);
 
+    const upcomingDoyou = getUpcomingDoyouPeriod(targetDate);
+
     return NextResponse.json({ 
       properties: scoredProperties,
       metadata: {
-        baseLat, baseLon, radiusKm, prefecture, layerMode, useClassical, useTrueNorth,
+        baseLat, baseLon, radiusKm, prefecture, layerMode, useClassical, useTrueNorth, nodeMapping,
         targetDate: targetDate.toISOString().split('T')[0],
         meanSqmRent,
         stdDevSqmRent,
-        totalAnalyzed: properties.length
+        totalAnalyzed: properties.length,
+        upcomingDoyou
       }
     });
 

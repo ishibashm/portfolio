@@ -9,8 +9,10 @@ import {
   calculateVectorCollision, 
   getPersonalVoidZodiac,
   Direction,
-  AstroEngine
+  AstroEngine,
+  getUpcomingDoyouPeriod
 } from '@/utils/ephemerisEngine';
+import { getGeomagneticData } from '@/utils/geomagnetism';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +72,7 @@ export async function GET(request: Request) {
   const engineType = searchParams.get('engineType') || 'physical'; // 'physical' or 'classical'
   const layerMode = searchParams.get('layerMode') || 'final'; // 'final', 'year', 'month', 'day'
   const useTrueNorth = searchParams.get('useTrueNorth') === 'true';
+  const nodeMapping = (searchParams.get('nodeMapping') || 'traditional') as 'traditional' | 'physical';
 
   // Fallback to local config if parameters are missing
   try {
@@ -128,13 +131,28 @@ export async function GET(request: Request) {
     yB, mB, dB,
     voidZodiacs,
     env.raw.lunarNode,
-    'MIGRATION' // Action intent for relocation
+    'MIGRATION', // Action intent for relocation
+    targetDate,
+    baseLon,
+    undefined,
+    nodeMapping
   );
   
   if (layerMode === 'year') activeVectors = vectorData.yearLayer;
   else if (layerMode === 'month') activeVectors = vectorData.monthLayer;
   else if (layerMode === 'day') activeVectors = vectorData.dayLayer;
   else activeVectors = vectorData.finalVectors;
+
+  // 動的偏角の取得
+  let declination = -8.2; // デフォルト偏角
+  try {
+    const geoData = await getGeomagneticData(baseLat, baseLon, targetDate.getTime());
+    if (geoData && typeof geoData.declination === 'number') {
+      declination = geoData.declination;
+    }
+  } catch (err) {
+    console.error('Error fetching dynamic declination in API:', err);
+  }
 
   try {
     const municipalities = await prisma.municipalityWealth.findMany({
@@ -154,8 +172,7 @@ export async function GET(request: Request) {
         trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);
         direction = getDirectionFromBearing(trueBearing); // True direction (地図上の方位)
         
-        // 偏角の補正 (-8.2度)
-        const declination = -8.2;
+        // 偏角の補正 (動的に取得した値を使用)
         magneticBearing = (trueBearing - declination + 360) % 360;
         magneticDirection = getDirectionFromBearing(magneticBearing);
 
@@ -242,6 +259,8 @@ export async function GET(request: Request) {
       return b.incomePerCapita - a.incomePerCapita;
     });
 
+    const upcomingDoyou = getUpcomingDoyouPeriod(targetDate);
+
     return NextResponse.json({
       success: true,
       count: scoredData.length,
@@ -255,6 +274,8 @@ export async function GET(request: Request) {
         birthDate: bDate.toISOString(),
         engineType,
         layerMode,
+        nodeMapping,
+        upcomingDoyou,
         vectors: activeVectors
       }
     });

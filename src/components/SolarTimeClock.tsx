@@ -728,7 +728,8 @@ export const SolarTimeClock = () => {
           actionIntent,
           testDate,
           lon || 139.6917,
-          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
+          useClassicalBoard ? 'traditional' : 'physical'
         );
 
         if (targetDirInfo) {
@@ -818,7 +819,8 @@ export const SolarTimeClock = () => {
       actionIntent,
       tDate,
       lon || 139.6917,
-      useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
+      useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
+      useClassicalBoard ? 'traditional' : 'physical'
     );
 
     const physicalVectorData = calculateVectorCollision(
@@ -829,7 +831,8 @@ export const SolarTimeClock = () => {
       actionIntent,
       tDate,
       lon || 139.6917,
-      undefined
+      undefined,
+      'physical'
     );
 
     const classicalVectorData = calculateVectorCollision(
@@ -840,7 +843,8 @@ export const SolarTimeClock = () => {
       actionIntent,
       tDate,
       lon || 139.6917,
-      getsuMeiStar || undefined
+      getsuMeiStar || undefined,
+      'traditional'
     );
 
     return { board: dB, layers: vectorData, physicalLayers: physicalVectorData, classicalLayers: classicalVectorData, physicalYearBoard: pyB, physicalMonthBoard: pmB, physicalDayBoard: pdB, classicalYearBoard: cyB, classicalMonthBoard: cmB, classicalDayBoard: cdB };
@@ -917,7 +921,8 @@ export const SolarTimeClock = () => {
           actionIntent,
           testDate,
           lon || 139.6917,
-          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
+          useClassicalBoard ? 'traditional' : 'physical'
         );
 
         const filteredV = filterVectors(
@@ -958,7 +963,8 @@ export const SolarTimeClock = () => {
           actionIntent,
           testDate,
           lon || 139.6917,
-          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined
+          useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
+          useClassicalBoard ? 'traditional' : 'physical'
         );
 
         const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -1770,6 +1776,7 @@ export const SolarTimeClock = () => {
                 environmentalFrequencies={env}
                 birthFrequencies={birthEnv}
                 finalVectors={layers?.finalVectors || {}}
+                doyouState={layers?.doyouState}
                 isPersonalVoid={isPersonalVoid}
                 isYearVoid={isYearVoid}
                 isMonthVoid={isMonthVoid}

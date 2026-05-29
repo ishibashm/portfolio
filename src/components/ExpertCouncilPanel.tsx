@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { getUpcomingDoyouPeriod } from '../utils/ephemerisEngine';
 
 interface ExpertCouncilPanelProps {
   actionIntent: string;
@@ -26,7 +27,7 @@ interface ExpertCouncilPanelProps {
   isTimingOptimal?: boolean;
   timingDetails?: { name: string; phenomenon: string; detail: string }[];
   timingRecommendation?: string;
-
+  doyouState?: any;
 }
 
 export default function ExpertCouncilPanel({
@@ -36,6 +37,7 @@ export default function ExpertCouncilPanel({
   environmentalFrequencies,
   birthFrequencies,
   finalVectors,
+  doyouState,
   isPersonalVoid,
   isYearVoid = false,
   isMonthVoid = false,
@@ -108,6 +110,16 @@ export default function ExpertCouncilPanel({
       conditions.push({ label: '空間共鳴 (OPTIMAL)', value: '+10 (大吉)', colorClass: 'text-blue-400' });
     }
 
+    // 5. 土用期間の判定（引越しモードの場合のみ影響）
+    if (actionIntent === 'MIGRATION' && doyouState) {
+      if (doyouState.isDoyouHazard) {
+        base -= 30;
+        conditions.push({ label: `土用ハザード (${doyouState.doyouType})`, value: '-30 (大凶期)', colorClass: 'text-red-500' });
+      } else if (doyouState.inDoyou && doyouState.isMabi) {
+        conditions.push({ label: '土用・間日 (Mabi)', value: 'CLEAR (セーフ)', colorClass: 'text-emerald-500/50' });
+      }
+    }
+
     const finalScore = Math.max(0, Math.min(100, base));
 
     if (timingScore !== undefined && !isNaN(timingScore)) {
@@ -116,7 +128,7 @@ export default function ExpertCouncilPanel({
     }
 
     return { score: finalScore, conditions };
-  }, [timingScore, anyVoid, isPersonalVoid, isYearVoid, isMonthVoid, isDayVoid, kpIndex, ansLoad, finalVectors, actionIntent]);
+  }, [timingScore, anyVoid, isPersonalVoid, isYearVoid, isMonthVoid, isDayVoid, kpIndex, ansLoad, finalVectors, actionIntent, doyouState]);
 
   // 現在のパラメータ（目的・環境データ・スコア）に完全連動するダイナミックな推奨テキストを生成
   const getDynamicRecommendation = () => {
@@ -150,7 +162,11 @@ export default function ExpertCouncilPanel({
         break;
       case 'MIGRATION':
         text = "【意図: 引越し・長期滞在 (MIGRATION)】\n";
-        if (scoreVal >= 70) {
+        if (doyouState?.isDoyouHazard) {
+          text += `⚠️ 現在は土用期間（${doyouState.doyouType}）の【大凶期（土用ハザード）】に該当します。間日（まび）でもありません。大地の磁気エネルギーが極めて不安定になっており、移住や長期滞在のための基礎固めを行うには最悪の時期です。方位に関わらず、この期間中の移動や物件契約手続きは一時保留（凍結）し、期間外への延期を強く推奨します。`;
+        } else if (doyouState?.inDoyou && doyouState?.isMabi) {
+          text += `✨ 現在は土用期間（${doyouState.doyouType}）中ですが、本日は特別に土の乱れが緩和される「間日（まび）」です。やむを得ない移動や、小規模な新居関連の意思決定であれば、本日中に実施可能です。`;
+        } else if (scoreVal >= 70) {
           text += "長期的な拠点移動において、極めて良好な空間・時間位相が重なっています。このタイミングでの移動は、新しい土地の磁場への順化（ベース同期）を早め、人生のパフォーマンス基盤を強固にします。";
         } else {
           text += "長期拠点移動にはリスク（環境ノイズ）が伴います。Target Date（目標日）をずらすか、現地で十分な休息期間を確保するフェイルセーフ計画を立ててください。";
@@ -292,6 +308,32 @@ export default function ExpertCouncilPanel({
           {displayRecommendation}
         </p>
       </div>
+
+      {(() => {
+        const upcoming = targetDate ? getUpcomingDoyouPeriod(targetDate) : null;
+        if (!upcoming) return null;
+        
+        return (
+          <div className="mt-3 bg-amber-950/10 border border-amber-900/30 p-4 rounded-xl flex flex-col gap-2 text-xs font-sans">
+            <div className="flex items-center gap-2 font-bold text-amber-400 text-[10px]">
+              <span>🗓️</span>
+              <span className="uppercase tracking-wider">Doyou & Mabi Forecast / 土用・間日予報</span>
+            </div>
+            <div className="text-zinc-300">
+              直近の土用期間 ({upcoming.type === 'SPRING' ? '春土用' : upcoming.type === 'SUMMER' ? '夏土用' : upcoming.type === 'AUTUMN' ? '秋土用' : '冬土用'}): 
+              <strong className="text-amber-500 font-mono ml-2 text-sm">{upcoming.start} 〜 {upcoming.end}</strong>
+            </div>
+            {upcoming.mabiDays.length > 0 && (
+              <div className="text-zinc-400 flex flex-wrap gap-1.5 items-center mt-1">
+                <span className="text-[10px] text-zinc-500">🍀 期間内の間日 (安全な日):</span>
+                {upcoming.mabiDays.map(day => (
+                  <span key={day} className="bg-emerald-950/30 border border-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded-md font-mono text-[10px]">{day}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

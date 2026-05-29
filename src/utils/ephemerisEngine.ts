@@ -421,7 +421,8 @@ export function calculateVectorCollision(
   actionIntent: ActionIntent = 'DEFAULT',
   targetDate?: Date,
   lon: number = 139.6917,
-  getsuMeiStar?: StarFrequency
+  getsuMeiStar?: StarFrequency,
+  nodeMapping: 'traditional' | 'physical' = 'traditional'
 ): {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
@@ -454,10 +455,17 @@ export function calculateVectorCollision(
   if (lunarNodeLon !== null) {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const getBearing = (lon: number): Direction => {
-      let b = (lon - 90) % 360; 
-      if (b < 0) b += 360;
-      b = 360 - b; 
-      const val = (b % 360 + 360) % 360;
+      let val = 0;
+      if (nodeMapping === 'physical') {
+        let b = (lon - 90) % 360; 
+        if (b < 0) b += 360;
+        b = 360 - b; 
+        val = (b % 360 + 360) % 360;
+      } else {
+        // 'traditional' model: Spring (0) = East (90), Summer (90) = South (180), Autumn (180) = West (270), Winter (270) = North (0)
+        val = (lon + 90) % 360;
+      }
+      
       if (val >= 345 || val < 15) return 'N';
       if (val >= 15 && val < 75) return 'NE';
       if (val >= 75 && val < 105) return 'E';
@@ -879,5 +887,92 @@ export const clashMap: Record<string, string> = {
   "辰": "戌", "戌": "辰",
   "巳": "亥", "亥": "巳"
 };
+
+export interface DoyouPeriodInfo {
+  start: string;
+  end: string;
+  type: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER';
+  mabiDays: string[];
+}
+
+export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
+  const getDoyouType = (L0: number): 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null => {
+    if (L0 >= 27 && L0 < 45) return 'SPRING';
+    if (L0 >= 117 && L0 < 135) return 'SUMMER';
+    if (L0 >= 207 && L0 < 225) return 'AUTUMN';
+    if (L0 >= 297 && L0 < 315) return 'WINTER';
+    return null;
+  };
+
+  const getMabiZodiacs = (type: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER'): string[] => {
+    if (type === 'SPRING') return ['巳', '午', '酉'];
+    if (type === 'SUMMER') return ['卯', '辰', '申'];
+    if (type === 'AUTUMN') return ['未', '酉', '亥'];
+    return ['寅', '卯', '巳']; // WINTER
+  };
+
+  // Find the first day in a Doyou period, starting from baseDate
+  let current = new Date(baseDate.getTime());
+  current.setHours(12, 0, 0, 0); // normalize
+  let foundType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
+  let targetDate = new Date(current.getTime());
+
+  for (let i = 0; i < 365; i++) {
+    const testDate = new Date(current.getTime() + i * 86400000);
+    const L0 = AstroEngine.getSolarLongitude(testDate);
+    const type = getDoyouType(L0);
+    if (type) {
+      foundType = type;
+      targetDate = testDate;
+      break;
+    }
+  }
+
+  if (!foundType) return null;
+
+  // Scan backward to find the start date of this Doyou period
+  let startDate = new Date(targetDate.getTime());
+  while (true) {
+    const prevDate = new Date(startDate.getTime() - 86400000);
+    const L0 = AstroEngine.getSolarLongitude(prevDate);
+    if (getDoyouType(L0) === foundType) {
+      startDate = prevDate;
+    } else {
+      break;
+    }
+  }
+
+  // Scan forward to find the end date of this Doyou period
+  let endDate = new Date(targetDate.getTime());
+  while (true) {
+    const nextDate = new Date(endDate.getTime() + 86400000);
+    const L0 = AstroEngine.getSolarLongitude(nextDate);
+    if (getDoyouType(L0) === foundType) {
+      endDate = nextDate;
+    } else {
+      break;
+    }
+  }
+
+  // Find Mabi days in this period
+  const mabiDays: string[] = [];
+  const mabiZodiacs = getMabiZodiacs(foundType);
+  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(startDate.getTime() + i * 86400000);
+    const zodiacs = getCurrentZodiac(d);
+    if (zodiacs?.dayZodiac && mabiZodiacs.includes(zodiacs.dayZodiac)) {
+      mabiDays.push(d.toISOString().split('T')[0]);
+    }
+  }
+
+  return {
+    start: startDate.toISOString().split('T')[0],
+    end: endDate.toISOString().split('T')[0],
+    type: foundType,
+    mabiDays
+  };
+}
 
 
