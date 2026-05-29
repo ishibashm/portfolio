@@ -5,7 +5,7 @@ import { OuraClient } from '@/lib/ouraClient';
 import { TavilyClient } from '@/lib/tavilyClient';
 import { IChingClient } from '@/lib/ichingClient';
 import { NBAEngine, NBAParams } from '@/utils/nbaEngine';
-import { AstroEngine, getPersonalVoidZodiac, calculateTideScore, getLunarDistance, getCurrentZodiac, clashMap } from '@/utils/ephemerisEngine';
+import { AstroEngine, getPersonalVoidZodiac, calculateTideScore, getLunarDistance, getCurrentZodiac, clashMap, checkIsDoyouHazard } from '@/utils/ephemerisEngine';
 import { baziEngine } from '@/utils/baziEngine';
 import { AspectEngine } from '@/utils/aspectEngine';
 import { VedicEngine } from '@/utils/vedicEngine';
@@ -134,6 +134,8 @@ export async function POST(req: Request) {
       isConflictDay = (todayDayZhi === clashPartnerDay) || (todayDayZhi === clashPartnerYear);
     }
 
+    const isDoyouHazard = checkIsDoyouHazard(today);
+
     // Calculate Unified Risk Score (0-100)
     const kpVal = spaceWeatherData.kpIndex ?? 3.0;
     const kpRisk = (kpVal / 9.0) * 100;
@@ -240,6 +242,7 @@ export async function POST(req: Request) {
       metaphysical: metaphysicalData,
       isVoidTime,
       isConflictDay,
+      isDoyouHazard,
       unifiedRiskScore
     };
 
@@ -282,6 +285,7 @@ export async function POST(req: Request) {
       unifiedRiskScore,
       isVoidTime,
       isConflictDay,
+      isDoyouHazard,
       solarPhase: sunLon,
       stressLevel: typeof stressScore === 'number' ? stressScore : 50,
       resilience: resilienceScore,

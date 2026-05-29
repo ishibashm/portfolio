@@ -14,6 +14,7 @@ export interface NBAParams {
     resilience?: string; // e.g. 'adequate'
     isVoidTime?: boolean;
     isConflictDay?: boolean;
+    isDoyouHazard?: boolean;
     unifiedRiskScore?: number;
     // --- Enriched Data Streams from データストリーム.md ---
     ephemerisData?: {
@@ -136,13 +137,30 @@ const PolicyWeights: Record<ActionType, QWeights> = {
   }
 };
 
+function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
+  let diff = Math.abs(mars - saturn) % 360;
+  if (diff > 180) {
+    diff = 360 - diff;
+  }
+  // Hard aspects (Conjunction 0°, Square 90°, Opposition 180° ± 8°)
+  if (diff <= 8) return -0.8;
+  if (Math.abs(diff - 90) <= 8) return -0.8;
+  if (Math.abs(diff - 180) <= 8) return -0.8;
+  
+  // Soft aspects (Sextile 60° ± 6°, Trine 120° ± 8°)
+  if (Math.abs(diff - 60) <= 6) return 0.6;
+  if (Math.abs(diff - 120) <= 8) return 0.6;
+  
+  return 0.0;
+}
+
 export class NBAEngine {
   /**
    * Helper to calculate the static Q-value for a given state vector and action.
    * Incorporates Action-Type Weighting (攻守分離) and Qimen Dunjia dynamic switches.
    */
   private evaluateStateStatic(state: any, action: ActionType): number {
-    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, unifiedRiskScore, tendoDirection, qiMenGate } = state;
+    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, isDoyouHazard = false, unifiedRiskScore, tendoDirection, qiMenGate } = state;
     
     // Apply dynamic risk calculation
     let finalRisk = environmentalRisk;
@@ -175,7 +193,7 @@ export class NBAEngine {
       const mars = parseFloat(ephemerisData.planetaryPositions.mars);
       const saturn = parseFloat(ephemerisData.planetaryPositions.saturn);
       if (!isNaN(mars) && !isNaN(saturn)) {
-        f6_ephem = Math.cos((mars - saturn) * Math.PI / 180.0);
+        f6_ephem = calculateMarsSaturnAspectScore(mars, saturn);
       }
     }
 
@@ -190,9 +208,9 @@ export class NBAEngine {
 
     let f8_rag = 0;
     if (ragContext && ragContext.classicalRules) {
-      const rules = JSON.stringify(ragContext.classicalRules).toLowerCase();
-      const strong = (rules.match(/dragon|tiger|horse/g) || []).length;
-      const stable = (rules.match(/ox|rabbit|sheep/g) || []).length;
+      const rules = JSON.stringify(ragContext.classicalRules);
+      const strong = (rules.match(/[辰寅午]/g) || []).length;
+      const stable = (rules.match(/[丑卯未]/g) || []).length;
       f8_rag = (strong - stable) * 0.3;
       f8_rag = Math.max(-1.0, Math.min(1.0, f8_rag));
     }
@@ -225,12 +243,22 @@ export class NBAEngine {
         const pm = personalBazi.summary.dayMasterWuxing;
         const em = envBazi.summary.dayMasterWuxing;
         const shengCycle: Record<string, string> = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+        const keCycle: Record<string, string> = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };
+        
         if (pm === em) {
           compatibilityScore = 0.2;
         } else if (shengCycle[pm] === em) {
           compatibilityScore = 0.5;
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
+        } else if (keCycle[pm] === em) {
+          // User controls Env (Wealth 才/財)
+          const isActive = action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION' || action === 'GATHER_INTEL';
+          compatibilityScore = isActive ? 0.4 : 0.1;
+        } else if (keCycle[em] === pm) {
+          // Env controls User (Officer 官/殺)
+          const isActive = action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION' || action === 'GATHER_INTEL';
+          compatibilityScore = isActive ? -0.5 : 0.6;
         } else {
           compatibilityScore = -0.3;
         }
@@ -254,9 +282,9 @@ export class NBAEngine {
       w_rag = 0.4;
       w_personal = 0.6;
     } else if (action === 'PREPARE_AND_WAIT' || action === 'ABORT_AND_SHIELD') {
-      // 受動アクション: 八字(w_personal)重視
+      // 受動アクション: 八字(w_personal)重視（負の重みで、個人相性が悪い・空亡の時にQ値を引き上げる）
       w_rag = 0.2;
-      w_personal = 0.8;
+      w_personal = -0.8;
     }
 
     // Qimen Dunjia & Kigaku Switch
@@ -293,9 +321,10 @@ export class NBAEngine {
       if (action === 'EXECUTE_RELOCATION' || action === 'GATHER_INTEL') {
         riskModifier = -0.5;
       } else if (action === 'EXECUTE_PURGE_RELOCATION') {
-        // Void time is the *reason* for this action, so it doesn't get a strict penalty,
-        // but it still requires high shield which was modeled in the weights and transitions.
-        riskModifier = 0.0;
+        // Purge is penalty-free during personal Void Time (isVoidTime),
+        // but gets penalized on Clash/Conflict Days or high unified risk.
+        const hasExternalClash = isConflictDay || (unifiedRiskScore !== undefined && unifiedRiskScore >= 60);
+        riskModifier = hasExternalClash ? -0.5 : 0.0;
       } else if (action === 'ABORT_AND_SHIELD' || action === 'PREPARE_AND_WAIT') {
         riskModifier = 0.5;
       }
@@ -309,6 +338,15 @@ export class NBAEngine {
       }
     }
 
+    // Doyou Hazard penalty/boost
+    if (isDoyouHazard) {
+      if (action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION') {
+        q += -0.6;
+      } else if (action === 'PREPARE_AND_WAIT' || action === 'ABORT_AND_SHIELD') {
+        q += 0.4;
+      }
+    }
+
     return q;
   }
 
@@ -317,7 +355,7 @@ export class NBAEngine {
    * Now incorporates state transition prediction (Bellman Equation).
    */
   async getNextBestAction(params: NBAParams) {
-    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, unifiedRiskScore, tendoDirection, qiMenGate } = params.stateVector;
+    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, isDoyouHazard = false, unifiedRiskScore, tendoDirection, qiMenGate } = params.stateVector;
     
     // Apply I-Ching metaphysical modifiers if available
     let finalRisk = environmentalRisk;
@@ -356,8 +394,7 @@ export class NBAEngine {
       const mars = parseFloat(ephemerisData.planetaryPositions.mars);
       const saturn = parseFloat(ephemerisData.planetaryPositions.saturn);
       if (!isNaN(mars) && !isNaN(saturn)) {
-        // cosine of angle between Mars and Saturn
-        f6_ephem = Math.cos((mars - saturn) * Math.PI / 180.0);
+        f6_ephem = calculateMarsSaturnAspectScore(mars, saturn);
       }
     }
 
@@ -374,11 +411,11 @@ export class NBAEngine {
     // RAG/Classical Rules (Bazi) Feature: Strong vs Stable signs
     let f8_rag = 0;
     if (ragContext && ragContext.classicalRules) {
-      const rules = JSON.stringify(ragContext.classicalRules).toLowerCase();
-      // 'Dragon', 'Tiger', 'Horse' represent high energy execution
-      const strong = (rules.match(/dragon|tiger|horse/g) || []).length;
-      // 'Ox', 'Rabbit', 'Sheep' represent stable/conservative energy
-      const stable = (rules.match(/ox|rabbit|sheep/g) || []).length;
+      const rules = JSON.stringify(ragContext.classicalRules);
+      // '辰' (Dragon), '寅' (Tiger), '午' (Horse) represent high energy execution
+      const strong = (rules.match(/[辰寅午]/g) || []).length;
+      // '丑' (Ox), '卯' (Rabbit), '未' (Sheep) represent stable/conservative energy
+      const stable = (rules.match(/[丑卯未]/g) || []).length;
       f8_rag = (strong - stable) * 0.3;
       f8_rag = Math.max(-1.0, Math.min(1.0, f8_rag));
     }
@@ -417,6 +454,8 @@ export class NBAEngine {
         const pm = personalBazi.summary.dayMasterWuxing;
         const em = envBazi.summary.dayMasterWuxing;
         const shengCycle: Record<string, string> = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+        const keCycle: Record<string, string> = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };
+        
         if (pm === em) {
           compatibilityScore = 0.2;
           personalLog += `Compatibility: Same Element (+0.2). `;
@@ -426,6 +465,12 @@ export class NBAEngine {
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
           personalLog += `Compatibility: Env generates You (+0.8). `;
+        } else if (keCycle[pm] === em) {
+          compatibilityScore = 0.4;
+          personalLog += `Compatibility: You control Env (Wealth 才/財) (+0.4 active / +0.1 passive). `;
+        } else if (keCycle[em] === pm) {
+          compatibilityScore = -0.5;
+          personalLog += `Compatibility: Env controls You (Officer 官/殺) (-0.5 active / +0.6 passive). `;
         } else {
           compatibilityScore = -0.3;
           personalLog += `Compatibility: Controlling/Conflict (-0.3). `;
@@ -443,6 +488,9 @@ export class NBAEngine {
     }
     if (ichingHexagram) {
       logicTrace.push(`[MODIFIER] I-Ching Hexagram ${ichingHexagram.number} applied: Risk Modifier ${ichingHexagram.riskModifier > 0 ? '+' : ''}${ichingHexagram.riskModifier}, Confidence Boost ${ichingHexagram.confidenceBoost > 0 ? '+' : ''}${ichingHexagram.confidenceBoost}`);
+    }
+    if (isDoyouHazard) {
+      logicTrace.push(`[DOYOU] Active Doyou Hazard (土用殺) detected. Restricting active/purge relocation actions.`);
     }
 
     // 2. Calculate Q-values for each action

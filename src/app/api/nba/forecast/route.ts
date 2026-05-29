@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { NBAEngine, NBAParams, ActionType } from '@/utils/nbaEngine';
 import { AspectEngine } from '@/utils/aspectEngine';
-import { AstroEngine, getPersonalVoidZodiac, getCurrentZodiac, clashMap } from '@/utils/ephemerisEngine';
+import { AstroEngine, getPersonalVoidZodiac, getCurrentZodiac, clashMap, checkIsDoyouHazard } from '@/utils/ephemerisEngine';
 import { baziEngine } from '@/utils/baziEngine';
 import { fetchMetaphysicalData } from '@/utils/metaphysicalApis';
 import { VedicEngine } from '@/utils/vedicEngine';
@@ -75,6 +75,8 @@ export async function POST(req: Request) {
                           (targetYearZhi === clashPartnerDay) || (targetYearZhi === clashPartnerYear);
       }
 
+      const isDoyouHazard = checkIsDoyouHazard(targetDate);
+
       // 3. Generate Metaphysical Deterministic Mock
       const metaData = birthDate ? fetchMetaphysicalData(birthDate, targetDate, personalBaziData) : null;
       
@@ -82,6 +84,7 @@ export async function POST(req: Request) {
       let envCost = 30 + aspectRisk;
       if (isVoidTime) envCost += 30;
       if (isConflictMonth) envCost += 20;
+      if (isDoyouHazard) envCost += 25;
       if (metaData?.chineseMetasoft.qiMenGate.status === 'Inauspicious') envCost += 10;
       if (metaData?.chineseMetasoft.qiMenGate.status === 'Auspicious') envCost -= 15;
       
@@ -97,6 +100,7 @@ export async function POST(req: Request) {
           solarPhase: AstroEngine.getSolarLongitude(targetDate),
           isVoidTime,
           isConflictDay: isConflictMonth,
+          isDoyouHazard,
           astrologyData: { source: 'sim', transits: allAspects.map(a => a.type) },
           ragContext: { source: 'sim', classicalRules: environmentalBaziData, personalBazi: personalBaziData },
           vedicAstrology: vedicEngine.generateVedicChart(targetDate) as any,

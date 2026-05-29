@@ -1058,4 +1058,26 @@ export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
   };
 }
 
+export function checkIsDoyouHazard(date: Date): boolean {
+  const L0 = AstroEngine.getSolarLongitude(date);
+  let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
+  if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
+  else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
+  else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
+  else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+
+  const inDoyou = doyouType !== null;
+  if (!inDoyou) return false;
+
+  const zodiacs = getCurrentZodiac(date);
+  let isMabi = false;
+  if (zodiacs?.dayZodiac) {
+    if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
+    else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
+    else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
+    else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+  }
+  return inDoyou && !isMabi;
+}
+
 
