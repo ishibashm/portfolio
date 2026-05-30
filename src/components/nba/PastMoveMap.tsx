@@ -82,16 +82,13 @@ export default function PastMoveMap({
     else setIsSearchingTo(true);
 
     try {
-      // Free open geocoding with Nominatim API (with standard safety defaults)
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`, {
-        headers: { 'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8' }
-      });
-      const data = await res.json();
-      if (data && data.length > 0) {
-        const item = data[0];
-        const lat = parseFloat(item.lat);
-        const lon = parseFloat(item.lon);
-        const name = item.display_name.split(',')[0] || query;
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        const lat = data.lat;
+        const lon = data.lon;
+        const name = data.name;
 
         if (type === 'from') {
           onFromChange(lat, lon, name);
