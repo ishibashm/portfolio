@@ -16,11 +16,21 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
     
     if (kpResponse.ok) {
       const kpData = await kpResponse.json();
-      if (kpData && kpData.length > 1) {
+      if (kpData && kpData.length > 0) {
         // Get the latest valid reading (last element)
         const latest = kpData[kpData.length - 1];
-        timestamp = latest[0];
-        kpIndex = parseFloat(latest[1]);
+        if (Array.isArray(latest)) {
+          timestamp = latest[0] || null;
+          kpIndex = parseFloat(latest[1]);
+        } else if (latest && typeof latest === 'object') {
+          timestamp = latest.time_tag || null;
+          kpIndex = typeof latest.Kp === 'number' ? latest.Kp : parseFloat(latest.Kp);
+        }
+        
+        // Coerce NaN to null to trigger standard fallback of 3.0 upstream
+        if (kpIndex !== null && Number.isNaN(kpIndex)) {
+          kpIndex = null;
+        }
       }
     }
 

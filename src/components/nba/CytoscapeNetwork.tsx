@@ -95,6 +95,7 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
         {Object.keys(policyWeights).map((actionId) => {
           const isBest = suggestedAction === actionId;
           const qVal = qValues[actionId] || 0;
+          const isDeactivated = qVal <= -900;
           
           // Dynamically adjust meta based on Q-Value
           const meta = { ...actionMeta[actionId] };
@@ -136,8 +137,8 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({ nbaData }) =
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="flex flex-col items-end">
                     <span className="text-[9px] text-zinc-500 uppercase tracking-widest">Q-Value (期待値)</span>
-                    <span className={`text-xl font-mono font-bold ${qVal > 0 ? 'text-emerald-400' : qVal < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
-                      {qVal > 0 ? '+' : ''}{qVal.toFixed(3)}
+                    <span className={`text-xl font-mono font-bold ${isDeactivated ? 'text-red-400 text-xs font-bold animate-pulse' : qVal > 0 ? 'text-emerald-400' : qVal < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+                      {isDeactivated ? 'DEACTIVATED (天中殺)' : `${qVal > 0 ? '+' : ''}${qVal.toFixed(3)}`}
                     </span>
                   </div>
                 </div>

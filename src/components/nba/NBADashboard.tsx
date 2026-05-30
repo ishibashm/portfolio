@@ -1335,15 +1335,16 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                       </div>
                       <div className="space-y-2">
                         {Object.entries(data.nba.actionResult.probabilities || {}).sort(([,a], [,b]) => b - a).map(([action, prob]) => {
-                          const qValue = data.nba.actionResult.qValues?.[action] || 0;
+                          const qValue = data.nba.actionResult.qValues?.[action] ?? 0;
                           const isMax = prob === Math.max(...Object.values(data.nba.actionResult.probabilities || {}));
+                          const isDeactivated = qValue <= -900;
                           return (
                             <div key={action} className={`p-2 rounded-xl transition-all ${isMax ? 'bg-white/5 border border-white/10 shadow-sm' : 'bg-transparent border border-transparent'}`}>
                               <div className="flex justify-between items-center text-[10px] font-mono mb-1.5">
                                 <div className="flex items-center gap-2">
                                   <span className={isMax ? "text-white font-bold tracking-wide" : "text-gray-400"}>{action.replace('_', ' ')}</span>
-                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${qValue > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : qValue < 0 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'}`}>
-                                    Q: {qValue > 0 ? '+' : ''}{qValue.toFixed(3)}
+                                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${isDeactivated ? 'bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse' : qValue > 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : qValue < 0 ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'}`}>
+                                    {isDeactivated ? 'Q: DEACTIVATED (天中殺)' : `Q: ${qValue > 0 ? '+' : ''}${qValue.toFixed(3)}`}
                                   </span>
                                 </div>
                                 <span className={isMax ? "text-emerald-400 font-bold text-xs" : "text-gray-400"}>{(prob * 100).toFixed(1)}%</span>

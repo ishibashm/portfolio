@@ -950,11 +950,21 @@ export function calculateTideScore(date: Date): { tideIntensity: number; distanc
   const distanceCloseness = Math.max(0, Math.min(1, (406700 - distance_km) / (406700 - 356400)));
 
   // Combine both factors to form score out of 20
-  const gravitationalTideScore = (tideIntensity * 10) + (distanceCloseness * 10);
+  let gravitationalTideScore = (tideIntensity * 10) + (distanceCloseness * 10);
+
+  let intensityVal = tideIntensity;
+  let closenessVal = distanceCloseness;
+
+  // Safeguard against NaN computations in case astronomical outputs or divisions fail
+  if (Number.isNaN(intensityVal) || Number.isNaN(closenessVal) || Number.isNaN(gravitationalTideScore)) {
+    intensityVal = 0.5;
+    closenessVal = 0.5;
+    gravitationalTideScore = 10.0; // Neutral midpoint
+  }
 
   return {
-    tideIntensity: parseFloat(tideIntensity.toFixed(3)),
-    distanceCloseness: parseFloat(distanceCloseness.toFixed(3)),
+    tideIntensity: parseFloat(intensityVal.toFixed(3)),
+    distanceCloseness: parseFloat(closenessVal.toFixed(3)),
     gravitationalTideScore: parseFloat(gravitationalTideScore.toFixed(3))
   };
 }

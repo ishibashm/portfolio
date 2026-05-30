@@ -14,7 +14,7 @@ export async function fetchMacroEconomics(): Promise<MacroEconomicsData> {
     // Fetch ^VIX quote
     const quote = await yahooFinance.quote('^VIX');
     
-    if (quote && typeof quote.regularMarketPrice === 'number') {
+    if (quote && typeof quote.regularMarketPrice === 'number' && !Number.isNaN(quote.regularMarketPrice)) {
       const vix = quote.regularMarketPrice;
       const creditSpread = 1.5 + vix * 0.15;
       return {
