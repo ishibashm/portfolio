@@ -221,6 +221,7 @@ export async function GET(request: Request) {
       let astrologyScore = 50;
       let astrologyStatus = 'UNKNOWN';
       let direction: Direction | null = null;
+      let magneticDirection: Direction | null = null;
       let trueBearing: number | null = null;
       let distanceKm: number | null = null;
       const astroFlags: string[] = [];
@@ -232,7 +233,7 @@ export async function GET(request: Request) {
         
         // 偏角の補正 (動的に取得した値を使用)
         const magneticBearing = (trueBearing - declination + 360) % 360;
-        const magneticDirection = getDirectionFromBearing(magneticBearing);
+        magneticDirection = getDirectionFromBearing(magneticBearing);
 
         const targetDirection = useTrueNorth ? direction : magneticDirection;
         if (activeVectors && targetDirection) {
@@ -316,6 +317,7 @@ export async function GET(request: Request) {
         propSqmRent,
         distanceKm,
         direction,
+        magneticDirection,
         astrologyStatus,
         astrologyScore,
         astroFlags,

@@ -14,6 +14,7 @@ import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing
 import { InlineMath, BlockMath } from 'react-katex';
 import 'katex/dist/katex.min.css';
 import type { NBAData } from "./nba/NBADashboard";
+import { Loader2 } from "lucide-react";
 
 const NBADashboard = dynamic(() => import("./nba/NBADashboard").then(mod => mod.NBADashboard), { ssr: false });
 const SolarTimeTable = dynamic(() => import("./SolarTimeTable").then(mod => mod.SolarTimeTable), { ssr: false });
@@ -365,7 +366,7 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "history">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "destination" | "timing" | "consult" | "history" | "scorecard">("profile");
 
   // NBA State
   const [nbaData, setNbaData] = useState<NBAData | null>(null);
@@ -447,6 +448,70 @@ export const SolarTimeClock = () => {
 
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Scorecard Tab States
+  const [scorecardLoading, setScorecardLoading] = useState(false);
+  const [wealthData, setWealthData] = useState<any[]>([]);
+  const [propertiesData, setPropertiesData] = useState<any[]>([]);
+  const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+  const [showNoiseDirections, setShowNoiseDirections] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+
+  useEffect(() => {
+    if (activeTab === "scorecard") {
+      const loadScorecardData = async () => {
+        setScorecardLoading(true);
+        try {
+          const dateStr = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+          
+          // Fetch Wealth Matrix data
+          const wParams = new URLSearchParams();
+          wParams.append("limit", "2000");
+          wParams.append("baseLat", lat.toString());
+          wParams.append("baseLon", lon.toString());
+          wParams.append("birthLat", birthLat.toString());
+          wParams.append("birthLon", birthLon.toString());
+          wParams.append("birthDate", birthDate);
+          wParams.append("targetDate", dateStr);
+          wParams.append("engineType", useClassicalBoard ? "classical" : "physical");
+          wParams.append("layerMode", activeLayerMode);
+          wParams.append("useTrueNorth", useTrueNorth.toString());
+          wParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+
+          const wRes = await fetch(`/api/municipalities-wealth?${wParams.toString()}`);
+          const wJson = await wRes.json();
+          if (wJson.success) setWealthData(wJson.data || []);
+
+          // Fetch Rental Arbitrage data
+          const aParams = new URLSearchParams();
+          aParams.append("limit", "1000");
+          aParams.append("baseLat", lat.toString());
+          aParams.append("baseLon", lon.toString());
+          aParams.append("birthLat", birthLat.toString());
+          aParams.append("birthLon", birthLon.toString());
+          aParams.append("birthDate", birthDate);
+          aParams.append("targetDate", dateStr);
+          aParams.append("radiusKm", "all");
+          aParams.append("prefecture", "all");
+          aParams.append("useClassical", useClassicalBoard.toString());
+          aParams.append("layerMode", activeLayerMode);
+          aParams.append("useTrueNorth", useTrueNorth.toString());
+          aParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+
+          const aRes = await fetch(`/api/rentals/arbitrage?${aParams.toString()}`);
+          const aJson = await aRes.json();
+          setPropertiesData(aJson.properties || []);
+        } catch (e) {
+          console.error("Failed to load scorecard data:", e);
+        } finally {
+          setScorecardLoading(false);
+        }
+      };
+      loadScorecardData();
+    }
+  }, [activeTab, lat, lon, birthLat, birthLon, birthDate, baseTime, timeOffsetDays, useClassicalBoard, activeLayerMode, useTrueNorth, lunarPhaseModifier]);
 
   const fetchNBAData = async () => {
     try {
@@ -523,6 +588,12 @@ export const SolarTimeClock = () => {
           if (data.gsr !== undefined) setGsr(data.gsr);
           if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
           if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
+          // Load unified configurations
+          if (data.use_classical_board !== undefined) setUseClassicalBoard(data.use_classical_board);
+          if (data.use_true_north !== undefined) setUseTrueNorth(data.use_true_north);
+          if (data.lunar_phase_modifier !== undefined) setLunarPhaseModifier(data.lunar_phase_modifier);
+          if (data.layer_mode !== undefined) setActiveLayerMode(data.layer_mode);
+          if (data.direction_filter_mode !== undefined) setDirectionFilterMode(data.direction_filter_mode);
           isLoaded = true;
         }
       }
@@ -553,6 +624,12 @@ export const SolarTimeClock = () => {
         if (data.gsr !== undefined) setGsr(data.gsr);
         if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
         if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
+        // Load unified configurations
+        if (data.use_classical_board !== undefined) setUseClassicalBoard(data.use_classical_board);
+        if (data.use_true_north !== undefined) setUseTrueNorth(data.use_true_north);
+        if (data.lunar_phase_modifier !== undefined) setLunarPhaseModifier(data.lunar_phase_modifier);
+        if (data.layer_mode !== undefined) setActiveLayerMode(data.layer_mode);
+        if (data.direction_filter_mode !== undefined) setDirectionFilterMode(data.direction_filter_mode);
         isLoaded = true;
       } catch (e) {
         console.error("LocalStorage parse error", e);
@@ -574,6 +651,7 @@ export const SolarTimeClock = () => {
       if (wBaseLon) { setLon(Number(wBaseLon)); isLoaded = true; }
     }
 
+    setConfigLoaded(true);
     return isLoaded;
   };
 
@@ -586,6 +664,46 @@ export const SolarTimeClock = () => {
   useEffect(() => {
     handleLoadConfig(true);
   }, []);
+
+  useEffect(() => {
+    if (!configLoaded) return;
+    
+    const autoSave = async () => {
+      try {
+        const partialConfig = {
+          use_classical_board: useClassicalBoard,
+          use_true_north: useTrueNorth,
+          lunar_phase_modifier: lunarPhaseModifier,
+          layer_mode: activeLayerMode,
+          direction_filter_mode: directionFilterMode,
+          base_lat: lat,
+          base_lon: lon,
+          birth_date: birthDate,
+          birth_lat: birthLat,
+          birth_lon: birthLon
+        };
+        
+        // Save to localStorage
+        const localData = localStorage.getItem('tactical_config_v1');
+        let currentLocal = {};
+        if (localData) {
+          try { currentLocal = JSON.parse(localData); } catch(e){}
+        }
+        localStorage.setItem('tactical_config_v1', JSON.stringify({ ...currentLocal, ...partialConfig }));
+        
+        // POST to API
+        await fetch('/api/user-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(partialConfig)
+        });
+      } catch (e) {
+        console.error("Auto-save configuration failed:", e);
+      }
+    };
+    
+    autoSave();
+  }, [useClassicalBoard, useTrueNorth, lunarPhaseModifier, activeLayerMode, directionFilterMode, lat, lon, birthDate, birthLat, birthLon, configLoaded]);
 
   const handleGetGPS = () => {
     if (navigator.geolocation) {
@@ -632,7 +750,13 @@ export const SolarTimeClock = () => {
         hrv,
         gsr,
         ansLoad,
-        shieldCapacity
+        shieldCapacity,
+        // Persist unified configurations
+        use_classical_board: useClassicalBoard,
+        use_true_north: useTrueNorth,
+        lunar_phase_modifier: lunarPhaseModifier,
+        layer_mode: activeLayerMode,
+        direction_filter_mode: directionFilterMode
       };
 
       await fetch('/api/user-config', {
@@ -897,6 +1021,161 @@ export const SolarTimeClock = () => {
   const layers = filteredLayers.layers;
   const physicalLayers = filteredLayers.physicalLayers;
   const classicalLayers = filteredLayers.classicalLayers;
+
+  const activeVectors = React.useMemo(() => {
+    let av: any = layers?.finalVectors || {};
+    if (activeLayerMode === 'year') av = layers?.yearLayer || {};
+    else if (activeLayerMode === 'month') av = layers?.monthLayer || {};
+    else if (activeLayerMode === 'day') av = layers?.dayLayer || {};
+    return av;
+  }, [layers, activeLayerMode]);
+
+  const getStatusScore = (status: string) => {
+    if (!status) return 50;
+    if (status === 'OPTIMAL') return 100;
+    if (status === 'OPTIMAL_REGULAR') return 90;
+    if (status === 'SAFE') return 80;
+    if (status === 'WARNING') return 60;
+    if (status.startsWith('NOISE_VOID') || status.startsWith('NOISE_NODE')) return 40;
+    if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI') || status.startsWith('NOISE_GETSUMEI') || status.startsWith('NOISE_GETSUTEKI')) return 20;
+    if (status.startsWith('NOISE_GOU') || status.startsWith('NOISE_ANKEN') || status.startsWith('NOISE_HA')) return 10;
+    return 50;
+  };
+
+  const scorecard30DaysForecast = React.useMemo(() => {
+    if (!baseTime || !honmeiStar) return null;
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    
+    const result: Record<Direction, { luckyDays: number; dates: { dateStr: string; status: string; score: number }[] }> = {
+      N: { luckyDays: 0, dates: [] },
+      NE: { luckyDays: 0, dates: [] },
+      E: { luckyDays: 0, dates: [] },
+      SE: { luckyDays: 0, dates: [] },
+      S: { luckyDays: 0, dates: [] },
+      SW: { luckyDays: 0, dates: [] },
+      W: { luckyDays: 0, dates: [] },
+      NW: { luckyDays: 0, dates: [] },
+    };
+
+    for (let i = 0; i < 30; i++) {
+      const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
+      const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
+      const testDate = testDateSolar.solarTime;
+      const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
+      const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
+      const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
+      const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
+
+      const vectorData = calculateVectorCollision(
+        useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+        yB, mB, dB,
+        voidZodiacArray,
+        testEnv.raw.lunarNode,
+        'MIGRATION',
+        testDate,
+        lon || 139.6917,
+        useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
+        useClassicalBoard ? 'traditional' : 'physical'
+      );
+
+      const filteredV = filterVectors(
+        vectorData,
+        useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
+        voidZodiacArray,
+        testEnv.raw.lunarNode,
+        yB, mB, dB,
+        directionFilterMode,
+        useClassicalBoard ? getsuMeiStar : null,
+        activeLayerMode
+      );
+
+      dirs.forEach(dir => {
+        const status = filteredV[dir] || 'SAFE';
+        const isLucky = status === 'SAFE' || status === 'OPTIMAL' || status === 'OPTIMAL_REGULAR';
+        const score = getStatusScore(status);
+        
+        if (isLucky) {
+          result[dir].luckyDays += 1;
+        }
+        result[dir].dates.push({
+          dateStr: testDateLocal.toISOString().split('T')[0],
+          status,
+          score
+        });
+      });
+    }
+    return result;
+  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, useClassicalBoard, getsuMeiStar, directionFilterMode, activeLayerMode]);
+
+  const scorecardSummary = React.useMemo(() => {
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const dirMapJa: Record<Direction, string> = {
+      N: '北', NE: '北東', E: '東', SE: '南東',
+      S: '南', SW: '南西', W: '西', NW: '北西'
+    };
+
+    return dirs.map(dir => {
+      const status = activeVectors[dir] || 'SAFE';
+      const score = getStatusScore(status);
+      const isNoise = status.startsWith('NOISE');
+      const forecast = scorecard30DaysForecast?.[dir] || { luckyDays: 0, dates: [] };
+
+      const areasForDir = wealthData.filter(item => {
+        const itemDir = useTrueNorth ? item.direction : item.magneticDirection;
+        return itemDir === dir;
+      });
+      const topAreas = [...areasForDir].sort((a, b) => (b.incomePerCapita || 0) - (a.incomePerCapita || 0));
+      const topArea = topAreas[0] || null;
+
+      const rentalsForDir = propertiesData.filter(item => {
+        const itemDir = useTrueNorth ? item.direction : item.magneticDirection;
+        return itemDir === dir;
+      });
+      const topRentals = [...rentalsForDir].sort((a, b) => (b.arbitrageScore || 0) - (a.arbitrageScore || 0));
+      const topRental = topRentals[0] || null;
+
+      return {
+        direction: dir,
+        labelJa: dirMapJa[dir],
+        status,
+        score,
+        isNoise,
+        luckyDays: forecast.luckyDays,
+        dates: forecast.dates,
+        topArea,
+        topAreas: topAreas.slice(0, 5),
+        topRental,
+        topRentals: topRentals.slice(0, 5)
+      };
+    });
+  }, [activeVectors, scorecard30DaysForecast, wealthData, propertiesData, useTrueNorth]);
+
+  const handleExportForGemini = async () => {
+    setIsExporting(true);
+    try {
+      const res = await fetch('/api/relocation/export');
+      if (!res.ok) throw new Error("エクスポートAPIエラー");
+      const data = await res.json();
+      
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `oracle_engine_gemini_export.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      console.error(e);
+      alert("エクスポートに失敗しました: " + e.message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   useEffect(() => {
     if (heatmapMode === 'none' || !baseTime || !honmeiStar || !env) return;
@@ -1381,10 +1660,7 @@ export const SolarTimeClock = () => {
   const personalVoidZodiac = voidZodiacOverride ? voidZodiacOverride.split('') : basePersonalVoidZodiac;
   const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
 
-  let activeVectors: any = layers?.finalVectors || {};
-  if (activeLayerMode === 'year') activeVectors = layers?.yearLayer || {};
-  else if (activeLayerMode === 'month') activeVectors = layers?.monthLayer || {};
-  else if (activeLayerMode === 'day') activeVectors = layers?.dayLayer || {};
+
 
   const targetDirInfo = getTargetDirectionInfo();
   let targetVectorStatus: string | null = null;
@@ -1645,6 +1921,15 @@ export const SolarTimeClock = () => {
               }`}
           >
             4. AI相談
+          </button>
+          <button
+            onClick={() => setActiveTab("scorecard")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${activeTab === "scorecard"
+              ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+              : "text-zinc-500 hover:text-zinc-300"
+              }`}
+          >
+            5. 総合スコア
           </button>
         </div>
 
@@ -2296,6 +2581,352 @@ export const SolarTimeClock = () => {
 
           </div>
         )}
+
+        {/* --- TAB CONTENT: 5. SCORECARD --- */}
+        {activeTab === "scorecard" && (
+          <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-4xl">
+            {/* Control Panel Header */}
+            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+              <div>
+                <h2 className="text-emerald-500 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                  5. 総合スコア / 8方位統合評価マトリクス
+                </h2>
+                <p className="text-zinc-400 text-[10px] sm:text-xs leading-relaxed max-w-xl">
+                  直近30日の時空波動予測、各方位における富裕エリア所得、および不動産賃貸アービトラージの偏差値指標を統合した意思決定コックピットです。
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {/* Visibility Toggle */}
+                <button
+                  onClick={() => setShowNoiseDirections(!showNoiseDirections)}
+                  className={`px-3 py-1.5 text-[9px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
+                    showNoiseDirections
+                      ? 'bg-zinc-800 text-zinc-300 border-zinc-700'
+                      : 'bg-emerald-950/20 text-emerald-400 border-emerald-500/30'
+                  }`}
+                >
+                  {showNoiseDirections ? '☐ NOISE方位を表示中' : '☑ NOISE方位を非表示'}
+                </button>
+
+                {/* Gemini Export Button */}
+                <button
+                  onClick={handleExportForGemini}
+                  disabled={isExporting}
+                  className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      エクスポート中...
+                    </>
+                  ) : (
+                    <>
+                      <span>EXPORT FOR GEMINI</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {scorecardLoading ? (
+              <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
+                <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                <span className="text-[10px] font-mono text-zinc-500 tracking-[0.2em] uppercase">Loading Relocation Scenarios...</span>
+              </div>
+            ) : (
+              <div className="w-full overflow-hidden bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <th className="p-3 w-28">方位 (Sector)</th>
+                        <th className="p-3 w-36">ステータス (Status)</th>
+                        <th className="p-3 w-20">統合スコア</th>
+                        <th className="p-3 w-28 text-center">30日吉日数</th>
+                        <th className="p-3">推奨富裕エリア (最高所得)</th>
+                        <th className="p-3">推奨物件 (最大アービトラージ)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/50 text-xs">
+                      {scorecardSummary
+                        .filter(item => showNoiseDirections || !item.isNoise)
+                        .map((item, idx) => {
+                          const statusColor = (s: string) => {
+                            if (s === 'OPTIMAL') return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+                            if (s === 'OPTIMAL_REGULAR') return 'text-emerald-500 bg-emerald-500/5 border-emerald-500/20';
+                            if (s === 'SAFE') return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+                            if (s === 'WARNING') return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+                            if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-800 border-zinc-700';
+                            if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+                            return 'text-red-400 bg-red-500/10 border-red-500/30';
+                          };
+
+                          return (
+                            <tr
+                              key={item.direction}
+                              onClick={() => setSelectedDirection(item.direction)}
+                              className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
+                            >
+                              {/* Direction */}
+                              <td className="p-3 font-mono font-bold text-zinc-200 flex items-center gap-1.5">
+                                <span className="text-[10px] text-zinc-500">▶</span>
+                                {item.labelJa} ({item.direction})
+                              </td>
+
+                              {/* Status Badge */}
+                              <td className="p-3">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.status)}`}>
+                                  {item.status.replace('NOISE_', '')}
+                                </span>
+                              </td>
+
+                              {/* Score */}
+                              <td className="p-3 font-mono font-bold">
+                                <span className={
+                                  item.score >= 80 ? 'text-emerald-400' :
+                                  item.score >= 50 ? 'text-blue-400' :
+                                  item.score >= 30 ? 'text-yellow-500' : 'text-red-500'
+                                }>
+                                  {item.score}
+                                </span>
+                              </td>
+
+                              {/* Lucky Days */}
+                              <td className="p-3 text-center font-mono">
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${
+                                  item.luckyDays >= 20 ? 'bg-emerald-950/40 text-emerald-400 font-bold' :
+                                  item.luckyDays >= 10 ? 'bg-blue-950/20 text-blue-400' : 'bg-zinc-900 text-zinc-500'
+                                }`}>
+                                  {item.luckyDays} / 30日
+                                </span>
+                              </td>
+
+                              {/* Recommended Wealth Area */}
+                              <td className="p-3">
+                                {item.topArea ? (
+                                  <div className="flex flex-col">
+                                    <span className="text-zinc-200 font-bold group-hover:text-emerald-400 transition-colors">
+                                      {item.topArea.areaName}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                      平均所得: {item.topArea.incomePerCapita ? `${(item.topArea.incomePerCapita / 10000).toFixed(1)}万円` : `${(item.topArea.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-zinc-600 text-[10px] italic">データなし</span>
+                                )}
+                              </td>
+
+                              {/* Recommended Property */}
+                              <td className="p-3">
+                                {item.topRental ? (
+                                  <div className="flex flex-col">
+                                    <span className="text-zinc-200 font-bold group-hover:text-emerald-400 transition-colors truncate max-w-[200px]">
+                                      {item.topRental.property_name}
+                                    </span>
+                                    <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                      賃料: {(item.topRental.totalRent / 10000).toFixed(1)}万円 | 差益: {item.topRental.arbitrageScore?.toFixed(1)}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-zinc-600 text-[10px] italic">対象物件なし</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* --- DETAIL SIDE-DRAWER --- */}
+        {selectedDirection && (() => {
+          const detail = scorecardSummary.find(d => d.direction === selectedDirection);
+          if (!detail) return null;
+
+          const statusColor = (s: string) => {
+            if (s === 'OPTIMAL') return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+            if (s === 'OPTIMAL_REGULAR') return 'text-emerald-500 bg-emerald-500/5 border-emerald-500/20';
+            if (s === 'SAFE') return 'text-blue-400 bg-blue-500/10 border-blue-500/30';
+            if (s === 'WARNING') return 'text-orange-400 bg-orange-500/10 border-orange-500/30';
+            if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-800 border-zinc-700';
+            if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
+            return 'text-red-400 bg-red-500/10 border-red-500/30';
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 overflow-hidden font-sans">
+              {/* Backdrop */}
+              <div 
+                className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                onClick={() => setSelectedDirection(null)}
+              ></div>
+
+              {/* Drawer Container */}
+              <div className="absolute inset-y-0 right-0 max-w-full flex">
+                <div className="w-screen max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl relative flex flex-col">
+                  {/* Close button */}
+                  <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-500 font-bold font-mono">▶</span>
+                      <h3 className="text-sm font-bold text-zinc-200">
+                        【方位詳細】 {detail.labelJa} ({detail.direction})
+                      </h3>
+                    </div>
+                    <button 
+                      onClick={() => setSelectedDirection(null)}
+                      className="text-zinc-400 hover:text-white transition-colors p-1"
+                    >
+                      ✕ 閉じる
+                    </button>
+                  </div>
+
+                  {/* Scrollable Content */}
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                    {/* Status & Score Block */}
+                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Astrological Wave</span>
+                        <span className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusColor(detail.status)}`}>
+                          {detail.status}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Score</span>
+                        <span className={`text-2xl font-mono font-bold ${
+                          detail.score >= 80 ? 'text-emerald-400' :
+                          detail.score >= 50 ? 'text-blue-400' :
+                          detail.score >= 30 ? 'text-yellow-500' : 'text-red-500'
+                        }`}>
+                          {detail.score}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 30-Day Forecast Calendar */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <span>📅 直近30日の時空吉凶シミュレーション</span>
+                        </h4>
+                        <span className="text-[9px] text-zinc-500 font-mono">吉日数: {detail.luckyDays}日</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-6 gap-1 bg-black/40 p-2 border border-zinc-900 rounded-md">
+                        {detail.dates.map((d, i) => {
+                          let bg = 'bg-zinc-900/50 border-zinc-800 text-zinc-500';
+                          if (d.status === 'OPTIMAL') bg = 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400';
+                          else if (d.status === 'OPTIMAL_REGULAR') bg = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                          else if (d.status === 'SAFE') bg = 'bg-blue-500/10 border-blue-500/30 text-blue-400';
+                          else if (d.status === 'WARNING') bg = 'bg-orange-500/10 border-orange-500/30 text-orange-400';
+                          else if (d.status.startsWith('NOISE')) bg = 'bg-red-500/10 border-red-500/30 text-red-400';
+
+                          const dateParts = d.dateStr.split('-');
+                          const mDay = dateParts[2];
+                          const mMonth = dateParts[1];
+
+                          return (
+                            <div 
+                              key={i} 
+                              className={`border p-1 text-center rounded flex flex-col items-center justify-center transition-all ${bg}`}
+                              title={`${d.dateStr}: ${d.status}`}
+                            >
+                              <span className="text-[7px] opacity-70 font-mono">{mMonth}/{mDay}</span>
+                              <span className="text-[9px] font-bold font-mono">{d.score}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Top 5 Wealth Municipalities */}
+                    <div className="space-y-3">
+                      <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800 pb-1.5">
+                        <span>🏢 富裕度市区町村 TOP 5</span>
+                      </h4>
+                      {detail.topAreas.length > 0 ? (
+                        <div className="space-y-2">
+                          {detail.topAreas.map((area, idx) => (
+                            <div 
+                              key={area.id} 
+                              className="bg-black/30 border border-zinc-900 rounded p-2.5 flex items-center justify-between text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono text-zinc-600">#{idx + 1}</span>
+                                <div className="flex flex-col">
+                                  <span className="text-zinc-200 font-bold">{area.areaName}</span>
+                                  <span className="text-[9px] text-zinc-500 font-mono mt-0.5">コード: {area.areaCode}</span>
+                                </div>
+                              </div>
+                              <div className="text-right flex flex-col items-end">
+                                <span className="text-zinc-300 font-mono font-bold">
+                                  {area.incomePerCapita ? `${(area.incomePerCapita / 10000).toFixed(1)}万円` : `${(area.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
+                                </span>
+                                <span className="text-[9px] text-zinc-500 font-sans mt-0.5">一人当たり平均所得</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">該当するエリアがありません。</p>
+                      )}
+                    </div>
+
+                    {/* Top 5 Rentals */}
+                    <div className="space-y-3">
+                      <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800 pb-1.5">
+                        <span>🏠 推奨賃貸物件 (アービトラージ) TOP 5</span>
+                      </h4>
+                      {detail.topRentals.length > 0 ? (
+                        <div className="space-y-2">
+                          {detail.topRentals.map((rental, idx) => (
+                            <div 
+                              key={rental.id} 
+                              className="bg-black/30 border border-zinc-900 rounded p-2.5 flex flex-col gap-1.5 text-xs"
+                            >
+                              <div className="flex justify-between items-start gap-2">
+                                <div className="flex items-start gap-2">
+                                  <span className="text-[10px] font-mono text-zinc-600 mt-0.5">#{idx + 1}</span>
+                                  <div className="flex flex-col">
+                                    <span className="text-zinc-200 font-bold truncate max-w-[280px]" title={rental.property_name}>
+                                      {rental.property_name}
+                                    </span>
+                                    <span className="text-[9px] text-zinc-500 font-mono">
+                                      距離: {rental.distanceKm?.toFixed(1)}km | 広さ: {rental.size_sqm}㎡ | 築年数: {rental.age_years}年
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                                  差益: {rental.arbitrageScore?.toFixed(1)}
+                                </span>
+                              </div>
+
+                              <div className="flex justify-between items-center border-t border-zinc-900/50 pt-1.5 text-[10px] text-zinc-400">
+                                <span>賃料+管理費: <strong className="text-zinc-300 font-bold font-mono">{(rental.totalRent / 10000).toFixed(1)}万円</strong></span>
+                                <span className={`px-1 py-0.5 rounded text-[8px] font-mono border ${statusColor(rental.astrologyStatus)}`}>
+                                  {rental.astrologyStatus}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-zinc-500 italic">該当する物件情報がありません。</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* --- MAP CONTENT (Appended to DESTINATION tab) --- */}
         {activeTab === "destination" && (

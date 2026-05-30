@@ -21,6 +21,8 @@ export default function ArbitrageScannerPage() {
   // Relocation & Fortune Settings States
   const [baseLat, setBaseLat] = useState("34.9911"); // Default Kyoto
   const [baseLon, setBaseLon] = useState("135.7248");
+  const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
+  const [birthLon, setBirthLon] = useState("132.4482");
   const [birthDate, setBirthDate] = useState("1988-11-25"); // Default Birth Date
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
@@ -52,25 +54,69 @@ export default function ArbitrageScannerPage() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    const storedLat = localStorage.getItem("arb_baseLat");
-    const storedLon = localStorage.getItem("arb_baseLon");
-    const storedBirth = localStorage.getItem("arb_birthDate");
-    const storedTarget = localStorage.getItem("arb_targetDate");
-    const storedRadius = localStorage.getItem("arb_radiusKm");
-    const storedPrefecture = localStorage.getItem("arb_prefecture");
-    const storedClassical = localStorage.getItem("arb_useClassical");
-    const storedLayer = localStorage.getItem("arb_layerMode");
-    const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
+    let bsLat = "34.9911";
+    let bsLon = "135.7248";
+    let bLat = "34.3952";
+    let bLon = "132.4482";
+    let bDate = "1988-11-25";
+    let tDate = getTodayString();
+    let rKm = "10";
+    let pref = "all";
+    let classical = false;
+    let layer = "year";
+    let trueNorth = false;
 
-    if (storedLat) { setBaseLat(storedLat); setLocalLat(storedLat); }
-    if (storedLon) { setBaseLon(storedLon); setLocalLon(storedLon); }
-    if (storedBirth) { setBirthDate(storedBirth); setLocalBirthDate(storedBirth); }
-    if (storedTarget) { setTargetDate(storedTarget); setLocalTargetDate(storedTarget); }
-    if (storedRadius) setRadiusKm(storedRadius);
-    if (storedPrefecture) setPrefecture(storedPrefecture);
-    if (storedClassical) setUseClassical(storedClassical === "true");
-    if (storedLayer) setLayerMode(storedLayer);
-    if (storedTrueNorth) setUseTrueNorth(storedTrueNorth === "true");
+    // Load from unified tactical config
+    const tacticalConfig = localStorage.getItem('tactical_config_v1');
+    if (tacticalConfig) {
+      try {
+        const config = JSON.parse(tacticalConfig);
+        if (config.birth_date) {
+          const dStr = config.birth_date.split('T')[0];
+          bDate = dStr;
+        }
+        if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
+        if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
+        if (config.base_lat !== undefined) bsLat = config.base_lat.toString();
+        if (config.base_lon !== undefined) bsLon = config.base_lon.toString();
+        if (config.use_classical_board !== undefined) classical = config.use_classical_board;
+        if (config.use_true_north !== undefined) trueNorth = config.use_true_north;
+        if (config.layer_mode !== undefined) layer = config.layer_mode;
+      } catch (e) { }
+    } else {
+      // Fallback to legacy isolated keys
+      const storedLat = localStorage.getItem("arb_baseLat");
+      const storedLon = localStorage.getItem("arb_baseLon");
+      const storedBirth = localStorage.getItem("arb_birthDate");
+      const storedTarget = localStorage.getItem("arb_targetDate");
+      const storedRadius = localStorage.getItem("arb_radiusKm");
+      const storedPrefecture = localStorage.getItem("arb_prefecture");
+      const storedClassical = localStorage.getItem("arb_useClassical");
+      const storedLayer = localStorage.getItem("arb_layerMode");
+      const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
+
+      if (storedLat) bsLat = storedLat;
+      if (storedLon) bsLon = storedLon;
+      if (storedBirth) bDate = storedBirth;
+      if (storedTarget) tDate = storedTarget;
+      if (storedRadius) rKm = storedRadius;
+      if (storedPrefecture) pref = storedPrefecture;
+      if (storedClassical) classical = storedClassical === "true";
+      if (storedLayer) layer = storedLayer;
+      if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
+    }
+
+    setBaseLat(bsLat); setLocalLat(bsLat);
+    setBaseLon(bsLon); setLocalLon(bsLon);
+    setBirthLat(bLat);
+    setBirthLon(bLon);
+    setBirthDate(bDate); setLocalBirthDate(bDate);
+    setTargetDate(tDate); setLocalTargetDate(tDate);
+    setRadiusKm(rKm);
+    setPrefecture(pref);
+    setUseClassical(classical);
+    setLayerMode(layer);
+    setUseTrueNorth(trueNorth);
 
     setInitialLoaded(true);
   }, []);
@@ -83,8 +129,8 @@ export default function ArbitrageScannerPage() {
       params.append("limit", "1000");
       params.append("baseLat", baseLat);
       params.append("baseLon", baseLon);
-      params.append("birthLat", baseLat); // Fallback: birth location matches base location for ACD calculations
-      params.append("birthLon", baseLon);
+      params.append("birthLat", birthLat);
+      params.append("birthLon", birthLon);
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
       params.append("radiusKm", radiusKm);
@@ -114,6 +160,25 @@ export default function ArbitrageScannerPage() {
     }
   }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, initialLoaded]);
 
+  const saveUnifiedConfig = async (updatedFields: any) => {
+    try {
+      const localData = localStorage.getItem('tactical_config_v1');
+      let currentLocal = {};
+      if (localData) {
+        try { currentLocal = JSON.parse(localData); } catch (e) {}
+      }
+      localStorage.setItem('tactical_config_v1', JSON.stringify({ ...currentLocal, ...updatedFields }));
+
+      await fetch('/api/user-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+    } catch (e) {
+      console.error("Failed to sync config in arbitrage page:", e);
+    }
+  };
+
   // Handle manual submit of location/birth date
   const handleSettingsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +191,12 @@ export default function ArbitrageScannerPage() {
     localStorage.setItem("arb_baseLon", localLon);
     localStorage.setItem("arb_birthDate", localBirthDate);
     localStorage.setItem("arb_targetDate", localTargetDate);
+
+    saveUnifiedConfig({
+      base_lat: parseFloat(localLat),
+      base_lon: parseFloat(localLon),
+      birth_date: localBirthDate
+    });
   };
 
   // Sync radius changes instantly
@@ -133,6 +204,7 @@ export default function ArbitrageScannerPage() {
     setRadiusKm(newRadius);
     localStorage.setItem("arb_radiusKm", newRadius);
     setCurrentPage(1);
+    saveUnifiedConfig({ radius_km: newRadius });
   };
 
   // Sync prefecture changes instantly
@@ -140,6 +212,7 @@ export default function ArbitrageScannerPage() {
     setPrefecture(newPref);
     localStorage.setItem("arb_prefecture", newPref);
     setCurrentPage(1);
+    saveUnifiedConfig({ prefecture: newPref });
   };
 
   const applyPreset = (presetName: string, lat: string, lon: string, pref: string) => {
@@ -152,6 +225,11 @@ export default function ArbitrageScannerPage() {
     localStorage.setItem("arb_baseLon", lon);
     localStorage.setItem("arb_prefecture", pref);
     setCurrentPage(1);
+    saveUnifiedConfig({
+      base_lat: parseFloat(lat),
+      base_lon: parseFloat(lon),
+      prefecture: pref
+    });
   };
 
   // Sync toggles instantly
@@ -159,18 +237,21 @@ export default function ArbitrageScannerPage() {
     setUseClassical(val);
     localStorage.setItem("arb_useClassical", val.toString());
     setCurrentPage(1);
+    saveUnifiedConfig({ use_classical_board: val });
   };
 
   const handleTrueNorthToggle = (val: boolean) => {
     setUseTrueNorth(val);
     localStorage.setItem("arb_useTrueNorth", val.toString());
     setCurrentPage(1);
+    saveUnifiedConfig({ use_true_north: val });
   };
 
   const handleLayerModeChange = (val: string) => {
     setLayerMode(val);
     localStorage.setItem("arb_layerMode", val);
     setCurrentPage(1);
+    saveUnifiedConfig({ layer_mode: val });
   };
 
   // Geolocation trigger

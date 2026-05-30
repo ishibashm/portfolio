@@ -115,13 +115,38 @@ export default function RegionalWealthPage() {
     const currentUseTrueNorth = overrideParams?.useTrueNorth !== undefined ? overrideParams.useTrueNorth : useTrueNorth;
     const currentLunarPhaseModifier = overrideParams?.lunarPhaseModifier !== undefined ? overrideParams.lunarPhaseModifier : lunarPhaseModifier;
 
-    // Save to localStorage (fallback generic slots)
+    // Save to localStorage & POST to user-config for global sync
     if (typeof window !== 'undefined') {
       localStorage.setItem('wealth_birthDate', currentBirthDate);
       localStorage.setItem('wealth_birthLat', currentBirthLat);
       localStorage.setItem('wealth_birthLon', currentBirthLon);
       localStorage.setItem('wealth_baseLat', currentBaseLat);
       localStorage.setItem('wealth_baseLon', currentBaseLon);
+
+      const partialConfig = {
+        birth_date: currentBirthDate,
+        birth_lat: currentBirthLat ? parseFloat(currentBirthLat) : undefined,
+        birth_lon: currentBirthLon ? parseFloat(currentBirthLon) : undefined,
+        base_lat: currentBaseLat ? parseFloat(currentBaseLat) : undefined,
+        base_lon: currentBaseLon ? parseFloat(currentBaseLon) : undefined,
+        use_classical_board: currentEngineType === "classical",
+        use_true_north: currentUseTrueNorth,
+        lunar_phase_modifier: currentLunarPhaseModifier,
+        layer_mode: currentLayerMode
+      };
+
+      const localData = localStorage.getItem('tactical_config_v1');
+      let currentLocal = {};
+      if (localData) {
+        try { currentLocal = JSON.parse(localData); } catch (e) {}
+      }
+      localStorage.setItem('tactical_config_v1', JSON.stringify({ ...currentLocal, ...partialConfig }));
+
+      fetch('/api/user-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(partialConfig)
+      }).catch(e => console.error("Sync config failed on wealth page:", e));
     }
 
     try {
@@ -208,6 +233,10 @@ export default function RegionalWealthPage() {
       let bLon = "";
       let bsLat = "";
       let bsLon = "";
+      let engine = "physical";
+      let layer = "final";
+      let trueNorth = false;
+      let lunarPhase = true;
 
       // 1. Try to load from unified tactical config (Sync with SolarTimeClock)
       const tacticalConfig = localStorage.getItem('tactical_config_v1');
@@ -219,6 +248,10 @@ export default function RegionalWealthPage() {
           if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
           if (config.base_lat !== undefined) bsLat = config.base_lat.toString();
           if (config.base_lon !== undefined) bsLon = config.base_lon.toString();
+          if (config.use_classical_board !== undefined) engine = config.use_classical_board ? "classical" : "physical";
+          if (config.use_true_north !== undefined) trueNorth = config.use_true_north;
+          if (config.lunar_phase_modifier !== undefined) lunarPhase = config.lunar_phase_modifier;
+          if (config.layer_mode !== undefined) layer = config.layer_mode;
         } catch (e) { }
       }
 
@@ -234,13 +267,21 @@ export default function RegionalWealthPage() {
       if (bLon) setBirthLon(bLon);
       if (bsLat) setBaseLat(bsLat);
       if (bsLon) setBaseLon(bsLon);
+      setEngineType(engine);
+      setLayerMode(layer);
+      setUseTrueNorth(trueNorth);
+      setLunarPhaseModifier(lunarPhase);
 
       fetchData({
         birthDate: bDate,
         birthLat: bLat,
         birthLon: bLon,
         baseLat: bsLat,
-        baseLon: bsLon
+        baseLon: bsLon,
+        engineType: engine,
+        layerMode: layer,
+        useTrueNorth: trueNorth,
+        lunarPhaseModifier: lunarPhase
       });
     } else {
       fetchData();
