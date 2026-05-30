@@ -1,30 +1,20 @@
-import { NextResponse } from 'next/server';
-import { normalize } from '@geolonia/normalize-japanese-addresses';
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const q = searchParams.get('q');
-
-  if (!q) {
-    return NextResponse.json({ error: 'Query parameter "q" is required' }, { status: 400 });
-  }
-
+async function GET(q) {
+  const { normalize } = require('@geolonia/normalize-japanese-addresses');
   try {
     const result = await normalize(q);
 
     if (result.point && result.point.lat && result.point.lng) {
-      return NextResponse.json({
+      return {
         lat: result.point.lat,
         lon: result.point.lng,
         name: `${result.pref}${result.city}${result.town}${result.addr}`.replace(/null/g, '') || q
-      });
+      };
     }
 
-    // Fallback: If normalize fails, we can try nominatim or just return 404
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`, {
       headers: { 
         'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
-        'User-Agent': 'Kigaku-Relocation-App/1.0'
+        'User-Agent': 'Portfolio-App/1.0 (Contact: local-admin@example.com)'
       }
     });
 
@@ -32,19 +22,21 @@ export async function GET(request: Request) {
       const data = await res.json();
       if (data && data.length > 0) {
         const item = data[0];
-        return NextResponse.json({
+        return {
           lat: parseFloat(item.lat),
           lon: parseFloat(item.lon),
           name: item.display_name.split(',')[0] || q
-        });
+        };
       }
     } else {
       console.error(`Nominatim API returned ${res.status} ${res.statusText}`);
     }
 
-    return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+    return { error: 'Location not found', nominatimFallback: true };
   } catch (error) {
     console.error('Geocoding API error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return { error: 'Internal Server Error' };
   }
 }
+
+GET('Iowa, USA').then(console.log).catch(console.error);
