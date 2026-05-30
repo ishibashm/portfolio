@@ -18,8 +18,8 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { id, name, steps } = body;
 
-    if (!name || !steps || !Array.isArray(steps)) {
-      return NextResponse.json({ success: false, error: 'Name and steps (array) are required' }, { status: 400 });
+    if (!name || !steps || (typeof steps !== 'object' && !Array.isArray(steps))) {
+      return NextResponse.json({ success: false, error: 'Name and steps (array or object) are required' }, { status: 400 });
     }
 
     let record;

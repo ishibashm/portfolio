@@ -45,6 +45,8 @@ interface MapProps {
   setActiveLayerMode?: (mode: 'final' | 'year' | 'month' | 'day') => void;
   activeModel?: 'physical' | 'classical';
   properties?: any[];
+  useTrueNorth?: boolean;
+  setUseTrueNorth?: (val: boolean) => void;
 }
 
 export function TacticalMagneticMapComponent({ 
@@ -54,10 +56,14 @@ export function TacticalMagneticMapComponent({
   activeLayerMode = 'final',
   setActiveLayerMode,
   activeModel = 'physical',
-  properties = []
+  properties = [],
+  useTrueNorth: propsUseTrueNorth,
+  setUseTrueNorth: propsSetUseTrueNorth
 }: MapProps) {
   const [showHUD, setShowHUD] = useState(true);
-  const [useTrueNorth, setUseTrueNorth] = useState(false);
+  const [localUseTrueNorth, localSetUseTrueNorth] = useState(false);
+  const useTrueNorth = propsUseTrueNorth !== undefined ? propsUseTrueNorth : localUseTrueNorth;
+  const setUseTrueNorth = propsSetUseTrueNorth !== undefined ? propsSetUseTrueNorth : localSetUseTrueNorth;
   const [activeDecryptTab, setActiveDecryptTab] = useState(1);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 

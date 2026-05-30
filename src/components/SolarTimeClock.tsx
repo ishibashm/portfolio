@@ -1056,6 +1056,7 @@ export const SolarTimeClock = () => {
       SW: { luckyDays: 0, dates: [] },
       W: { luckyDays: 0, dates: [] },
       NW: { luckyDays: 0, dates: [] },
+      CENTER: { luckyDays: 0, dates: [] },
     };
 
     for (let i = 0; i < 30; i++) {
@@ -1112,7 +1113,8 @@ export const SolarTimeClock = () => {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const dirMapJa: Record<Direction, string> = {
       N: '北', NE: '北東', E: '東', SE: '南東',
-      S: '南', SW: '南西', W: '西', NW: '北西'
+      S: '南', SW: '南西', W: '西', NW: '北西',
+      CENTER: '中央'
     };
 
     return dirs.map(dir => {

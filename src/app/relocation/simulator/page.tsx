@@ -8,19 +8,18 @@ import {
   Plus, 
   Trash2, 
   Save, 
-  FolderOpen, 
   AlertTriangle, 
   MapPin, 
   HelpCircle,
   Calendar,
-  ArrowRight,
-  TrendingUp,
-  Info,
   ChevronRight,
-  CheckCircle2,
-  Settings,
+  Info,
   Clock,
-  Sparkles
+  Sparkles,
+  Users,
+  UserPlus,
+  Sliders,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   getCurrentEnvironmentalFrequencies, 
@@ -71,7 +70,12 @@ interface SavedPlan {
   updatedAt: string;
 }
 
-// Bounding boxes / Centroids of key regions for detours
+interface AccompanyingMember {
+  id: string;
+  name: string;
+  birthDate: string;
+}
+
 const candidates = [
   { name: '福井県敦賀周辺', lat: 35.645, lon: 136.055 },
   { name: '滋賀県大津周辺', lat: 35.017, lon: 135.854 },
@@ -119,7 +123,6 @@ const dirAngleRanges: Record<string, [number, number]> = {
   'NW': [292.5, 337.5]
 };
 
-// Helper to compute ray intersections
 function intersectRays(
   lat1: number, lon1: number, bearing1: number,
   lat2: number, lon2: number, bearing2: number
@@ -144,8 +147,6 @@ function intersectRays(
   const t1 = ((x2 - x1) * cos2 - (y2 - y1) * sin2) / denom;
 
   if (t1 <= 0 || t2 <= 0) return null;
-
-  // Let's cap distance to avoid infinite polygons spanning the globe
   if (t1 > 5.0 || t2 > 5.0) return null;
 
   const lat = y1 + t1 * cos1;
@@ -160,6 +161,13 @@ export default function RelocationSimulatorPage() {
   const [startLon, setStartLon] = useState(135.7248);
   const [startName, setStartName] = useState("京都市右京区西京極");
   
+  // Accompanying Members
+  const [members, setMembers] = useState<AccompanyingMember[]>([]);
+
+  // Telemetry simulation state sliders
+  const [simulatedAns, setSimulatedAns] = useState(20); // ANS load (0-100)
+  const [simulatedShield, setSimulatedShield] = useState(80); // Shield capacity (0-100)
+
   // Simulation Steps
   const [steps, setSteps] = useState<SimulatorStep[]>([
     {
@@ -182,6 +190,10 @@ export default function RelocationSimulatorPage() {
   const [planName, setPlanName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+
+  // NBA Evaluations from server evaluation endpoint
+  const [nbaEvaluations, setNbaEvaluations] = useState<Record<string, any>>({});
+  const [isEvaluatingNba, setIsEvaluatingNba] = useState(false);
 
   // Load configuration and cached drafts on mount
   useEffect(() => {
@@ -231,18 +243,28 @@ export default function RelocationSimulatorPage() {
         if (draft.steps && Array.isArray(draft.steps)) setSteps(draft.steps);
         if (draft.useTrueNorth !== undefined) setUseTrueNorth(draft.useTrueNorth);
         if (draft.planName !== undefined) setPlanName(draft.planName);
+        if (draft.members && Array.isArray(draft.members)) setMembers(draft.members);
       } catch (e) {}
     }
   };
 
-  const saveDraft = (updatedSteps: SimulatorStep[], sLat = startLat, sLon = startLon, sName = startName, uTrue = useTrueNorth, pName = planName) => {
+  const saveDraft = (
+    updatedSteps: SimulatorStep[], 
+    sLat = startLat, 
+    sLon = startLon, 
+    sName = startName, 
+    uTrue = useTrueNorth, 
+    pName = planName,
+    updatedMembers = members
+  ) => {
     localStorage.setItem('relocation_simulator_draft', JSON.stringify({
       startLat: sLat,
       startLon: sLon,
       startName: sName,
       steps: updatedSteps,
       useTrueNorth: uTrue,
-      planName: pName
+      planName: pName,
+      members: updatedMembers
     }));
   };
 
@@ -253,9 +275,6 @@ export default function RelocationSimulatorPage() {
 
   // Declination calculation approximation (Clamped to 2017)
   const getApproximateDeclination = (lat: number, lon: number): number => {
-    // Standard Japanese declination runs from -7° (Kyushu) to -9° (Hokkaido).
-    // Approx based on latitude: Tokyo is -7.3, Kyoto -7.9, Sapporo -9.0.
-    // Linear regression approximation:
     const baseDecl = -7.5;
     const latDiff = lat - 35.0;
     return baseDecl - latDiff * 0.15;
@@ -272,7 +291,6 @@ export default function RelocationSimulatorPage() {
     steps.forEach((step, idx) => {
       const depDate = new Date(step.departureDate);
       
-      // Calculate Geometrical Bearing from the active base at this moment
       const rawBearing = getBearing(currentBaseLat, currentBaseLon, step.toLat, step.toLon);
       let decl = 0;
       if (!useTrueNorth) {
@@ -299,7 +317,6 @@ export default function RelocationSimulatorPage() {
         currentBaseLon
       );
 
-      // Evaluate combined status (Day precision logic)
       const finalStatus = collision.finalVectors[direction] || 'SAFE';
 
       const getRatingDetails = (status: string) => {
@@ -324,8 +341,7 @@ export default function RelocationSimulatorPage() {
 
       const ratingInfo = getRatingDetails(finalStatus);
 
-      // Calculate stay duration (if next step exists)
-      let stayDuration = 999; // infinite default for final step
+      let stayDuration = 999; 
       if (idx < steps.length - 1) {
         const nextDep = new Date(steps[idx + 1].departureDate);
         const diffMs = nextDep.getTime() - depDate.getTime();
@@ -352,8 +368,6 @@ export default function RelocationSimulatorPage() {
 
       list.push(evaluatedStepObj);
 
-      // Base shifting logic:
-      // Base shifts ONLY if purpose is MIGRATION and stay is >= 75 days.
       if (step.purpose === 'MIGRATION' && stayDuration >= 75) {
         currentBaseLat = step.toLat;
         currentBaseLon = step.toLon;
@@ -364,7 +378,166 @@ export default function RelocationSimulatorPage() {
     return list;
   }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs]);
 
-  // Compute Kari-kippou Detour Polygons for the selected step
+  // Fetch NBA timing and Q-value details dynamically
+  const fetchNbaEvaluations = async () => {
+    if (steps.length === 0) return;
+    setIsEvaluatingNba(true);
+
+    const stepDates = steps.map(s => s.departureDate);
+    let candidateDates: string[] = [];
+    if (activeStepIndex !== null && activeStepIndex < steps.length) {
+      const activeStep = steps[activeStepIndex];
+      const baseDate = new Date(activeStep.departureDate);
+      candidateDates = [activeStep.departureDate];
+      // Generate 7 weekly options (+7 to +49 days) for timing scan
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(baseDate);
+        d.setDate(baseDate.getDate() + i * 7);
+        candidateDates.push(d.toISOString().slice(0, 10));
+      }
+    }
+
+    const allDates = Array.from(new Set([...stepDates, ...candidateDates]));
+
+    try {
+      const res = await fetch('/api/relocation/nba-evaluate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          birthDate,
+          dates: allDates,
+          lon: startLon,
+          simulatedAns,
+          simulatedShield
+        })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const mapping: Record<string, any> = {};
+          result.data.forEach((item: any) => {
+            mapping[item.date] = item;
+          });
+          setNbaEvaluations(prev => ({ ...prev, ...mapping }));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch Q-value evaluations:', e);
+    } finally {
+      setIsEvaluatingNba(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNbaEvaluations();
+  }, [steps, birthDate, simulatedAns, simulatedShield, activeStepIndex]);
+
+  // Compute timing recommendations (Time avoidance)
+  const timingRecommendations = useMemo(() => {
+    if (activeStepIndex === null || activeStepIndex >= steps.length) return [];
+    const activeStep = steps[activeStepIndex];
+    const currentEval = nbaEvaluations[activeStep.departureDate];
+    if (!currentEval) return [];
+
+    const baseDate = new Date(activeStep.departureDate);
+    const list = [];
+
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(baseDate);
+      d.setDate(baseDate.getDate() + i * 7);
+      const dateStr = d.toISOString().slice(0, 10);
+      const ev = nbaEvaluations[dateStr];
+
+      if (ev && ev.qValue > currentEval.qValue) {
+        list.push({
+          date: dateStr,
+          qValue: ev.qValue,
+          riskFactors: ev.riskFactors,
+          diffDays: i * 7
+        });
+      }
+    }
+
+    return list.sort((a, b) => b.qValue - a.qValue).slice(0, 3);
+  }, [activeStepIndex, steps, nbaEvaluations]);
+
+  // Compute Spatial Detour Recommendations
+  const detourCandidates = useMemo(() => {
+    if (activeStepIndex === null || activeStepIndex >= evaluatedSteps.length) return [];
+    const currentStep = evaluatedSteps[activeStepIndex];
+    const rating = currentStep.evaluation?.rating;
+
+    // Only suggest detours if direct route is inauspicious
+    if (rating !== '凶' && rating !== '大凶') return [];
+
+    const latA = currentStep.fromLat;
+    const lonA = currentStep.fromLon;
+    const latB = currentStep.toLat;
+    const lonB = currentStep.toLon;
+
+    let declA = 0;
+    let declB = 0;
+    if (!useTrueNorth) {
+      declA = getApproximateDeclination(latA, lonA);
+      declB = getApproximateDeclination(latB, lonB);
+    }
+
+    const validCandidates: { name: string; lat: number; lon: number; score: number }[] = [];
+
+    candidates.forEach(cand => {
+      // 1. Check A -> C direction
+      const rawBearingC = getBearing(latA, lonA, cand.lat, cand.lon);
+      const adjustedC = (rawBearingC - declA + 360) % 360;
+      const dirC = bearingToDirection(adjustedC);
+
+      // 2. Check C -> B direction
+      const rawBearingB = getBearing(cand.lat, cand.lon, latB, lonB);
+      const adjustedB = (rawBearingB - declB + 360) % 360;
+      const dirB = bearingToDirection(adjustedB);
+
+      const envA = getCurrentEnvironmentalFrequencies(new Date(currentStep.departureDate), lonA);
+      const yB_A = generateBoard(envA.classicalYearStar);
+      const mB_A = generateBoard(envA.classicalMonthStar);
+      const dB_A = generateBoard(envA.classicalDayStar);
+
+      const collisionC = calculateVectorCollision(
+        personalStar, yB_A, mB_A, dB_A, voidZodiacs, envA.raw.lunarNode, 'MIGRATION', new Date(currentStep.departureDate), lonA
+      );
+      const statusC = collisionC.finalVectors[dirC] || 'SAFE';
+
+      const depDateB = new Date(currentStep.departureDate);
+      depDateB.setDate(depDateB.getDate() + 75);
+      const envC = getCurrentEnvironmentalFrequencies(depDateB, cand.lon);
+      const yB_C = generateBoard(envC.classicalYearStar);
+      const mB_C = generateBoard(envC.classicalMonthStar);
+      const dB_C = generateBoard(envC.classicalDayStar);
+
+      const collisionB = calculateVectorCollision(
+        personalStar, yB_C, mB_C, dB_C, voidZodiacs, envC.raw.lunarNode, 'MIGRATION', depDateB, cand.lon
+      );
+      const statusB = collisionB.finalVectors[dirB] || 'SAFE';
+
+      const isSafe = (status: string) => ['SAFE', 'OPTIMAL', 'OPTIMAL_REGULAR'].includes(status);
+
+      if (isSafe(statusC) && isSafe(statusB)) {
+        const rateVal = (status: string) => {
+          if (status === 'OPTIMAL') return 100;
+          if (status === 'OPTIMAL_REGULAR') return 80;
+          return 60;
+        };
+        validCandidates.push({
+          name: cand.name,
+          lat: cand.lat,
+          lon: cand.lon,
+          score: rateVal(statusC) + rateVal(statusB)
+        });
+      }
+    });
+
+    return validCandidates.sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs]);
+
+  // Compute Kari-kippou Detour Polygons for drawing on map
   const detourPolygonsAndPrefectures = useMemo(() => {
     if (activeStepIndex === null || activeStepIndex >= evaluatedSteps.length) {
       return { polygons: [], recommendations: [] };
@@ -372,7 +545,6 @@ export default function RelocationSimulatorPage() {
     const currentStep = evaluatedSteps[activeStepIndex];
     const rating = currentStep.evaluation?.rating;
 
-    // Only suggest detours if the selected step is inauspicious (凶 or 大凶)
     if (rating !== '凶' && rating !== '大凶') {
       return { polygons: [], recommendations: [] };
     }
@@ -395,7 +567,6 @@ export default function RelocationSimulatorPage() {
       currentStep.fromLon
     );
 
-    // Identify safe directions in the Year Board
     const safeDirs: Direction[] = [];
     const directionsList: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     directionsList.forEach(d => {
@@ -420,8 +591,6 @@ export default function RelocationSimulatorPage() {
       declB = getApproximateDeclination(latB, lonB);
     }
 
-    // For each safe direction d1 from A, and safe direction d2 to B:
-    // C must be in direction d1 from A, and B must be in direction d2 from C (which means C is in the opposite d2_opp from B).
     safeDirs.forEach(d1 => {
       const rangeA = dirAngleRanges[d1];
       if (!rangeA) return;
@@ -435,7 +604,6 @@ export default function RelocationSimulatorPage() {
         const angleB1 = (rangeB[0] + declB) % 360;
         const angleB2 = (rangeB[1] + declB) % 360;
 
-        // Solve the 4 intersection combinations to construct the polygon bounding box
         const p1 = intersectRays(latA, lonA, angleA1, latB, lonB, angleB1);
         const p2 = intersectRays(latA, lonA, angleA1, latB, lonB, angleB2);
         const p3 = intersectRays(latA, lonA, angleA2, latB, lonB, angleB1);
@@ -444,7 +612,6 @@ export default function RelocationSimulatorPage() {
         const validPoints = [p1, p2, p3, p4].filter(p => p !== null) as [number, number][];
 
         if (validPoints.length >= 3) {
-          // Sort clockwise relative to centroid
           const centroid = validPoints.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]], [0, 0]).map(v => v / validPoints.length) as [number, number];
           validPoints.sort((a, b) => {
             const angle1 = Math.atan2(a[0] - centroid[0], a[1] - centroid[1]);
@@ -454,8 +621,6 @@ export default function RelocationSimulatorPage() {
 
           polygons.push(validPoints);
 
-          // Find candidate regions falling inside this polygon
-          // We check if any static candidate centroid is within the bounds
           candidates.forEach(cand => {
             const bearingFromA = getBearing(latA, lonA, cand.lat, cand.lon);
             const adjA = (bearingFromA - declA + 360) % 360;
@@ -476,11 +641,138 @@ export default function RelocationSimulatorPage() {
     return { polygons, recommendations: Array.from(recommendedPrefectures) };
   }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs]);
 
-  // Handle step manipulations
+  // Compute Overall Plan Scorer (0-100)
+  const overallPlanScore = useMemo(() => {
+    if (evaluatedSteps.length === 0) return 0;
+
+    let totalSpaceScore = 0;
+    let totalEvaluationsCount = 0;
+
+    evaluatedSteps.forEach(step => {
+      const rateToPoints = (rating: string) => {
+        if (rating === '大吉') return 100;
+        if (rating === '吉') return 80;
+        if (rating === '凶') return 20;
+        if (rating === '大凶') return 0;
+        return 60; // SAFE/普通
+      };
+
+      totalSpaceScore += rateToPoints(step.evaluation?.rating || '普通');
+      totalEvaluationsCount++;
+
+      members.forEach(m => {
+        const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
+        const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
+        
+        const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
+        let decl = 0;
+        if (!useTrueNorth) {
+          decl = getApproximateDeclination(step.fromLat, step.fromLon);
+        }
+        const adjustedBearing = (rawBearing - decl + 360) % 360;
+        const direction = bearingToDirection(adjustedBearing);
+
+        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+        const yearBoard = generateBoard(env.classicalYearStar);
+        const monthBoard = generateBoard(env.classicalMonthStar);
+        const dayBoard = generateBoard(env.classicalDayStar);
+
+        const mCollision = calculateVectorCollision(
+          mPersonalStar,
+          yearBoard,
+          monthBoard,
+          dayBoard,
+          mVoidZodiacs,
+          env.raw.lunarNode,
+          step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
+          new Date(step.departureDate),
+          step.fromLon
+        );
+        const mStatus = mCollision.finalVectors[direction] || 'SAFE';
+        let mRating = '普通';
+        if (mStatus === 'OPTIMAL') mRating = '大吉';
+        else if (mStatus === 'OPTIMAL_REGULAR') mRating = '吉';
+        else if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(mStatus)) mRating = '凶';
+        else if (['NOISE_VOID', 'NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) mRating = '大凶';
+
+        totalSpaceScore += rateToPoints(mRating);
+        totalEvaluationsCount++;
+      });
+    });
+
+    const spaceScore = totalEvaluationsCount > 0 ? totalSpaceScore / totalEvaluationsCount : 60;
+
+    let totalTimeScore = 0;
+    let totalTimeCount = 0;
+    evaluatedSteps.forEach(step => {
+      const ev = nbaEvaluations[step.departureDate];
+      if (ev) {
+        const score = (ev.qValue + 100) / 2;
+        totalTimeScore += score;
+        totalTimeCount++;
+      }
+    });
+    const timeScore = totalTimeCount > 0 ? totalTimeScore / totalTimeCount : 50;
+
+    let finalScore = Math.round(spaceScore * 0.6 + timeScore * 0.4);
+
+    let hasSevereClash = false;
+    evaluatedSteps.forEach(step => {
+      const mainStatus = step.evaluation?.status || '';
+      if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mainStatus)) {
+        hasSevereClash = true;
+      }
+      members.forEach(m => {
+        const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
+        const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
+        
+        const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
+        let decl = 0;
+        if (!useTrueNorth) {
+          decl = getApproximateDeclination(step.fromLat, step.fromLon);
+        }
+        const adjustedBearing = (rawBearing - decl + 360) % 360;
+        const direction = bearingToDirection(adjustedBearing);
+
+        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+        const yearBoard = generateBoard(env.classicalYearStar);
+        const monthBoard = generateBoard(env.classicalMonthStar);
+        const dayBoard = generateBoard(env.classicalDayStar);
+
+        const mCollision = calculateVectorCollision(
+          mPersonalStar,
+          yearBoard,
+          monthBoard,
+          dayBoard,
+          mVoidZodiacs,
+          env.raw.lunarNode,
+          step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
+          new Date(step.departureDate),
+          step.fromLon
+        );
+        const mStatus = mCollision.finalVectors[direction] || 'SAFE';
+        if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) {
+          hasSevereClash = true;
+        }
+      });
+
+      const ev = nbaEvaluations[step.departureDate];
+      if (ev && ev.qValue < -50) {
+        hasSevereClash = true;
+      }
+    });
+
+    if (hasSevereClash && finalScore > 40) {
+      finalScore = 40;
+    }
+
+    return finalScore;
+  }, [evaluatedSteps, members, nbaEvaluations, useTrueNorth]);
+
+  // Handle step updates & inserts
   const handleAddStep = () => {
     const lastStep = steps[steps.length - 1];
     const baseDate = lastStep ? new Date(lastStep.departureDate) : new Date();
-    // Default next date to +90 days later
     const nextDate = new Date(baseDate.getTime() + 90 * 24 * 60 * 60 * 1000);
     const dateStr = nextDate.toISOString().slice(0, 10);
 
@@ -493,7 +785,7 @@ export default function RelocationSimulatorPage() {
       fromLat,
       fromLon,
       toName: "新しい目的地",
-      toLat: fromLat + 0.1, // slightly offset
+      toLat: fromLat + 0.1, 
       toLon: fromLon + 0.1,
       departureDate: dateStr,
       purpose: "MIGRATION" as const,
@@ -525,6 +817,44 @@ export default function RelocationSimulatorPage() {
     saveDraft(newSteps);
   };
 
+  const handleApplyDetour = (cand: typeof detourCandidates[0]) => {
+    if (activeStepIndex === null || activeStepIndex >= steps.length) return;
+    const currentStep = steps[activeStepIndex];
+
+    const depDate = new Date(currentStep.departureDate);
+    const nextDepDate = new Date(depDate);
+    nextDepDate.setDate(nextDepDate.getDate() + 75);
+    const nextDepStr = nextDepDate.toISOString().slice(0, 10);
+
+    const stepN: SimulatorStep = {
+      ...currentStep,
+      toName: cand.name,
+      toLat: cand.lat,
+      toLon: cand.lon,
+      purpose: 'MIGRATION', 
+    };
+
+    const stepNPlus1: SimulatorStep = {
+      fromName: cand.name,
+      fromLat: cand.lat,
+      fromLon: cand.lon,
+      toName: currentStep.toName,
+      toLat: currentStep.toLat,
+      toLon: currentStep.toLon,
+      departureDate: nextDepStr,
+      purpose: currentStep.purpose,
+      notes: `${currentStep.toName}への本目的移動`
+    };
+
+    const newSteps = [...steps];
+    newSteps[activeStepIndex] = stepN;
+    newSteps.splice(activeStepIndex + 1, 0, stepNPlus1);
+
+    setSteps(newSteps);
+    setActiveStepIndex(activeStepIndex + 1); 
+    saveDraft(newSteps);
+  };
+
   // Database Save/Load operations
   const handleSavePlan = async () => {
     if (!planName) {
@@ -541,13 +871,17 @@ export default function RelocationSimulatorPage() {
   const triggerSave = async (name: string) => {
     setIsSaving(true);
     try {
+      const payload = {
+        steps,
+        members
+      };
       const res = await fetch('/api/relocation/simulation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: currentPlanId || undefined,
           name,
-          steps
+          steps: payload
         })
       });
       if (res.ok) {
@@ -570,19 +904,28 @@ export default function RelocationSimulatorPage() {
 
   const handleLoadPlan = (plan: SavedPlan) => {
     try {
-      const parsedSteps = plan.steps;
-      if (Array.isArray(parsedSteps)) {
-        setSteps(parsedSteps);
-        setCurrentPlanId(plan.id);
-        setPlanName(plan.name);
-        if (parsedSteps[0]) {
-          setStartLat(parsedSteps[0].fromLat);
-          setStartLon(parsedSteps[0].fromLon);
-          setStartName(parsedSteps[0].fromName);
-        }
-        setActiveStepIndex(0);
-        saveDraft(parsedSteps, parsedSteps[0]?.fromLat, parsedSteps[0]?.fromLon, parsedSteps[0]?.fromName, useTrueNorth, plan.name);
+      const payload = plan.steps as any;
+      let parsedSteps = [];
+      let parsedMembers = [];
+      if (Array.isArray(payload)) {
+        parsedSteps = payload;
+      } else if (payload && typeof payload === 'object') {
+        parsedSteps = payload.steps || [];
+        parsedMembers = payload.members || [];
       }
+
+      setSteps(parsedSteps);
+      setMembers(parsedMembers);
+      setCurrentPlanId(plan.id);
+      setPlanName(plan.name);
+
+      if (parsedSteps[0]) {
+        setStartLat(parsedSteps[0].fromLat);
+        setStartLon(parsedSteps[0].fromLon);
+        setStartName(parsedSteps[0].fromName);
+      }
+      setActiveStepIndex(0);
+      saveDraft(parsedSteps, parsedSteps[0]?.fromLat, parsedSteps[0]?.fromLon, parsedSteps[0]?.fromName, useTrueNorth, plan.name, parsedMembers);
     } catch (e) {
       alert("データの展開に失敗しました。");
     }
@@ -624,7 +967,6 @@ export default function RelocationSimulatorPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 relative selection:bg-indigo-500/30 selection:text-indigo-200">
-      {/* Background radial glow */}
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -644,31 +986,43 @@ export default function RelocationSimulatorPage() {
             </p>
           </div>
 
-          {/* Load/Save Controls */}
-          <div className="flex flex-wrap items-center gap-3 bg-zinc-900/60 p-3 rounded-2xl border border-white/5 backdrop-blur-md">
-            {currentPlanId && (
-              <span className="text-[10px] font-mono text-zinc-500 px-2 border-r border-zinc-800">
-                ACTIVE: {planName}
-              </span>
-            )}
-            <input
-              type="text"
-              placeholder="プラン名を入力..."
-              value={planName}
-              onChange={(e) => {
-                setPlanName(e.target.value);
-                saveDraft(steps, startLat, startLon, startName, useTrueNorth, e.target.value);
-              }}
-              className="px-3 py-1.5 bg-black/40 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30"
-            />
-            <button
-              onClick={handleSavePlan}
-              disabled={isSaving}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-xs font-bold transition-all shadow-lg"
-            >
-              <Save className="w-3.5 h-3.5" />
-              {isSaving ? '保存中...' : 'プランを保存'}
-            </button>
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Overall Quality Score Badge */}
+            <div className="flex items-center gap-4 bg-zinc-900/60 p-4 rounded-3xl border border-white/5 backdrop-blur-md shadow-2xl">
+              <div className="text-center">
+                <span className="text-[8px] uppercase tracking-widest text-zinc-500 font-bold block leading-none mb-1.5">計画総合適合度</span>
+                <span className={`text-3xl font-black tracking-tight font-mono ${overallPlanScore <= 40 ? 'text-red-400' : overallPlanScore >= 75 ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                  {overallPlanScore} <span className="text-xs font-normal text-zinc-500">pts</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Load/Save Controls */}
+            <div className="flex flex-wrap items-center gap-3 bg-zinc-900/60 p-3 rounded-2xl border border-white/5 backdrop-blur-md">
+              {currentPlanId && (
+                <span className="text-[10px] font-mono text-zinc-500 px-2 border-r border-zinc-800">
+                  ACTIVE: {planName}
+                </span>
+              )}
+              <input
+                type="text"
+                placeholder="プラン名を入力..."
+                value={planName}
+                onChange={(e) => {
+                  setPlanName(e.target.value);
+                  saveDraft(steps, startLat, startLon, startName, useTrueNorth, e.target.value);
+                }}
+                className="px-3 py-1.5 bg-black/40 border border-zinc-800 rounded-xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30"
+              />
+              <button
+                onClick={handleSavePlan}
+                disabled={isSaving}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-xs font-bold transition-all shadow-lg"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {isSaving ? '保存中...' : 'プランを保存'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -724,6 +1078,38 @@ export default function RelocationSimulatorPage() {
           </div>
         </div>
 
+        {/* Biosignal Simulation Sliders Panel */}
+        <div className="p-5 rounded-3xl bg-zinc-900/10 border border-zinc-900/80 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs shadow-inner">
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+              <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-indigo-400" /> 当日の想定ストレス負荷 (ANS Load):</span>
+              <span className="text-indigo-400 font-bold">{simulatedAns}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={simulatedAns}
+              onChange={(e) => setSimulatedAns(parseInt(e.target.value))}
+              className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+              <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-emerald-400" /> 当日の想定睡眠スコア (Shield Capacity):</span>
+              <span className="text-emerald-400 font-bold">{simulatedShield}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={simulatedShield}
+              onChange={(e) => setSimulatedShield(parseInt(e.target.value))}
+              className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+          </div>
+        </div>
+
         {/* Dashboard Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
@@ -755,24 +1141,147 @@ export default function RelocationSimulatorPage() {
               </div>
             </div>
 
+            {/* Accompanying Members Config */}
+            <div className="p-5 rounded-3xl bg-zinc-900/20 border border-zinc-800/80 shadow-md space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-500 uppercase flex items-center gap-2">
+                  <Users className="w-4 h-4 text-indigo-400" /> 同伴者の設定 (ACCOMPANYING MEMBERS)
+                </h3>
+                <button
+                  onClick={() => {
+                    const name = prompt("同伴者の名前を入力してください：", `同伴者 ${members.length + 1}`);
+                    if (!name) return;
+                    const bdate = prompt("同伴者の生年月日を入力してください（例：1965-05-15）：", "1990-01-01");
+                    if (!bdate) return;
+                    const newMembers = [...members, { id: Date.now().toString(), name, birthDate: bdate }];
+                    setMembers(newMembers);
+                    saveDraft(steps, startLat, startLon, startName, useTrueNorth, planName, newMembers);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> 同伴者を追加
+                </button>
+              </div>
+
+              {members.length === 0 ? (
+                <div className="text-[10px] text-zinc-600 font-mono italic">同伴者はいません（単身移動シミュレーション）</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {members.map((member) => (
+                    <div key={member.id} className="p-3.5 rounded-2xl bg-black/40 border border-zinc-800 flex items-center justify-between gap-3 shadow-inner">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold text-white">{member.name}</span>
+                        <span className="text-[9px] font-mono text-zinc-500">
+                          生年月日: {member.birthDate} ({getClassicalYearStar(new Date(member.birthDate))}・空亡: {getPersonalVoidZodiac(new Date(member.birthDate)).join('')})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newMembers = members.filter(m => m.id !== member.id);
+                          setMembers(newMembers);
+                          saveDraft(steps, startLat, startLon, startName, useTrueNorth, planName, newMembers);
+                        }}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-colors cursor-pointer"
+                        title="同伴者を削除"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Sequence Steps Cards */}
             <div className="space-y-4">
               {evaluatedSteps.map((step, idx) => {
                 const isSelected = activeStepIndex === idx;
-                const stayDuration = idx < evaluatedSteps.length - 1 
-                  ? steps[idx].departureDate // computed on memo
-                  : 'N/A'; // stay computed below
 
-                // Stay length logic
                 let stayStr = '定住（無期限）';
                 let isStayShort = false;
+                let stayDays = 999;
                 if (idx < steps.length - 1) {
                   const currentDep = new Date(step.departureDate);
                   const nextDep = new Date(steps[idx + 1].departureDate);
-                  const stayDays = Math.round((nextDep.getTime() - currentDep.getTime()) / (1000 * 60 * 60 * 24));
+                  stayDays = Math.round((nextDep.getTime() - currentDep.getTime()) / (1000 * 60 * 60 * 24));
                   stayStr = `${stayDays} 日間`;
                   isStayShort = stayDays < 75;
                 }
+
+                // Companion specific direction ratings
+                const memberEvals = members.map(m => {
+                  const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
+                  const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
+                  
+                  const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
+                  let decl = 0;
+                  if (!useTrueNorth) {
+                    decl = getApproximateDeclination(step.fromLat, step.fromLon);
+                  }
+                  const adjustedBearing = (rawBearing - decl + 360) % 360;
+                  const direction = bearingToDirection(adjustedBearing);
+
+                  const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+                  const yearBoard = generateBoard(env.classicalYearStar);
+                  const monthBoard = generateBoard(env.classicalMonthStar);
+                  const dayBoard = generateBoard(env.classicalDayStar);
+
+                  const mCollision = calculateVectorCollision(
+                    mPersonalStar,
+                    yearBoard,
+                    monthBoard,
+                    dayBoard,
+                    mVoidZodiacs,
+                    env.raw.lunarNode,
+                    step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
+                    new Date(step.departureDate),
+                    step.fromLon
+                  );
+
+                  const mStatus = mCollision.finalVectors[direction] || 'SAFE';
+
+                  let ratingLabel = '普通';
+                  let mColor = 'text-zinc-400 border-white/10 bg-white/5';
+                  if (mStatus === 'OPTIMAL') { ratingLabel = '大吉'; mColor = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'; }
+                  else if (mStatus === 'OPTIMAL_REGULAR') { ratingLabel = '吉'; mColor = 'text-emerald-500/80 border-emerald-500/20 bg-emerald-500/5'; }
+                  else if (mStatus === 'SAFE') { ratingLabel = '普通'; mColor = 'text-zinc-400 border-white/10 bg-white/5'; }
+                  else if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(mStatus)) { ratingLabel = '凶'; mColor = 'text-orange-400 border-orange-500/20 bg-orange-500/5'; }
+                  else if (['NOISE_VOID', 'NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) { ratingLabel = '大凶'; mColor = 'text-red-400 border-red-500/30 bg-red-500/10'; }
+
+                  return {
+                    memberId: m.id,
+                    name: m.name,
+                    status: mStatus,
+                    rating: ratingLabel,
+                    color: mColor
+                  };
+                });
+
+                // Calculate Universal Clashes
+                const clashingMembers: string[] = [];
+                let universalClashType = '';
+                const checkUniversal = (status: string) => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(status);
+
+                if (checkUniversal(step.evaluation?.status || '')) {
+                  clashingMembers.push("自分");
+                  universalClashType = step.evaluation?.status || '';
+                }
+                memberEvals.forEach(m => {
+                  if (checkUniversal(m.status)) {
+                    clashingMembers.push(m.name);
+                    universalClashType = m.status;
+                  }
+                });
+
+                const clashLabelMap: Record<string, string> = {
+                  'NOISE_GOU': '五黄殺',
+                  'NOISE_ANKEN': '暗剣殺',
+                  'NOISE_HA': '歳破/月破/日破'
+                };
+                const hasUniversalClash = clashingMembers.length > 0;
+
+                // Grab Timing evaluations for this date
+                const timingEval = nbaEvaluations[step.departureDate];
 
                 return (
                   <motion.div
@@ -801,17 +1310,23 @@ export default function RelocationSimulatorPage() {
                           e.stopPropagation();
                           handleRemoveStep(idx);
                         }}
-                        className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-all"
+                        className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-all cursor-pointer"
                         title="このステップを削除"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
+                    {/* Universal Clash Alert Banner */}
+                    {hasUniversalClash && (
+                      <div className="px-3.5 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-xl text-[10px] flex items-center gap-2 font-bold shadow-inner">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        <span>※家屋全体の重大な凶方位（{clashLabelMap[universalClashType] || '共通の凶'}）に衝突しています。影響：{clashingMembers.join(', ')}</span>
+                      </div>
+                    )}
+
                     {/* Step Fields Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" onClick={(e) => e.stopPropagation()}>
-                      
-                      {/* Destination Name */}
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[9px] uppercase font-bold text-zinc-500">目的地</label>
                         <input
@@ -822,7 +1337,6 @@ export default function RelocationSimulatorPage() {
                         />
                       </div>
 
-                      {/* Departure Date */}
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[9px] uppercase font-bold text-zinc-500">出発日</label>
                         <input
@@ -833,7 +1347,6 @@ export default function RelocationSimulatorPage() {
                         />
                       </div>
 
-                      {/* Purpose Select */}
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[9px] uppercase font-bold text-zinc-500">目的区分</label>
                         <select
@@ -847,16 +1360,44 @@ export default function RelocationSimulatorPage() {
                       </div>
                     </div>
 
+                    {/* Member Evaluations Matrix Row */}
+                    {members.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-white/5 pt-3">
+                        <div className="p-2 rounded-xl bg-black/30 border border-zinc-800 flex items-center justify-between gap-2 shadow-inner">
+                          <span className="text-[10px] text-zinc-400 font-bold">自分</span>
+                          <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black ${step.evaluation?.color}`}>
+                            {step.evaluation?.rating}
+                          </span>
+                        </div>
+                        {memberEvals.map(mEval => (
+                          <div key={mEval.memberId} className="p-2 rounded-xl bg-black/30 border border-zinc-800 flex items-center justify-between gap-2 shadow-inner">
+                            <span className="text-[10px] text-zinc-400 font-bold truncate max-w-[65px]">{mEval.name}</span>
+                            <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black border ${mEval.color}`}>
+                              {mEval.rating}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Vector / Direction HUD */}
                     <div className="flex flex-wrap items-center justify-between gap-4 bg-black/30 p-3 rounded-2xl border border-zinc-900 text-xs font-mono text-zinc-500">
                       <div>
                         出発地: <span className="text-zinc-300 font-bold">{step.fromName}</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span>方位角:</span>
-                        <span className="text-indigo-400 font-bold">
-                          {bearingToDirection(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))} ({Math.round(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))}°)
-                        </span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <span>方位角:</span>
+                          <span className="text-indigo-400 font-bold">
+                            {bearingToDirection(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))} ({Math.round(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))}°)
+                          </span>
+                        </div>
+                        {timingEval && (
+                          <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-4">
+                            <span>Q値:</span>
+                            <span className={`font-black ${timingEval.qValue < 0 ? 'text-red-400' : 'text-emerald-400'}`}>{timingEval.qValue.toFixed(1)}</span>
+                          </div>
+                        )}
                       </div>
                       <div>
                         滞在期間: <span className={`font-bold ${isStayShort ? 'text-amber-400' : 'text-emerald-400'}`}>{stayStr}</span>
@@ -882,7 +1423,7 @@ export default function RelocationSimulatorPage() {
             {/* Add Step button */}
             <button
               onClick={handleAddStep}
-              className="w-full py-4 border border-dashed border-zinc-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 rounded-[2rem] text-xs font-bold text-zinc-400 hover:text-indigo-300 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 border border-dashed border-zinc-800 hover:border-indigo-500/50 hover:bg-indigo-500/5 rounded-[2rem] text-xs font-bold text-zinc-400 hover:text-indigo-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> 移動ステップを追加
             </button>
@@ -936,6 +1477,45 @@ export default function RelocationSimulatorPage() {
                   </p>
                 </div>
 
+                {/* Timing Q-Value Overlay */}
+                {(() => {
+                  const step = evaluatedSteps[activeStepIndex];
+                  const ev = nbaEvaluations[step.departureDate];
+                  if (!ev) return null;
+                  
+                  return (
+                    <div className="p-4 rounded-2xl bg-zinc-900/60 border border-zinc-850 flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase leading-none">時間適合度 (Q値)</span>
+                        <span className="text-zinc-400">推奨行動: <strong className={ev.suggestedAction === 'EXECUTE_RELOCATION' ? 'text-emerald-400' : 'text-amber-400'}>{
+                          ev.suggestedAction === 'EXECUTE_RELOCATION' ? '実行前進' :
+                          ev.suggestedAction === 'EXECUTE_PURGE_RELOCATION' ? '浄化移住' :
+                          ev.suggestedAction === 'ABORT_AND_SHIELD' ? '撤退' :
+                          ev.suggestedAction === 'GATHER_INTEL' ? '情報収集' : '警戒待機'
+                        }</strong></span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-2xl font-black ${ev.qValue < 0 ? 'text-red-400' : 'text-emerald-400'}`}>{ev.qValue.toFixed(1)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Active Risk Factors alert */}
+                {(() => {
+                  const step = evaluatedSteps[activeStepIndex];
+                  const ev = nbaEvaluations[step.departureDate];
+                  if (!ev || !ev.riskFactors || ev.riskFactors.length === 0) return null;
+                  return (
+                    <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 text-zinc-400 text-[10px] flex gap-2 leading-relaxed font-mono">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="text-red-450 font-bold">日付リスク要因:</strong> {ev.riskFactors.join(', ')} が干渉しています。
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Phased relocation / Detour suggestions HUD */}
                 <div className="space-y-4 pt-2 border-t border-white/5">
                   <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300">最適化アクションアドバイス</h4>
@@ -950,7 +1530,7 @@ export default function RelocationSimulatorPage() {
 
                     if (step.purpose === 'TRAVEL' && stayDays >= 75) {
                       return (
-                        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex gap-2">
+                        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-xs flex gap-2 shadow-inner">
                           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                           <div className="leading-relaxed">
                             <strong className="block font-bold mb-1">【天中殺/拠点定着警告】</strong>
@@ -961,7 +1541,7 @@ export default function RelocationSimulatorPage() {
                     }
                     if (step.purpose === 'MIGRATION' && stayDays < 75) {
                       return (
-                        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex gap-2">
+                        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs flex gap-2 shadow-inner">
                           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                           <div className="leading-relaxed">
                             <strong className="block font-bold mb-1">【拠点未確定アラート】</strong>
@@ -973,20 +1553,57 @@ export default function RelocationSimulatorPage() {
                     return null;
                   })()}
 
-                  {/* Detour Suggestion (Fukui prefecture detour, etc.) */}
-                  {detourPolygonsAndPrefectures.recommendations.length > 0 && (
-                    <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs flex gap-2">
-                      <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
-                      <div className="leading-relaxed">
-                        <strong className="block font-bold mb-1">【吉方位迂回ルート提案 (仮吉方)】</strong>
-                        目的地への直接の移動は凶方位です。
-                        地図上のハイライトされた領域：<strong className="underline text-white font-bold">{detourPolygonsAndPrefectures.recommendations.join(', ')}</strong> 等の地域に **75日以上** 滞在（仮吉方）してから目的地へ移動することで、凶作用を避けてすべて吉方位に変換できます。
+                  {/* Timing Recommendations Box */}
+                  {timingRecommendations.length > 0 && (
+                    <div className="p-3.5 rounded-xl border border-zinc-800 bg-black/45 space-y-2 shadow-inner">
+                      <strong className="block text-[10px] uppercase font-bold text-zinc-400 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-indigo-400" /> 出発日程の最適化推奨（時間的回避）
+                      </strong>
+                      <p className="text-[9px] text-zinc-500 leading-normal">
+                        出発日を以下に変更すると、宇宙潮汐や自律神経（シミュレート値）との適合度が改善し、Q値が向上します。
+                      </p>
+                      <div className="flex flex-col gap-1.5 pt-1">
+                        {timingRecommendations.map((rec) => (
+                          <button
+                            key={rec.date}
+                            onClick={() => handleUpdateStep(activeStepIndex, { departureDate: rec.date })}
+                            className="w-full px-3 py-2 bg-zinc-950/80 hover:bg-indigo-500/10 border border-zinc-800 hover:border-indigo-500/30 rounded-xl text-left text-[10px] text-zinc-300 hover:text-indigo-200 transition-all flex items-center justify-between cursor-pointer"
+                          >
+                            <span>📅 {rec.date} <span className="text-zinc-500 font-mono">({rec.diffDays}日後)</span></span>
+                            <span className="font-bold text-emerald-400 font-mono">Q: {rec.qValue.toFixed(1)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Spatial Detour Candidates */}
+                  {detourCandidates.length > 0 && (
+                    <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs flex flex-col gap-2 shadow-inner">
+                      <div className="flex gap-2">
+                        <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div className="leading-relaxed">
+                          <strong className="block font-bold mb-1">【吉方位迂回ルート提案 (仮吉方)】</strong>
+                          目的地への直接の移動は凶方位です。以下の候補地に **75日以上** 滞在（仮吉方）してから移動することで、凶作用を回避できます。
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-1.5 mt-1 pt-1.5 border-t border-indigo-500/20">
+                        {detourCandidates.map(cand => (
+                          <button
+                            key={cand.name}
+                            onClick={() => handleApplyDetour(cand)}
+                            className="w-full px-3 py-2 bg-indigo-950/80 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-left text-[10px] text-indigo-200 hover:text-white transition-all flex items-center justify-between font-bold cursor-pointer"
+                          >
+                            <span>📍 {cand.name}経由で迂回ルートを作成</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
                       </div>
                     </div>
                   )}
 
                   {/* General Tips on Kari-Kippou */}
-                  {evaluatedSteps[activeStepIndex].evaluation?.rating === '普通' && (
+                  {evaluatedSteps[activeStepIndex].evaluation?.rating === '普通' && detourCandidates.length === 0 && (
                     <div className="p-3.5 rounded-xl border border-white/5 bg-black/40 text-zinc-400 text-[10px] flex gap-2 leading-relaxed">
                       <Info className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-500" />
                       <span>
