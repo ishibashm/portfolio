@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         lat: result.point.lat,
         lon: result.point.lng,
-        name: `${result.pref}${result.city}${result.town}${result.addr}`.replace(/null/g, '') || q
+        name: `${result.pref || ''}${result.city || ''}${result.town || ''}${result.addr || ''}` || q
       });
     }
 

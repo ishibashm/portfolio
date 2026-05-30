@@ -1,0 +1,294 @@
+"use client";
+
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, Polygon, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Search } from 'lucide-react';
+
+// Fix Leaflet marker icons in Next.js
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+// Custom Icons for Source and Step coordinates
+const startIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const stepIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const activeStepIcon = L.icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Component to dynamically fit bounds of the map to display all markers in the chain
+function FitBounds({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions && positions.length > 0) {
+      const bounds = L.latLngBounds(positions);
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }, [positions, map]);
+  return null;
+}
+
+interface SimulatorStep {
+  fromName: string;
+  fromLat: number;
+  fromLon: number;
+  toName: string;
+  toLat: number;
+  toLon: number;
+  departureDate: string;
+  purpose: 'MIGRATION' | 'TRAVEL';
+  notes: string | null;
+  evaluation?: {
+    status: string;
+    rating: string;
+    color: string;
+  };
+}
+
+interface SimulatorMapProps {
+  startLat: number;
+  startLon: number;
+  steps: SimulatorStep[];
+  activeStepIndex: number | null;
+  onStartLocationChange: (lat: number, lon: number, name?: string) => void;
+  onStepDestinationChange: (index: number, lat: number, lon: number, name?: string) => void;
+  detourPolygons: [number, number][][]; // Polygons representing detour zones
+}
+
+export default function SimulatorMap({
+  startLat,
+  startLon,
+  steps,
+  activeStepIndex,
+  onStartLocationChange,
+  onStepDestinationChange,
+  detourPolygons
+}: SimulatorMapProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const startPos: [number, number] = useMemo(() => [startLat || 35.6895, startLon || 139.6917], [startLat, startLon]);
+
+  // Combine starting position and all destination positions for boundary fitting
+  const allPositions: [number, number][] = useMemo(() => {
+    const list: [number, number][] = [startPos];
+    steps.forEach(s => {
+      if (s.toLat && s.toLon) {
+        list.push([s.toLat, s.toLon]);
+      }
+    });
+    return list;
+  }, [startPos, steps]);
+
+  const handleGeocodeSearch = async (query: string) => {
+    if (!query) return;
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        // If active step is selected, update that step's destination. Otherwise, update start position.
+        if (activeStepIndex !== null && activeStepIndex >= 0) {
+          onStepDestinationChange(activeStepIndex, data.lat, data.lon, data.name);
+        } else {
+          onStartLocationChange(data.lat, data.lon, data.name);
+        }
+      } else {
+        alert('指定された地名が見つかりませんでした。');
+      }
+    } catch (e) {
+      console.error('Geocoding failed:', e);
+      alert('地名検索中にエラーが発生しました。');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  if (!isMounted) {
+    return (
+      <div className="w-full h-full min-h-[400px] bg-zinc-950/80 border border-zinc-800 rounded-3xl flex items-center justify-center font-mono text-xs text-zinc-500 backdrop-blur-md">
+        [ LOADING SIMULATOR MAP ENGINE... ]
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full min-h-[400px] flex flex-col gap-4 relative">
+      {/* Geocoding search HUD overlay */}
+      <div className="absolute top-4 left-4 right-4 z-[1000] max-w-md pointer-events-auto">
+        <div className="relative shadow-2xl">
+          <input
+            type="text"
+            placeholder={
+              activeStepIndex !== null 
+                ? `ステップ ${activeStepIndex + 1} の目的地を検索...` 
+                : "スタート地（初期拠点）を検索..."
+            }
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleGeocodeSearch(searchQuery))}
+            className="w-full pl-9 pr-20 py-2.5 bg-black/90 border border-zinc-800 rounded-2xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/50 transition-all backdrop-blur-md"
+          />
+          <span className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 flex items-center justify-center">🔍</span>
+          <button
+            type="button"
+            onClick={() => handleGeocodeSearch(searchQuery)}
+            disabled={isSearching}
+            className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+          >
+            {isSearching ? '検索中...' : '検索'}
+          </button>
+        </div>
+      </div>
+
+      <div className="w-full flex-1 min-h-[400px] border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+        <MapContainer
+          key="relocation-simulator-leaflet"
+          center={startPos}
+          zoom={6}
+          style={{ height: '100%', width: '100%', background: '#09090b', zIndex: 0 }}
+          attributionControl={false}
+        >
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
+          
+          {/* Fit map view dynamically */}
+          <FitBounds positions={allPositions} />
+
+          {/* Start Location Marker (Gold) */}
+          <Marker 
+            position={startPos} 
+            icon={startIcon}
+            draggable={true} 
+            eventHandlers={{
+              dragend: (e) => {
+                const position = e.target.getLatLng();
+                onStartLocationChange(position.lat, position.lng);
+              }
+            }}
+          />
+
+          {/* Render Step Destination Markers */}
+          {steps.map((step, idx) => {
+            const isSelected = activeStepIndex === idx;
+            const pos: [number, number] = [step.toLat, step.toLon];
+            return (
+              <Marker
+                key={idx}
+                position={pos}
+                icon={isSelected ? activeStepIcon : stepIcon}
+                draggable={true}
+                eventHandlers={{
+                  dragend: (e) => {
+                    const position = e.target.getLatLng();
+                    onStepDestinationChange(idx, position.lat, position.lng);
+                  }
+                }}
+              />
+            );
+          })}
+
+          {/* Render Connecting Polyline Vectors */}
+          {steps.map((step, idx) => {
+            const prevPos: [number, number] = idx === 0 
+              ? startPos 
+              : [steps[idx - 1].toLat, steps[idx - 1].toLon];
+            const currentPos: [number, number] = [step.toLat, step.toLon];
+
+            const rating = step.evaluation?.rating || '普通';
+            let lineColor = '#a1a1aa'; // default gray (SAFE/N/A)
+            if (rating === '大吉' || rating === '吉') lineColor = '#10b981'; // green
+            else if (rating === '凶') lineColor = '#f59e0b'; // orange
+            else if (rating === '大凶') lineColor = '#ef4444'; // red
+
+            return (
+              <Polyline
+                key={`line-${idx}`}
+                positions={[prevPos, currentPos]}
+                color={lineColor}
+                weight={idx === activeStepIndex ? 4 : 2}
+                dashArray={step.purpose === 'TRAVEL' ? '5, 8' : undefined}
+              />
+            );
+          })}
+
+          {/* Render Kari-kippou Detour Zone Polygons */}
+          {detourPolygons.map((poly, idx) => (
+            <Polygon
+              key={`poly-${idx}`}
+              positions={poly}
+              pathOptions={{
+                color: '#6366f1',
+                fillColor: '#818cf8',
+                fillOpacity: 0.15,
+                weight: 1.5,
+                dashArray: '3, 6'
+              }}
+            />
+          ))}
+
+        </MapContainer>
+
+        {/* Legend Overlay HUD */}
+        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-black/90 border border-zinc-800 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-zinc-400">
+          <div className="flex items-center gap-2 font-bold text-amber-400">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span> 出発起点 (ゴールド)
+          </div>
+          <div className="flex items-center gap-2 font-bold text-indigo-400 mt-0.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span> 経由地 (青)
+          </div>
+          <div className="flex items-center gap-2 font-bold text-rose-400 mt-0.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span> 選択中の目的地 (赤)
+          </div>
+          <div className="border-t border-zinc-800 my-1"></div>
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-0.5 bg-emerald-500 inline-block"></span> 吉 / 大吉 方位ベクトル
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-0.5 bg-red-500 inline-block"></span> 凶 / 大凶 方位ベクトル
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-0.5 bg-zinc-500 border border-dashed border-zinc-400 inline-block"></span> 旅行（TRAVEL）ステップ
+          </div>
+          {detourPolygons.length > 0 && (
+            <div className="flex items-center gap-2 text-indigo-300 font-bold mt-0.5">
+              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-500/50 inline-block"></span> 吉方位迂回ゾーン (仮吉方領域)
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

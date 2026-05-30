@@ -14,7 +14,18 @@ export interface GeomagneticData {
 }
 
 export async function getGeomagneticData(lat: number, lon: number, timestamp: number = Date.now()): Promise<GeomagneticData | null> {
-  const date = new Date(timestamp);
+  let date = new Date(timestamp);
+  
+  // Clamp date to the validity range of the geomagnetism WMM-2015 model
+  // to prevent "Model is only valid from Mon Dec 15 2014 to Sun Dec 15 2019" errors.
+  const minDate = new Date("2014-12-16");
+  const maxDate = new Date("2019-12-14");
+  if (date < minDate) {
+    date = minDate;
+  } else if (date > maxDate) {
+    date = maxDate;
+  }
+
   try {
     const model = geomagnetism.model(date);
     const info = model.point([lat, lon]);
