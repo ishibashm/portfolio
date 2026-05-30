@@ -22,16 +22,24 @@ export async function GET(request: Request) {
 
     // Fallback: If normalize fails, we can try nominatim or just return 404
     const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`, {
-      headers: { 'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8' }
+      headers: { 
+        'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
+        'User-Agent': 'Portfolio-App/1.0 (Contact: local-admin@example.com)'
+      }
     });
-    const data = await res.json();
-    if (data && data.length > 0) {
-      const item = data[0];
-      return NextResponse.json({
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-        name: item.display_name.split(',')[0] || q
-      });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const item = data[0];
+        return NextResponse.json({
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+          name: item.display_name.split(',')[0] || q
+        });
+      }
+    } else {
+      console.error(`Nominatim API returned ${res.status} ${res.statusText}`);
     }
 
     return NextResponse.json({ error: 'Location not found' }, { status: 404 });
