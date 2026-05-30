@@ -12,6 +12,7 @@ import { ClockDisplay } from "./ClockDisplay";
 import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency } from "../utils/ephemerisEngine";
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
+import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
 import 'katex/dist/katex.min.css';
 import type { NBAData } from "./nba/NBADashboard";
 import { Loader2 } from "lucide-react";
@@ -2792,6 +2793,66 @@ export const SolarTimeClock = () => {
 
                   {/* Scrollable Content */}
                   <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                    {/* Unified Ten-Chi-Jin Evaluation Block */}
+                    {(() => {
+                      const dateStr = baseTime ? baseTime.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                      const dirAngles: Record<string, number> = {
+                        N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315
+                      };
+                      const angle = dirAngles[selectedDirection] || 0;
+                      const rad = (angle * Math.PI) / 180;
+                      const stepObj = {
+                        fromName: "現在地",
+                        fromLat: lat || 35.0116,
+                        fromLon: lon || 135.7681,
+                        toName: `${detail.labelJa}方面`,
+                        toLat: (lat || 35.0116) + Math.cos(rad) * 0.9,
+                        toLon: (lon || 135.7681) + Math.sin(rad) * 0.9,
+                        departureDate: dateStr,
+                        purpose: 'MIGRATION' as const,
+                        notes: '当日詳細判定',
+                        evaluation: {
+                          status: detail.status,
+                          rating: detail.score >= 80 ? '大吉' : detail.score >= 50 ? '吉' : detail.score >= 20 ? '凶' : '大凶',
+                          color: '',
+                          score: detail.score,
+                          details: {
+                            yearLayer: '',
+                            monthLayer: '',
+                            dayLayer: ''
+                          }
+                        }
+                      };
+
+                      const qVal = nbaData?.nba.actionResult.expectedReward ?? 0;
+                      const simulatedAns = nbaData?.micro.ansLoad ?? 20;
+                      const simulatedShield = nbaData?.micro.shieldCapacity ?? 80;
+
+                      const nbaEvaluationsMap = {
+                        [dateStr]: {
+                          date: dateStr,
+                          qValue: qVal,
+                          suggestedAction: nbaData?.nba.actionResult.suggestedAction || 'WAIT',
+                          riskFactors: nbaData?.macro.streams?.westernAstrology?.aspects || []
+                        }
+                      };
+
+                      return (
+                        <TenChiJinEvaluation
+                          mode="step"
+                          steps={[stepObj]}
+                          singleStepIndex={0}
+                          nbaEvaluations={nbaEvaluationsMap}
+                          simulatedAns={simulatedAns}
+                          simulatedShield={simulatedShield}
+                          birthDate={birthDate}
+                          onApplyAction={() => {
+                            window.location.href = `/relocation/simulator?date=${dateStr}&direction=${selectedDirection}`;
+                          }}
+                        />
+                      );
+                    })()}
+
                     {/* Status & Score Block */}
                     <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">

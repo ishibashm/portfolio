@@ -29,6 +29,7 @@ import {
   getClassicalYearStar,
   Direction
 } from '@/utils/ephemerisEngine';
+import { TenChiJinEvaluation } from '@/components/nba/TenChiJinEvaluation';
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import('@/components/nba/SimulatorMap'), {
@@ -201,6 +202,46 @@ export default function RelocationSimulatorPage() {
     fetchSavedPlans();
     loadDraft();
   }, []);
+
+  // Parse URL search parameters on load to pre-populate simulator inputs
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const dateParam = params.get('date');
+    const dirParam = params.get('direction');
+    const bearingParam = params.get('bearing');
+    
+    if (dateParam || dirParam || bearingParam) {
+      const updatedSteps = [...steps];
+      if (dateParam) {
+        updatedSteps[0].departureDate = dateParam;
+      }
+      
+      let bearingVal = 0;
+      let hasTarget = false;
+      if (bearingParam) {
+        bearingVal = parseFloat(bearingParam);
+        hasTarget = true;
+      } else if (dirParam) {
+        const dirAngles: Record<string, number> = {
+          N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315
+        };
+        bearingVal = dirAngles[dirParam.toUpperCase()] ?? 0;
+        hasTarget = true;
+      }
+
+      if (hasTarget) {
+        // Approximate coordinates (0.9 degrees is roughly 100km distance)
+        const rad = (bearingVal * Math.PI) / 180;
+        updatedSteps[0].toLat = startLat + Math.cos(rad) * 0.9;
+        updatedSteps[0].toLon = startLon + Math.sin(rad) * 0.9;
+        updatedSteps[0].toName = `${bearingToDirection(bearingVal)}方面の目的地`;
+      }
+
+      setSteps(updatedSteps);
+      saveDraft(updatedSteps, startLat, startLon, startName, useTrueNorth, planName, members);
+    }
+  }, [startLat, startLon]);
 
   const fetchUserConfig = async () => {
     try {
@@ -1109,6 +1150,28 @@ export default function RelocationSimulatorPage() {
             />
           </div>
         </div>
+        
+        {/* Unified Ten-Chi-Jin Plan Level Panel */}
+        <div className="w-full">
+          <TenChiJinEvaluation
+            mode="plan"
+            steps={steps}
+            members={members}
+            nbaEvaluations={nbaEvaluations}
+            simulatedAns={simulatedAns}
+            simulatedShield={simulatedShield}
+            birthDate={birthDate}
+            onApplyAction={(actionType, data) => {
+              if (actionType === 'DETOUR' && data) {
+                handleApplyDetour(data);
+              } else if (actionType === 'DATE' && typeof data === 'string') {
+                if (activeStepIndex !== null) {
+                  handleUpdateStep(activeStepIndex, { departureDate: data });
+                }
+              }
+            }}
+          />
+        </div>
 
         {/* Dashboard Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1413,6 +1476,29 @@ export default function RelocationSimulatorPage() {
                             ? "※滞在が75日未満のため、この移動後の拠点（太極）は京都のまま動きません。"
                             : `※滞在が75日以上のため、この移動後に拠点は「${step.toName}」に移転します。`}
                         </span>
+                      </div>
+                    )}
+
+                    {/* Step Specific Ten-Chi-Jin Panel (Advisory UI Integration) */}
+                    {isSelected && (
+                      <div className="mt-4 pt-4 border-t border-zinc-900/60" onClick={(e) => e.stopPropagation()}>
+                        <TenChiJinEvaluation
+                          mode="step"
+                          steps={steps}
+                          singleStepIndex={idx}
+                          members={members}
+                          nbaEvaluations={nbaEvaluations}
+                          simulatedAns={simulatedAns}
+                          simulatedShield={simulatedShield}
+                          birthDate={birthDate}
+                          onApplyAction={(actionType, data) => {
+                            if (actionType === 'DETOUR' && data) {
+                              handleApplyDetour(data);
+                            } else if (actionType === 'DATE' && typeof data === 'string') {
+                              handleUpdateStep(idx, { departureDate: data });
+                            }
+                          }}
+                        />
                       </div>
                     )}
                   </motion.div>
