@@ -20,7 +20,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   TrendingUp,
-  LogOut
+  LogOut,
+  History
 } from 'lucide-react';
 
 const PUBLIC_ITEMS = [
@@ -30,6 +31,7 @@ const PUBLIC_ITEMS = [
 const PROTECTED_ITEMS = [
   { href: '/relocation/wealth', icon: Map, label: 'Relocation Matrix' },
   { href: '/relocation/arbitrage', icon: TrendingUp, label: 'Real Estate Arbitrage' },
+  { href: '/relocation/history', icon: History, label: 'Relocation History' },
   { href: '/metaphysical', icon: Compass, label: 'Metaphysical Engine' },
   { href: '/dashboard', icon: LayoutDashboard, label: 'Oracle Hub' },
   { href: '/research', icon: Database, label: 'Data Engine' },

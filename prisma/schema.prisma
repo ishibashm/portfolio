@@ -67,6 +67,7 @@ model User {
   Session              Session[]
   MetaphysicalStateLog MetaphysicalStateLog[]
   KnowledgeDocument    KnowledgeDocument[]
+  RelocationHistory    RelocationHistory[]
 }
 
 model VerificationToken {
@@ -339,3 +340,25 @@ model FinancialData {
   @@index([report_id, item_id])
   @@map("financial_data")
 }
+
+model RelocationHistory {
+  id            String   @id @default(cuid())
+  userId        String?
+  departureDate DateTime
+  datePrecision String   @default("DAY") // "YEAR" | "MONTH" | "DAY" | "HOUR"
+  fromName      String
+  fromLat       Float
+  fromLon       Float
+  toName        String
+  toLat         Float
+  toLon         Float
+  purpose       String   @default("TRAVEL") // "MIGRATION" | "TRAVEL"
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  User User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
