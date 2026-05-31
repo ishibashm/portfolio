@@ -32,6 +32,7 @@ interface MapInnerProps {
   activeLayerMode?: 'final' | 'year' | 'month' | 'day';
   useTrueNorth?: boolean;
   properties?: any[];
+  onSelectTarget?: (lat: number, lon: number) => void;
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -118,7 +119,8 @@ export default function MagneticMapInner({
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   activeLayerMode = 'final',
   useTrueNorth = false,
-  properties = []
+  properties = [],
+  onSelectTarget
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   const [clickedPos, setClickedPos] = React.useState<[number, number] | null>(null);
@@ -407,7 +409,10 @@ export default function MagneticMapInner({
         <SyncMapCenter lat={lat} lon={lon} />
         <InvalidateMapSize />
         <ZoomListener onChangeZoom={setZoom} />
-        <ClickEvents onMapClick={(lat, lng) => setClickedPos([lat, lng])} />
+        <ClickEvents onMapClick={(lat, lng) => {
+          setClickedPos([lat, lng]);
+          onSelectTarget?.(lat, lng);
+        }} />
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
@@ -471,6 +476,12 @@ export default function MagneticMapInner({
                 fillColor: prop.is_new_build ? '#10b981' : '#3b82f6',
                 fillOpacity: 0.8,
                 weight: 1
+              }}
+              eventHandlers={{
+                click: () => {
+                  setClickedPos([prop.lat, prop.lon]);
+                  onSelectTarget?.(prop.lat, prop.lon);
+                }
               }}
             >
               <Tooltip>

@@ -28,6 +28,14 @@ interface ExpertCouncilPanelProps {
   timingDetails?: { name: string; phenomenon: string; detail: string }[];
   timingRecommendation?: string;
   doyouState?: any;
+  // New props for AI Prompt integration
+  targetLat?: number | null;
+  targetLon?: number | null;
+  targetDirection?: string | null;
+  aiPromptText?: string;
+  onCopyPrompt?: () => void;
+  copiedPrompt?: boolean;
+  onDownloadJson?: () => void;
 }
 
 export default function ExpertCouncilPanel({
@@ -54,7 +62,15 @@ export default function ExpertCouncilPanel({
   timingScore,
   timingDetails,
   timingRecommendation,
-  isTimingOptimal
+  isTimingOptimal,
+  // New props
+  targetLat = null,
+  targetLon = null,
+  targetDirection = null,
+  aiPromptText = "",
+  onCopyPrompt,
+  copiedPrompt = false,
+  onDownloadJson
 }: ExpertCouncilPanelProps) {
 
   const anyVoid = isPersonalVoid || isYearVoid || isMonthVoid || isDayVoid;
@@ -334,6 +350,83 @@ export default function ExpertCouncilPanel({
           </div>
         );
       })()}
+
+      {/* AI Consultation Prompt Generation Area */}
+      <div className="mt-6 p-5 border border-purple-500/30 bg-purple-950/5 backdrop-blur-md rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
+        {/* Decorative background glow */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+        <div className="flex justify-between items-center border-b border-purple-500/25 pb-2 mb-1">
+          <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 font-mono">
+            <span className="text-purple-400 animate-pulse">🔮</span>
+            AI Consultation Hub / AI相談プロンプト生成
+          </h4>
+          <span className="text-[7.5px] font-mono text-purple-400/60 bg-purple-500/10 px-1.5 py-0.5 border border-purple-500/25 rounded-sm">
+            PROMPT ENGINE ACTIVE
+          </span>
+        </div>
+
+        <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
+          現在アクティブな生体測定（HRV/ANS負荷）、地磁気偏角、宇宙天気、および九星・干支の軌道干渉データを統合した高度なAI指示文（プロンプト）を自動生成しました。
+          下のボタンを押すとプロンプトが自動でコピーされ、外部のGeminiが別タブで開くため、そのまま貼り付けて（Ctrl+V）相談が開始できます。
+        </p>
+
+        {/* Selected Coordinates Indicator */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/40 border border-zinc-800/80 p-2.5 rounded-md font-mono text-[10px]">
+          <div className="flex justify-between items-center bg-white/[0.01] px-2 py-1.5 rounded-sm">
+            <span className="text-zinc-500">目標方位 (Direction):</span>
+            <span className={targetDirection ? "text-emerald-400 font-bold" : "text-amber-500"}>
+              {targetDirection || "未選択"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center bg-white/[0.01] px-2 py-1.5 rounded-sm">
+            <span className="text-zinc-500">目標座標 (Coordinates):</span>
+            <span className={targetLat && targetLon ? "text-emerald-400 font-bold" : "text-amber-500"}>
+              {targetLat && targetLon ? `${targetLat.toFixed(4)}, ${targetLon.toFixed(4)}` : "地図上でクリックして選択"}
+            </span>
+          </div>
+        </div>
+
+        {!targetLat || !targetLon ? (
+          <div className="p-3 bg-amber-950/15 border border-amber-500/20 text-amber-400 text-[10px] font-sans rounded-md leading-relaxed flex items-start gap-2 animate-pulse">
+            <span>⚠️</span>
+            <div>
+              <strong>【目的地未設定】</strong> 現在、目的地の緯度・経度が設定されていません。<br />
+              「2. 目的地/健康」タブの地図上で行きたい場所をクリックするか物件のピンを選択すると、その座標と吉凶評価がこのAI相談プロンプトに自動的に同期・マッピングされます。
+            </div>
+          </div>
+        ) : null}
+
+        <div className="relative">
+          <textarea
+            readOnly
+            value={aiPromptText}
+            className="w-full h-36 bg-zinc-950/80 border border-zinc-800 rounded-md p-2.5 text-zinc-400 outline-none text-[9px] leading-relaxed custom-scrollbar font-mono resize-y"
+            onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+            placeholder="[ 目的地情報を含むプロンプトがここに生成されます ]"
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 mt-1 z-10">
+          <button
+            onClick={() => {
+              onCopyPrompt?.();
+              window.open("https://gemini.google.com/", "_blank");
+            }}
+            className="flex-1 bg-purple-900/30 text-purple-400 hover:bg-purple-800/50 border border-purple-800/50 text-[10px] uppercase tracking-widest px-3 py-2 rounded-md transition-all font-bold flex items-center justify-center gap-1.5 font-mono shadow-[0_0_15px_rgba(168,85,247,0.1)] active:scale-[0.98]"
+          >
+            📋 {copiedPrompt ? "コピー完了！Geminiを開きます..." : "コピーしてGeminiを起動"}
+          </button>
+          {onDownloadJson && (
+            <button
+              onClick={onDownloadJson}
+              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 text-[10px] uppercase tracking-widest px-3 py-2 rounded-md transition-all font-bold flex items-center justify-center gap-1.5 font-mono active:scale-[0.98]"
+            >
+              📥 JSONダウンロード
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

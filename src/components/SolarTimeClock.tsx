@@ -2270,9 +2270,15 @@ ${timingOptimization?.recommendationText || "特になし"}
                 gsr={gsr}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
-                timingScore={(timingOptimization as any)?.score}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
+                targetLat={targetLat}
+                targetLon={targetLon}
+                targetDirection={getTargetDirectionInfo()?.magneticDirection}
+                aiPromptText={getAiAssistantTextSummary()}
+                onCopyPrompt={handleCopyAiPrompt}
+                copiedPrompt={copiedPrompt}
+                onDownloadJson={handleDownloadDestinationJson}
               />
             </div>
 
@@ -3216,18 +3222,6 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setShowAiAssistant(!showAiAssistant)}
-                        className={`text-[9px] border px-2 py-1 rounded-sm transition-all uppercase tracking-widest flex items-center gap-1 font-mono ${
-                          showAiAssistant 
-                            ? 'bg-purple-950/40 text-purple-400 border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.3)]' 
-                            : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
-                        }`}
-                        title="AI解析用のデータとプロンプトを表示します"
-                      >
-                        <Sparkles size={10} className={showAiAssistant ? "animate-pulse" : ""} />
-                        {showAiAssistant ? 'AI閉じる' : 'AI解析'}
-                      </button>
-                      <button
                         onClick={handleAutoSearch}
                         disabled={isAutoSearching}
                         className="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-950/20 px-2 py-1 rounded-sm hover:bg-emerald-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
@@ -3399,44 +3393,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                       </div>
                     )}
 
-                    {showAiAssistant && (
-                      <div className="mt-3 p-3 bg-black/85 border border-purple-500/30 rounded-sm font-mono text-[9px] text-zinc-300 animate-fade-in flex flex-col gap-2 relative z-20">
-                        <div className="flex justify-between items-center border-b border-zinc-800/80 pb-1.5 mb-1">
-                          <span className="text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                            <Sparkles size={10} className="text-purple-400 animate-pulse" /> AI ANALYSIS ASSISTANT / AI解析アシスタント
-                          </span>
-                          <span className="text-[7px] text-zinc-500">READY TO COPY</span>
-                        </div>
-                        
-                        <p className="text-zinc-500 leading-normal text-[8px] mb-1">
-                          現在の気学・生体パラメータと判定結果をまとめました。下の「コピー」ボタンでプロンプト付きデータをクリップボードにコピーしてGeminiなどの生成AIに貼り付けるか、JSONファイルをダウンロードしてください。
-                        </p>
 
-                        <div className="relative">
-                          <textarea
-                            readOnly
-                            value={getAiAssistantTextSummary()}
-                            className="w-full h-32 bg-zinc-950 border border-zinc-800 rounded p-1.5 text-zinc-400 outline-none text-[8px] leading-relaxed custom-scrollbar font-mono resize-y"
-                            onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-                          />
-                        </div>
-
-                        <div className="flex gap-2 mt-1">
-                          <button
-                            onClick={handleCopyAiPrompt}
-                            className="flex-1 bg-purple-900/30 text-purple-400 hover:bg-purple-800/50 border border-purple-800/50 text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm transition-colors font-bold flex items-center justify-center gap-1 font-mono"
-                          >
-                            {copiedPrompt ? "📋 コピー完了！" : "📋 プロンプトをコピー"}
-                          </button>
-                          <button
-                            onClick={handleDownloadDestinationJson}
-                            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm transition-colors font-bold flex items-center justify-center gap-1 font-mono"
-                          >
-                            📥 JSONをダウンロード
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -3756,6 +3713,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                 properties={showOnlyNewBuild ? mapProperties.filter((p: any) => p.is_new_build) : mapProperties}
                 useTrueNorth={useTrueNorth}
                 setUseTrueNorth={setUseTrueNorth}
+                onSelectTarget={(newLat, newLon) => {
+                  setTargetLat(Number(newLat.toFixed(5)));
+                  setTargetLon(Number(newLon.toFixed(5)));
+                }}
               />
             </div>
 
