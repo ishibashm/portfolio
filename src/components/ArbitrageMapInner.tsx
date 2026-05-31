@@ -45,6 +45,7 @@ interface ArbitrageMapInnerProps {
   baseLon: number;
   useTrueNorth: boolean;
   layerMode: string;
+  radiusKm?: string;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
 
@@ -93,15 +94,23 @@ function InvalidateMapSize() {
 // Automatically fit map bounds to show properties and the center
 function AutoFitBounds({ properties, center }: { properties: ScoredProperty[]; center: [number, number] }) {
   const map = useMap();
-  const prevPropsRef = useRef<string>("");
-  const currentPropsKey = properties.map(p => p.id).join(",");
+  const prevCenterRef = useRef<[number, number] | null>(null);
+  const initialFitDoneRef = useRef(false);
 
   useEffect(() => {
     if (properties.length === 0) return;
-    if (prevPropsRef.current === currentPropsKey) return;
-    
-    prevPropsRef.current = currentPropsKey;
-    
+
+    // Check if center changed
+    const centerChanged = !prevCenterRef.current || 
+      prevCenterRef.current[0] !== center[0] || 
+      prevCenterRef.current[1] !== center[1];
+
+    // If center didn't change and we've already done the initial fit, do nothing
+    if (!centerChanged && initialFitDoneRef.current) {
+      return;
+    }
+
+    // Perform fit
     const bounds = L.latLngBounds([center]);
     properties.forEach(p => {
       if (p.lat && p.lon) {
@@ -110,7 +119,11 @@ function AutoFitBounds({ properties, center }: { properties: ScoredProperty[]; c
     });
     
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-  }, [properties, center, map, currentPropsKey]);
+    
+    // Update refs
+    prevCenterRef.current = center;
+    initialFitDoneRef.current = true;
+  }, [properties, center, map]);
 
   return null;
 }
@@ -151,6 +164,7 @@ export default function ArbitrageMapInner({
   baseLon,
   useTrueNorth,
   layerMode,
+  radiusKm,
   onBoundsChange
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
@@ -317,18 +331,20 @@ export default function ArbitrageMapInner({
           </Popup>
         </Marker>
 
-        {/* Pulsing ring around center */}
-        <Circle
-          center={center}
-          radius={500}
-          pathOptions={{
-            color: "#10b981",
-            fillColor: "#10b981",
-            fillOpacity: 0.05,
-            weight: 1,
-            dashArray: "3,6"
-          }}
-        />
+        {/* Pulsing ring around center (matching scan radius) */}
+        {radiusKm && radiusKm !== "all" && (
+          <Circle
+            center={center}
+            radius={Number(radiusKm) * 1000}
+            pathOptions={{
+              color: "#10b981",
+              fillColor: "#10b981",
+              fillOpacity: 0.03,
+              weight: 1.5,
+              dashArray: "4,8"
+            }}
+          />
+        )}
 
         {/* Direction Sectors */}
         {sectorLayers}

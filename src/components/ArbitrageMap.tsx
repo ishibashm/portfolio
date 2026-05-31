@@ -44,6 +44,7 @@ interface ArbitrageMapProps {
   baseLon: number;
   useTrueNorth: boolean;
   layerMode: string;
+  radiusKm?: string;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
 

@@ -605,28 +605,28 @@ export default function ArbitrageScannerPage() {
           {/* Leaflet Map Column */}
           <div className="lg:col-span-2 space-y-6">
             <div className="h-[550px] rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900">
-              {loading ? (
-                <div className="w-full h-full bg-[#050505] flex flex-col items-center justify-center font-mono text-xs text-zinc-500">
+              <ArbitrageMap
+                properties={filteredData}
+                baseLat={Number(baseLat)}
+                baseLon={Number(baseLon)}
+                useTrueNorth={useTrueNorth}
+                layerMode={layerMode}
+                radiusKm={radiusKm}
+                onBoundsChange={(b) => {
+                  // Debounce map bounds updates slightly to avoid hammering the API
+                  setMapBounds(prev => {
+                    if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
+                      return b;
+                    }
+                    return prev;
+                  });
+                }}
+              />
+              {loading && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
                   <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                   データベースから割安物件を走査中...
                 </div>
-              ) : (
-                <ArbitrageMap
-                  properties={filteredData}
-                  baseLat={Number(baseLat)}
-                  baseLon={Number(baseLon)}
-                  useTrueNorth={useTrueNorth}
-                  layerMode={layerMode}
-                  onBoundsChange={(b) => {
-                    // Debounce map bounds updates slightly to avoid hammering the API
-                    setMapBounds(prev => {
-                      if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
-                        return b;
-                      }
-                      return prev;
-                    });
-                  }}
-                />
               )}
             </div>
           </div>
