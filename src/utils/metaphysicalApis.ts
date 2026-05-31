@@ -7,7 +7,7 @@
  */
 
 import { BaziResult } from './baziEngine';
-import { getCurrentZodiac } from './ephemerisEngine';
+import { getCurrentZodiac, getHonmeiStar } from './ephemerisEngine';
 
 export interface TarotCard {
   name: string;
@@ -264,23 +264,9 @@ function calculateHexagramFromLines(lines: number[]): number {
   return keys[val % keys.length];
 }
 
-function getNineStarKi(birthDate: Date, currentDate: Date) {
-  const birthYear = birthDate.getFullYear();
-  
-  const sumDigits = (num: number): number => {
-    let sum = 0;
-    let temp = num;
-    while (temp > 0) {
-      sum += temp % 10;
-      temp = Math.floor(temp / 10);
-    }
-    return sum > 9 ? sumDigits(sum) : sum;
-  };
-  
-  const yrSum = sumDigits(birthYear);
-  let yrStarNum = 11 - yrSum;
-  while (yrStarNum <= 0) yrStarNum += 9;
-  while (yrStarNum > 9) yrStarNum -= 9;
+function getNineStarKi(birthDate: Date, currentDate: Date, useClassical: boolean = true) {
+  const honmei = getHonmeiStar(birthDate);
+  const yrStarNum = useClassical ? honmei.classical : honmei.physical;
   
   const starsMap = [
     "",
@@ -535,7 +521,8 @@ function getZiWeiDouShu(birthDate: Date, currentDate: Date) {
 export function fetchMetaphysicalData(
   birthDate: Date,
   currentDate: Date,
-  personalBazi: BaziResult | null
+  personalBazi: BaziResult | null,
+  useClassical: boolean = true
 ): MetaphysicalData {
   // Use date hashes for deterministic daily outputs
   const dayString = currentDate.toISOString().split('T')[0];
@@ -648,7 +635,7 @@ export function fetchMetaphysicalData(
 
   // 6. Build the extended systems
   const ziWeiDouShu = getZiWeiDouShu(birthDate, currentDate);
-  const nineStarKi = getNineStarKi(birthDate, currentDate);
+  const nineStarKi = getNineStarKi(birthDate, currentDate, useClassical);
   const mayaTzolkin = getMayaTzolkin(birthDate, currentDate);
   const kabbalahTree = getKabbalahTree(birthDate, currentDate);
   const humanDesign = getHumanDesign(birthDate, currentDate);

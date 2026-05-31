@@ -10,7 +10,7 @@ import { SwissEphemerisEngine, CelestialBody } from '@/utils/swissEphemerisEngin
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { birthDate, dates, lon = 139.6917, simulatedAns = 20, simulatedShield = 80 } = body;
+    const { birthDate, dates, lon = 139.6917, simulatedAns = 20, simulatedShield = 80, useClassical = true } = body;
 
     if (!dates || !Array.isArray(dates)) {
       return NextResponse.json({ success: false, error: 'Dates array is required' }, { status: 400 });
@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       const isDoyouHazard = checkIsDoyouHazard(targetDate);
 
       // 3. Metaphysical Context
-      const metaData = birthDateObj ? fetchMetaphysicalData(birthDateObj, targetDate, personalBaziData) : null;
+      const metaData = birthDateObj ? fetchMetaphysicalData(birthDateObj, targetDate, personalBaziData, useClassical) : null;
       
       let envCost = 30 + aspectRisk;
       if (isVoidTime) envCost += 30;

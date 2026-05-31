@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Award
 } from 'lucide-react';
+import { MetaphysicalConfigBar, MetaphysicalConfig } from '@/components/layout/MetaphysicalConfigBar';
 
 // Dynamically import Leaflet Map with SSR disabled to prevent window/document undefined issues
 const PastMoveMap = dynamic(() => import('@/components/nba/PastMoveMap'), {
@@ -104,10 +105,26 @@ export default function RelocationHistoryPage() {
 
   // Load preferences to check True/Magnetic North state
   const [useTrueNorth, setUseTrueNorth] = useState(false);
+  
+  // Metaphysical Engine Global Configuration States
+  const [useClassical, setUseClassical] = useState(true);
+  const [directionFilterMode, setDirectionFilterMode] = useState<'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental'>('composite');
+  const [actionIntent, setActionIntent] = useState<'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION'>('DEFAULT');
 
   useEffect(() => {
-    fetchHistory();
     fetchUserConfig();
+    
+    // Listen to updates from other pages / config bars
+    const handleGlobalConfigUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<MetaphysicalConfig>;
+      if (customEvent.detail) {
+        handleConfigChange(customEvent.detail);
+      }
+    };
+    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    return () => {
+      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    };
   }, []);
 
   const fetchUserConfig = async () => {
@@ -124,14 +141,35 @@ export default function RelocationHistoryPage() {
     }
   };
 
-  const fetchHistory = async () => {
+  const fetchHistory = async (cfg?: {
+    useClassicalBoard?: boolean;
+    directionFilterMode?: string;
+    actionIntent?: string;
+  }) => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/relocation/history');
+      const activeClassical = cfg?.useClassicalBoard !== undefined ? cfg.useClassicalBoard : useClassical;
+      const activeFilter = cfg?.directionFilterMode !== undefined ? cfg.directionFilterMode : directionFilterMode;
+      const activeIntent = cfg?.actionIntent !== undefined ? cfg.actionIntent : actionIntent;
+
+      const params = new URLSearchParams();
+      params.append("useClassical", activeClassical.toString());
+      params.append("directionFilterMode", activeFilter);
+      params.append("actionIntent", activeIntent);
+
+      const res = await fetch(`/api/relocation/history?${params.toString()}`);
       if (res.ok) {
         const result = await res.json();
         if (result.success) {
           setHistoryItems(result.data);
+          
+          // Keep the selected item updated with the new evaluations if it exists
+          if (selectedItem) {
+            const updatedSelected = result.data.find((item: any) => item.id === selectedItem.id);
+            if (updatedSelected) {
+              setSelectedItem(updatedSelected);
+            }
+          }
         }
       }
     } catch (error) {
@@ -139,6 +177,18 @@ export default function RelocationHistoryPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleConfigChange = (newConfig: MetaphysicalConfig) => {
+    setUseClassical(newConfig.useClassicalBoard);
+    setDirectionFilterMode(newConfig.directionFilterMode);
+    setActionIntent(newConfig.actionIntent);
+    
+    fetchHistory({
+      useClassicalBoard: newConfig.useClassicalBoard,
+      directionFilterMode: newConfig.directionFilterMode,
+      actionIntent: newConfig.actionIntent
+    });
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -252,9 +302,15 @@ export default function RelocationHistoryPage() {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="max-w-6xl mx-auto px-4 pt-10 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 pt-10 relative z-10 space-y-6">
+        
+        {/* Metaphysical Configuration Bar */}
+        <MetaphysicalConfigBar 
+          onConfigChange={handleConfigChange}
+        />
+
         {/* Header Block */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold border border-indigo-500/20 mb-3">
               <History className="w-3.5 h-3.5" /> 物理・古典鑑定の歴史的統合
@@ -277,15 +333,31 @@ export default function RelocationHistoryPage() {
 
         {/* Dynamic Auspice Config Info */}
         <div className="p-4 rounded-2xl bg-zinc-900/40 border border-white/5 backdrop-blur-md mb-8 flex items-center justify-between gap-4 text-xs font-mono">
-          <div className="flex items-center gap-2.5 text-zinc-400">
-            <Compass className="w-4 h-4 text-indigo-400" />
-            <span>現在の方位基準設定:</span>
-            <span className={`px-2 py-0.5 rounded font-bold ${useTrueNorth ? 'bg-indigo-500/20 text-indigo-300' : 'bg-amber-500/20 text-amber-300'}`}>
-              {useTrueNorth ? '真北基準 (物理天体方位)' : '磁北基準 (風水・磁気偏角補正)'}
-            </span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-zinc-400">
+            <div className="flex items-center gap-2">
+              <Compass className="w-4 h-4 text-indigo-400" />
+              <span>方位偏角:</span>
+              <span className={`px-2 py-0.5 rounded font-bold ${useTrueNorth ? 'bg-indigo-500/20 text-indigo-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                {useTrueNorth ? '真北基準 (物理)' : '磁北基準 (磁気偏角補正)'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>方位盤基準:</span>
+              <span className={`px-2 py-0.5 rounded font-bold ${useClassical ? 'bg-indigo-500/20 text-indigo-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                {useClassical ? '古典暦基準 (立春)' : '物理天体基準 (木星黄経)'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>フィルター:</span>
+              <span className="text-white font-semibold">
+                {directionFilterMode === 'composite' ? '総合' : 
+                 directionFilterMode === 'personal_kigaku' ? '個人吉凶' : 
+                 directionFilterMode === 'personal_bazi' ? '天中殺のみ' : '環境方位のみ'}
+              </span>
+            </div>
           </div>
           <span className="text-zinc-500 text-[10px] hidden md:inline">
-            ※設定は「ホームポータル」の構成設定から変更できます。
+            ※詳細設定は上部のコントロールバーから変更できます。
           </span>
         </div>
 

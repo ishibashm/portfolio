@@ -15,16 +15,22 @@ export async function POST(req: Request) {
       clientBody = await req.json();
     } catch (e) {}
 
-    const { currentShield = 100, currentAnsLoad = 20, clientBirthDate, lon = 139.6917 } = clientBody;
+    const { currentShield = 100, currentAnsLoad = 20, clientBirthDate, lon = 139.6917, useClassical: clientUseClassical } = clientBody;
 
     let birthDateStr: string | null = clientBirthDate || null;
-    if (!birthDateStr) {
+    let useClassical = true;
+    if (clientUseClassical !== undefined) {
+      useClassical = clientUseClassical;
+    } else {
       try {
         const configPath = path.join(process.cwd(), 'local_tactical_config.json');
         const configContent = await fs.readFile(configPath, 'utf8');
         const config = JSON.parse(configContent);
         if (config.birth_date) {
           birthDateStr = config.birth_date;
+        }
+        if (config.use_classical_board !== undefined) {
+          useClassical = config.use_classical_board;
         }
       } catch (e) {}
     }
@@ -78,7 +84,7 @@ export async function POST(req: Request) {
       const isDoyouHazard = checkIsDoyouHazard(targetDate);
 
       // 3. Generate Metaphysical Deterministic Mock
-      const metaData = birthDate ? fetchMetaphysicalData(birthDate, targetDate, personalBaziData) : null;
+      const metaData = birthDate ? fetchMetaphysicalData(birthDate, targetDate, personalBaziData, useClassical) : null;
       
       // Calculate Base Environmental Cost (0-100)
       let envCost = 30 + aspectRisk;

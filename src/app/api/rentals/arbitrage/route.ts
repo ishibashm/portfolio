@@ -9,7 +9,8 @@ import {
   Direction,
   AstroEngine,
   getUpcomingDoyouPeriod,
-  calculateLunarPhaseCondition
+  calculateLunarPhaseCondition,
+  filterCollisionByMode
 } from '@/utils/ephemerisEngine';
 import { getGeomagneticData } from '@/utils/geomagnetism';
 
@@ -79,6 +80,8 @@ export async function GET(request: Request) {
   const nodeMapping = (searchParams.get('nodeMapping') || 'traditional') as 'traditional' | 'physical';
   const limit = parseInt(searchParams.get('limit') || '500');
   const lunarPhaseModifier = searchParams.get('lunarPhaseModifier') !== 'false';
+  const directionFilterMode = (searchParams.get('directionFilterMode') || 'composite') as 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental';
+  const actionIntent = (searchParams.get('actionIntent') || 'MIGRATION') as any;
 
   const useClassical = useClassicalStr === 'true';
   const useTrueNorth = useTrueNorthStr === 'true';
@@ -135,16 +138,25 @@ export async function GET(request: Request) {
   const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
   const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
   
-  const vectorData = calculateVectorCollision(
+  const baseCollision = calculateVectorCollision(
     useClassical ? honmeiStar.classical : honmeiStar.physical,
     yB, mB, dB,
     voidZodiacs,
     env.raw.lunarNode,
-    'MIGRATION',
+    actionIntent,
     targetDate,
     baseLon,
     undefined,
     nodeMapping
+  );
+
+  const vectorData = filterCollisionByMode(
+    baseCollision,
+    useClassical ? honmeiStar.classical : honmeiStar.physical,
+    null,
+    voidZodiacs,
+    directionFilterMode,
+    yB, mB, dB
   );
   
   let activeVectors: Partial<Record<Direction, string>>;

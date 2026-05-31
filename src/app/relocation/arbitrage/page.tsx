@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, Search, Settings, RefreshCw } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { MetaphysicalConfigBar, MetaphysicalConfig } from "@/components/layout/MetaphysicalConfigBar";
 
 const getTodayString = () => {
   const today = new Date();
@@ -25,6 +26,8 @@ export default function ArbitrageScannerPage() {
   const [birthLon, setBirthLon] = useState("132.4482");
   const [birthDate, setBirthDate] = useState("1988-11-25"); // Default Birth Date
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
+  const [directionFilterMode, setDirectionFilterMode] = useState("composite");
+  const [actionIntent, setActionIntent] = useState("MIGRATION");
   const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   const [useClassical, setUseClassical] = useState(false);
@@ -68,6 +71,8 @@ export default function ArbitrageScannerPage() {
 
     // Load from unified tactical config
     const tacticalConfig = localStorage.getItem('tactical_config_v1');
+    let filter = "composite";
+    let intent = "MIGRATION";
     if (tacticalConfig) {
       try {
         const config = JSON.parse(tacticalConfig);
@@ -82,6 +87,9 @@ export default function ArbitrageScannerPage() {
         if (config.use_classical_board !== undefined) classical = config.use_classical_board;
         if (config.use_true_north !== undefined) trueNorth = config.use_true_north;
         if (config.layer_mode !== undefined) layer = config.layer_mode;
+        if (config.target_date) tDate = config.target_date;
+        if (config.direction_filter_mode !== undefined) filter = config.direction_filter_mode;
+        if (config.action_intent !== undefined) intent = config.action_intent;
       } catch (e) { }
     } else {
       // Fallback to legacy isolated keys
@@ -117,6 +125,8 @@ export default function ArbitrageScannerPage() {
     setUseClassical(classical);
     setLayerMode(layer);
     setUseTrueNorth(trueNorth);
+    setDirectionFilterMode(filter);
+    setActionIntent(intent);
 
     setInitialLoaded(true);
   }, []);
@@ -139,6 +149,8 @@ export default function ArbitrageScannerPage() {
       params.append("layerMode", layerMode);
       params.append("useTrueNorth", useTrueNorth.toString());
       params.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+      params.append("directionFilterMode", directionFilterMode);
+      params.append("actionIntent", actionIntent);
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -158,7 +170,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, initialLoaded]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
@@ -185,12 +197,10 @@ export default function ArbitrageScannerPage() {
     setBaseLat(localLat);
     setBaseLon(localLon);
     setBirthDate(localBirthDate);
-    setTargetDate(localTargetDate);
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
     localStorage.setItem("arb_birthDate", localBirthDate);
-    localStorage.setItem("arb_targetDate", localTargetDate);
 
     saveUnifiedConfig({
       base_lat: parseFloat(localLat),
@@ -379,6 +389,16 @@ export default function ArbitrageScannerPage() {
     <div className="min-h-screen bg-white dark:bg-[#050505] p-4 sm:p-8 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-8">
         
+        {/* Metaphysical Configuration Bar */}
+        <MetaphysicalConfigBar 
+          onConfigChange={(newConfig) => {
+            setTargetDate(newConfig.targetDate);
+            setUseClassical(newConfig.useClassicalBoard);
+            setDirectionFilterMode(newConfig.directionFilterMode);
+            setActionIntent(newConfig.actionIntent);
+          }}
+        />
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-900 pb-6">
           <div>
@@ -469,19 +489,6 @@ export default function ArbitrageScannerPage() {
               />
             </div>
 
-            {/* Target Date */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                目標日 (方位盤基準日)
-              </label>
-              <input
-                type="date"
-                value={localTargetDate}
-                onChange={e => setLocalTargetDate(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
-              />
-            </div>
-
             {/* Submit Button */}
             <div>
               <button
@@ -559,13 +566,7 @@ export default function ArbitrageScannerPage() {
                 真北を使用 (無効時は磁北で補正計算)
               </label>
               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={useClassical}
-                  onChange={e => handleClassicalToggle(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                />
-                古典節気を使用 (九星気学用)
+                <span className="font-bold text-indigo-500">方位基準: {useClassical ? '暦基準' : '木星黄経'} (上部バーで設定)</span>
               </label>
               <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input

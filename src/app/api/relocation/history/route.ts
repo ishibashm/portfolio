@@ -7,7 +7,8 @@ import {
   generateBoard, 
   calculateVectorCollision, 
   getPersonalVoidZodiac, 
-  getClassicalYearStar,
+  getHonmeiStar,
+  filterCollisionByMode,
   Direction
 } from '@/utils/ephemerisEngine';
 import { getGeomagneticData } from '@/utils/geomagnetism';
@@ -58,20 +59,38 @@ function getRatingLabel(status: string): { rating: '大吉' | '吉' | '普通' |
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const useClassicalStr = searchParams.get('useClassical');
+    const directionFilterModeStr = searchParams.get('directionFilterMode');
+    const actionIntentStr = searchParams.get('actionIntent');
+
     // 1. Resolve active config
     let birthDate = new Date("1988-11-25T04:26");
     let useTrueNorth = false;
+    let useClassical = false;
+    let directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental' = 'composite';
+    let actionIntent = 'DEFAULT';
+
     try {
       const configContent = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
       const config = JSON.parse(configContent);
       if (config.birth_date) birthDate = new Date(config.birth_date);
       if (config.use_true_north !== undefined) useTrueNorth = config.use_true_north;
+      if (config.use_classical_board !== undefined) useClassical = config.use_classical_board;
+      if (config.direction_filter_mode !== undefined) directionFilterMode = config.direction_filter_mode;
+      if (config.action_intent !== undefined) actionIntent = config.action_intent;
     } catch (e) {}
 
+    // Override from search params if provided
+    if (useClassicalStr !== null) useClassical = useClassicalStr === 'true';
+    if (directionFilterModeStr !== null) directionFilterMode = directionFilterModeStr as any;
+    if (actionIntentStr !== null) actionIntent = actionIntentStr;
+
     const voidZodiacs = getPersonalVoidZodiac(birthDate);
-    const personalStar = getClassicalYearStar(birthDate);
+    const honmeiStar = getHonmeiStar(birthDate);
+    const personalStar = useClassical ? honmeiStar.classical : honmeiStar.physical;
 
     // 2. Fetch past move records from PostgreSQL
     const histories = await prisma.relocationHistory.findMany({
@@ -96,14 +115,14 @@ export async function GET() {
       const adjustedBearing = (rawBearing - decl + 360) % 360;
       const direction = bearingToDirection(adjustedBearing);
 
-      // Evaluate physical orbital positions at time of departure
+      // Evaluate physical/classical orbital positions at time of departure
       const env = getCurrentEnvironmentalFrequencies(depDate, item.fromLon);
-      const yearBoard = generateBoard(env.classicalYearStar);
-      const monthBoard = generateBoard(env.classicalMonthStar);
-      const dayBoard = generateBoard(env.classicalDayStar);
+      const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
+      const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
+      const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
       const lunarNode = env.raw.lunarNode;
 
-      const intent = item.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT';
+      const evalIntent = actionIntent !== 'DEFAULT' ? actionIntent : (item.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT');
       const collision = calculateVectorCollision(
         personalStar,
         yearBoard,
@@ -111,18 +130,29 @@ export async function GET() {
         dayBoard,
         voidZodiacs,
         lunarNode,
-        intent,
+        evalIntent as any,
         depDate,
         item.fromLon
+      );
+
+      const filteredCollision = filterCollisionByMode(
+        collision,
+        personalStar,
+        null,
+        voidZodiacs,
+        directionFilterMode,
+        yearBoard,
+        monthBoard,
+        dayBoard
       );
 
       // Auspice scoring layer selections based on Date Precision
       let finalStatus = 'SAFE';
       const precision = item.datePrecision;
       
-      const yStatus = collision.yearLayer[direction] || 'SAFE';
-      const mStatus = collision.monthLayer[direction] || 'SAFE';
-      const dStatus = collision.dayLayer[direction] || 'SAFE';
+      const yStatus = filteredCollision.yearLayer[direction] || 'SAFE';
+      const mStatus = filteredCollision.monthLayer[direction] || 'SAFE';
+      const dStatus = filteredCollision.dayLayer[direction] || 'SAFE';
 
       if (precision === 'YEAR') {
         finalStatus = yStatus;
@@ -143,7 +173,7 @@ export async function GET() {
         }
       } else {
         // DAY and HOUR precision evaluates all layers (Day precision)
-        finalStatus = collision.finalVectors[direction] || 'SAFE';
+        finalStatus = filteredCollision.finalVectors[direction] || 'SAFE';
       }
 
       const ratingInfo = getRatingLabel(finalStatus);

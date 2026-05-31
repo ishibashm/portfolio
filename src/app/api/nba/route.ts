@@ -41,13 +41,19 @@ export async function POST(req: Request) {
 
     // Strictly prioritize clientBirthDate to fix state management cache bug
     let birthDateStr: string | null = clientBirthDate || null;
-    if (!birthDateStr) {
+    let useClassical = true;
+    if (clientBody && clientBody.useClassical !== undefined) {
+      useClassical = clientBody.useClassical;
+    } else {
       try {
         const configPath = path.join(process.cwd(), 'local_tactical_config.json');
         const configContent = await fs.readFile(configPath, 'utf8');
         const config = JSON.parse(configContent);
         if (config.birth_date) {
           birthDateStr = config.birth_date;
+        }
+        if (config.use_classical_board !== undefined) {
+          useClassical = config.use_classical_board;
         }
       } catch (e) {
         console.warn("Failed to read local_tactical_config.json, personal natal data will be omitted.");
@@ -160,7 +166,7 @@ export async function POST(req: Request) {
 
     // Fetch Metaphysical Data Stream
     const targetBirthDate = birthDateStr ? new Date(birthDateStr) : new Date("1988-11-25T04:26");
-    const metaphysicalData = fetchMetaphysicalData(targetBirthDate, today, personalBaziData);
+    const metaphysicalData = fetchMetaphysicalData(targetBirthDate, today, personalBaziData, useClassical);
 
     // Calculate actual retrograde planets
     const swissEngine = SwissEphemerisEngine.getInstance();

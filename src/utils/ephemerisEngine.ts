@@ -1090,4 +1090,158 @@ export function checkIsDoyouHazard(date: Date): boolean {
   return inDoyou && !isMabi;
 }
 
+export function filterCollisionByMode(
+  collision: any,
+  personalStar: StarFrequency,
+  getsuMeiStar: StarFrequency | null,
+  voidZodiacs: string[],
+  directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
+  yBoard: any,
+  mBoard: any,
+  dBoard: any
+) {
+  if (directionFilterMode === 'composite') {
+    return collision;
+  }
+
+  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+
+  const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
+    switch(star) {
+      case 1: return [6, 7, 3, 4];
+      case 2: return [9, 6, 7];
+      case 3: return [1, 9];
+      case 4: return [1, 9];
+      case 5: return [9, 6, 7];
+      case 6: return [2, 5, 8, 1];
+      case 7: return [2, 5, 8, 1];
+      case 8: return [9, 6, 7];
+      case 9: return [3, 4, 2, 5, 8];
+      default: return [];
+    }
+  };
+  const compatiblesHonmei = getCompatibleStars(personalStar);
+  const compatiblesGetsumei = getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+
+  const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+    const isHonmeiComp = compatiblesHonmei.includes(starNum);
+    if (!getsuMeiStar) {
+      return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+    }
+    const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
+    if (isHonmeiComp && isGetsumeiComp) {
+      return 'OPTIMAL';
+    } else if (isHonmeiComp) {
+      return 'OPTIMAL_REGULAR';
+    }
+    return 'SAFE';
+  };
+
+  const z2d: Record<string, Direction[]> = {
+    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
+    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
+    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+  };
+  const voidDirs = new Set<Direction>();
+  voidZodiacs.forEach(z => {
+    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  });
+
+  const getOpposite = (d: Direction): Direction => {
+    const opposites: Record<string, Direction> = {
+      'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
+      'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+    };
+    return opposites[d];
+  };
+
+  const filterStatus = (status: string | undefined, dir: Direction, activeBoard: any) => {
+    if (!status) return 'SAFE';
+    if (directionFilterMode === 'personal_kigaku') {
+      let honmeiD: Direction | null = null;
+      directions.forEach(d => {
+        if (activeBoard && activeBoard[d] === personalStar) {
+          honmeiD = d;
+        }
+      });
+      if (dir === honmeiD) return 'NOISE_HONMEI';
+      if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
+      const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+      return optStatus;
+    } else if (directionFilterMode === 'personal_bazi') {
+      if (voidDirs.has(dir)) return 'NOISE_VOID';
+      return 'SAFE';
+    } else {
+      let isGou = false;
+      let isAnken = false;
+      if (activeBoard) {
+        directions.forEach(d => {
+          if (activeBoard[d] === 5) {
+            if (d === dir) isGou = true;
+            if (getOpposite(d) === dir) isAnken = true;
+          }
+        });
+      }
+      if (isGou) return 'NOISE_GOU';
+      if (isAnken) return 'NOISE_ANKEN';
+      if (status === 'NOISE_HA') return 'NOISE_HA';
+      if (status === 'NOISE_NODE') return 'NOISE_NODE';
+      return 'SAFE';
+    }
+  };
+
+  const newYearLayer: any = {};
+  const newMonthLayer: any = {};
+  const newDayLayer: any = {};
+  const newFinalVectors: any = {};
+
+  directions.forEach(d => {
+    newYearLayer[d] = filterStatus(collision.yearLayer[d], d, yBoard);
+    newMonthLayer[d] = filterStatus(collision.monthLayer[d], d, mBoard);
+    newDayLayer[d] = filterStatus(collision.dayLayer[d], d, dBoard);
+    
+    if (directionFilterMode === 'personal_kigaku') {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
+      const hasOpt = list.find(s => s === 'OPTIMAL');
+      const hasOptReg = list.find(s => s === 'OPTIMAL_REGULAR');
+
+      if (hasPurple) newFinalVectors[d] = hasPurple;
+      else if (hasOpt) newFinalVectors[d] = 'OPTIMAL';
+      else if (hasOptReg) newFinalVectors[d] = 'OPTIMAL_REGULAR';
+      else newFinalVectors[d] = 'SAFE';
+    } else if (directionFilterMode === 'personal_bazi') {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasVoid = list.find(s => s === 'NOISE_VOID');
+      if (hasVoid) newFinalVectors[d] = 'NOISE_VOID';
+      else newFinalVectors[d] = 'SAFE';
+    } else {
+      const y = newYearLayer[d];
+      const m = newMonthLayer[d];
+      const dStatus = newDayLayer[d];
+      const list = [y, m, dStatus];
+      const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
+      const hasNode = list.find(s => s === 'NOISE_NODE');
+
+      if (hasRed) newFinalVectors[d] = hasRed;
+      else if (hasNode) newFinalVectors[d] = 'NOISE_NODE';
+      else newFinalVectors[d] = 'SAFE';
+    }
+  });
+
+  return {
+    ...collision,
+    yearLayer: newYearLayer,
+    monthLayer: newMonthLayer,
+    dayLayer: newDayLayer,
+    finalVectors: newFinalVectors
+  };
+}
+
 

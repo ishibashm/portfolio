@@ -20,6 +20,7 @@ import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, Respon
 import { CytoscapeNetwork } from "./CytoscapeNetwork";
 import { BaziReport, BaziData } from "./BaziReport";
 import { VedicReport, VedicData } from "./VedicReport";
+import { MetaphysicalConfigBar, MetaphysicalConfig } from "@/components/layout/MetaphysicalConfigBar";
 
 export interface TarotCard {
   name: string;
@@ -237,6 +238,11 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'telemetry' | 'matrix' | 'engine'>('telemetry');
   
+  // Metaphysical Engine Global Configuration States
+  const [useClassical, setUseClassical] = useState(true);
+  const [directionFilterMode, setDirectionFilterMode] = useState<'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental'>('composite');
+  const [actionIntent, setActionIntent] = useState<'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION'>('DEFAULT');
+
   // Collapse states for detailed reports
   const [showNatalBazi, setShowNatalBazi] = useState(false);
   const [showEnvBazi, setShowEnvBazi] = useState(false);
@@ -244,14 +250,26 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
 
   const data = externalData !== undefined ? externalData : internalData;
 
-  const fetchNBAData = async () => {
+  const fetchNBAData = async (cfg?: {
+    useClassicalBoard?: boolean;
+    directionFilterMode?: string;
+    actionIntent?: string;
+  }) => {
     setLoading(true);
     setError(null);
     try {
+      const activeClassical = cfg?.useClassicalBoard !== undefined ? cfg.useClassicalBoard : useClassical;
+      const activeFilter = cfg?.directionFilterMode !== undefined ? cfg.directionFilterMode : directionFilterMode;
+      const activeIntent = cfg?.actionIntent !== undefined ? cfg.actionIntent : actionIntent;
+
       const res = await fetch("/api/nba", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          useClassical: activeClassical,
+          directionFilterMode: activeFilter,
+          actionIntent: activeIntent
+        })
       });
       if (!res.ok) throw new Error("Failed to fetch NBA data");
       const json = await res.json();
@@ -267,15 +285,17 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
     }
   };
 
-  const fetchForecast = async (currentData: NBAData) => {
+  const fetchForecast = async (currentData: NBAData, cfg?: { useClassicalBoard?: boolean }) => {
     setForecastLoading(true);
     try {
+      const activeClassical = cfg?.useClassicalBoard !== undefined ? cfg.useClassicalBoard : useClassical;
       const res = await fetch("/api/nba/forecast", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentShield: currentData.nba.stateVector.shieldCapacity,
-          currentAnsLoad: currentData.nba.stateVector.ansLoad
+          currentAnsLoad: currentData.nba.stateVector.ansLoad,
+          useClassical: activeClassical
         })
       });
       const json = await res.json();
@@ -297,9 +317,33 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
 
   useEffect(() => {
     if (data) {
-      fetchForecast(data);
+      fetchForecast(data, { useClassicalBoard: useClassical });
     }
-  }, [data]);
+  }, [data, useClassical]);
+
+  useEffect(() => {
+    // Listen to updates from other pages / config bars
+    const handleGlobalConfigUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<MetaphysicalConfig>;
+      if (customEvent.detail) {
+        setUseClassical(customEvent.detail.useClassicalBoard);
+        setDirectionFilterMode(customEvent.detail.directionFilterMode);
+        setActionIntent(customEvent.detail.actionIntent);
+        
+        if (externalData === undefined) {
+          fetchNBAData({
+            useClassicalBoard: customEvent.detail.useClassicalBoard,
+            directionFilterMode: customEvent.detail.directionFilterMode,
+            actionIntent: customEvent.detail.actionIntent
+          });
+        }
+      }
+    };
+    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    return () => {
+      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    };
+  }, [externalData, useClassical, directionFilterMode, actionIntent]);
 
   // Unified Risk Variables
   const unifiedRisk = data?.macro.streams?.unifiedRiskScore ?? 50;
@@ -319,8 +363,72 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
     return "bg-red-500/10 border-red-500/20";
   };
 
+  // Alignment Check Logic
+  const getActionAlignment = () => {
+    const suggested = data?.nba?.actionResult?.suggestedAction;
+    const intent = actionIntent;
+    
+    if (!suggested || !intent) return null;
+    
+    let isAligned = true;
+    let message = '';
+    let status: 'success' | 'warning' | 'error' = 'success';
+    
+    if (suggested === 'ABORT_AND_SHIELD') {
+      if (intent === 'MIGRATION' || intent === 'BUSINESS') {
+        isAligned = false;
+        status = 'error';
+        message = '警告: 意思決定エンジンは「撤退（ABORT_AND_SHIELD）」を強く推奨していますが、主観的なアクション目的は「前進/ビジネス（MIGRATION/BUSINESS）」に設定されています。高リスクの電磁/生体障害が生じる恐れがあります。';
+      } else {
+        message = '整合性良好: 意思決定エンジンの「撤退」推奨に対し、目的は「標準/休息（DEFAULT/REST）」であり、安全志向で一致しています。';
+      }
+    } else if (suggested === 'PREPARE_AND_WAIT') {
+      if (intent === 'MIGRATION' || intent === 'BUSINESS') {
+        isAligned = false;
+        status = 'warning';
+        message = '不一致警告: エンジンは「準備・待機（PREPARE_AND_WAIT）」を推奨していますが、目的は活性（MIGRATION/BUSINESS）に設定されています。時期尚早または微小な障害発生のシグナルがあります。';
+      } else {
+        message = '整合性良好: 推奨行動とアクション目的は待機・安定期（DEFAULT/REST）で整合しています。';
+      }
+    } else if (suggested === 'EXECUTE_RELOCATION' || suggested === 'EXECUTE_PURGE_RELOCATION') {
+      if (intent === 'REST') {
+        isAligned = false;
+        status = 'warning';
+        message = '注意: エンジンは「実行・前進（EXECUTE_RELOCATION）」を推奨していますが、目的は「休息（REST）」に設定されています。エネルギーの急激な消耗に備えてください。';
+      } else {
+        message = '整合性良好: 意思決定エンジンの「実行」推奨と、アクティブな目的（DEFAULT/MIGRATION/BUSINESS）が整合しています。';
+      }
+    } else {
+      message = '整合性良好: 現在の意思決定ポリシーと選択されたアクション目的は一致しています。';
+    }
+    
+    return { isAligned, status, message };
+  };
+
+  const alignment = getActionAlignment();
+
+  const handleConfigChange = (newConfig: MetaphysicalConfig) => {
+    setUseClassical(newConfig.useClassicalBoard);
+    setDirectionFilterMode(newConfig.directionFilterMode);
+    setActionIntent(newConfig.actionIntent);
+    
+    if (externalData === undefined) {
+      fetchNBAData({
+        useClassicalBoard: newConfig.useClassicalBoard,
+        directionFilterMode: newConfig.directionFilterMode,
+        actionIntent: newConfig.actionIntent
+      });
+    }
+  };
+
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-8 text-white relative font-sans">
+    <div className="w-full max-w-6xl mx-auto p-4 md:p-8 text-white relative font-sans space-y-6">
+      
+      {/* Metaphysical Configuration Bar */}
+      <MetaphysicalConfigBar 
+        onConfigChange={handleConfigChange}
+      />
+
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
         <div>
@@ -332,7 +440,10 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
         </div>
         <div className="flex items-center gap-3">
           <button 
-            onClick={onRefresh || fetchNBAData}
+            onClick={() => {
+              if (onRefresh) onRefresh();
+              else fetchNBAData();
+            }}
             disabled={loading || (externalData !== undefined && !onRefresh)}
             className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-lg backdrop-blur-md"
             title="データを更新"
@@ -1324,6 +1435,25 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                         ? '警戒待機（マイナス回避）' 
                         : data.nba.actionResult.suggestedAction.replace(/_/g, ' ')}
                     </h2>
+                    
+                    {/* Action Alignment Indicator Widget */}
+                    {alignment && (
+                      <div className={`mt-3 p-3.5 rounded-2xl border text-[11px] leading-relaxed backdrop-blur-sm shadow-sm ${
+                        alignment.status === 'error' 
+                          ? 'bg-red-950/20 text-red-300 border-red-500/30' 
+                          : alignment.status === 'warning'
+                          ? 'bg-amber-950/20 text-amber-300 border-amber-500/30'
+                          : 'bg-emerald-950/20 text-emerald-300 border-emerald-500/20'
+                      }`}>
+                        <div className="flex items-center gap-2 font-bold mb-1">
+                          {alignment.status === 'error' && <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />}
+                          {alignment.status === 'warning' && <AlertTriangle className="w-4 h-4 text-amber-400" />}
+                          {alignment.status === 'success' && <ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                          <span>アクション目的整合性: {alignment.status === 'success' ? '整合中 (Aligned)' : 'ミスマッチ (Mismatch)'}</span>
+                        </div>
+                        <p className="opacity-90">{alignment.message}</p>
+                      </div>
+                    )}
                     
                     {/* Q-Value and Probability Distribution Matrix */}
                     <div className="mt-6 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-500/20 backdrop-blur-sm shadow-inner">

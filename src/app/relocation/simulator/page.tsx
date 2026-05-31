@@ -26,10 +26,13 @@ import {
   generateBoard, 
   calculateVectorCollision, 
   getPersonalVoidZodiac, 
+  getHonmeiStar,
+  filterCollisionByMode,
   getClassicalYearStar,
   Direction
 } from '@/utils/ephemerisEngine';
 import { TenChiJinEvaluation } from '@/components/nba/TenChiJinEvaluation';
+import { MetaphysicalConfigBar, MetaphysicalConfig } from '@/components/layout/MetaphysicalConfigBar';
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import('@/components/nba/SimulatorMap'), {
@@ -192,6 +195,11 @@ export default function RelocationSimulatorPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
 
+  // Metaphysical Engine Global Configuration States
+  const [useClassical, setUseClassical] = useState(true);
+  const [directionFilterMode, setDirectionFilterMode] = useState<'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental'>('composite');
+  const [actionIntent, setActionIntent] = useState<'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION'>('DEFAULT');
+
   // NBA Evaluations from server evaluation endpoint
   const [nbaEvaluations, setNbaEvaluations] = useState<Record<string, any>>({});
   const [isEvaluatingNba, setIsEvaluatingNba] = useState(false);
@@ -201,6 +209,20 @@ export default function RelocationSimulatorPage() {
     fetchUserConfig();
     fetchSavedPlans();
     loadDraft();
+
+    // Listen to updates from other pages / config bars
+    const handleGlobalConfigUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<MetaphysicalConfig>;
+      if (customEvent.detail) {
+        setUseClassical(customEvent.detail.useClassicalBoard);
+        setDirectionFilterMode(customEvent.detail.directionFilterMode);
+        setActionIntent(customEvent.detail.actionIntent);
+      }
+    };
+    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    return () => {
+      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    };
   }, []);
 
   // Parse URL search parameters on load to pre-populate simulator inputs
@@ -252,6 +274,9 @@ export default function RelocationSimulatorPage() {
         if (config.base_lat !== undefined) setStartLat(config.base_lat);
         if (config.base_lon !== undefined) setStartLon(config.base_lon);
         if (config.use_true_north !== undefined) setUseTrueNorth(config.use_true_north);
+        if (config.use_classical_board !== undefined) setUseClassical(config.use_classical_board);
+        if (config.direction_filter_mode !== undefined) setDirectionFilterMode(config.direction_filter_mode);
+        if (config.action_intent !== undefined) setActionIntent(config.action_intent);
       }
     } catch (e) {
       console.error('Failed to load user config:', e);
@@ -312,7 +337,8 @@ export default function RelocationSimulatorPage() {
   // Compute Personal Hardware baseline metrics
   const birthDateObj = new Date(birthDate);
   const voidZodiacs = getPersonalVoidZodiac(birthDateObj);
-  const personalStar = getClassicalYearStar(birthDateObj);
+  const honmeiStar = getHonmeiStar(birthDateObj);
+  const personalStar = useClassical ? honmeiStar.classical : honmeiStar.physical;
 
   // Declination calculation approximation (Clamped to 2017)
   const getApproximateDeclination = (lat: number, lon: number): number => {
@@ -342,10 +368,11 @@ export default function RelocationSimulatorPage() {
 
       // Metaphysical Evaluation
       const env = getCurrentEnvironmentalFrequencies(depDate, currentBaseLon);
-      const yearBoard = generateBoard(env.classicalYearStar);
-      const monthBoard = generateBoard(env.classicalMonthStar);
-      const dayBoard = generateBoard(env.classicalDayStar);
+      const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
+      const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
+      const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
+      const evalIntent = actionIntent !== 'DEFAULT' ? actionIntent : (step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT');
       const collision = calculateVectorCollision(
         personalStar,
         yearBoard,
@@ -353,12 +380,23 @@ export default function RelocationSimulatorPage() {
         dayBoard,
         voidZodiacs,
         env.raw.lunarNode,
-        step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
+        evalIntent,
         depDate,
         currentBaseLon
       );
 
-      const finalStatus = collision.finalVectors[direction] || 'SAFE';
+      const filteredCollision = filterCollisionByMode(
+        collision,
+        personalStar,
+        null,
+        voidZodiacs,
+        directionFilterMode,
+        yearBoard,
+        monthBoard,
+        dayBoard
+      );
+
+      const finalStatus = filteredCollision.finalVectors[direction] || 'SAFE';
 
       const getRatingDetails = (status: string) => {
         switch (status) {
@@ -400,9 +438,9 @@ export default function RelocationSimulatorPage() {
           color: ratingInfo.color,
           score: ratingInfo.score,
           details: {
-            yearLayer: collision.yearLayer[direction] || 'SAFE',
-            monthLayer: collision.monthLayer[direction] || 'SAFE',
-            dayLayer: collision.dayLayer[direction] || 'SAFE'
+            yearLayer: filteredCollision.yearLayer[direction] || 'SAFE',
+            monthLayer: filteredCollision.monthLayer[direction] || 'SAFE',
+            dayLayer: filteredCollision.dayLayer[direction] || 'SAFE'
           }
         }
       };
@@ -417,7 +455,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return list;
-  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs]);
+  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
 
   // Fetch NBA timing and Q-value details dynamically
   const fetchNbaEvaluations = async () => {
@@ -537,26 +575,32 @@ export default function RelocationSimulatorPage() {
       const dirB = bearingToDirection(adjustedB);
 
       const envA = getCurrentEnvironmentalFrequencies(new Date(currentStep.departureDate), lonA);
-      const yB_A = generateBoard(envA.classicalYearStar);
-      const mB_A = generateBoard(envA.classicalMonthStar);
-      const dB_A = generateBoard(envA.classicalDayStar);
+      const yB_A = generateBoard(useClassical ? envA.classicalYearStar : envA.yearStar);
+      const mB_A = generateBoard(useClassical ? envA.classicalMonthStar : envA.monthStar);
+      const dB_A = generateBoard(useClassical ? envA.classicalDayStar : envA.dayStar);
 
       const collisionC = calculateVectorCollision(
         personalStar, yB_A, mB_A, dB_A, voidZodiacs, envA.raw.lunarNode, 'MIGRATION', new Date(currentStep.departureDate), lonA
       );
-      const statusC = collisionC.finalVectors[dirC] || 'SAFE';
+      const filteredCollisionC = filterCollisionByMode(
+        collisionC, personalStar, null, voidZodiacs, directionFilterMode, yB_A, mB_A, dB_A
+      );
+      const statusC = filteredCollisionC.finalVectors[dirC] || 'SAFE';
 
       const depDateB = new Date(currentStep.departureDate);
       depDateB.setDate(depDateB.getDate() + 75);
       const envC = getCurrentEnvironmentalFrequencies(depDateB, cand.lon);
-      const yB_C = generateBoard(envC.classicalYearStar);
-      const mB_C = generateBoard(envC.classicalMonthStar);
-      const dB_C = generateBoard(envC.classicalDayStar);
+      const yB_C = generateBoard(useClassical ? envC.classicalYearStar : envC.yearStar);
+      const mB_C = generateBoard(useClassical ? envC.classicalMonthStar : envC.monthStar);
+      const dB_C = generateBoard(useClassical ? envC.classicalDayStar : envC.dayStar);
 
       const collisionB = calculateVectorCollision(
         personalStar, yB_C, mB_C, dB_C, voidZodiacs, envC.raw.lunarNode, 'MIGRATION', depDateB, cand.lon
       );
-      const statusB = collisionB.finalVectors[dirB] || 'SAFE';
+      const filteredCollisionB = filterCollisionByMode(
+        collisionB, personalStar, null, voidZodiacs, directionFilterMode, yB_C, mB_C, dB_C
+      );
+      const statusB = filteredCollisionB.finalVectors[dirB] || 'SAFE';
 
       const isSafe = (status: string) => ['SAFE', 'OPTIMAL', 'OPTIMAL_REGULAR'].includes(status);
 
@@ -576,7 +620,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return validCandidates.sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs]);
+  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
 
   // Compute Kari-kippou Detour Polygons for drawing on map
   const detourPolygonsAndPrefectures = useMemo(() => {
@@ -592,9 +636,9 @@ export default function RelocationSimulatorPage() {
 
     const depDate = new Date(currentStep.departureDate);
     const env = getCurrentEnvironmentalFrequencies(depDate, currentStep.fromLon);
-    const yearBoard = generateBoard(env.classicalYearStar);
-    const monthBoard = generateBoard(env.classicalMonthStar);
-    const dayBoard = generateBoard(env.classicalDayStar);
+    const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
+    const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
+    const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
     const collision = calculateVectorCollision(
       personalStar,
@@ -608,10 +652,21 @@ export default function RelocationSimulatorPage() {
       currentStep.fromLon
     );
 
+    const filteredCollision = filterCollisionByMode(
+      collision,
+      personalStar,
+      null,
+      voidZodiacs,
+      directionFilterMode,
+      yearBoard,
+      monthBoard,
+      dayBoard
+    );
+
     const safeDirs: Direction[] = [];
     const directionsList: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     directionsList.forEach(d => {
-      const status = collision.yearLayer[d] || 'SAFE';
+      const status = filteredCollision.yearLayer[d] || 'SAFE';
       if (status === 'SAFE' || status === 'OPTIMAL' || status === 'OPTIMAL_REGULAR') {
         safeDirs.push(d);
       }
@@ -680,7 +735,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return { polygons, recommendations: Array.from(recommendedPrefectures) };
-  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs]);
+  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
 
   // Compute Overall Plan Scorer (0-100)
   const overallPlanScore = useMemo(() => {
@@ -1006,6 +1061,21 @@ export default function RelocationSimulatorPage() {
     return noiseLabels[status] || 'SAFE (吉方位/中立平穏)';
   };
 
+  const handleConfigChange = (newConfig: MetaphysicalConfig) => {
+    setUseClassical(newConfig.useClassicalBoard);
+    setDirectionFilterMode(newConfig.directionFilterMode);
+    setActionIntent(newConfig.actionIntent);
+    
+    // Sync target date ONLY to the initial step's departure date if it changes
+    if (steps.length > 0 && steps[0].departureDate !== newConfig.targetDate) {
+      setSteps(prev => {
+        const nextSteps = [...prev];
+        nextSteps[0] = { ...nextSteps[0], departureDate: newConfig.targetDate };
+        return nextSteps;
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white pb-20 relative selection:bg-indigo-500/30 selection:text-indigo-200">
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -1013,6 +1083,11 @@ export default function RelocationSimulatorPage() {
 
       <div className="max-w-7xl mx-auto px-4 pt-10 relative z-10 space-y-8">
         
+        {/* Metaphysical Configuration Bar */}
+        <MetaphysicalConfigBar 
+          onConfigChange={handleConfigChange}
+        />
+
         {/* Header Block */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/5 pb-8">
           <div>
