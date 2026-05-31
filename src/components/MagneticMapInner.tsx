@@ -250,18 +250,30 @@ export default function MagneticMapInner({
       const dLayer = layers?.dayLayer[d.dir] || 'SAFE';
 
       const formatLayer = (s: string) => {
-        if (s.startsWith('NOISE_GOU') || s.startsWith('NOISE_ANKEN')) return '危険';
-        if (s.startsWith('NOISE_HONMEI') || s.startsWith('NOISE_TEKI')) return '不調';
-        if (s === 'OPTIMAL') return '良好';
-        return '平穏';
+        if (s.startsWith('NOISE_GOU')) return '五黄殺 (大凶)';
+        if (s.startsWith('NOISE_ANKEN')) return '暗剣殺 (大凶)';
+        if (s.startsWith('NOISE_HA')) return '歳破/月破 (大凶)';
+        if (s.startsWith('NOISE_HONMEI')) return '本命殺 (凶)';
+        if (s.startsWith('NOISE_TEKI')) return '本命的殺 (凶)';
+        if (s.startsWith('NOISE_GETSUMEI')) return '月命殺 (凶)';
+        if (s.startsWith('NOISE_GETSUTEKI')) return '月命的殺 (凶)';
+        if (s.startsWith('NOISE_VOID')) return '天中殺 (大凶)';
+        if (s.startsWith('NOISE_NODE')) return '羅睺/計都 (凶)';
+        if (s === 'OPTIMAL') return '大吉方位';
+        if (s === 'OPTIMAL_REGULAR') return '吉方位';
+        return '平穏 (SAFE)';
       };
 
       const getActionSuggest = (status: string) => {
-        if (status.startsWith('NOISE_GOU') || status.startsWith('NOISE_ANKEN')) return '【退避】致命的な環境エラー域です';
-        if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI')) return '【警戒】主観的エラーが頻発する帯域です';
-        if (status.includes('VOID') || status.includes('NODE')) return '【警告】重大な決断は保留してください';
-        if (status === 'OPTIMAL') return '【推奨】最適化ゾーン。積極的な行動を';
-        return '【中立】平穏な環境です';
+        if (status.startsWith('NOISE_GOU')) return '【退避】五黄殺: 自滅や深刻なトラブルを招く致命的な環境エラー域です';
+        if (status.startsWith('NOISE_ANKEN')) return '【退避】暗剣殺: 予期せぬ他動的なトラブルを被る致命的な環境エラー域です';
+        if (status.startsWith('NOISE_HA')) return '【退避】破れ: 計画が破綻しやすい環境エラー域です';
+        if (status.startsWith('NOISE_HONMEI') || status.startsWith('NOISE_TEKI')) return '【警戒】健康被害や目的阻害など、主観的エラーが頻発する帯域です';
+        if (status.includes('VOID')) return '【警告】天中殺: 基盤が崩れやすい空間。重大な決断は保留してください';
+        if (status.includes('NODE')) return '【警告】交点軸: 宿命的な磁気ストレスがあります。重大な決断は保留してください';
+        if (status === 'OPTIMAL') return '【推奨】大吉方位。環境と生体波長が完全に一致した最適化ゾーンです';
+        if (status === 'OPTIMAL_REGULAR') return '【推奨】吉方位。運気を後押しする良好なゾーンです';
+        return '【中立】干渉のない平穏な環境です';
       };
 
       return (

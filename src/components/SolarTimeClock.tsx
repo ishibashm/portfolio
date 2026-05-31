@@ -9,13 +9,13 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition } from "../utils/ephemerisEngine";
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
 import 'katex/dist/katex.min.css';
 import type { NBAData } from "./nba/NBADashboard";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 const NBADashboard = dynamic(() => import("./nba/NBADashboard").then(mod => mod.NBADashboard), { ssr: false });
 const SolarTimeTable = dynamic(() => import("./SolarTimeTable").then(mod => mod.SolarTimeTable), { ssr: false });
@@ -448,6 +448,8 @@ export const SolarTimeClock = () => {
   });
 
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
+  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
 
@@ -1171,12 +1173,196 @@ export const SolarTimeClock = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (e: any) {
-      console.error(e);
-      alert("エクスポートに失敗しました: " + e.message);
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const generateDestinationExportPayload = () => {
+    const targetDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
+    const targetDir = getTargetDirectionInfo();
+    const activeVectors = useClassicalBoard ? classicalLayers?.finalVectors : physicalLayers?.finalVectors;
+    const targetStatus = (targetDir && activeVectors) 
+      ? activeVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] 
+      : null;
+
+    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917);
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
+
+    const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
+    const KNOWN_NEW_MOON = 947182440000;
+    const diffMs = targetDate.getTime() - KNOWN_NEW_MOON;
+    let phase = (diffMs % LUNAR_MONTH) / LUNAR_MONTH;
+    if (phase < 0) phase += 1;
+    const lunarCondition = calculateLunarPhaseCondition(targetDate, actionIntent);
+    const phaseLabel = lunarCondition.phaseLabel;
+
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      activeContext: {
+        evaluationDate: targetDate.toISOString().split('T')[0],
+        actionIntent,
+        calculationModel: useClassicalBoard ? "classical (暦基準)" : "physical (木星黄経基準)",
+        filterMode: directionFilterMode,
+        useTrueNorth
+      },
+      coordinates: {
+        baseCoordinates: { lat, lon },
+        targetCoordinates: { lat: targetLat, lon: targetLon, elevation: targetElevation },
+        heading: targetDir ? {
+          trueDirection: targetDir.trueDirection,
+          magneticDirection: targetDir.magneticDirection,
+          declination: geoData?.declination || null,
+          inclination: geoData?.inclination || null,
+          intensity: geoData?.intensity || null
+        } : null
+      },
+      personalProfile: {
+        birthDate: birthDate ? birthDate.split('T')[0] : null,
+        astrologicalStars: {
+          honmeiStarPhysical: honmeiStar?.physical || null,
+          honmeiStarClassical: honmeiStar?.classical || null,
+          getsuMeiStar: getsuMeiStar || null,
+          voidZodiacs: voidZodiacArray
+        }
+      },
+      environmentalState: {
+        centralStars: {
+          yearStar: useClassicalBoard ? envData.classicalYearStar : envData.yearStar,
+          monthStar: useClassicalBoard ? envData.classicalMonthStar : envData.monthStar,
+          dayStar: useClassicalBoard ? envData.classicalDayStar : envData.dayStar
+        },
+        zodiacs: zodiacData,
+        lunarPhase: {
+          phaseValue: phase,
+          phaseLabel: phaseLabel
+        }
+      },
+      vectorCollision: {
+        targetDirectionStatus: targetStatus,
+        targetDirectionDetails: targetDir ? {
+          yearLayer: (useClassicalBoard ? classicalLayers?.yearLayer : physicalLayers?.yearLayer)?.[useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection] || null,
+          monthLayer: (useClassicalBoard ? classicalLayers?.monthLayer : physicalLayers?.monthLayer)?.[useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection] || null,
+          dayLayer: (useClassicalBoard ? classicalLayers?.dayLayer : physicalLayers?.dayLayer)?.[useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection] || null
+        } : null,
+        allDirectionsFinal: activeVectors || null
+      },
+      biometrics: {
+        hrv,
+        gsr,
+        baseSyncDays,
+        ansLoad,
+        shieldCapacity
+      },
+      spaceWeather: {
+        kpIndex: spaceWeather?.kpIndex || null,
+        xrayFlux: spaceWeather?.xrayFlux || null
+      },
+      timingOptimization: {
+        recommendationText: timingOptimization?.recommendationText || null,
+        details: timingOptimization?.details || []
+      },
+      prompt_suggestion: `あなたは超科学・生体磁気学・東洋占星術（九星気学、四柱推命）を融合したメタフィジカル意思決定のアドバイザーです。
+以下のJSONデータをもとに、なぜ目標日（${targetDate.toLocaleDateString()}）に目標方位（磁北: ${targetDir?.magneticDirection || "未指定"} / 真北: ${targetDir?.trueDirection || "未指定"}）が吉凶ステータス「${targetStatus || "判定不能"}」になったのか、そしてなぜこの期間の行動が推奨されたのか（Timing Recommendation）を、物理法則と伝統占星術の両面からわかりやすく日本語で論理的に解説してください。
+特に、生体センサーデータ（HRV、GSR、ANS Overload）と環境磁場、九星の衝突配置、天中殺やドラゴニックノードの干渉などを関連付けて説明し、実用的なアドバイスを提供してください。`
+    };
+
+    return payload;
+  };
+
+  const getAiAssistantTextSummary = () => {
+    const targetDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
+    const targetDir = getTargetDirectionInfo();
+    const activeVectors = useClassicalBoard ? classicalLayers?.finalVectors : physicalLayers?.finalVectors;
+    const targetStatus = (targetDir && activeVectors) 
+      ? activeVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] 
+      : null;
+
+    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917);
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
+
+    const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
+    const KNOWN_NEW_MOON = 947182440000;
+    const diffMs = targetDate.getTime() - KNOWN_NEW_MOON;
+    let phase = (diffMs % LUNAR_MONTH) / LUNAR_MONTH;
+    if (phase < 0) phase += 1;
+    const lunarCondition = calculateLunarPhaseCondition(targetDate, actionIntent);
+    const phaseLabel = lunarCondition.phaseLabel;
+
+    return `あなたは超科学・生体磁気学・東洋占星術（九星気学、四柱推命）を融合したメタフィジカル意思決定のアドバイザーです。
+以下のパラメータデータをもとに、なぜ目標日（${targetDate.toLocaleDateString()}）に目標方位（磁北: ${targetDir?.magneticDirection || "未指定"} / 真北: ${targetDir?.trueDirection || "未指定"}）が吉凶ステータス「${targetStatus || "判定不能"}」になったのか、そしてなぜこの期間の行動が推奨されたのか（Timing Recommendation）を、物理法則と伝統占星術の両面からわかりやすく日本語で論理的に解説してください。
+特に、生体センサーデータ（HRV、GSR、ANS Overload）と環境磁場、九星の衝突配置、天中殺やドラゴニックノードの干渉などを関連付けて説明し、実用的なアドバイスを提供してください。
+
+--- PARAMETER DATA ---
+【基本情報】
+・評価日時: ${targetDate.toLocaleDateString()} (${timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}日後)
+・行動目的 (Action Intent): ${actionIntent}
+・演算モデル (Calculation Model): ${useClassicalBoard ? "classical (暦基準)" : "physical (木星黄経基準)"}
+・フィルターモード: ${directionFilterMode}
+・基準北: ${useTrueNorth ? "真北基準" : "磁北基準"}
+
+【座標・位置情報】
+・基準地座標: 緯度 ${lat?.toFixed(4)}, 経度 ${lon?.toFixed(4)}
+・目標地座標: 緯度 ${targetLat ?? "未設定"}, 経度 ${targetLon ?? "未設定"}, 標高 ${targetElevation ?? 0}m
+・方位判定: 磁北 ${targetDir?.magneticDirection || "未指定"} / 真北 ${targetDir?.trueDirection || "未指定"}
+
+【個人アストロプロファイル】
+・生年月日: ${birthDate ? birthDate.split('T')[0] : "未設定"}
+・本命星(Physical): ${honmeiStar?.physical || "未設定"}
+・本命星(Classical): ${honmeiStar?.classical || "未設定"}
+・月命星 (Getsumei): ${getsuMeiStar || "未設定"}
+・個人天中殺 (Void Zodiacs): ${voidZodiacArray.join(', ')}
+
+【九星盤・環境状態】
+・環境九星 (中宮): 年星 ${useClassicalBoard ? envData.classicalYearStar : envData.yearStar} / 月星 ${useClassicalBoard ? envData.classicalMonthStar : envData.monthStar} / 日星 ${useClassicalBoard ? envData.classicalDayStar : envData.dayStar}
+・十二支: 年支 ${zodiacData.yearZodiac} / 月支 ${zodiacData.monthZodiac} / 日支 ${zodiacData.dayZodiac}
+・月相 (Lunar Phase): ${phaseLabel}
+
+【吉凶衝突判定 (Vector Collision)】
+・目標方位の総合ステータス: ${targetStatus || "判定不能"}
+・目標方位の各レイヤーステータス:
+  - 年盤レイヤー: ${(useClassicalBoard ? classicalLayers?.yearLayer : physicalLayers?.yearLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
+  - 月盤レイヤー: ${(useClassicalBoard ? classicalLayers?.monthLayer : physicalLayers?.monthLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
+  - 日盤レイヤー: ${(useClassicalBoard ? classicalLayers?.dayLayer : physicalLayers?.dayLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
+
+【生体・磁気テレメトリー】
+・自律神経負荷 (ANS Overload): ${ansLoad}%
+・シールド容量 (Shield Capacity): ${shieldCapacity}%
+・心拍変動 (HRV): ${hrv} ms
+・皮膚電気活動 (GSR): ${gsr} μS
+・環境順化日数 (Sync Days): ${baseSyncDays}日
+・宇宙天気 Kp-index: ${spaceWeather?.kpIndex !== undefined ? spaceWeather.kpIndex : "未取得"}
+・太陽X線フラックス: ${spaceWeather?.xrayFlux || "未取得"}
+・局所磁場強度: F=${geoData?.intensity?.toFixed(0) || "未計算"}nT, D=${geoData?.declination?.toFixed(2) || "未計算"}°, I=${geoData?.inclination?.toFixed(2) || "未計算"}°
+
+【タイミング最適化 (Timing Optimization)】
+・推奨テキスト (Recommendation):
+${timingOptimization?.recommendationText || "特になし"}
+`;
+  };
+
+  const handleCopyAiPrompt = () => {
+    const text = getAiAssistantTextSummary();
+    navigator.clipboard.writeText(text);
+    setCopiedPrompt(true);
+    setTimeout(() => setCopiedPrompt(false), 2000);
+  };
+
+  const handleDownloadDestinationJson = () => {
+    const payload = generateDestinationExportPayload();
+    const jsonStr = JSON.stringify(payload, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const targetDateStr = payload.activeContext.evaluationDate;
+    link.download = `destination_ai_report_${targetDateStr}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
 
@@ -3030,6 +3216,18 @@ export const SolarTimeClock = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => setShowAiAssistant(!showAiAssistant)}
+                        className={`text-[9px] border px-2 py-1 rounded-sm transition-all uppercase tracking-widest flex items-center gap-1 font-mono ${
+                          showAiAssistant 
+                            ? 'bg-purple-950/40 text-purple-400 border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.3)]' 
+                            : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700 hover:text-white'
+                        }`}
+                        title="AI解析用のデータとプロンプトを表示します"
+                      >
+                        <Sparkles size={10} className={showAiAssistant ? "animate-pulse" : ""} />
+                        {showAiAssistant ? 'AI閉じる' : 'AI解析'}
+                      </button>
+                      <button
                         onClick={handleAutoSearch}
                         disabled={isAutoSearching}
                         className="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-950/20 px-2 py-1 rounded-sm hover:bg-emerald-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
@@ -3198,6 +3396,45 @@ export const SolarTimeClock = () => {
                           )}
                         </div>
                         <span className="text-[8px] opacity-70">TARGET EVAL</span>
+                      </div>
+                    )}
+
+                    {showAiAssistant && (
+                      <div className="mt-3 p-3 bg-black/85 border border-purple-500/30 rounded-sm font-mono text-[9px] text-zinc-300 animate-fade-in flex flex-col gap-2 relative z-20">
+                        <div className="flex justify-between items-center border-b border-zinc-800/80 pb-1.5 mb-1">
+                          <span className="text-purple-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <Sparkles size={10} className="text-purple-400 animate-pulse" /> AI ANALYSIS ASSISTANT / AI解析アシスタント
+                          </span>
+                          <span className="text-[7px] text-zinc-500">READY TO COPY</span>
+                        </div>
+                        
+                        <p className="text-zinc-500 leading-normal text-[8px] mb-1">
+                          現在の気学・生体パラメータと判定結果をまとめました。下の「コピー」ボタンでプロンプト付きデータをクリップボードにコピーしてGeminiなどの生成AIに貼り付けるか、JSONファイルをダウンロードしてください。
+                        </p>
+
+                        <div className="relative">
+                          <textarea
+                            readOnly
+                            value={getAiAssistantTextSummary()}
+                            className="w-full h-32 bg-zinc-950 border border-zinc-800 rounded p-1.5 text-zinc-400 outline-none text-[8px] leading-relaxed custom-scrollbar font-mono resize-y"
+                            onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                          />
+                        </div>
+
+                        <div className="flex gap-2 mt-1">
+                          <button
+                            onClick={handleCopyAiPrompt}
+                            className="flex-1 bg-purple-900/30 text-purple-400 hover:bg-purple-800/50 border border-purple-800/50 text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm transition-colors font-bold flex items-center justify-center gap-1 font-mono"
+                          >
+                            {copiedPrompt ? "📋 コピー完了！" : "📋 プロンプトをコピー"}
+                          </button>
+                          <button
+                            onClick={handleDownloadDestinationJson}
+                            className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 text-[9px] uppercase tracking-widest px-2.5 py-1.5 rounded-sm transition-colors font-bold flex items-center justify-center gap-1 font-mono"
+                          >
+                            📥 JSONをダウンロード
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
