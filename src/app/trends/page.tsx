@@ -99,7 +99,9 @@ export default function TrendsPage() {
   };
 
   // Get list of all available tabs (sources)
-  const sources = groupedArticles ? Object.keys(groupedArticles) : [];
+  const sources = groupedArticles 
+    ? Object.keys(groupedArticles).filter(key => Array.isArray(groupedArticles[key])) 
+    : [];
 
   // Helper to color source tags
   const getSourceColor = (source: string) => {
@@ -113,30 +115,45 @@ export default function TrendsPage() {
 
   // Filter or flatten articles
   const getDisplayedArticles = () => {
-    if (!groupedArticles) return [];
+    if (!groupedArticles || typeof groupedArticles !== 'object') return [];
 
     if (activeTab === 'All') {
-      // Flatten all articles
+      // Flatten all articles safely
       const all: (Article & { source: string })[] = [];
       Object.entries(groupedArticles).forEach(([source, list]) => {
-        list.forEach(article => {
-          all.push({ ...article, source });
-        });
+        if (Array.isArray(list)) {
+          list.forEach(article => {
+            if (article && typeof article === 'object' && 'title' in article && 'link' in article) {
+              all.push({ ...article, source });
+            }
+          });
+        }
       });
-      // Since we don't have pubDate, keep the order grouped but interleaved, or simple alphabetical.
-      // Let's interleave them so Zenn[0], Qiita[0], Hatena[0], Zenn[1]... to give variety
-      const maxLen = Math.max(...Object.values(groupedArticles).map(l => l.length));
+
+      // Safely compute the max length of array lists
+      const lengths = Object.values(groupedArticles)
+        .filter(Array.isArray)
+        .map(l => l.length);
+      const maxLen = lengths.length > 0 ? Math.max(...lengths) : 0;
+
       const interleaved: (Article & { source: string })[] = [];
       for (let i = 0; i < maxLen; i++) {
         Object.entries(groupedArticles).forEach(([source, list]) => {
-          if (list[i]) {
-            interleaved.push({ ...list[i], source });
+          if (Array.isArray(list) && list[i]) {
+            const article = list[i];
+            if (article && typeof article === 'object' && 'title' in article && 'link' in article) {
+              interleaved.push({ ...article, source });
+            }
           }
         });
       }
       return interleaved;
     } else {
-      return (groupedArticles[activeTab] || []).map(article => ({ ...article, source: activeTab }));
+      const list = groupedArticles[activeTab];
+      if (!Array.isArray(list)) return [];
+      return list
+        .filter(article => article && typeof article === 'object' && 'title' in article && 'link' in article)
+        .map(article => ({ ...article, source: activeTab }));
     }
   };
 
