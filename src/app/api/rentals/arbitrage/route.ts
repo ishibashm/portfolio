@@ -89,6 +89,11 @@ export async function GET(request: Request) {
   const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
   const prefecture = searchParams.get('prefecture') || 'all';
 
+  const minLat = parseFloat(searchParams.get('minLat') || 'NaN');
+  const maxLat = parseFloat(searchParams.get('maxLat') || 'NaN');
+  const minLon = parseFloat(searchParams.get('minLon') || 'NaN');
+  const maxLon = parseFloat(searchParams.get('maxLon') || 'NaN');
+
   const targetDateStr = searchParams.get('targetDate') || '';
   let targetDate = new Date();
   if (targetDateStr) {
@@ -199,6 +204,16 @@ export async function GET(request: Request) {
         gte: baseLon - deltaLon,
         lte: baseLon + deltaLon
       };
+    } else if (!isNaN(minLat) && !isNaN(maxLat) && !isNaN(minLon) && !isNaN(maxLon)) {
+      // Use map viewport bounding box
+      whereClause.lat = {
+        gte: minLat,
+        lte: maxLat
+      };
+      whereClause.lon = {
+        gte: minLon,
+        lte: maxLon
+      };
     }
 
     if (prefecture && prefecture !== 'all') {
@@ -207,14 +222,19 @@ export async function GET(request: Request) {
       };
     }
 
-    const properties = await prisma.rental_properties.findMany({
-      where: whereClause,
-      take: limit,
-      orderBy: { created_at: 'desc' }
-    });
+    const [properties, totalCount] = await Promise.all([
+      prisma.rental_properties.findMany({
+        where: whereClause,
+        take: limit,
+        orderBy: { created_at: 'desc' }
+      }),
+      prisma.rental_properties.count({
+        where: whereClause
+      })
+    ]);
 
     if (properties.length === 0) {
-      return NextResponse.json({ properties: [], stats: {} });
+      return NextResponse.json({ properties: [], stats: {}, metadata: { totalCount: 0, limit } });
     }
 
     // --- アービトラージ（割安度）のベース計算 ---
@@ -351,6 +371,8 @@ export async function GET(request: Request) {
         meanSqmRent,
         stdDevSqmRent,
         totalAnalyzed: properties.length,
+        totalCount,
+        limit,
         upcomingDoyou,
         lunarPhase: {
           label: lunarPhaseLabel,

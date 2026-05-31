@@ -34,6 +34,10 @@ export default function ArbitrageScannerPage() {
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
+  const [dataLimit, setDataLimit] = useState(500);
+
+  // Viewport bounds for map searching
+  const [mapBounds, setMapBounds] = useState<{minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number} | null>(null);
 
   // Temporary local inputs to avoid API hammering during typing
   const [localLat, setLocalLat] = useState("34.9911");
@@ -136,14 +140,25 @@ export default function ArbitrageScannerPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("limit", "1000");
+      params.append("limit", dataLimit.toString());
       params.append("baseLat", baseLat);
       params.append("baseLon", baseLon);
       params.append("birthLat", birthLat);
       params.append("birthLon", birthLon);
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
-      params.append("radiusKm", radiusKm);
+      
+      // Send either radius or map bounding box depending on mapBounds
+      if (mapBounds && mapBounds.zoom >= 10) { // Only use bounds if reasonably zoomed in
+        params.append("minLat", mapBounds.minLat.toString());
+        params.append("maxLat", mapBounds.maxLat.toString());
+        params.append("minLon", mapBounds.minLon.toString());
+        params.append("maxLon", mapBounds.maxLon.toString());
+        params.append("radiusKm", "all"); // Disable radius when using bounds
+      } else {
+        params.append("radiusKm", radiusKm);
+      }
+
       params.append("prefecture", prefecture);
       params.append("useClassical", useClassical.toString());
       params.append("layerMode", layerMode);
@@ -170,7 +185,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, dataLimit, mapBounds, initialLoaded]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
@@ -602,6 +617,15 @@ export default function ArbitrageScannerPage() {
                   baseLon={Number(baseLon)}
                   useTrueNorth={useTrueNorth}
                   layerMode={layerMode}
+                  onBoundsChange={(b) => {
+                    // Debounce map bounds updates slightly to avoid hammering the API
+                    setMapBounds(prev => {
+                      if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
+                        return b;
+                      }
+                      return prev;
+                    });
+                  }}
                 />
               )}
             </div>
@@ -660,9 +684,20 @@ export default function ArbitrageScannerPage() {
           <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-zinc-950/20">
             <div>
               <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">物件データベース</h2>
-              <p className="text-xs text-gray-500 mt-1">
-                スキャンされた {filteredData.length} 件の物件を抽出しています。(全体平均平米単価: {metadata?.meanSqmRent ? `${Math.round(metadata.meanSqmRent).toLocaleString()}円` : '...'})
-              </p>
+              <div className="text-xs text-gray-500 mt-1 flex items-center flex-wrap gap-2">
+                <span>
+                  条件に合致する全 <b>{metadata?.totalCount?.toLocaleString() || data.length}</b> 件のうち、スコア上位 <b>{data.length}</b> 件を取得しています。
+                  (全体平均平米単価: {metadata?.meanSqmRent ? `${Math.round(metadata.meanSqmRent).toLocaleString()}円` : '...'})
+                </span>
+                {(metadata?.totalCount > dataLimit) && (
+                  <button 
+                    onClick={() => setDataLimit(prev => prev + 500)}
+                    className="px-2 py-0.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-md transition-colors"
+                  >
+                    +500件を追加読込 (現在上限: {dataLimit})
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="flex flex-wrap gap-3 items-center">

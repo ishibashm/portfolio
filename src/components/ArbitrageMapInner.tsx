@@ -45,6 +45,7 @@ interface ArbitrageMapInnerProps {
   baseLon: number;
   useTrueNorth: boolean;
   layerMode: string;
+  onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
 
 // Helper to calculate coordinates of a point at a certain distance and bearing from origin
@@ -114,12 +115,43 @@ function AutoFitBounds({ properties, center }: { properties: ScoredProperty[]; c
   return null;
 }
 
+// Track map viewport bounds
+function BoundsListener({ onBoundsChange }: { onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void }) {
+  const map = useMapEvents({
+    moveend() {
+      if (!onBoundsChange) return;
+      const bounds = map.getBounds();
+      onBoundsChange({
+        minLat: bounds.getSouthWest().lat,
+        maxLat: bounds.getNorthEast().lat,
+        minLon: bounds.getSouthWest().lng,
+        maxLon: bounds.getNorthEast().lng,
+        zoom: map.getZoom()
+      });
+    },
+    zoomend() {
+      if (!onBoundsChange) return;
+      const bounds = map.getBounds();
+      onBoundsChange({
+        minLat: bounds.getSouthWest().lat,
+        maxLat: bounds.getNorthEast().lat,
+        minLon: bounds.getSouthWest().lng,
+        maxLon: bounds.getNorthEast().lng,
+        zoom: map.getZoom()
+      });
+    }
+  });
+
+  return null;
+}
+
 export default function ArbitrageMapInner({
   properties,
   baseLat,
   baseLon,
   useTrueNorth,
-  layerMode
+  layerMode,
+  onBoundsChange
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
   const [zoom, setZoom] = useState(13);
@@ -261,6 +293,7 @@ export default function ArbitrageMapInner({
         style={{ height: "100%", width: "100%", background: "#0c0c0e" }}
         zoomControl={false}
       >
+        <BoundsListener onBoundsChange={onBoundsChange} />
         <SyncMapCenter lat={baseLat} lon={baseLon} />
         <InvalidateMapSize />
         <AutoFitBounds properties={properties} center={center} />
