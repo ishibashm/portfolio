@@ -22,7 +22,8 @@ import {
   TrendingUp,
   LogOut,
   History,
-  Route
+  Route,
+  Rss
 } from 'lucide-react';
 
 const PUBLIC_ITEMS = [
@@ -38,6 +39,7 @@ const PROTECTED_ITEMS = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Oracle Hub' },
   { href: '/research', icon: Database, label: 'Data Engine' },
   { href: '/knowledge', icon: BookOpen, label: 'Second Brain' },
+  { href: '/trends', icon: Rss, label: 'Tech Trends' },
   { href: '/x-viewer', icon: Twitter, label: 'X Archive' },
   { href: '/visualizer', icon: Palette, label: 'AI Visualizer' },
   { href: '/omni', icon: Terminal, label: 'Omni-Terminal' },
