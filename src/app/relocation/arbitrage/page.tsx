@@ -185,7 +185,7 @@ export default function ArbitrageScannerPage() {
     if (initialLoaded) {
       fetchData();
     }
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, dataLimit, mapBounds, initialLoaded]);
+  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, mapBounds, initialLoaded]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
@@ -689,14 +689,6 @@ export default function ArbitrageScannerPage() {
                   条件に合致する全 <b>{metadata?.totalCount?.toLocaleString() || data.length}</b> 件のうち、スコア上位 <b>{data.length}</b> 件を取得しています。
                   (全体平均平米単価: {metadata?.meanSqmRent ? `${Math.round(metadata.meanSqmRent).toLocaleString()}円` : '...'})
                 </span>
-                {(metadata?.totalCount > dataLimit) && (
-                  <button 
-                    onClick={() => setDataLimit(prev => prev + 500)}
-                    className="px-2 py-0.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-md transition-colors"
-                  >
-                    +500件を追加読込 (現在上限: {dataLimit})
-                  </button>
-                )}
               </div>
             </div>
             

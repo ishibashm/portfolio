@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Polygon, Circle, CircleMarker, useMap, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polygon, Circle, CircleMarker, useMap, Popup, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { scaleLinear } from "d3-scale";
