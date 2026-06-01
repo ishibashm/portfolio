@@ -259,6 +259,8 @@ export default function ArbitrageMapInner({
   layerMode,
   radiusKm,
   prefecture,
+  isTransitioningDate = false,
+  onDateChange,
   onBoundsChange
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
