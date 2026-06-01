@@ -273,8 +273,8 @@ async function main() {
   const browser = await chromium.launch(BROWSER_OPTIONS);
 
   try {
-    // ターゲット都道府県（現在は全国47都道府県）
-    const targetPrefectures = PREFECTURES;
+    // ターゲット都道府県（愛知のみ）
+    const targetPrefectures = ['aichi'];
 
     // 進行状況の読み込み
     const state = loadState();

@@ -101,3 +101,142 @@ export function getWeedingScore(date: Date, rokuyo: string): number {
     return score;
 }
 
+// 一粒万倍日の地支対応表
+const ICHIRYUMANBAI_MAP: Record<string, string[]> = {
+  "寅": ["丑", "午"], // 正月
+  "卯": ["寅", "酉"], // 二月
+  "辰": ["子", "卯"], // 三月
+  "巳": ["卯", "辰"], // 四月
+  "午": ["巳", "午"], // 五月
+  "未": ["午", "酉"], // 六月
+  "申": ["子", "未"], // 七月
+  "酉": ["卯", "申"], // 八月
+  "戌": ["午", "酉"], // 九月
+  "亥": ["酉", "戌"], // 十月
+  "子": ["亥", "子"], // 十一月
+  "丑": ["子", "卯"], // 十二月
+};
+
+/**
+ * 吉日（一粒万倍日・天赦日）の判定を行う
+ */
+export function getLuckyDays(date: Date): { 
+  isIchiryumanbai: boolean; 
+  isTensho: boolean; 
+  labels: string[]; 
+} {
+  const fields = getZonedDateTimeFields(date, 9);
+  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const lunar = solar.getLunar();
+
+  const monthZhi = lunar.getMonthZhi();
+  const dayZhi = lunar.getDayZhi();
+  const dayGanZhi = lunar.getDayInGanZhi();
+
+  // 1. 一粒万倍日
+  const isIchiryumanbai = ICHIRYUMANBAI_MAP[monthZhi]?.includes(dayZhi) || false;
+
+  // 2. 天赦日
+  let isTensho = false;
+  if (["寅", "卯", "辰"].includes(monthZhi) && dayGanZhi === "戊寅") isTensho = true;
+  else if (["巳", "午", "未"].includes(monthZhi) && dayGanZhi === "甲午") isTensho = true;
+  else if (["申", "酉", "戌"].includes(monthZhi) && dayGanZhi === "戊申") isTensho = true;
+  else if (["亥", "子", "丑"].includes(monthZhi) && dayGanZhi === "甲子") isTensho = true;
+
+  const labels: string[] = [];
+  if (isIchiryumanbai) labels.push("一粒万倍日");
+  if (isTensho) labels.push("天赦日");
+
+  return { isIchiryumanbai, isTensho, labels };
+}
+
+/**
+ * 日本の祝日を簡易判定する（振替休日・国民の休日対応）
+ */
+export function isJapaneseHoliday(date: Date): { isHoliday: boolean; name: string } {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+
+  // 1. 固定祝日の定義
+  const fixedHolidays: Record<string, string> = {
+    '1-1': '元日',
+    '2-11': '建国記念の日',
+    '2-23': '天皇誕生日',
+    '4-29': '昭和の日',
+    '5-3': '憲法記念日',
+    '5-4': 'みどりの日',
+    '5-5': 'こどもの日',
+    '8-11': '山の日',
+    '11-3': '文化の日',
+    '11-23': '勤労感謝の日'
+  };
+
+  // 2. 春分・秋分の計算
+  const getVernalEquinox = (y: number) => {
+    if (y < 1900 || y > 2099) return 20;
+    return Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  };
+  const getAutumnalEquinox = (y: number) => {
+    if (y < 1900 || y > 2099) return 23;
+    return Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  };
+
+  const vernalEquinox = getVernalEquinox(year);
+  const autumnalEquinox = getAutumnalEquinox(year);
+
+  if (month === 3 && day === vernalEquinox) return { isHoliday: true, name: '春分の日' };
+  if (month === 9 && day === autumnalEquinox) return { isHoliday: true, name: '秋分の日' };
+
+  // 3. ハッピーマンデーの計算（第N月曜日）
+  const getMondayDate = (y: number, m: number, count: number) => {
+    const firstDay = new Date(y, m - 1, 1).getDay();
+    const firstMonday = (8 - firstDay) % 7 + 1;
+    return firstMonday + 7 * (count - 1);
+  };
+
+  if (month === 1 && day === getMondayDate(year, 1, 2)) return { isHoliday: true, name: '成人の日' };
+  if (month === 7 && day === getMondayDate(year, 7, 3)) return { isHoliday: true, name: '海の日' };
+  if (month === 9 && day === getMondayDate(year, 9, 3)) return { isHoliday: true, name: '敬老の日' };
+  if (month === 10 && day === getMondayDate(year, 10, 2)) return { isHoliday: true, name: 'スポーツの日' };
+
+  // 固定祝日の判定
+  const key = `${month}-${day}`;
+  if (fixedHolidays[key]) return { isHoliday: true, name: fixedHolidays[key] };
+
+  // 振替休日の判定
+  const prevDate = new Date(date);
+  prevDate.setDate(date.getDate() - 1);
+  
+  if (date.getDay() === 1) { // 月曜日の場合
+    const prevH = isJapaneseHoliday(prevDate);
+    if (prevH.isHoliday && !prevH.name.startsWith('振替休日')) {
+      return { isHoliday: true, name: `振替休日 (${prevH.name})` };
+    }
+  } else if (date.getDay() === 2 || date.getDay() === 3) {
+    // 5月6日の振替休日判定（憲法記念日、みどりの日、こどもの日のいずれかが日曜日）
+    if (month === 5 && day === 6) {
+      const d3 = new Date(year, 4, 3).getDay();
+      const d4 = new Date(year, 4, 4).getDay();
+      const d5 = new Date(year, 4, 5).getDay();
+      if (d3 === 0 || d4 === 0 || d5 === 0) {
+        return { isHoliday: true, name: '振替休日' };
+      }
+    }
+  }
+
+  // 国民の休日の判定
+  const nextDate = new Date(date);
+  nextDate.setDate(date.getDate() + 1);
+  
+  // 国民の休日の判定のためには、祝日判定自体をループしないように簡易取得
+  const isPrevH = fixedHolidays[`${prevDate.getMonth()+1}-${prevDate.getDate()}`] || (prevDate.getMonth()+1 === 3 && prevDate.getDate() === vernalEquinox) || (prevDate.getMonth()+1 === 9 && prevDate.getDate() === autumnalEquinox);
+  const isNextH = fixedHolidays[`${nextDate.getMonth()+1}-${nextDate.getDate()}`] || (nextDate.getMonth()+1 === 3 && nextDate.getDate() === vernalEquinox) || (nextDate.getMonth()+1 === 9 && nextDate.getDate() === autumnalEquinox);
+  
+  if (isPrevH && isNextH) {
+    return { isHoliday: true, name: '国民の休日' };
+  }
+
+  return { isHoliday: false, name: '' };
+}
+

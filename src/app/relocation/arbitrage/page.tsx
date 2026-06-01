@@ -1,9 +1,18 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, Search, Settings, RefreshCw } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar, MetaphysicalConfig } from "@/components/layout/MetaphysicalConfigBar";
+import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
+
+// 吉凶バッジ定義のインターフェース
+interface BadgeItem {
+  label: string;
+  type: 'calendar' | 'individual'; // 枠線のみ or 塗りつぶし
+  colorClass: string;
+  priority: number;
+}
 
 const getTodayString = () => {
   const today = new Date();
@@ -16,6 +25,7 @@ const getTodayString = () => {
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTransitioningDate, setIsTransitioningDate] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
@@ -39,11 +49,152 @@ export default function ArbitrageScannerPage() {
   // Viewport bounds for map searching
   const [mapBounds, setMapBounds] = useState<{minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number} | null>(null);
 
+  // 前回のパラメータを保持して比較する ref
+  const prevParamsRef = useRef({
+    baseLat,
+    baseLon,
+    birthDate,
+    radiusKm,
+    prefecture,
+    useClassical,
+    layerMode,
+    useTrueNorth,
+    lunarPhaseModifier,
+    directionFilterMode,
+    actionIntent,
+    mapBounds
+  });
+
   // Temporary local inputs to avoid API hammering during typing
   const [localLat, setLocalLat] = useState("34.9911");
   const [localLon, setLocalLon] = useState("135.7248");
   const [localBirthDate, setLocalBirthDate] = useState("1988-11-25");
   const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
+
+  // おすすめ度（星マーク）の描画
+  const renderStars = (score: number) => {
+    let starCount = 1;
+    if (score >= 80) starCount = 5;
+    else if (score >= 70) starCount = 4;
+    else if (score >= 60) starCount = 3;
+    else if (score >= 50) starCount = 2;
+
+    return (
+      <div className="flex gap-0.5 text-amber-400 text-xs" title={`おすすめ度: ${score.toFixed(1)}`}>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <span key={i} className={i < starCount ? "opacity-100 text-amber-400" : "opacity-20 text-zinc-600"}>
+            ★
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  // 吉凶要因バッジの描画
+  const renderFactorBadges = (item: any) => {
+    const targetDay = item.dateScores?.[3];
+    if (!targetDay) return null;
+    const details = targetDay.scoreDetails;
+
+    const badges: BadgeItem[] = [];
+
+    // 1. 大凶要因
+    if (item.astrologyStatus === 'NOISE_GOU') badges.push({ label: '五黄殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+    if (item.astrologyStatus === 'NOISE_ANKEN') badges.push({ label: '暗剣殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+    if (item.astrologyStatus === 'NOISE_HA') badges.push({ label: '歳破', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+    if (item.astrologyStatus === 'NOISE_HONMEI') badges.push({ label: '本命殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+    if (item.astrologyStatus === 'NOISE_TEKI') badges.push({ label: '本命的殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+
+    // 2. 最大吉要因
+    if (item.isTendo) badges.push({ label: '天道方位', type: 'individual', colorClass: 'bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-300 border border-amber-400/40 font-bold', priority: 2 });
+    if (targetDay.luckyDays?.isTensho) badges.push({ label: '天赦日', type: 'calendar', colorClass: 'border border-yellow-400/50 text-yellow-300 bg-yellow-400/5', priority: 2 });
+
+    // 3. 通常の吉要因
+    if (targetDay.rokuyo?.includes("大安")) badges.push({ label: '大安', type: 'calendar', colorClass: 'border border-indigo-400/50 text-indigo-300 bg-indigo-400/5', priority: 3 });
+    if (targetDay.luckyDays?.isIchiryumanbai) badges.push({ label: '一粒万倍', type: 'calendar', colorClass: 'border border-emerald-400/50 text-emerald-300 bg-emerald-400/5', priority: 3 });
+    if (item.astroFlags?.includes("JUPITER_LINE")) badges.push({ label: '木星ライン', type: 'individual', colorClass: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30', priority: 3 });
+    if (item.astroFlags?.includes("VENUS_LINE")) badges.push({ label: '金星ライン', type: 'individual', colorClass: 'bg-blue-500/15 text-blue-300 border border-blue-500/30', priority: 3 });
+    if (item.astroFlags?.includes("SUN_LINE")) badges.push({ label: '太陽ライン', type: 'individual', colorClass: 'bg-purple-500/15 text-purple-300 border border-purple-500/30', priority: 3 });
+
+    // 4. 軽い凶や警告
+    if (targetDay.status === 'NOISE_VOID' || (details && details.voidPenalty < 0)) badges.push({ label: '天中殺', type: 'individual', colorClass: 'bg-orange-500/10 text-orange-400 border border-orange-500/20', priority: 4 });
+    if (item.astroFlags?.includes("DOYOU_HAZARD") || (details && details.doyouPenalty < 0)) badges.push({ label: '土用期間', type: 'calendar', colorClass: 'border border-zinc-600 text-zinc-400 bg-zinc-700/5', priority: 4 });
+    if (item.astrologyStatus === 'NOISE_GETSUMEI') badges.push({ label: '月命殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
+    if (item.astrologyStatus === 'NOISE_GETSUTEKI') badges.push({ label: '月命的殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
+    if (item.astrologyStatus === 'NOISE_NODE') badges.push({ label: '月交点', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
+    if (item.astroFlags?.includes("DECLINATION_WARNING")) badges.push({ label: '偏角ズレ', type: 'individual', colorClass: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20', priority: 4 });
+
+    // 優先度順、かつ同じ優先度なら「カレンダー共通（暦）」を左、「個別」を右に配置
+    badges.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      if (a.type !== b.type) return a.type === 'calendar' ? -1 : 1;
+      return 0;
+    });
+
+    const displayLimit = 5;
+    const visibleBadges = badges.slice(0, displayLimit);
+    const hiddenCount = badges.length - displayLimit;
+
+    return (
+      <div className="flex flex-wrap gap-1.5 items-center mt-2.5">
+        {visibleBadges.map((badge, idx) => (
+          <span 
+            key={idx}
+            className={`px-2 py-0.5 rounded text-[9.5px] font-medium leading-none ${badge.colorClass}`}
+          >
+            {badge.label}
+          </span>
+        ))}
+        {hiddenCount > 0 && (
+          <div className="group relative">
+            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200 cursor-help leading-none">
+              +{hiddenCount}
+            </span>
+            {/* ポップオーバー */}
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-zinc-950/95 border border-zinc-800 rounded-lg p-2.5 shadow-xl text-[10px] text-zinc-300 hidden group-hover:block z-50 backdrop-blur-sm">
+              <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 mb-1.5">すべての吉凶要因:</div>
+              <div className="flex flex-wrap gap-1.5">
+                {badges.map((badge, idx) => (
+                  <span key={idx} className={`px-1.5 py-0.5 rounded text-[8.5px] font-medium leading-none ${badge.colorClass}`}>
+                    {badge.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 全体ロード時のカード型スケルトン
+  const renderCardSkeletons = () => {
+    return Array.from({ length: 4 }).map((_, idx) => (
+      <tr key={idx} className="border-b border-gray-100 dark:border-gray-900 animate-pulse">
+        <td className="px-6 py-4">
+          <div className="w-16 h-4 bg-zinc-800/40 rounded-md" />
+        </td>
+        <td className="px-6 py-4 space-y-2">
+          <div className="w-48 h-4 bg-zinc-800/40 rounded-md" />
+          <div className="w-32 h-3 bg-zinc-800/25 rounded-md" />
+          <div className="w-40 h-8 bg-zinc-800/20 rounded-md mt-2" />
+        </td>
+        <td className="px-6 py-4 space-y-1.5">
+          <div className="w-20 h-4 bg-zinc-800/40 rounded-md" />
+          <div className="w-24 h-3 bg-zinc-800/25 rounded-md" />
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="w-16 h-4 bg-zinc-800/40 rounded-md ml-auto" />
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="w-12 h-4 bg-zinc-800/40 rounded-md ml-auto" />
+        </td>
+        <td className="px-6 py-4 text-right">
+          <div className="w-24 h-3 bg-zinc-800/25 rounded-md ml-auto" />
+        </td>
+      </tr>
+    ));
+  };
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -135,9 +286,13 @@ export default function ArbitrageScannerPage() {
     setInitialLoaded(true);
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (isDateChange = false) => {
     if (!initialLoaded) return;
-    setLoading(true);
+    if (isDateChange) {
+      setIsTransitioningDate(true);
+    } else {
+      setLoading(true);
+    }
     try {
       const params = new URLSearchParams();
       params.append("limit", dataLimit.toString());
@@ -177,14 +332,52 @@ export default function ArbitrageScannerPage() {
       console.error(err);
     } finally {
       setLoading(false);
+      setIsTransitioningDate(false);
     }
+  };
+
+  const handleDateChange = (newDateStr: string) => {
+    setTargetDate(newDateStr);
+    setLocalTargetDate(newDateStr);
+    localStorage.setItem("arb_targetDate", newDateStr);
+    saveUnifiedConfig({ target_date: newDateStr });
   };
 
   // Re-fetch data whenever params change
   useEffect(() => {
-    if (initialLoaded) {
-      fetchData();
-    }
+    if (!initialLoaded) return;
+
+    const prev = prevParamsRef.current;
+    const isOtherChanged = 
+      prev.baseLat !== baseLat ||
+      prev.baseLon !== baseLon ||
+      prev.birthDate !== birthDate ||
+      prev.radiusKm !== radiusKm ||
+      prev.prefecture !== prefecture ||
+      prev.useClassical !== useClassical ||
+      prev.layerMode !== layerMode ||
+      prev.useTrueNorth !== useTrueNorth ||
+      prev.lunarPhaseModifier !== lunarPhaseModifier ||
+      prev.directionFilterMode !== directionFilterMode ||
+      prev.actionIntent !== actionIntent ||
+      JSON.stringify(prev.mapBounds) !== JSON.stringify(mapBounds);
+
+    prevParamsRef.current = {
+      baseLat,
+      baseLon,
+      birthDate,
+      radiusKm,
+      prefecture,
+      useClassical,
+      layerMode,
+      useTrueNorth,
+      lunarPhaseModifier,
+      directionFilterMode,
+      actionIntent,
+      mapBounds
+    };
+
+    fetchData(!isOtherChanged);
   }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, mapBounds, initialLoaded]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
@@ -237,7 +430,47 @@ export default function ArbitrageScannerPage() {
     setPrefecture(newPref);
     localStorage.setItem("arb_prefecture", newPref);
     setCurrentPage(1);
-    saveUnifiedConfig({ prefecture: newPref });
+
+    // 都道府県が指定された場合はスキャン半径制限を「制限なし」にし、代表座標に移動する
+    let nextLat = baseLat;
+    let nextLon = baseLon;
+    let nextRadius = radiusKm;
+
+    if (newPref === "愛知県") {
+      nextLat = "35.1815";
+      nextLon = "136.9064";
+      nextRadius = "all";
+    } else if (newPref === "岐阜県") {
+      nextLat = "35.4233";
+      nextLon = "136.7607";
+      nextRadius = "all";
+    } else if (newPref === "滋賀県") {
+      nextLat = "35.0178";
+      nextLon = "135.8547";
+      nextRadius = "all";
+    } else if (newPref === "all") {
+      // 全国が選ばれた場合は、日本中心に移動して半径制限を解除する
+      nextLat = "36.2048";
+      nextLon = "138.2529";
+      nextRadius = "all";
+    }
+
+    setBaseLat(nextLat);
+    setLocalLat(nextLat);
+    setBaseLon(nextLon);
+    setLocalLon(nextLon);
+    setRadiusKm(nextRadius);
+    
+    localStorage.setItem("arb_baseLat", nextLat);
+    localStorage.setItem("arb_baseLon", nextLon);
+    localStorage.setItem("arb_radiusKm", nextRadius);
+
+    saveUnifiedConfig({ 
+      prefecture: newPref,
+      base_lat: parseFloat(nextLat),
+      base_lon: parseFloat(nextLon),
+      radius_km: nextRadius
+    });
   };
 
   const applyPreset = (presetName: string, lat: string, lon: string, pref: string) => {
@@ -444,97 +677,9 @@ export default function ArbitrageScannerPage() {
                 スキャナー設定 (吉方位・リロケーション条件)
               </h2>
             </div>
-            {/* Presets */}
-            <div className="flex flex-wrap gap-1.5 items-center text-xs">
-              <span className="font-semibold text-gray-500 mr-1">エリア選択プリセット:</span>
-              <button type="button" onClick={() => applyPreset("京都", "34.9911", "135.7248", "滋賀県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">京都 (滋賀近隣)</button>
-              <button type="button" onClick={() => applyPreset("名古屋", "35.1815", "136.9064", "愛知県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">名古屋 (愛知)</button>
-              <button type="button" onClick={() => applyPreset("岐阜", "35.4233", "136.7607", "岐阜県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">岐阜 (岐阜)</button>
-              <button type="button" onClick={() => applyPreset("大津", "35.0178", "135.8547", "滋賀県")} className="px-2.5 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg hover:border-indigo-500 transition-colors text-[11px] font-medium shadow-sm cursor-pointer">大津 (滋賀)</button>
-            </div>
           </div>
           
-          <form onSubmit={handleSettingsSubmit} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
-            {/* Base Lat/Lon */}
-            <div className="space-y-1.5 col-span-1 sm:col-span-2 grid grid-cols-2 gap-2">
-              <div className="col-span-2 flex justify-between items-center">
-                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  スキャン中心座標 (緯度 / 経度)
-                </label>
-                <button 
-                  type="button"
-                  onClick={handleUseCurrentLocation}
-                  className="text-[10px] text-indigo-500 hover:underline flex items-center gap-0.5"
-                >
-                  <MapPin className="w-3 h-3" /> 現在地を取得
-                </button>
-              </div>
-              <div>
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={localLat}
-                  onChange={e => setLocalLat(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
-                  placeholder="緯度 (例: 35.658)"
-                />
-              </div>
-              <div>
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={localLon}
-                  onChange={e => setLocalLon(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
-                  placeholder="経度 (例: 139.745)"
-                />
-              </div>
-            </div>
-
-            {/* Birth Date */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                生年月日 (吉方位計算用)
-              </label>
-              <input
-                type="date"
-                value={localBirthDate}
-                onChange={e => setLocalBirthDate(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
-                className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-bold rounded-xl text-sm transition-colors cursor-pointer"
-              >
-                スキャン条件を更新
-              </button>
-            </div>
-
-            {/* Scan Radius */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                スキャン半径 (近接フィルタ)
-              </label>
-              <select
-                value={radiusKm}
-                onChange={e => handleRadiusChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none cursor-pointer"
-              >
-                <option value="3">3 km</option>
-                <option value="5">5 km</option>
-                <option value="10">10 km (標準)</option>
-                <option value="20">20 km</option>
-                <option value="50">50 km</option>
-                <option value="100">100 km</option>
-                <option value="300">300 km</option>
-                <option value="all">制限なし (全件最新)</option>
-              </select>
-            </div>
-
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
             {/* Target Prefecture */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
@@ -550,6 +695,24 @@ export default function ArbitrageScannerPage() {
                 <option value="岐阜県">岐阜県 (26,623件)</option>
                 <option value="滋賀県">滋賀県 (29,284件)</option>
               </select>
+            </div>
+
+            {/* Birth Date */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
+                生年月日 (吉方位計算用)
+              </label>
+              <input
+                type="date"
+                value={localBirthDate}
+                onChange={e => {
+                  setLocalBirthDate(e.target.value);
+                  setBirthDate(e.target.value);
+                  localStorage.setItem("arb_birthDate", e.target.value);
+                  saveUnifiedConfig({ birth_date: e.target.value });
+                }}
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
+              />
             </div>
 
             {/* Layer Mode */}
@@ -596,7 +759,7 @@ export default function ArbitrageScannerPage() {
                 月相タイミング補正 (日単位 +/-10点)
               </label>
             </div>
-          </form>
+          </div>
         </div>
 
         {/* Dashboard Grid */}
@@ -612,6 +775,9 @@ export default function ArbitrageScannerPage() {
                 useTrueNorth={useTrueNorth}
                 layerMode={layerMode}
                 radiusKm={radiusKm}
+                prefecture={prefecture}
+                isTransitioningDate={isTransitioningDate}
+                onDateChange={handleDateChange}
                 onBoundsChange={(b) => {
                   // Debounce map bounds updates slightly to avoid hammering the API
                   setMapBounds(prev => {
@@ -750,10 +916,21 @@ export default function ArbitrageScannerPage() {
 
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="flex items-center justify-center p-12 text-gray-500 text-sm font-mono">
-                <Loader2 className="w-5 h-5 text-indigo-500 animate-spin mr-2" />
-                データの集計中...
-              </div>
+              <table className="w-full text-sm text-left">
+                <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-950/20 border-b border-gray-100 dark:border-gray-900">
+                  <tr>
+                    <th className="px-6 py-4">おすすめ度</th>
+                    <th className="px-6 py-4">物件名 / 住所</th>
+                    <th className="px-6 py-4">方位・吉凶</th>
+                    <th className="px-6 py-4 text-right">総家賃(円)</th>
+                    <th className="px-6 py-4 text-right">利回り偏差値</th>
+                    <th className="px-6 py-4 text-right">平米 / 築年 / 駅徒歩</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {renderCardSkeletons()}
+                </tbody>
+              </table>
             ) : sortedTableData.length === 0 ? (
               <div className="flex items-center justify-center p-12 text-gray-500 text-sm">
                 該当する物件がありません。
@@ -763,11 +940,11 @@ export default function ArbitrageScannerPage() {
                 <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-950/20 border-b border-gray-100 dark:border-gray-900">
                   <tr>
                     <th className="px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('arbitrage', e)}>
-                      アービトラージ {renderSortIndicator('arbitrage')}
+                      おすすめ度 {renderSortIndicator('arbitrage')}
                     </th>
                     <th className="px-6 py-4">物件名 / 住所</th>
                     <th className="px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('astrology', e)}>
-                      方位スコア {renderSortIndicator('astrology')}
+                      方位・吉凶 {renderSortIndicator('astrology')}
                     </th>
                     <th className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('rent', e)}>
                       総家賃(円) {renderSortIndicator('rent')}
@@ -781,35 +958,41 @@ export default function ArbitrageScannerPage() {
                 <tbody>
                   {currentTableData.map((item, i) => (
                     <tr key={item.id} className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold text-indigo-500">
-                        {item.arbitrageScore.toFixed(1)}
+                      <td className="px-6 py-4 font-mono font-bold">
+                        {renderStars(item.arbitrageScore)}
                       </td>
                       <td className="px-6 py-4">
                         {item.url ? (
-                          <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                           <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
                             {item.property_name}
                           </a>
                         ) : (
                           <span className="font-semibold text-gray-800 dark:text-gray-200">{item.property_name}</span>
                         )}
                         <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">{item.address || '住所情報なし'}</div>
+                        <div className="mt-2.5">
+                          <AstroGridCalendar 
+                            dateScores={item.dateScores} 
+                            onDateChange={handleDateChange}
+                            isTransitioning={isTransitioningDate}
+                          />
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1.5">
-                            <span className={`w-2.5 h-2.5 rounded-full ${
-                              item.astrologyStatus.includes('OPTIMAL') ? 'bg-emerald-500' : 
-                              item.astrologyStatus.includes('SAFE') ? 'bg-blue-400' : 'bg-red-400'
-                            }`}></span>
-                            <span className="font-semibold">{item.direction} ({item.astrologyScore}点)</span>
-                          </div>
-                          {item.astrologyStatus.includes('DECLINATION_WARNING') && (
-                            <span 
-                              className="text-[10px] text-amber-500 font-bold cursor-help w-max"
-                              title="偏角影響警告: 真北と磁北で判定する方位セクターが異なっています。境界線上にあるため、選択基準によって吉凶評価がシフトする可能性があります。"
-                            >
-                              ⚠️偏角ズレ警告
+                            <span className="font-semibold text-gray-800 dark:text-gray-200">
+                              {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
                             </span>
+                          </div>
+                          {isTransitioningDate ? (
+                            <div className="flex gap-1.5 mt-2 animate-pulse">
+                              <div className="w-12 h-4 bg-zinc-800/40 rounded" />
+                              <div className="w-16 h-4 bg-zinc-800/40 rounded" />
+                              <div className="w-14 h-4 bg-zinc-800/40 rounded" />
+                            </div>
+                          ) : (
+                            renderFactorBadges(item)
                           )}
                         </div>
                       </td>

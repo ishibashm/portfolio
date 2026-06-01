@@ -45,6 +45,9 @@ interface ArbitrageMapProps {
   useTrueNorth: boolean;
   layerMode: string;
   radiusKm?: string;
+  prefecture?: string;
+  isTransitioningDate?: boolean;
+  onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
 
