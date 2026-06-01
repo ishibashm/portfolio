@@ -549,7 +549,7 @@ export default function ArbitrageScannerPage() {
   const safeData = data.filter(d => d.astrologyScore >= 0);
 
   const filteredData = safeData.filter(d => {
-    if (filterStatus !== "ALL" && !d.astrologyStatus.includes(filterStatus)) return false;
+    if (filterStatus !== "ALL" && (!d.astrologyStatus || !d.astrologyStatus.includes(filterStatus))) return false;
     
     if (filterMaxRent) {
       const maxRent = Number(filterMaxRent) * 10000;
@@ -817,28 +817,42 @@ export default function ArbitrageScannerPage() {
             ) : (
               <div className="space-y-3">
                 {filteredData.slice(0, 5).map((item, i) => (
-                  <a href={item.url} target="_blank" rel="noreferrer" key={item.id} className="block group">
-                    <div className="flex justify-between items-center p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-gray-900 group-hover:border-indigo-500/50 transition-colors shadow-sm">
+                  <div key={item.id} className="block group">
+                    <div className="flex justify-between items-center p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-gray-900 group-hover:border-indigo-500/50 transition-colors shadow-sm relative">
                       <div className="truncate pr-2">
-                        <div className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate group-hover:text-indigo-500 transition-colors">
-                          {item.property_name}
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1.5">
-                          <span className={`w-2 h-2 rounded-full ${
-                            item.astrologyStatus.includes('OPTIMAL') ? 'bg-emerald-500' : 
-                            item.astrologyStatus.includes('SAFE') ? 'bg-blue-400' : 'bg-red-400'
-                          }`}></span>
-                          {item.direction}方位 ({item.astrologyStatus})
+                        {item.url ? (
+                          <a href={item.url} target="_blank" rel="noreferrer" className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate group-hover:text-indigo-500 transition-colors hover:underline">
+                            {item.property_name}
+                          </a>
+                        ) : (
+                          <div className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{item.property_name}</div>
+                        )}
+                        <div className="text-xs text-gray-500 flex flex-col gap-1 mt-1.5">
+                          <span className="font-semibold">
+                            {item.direction ? `${item.direction} (${item.maxAstroFactor || '計算中'})` : '方位不明'}
+                          </span>
+                          {/* ミニバッジ表示 */}
+                          {isTransitioningDate ? (
+                            <div className="flex gap-1.5 mt-1 animate-pulse">
+                              <div className="w-10 h-3.5 bg-zinc-800/40 rounded" />
+                              <div className="w-12 h-3.5 bg-zinc-800/40 rounded" />
+                            </div>
+                          ) : (
+                            renderFactorBadges(item)
+                          )}
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                          {Math.round(item.totalRent / 10000)}万円
+                          {Math.round((item.totalRent || 0) / 10000)}万円
                         </div>
-                        <div className="text-[10px] text-gray-400 mt-1">偏差値: {item.yieldScore.toFixed(1)}</div>
+                        {/* おすすめ度（星マーク）を小さく表示 */}
+                        <div className="mt-1 flex justify-end">
+                          {renderStars(item.arbitrageScore)}
+                        </div>
                       </div>
                     </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             )}
