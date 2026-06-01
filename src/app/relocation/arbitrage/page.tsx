@@ -45,6 +45,7 @@ export default function ArbitrageScannerPage() {
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
   const [dataLimit, setDataLimit] = useState(500);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([34.9911, 135.7248]);
 
   // Viewport bounds for map searching
   const [mapBounds, setMapBounds] = useState<{minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number} | null>(null);
@@ -271,6 +272,7 @@ export default function ArbitrageScannerPage() {
 
     setBaseLat(bsLat); setLocalLat(bsLat);
     setBaseLon(bsLon); setLocalLon(bsLon);
+    setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
     setBirthLat(bLat);
     setBirthLon(bLon);
     setBirthDate(bDate); setLocalBirthDate(bDate);
@@ -405,6 +407,7 @@ export default function ArbitrageScannerPage() {
     setBaseLat(localLat);
     setBaseLon(localLon);
     setBirthDate(localBirthDate);
+    setMapCenter([parseFloat(localLat), parseFloat(localLon)]);
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
@@ -431,44 +434,32 @@ export default function ArbitrageScannerPage() {
     localStorage.setItem("arb_prefecture", newPref);
     setCurrentPage(1);
 
-    // 都道府県が指定された場合はスキャン半径制限を「制限なし」にし、代表座標に移動する
-    let nextLat = baseLat;
-    let nextLon = baseLon;
+    // 都道府県が指定された場合はスキャン半径制限を「制限なし」にし、地図の表示中心を代表座標に移動する
     let nextRadius = radiusKm;
+    let nextCenter: [number, number] = mapCenter;
 
     if (newPref === "愛知県") {
-      nextLat = "35.1815";
-      nextLon = "136.9064";
+      nextCenter = [35.1815, 136.9064];
       nextRadius = "all";
     } else if (newPref === "岐阜県") {
-      nextLat = "35.4233";
-      nextLon = "136.7607";
+      nextCenter = [35.4233, 136.7607];
       nextRadius = "all";
     } else if (newPref === "滋賀県") {
-      nextLat = "35.0178";
-      nextLon = "135.8547";
+      nextCenter = [35.0178, 135.8547];
       nextRadius = "all";
     } else if (newPref === "all") {
       // 全国が選ばれた場合は、日本中心に移動して半径制限を解除する
-      nextLat = "36.2048";
-      nextLon = "138.2529";
+      nextCenter = [36.2048, 138.2529];
       nextRadius = "all";
     }
 
-    setBaseLat(nextLat);
-    setLocalLat(nextLat);
-    setBaseLon(nextLon);
-    setLocalLon(nextLon);
     setRadiusKm(nextRadius);
+    setMapCenter(nextCenter);
     
-    localStorage.setItem("arb_baseLat", nextLat);
-    localStorage.setItem("arb_baseLon", nextLon);
     localStorage.setItem("arb_radiusKm", nextRadius);
 
     saveUnifiedConfig({ 
       prefecture: newPref,
-      base_lat: parseFloat(nextLat),
-      base_lon: parseFloat(nextLon),
       radius_km: nextRadius
     });
   };
@@ -772,6 +763,7 @@ export default function ArbitrageScannerPage() {
                 properties={filteredData}
                 baseLat={Number(baseLat)}
                 baseLon={Number(baseLon)}
+                mapCenter={mapCenter}
                 useTrueNorth={useTrueNorth}
                 layerMode={layerMode}
                 radiusKm={radiusKm}

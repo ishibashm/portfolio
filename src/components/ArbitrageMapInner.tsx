@@ -46,6 +46,7 @@ interface ArbitrageMapInnerProps {
   properties: ScoredProperty[];
   baseLat: number;
   baseLon: number;
+  mapCenter?: [number, number];
   useTrueNorth: boolean;
   layerMode: string;
   radiusKm?: string;
@@ -255,6 +256,7 @@ export default function ArbitrageMapInner({
   properties,
   baseLat,
   baseLon,
+  mapCenter,
   useTrueNorth,
   layerMode,
   radiusKm,
@@ -277,7 +279,10 @@ export default function ArbitrageMapInner({
     }
   }, [onBoundsChange]);
 
-  const center = useMemo<[number, number]>(() => [baseLat, baseLon], [baseLat, baseLon]);
+  const center = useMemo<[number, number]>(() => {
+    if (mapCenter) return mapCenter;
+    return [baseLat, baseLon];
+  }, [baseLat, baseLon, mapCenter]);
   const declination = -8.2; // Tokyo magnetic declination
   const rotationAngle = useTrueNorth ? 0 : declination;
 
@@ -390,7 +395,7 @@ export default function ArbitrageMapInner({
       const baseBearing = rotationAngle + d.deg;
 
       // Draw wedge shape polygon extending 30km
-      const points: [number, number][] = [center];
+      const points: [number, number][] = [[baseLat, baseLon]];
       const isCorner = ["NE", "SE", "SW", "NW"].includes(d.dir);
       const halfWidth = isCorner ? 30 : 15;
       
@@ -454,7 +459,7 @@ export default function ArbitrageMapInner({
         zoomControl={false}
       >
         <BoundsListener onBoundsChange={handleBoundsChange} />
-        <SyncMapCenter lat={baseLat} lon={baseLon} />
+        <SyncMapCenter lat={center[0]} lon={center[1]} />
         <InvalidateMapSize />
         <AutoFitBounds properties={properties} center={center} prefecture={prefecture} />
         
@@ -465,7 +470,7 @@ export default function ArbitrageMapInner({
         />
 
         {/* Base Location Marker (Glowing Center) */}
-        <Marker position={center}>
+        <Marker position={[baseLat, baseLon]}>
           <Popup>
             <div className="font-sans text-xs text-gray-900 p-1">
               <div className="font-bold text-indigo-600">現在地・スキャン起点</div>
@@ -480,7 +485,7 @@ export default function ArbitrageMapInner({
         {/* Pulsing ring around center (matching scan radius) */}
         {radiusKm && radiusKm !== "all" && (
           <Circle
-            center={center}
+            center={[baseLat, baseLon]}
             radius={Number(radiusKm) * 1000}
             pathOptions={{
               color: "#10b981",

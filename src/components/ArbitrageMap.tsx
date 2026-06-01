@@ -42,6 +42,7 @@ interface ArbitrageMapProps {
   properties: ScoredProperty[];
   baseLat: number;
   baseLon: number;
+  mapCenter?: [number, number];
   useTrueNorth: boolean;
   layerMode: string;
   radiusKm?: string;
