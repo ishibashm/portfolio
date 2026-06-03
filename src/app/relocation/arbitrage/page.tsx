@@ -5,6 +5,7 @@ import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, 
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar, MetaphysicalConfig } from "@/components/layout/MetaphysicalConfigBar";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
+import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 
 // 吉凶バッジ定義のインターフェース
 interface BadgeItem {
@@ -58,6 +59,10 @@ export default function ArbitrageScannerPage() {
   const [isTransitioningDate, setIsTransitioningDate] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  // Sidebar & Layout views states
+  const [showListView, setShowListView] = useState(false);
+  const [showTableView, setShowTableView] = useState(false);
 
   // Relocation & Fortune Settings States
   const [baseLat, setBaseLat] = useState("34.9911"); // Default Kyoto
@@ -733,6 +738,27 @@ export default function ArbitrageScannerPage() {
     return 0;
   });
 
+  const propertiesInBounds = useMemo(() => {
+    if (!mapBounds) return sortedTableData;
+    return sortedTableData.filter(d => {
+      if (d.lat === null || d.lon === null) return false;
+      return d.lat >= mapBounds.minLat &&
+             d.lat <= mapBounds.maxLat &&
+             d.lon >= mapBounds.minLon &&
+             d.lon <= mapBounds.maxLon;
+    });
+  }, [sortedTableData, mapBounds]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filterName !== "") count++;
+    if (filterStatus !== "ALL") count++;
+    if (filterMaxRent !== "") count++;
+    if (filterMinYield !== "") count++;
+    if (filterMaxAge !== "") count++;
+    return count;
+  }, [filterName, filterStatus, filterMaxRent, filterMinYield, filterMaxAge]);
+
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
   const currentTableData = sortedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -742,20 +768,6 @@ export default function ArbitrageScannerPage() {
       const existingSortIndex = prev.findIndex(config => config.key === newSort);
       let newConfigs = [...prev];
 
-      if (isMultiSort) {
-        if (existingSortIndex >= 0) {
-          if (newConfigs[existingSortIndex].direction === 'desc') newConfigs[existingSortIndex].direction = 'asc';
-          else newConfigs.splice(existingSortIndex, 1);
-        } else {
-          newConfigs.push({ key: newSort, direction: 'desc' });
-        }
-      } else {
-        if (existingSortIndex >= 0 && prev.length === 1) {
-          newConfigs = [{ key: newSort, direction: prev[0].direction === 'desc' ? 'asc' : 'desc' }];
-        } else {
-          newConfigs = [{ key: newSort, direction: 'desc' }];
-        }
-      }
       if (newConfigs.length === 0) newConfigs = [{ key: 'arbitrage', direction: 'desc' }];
       return newConfigs;
     });
@@ -775,8 +787,8 @@ export default function ArbitrageScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#050505] p-4 sm:p-8 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-white dark:bg-[#050505] p-3 sm:p-5 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto space-y-5">
         
         {/* Metaphysical Configuration Bar */}
         <MetaphysicalConfigBar 
@@ -789,472 +801,557 @@ export default function ArbitrageScannerPage() {
         />
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-900 pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-900 pb-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight flex items-center gap-2">
-              <TrendingUp className="w-7 h-7 text-indigo-500 animate-pulse" />
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-indigo-500 animate-pulse" />
               不動産アービトラージ・スキャナー
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1.5 text-sm max-w-2xl">
-              吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、110万件以上のデータベースから、運気とコスパが最強の割安物件をスキャンします。
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs max-w-2xl">
+              吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、運気とコスパが最強の割安物件をスキャンします。
             </p>
           </div>
           <button 
             onClick={() => fetchData()}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-xs font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             再スキャン
           </button>
         </div>
 
-        {/* Astro & Proximity Control Panel */}
-        <div className="bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-800 pb-3">
-            <div className="flex items-center gap-2">
-              <Settings className="w-5 h-5 text-indigo-500" />
-              <h2 className="text-md font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                スキャナー設定 (吉方位・リロケーション条件)
-              </h2>
-            </div>
-          </div>
+        {/* 2-Column Split Dashboard Layout */}
+        <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[650px] relative">
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-            {/* Target Prefecture */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                対象都道府県 (DBフィルタ)
-              </label>
-              <select
-                value={prefecture}
-                onChange={e => handlePrefectureChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none cursor-pointer"
-              >
-                <option value="all">全国 / すべて</option>
-                <option value="愛知県">愛知県 (42,641件)</option>
-                <option value="岐阜県">岐阜県 (26,623件)</option>
-                <option value="滋賀県">滋賀県 (29,284件)</option>
-              </select>
-            </div>
-
-            {/* Birth Date */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block flex items-center justify-between">
-                <span>生年月日 (吉方位計算用)</span>
-                <span className="text-[10px] text-zinc-500 font-normal">時間指定可</span>
-              </label>
-              <input
-                type="datetime-local"
-                value={localBirthDate}
-                onChange={e => {
-                  setLocalBirthDate(e.target.value);
-                  setBirthDate(e.target.value);
-                  localStorage.setItem("arb_birthDate", e.target.value);
-                  saveUnifiedConfig({ birth_date: e.target.value });
-                }}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
-              />
-            </div>
-
-            {/* Birth Location */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
-                  出生地座標 (天体ライン計算用)
-                </label>
+          {/* Left Column: Sidebar (expands from 33% to 55% in Table Mode) */}
+          <div 
+            className={`transition-all duration-300 ease-in-out ${
+              showTableView && showListView ? 'w-full lg:w-[55%]' : 'w-full lg:w-1/3'
+            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col h-[680px] relative z-10`}
+          >
+            {/* Sticky Header */}
+            <div className="sticky top-0 bg-gray-50/95 dark:bg-[#09090b]/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between z-30 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
+                  条件 ({activeFiltersCount})
+                </span>
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                  表示範囲内: <b className="text-gray-900 dark:text-white font-mono text-xs">{propertiesInBounds.length}</b> 件
+                </span>
+              </div>
+              
+              {/* Toggle Button for Filter/List View (Only when <= 100 properties) */}
+              {propertiesInBounds.length <= 100 ? (
                 <button
-                  type="button"
-                  onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                  className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                  onClick={() => setShowListView(!showListView)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                    showListView 
+                      ? 'bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300' 
+                      : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm'
+                  }`}
                 >
-                  {showBirthMapPicker ? '閉じる' : '地図で検索'}
+                  <Filter className="w-3.5 h-3.5" />
+                  {showListView ? "絞込に戻る" : "一覧を表示"}
                 </button>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={localBirthLat}
-                  onChange={e => {
-                    setLocalBirthLat(e.target.value);
-                    setBirthLat(e.target.value);
-                    saveUnifiedConfig({ birth_lat: parseFloat(e.target.value) });
-                  }}
-                  className="w-1/2 px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
-                  placeholder="緯度"
-                />
-                <input
-                  type="number"
-                  step="0.00001"
-                  value={localBirthLon}
-                  onChange={e => {
-                    setLocalBirthLon(e.target.value);
-                    setBirthLon(e.target.value);
-                    saveUnifiedConfig({ birth_lon: parseFloat(e.target.value) });
-                  }}
-                  className="w-1/2 px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
-                  placeholder="経度"
-                />
-              </div>
+              ) : (
+                <span className="text-[10px] text-zinc-500 font-medium">
+                  ※100件以下で一覧表示可能
+                </span>
+              )}
             </div>
 
-            {/* Layer Mode */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                方位盤の計算レイヤー
-              </label>
-              <select
-                value={layerMode}
-                onChange={e => handleLayerModeChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none cursor-pointer"
-              >
-                <option value="year">年盤 (長期・引越し向き)</option>
-                <option value="month">月盤 (中期・旅行向き)</option>
-                <option value="day">日盤 (短期・出張向き)</option>
-                <option value="final">総合ベクトル (全レイヤー統合)</option>
-              </select>
-            </div>
+            {/* Sidebar Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {!showListView ? (
+                // VIEW 1: Filter Screen & Settings
+                <>
+                  {/* Geographic & Calculations Settings */}
+                  <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">スキャン地域と計算方式</h3>
+                    
+                    {/* Prefecture Selection */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        対象都道府県 (DBフィルタ)
+                      </label>
+                      <select
+                        value={prefecture}
+                        onChange={e => handlePrefectureChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="all">全国 / すべて</option>
+                        <option value="愛知県">愛知県 (42,641件)</option>
+                        <option value="岐阜県">岐阜県 (26,623件)</option>
+                        <option value="滋賀県">滋賀県 (29,284件)</option>
+                      </select>
+                    </div>
 
-            {/* Toggles */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex flex-wrap gap-x-6 gap-y-2 mt-2 pt-2 lg:pt-0 lg:mt-0 col-span-full">
-              <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={useTrueNorth}
-                  onChange={e => handleTrueNorthToggle(e.target.checked)}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                />
-                真北を使用 (無効時は磁北で補正計算)
-              </label>
-              <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <span className="font-bold text-indigo-500">方位基準: {useClassical ? '暦基準' : '木星黄経'} (上部バーで設定)</span>
-              </label>
-              <label className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={lunarPhaseModifier}
-                  onChange={e => {
-                    setLunarPhaseModifier(e.target.checked);
-                    setCurrentPage(1);
-                  }}
-                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                />
-                月相タイミング補正 (日単位 +/-10点)
-              </label>
-            </div>
-          </div>
+                    {/* Birth Date */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block flex items-center justify-between">
+                        <span>生年月日 (吉方位用)</span>
+                        <span className="text-[9px] text-zinc-500 font-normal">時間指定可</span>
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={localBirthDate}
+                        onChange={e => {
+                          setLocalBirthDate(e.target.value);
+                          setBirthDate(e.target.value);
+                          localStorage.setItem("arb_birthDate", e.target.value);
+                          saveUnifiedConfig({ birth_date: e.target.value });
+                        }}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                      />
+                    </div>
 
-          {showBirthMapPicker && (
-            <div className="mt-4 w-full h-72 rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800 relative z-20">
-              <LocationPickerInner
-                initialLat={Number(birthLat) || 34.3952}
-                initialLon={Number(birthLon) || 132.4482}
-                onSelect={(newLat: number, newLon: number) => {
-                  const latStr = newLat.toFixed(5);
-                  const lonStr = newLon.toFixed(5);
-                  setLocalBirthLat(latStr);
-                  setBirthLat(latStr);
-                  setLocalBirthLon(lonStr);
-                  setBirthLon(lonStr);
-                  saveUnifiedConfig({ birth_lat: newLat, birth_lon: newLon });
-                }}
-              />
-            </div>
-          )}
-        </div>
+                    {/* Birth Location coordinates */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                          出生地座標 (天体ライン用)
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                        >
+                          {showBirthMapPicker ? '閉じる' : '地図で検索'}
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={localBirthLat}
+                          onChange={e => {
+                            setLocalBirthLat(e.target.value);
+                            setBirthLat(e.target.value);
+                            saveUnifiedConfig({ birth_lat: parseFloat(e.target.value) });
+                          }}
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          placeholder="緯度"
+                        />
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={localBirthLon}
+                          onChange={e => {
+                            setLocalBirthLon(e.target.value);
+                            setBirthLon(e.target.value);
+                            saveUnifiedConfig({ birth_lon: parseFloat(e.target.value) });
+                          }}
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          placeholder="経度"
+                        />
+                      </div>
+                    </div>
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          {/* Leaflet Map Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="h-[550px] rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900">
-              <ArbitrageMap
-                properties={filteredData}
-                baseLat={Number(baseLat)}
-                baseLon={Number(baseLon)}
-                mapCenter={mapCenter}
-                useTrueNorth={useTrueNorth}
-                layerMode={layerMode}
-                radiusKm={radiusKm}
-                prefecture={prefecture}
-                isTransitioningDate={isTransitioningDate}
-                onDateChange={handleDateChange}
-                onBoundsChange={(b) => {
-                  // Debounce map bounds updates slightly to avoid hammering the API
-                  setMapBounds(prev => {
-                    if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
-                      return b;
-                    }
-                    return prev;
-                  });
-                }}
-              />
-              {loading && (
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
-                  <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
-                  データベースから割安物件を走査中...
+                    {showBirthMapPicker && (
+                      <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 relative z-20">
+                        <LocationPickerInner
+                          initialLat={Number(birthLat) || 34.3952}
+                          initialLon={Number(birthLon) || 132.4482}
+                          onSelect={(newLat: number, newLon: number) => {
+                            const latStr = newLat.toFixed(5);
+                            const lonStr = newLon.toFixed(5);
+                            setLocalBirthLat(latStr);
+                            setBirthLat(latStr);
+                            setLocalBirthLon(lonStr);
+                            setBirthLon(lonStr);
+                            saveUnifiedConfig({ birth_lat: newLat, birth_lon: newLon });
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Layer Mode */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        方位盤の計算レイヤー
+                      </label>
+                      <select
+                        value={layerMode}
+                        onChange={e => handleLayerModeChange(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="year">年盤 (長期・引越し向き)</option>
+                        <option value="month">月盤 (中期・旅行向き)</option>
+                        <option value="day">日盤 (短期・出張向き)</option>
+                        <option value="final">総合ベクトル (全レイヤー統合)</option>
+                      </select>
+                    </div>
+
+                    {/* Options Toggles */}
+                    <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-zinc-900">
+                      <label className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={useTrueNorth}
+                          onChange={e => handleTrueNorthToggle(e.target.checked)}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                        真北を使用 (無効時は磁北補正)
+                      </label>
+                      <label className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={lunarPhaseModifier}
+                          onChange={e => {
+                            setLunarPhaseModifier(e.target.checked);
+                            setCurrentPage(1);
+                          }}
+                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                        />
+                        月相タイミング補正 (日単位 +/-10点)
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Filter Criteria Panel */}
+                  <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider font-semibold">絞り込みフィルター</h3>
+                    
+                    {/* Search query input */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">物件名・住所検索</label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="物件名・住所で検索..."
+                          value={filterName}
+                          onChange={handleFilterNameChange}
+                          className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status Select */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">吉凶ステータス</label>
+                      <select
+                        value={filterStatus}
+                        onChange={handleFilterStatusChange}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="ALL">全ステータス</option>
+                        <option value="OPTIMAL">OPTIMAL (大吉)</option>
+                        <option value="SAFE">SAFE (吉)</option>
+                        <option value="NOISE">NOISE (凶)</option>
+                      </select>
+                    </div>
+
+                    {/* Rent & Age & Yield filters */}
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">総家賃上限 (万円)</label>
+                        <input
+                          type="number"
+                          placeholder="例: 15"
+                          value={filterMaxRent}
+                          onChange={e => { setFilterMaxRent(e.target.value); setCurrentPage(1); }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">築年数上限 (年)</label>
+                        <input
+                          type="number"
+                          placeholder="例: 15"
+                          value={filterMaxAge}
+                          onChange={e => { setFilterMaxAge(e.target.value); setCurrentPage(1); }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">最小利回り偏差値</label>
+                        <input
+                          type="number"
+                          placeholder="例: 60"
+                          value={filterMinYield}
+                          onChange={e => { setFilterMinYield(e.target.value); setCurrentPage(1); }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* TOP 5 お買い得アコーディオン (HTML5 details) */}
+                  <details className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-100 dark:border-zinc-900 overflow-hidden shadow-xs group" open>
+                    <summary className="p-4 font-bold text-xs text-gray-900 dark:text-white flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-zinc-900">
+                      <span className="flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />
+                        最強のアービトラージ物件 TOP 5
+                      </span>
+                      <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90 text-gray-400" />
+                    </summary>
+                    <div className="p-3.5 space-y-3.5">
+                      {loading ? (
+                        <div className="space-y-3">
+                          {[1, 2, 3].map(i => (
+                            <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-zinc-900 animate-pulse" />
+                          ))}
+                        </div>
+                      ) : filteredData.length === 0 ? (
+                        <div className="p-6 text-center text-gray-500 text-[10px]">
+                          合致する物件がありません。
+                        </div>
+                      ) : (
+                        filteredData.slice(0, 5).map((item) => (
+                          <div 
+                            key={item.id}
+                            onClick={() => {
+                              setMapCenter([item.lat, item.lon]);
+                            }}
+                            className="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-200/50 dark:border-zinc-800/40 hover:border-indigo-500/50 cursor-pointer transition-colors shadow-2xs"
+                          >
+                            <div className="truncate pr-2 max-w-[70%]">
+                              {item.url ? (
+                                <a href={item.url} target="_blank" rel="noreferrer" className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block">
+                                  {item.property_name}
+                                </a>
+                              ) : (
+                                <div className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate">{item.property_name}</div>
+                              )}
+                              <div className="text-[10px] text-gray-500 mt-1 flex flex-col gap-0.5">
+                                <span className="font-semibold">
+                                  {item.direction ? `${item.direction} (${item.maxAstroFactor || '計算中'})` : '方位不明'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-[11px]">
+                                {Math.round((item.totalRent || 0) / 10000)}万円
+                              </div>
+                              <div className="mt-1 flex justify-end">
+                                {renderStars(item.arbitrageScore)}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </details>
+                </>
+              ) : (
+                // VIEW 2: Property List Screen (Cards or Table)
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-2">
+                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      物件リスト ({sortedTableData.length}件中、表示範囲内)
+                    </h3>
+                    
+                    {/* Card vs Table toggle switches */}
+                    <div className="flex items-center gap-1 bg-zinc-200 dark:bg-zinc-900 p-0.5 rounded-lg shrink-0 select-none">
+                      <button 
+                        onClick={() => setShowTableView(false)}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                        カード
+                      </button>
+                      <button 
+                        onClick={() => setShowTableView(true)}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                      >
+                        テーブル
+                      </button>
+                    </div>
+                  </div>
+
+                  {propertiesInBounds.length === 0 ? (
+                    <div className="p-12 text-center text-gray-500 text-xs">
+                      現在の表示範囲内に条件合致する物件がありません。地図をドラッグするかズームアウトしてください。
+                    </div>
+                  ) : !showTableView ? (
+                    // Card View List inside sidebar
+                    <div className="space-y-3.5">
+                      {propertiesInBounds.map(item => {
+                        const pinColors = getPropertyPinColors(item);
+                        return (
+                          <div 
+                            key={item.id} 
+                            onClick={() => {
+                              setMapCenter([item.lat, item.lon]);
+                            }}
+                            className="p-3.5 rounded-2xl bg-white dark:bg-zinc-950 border border-gray-200/60 dark:border-zinc-900 hover:border-indigo-500/50 cursor-pointer transition-colors shadow-2xs relative group"
+                          >
+                            <div className="flex justify-between items-start gap-1 mb-1">
+                              <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs leading-snug line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {item.url ? (
+                                  <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                    {item.property_name}
+                                  </a>
+                                ) : (
+                                  item.property_name
+                                )}
+                              </h4>
+                              <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold shrink-0 leading-none ${pinColors.bgClass} ${pinColors.textClass}`}>
+                                {pinColors.label}
+                              </span>
+                            </div>
+
+                            <div className="text-[10px] text-gray-500 truncate max-w-xs">{item.address || '住所情報なし'}</div>
+                            
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-zinc-900 text-[10px] text-gray-600 dark:text-gray-400 font-mono">
+                              <div className="flex justify-between">
+                                <span>総賃料:</span>
+                                <span className="font-bold text-gray-900 dark:text-white">
+                                  {item.totalRent ? `${(item.totalRent / 10000).toFixed(1)}万円` : "不明"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>利回り偏差値:</span>
+                                <span className={`font-bold ${item.yieldScore > 60 ? 'text-emerald-500' : 'text-gray-900 dark:text-white'}`}>
+                                  {item.yieldScore.toFixed(1)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between col-span-2">
+                                <span>広さ/築年/徒歩:</span>
+                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                  {item.size_sqm}㎡ / 築{item.building_age || 0}年 / {item.minutes_to_station || '不明'}分
+                                </span>
+                              </div>
+                              <div className="flex justify-between col-span-2 pt-1 border-t border-zinc-100 dark:border-zinc-900/60">
+                                <span>方位・吉凶:</span>
+                                <span className={`font-bold ${pinColors.textClass}`}>
+                                  {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-zinc-900/40 rounded-lg px-2 py-1.5">
+                              {renderStars(item.arbitrageScore)}
+                              <span className="text-[8px] text-gray-400 font-semibold">推奨スコア: {item.arbitrageScore.toFixed(1)}</span>
+                            </div>
+
+                            {/* Small date calendar row inside card */}
+                            <div className="mt-2.5">
+                              <AstroGridCalendar 
+                                dateScores={item.dateScores} 
+                                onDateChange={handleDateChange}
+                                isTransitioning={isTransitioningDate}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    // Table View Mode inside expanded sidebar (55% width)
+                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+                      <table className="w-full text-xs text-left min-w-[500px]">
+                        <thead className="text-[10px] text-gray-500 uppercase bg-gray-50 dark:bg-zinc-900/50 border-b border-gray-200 dark:border-zinc-800">
+                          <tr>
+                            <th className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('arbitrage', e)}>
+                              おすすめ度 {renderSortIndicator('arbitrage')}
+                            </th>
+                            <th className="px-4 py-2.5 font-bold">物件名 / 住所</th>
+                            <th className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('astrology', e)}>
+                              方位・吉凶 {renderSortIndicator('astrology')}
+                            </th>
+                            <th className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('rent', e)}>
+                              総家賃 {renderSortIndicator('rent')}
+                            </th>
+                            <th className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('yield', e)}>
+                              利回り偏差 {renderSortIndicator('yield')}
+                            </th>
+                            <th className="px-4 py-2.5 text-right font-bold">平米 / 築年 / 徒歩</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {propertiesInBounds.map((item) => {
+                            const pinColors = getPropertyPinColors(item);
+                            return (
+                              <tr 
+                                key={item.id} 
+                                onClick={() => {
+                                  setMapCenter([item.lat, item.lon]);
+                                }}
+                                className="border-b border-gray-100 dark:border-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-900/30 transition-colors cursor-pointer"
+                              >
+                                <td className="px-4 py-3 font-mono">
+                                  {renderStars(item.arbitrageScore)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-[180px]">
+                                    {item.url ? (
+                                      <a href={item.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                        {item.property_name}
+                                      </a>
+                                    ) : (
+                                      item.property_name
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[180px]">{item.address}</div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className={`font-semibold ${pinColors.textClass}`}>
+                                      {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono font-semibold">
+                                  {item.totalRent.toLocaleString()}円
+                                </td>
+                                <td className="px-4 py-3 text-right font-mono">
+                                  <span className={item.yieldScore > 60 ? "text-emerald-500 font-bold" : ""}>
+                                    {item.yieldScore.toFixed(1)}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-500 font-mono text-[10px]">
+                                  {item.size_sqm}㎡ / 築{item.building_age || 0}年 / {item.minutes_to_station || '不明'}分
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
-
-          {/* Top Rankings */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 text-md">
-              <Sparkles className="w-5 h-5 text-amber-500 animate-bounce" />
-              最強のアービトラージ物件 TOP 5
-            </h3>
-            
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className="h-16 rounded-xl bg-gray-100 dark:bg-zinc-950 border border-gray-200 dark:border-gray-900 animate-pulse" />
-                ))}
-              </div>
-            ) : filteredData.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-gray-900 text-center text-gray-500 text-xs">
-                スキャン条件に合致する物件がありませんでした。半径を広げるか現在地を変更してください。
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredData.slice(0, 5).map((item, i) => (
-                  <div key={item.id} className="block group">
-                    <div className="flex justify-between items-center p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-950 border border-gray-100 dark:border-gray-900 group-hover:border-indigo-500/50 transition-colors shadow-sm relative">
-                      <div className="truncate pr-2">
-                        {item.url ? (
-                          <a href={item.url} target="_blank" rel="noreferrer" className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate group-hover:text-indigo-500 transition-colors hover:underline">
-                            {item.property_name}
-                          </a>
-                        ) : (
-                          <div className="font-bold text-gray-900 dark:text-gray-100 text-sm truncate">{item.property_name}</div>
-                        )}
-                        <div className="text-xs text-gray-500 flex flex-col gap-1 mt-1.5">
-                          <span className="font-semibold">
-                            {item.direction ? `${item.direction} (${item.maxAstroFactor || '計算中'})` : '方位不明'}
-                          </span>
-                          {/* ミニバッジ表示 */}
-                          {isTransitioningDate ? (
-                            <div className="flex gap-1.5 mt-1 animate-pulse">
-                              <div className="w-10 h-3.5 bg-zinc-800/40 rounded" />
-                              <div className="w-12 h-3.5 bg-zinc-800/40 rounded" />
-                            </div>
-                          ) : (
-                            renderFactorBadges(item)
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-sm">
-                          {Math.round((item.totalRent || 0) / 10000)}万円
-                        </div>
-                        {/* おすすめ度（星マーク）を小さく表示 */}
-                        <div className="mt-1 flex justify-end">
-                          {renderStars(item.arbitrageScore)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          
+          {/* Right Column: Leaflet Map (shrinks to 45% width when table mode is expanded) */}
+          <div 
+            className={`transition-all duration-300 ease-in-out ${
+              showTableView && showListView ? 'w-full lg:w-[45%]' : 'w-full lg:w-2/3'
+            } h-[680px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900 shrink-0`}
+          >
+            <ArbitrageMap
+              properties={filteredData}
+              baseLat={Number(baseLat)}
+              baseLon={Number(baseLon)}
+              mapCenter={mapCenter}
+              useTrueNorth={useTrueNorth}
+              layerMode={layerMode}
+              radiusKm={radiusKm}
+              prefecture={prefecture}
+              isTransitioningDate={isTransitioningDate}
+              showListView={showListView}
+              onDateChange={handleDateChange}
+              onBoundsChange={(b) => {
+                setMapBounds(prev => {
+                  if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
+                    return b;
+                  }
+                  return prev;
+                });
+              }}
+            />
+            {loading && (
+              <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
+                <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
+                データベースから割安物件を走査中...
               </div>
             )}
           </div>
+          
         </div>
-
-        {/* Data Table */}
-        <div className="bg-white dark:bg-[#0a0a0a] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-          <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50 dark:bg-zinc-950/20">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">物件データベース</h2>
-              <div className="text-xs text-gray-500 mt-1 flex items-center flex-wrap gap-2">
-                <span>
-                  条件に合致する全 <b>{metadata?.totalCount?.toLocaleString() || data.length}</b> 件のうち、スコア上位 <b>{data.length}</b> 件を取得しています。
-                  (全体平均平米単価: {metadata?.meanSqmRent ? `${Math.round(metadata.meanSqmRent).toLocaleString()}円` : '...'})
-                </span>
-              </div>
-            </div>
-            
-            <div className="flex flex-wrap gap-3 items-center">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="物件名・住所で検索..."
-                  value={filterName}
-                  onChange={handleFilterNameChange}
-                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none w-48 transition-all"
-                />
-              </div>
-              <select
-                value={filterStatus}
-                onChange={handleFilterStatusChange}
-                className="bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-sm outline-none cursor-pointer"
-              >
-                <option value="ALL">全ステータス</option>
-                <option value="OPTIMAL">OPTIMAL (大吉)</option>
-                <option value="SAFE">SAFE (吉)</option>
-                <option value="NOISE">NOISE (凶)</option>
-              </select>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500">家賃≦</span>
-                <input
-                  type="number"
-                  placeholder="例: 15"
-                  value={filterMaxRent}
-                  onChange={e => { setFilterMaxRent(e.target.value); setCurrentPage(1); }}
-                  className="w-16 px-2 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm outline-none"
-                />
-                <span className="text-xs text-gray-500">万円</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500">築年数≦</span>
-                <input
-                  type="number"
-                  placeholder="例: 15"
-                  value={filterMaxAge}
-                  onChange={e => { setFilterMaxAge(e.target.value); setCurrentPage(1); }}
-                  className="w-16 px-2 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm outline-none"
-                />
-                <span className="text-xs text-gray-500">年</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-500">利回り偏差値≧</span>
-                <input
-                  type="number"
-                  placeholder="例: 60"
-                  value={filterMinYield}
-                  onChange={e => { setFilterMinYield(e.target.value); setCurrentPage(1); }}
-                  className="w-16 px-2 py-1.5 bg-gray-50 dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-lg text-sm outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            {loading ? (
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-950/20 border-b border-gray-100 dark:border-gray-900">
-                  <tr>
-                    <th className="px-6 py-4">おすすめ度</th>
-                    <th className="px-6 py-4">物件名 / 住所</th>
-                    <th className="px-6 py-4">方位・吉凶</th>
-                    <th className="px-6 py-4 text-right">総家賃(円)</th>
-                    <th className="px-6 py-4 text-right">利回り偏差値</th>
-                    <th className="px-6 py-4 text-right">平米 / 築年 / 駅徒歩</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {renderCardSkeletons()}
-                </tbody>
-              </table>
-            ) : sortedTableData.length === 0 ? (
-              <div className="flex items-center justify-center p-12 text-gray-500 text-sm">
-                該当する物件がありません。
-              </div>
-            ) : (
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-zinc-950/20 border-b border-gray-100 dark:border-gray-900">
-                  <tr>
-                    <th className="px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('arbitrage', e)}>
-                      おすすめ度 {renderSortIndicator('arbitrage')}
-                    </th>
-                    <th className="px-6 py-4">物件名 / 住所</th>
-                    <th className="px-6 py-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('astrology', e)}>
-                      方位・吉凶 {renderSortIndicator('astrology')}
-                    </th>
-                    <th className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('rent', e)}>
-                      総家賃(円) {renderSortIndicator('rent')}
-                    </th>
-                    <th className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors" onClick={(e) => handleSortChange('yield', e)}>
-                      利回り偏差値 {renderSortIndicator('yield')}
-                    </th>
-                    <th className="px-6 py-4 text-right">平米 / 築年 / 駅徒歩</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentTableData.map((item, i) => (
-                    <tr key={item.id} className="border-b border-gray-100 dark:border-gray-900 hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
-                      <td className="px-6 py-4 font-mono font-bold">
-                        {renderStars(item.arbitrageScore)}
-                      </td>
-                      <td className="px-6 py-4">
-                        {item.url ? (
-                           <a href={item.url} target="_blank" rel="noreferrer" className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                            {item.property_name}
-                          </a>
-                        ) : (
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">{item.property_name}</span>
-                        )}
-                        <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">{item.address || '住所情報なし'}</div>
-                        <div className="mt-2.5">
-                          <AstroGridCalendar 
-                            dateScores={item.dateScores} 
-                            onDateChange={handleDateChange}
-                            isTransitioning={isTransitioningDate}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-gray-800 dark:text-gray-200">
-                              {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
-                            </span>
-                          </div>
-                          {isTransitioningDate ? (
-                            <div className="flex gap-1.5 mt-2 animate-pulse">
-                              <div className="w-12 h-4 bg-zinc-800/40 rounded" />
-                              <div className="w-16 h-4 bg-zinc-800/40 rounded" />
-                              <div className="w-14 h-4 bg-zinc-800/40 rounded" />
-                            </div>
-                          ) : (
-                            renderFactorBadges(item)
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono">
-                        {item.totalRent.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-right font-mono">
-                        <span className={item.yieldScore > 60 ? "text-emerald-500 font-bold" : ""}>
-                          {item.yieldScore.toFixed(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right text-gray-500 text-xs font-mono">
-                        {item.size_sqm}㎡ / 築{item.building_age || 0}年 / {item.minutes_to_station || '不明'}分
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && !loading && (
-            <div className="p-4 flex items-center justify-between border-t border-gray-100 dark:border-gray-900 bg-gray-50/50 dark:bg-zinc-950/20">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-xs disabled:opacity-50 transition-all font-semibold"
-              >
-                前へ
-              </button>
-              <span className="text-xs text-gray-500">
-                {currentPage} / {totalPages} ページ (全 {sortedTableData.length} 件)
-              </span>
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                className="px-3 py-1 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg text-xs disabled:opacity-50 transition-all font-semibold"
-              >
-                次へ
-              </button>
-            </div>
-          )}
-        </div>
-
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Polygon, Circle, CircleMarker, useMap, Popup, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polygon, Circle, CircleMarker, useMap, Popup, useMapEvents, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { scaleLinear } from "d3-scale";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
+import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 
 // Fix Leaflet default icon problem in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -55,103 +56,11 @@ interface ArbitrageMapInnerProps {
   radiusKm?: string;
   prefecture?: string;
   isTransitioningDate?: boolean;
+  showListView?: boolean;
   onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
 
-// マップピンの5色塗り分けとカラーコードの取得
-const getPropertyPinColors = (prop: any) => {
-  const targetDay = prop.dateScores?.[3];
-  const isUltra = targetDay?.isUltraLucky;
-  
-  if (prop.astrologyStatus === 'OPTIMAL_BOOST') {
-    // 🌟 ゴールド（超大吉）
-    return {
-      fillColor: "#fbbf24",
-      borderColor: "#b45309",
-      textClass: "text-amber-500 dark:text-amber-400 font-extrabold animate-pulse",
-      bgClass: "bg-amber-500/20 border-amber-500/40 shadow-[0_0_10px_rgba(251,191,36,0.5)]",
-      label: "超大吉"
-    };
-  }
-
-  if (prop.astrologyStatus === 'WARNING') {
-    // 🟧 オレンジ（警告・調整）
-    return {
-      fillColor: "#f97316",
-      borderColor: "#7c2d12",
-      textClass: "text-orange-500 dark:text-orange-400 font-semibold",
-      bgClass: "bg-orange-500/10 border-orange-500/30",
-      label: "警告"
-    };
-  }
-
-  const isHeavyBad = [
-    'NOISE_GOU', 
-    'NOISE_ANKEN', 
-    'NOISE_HA', 
-    'NOISE_HONMEI', 
-    'NOISE_TEKI'
-  ].includes(prop.astrologyStatus);
-
-  if (isHeavyBad) {
-    // 🟥 赤（警告）
-    return {
-      fillColor: "#ef4444",
-      borderColor: "#7f1d1d",
-      textClass: "text-red-500 dark:text-red-400",
-      bgClass: "bg-red-500/10 border-red-500/30",
-      label: "大凶"
-    };
-  }
-
-  const details = targetDay?.scoreDetails;
-  const hasLightBad = (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) || 
-                      ['NOISE_VOID', 'NOISE_NODE', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(prop.astrologyStatus);
-  const hasLucky = prop.isTendo || ['OPTIMAL', 'SAFE'].includes(prop.astrologyStatus) || prop.astroFlags?.some((f: string) => f.endsWith('_LINE'));
-
-  if (isUltra) {
-    // 🌟 ゴールド（超吉）
-    return {
-      fillColor: "#fbbf24",
-      borderColor: "#b45309",
-      textClass: "text-amber-500 dark:text-amber-400 font-bold",
-      bgClass: "bg-amber-500/10 border-amber-500/30",
-      label: "超吉"
-    };
-  }
-
-  if (hasLucky && !hasLightBad) {
-    // 🟩 緑（吉）
-    return {
-      fillColor: "#10b981",
-      borderColor: "#065f46",
-      textClass: "text-emerald-500 dark:text-emerald-400",
-      bgClass: "bg-emerald-500/10 border-emerald-500/30",
-      label: "吉"
-    };
-  }
-
-  if (hasLightBad) {
-    // 🟨 黄（注意）
-    return {
-      fillColor: "#f59e0b",
-      borderColor: "#78350f",
-      textClass: "text-amber-600 dark:text-amber-500",
-      bgClass: "bg-amber-500/5 border-amber-500/20",
-      label: "注意"
-    };
-  }
-
-  // ⬜ グレー（通常・ネイビーグレー）➔ 地図と同化しないように境界線を濃く
-  return {
-    fillColor: "#475569", // slate-600
-    borderColor: "#1e293b", // slate-900
-    textClass: "text-slate-500 dark:text-slate-400",
-    bgClass: "bg-slate-500/10 border-slate-500/30",
-    label: "通常"
-  };
-};
 
 // Helper to calculate coordinates of a point at a certain distance and bearing from origin
 function getDestination(lat: number, lon: number, bearing: number, distanceKm: number = 10) {
@@ -287,6 +196,7 @@ export default function ArbitrageMapInner({
   radiusKm,
   prefecture,
   isTransitioningDate = false,
+  showListView = false,
   onDateChange,
   onBoundsChange
 }: ArbitrageMapInnerProps) {
@@ -294,10 +204,31 @@ export default function ArbitrageMapInner({
   const [zoom, setZoom] = useState(13);
   const [currentBounds, setCurrentBounds] = useState<{ minLat: number; maxLat: number; minLon: number; maxLon: number } | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
+  const [geoData, setGeoData] = useState<any>(null);
 
   useEffect(() => {
     setMounted(true);
+    fetch("/prefectures.geojson")
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to load prefectures.geojson");
+        return res.json();
+      })
+      .then(data => setGeoData(data))
+      .catch(err => console.error("Error loading prefectures.geojson:", err));
   }, []);
+
+  const prefCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    properties.forEach(p => {
+      if (!p.address) return;
+      const match = p.address.match(/^(東京都|北海道|京都府|大阪府|.{2,3}県)/);
+      if (match) {
+        const pref = match[1];
+        counts[pref] = (counts[pref] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [properties]);
 
   const handleBoundsChange = useCallback((b: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => {
     setZoom(b.zoom);
@@ -386,6 +317,84 @@ export default function ArbitrageMapInner({
       properties: g.properties
     }));
   }, [properties, zoom]);
+
+  const maxPrefOrBubbleCount = useMemo(() => {
+    let max = 0;
+    if (zoom < 10) {
+      Object.values(prefCounts).forEach(c => {
+        if (c > max) max = c;
+      });
+    } else {
+      municipalityData.forEach(m => {
+        if (m.count > max) max = m.count;
+      });
+    }
+    return Math.max(max, 20); // Minimum scale denominator of 20
+  }, [prefCounts, municipalityData, zoom]);
+
+  const getDensityColor = useCallback((count: number) => {
+    if (count === 0) return "#818cf8"; // Purple/Indigo
+    const ratio = Math.min(1, count / maxPrefOrBubbleCount);
+    // Gradient: Purple (260) -> Blue -> Teal -> Green -> Yellow -> Red (0)
+    const hue = (1 - ratio) * 260;
+    return `hsl(${hue}, 90%, 60%)`;
+  }, [maxPrefOrBubbleCount]);
+
+  const clusters = useMemo(() => {
+    // Only cluster when visibleCount <= 100 AND list view is not fully expanded AND zoom is moderate
+    if (visibleCount > 100 || showListView || zoom >= 15) return [];
+
+    const grouped: {
+      latSum: number;
+      lonSum: number;
+      properties: ScoredProperty[];
+    }[] = [];
+
+    // Distance threshold in degrees based on zoom level
+    const distThreshold = Math.max(0.0015, 0.04 / Math.pow(2, zoom - 10));
+
+    properties.forEach(p => {
+      if (p.lat === null || p.lon === null) return;
+      
+      if (currentBounds) {
+        if (p.lat < currentBounds.minLat || p.lat > currentBounds.maxLat ||
+            p.lon < currentBounds.minLon || p.lon > currentBounds.maxLon) {
+          return;
+        }
+      }
+
+      let merged = false;
+      for (const group of grouped) {
+        const avgLat = group.latSum / group.properties.length;
+        const avgLon = group.lonSum / group.properties.length;
+        
+        const dLat = Math.abs(avgLat - p.lat);
+        const dLon = Math.abs(avgLon - p.lon);
+        if (dLat < distThreshold && dLon < distThreshold) {
+          group.properties.push(p);
+          group.latSum += p.lat;
+          group.lonSum += p.lon;
+          merged = true;
+          break;
+        }
+      }
+
+      if (!merged) {
+        grouped.push({
+          latSum: p.lat,
+          lonSum: p.lon,
+          properties: [p]
+        });
+      }
+    });
+
+    return grouped.map(g => ({
+      lat: g.latSum / g.properties.length,
+      lon: g.lonSum / g.properties.length,
+      count: g.properties.length,
+      properties: g.properties
+    }));
+  }, [properties, currentBounds, zoom, visibleCount, showListView]);
 
   // Directions mapping
   const sectors = useMemo(() => {
@@ -528,20 +537,22 @@ export default function ArbitrageMapInner({
         />
 
         {/* Base Location Marker (Glowing Center) */}
-        <Marker position={[baseLat, baseLon]}>
-          <Popup>
-            <div className="font-sans text-xs text-gray-900 p-1">
-              <div className="font-bold text-indigo-600">現在地・スキャン起点</div>
-              <div className="text-[10px] text-gray-500 mt-0.5">
-                経度: {baseLon.toFixed(5)} <br />
-                緯度: {baseLat.toFixed(5)}
+        {zoom >= 10 && (
+          <Marker position={[baseLat, baseLon]}>
+            <Popup>
+              <div className="font-sans text-xs text-gray-900 p-1">
+                <div className="font-bold text-indigo-600">現在地・スキャン起点</div>
+                <div className="text-[10px] text-gray-500 mt-0.5">
+                  経度: {baseLon.toFixed(5)} <br />
+                  緯度: {baseLat.toFixed(5)}
+                </div>
               </div>
-            </div>
-          </Popup>
-        </Marker>
+            </Popup>
+          </Marker>
+        )}
 
         {/* Pulsing ring around center (matching scan radius) */}
-        {radiusKm && radiusKm !== "all" && (
+        {zoom >= 10 && radiusKm && radiusKm !== "all" && (
           <Circle
             center={[baseLat, baseLon]}
             radius={Number(radiusKm) * 1000}
@@ -555,209 +566,276 @@ export default function ArbitrageMapInner({
           />
         )}
 
-        {/* Direction Sectors */}
-        {!showHeatmap && sectorLayers}
-
-        {/* Viewport content based on Heatmap State */}
-        {showHeatmap ? (
-          // 広域表示：市区町村バブル (ヒートマップ風)
-          municipalityData.map((muni) => {
-            const color = getPropertyColor(muni.avgScore);
-            // Core radius based on count
-            const coreRadius = Math.max(8, Math.min(25, 6 + Math.log2(muni.count) * 3));
-            // Glow radius is larger
-            const glowRadius = coreRadius * 2.2;
-            const hasGlow = muni.count > 10;
-            
-            return (
-              <React.Fragment key={`muni-${muni.name}`}>
-                {hasGlow && (
-                  <CircleMarker
-                    center={[muni.lat, muni.lon]}
-                    radius={glowRadius}
-                    pathOptions={{
-                      stroke: false,
-                      fillColor: color,
-                      fillOpacity: 0.15,
-                    }}
-                    interactive={false}
-                  />
-                )}
-                <CircleMarker
-                  center={[muni.lat, muni.lon]}
-                  radius={coreRadius}
-                  pathOptions={{
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: 0.75,
-                    weight: 2,
-                    opacity: 0.5
-                  }}
-                >
-                  <Popup>
-                    <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
-                      <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
-                        {muni.name}
-                      </div>
-                      <div className="space-y-1 text-gray-600">
-                        <div className="flex justify-between">
-                          <span>検出物件数:</span>
-                          <span className="font-bold text-gray-900">{muni.count}件</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>平均推奨度:</span>
-                          <span className="font-bold text-emerald-600">{muni.avgScore.toFixed(1)}点</span>
-                        </div>
-                      </div>
-                      <div className="text-[9px] text-gray-400 mt-2 text-center">
-                        ※ズームインすると詳細物件ピンが表示されます
-                      </div>
-                    </div>
-                  </Popup>
-                </CircleMarker>
-              </React.Fragment>
-            );
-          })
-        ) : (
-          // 詳細表示：個別物件ピン
-          (() => {
-            // 重なり順の制御：最背面（黄、グレー）➔ 中間（緑）➔ 最手前（ゴールド、赤）の順にソートして描画
-            const sortedProperties = [...properties].sort((a, b) => {
-              const getPriority = (p: any) => {
-                const targetDay = p.dateScores?.[3];
-                const isUltra = targetDay?.isUltraLucky;
-                const isHeavyBad = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA', 'NOISE_HONMEI', 'NOISE_TEKI'].includes(p.astrologyStatus);
-                if (isUltra || isHeavyBad) return 3; // ゴールド、赤 ➔ 最手前
-                
-                const details = targetDay?.scoreDetails;
-                const hasLightBad = (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) || 
-                                    ['NOISE_VOID', 'NOISE_NODE', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(p.astrologyStatus);
-                const hasLucky = p.isTendo || ['OPTIMAL', 'SAFE'].includes(p.astrologyStatus) || p.astroFlags?.some((f: string) => f.endsWith('_LINE'));
-                
-                if (hasLucky && !hasLightBad) return 2; // 緑 ➔ 中間
-                return 1; // 黄、グレー ➔ 最背面
+        {/* 都道府県ポリゴン (zoom < 10) */}
+        {zoom < 10 && geoData && (
+          <GeoJSON
+            data={geoData}
+            style={(feature) => {
+              const prefName = feature?.properties?.name || "";
+              const count = prefCounts[prefName] || 0;
+              const color = getDensityColor(count);
+              return {
+                fillColor: color,
+                fillOpacity: count > 0 ? 0.65 : 0.1,
+                color: "#1e293b",
+                weight: 1.2,
+                opacity: 0.6
               };
-              return getPriority(a) - getPriority(b);
-            });
+            }}
+            onEachFeature={(feature, layer) => {
+              const prefName = feature?.properties?.name || "";
+              const count = prefCounts[prefName] || 0;
+              layer.bindPopup(
+                `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
+                  <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
+                  <div>スキャン物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件</div>
+                  <div class="text-[9px] text-gray-400 mt-1.5">※ズームインするとより詳細な情報が表示されます</div>
+                </div>`
+              );
+            }}
+          />
+        )}
 
-            return sortedProperties.map((prop) => {
-              if (!prop.lat || !prop.lon) return null;
-              
-              const pinColors = getPropertyPinColors(prop);
-              const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
+        {/* Direction Sectors - Only shown when zoom >= 10 and we are showing individual pins */}
+        {zoom >= 10 && (visibleCount > 100 || zoom >= 15 || showListView) && !showHeatmap && sectorLayers}
+
+        {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
+        {zoom >= 10 && (
+          showHeatmap && visibleCount > 100 ? (
+            // 1. 広域表示：市区町村バブル (温度計と連動)
+            municipalityData.map((muni) => {
+              const color = getDensityColor(muni.count);
+              const coreRadius = Math.max(8, Math.min(25, 6 + Math.log2(muni.count) * 3));
+              const glowRadius = coreRadius * 2.2;
+              const hasGlow = muni.count > 10;
               
               return (
-                <CircleMarker
-                  key={prop.id}
-                  center={[prop.lat, prop.lon]}
-                  radius={isTodayUltra ? 8 : 6}
-                  pathOptions={{
-                    color: pinColors.borderColor,
-                    fillColor: pinColors.fillColor,
-                    fillOpacity: isTransitioningDate ? 0.3 : 0.9,
-                    weight: isTodayUltra ? 2.5 : 1.5
-                  }}
-                  className={isTransitioningDate ? "animate-pulse" : ""}
-                >
-                  <Popup className="arbitrage-property-popup">
-                    <div className="font-sans text-xs text-gray-900 p-2 min-w-[220px] max-w-[280px]">
-                      {/* ポップアップとピンカラーの連動ヘッダー */}
-                      <div className={`font-bold text-xs leading-tight p-2 -mx-2 -mt-2 rounded-t-lg border-b ${pinColors.bgClass} ${pinColors.textClass} flex justify-between items-center`}>
-                        <span className="line-clamp-1">{prop.property_name}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold shrink-0 ml-1">
-                          {pinColors.label}
-                        </span>
-                      </div>
-                      
-                      {prop.is_new_build && (
-                        <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded mt-2 mr-1">
-                          新築
-                        </span>
-                      )}
-                      {prop.floor && (
-                        <span className="inline-block bg-gray-100 text-gray-800 text-[9px] font-medium px-1.5 py-0.5 rounded mt-2">
-                          {prop.floor}
-                        </span>
-                      )}
-
-                      <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-gray-600 text-[11px]">
-                        <div className="flex justify-between">
-                          <span>総賃料:</span>
-                          <span className="font-bold text-gray-900">
-                            {prop.totalRent ? `${(prop.totalRent / 10000).toFixed(1)}万円` : "不明"}
-                            {prop.management_fee ? ` (管:${(prop.management_fee / 1000).toFixed(0)}k)` : ""}
-                          </span>
+                <React.Fragment key={`muni-${muni.name}`}>
+                  {hasGlow && (
+                    <CircleMarker
+                      center={[muni.lat, muni.lon]}
+                      radius={glowRadius}
+                      pathOptions={{
+                        stroke: false,
+                        fillColor: color,
+                        fillOpacity: 0.18,
+                      }}
+                      interactive={false}
+                    />
+                  )}
+                  <CircleMarker
+                    center={[muni.lat, muni.lon]}
+                    radius={coreRadius}
+                    pathOptions={{
+                      color: color,
+                      fillColor: color,
+                      fillOpacity: 0.8,
+                      weight: 2.5,
+                      opacity: 0.6
+                    }}
+                  >
+                    <Popup>
+                      <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
+                        <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
+                          {muni.name}
                         </div>
-                        <div className="flex justify-between">
-                          <span>広さ / 間取り:</span>
-                          <span className="font-medium text-gray-900">
-                            {prop.size_sqm}㎡ / {prop.layout || "不明"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>築年 / 駅徒歩:</span>
-                          <span className="font-medium text-gray-900">
-                            築{prop.building_age || 0}年 / {prop.minutes_to_station || "不明"}分
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>方位・吉凶:</span>
-                          <span className={`font-semibold ${pinColors.textClass}`}>
-                            {prop.direction ? `${prop.direction} (${prop.maxAstroFactor})` : '不明'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-2.5 bg-gray-50 rounded-lg p-2 flex justify-between items-center text-[10px] border border-gray-100">
-                        <div>
-                          <div className="text-gray-400">利回り偏差値</div>
-                          <div className="font-mono font-bold text-indigo-600 text-xs">
-                            {prop.yieldScore.toFixed(1)}
+                        <div className="space-y-1 text-gray-600">
+                          <div className="flex justify-between">
+                            <span>検出物件数:</span>
+                            <span className="font-bold text-gray-900">{muni.count}件</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>平均推奨度:</span>
+                            <span className="font-bold text-emerald-600">{muni.avgScore.toFixed(1)}点</span>
                           </div>
                         </div>
-                        <div className="text-right border-l border-gray-200 pl-2">
-                          <div className="text-gray-500 font-medium">おすすめ度</div>
-                          <div className="flex gap-0.5 text-amber-400 mt-0.5">
-                            {(() => {
-                              let starCount = 1;
-                              if (prop.arbitrageScore >= 80) starCount = 5;
-                              else if (prop.arbitrageScore >= 70) starCount = 4;
-                              else if (prop.arbitrageScore >= 60) starCount = 3;
-                              else if (prop.arbitrageScore >= 50) starCount = 2;
-                              return Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={i < starCount ? "opacity-100 text-amber-400" : "opacity-20 text-zinc-600"}>★</span>
-                              ));
-                            })()}
-                          </div>
+                        <div className="text-[9px] text-gray-400 mt-2 text-center">
+                          ※ズームインすると詳細物件ピンが表示されます
                         </div>
                       </div>
-
-                      <div className="mt-3">
-                        <AstroGridCalendar 
-                          dateScores={prop.dateScores} 
-                          onDateChange={onDateChange}
-                          isTransitioning={isTransitioningDate}
-                        />
-                      </div>
-
-                      {prop.url && (
-                        <a
-                          href={prop.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
-                        >
-                          詳細サイトを開く ↗
-                        </a>
-                      )}
-                    </div>
-                  </Popup>
-                </CircleMarker>
+                    </Popup>
+                  </CircleMarker>
+                </React.Fragment>
               );
-            });
-          })()
+            })
+          ) : (visibleCount <= 100 && !showListView && zoom < 15) ? (
+            // 2. 100件以下で、かつ一覧ボタンが押されていない状態：物理距離クラスター（白丸バッジ）
+            clusters.map((cluster, idx) => {
+              return (
+                <Marker
+                  key={`cluster-${idx}`}
+                  position={[cluster.lat, cluster.lon]}
+                  icon={L.divIcon({
+                    className: "custom-cluster-icon",
+                    html: `<div class="w-8 h-8 rounded-full bg-white border-2 border-indigo-500 shadow-[0_2.5px_8px_rgba(79,70,229,0.35)] text-indigo-600 font-extrabold text-xs flex items-center justify-center transition-transform hover:scale-105 pointer-events-auto">
+                      ${cluster.count}
+                    </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                  })}
+                  eventHandlers={{
+                    click: (e) => {
+                      const map = e.target._map;
+                      map.setView([cluster.lat, cluster.lon], Math.min(16, map.getZoom() + 2));
+                    }
+                  }}
+                />
+              );
+            })
+          ) : (
+            // 3. 詳細表示：個別物件ピン
+            (() => {
+              const sortedProperties = [...properties].sort((a, b) => {
+                const getPriority = (p: any) => {
+                  const targetDay = p.dateScores?.[3];
+                  const isUltra = targetDay?.isUltraLucky;
+                  const isHeavyBad = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA', 'NOISE_HONMEI', 'NOISE_TEKI'].includes(p.astrologyStatus);
+                  if (isUltra || isHeavyBad) return 3;
+                  
+                  const details = targetDay?.scoreDetails;
+                  const hasLightBad = (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) || 
+                                      ['NOISE_VOID', 'NOISE_NODE', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(p.astrologyStatus);
+                  const hasLucky = p.isTendo || ['OPTIMAL', 'SAFE'].includes(p.astrologyStatus) || p.astroFlags?.some((f: string) => f.endsWith('_LINE'));
+                  
+                  if (hasLucky && !hasLightBad) return 2;
+                  return 1;
+                };
+                return getPriority(a) - getPriority(b);
+              });
+
+              return sortedProperties.map((prop) => {
+                if (!prop.lat || !prop.lon) return null;
+                
+                const pinColors = getPropertyPinColors(prop);
+                const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
+                
+                return (
+                  <CircleMarker
+                    key={prop.id}
+                    center={[prop.lat, prop.lon]}
+                    radius={isTodayUltra ? 8 : 6}
+                    pathOptions={{
+                      color: pinColors.borderColor,
+                      fillColor: pinColors.fillColor,
+                      fillOpacity: isTransitioningDate ? 0.3 : 0.9,
+                      weight: isTodayUltra ? 2.5 : 1.5
+                    }}
+                    className={isTransitioningDate ? "animate-pulse" : ""}
+                  >
+                    <Popup className="arbitrage-property-popup">
+                      <div className="font-sans text-xs text-gray-900 p-2 min-w-[220px] max-w-[280px]">
+                        <div className={`font-bold text-xs leading-tight p-2 -mx-2 -mt-2 rounded-t-lg border-b ${pinColors.bgClass} ${pinColors.textClass} flex justify-between items-center`}>
+                          <span className="line-clamp-1">{prop.property_name}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold shrink-0 ml-1">
+                            {pinColors.label}
+                          </span>
+                        </div>
+                        
+                        {prop.is_new_build && (
+                          <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded mt-2 mr-1">
+                            新築
+                          </span>
+                        )}
+                        {prop.floor && (
+                          <span className="inline-block bg-gray-100 text-gray-800 text-[9px] font-medium px-1.5 py-0.5 rounded mt-2">
+                            {prop.floor}
+                          </span>
+                        )}
+
+                        <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-gray-600 text-[11px]">
+                          <div className="flex justify-between">
+                            <span>総賃料:</span>
+                            <span className="font-bold text-gray-900">
+                              {prop.totalRent ? `${(prop.totalRent / 10000).toFixed(1)}万円` : "不明"}
+                              {prop.management_fee ? ` (管:${(prop.management_fee / 1000).toFixed(0)}k)` : ""}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>広さ / 間取り:</span>
+                            <span className="font-medium text-gray-900">
+                              {prop.size_sqm}㎡ / {prop.layout || "不明"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>築年 / 駅徒歩:</span>
+                            <span className="font-medium text-gray-900">
+                              築{prop.building_age || 0}年 / {prop.minutes_to_station || "不明"}分
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>方位・吉凶:</span>
+                            <span className={`font-semibold ${pinColors.textClass}`}>
+                              {prop.direction ? `${prop.direction} (${prop.maxAstroFactor})` : '不明'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2.5 bg-gray-50 rounded-lg p-2 flex justify-between items-center text-[10px] border border-gray-100">
+                          <div>
+                            <div className="text-gray-400">利回り偏差値</div>
+                            <div className="font-mono font-bold text-indigo-600 text-xs">
+                              {prop.yieldScore.toFixed(1)}
+                            </div>
+                          </div>
+                          <div className="text-right border-l border-gray-200 pl-2">
+                            <div className="text-gray-500 font-medium">おすすめ度</div>
+                            <div className="flex gap-0.5 text-amber-400 mt-0.5">
+                              {(() => {
+                                let starCount = 1;
+                                if (prop.arbitrageScore >= 80) starCount = 5;
+                                else if (prop.arbitrageScore >= 70) starCount = 4;
+                                else if (prop.arbitrageScore >= 60) starCount = 3;
+                                else if (prop.arbitrageScore >= 50) starCount = 2;
+                                return Array.from({ length: 5 }).map((_, i) => (
+                                  <span key={i} className={i < starCount ? "opacity-100 text-amber-400" : "opacity-20 text-zinc-600"}>★</span>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
+                          <AstroGridCalendar 
+                            dateScores={prop.dateScores} 
+                            onDateChange={onDateChange}
+                            isTransitioning={isTransitioningDate}
+                          />
+                        </div>
+
+                        {prop.url && (
+                          <a
+                            href={prop.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
+                          >
+                            詳細サイトを開く ↗
+                          </a>
+                        )}
+                      </div>
+                    </Popup>
+                  </CircleMarker>
+                );
+              });
+            })()
+          )
         )}
       </MapContainer>
+
+      {/* Thermometer Legend Overlay (Top Left) */}
+      <div className="absolute top-4 left-4 bg-zinc-950/90 text-white px-3 py-3.5 rounded-2xl shadow-xl border border-zinc-800/80 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
+        <div className="font-bold text-[9px] text-zinc-300 tracking-tight text-center pb-0.5 border-b border-zinc-800 w-full">件数</div>
+        <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
+          <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-zinc-800/50" />
+          <div className="flex flex-col justify-between text-[7.5px] font-mono text-zinc-400 select-none">
+            <span>{maxPrefOrBubbleCount.toLocaleString()}</span>
+            <span>{Math.round(maxPrefOrBubbleCount * 0.75).toLocaleString()}</span>
+            <span>{Math.round(maxPrefOrBubbleCount * 0.5).toLocaleString()}</span>
+            <span>{Math.round(maxPrefOrBubbleCount * 0.25).toLocaleString()}</span>
+            <span>0</span>
+          </div>
+        </div>
+      </div>
 
       {/* Map Legend Overlay */}
       <div className="absolute bottom-4 right-4 bg-zinc-950/90 text-white px-3.5 py-3 rounded-xl shadow-lg border border-zinc-800 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
