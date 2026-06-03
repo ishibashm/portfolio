@@ -13,30 +13,7 @@ const ArbitrageMapInner = dynamic(() => import("./ArbitrageMapInner"), {
   ),
 });
 
-interface ScoredProperty {
-  id: string;
-  property_name: string;
-  rent: number | null;
-  management_fee: number | null;
-  layout: string | null;
-  size_sqm: any | null;
-  is_new_build: boolean | null;
-  minutes_to_station: number | null;
-  address: string | null;
-  lat: number | null;
-  lon: number | null;
-  building_age: number | null;
-  floor: string | null;
-  url: string | null;
-  totalRent: number;
-  propSqmRent: number;
-  distanceKm: number | null;
-  direction: string | null;
-  astrologyStatus: string;
-  astrologyScore: number;
-  yieldScore: number;
-  arbitrageScore: number;
-}
+import type { ScoredProperty } from "./ArbitrageMapInner";
 
 interface ArbitrageMapProps {
   properties: ScoredProperty[];

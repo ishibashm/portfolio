@@ -15,7 +15,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-interface ScoredProperty {
+export interface ScoredProperty {
   id: string;
   property_name: string;
   rent: number | null;
@@ -34,11 +34,14 @@ interface ScoredProperty {
   propSqmRent: number;
   distanceKm: number | null;
   direction: string | null;
+  magneticDirection: string | null;
   astrologyStatus: string;
   astrologyScore: number;
   yieldScore: number;
   arbitrageScore: number;
   isTendo?: boolean;
+  maxAstroFactor?: string;
+  astroFlags?: string[];
   dateScores?: any[];
 }
 
@@ -61,6 +64,28 @@ const getPropertyPinColors = (prop: any) => {
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
   
+  if (prop.astrologyStatus === 'OPTIMAL_BOOST') {
+    // 🌟 ゴールド（超大吉）
+    return {
+      fillColor: "#fbbf24",
+      borderColor: "#b45309",
+      textClass: "text-amber-500 dark:text-amber-400 font-extrabold animate-pulse",
+      bgClass: "bg-amber-500/20 border-amber-500/40 shadow-[0_0_10px_rgba(251,191,36,0.5)]",
+      label: "超大吉"
+    };
+  }
+
+  if (prop.astrologyStatus === 'WARNING') {
+    // 🟧 オレンジ（警告・調整）
+    return {
+      fillColor: "#f97316",
+      borderColor: "#7c2d12",
+      textClass: "text-orange-500 dark:text-orange-400 font-semibold",
+      bgClass: "bg-orange-500/10 border-orange-500/30",
+      label: "警告"
+    };
+  }
+
   const isHeavyBad = [
     'NOISE_GOU', 
     'NOISE_ANKEN', 
@@ -267,6 +292,8 @@ export default function ArbitrageMapInner({
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
   const [zoom, setZoom] = useState(13);
+  const [currentBounds, setCurrentBounds] = useState<{ minLat: number; maxLat: number; minLon: number; maxLon: number } | null>(null);
+  const [showHeatmap, setShowHeatmap] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -274,10 +301,41 @@ export default function ArbitrageMapInner({
 
   const handleBoundsChange = useCallback((b: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => {
     setZoom(b.zoom);
+    setCurrentBounds({
+      minLat: b.minLat,
+      maxLat: b.maxLat,
+      minLon: b.minLon,
+      maxLon: b.maxLon
+    });
     if (onBoundsChange) {
       onBoundsChange(b);
     }
   }, [onBoundsChange]);
+
+  const visibleProperties = useMemo(() => {
+    if (!currentBounds) return properties;
+    return properties.filter(p => {
+      if (p.lat === null || p.lon === null) return false;
+      return p.lat >= currentBounds.minLat &&
+             p.lat <= currentBounds.maxLat &&
+             p.lon >= currentBounds.minLon &&
+             p.lon <= currentBounds.maxLon;
+    });
+  }, [properties, currentBounds]);
+
+  const visibleCount = visibleProperties.length;
+
+  useEffect(() => {
+    if (zoom >= 12) {
+      setShowHeatmap(false);
+      return;
+    }
+    if (visibleCount >= 120) {
+      setShowHeatmap(true);
+    } else if (visibleCount <= 80) {
+      setShowHeatmap(false);
+    }
+  }, [visibleCount, zoom]);
 
   const center = useMemo<[number, number]>(() => {
     if (mapCenter) return mapCenter;
@@ -288,7 +346,7 @@ export default function ArbitrageMapInner({
 
   // 市区町村ごとの集計データ (広域表示用)
   const municipalityData = useMemo(() => {
-    if (zoom >= 10) return [];
+    if (!showHeatmap && zoom >= 10) return [];
 
     const groups: Record<string, {
       name: string;
@@ -498,48 +556,66 @@ export default function ArbitrageMapInner({
         )}
 
         {/* Direction Sectors */}
-        {sectorLayers}
+        {!showHeatmap && sectorLayers}
 
-        {/* Viewport content based on Zoom Level */}
-        {zoom < 10 ? (
-          // 広域表示：市区町村バブル
+        {/* Viewport content based on Heatmap State */}
+        {showHeatmap ? (
+          // 広域表示：市区町村バブル (ヒートマップ風)
           municipalityData.map((muni) => {
             const color = getPropertyColor(muni.avgScore);
-            const radius = Math.max(10, Math.min(30, 8 + Math.log2(muni.count) * 4));
+            // Core radius based on count
+            const coreRadius = Math.max(8, Math.min(25, 6 + Math.log2(muni.count) * 3));
+            // Glow radius is larger
+            const glowRadius = coreRadius * 2.2;
+            const hasGlow = muni.count > 10;
             
             return (
-              <CircleMarker
-                key={`muni-${muni.name}`}
-                center={[muni.lat, muni.lon]}
-                radius={radius}
-                pathOptions={{
-                  color: "#ffffff",
-                  fillColor: color,
-                  fillOpacity: 0.85,
-                  weight: 1.5
-                }}
-              >
-                <Popup>
-                  <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
-                    <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
-                      {muni.name}
-                    </div>
-                    <div className="space-y-1 text-gray-600">
-                      <div className="flex justify-between">
-                        <span>検出物件数:</span>
-                        <span className="font-bold text-gray-900">{muni.count}件</span>
+              <React.Fragment key={`muni-${muni.name}`}>
+                {hasGlow && (
+                  <CircleMarker
+                    center={[muni.lat, muni.lon]}
+                    radius={glowRadius}
+                    pathOptions={{
+                      stroke: false,
+                      fillColor: color,
+                      fillOpacity: 0.15,
+                    }}
+                    interactive={false}
+                  />
+                )}
+                <CircleMarker
+                  center={[muni.lat, muni.lon]}
+                  radius={coreRadius}
+                  pathOptions={{
+                    color: color,
+                    fillColor: color,
+                    fillOpacity: 0.75,
+                    weight: 2,
+                    opacity: 0.5
+                  }}
+                >
+                  <Popup>
+                    <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
+                      <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
+                        {muni.name}
                       </div>
-                      <div className="flex justify-between">
-                        <span>平均推奨度:</span>
-                        <span className="font-bold text-emerald-600">{muni.avgScore.toFixed(1)}点</span>
+                      <div className="space-y-1 text-gray-600">
+                        <div className="flex justify-between">
+                          <span>検出物件数:</span>
+                          <span className="font-bold text-gray-900">{muni.count}件</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>平均推奨度:</span>
+                          <span className="font-bold text-emerald-600">{muni.avgScore.toFixed(1)}点</span>
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-gray-400 mt-2 text-center">
+                        ※ズームインすると詳細物件ピンが表示されます
                       </div>
                     </div>
-                    <div className="text-[9px] text-gray-400 mt-2 text-center">
-                      ※ズームインすると詳細物件ピンが表示されます
-                    </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
+                  </Popup>
+                </CircleMarker>
+              </React.Fragment>
             );
           })
         ) : (
@@ -687,6 +763,10 @@ export default function ArbitrageMapInner({
       <div className="absolute bottom-4 right-4 bg-zinc-950/90 text-white px-3.5 py-3 rounded-xl shadow-lg border border-zinc-800 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
         <div className="font-bold border-b border-zinc-800 pb-1 mb-0.5 text-zinc-300">アストロ吉凶（凡例）</div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+          <div className="flex items-center gap-1.5 col-span-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
+            <span className="font-bold text-amber-300">超大吉 (木星ライン特選)</span>
+          </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
             <span>超吉 (最上吉)</span>
@@ -696,14 +776,18 @@ export default function ArbitrageMapInner({
             <span>吉 (相性抜群)</span>
           </div>
           <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
+            <span>警告・調整方位</span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
             <span>注意 (軽い凶)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
-            <span>警告 (大凶方位)</span>
+            <span>大凶 (大凶方位)</span>
           </div>
-          <div className="flex items-center gap-1.5 col-span-2">
+          <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
             <span>通常 (吉凶なし)</span>
           </div>

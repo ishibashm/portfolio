@@ -118,7 +118,15 @@ export default function ArbitrageScannerPage() {
     if (item.astroFlags?.includes("SUN_LINE")) badges.push({ label: '太陽ライン', type: 'individual', colorClass: 'bg-purple-500/15 text-purple-300 border border-purple-500/30', priority: 3 });
 
     // 4. 軽い凶や警告
-    if (targetDay.status === 'NOISE_VOID' || (details && details.voidPenalty < 0)) badges.push({ label: '天中殺', type: 'individual', colorClass: 'bg-orange-500/10 text-orange-400 border border-orange-500/20', priority: 4 });
+    if (targetDay.status === 'NOISE_VOID' || (details && details.voidPenalty < 0) || item.astroFlags?.includes("VOID_TIME_HAZARD")) {
+      const isBlocker = item.maxAstroFactor === "天中殺期間 (移転NG)";
+      badges.push({
+        label: isBlocker ? '天中殺 (移転NG)' : '天中殺',
+        type: 'individual',
+        colorClass: isBlocker ? 'bg-red-500/25 text-red-300 border border-red-500/40 font-bold' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
+        priority: isBlocker ? 1 : 4
+      });
+    }
     if (item.astroFlags?.includes("DOYOU_HAZARD") || (details && details.doyouPenalty < 0)) badges.push({ label: '土用期間', type: 'calendar', colorClass: 'border border-zinc-600 text-zinc-400 bg-zinc-700/5', priority: 4 });
     if (item.astrologyStatus === 'NOISE_GETSUMEI') badges.push({ label: '月命殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
     if (item.astrologyStatus === 'NOISE_GETSUTEKI') badges.push({ label: '月命的殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
@@ -340,9 +348,25 @@ export default function ArbitrageScannerPage() {
 
   const handleDateChange = (newDateStr: string) => {
     setTargetDate(newDateStr);
+    setLocalDateChange(newDateStr);
+  };
+
+  const setLocalDateChange = (newDateStr: string) => {
+    setTargetDate(newDateStr);
     setLocalTargetDate(newDateStr);
     localStorage.setItem("arb_targetDate", newDateStr);
     saveUnifiedConfig({ target_date: newDateStr });
+
+    // Dispatch global event for instant sync
+    const event = new CustomEvent("metaphysical-config-updated", {
+      detail: {
+        targetDate: newDateStr,
+        useClassicalBoard: useClassical,
+        directionFilterMode: directionFilterMode,
+        actionIntent: actionIntent
+      }
+    });
+    window.dispatchEvent(event);
   };
 
   // Re-fetch data whenever params change
@@ -487,6 +511,17 @@ export default function ArbitrageScannerPage() {
     localStorage.setItem("arb_useClassical", val.toString());
     setCurrentPage(1);
     saveUnifiedConfig({ use_classical_board: val });
+
+    // Dispatch global event for instant sync
+    const event = new CustomEvent("metaphysical-config-updated", {
+      detail: {
+        targetDate: targetDate,
+        useClassicalBoard: val,
+        directionFilterMode: directionFilterMode,
+        actionIntent: actionIntent
+      }
+    });
+    window.dispatchEvent(event);
   };
 
   const handleTrueNorthToggle = (val: boolean) => {
@@ -650,7 +685,7 @@ export default function ArbitrageScannerPage() {
             </p>
           </div>
           <button 
-            onClick={fetchData}
+            onClick={() => fetchData()}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-sm font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
           >

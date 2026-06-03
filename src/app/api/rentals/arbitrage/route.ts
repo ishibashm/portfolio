@@ -10,10 +10,12 @@ import {
   AstroEngine,
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
-  filterCollisionByMode
+  filterCollisionByMode,
+  getCurrentZodiac
 } from '@/utils/ephemerisEngine';
 import { getGeomagneticData } from '@/utils/geomagnetism';
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from '@/utils/lunar';
+import { Solar } from 'lunar-javascript';
 
 
 // 物件名から不要な階数や築年数表現を除去するクレンジング関数
@@ -25,7 +27,85 @@ function cleanPropertyName(name: string): string {
     .trim();
 }
 
+function isNoiseStatus(status: string): boolean {
+  if (!status) return false;
+  return status.startsWith('NOISE') && status !== 'NOISE_VOID' && status !== 'NOISE_NODE';
+}
+
+function blendStatus(physical: string, classical: string): string {
+  const isPhysNoise = isNoiseStatus(physical);
+  const isClassNoise = isNoiseStatus(classical);
+  const isPhysOptimal = physical === 'OPTIMAL' || physical === 'OPTIMAL_REGULAR';
+  const isClassOptimal = classical === 'OPTIMAL' || classical === 'OPTIMAL_REGULAR';
+
+  // 1. NOISE (Physical) + OPTIMAL (Classical) ➔ WARNING
+  if (isPhysNoise && isClassOptimal) {
+    return 'WARNING';
+  }
+  // 2. SAFE (Physical) + OPTIMAL (Classical) ➔ OPTIMAL
+  if (physical === 'SAFE' && isClassOptimal) {
+    return classical;
+  }
+  // 3. NOISE (either) + SAFE (either) ➔ NOISE
+  if (isPhysNoise && classical === 'SAFE') {
+    return physical;
+  }
+  if (isClassNoise && physical === 'SAFE') {
+    return classical;
+  }
+  // 4. Both are noise: return the physical noise
+  if (isPhysNoise && isClassNoise) {
+    return physical;
+  }
+  return physical === 'SAFE' ? classical : physical;
+}
+
+function calculateBaziCompatibility(bDate: Date, targetDate: Date): number {
+  try {
+    const birthSolar = Solar.fromDate(bDate);
+    const birthEightChar = birthSolar.getLunar().getEightChar();
+    const userDayGan = birthEightChar.getDayGan();
+    
+    const targetSolar = Solar.fromDate(targetDate);
+    const targetEightChar = targetSolar.getLunar().getEightChar();
+    const targetDayGan = targetEightChar.getDayGan();
+
+    const GAN_WUXING: Record<string, string> = {
+      '甲': '木', '乙': '木',
+      '丙': '火', '丁': '火',
+      '戊': '土', '己': '土',
+      '庚': '金', '辛': '金',
+      '壬': '水', '癸': '水'
+    };
+
+    const userWuxing = GAN_WUXING[userDayGan];
+    const targetWuxing = GAN_WUXING[targetDayGan];
+
+    if (!userWuxing || !targetWuxing) return 50;
+
+    const shengCycle: Record<string, string> = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+    const keCycle: Record<string, string> = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };
+
+    if (userWuxing === targetWuxing) {
+      return 60;
+    } else if (shengCycle[userWuxing] === targetWuxing) {
+      return 70;
+    } else if (shengCycle[targetWuxing] === userWuxing) {
+      return 90;
+    } else if (keCycle[userWuxing] === targetWuxing) {
+      return 65;
+    } else if (keCycle[targetWuxing] === userWuxing) {
+      return 30;
+    }
+    return 50;
+  } catch (e) {
+    return 50;
+  }
+}
+
 // 偏差値計算用のヘルパー
+
+
 function calculateZScore(value: number, mean: number, stdDev: number) {
   if (stdDev === 0) return 50;
   return ((value - mean) / stdDev) * 10 + 50;
@@ -255,38 +335,121 @@ export async function GET(request: Request) {
 
     const dailyAstroStates = dateList.map(d => {
       const env_d = getSystemEnvironment(d);
-      const yB_d = generateBoard(useClassical ? env_d.classicalYearStar : env_d.yearStar);
-      const mB_d = generateBoard(useClassical ? env_d.classicalMonthStar : env_d.monthStar);
-      const dB_d = generateBoard(useClassical ? env_d.classicalDayStar : env_d.dayStar);
       
-      const baseCollision_d = calculateVectorCollision(
-        useClassical ? honmeiStar.classical : honmeiStar.physical,
-        yB_d, mB_d, dB_d,
-        voidZodiacs,
-        env_d.raw.lunarNode,
-        actionIntent,
-        d,
-        baseLon,
-        undefined,
-        nodeMapping
-      );
-
-      const vectorData_d = filterCollisionByMode(
-        baseCollision_d,
-        useClassical ? honmeiStar.classical : honmeiStar.physical,
-        null,
-        voidZodiacs,
-        directionFilterMode,
-        yB_d, mB_d, dB_d
-      );
-
       let activeVectors_d: Partial<Record<Direction, string>>;
-      if (layerMode === 'year') activeVectors_d = vectorData_d.yearLayer;
-      else if (layerMode === 'month') activeVectors_d = vectorData_d.monthLayer;
-      else if (layerMode === 'day') activeVectors_d = vectorData_d.dayLayer;
-      else activeVectors_d = vectorData_d.finalVectors;
+      let tendoDir_d: Direction | undefined;
+      let isDoyouHazard_d = false;
 
-      const isDoyouHazard_d = vectorData_d.doyouState?.isDoyouHazard || false;
+      if (useClassical) {
+        // Compute Classical Board
+        const yB_class = generateBoard(env_d.classicalYearStar);
+        const mB_class = generateBoard(env_d.classicalMonthStar);
+        const dB_class = generateBoard(env_d.classicalDayStar);
+        
+        const baseCollision_class = calculateVectorCollision(
+          honmeiStar.classical,
+          yB_class, mB_class, dB_class,
+          voidZodiacs,
+          env_d.raw.lunarNode,
+          actionIntent,
+          d,
+          baseLon,
+          undefined,
+          nodeMapping
+        );
+
+        const vectorData_class = filterCollisionByMode(
+          baseCollision_class,
+          honmeiStar.classical,
+          null,
+          voidZodiacs,
+          directionFilterMode,
+          yB_class, mB_class, dB_class
+        );
+
+        let activeClass: Partial<Record<Direction, string>>;
+        if (layerMode === 'year') activeClass = vectorData_class.yearLayer;
+        else if (layerMode === 'month') activeClass = vectorData_class.monthLayer;
+        else if (layerMode === 'day') activeClass = vectorData_class.dayLayer;
+        else activeClass = vectorData_class.finalVectors;
+
+        tendoDir_d = vectorData_class.tendoDirection;
+        isDoyouHazard_d = vectorData_class.doyouState?.isDoyouHazard || false;
+
+        // Compute Physical Board for blending
+        const yB_phys = generateBoard(env_d.yearStar);
+        const mB_phys = generateBoard(env_d.monthStar);
+        const dB_phys = generateBoard(env_d.dayStar);
+
+        const baseCollision_phys = calculateVectorCollision(
+          honmeiStar.physical,
+          yB_phys, mB_phys, dB_phys,
+          voidZodiacs,
+          env_d.raw.lunarNode,
+          actionIntent,
+          d,
+          baseLon,
+          undefined,
+          nodeMapping
+        );
+
+        const vectorData_phys = filterCollisionByMode(
+          baseCollision_phys,
+          honmeiStar.physical,
+          null,
+          voidZodiacs,
+          directionFilterMode,
+          yB_phys, mB_phys, dB_phys
+        );
+
+        let activePhys: Partial<Record<Direction, string>>;
+        if (layerMode === 'year') activePhys = vectorData_phys.yearLayer;
+        else if (layerMode === 'month') activePhys = vectorData_phys.monthLayer;
+        else if (layerMode === 'day') activePhys = vectorData_phys.dayLayer;
+        else activePhys = vectorData_phys.finalVectors;
+
+        // Blend physical and classical
+        const blended: Partial<Record<Direction, string>> = {};
+        const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        for (const dir of directions) {
+          blended[dir] = blendStatus(activePhys[dir] || 'SAFE', activeClass[dir] || 'SAFE');
+        }
+        activeVectors_d = blended;
+      } else {
+        // Pure Physical Board
+        const yB_phys = generateBoard(env_d.yearStar);
+        const mB_phys = generateBoard(env_d.monthStar);
+        const dB_phys = generateBoard(env_d.dayStar);
+
+        const baseCollision_phys = calculateVectorCollision(
+          honmeiStar.physical,
+          yB_phys, mB_phys, dB_phys,
+          voidZodiacs,
+          env_d.raw.lunarNode,
+          actionIntent,
+          d,
+          baseLon,
+          undefined,
+          nodeMapping
+        );
+
+        const vectorData_phys = filterCollisionByMode(
+          baseCollision_phys,
+          honmeiStar.physical,
+          null,
+          voidZodiacs,
+          directionFilterMode,
+          yB_phys, mB_phys, dB_phys
+        );
+
+        if (layerMode === 'year') activeVectors_d = vectorData_phys.yearLayer;
+        else if (layerMode === 'month') activeVectors_d = vectorData_phys.monthLayer;
+        else if (layerMode === 'day') activeVectors_d = vectorData_phys.dayLayer;
+        else activeVectors_d = vectorData_phys.finalVectors;
+
+        tendoDir_d = vectorData_phys.tendoDirection;
+        isDoyouHazard_d = vectorData_phys.doyouState?.isDoyouHazard || false;
+      }
 
       let lunarPhaseScore_d = 0;
       if (lunarPhaseModifier) {
@@ -304,7 +467,7 @@ export async function GET(request: Request) {
         activeVectors: activeVectors_d,
         isDoyouHazard: isDoyouHazard_d,
         lunarPhaseScore: lunarPhaseScore_d,
-        tendoDir: vectorData_d.tendoDirection,
+        tendoDir: tendoDir_d,
         rokuyo: rokuyo_d,
         luckyDays: luckyDays_d,
         holiday: holiday_d,
@@ -363,9 +526,33 @@ export async function GET(request: Request) {
           
           if (state.activeVectors && targetDirection) {
             dailyStatus = state.activeVectors[targetDirection] || 'UNKNOWN';
+
+            // 1. Tendo (天道) override/shift rules
+            const isTendo = state.tendoDir && targetDirection === state.tendoDir;
+            if (isTendo) {
+              dailyIsTendo = true;
+              tendoBonus = 20;
+              
+              if (isNoiseStatus(dailyStatus)) {
+                // Shift NOISE to WARNING
+                dailyStatus = 'WARNING';
+              } else if (dailyStatus === 'WARNING') {
+                // Shift WARNING to SAFE
+                dailyStatus = 'SAFE';
+              }
+            }
+
+            // 2. Jupiter Line (木星ライン) boost
+            const isOptimal = dailyStatus === 'OPTIMAL' || dailyStatus === 'OPTIMAL_REGULAR';
+            if (isOptimal && hasJupiterLine) {
+              dailyStatus = 'OPTIMAL_BOOST';
+            }
+
             switch (dailyStatus) {
+              case 'OPTIMAL_BOOST': baseAstrologyScore = 110; break;
               case 'OPTIMAL': baseAstrologyScore = 100; break;
               case 'SAFE': baseAstrologyScore = 80; break;
+              case 'WARNING': baseAstrologyScore = 60; break;
               case 'NOISE_VOID': 
                 baseAstrologyScore = 40;
                 voidPenalty = -40;
@@ -382,11 +569,6 @@ export async function GET(request: Request) {
             }
           }
 
-          if (state.tendoDir && targetDirection === state.tendoDir) {
-            dailyIsTendo = true;
-            tendoBonus = 20;
-          }
-
           if (!isNaN(birthLat) && !isNaN(birthLon)) {
             if (hasSunLine) sunLineBonus = 15;
             if (hasVenusLine && baseAstrologyScore >= 50) venusLineBonus = 15;
@@ -396,10 +578,30 @@ export async function GET(request: Request) {
           if (state.isDoyouHazard) {
             doyouPenalty = -30;
           }
+
+          // 3. Time-Gate (天中殺) check
+          const zodiacs_d = getCurrentZodiac(new Date(state.dateStr), baseLon);
+          const isVoidTime_d = voidZodiacs.includes(zodiacs_d.yearZodiac) ||
+                               voidZodiacs.includes(zodiacs_d.monthZodiac) ||
+                               voidZodiacs.includes(zodiacs_d.dayZodiac);
+          if (isVoidTime_d && actionIntent === 'MIGRATION') {
+            voidPenalty = -100; // Time-Gate blocker!
+          }
+        }
+
+        // 4. Bazi vs Kigaku Intent-based dynamic weighting
+        let blendedAstroScore = baseAstrologyScore;
+        if (!isNaN(birthLat) && !isNaN(birthLon)) {
+          const baziScore = calculateBaziCompatibility(bDate, new Date(state.dateStr));
+          if (actionIntent === 'MIGRATION' || actionIntent === 'BUSINESS') {
+            blendedAstroScore = (baseAstrologyScore * 0.7) + (baziScore * 0.3);
+          } else {
+            blendedAstroScore = (baseAstrologyScore * 0.2) + (baziScore * 0.8);
+          }
         }
 
         // クリップ前の生合計値
-        const rawTotalScore = baseAstrologyScore + tendoBonus + sunLineBonus + venusLineBonus + jupiterLineBonus + lunarPhaseScore + doyouPenalty + voidPenalty;
+        const rawTotalScore = blendedAstroScore + tendoBonus + sunLineBonus + venusLineBonus + jupiterLineBonus + lunarPhaseScore + doyouPenalty + voidPenalty;
         const dailyScore = Math.max(0, Math.min(100, rawTotalScore));
 
         const isTaian = state.rokuyo.includes("大安");
@@ -464,10 +666,16 @@ export async function GET(request: Request) {
       if (targetDetails.lunarPhaseScore > 0) astroFlags.push("LUNAR_BOOST");
       if (targetDetails.lunarPhaseScore < 0) astroFlags.push("LUNAR_PENALTY");
       if (targetDetails.doyouPenalty < 0) astroFlags.push("DOYOU_HAZARD");
+      if (targetDetails.voidPenalty < 0 || astrologyStatus === 'NOISE_VOID') {
+        astroFlags.push("VOID_TIME_HAZARD");
+      }
 
       // 最大吉凶要因（maxAstroFactor）の決定ロジック
       let maxAstroFactor = "通常";
-      if (astrologyStatus === 'NOISE_GOU') maxAstroFactor = "五黄殺";
+      if (targetDetails.voidPenalty < 0 || astrologyStatus === 'NOISE_VOID') maxAstroFactor = "天中殺期間 (移転NG)";
+      else if (astrologyStatus === 'OPTIMAL_BOOST') maxAstroFactor = "超大吉 (木星ライン)";
+      else if (astrologyStatus === 'WARNING') maxAstroFactor = "警告・調整方位";
+      else if (astrologyStatus === 'NOISE_GOU') maxAstroFactor = "五黄殺";
       else if (astrologyStatus === 'NOISE_ANKEN') maxAstroFactor = "暗剣殺";
       else if (astrologyStatus === 'NOISE_HA') maxAstroFactor = "歳破";
       else if (astrologyStatus === 'NOISE_HONMEI') maxAstroFactor = "本命殺";
@@ -480,7 +688,6 @@ export async function GET(request: Request) {
       else if (targetDetails.sunLineBonus > 0) maxAstroFactor = "太陽ライン";
       else if (targetDay.rokuyo.includes("大安")) maxAstroFactor = "大安";
       else if (targetDay.luckyDays.isIchiryumanbai) maxAstroFactor = "一粒万倍日";
-      else if (targetDetails.voidPenalty < 0 || astrologyStatus === 'NOISE_VOID') maxAstroFactor = "天中殺";
       else if (targetDetails.doyouPenalty < 0) maxAstroFactor = "土用殺";
       else if (astrologyStatus === 'NOISE_GETSUMEI') maxAstroFactor = "月命殺";
       else if (astrologyStatus === 'NOISE_GETSUTEKI') maxAstroFactor = "月命的殺";
