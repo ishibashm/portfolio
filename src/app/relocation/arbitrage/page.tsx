@@ -407,13 +407,18 @@ export default function ArbitrageScannerPage() {
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
       
-      // Send either radius or map bounding box depending on mapBounds
-      if (mapBounds && mapBounds.zoom >= 10) { // Only use bounds if reasonably zoomed in
-        params.append("minLat", mapBounds.minLat.toString());
-        params.append("maxLat", mapBounds.maxLat.toString());
-        params.append("minLon", mapBounds.minLon.toString());
-        params.append("maxLon", mapBounds.maxLon.toString());
-        params.append("radiusKm", "all"); // Disable radius when using bounds
+       // Send either radius or map bounding box depending on mapBounds
+      if (mapBounds) {
+        if (mapBounds.zoom >= 10) {
+          params.append("minLat", mapBounds.minLat.toString());
+          params.append("maxLat", mapBounds.maxLat.toString());
+          params.append("minLon", mapBounds.minLon.toString());
+          params.append("maxLon", mapBounds.maxLon.toString());
+          params.append("radiusKm", "all"); // Disable radius when using bounds
+        } else {
+          // Zoome out (< 10): Fetch all data to show prefectures density colored polygons
+          params.append("radiusKm", "all");
+        }
       } else {
         params.append("radiusKm", radiusKm);
       }
@@ -822,13 +827,13 @@ export default function ArbitrageScannerPage() {
         </div>
 
         {/* 2-Column Split Dashboard Layout */}
-        <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[650px] relative">
+        <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[600px] relative">
           
-          {/* Left Column: Sidebar (expands from 33% to 55% in Table Mode) */}
+          {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode) */}
           <div 
             className={`transition-all duration-300 ease-in-out ${
-              showTableView && showListView ? 'w-full lg:w-[55%]' : 'w-full lg:w-1/3'
-            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col h-[680px] relative z-10`}
+              showTableView && showListView ? 'w-full lg:w-[50%]' : 'w-full lg:w-[30%]'
+            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
           >
             {/* Sticky Header */}
             <div className="sticky top-0 bg-gray-50/95 dark:bg-[#09090b]/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between z-30 shrink-0">
@@ -1316,11 +1321,11 @@ export default function ArbitrageScannerPage() {
             </div>
           </div>
           
-          {/* Right Column: Leaflet Map (shrinks to 45% width when table mode is expanded) */}
+          {/* Right Column: Leaflet Map (shrinks to 50% width when table mode is expanded) */}
           <div 
             className={`transition-all duration-300 ease-in-out ${
-              showTableView && showListView ? 'w-full lg:w-[45%]' : 'w-full lg:w-2/3'
-            } h-[680px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900 shrink-0`}
+              showTableView && showListView ? 'w-full lg:w-[50%]' : 'w-full lg:w-[70%]'
+            } h-[calc(100vh-220px)] min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900 shrink-0`}
           >
             <ArbitrageMap
               properties={filteredData}
