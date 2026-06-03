@@ -22,6 +22,36 @@ const getTodayString = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+const normalizeDateTimeLocal = (dateStr: string): string => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+  } catch (e) {}
+  if (dateStr.includes('T')) {
+    return dateStr.substring(0, 16);
+  }
+  return `${dateStr}T12:00`;
+};
+
+import dynamic from "next/dynamic";
+
+const LocationPickerInner = dynamic(() => import("@/components/LocationPickerInner"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
+      マップを読み込み中...
+    </div>
+  ),
+});
+
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +64,7 @@ export default function ArbitrageScannerPage() {
   const [baseLon, setBaseLon] = useState("135.7248");
   const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
   const [birthLon, setBirthLon] = useState("132.4482");
-  const [birthDate, setBirthDate] = useState("1988-11-25"); // Default Birth Date
+  const [birthDate, setBirthDate] = useState("1988-11-25T04:26"); // Default Birth Date with time
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
@@ -54,6 +84,8 @@ export default function ArbitrageScannerPage() {
   const prevParamsRef = useRef({
     baseLat,
     baseLon,
+    birthLat,
+    birthLon,
     birthDate,
     radiusKm,
     prefecture,
@@ -69,7 +101,10 @@ export default function ArbitrageScannerPage() {
   // Temporary local inputs to avoid API hammering during typing
   const [localLat, setLocalLat] = useState("34.9911");
   const [localLon, setLocalLon] = useState("135.7248");
-  const [localBirthDate, setLocalBirthDate] = useState("1988-11-25");
+  const [localBirthDate, setLocalBirthDate] = useState("1988-11-25T04:26");
+  const [localBirthLat, setLocalBirthLat] = useState("34.3952");
+  const [localBirthLon, setLocalBirthLon] = useState("132.4482");
+  const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
 
   // おすすめ度（星マーク）の描画
@@ -225,7 +260,7 @@ export default function ArbitrageScannerPage() {
     let bsLon = "135.7248";
     let bLat = "34.3952";
     let bLon = "132.4482";
-    let bDate = "1988-11-25";
+    let bDate = "1988-11-25T04:26";
     let tDate = getTodayString();
     let rKm = "10";
     let pref = "all";
@@ -241,8 +276,7 @@ export default function ArbitrageScannerPage() {
       try {
         const config = JSON.parse(tacticalConfig);
         if (config.birth_date) {
-          const dStr = config.birth_date.split('T')[0];
-          bDate = dStr;
+          bDate = config.birth_date;
         }
         if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
         if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
@@ -281,9 +315,9 @@ export default function ArbitrageScannerPage() {
     setBaseLat(bsLat); setLocalLat(bsLat);
     setBaseLon(bsLon); setLocalLon(bsLon);
     setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
-    setBirthLat(bLat);
-    setBirthLon(bLon);
-    setBirthDate(bDate); setLocalBirthDate(bDate);
+    setBirthLat(bLat); setLocalBirthLat(bLat);
+    setBirthLon(bLon); setLocalBirthLon(bLon);
+    setBirthDate(bDate); setLocalBirthDate(normalizeDateTimeLocal(bDate));
     setTargetDate(tDate); setLocalTargetDate(tDate);
     setRadiusKm(rKm);
     setPrefecture(pref);
@@ -294,6 +328,61 @@ export default function ArbitrageScannerPage() {
     setActionIntent(intent);
 
     setInitialLoaded(true);
+
+    const handleGlobalConfigUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<any>;
+      if (customEvent.detail) {
+        const detail = customEvent.detail;
+        
+        const newTargetDate = detail.targetDate || detail.target_date;
+        const newUseClassical = detail.useClassicalBoard !== undefined ? detail.useClassicalBoard : detail.use_classical_board;
+        const newFilterMode = detail.directionFilterMode || detail.direction_filter_mode;
+        const newIntent = detail.actionIntent || detail.action_intent;
+        const newBirthDate = detail.birthDate || detail.birth_date;
+        const newBirthLat = detail.birthLat !== undefined ? detail.birthLat.toString() : (detail.birth_lat !== undefined ? detail.birth_lat.toString() : undefined);
+        const newBirthLon = detail.birthLon !== undefined ? detail.birthLon.toString() : (detail.birth_lon !== undefined ? detail.birth_lon.toString() : undefined);
+        const newBaseLat = detail.baseLat !== undefined ? detail.baseLat.toString() : (detail.base_lat !== undefined ? detail.base_lat.toString() : undefined);
+        const newBaseLon = detail.baseLon !== undefined ? detail.baseLon.toString() : (detail.base_lon !== undefined ? detail.base_lon.toString() : undefined);
+
+        if (newTargetDate) {
+          setTargetDate(newTargetDate);
+          setLocalTargetDate(newTargetDate);
+        }
+        if (newUseClassical !== undefined) {
+          setUseClassical(newUseClassical);
+        }
+        if (newFilterMode) {
+          setDirectionFilterMode(newFilterMode);
+        }
+        if (newIntent) {
+          setActionIntent(newIntent);
+        }
+        if (newBirthDate) {
+          setBirthDate(newBirthDate);
+          setLocalBirthDate(normalizeDateTimeLocal(newBirthDate));
+        }
+        if (newBirthLat) {
+          setBirthLat(newBirthLat);
+          setLocalBirthLat(newBirthLat);
+        }
+        if (newBirthLon) {
+          setBirthLon(newBirthLon);
+          setLocalBirthLon(newBirthLon);
+        }
+        if (newBaseLat && newBaseLon) {
+          setBaseLat(newBaseLat);
+          setLocalLat(newBaseLat);
+          setBaseLon(newBaseLon);
+          setLocalLon(newBaseLon);
+          setMapCenter([parseFloat(newBaseLat), parseFloat(newBaseLon)]);
+        }
+      }
+    };
+
+    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    return () => {
+      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    };
   }, []);
 
   const fetchData = async (isDateChange = false) => {
@@ -377,6 +466,8 @@ export default function ArbitrageScannerPage() {
     const isOtherChanged = 
       prev.baseLat !== baseLat ||
       prev.baseLon !== baseLon ||
+      prev.birthLat !== birthLat ||
+      prev.birthLon !== birthLon ||
       prev.birthDate !== birthDate ||
       prev.radiusKm !== radiusKm ||
       prev.prefecture !== prefecture ||
@@ -391,6 +482,8 @@ export default function ArbitrageScannerPage() {
     prevParamsRef.current = {
       baseLat,
       baseLon,
+      birthLat,
+      birthLon,
       birthDate,
       radiusKm,
       prefecture,
@@ -404,22 +497,44 @@ export default function ArbitrageScannerPage() {
     };
 
     fetchData(!isOtherChanged);
-  }, [baseLat, baseLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, mapBounds, initialLoaded]);
+  }, [baseLat, baseLon, birthLat, birthLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, mapBounds, initialLoaded]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
       const localData = localStorage.getItem('tactical_config_v1');
-      let currentLocal = {};
+      let currentLocal: any = {};
       if (localData) {
         try { currentLocal = JSON.parse(localData); } catch (e) {}
       }
-      localStorage.setItem('tactical_config_v1', JSON.stringify({ ...currentLocal, ...updatedFields }));
+      
+      const mergedConfig = {
+        ...currentLocal,
+        ...updatedFields
+      };
+      
+      localStorage.setItem('tactical_config_v1', JSON.stringify(mergedConfig));
 
       await fetch('/api/user-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedFields)
       });
+
+      // Dispatch global config update event for instant sync
+      const event = new CustomEvent("metaphysical-config-updated", {
+        detail: {
+          targetDate: mergedConfig.target_date || targetDate,
+          useClassicalBoard: mergedConfig.use_classical_board !== undefined ? mergedConfig.use_classical_board : useClassical,
+          directionFilterMode: mergedConfig.direction_filter_mode || directionFilterMode,
+          actionIntent: mergedConfig.action_intent || actionIntent,
+          birthDate: mergedConfig.birth_date || birthDate,
+          birthLat: mergedConfig.birth_lat !== undefined ? mergedConfig.birth_lat : parseFloat(birthLat),
+          birthLon: mergedConfig.birth_lon !== undefined ? mergedConfig.birth_lon : parseFloat(birthLon),
+          baseLat: mergedConfig.base_lat !== undefined ? mergedConfig.base_lat : parseFloat(baseLat),
+          baseLon: mergedConfig.base_lon !== undefined ? mergedConfig.base_lon : parseFloat(baseLon)
+        }
+      });
+      window.dispatchEvent(event);
     } catch (e) {
       console.error("Failed to sync config in arbitrage page:", e);
     }
@@ -705,7 +820,7 @@ export default function ArbitrageScannerPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             {/* Target Prefecture */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
@@ -725,11 +840,12 @@ export default function ArbitrageScannerPage() {
 
             {/* Birth Date */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block">
-                生年月日 (吉方位計算用)
+              <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 block flex items-center justify-between">
+                <span>生年月日 (吉方位計算用)</span>
+                <span className="text-[10px] text-zinc-500 font-normal">時間指定可</span>
               </label>
               <input
-                type="date"
+                type="datetime-local"
                 value={localBirthDate}
                 onChange={e => {
                   setLocalBirthDate(e.target.value);
@@ -737,8 +853,50 @@ export default function ArbitrageScannerPage() {
                   localStorage.setItem("arb_birthDate", e.target.value);
                   saveUnifiedConfig({ birth_date: e.target.value });
                 }}
-                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500"
+                className="w-full px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
               />
+            </div>
+
+            {/* Birth Location */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+                  出生地座標 (天体ライン計算用)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
+                  className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                >
+                  {showBirthMapPicker ? '閉じる' : '地図で検索'}
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.00001"
+                  value={localBirthLat}
+                  onChange={e => {
+                    setLocalBirthLat(e.target.value);
+                    setBirthLat(e.target.value);
+                    saveUnifiedConfig({ birth_lat: parseFloat(e.target.value) });
+                  }}
+                  className="w-1/2 px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
+                  placeholder="緯度"
+                />
+                <input
+                  type="number"
+                  step="0.00001"
+                  value={localBirthLon}
+                  onChange={e => {
+                    setLocalBirthLon(e.target.value);
+                    setBirthLon(e.target.value);
+                    saveUnifiedConfig({ birth_lon: parseFloat(e.target.value) });
+                  }}
+                  className="w-1/2 px-3 py-2 bg-white dark:bg-zinc-950 border border-gray-300 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-indigo-500 font-mono"
+                  placeholder="経度"
+                />
+              </div>
             </div>
 
             {/* Layer Mode */}
@@ -786,6 +944,24 @@ export default function ArbitrageScannerPage() {
               </label>
             </div>
           </div>
+
+          {showBirthMapPicker && (
+            <div className="mt-4 w-full h-72 rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-800 relative z-20">
+              <LocationPickerInner
+                initialLat={Number(birthLat) || 34.3952}
+                initialLon={Number(birthLon) || 132.4482}
+                onSelect={(newLat: number, newLon: number) => {
+                  const latStr = newLat.toFixed(5);
+                  const lonStr = newLon.toFixed(5);
+                  setLocalBirthLat(latStr);
+                  setBirthLat(latStr);
+                  setLocalBirthLon(lonStr);
+                  setBirthLon(lonStr);
+                  saveUnifiedConfig({ birth_lat: newLat, birth_lon: newLon });
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Dashboard Grid */}

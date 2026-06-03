@@ -62,6 +62,25 @@ interface SavedPreset {
   layerMode: string;
 }
 
+const normalizeDateTimeLocal = (dateStr: string): string => {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+  } catch (e) {}
+  if (dateStr.includes('T')) {
+    return dateStr.substring(0, 16);
+  }
+  return `${dateStr}T12:00`;
+};
+
 export default function RegionalWealthPage() {
   const [data, setData] = useState<MunicipalityWealth[]>([]);
   const [metadata, setMetadata] = useState<any>(null);
@@ -99,6 +118,47 @@ export default function RegionalWealthPage() {
   // Map Picker State
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
+
+  const saveUnifiedConfig = async (updatedFields: any) => {
+    try {
+      const localData = localStorage.getItem('tactical_config_v1');
+      let currentLocal: any = {};
+      if (localData) {
+        try { currentLocal = JSON.parse(localData); } catch (e) {}
+      }
+      
+      const mergedConfig = {
+        ...currentLocal,
+        ...updatedFields
+      };
+      
+      localStorage.setItem('tactical_config_v1', JSON.stringify(mergedConfig));
+
+      await fetch('/api/user-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+
+      // Dispatch global config update event for instant sync
+      const event = new CustomEvent("metaphysical-config-updated", {
+        detail: {
+          targetDate: mergedConfig.target_date || targetDate,
+          useClassicalBoard: mergedConfig.use_classical_board !== undefined ? mergedConfig.use_classical_board : (engineType === "classical"),
+          directionFilterMode: mergedConfig.direction_filter_mode || "composite",
+          actionIntent: mergedConfig.action_intent || "DEFAULT",
+          birthDate: mergedConfig.birth_date || birthDate,
+          birthLat: mergedConfig.birth_lat !== undefined ? mergedConfig.birth_lat : (birthLat ? parseFloat(birthLat) : undefined),
+          birthLon: mergedConfig.birth_lon !== undefined ? mergedConfig.birth_lon : (birthLon ? parseFloat(birthLon) : undefined),
+          baseLat: mergedConfig.base_lat !== undefined ? mergedConfig.base_lat : (baseLat ? parseFloat(baseLat) : undefined),
+          baseLon: mergedConfig.base_lon !== undefined ? mergedConfig.base_lon : (baseLon ? parseFloat(baseLon) : undefined)
+        }
+      });
+      window.dispatchEvent(event);
+    } catch (e) {
+      console.error("Failed to sync config in wealth page:", e);
+    }
+  };
 
   const fetchData = async (overrideParams?: any) => {
     setLoading(true);
@@ -147,6 +207,22 @@ export default function RegionalWealthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(partialConfig)
       }).catch(e => console.error("Sync config failed on wealth page:", e));
+
+      // Dispatch global config event for instant cross-tab/cross-page synchronization
+      const event = new CustomEvent("metaphysical-config-updated", {
+        detail: {
+          targetDate: currentTargetDate,
+          useClassicalBoard: currentEngineType === "classical",
+          directionFilterMode: "composite",
+          actionIntent: "DEFAULT",
+          birthDate: currentBirthDate,
+          birthLat: currentBirthLat ? parseFloat(currentBirthLat) : undefined,
+          birthLon: currentBirthLon ? parseFloat(currentBirthLon) : undefined,
+          baseLat: currentBaseLat ? parseFloat(currentBaseLat) : undefined,
+          baseLon: currentBaseLon ? parseFloat(currentBaseLon) : undefined
+        }
+      });
+      window.dispatchEvent(event);
     }
 
     try {
@@ -205,8 +281,14 @@ export default function RegionalWealthPage() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setBaseLat(position.coords.latitude.toString());
-          setBaseLon(position.coords.longitude.toString());
+          const latStr = position.coords.latitude.toString();
+          const lonStr = position.coords.longitude.toString();
+          setBaseLat(latStr);
+          setBaseLon(lonStr);
+          saveUnifiedConfig({
+            base_lat: position.coords.latitude,
+            base_lon: position.coords.longitude
+          });
         },
         (error) => {
           console.error("GPS Error:", error);
@@ -262,7 +344,7 @@ export default function RegionalWealthPage() {
       if (!bsLat) bsLat = localStorage.getItem('wealth_baseLat') || "";
       if (!bsLon) bsLon = localStorage.getItem('wealth_baseLon') || "";
 
-      if (bDate) setBirthDate(bDate);
+      if (bDate) setBirthDate(normalizeDateTimeLocal(bDate));
       if (bLat) setBirthLat(bLat);
       if (bLon) setBirthLon(bLon);
       if (bsLat) setBaseLat(bsLat);
@@ -286,6 +368,54 @@ export default function RegionalWealthPage() {
     } else {
       fetchData();
     }
+
+    const handleGlobalConfigUpdate = () => {
+      const tacticalConfig = localStorage.getItem('tactical_config_v1');
+      if (tacticalConfig) {
+        try {
+          const config = JSON.parse(tacticalConfig);
+          const bDate = config.birth_date || "";
+          const bLat = config.birth_lat !== undefined ? config.birth_lat.toString() : "";
+          const bLon = config.birth_lon !== undefined ? config.birth_lon.toString() : "";
+          const bsLat = config.base_lat !== undefined ? config.base_lat.toString() : "";
+          const bsLon = config.base_lon !== undefined ? config.base_lon.toString() : "";
+          const engine = config.use_classical_board !== undefined ? (config.use_classical_board ? "classical" : "physical") : "physical";
+          const layer = config.layer_mode || "final";
+          const trueNorth = config.use_true_north || false;
+          const lunarPhase = config.lunar_phase_modifier !== undefined ? config.lunar_phase_modifier : true;
+          const tDate = config.target_date || new Date().toISOString().split('T')[0];
+
+          setBirthDate(normalizeDateTimeLocal(bDate));
+          setBirthLat(bLat);
+          setBirthLon(bLon);
+          setBaseLat(bsLat);
+          setBaseLon(bsLon);
+          setEngineType(engine);
+          setLayerMode(layer);
+          setUseTrueNorth(trueNorth);
+          setLunarPhaseModifier(lunarPhase);
+          setTargetDate(tDate);
+
+          fetchData({
+            targetDate: tDate,
+            birthDate: bDate,
+            birthLat: bLat,
+            birthLon: bLon,
+            baseLat: bsLat,
+            baseLon: bsLon,
+            engineType: engine,
+            layerMode: layer,
+            useTrueNorth: trueNorth,
+            lunarPhaseModifier: lunarPhase
+          });
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    return () => {
+      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    };
   }, []);
 
   const handleSavePreset = () => {
@@ -648,7 +778,11 @@ export default function RegionalWealthPage() {
               <input
                 type="date"
                 value={targetDate}
-                onChange={e => { setTargetDate(e.target.value); setSelectedPresetId(""); }}
+                onChange={e => {
+                  setTargetDate(e.target.value);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ target_date: e.target.value });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
             </div>
@@ -657,7 +791,11 @@ export default function RegionalWealthPage() {
               <input
                 type="datetime-local"
                 value={birthDate}
-                onChange={e => { setBirthDate(e.target.value); setSelectedPresetId(""); }}
+                onChange={e => {
+                  setBirthDate(e.target.value);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ birth_date: e.target.value });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 title="出生時間が不明な場合は 12:00 等を入力してください"
               />
@@ -666,7 +804,11 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1">方位計算エンジン</label>
               <select
                 value={engineType}
-                onChange={e => { setEngineType(e.target.value); setSelectedPresetId(""); }}
+                onChange={e => {
+                  setEngineType(e.target.value);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ use_classical_board: e.target.value === "classical" });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="physical">天体軌道モデル (Physical)</option>
@@ -677,7 +819,11 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1">方位計算レイヤー</label>
               <select
                 value={layerMode}
-                onChange={e => { setLayerMode(e.target.value); setSelectedPresetId(""); }}
+                onChange={e => {
+                  setLayerMode(e.target.value);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ layer_mode: e.target.value });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="final">統合ベクター (Final)</option>
@@ -690,7 +836,12 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1">北基準方位</label>
               <select
                 value={useTrueNorth ? "true" : "false"}
-                onChange={e => { setUseTrueNorth(e.target.value === "true"); setSelectedPresetId(""); }}
+                onChange={e => {
+                  const val = e.target.value === "true";
+                  setUseTrueNorth(val);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ use_true_north: val });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="false">磁北 (Magnetic)</option>
@@ -701,7 +852,12 @@ export default function RegionalWealthPage() {
               <label className="block text-xs font-semibold text-gray-500 mb-1">月相タイミング補正</label>
               <select
                 value={lunarPhaseModifier ? "true" : "false"}
-                onChange={e => { setLunarPhaseModifier(e.target.value === "true"); setSelectedPresetId(""); }}
+                onChange={e => {
+                  const val = e.target.value === "true";
+                  setLunarPhaseModifier(val);
+                  setSelectedPresetId("");
+                  saveUnifiedConfig({ lunar_phase_modifier: val });
+                }}
                 className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="true">有効 (+/- 10点補正)</option>
@@ -734,6 +890,7 @@ export default function RegionalWealthPage() {
                       onSelect={(newLat: number, newLon: number) => {
                         setBirthLat(newLat.toFixed(5));
                         setBirthLon(newLon.toFixed(5));
+                        saveUnifiedConfig({ birth_lat: newLat, birth_lon: newLon });
                       }}
                     />
                   </div>
@@ -742,14 +899,22 @@ export default function RegionalWealthPage() {
                   <input
                     type="number"
                     value={birthLat || ""}
-                    onChange={e => { setBirthLat(e.target.value); setSelectedPresetId(""); }}
+                    onChange={e => {
+                      setBirthLat(e.target.value);
+                      setSelectedPresetId("");
+                      saveUnifiedConfig({ birth_lat: e.target.value ? parseFloat(e.target.value) : undefined });
+                    }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     placeholder="緯度: 35.6"
                   />
                   <input
                     type="number"
                     value={birthLon || ""}
-                    onChange={e => { setBirthLon(e.target.value); setSelectedPresetId(""); }}
+                    onChange={e => {
+                      setBirthLon(e.target.value);
+                      setSelectedPresetId("");
+                      saveUnifiedConfig({ birth_lon: e.target.value ? parseFloat(e.target.value) : undefined });
+                    }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     placeholder="経度: 139.6"
                   />
@@ -777,6 +942,7 @@ export default function RegionalWealthPage() {
                       onSelect={(newLat: number, newLon: number) => {
                         setBaseLat(newLat.toFixed(5));
                         setBaseLon(newLon.toFixed(5));
+                        saveUnifiedConfig({ base_lat: newLat, base_lon: newLon });
                       }}
                     />
                   </div>
@@ -785,14 +951,22 @@ export default function RegionalWealthPage() {
                   <input
                     type="number"
                     value={baseLat}
-                    onChange={e => { setBaseLat(e.target.value); setSelectedPresetId(""); }}
+                    onChange={e => {
+                      setBaseLat(e.target.value);
+                      setSelectedPresetId("");
+                      saveUnifiedConfig({ base_lat: e.target.value ? parseFloat(e.target.value) : undefined });
+                    }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     placeholder="緯度"
                   />
                   <input
                     type="number"
                     value={baseLon}
-                    onChange={e => { setBaseLon(e.target.value); setSelectedPresetId(""); }}
+                    onChange={e => {
+                      setBaseLon(e.target.value);
+                      setSelectedPresetId("");
+                      saveUnifiedConfig({ base_lon: e.target.value ? parseFloat(e.target.value) : undefined });
+                    }}
                     className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     placeholder="経度"
                   />

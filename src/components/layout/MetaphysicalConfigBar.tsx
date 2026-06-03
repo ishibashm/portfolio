@@ -8,6 +8,11 @@ export interface MetaphysicalConfig {
   useClassicalBoard: boolean; // true = 暦基準, false = 木星黄経基準
   directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental';
   actionIntent: 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
+  birthDate?: string;
+  birthLat?: number;
+  birthLon?: number;
+  baseLat?: number;
+  baseLon?: number;
 }
 
 const DEFAULT_CONFIG: MetaphysicalConfig = {
@@ -39,13 +44,12 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
           if (parsed.use_classical_board !== undefined) loadedConfig.useClassicalBoard = parsed.use_classical_board;
           if (parsed.direction_filter_mode !== undefined) loadedConfig.directionFilterMode = parsed.direction_filter_mode;
           if (parsed.action_intent !== undefined) loadedConfig.actionIntent = parsed.action_intent;
-          
-          // Align targetDate
-          if (parsed.target_date) {
-            loadedConfig.targetDate = parsed.target_date;
-          } else if (parsed.birth_date) {
-            // fallback/reference
-          }
+          if (parsed.target_date) loadedConfig.targetDate = parsed.target_date;
+          if (parsed.birth_date) loadedConfig.birthDate = parsed.birth_date;
+          if (parsed.birth_lat !== undefined) loadedConfig.birthLat = parsed.birth_lat;
+          if (parsed.birth_lon !== undefined) loadedConfig.birthLon = parsed.birth_lon;
+          if (parsed.base_lat !== undefined) loadedConfig.baseLat = parsed.base_lat;
+          if (parsed.base_lon !== undefined) loadedConfig.baseLon = parsed.base_lon;
         } catch (e) {
           console.error("Failed to parse localStorage config:", e);
         }
@@ -60,6 +64,11 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
           if (apiData.direction_filter_mode !== undefined) loadedConfig.directionFilterMode = apiData.direction_filter_mode;
           if (apiData.action_intent !== undefined) loadedConfig.actionIntent = apiData.action_intent;
           if (apiData.target_date) loadedConfig.targetDate = apiData.target_date;
+          if (apiData.birth_date) loadedConfig.birthDate = apiData.birth_date;
+          if (apiData.birth_lat !== undefined) loadedConfig.birthLat = apiData.birth_lat;
+          if (apiData.birth_lon !== undefined) loadedConfig.birthLon = apiData.birth_lon;
+          if (apiData.base_lat !== undefined) loadedConfig.baseLat = apiData.base_lat;
+          if (apiData.base_lon !== undefined) loadedConfig.baseLon = apiData.base_lon;
         }
       } catch (e) {
         console.warn("Failed to load user config from API, relying on localStorage:", e);
@@ -87,8 +96,21 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
   }, []);
 
   const saveConfig = async (newConfig: MetaphysicalConfig) => {
-    setConfig(newConfig);
+    const updatedConfig = { ...config, ...newConfig };
+    setConfig(updatedConfig);
     setIsSyncing(true);
+
+    const apiBody: any = {
+      use_classical_board: updatedConfig.useClassicalBoard,
+      direction_filter_mode: updatedConfig.directionFilterMode,
+      action_intent: updatedConfig.actionIntent,
+      target_date: updatedConfig.targetDate
+    };
+    if (updatedConfig.birthDate) apiBody.birth_date = updatedConfig.birthDate;
+    if (updatedConfig.birthLat !== undefined) apiBody.birth_lat = updatedConfig.birthLat;
+    if (updatedConfig.birthLon !== undefined) apiBody.birth_lon = updatedConfig.birthLon;
+    if (updatedConfig.baseLat !== undefined) apiBody.base_lat = updatedConfig.baseLat;
+    if (updatedConfig.baseLon !== undefined) apiBody.base_lon = updatedConfig.baseLon;
 
     // Save locally
     try {
@@ -99,10 +121,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
       }
       localStorage.setItem('tactical_config_v1', JSON.stringify({
         ...currentLocal,
-        use_classical_board: newConfig.useClassicalBoard,
-        direction_filter_mode: newConfig.directionFilterMode,
-        action_intent: newConfig.actionIntent,
-        target_date: newConfig.targetDate
+        ...apiBody
       }));
     } catch (e) {
       console.error("Failed to save config to localStorage:", e);
@@ -113,24 +132,19 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
       await fetch('/api/user-config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          use_classical_board: newConfig.useClassicalBoard,
-          direction_filter_mode: newConfig.directionFilterMode,
-          action_intent: newConfig.actionIntent,
-          target_date: newConfig.targetDate
-        })
+        body: JSON.stringify(apiBody)
       });
     } catch (e) {
       console.error("Failed to save config to API:", e);
     }
 
     // Dispatch global event for instant synchrony across same-page components
-    const event = new CustomEvent<MetaphysicalConfig>('metaphysical-config-updated', { detail: newConfig });
+    const event = new CustomEvent<MetaphysicalConfig>('metaphysical-config-updated', { detail: updatedConfig });
     window.dispatchEvent(event);
 
     // Trigger parent callback
     if (onConfigChange) {
-      onConfigChange(newConfig);
+      onConfigChange(updatedConfig);
     }
 
     setTimeout(() => setIsSyncing(false), 400);

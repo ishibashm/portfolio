@@ -1061,10 +1061,59 @@ export default function RelocationSimulatorPage() {
     return noiseLabels[status] || 'SAFE (吉方位/中立平穏)';
   };
 
+  const saveUnifiedConfig = async (updatedFields: any) => {
+    try {
+      const localData = localStorage.getItem('tactical_config_v1');
+      let currentLocal: any = {};
+      if (localData) {
+        try { currentLocal = JSON.parse(localData); } catch (e) {}
+      }
+      
+      const mergedConfig = {
+        ...currentLocal,
+        ...updatedFields
+      };
+      
+      localStorage.setItem('tactical_config_v1', JSON.stringify(mergedConfig));
+
+      await fetch('/api/user-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+
+      // Dispatch global config update event for instant sync
+      const event = new CustomEvent("metaphysical-config-updated", {
+        detail: {
+          targetDate: mergedConfig.target_date || (steps.length > 0 ? steps[0].departureDate : undefined),
+          useClassicalBoard: mergedConfig.use_classical_board !== undefined ? mergedConfig.use_classical_board : useClassical,
+          directionFilterMode: mergedConfig.direction_filter_mode || directionFilterMode,
+          actionIntent: mergedConfig.action_intent || actionIntent,
+          birthDate: mergedConfig.birth_date || birthDate,
+          baseLat: mergedConfig.base_lat !== undefined ? mergedConfig.base_lat : startLat,
+          baseLon: mergedConfig.base_lon !== undefined ? mergedConfig.base_lon : startLon
+        }
+      });
+      window.dispatchEvent(event);
+    } catch (e) {
+      console.error("Failed to sync config in simulator page:", e);
+    }
+  };
+
   const handleConfigChange = (newConfig: MetaphysicalConfig) => {
     setUseClassical(newConfig.useClassicalBoard);
     setDirectionFilterMode(newConfig.directionFilterMode);
     setActionIntent(newConfig.actionIntent);
+    
+    if (newConfig.birthDate) {
+      setBirthDate(newConfig.birthDate);
+    }
+    if (newConfig.baseLat !== undefined) {
+      setStartLat(newConfig.baseLat);
+    }
+    if (newConfig.baseLon !== undefined) {
+      setStartLon(newConfig.baseLon);
+    }
     
     // Sync target date ONLY to the initial step's departure date if it changes
     if (steps.length > 0 && steps[0].departureDate !== newConfig.targetDate) {
@@ -1606,6 +1655,10 @@ export default function RelocationSimulatorPage() {
                   setStartLon(lon);
                   if (name) setStartName(name);
                   saveDraft(steps, lat, lon, name || startName);
+                  saveUnifiedConfig({
+                    base_lat: lat,
+                    base_lon: lon
+                  });
                 }}
                 onStepDestinationChange={(index, lat, lon, name) => {
                   const nameToUse = name || steps[index].toName;
