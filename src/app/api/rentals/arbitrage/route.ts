@@ -306,7 +306,7 @@ export async function GET(request: Request) {
       prisma.rental_properties.findMany({
         where: whereClause,
         take: limit,
-        orderBy: { created_at: 'desc' }
+        orderBy: { id: 'desc' }
       }),
       prisma.rental_properties.count({
         where: whereClause
