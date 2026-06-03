@@ -461,9 +461,16 @@ export async function GET(request: Request) {
       const luckyDays_d = getLuckyDays(d);
       const holiday_d = isJapaneseHoliday(d);
 
+      const dateStr = d.toISOString().split('T')[0];
+      const zodiacs_d = getCurrentZodiac(new Date(dateStr), baseLon);
+      const isVoidTime_d = voidZodiacs.includes(zodiacs_d.yearZodiac) ||
+                           voidZodiacs.includes(zodiacs_d.monthZodiac) ||
+                           voidZodiacs.includes(zodiacs_d.dayZodiac);
+      const baziScore_d = !isNaN(birthLat) && !isNaN(birthLon) ? calculateBaziCompatibility(bDate, new Date(dateStr)) : 50;
+
       return {
         date: d,
-        dateStr: d.toISOString().split('T')[0],
+        dateStr,
         activeVectors: activeVectors_d,
         isDoyouHazard: isDoyouHazard_d,
         lunarPhaseScore: lunarPhaseScore_d,
@@ -471,7 +478,9 @@ export async function GET(request: Request) {
         rokuyo: rokuyo_d,
         luckyDays: luckyDays_d,
         holiday: holiday_d,
-        weekday: d.getDay()
+        weekday: d.getDay(),
+        isVoidTime: isVoidTime_d,
+        baziScore: baziScore_d
       };
     });
 
@@ -580,11 +589,7 @@ export async function GET(request: Request) {
           }
 
           // 3. Time-Gate (天中殺) check
-          const zodiacs_d = getCurrentZodiac(new Date(state.dateStr), baseLon);
-          const isVoidTime_d = voidZodiacs.includes(zodiacs_d.yearZodiac) ||
-                               voidZodiacs.includes(zodiacs_d.monthZodiac) ||
-                               voidZodiacs.includes(zodiacs_d.dayZodiac);
-          if (isVoidTime_d && actionIntent === 'MIGRATION') {
+          if (state.isVoidTime && actionIntent === 'MIGRATION') {
             voidPenalty = -100; // Time-Gate blocker!
           }
         }
@@ -592,7 +597,7 @@ export async function GET(request: Request) {
         // 4. Bazi vs Kigaku Intent-based dynamic weighting
         let blendedAstroScore = baseAstrologyScore;
         if (!isNaN(birthLat) && !isNaN(birthLon)) {
-          const baziScore = calculateBaziCompatibility(bDate, new Date(state.dateStr));
+          const baziScore = state.baziScore;
           if (actionIntent === 'MIGRATION' || actionIntent === 'BUSINESS') {
             blendedAstroScore = (baseAstrologyScore * 0.7) + (baziScore * 0.3);
           } else {
