@@ -522,6 +522,7 @@ export default function ArbitrageMapInner({
       <MapContainer
         center={center}
         zoom={zoom}
+        maxZoom={20}
         style={{ height: "100%", width: "100%", background: "#0c0c0e" }}
         zoomControl={false}
       >
@@ -534,6 +535,8 @@ export default function ArbitrageMapInner({
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+          maxZoom={20}
+          maxNativeZoom={19}
         />
 
         {/* Base Location Marker (Glowing Center) */}

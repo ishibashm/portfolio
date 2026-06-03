@@ -174,11 +174,14 @@ export default function PastMoveMap({
           key="past-moves-map-leaflet"
           center={fromPos}
           zoom={5}
+          maxZoom={20}
           style={{ height: '100%', width: '100%', background: '#09090b', zIndex: 0 }}
           attributionControl={false}
         >
           <TileLayer
             url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            maxZoom={20}
+            maxNativeZoom={19}
           />
           {/* Fit map view to show both coordinates dynamically */}
           <FitBounds fromPos={fromPos} toPos={toPos} />

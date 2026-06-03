@@ -405,7 +405,7 @@ export default function MagneticMapInner({
 
   return (
     <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80">
-      <MapContainer key="magnetic-map-container" center={center} zoom={13} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
+      <MapContainer key="magnetic-map-container" center={center} zoom={13} maxZoom={20} className="w-full h-full bg-zinc-950" zoomControl={false} preferCanvas={true}>
         <SyncMapCenter lat={lat} lon={lon} />
         <InvalidateMapSize />
         <ZoomListener onChangeZoom={setZoom} />
@@ -416,6 +416,8 @@ export default function MagneticMapInner({
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          maxZoom={20}
+          maxNativeZoom={19}
         />
 
         {clickedPos && (
