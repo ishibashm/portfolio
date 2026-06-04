@@ -192,7 +192,7 @@ export default function PastMoveMap({
             key={`tile-layer-${mapTheme}`}
             url={mapTheme === 'dark'
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
+              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
             maxZoom={20}
             maxNativeZoom={19}
           />

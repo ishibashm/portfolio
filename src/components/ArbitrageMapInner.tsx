@@ -550,7 +550,7 @@ export default function ArbitrageMapInner({
           key={`tile-layer-${mapTheme}`}
           url={mapTheme === 'dark'
             ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
+            : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
           attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
           maxZoom={20}
           maxNativeZoom={19}
