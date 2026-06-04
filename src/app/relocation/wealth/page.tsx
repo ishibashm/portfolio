@@ -160,7 +160,7 @@ export default function RegionalWealthPage() {
     }
   };
 
-  const fetchData = async (overrideParams?: any) => {
+  const fetchData = async (overrideParams?: any, shouldDispatchEvent = true) => {
     setLoading(true);
     setCurrentPage(1); // Reset page on new fetch
 
@@ -208,21 +208,23 @@ export default function RegionalWealthPage() {
         body: JSON.stringify(partialConfig)
       }).catch(e => console.error("Sync config failed on wealth page:", e));
 
-      // Dispatch global config event for instant cross-tab/cross-page synchronization
-      const event = new CustomEvent("metaphysical-config-updated", {
-        detail: {
-          targetDate: currentTargetDate,
-          useClassicalBoard: currentEngineType === "classical",
-          directionFilterMode: "composite",
-          actionIntent: "DEFAULT",
-          birthDate: currentBirthDate,
-          birthLat: currentBirthLat ? parseFloat(currentBirthLat) : undefined,
-          birthLon: currentBirthLon ? parseFloat(currentBirthLon) : undefined,
-          baseLat: currentBaseLat ? parseFloat(currentBaseLat) : undefined,
-          baseLon: currentBaseLon ? parseFloat(currentBaseLon) : undefined
-        }
-      });
-      window.dispatchEvent(event);
+      if (shouldDispatchEvent) {
+        // Dispatch global config event for instant cross-tab/cross-page synchronization
+        const event = new CustomEvent("metaphysical-config-updated", {
+          detail: {
+            targetDate: currentTargetDate,
+            useClassicalBoard: currentEngineType === "classical",
+            directionFilterMode: "composite",
+            actionIntent: "DEFAULT",
+            birthDate: currentBirthDate,
+            birthLat: currentBirthLat ? parseFloat(currentBirthLat) : undefined,
+            birthLon: currentBirthLon ? parseFloat(currentBirthLon) : undefined,
+            baseLat: currentBaseLat ? parseFloat(currentBaseLat) : undefined,
+            baseLon: currentBaseLon ? parseFloat(currentBaseLon) : undefined
+          }
+        });
+        window.dispatchEvent(event);
+      }
     }
 
     try {
@@ -360,9 +362,9 @@ export default function RegionalWealthPage() {
         layerMode: layer,
         useTrueNorth: trueNorth,
         lunarPhaseModifier: lunarPhase
-      });
+      }, false);
     } else {
-      fetchData();
+      fetchData(undefined, false);
     }
 
     const handleGlobalConfigUpdate = () => {
@@ -403,7 +405,7 @@ export default function RegionalWealthPage() {
             layerMode: layer,
             useTrueNorth: trueNorth,
             lunarPhaseModifier: lunarPhase
-          });
+          }, false);
         } catch (e) {}
       }
     };
