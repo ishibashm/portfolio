@@ -53,3 +53,41 @@ export async function extractAndSaveArticle(url: string) {
     };
   }
 }
+
+export async function getArticles() {
+  try {
+    const documents = await prisma.knowledgeDocument.findMany({
+      orderBy: { created_at: 'desc' }
+    });
+    return {
+      success: true,
+      data: documents.map(doc => ({
+        id: doc.id,
+        kb_id: `KB${doc.kb_id.toString().padStart(6, '0')}`,
+        title: doc.title,
+        content: doc.content,
+        domain: doc.domain,
+        category: doc.category,
+        type: doc.type,
+        status: doc.status,
+        priority: doc.priority,
+        created_at: doc.created_at.toISOString()
+      }))
+    };
+  } catch (error: any) {
+    console.error("Failed to fetch articles:", error);
+    return { success: false, error: error.message || "Failed to fetch articles" };
+  }
+}
+
+export async function deleteArticle(id: string) {
+  try {
+    await prisma.knowledgeDocument.delete({
+      where: { id }
+    });
+    return { success: true };
+  } catch (error: any) {
+    console.error("Failed to delete article:", error);
+    return { success: false, error: error.message || "Failed to delete article" };
+  }
+}
