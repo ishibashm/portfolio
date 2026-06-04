@@ -16,7 +16,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: 'Dates array is required' }, { status: 400 });
     }
 
-    const birthDateObj = birthDate ? new Date(birthDate) : null;
+    const parseSafeDate = (dateStr: string | null | undefined): Date => {
+      if (!dateStr) return new Date();
+      if (dateStr.includes('T') && !dateStr.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+        return new Date(dateStr + '+09:00');
+      }
+      return new Date(dateStr);
+    };
+
+    const birthDateObj = birthDate ? parseSafeDate(birthDate) : null;
     const voidZodiacArray = birthDateObj ? getPersonalVoidZodiac(birthDateObj) : [];
     const personalBaziData = birthDateObj ? baziEngine.calculate(birthDateObj, lon) : null;
 

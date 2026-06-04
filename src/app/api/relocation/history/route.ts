@@ -66,8 +66,16 @@ export async function GET(request: Request) {
     const directionFilterModeStr = searchParams.get('directionFilterMode');
     const actionIntentStr = searchParams.get('actionIntent');
 
+    const parseSafeDate = (dateStr: string | null | undefined): Date => {
+      if (!dateStr) return new Date();
+      if (dateStr.includes('T') && !dateStr.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+        return new Date(dateStr + '+09:00');
+      }
+      return new Date(dateStr);
+    };
+
     // 1. Resolve active config
-    let birthDate = new Date("1988-11-25T04:26");
+    let birthDate = parseSafeDate("1988-11-25T04:26");
     let useTrueNorth = false;
     let useClassical = false;
     let directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental' = 'composite';
@@ -76,7 +84,7 @@ export async function GET(request: Request) {
     try {
       const configContent = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
       const config = JSON.parse(configContent);
-      if (config.birth_date) birthDate = new Date(config.birth_date);
+      if (config.birth_date) birthDate = parseSafeDate(config.birth_date);
       if (config.use_true_north !== undefined) useTrueNorth = config.use_true_north;
       if (config.use_classical_board !== undefined) useClassical = config.use_classical_board;
       if (config.direction_filter_mode !== undefined) directionFilterMode = config.direction_filter_mode;

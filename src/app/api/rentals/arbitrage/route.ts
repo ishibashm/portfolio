@@ -32,32 +32,12 @@ function isNoiseStatus(status: string): boolean {
   return status.startsWith('NOISE') && status !== 'NOISE_VOID' && status !== 'NOISE_NODE';
 }
 
-function blendStatus(physical: string, classical: string): string {
-  const isPhysNoise = isNoiseStatus(physical);
-  const isClassNoise = isNoiseStatus(classical);
-  const isPhysOptimal = physical === 'OPTIMAL' || physical === 'OPTIMAL_REGULAR';
-  const isClassOptimal = classical === 'OPTIMAL' || classical === 'OPTIMAL_REGULAR';
-
-  // 1. NOISE (Physical) + OPTIMAL (Classical) ➔ WARNING
-  if (isPhysNoise && isClassOptimal) {
-    return 'WARNING';
+function parseSafeDate(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date();
+  if (dateStr.includes('T') && !dateStr.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + '+09:00');
   }
-  // 2. SAFE (Physical) + OPTIMAL (Classical) ➔ OPTIMAL
-  if (physical === 'SAFE' && isClassOptimal) {
-    return classical;
-  }
-  // 3. NOISE (either) + SAFE (either) ➔ NOISE
-  if (isPhysNoise && classical === 'SAFE') {
-    return physical;
-  }
-  if (isClassNoise && physical === 'SAFE') {
-    return classical;
-  }
-  // 4. Both are noise: return the physical noise
-  if (isPhysNoise && isClassNoise) {
-    return physical;
-  }
-  return physical === 'SAFE' ? classical : physical;
+  return new Date(dateStr);
 }
 
 function calculateBaziCompatibility(bDate: Date, targetDate: Date): number {
@@ -183,13 +163,7 @@ export async function GET(request: Request) {
   const maxLon = parseFloat(searchParams.get('maxLon') || 'NaN');
 
   const targetDateStr = searchParams.get('targetDate') || '';
-  let targetDate = new Date();
-  if (targetDateStr) {
-    const parsedDate = new Date(targetDateStr);
-    if (!isNaN(parsedDate.getTime())) {
-      targetDate = parsedDate;
-    }
-  }
+  let targetDate = parseSafeDate(targetDateStr);
 
   // 月相コンディションの計算
   let lunarPhaseScore = 0;
@@ -205,10 +179,7 @@ export async function GET(request: Request) {
   // 1. 環境・運気エンジンの初期化
   const env = getSystemEnvironment(targetDate);
   
-  let bDate = new Date();
-  if (birthDateStr) {
-    bDate = new Date(birthDateStr);
-  }
+  let bDate = parseSafeDate(birthDateStr);
 
   // アストロデータの計算準備
   let birthGst = 0;
@@ -382,45 +353,7 @@ export async function GET(request: Request) {
         tendoDir_d = vectorData_class.tendoDirection;
         isDoyouHazard_d = vectorData_class.doyouState?.isDoyouHazard || false;
 
-        // Compute Physical Board for blending
-        const yB_phys = generateBoard(env_d.yearStar);
-        const mB_phys = generateBoard(env_d.monthStar);
-        const dB_phys = generateBoard(env_d.dayStar);
-
-        const baseCollision_phys = calculateVectorCollision(
-          honmeiStar.physical,
-          yB_phys, mB_phys, dB_phys,
-          voidZodiacs,
-          env_d.raw.lunarNode,
-          actionIntent,
-          d,
-          baseLon,
-          undefined,
-          nodeMapping
-        );
-
-        const vectorData_phys = filterCollisionByMode(
-          baseCollision_phys,
-          honmeiStar.physical,
-          null,
-          voidZodiacs,
-          directionFilterMode,
-          yB_phys, mB_phys, dB_phys
-        );
-
-        let activePhys: Partial<Record<Direction, string>>;
-        if (layerMode === 'year') activePhys = vectorData_phys.yearLayer;
-        else if (layerMode === 'month') activePhys = vectorData_phys.monthLayer;
-        else if (layerMode === 'day') activePhys = vectorData_phys.dayLayer;
-        else activePhys = vectorData_phys.finalVectors;
-
-        // Blend physical and classical
-        const blended: Partial<Record<Direction, string>> = {};
-        const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-        for (const dir of directions) {
-          blended[dir] = blendStatus(activePhys[dir] || 'SAFE', activeClass[dir] || 'SAFE');
-        }
-        activeVectors_d = blended;
+        activeVectors_d = activeClass;
       } else {
         // Pure Physical Board
         const yB_phys = generateBoard(env_d.yearStar);

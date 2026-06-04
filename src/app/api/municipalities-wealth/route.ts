@@ -17,6 +17,14 @@ import { getGeomagneticData } from '@/utils/geomagnetism';
 
 export const dynamic = 'force-dynamic';
 
+function parseSafeDate(dateStr: string | null | undefined): Date {
+  if (!dateStr) return new Date();
+  if (dateStr.includes('T') && !dateStr.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + '+09:00');
+  }
+  return new Date(dateStr);
+}
+
 function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (val: number) => val * Math.PI / 180;
   const toDeg = (val: number) => val * 180 / Math.PI;
@@ -106,12 +114,12 @@ export async function GET(request: Request) {
   if (!birthDateStr) birthDateStr = '2000-01-01T12:00'; 
   
   // datetime-localが秒を含まない場合があるため、有効なDate形式にする
-  const bDate = new Date(birthDateStr);
+  const bDate = parseSafeDate(birthDateStr);
   if (isNaN(bDate.getTime())) {
     return NextResponse.json({ success: false, error: 'Invalid birthDate' }, { status: 400 });
   }
 
-  const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+  const targetDate = parseSafeDate(targetDateStr);
 
   // 月相コンディションの計算
   let lunarPhaseScore = 0;

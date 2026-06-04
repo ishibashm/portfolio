@@ -263,14 +263,7 @@ export default function RegionalWealthPage() {
 
         // Handle datetime-local which expects "YYYY-MM-DDTHH:mm" format
         if (!birthDate && json.metadata.birthDate) {
-          try {
-            const d = new Date(json.metadata.birthDate);
-            if (!isNaN(d.getTime())) {
-              const tzoffset = d.getTimezoneOffset() * 60000;
-              const localISOTime = (new Date(d.getTime() - tzoffset)).toISOString().slice(0, 16);
-              setBirthDate(localISOTime);
-            }
-          } catch (e) { }
+          setBirthDate(normalizeDateTimeLocal(json.metadata.birthDate));
         }
       }
     } catch (err: any) {
