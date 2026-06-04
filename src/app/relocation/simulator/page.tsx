@@ -105,10 +105,22 @@ function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): num
   return (bearing + 360) % 360;
 }
 
-function bearingToDirection(bearing: number): Direction {
-  const index = Math.floor(((bearing + 22.5) % 360) / 45);
-  const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  return dirs[index];
+function bearingToDirection(bearing: number, useClassical: boolean = false): Direction {
+  const b = (bearing % 360 + 360) % 360;
+  if (useClassical) {
+    if (b >= 345 || b < 15) return 'N';
+    if (b >= 15 && b < 75) return 'NE';
+    if (b >= 75 && b < 105) return 'E';
+    if (b >= 105 && b < 165) return 'SE';
+    if (b >= 165 && b < 195) return 'S';
+    if (b >= 195 && b < 255) return 'SW';
+    if (b >= 255 && b < 285) return 'W';
+    return 'NW';
+  } else {
+    const index = Math.floor(((b + 22.5) % 360) / 45);
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[index];
+  }
 }
 
 const dirOpposites: Record<string, string> = {
@@ -116,16 +128,31 @@ const dirOpposites: Record<string, string> = {
   'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
 };
 
-const dirAngleRanges: Record<string, [number, number]> = {
-  'N': [337.5, 22.5],
-  'NE': [22.5, 67.5],
-  'E': [67.5, 112.5],
-  'SE': [112.5, 157.5],
-  'S': [157.5, 202.5],
-  'SW': [202.5, 247.5],
-  'W': [247.5, 292.5],
-  'NW': [292.5, 337.5]
-};
+function getDirAngleRanges(useClassical: boolean = false): Record<string, [number, number]> {
+  if (useClassical) {
+    return {
+      'N': [345, 15],
+      'NE': [15, 75],
+      'E': [75, 105],
+      'SE': [105, 165],
+      'S': [165, 195],
+      'SW': [195, 255],
+      'W': [255, 285],
+      'NW': [285, 345]
+    };
+  } else {
+    return {
+      'N': [337.5, 22.5],
+      'NE': [22.5, 67.5],
+      'E': [67.5, 112.5],
+      'SE': [112.5, 157.5],
+      'S': [157.5, 202.5],
+      'SW': [202.5, 247.5],
+      'W': [247.5, 292.5],
+      'NW': [292.5, 337.5]
+    };
+  }
+}
 
 function intersectRays(
   lat1: number, lon1: number, bearing1: number,
@@ -257,7 +284,7 @@ export default function RelocationSimulatorPage() {
         const rad = (bearingVal * Math.PI) / 180;
         updatedSteps[0].toLat = startLat + Math.cos(rad) * 0.9;
         updatedSteps[0].toLon = startLon + Math.sin(rad) * 0.9;
-        updatedSteps[0].toName = `${bearingToDirection(bearingVal)}方面の目的地`;
+        updatedSteps[0].toName = `${bearingToDirection(bearingVal, useClassical)}方面の目的地`;
       }
 
       setSteps(updatedSteps);
@@ -364,7 +391,7 @@ export default function RelocationSimulatorPage() {
         decl = getApproximateDeclination(currentBaseLat, currentBaseLon);
       }
       const adjustedBearing = (rawBearing - decl + 360) % 360;
-      const direction = bearingToDirection(adjustedBearing);
+      const direction = bearingToDirection(adjustedBearing, useClassical);
 
       // Metaphysical Evaluation
       const env = getCurrentEnvironmentalFrequencies(depDate, currentBaseLon);
@@ -567,12 +594,12 @@ export default function RelocationSimulatorPage() {
       // 1. Check A -> C direction
       const rawBearingC = getBearing(latA, lonA, cand.lat, cand.lon);
       const adjustedC = (rawBearingC - declA + 360) % 360;
-      const dirC = bearingToDirection(adjustedC);
+      const dirC = bearingToDirection(adjustedC, useClassical);
 
       // 2. Check C -> B direction
       const rawBearingB = getBearing(cand.lat, cand.lon, latB, lonB);
       const adjustedB = (rawBearingB - declB + 360) % 360;
-      const dirB = bearingToDirection(adjustedB);
+      const dirB = bearingToDirection(adjustedB, useClassical);
 
       const envA = getCurrentEnvironmentalFrequencies(new Date(currentStep.departureDate), lonA);
       const yB_A = generateBoard(useClassical ? envA.classicalYearStar : envA.yearStar);
@@ -687,15 +714,17 @@ export default function RelocationSimulatorPage() {
       declB = getApproximateDeclination(latB, lonB);
     }
 
+    const angleRanges = getDirAngleRanges(useClassical);
+
     safeDirs.forEach(d1 => {
-      const rangeA = dirAngleRanges[d1];
+      const rangeA = angleRanges[d1];
       if (!rangeA) return;
       const angleA1 = (rangeA[0] + declA) % 360;
       const angleA2 = (rangeA[1] + declA) % 360;
 
       safeDirs.forEach(d2 => {
         const d2Opp = dirOpposites[d2];
-        const rangeB = dirAngleRanges[d2Opp];
+        const rangeB = angleRanges[d2Opp];
         if (!rangeB) return;
         const angleB1 = (rangeB[0] + declB) % 360;
         const angleB2 = (rangeB[1] + declB) % 360;
@@ -720,11 +749,11 @@ export default function RelocationSimulatorPage() {
           candidates.forEach(cand => {
             const bearingFromA = getBearing(latA, lonA, cand.lat, cand.lon);
             const adjA = (bearingFromA - declA + 360) % 360;
-            const dirFromA = bearingToDirection(adjA);
+            const dirFromA = bearingToDirection(adjA, useClassical);
 
             const bearingToB = getBearing(cand.lat, cand.lon, latB, lonB);
             const adjB = (bearingToB - declB + 360) % 360;
-            const dirToB = bearingToDirection(adjB);
+            const dirToB = bearingToDirection(adjB, useClassical);
 
             if (dirFromA === d1 && dirToB === d2) {
               recommendedPrefectures.add(cand.name);
@@ -766,7 +795,7 @@ export default function RelocationSimulatorPage() {
           decl = getApproximateDeclination(step.fromLat, step.fromLon);
         }
         const adjustedBearing = (rawBearing - decl + 360) % 360;
-        const direction = bearingToDirection(adjustedBearing);
+        const direction = bearingToDirection(adjustedBearing, useClassical);
 
         const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
         const yearBoard = generateBoard(env.classicalYearStar);
@@ -828,7 +857,7 @@ export default function RelocationSimulatorPage() {
           decl = getApproximateDeclination(step.fromLat, step.fromLon);
         }
         const adjustedBearing = (rawBearing - decl + 360) % 360;
-        const direction = bearingToDirection(adjustedBearing);
+        const direction = bearingToDirection(adjustedBearing, useClassical);
 
         const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
         const yearBoard = generateBoard(env.classicalYearStar);
@@ -1406,7 +1435,7 @@ export default function RelocationSimulatorPage() {
                     decl = getApproximateDeclination(step.fromLat, step.fromLon);
                   }
                   const adjustedBearing = (rawBearing - decl + 360) % 360;
-                  const direction = bearingToDirection(adjustedBearing);
+                  const direction = bearingToDirection(adjustedBearing, useClassical);
 
                   const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
                   const yearBoard = generateBoard(env.classicalYearStar);
@@ -1576,7 +1605,7 @@ export default function RelocationSimulatorPage() {
                         <div className="flex items-center gap-1.5">
                           <span>方位角:</span>
                           <span className="text-indigo-400 font-bold">
-                            {bearingToDirection(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))} ({Math.round(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))}°)
+                            {bearingToDirection(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon), useClassical)} ({Math.round(getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon))}°)
                           </span>
                         </div>
                         {timingEval && (

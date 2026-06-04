@@ -57,6 +57,7 @@ interface ArbitrageMapInnerProps {
   prefecture?: string;
   isTransitioningDate?: boolean;
   showListView?: boolean;
+  useClassical?: boolean;
   onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }
@@ -197,6 +198,7 @@ export default function ArbitrageMapInner({
   prefecture,
   isTransitioningDate = false,
   showListView = false,
+  useClassical = false,
   onDateChange,
   onBoundsChange
 }: ArbitrageMapInnerProps) {
@@ -205,9 +207,19 @@ export default function ArbitrageMapInner({
   const [currentBounds, setCurrentBounds] = useState<{ minLat: number; maxLat: number; minLon: number; maxLon: number } | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('map_theme') as 'dark' | 'light';
+    if (saved) setMapTheme(saved);
+
+    const handleThemeChange = () => {
+      const current = localStorage.getItem('map_theme') as 'dark' | 'light';
+      if (current) setMapTheme(current);
+    };
+    window.addEventListener('mapThemeChanged', handleThemeChange);
+
     fetch("/prefectures.geojson")
       .then(res => {
         if (!res.ok) throw new Error("Failed to load prefectures.geojson");
@@ -215,6 +227,8 @@ export default function ArbitrageMapInner({
       })
       .then(data => setGeoData(data))
       .catch(err => console.error("Error loading prefectures.geojson:", err));
+
+    return () => window.removeEventListener('mapThemeChanged', handleThemeChange);
   }, []);
 
   const prefCounts = useMemo(() => {
@@ -464,7 +478,7 @@ export default function ArbitrageMapInner({
       // Draw wedge shape polygon extending 30km
       const points: [number, number][] = [[baseLat, baseLon]];
       const isCorner = ["NE", "SE", "SW", "NW"].includes(d.dir);
-      const halfWidth = isCorner ? 30 : 15;
+      const halfWidth = useClassical ? (isCorner ? 30 : 15) : 22.5;
       
       for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
         points.push(getDestination(baseLat, baseLon, baseBearing + offset, 30));
@@ -507,7 +521,7 @@ export default function ArbitrageMapInner({
         </React.Fragment>
       );
     });
-  }, [sectors, center, baseLat, baseLon, rotationAngle, getStyleForVector]);
+  }, [sectors, center, baseLat, baseLon, rotationAngle, getStyleForVector, useClassical]);
 
   if (!mounted) {
     return (
@@ -531,13 +545,31 @@ export default function ArbitrageMapInner({
         <InvalidateMapSize />
         <AutoFitBounds properties={properties} center={center} prefecture={prefecture} />
         
-        {/* OpenStreetMap / CartoDB Dark Matter Tiles */}
+        {/* OpenStreetMap / CartoDB Tiles (Theme Switchable) */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
+          key={`tile-layer-${mapTheme}`}
+          url={mapTheme === 'dark'
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
           maxZoom={20}
           maxNativeZoom={19}
         />
+
+        {/* Theme Switcher Button */}
+        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto">
+          <button
+            onClick={() => {
+              const nextTheme = mapTheme === 'dark' ? 'light' : 'dark';
+              setMapTheme(nextTheme);
+              localStorage.setItem('map_theme', nextTheme);
+              window.dispatchEvent(new Event('mapThemeChanged'));
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-zinc-950/90 text-zinc-200 border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg active:scale-95 cursor-pointer"
+          >
+            {mapTheme === 'dark' ? '☀️ ライトマップ' : '🌙 ダークマップ'}
+          </button>
+        </div>
 
         {/* Base Location Marker (Glowing Center) */}
         {zoom >= 10 && (

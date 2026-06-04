@@ -234,7 +234,10 @@ export default function RegionalWealthPage() {
       if (currentBirthLon) params.append("birthLon", currentBirthLon);
       if (currentBaseLat) params.append("baseLat", currentBaseLat);
       if (currentBaseLon) params.append("baseLon", currentBaseLon);
-      if (currentEngineType) params.append("engineType", currentEngineType);
+      if (currentEngineType) {
+        params.append("engineType", currentEngineType);
+        params.append("nodeMapping", currentEngineType === 'classical' ? 'traditional' : 'physical');
+      }
       if (currentLayerMode) params.append("layerMode", currentLayerMode);
       if (currentUseTrueNorth) params.append("useTrueNorth", "true");
       params.append("lunarPhaseModifier", currentLunarPhaseModifier.toString());

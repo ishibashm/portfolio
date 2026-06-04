@@ -33,6 +33,7 @@ interface MapInnerProps {
   useTrueNorth?: boolean;
   properties?: any[];
   onSelectTarget?: (lat: number, lon: number) => void;
+  nodeMapping?: 'traditional' | 'physical';
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -120,13 +121,26 @@ export default function MagneticMapInner({
   activeLayerMode = 'final',
   useTrueNorth = false,
   properties = [],
-  onSelectTarget
+  onSelectTarget,
+  nodeMapping = 'traditional'
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   const [clickedPos, setClickedPos] = React.useState<[number, number] | null>(null);
   const [zoom, setZoom] = React.useState(13);
+  const [mapTheme, setMapTheme] = React.useState<'dark' | 'light'>('dark');
+
   useEffect(() => {
     setMounted(true);
+    const saved = localStorage.getItem('map_theme') as 'dark' | 'light';
+    if (saved) setMapTheme(saved);
+
+    const handleThemeChange = () => {
+      const current = localStorage.getItem('map_theme') as 'dark' | 'light';
+      if (current) setMapTheme(current);
+    };
+
+    window.addEventListener('mapThemeChanged', handleThemeChange);
+    return () => window.removeEventListener('mapThemeChanged', handleThemeChange);
   }, []);
 
   const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
@@ -163,8 +177,10 @@ export default function MagneticMapInner({
 
   // 1. Memoize boundaries
   const boundaries = React.useMemo(() => {
-    return [15, 75, 105, 165, 195, 255, 285, 345];
-  }, []);
+    return nodeMapping === 'physical'
+      ? [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]
+      : [15, 75, 105, 165, 195, 255, 285, 345];
+  }, [nodeMapping]);
 
   // 2. Memoize vector styles based on status and kpIndex
   const getStyleForVector = React.useCallback((status: string) => {
@@ -216,7 +232,7 @@ export default function MagneticMapInner({
 
       const points: [number, number][] = [center];
       const isCorner = ['NE', 'SE', 'SW', 'NW'].includes(d.dir);
-      const halfWidth = isCorner ? 30 : 15;
+      const halfWidth = nodeMapping === 'physical' ? 22.5 : (isCorner ? 30 : 15);
       for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
@@ -297,16 +313,16 @@ export default function MagneticMapInner({
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">環境:</span>
-                    <span className={y.includes('NOISE') || m.includes('NOISE') || dLayer.includes('NOISE') ? 'text-red-500' : 'text-emerald-500'}>
-                      {formatLayer(y)} / {formatLayer(m)}
-                    </span>
+                     <span className="text-zinc-500">環境:</span>
+                     <span className={y.includes('NOISE') || m.includes('NOISE') || dLayer.includes('NOISE') ? 'text-red-500' : 'text-emerald-500'}>
+                       {formatLayer(y)} / {formatLayer(m)}
+                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">個人:</span>
-                    <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#a855f7]' : 'text-emerald-500'}>
-                      {formatLayer(dLayer)}
-                    </span>
+                     <span className="text-zinc-500">個人:</span>
+                     <span className={d.status.includes('HONMEI') || d.status.includes('TEKI') ? 'text-[#a855f7]' : 'text-emerald-500'}>
+                       {formatLayer(dLayer)}
+                     </span>
                   </div>
                   <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
@@ -338,7 +354,7 @@ export default function MagneticMapInner({
         </React.Fragment>
       );
     });
-  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers, activeLayerMode, zoom]);
+  }, [sectors, getStyleForVector, magNorthBearing, center, lat, lon, layers, hudLayers, activeLayerMode, zoom, nodeMapping]);
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {
@@ -414,11 +430,31 @@ export default function MagneticMapInner({
           onSelectTarget?.(lat, lng);
         }} />
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          key={`tile-layer-${mapTheme}`}
+          url={mapTheme === 'dark'
+            ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
+          attribution={mapTheme === 'dark'
+            ? '&copy; <a href="https://carto.com/">CARTO</a>'
+            : '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'}
           maxZoom={20}
           maxNativeZoom={19}
         />
+
+        {/* Theme Switcher Button */}
+        <div className="absolute top-4 left-4 z-[1000] pointer-events-auto">
+          <button
+            onClick={() => {
+              const nextTheme = mapTheme === 'dark' ? 'light' : 'dark';
+              setMapTheme(nextTheme);
+              localStorage.setItem('map_theme', nextTheme);
+              window.dispatchEvent(new Event('mapThemeChanged'));
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-zinc-950/90 text-zinc-200 border-zinc-800/80 hover:bg-zinc-900 transition-colors shadow-lg active:scale-95 cursor-pointer"
+          >
+            {mapTheme === 'dark' ? '☀️ ライトマップ' : '🌙 ダークマップ'}
+          </button>
+        </div>
 
         {clickedPos && (
           <Marker position={clickedPos}>

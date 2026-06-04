@@ -479,6 +479,7 @@ export const SolarTimeClock = () => {
           wParams.append("birthDate", birthDate);
           wParams.append("targetDate", dateStr);
           wParams.append("engineType", useClassicalBoard ? "classical" : "physical");
+          wParams.append("nodeMapping", useClassicalBoard ? "traditional" : "physical");
           wParams.append("layerMode", activeLayerMode);
           wParams.append("useTrueNorth", useTrueNorth.toString());
           wParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
@@ -499,6 +500,7 @@ export const SolarTimeClock = () => {
           aParams.append("radiusKm", "all");
           aParams.append("prefecture", "all");
           aParams.append("useClassical", useClassicalBoard.toString());
+          aParams.append("nodeMapping", useClassicalBoard ? "traditional" : "physical");
           aParams.append("layerMode", activeLayerMode);
           aParams.append("useTrueNorth", useTrueNorth.toString());
           aParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
@@ -806,14 +808,20 @@ export const SolarTimeClock = () => {
 
       const getDir = (bearing: number): Direction => {
         const b = (bearing % 360 + 360) % 360;
-        if (b >= 345 || b < 15) return 'N';
-        if (b >= 15 && b < 75) return 'NE';
-        if (b >= 75 && b < 105) return 'E';
-        if (b >= 105 && b < 165) return 'SE';
-        if (b >= 165 && b < 195) return 'S';
-        if (b >= 195 && b < 255) return 'SW';
-        if (b >= 255 && b < 285) return 'W';
-        return 'NW';
+        if (useClassicalBoard) {
+          if (b >= 345 || b < 15) return 'N';
+          if (b >= 15 && b < 75) return 'NE';
+          if (b >= 75 && b < 105) return 'E';
+          if (b >= 105 && b < 165) return 'SE';
+          if (b >= 165 && b < 195) return 'S';
+          if (b >= 195 && b < 255) return 'SW';
+          if (b >= 255 && b < 285) return 'W';
+          return 'NW';
+        } else {
+          const index = Math.floor(((b + 22.5) % 360) / 45);
+          const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+          return dirs[index];
+        }
       };
 
       return {

@@ -27,16 +27,22 @@ function getBearing(lat1: number, lon1: number, lat2: number, lon2: number): num
   return (brng + 360) % 360;
 }
 
-function getDirectionFromBearing(brng: number): Direction {
+function getDirectionFromBearing(brng: number, nodeMapping: 'traditional' | 'physical' = 'traditional'): Direction {
   const b = (brng % 360 + 360) % 360;
-  if (b >= 345 || b < 15) return 'N';
-  if (b >= 15 && b < 75) return 'NE';
-  if (b >= 75 && b < 105) return 'E';
-  if (b >= 105 && b < 165) return 'SE';
-  if (b >= 165 && b < 195) return 'S';
-  if (b >= 195 && b < 255) return 'SW';
-  if (b >= 255 && b < 285) return 'W';
-  return 'NW';
+  if (nodeMapping === 'physical') {
+    const index = Math.floor(((b + 22.5) % 360) / 45);
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[index];
+  } else {
+    if (b >= 345 || b < 15) return 'N';
+    if (b >= 15 && b < 75) return 'NE';
+    if (b >= 75 && b < 105) return 'E';
+    if (b >= 105 && b < 165) return 'SE';
+    if (b >= 165 && b < 195) return 'S';
+    if (b >= 195 && b < 255) return 'SW';
+    if (b >= 255 && b < 285) return 'W';
+    return 'NW';
+  }
 }
 
 // 角度の差を計算する関数（円弧上の最短距離）
@@ -73,7 +79,8 @@ export async function GET(request: Request) {
   const engineType = searchParams.get('engineType') || 'physical'; // 'physical' or 'classical'
   const layerMode = searchParams.get('layerMode') || 'final'; // 'final', 'year', 'month', 'day'
   const useTrueNorth = searchParams.get('useTrueNorth') === 'true';
-  const nodeMapping = (searchParams.get('nodeMapping') || 'traditional') as 'traditional' | 'physical';
+  const useClassical = engineType === 'classical';
+  const nodeMapping = (searchParams.get('nodeMapping') || (useClassical ? 'traditional' : 'physical')) as 'traditional' | 'physical';
   const lunarPhaseModifier = searchParams.get('lunarPhaseModifier') !== 'false';
 
   // Fallback to local config if parameters are missing
@@ -133,8 +140,6 @@ export async function GET(request: Request) {
   const env = getCurrentEnvironmentalFrequencies(targetDate);
   const voidZodiacs = getPersonalVoidZodiac(bDate);
   
-  const useClassical = engineType === 'classical';
-  
   const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
   const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
   const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
@@ -185,11 +190,11 @@ export async function GET(request: Request) {
 
       if (m.lat && m.lon) {
         trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);
-        direction = getDirectionFromBearing(trueBearing); // True direction (地図上の方位)
+        direction = getDirectionFromBearing(trueBearing, nodeMapping); // True direction (地図上の方位)
         
         // 偏角の補正 (動的に取得した値を使用)
         magneticBearing = (trueBearing - declination + 360) % 360;
-        magneticDirection = getDirectionFromBearing(magneticBearing);
+        magneticDirection = getDirectionFromBearing(magneticBearing, nodeMapping);
 
         // 1. 九星気学による方位スコア計算
         const targetDirection = useTrueNorth ? direction : magneticDirection;

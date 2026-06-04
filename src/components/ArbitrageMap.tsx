@@ -26,6 +26,7 @@ interface ArbitrageMapProps {
   prefecture?: string;
   isTransitioningDate?: boolean;
   showListView?: boolean;
+  useClassical?: boolean;
   onDateChange?: (date: string) => void;
   onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
 }

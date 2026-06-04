@@ -93,9 +93,19 @@ export default function SimulatorMap({
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
     setIsMounted(true);
+    const saved = localStorage.getItem('map_theme') as 'dark' | 'light';
+    if (saved) setMapTheme(saved);
+
+    const handleThemeChange = () => {
+      const current = localStorage.getItem('map_theme') as 'dark' | 'light';
+      if (current) setMapTheme(current);
+    };
+    window.addEventListener('mapThemeChanged', handleThemeChange);
+    return () => window.removeEventListener('mapThemeChanged', handleThemeChange);
   }, []);
 
   const startPos: [number, number] = useMemo(() => [startLat || 35.6895, startLon || 139.6917], [startLat, startLon]);
@@ -182,7 +192,10 @@ export default function SimulatorMap({
           attributionControl={false}
         >
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            key={`tile-layer-${mapTheme}`}
+            url={mapTheme === 'dark'
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"}
             maxZoom={20}
             maxNativeZoom={19}
           />
@@ -263,6 +276,21 @@ export default function SimulatorMap({
           ))}
 
         </MapContainer>
+
+        {/* Theme Switcher Button */}
+        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto">
+          <button
+            onClick={() => {
+              const nextTheme = mapTheme === 'dark' ? 'light' : 'dark';
+              setMapTheme(nextTheme);
+              localStorage.setItem('map_theme', nextTheme);
+              window.dispatchEvent(new Event('mapThemeChanged'));
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/90 text-zinc-200 border border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+          >
+            {mapTheme === 'dark' ? '☀️ ライトマップ' : '🌙 ダークマップ'}
+          </button>
+        </div>
 
         {/* Legend Overlay HUD */}
         <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-black/90 border border-zinc-800 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-zinc-400">

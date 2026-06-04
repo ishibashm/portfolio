@@ -1338,6 +1338,7 @@ export default function ArbitrageScannerPage() {
               prefecture={prefecture}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}
+              useClassical={useClassical}
               onDateChange={handleDateChange}
               onBoundsChange={(b) => {
                 setMapBounds(prev => {

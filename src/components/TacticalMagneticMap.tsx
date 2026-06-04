@@ -219,6 +219,7 @@ export function TacticalMagneticMapComponent({
               useTrueNorth={useTrueNorth}
               properties={properties}
               onSelectTarget={onSelectTarget}
+              nodeMapping={isPhysical ? 'physical' : 'traditional'}
              />
          </div>
 
