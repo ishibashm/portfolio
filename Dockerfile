@@ -1,6 +1,13 @@
 # syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 
+# Install Python 3, pip, and pre-compiled Pandas, Numpy, and LXML
+RUN apk add --no-cache python3 py3-pip py3-pandas py3-numpy py3-lxml && \
+    ln -sf /usr/bin/python3 /usr/bin/python
+
+# Install yfinance in system packages
+RUN pip install --no-cache-dir --break-system-packages yfinance
+
 # Install dependencies only when needed
 FROM base AS deps
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
