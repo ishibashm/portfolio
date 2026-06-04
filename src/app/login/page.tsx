@@ -9,13 +9,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [nextUrl, setNextUrl] = useState("/dashboard");
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setCurrentUser(user);
+    });
+
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const err = params.get("error");
       if (err) {
         setAuthError(decodeURIComponent(err));
+      }
+      const next = params.get("next");
+      if (next) {
+        setNextUrl(next);
       }
     }
   }, []);
@@ -25,7 +36,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/rentals`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
       },
     });
 
@@ -57,7 +68,7 @@ export default function LoginPage() {
         setAuthError(error.message);
       } else {
         // Success redirect
-        window.location.href = "/rentals";
+        window.location.href = nextUrl;
       }
     } catch (err: any) {
       setAuthError(err.message || "ログイン中にエラーが発生しました。");
@@ -91,7 +102,7 @@ export default function LoginPage() {
       } else {
         setSuccessMessage("登録が完了しました！自動ログインします...");
         setTimeout(() => {
-          window.location.href = "/rentals";
+          window.location.href = nextUrl;
         }, 1500);
       }
     } catch (err: any) {
@@ -114,6 +125,31 @@ export default function LoginPage() {
         <p className="text-zinc-500 text-xs text-center mb-8 font-mono">
           REAL ESTATE ARBITRAGE & WEALTH PORTAL
         </p>
+
+        {/* Logged in User Status */}
+        {currentUser && (
+          <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 mb-6 text-xs text-zinc-400 space-y-2">
+            <div>現在ログイン中のアカウント:</div>
+            <div className="font-semibold text-zinc-200 break-all">{currentUser.email}</div>
+            <div className={`font-bold ${currentUser.email?.toLowerCase() === "ishibashm@gmail.com" ? "text-emerald-400" : "text-rose-400"}`}>
+              {currentUser.email?.toLowerCase() === "ishibashm@gmail.com" ? "管理者として認証されています" : "このアカウントはアクセス権限（管理権限）がありません"}
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                setCurrentUser(null);
+                setAuthError(null);
+                setSuccessMessage(null);
+                window.location.reload();
+              }}
+              className="mt-2 text-indigo-400 hover:text-indigo-300 underline font-medium cursor-pointer"
+            >
+              ログアウトして別のアカウントでログイン
+            </button>
+          </div>
+        )}
 
         {/* OAuth Provider */}
         <button
@@ -200,7 +236,7 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               document.cookie = "dev_bypass_user=ishibashm@gmail.com; path=/; max-age=31536000";
-              window.location.href = "/rentals";
+              window.location.href = nextUrl;
             }}
             className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-lg active:scale-[0.98] transition-all"
           >

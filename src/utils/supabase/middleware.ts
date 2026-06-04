@@ -47,15 +47,16 @@ export async function updateSession(request: NextRequest) {
   }
 
   const adminEmail = process.env.ADMIN_EMAIL;
-  const isAuthorized = !adminEmail || user?.email === adminEmail;
+  const isAuthorized = !adminEmail || (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
 
-  const protectedRoutes = ['/research', '/knowledge', '/x-viewer', '/visualizer', '/omni', '/dashboard', '/relocation/history'];
+  const protectedRoutes = ['/research', '/knowledge', '/x-viewer', '/visualizer', '/omni', '/dashboard', '/relocation', '/rentals', '/metaphysical', '/trends'];
   const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
 
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
+    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
@@ -64,6 +65,7 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('error', 'Unauthorized access.');
+    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
