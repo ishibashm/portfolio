@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -26,4 +26,26 @@ export async function createClient() {
       },
     }
   );
+
+  if (process.env.NODE_ENV === 'development') {
+    const originalGetUser = client.auth.getUser.bind(client.auth);
+    client.auth.getUser = async (token?: string) => {
+      const bypassEmail = cookieStore.get('dev_bypass_user')?.value;
+      if (bypassEmail) {
+        return {
+          data: {
+            user: {
+              id: 'dev-bypass-id',
+              email: bypassEmail,
+              role: 'authenticated',
+            } as any
+          },
+          error: null
+        };
+      }
+      return originalGetUser(token);
+    };
+  }
+
+  return client;
 }

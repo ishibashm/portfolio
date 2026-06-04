@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
@@ -9,6 +9,16 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get("error");
+      if (err) {
+        setAuthError(decodeURIComponent(err));
+      }
+    }
+  }, []);
 
   const handleGoogleLogin = async () => {
     const supabase = createClient();
@@ -184,7 +194,21 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <p className="text-[10px] text-zinc-600 text-center mt-8 font-mono leading-relaxed max-w-[280px]">
+        {/* Dev Bypass Section */}
+        <div className="w-full mt-4 pt-4 border-t border-zinc-800/60 flex flex-col items-center">
+          <button
+            type="button"
+            onClick={() => {
+              document.cookie = "dev_bypass_user=ishibashm@gmail.com; path=/; max-age=31536000";
+              window.location.href = "/rentals";
+            }}
+            className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-lg active:scale-[0.98] transition-all"
+          >
+            ⚡ 開発用バイパスでログイン (ishibashm@gmail.com)
+          </button>
+        </div>
+
+        <p className="text-[10px] text-zinc-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
           ローカル開発環境で動作しています。管理者アドレス ({process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashm@gmail.com"}) などで登録し利用してください。
         </p>
       </div>
