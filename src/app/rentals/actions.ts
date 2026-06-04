@@ -88,9 +88,9 @@ export async function addSampleData() {
 }
 
 export async function triggerRealScrape() {
-  const gasUrl = process.env.GAS_WEBAPP_URL;
+  const gasUrl = process.env.GAS_RENTALS_WEBAPP_URL || process.env.GAS_WEBAPP_URL;
   if (!gasUrl) {
-    return { success: false, error: "GAS_WEBAPP_URL environment variable is not configured." };
+    return { success: false, error: "GAS_RENTALS_WEBAPP_URL or GAS_WEBAPP_URL environment variable is not configured." };
   }
 
   try {
@@ -99,7 +99,22 @@ export async function triggerRealScrape() {
       return { success: false, error: `GAS Web App returned status ${res.status}` };
     }
     const data = await res.json();
-    return data; // { success: true/false, ...}
+    if (data && typeof data === 'object') {
+      if ('success' in data) {
+        return {
+          success: !!data.success,
+          error: data.error || (data.success ? undefined : "Unknown error returned from GAS Web App"),
+          message: data.message
+        };
+      } else {
+        console.warn("Unexpected GAS Web App response layout (missing 'success'):", data);
+        return {
+          success: false,
+          error: "GAS Web App returned an unexpected response structure. It appears the GAS_WEBAPP_URL is pointing to the Trends RSS feed generator instead of the Rentals scraper Web App. Please configure GAS_RENTALS_WEBAPP_URL for the rentals scraper."
+        };
+      }
+    }
+    return { success: false, error: "GAS Web App returned a non-object response." };
   } catch (e: any) {
     return { success: false, error: e.message };
   }
