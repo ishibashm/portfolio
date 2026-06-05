@@ -47,6 +47,8 @@ interface MapProps {
   properties?: any[];
   useTrueNorth?: boolean;
   setUseTrueNorth?: (val: boolean) => void;
+  targetLat?: number | null;
+  targetLon?: number | null;
   onSelectTarget?: (lat: number, lon: number) => void;
 }
 
@@ -60,6 +62,8 @@ export function TacticalMagneticMapComponent({
   properties = [],
   useTrueNorth: propsUseTrueNorth,
   setUseTrueNorth: propsSetUseTrueNorth,
+  targetLat,
+  targetLon,
   onSelectTarget
 }: MapProps) {
   const [showHUD, setShowHUD] = useState(true);
@@ -227,6 +231,8 @@ export function TacticalMagneticMapComponent({
               useTrueNorth={useTrueNorth}
               properties={properties}
               onSelectTarget={onSelectTarget}
+              targetLat={targetLat}
+              targetLon={targetLon}
               nodeMapping={isPhysical ? 'physical' : 'traditional'}
              />
          </div>

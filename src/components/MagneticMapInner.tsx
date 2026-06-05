@@ -33,6 +33,8 @@ interface MapInnerProps {
   useTrueNorth?: boolean;
   properties?: any[];
   onSelectTarget?: (lat: number, lon: number) => void;
+  targetLat?: number | null;
+  targetLon?: number | null;
   nodeMapping?: 'traditional' | 'physical';
 }
 
@@ -122,6 +124,8 @@ export default function MagneticMapInner({
   useTrueNorth = false,
   properties = [],
   onSelectTarget,
+  targetLat,
+  targetLon,
   nodeMapping = 'traditional'
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
@@ -142,6 +146,15 @@ export default function MagneticMapInner({
     window.addEventListener('mapThemeChanged', handleThemeChange);
     return () => window.removeEventListener('mapThemeChanged', handleThemeChange);
   }, []);
+
+  // Sync clickedPos with targetLat/targetLon from props
+  useEffect(() => {
+    if (targetLat != null && targetLon != null) {
+      setClickedPos([targetLat, targetLon]);
+    } else {
+      setClickedPos(null);
+    }
+  }, [targetLat, targetLon]);
 
   const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
 

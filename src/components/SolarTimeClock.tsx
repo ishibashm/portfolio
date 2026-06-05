@@ -3735,6 +3735,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                 properties={showOnlyNewBuild ? mapProperties.filter((p: any) => p.is_new_build) : mapProperties}
                 useTrueNorth={useTrueNorth}
                 setUseTrueNorth={setUseTrueNorth}
+                targetLat={targetLat}
+                targetLon={targetLon}
                 onSelectTarget={(newLat, newLon) => {
                   setTargetLat(Number(newLat.toFixed(5)));
                   setTargetLon(Number(newLon.toFixed(5)));
