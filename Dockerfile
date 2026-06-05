@@ -5,8 +5,10 @@ FROM node:20-alpine AS base
 RUN apk add --no-cache python3 py3-pip py3-pandas py3-numpy py3-lxml && \
     ln -sf /usr/bin/python3 /usr/bin/python
 
-# Install yfinance in system packages
-RUN pip install --no-cache-dir --break-system-packages yfinance
+# Install yfinance in system packages with build dependencies
+RUN apk add --no-cache --virtual .build-deps gcc g++ musl-dev python3-dev libffi-dev openssl-dev make && \
+    pip install --no-cache-dir --break-system-packages yfinance && \
+    apk del .build-deps
 
 # Install dependencies only when needed
 FROM base AS deps
