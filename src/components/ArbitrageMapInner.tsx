@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { MapContainer, TileLayer, Marker, Polygon, Circle, CircleMarker, useMap, Popup, useMapEvents, GeoJSON } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { Copy, Check } from "lucide-react";
 import { scaleLinear } from "d3-scale";
+import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
 import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 
@@ -15,6 +17,21 @@ L.Icon.Default.mergeOptions({
   iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
+
+// Map Click Handler to copy coordinates
+function MapClickHandler({ onCopy }: { onCopy: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e) {
+      const target = e.originalEvent.target as HTMLElement;
+      // Don't trigger if clicking on a control, popup, or marker
+      if (target.closest('.leaflet-control') || target.closest('.leaflet-popup') || target.closest('.leaflet-marker-icon')) {
+        return;
+      }
+      onCopy(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
 
 export interface ScoredProperty {
   id: string;
@@ -208,6 +225,19 @@ export default function ArbitrageMapInner({
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' } | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'info' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 2500);
+  }, []);
+
+  const copyCoordinates = useCallback((lat: number, lon: number, label?: string) => {
+    const text = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`${label ? label + 'の' : ''}座標をコピーしました: ${text}`);
+    });
+  }, [showToast]);
 
   useEffect(() => {
     setMounted(true);
@@ -541,6 +571,7 @@ export default function ArbitrageMapInner({
         zoomControl={false}
       >
         <BoundsListener onBoundsChange={handleBoundsChange} />
+        <MapClickHandler onCopy={copyCoordinates} />
         <SyncMapCenter lat={center[0]} lon={center[1]} />
         <InvalidateMapSize />
         <AutoFitBounds properties={properties} center={center} prefecture={prefecture} />
@@ -577,9 +608,16 @@ export default function ArbitrageMapInner({
             <Popup>
               <div className="font-sans text-xs text-gray-900 p-1">
                 <div className="font-bold text-indigo-600">現在地・スキャン起点</div>
-                <div className="text-[10px] text-gray-500 mt-0.5">
-                  経度: {baseLon.toFixed(5)} <br />
-                  緯度: {baseLat.toFixed(5)}
+                <div 
+                  className="text-[10px] text-gray-500 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
+                  onClick={() => copyCoordinates(baseLat, baseLon, "起点")}
+                  title="クリックで座標をコピー"
+                >
+                  <div>
+                    経度: {baseLon.toFixed(5)} <br />
+                    緯度: {baseLat.toFixed(5)}
+                  </div>
+                  <Copy className="w-3 h-3 text-zinc-300 group-hover:text-zinc-500 ml-2" />
                 </div>
               </div>
             </Popup>
@@ -797,10 +835,21 @@ export default function ArbitrageMapInner({
                               築{prop.building_age || 0}年 / {prop.minutes_to_station || "不明"}分
                             </span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex justify-between items-center">
                             <span>方位・吉凶:</span>
                             <span className={`font-semibold ${pinColors.textClass}`}>
                               {prop.direction ? `${prop.direction} (${prop.maxAstroFactor})` : '不明'}
+                            </span>
+                          </div>
+                          <div 
+                            className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-100 p-0.5 rounded transition-colors group"
+                            onClick={() => copyCoordinates(prop.lat!, prop.lon!, prop.property_name)}
+                            title="クリックで座標をコピー"
+                          >
+                            <span>緯度経度:</span>
+                            <span className="font-mono text-[9px] text-gray-400 flex items-center gap-1 group-hover:text-gray-600">
+                              {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
+                              <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
                             </span>
                           </div>
                         </div>
@@ -906,6 +955,27 @@ export default function ArbitrageMapInner({
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -20, x: "-50%" }}
+            className="absolute top-20 left-1/2 z-[2000]"
+          >
+            <div className="bg-zinc-900/95 text-zinc-100 px-4 py-2 rounded-full border border-zinc-700 shadow-2xl flex items-center gap-2 backdrop-blur-md">
+              {toast.type === 'success' ? (
+                <Check className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <Copy className="w-4 h-4 text-indigo-400" />
+              )}
+              <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">{toast.message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
