@@ -30,7 +30,7 @@ export function SolarTimeTableComponent({
     [date, longitude]
   );
   
-  const currentZodiac = useMemo(() => getCurrentZodiac(date), [date]);
+  const currentZodiac = useMemo(() => getCurrentZodiac(date, longitude), [date, longitude]);
 
   const isYearVoid = personalVoidZodiac?.includes(currentZodiac.yearZodiac) || false;
   const isMonthVoid = personalVoidZodiac?.includes(currentZodiac.monthZodiac) || false;
@@ -221,8 +221,7 @@ export function SolarTimeTableComponent({
     });
 
     // CSV Content
-    return "data:text/csv;charset=utf-8,\uFEFF" + // BOM for Excel
-      telemetryHeaders.map(c => `"${c}"`).join(",") + "\n\n" +
+    return telemetryHeaders.map(c => `"${c}"`).join(",") + "\n\n" +
       [headers, ...rows]
         .map((e) => e.map((c) => `"${c}"`).join(",")) // Quote fields
         .join("\n");
@@ -234,14 +233,17 @@ export function SolarTimeTableComponent({
   };
 
   const executeDownload = () => {
-    const encodedUri = encodeURI(previewContent);
+    const csvContent = "\uFEFF" + previewContent;
+    const csvBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const csvUrl = URL.createObjectURL(csvBlob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", csvUrl);
     const dateStr = date.toLocaleDateString().replace(/\//g, "-");
     link.setAttribute("download", `temporal_matrix_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(csvUrl);
     setShowPreview(false);
   };
 

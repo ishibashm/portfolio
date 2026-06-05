@@ -10,7 +10,9 @@ import {
   getPersonalVoidZodiac,
   Direction,
   calculateLunarPhaseCondition,
-  getCurrentZodiac
+  getCurrentZodiac,
+  getClassicalMonthStar,
+  filterCollisionByMode
 } from '@/utils/ephemerisEngine';
 
 export const dynamic = 'force-dynamic';
@@ -27,16 +29,18 @@ export async function GET(request: Request) {
       console.warn("Failed to read local_tactical_config.json for export API.");
     }
 
-    const birthDateStr = config.birth_date || '2000-01-01T12:00';
-    const birthLat = config.birth_lat !== undefined ? config.birth_lat : 35.6895;
-    const birthLon = config.birth_lon !== undefined ? config.birth_lon : 139.6917;
-    const baseLat = config.base_lat !== undefined ? config.base_lat : 35.6895;
-    const baseLon = config.base_lon !== undefined ? config.base_lon : 139.6917;
-    const useClassical = config.use_classical_board !== undefined ? config.use_classical_board : true;
-    const useTrueNorth = config.use_true_north !== undefined ? config.use_true_north : false;
+    const url = new URL(request.url);
+
+    const birthDateStr = url.searchParams.get('birth_date') || config.birth_date || '2000-01-01T12:00';
+    const birthLat = url.searchParams.get('birth_lat') ? parseFloat(url.searchParams.get('birth_lat')!) : (config.birth_lat !== undefined ? config.birth_lat : 35.6895);
+    const birthLon = url.searchParams.get('birth_lon') ? parseFloat(url.searchParams.get('birth_lon')!) : (config.birth_lon !== undefined ? config.birth_lon : 139.6917);
+    const baseLat = url.searchParams.get('base_lat') ? parseFloat(url.searchParams.get('base_lat')!) : (config.base_lat !== undefined ? config.base_lat : 35.6895);
+    const baseLon = url.searchParams.get('base_lon') ? parseFloat(url.searchParams.get('base_lon')!) : (config.base_lon !== undefined ? config.base_lon : 139.6917);
+    const useClassical = url.searchParams.get('use_classical') ? url.searchParams.get('use_classical') === 'true' : (config.use_classical_board !== undefined ? config.use_classical_board : true);
+    const useTrueNorth = url.searchParams.get('use_true_north') ? url.searchParams.get('use_true_north') === 'true' : (config.use_true_north !== undefined ? config.use_true_north : false);
     const lunarPhaseModifier = config.lunar_phase_modifier !== undefined ? config.lunar_phase_modifier : true;
-    const layerMode = config.layer_mode || 'final';
-    const directionFilterMode = config.direction_filter_mode || 'composite';
+    const layerMode = url.searchParams.get('layer_mode') || config.layer_mode || 'final';
+    const directionFilterMode = url.searchParams.get('direction_filter_mode') || config.direction_filter_mode || 'composite';
 
     const parseSafeDate = (dateStr: string | null | undefined): Date => {
       if (!dateStr) return new Date();
@@ -47,10 +51,11 @@ export async function GET(request: Request) {
     };
 
     const bDate = parseSafeDate(birthDateStr);
-    const targetDate = new Date(); // Current date for live snapshot
+    const targetDate = url.searchParams.get('date') ? new Date(url.searchParams.get('date')!) : new Date(); // Custom target date or current date
 
     // 2. Compute Astro & Kigaku data
     const honmeiStar = getHonmeiStar(bDate);
+    const getsuMeiStar = getClassicalMonthStar(bDate);
     const voidZodiacs = getPersonalVoidZodiac(bDate);
     const env = getCurrentEnvironmentalFrequencies(targetDate, baseLon);
 
@@ -59,7 +64,7 @@ export async function GET(request: Request) {
     const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
     const nodeMapping = useClassical ? 'traditional' : 'physical';
-    const vectorCollision = calculateVectorCollision(
+    const rawVectorCollision = calculateVectorCollision(
       useClassical ? honmeiStar.classical : honmeiStar.physical,
       yB, mB, dB,
       voidZodiacs,
@@ -67,8 +72,17 @@ export async function GET(request: Request) {
       'MIGRATION',
       targetDate,
       baseLon,
-      undefined,
+      useClassical ? getsuMeiStar : undefined,
       nodeMapping
+    );
+
+    const vectorCollision = filterCollisionByMode(
+      rawVectorCollision,
+      useClassical ? honmeiStar.classical : honmeiStar.physical,
+      useClassical ? getsuMeiStar : null,
+      voidZodiacs,
+      directionFilterMode,
+      yB, mB, dB
     );
 
     // Compute 30-day forecast matrix
@@ -82,7 +96,7 @@ export async function GET(request: Request) {
       const tmB = generateBoard(useClassical ? testEnv.classicalMonthStar : testEnv.monthStar);
       const tdB = generateBoard(useClassical ? testEnv.classicalDayStar : testEnv.dayStar);
       
-      const tc = calculateVectorCollision(
+      const rawTc = calculateVectorCollision(
         useClassical ? honmeiStar.classical : honmeiStar.physical,
         tyB, tmB, tdB,
         voidZodiacs,
@@ -90,8 +104,17 @@ export async function GET(request: Request) {
         'MIGRATION',
         testDate,
         baseLon,
-        undefined,
+        useClassical ? getsuMeiStar : undefined,
         nodeMapping
+      );
+
+      const tc = filterCollisionByMode(
+        rawTc,
+        useClassical ? honmeiStar.classical : honmeiStar.physical,
+        useClassical ? getsuMeiStar : null,
+        voidZodiacs,
+        directionFilterMode,
+        tyB, tmB, tdB
       );
 
       // Score each direction on this day
@@ -108,7 +131,9 @@ export async function GET(request: Request) {
         let score = 50;
         switch (status) {
           case 'OPTIMAL': score = 100; break;
+          case 'OPTIMAL_REGULAR': score = 90; break;
           case 'SAFE': score = 80; break;
+          case 'WARNING': score = 60; break;
           case 'NOISE_VOID': 
           case 'NOISE_NODE': score = 40; break;
           case 'NOISE_HONMEI':

@@ -39,15 +39,30 @@ function generateCircleCoords(lat: number, lon: number, radiusKm: number): strin
   return coords.join(' ');
 }
 
+function getStatusLabel(status: string): string {
+  if (status === 'NOISE_GOU') return '五黄';
+  if (status === 'NOISE_ANKEN') return '暗剣';
+  if (status === 'NOISE_HA') return '破';
+  if (status === 'NOISE_HONMEI') return '本命';
+  if (status === 'NOISE_TEKI') return '的殺';
+  if (status === 'NOISE_VOID') return 'ボイド';
+  if (status === 'NOISE_NODE') return '交点';
+  if (status === 'OPTIMAL') return '大吉';
+  if (status === 'OPTIMAL_REGULAR') return '吉';
+  return '';
+}
+
 export function generateMagneticMapKML(
   lat: number,
   lon: number,
   declination: number,
   useTrueNorth: boolean = false,
-  vectors?: Record<string, string>
+  vectors?: Record<string, string>,
+  nodeMapping: 'traditional' | 'physical' = 'traditional',
+  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean },
+  maxRadiusKm: number = 1000
 ): string {
   const magNorthBearing = useTrueNorth ? 0 : declination;
-  const maxRadiusKm = 5000;
 
   // Directions mapping
   const directions = [
@@ -62,15 +77,71 @@ export function generateMagneticMapKML(
   ];
 
   let sectorsKML = '';
+  let labelsKML = '';
+
   directions.forEach((d) => {
-    const status = vectors ? (vectors[d.dir] || 'SAFE') : 'SAFE';
-    const spread = d.isCorner ? 30 : 15;
+    const rawStatus = vectors ? (vectors[d.dir] || 'SAFE') : 'SAFE';
+    
+    // Apply HUD Layer Filtering to match Leaflet map visual state
+    let displayStatus = 'SAFE';
+    const hasTerrainNoise = rawStatus === 'NOISE';
+    const hasBioNoise = rawStatus.includes('HONMEI') || rawStatus.includes('TEKI');
+    const hasWeatherNoise = rawStatus.includes('NOISE') && !hasBioNoise && !hasTerrainNoise;
+
+    if (!hudLayers) {
+      displayStatus = rawStatus;
+    } else {
+      if (hudLayers.terrain && hasTerrainNoise) displayStatus = rawStatus;
+      if (hudLayers.weather && hasWeatherNoise) displayStatus = rawStatus;
+      if (hudLayers.bio && hasBioNoise) displayStatus = rawStatus;
+      if (!rawStatus.includes('NOISE')) displayStatus = rawStatus;
+    }
+
+    // Determine sector angles layout
+    const spread = nodeMapping === 'physical'
+      ? 22.5
+      : (d.isCorner ? 30 : 15);
+
     const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + d.deg, spread, maxRadiusKm);
     
     sectorsKML += `
       <Placemark>
-        <name>Sector ${d.dir} (${status})</name>
-        <styleUrl>#style_${status}</styleUrl>
+        <name>Sector ${d.dir} (${displayStatus})</name>
+        <styleUrl>#style_${displayStatus}</styleUrl>
+        <Polygon>
+          <tessellate>1</tessellate>
+          <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
+        </Polygon>
+      </Placemark>`;
+
+    const label = getStatusLabel(displayStatus);
+    if (label) {
+      const [labelLon, labelLat] = getDestinationKML(lat, lon, magNorthBearing + d.deg, maxRadiusKm * 0.4);
+      labelsKML += `
+      <Placemark>
+        <name>${label}</name>
+        <description>${d.dir} Sector Label (${displayStatus})</description>
+        <styleUrl>#label_${displayStatus}</styleUrl>
+        <Point>
+          <coordinates>${labelLon},${labelLat},0</coordinates>
+        </Point>
+      </Placemark>`;
+    }
+  });
+
+  // Boundary Danger Zones (Red Wedges)
+  const boundaries = nodeMapping === 'physical'
+    ? [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]
+    : [15, 75, 105, 165, 195, 255, 285, 345];
+
+  let dangerWedgesKML = '';
+  boundaries.forEach((b, idx) => {
+    const baseBearing = magNorthBearing + b;
+    const coords = generateArcPolygonCoords(lat, lon, baseBearing, 2, maxRadiusKm);
+    dangerWedgesKML += `
+      <Placemark>
+        <name>Boundary Danger Zone ${idx + 1}</name>
+        <styleUrl>#boundaryDangerStyle</styleUrl>
         <Polygon>
           <tessellate>1</tessellate>
           <outerBoundaryIs><LinearRing><coordinates>${coords}</coordinates></LinearRing></outerBoundaryIs>
@@ -78,8 +149,8 @@ export function generateMagneticMapKML(
       </Placemark>`;
   });
 
-  // Attenuation Rings
-  const attenuationRings = [100, 500, 1000, 2500, 5000]; // km
+  // Attenuation Rings (Zinc) - 250km, 500km, 1000km to match Leaflet map
+  const attenuationRings = [250, 500, 1000];
   let ringsKML = '';
   attenuationRings.forEach((radius) => {
     const coords = generateCircleCoords(lat, lon, radius);
@@ -178,16 +249,67 @@ export function generateMagneticMapKML(
       <PolyStyle><color>994444ef</color></PolyStyle>
     </Style>
 
+    <Style id="boundaryDangerStyle">
+      <LineStyle><color>004444ef</color><width>0</width></LineStyle>
+      <PolyStyle><color>664444ef</color></PolyStyle>
+    </Style>
+
     <Style id="ringStyle">
-      <LineStyle><color>ff00aaff</color><width>2</width></LineStyle>
+      <LineStyle><color>ff7a7a7a</color><width>1</width></LineStyle>
     </Style>
 
     <Style id="trueNorthStyle">
-      <LineStyle><color>ff50c878</color><width>3</width></LineStyle>
+      <LineStyle><color>ff81b910</color><width>3</width></LineStyle>
     </Style>
 
     <Style id="magNorthStyle">
-      <LineStyle><color>ffff0000</color><width>3</width></LineStyle>
+      <LineStyle><color>fff6823b</color><width>3</width></LineStyle>
+    </Style>
+
+    <!-- Label style definitions mapping to status colors -->
+    <Style id="label_OPTIMAL">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff81b910</color><scale>1.2</scale></LabelStyle>
+    </Style>
+    <Style id="label_OPTIMAL_REGULAR">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff99d334</color><scale>1.1</scale></LabelStyle>
+    </Style>
+    <Style id="label_SAFE">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>fff6823b</color><scale>0.0</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_GOU">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff4444ef</color><scale>1.3</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_ANKEN">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff5e3ff4</color><scale>1.3</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_HA">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff5e3ff4</color><scale>1.3</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_HONMEI">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ffef46d9</color><scale>1.2</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_TEKI">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ffd326c0</color><scale>1.2</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_VOID">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff08b3ea</color><scale>1.1</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE_NODE">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff0b9ef5</color><scale>1.1</scale></LabelStyle>
+    </Style>
+    <Style id="label_NOISE">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff4444ef</color><scale>1.2</scale></LabelStyle>
     </Style>
 
     <Placemark>
@@ -205,12 +327,22 @@ export function generateMagneticMapKML(
     </Folder>
 
     <Folder>
-      <name>Evaluated Sectors (30/60 Degree)</name>
+      <name>Evaluated Sectors (${nodeMapping === 'physical' ? '45 Degree' : '30/60 Degree'})</name>
       ${sectorsKML}
     </Folder>
 
     <Folder>
-      <name>Shield Attenuation Rings (Amber)</name>
+      <name>Sector Status Labels</name>
+      ${labelsKML}
+    </Folder>
+
+    <Folder>
+      <name>Boundary Danger Zones (Red Wedges)</name>
+      ${dangerWedgesKML}
+    </Folder>
+
+    <Folder>
+      <name>Shield Attenuation Rings (Zinc)</name>
       ${ringsKML}
     </Folder>
   </Document>
@@ -224,9 +356,11 @@ export function downloadKML(
   lon: number,
   declination: number,
   useTrueNorth: boolean = false,
-  vectors?: Record<string, string>
+  vectors?: Record<string, string>,
+  nodeMapping: 'traditional' | 'physical' = 'traditional',
+  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean }
 ) {
-  const kmlString = generateMagneticMapKML(lat, lon, declination, useTrueNorth, vectors);
+  const kmlString = generateMagneticMapKML(lat, lon, declination, useTrueNorth, vectors, nodeMapping, hudLayers);
   const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -846,13 +846,13 @@ export const SolarTimeClock = () => {
       for (let i = 0; i < MAX_SEARCH_DAYS; i++) {
         const testDate = new Date(baseTime.getTime() + offset * 86400000);
 
-        const cz = getCurrentZodiac(testDate);
+        const cz = getCurrentZodiac(testDate, lon || 139.6917);
         if (personalVoidZodiac.includes(cz.yearZodiac) || personalVoidZodiac.includes(cz.monthZodiac) || personalVoidZodiac.includes(cz.dayZodiac)) {
           offset++;
           continue;
         }
 
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
         const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -903,15 +903,15 @@ export const SolarTimeClock = () => {
   const env = React.useMemo(() => {
     if (!solarData?.solarTime) {
       if (!ephemerisTime) return null;
-      return getCurrentEnvironmentalFrequencies(ephemerisTime);
+      return getCurrentEnvironmentalFrequencies(ephemerisTime, lon || 139.6917);
     }
-    return getCurrentEnvironmentalFrequencies(solarData.solarTime);
-  }, [ephemerisTime, solarData]);
+    return getCurrentEnvironmentalFrequencies(solarData.solarTime, lon || 139.6917);
+  }, [ephemerisTime, solarData, lon]);
 
   const birthEnv = React.useMemo(() => {
     if (!birthSolarData) return null;
-    return getCurrentEnvironmentalFrequencies(birthSolarData.solarTime);
-  }, [birthSolarData]);
+    return getCurrentEnvironmentalFrequencies(birthSolarData.solarTime, birthLon || 139.6917);
+  }, [birthSolarData, birthLon]);
 
   const honmeiStar = React.useMemo(() => {
     if (!birthSolarData?.solarTime) {
@@ -1167,7 +1167,19 @@ export const SolarTimeClock = () => {
   const handleExportForGemini = async () => {
     setIsExporting(true);
     try {
-      const res = await fetch('/api/relocation/export');
+      const queryParams = new URLSearchParams({
+        birth_date: birthDate || '',
+        birth_lat: birthLat?.toString() || '',
+        birth_lon: birthLon?.toString() || '',
+        base_lat: lat?.toString() || '',
+        base_lon: lon?.toString() || '',
+        use_classical: useClassicalBoard.toString(),
+        use_true_north: useTrueNorth.toString(),
+        layer_mode: activeLayerMode,
+        direction_filter_mode: directionFilterMode,
+        date: evalDate.toISOString()
+      });
+      const res = await fetch(`/api/relocation/export?${queryParams.toString()}`);
       if (!res.ok) throw new Error("エクスポートAPIエラー");
       const data = await res.json();
       
@@ -1417,7 +1429,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         data.push({
           label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
           vectors: filteredV,
-          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac, getCurrentZodiac(testDate).dayZodiac].includes(z)),
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate, lon || 139.6917).yearZodiac, getCurrentZodiac(testDate, lon || 139.6917).monthZodiac, getCurrentZodiac(testDate, lon || 139.6917).dayZodiac].includes(z)),
           offsetDays: timeOffsetDays + i
         });
       }
@@ -1512,7 +1524,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         data.push({
           label: `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, '0')}`,
           vectors: filteredV,
-          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate).yearZodiac, getCurrentZodiac(testDate).monthZodiac].includes(z)),
+          isVoid: voidZodiacArray.some(z => [getCurrentZodiac(testDate, lon || 139.6917).yearZodiac, getCurrentZodiac(testDate, lon || 139.6917).monthZodiac].includes(z)),
           offsetDays: diffDays
         });
       }
@@ -1605,14 +1617,16 @@ ${timingOptimization?.recommendationText || "特になし"}
       nbaData?.nba.actionResult.logicTrace?.join(' | ') ?? ""
     ].map(v => `"${v}"`).join(","); // wrap fields in quotes to prevent comma breaks
 
-    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + header + "\n" + row;
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = "\uFEFF" + header + "\n" + row;
+    const csvBlob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
+    const csvUrl = URL.createObjectURL(csvBlob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", csvUrl);
     link.setAttribute("download", `metaphysical_unified_export_${timestampStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(csvUrl);
 
     // Export Unified JSON (Full State)
     const fullState = {
@@ -1867,7 +1881,7 @@ ${timingOptimization?.recommendationText || "特になし"}
   }
 
   const evalDate = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
-  const currentZodiac = getCurrentZodiac(evalDate);
+  const currentZodiac = getCurrentZodiac(evalDate, lon || 139.6917);
   const isYearVoid = personalVoidZodiac.includes(currentZodiac.yearZodiac);
   const isMonthVoid = personalVoidZodiac.includes(currentZodiac.monthZodiac);
   const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);

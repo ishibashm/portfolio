@@ -176,7 +176,15 @@ export function TacticalMagneticMapComponent({
                     HUD: {showHUD ? 'ON' : 'OFF'}
                   </button>
                   <button 
-                    onClick={() => downloadKML(lat, lon, declination || 0, useTrueNorth, activeVectors as Record<string, string>)}
+                    onClick={() => downloadKML(
+                      lat,
+                      lon,
+                      declination || 0,
+                      useTrueNorth,
+                      activeVectors as Record<string, string>,
+                      isPhysical ? 'physical' : 'traditional',
+                      hudLayers
+                    )}
                     className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
                   >
                     <Download size={10} />
