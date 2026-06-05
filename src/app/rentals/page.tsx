@@ -68,10 +68,10 @@ export default function RentalsDashboard() {
     setIsFetchingReal(true);
     const result = await triggerRealScrape();
     if (result.success) {
-      alert("✅ 取得リクエストを送信しました！数秒後にデータを更新してください。");
+      alert(`✅ 取得完了\n結果: ${result.message || "取得リクエストを送信しました。"}`);
       await fetchProperties();
     } else {
-      alert("エラーが発生しました: " + result.error + "\n\n(GAS Web AppのURLが設定されていない可能性があります。マニュアルを参照してください)");
+      alert("エラーが発生しました: " + result.error + "\n\n(GAS Web AppのURLが設定されていない、または認証キーが一致していない可能性があります。)");
     }
     setIsFetchingReal(false);
   };

@@ -18,15 +18,24 @@ const API_SECRET_KEY = "PLEASE_SET_YOUR_SECRET_KEY_HERE";
 
 /**
  * フィルターに合致する新着（未読）メールを取得してWebhookに送信するメイン関数
+ * 処理結果の統計オブジェクトを返します。
  */
 function fetchAndSendRealEstateEmails() {
   // 指定したラベルが付いている未読メールを検索
   const searchQuery = `label:${GMAIL_LABEL} is:unread`;
   const threads = GmailApp.search(searchQuery, 0, 10); // 一度に最大10スレッド処理
   
+  const stats = {
+    threadsFound: threads.length,
+    emailsProcessed: 0,
+    webhooksSent: 0,
+    webhooksSucceeded: 0,
+    errors: []
+  };
+
   if (threads.length === 0) {
     Logger.log("新着の不動産メールはありませんでした。");
-    return;
+    return stats;
   }
   
   for (const thread of threads) {
@@ -34,6 +43,8 @@ function fetchAndSendRealEstateEmails() {
     
     for (const message of messages) {
       if (message.isUnread()) {
+        stats.emailsProcessed++;
+        
         const emailData = {
           email_id: message.getId(),
           subject: message.getSubject(),
@@ -42,19 +53,26 @@ function fetchAndSendRealEstateEmails() {
         };
         
         // Webhookの呼び出し
-        const success = sendToWebhook(emailData);
+        stats.webhooksSent++;
+        const result = sendToWebhook(emailData);
         
         // 成功したら既読にする（同じメールを何度も処理しないため）
-        if (success) {
+        if (result.success) {
+          stats.webhooksSucceeded++;
           message.markRead();
+        } else {
+          stats.errors.push(`Email "${emailData.subject}": ${result.error}`);
         }
       }
     }
   }
+  
+  return stats;
 }
 
 /**
  * Next.jsのAPIにデータをPOST送信する関数
+ * 送信結果オブジェクトを返します。
  */
 function sendToWebhook(data) {
   const options = {
@@ -70,17 +88,20 @@ function sendToWebhook(data) {
   try {
     const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
     const responseCode = response.getResponseCode();
+    const responseText = response.getContentText();
     
     if (responseCode >= 200 && responseCode < 300) {
       Logger.log(`✅ Webhook送信成功: ${data.subject}`);
-      return true;
+      return { success: true };
     } else {
-      Logger.log(`❌ Webhookエラー (${responseCode}): ${response.getContentText()}`);
-      return false;
+      const errMsg = `Webhookエラー (${responseCode}): ${responseText}`;
+      Logger.log(`❌ ${errMsg}`);
+      return { success: false, error: errMsg };
     }
   } catch (e) {
-    Logger.log(`⚠️ 送信時の例外エラー: ${e.message}`);
-    return false;
+    const errMsg = `送信時の例外エラー: ${e.message}`;
+    Logger.log(`⚠️ ${errMsg}`);
+    return { success: false, error: errMsg };
   }
 }
 
@@ -89,9 +110,13 @@ function sendToWebhook(data) {
  */
 function doGet(e) {
   try {
-    fetchAndSendRealEstateEmails();
-    return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Emails scraped and sent to webhook." }))
-      .setMimeType(ContentService.MimeType.JSON);
+    const stats = fetchAndSendRealEstateEmails();
+    return ContentService.createTextOutput(JSON.stringify({ 
+      success: true, 
+      message: `Scraper executed. Threads found: ${stats.threadsFound}, Emails processed: ${stats.emailsProcessed}, Sent to Webhook: ${stats.webhooksSent}, Succeeded: ${stats.webhooksSucceeded}`,
+      stats: stats
+    }))
+    .setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.message }))
       .setMimeType(ContentService.MimeType.JSON);
