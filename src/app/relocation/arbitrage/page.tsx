@@ -65,22 +65,22 @@ export default function ArbitrageScannerPage() {
   const [showTableView, setShowTableView] = useState(false);
 
   // Relocation & Fortune Settings States
-  const [baseLat, setBaseLat] = useState("34.9911"); // Default Kyoto
-  const [baseLon, setBaseLon] = useState("135.7248");
+  const [baseLat, setBaseLat] = useState("38.0"); // Default Japan Center
+  const [baseLon, setBaseLon] = useState("137.0");
   const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
   const [birthLon, setBirthLon] = useState("132.4482");
   const [birthDate, setBirthDate] = useState("1988-11-25T04:26"); // Default Birth Date with time
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
-  const [radiusKm, setRadiusKm] = useState("10"); // Scan Radius (km)
+  const [radiusKm, setRadiusKm] = useState("all"); // Scan Radius (km)
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
   const [dataLimit, setDataLimit] = useState(500);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([34.9911, 135.7248]);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([38.0, 137.0]); // Default to Japan center
 
   // Viewport bounds for map searching
   const [mapBounds, setMapBounds] = useState<{minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number} | null>(null);
@@ -104,8 +104,8 @@ export default function ArbitrageScannerPage() {
   });
 
   // Temporary local inputs to avoid API hammering during typing
-  const [localLat, setLocalLat] = useState("34.9911");
-  const [localLon, setLocalLon] = useState("135.7248");
+  const [localLat, setLocalLat] = useState("38.0");
+  const [localLon, setLocalLon] = useState("137.0");
   const [localBirthDate, setLocalBirthDate] = useState("1988-11-25T04:26");
   const [localBirthLat, setLocalBirthLat] = useState("34.3952");
   const [localBirthLon, setLocalBirthLon] = useState("132.4482");
@@ -261,13 +261,13 @@ export default function ArbitrageScannerPage() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    let bsLat = "34.9911";
-    let bsLon = "135.7248";
+    let bsLat = "38.0";
+    let bsLon = "137.0";
     let bLat = "34.3952";
     let bLon = "132.4482";
     let bDate = "1988-11-25T04:26";
     let tDate = getTodayString();
-    let rKm = "10";
+    let rKm = "all";
     let pref = "all";
     let classical = false;
     let layer = "year";
@@ -285,8 +285,9 @@ export default function ArbitrageScannerPage() {
         }
         if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
         if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
-        if (config.base_lat !== undefined) bsLat = config.base_lat.toString();
-        if (config.base_lon !== undefined) bsLon = config.base_lon.toString();
+        // Skip loading base_lat/lon to preserve the Japan-wide view unless specifically zooming in
+        if (config.base_lat !== undefined && config.prefecture && config.prefecture !== "all") bsLat = config.base_lat.toString();
+        if (config.base_lon !== undefined && config.prefecture && config.prefecture !== "all") bsLon = config.base_lon.toString();
         if (config.use_classical_board !== undefined) classical = config.use_classical_board;
         if (config.use_true_north !== undefined) trueNorth = config.use_true_north;
         if (config.layer_mode !== undefined) layer = config.layer_mode;
@@ -306,12 +307,14 @@ export default function ArbitrageScannerPage() {
       const storedLayer = localStorage.getItem("arb_layerMode");
       const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
 
-      if (storedLat) bsLat = storedLat;
-      if (storedLon) bsLon = storedLon;
+      if (storedPrefecture) pref = storedPrefecture;
+      if (storedRadius) rKm = storedRadius;
+      
+      if (storedLat && pref !== "all") bsLat = storedLat;
+      if (storedLon && pref !== "all") bsLon = storedLon;
+      
       if (storedBirth) bDate = storedBirth;
       if (storedTarget) tDate = storedTarget;
-      if (storedRadius) rKm = storedRadius;
-      if (storedPrefecture) pref = storedPrefecture;
       if (storedClassical) classical = storedClassical === "true";
       if (storedLayer) layer = storedLayer;
       if (storedTrueNorth) trueNorth = storedTrueNorth === "true";

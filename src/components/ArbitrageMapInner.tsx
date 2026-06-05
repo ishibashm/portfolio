@@ -130,7 +130,16 @@ function AutoFitBounds({ properties, center, prefecture }: { properties: ScoredP
   const prevPropsLengthRef = useRef<number>(0);
 
   useEffect(() => {
-    if (properties.length === 0) return;
+    // If no properties, zoom out to show Japan if not already zoomed out
+    if (properties.length === 0) {
+      if (prevPropsLengthRef.current > 0 || !prevCenterRef.current) {
+        // Center roughly on Japan with a wide zoom
+        map.setView([38.0, 137.0], 5);
+        prevCenterRef.current = [38.0, 137.0];
+      }
+      prevPropsLengthRef.current = 0;
+      return;
+    }
 
     const prefectureChanged = prevPrefectureRef.current !== prefecture;
     const centerChanged = !prevCenterRef.current || 
@@ -139,14 +148,19 @@ function AutoFitBounds({ properties, center, prefecture }: { properties: ScoredP
     const propsAdded = prevPropsLengthRef.current === 0 && properties.length > 0;
 
     if (prefectureChanged || centerChanged || propsAdded) {
-      const bounds = L.latLngBounds([center]);
-      properties.forEach(p => {
-        if (p.lat && p.lon) {
-          bounds.extend([p.lat, p.lon]);
-        }
-      });
-      
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      // If prefecture is 'all' or undefined, keep the wide Japan view unless center was explicitly moved
+      if ((!prefecture || prefecture === "all") && !centerChanged) {
+        map.setView([38.0, 137.0], 5);
+      } else {
+        const bounds = L.latLngBounds([center]);
+        properties.forEach(p => {
+          if (p.lat && p.lon) {
+            bounds.extend([p.lat, p.lon]);
+          }
+        });
+        
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+      }
       
       prevPrefectureRef.current = prefecture;
       prevCenterRef.current = center;
@@ -220,7 +234,7 @@ export default function ArbitrageMapInner({
   onBoundsChange
 }: ArbitrageMapInnerProps) {
   const [mounted, setMounted] = useState(false);
-  const [zoom, setZoom] = useState(13);
+  const [zoom, setZoom] = useState(5);
   const [currentBounds, setCurrentBounds] = useState<{ minLat: number; maxLat: number; minLon: number; maxLon: number } | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
