@@ -266,7 +266,17 @@ function saveState(pref: string, city: string, page: number = 1) {
 }
 
 async function main() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+  let dbHost = 'unknown';
+  if (connectionString) {
+    try {
+      dbHost = new URL(connectionString.replace('postgresql://', 'http://')).host;
+    } catch (_) {
+      dbHost = 'configured-host';
+    }
+  }
+  console.log(`Connecting to database at ${dbHost}...`);
+  const pool = new Pool({ connectionString, max: 1 });
   const adapter = new PrismaPg(pool);
   const prisma = new PrismaClient({ adapter } as any);
 
