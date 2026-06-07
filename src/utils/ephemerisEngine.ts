@@ -494,7 +494,7 @@ export function calculateVectorCollision(
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_GETSUMEI' | 'NOISE_GETSUTEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
+  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'WARNING' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_GETSUMEI' | 'NOISE_GETSUTEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
   tendoDirection?: Direction;
   doyouState?: {
     inDoyou: boolean;

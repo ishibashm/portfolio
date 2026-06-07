@@ -35,7 +35,7 @@ function bearingToDirection(bearing: number): Direction {
 }
 
 // Map auspice codes to clean UX ratings
-function getRatingLabel(status: string): { rating: '大吉' | '吉' | '普通' | '凶' | '大凶'; score: number; color: string } {
+function getRatingLabel(status: string): { rating: '大吉' | '吉' | '注意' | '普通' | '凶' | '大凶'; score: number; color: string } {
   switch (status) {
     case 'OPTIMAL':
       return { rating: '大吉', score: 100, color: 'text-emerald-400 border border-emerald-500/30 bg-emerald-500/10' };
@@ -43,6 +43,8 @@ function getRatingLabel(status: string): { rating: '大吉' | '吉' | '普通' |
       return { rating: '吉', score: 50, color: 'text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5' };
     case 'SAFE':
       return { rating: '普通', score: 0, color: 'text-gray-400 border border-white/10 bg-white/5' };
+    case 'WARNING':
+      return { rating: '注意', score: -10, color: 'text-amber-400 border border-amber-500/20 bg-amber-500/5' };
     case 'NOISE_HONMEI':
     case 'NOISE_TEKI':
     case 'NOISE_GETSUMEI':

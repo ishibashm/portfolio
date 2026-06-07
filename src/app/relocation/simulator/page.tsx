@@ -430,6 +430,7 @@ export default function RelocationSimulatorPage() {
           case 'OPTIMAL': return { rating: '大吉', color: 'text-emerald-400 border border-emerald-500/30 bg-emerald-500/10', score: 100 };
           case 'OPTIMAL_REGULAR': return { rating: '吉', color: 'text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5', score: 50 };
           case 'SAFE': return { rating: '普通', color: 'text-zinc-400 border border-white/10 bg-white/5', score: 0 };
+          case 'WARNING': return { rating: '注意', color: 'text-amber-400 border border-amber-500/20 bg-amber-500/5', score: -10 };
           case 'NOISE_HONMEI':
           case 'NOISE_TEKI':
           case 'NOISE_GETSUMEI':

@@ -60,7 +60,7 @@ interface EvaluatedHistoryItem {
 }
 
 // Map auspice codes to clean UX ratings
-function getRatingLabel(status: string): { rating: '大吉' | '吉' | '普通' | '凶' | '大凶'; color: string } {
+function getRatingLabel(status: string): { rating: '大吉' | '吉' | '注意' | '普通' | '凶' | '大凶'; color: string } {
   switch (status) {
     case 'OPTIMAL':
       return { rating: '大吉', color: 'text-emerald-400 border border-emerald-500/30 bg-emerald-500/10' };
@@ -68,6 +68,8 @@ function getRatingLabel(status: string): { rating: '大吉' | '吉' | '普通' |
       return { rating: '吉', color: 'text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5' };
     case 'SAFE':
       return { rating: '普通', color: 'text-gray-400 border border-white/10 bg-white/5' };
+    case 'WARNING':
+      return { rating: '注意', color: 'text-amber-400 border border-amber-500/20 bg-amber-500/5' };
     case 'NOISE_HONMEI':
     case 'NOISE_TEKI':
     case 'NOISE_GETSUMEI':
@@ -280,6 +282,7 @@ export default function RelocationHistoryPage() {
 
   const formatDirectionInfo = (status: string) => {
     if (status === 'SAFE' || status === 'OPTIMAL' || status === 'OPTIMAL_REGULAR') return '吉方位 / 平穏';
+    if (status === 'WARNING') return '一部干渉・引越当日注意 (長期方位は吉ですが、移動当日に注意が必要です)';
     
     const noiseLabels: Record<string, string> = {
       NOISE_GOU: '五黄殺 (大凶 - 自己破壊のエネルギー)',
