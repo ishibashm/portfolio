@@ -898,38 +898,55 @@ export const SolarTimeClock = () => {
 
   const birthSolarData = React.useMemo(() => {
     if (!birthDate || !birthLon) return null;
-    return calculateSolarTime(new Date(birthDate), birthLon);
+    const d = new Date(birthDate);
+    if (isNaN(d.getTime())) return null;
+    return calculateSolarTime(d, birthLon);
   }, [birthDate, birthLon]);
 
   const env = React.useMemo(() => {
-    if (!solarData?.solarTime) {
-      if (!ephemerisTime) return null;
+    if (!solarData?.solarTime || isNaN(solarData.solarTime.getTime())) {
+      if (!ephemerisTime || isNaN(ephemerisTime.getTime())) return null;
       return getCurrentEnvironmentalFrequencies(ephemerisTime, lon || 139.6917);
     }
     return getCurrentEnvironmentalFrequencies(solarData.solarTime, lon || 139.6917);
   }, [ephemerisTime, solarData, lon]);
 
   const birthEnv = React.useMemo(() => {
-    if (!birthSolarData) return null;
+    if (!birthSolarData || isNaN(birthSolarData.solarTime.getTime())) return null;
     return getCurrentEnvironmentalFrequencies(birthSolarData.solarTime, birthLon || 139.6917);
   }, [birthSolarData, birthLon]);
 
   const honmeiStar = React.useMemo(() => {
-    if (!birthSolarData?.solarTime) {
-      if (!birthDate) return null;
-      return getHonmeiStar(new Date(birthDate));
+    if (birthSolarData?.solarTime && !isNaN(birthSolarData.solarTime.getTime())) {
+      return getHonmeiStar(birthSolarData.solarTime);
     }
-    return getHonmeiStar(birthSolarData.solarTime);
+    if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) {
+        return getHonmeiStar(d);
+      }
+    }
+    return null;
   }, [birthDate, birthSolarData]);
 
   const getsuMeiStar = React.useMemo(() => {
-    if (!birthDate) return null;
-    const bDate = birthSolarData?.solarTime ? new Date(birthSolarData.solarTime) : new Date(birthDate);
-    return getClassicalMonthStar(bDate);
+    if (birthSolarData?.solarTime && !isNaN(birthSolarData.solarTime.getTime())) {
+      return getClassicalMonthStar(new Date(birthSolarData.solarTime));
+    }
+    if (birthDate) {
+      const d = new Date(birthDate);
+      if (!isNaN(d.getTime())) {
+        return getClassicalMonthStar(d);
+      }
+    }
+    return null;
   }, [birthDate, birthSolarData]);
 
   const { board, layers: rawLayers, physicalLayers: rawPhysicalLayers, classicalLayers: rawClassicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard } = React.useMemo(() => {
     if (!env || !honmeiStar) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
+
+    const bDate = new Date(birthDate);
+    if (isNaN(bDate.getTime())) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
 
     // Boards for internal calculation based on user preference toggle
     const yB = generateBoard(useClassicalBoard ? env.classicalYearStar : env.yearStar);
@@ -946,7 +963,7 @@ export const SolarTimeClock = () => {
     const cmB = generateBoard(env.classicalMonthStar);
     const cdB = generateBoard(env.classicalDayStar);
 
-    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(bDate);
     const tDate = solarData?.solarTime || ephemerisTime || new Date();
 
     const vectorData = calculateVectorCollision(
@@ -993,8 +1010,11 @@ export const SolarTimeClock = () => {
       return { layers: null, physicalLayers: null, classicalLayers: null };
     }
 
+    const bDate = new Date(birthDate);
+    if (isNaN(bDate.getTime())) return { layers: null, physicalLayers: null, classicalLayers: null };
+
     const personalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
-    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(bDate);
 
     return {
       layers: filterLayerData(
@@ -1874,9 +1894,15 @@ ${timingOptimization?.recommendationText || "特になし"}
       </div>
     );
 
-  const kimon = getKimonHour(solarData.solarTime);
-  const basePersonalVoidZodiac = getPersonalVoidZodiac(new Date(birthDate));
+  const basePersonalVoidZodiac = React.useMemo(() => {
+    if (!birthDate) return [];
+    const d = new Date(birthDate);
+    if (isNaN(d.getTime())) return [];
+    return getPersonalVoidZodiac(d);
+  }, [birthDate]);
+
   const personalVoidZodiac = voidZodiacOverride ? voidZodiacOverride.split('') : basePersonalVoidZodiac;
+  const kimon = getKimonHour(solarData.solarTime);
   const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
 
 
