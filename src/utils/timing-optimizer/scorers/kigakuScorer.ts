@@ -152,7 +152,7 @@ export class KigakuScorer implements TimingScorer {
 
     return { 
       phenomenon: mainPhenomenon, 
-      detail: doyouDetail + `[年:${activeYearStar}(${yPhase})] [月:${activeMonthStar}(${mPhase})] [日:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
+      detail: doyouDetail + `[目的地${ctx.targetDirection}方位の年星:${activeYearStar}(${yPhase})] [月星:${activeMonthStar}(${mPhase})] [日星:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
     };
   }
 }

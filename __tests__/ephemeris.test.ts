@@ -122,7 +122,7 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       // Year Center 1 -> E is 8. Wood (3) controls Earth (8) -> 相剋 (Shokoku)
       // Month Center 3 -> E is 1. Water (1) generates Wood (3) -> 相生 (Sojo)
       // Day Center 5 -> E is 3. Wood (3) is same as Wood (3) -> 比和 (Hiwa)
-      expect(result!.detail).toContain('[年:8(相剋)] [月:1(相生)] [日:3(比和)]');
+      expect(result!.detail).toContain('[目的地E方位の年星:8(相剋)] [月星:1(相生)] [日星:3(比和)]');
     });
 
 
