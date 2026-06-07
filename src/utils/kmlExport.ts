@@ -49,6 +49,7 @@ function getStatusLabel(status: string): string {
   if (status === 'NOISE_NODE') return '交点';
   if (status === 'OPTIMAL') return '大吉';
   if (status === 'OPTIMAL_REGULAR') return '吉';
+  if (status === 'WARNING') return '注意';
   return '';
 }
 
@@ -208,6 +209,10 @@ export function generateMagneticMapKML(
       <LineStyle><color>fff6823b</color><width>1</width></LineStyle>
       <PolyStyle><color>22f6823b</color></PolyStyle>
     </Style>
+    <Style id="style_WARNING">
+      <LineStyle><color>ff00a5ff</color><width>2</width></LineStyle>
+      <PolyStyle><color>6600a5ff</color></PolyStyle>
+    </Style>
     <Style id="style_NOISE_GOU">
       <LineStyle><color>ff4444ef</color><width>2</width></LineStyle>
       <PolyStyle><color>994444ef</color></PolyStyle>
@@ -278,6 +283,10 @@ export function generateMagneticMapKML(
     <Style id="label_SAFE">
       <IconStyle><scale>0</scale></IconStyle>
       <LabelStyle><color>fff6823b</color><scale>0.0</scale></LabelStyle>
+    </Style>
+    <Style id="label_WARNING">
+      <IconStyle><scale>0</scale></IconStyle>
+      <LabelStyle><color>ff00a5ff</color><scale>1.2</scale></LabelStyle>
     </Style>
     <Style id="label_NOISE_GOU">
       <IconStyle><scale>0</scale></IconStyle>

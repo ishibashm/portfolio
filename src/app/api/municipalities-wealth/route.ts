@@ -211,6 +211,7 @@ export async function GET(request: Request) {
           switch (astrologyStatus) {
             case 'OPTIMAL': astrologyScore = 100; break;
             case 'SAFE': astrologyScore = 80; break;
+            case 'WARNING': astrologyScore = 60; break;
             case 'NOISE_VOID': 
             case 'NOISE_NODE': astrologyScore = 40; break;
             case 'NOISE_HONMEI':

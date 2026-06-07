@@ -110,4 +110,21 @@ describe('KML Export Validation and Inconsistency Tests', () => {
     expect(kml).toContain('<name>Boundary Danger Zone 1</name>');
     expect(kml).toContain('<name>Boundary Danger Zone 8</name>');
   });
+
+  it('should correctly output WARNING status with orange style and 注意 label', () => {
+    const warningVectors = {
+      N: 'WARNING',
+      NE: 'SAFE',
+      E: 'SAFE',
+      SE: 'SAFE',
+      S: 'SAFE',
+      SW: 'SAFE',
+      W: 'SAFE',
+      NW: 'SAFE'
+    };
+    const kml = generateMagneticMapKML(sampleLat, sampleLon, sampleDeclination, false, warningVectors);
+    expect(kml).toContain('<styleUrl>#style_WARNING</styleUrl>');
+    expect(kml).toContain('<name>注意</name>');
+    expect(kml).toContain('<styleUrl>#label_WARNING</styleUrl>');
+  });
 });
