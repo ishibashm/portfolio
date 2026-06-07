@@ -739,7 +739,7 @@ export function calculateVectorCollision(
     const layers = [yStatus, mStatus, dStatus];
 
     if (actionIntent === 'MIGRATION') {
-      // For relocation, Year and Month layers are extremely critical, Day is short-term
+      // For relocation, Year and Month layers are extremely critical (long-term), Day is short-term.
       const yRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(yStatus);
       const mRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus);
       const dRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(dStatus);
@@ -749,69 +749,74 @@ export function calculateVectorCollision(
       } else if (mRed) {
         finalVectors[dir] = mStatus as any; // Month red noise is absolute blocker
       } else if (dRed) {
-        // If Year/Month are safe or lucky, but only Day has red noise, downgrade to WARNING
+        // If Year/Month are safe, but only Day has red noise, downgrade to WARNING
         finalVectors[dir] = 'WARNING';
       } else {
-        const yScore = getLayerScore(yStatus);
-        const mScore = getLayerScore(mStatus);
-        const totalScore = yScore + mScore;
-
-        if (totalScore < 0) {
-          const hasVoid = [yStatus, mStatus].find(s => s === 'NOISE_VOID');
-          if (hasVoid) {
-            finalVectors[dir] = 'NOISE_VOID';
-          } else {
-            const hasMinor = [yStatus, mStatus].find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
-            finalVectors[dir] = (hasMinor || 'SAFE') as any;
-          }
-        } else if (totalScore === 0) {
-          finalVectors[dir] = 'SAFE';
+        // Evaluate other noises on critical layers (Year and Month)
+        // Order of severity: VOID > HONMEI > TEKI > GETSUMEI > GETSUTEKI > NODE
+        const criticalLayers = [yStatus, mStatus];
+        if (criticalLayers.includes('NOISE_VOID')) {
+          finalVectors[dir] = 'NOISE_VOID';
+        } else if (criticalLayers.includes('NOISE_HONMEI')) {
+          finalVectors[dir] = 'NOISE_HONMEI';
+        } else if (criticalLayers.includes('NOISE_TEKI')) {
+          finalVectors[dir] = 'NOISE_TEKI';
+        } else if (criticalLayers.includes('NOISE_GETSUMEI')) {
+          finalVectors[dir] = 'NOISE_GETSUMEI';
+        } else if (criticalLayers.includes('NOISE_GETSUTEKI')) {
+          finalVectors[dir] = 'NOISE_GETSUTEKI';
+        } else if (criticalLayers.includes('NOISE_NODE')) {
+          finalVectors[dir] = 'NOISE_NODE';
         } else {
-          const hasOpt = [yStatus, mStatus].includes('OPTIMAL');
-          let val = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
-          
-          // Tenchusatsu / Node conflict downgrade
-          const hasVoid = [yStatus, mStatus].includes('NOISE_VOID');
-          const hasNode = [yStatus, mStatus].includes('NOISE_NODE');
-          if (hasVoid) {
-            val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
-          } else if (hasNode) {
-            val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+          // No active noises on Year and Month. Now we can check if it is OPTIMAL.
+          const hasOpt = criticalLayers.includes('OPTIMAL');
+          const hasOptReg = criticalLayers.includes('OPTIMAL_REGULAR');
+          if (hasOpt) {
+            finalVectors[dir] = 'OPTIMAL';
+          } else if (hasOptReg) {
+            finalVectors[dir] = 'OPTIMAL_REGULAR';
+          } else {
+            finalVectors[dir] = 'SAFE';
           }
-          finalVectors[dir] = val as any;
         }
       }
     } else {
-      const totalScore = getLayerScore(yStatus) + getLayerScore(mStatus) + getLayerScore(dStatus);
+      // General Ops: Year, Month, and Day are all active.
+      const layers = [yStatus, mStatus, dStatus];
+      
+      const hasGou = layers.includes('NOISE_GOU');
+      const hasAnken = layers.includes('NOISE_ANKEN');
+      const hasHa = layers.includes('NOISE_HA');
 
-      if (totalScore < 0) {
-        const hasRed = layers.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
-        if (hasRed) {
-          finalVectors[dir] = hasRed as any;
-        } else {
-          const hasVoid = layers.find(s => s === 'NOISE_VOID');
-          if (hasVoid) {
-            finalVectors[dir] = 'NOISE_VOID';
-          } else {
-            const hasMinor = layers.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
-            finalVectors[dir] = (hasMinor || 'SAFE') as any;
-          }
-        }
-      } else if (totalScore === 0) {
-        finalVectors[dir] = 'SAFE';
+      if (hasGou) {
+        finalVectors[dir] = 'NOISE_GOU';
+      } else if (hasAnken) {
+        finalVectors[dir] = 'NOISE_ANKEN';
+      } else if (hasHa) {
+        finalVectors[dir] = 'NOISE_HA';
+      } else if (layers.includes('NOISE_VOID')) {
+        finalVectors[dir] = 'NOISE_VOID';
+      } else if (layers.includes('NOISE_HONMEI')) {
+        finalVectors[dir] = 'NOISE_HONMEI';
+      } else if (layers.includes('NOISE_TEKI')) {
+        finalVectors[dir] = 'NOISE_TEKI';
+      } else if (layers.includes('NOISE_GETSUMEI')) {
+        finalVectors[dir] = 'NOISE_GETSUMEI';
+      } else if (layers.includes('NOISE_GETSUTEKI')) {
+        finalVectors[dir] = 'NOISE_GETSUTEKI';
+      } else if (layers.includes('NOISE_NODE')) {
+        finalVectors[dir] = 'NOISE_NODE';
       } else {
+        // No noises. Determine if lucky.
         const hasOpt = layers.includes('OPTIMAL');
-        let val = hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR';
-        
-        // Tenchusatsu / Node conflict downgrade
-        const hasVoid = layers.includes('NOISE_VOID');
-        const hasNode = layers.includes('NOISE_NODE');
-        if (hasVoid) {
-          val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
-        } else if (hasNode) {
-          val = val === 'OPTIMAL' ? 'OPTIMAL_REGULAR' : 'SAFE';
+        const hasOptReg = layers.includes('OPTIMAL_REGULAR');
+        if (hasOpt) {
+          finalVectors[dir] = 'OPTIMAL';
+        } else if (hasOptReg) {
+          finalVectors[dir] = 'OPTIMAL_REGULAR';
+        } else {
+          finalVectors[dir] = 'SAFE';
         }
-        finalVectors[dir] = val as any;
       }
     }
   }

@@ -17,6 +17,15 @@ export class KigakuScorer implements TimingScorer {
     const yearStar = ctx.useClassical ? getClassicalYearStar(ctx.targetDate) : getYearStar(ctx.targetDate);
     const monthStar = ctx.useClassical ? getClassicalMonthStar(ctx.targetDate) : getMonthStar(ctx.targetDate);
     const dailyStar = ctx.useClassical ? getClassicalDayStar(ctx.targetDate) : getDayStar(ctx.targetDate);
+
+    const yB = generateBoard(yearStar);
+    const mB = generateBoard(monthStar);
+    const dB = generateBoard(dailyStar);
+
+    // If targetDirection is specified, look up the star in that direction for phase compatibility check
+    const activeYearStar = ctx.targetDirection ? yB[ctx.targetDirection] : yearStar;
+    const activeMonthStar = ctx.targetDirection ? mB[ctx.targetDirection] : monthStar;
+    const activeDailyStar = ctx.targetDirection ? dB[ctx.targetDirection] : dailyStar;
     
     const elementMap: Record<number, string> = {
         1: 'water', 2: 'earth', 3: 'wood', 4: 'wood', 5: 'earth',
@@ -45,9 +54,9 @@ export class KigakuScorer implements TimingScorer {
         return '独立';
     };
 
-    const yPhase = evaluatePhase(yearStar);
-    const mPhase = evaluatePhase(monthStar);
-    const dPhase = evaluatePhase(dailyStar);
+    const yPhase = evaluatePhase(activeYearStar);
+    const mPhase = evaluatePhase(activeMonthStar);
+    const dPhase = evaluatePhase(activeDailyStar);
 
     const isGood = (p: string) => p === '比和' || p === '相生';
     let overallGood = isGood(yPhase) && isGood(mPhase) && isGood(dPhase);
@@ -56,9 +65,6 @@ export class KigakuScorer implements TimingScorer {
     let targetClashStatus: string | null = null;
     let isDayWarning = false;
     if (ctx.targetDirection && ctx.userKigakuStar) {
-      const yB = generateBoard(yearStar);
-      const mB = generateBoard(monthStar);
-      const dB = generateBoard(dailyStar);
       const voidZodiacs = ctx.userBirthDate ? getPersonalVoidZodiac(ctx.userBirthDate) : [];
       const lunarNodeLon = AstroEngine.getLunarNodeLongitude(ctx.targetDate);
       const collision = calculateVectorCollision(
@@ -134,7 +140,7 @@ export class KigakuScorer implements TimingScorer {
 
     return { 
       phenomenon: mainPhenomenon, 
-      detail: doyouDetail + `[年:${yearStar}(${yPhase})] [月:${monthStar}(${mPhase})] [日:${dailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
+      detail: doyouDetail + `[年:${activeYearStar}(${yPhase})] [月:${activeMonthStar}(${mPhase})] [日:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
     };
   }
 }

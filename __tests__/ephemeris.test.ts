@@ -101,6 +101,46 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       expect(result.phenomenon).toBe('一時的干渉・引越当日注意');
       expect(result.detail).toContain('【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。');
     });
+
+    it('correctly evaluates target direction stars when targetDirection is specified', () => {
+      const scorer = new KigakuScorer();
+      const ctx = {
+        targetDate: new Date('2026-07-11T12:00:00+09:00'),
+        userBirthDate: new Date('1988-11-25T12:00:00+09:00'),
+        userKigakuStar: 3,
+        actionType: 'focus' as const,
+        useClassical: true,
+        targetDirection: 'E' as const,
+        actionIntent: 'DEFAULT' as const
+      };
+
+      const result = scorer.observe(ctx);
+      // For Center (1, 3, 5) at East direction:
+      // Year Center 1 -> E is 8. Wood (3) controls Earth (8) -> 相剋 (Shokoku)
+      // Month Center 3 -> E is 1. Water (1) generates Wood (3) -> 相生 (Sojo)
+      // Day Center 5 -> E is 3. Wood (3) is same as Wood (3) -> 比和 (Hiwa)
+      expect(result.detail).toContain('[年:8(相剋)] [月:1(相生)] [日:3(比和)]');
+    });
+
+    it('applies strict priority gating on layer merging, preventing OPTIMAL from masking noises', () => {
+      const yB = generateBoard(1);
+      const mB = generateBoard(3);
+      const dB = generateBoard(5);
+
+      const collision = calculateVectorCollision(
+        3,
+        yB, mB, dB,
+        [],
+        null,
+        'MIGRATION',
+        new Date('2026-07-11T12:00:00+09:00'),
+        139.6917
+      );
+
+      // Even with positive Year/Month element phases, presence of NOISE_ANKEN on Month
+      // must absolute block and keep the final vector as NOISE_ANKEN.
+      expect(collision.finalVectors.E).toBe('NOISE_ANKEN');
+    });
   });
 });
 

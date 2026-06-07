@@ -1505,28 +1505,39 @@ ${timingOptimization?.recommendationText || "特になし"}
           const m = vectorData.monthLayer[dir] || 'SAFE';
           const d = 'SAFE';
 
-          const totalScore = getLayerScore(y) + getLayerScore(m) + getLayerScore(d);
-          
-          if (totalScore < 0) {
-            const layersList = [y, m, d];
-            const hasRed = layersList.find(s => ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(s));
-            if (hasRed) {
-              vectorData.finalVectors[dir] = hasRed as any;
-            } else {
-              const hasVoid = layersList.find(s => s === 'NOISE_VOID');
-              if (hasVoid) {
-                vectorData.finalVectors[dir] = 'NOISE_VOID' as any;
-              } else {
-                const hasMinor = layersList.find(s => ['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(s));
-                vectorData.finalVectors[dir] = (hasMinor || 'SAFE') as any;
-              }
-            }
-          } else if (totalScore === 0) {
-            vectorData.finalVectors[dir] = 'SAFE';
+          const layersList = [y, m, d];
+          const hasGou = layersList.includes('NOISE_GOU');
+          const hasAnken = layersList.includes('NOISE_ANKEN');
+          const hasHa = layersList.includes('NOISE_HA');
+
+          if (hasGou) {
+            vectorData.finalVectors[dir] = 'NOISE_GOU' as any;
+          } else if (hasAnken) {
+            vectorData.finalVectors[dir] = 'NOISE_ANKEN' as any;
+          } else if (hasHa) {
+            vectorData.finalVectors[dir] = 'NOISE_HA' as any;
+          } else if (layersList.includes('NOISE_VOID')) {
+            vectorData.finalVectors[dir] = 'NOISE_VOID' as any;
+          } else if (layersList.includes('NOISE_HONMEI')) {
+            vectorData.finalVectors[dir] = 'NOISE_HONMEI' as any;
+          } else if (layersList.includes('NOISE_TEKI')) {
+            vectorData.finalVectors[dir] = 'NOISE_TEKI' as any;
+          } else if (layersList.includes('NOISE_GETSUMEI')) {
+            vectorData.finalVectors[dir] = 'NOISE_GETSUMEI' as any;
+          } else if (layersList.includes('NOISE_GETSUTEKI')) {
+            vectorData.finalVectors[dir] = 'NOISE_GETSUTEKI' as any;
+          } else if (layersList.includes('NOISE_NODE')) {
+            vectorData.finalVectors[dir] = 'NOISE_NODE' as any;
           } else {
-            const layersList = [y, m, d];
             const hasOpt = layersList.includes('OPTIMAL');
-            vectorData.finalVectors[dir] = (hasOpt ? 'OPTIMAL' : 'OPTIMAL_REGULAR') as any;
+            const hasOptReg = layersList.includes('OPTIMAL_REGULAR');
+            if (hasOpt) {
+              vectorData.finalVectors[dir] = 'OPTIMAL' as any;
+            } else if (hasOptReg) {
+              vectorData.finalVectors[dir] = 'OPTIMAL_REGULAR' as any;
+            } else {
+              vectorData.finalVectors[dir] = 'SAFE';
+            }
           }
         });
 
