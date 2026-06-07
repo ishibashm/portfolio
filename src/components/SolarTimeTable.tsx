@@ -58,6 +58,9 @@ export function SolarTimeTableComponent({
   };
 
   const isVoidTimeHour = (item: KimonScheduleItem) => {
+    if (personalVoidZodiac && personalVoidZodiac.length > 0) {
+      return personalVoidZodiac.includes(item.japanese);
+    }
     return item.japanese === "午" || item.japanese === "未"; // 11:00 - 15:00
   };
 
