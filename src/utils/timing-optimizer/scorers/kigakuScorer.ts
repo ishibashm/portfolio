@@ -1,5 +1,10 @@
 import { EvaluationContext, TimingScorer } from '../types';
-import { getDayStar, getYearStar, getMonthStar, getCurrentZodiac, AstroEngine } from '../../ephemerisEngine';
+import { 
+  getDayStar, getYearStar, getMonthStar, getCurrentZodiac, AstroEngine,
+  getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar,
+  generateBoard, calculateVectorCollision, getPersonalVoidZodiac,
+  StarFrequency
+} from '../../ephemerisEngine';
 
 export class KigakuScorer implements TimingScorer {
   name = "Kigaku (Oriental Astrology)";
@@ -9,9 +14,9 @@ export class KigakuScorer implements TimingScorer {
         return { phenomenon: "Insufficient Data", detail: "本命星の登録がないため観測不能です。" };
     }
 
-    const yearStar = getYearStar(ctx.targetDate);
-    const monthStar = getMonthStar(ctx.targetDate);
-    const dailyStar = getDayStar(ctx.targetDate);
+    const yearStar = ctx.useClassical ? getClassicalYearStar(ctx.targetDate) : getYearStar(ctx.targetDate);
+    const monthStar = ctx.useClassical ? getClassicalMonthStar(ctx.targetDate) : getMonthStar(ctx.targetDate);
+    const dailyStar = ctx.useClassical ? getClassicalDayStar(ctx.targetDate) : getDayStar(ctx.targetDate);
     
     const elementMap: Record<number, string> = {
         1: 'water', 2: 'earth', 3: 'wood', 4: 'wood', 5: 'earth',
@@ -45,7 +50,33 @@ export class KigakuScorer implements TimingScorer {
     const dPhase = evaluatePhase(dailyStar);
 
     const isGood = (p: string) => p === '比和' || p === '相生';
-    const overallGood = isGood(yPhase) && isGood(mPhase) && isGood(dPhase);
+    let overallGood = isGood(yPhase) && isGood(mPhase) && isGood(dPhase);
+
+    // Direction-based Collision Validation
+    let targetClashStatus: string | null = null;
+    if (ctx.targetDirection && ctx.userKigakuStar) {
+      const yB = generateBoard(yearStar);
+      const mB = generateBoard(monthStar);
+      const dB = generateBoard(dailyStar);
+      const voidZodiacs = ctx.userBirthDate ? getPersonalVoidZodiac(ctx.userBirthDate) : [];
+      const lunarNodeLon = AstroEngine.getLunarNodeLongitude(ctx.targetDate);
+      const collision = calculateVectorCollision(
+        ctx.userKigakuStar as StarFrequency,
+        yB, mB, dB,
+        voidZodiacs,
+        lunarNodeLon,
+        ctx.actionIntent || 'DEFAULT',
+        ctx.targetDate,
+        ctx.longitude || 139.6917,
+        undefined,
+        ctx.useClassical ? 'traditional' : 'physical'
+      );
+      const status = collision.finalVectors[ctx.targetDirection];
+      if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA', 'NOISE_HONMEI', 'NOISE_TEKI'].includes(status)) {
+        targetClashStatus = status;
+        overallGood = false; // Prevent Complete Resonance on clashing directions
+      }
+    }
 
     // Doyou (土用) & Mabi (間日) Check
     const L0 = AstroEngine.getSolarLongitude(ctx.targetDate);
@@ -71,6 +102,8 @@ export class KigakuScorer implements TimingScorer {
     let mainPhenomenon = "";
     if (isDoyouHazard) {
       mainPhenomenon = `土用殺 (Doyou Hazard)`;
+    } else if (targetClashStatus) {
+      mainPhenomenon = `警告・方位凶殺衝突`;
     } else if (overallGood) {
       mainPhenomenon = `完全共鳴 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     } else {
@@ -78,6 +111,19 @@ export class KigakuScorer implements TimingScorer {
     }
 
     let doyouDetail = isDoyouHazard ? `【大凶・土用殺 (${doyouType === 'SPRING' ? '春土用' : doyouType === 'SUMMER' ? '夏土用' : doyouType === 'AUTUMN' ? '秋土用' : '冬土用'})】土地の契約、引越しなどの基礎に関わる活動は避けてください。 ` : "";
+
+    if (targetClashStatus) {
+      const translateStatus = (s: string) => {
+        if (s === 'NOISE_GOU') return '五黄殺 (大凶)';
+        if (s === 'NOISE_ANKEN') return '暗剣殺 (大凶)';
+        if (s === 'NOISE_HA') return '破 (大凶・不整合波)';
+        if (s === 'NOISE_HONMEI') return '本命殺 (自滅・健康害)';
+        if (s === 'NOISE_TEKI') return '的殺 (目的喪失・精神負荷)';
+        return s;
+      };
+      const clashName = translateStatus(targetClashStatus);
+      doyouDetail += `【警告・方位凶殺衝突】目的地（${ctx.targetDirection}方位）に凶殺「${clashName}」が検出されています。年月日の時間的波長が「相生」や「比和」であっても、この方位への移動は物理的・精神的なノイズとなるため推奨されません。 `;
+    }
 
     return { 
       phenomenon: mainPhenomenon, 

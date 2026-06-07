@@ -20,10 +20,11 @@ interface SolarTimeTableProps {
   envData?: any;
   personalVoidZodiac?: string[];
   nbaData?: any;
+  useClassical?: boolean;
 }
 
 export function SolarTimeTableComponent({ 
-  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, personalVoidZodiac, nbaData
+  date, longitude, latitude, eot, kpIndex, xrayFlux, ansLoad, shieldCapacity, vectors, honmeiStar, envData, personalVoidZodiac, nbaData, useClassical
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -72,9 +73,11 @@ export function SolarTimeTableComponent({
   const evaluateTimePhase = (item: KimonScheduleItem) => {
     const isGoodGate = item.hachimon.auspicious; // 生, 休, 開
     
-    if (!honmeiStar || !honmeiStar.physical) return { isOptimal: false, myElement: null, timeElement: null, relation: null };
+    if (!honmeiStar) return { isOptimal: false, myElement: null, timeElement: null, relation: null };
+    const activeStar = useClassical ? honmeiStar.classical : honmeiStar.physical;
+    if (!activeStar) return { isOptimal: false, myElement: null, timeElement: null, relation: null };
     
-    const myElement = getElementInfo(honmeiStar.physical);
+    const myElement = getElementInfo(activeStar);
     const timeElementNum = item.kyusei.number || parseInt(item.kyusei.japanese.substring(0,1)) || 3;
     const timeElement = getElementInfo(timeElementNum);
     

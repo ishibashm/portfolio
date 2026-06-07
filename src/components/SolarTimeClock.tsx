@@ -528,7 +528,8 @@ export const SolarTimeClock = () => {
         gsr,
         birthDate,
         lon,
-        targetDate: targetDateStr
+        targetDate: targetDateStr,
+        useClassical: useClassicalBoard
       };
       const res = await fetch("/api/nba", {
         method: 'POST',
@@ -555,7 +556,7 @@ export const SolarTimeClock = () => {
       fetchNBAData();
     }, 1000); // 1s debounce
     return () => clearTimeout(timer);
-  }, [ansLoad, shieldCapacity, birthDate, lon, timeOffsetDays, baseTime]);
+  }, [ansLoad, shieldCapacity, birthDate, lon, timeOffsetDays, baseTime, useClassicalBoard]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -1832,20 +1833,24 @@ ${timingOptimization?.recommendationText || "特になし"}
     });
 
     let userKigakuStar: number | undefined;
-    if (honmeiStar?.physical) {
-      if (typeof honmeiStar.physical === 'number') {
-        userKigakuStar = honmeiStar.physical;
-      } else if (typeof honmeiStar.physical === 'string') {
-        const match = String(honmeiStar.physical).match(/([一二三四五六七八九])/);
+    const activeHonmeiStar = useClassicalBoard ? honmeiStar?.classical : honmeiStar?.physical;
+    if (activeHonmeiStar) {
+      if (typeof activeHonmeiStar === 'number') {
+        userKigakuStar = activeHonmeiStar;
+      } else if (typeof activeHonmeiStar === 'string') {
+        const match = String(activeHonmeiStar).match(/([一二三四五六七八九])/);
         if (match) {
           const numMap: Record<string, number> = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9 };
           userKigakuStar = numMap[match[1]];
         } else {
-          const numMatch = String(honmeiStar.physical).match(/(\d)/);
+          const numMatch = String(activeHonmeiStar).match(/(\d)/);
           if (numMatch) userKigakuStar = parseInt(numMatch[1], 10);
         }
       }
     }
+
+    const dirInfo = getTargetDirectionInfo();
+    const targetDirection = dirInfo ? (useTrueNorth ? dirInfo.trueDirection : dirInfo.magneticDirection) as Direction : undefined;
 
     const result = optimizer.evaluate({
       targetDate,
@@ -1853,11 +1858,14 @@ ${timingOptimization?.recommendationText || "特になし"}
       userKigakuStar,
       actionType: timingActionType,
       latitude: targetLat || lat,
-      longitude: targetLon || lon
+      longitude: targetLon || lon,
+      useClassical: useClassicalBoard,
+      targetDirection,
+      actionIntent
     });
 
     setTimingOptimization(result);
-  }, [baseTime, timeOffsetDays, actionIntent, usePsychologyScorer, useKigakuScorer, useAstrologyScorer, honmeiStar, birthDate, targetLat, lat, targetLon, lon]);
+  }, [baseTime, timeOffsetDays, actionIntent, usePsychologyScorer, useKigakuScorer, useAstrologyScorer, honmeiStar, birthDate, targetLat, lat, targetLon, lon, useClassicalBoard, useTrueNorth]);
 
   if (!baseTime || !solarData)
     return (
@@ -2262,6 +2270,7 @@ ${timingOptimization?.recommendationText || "特になし"}
               honmeiStar={honmeiStar}
               envData={env}
               personalVoidZodiac={personalVoidZodiac}
+              useClassical={useClassicalBoard}
             />
           </div>
         )}
@@ -2274,7 +2283,7 @@ ${timingOptimization?.recommendationText || "特になし"}
               <ExpertCouncilPanel
                 actionIntent={actionIntent}
                 targetDate={baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : null}
-                honmeiStar={honmeiStar?.physical || null}
+                honmeiStar={(useClassicalBoard ? honmeiStar?.classical : honmeiStar?.physical) || null}
                 environmentalFrequencies={env}
                 birthFrequencies={birthEnv}
                 finalVectors={layers?.finalVectors || {}}
