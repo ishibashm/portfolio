@@ -54,6 +54,7 @@ export class KigakuScorer implements TimingScorer {
 
     // Direction-based Collision Validation
     let targetClashStatus: string | null = null;
+    let isDayWarning = false;
     if (ctx.targetDirection && ctx.userKigakuStar) {
       const yB = generateBoard(yearStar);
       const mB = generateBoard(monthStar);
@@ -75,6 +76,8 @@ export class KigakuScorer implements TimingScorer {
       if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA', 'NOISE_HONMEI', 'NOISE_TEKI'].includes(status)) {
         targetClashStatus = status;
         overallGood = false; // Prevent Complete Resonance on clashing directions
+      } else if (status === 'WARNING') {
+        isDayWarning = true;
       }
     }
 
@@ -104,6 +107,8 @@ export class KigakuScorer implements TimingScorer {
       mainPhenomenon = `土用殺 (Doyou Hazard)`;
     } else if (targetClashStatus) {
       mainPhenomenon = `警告・方位凶殺衝突`;
+    } else if (isDayWarning) {
+      mainPhenomenon = `一時的干渉・引越当日注意`;
     } else if (overallGood) {
       mainPhenomenon = `完全共鳴 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     } else {
@@ -123,6 +128,8 @@ export class KigakuScorer implements TimingScorer {
       };
       const clashName = translateStatus(targetClashStatus);
       doyouDetail += `【警告・方位凶殺衝突】目的地（${ctx.targetDirection}方位）に凶殺「${clashName}」が検出されています。年月日の時間的波長が「相生」や「比和」であっても、この方位への移動は物理的・精神的なノイズとなるため推奨されません。 `;
+    } else if (isDayWarning) {
+      doyouDetail += `【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。当日の荷物の紛失、配送遅延、または軽微なケガや体調管理に普段より注意を払い、時間に余裕を持って行動してください。移住後の長期的な生活への悪影響はありません。 `;
     }
 
     return { 

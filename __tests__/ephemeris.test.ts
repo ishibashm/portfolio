@@ -84,6 +84,23 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       expect(collision.doyouState?.doyouType).toBe('SUMMER');
       expect(collision.finalVectors.SW).toBe('NOISE_GOU');
     });
+
+    it('applies a soft warning for daily-level blocker under MIGRATION instead of absolute block', () => {
+      const scorer = new KigakuScorer();
+      const ctx = {
+        targetDate: new Date('2026-07-04T12:00:00+09:00'), // Day has Center 3, E is NOISE_ANKEN
+        userBirthDate: new Date('1988-11-25T12:00:00+09:00'),
+        userKigakuStar: 3,
+        actionType: 'focus' as const,
+        useClassical: true,
+        targetDirection: 'E' as const,
+        actionIntent: 'MIGRATION' as const
+      };
+
+      const result = scorer.observe(ctx);
+      expect(result.phenomenon).toBe('一時的干渉・引越当日注意');
+      expect(result.detail).toContain('【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。');
+    });
   });
 });
 
