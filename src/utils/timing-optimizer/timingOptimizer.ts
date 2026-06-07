@@ -21,6 +21,7 @@ export class TimingOptimizer {
 
     for (const { scorer } of this.configs) {
       const result = scorer.observe(context);
+      if (result === null) continue;
       
       details.push({
         name: scorer.name,

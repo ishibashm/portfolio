@@ -14,6 +14,18 @@ export class KigakuScorer implements TimingScorer {
         return { phenomenon: "Insufficient Data", detail: "本命星の登録がないため観測不能です。" };
     }
 
+    if (
+      !ctx.targetDirection ||
+      ctx.latitude === undefined ||
+      ctx.latitude === null ||
+      isNaN(ctx.latitude) ||
+      ctx.longitude === undefined ||
+      ctx.longitude === null ||
+      isNaN(ctx.longitude)
+    ) {
+      return null;
+    }
+
     const yearStar = ctx.useClassical ? getClassicalYearStar(ctx.targetDate) : getYearStar(ctx.targetDate);
     const monthStar = ctx.useClassical ? getClassicalMonthStar(ctx.targetDate) : getMonthStar(ctx.targetDate);
     const dailyStar = ctx.useClassical ? getClassicalDayStar(ctx.targetDate) : getDayStar(ctx.targetDate);

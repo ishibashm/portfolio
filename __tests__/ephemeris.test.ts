@@ -26,7 +26,7 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
   });
 
   describe('KigakuScorer Timing and Spatial Blocker Integration', () => {
-    it('correctly evaluates using classical stars under useClassical: true', () => {
+    it('returns null when targetDirection or coordinates are missing', () => {
       const scorer = new KigakuScorer();
       const ctx = {
         targetDate: new Date('2026-07-11T12:00:00+09:00'),
@@ -37,13 +37,7 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       };
       
       const result = scorer.observe(ctx);
-      // Under Classical, 2026-07-11 is Year: 1, Month: 3, Day: 5
-      // 3 is Wood, Year 1 (Water) is water-wood (相生)
-      // Month 3 (Wood) is wood-wood (比和)
-      // Day 5 (Earth) is wood-earth (相剋)
-      // Hence it is a mixed resonance (混在干渉)
-      expect(result.phenomenon).toContain('混在干渉');
-      expect(result.detail).toContain('[年:1(相生)] [月:3(比和)] [日:5(相剋)]');
+      expect(result).toBeNull();
     });
 
     it('downgrades status to warning when a target direction has blockers', () => {
@@ -55,12 +49,15 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
         actionType: 'focus' as const,
         useClassical: true,
         targetDirection: 'E' as const, // East direction has Anken-satsu in Month Board
-        actionIntent: 'MIGRATION' as const
+        actionIntent: 'MIGRATION' as const,
+        latitude: 35.6895,
+        longitude: 139.6917
       };
 
       const result = scorer.observe(ctx);
-      expect(result.phenomenon).toBe('警告・方位凶殺衝突');
-      expect(result.detail).toContain('【警告・方位凶殺衝突】目的地（E方位）に凶殺「暗剣殺 (大凶)」が検出されています。');
+      expect(result).not.toBeNull();
+      expect(result!.phenomenon).toBe('警告・方位凶殺衝突');
+      expect(result!.detail).toContain('【警告・方位凶殺衝突】目的地（E方位）に凶殺「暗剣殺 (大凶)」が検出されています。');
     });
 
     it('blocks the seasonal Doyou-satsu direction during a Doyou hazard period', () => {
@@ -94,12 +91,15 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
         actionType: 'focus' as const,
         useClassical: true,
         targetDirection: 'E' as const,
-        actionIntent: 'MIGRATION' as const
+        actionIntent: 'MIGRATION' as const,
+        latitude: 35.6895,
+        longitude: 139.6917
       };
 
       const result = scorer.observe(ctx);
-      expect(result.phenomenon).toBe('一時的干渉・引越当日注意');
-      expect(result.detail).toContain('【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。');
+      expect(result).not.toBeNull();
+      expect(result!.phenomenon).toBe('一時的干渉・引越当日注意');
+      expect(result!.detail).toContain('【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。');
     });
 
     it('correctly evaluates target direction stars when targetDirection is specified', () => {
@@ -111,16 +111,20 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
         actionType: 'focus' as const,
         useClassical: true,
         targetDirection: 'E' as const,
-        actionIntent: 'DEFAULT' as const
+        actionIntent: 'DEFAULT' as const,
+        latitude: 35.6895,
+        longitude: 139.6917
       };
 
       const result = scorer.observe(ctx);
+      expect(result).not.toBeNull();
       // For Center (1, 3, 5) at East direction:
       // Year Center 1 -> E is 8. Wood (3) controls Earth (8) -> 相剋 (Shokoku)
       // Month Center 3 -> E is 1. Water (1) generates Wood (3) -> 相生 (Sojo)
       // Day Center 5 -> E is 3. Wood (3) is same as Wood (3) -> 比和 (Hiwa)
-      expect(result.detail).toContain('[年:8(相剋)] [月:1(相生)] [日:3(比和)]');
+      expect(result!.detail).toContain('[年:8(相剋)] [月:1(相生)] [日:3(比和)]');
     });
+
 
     it('applies strict priority gating on layer merging, preventing OPTIMAL from masking noises', () => {
       const yB = generateBoard(1);

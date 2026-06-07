@@ -16,5 +16,5 @@ export interface EvaluationContext {
 export interface TimingScorer {
   name: string;
   // そのタイミングで観測された物理・天体現象とその解説をそのまま返す（スコア化・ブラックボックス化の排除）
-  observe(context: EvaluationContext): { phenomenon: string; detail: string };
+  observe(context: EvaluationContext): { phenomenon: string; detail: string } | null;
 }
