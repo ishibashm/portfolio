@@ -1887,13 +1887,6 @@ ${timingOptimization?.recommendationText || "特になし"}
     setTimingOptimization(result);
   }, [baseTime, timeOffsetDays, actionIntent, usePsychologyScorer, useKigakuScorer, useAstrologyScorer, honmeiStar, birthDate, targetLat, lat, targetLon, lon, useClassicalBoard, useTrueNorth]);
 
-  if (!baseTime || !solarData)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
-        Initializing Tactical Systems...
-      </div>
-    );
-
   const basePersonalVoidZodiac = React.useMemo(() => {
     if (!birthDate) return [];
     const d = new Date(birthDate);
@@ -1902,8 +1895,8 @@ ${timingOptimization?.recommendationText || "特になし"}
   }, [birthDate]);
 
   const personalVoidZodiac = voidZodiacOverride ? voidZodiacOverride.split('') : basePersonalVoidZodiac;
-  const kimon = getKimonHour(solarData.solarTime);
-  const isPersonalVoid = personalVoidZodiac.includes(kimon.japanese);
+  const kimon = solarData ? getKimonHour(solarData.solarTime) : null;
+  const isPersonalVoid = kimon ? personalVoidZodiac.includes(kimon.japanese) : false;
 
 
 
@@ -2042,6 +2035,13 @@ ${timingOptimization?.recommendationText || "特になし"}
       </div>
     );
   };
+
+  if (!baseTime || !solarData)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
+        Initializing Tactical Systems...
+      </div>
+    );
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
