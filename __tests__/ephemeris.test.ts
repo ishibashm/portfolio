@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar, getHonmeiStar } from '../src/utils/ephemerisEngine';
+import { getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar, getHonmeiStar, calculateVectorCollision, generateBoard } from '../src/utils/ephemerisEngine';
 import { KigakuScorer } from '../src/utils/timing-optimizer/scorers/kigakuScorer';
 
 describe('Kyusei Kigaku High-Precision Calculations', () => {
@@ -16,7 +16,7 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
   });
 
   it('should verify day star changes and solar terms', () => {
-    // A known date with standard day star, e.g., 2026-05-23
+    // A we-known date with standard day star, e.g., 2026-05-23
     const targetDate = new Date('2026-05-23T12:00:00+09:00');
     const dayStar = getClassicalDayStar(targetDate);
     
@@ -61,6 +61,28 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       const result = scorer.observe(ctx);
       expect(result.phenomenon).toBe('警告・方位凶殺衝突');
       expect(result.detail).toContain('【警告・方位凶殺衝突】目的地（E方位）に凶殺「暗剣殺 (大凶)」が検出されています。');
+    });
+
+    it('blocks the seasonal Doyou-satsu direction during a Doyou hazard period', () => {
+      const targetDate = new Date('2026-07-25T12:00:00+09:00'); // Summer Doyou
+      const yB = generateBoard(1);
+      const mB = generateBoard(1);
+      const dB = generateBoard(1);
+
+      const collision = calculateVectorCollision(
+        3, // personalStar
+        yB, mB, dB,
+        [], // voidZodiacs
+        null, // lunarNodeLon
+        'DEFAULT',
+        targetDate,
+        139.6917 // longitude
+      );
+
+      // Verify Summer Doyou-satsu blocks SW (坤宮) direction
+      expect(collision.doyouState?.inDoyou).toBe(true);
+      expect(collision.doyouState?.doyouType).toBe('SUMMER');
+      expect(collision.finalVectors.SW).toBe('NOISE_GOU');
     });
   });
 });

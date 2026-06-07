@@ -815,6 +815,19 @@ export function calculateVectorCollision(
       }
     }
   }
+  // Apply 土用殺 (Doyou-satsu) to finalVectors
+  if (doyouState && doyouState.isDoyouHazard) {
+    const doyouSatsuDirections: Record<string, Direction> = {
+      'SPRING': 'SE',
+      'SUMMER': 'SW',
+      'AUTUMN': 'NW',
+      'WINTER': 'NE'
+    };
+    const targetDoyouSatsuDir = doyouSatsuDirections[doyouState.doyouType];
+    if (targetDoyouSatsuDir) {
+      finalVectors[targetDoyouSatsuDir] = 'NOISE_GOU';
+    }
+  }
 
   return {
     yearLayer,
