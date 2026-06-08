@@ -224,6 +224,7 @@ export default function RelocationSimulatorPage() {
 
   // Metaphysical Engine Global Configuration States
   const [useClassical, setUseClassical] = useState(true);
+  const [physicalMonthMode, setPhysicalMonthMode] = useState<'coupled' | 'independent'>('independent');
   const [directionFilterMode, setDirectionFilterMode] = useState<'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental'>('composite');
   const [actionIntent, setActionIntent] = useState<'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION'>('DEFAULT');
 
@@ -242,6 +243,7 @@ export default function RelocationSimulatorPage() {
       const customEvent = e as CustomEvent<MetaphysicalConfig>;
       if (customEvent.detail) {
         setUseClassical(customEvent.detail.useClassicalBoard);
+        if (customEvent.detail.physicalMonthMode !== undefined) setPhysicalMonthMode(customEvent.detail.physicalMonthMode);
         setDirectionFilterMode(customEvent.detail.directionFilterMode);
         setActionIntent(customEvent.detail.actionIntent);
       }
@@ -302,6 +304,7 @@ export default function RelocationSimulatorPage() {
         if (config.base_lon !== undefined) setStartLon(config.base_lon);
         if (config.use_true_north !== undefined) setUseTrueNorth(config.use_true_north);
         if (config.use_classical_board !== undefined) setUseClassical(config.use_classical_board);
+        if (config.physical_month_mode !== undefined) setPhysicalMonthMode(config.physical_month_mode);
         if (config.direction_filter_mode !== undefined) setDirectionFilterMode(config.direction_filter_mode);
         if (config.action_intent !== undefined) setActionIntent(config.action_intent);
       }
@@ -394,7 +397,7 @@ export default function RelocationSimulatorPage() {
       const direction = bearingToDirection(adjustedBearing, useClassical);
 
       // Metaphysical Evaluation
-      const env = getCurrentEnvironmentalFrequencies(depDate, currentBaseLon);
+      const env = getCurrentEnvironmentalFrequencies(depDate, currentBaseLon, physicalMonthMode);
       const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
       const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
       const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
@@ -483,7 +486,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return list;
-  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
+  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent]);
 
   // Fetch NBA timing and Q-value details dynamically
   const fetchNbaEvaluations = async () => {
@@ -602,7 +605,7 @@ export default function RelocationSimulatorPage() {
       const adjustedB = (rawBearingB - declB + 360) % 360;
       const dirB = bearingToDirection(adjustedB, useClassical);
 
-      const envA = getCurrentEnvironmentalFrequencies(new Date(currentStep.departureDate), lonA);
+      const envA = getCurrentEnvironmentalFrequencies(new Date(currentStep.departureDate), lonA, physicalMonthMode);
       const yB_A = generateBoard(useClassical ? envA.classicalYearStar : envA.yearStar);
       const mB_A = generateBoard(useClassical ? envA.classicalMonthStar : envA.monthStar);
       const dB_A = generateBoard(useClassical ? envA.classicalDayStar : envA.dayStar);
@@ -617,7 +620,7 @@ export default function RelocationSimulatorPage() {
 
       const depDateB = new Date(currentStep.departureDate);
       depDateB.setDate(depDateB.getDate() + 75);
-      const envC = getCurrentEnvironmentalFrequencies(depDateB, cand.lon);
+      const envC = getCurrentEnvironmentalFrequencies(depDateB, cand.lon, physicalMonthMode);
       const yB_C = generateBoard(useClassical ? envC.classicalYearStar : envC.yearStar);
       const mB_C = generateBoard(useClassical ? envC.classicalMonthStar : envC.monthStar);
       const dB_C = generateBoard(useClassical ? envC.classicalDayStar : envC.dayStar);
@@ -648,7 +651,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return validCandidates.sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
+  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent]);
 
   // Compute Kari-kippou Detour Polygons for drawing on map
   const detourPolygonsAndPrefectures = useMemo(() => {
@@ -663,7 +666,7 @@ export default function RelocationSimulatorPage() {
     }
 
     const depDate = new Date(currentStep.departureDate);
-    const env = getCurrentEnvironmentalFrequencies(depDate, currentStep.fromLon);
+    const env = getCurrentEnvironmentalFrequencies(depDate, currentStep.fromLon, physicalMonthMode);
     const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
     const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
     const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
@@ -765,7 +768,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return { polygons, recommendations: Array.from(recommendedPrefectures) };
-  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, directionFilterMode, actionIntent]);
+  }, [activeStepIndex, evaluatedSteps, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent]);
 
   // Compute Overall Plan Scorer (0-100)
   const overallPlanScore = useMemo(() => {
@@ -798,7 +801,7 @@ export default function RelocationSimulatorPage() {
         const adjustedBearing = (rawBearing - decl + 360) % 360;
         const direction = bearingToDirection(adjustedBearing, useClassical);
 
-        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
         const yearBoard = generateBoard(env.classicalYearStar);
         const monthBoard = generateBoard(env.classicalMonthStar);
         const dayBoard = generateBoard(env.classicalDayStar);
@@ -860,7 +863,7 @@ export default function RelocationSimulatorPage() {
         const adjustedBearing = (rawBearing - decl + 360) % 360;
         const direction = bearingToDirection(adjustedBearing, useClassical);
 
-        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
         const yearBoard = generateBoard(env.classicalYearStar);
         const monthBoard = generateBoard(env.classicalMonthStar);
         const dayBoard = generateBoard(env.classicalDayStar);
@@ -1117,6 +1120,7 @@ export default function RelocationSimulatorPage() {
         detail: {
           targetDate: mergedConfig.target_date || (steps.length > 0 ? steps[0].departureDate : undefined),
           useClassicalBoard: mergedConfig.use_classical_board !== undefined ? mergedConfig.use_classical_board : useClassical,
+          physicalMonthMode: mergedConfig.physical_month_mode !== undefined ? mergedConfig.physical_month_mode : physicalMonthMode,
           directionFilterMode: mergedConfig.direction_filter_mode || directionFilterMode,
           actionIntent: mergedConfig.action_intent || actionIntent,
           birthDate: mergedConfig.birth_date || birthDate,
@@ -1438,7 +1442,7 @@ export default function RelocationSimulatorPage() {
                   const adjustedBearing = (rawBearing - decl + 360) % 360;
                   const direction = bearingToDirection(adjustedBearing, useClassical);
 
-                  const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon);
+                  const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
                   const yearBoard = generateBoard(env.classicalYearStar);
                   const monthBoard = generateBoard(env.classicalMonthStar);
                   const dayBoard = generateBoard(env.classicalDayStar);

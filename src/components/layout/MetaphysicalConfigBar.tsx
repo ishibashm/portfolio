@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Compass, Calendar, Sliders, PlayCircle, Info, R
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
   useClassicalBoard: boolean; // true = 暦基準, false = 木星黄経基準
+  physicalMonthMode?: 'coupled' | 'independent';
   directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental';
   actionIntent: 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
   birthDate?: string;
@@ -18,6 +19,7 @@ export interface MetaphysicalConfig {
 const DEFAULT_CONFIG: MetaphysicalConfig = {
   targetDate: new Date().toISOString().split('T')[0],
   useClassicalBoard: true,
+  physicalMonthMode: 'independent',
   directionFilterMode: 'composite',
   actionIntent: 'DEFAULT',
 };
@@ -42,6 +44,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
         try {
           const parsed = JSON.parse(localData);
           if (parsed.use_classical_board !== undefined) loadedConfig.useClassicalBoard = parsed.use_classical_board;
+          if (parsed.physical_month_mode !== undefined) loadedConfig.physicalMonthMode = parsed.physical_month_mode;
           if (parsed.direction_filter_mode !== undefined) loadedConfig.directionFilterMode = parsed.direction_filter_mode;
           if (parsed.action_intent !== undefined) loadedConfig.actionIntent = parsed.action_intent;
           if (parsed.target_date) loadedConfig.targetDate = parsed.target_date;
@@ -61,6 +64,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
         if (res.ok) {
           const apiData = await res.json();
           if (apiData.use_classical_board !== undefined) loadedConfig.useClassicalBoard = apiData.use_classical_board;
+          if (apiData.physical_month_mode !== undefined) loadedConfig.physicalMonthMode = apiData.physical_month_mode;
           if (apiData.direction_filter_mode !== undefined) loadedConfig.directionFilterMode = apiData.direction_filter_mode;
           if (apiData.action_intent !== undefined) loadedConfig.actionIntent = apiData.action_intent;
           if (apiData.target_date) loadedConfig.targetDate = apiData.target_date;
@@ -102,6 +106,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
 
     const apiBody: any = {
       use_classical_board: updatedConfig.useClassicalBoard,
+      physical_month_mode: updatedConfig.physicalMonthMode || 'independent',
       direction_filter_mode: updatedConfig.directionFilterMode,
       action_intent: updatedConfig.actionIntent,
       target_date: updatedConfig.targetDate
@@ -110,7 +115,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
     if (updatedConfig.birthLat !== undefined) apiBody.birth_lat = updatedConfig.birthLat;
     if (updatedConfig.birthLon !== undefined) apiBody.birth_lon = updatedConfig.birthLon;
     if (updatedConfig.baseLat !== undefined) apiBody.base_lat = updatedConfig.baseLat;
-    if (updatedConfig.baseLon !== undefined) apiBody.base_lon = updatedConfig.baseLon;
+    if (updatedConfig.base_lon !== undefined) apiBody.base_lon = updatedConfig.baseLon;
 
     // Save locally
     try {
@@ -208,7 +213,9 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                 config.useClassicalBoard ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
               }`}>
-                {config.useClassicalBoard ? '古典暦基準 (立春基準)' : '物理天体基準 (木星黄経)'}
+                {config.useClassicalBoard 
+                  ? '古典暦基準 (立春基準)' 
+                  : `物理天体基準 (木星黄経 - ${config.physicalMonthMode === 'coupled' ? '伝統連動' : '物理独立'})`}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -281,6 +288,39 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
                   木星黄経 (物理)
                 </button>
               </div>
+
+              {/* Sub-option for Physical Month Star Calculation */}
+              {!config.useClassicalBoard && (
+                <div className="pt-1 space-y-1">
+                  <span className="text-[9px] text-zinc-500 block">月盤の算出方法:</span>
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-black rounded-lg border border-zinc-900">
+                    <button
+                      type="button"
+                      onClick={() => saveConfig({ ...config, physicalMonthMode: 'independent' })}
+                      className={`py-1 rounded text-[9px] font-bold transition-all ${
+                        config.physicalMonthMode === 'independent' || !config.physicalMonthMode
+                          ? 'bg-zinc-800 text-white shadow-sm'
+                          : 'bg-transparent text-zinc-500 hover:text-zinc-300'
+                      }`}
+                      title="物理独立型: 年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。"
+                    >
+                      物理独立
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => saveConfig({ ...config, physicalMonthMode: 'coupled' })}
+                      className={`py-1 rounded text-[9px] font-bold transition-all ${
+                        config.physicalMonthMode === 'coupled'
+                          ? 'bg-zinc-800 text-white shadow-sm'
+                          : 'bg-transparent text-zinc-500 hover:text-zinc-300'
+                      }`}
+                      title="伝統連動型: 木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。"
+                    >
+                      伝統連動
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Direction Filter Mode */}
@@ -346,6 +386,13 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
                 {config.directionFilterMode === 'personal_bazi' && '「個人天中殺のみ」が選択されています。生誕の日干支から算出される空亡（天中殺）方位のみをペナルティとして抽出します。'}
                 {config.directionFilterMode === 'environmental' && '「環境方位のみ」が選択されています。五黄殺・暗剣殺・各種「破」といった万人共通の環境凶方位のみをマッピングします。'}
                 {config.directionFilterMode === 'composite' && '「総合判定」が選択されています。環境の地磁気および天体干渉と、個人のバイオリズムを重ね合わせて統合評価します。'}
+                {!config.useClassicalBoard && (
+                  <span className="block mt-1 text-amber-400">
+                    {config.physicalMonthMode === 'coupled' 
+                      ? '※物理月盤は「伝統連動型」で動作中：木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。'
+                      : '※物理月盤は「物理独立型」で動作中：年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。'}
+                  </span>
+                )}
                 <span className="block mt-1">
                   {config.actionIntent === 'REST' && '※「休息目的」に合わせたバイオリズム・月相・気学の吉方位の重み付け補正がアクティブです。'}
                   {config.actionIntent === 'BUSINESS' && '※「ビジネス目的」に合わせたタイミング・方位価値（Q値）の活性化補正がアクティブです。'}

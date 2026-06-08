@@ -54,10 +54,11 @@ export async function GET(request: Request) {
     const targetDate = url.searchParams.get('date') ? new Date(url.searchParams.get('date')!) : new Date(); // Custom target date or current date
 
     // 2. Compute Astro & Kigaku data
+    const physicalMonthMode = (url.searchParams.get('physical_month_mode') || config.physical_month_mode || 'independent') as 'coupled' | 'independent';
     const honmeiStar = getHonmeiStar(bDate);
     const getsuMeiStar = getClassicalMonthStar(bDate);
     const voidZodiacs = getPersonalVoidZodiac(bDate);
-    const env = getCurrentEnvironmentalFrequencies(targetDate, baseLon);
+    const env = getCurrentEnvironmentalFrequencies(targetDate, baseLon, physicalMonthMode);
 
     const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
     const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
@@ -91,7 +92,7 @@ export async function GET(request: Request) {
     
     for (let i = 0; i < 30; i++) {
       const testDate = new Date(targetDate.getTime() + i * 86400000);
-      const testEnv = getCurrentEnvironmentalFrequencies(testDate, baseLon);
+      const testEnv = getCurrentEnvironmentalFrequencies(testDate, baseLon, physicalMonthMode);
       const tyB = generateBoard(useClassical ? testEnv.classicalYearStar : testEnv.yearStar);
       const tmB = generateBoard(useClassical ? testEnv.classicalMonthStar : testEnv.monthStar);
       const tdB = generateBoard(useClassical ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -232,6 +233,7 @@ export async function GET(request: Request) {
       },
       configurations: {
         engineType: useClassical ? 'classical' : 'physical',
+        physicalMonthMode,
         trueNorth: useTrueNorth,
         lunarPhaseModifier,
         layerMode,

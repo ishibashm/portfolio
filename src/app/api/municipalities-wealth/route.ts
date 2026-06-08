@@ -90,6 +90,7 @@ export async function GET(request: Request) {
   const useClassical = engineType === 'classical';
   const nodeMapping = (searchParams.get('nodeMapping') || (useClassical ? 'traditional' : 'physical')) as 'traditional' | 'physical';
   const lunarPhaseModifier = searchParams.get('lunarPhaseModifier') !== 'false';
+  const physicalMonthMode = (searchParams.get('physicalMonthMode') || 'independent') as 'coupled' | 'independent';
 
   // Fallback to local config if parameters are missing
   try {
@@ -145,7 +146,7 @@ export async function GET(request: Request) {
   let activeVectors: Partial<Record<Direction, string>> | null = null;
   
   const honmeiStar = getHonmeiStar(bDate);
-  const env = getCurrentEnvironmentalFrequencies(targetDate);
+  const env = getCurrentEnvironmentalFrequencies(targetDate, isNaN(baseLon) ? 139.6917 : baseLon, physicalMonthMode);
   const voidZodiacs = getPersonalVoidZodiac(bDate);
   
   const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
@@ -327,6 +328,7 @@ export async function GET(request: Request) {
         layerMode,
         nodeMapping,
         upcomingDoyou,
+        physicalMonthMode,
         lunarPhase: {
           label: lunarPhaseLabel,
           scoreModifier: lunarPhaseScore,

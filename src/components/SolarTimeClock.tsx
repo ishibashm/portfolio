@@ -418,6 +418,7 @@ export const SolarTimeClock = () => {
   const [playSpeedDays, setPlaySpeedDays] = useState(1);
   const [actionIntent, setActionIntent] = useState<ActionIntent>('DEFAULT');
   const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
+  const [physicalMonthMode, setPhysicalMonthMode] = useState<'coupled' | 'independent'>('independent');
   const [useTrueNorth, setUseTrueNorth] = useState<boolean>(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState<boolean>(true);
 
@@ -596,6 +597,7 @@ export const SolarTimeClock = () => {
           if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
           // Load unified configurations
           if (data.use_classical_board !== undefined) setUseClassicalBoard(data.use_classical_board);
+          if (data.physical_month_mode !== undefined) setPhysicalMonthMode(data.physical_month_mode);
           if (data.use_true_north !== undefined) setUseTrueNorth(data.use_true_north);
           if (data.lunar_phase_modifier !== undefined) setLunarPhaseModifier(data.lunar_phase_modifier);
           if (data.layer_mode !== undefined) setActiveLayerMode(data.layer_mode);
@@ -632,6 +634,7 @@ export const SolarTimeClock = () => {
         if (data.shieldCapacity !== undefined) setShieldCapacity(data.shieldCapacity);
         // Load unified configurations
         if (data.use_classical_board !== undefined) setUseClassicalBoard(data.use_classical_board);
+        if (data.physical_month_mode !== undefined) setPhysicalMonthMode(data.physical_month_mode);
         if (data.use_true_north !== undefined) setUseTrueNorth(data.use_true_north);
         if (data.lunar_phase_modifier !== undefined) setLunarPhaseModifier(data.lunar_phase_modifier);
         if (data.layer_mode !== undefined) setActiveLayerMode(data.layer_mode);
@@ -678,6 +681,7 @@ export const SolarTimeClock = () => {
       try {
         const partialConfig = {
           use_classical_board: useClassicalBoard,
+          physical_month_mode: physicalMonthMode,
           use_true_north: useTrueNorth,
           lunar_phase_modifier: lunarPhaseModifier,
           layer_mode: activeLayerMode,
@@ -709,7 +713,7 @@ export const SolarTimeClock = () => {
     };
     
     autoSave();
-  }, [useClassicalBoard, useTrueNorth, lunarPhaseModifier, activeLayerMode, directionFilterMode, lat, lon, birthDate, birthLat, birthLon, configLoaded]);
+  }, [useClassicalBoard, physicalMonthMode, useTrueNorth, lunarPhaseModifier, activeLayerMode, directionFilterMode, lat, lon, birthDate, birthLat, birthLon, configLoaded]);
 
   const handleGetGPS = () => {
     if (navigator.geolocation) {
@@ -759,6 +763,7 @@ export const SolarTimeClock = () => {
         shieldCapacity,
         // Persist unified configurations
         use_classical_board: useClassicalBoard,
+        physical_month_mode: physicalMonthMode,
         use_true_north: useTrueNorth,
         lunar_phase_modifier: lunarPhaseModifier,
         layer_mode: activeLayerMode,
@@ -853,7 +858,7 @@ export const SolarTimeClock = () => {
           continue;
         }
 
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
         const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -906,10 +911,10 @@ export const SolarTimeClock = () => {
   const env = React.useMemo(() => {
     if (!solarData?.solarTime || isNaN(solarData.solarTime.getTime())) {
       if (!ephemerisTime || isNaN(ephemerisTime.getTime())) return null;
-      return getCurrentEnvironmentalFrequencies(ephemerisTime, lon || 139.6917);
+      return getCurrentEnvironmentalFrequencies(ephemerisTime, lon || 139.6917, physicalMonthMode);
     }
-    return getCurrentEnvironmentalFrequencies(solarData.solarTime, lon || 139.6917);
-  }, [ephemerisTime, solarData, lon]);
+    return getCurrentEnvironmentalFrequencies(solarData.solarTime, lon || 139.6917, physicalMonthMode);
+  }, [ephemerisTime, solarData, lon, physicalMonthMode]);
 
   const birthEnv = React.useMemo(() => {
     if (!birthSolarData || isNaN(birthSolarData.solarTime.getTime())) return null;
@@ -1095,7 +1100,7 @@ export const SolarTimeClock = () => {
       const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
       const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
       const testDate = testDateSolar.solarTime;
-      const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
+      const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
       const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
       const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
       const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -1139,7 +1144,7 @@ export const SolarTimeClock = () => {
       });
     }
     return result;
-  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, useClassicalBoard, getsuMeiStar, directionFilterMode, activeLayerMode]);
+  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, useClassicalBoard, getsuMeiStar, directionFilterMode, activeLayerMode, physicalMonthMode]);
 
   const scorecardSummary = React.useMemo(() => {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -1195,6 +1200,7 @@ export const SolarTimeClock = () => {
         base_lat: lat?.toString() || '',
         base_lon: lon?.toString() || '',
         use_classical: useClassicalBoard.toString(),
+        physical_month_mode: physicalMonthMode,
         use_true_north: useTrueNorth.toString(),
         layer_mode: activeLayerMode,
         direction_filter_mode: directionFilterMode,
@@ -1227,7 +1233,7 @@ export const SolarTimeClock = () => {
       ? activeVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] 
       : null;
 
-    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917);
+    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917, physicalMonthMode);
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
     const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
 
@@ -1245,6 +1251,7 @@ export const SolarTimeClock = () => {
         evaluationDate: targetDate.toISOString().split('T')[0],
         actionIntent,
         calculationModel: useClassicalBoard ? "classical (暦基準)" : "physical (木星黄経基準)",
+        physicalMonthMode,
         filterMode: directionFilterMode,
         useTrueNorth
       },
@@ -1320,7 +1327,7 @@ export const SolarTimeClock = () => {
       ? activeVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] 
       : null;
 
-    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917);
+    const envData = getCurrentEnvironmentalFrequencies(targetDate, lon || 139.6917, physicalMonthMode);
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
     const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
 
@@ -1341,6 +1348,7 @@ export const SolarTimeClock = () => {
 ・評価日時: ${targetDate.toLocaleDateString()} (${timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}日後)
 ・行動目的 (Action Intent): ${actionIntent}
 ・演算モデル (Calculation Model): ${useClassicalBoard ? "classical (暦基準)" : "physical (木星黄経基準)"}
+・物理月盤算出モード: ${physicalMonthMode}
 ・フィルターモード: ${directionFilterMode}
 ・基準北: ${useTrueNorth ? "真北基準" : "磁北基準"}
 
@@ -1419,7 +1427,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         const testDateLocal = new Date(baseTime.getTime() + (timeOffsetDays + i) * 86400000);
         const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
         const testDate = testDateSolar.solarTime;
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
         const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -1461,7 +1469,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         testDateLocal.setMonth(testDateLocal.getMonth() + i);
         const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
         const testDate = testDateSolar.solarTime;
-        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917);
+        const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
         const yB = generateBoard(useClassicalBoard ? testEnv.classicalYearStar : testEnv.yearStar);
         const mB = generateBoard(useClassicalBoard ? testEnv.classicalMonthStar : testEnv.monthStar);
         const dB = generateBoard(useClassicalBoard ? testEnv.classicalDayStar : testEnv.dayStar);
@@ -1562,7 +1570,7 @@ ${timingOptimization?.recommendationText || "特になし"}
       }
     }
     setHeatmapData(data);
-  }, [heatmapMode, baseTime, timeOffsetDays, honmeiStar, getsuMeiStar, actionIntent, useClassicalBoard, voidZodiacOverride, birthDate, env, directionFilterMode, activeLayerMode]);
+  }, [heatmapMode, baseTime, timeOffsetDays, honmeiStar, getsuMeiStar, actionIntent, useClassicalBoard, voidZodiacOverride, birthDate, env, directionFilterMode, activeLayerMode, physicalMonthMode]);
 
   const exportMasterTelemetry = () => {
     const timestampStr = new Date().getTime();
@@ -3713,13 +3721,22 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </button>
                 </div>
 
-                <div className="flex gap-2 self-stretch md:self-auto justify-end">
+                <div className="flex flex-wrap gap-2 self-stretch md:self-auto justify-end">
                   <button
                     onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
                     className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
                   >
                     {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
                   </button>
+                  {!useClassicalBoard && (
+                    <button
+                      onClick={() => setPhysicalMonthMode(physicalMonthMode === 'independent' ? 'coupled' : 'independent')}
+                      className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-all bg-amber-950/40 text-amber-400 border-amber-500/30 hover:bg-amber-950/60"
+                      title={physicalMonthMode === 'independent' ? "物理独立型: 年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。" : "伝統連動型: 木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。"}
+                    >
+                      Month: {physicalMonthMode === 'independent' ? "物理独立" : "伝統連動"}
+                    </button>
+                  )}
                   <button
                     onClick={() => setUseClassicalBoard(!useClassicalBoard)}
                     className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}

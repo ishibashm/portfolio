@@ -82,6 +82,7 @@ export async function GET(request: Request) {
     let useClassical = false;
     let directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental' = 'composite';
     let actionIntent = 'DEFAULT';
+    let physicalMonthMode = 'independent';
 
     try {
       const configContent = await fs.readFile(CONFIG_FILE_PATH, 'utf-8');
@@ -91,6 +92,7 @@ export async function GET(request: Request) {
       if (config.use_classical_board !== undefined) useClassical = config.use_classical_board;
       if (config.direction_filter_mode !== undefined) directionFilterMode = config.direction_filter_mode;
       if (config.action_intent !== undefined) actionIntent = config.action_intent;
+      if (config.physical_month_mode !== undefined) physicalMonthMode = config.physical_month_mode;
     } catch (e) {}
 
     // Override from search params if provided
@@ -126,7 +128,7 @@ export async function GET(request: Request) {
       const direction = bearingToDirection(adjustedBearing);
 
       // Evaluate physical/classical orbital positions at time of departure
-      const env = getCurrentEnvironmentalFrequencies(depDate, item.fromLon);
+      const env = getCurrentEnvironmentalFrequencies(depDate, item.fromLon, physicalMonthMode as any);
       const yearBoard = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
       const monthBoard = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
       const dayBoard = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);

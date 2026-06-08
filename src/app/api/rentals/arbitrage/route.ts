@@ -153,6 +153,7 @@ export async function GET(request: Request) {
   const directionFilterMode = (searchParams.get('directionFilterMode') || 'composite') as 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental';
   const actionIntent = (searchParams.get('actionIntent') || 'MIGRATION') as any;
   const useTrueNorth = useTrueNorthStr === 'true';
+  const physicalMonthMode = (searchParams.get('physicalMonthMode') || 'independent') as 'coupled' | 'independent';
   const radiusKmStr = searchParams.get('radiusKm') || '10';
   const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
   const prefecture = searchParams.get('prefecture') || 'all';
@@ -177,7 +178,7 @@ export async function GET(request: Request) {
   }
 
   // 1. 環境・運気エンジンの初期化
-  const env = getSystemEnvironment(targetDate);
+  const env = getSystemEnvironment(targetDate, baseLon, physicalMonthMode);
   
   let bDate = parseSafeDate(birthDateStr);
 
@@ -311,7 +312,7 @@ export async function GET(request: Request) {
     }
 
     const dailyAstroStates = dateList.map(d => {
-      const env_d = getSystemEnvironment(d);
+      const env_d = getSystemEnvironment(d, baseLon, physicalMonthMode);
       
       let activeVectors_d: Partial<Record<Direction, string>>;
       let tendoDir_d: Direction | undefined;
@@ -674,7 +675,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ 
       properties: scoredProperties,
       metadata: {
-        baseLat, baseLon, radiusKm, prefecture, layerMode, useClassical, useTrueNorth, nodeMapping,
+        baseLat, baseLon, radiusKm, prefecture, layerMode, useClassical, useTrueNorth, nodeMapping, physicalMonthMode,
         targetDate: targetDate.toISOString().split('T')[0],
         meanSqmRent,
         stdDevSqmRent,

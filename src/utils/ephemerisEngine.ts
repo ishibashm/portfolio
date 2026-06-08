@@ -294,6 +294,52 @@ export function getMonthStar(date: Date): StarFrequency {
 }
 
 /**
+ * 太陽黄経(0〜360度)を節入り（315度＝寅月起点）のインデックス（0〜11）にマッピングする
+ */
+export function getSolarMonthIndex(L0: number): number {
+  let L_adj = L0 - 315;
+  if (L_adj < 0) {
+    L_adj += 360;
+  }
+  return Math.floor(L_adj / 30);
+}
+
+/**
+ * 木星黄経モード下での物理月盤の星を算出する
+ * - independent: 年盤に依存せず太陽黄経から直接算出（従来の仕様）
+ * - coupled: 年盤の星（木星黄経ベース）に依存して伝統的な規則で連動算出
+ */
+export function getPhysicalMonthStar(date: Date, mode: 'coupled' | 'independent' = 'independent'): StarFrequency {
+  if (mode === 'coupled') {
+    const yStar = getYearStar(date);
+    const L0 = AstroEngine.getSolarLongitude(date);
+    const mIndex = getSolarMonthIndex(L0);
+    
+    let startStar: StarFrequency;
+    const mod = yStar % 3;
+    if (mod === 1) {
+      startStar = 8;
+    } else if (mod === 2) {
+      startStar = 5;
+    } else {
+      startStar = 2;
+    }
+    
+    let star = startStar - mIndex;
+    while (star <= 0) {
+      star += 9;
+    }
+    star = star % 9;
+    if (star === 0) {
+      star = 9;
+    }
+    return star as StarFrequency;
+  } else {
+    return getMonthStar(date);
+  }
+}
+
+/**
  * Calculates a daily timing modifier based on the lunar phase.
  * Returns a scoreModifier (+/- 10 points) and custom advice text.
  */
@@ -425,12 +471,16 @@ export function getHourStar(date: Date, isYinPhase: boolean, lon: number = 139.6
   return star as StarFrequency;
 }
 
-export function getCurrentEnvironmentalFrequencies(date: Date, lon: number = 139.6917) {
+export function getCurrentEnvironmentalFrequencies(
+  date: Date,
+  lon: number = 139.6917,
+  physicalMonthMode: 'coupled' | 'independent' = 'independent'
+) {
   const physY = getYearStar(date);
   const classY = getClassicalYearStar(date);
   const classM = getClassicalMonthStar(date);
   const classD = getClassicalDayStar(date);
-  const m = getMonthStar(date);
+  const m = getPhysicalMonthStar(date, physicalMonthMode);
   const d = getDayStar(date);
   const L0 = AstroEngine.getSolarLongitude(date);
   const isYinPhase = (L0 >= 90 && L0 < 270);

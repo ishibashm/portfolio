@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar, getHonmeiStar, calculateVectorCollision, generateBoard } from '../src/utils/ephemerisEngine';
+import { getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar, getHonmeiStar, calculateVectorCollision, generateBoard, getSolarMonthIndex, getPhysicalMonthStar, getYearStar, getMonthStar } from '../src/utils/ephemerisEngine';
 import { KigakuScorer } from '../src/utils/timing-optimizer/scorers/kigakuScorer';
 
 describe('Kyusei Kigaku High-Precision Calculations', () => {
@@ -144,6 +144,47 @@ describe('Kyusei Kigaku High-Precision Calculations', () => {
       // Even with positive Year/Month element phases, presence of NOISE_ANKEN on Month
       // must absolute block and keep the final vector as NOISE_ANKEN.
       expect(collision.finalVectors.E).toBe('NOISE_ANKEN');
+    });
+  });
+
+  describe('Physical Month Star Modes (Coupled vs Independent)', () => {
+    it('correctly maps solar longitudes to solar month indices starting at 315 degrees', () => {
+      // 315 deg is the start of Month 1 (寅月)
+      expect(getSolarMonthIndex(315)).toBe(0);
+      expect(getSolarMonthIndex(320)).toBe(0);
+      expect(getSolarMonthIndex(345)).toBe(1); // Month 2 (卯月)
+      expect(getSolarMonthIndex(0)).toBe(1);   // still Month 2 (卯月)
+      expect(getSolarMonthIndex(15)).toBe(2);  // Month 3 (辰月)
+      expect(getSolarMonthIndex(285)).toBe(11); // Month 12 (丑月)
+    });
+
+    it('calculates the independent month star based strictly on solar longitude', () => {
+      const testDate = new Date('2026-06-15T12:00:00+09:00');
+      const indepStar = getPhysicalMonthStar(testDate, 'independent');
+      const standardStar = getMonthStar(testDate);
+      expect(indepStar).toBe(standardStar);
+    });
+
+    it('calculates the coupled month star dependent on the Year Star and month index', () => {
+      const testDate = new Date('2026-06-15T12:00:00+09:00'); // June 15, 2026 is Month index 4 (午月)
+      const yStar = getYearStar(testDate);
+      const coupledStar = getPhysicalMonthStar(testDate, 'coupled');
+      
+      // Determine starting star for month 1 (index 0) based on Year Star
+      let startStar: number;
+      const mod = yStar % 3;
+      if (mod === 1) startStar = 8;
+      else if (mod === 2) startStar = 5;
+      else startStar = 2;
+
+      // Month index is 4
+      let expectedStar = startStar - 4;
+      while (expectedStar <= 0) expectedStar += 9;
+      expectedStar = expectedStar % 9 || 9;
+
+      expect(coupledStar).toBe(expectedStar);
+      expect(coupledStar).toBeGreaterThanOrEqual(1);
+      expect(coupledStar).toBeLessThanOrEqual(9);
     });
   });
 });
