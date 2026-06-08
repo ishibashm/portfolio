@@ -91,6 +91,7 @@ export async function GET(request: Request) {
   const nodeMapping = (searchParams.get('nodeMapping') || (useClassical ? 'traditional' : 'physical')) as 'traditional' | 'physical';
   const lunarPhaseModifier = searchParams.get('lunarPhaseModifier') !== 'false';
   const physicalMonthMode = (searchParams.get('physicalMonthMode') || 'independent') as 'coupled' | 'independent';
+  const prefecture = searchParams.get('prefecture') || 'all';
 
   // Fallback to local config if parameters are missing
   try {
@@ -184,7 +185,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    const whereClause: any = {};
+    if (prefecture && prefecture !== 'all') {
+      if (/^\d+$/.test(prefecture)) {
+        whereClause.areaCode = { startsWith: prefecture };
+      } else {
+        whereClause.areaName = { startsWith: prefecture };
+      }
+    }
+
     const municipalities = await prisma.municipalityWealth.findMany({
+      where: whereClause,
       take: limit,
     });
 

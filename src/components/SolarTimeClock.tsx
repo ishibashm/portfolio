@@ -461,6 +461,9 @@ export const SolarTimeClock = () => {
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
   const [showNoiseDirections, setShowNoiseDirections] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [scorecardPrefecture, setScorecardPrefecture] = useState<string>("愛知県");
+  const [gridModelView, setGridModelView] = useState<'consensus' | 'classical' | 'physicalIndep' | 'physicalCoupled'>('consensus');
+  const [scorecardActiveGridTab, setScorecardActiveGridTab] = useState<'dates' | 'stars'>('dates');
 
 
   useEffect(() => {
@@ -484,6 +487,7 @@ export const SolarTimeClock = () => {
           wParams.append("layerMode", activeLayerMode);
           wParams.append("useTrueNorth", useTrueNorth.toString());
           wParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+          wParams.append("prefecture", scorecardPrefecture);
 
           const wRes = await fetch(`/api/municipalities-wealth?${wParams.toString()}`);
           const wJson = await wRes.json();
@@ -499,7 +503,7 @@ export const SolarTimeClock = () => {
           aParams.append("birthDate", birthDate);
           aParams.append("targetDate", dateStr);
           aParams.append("radiusKm", "all");
-          aParams.append("prefecture", "all");
+          aParams.append("prefecture", scorecardPrefecture);
           aParams.append("useClassical", useClassicalBoard.toString());
           aParams.append("nodeMapping", useClassicalBoard ? "traditional" : "physical");
           aParams.append("layerMode", activeLayerMode);
@@ -517,7 +521,7 @@ export const SolarTimeClock = () => {
       };
       loadScorecardData();
     }
-  }, [activeTab, lat, lon, birthLat, birthLon, birthDate, baseTime, timeOffsetDays, useClassicalBoard, activeLayerMode, useTrueNorth, lunarPhaseModifier]);
+  }, [activeTab, lat, lon, birthLat, birthLon, birthDate, baseTime, timeOffsetDays, useClassicalBoard, activeLayerMode, useTrueNorth, lunarPhaseModifier, scorecardPrefecture]);
 
   const fetchNBAData = async () => {
     try {
@@ -1249,6 +1253,187 @@ export const SolarTimeClock = () => {
     return result;
   }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, useClassicalBoard, getsuMeiStar, directionFilterMode, activeLayerMode, physicalMonthMode]);
 
+  const scorecard30DaysForecastAllModels = React.useMemo(() => {
+    if (!baseTime || !honmeiStar) return null;
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+    
+    const result: {
+      dateStr: string;
+      weekday: number;
+      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { status: string; score: number }>>;
+    }[] = [];
+
+    for (let i = 0; i < 30; i++) {
+      const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
+      const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
+      const testDate = testDateSolar.solarTime;
+      const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
+      
+      // 1. Classical Model
+      const yB_class = generateBoard(testEnv.classicalYearStar);
+      const mB_class = generateBoard(testEnv.classicalMonthStar);
+      const dB_class = generateBoard(testEnv.classicalDayStar);
+      const vec_class = calculateVectorCollision(
+        honmeiStar.classical, yB_class, mB_class, dB_class,
+        voidZodiacArray, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        getsuMeiStar || undefined, 'traditional'
+      );
+      const filtered_class = filterVectors(
+        vec_class, honmeiStar.classical, voidZodiacArray, testEnv.raw.lunarNode,
+        yB_class, mB_class, dB_class, directionFilterMode, getsuMeiStar, activeLayerMode
+      );
+
+      // 2. Physical Independent Model
+      const yB_indep = generateBoard(testEnv.yearStar);
+      const mB_indep = generateBoard(testEnv.monthStar);
+      const dB_indep = generateBoard(testEnv.dayStar);
+      const vec_indep = calculateVectorCollision(
+        honmeiStar.physical, yB_indep, mB_indep, dB_indep,
+        voidZodiacArray, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        undefined, 'physical'
+      );
+      const filtered_indep = filterVectors(
+        vec_indep, honmeiStar.physical, voidZodiacArray, testEnv.raw.lunarNode,
+        yB_indep, mB_indep, dB_indep, directionFilterMode, null, activeLayerMode
+      );
+
+      // 3. Physical Coupled Model
+      const pMonthStarCoupled = getPhysicalMonthStar(testDate, 'coupled');
+      const yB_coupled = generateBoard(testEnv.yearStar);
+      const mB_coupled = generateBoard(pMonthStarCoupled);
+      const dB_coupled = generateBoard(testEnv.dayStar);
+      const vec_coupled = calculateVectorCollision(
+        honmeiStar.physical, yB_coupled, mB_coupled, dB_coupled,
+        voidZodiacArray, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        undefined, 'physical'
+      );
+      const filtered_coupled = filterVectors(
+        vec_coupled, honmeiStar.physical, voidZodiacArray, testEnv.raw.lunarNode,
+        yB_coupled, mB_coupled, dB_coupled, directionFilterMode, null, activeLayerMode
+      );
+
+      const dayModelData: any = {
+        dateStr: testDateLocal.toISOString().split('T')[0],
+        weekday: testDateLocal.getDay(),
+        models: {
+          classical: {},
+          physicalIndep: {},
+          physicalCoupled: {}
+        }
+      };
+
+      dirs.forEach(dir => {
+        const status_class = filtered_class[dir] || 'SAFE';
+        const score_class = getStatusScore(status_class);
+        dayModelData.models.classical[dir] = { status: status_class, score: score_class };
+
+        const status_indep = filtered_indep[dir] || 'SAFE';
+        const score_indep = getStatusScore(status_indep);
+        dayModelData.models.physicalIndep[dir] = { status: status_indep, score: score_indep };
+
+        const status_coupled = filtered_coupled[dir] || 'SAFE';
+        const score_coupled = getStatusScore(status_coupled);
+        dayModelData.models.physicalCoupled[dir] = { status: status_coupled, score: score_coupled };
+      });
+
+      result.push(dayModelData);
+    }
+
+    return result;
+  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, getsuMeiStar, directionFilterMode, activeLayerMode, physicalMonthMode]);
+
+  const scorecardHonmeiStarsForecast = React.useMemo(() => {
+    if (!baseTime) return null;
+    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const targetDateLocal = baseTime ? new Date(baseTime.getTime() + timeOffsetDays * 86400000) : new Date();
+    const testDateSolar = calculateSolarTime(targetDateLocal, lon || 139.6917);
+    const testDate = testDateSolar.solarTime;
+    const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
+    
+    const honmeiStarIds: StarFrequency[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    const dummyVoidZodiac: string[] = [];
+
+    const result: {
+      star: StarFrequency;
+      label: string;
+      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { status: string; score: number }>>;
+    }[] = [];
+
+    honmeiStarIds.forEach(star => {
+      // 1. Classical Model
+      const yB_class = generateBoard(testEnv.classicalYearStar);
+      const mB_class = generateBoard(testEnv.classicalMonthStar);
+      const dB_class = generateBoard(testEnv.classicalDayStar);
+      const vec_class = calculateVectorCollision(
+        star, yB_class, mB_class, dB_class,
+        dummyVoidZodiac, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        undefined, 'traditional'
+      );
+      const filtered_class = filterVectors(
+        vec_class, star, dummyVoidZodiac, testEnv.raw.lunarNode,
+        yB_class, mB_class, dB_class, directionFilterMode, null, activeLayerMode
+      );
+
+      // 2. Physical Independent Model
+      const yB_indep = generateBoard(testEnv.yearStar);
+      const mB_indep = generateBoard(testEnv.monthStar);
+      const dB_indep = generateBoard(testEnv.dayStar);
+      const vec_indep = calculateVectorCollision(
+        star, yB_indep, mB_indep, dB_indep,
+        dummyVoidZodiac, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        undefined, 'physical'
+      );
+      const filtered_indep = filterVectors(
+        vec_indep, star, dummyVoidZodiac, testEnv.raw.lunarNode,
+        yB_indep, mB_indep, dB_indep, directionFilterMode, null, activeLayerMode
+      );
+
+      // 3. Physical Coupled Model
+      const pMonthStarCoupled = getPhysicalMonthStar(testDate, 'coupled');
+      const yB_coupled = generateBoard(testEnv.yearStar);
+      const mB_coupled = generateBoard(pMonthStarCoupled);
+      const dB_coupled = generateBoard(testEnv.dayStar);
+      const vec_coupled = calculateVectorCollision(
+        star, yB_coupled, mB_coupled, dB_coupled,
+        dummyVoidZodiac, testEnv.raw.lunarNode, 'MIGRATION', testDate, lon || 139.6917,
+        undefined, 'physical'
+      );
+      const filtered_coupled = filterVectors(
+        vec_coupled, star, dummyVoidZodiac, testEnv.raw.lunarNode,
+        yB_coupled, mB_coupled, dB_coupled, directionFilterMode, null, activeLayerMode
+      );
+
+      const starData: any = {
+        star,
+        label: `${star} (${['一白水星', '二黒土星', '三碧木星', '四緑木星', '五黄土星', '六白金星', '七赤金星', '八白土星', '九紫火星'][star - 1]})`,
+        models: {
+          classical: {},
+          physicalIndep: {},
+          physicalCoupled: {}
+        }
+      };
+
+      dirs.forEach(dir => {
+        const status_class = filtered_class[dir] || 'SAFE';
+        const score_class = getStatusScore(status_class);
+        starData.models.classical[dir] = { status: status_class, score: score_class };
+
+        const status_indep = filtered_indep[dir] || 'SAFE';
+        const score_indep = getStatusScore(status_indep);
+        starData.models.physicalIndep[dir] = { status: status_indep, score: score_indep };
+
+        const status_coupled = filtered_coupled[dir] || 'SAFE';
+        const score_coupled = getStatusScore(status_coupled);
+        starData.models.physicalCoupled[dir] = { status: status_coupled, score: score_coupled };
+      });
+
+      result.push(starData);
+    });
+
+    return result;
+  }, [baseTime, timeOffsetDays, lon, directionFilterMode, activeLayerMode, physicalMonthMode]);
+
   const scorecardSummary = React.useMemo(() => {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const dirMapJa: Record<Direction, string> = {
@@ -1332,6 +1517,116 @@ export const SolarTimeClock = () => {
     physicalIndepLayers,
     physicalCoupledLayers
   ]);
+
+  const getCellBgColor = (score: number, status: string, isConsensus?: boolean, isDivergence?: boolean) => {
+    if (isConsensus) return 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30';
+    if (isDivergence) return 'bg-amber-950/20 text-amber-500 border border-amber-500/20';
+
+    if (score >= 80) return 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10';
+    if (score >= 50) return 'bg-blue-950/10 text-blue-400 border border-blue-500/10';
+    if (score >= 30) return 'bg-amber-950/10 text-amber-500 border border-amber-500/10';
+    return 'bg-red-950/10 text-red-400 border border-red-500/10';
+  };
+
+  const handleExportGridCsv = () => {
+    if (scorecardActiveGridTab === 'dates') {
+      if (!scorecard30DaysForecastAllModels) return;
+      const headers = ['日付', '曜日', '方位', '合意判定', '古典_スコア', '古典_ステータス', '物理独立_スコア', '物理独立_ステータス', '伝統連動_スコア', '伝統連動_ステータス'];
+      const rows: any[] = [];
+      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+      
+      scorecard30DaysForecastAllModels.forEach(day => {
+        dirs.forEach(dir => {
+          const classData = day.models.classical[dir];
+          const indepData = day.models.physicalIndep[dir];
+          const coupledData = day.models.physicalCoupled[dir];
+          
+          const isClassHigh = !classData.status.startsWith('NOISE');
+          const isIndepHigh = !indepData.status.startsWith('NOISE');
+          const isCoupledHigh = !coupledData.status.startsWith('NOISE');
+          const isConsensusClear = isClassHigh && isIndepHigh && isCoupledHigh;
+          const hasHigh = isClassHigh || isIndepHigh || isCoupledHigh;
+          const hasLow = !isClassHigh || !isIndepHigh || !isCoupledHigh;
+          const isDivergenceAlert = hasHigh && hasLow;
+          
+          let consensusLabel = '-';
+          if (isConsensusClear) consensusLabel = 'トリプル大吉 🌟';
+          else if (isDivergenceAlert) consensusLabel = '位相差警告 ⚠️';
+          
+          rows.push([
+            day.dateStr,
+            weekdays[day.weekday],
+            dir,
+            consensusLabel,
+            classData.score,
+            classData.status,
+            indepData.score,
+            indepData.status,
+            coupledData.score,
+            coupledData.status
+          ]);
+        });
+      });
+      
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `30day_pattern_scorecard_${scorecardPrefecture}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      if (!scorecardHonmeiStarsForecast) return;
+      const headers = ['本命星', '方位', '合意判定', '古典_スコア', '古典_ステータス', '物理独立_スコア', '物理独立_ステータス', '伝統連動_スコア', '伝統連動_ステータス'];
+      const rows: any[] = [];
+      const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      
+      scorecardHonmeiStarsForecast.forEach(star => {
+        dirs.forEach(dir => {
+          const classData = star.models.classical[dir];
+          const indepData = star.models.physicalIndep[dir];
+          const coupledData = star.models.physicalCoupled[dir];
+          
+          const isClassHigh = !classData.status.startsWith('NOISE');
+          const isIndepHigh = !indepData.status.startsWith('NOISE');
+          const isCoupledHigh = !coupledData.status.startsWith('NOISE');
+          const isConsensusClear = isClassHigh && isIndepHigh && isCoupledHigh;
+          const hasHigh = isClassHigh || isIndepHigh || isCoupledHigh;
+          const hasLow = !isClassHigh || !isIndepHigh || !isCoupledHigh;
+          const isDivergenceAlert = hasHigh && hasLow;
+          
+          let consensusLabel = '-';
+          if (isConsensusClear) consensusLabel = 'トリプル大吉 🌟';
+          else if (isDivergenceAlert) consensusLabel = '位相差警告 ⚠️';
+          
+          rows.push([
+            star.label.replace(/,/g, ' '),
+            dir,
+            consensusLabel,
+            classData.score,
+            classData.status,
+            indepData.score,
+            indepData.status,
+            coupledData.score,
+            coupledData.status
+          ]);
+        });
+      });
+      
+      const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `honmei_stars_scorecard_${scorecardPrefecture}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   const handleExportForGemini = async () => {
     setIsExporting(true);
@@ -3049,9 +3344,34 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <p className="text-zinc-400 text-[10px] sm:text-xs leading-relaxed max-w-xl">
                   直近30日の時空波動予測、各方位における富裕エリア所得、および不動産賃貸アービトラージの偏差値指標を統合した意思決定コックピットです。
                 </p>
+                <div className="mt-2 text-zinc-500 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+                  <span><strong className="text-emerald-400">🌟 トリプル大吉:</strong> 3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。</span>
+                  <span><strong className="text-amber-500">⚠️ 位相差警告:</strong> 計算モデル間で吉凶判定が分かれる（一方は吉、他方は凶など）ため、注意が必要な方位。</span>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 shrink-0">
+                {/* Prefecture Filter */}
+                <div className="flex items-center gap-1.5 bg-zinc-950 px-2 py-1.5 rounded-md border border-zinc-800">
+                  <span className="text-zinc-400 font-mono text-[9px] uppercase tracking-wider">対象県:</span>
+                  <select
+                    value={scorecardPrefecture}
+                    onChange={(e) => setScorecardPrefecture(e.target.value)}
+                    className="bg-zinc-900 text-zinc-200 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
+                  >
+                    <option value="all">全国 (すべて)</option>
+                    <option value="愛知県">愛知県</option>
+                    <option value="東京都">東京都</option>
+                    <option value="大阪府">大阪府</option>
+                    <option value="神奈川県">神奈川県</option>
+                    <option value="埼玉県">埼玉県</option>
+                    <option value="千葉県">千葉県</option>
+                    <option value="京都府">京都府</option>
+                    <option value="兵庫県">兵庫県</option>
+                    <option value="福岡県">福岡県</option>
+                  </select>
+                </div>
+
                 {/* Visibility Toggle */}
                 <button
                   onClick={() => setShowNoiseDirections(!showNoiseDirections)}
@@ -3245,6 +3565,214 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
             )}
+
+            {/* --- MULTI-MODEL GRID SCORECARD (大量パターンスコア表) --- */}
+            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 md:p-6 shadow-lg space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h3 className="text-zinc-200 font-mono text-sm tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    多次元吉凶パターンマトリクス (Grid Scorecard)
+                  </h3>
+                  <p className="text-zinc-500 text-[10px] sm:text-xs">
+                    本命星別、または日付別の全方位吉凶パターンを網羅した詳細グリッド表です。
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Grid Selector Toggles */}
+                  <div className="flex bg-zinc-950 p-1 rounded-md border border-zinc-800 text-[10px] font-mono">
+                    <button
+                      onClick={() => setScorecardActiveGridTab('dates')}
+                      className={`px-3 py-1 rounded transition-all ${
+                        scorecardActiveGridTab === 'dates' ? 'bg-emerald-600 text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      30日カレンダー
+                    </button>
+                    <button
+                      onClick={() => setScorecardActiveGridTab('stars')}
+                      className={`px-3 py-1 rounded transition-all ${
+                        scorecardActiveGridTab === 'stars' ? 'bg-emerald-600 text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      九星本命星別 (当日)
+                    </button>
+                  </div>
+
+                  {/* Model Selector */}
+                  <select
+                    value={gridModelView}
+                    onChange={(e: any) => setGridModelView(e.target.value)}
+                    className="bg-zinc-950 text-zinc-300 border border-zinc-800 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                  >
+                    <option value="consensus">合意判定 (Consensus)</option>
+                    <option value="classical">古典暦モデル (Classical)</option>
+                    <option value="physicalIndep">物理独立モデル (Phys Indep)</option>
+                    <option value="physicalCoupled">伝統連動モデル (Phys Coupled)</option>
+                  </select>
+
+                  {/* CSV Export Button */}
+                  <button
+                    onClick={handleExportGridCsv}
+                    className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
+                  >
+                    EXPORT PATTERN CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Legend for Grid */}
+              <div className="flex flex-wrap gap-3 text-[9px] font-mono text-zinc-500 bg-zinc-950/40 p-2.5 rounded border border-zinc-800/40">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-950/60 border border-emerald-500/30"></span>大吉/吉 ({"≥ 80"})</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-950/20 border border-blue-500/20"></span>吉 ({"≥ 50"})</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-amber-950/20 border border-amber-500/20"></span>警告 ({"≥ 30"})</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-red-950/20 border border-red-500/20"></span>大凶 (その他)</span>
+                {gridModelView === 'consensus' && (
+                  <>
+                    <span className="text-emerald-400">🌟 = トリプル大吉</span>
+                    <span className="text-amber-500">⚠️ = 位相差警告</span>
+                  </>
+                )}
+              </div>
+
+              {/* Grid Table */}
+              <div className="w-full overflow-hidden bg-zinc-950 border border-zinc-850 rounded-lg shadow-inner">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-center border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-850 bg-zinc-900/40 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                        <th className="p-2.5 text-left w-28">{scorecardActiveGridTab === 'dates' ? '日付' : '本命星'}</th>
+                        {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map(dir => {
+                          const dirLabels: Record<string, string> = { N:'北', NE:'北東', E:'東', SE:'南東', S:'南', SW:'南西', W:'西', NW:'北西' };
+                          return (
+                            <th key={dir} className="p-2.5 w-20">
+                              {dirLabels[dir]} ({dir})
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-900/50 text-[10px] font-mono">
+                      {scorecardActiveGridTab === 'dates' ? (
+                        scorecard30DaysForecastAllModels?.map(day => {
+                          const wdayJa = ['日', '月', '火', '水', '木', '金', '土'][day.weekday];
+                          const wdayColor = day.weekday === 0 ? 'text-red-400' : day.weekday === 6 ? 'text-blue-400' : 'text-zinc-400';
+                          return (
+                            <tr key={day.dateStr} className="hover:bg-zinc-900/20 transition-colors">
+                              <td className="p-2 text-left text-[9px] text-zinc-400 border-r border-zinc-900 whitespace-nowrap">
+                                {day.dateStr} <span className={wdayColor}>({wdayJa})</span>
+                              </td>
+                              {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((dir: Direction) => {
+                                const classData = day.models.classical[dir];
+                                const indepData = day.models.physicalIndep[dir];
+                                const coupledData = day.models.physicalCoupled[dir];
+                                
+                                const isClassHigh = !classData.status.startsWith('NOISE');
+                                const isIndepHigh = !indepData.status.startsWith('NOISE');
+                                const isCoupledHigh = !coupledData.status.startsWith('NOISE');
+                                const isConsensusClear = isClassHigh && isIndepHigh && isCoupledHigh;
+                                const hasHigh = isClassHigh || isIndepHigh || isCoupledHigh;
+                                const hasLow = !isClassHigh || !isIndepHigh || !isCoupledHigh;
+                                const isDivergenceAlert = hasHigh && hasLow;
+
+                                let activeScore = 50;
+                                let activeStatus = 'SAFE';
+
+                                if (gridModelView === 'classical') {
+                                  activeScore = classData.score;
+                                  activeStatus = classData.status;
+                                } else if (gridModelView === 'physicalIndep') {
+                                  activeScore = indepData.score;
+                                  activeStatus = indepData.status;
+                                } else if (gridModelView === 'physicalCoupled') {
+                                  activeScore = coupledData.score;
+                                  activeStatus = coupledData.status;
+                                } else {
+                                  activeScore = Math.round((classData.score + indepData.score + coupledData.score) / 3);
+                                  activeStatus = isConsensusClear ? 'OPTIMAL' : isDivergenceAlert ? 'WARNING' : 'SAFE';
+                                }
+
+                                const cellClass = getCellBgColor(activeScore, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
+
+                                return (
+                                  <td key={dir} className={`p-2 font-bold transition-all ${cellClass}`}>
+                                    <div className="flex items-center justify-center gap-0.5">
+                                      {gridModelView === 'consensus' && isConsensusClear && <span>🌟</span>}
+                                      {gridModelView === 'consensus' && isDivergenceAlert && <span>⚠️</span>}
+                                      <span>{activeScore}</span>
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        scorecardHonmeiStarsForecast?.map(star => {
+                          const isUserStar = honmeiStar && (
+                            (useClassicalBoard && star.star === honmeiStar.classical) ||
+                            (!useClassicalBoard && star.star === honmeiStar.physical)
+                          );
+                          return (
+                            <tr key={star.star} className={`hover:bg-zinc-900/20 transition-colors ${isUserStar ? 'bg-emerald-950/10 border-y border-emerald-500/20' : ''}`}>
+                              <td className="p-2 text-left text-[9px] text-zinc-300 font-bold border-r border-zinc-900 whitespace-nowrap flex items-center gap-1.5">
+                                {isUserStar && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>}
+                                {star.label}
+                              </td>
+                              {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((dir: Direction) => {
+                                const classData = star.models.classical[dir];
+                                const indepData = star.models.physicalIndep[dir];
+                                const coupledData = star.models.physicalCoupled[dir];
+                                
+                                const isClassHigh = !classData.status.startsWith('NOISE');
+                                const isIndepHigh = !indepData.status.startsWith('NOISE');
+                                const isCoupledHigh = !coupledData.status.startsWith('NOISE');
+                                const isConsensusClear = isClassHigh && isIndepHigh && isCoupledHigh;
+                                const hasHigh = isClassHigh || isIndepHigh || isCoupledHigh;
+                                const hasLow = !isClassHigh || !isIndepHigh || !isCoupledHigh;
+                                const isDivergenceAlert = hasHigh && hasLow;
+
+                                let activeScore = 50;
+                                let activeStatus = 'SAFE';
+
+                                if (gridModelView === 'classical') {
+                                  activeScore = classData.score;
+                                  activeStatus = classData.status;
+                                } else if (gridModelView === 'physicalIndep') {
+                                  activeScore = indepData.score;
+                                  activeStatus = indepData.status;
+                                } else if (gridModelView === 'physicalCoupled') {
+                                  activeScore = coupledData.score;
+                                  activeStatus = coupledData.status;
+                                } else {
+                                  activeScore = Math.round((classData.score + indepData.score + coupledData.score) / 3);
+                                  activeStatus = isConsensusClear ? 'OPTIMAL' : isDivergenceAlert ? 'WARNING' : 'SAFE';
+                                }
+
+                                const cellClass = getCellBgColor(activeScore, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
+
+                                return (
+                                  <td key={dir} className={`p-2 font-bold transition-all ${cellClass}`}>
+                                    <div className="flex items-center justify-center gap-0.5">
+                                      {gridModelView === 'consensus' && isConsensusClear && <span>🌟</span>}
+                                      {gridModelView === 'consensus' && isDivergenceAlert && <span>⚠️</span>}
+                                      <span>{activeScore}</span>
+                                    </div>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
