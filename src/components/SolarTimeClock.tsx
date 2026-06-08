@@ -464,6 +464,7 @@ export const SolarTimeClock = () => {
   const [scorecardPrefecture, setScorecardPrefecture] = useState<string>("愛知県");
   const [gridModelView, setGridModelView] = useState<'consensus' | 'classical' | 'physicalIndep' | 'physicalCoupled'>('consensus');
   const [scorecardActiveGridTab, setScorecardActiveGridTab] = useState<'dates' | 'stars'>('dates');
+  const [gridDimension, setGridDimension] = useState<'total' | 'kigaku' | 'astro' | 'timeGate'>('total');
 
 
   useEffect(() => {
@@ -1258,18 +1259,56 @@ export const SolarTimeClock = () => {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
     
+    // APIデータからアストロボーナスを抽出してマップ化する
+    const astroBonusMap: Record<Direction, number> = {
+      N: 0, NE: 0, E: 0, SE: 0, S: 0, SW: 0, W: 0, NW: 0, CENTER: 0
+    };
+    if (wealthData && wealthData.length > 0) {
+      dirs.forEach(dir => {
+        const item = wealthData.find(w => (useTrueNorth ? w.direction : w.magneticDirection) === dir);
+        if (item && item.astrologyStatus) {
+          let bonus = 0;
+          if (item.astrologyStatus.includes('JUPITER_ASC') || item.astrologyStatus.includes('JUPITER_MC')) bonus += 30;
+          if (item.astrologyStatus.includes('VENUS_ASC') || item.astrologyStatus.includes('VENUS_MC')) bonus += 15;
+          astroBonusMap[dir] = bonus;
+        }
+      });
+    }
+
     const result: {
       dateStr: string;
       weekday: number;
-      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { status: string; score: number }>>;
+      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { 
+        status: string; 
+        score: number;
+        kigakuScore: number;
+        astroBonus: number;
+        timeGateModifier: number;
+      }>>;
     }[] = [];
 
     for (let i = 0; i < 30; i++) {
       const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
+      const testSolar = Solar.fromDate(testDateLocal);
+      const testLunar = testSolar.getLunar();
+      
       const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
       const testDate = testDateSolar.solarTime;
       const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
       
+      // 天中殺ペナルティの計算
+      const testYearZodiac = testLunar.getYearZodiac();
+      const testMonthZodiac = testLunar.getMonthZodiac();
+      const testDayZodiac = testLunar.getDayZodiac();
+      const isVoidDay = voidZodiacArray.includes(testYearZodiac) ||
+                        voidZodiacArray.includes(testMonthZodiac) ||
+                        voidZodiacArray.includes(testDayZodiac);
+      const voidPenalty = isVoidDay ? -100 : 0;
+
+      // 月相補正の計算
+      const lp = calculateLunarPhaseCondition(testDate, 'MIGRATION');
+      const lunarPhaseScore = lp.scoreModifier;
+
       // 1. Classical Model
       const yB_class = generateBoard(testEnv.classicalYearStar);
       const mB_class = generateBoard(testEnv.classicalMonthStar);
@@ -1283,6 +1322,8 @@ export const SolarTimeClock = () => {
         vec_class, honmeiStar.classical, voidZodiacArray, testEnv.raw.lunarNode,
         yB_class, mB_class, dB_class, directionFilterMode, getsuMeiStar, activeLayerMode
       );
+      const doyou_class = vec_class.doyouState?.isDoyouHazard ? -30 : 0;
+      const timeGate_class = doyou_class + (lunarPhaseModifier ? lunarPhaseScore : 0);
 
       // 2. Physical Independent Model
       const yB_indep = generateBoard(testEnv.yearStar);
@@ -1297,6 +1338,8 @@ export const SolarTimeClock = () => {
         vec_indep, honmeiStar.physical, voidZodiacArray, testEnv.raw.lunarNode,
         yB_indep, mB_indep, dB_indep, directionFilterMode, null, activeLayerMode
       );
+      const doyou_indep = vec_indep.doyouState?.isDoyouHazard ? -30 : 0;
+      const timeGate_indep = voidPenalty + doyou_indep + (lunarPhaseModifier ? lunarPhaseScore : 0);
 
       // 3. Physical Coupled Model
       const pMonthStarCoupled = getPhysicalMonthStar(testDate, 'coupled');
@@ -1312,6 +1355,8 @@ export const SolarTimeClock = () => {
         vec_coupled, honmeiStar.physical, voidZodiacArray, testEnv.raw.lunarNode,
         yB_coupled, mB_coupled, dB_coupled, directionFilterMode, null, activeLayerMode
       );
+      const doyou_coupled = vec_coupled.doyouState?.isDoyouHazard ? -30 : 0;
+      const timeGate_coupled = voidPenalty + doyou_coupled + (lunarPhaseModifier ? lunarPhaseScore : 0);
 
       const dayModelData: any = {
         dateStr: testDateLocal.toISOString().split('T')[0],
@@ -1325,23 +1370,46 @@ export const SolarTimeClock = () => {
 
       dirs.forEach(dir => {
         const status_class = filtered_class[dir] || 'SAFE';
-        const score_class = getStatusScore(status_class);
-        dayModelData.models.classical[dir] = { status: status_class, score: score_class };
+        const kigaku_class = getStatusScore(status_class);
+        const score_class = Math.max(0, Math.min(100, kigaku_class + timeGate_class));
+        dayModelData.models.classical[dir] = { 
+          status: status_class, 
+          score: score_class,
+          kigakuScore: kigaku_class,
+          astroBonus: 0,
+          timeGateModifier: timeGate_class
+        };
 
         const status_indep = filtered_indep[dir] || 'SAFE';
-        const score_indep = getStatusScore(status_indep);
-        dayModelData.models.physicalIndep[dir] = { status: status_indep, score: score_indep };
+        const kigaku_indep = getStatusScore(status_indep);
+        const astro_indep = astroBonusMap[dir];
+        const score_indep = Math.max(0, Math.min(100, kigaku_indep + astro_indep + timeGate_indep));
+        dayModelData.models.physicalIndep[dir] = { 
+          status: status_indep, 
+          score: score_indep,
+          kigakuScore: kigaku_indep,
+          astroBonus: astro_indep,
+          timeGateModifier: timeGate_indep
+        };
 
         const status_coupled = filtered_coupled[dir] || 'SAFE';
-        const score_coupled = getStatusScore(status_coupled);
-        dayModelData.models.physicalCoupled[dir] = { status: status_coupled, score: score_coupled };
+        const kigaku_coupled = getStatusScore(status_coupled);
+        const astro_coupled = astroBonusMap[dir];
+        const score_coupled = Math.max(0, Math.min(100, kigaku_coupled + astro_coupled + timeGate_coupled));
+        dayModelData.models.physicalCoupled[dir] = { 
+          status: status_coupled, 
+          score: score_coupled,
+          kigakuScore: kigaku_coupled,
+          astroBonus: astro_coupled,
+          timeGateModifier: timeGate_coupled
+        };
       });
 
       result.push(dayModelData);
     }
 
     return result;
-  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, getsuMeiStar, directionFilterMode, activeLayerMode, physicalMonthMode]);
+  }, [baseTime, honmeiStar, voidZodiacOverride, birthDate, lon, getsuMeiStar, directionFilterMode, activeLayerMode, physicalMonthMode, wealthData, useTrueNorth, lunarPhaseModifier]);
 
   const scorecardHonmeiStarsForecast = React.useMemo(() => {
     if (!baseTime) return null;
@@ -1354,11 +1422,38 @@ export const SolarTimeClock = () => {
     const honmeiStarIds: StarFrequency[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     const dummyVoidZodiac: string[] = [];
 
+    // APIデータからアストロボーナスを抽出してマップ化する
+    const astroBonusMap: Record<Direction, number> = {
+      N: 0, NE: 0, E: 0, SE: 0, S: 0, SW: 0, W: 0, NW: 0, CENTER: 0
+    };
+    if (wealthData && wealthData.length > 0) {
+      dirs.forEach(dir => {
+        const item = wealthData.find(w => (useTrueNorth ? w.direction : w.magneticDirection) === dir);
+        if (item && item.astrologyStatus) {
+          let bonus = 0;
+          if (item.astrologyStatus.includes('JUPITER_ASC') || item.astrologyStatus.includes('JUPITER_MC')) bonus += 30;
+          if (item.astrologyStatus.includes('VENUS_ASC') || item.astrologyStatus.includes('VENUS_MC')) bonus += 15;
+          astroBonusMap[dir] = bonus;
+        }
+      });
+    }
+
     const result: {
       star: StarFrequency;
       label: string;
-      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { status: string; score: number }>>;
+      models: Record<'classical' | 'physicalIndep' | 'physicalCoupled', Record<Direction, { 
+        status: string; 
+        score: number;
+        kigakuScore: number;
+        astroBonus: number;
+        timeGateModifier: number;
+      }>>;
     }[] = [];
+
+    const doyou_today = testEnv.raw.doyouState?.isDoyouHazard ? -30 : 0;
+    const lp_today = calculateLunarPhaseCondition(testDate, 'MIGRATION');
+    const lunarPhase_today = lp_today.scoreModifier;
+    const timeGate_today = doyou_today + (lunarPhaseModifier ? lunarPhase_today : 0);
 
     honmeiStarIds.forEach(star => {
       // 1. Classical Model
@@ -1416,23 +1511,46 @@ export const SolarTimeClock = () => {
 
       dirs.forEach(dir => {
         const status_class = filtered_class[dir] || 'SAFE';
-        const score_class = getStatusScore(status_class);
-        starData.models.classical[dir] = { status: status_class, score: score_class };
+        const kigaku_class = getStatusScore(status_class);
+        const score_class = Math.max(0, Math.min(100, kigaku_class + timeGate_today));
+        starData.models.classical[dir] = { 
+          status: status_class, 
+          score: score_class,
+          kigakuScore: kigaku_class,
+          astroBonus: 0,
+          timeGateModifier: timeGate_today
+        };
 
         const status_indep = filtered_indep[dir] || 'SAFE';
-        const score_indep = getStatusScore(status_indep);
-        starData.models.physicalIndep[dir] = { status: status_indep, score: score_indep };
+        const kigaku_indep = getStatusScore(status_indep);
+        const astro_indep = astroBonusMap[dir];
+        const score_indep = Math.max(0, Math.min(100, kigaku_indep + astro_indep + timeGate_today));
+        starData.models.physicalIndep[dir] = { 
+          status: status_indep, 
+          score: score_indep,
+          kigakuScore: kigaku_indep,
+          astroBonus: astro_indep,
+          timeGateModifier: timeGate_today
+        };
 
         const status_coupled = filtered_coupled[dir] || 'SAFE';
-        const score_coupled = getStatusScore(status_coupled);
-        starData.models.physicalCoupled[dir] = { status: status_coupled, score: score_coupled };
+        const kigaku_coupled = getStatusScore(status_coupled);
+        const astro_coupled = astroBonusMap[dir];
+        const score_coupled = Math.max(0, Math.min(100, kigaku_coupled + astro_coupled + timeGate_today));
+        starData.models.physicalCoupled[dir] = { 
+          status: status_coupled, 
+          score: score_coupled,
+          kigakuScore: kigaku_coupled,
+          astroBonus: astro_coupled,
+          timeGateModifier: timeGate_today
+        };
       });
 
       result.push(starData);
     });
 
     return result;
-  }, [baseTime, timeOffsetDays, lon, directionFilterMode, activeLayerMode, physicalMonthMode]);
+  }, [baseTime, timeOffsetDays, lon, directionFilterMode, activeLayerMode, physicalMonthMode, wealthData, useTrueNorth, lunarPhaseModifier]);
 
   const scorecardSummary = React.useMemo(() => {
     const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
@@ -1518,6 +1636,33 @@ export const SolarTimeClock = () => {
     physicalCoupledLayers
   ]);
 
+  const parseBreakdown = (item: any) => {
+    if (!item || !item.astrologyStatus) {
+      return { kigaku: 'SAFE', kigakuScore: 80, astro: [], astroScore: 0, timeGate: [], timeGateScore: 0 };
+    }
+    
+    const parts = item.astrologyStatus.split(' + ');
+    const kigaku = parts[0] || 'SAFE';
+    const kigakuScore = getStatusScore(kigaku);
+    const flags = parts[1] ? parts[1].split(',') : [];
+    
+    let astroScore = 0;
+    const astro: string[] = [];
+    if (flags.includes('JUPITER_ASC')) { astroScore += 30; astro.push('木星ASC'); }
+    if (flags.includes('JUPITER_MC')) { astroScore += 30; astro.push('木星MC'); }
+    if (flags.includes('VENUS_ASC')) { astroScore += 15; astro.push('金星ASC'); }
+    if (flags.includes('VENUS_MC')) { astroScore += 15; astro.push('金星MC'); }
+
+    let timeGateScore = 0;
+    const timeGate: string[] = [];
+    if (flags.includes('LUNAR_BOOST')) { timeGateScore += 10; timeGate.push('月相満ち'); }
+    if (flags.includes('LUNAR_PENALTY')) { timeGateScore -= 10; timeGate.push('月相欠け'); }
+    if (flags.includes('DOYOU_HAZARD')) { timeGateScore -= 30; timeGate.push('土用期間'); }
+    if (flags.includes('VOID_TIME_HAZARD')) { timeGateScore -= 100; timeGate.push('天中殺'); }
+
+    return { kigaku, kigakuScore, astro, astroScore, timeGate, timeGateScore };
+  };
+
   const getCellBgColor = (score: number, status: string, isConsensus?: boolean, isDivergence?: boolean) => {
     if (isConsensus) return 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/30';
     if (isDivergence) return 'bg-amber-950/20 text-amber-500 border border-amber-500/20';
@@ -1528,10 +1673,42 @@ export const SolarTimeClock = () => {
     return 'bg-red-950/10 text-red-400 border border-red-500/10';
   };
 
+  const getDimensionCellBgColor = (
+    dimension: 'total' | 'kigaku' | 'astro' | 'timeGate',
+    score: number,
+    status: string,
+    isConsensus?: boolean,
+    isDivergence?: boolean
+  ) => {
+    if (dimension === 'total') {
+      return getCellBgColor(score, status, isConsensus, isDivergence);
+    }
+    if (dimension === 'kigaku') {
+      return getCellBgColor(score, status);
+    }
+    if (dimension === 'astro') {
+      if (score >= 30) return 'bg-blue-950/30 text-blue-400 border border-blue-500/20';
+      if (score > 0) return 'bg-blue-950/15 text-blue-400/80 border border-blue-500/10';
+      return 'text-zinc-600 border border-zinc-900';
+    }
+    if (dimension === 'timeGate') {
+      if (score <= -100) return 'bg-red-950/35 text-red-400 border border-red-500/35 font-bold';
+      if (score < 0) return 'bg-amber-950/20 text-amber-500 border border-amber-500/20';
+      if (score > 0) return 'bg-emerald-950/25 text-emerald-400 border border-emerald-500/20';
+      return 'text-zinc-600 border border-zinc-900';
+    }
+    return '';
+  };
+
   const handleExportGridCsv = () => {
     if (scorecardActiveGridTab === 'dates') {
       if (!scorecard30DaysForecastAllModels) return;
-      const headers = ['日付', '曜日', '方位', '合意判定', '古典_スコア', '古典_ステータス', '物理独立_スコア', '物理独立_ステータス', '伝統連動_スコア', '伝統連動_ステータス'];
+      const headers = [
+        '日付', '曜日', '方位', '合意判定', 
+        '古典_総合スコア', '古典_判定ステータス', '古典_気学スコア', '古典_時間ゲート調整', 
+        '物理独立_総合スコア', '物理独立_判定ステータス', '物理独立_気学スコア', '物理独立_アストロボーナス', '物理独立_時間ゲート調整', 
+        '伝統連動_総合スコア', '伝統連動_判定ステータス', '伝統連動_気学スコア', '伝統連動_アストロボーナス', '伝統連動_時間ゲート調整'
+      ];
       const rows: any[] = [];
       const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
       const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
@@ -1561,10 +1738,18 @@ export const SolarTimeClock = () => {
             consensusLabel,
             classData.score,
             classData.status,
+            classData.kigakuScore,
+            classData.timeGateModifier,
             indepData.score,
             indepData.status,
+            indepData.kigakuScore,
+            indepData.astroBonus,
+            indepData.timeGateModifier,
             coupledData.score,
-            coupledData.status
+            coupledData.status,
+            coupledData.kigakuScore,
+            coupledData.astroBonus,
+            coupledData.timeGateModifier
           ]);
         });
       });
@@ -1580,7 +1765,12 @@ export const SolarTimeClock = () => {
       document.body.removeChild(link);
     } else {
       if (!scorecardHonmeiStarsForecast) return;
-      const headers = ['本命星', '方位', '合意判定', '古典_スコア', '古典_ステータス', '物理独立_スコア', '物理独立_ステータス', '伝統連動_スコア', '伝統連動_ステータス'];
+      const headers = [
+        '本命星', '方位', '合意判定', 
+        '古典_総合スコア', '古典_判定ステータス', '古典_気学スコア', '古典_時間ゲート調整', 
+        '物理独立_総合スコア', '物理独立_判定ステータス', '物理独立_気学スコア', '物理独立_アストロボーナス', '物理独立_時間ゲート調整', 
+        '伝統連動_総合スコア', '伝統連動_判定ステータス', '伝統連動_気学スコア', '伝統連動_アストロボーナス', '伝統連動_時間ゲート調整'
+      ];
       const rows: any[] = [];
       const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
       
@@ -1608,10 +1798,18 @@ export const SolarTimeClock = () => {
             consensusLabel,
             classData.score,
             classData.status,
+            classData.kigakuScore,
+            classData.timeGateModifier,
             indepData.score,
             indepData.status,
+            indepData.kigakuScore,
+            indepData.astroBonus,
+            indepData.timeGateModifier,
             coupledData.score,
-            coupledData.status
+            coupledData.status,
+            coupledData.kigakuScore,
+            coupledData.astroBonus,
+            coupledData.timeGateModifier
           ]);
         });
       });
@@ -3416,13 +3614,19 @@ ${timingOptimization?.recommendationText || "特になし"}
                     <thead>
                       <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
                         <th className="p-3 w-24">方位 (Sector)</th>
-                        <th className="p-3 w-32">古典暦基準 (Classical)</th>
-                        <th className="p-3 w-32">物理独立型 (Phys Indep)</th>
-                        <th className="p-3 w-32">伝統連動型 (Phys Coupled)</th>
-                        <th className="p-3 w-36 text-center">合意判定 (Consensus)</th>
-                        <th className="p-3 w-24 text-center">30日吉日数</th>
-                        <th className="p-3">推奨富裕エリア (最高所得)</th>
-                        <th className="p-3">推奨物件 (最大アービトラージ)</th>
+                        <th className="p-3 w-20">古典 (Classical)</th>
+                        <th className="p-3 w-20">物理独立 (Phys Indep)</th>
+                        <th className="p-3 w-20">伝統連動 (Phys Coupled)</th>
+                        <th className="p-3 w-28 text-center">合意判定</th>
+                        
+                        {/* 3つの個別判断軸カラム */}
+                        <th className="p-3 w-32 bg-emerald-950/10 border-x border-emerald-900/20">① 気学方位 (Kigaku)</th>
+                        <th className="p-3 w-32 bg-blue-950/10 border-r border-blue-900/20">② アストロ (Astro)</th>
+                        <th className="p-3 w-32 bg-amber-950/10 border-r border-amber-900/20">③ 時間ゲート (Time)</th>
+                        
+                        <th className="p-3 w-20 text-center">30日吉日</th>
+                        <th className="p-3">推奨エリア (所得)</th>
+                        <th className="p-3">推奨物件 (差益)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/50 text-xs">
@@ -3437,6 +3641,14 @@ ${timingOptimization?.recommendationText || "特になし"}
                             if (s.startsWith('NOISE_VOID')) return 'text-zinc-500 bg-zinc-800 border-zinc-700';
                             if (s.startsWith('NOISE_NODE')) return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30';
                             return 'text-red-400 bg-red-500/10 border-red-500/30';
+                          };
+
+                          const bd = parseBreakdown(item.topArea);
+                          const kigakuTextColor = (s: string) => {
+                            if (s === 'OPTIMAL' || s === 'OPTIMAL_REGULAR') return 'text-emerald-400';
+                            if (s === 'SAFE') return 'text-blue-400';
+                            if (s === 'WARNING') return 'text-orange-400';
+                            return 'text-red-400';
                           };
 
                           return (
@@ -3516,25 +3728,52 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 )}
                               </td>
 
-                              {/* Lucky Days */}
-                              <td className="p-3 text-center font-mono">
-                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] ${
-                                  item.luckyDays >= 20 ? 'bg-emerald-950/40 text-emerald-400 font-bold' :
-                                  item.luckyDays >= 10 ? 'bg-blue-950/20 text-blue-400' : 'bg-zinc-900 text-zinc-500'
-                                }`}>
-                                  {item.luckyDays} / 30日
-                                </span>
+                              {/* ① 気学方位 */}
+                              <td className="p-3 bg-emerald-950/5 border-x border-zinc-900/50 font-mono">
+                                <div className="flex flex-col">
+                                  <span className={`font-bold ${kigakuTextColor(bd.kigaku)}`}>
+                                    {bd.kigaku.replace('NOISE_', '')}
+                                  </span>
+                                  <span className="text-[9px] text-zinc-500">ベース: {bd.kigakuScore}点</span>
+                                </div>
                               </td>
 
-                              {/* Recommended Wealth Area */}
+                              {/* ② アストロ */}
+                              <td className="p-3 bg-blue-950/5 border-r border-zinc-900/50 font-mono">
+                                <div className="flex flex-col">
+                                  <span className={`text-[10px] ${bd.astroScore > 0 ? 'text-blue-400 font-bold' : 'text-zinc-600'}`}>
+                                    {bd.astro.length > 0 ? bd.astro.join(', ') : 'ラインなし'}
+                                  </span>
+                                  <span className="text-[9px] text-zinc-500">加算: +{bd.astroScore}点</span>
+                                </div>
+                              </td>
+
+                              {/* ③ 時間ゲート */}
+                              <td className="p-3 bg-amber-950/5 border-r border-zinc-900/50 font-mono">
+                                <div className="flex flex-col">
+                                  <span className={`text-[10px] ${bd.timeGateScore < 0 ? 'text-red-400 font-bold' : bd.timeGateScore > 0 ? 'text-emerald-400 font-bold' : 'text-zinc-600'}`}>
+                                    {bd.timeGate.length > 0 ? bd.timeGate.join(', ') : '通常時間'}
+                                  </span>
+                                  <span className="text-[9px] text-zinc-500 border-t border-zinc-800/10 mt-0.5 pt-0.5">
+                                    調整: {bd.timeGateScore > 0 ? '+' : ''}{bd.timeGateScore}点
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* 30日吉日 */}
+                              <td className="p-3 text-center font-mono text-[10px] text-zinc-400">
+                                {item.luckyDays}日
+                              </td>
+
+                              {/* Recommended Area */}
                               <td className="p-3">
                                 {item.topArea ? (
                                   <div className="flex flex-col">
-                                    <span className="text-zinc-200 font-bold group-hover:text-emerald-400 transition-colors">
-                                      {item.topArea.areaName}
+                                    <span className="text-zinc-200 font-bold truncate max-w-[180px]">
+                                      {item.topArea.municipality_name_ja}
                                     </span>
                                     <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                                      平均所得: {item.topArea.incomePerCapita ? `${(item.topArea.incomePerCapita / 10000).toFixed(1)}万円` : `${(item.topArea.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
+                                      所得: {(item.topArea.averageIncome / 10000).toFixed(0)}万円
                                     </span>
                                   </div>
                                 ) : (
@@ -3614,6 +3853,18 @@ ${timingOptimization?.recommendationText || "特になし"}
                     <option value="physicalCoupled">伝統連動モデル (Phys Coupled)</option>
                   </select>
 
+                  {/* 表示軸 (Dimension Selector) */}
+                  <select
+                    value={gridDimension}
+                    onChange={(e: any) => setGridDimension(e.target.value)}
+                    className="bg-zinc-950 text-zinc-300 border border-zinc-800 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                  >
+                    <option value="total">表示軸: 総合スコア</option>
+                    <option value="kigaku">表示軸: ①気学方位</option>
+                    <option value="astro">表示軸: ②アストロライン</option>
+                    <option value="timeGate">表示軸: ③時間ゲート</option>
+                  </select>
+
                   {/* CSV Export Button */}
                   <button
                     onClick={handleExportGridCsv}
@@ -3680,29 +3931,83 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                                 let activeScore = 50;
                                 let activeStatus = 'SAFE';
+                                let cellVal = 0;
+                                let cellLabel = '';
 
                                 if (gridModelView === 'classical') {
                                   activeScore = classData.score;
                                   activeStatus = classData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = classData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = classData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = classData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = classData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else if (gridModelView === 'physicalIndep') {
                                   activeScore = indepData.score;
                                   activeStatus = indepData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = indepData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = indepData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = indepData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = indepData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else if (gridModelView === 'physicalCoupled') {
                                   activeScore = coupledData.score;
                                   activeStatus = coupledData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = coupledData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = coupledData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = coupledData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = coupledData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else {
                                   activeScore = Math.round((classData.score + indepData.score + coupledData.score) / 3);
                                   activeStatus = isConsensusClear ? 'OPTIMAL' : isDivergenceAlert ? 'WARNING' : 'SAFE';
+                                  if (gridDimension === 'total') {
+                                    cellVal = activeScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = Math.round((classData.kigakuScore + indepData.kigakuScore + coupledData.kigakuScore) / 3);
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = Math.round((classData.astroBonus + indepData.astroBonus + coupledData.astroBonus) / 3);
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = Math.round((classData.timeGateModifier + indepData.timeGateModifier + coupledData.timeGateModifier) / 3);
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 }
 
-                                const cellClass = getCellBgColor(activeScore, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
+                                const cellClass = getDimensionCellBgColor(gridDimension, cellVal, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
 
                                 return (
                                   <td key={dir} className={`p-2 font-bold transition-all ${cellClass}`}>
                                     <div className="flex items-center justify-center gap-0.5">
-                                      {gridModelView === 'consensus' && isConsensusClear && <span>🌟</span>}
-                                      {gridModelView === 'consensus' && isDivergenceAlert && <span>⚠️</span>}
-                                      <span>{activeScore}</span>
+                                      {gridModelView === 'consensus' && gridDimension === 'total' && isConsensusClear && <span>🌟</span>}
+                                      {gridModelView === 'consensus' && gridDimension === 'total' && isDivergenceAlert && <span>⚠️</span>}
+                                      <span>{cellLabel}</span>
                                     </div>
                                   </td>
                                 );
@@ -3737,29 +4042,83 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                                 let activeScore = 50;
                                 let activeStatus = 'SAFE';
+                                let cellVal = 0;
+                                let cellLabel = '';
 
                                 if (gridModelView === 'classical') {
                                   activeScore = classData.score;
                                   activeStatus = classData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = classData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = classData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = classData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = classData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else if (gridModelView === 'physicalIndep') {
                                   activeScore = indepData.score;
                                   activeStatus = indepData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = indepData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = indepData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = indepData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = indepData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else if (gridModelView === 'physicalCoupled') {
                                   activeScore = coupledData.score;
                                   activeStatus = coupledData.status;
+                                  if (gridDimension === 'total') {
+                                    cellVal = coupledData.score;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = coupledData.kigakuScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = coupledData.astroBonus;
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = coupledData.timeGateModifier;
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 } else {
                                   activeScore = Math.round((classData.score + indepData.score + coupledData.score) / 3);
                                   activeStatus = isConsensusClear ? 'OPTIMAL' : isDivergenceAlert ? 'WARNING' : 'SAFE';
+                                  if (gridDimension === 'total') {
+                                    cellVal = activeScore;
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'kigaku') {
+                                    cellVal = Math.round((classData.kigakuScore + indepData.kigakuScore + coupledData.kigakuScore) / 3);
+                                    cellLabel = `${cellVal}`;
+                                  } else if (gridDimension === 'astro') {
+                                    cellVal = Math.round((classData.astroBonus + indepData.astroBonus + coupledData.astroBonus) / 3);
+                                    cellLabel = `+${cellVal}`;
+                                  } else {
+                                    cellVal = Math.round((classData.timeGateModifier + indepData.timeGateModifier + coupledData.timeGateModifier) / 3);
+                                    cellLabel = cellVal > 0 ? `+${cellVal}` : `${cellVal}`;
+                                  }
                                 }
 
-                                const cellClass = getCellBgColor(activeScore, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
+                                const cellClass = getDimensionCellBgColor(gridDimension, cellVal, activeStatus, gridModelView === 'consensus' && isConsensusClear, gridModelView === 'consensus' && isDivergenceAlert);
 
                                 return (
                                   <td key={dir} className={`p-2 font-bold transition-all ${cellClass}`}>
                                     <div className="flex items-center justify-center gap-0.5">
-                                      {gridModelView === 'consensus' && isConsensusClear && <span>🌟</span>}
-                                      {gridModelView === 'consensus' && isDivergenceAlert && <span>⚠️</span>}
-                                      <span>{activeScore}</span>
+                                      {gridModelView === 'consensus' && gridDimension === 'total' && isConsensusClear && <span>🌟</span>}
+                                      {gridModelView === 'consensus' && gridDimension === 'total' && isDivergenceAlert && <span>⚠️</span>}
+                                      <span>{cellLabel}</span>
                                     </div>
                                   </td>
                                 );
