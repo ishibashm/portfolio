@@ -20,6 +20,8 @@ export async function POST(req: Request) {
       personalBazi: body.personalBazi || null,
       physicalLayers: body.physicalLayers || null,
       classicalLayers: body.classicalLayers || null,
+      physicalIndependentLayers: body.physicalIndependentLayers || null,
+      physicalCoupledLayers: body.physicalCoupledLayers || null,
       ansLoad: body.ansLoad || null,
       kpIndex: body.kpIndex || null,
       metadata: body.metadata || null,

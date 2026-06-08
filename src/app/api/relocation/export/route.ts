@@ -12,7 +12,8 @@ import {
   calculateLunarPhaseCondition,
   getCurrentZodiac,
   getClassicalMonthStar,
-  filterCollisionByMode
+  filterCollisionByMode,
+  getPhysicalMonthStar
 } from '@/utils/ephemerisEngine';
 
 export const dynamic = 'force-dynamic';
@@ -60,6 +61,80 @@ export async function GET(request: Request) {
     const voidZodiacs = getPersonalVoidZodiac(bDate);
     const env = getCurrentEnvironmentalFrequencies(targetDate, baseLon, physicalMonthMode);
 
+    // Strict boards for multi-model calculations
+    const pyB = generateBoard(env.yearStar);
+    const pmB_indep = generateBoard(getPhysicalMonthStar(targetDate, 'independent'));
+    const pmB_coupled = generateBoard(getPhysicalMonthStar(targetDate, 'coupled'));
+    const pdB = generateBoard(env.dayStar);
+
+    const cyB = generateBoard(env.classicalYearStar);
+    const cmB = generateBoard(env.classicalMonthStar);
+    const cdB = generateBoard(env.classicalDayStar);
+
+    // Compute classical collision
+    const classicalCollisionRaw = calculateVectorCollision(
+      honmeiStar.classical,
+      cyB, cmB, cdB,
+      voidZodiacs,
+      env.raw.lunarNode,
+      'MIGRATION',
+      targetDate,
+      baseLon,
+      getsuMeiStar,
+      'traditional'
+    );
+    const classicalCollision = filterCollisionByMode(
+      classicalCollisionRaw,
+      honmeiStar.classical,
+      getsuMeiStar,
+      voidZodiacs,
+      directionFilterMode,
+      cyB, cmB, cdB
+    );
+
+    // Compute physical independent collision
+    const physicalIndepCollisionRaw = calculateVectorCollision(
+      honmeiStar.physical,
+      pyB, pmB_indep, pdB,
+      voidZodiacs,
+      env.raw.lunarNode,
+      'MIGRATION',
+      targetDate,
+      baseLon,
+      undefined,
+      'physical'
+    );
+    const physicalIndepCollision = filterCollisionByMode(
+      physicalIndepCollisionRaw,
+      honmeiStar.physical,
+      null,
+      voidZodiacs,
+      directionFilterMode,
+      pyB, pmB_indep, pdB
+    );
+
+    // Compute physical coupled collision
+    const physicalCoupledCollisionRaw = calculateVectorCollision(
+      honmeiStar.physical,
+      pyB, pmB_coupled, pdB,
+      voidZodiacs,
+      env.raw.lunarNode,
+      'MIGRATION',
+      targetDate,
+      baseLon,
+      undefined,
+      'physical'
+    );
+    const physicalCoupledCollision = filterCollisionByMode(
+      physicalCoupledCollisionRaw,
+      honmeiStar.physical,
+      null,
+      voidZodiacs,
+      directionFilterMode,
+      pyB, pmB_coupled, pdB
+    );
+
+    // For backwards compatibility and the default return:
     const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
     const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
     const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
@@ -257,6 +332,11 @@ export async function GET(request: Request) {
           finalVectors: vectorCollision.finalVectors,
           tendoDirection: vectorCollision.tendoDirection,
           doyouState: vectorCollision.doyouState
+        },
+        modelsComparison: {
+          classical: classicalCollision.finalVectors,
+          physicalIndependent: physicalIndepCollision.finalVectors,
+          physicalCoupled: physicalCoupledCollision.finalVectors
         }
       },
       forecast30Days,

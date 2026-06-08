@@ -9,7 +9,7 @@ import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition, getPhysicalMonthStar } from "../utils/ephemerisEngine";
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
@@ -947,11 +947,26 @@ export const SolarTimeClock = () => {
     return null;
   }, [birthDate, birthSolarData]);
 
-  const { board, layers: rawLayers, physicalLayers: rawPhysicalLayers, classicalLayers: rawClassicalLayers, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard } = React.useMemo(() => {
-    if (!env || !honmeiStar) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
+  const {
+    board,
+    layers: rawLayers,
+    physicalLayers: rawPhysicalLayers,
+    classicalLayers: rawClassicalLayers,
+    physicalIndepLayers: rawPhysicalIndepLayers,
+    physicalCoupledLayers: rawPhysicalCoupledLayers,
+    physicalYearBoard,
+    physicalMonthBoard,
+    physicalDayBoard,
+    physicalMonthIndepBoard,
+    physicalMonthCoupledBoard,
+    classicalYearBoard,
+    classicalMonthBoard,
+    classicalDayBoard
+  } = React.useMemo(() => {
+    if (!env || !honmeiStar) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalIndepLayers: null, physicalCoupledLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, physicalMonthIndepBoard: null, physicalMonthCoupledBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
 
     const bDate = new Date(birthDate);
-    if (isNaN(bDate.getTime())) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
+    if (isNaN(bDate.getTime())) return { board: null, layers: null, physicalLayers: null, classicalLayers: null, physicalIndepLayers: null, physicalCoupledLayers: null, physicalYearBoard: null, physicalMonthBoard: null, physicalDayBoard: null, physicalMonthIndepBoard: null, physicalMonthCoupledBoard: null, classicalYearBoard: null, classicalMonthBoard: null, classicalDayBoard: null };
 
     // Boards for internal calculation based on user preference toggle
     const yB = generateBoard(useClassicalBoard ? env.classicalYearStar : env.yearStar);
@@ -970,6 +985,13 @@ export const SolarTimeClock = () => {
 
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(bDate);
     const tDate = solarData?.solarTime || ephemerisTime || new Date();
+
+    // Strict Physical boards for Independent and Coupled modes
+    const pmStar_indep = getPhysicalMonthStar(tDate, 'independent');
+    const pmStar_coupled = getPhysicalMonthStar(tDate, 'coupled');
+
+    const pmB_indep = generateBoard(pmStar_indep);
+    const pmB_coupled = generateBoard(pmStar_coupled);
 
     const vectorData = calculateVectorCollision(
       useClassicalBoard ? honmeiStar.classical : honmeiStar.physical,
@@ -1007,16 +1029,55 @@ export const SolarTimeClock = () => {
       'traditional'
     );
 
-    return { board: dB, layers: vectorData, physicalLayers: physicalVectorData, classicalLayers: classicalVectorData, physicalYearBoard: pyB, physicalMonthBoard: pmB, physicalDayBoard: pdB, classicalYearBoard: cyB, classicalMonthBoard: cmB, classicalDayBoard: cdB };
+    const physicalIndepVectorData = calculateVectorCollision(
+      honmeiStar.physical,
+      pyB, pmB_indep, pdB,
+      voidZodiacArray,
+      env.raw.lunarNode,
+      actionIntent,
+      tDate,
+      lon || 139.6917,
+      undefined,
+      'physical'
+    );
+
+    const physicalCoupledVectorData = calculateVectorCollision(
+      honmeiStar.physical,
+      pyB, pmB_coupled, pdB,
+      voidZodiacArray,
+      env.raw.lunarNode,
+      actionIntent,
+      tDate,
+      lon || 139.6917,
+      undefined,
+      'physical'
+    );
+
+    return {
+      board: dB,
+      layers: vectorData,
+      physicalLayers: physicalVectorData,
+      classicalLayers: classicalVectorData,
+      physicalIndepLayers: physicalIndepVectorData,
+      physicalCoupledLayers: physicalCoupledVectorData,
+      physicalYearBoard: pyB,
+      physicalMonthBoard: pmB,
+      physicalDayBoard: pdB,
+      physicalMonthIndepBoard: pmB_indep,
+      physicalMonthCoupledBoard: pmB_coupled,
+      classicalYearBoard: cyB,
+      classicalMonthBoard: cmB,
+      classicalDayBoard: cdB
+    };
   }, [honmeiStar, getsuMeiStar, env, birthDate, actionIntent, voidZodiacOverride, useClassicalBoard, solarData, ephemerisTime]);
 
   const filteredLayers = React.useMemo(() => {
-    if (!rawLayers || !rawPhysicalLayers || !rawClassicalLayers || !honmeiStar) {
-      return { layers: null, physicalLayers: null, classicalLayers: null };
+    if (!rawLayers || !rawPhysicalLayers || !rawClassicalLayers || !rawPhysicalIndepLayers || !rawPhysicalCoupledLayers || !honmeiStar) {
+      return { layers: null, physicalLayers: null, classicalLayers: null, physicalIndepLayers: null, physicalCoupledLayers: null };
     }
 
     const bDate = new Date(birthDate);
-    if (isNaN(bDate.getTime())) return { layers: null, physicalLayers: null, classicalLayers: null };
+    if (isNaN(bDate.getTime())) return { layers: null, physicalLayers: null, classicalLayers: null, physicalIndepLayers: null, physicalCoupledLayers: null };
 
     const personalStar = useClassicalBoard ? honmeiStar.classical : honmeiStar.physical;
     const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(bDate);
@@ -1051,13 +1112,55 @@ export const SolarTimeClock = () => {
         classicalYearBoard,
         classicalMonthBoard,
         classicalDayBoard
+      ),
+      physicalIndepLayers: filterLayerData(
+        rawPhysicalIndepLayers,
+        honmeiStar.physical,
+        null,
+        voidZodiacArray,
+        directionFilterMode,
+        physicalYearBoard,
+        physicalMonthIndepBoard,
+        physicalDayBoard
+      ),
+      physicalCoupledLayers: filterLayerData(
+        rawPhysicalCoupledLayers,
+        honmeiStar.physical,
+        null,
+        voidZodiacArray,
+        directionFilterMode,
+        physicalYearBoard,
+        physicalMonthCoupledBoard,
+        physicalDayBoard
       )
     };
-  }, [rawLayers, rawPhysicalLayers, rawClassicalLayers, directionFilterMode, useClassicalBoard, honmeiStar, getsuMeiStar, voidZodiacOverride, birthDate, physicalYearBoard, physicalMonthBoard, physicalDayBoard, classicalYearBoard, classicalMonthBoard, classicalDayBoard]);
+  }, [
+    rawLayers,
+    rawPhysicalLayers,
+    rawClassicalLayers,
+    rawPhysicalIndepLayers,
+    rawPhysicalCoupledLayers,
+    directionFilterMode,
+    useClassicalBoard,
+    honmeiStar,
+    getsuMeiStar,
+    voidZodiacOverride,
+    birthDate,
+    physicalYearBoard,
+    physicalMonthBoard,
+    physicalDayBoard,
+    physicalMonthIndepBoard,
+    physicalMonthCoupledBoard,
+    classicalYearBoard,
+    classicalMonthBoard,
+    classicalDayBoard
+  ]);
 
   const layers = filteredLayers.layers;
   const physicalLayers = filteredLayers.physicalLayers;
   const classicalLayers = filteredLayers.classicalLayers;
+  const physicalIndepLayers = filteredLayers.physicalIndepLayers;
+  const physicalCoupledLayers = filteredLayers.physicalCoupledLayers;
 
   const activeVectors = React.useMemo(() => {
     let av: any = layers?.finalVectors || {};
@@ -1174,6 +1277,27 @@ export const SolarTimeClock = () => {
       const topRentals = [...rentalsForDir].sort((a, b) => (b.arbitrageScore || 0) - (a.arbitrageScore || 0));
       const topRental = topRentals[0] || null;
 
+      // Comparative Model Calculations
+      const classicalStatus = classicalLayers?.finalVectors[dir] || 'SAFE';
+      const classicalScore = getStatusScore(classicalStatus);
+
+      const physicalIndepStatus = physicalIndepLayers?.finalVectors[dir] || 'SAFE';
+      const physicalIndepScore = getStatusScore(physicalIndepStatus);
+
+      const physicalCoupledStatus = physicalCoupledLayers?.finalVectors[dir] || 'SAFE';
+      const physicalCoupledScore = getStatusScore(physicalCoupledStatus);
+
+      // Consensus / Divergence Highlights
+      const isClassicalHigh = !classicalStatus.startsWith('NOISE');
+      const isPhysicalIndepHigh = !physicalIndepStatus.startsWith('NOISE');
+      const isPhysicalCoupledHigh = !physicalCoupledStatus.startsWith('NOISE');
+
+      const isConsensusClear = isClassicalHigh && isPhysicalIndepHigh && isPhysicalCoupledHigh;
+
+      const hasHigh = isClassicalHigh || isPhysicalIndepHigh || isPhysicalCoupledHigh;
+      const hasLow = !isClassicalHigh || !isPhysicalIndepHigh || !isPhysicalCoupledHigh;
+      const isDivergenceAlert = hasHigh && hasLow;
+
       return {
         direction: dir,
         labelJa: dirMapJa[dir],
@@ -1185,10 +1309,29 @@ export const SolarTimeClock = () => {
         topArea,
         topAreas: topAreas.slice(0, 5),
         topRental,
-        topRentals: topRentals.slice(0, 5)
+        topRentals: topRentals.slice(0, 5),
+        
+        // Extended comparative fields
+        classicalStatus,
+        classicalScore,
+        physicalIndepStatus,
+        physicalIndepScore,
+        physicalCoupledStatus,
+        physicalCoupledScore,
+        isConsensusClear,
+        isDivergenceAlert
       };
     });
-  }, [activeVectors, scorecard30DaysForecast, wealthData, propertiesData, useTrueNorth]);
+  }, [
+    activeVectors,
+    scorecard30DaysForecast,
+    wealthData,
+    propertiesData,
+    useTrueNorth,
+    classicalLayers,
+    physicalIndepLayers,
+    physicalCoupledLayers
+  ]);
 
   const handleExportForGemini = async () => {
     setIsExporting(true);
@@ -1294,7 +1437,28 @@ export const SolarTimeClock = () => {
           monthLayer: (useClassicalBoard ? classicalLayers?.monthLayer : physicalLayers?.monthLayer)?.[useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection] || null,
           dayLayer: (useClassicalBoard ? classicalLayers?.dayLayer : physicalLayers?.dayLayer)?.[useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection] || null
         } : null,
-        allDirectionsFinal: activeVectors || null
+        allDirectionsFinal: activeVectors || null,
+        modelsComparison: {
+          targetDirection: targetDir ? {
+            classical: {
+              status: classicalLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || null,
+              score: getStatusScore(classicalLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE')
+            },
+            physicalIndependent: {
+              status: physicalIndepLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || null,
+              score: getStatusScore(physicalIndepLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE')
+            },
+            physicalCoupled: {
+              status: physicalCoupledLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || null,
+              score: getStatusScore(physicalCoupledLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE')
+            }
+          } : null,
+          allDirections: {
+            classical: classicalLayers?.finalVectors || null,
+            physicalIndependent: physicalIndepLayers?.finalVectors || null,
+            physicalCoupled: physicalCoupledLayers?.finalVectors || null
+          }
+        }
       },
       biometrics: {
         hrv,
@@ -1371,7 +1535,11 @@ export const SolarTimeClock = () => {
 
 【吉凶衝突判定 (Vector Collision)】
 ・目標方位の総合ステータス: ${targetStatus || "判定不能"}
-・目標方位の各レイヤーステータス:
+・各モデルの目標方位判定:
+  - 古典暦基準: ${targetDir ? classicalLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || "SAFE" : "未指定"} (スコア: ${targetDir ? getStatusScore(classicalLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE') : "-"})
+  - 物理独立型: ${targetDir ? physicalIndepLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || "SAFE" : "未指定"} (スコア: ${targetDir ? getStatusScore(physicalIndepLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE') : "-"})
+  - 伝統連動型: ${targetDir ? physicalCoupledLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || "SAFE" : "未指定"} (スコア: ${targetDir ? getStatusScore(physicalCoupledLayers?.finalVectors[(useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection) as Direction] || 'SAFE') : "-"})
+・目標方位の各レイヤーステータス (アクティブモデル):
   - 年盤レイヤー: ${(useClassicalBoard ? classicalLayers?.yearLayer : physicalLayers?.yearLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
   - 月盤レイヤー: ${(useClassicalBoard ? classicalLayers?.monthLayer : physicalLayers?.monthLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
   - 日盤レイヤー: ${(useClassicalBoard ? classicalLayers?.dayLayer : physicalLayers?.dayLayer)?.[useTrueNorth ? targetDir?.trueDirection! : targetDir?.magneticDirection!] || "SAFE"}
@@ -1590,6 +1758,8 @@ ${timingOptimization?.recommendationText || "特になし"}
       "Timing_Psychology", "Timing_Kigaku", "Timing_Astrology",
       "Phys_N", "Phys_NE", "Phys_E", "Phys_SE", "Phys_S", "Phys_SW", "Phys_W", "Phys_NW",
       "Class_N", "Class_NE", "Class_E", "Class_SE", "Class_S", "Class_SW", "Class_W", "Class_NW",
+      "PhysIndep_N", "PhysIndep_NE", "PhysIndep_E", "PhysIndep_SE", "PhysIndep_S", "PhysIndep_SW", "PhysIndep_W", "PhysIndep_NW",
+      "PhysCoupled_N", "PhysCoupled_NE", "PhysCoupled_E", "PhysCoupled_SE", "PhysCoupled_S", "PhysCoupled_SW", "PhysCoupled_W", "PhysCoupled_NW",
       "NBA_Suggested_Action", "NBA_Expected_Reward", "NBA_Confidence",
       "Micro_Stress", "Micro_Resilience",
       "DS_Ephemeris_Source", "DS_Ephemeris_Detail",
@@ -1628,6 +1798,14 @@ ${timingOptimization?.recommendationText || "特になし"}
       classicalLayers?.finalVectors?.E || "", classicalLayers?.finalVectors?.SE || "",
       classicalLayers?.finalVectors?.S || "", classicalLayers?.finalVectors?.SW || "",
       classicalLayers?.finalVectors?.W || "", classicalLayers?.finalVectors?.NW || "",
+      physicalIndepLayers?.finalVectors?.N || "", physicalIndepLayers?.finalVectors?.NE || "",
+      physicalIndepLayers?.finalVectors?.E || "", physicalIndepLayers?.finalVectors?.SE || "",
+      physicalIndepLayers?.finalVectors?.S || "", physicalIndepLayers?.finalVectors?.SW || "",
+      physicalIndepLayers?.finalVectors?.W || "", physicalIndepLayers?.finalVectors?.NW || "",
+      physicalCoupledLayers?.finalVectors?.N || "", physicalCoupledLayers?.finalVectors?.NE || "",
+      physicalCoupledLayers?.finalVectors?.E || "", physicalCoupledLayers?.finalVectors?.SE || "",
+      physicalCoupledLayers?.finalVectors?.S || "", physicalCoupledLayers?.finalVectors?.SW || "",
+      physicalCoupledLayers?.finalVectors?.W || "", physicalCoupledLayers?.finalVectors?.NW || "",
       nbaData?.nba.actionResult.suggestedAction || "",
       nbaData?.nba.actionResult.expectedReward?.toFixed(4) || "",
       nbaData?.nba.actionResult.confidence?.toFixed(4) || "",
@@ -1683,6 +1861,8 @@ ${timingOptimization?.recommendationText || "特になし"}
       spatialVectors: {
         physical: physicalLayers,
         classical: classicalLayers,
+        physicalIndependent: physicalIndepLayers,
+        physicalCoupled: physicalCoupledLayers,
         activeModel: useClassicalBoard ? 'classical' : 'physical',
         activeLayerMode: activeLayerMode
       },
@@ -1735,6 +1915,8 @@ ${timingOptimization?.recommendationText || "特になし"}
         personalBazi: honmeiStar,
         physicalLayers: physicalLayers,
         classicalLayers: classicalLayers,
+        physicalIndependentLayers: physicalIndepLayers,
+        physicalCoupledLayers: physicalCoupledLayers,
         ansLoad: ansLoad,
         kpIndex: spaceWeather?.kpIndex || null,
         metadata: {
@@ -2913,10 +3095,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
-                        <th className="p-3 w-28">方位 (Sector)</th>
-                        <th className="p-3 w-36">ステータス (Status)</th>
-                        <th className="p-3 w-20">統合スコア</th>
-                        <th className="p-3 w-28 text-center">30日吉日数</th>
+                        <th className="p-3 w-24">方位 (Sector)</th>
+                        <th className="p-3 w-32">古典暦基準 (Classical)</th>
+                        <th className="p-3 w-32">物理独立型 (Phys Indep)</th>
+                        <th className="p-3 w-32">伝統連動型 (Phys Coupled)</th>
+                        <th className="p-3 w-36 text-center">合意判定 (Consensus)</th>
+                        <th className="p-3 w-24 text-center">30日吉日数</th>
                         <th className="p-3">推奨富裕エリア (最高所得)</th>
                         <th className="p-3">推奨物件 (最大アービトラージ)</th>
                       </tr>
@@ -2942,27 +3126,74 @@ ${timingOptimization?.recommendationText || "特になし"}
                               className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
                             >
                               {/* Direction */}
-                              <td className="p-3 font-mono font-bold text-zinc-200 flex items-center gap-1.5">
+                              <td className="p-3 font-mono font-bold text-zinc-200 flex items-center gap-1.5 whitespace-nowrap">
                                 <span className="text-[10px] text-zinc-500">▶</span>
                                 {item.labelJa} ({item.direction})
                               </td>
 
-                              {/* Status Badge */}
-                              <td className="p-3">
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.status)}`}>
-                                  {item.status.replace('NOISE_', '')}
-                                </span>
+                              {/* Classical Model */}
+                              <td className="p-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.classicalStatus)}`}>
+                                    {item.classicalStatus.replace('NOISE_', '')}
+                                  </span>
+                                  <span className={`font-mono font-bold text-[10px] ${
+                                    item.classicalScore >= 80 ? 'text-emerald-400' :
+                                    item.classicalScore >= 50 ? 'text-blue-400' :
+                                    item.classicalScore >= 30 ? 'text-yellow-500' : 'text-red-500'
+                                  }`}>
+                                    {item.classicalScore}
+                                  </span>
+                                </div>
                               </td>
 
-                              {/* Score */}
-                              <td className="p-3 font-mono font-bold">
-                                <span className={
-                                  item.score >= 80 ? 'text-emerald-400' :
-                                  item.score >= 50 ? 'text-blue-400' :
-                                  item.score >= 30 ? 'text-yellow-500' : 'text-red-500'
-                                }>
-                                  {item.score}
-                                </span>
+                              {/* Physical Independent Model */}
+                              <td className="p-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalIndepStatus)}`}>
+                                    {item.physicalIndepStatus.replace('NOISE_', '')}
+                                  </span>
+                                  <span className={`font-mono font-bold text-[10px] ${
+                                    item.physicalIndepScore >= 80 ? 'text-emerald-400' :
+                                    item.physicalIndepScore >= 50 ? 'text-blue-400' :
+                                    item.physicalIndepScore >= 30 ? 'text-yellow-500' : 'text-red-500'
+                                  }`}>
+                                    {item.physicalIndepScore}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Physical Coupled Model */}
+                              <td className="p-3 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalCoupledStatus)}`}>
+                                    {item.physicalCoupledStatus.replace('NOISE_', '')}
+                                  </span>
+                                  <span className={`font-mono font-bold text-[10px] ${
+                                    item.physicalCoupledScore >= 80 ? 'text-emerald-400' :
+                                    item.physicalCoupledScore >= 50 ? 'text-blue-400' :
+                                    item.physicalCoupledScore >= 30 ? 'text-yellow-500' : 'text-red-500'
+                                  }`}>
+                                    {item.physicalCoupledScore}
+                                  </span>
+                                </div>
+                              </td>
+
+                              {/* Consensus / Highlights */}
+                              <td className="p-3 whitespace-nowrap text-center">
+                                {item.isConsensusClear && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                                    トリプル大吉 🌟
+                                  </span>
+                                )}
+                                {item.isDivergenceAlert && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-amber-950/60 text-amber-500 border border-amber-500/30">
+                                    位相差警告 ⚠️
+                                  </span>
+                                )}
+                                {!item.isConsensusClear && !item.isDivergenceAlert && (
+                                  <span className="text-zinc-600 text-[10px] font-mono">-</span>
+                                )}
                               </td>
 
                               {/* Lucky Days */}
