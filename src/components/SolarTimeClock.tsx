@@ -7,6 +7,7 @@ import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
 import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
+import { Solar } from "lunar-javascript";
 
 import { ClockDisplay } from "./ClockDisplay";
 import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition, getPhysicalMonthStar } from "../utils/ephemerisEngine";
