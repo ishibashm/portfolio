@@ -563,7 +563,7 @@ export default function MagneticMapInner({
             現在地偏角 (WMM2020): {declination > 0 ? '東偏' : '西偏'}{Math.abs(declination).toFixed(2)}°
           </div>
           <div className="text-[9px] text-zinc-500 mt-0.5 leading-tight max-w-[200px]">
-            ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。
+            ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。月交点（空間方位）と月相（時間補正）は別個に評価されています。
           </div>
         </div>
       </div>
@@ -594,7 +594,11 @@ export default function MagneticMapInner({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#eab308]"></span>
-              <span className="text-zinc-300">特異点 (Void)</span>
+              <span className="text-zinc-300">天中殺 (Void)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+              <span className="text-zinc-300">月交点 (Node)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 border-t border-dashed border-zinc-500"></div>

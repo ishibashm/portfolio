@@ -256,7 +256,7 @@ export function TacticalMagneticMapComponent({
             </div>
             <span className="group-open:rotate-180 transition-transform text-zinc-500">▼</span>
          </summary>
-         <div className="p-3 sm:p-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
+         <div className="p-3 sm:p-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-4 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
            <div className="p-2 sm:p-3 border border-red-900/30 rounded-sm">
               <strong className="text-red-400 block mb-1 font-mono text-[9px] uppercase">◆ 1. 凶殺ベクトル (NOISE)</strong>
               <p className="text-zinc-400 text-justify mt-1">
@@ -264,13 +264,19 @@ export function TacticalMagneticMapComponent({
               </p>
            </div>
            <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
-              <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">◆ 2. 警告ゾーン (VOID)</strong>
+              <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">◆ 2. 天中殺 (VOID)</strong>
               <p className="text-zinc-400 text-justify mt-1">
-                <strong className="text-yellow-500 font-bold">黄色の点線</strong>は、空間の磁気フレームワークが崩壊している「天中殺・歳破」の方向です。この方位への移動は、予測不可能なトラブルや自律神経の不調を招きやすいため、重要な決断・移動は保留を推奨します。
+                 <strong className="text-yellow-500 font-bold">黄色の点線</strong>は、個人の運気の空白（ボイド）である「天中殺（空亡）」の方向です。この方位への移動は、主観的な見通しの狂いやトラブルを招きやすいため、重要な決断は保留を推奨します。
+              </p>
+           </div>
+           <div className="p-2 sm:p-3 border border-amber-900/30 rounded-sm">
+              <strong className="text-amber-500 block mb-1 font-mono text-[9px] uppercase">◆ 3. 月交点 (NODE)</strong>
+              <p className="text-zinc-400 text-justify mt-1">
+                <strong className="text-amber-500 font-bold">オレンジの破線</strong>は、軌道の交点である「羅睺・計都軸（月交点）」の方向です。日食・月食の起点であり、地磁気・太陽風の物理的特異方位であるため、精神面への影響（宿命的磁気ストレス）に注意してください（※全方位に適用される「月相」とは異なり、空間的な偏りを持つ要因です）。
               </p>
            </div>
            <div className="p-2 sm:p-3 border border-emerald-900/30 rounded-sm">
-              <strong className="text-emerald-400 block mb-1 font-mono text-[9px] uppercase">◆ 3. 最適化ゾーン (OPTIMAL)</strong>
+              <strong className="text-emerald-400 block mb-1 font-mono text-[9px] uppercase">◆ 4. 最適化ゾーン (OPTIMAL)</strong>
               <p className="text-zinc-400 text-justify mt-1">
                 <strong className="text-emerald-500 font-bold">緑の実線</strong>は、すべてのノイズレイヤーをクリアし、かつあなたの目的（引越し・療養など）と完全に共鳴する「大吉方位」です。この方位へ移動することで、環境ストレスが最小化され、生体リズムが整います。
               </p>

@@ -19,7 +19,9 @@ import {
   Users,
   UserPlus,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { 
   getCurrentEnvironmentalFrequencies, 
@@ -231,6 +233,16 @@ export default function RelocationSimulatorPage() {
   // NBA Evaluations from server evaluation endpoint
   const [nbaEvaluations, setNbaEvaluations] = useState<Record<string, any>>({});
   const [isEvaluatingNba, setIsEvaluatingNba] = useState(false);
+
+  // Portal Sync State
+  const [portalSpaceWeather, setPortalSpaceWeather] = useState<{
+    kpIndex: number | null;
+    xrayFlux: string | null;
+    solarWindSpeed: number | null;
+    timestamp: string | null;
+  } | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
+  const [isSyncingPortal, setIsSyncingPortal] = useState(false);
 
   // Load configuration and cached drafts on mount
   useEffect(() => {
@@ -541,6 +553,42 @@ export default function RelocationSimulatorPage() {
   useEffect(() => {
     fetchNbaEvaluations();
   }, [steps, birthDate, simulatedAns, simulatedShield, activeStepIndex]);
+
+  const syncWithPortal = async () => {
+    setIsSyncingPortal(true);
+    try {
+      const res = await fetch('/api/nba', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          birthDate,
+          lon: startLon,
+          useClassical
+        })
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success && result.data) {
+          const { micro, macro } = result.data;
+          if (micro) {
+            if (micro.ansLoad !== undefined) setSimulatedAns(micro.ansLoad);
+            if (micro.shieldCapacity !== undefined) setSimulatedShield(micro.shieldCapacity);
+          }
+          if (macro && macro.streams && macro.streams.spaceWeather) {
+            setPortalSpaceWeather(macro.streams.spaceWeather);
+          }
+          setLastSyncTime(new Date().toLocaleTimeString());
+        }
+      } else {
+        alert("ポータルからの同期に失敗しました。");
+      }
+    } catch (e) {
+      console.error('Portal sync error:', e);
+      alert("通信エラーが発生しました。");
+    } finally {
+      setIsSyncingPortal(false);
+    }
+  };
 
   // Compute timing recommendations (Time avoidance)
   const timingRecommendations = useMemo(() => {
@@ -926,6 +974,28 @@ export default function RelocationSimulatorPage() {
     saveDraft(newSteps);
   };
 
+  const moveStepUp = (index: number) => {
+    if (index <= 0) return;
+    const newSteps = [...steps];
+    const temp = newSteps[index];
+    newSteps[index] = newSteps[index - 1];
+    newSteps[index - 1] = temp;
+    setSteps(newSteps);
+    setActiveStepIndex(index - 1);
+    saveDraft(newSteps);
+  };
+
+  const moveStepDown = (index: number) => {
+    if (index >= steps.length - 1) return;
+    const newSteps = [...steps];
+    const temp = newSteps[index];
+    newSteps[index] = newSteps[index + 1];
+    newSteps[index + 1] = temp;
+    setSteps(newSteps);
+    setActiveStepIndex(index + 1);
+    saveDraft(newSteps);
+  };
+
   const handleRemoveStep = (index: number) => {
     if (steps.length === 1) {
       alert("シミュレーションには最低1つの移動ステップが必要です。");
@@ -1278,35 +1348,80 @@ export default function RelocationSimulatorPage() {
         </div>
 
         {/* Biosignal Simulation Sliders Panel */}
-        <div className="p-5 rounded-3xl bg-zinc-900/10 border border-zinc-900/80 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs shadow-inner">
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between font-mono text-[10px] text-zinc-400">
-              <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-indigo-400" /> 当日の想定ストレス負荷 (ANS Load):</span>
-              <span className="text-indigo-400 font-bold">{simulatedAns}%</span>
+        <div className="p-6 rounded-[2.5rem] bg-zinc-900/10 border border-zinc-900/80 backdrop-blur-md space-y-4 shadow-inner">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/5 pb-3">
+            <div>
+              <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-400 uppercase flex items-center gap-1.5">
+                <Sliders className="w-4 h-4 text-indigo-400 animate-pulse" /> 生体・宇宙天気シミュレーション制御
+              </h3>
+              <p className="text-[10px] text-zinc-500 mt-1">
+                移動当日の生体状況と宇宙天気のノイズ負荷を擬似設定します。ポータルのリアルタイムデータと同期することも可能です。
+              </p>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={simulatedAns}
-              onChange={(e) => setSimulatedAns(parseInt(e.target.value))}
-              className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-            />
+            <button
+              onClick={syncWithPortal}
+              disabled={isSyncingPortal}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
+                isSyncingPortal
+                  ? 'bg-zinc-800 border-zinc-700 text-zinc-550 cursor-not-allowed'
+                  : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 active:scale-95'
+              }`}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${isSyncingPortal ? 'animate-spin' : ''}`} />
+              {isSyncingPortal ? 'ポータルと同期中...' : 'ポータルとリアルタイム同期'}
+            </button>
           </div>
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between font-mono text-[10px] text-zinc-400">
-              <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-emerald-400" /> 当日の想定睡眠スコア (Shield Capacity):</span>
-              <span className="text-emerald-400 font-bold">{simulatedShield}%</span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-xs">
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+                <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-indigo-400" /> 当日の想定ストレス負荷 (ANS Load):</span>
+                <span className="text-indigo-400 font-bold">{simulatedAns}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={simulatedAns}
+                onChange={(e) => setSimulatedAns(parseInt(e.target.value))}
+                className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+              />
             </div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={simulatedShield}
-              onChange={(e) => setSimulatedShield(parseInt(e.target.value))}
-              className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-            />
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between font-mono text-[10px] text-zinc-400">
+                <span className="flex items-center gap-1.5"><Sliders className="w-3.5 h-3.5 text-emerald-400" /> 当日の想定睡眠スコア (Shield Capacity):</span>
+                <span className="text-emerald-400 font-bold">{simulatedShield}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={simulatedShield}
+                onChange={(e) => setSimulatedShield(parseInt(e.target.value))}
+                className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+              />
+            </div>
           </div>
+
+          {/* Sync Metadata display */}
+          {(lastSyncTime || portalSpaceWeather) && (
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[10px] font-mono text-zinc-500 pt-1 border-t border-white/5">
+              {lastSyncTime && (
+                <span>同期時刻: <strong className="text-zinc-400">{lastSyncTime}</strong></span>
+              )}
+              {portalSpaceWeather && portalSpaceWeather.kpIndex !== null && (
+                <span className="flex items-center gap-1">
+                  宇宙天気 Kp: <strong className={`font-bold ${portalSpaceWeather.kpIndex >= 4 ? 'text-amber-400' : 'text-emerald-400'}`}>{portalSpaceWeather.kpIndex.toFixed(2)}</strong>
+                </span>
+              )}
+              {portalSpaceWeather && portalSpaceWeather.solarWindSpeed !== null && (
+                <span>太陽風速: <strong className="text-zinc-400">{portalSpaceWeather.solarWindSpeed} km/s</strong></span>
+              )}
+              {portalSpaceWeather && portalSpaceWeather.xrayFlux && (
+                <span>X線フラックス: <strong className="text-zinc-400">{portalSpaceWeather.xrayFlux}</strong></span>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Unified Ten-Chi-Jin Plan Level Panel */}
@@ -1525,17 +1640,40 @@ export default function RelocationSimulatorPage() {
                         </span>
                       </div>
                       
-                      {/* Delete Step */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRemoveStep(idx);
-                        }}
-                        className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-all cursor-pointer"
-                        title="このステップを削除"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* Controls: Move Up, Move Down, Delete */}
+                      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => moveStepUp(idx)}
+                          disabled={idx === 0}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            idx === 0
+                              ? 'border-zinc-800/20 text-zinc-750 cursor-not-allowed opacity-30'
+                              : 'bg-zinc-800/40 border-zinc-700/80 text-zinc-400 hover:text-white hover:bg-zinc-700/80'
+                          }`}
+                          title="上に移動"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => moveStepDown(idx)}
+                          disabled={idx === steps.length - 1}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            idx === steps.length - 1
+                              ? 'border-zinc-800/20 text-zinc-750 cursor-not-allowed opacity-30'
+                              : 'bg-zinc-800/40 border-zinc-700/80 text-zinc-400 hover:text-white hover:bg-zinc-700/80'
+                          }`}
+                          title="下に移動"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveStep(idx)}
+                          className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-all cursor-pointer"
+                          title="このステップを削除"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Universal Clash Alert Banner */}
@@ -1764,8 +1902,138 @@ export default function RelocationSimulatorPage() {
                   );
                 })()}
 
+                {/* Metaphysical Insights Section */}
+                {(() => {
+                  const step = evaluatedSteps[activeStepIndex];
+                  const ev = nbaEvaluations[step.departureDate];
+                  if (!ev || !ev.metaphysical) return null;
+                  const meta = ev.metaphysical;
+
+                  return (
+                    <div className="space-y-4 pt-4 border-t border-white/5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> 占術インサイト (Metaphysical Insights)
+                        </h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-3.5">
+                        {/* 奇門遁甲 (Qi Men Dun Jia) */}
+                        {meta.chineseMetasoft?.qiMenGate && (
+                          <div className="p-3.5 rounded-2xl bg-black/40 border border-zinc-800/80 space-y-2 shadow-inner">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-zinc-500">🚪 奇門遁甲 (Qi Men Dun Jia)</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                meta.chineseMetasoft.qiMenGate.status === 'Auspicious'
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : meta.chineseMetasoft.qiMenGate.status === 'Inauspicious'
+                                  ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                  : 'bg-zinc-800 text-zinc-400'
+                              }`}>
+                                {meta.chineseMetasoft.qiMenGate.status === 'Auspicious' ? '吉門' : meta.chineseMetasoft.qiMenGate.status === 'Inauspicious' ? '凶門' : '中立'}
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-zinc-300">
+                              開運門: <span className="text-indigo-400 font-mono">{meta.chineseMetasoft.qiMenGate.gate}</span>
+                            </div>
+                            <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
+                              {meta.chineseMetasoft.qiMenGate.description}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* 易経 (I-Ching) */}
+                        {meta.roxyApi?.ichingCast && (
+                          <div className="p-3.5 rounded-2xl bg-black/40 border border-zinc-800/80 space-y-2 shadow-inner">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-zinc-500">☯ 易経得卦 (I-Ching Hexagram)</span>
+                              <span className="text-[9px] font-mono text-indigo-400">第 {meta.roxyApi.ichingCast.hexagramNumber} 卦</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div className="text-xs font-bold text-zinc-300">
+                                卦名: <span className="text-indigo-400">{meta.roxyApi.ichingCast.name}</span>
+                              </div>
+                              {meta.roxyApi.ichingCast.changingLines?.length > 0 && (
+                                <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                                  変爻あり
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Hexagram visual bar representation */}
+                            {meta.roxyApi.ichingCast.lines && (
+                              <div className="flex flex-col gap-1 py-1.5 px-3 bg-zinc-950/60 rounded-xl border border-zinc-900/50 w-fit">
+                                {meta.roxyApi.ichingCast.lines.slice().reverse().map((lineVal: number, idx: number) => {
+                                  const isYin = lineVal === 6 || lineVal === 8;
+                                  const isChanging = lineVal === 6 || lineVal === 9;
+                                  return (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <span className="text-[8px] font-mono text-zinc-500 w-3">L{6 - idx}</span>
+                                      <div className="flex gap-0.5 w-16 h-1.5 rounded overflow-hidden">
+                                        {isYin ? (
+                                          <>
+                                            <div className={`h-full w-[47%] ${isChanging ? 'bg-amber-400/85 animate-pulse' : 'bg-zinc-650'}`} />
+                                            <div className="h-full w-[6%] bg-transparent" />
+                                            <div className={`h-full w-[47%] ${isChanging ? 'bg-amber-400/85 animate-pulse' : 'bg-zinc-650'}`} />
+                                          </>
+                                        ) : (
+                                          <div className={`h-full w-full ${isChanging ? 'bg-amber-400/85 animate-pulse' : 'bg-zinc-400'}`} />
+                                        )}
+                                      </div>
+                                      <span className="text-[8px] font-mono text-zinc-500">{lineVal}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+
+                            <p className="text-[10px] text-zinc-450 leading-relaxed font-sans pt-1">
+                              {meta.roxyApi.ichingCast.interpretation}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* タロット (Tarot Card) */}
+                        {meta.divineApi?.tarot && (
+                          <div className="p-3.5 rounded-2xl bg-black/40 border border-zinc-800/80 space-y-1.5 shadow-inner">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold text-zinc-500">🃏 タロットカード (Tarot)</span>
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                meta.divineApi.tarot.orientation.includes('正位置')
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                              }`}>
+                                {meta.divineApi.tarot.orientation}
+                              </span>
+                            </div>
+                            <div className="text-xs font-bold text-zinc-300">
+                              カード: <span className="text-indigo-400">{meta.divineApi.tarot.card}</span>
+                            </div>
+                            <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
+                              {meta.divineApi.tarot.meaning}
+                            </p>
+                            <div className="text-[8px] text-zinc-500 font-mono flex items-center justify-between pt-1.5 border-t border-zinc-900">
+                              <span>リスク寄与度: <strong className={meta.divineApi.tarot.riskModifier < 0 ? 'text-emerald-400' : meta.divineApi.tarot.riskModifier > 0 ? 'text-red-400' : 'text-zinc-500'}>{meta.divineApi.tarot.riskModifier > 0 ? `+${meta.divineApi.tarot.riskModifier}` : meta.divineApi.tarot.riskModifier}</strong></span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 紫微斗数 (Zi Wei Dou Shu) */}
+                        {meta.ziWeiDouShu?.dailyInsight && (
+                          <div className="p-3.5 rounded-2xl bg-black/40 border border-zinc-800/80 space-y-1.5 shadow-inner">
+                            <span className="text-[10px] font-bold text-zinc-500 block">⭐ 紫微斗数飛星 (Zi Wei Dou Shu)</span>
+                            <p className="text-[10px] text-zinc-400 leading-relaxed font-sans">
+                              {meta.ziWeiDouShu.dailyInsight}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Phased relocation / Detour suggestions HUD */}
-                <div className="space-y-4 pt-2 border-t border-white/5">
+                <div className="space-y-4 pt-4 border-t border-white/5">
                   <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300">最適化アクションアドバイス</h4>
 
                   {/* Warning 1: Stay duration alert */}

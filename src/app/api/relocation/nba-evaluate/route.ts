@@ -143,7 +143,8 @@ export async function POST(req: Request) {
         isConflictDay,
         isDoyouHazard,
         riskFactors,
-        envCost
+        envCost,
+        metaphysical: metaData
       });
     }
 
