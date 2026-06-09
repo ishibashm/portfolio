@@ -3785,14 +3785,30 @@ ${timingOptimization?.recommendationText || "特になし"}
                               {/* Recommended Property */}
                               <td className="p-3">
                                 {item.topRental ? (
-                                  <div className="flex flex-col">
-                                    <span className="text-zinc-200 font-bold group-hover:text-emerald-400 transition-colors truncate max-w-[200px]">
-                                      {item.topRental.property_name}
-                                    </span>
-                                    <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                                      賃料: {(item.topRental.totalRent / 10000).toFixed(1)}万円 | 差益: {item.topRental.arbitrageScore?.toFixed(1)}
-                                    </span>
-                                  </div>
+                                  item.topRental.url ? (
+                                    <a 
+                                      href={item.topRental.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="flex flex-col group/item cursor-pointer"
+                                    >
+                                      <span className="text-zinc-200 font-bold group-hover/item:text-indigo-400 group-hover/item:underline transition-all truncate max-w-[200px]" title={item.topRental.property_name}>
+                                        {item.topRental.property_name}
+                                      </span>
+                                      <span className="text-[10px] text-zinc-500 font-mono mt-0.5 group-hover/item:text-zinc-450">
+                                        賃料: {(item.topRental.totalRent / 10000).toFixed(1)}万円 | 差益: {item.topRental.arbitrageScore?.toFixed(1)}
+                                      </span>
+                                    </a>
+                                  ) : (
+                                    <div className="flex flex-col">
+                                      <span className="text-zinc-200 font-bold truncate max-w-[200px]" title={item.topRental.property_name}>
+                                        {item.topRental.property_name}
+                                      </span>
+                                      <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                        賃料: {(item.topRental.totalRent / 10000).toFixed(1)}万円 | 差益: {item.topRental.arbitrageScore?.toFixed(1)}
+                                      </span>
+                                    </div>
+                                  )
                                 ) : (
                                   <span className="text-zinc-600 text-[10px] italic">対象物件なし</span>
                                 )}
@@ -4336,36 +4352,58 @@ ${timingOptimization?.recommendationText || "特になし"}
                       </h4>
                       {detail.topRentals.length > 0 ? (
                         <div className="space-y-2">
-                          {detail.topRentals.map((rental, idx) => (
-                            <div 
-                              key={rental.id} 
-                              className="bg-black/30 border border-zinc-900 rounded p-2.5 flex flex-col gap-1.5 text-xs"
-                            >
-                              <div className="flex justify-between items-start gap-2">
-                                <div className="flex items-start gap-2">
-                                  <span className="text-[10px] font-mono text-zinc-600 mt-0.5">#{idx + 1}</span>
-                                  <div className="flex flex-col">
-                                    <span className="text-zinc-200 font-bold truncate max-w-[280px]" title={rental.property_name}>
-                                      {rental.property_name}
-                                    </span>
-                                    <span className="text-[9px] text-zinc-500 font-mono">
-                                      距離: {rental.distanceKm?.toFixed(1)}km | 広さ: {rental.size_sqm}㎡ | 築年数: {rental.age_years}年
-                                    </span>
+                          {detail.topRentals.map((rental, idx) => {
+                            const innerContent = (
+                              <>
+                                <div className="flex justify-between items-start gap-2">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-[10px] font-mono text-zinc-600 mt-0.5">#{idx + 1}</span>
+                                    <div className="flex flex-col">
+                                      <span className="text-zinc-200 font-bold truncate max-w-[280px] group-hover:text-indigo-400 group-hover:underline transition-colors" title={rental.property_name}>
+                                        {rental.property_name}
+                                      </span>
+                                      <span className="text-[9px] text-zinc-500 font-mono">
+                                        距離: {rental.distanceKm?.toFixed(1)}km | 広さ: {rental.size_sqm}㎡ | 築年数: {rental.age_years}年
+                                      </span>
+                                    </div>
                                   </div>
+                                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">
+                                    差益: {rental.arbitrageScore?.toFixed(1)}
+                                  </span>
                                 </div>
-                                <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                                  差益: {rental.arbitrageScore?.toFixed(1)}
-                                </span>
-                              </div>
 
-                              <div className="flex justify-between items-center border-t border-zinc-900/50 pt-1.5 text-[10px] text-zinc-400">
-                                <span>賃料+管理費: <strong className="text-zinc-300 font-bold font-mono">{(rental.totalRent / 10000).toFixed(1)}万円</strong></span>
-                                <span className={`px-1 py-0.5 rounded text-[8px] font-mono border ${statusColor(rental.astrologyStatus)}`}>
-                                  {rental.astrologyStatus}
-                                </span>
+                                <div className="flex justify-between items-center border-t border-zinc-900/50 pt-1.5 text-[10px] text-zinc-400">
+                                  <span>賃料+管理費: <strong className="text-zinc-300 font-bold font-mono">{(rental.totalRent / 10000).toFixed(1)}万円</strong></span>
+                                  <span className={`px-1 py-0.5 rounded text-[8px] font-mono border ${statusColor(rental.astrologyStatus)}`}>
+                                    {rental.astrologyStatus}
+                                  </span>
+                                </div>
+                              </>
+                            );
+
+                            if (rental.url) {
+                              return (
+                                <a 
+                                  key={rental.id} 
+                                  href={rental.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-black/30 border border-zinc-900 hover:border-indigo-500/30 hover:bg-indigo-500/5 rounded p-2.5 flex flex-col gap-1.5 text-xs transition-all block group cursor-pointer"
+                                >
+                                  {innerContent}
+                                </a>
+                              );
+                            }
+
+                            return (
+                              <div 
+                                key={rental.id} 
+                                className="bg-black/30 border border-zinc-900 rounded p-2.5 flex flex-col gap-1.5 text-xs"
+                              >
+                                {innerContent}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <p className="text-xs text-zinc-500 italic">該当する物件情報がありません。</p>
