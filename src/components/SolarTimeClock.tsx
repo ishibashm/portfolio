@@ -1298,9 +1298,9 @@ export const SolarTimeClock = () => {
       const testEnv = getCurrentEnvironmentalFrequencies(testDate, lon || 139.6917, physicalMonthMode);
       
       // 天中殺ペナルティの計算
-      const testYearZodiac = testLunar.getYearZodiac();
-      const testMonthZodiac = testLunar.getMonthZodiac();
-      const testDayZodiac = testLunar.getDayZodiac();
+      const testYearZodiac = testLunar.getYearZhi();
+      const testMonthZodiac = testLunar.getMonthZhi();
+      const testDayZodiac = testLunar.getDayZhi();
       const isVoidDay = voidZodiacArray.includes(testYearZodiac) ||
                         voidZodiacArray.includes(testMonthZodiac) ||
                         voidZodiacArray.includes(testDayZodiac);
