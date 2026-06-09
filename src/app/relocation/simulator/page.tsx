@@ -67,6 +67,13 @@ interface SimulatorStep {
       dayLayer: string;
     };
   };
+  memberEvaluations?: Array<{
+    memberId: string;
+    name: string;
+    status: string;
+    rating: string;
+    color: string;
+  }>;
 }
 
 interface SavedPlan {
@@ -470,6 +477,51 @@ export default function RelocationSimulatorPage() {
         stayDuration = Math.round(diffMs / (1000 * 60 * 60 * 24));
       }
 
+      // Precompute companion metrics
+      const mEvals = members.map(m => {
+        const mBirthDate = new Date(m.birthDate);
+        const mPersonalStar = getClassicalYearStar(mBirthDate);
+        const mVoidZodiacs = getPersonalVoidZodiac(mBirthDate);
+
+        const mCollision = calculateVectorCollision(
+          mPersonalStar,
+          yearBoard,
+          monthBoard,
+          dayBoard,
+          mVoidZodiacs,
+          env.raw.lunarNode,
+          step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
+          depDate,
+          currentBaseLon
+        );
+
+        const mStatus = mCollision.finalVectors[direction] || 'SAFE';
+
+        let mRating = '普通';
+        let mColor = 'text-zinc-400 border-white/10 bg-white/5';
+        if (mStatus === 'OPTIMAL') {
+          mRating = '大吉';
+          mColor = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10';
+        } else if (mStatus === 'OPTIMAL_REGULAR') {
+          mRating = '吉';
+          mColor = 'text-emerald-500/80 border-emerald-500/20 bg-emerald-500/5';
+        } else if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(mStatus)) {
+          mRating = '凶';
+          mColor = 'text-orange-400 border-orange-500/20 bg-orange-500/5';
+        } else if (['NOISE_VOID', 'NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) {
+          mRating = '大凶';
+          mColor = 'text-red-400 border-red-500/30 bg-red-500/10';
+        }
+
+        return {
+          memberId: m.id,
+          name: m.name,
+          status: mStatus,
+          rating: mRating,
+          color: mColor
+        };
+      });
+
       const evaluatedStepObj: SimulatorStep = {
         ...step,
         fromName: currentBaseName,
@@ -485,7 +537,8 @@ export default function RelocationSimulatorPage() {
             monthLayer: filteredCollision.monthLayer[direction] || 'SAFE',
             dayLayer: filteredCollision.dayLayer[direction] || 'SAFE'
           }
-        }
+        },
+        memberEvaluations: mEvals
       };
 
       list.push(evaluatedStepObj);
@@ -498,7 +551,7 @@ export default function RelocationSimulatorPage() {
     });
 
     return list;
-  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent]);
+  }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent, members]);
 
   // Fetch NBA timing and Q-value details dynamically
   const fetchNbaEvaluations = async () => {
@@ -837,44 +890,13 @@ export default function RelocationSimulatorPage() {
       totalSpaceScore += rateToPoints(step.evaluation?.rating || '普通');
       totalEvaluationsCount++;
 
-      members.forEach(m => {
-        const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
-        const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
-        
-        const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
-        let decl = 0;
-        if (!useTrueNorth) {
-          decl = getApproximateDeclination(step.fromLat, step.fromLon);
-        }
-        const adjustedBearing = (rawBearing - decl + 360) % 360;
-        const direction = bearingToDirection(adjustedBearing, useClassical);
-
-        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
-        const yearBoard = generateBoard(env.classicalYearStar);
-        const monthBoard = generateBoard(env.classicalMonthStar);
-        const dayBoard = generateBoard(env.classicalDayStar);
-
-        const mCollision = calculateVectorCollision(
-          mPersonalStar,
-          yearBoard,
-          monthBoard,
-          dayBoard,
-          mVoidZodiacs,
-          env.raw.lunarNode,
-          step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
-          new Date(step.departureDate),
-          step.fromLon
-        );
-        const mStatus = mCollision.finalVectors[direction] || 'SAFE';
-        let mRating = '普通';
-        if (mStatus === 'OPTIMAL') mRating = '大吉';
-        else if (mStatus === 'OPTIMAL_REGULAR') mRating = '吉';
-        else if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(mStatus)) mRating = '凶';
-        else if (['NOISE_VOID', 'NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) mRating = '大凶';
-
-        totalSpaceScore += rateToPoints(mRating);
-        totalEvaluationsCount++;
-      });
+      // Use cached companion evaluations
+      if (step.memberEvaluations) {
+        step.memberEvaluations.forEach(m => {
+          totalSpaceScore += rateToPoints(m.rating);
+          totalEvaluationsCount++;
+        });
+      }
     });
 
     const spaceScore = totalEvaluationsCount > 0 ? totalSpaceScore / totalEvaluationsCount : 60;
@@ -899,39 +921,15 @@ export default function RelocationSimulatorPage() {
       if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mainStatus)) {
         hasSevereClash = true;
       }
-      members.forEach(m => {
-        const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
-        const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
-        
-        const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
-        let decl = 0;
-        if (!useTrueNorth) {
-          decl = getApproximateDeclination(step.fromLat, step.fromLon);
-        }
-        const adjustedBearing = (rawBearing - decl + 360) % 360;
-        const direction = bearingToDirection(adjustedBearing, useClassical);
-
-        const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
-        const yearBoard = generateBoard(env.classicalYearStar);
-        const monthBoard = generateBoard(env.classicalMonthStar);
-        const dayBoard = generateBoard(env.classicalDayStar);
-
-        const mCollision = calculateVectorCollision(
-          mPersonalStar,
-          yearBoard,
-          monthBoard,
-          dayBoard,
-          mVoidZodiacs,
-          env.raw.lunarNode,
-          step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
-          new Date(step.departureDate),
-          step.fromLon
-        );
-        const mStatus = mCollision.finalVectors[direction] || 'SAFE';
-        if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) {
-          hasSevereClash = true;
-        }
-      });
+      
+      // Use cached companion evaluations for clash checks
+      if (step.memberEvaluations) {
+        step.memberEvaluations.forEach(m => {
+          if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(m.status)) {
+            hasSevereClash = true;
+          }
+        });
+      }
 
       const ev = nbaEvaluations[step.departureDate];
       if (ev && ev.qValue < -50) {
@@ -944,7 +942,7 @@ export default function RelocationSimulatorPage() {
     }
 
     return finalScore;
-  }, [evaluatedSteps, members, nbaEvaluations, useTrueNorth]);
+  }, [evaluatedSteps, nbaEvaluations]);
 
   // Handle step updates & inserts
   const handleAddStep = () => {
@@ -1544,54 +1542,8 @@ export default function RelocationSimulatorPage() {
                   isStayShort = stayDays < 75;
                 }
 
-                // Companion specific direction ratings
-                const memberEvals = members.map(m => {
-                  const mPersonalStar = getClassicalYearStar(new Date(m.birthDate));
-                  const mVoidZodiacs = getPersonalVoidZodiac(new Date(m.birthDate));
-                  
-                  const rawBearing = getBearing(step.fromLat, step.fromLon, step.toLat, step.toLon);
-                  let decl = 0;
-                  if (!useTrueNorth) {
-                    decl = getApproximateDeclination(step.fromLat, step.fromLon);
-                  }
-                  const adjustedBearing = (rawBearing - decl + 360) % 360;
-                  const direction = bearingToDirection(adjustedBearing, useClassical);
-
-                  const env = getCurrentEnvironmentalFrequencies(new Date(step.departureDate), step.fromLon, physicalMonthMode);
-                  const yearBoard = generateBoard(env.classicalYearStar);
-                  const monthBoard = generateBoard(env.classicalMonthStar);
-                  const dayBoard = generateBoard(env.classicalDayStar);
-
-                  const mCollision = calculateVectorCollision(
-                    mPersonalStar,
-                    yearBoard,
-                    monthBoard,
-                    dayBoard,
-                    mVoidZodiacs,
-                    env.raw.lunarNode,
-                    step.purpose === 'MIGRATION' ? 'MIGRATION' : 'DEFAULT',
-                    new Date(step.departureDate),
-                    step.fromLon
-                  );
-
-                  const mStatus = mCollision.finalVectors[direction] || 'SAFE';
-
-                  let ratingLabel = '普通';
-                  let mColor = 'text-zinc-400 border-white/10 bg-white/5';
-                  if (mStatus === 'OPTIMAL') { ratingLabel = '大吉'; mColor = 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10'; }
-                  else if (mStatus === 'OPTIMAL_REGULAR') { ratingLabel = '吉'; mColor = 'text-emerald-500/80 border-emerald-500/20 bg-emerald-500/5'; }
-                  else if (mStatus === 'SAFE') { ratingLabel = '普通'; mColor = 'text-zinc-400 border-white/10 bg-white/5'; }
-                  else if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI', 'NOISE_NODE'].includes(mStatus)) { ratingLabel = '凶'; mColor = 'text-orange-400 border-orange-500/20 bg-orange-500/5'; }
-                  else if (['NOISE_VOID', 'NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus)) { ratingLabel = '大凶'; mColor = 'text-red-400 border-red-500/30 bg-red-500/10'; }
-
-                  return {
-                    memberId: m.id,
-                    name: m.name,
-                    status: mStatus,
-                    rating: ratingLabel,
-                    color: mColor
-                  };
-                });
+                // Companion specific direction ratings (using cached metrics)
+                const memberEvals = step.memberEvaluations || [];
 
                 // Calculate Universal Clashes
                 const clashingMembers: string[] = [];
