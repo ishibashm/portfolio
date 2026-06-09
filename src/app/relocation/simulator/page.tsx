@@ -553,10 +553,20 @@ export default function RelocationSimulatorPage() {
     return list;
   }, [steps, startLat, startLon, startName, useTrueNorth, personalStar, voidZodiacs, useClassical, physicalMonthMode, directionFilterMode, actionIntent, members]);
 
-  // Fetch NBA timing and Q-value details dynamically
+  // Keep a ref of nbaEvaluations to avoid stale closure in useEffect without infinite loops
+  const nbaEvaluationsRef = React.useRef(nbaEvaluations);
+  useEffect(() => {
+    nbaEvaluationsRef.current = nbaEvaluations;
+  }, [nbaEvaluations]);
+
+  // Clear evaluation cache when baseline parameters change
+  useEffect(() => {
+    setNbaEvaluations({});
+  }, [birthDate, simulatedAns, simulatedShield]);
+
+  // Fetch NBA timing and Q-value details dynamically (Delta / Diff Fetching)
   const fetchNbaEvaluations = async () => {
     if (steps.length === 0) return;
-    setIsEvaluatingNba(true);
 
     const stepDates = steps.map(s => s.departureDate);
     let candidateDates: string[] = [];
@@ -573,14 +583,22 @@ export default function RelocationSimulatorPage() {
     }
 
     const allDates = Array.from(new Set([...stepDates, ...candidateDates]));
+    
+    // Only query dates that are NOT in the precomputed cache
+    const neededDates = allDates.filter(d => !nbaEvaluationsRef.current[d]);
 
+    if (neededDates.length === 0) {
+      return;
+    }
+
+    setIsEvaluatingNba(true);
     try {
       const res = await fetch('/api/relocation/nba-evaluate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           birthDate,
-          dates: allDates,
+          dates: neededDates,
           lon: startLon,
           simulatedAns,
           simulatedShield
@@ -605,7 +623,7 @@ export default function RelocationSimulatorPage() {
 
   useEffect(() => {
     fetchNbaEvaluations();
-  }, [steps, birthDate, simulatedAns, simulatedShield, activeStepIndex]);
+  }, [steps, activeStepIndex, birthDate, simulatedAns, simulatedShield]);
 
   const syncWithPortal = async () => {
     setIsSyncingPortal(true);
