@@ -1,6 +1,7 @@
 /**
  * Next Best Action (NBA) Engine
  * Uses Offline Reinforcement Learning (FQI) principles to suggest the optimal action based on current state.
+ * Incorporates Sigmoid Activation Gates (Biological Stress/Vulnerability) and LLM Self-Attention Mimicry.
  */
 
 export interface NBAParams {
@@ -16,7 +17,7 @@ export interface NBAParams {
     isConflictDay?: boolean;
     isDoyouHazard?: boolean;
     unifiedRiskScore?: number;
-    // --- Enriched Data Streams from データストリーム.md ---
+    // --- Enriched Data Streams ---
     ephemerisData?: {
       source: string;
       planetaryPositions: any;
@@ -52,6 +53,18 @@ export interface NBAParams {
       description: string;
       status: 'Auspicious' | 'Inauspicious' | 'Neutral';
     };
+    nineStarKi?: {
+      yearStar: number;
+      monthStar: number;
+      dayStar: number;
+    };
+    spaceWeather?: {
+      kpIndex: number | null;
+      xrayFlux: string | null;
+      solarWindSpeed: number | null;
+      timestamp: string | null;
+      riskScore: number;
+    };
   };
 }
 
@@ -86,8 +99,6 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     bias: -0.2,
   },
   EXECUTE_PURGE_RELOCATION: {
-    // Purge action relies heavily on high shield to absorb the "void" drain,
-    // and is less affected by standard risks because it's a defensive/passive move.
     w_ans: -0.2,
     w_shield: 1.0,
     w_risk: -0.4,
@@ -97,7 +108,7 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_astro: 0.4,
     w_rag: 0.3,
     w_personal: 0.5,
-    bias: -0.5, // inherent difficulty penalty
+    bias: -0.5,
   },
   PREPARE_AND_WAIT: {
     w_ans: 0.3,
@@ -137,17 +148,19 @@ const PolicyWeights: Record<ActionType, QWeights> = {
   }
 };
 
+export function sigmoid(x: number, k: number = 10, x0: number = 0.5): number {
+  return 1 / (1 + Math.exp(-k * (x - x0)));
+}
+
 function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
   let diff = Math.abs(mars - saturn) % 360;
   if (diff > 180) {
     diff = 360 - diff;
   }
-  // Hard aspects (Conjunction 0°, Square 90°, Opposition 180° ± 8°)
   if (diff <= 8) return -0.8;
   if (Math.abs(diff - 90) <= 8) return -0.8;
   if (Math.abs(diff - 180) <= 8) return -0.8;
   
-  // Soft aspects (Sextile 60° ± 6°, Trine 120° ± 8°)
   if (Math.abs(diff - 60) <= 6) return 0.6;
   if (Math.abs(diff - 120) <= 8) return 0.6;
   
@@ -157,9 +170,9 @@ function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
 export class NBAEngine {
   /**
    * Helper to calculate the static Q-value for a given state vector and action.
-   * Incorporates Action-Type Weighting (攻守分離) and Qimen Dunjia dynamic switches.
+   * Incorporates Action-Type Weighting (攻守分離), Sigmoid Gates, and Attention adjustments.
    */
-  private evaluateStateStatic(state: any, action: ActionType): number {
+  private evaluateStateStatic(state: any, action: ActionType, attentionRiskAdjustment: number = 0): number {
     const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, isDoyouHazard = false, unifiedRiskScore, tendoDirection, qiMenGate } = state;
     
     // Apply dynamic risk calculation
@@ -252,11 +265,9 @@ export class NBAEngine {
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
         } else if (keCycle[pm] === em) {
-          // User controls Env (Wealth 才/財)
           const isActive = action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION' || action === 'GATHER_INTEL';
           compatibilityScore = isActive ? 0.4 : 0.1;
         } else if (keCycle[em] === pm) {
-          // Env controls User (Officer 官/殺)
           const isActive = action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION' || action === 'GATHER_INTEL';
           compatibilityScore = isActive ? -0.5 : 0.6;
         } else {
@@ -274,15 +285,12 @@ export class NBAEngine {
     let w_personal = W.w_personal;
 
     if (action === 'EXECUTE_RELOCATION' || action === 'GATHER_INTEL') {
-      // 能動アクション: 九星気学(w_rag)重視
       w_rag = 0.7;
       w_personal = 0.3;
     } else if (action === 'EXECUTE_PURGE_RELOCATION') {
-      // 浄化アクション: 八字と気学の両方を重く見るが、個人の器(personal)をやや重視
       w_rag = 0.4;
       w_personal = 0.6;
     } else if (action === 'PREPARE_AND_WAIT' || action === 'ABORT_AND_SHIELD') {
-      // 受動アクション: 八字(w_personal)重視（負の重みで、個人相性が悪い・空亡の時にQ値を引き上げる）
       w_rag = 0.2;
       w_personal = -0.8;
     }
@@ -294,7 +302,7 @@ export class NBAEngine {
       if (action === 'EXECUTE_RELOCATION') {
         combinedClassical = f8_rag * 0.8 + qiMenScore * 0.2;
       } else if (action === 'EXECUTE_PURGE_RELOCATION') {
-        combinedClassical = f8_rag * 0.5 + qiMenScore * 0.5; // Purge relies heavily on a good gate
+        combinedClassical = f8_rag * 0.5 + qiMenScore * 0.5;
       } else if (action === 'GATHER_INTEL') {
         combinedClassical = f8_rag * 0.2 + qiMenScore * 0.8;
       } else {
@@ -302,6 +310,7 @@ export class NBAEngine {
       }
     }
 
+    // 1. Core Q-value regression
     let q = 
       (W.w_ans * f1_ans) + 
       (W.w_shield * f2_shield) + 
@@ -314,15 +323,28 @@ export class NBAEngine {
       (w_personal * f9_personal) + 
       W.bias;
 
-    // Time-Gate Architecture risk triggers
+    // 2. Apply Sigmoid Activation Gates (Biological Stress & Exhaustion Thresholds)
+    // Stress gate activates heavily past 65% ANS Load
+    const ansStressGate = sigmoid(f1_ans, 12, 0.65);
+    // Vulnerability gate activates when shield drops below 30% (equivalent to 1 - shield capacity > 70%)
+    const shieldVulnerabilityGate = sigmoid(1.0 - f2_shield, 10, 0.70);
+
+    const stressPenalty = ansStressGate * 0.8;
+    const vulnerabilityPenalty = shieldVulnerabilityGate * 0.9;
+
+    if (action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION' || action === 'GATHER_INTEL') {
+      q -= (stressPenalty + vulnerabilityPenalty + attentionRiskAdjustment);
+    } else if (action === 'ABORT_AND_SHIELD' || action === 'PREPARE_AND_WAIT') {
+      q += (stressPenalty + vulnerabilityPenalty) * 0.5; // Boost safety actions under stress
+    }
+
+    // Time-Gate Risk triggers
     const hasRiskTrigger = isVoidTime || isConflictDay || (unifiedRiskScore !== undefined && unifiedRiskScore >= 60);
     let riskModifier = 0;
     if (hasRiskTrigger) {
       if (action === 'EXECUTE_RELOCATION' || action === 'GATHER_INTEL') {
         riskModifier = -0.5;
       } else if (action === 'EXECUTE_PURGE_RELOCATION') {
-        // Purge is penalty-free during personal Void Time (isVoidTime),
-        // but gets penalized on Clash/Conflict Days or high unified risk.
         const hasExternalClash = isConflictDay || (unifiedRiskScore !== undefined && unifiedRiskScore >= 60);
         riskModifier = hasExternalClash ? -0.5 : 0.0;
       } else if (action === 'ABORT_AND_SHIELD' || action === 'PREPARE_AND_WAIT') {
@@ -338,7 +360,7 @@ export class NBAEngine {
       }
     }
 
-    // Doyou Hazard penalty/boost
+    // Doyou Hazard penalty
     if (isDoyouHazard) {
       if (action === 'EXECUTE_RELOCATION' || action === 'EXECUTE_PURGE_RELOCATION') {
         q += -0.6;
@@ -352,35 +374,31 @@ export class NBAEngine {
 
   /**
    * Evaluates the current state vector using a deterministic Q-value heuristic with Fitted Q-Iteration principles.
-   * Now incorporates state transition prediction (Bellman Equation).
+   * Incorporates Sigmoid stress gates, Attention weight mapping, and LLM token sequence generation.
    */
   async getNextBestAction(params: NBAParams) {
-    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, isDoyouHazard = false, unifiedRiskScore, tendoDirection, qiMenGate } = params.stateVector;
+    const { ansLoad, shieldCapacity, environmentalRisk = 50, solarPhase, ichingHexagram, vedicAstrology, ephemerisData, astrologyData, ragContext, isVoidTime = false, isConflictDay = false, isDoyouHazard = false, unifiedRiskScore, tendoDirection, qiMenGate, nineStarKi, spaceWeather } = params.stateVector;
     
     // Apply I-Ching metaphysical modifiers if available
     let finalRisk = environmentalRisk;
     if (ichingHexagram) {
       finalRisk += ichingHexagram.riskModifier;
     }
-    // Clamp to 0-100 range
     finalRisk = Math.max(0, Math.min(100, finalRisk));
 
-    // Normalize State Features (0.0 to 1.0 range, except solarPhase and vedic phase -1.0 to 1.0)
+    // Normalize State Features
     const f1_ans = ansLoad / 100.0;
     const f2_shield = shieldCapacity / 100.0;
     const f3_risk = finalRisk / 100.0;
     const f4_solar = Math.cos((solarPhase * Math.PI) / 180.0);
 
-    // Vedic Phase Feature: map Tithi to -1.0 (New Moon) to 1.0 (Full Moon)
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
       const match = vedicAstrology.tithi.match(/\d+/);
       if (match) {
         const tithiNum = parseInt(match[0], 10);
-        const tithiPhase = (tithiNum - 1) / 30; // 0.0 to approx 1.0
+        const tithiPhase = (tithiNum - 1) / 30;
         f5_vedic = -Math.cos(tithiPhase * 2 * Math.PI);
-        
-        // Add subtle transit dynamics using Nakshatra moon progress
         if (vedicAstrology.moonProgress !== undefined) {
           f5_vedic += (vedicAstrology.moonProgress - 0.5) * 0.2;
           f5_vedic = Math.max(-1.0, Math.min(1.0, f5_vedic));
@@ -388,7 +406,6 @@ export class NBAEngine {
       }
     }
 
-    // Ephemeris Feature: Mars vs Saturn angular relationship as tension index
     let f6_ephem = 0;
     if (ephemerisData && ephemerisData.planetaryPositions) {
       const mars = parseFloat(ephemerisData.planetaryPositions.mars);
@@ -398,29 +415,24 @@ export class NBAEngine {
       }
     }
 
-    // Astrology Transits Feature: Soft aspects (+1) vs Hard aspects (-1)
     let f7_astro = 0;
     if (astrologyData && astrologyData.transits && Array.isArray(astrologyData.transits)) {
       const aspects = astrologyData.transits.join(' ').toUpperCase();
       const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
       const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
-      f7_astro = (soft - hard) * 0.25; // 0.25 weight per aspect
+      f7_astro = (soft - hard) * 0.25;
       f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
     }
 
-    // RAG/Classical Rules (Bazi) Feature: Strong vs Stable signs
     let f8_rag = 0;
     if (ragContext && ragContext.classicalRules) {
       const rules = JSON.stringify(ragContext.classicalRules);
-      // '辰' (Dragon), '寅' (Tiger), '午' (Horse) represent high energy execution
       const strong = (rules.match(/[辰寅午]/g) || []).length;
-      // '丑' (Ox), '卯' (Rabbit), '未' (Sheep) represent stable/conservative energy
       const stable = (rules.match(/[丑卯未]/g) || []).length;
       f8_rag = (strong - stable) * 0.3;
       f8_rag = Math.max(-1.0, Math.min(1.0, f8_rag));
     }
 
-    // Personal Metaphysics Feature: Void Zodiac & Compatibility
     let f9_personal = 0;
     let voidPenalty = 0;
     let compatibilityScore = 0;
@@ -430,7 +442,6 @@ export class NBAEngine {
       const personalBazi = ragContext.personalBazi;
       const envBazi = ragContext.classicalRules;
       
-      // 1. Check Void (空亡)
       if (personalBazi.voidZodiac && envBazi && envBazi.pillars) {
         const voidZodiac = personalBazi.voidZodiac;
         const currentYearZhi = envBazi.pillars.year?.zhi;
@@ -449,7 +460,6 @@ export class NBAEngine {
         }
       }
 
-      // 2. Day Master Compatibility
       if (personalBazi.summary?.dayMasterWuxing && envBazi?.summary?.dayMasterWuxing) {
         const pm = personalBazi.summary.dayMasterWuxing;
         const em = envBazi.summary.dayMasterWuxing;
@@ -481,6 +491,43 @@ export class NBAEngine {
       f9_personal = Math.max(-1.0, Math.min(1.0, f9_personal));
     }
 
+    // --- LLM Self-Attention Mimicry Block ---
+    // Q (Queries): Natal Profile parameters
+    // K (Keys): Environmental parameters
+    const q_honmei = (ragContext?.personalBazi?.honmeiStar?.physical || 5) / 9.0;
+    const q_getsumei = (ragContext?.personalBazi?.honmeiStar?.classical || 5) / 9.0;
+    const q_daymaster = f9_personal;
+    const queries = [q_honmei, q_getsumei, q_daymaster];
+
+    const k_year = (nineStarKi?.yearStar || 5) / 9.0;
+    const k_month = (nineStarKi?.monthStar || 5) / 9.0;
+    const k_day = (nineStarKi?.dayStar || 5) / 9.0;
+    const k_lunar = f5_vedic;
+    const k_space = (spaceWeather?.kpIndex || 3.0) / 9.0;
+    const k_vix = f3_risk; // Unified environmental risk
+    const keys = [k_year, k_month, k_day, k_lunar, k_space, k_vix];
+
+    // Compute Query-Key dot products and apply Softmax to get Attention weights
+    const attentionMatrix: number[][] = [];
+    const d_k = 3.0; // Scaled dimension
+    
+    for (let i = 0; i < queries.length; i++) {
+      const rowScores = keys.map(k => (queries[i] * k) / Math.sqrt(d_k));
+      // Softmax over keys
+      const expScores = rowScores.map(s => Math.exp(s));
+      const sumExp = expScores.reduce((a, b) => a + b, 0);
+      const rowWeights = expScores.map(es => es / (sumExp || 1.0));
+      attentionMatrix.push(rowWeights);
+    }
+
+    // Day Master (index 2) attention to Macro Risk (index 5)
+    const dmToRiskAttention = attentionMatrix[2][5] || 0.16;
+    const attentionRiskAdjustment = dmToRiskAttention * f3_risk * 0.2;
+
+    // --- Sigmoid Gating Thresholds ---
+    const ansStressGate = sigmoid(f1_ans, 12, 0.65);
+    const shieldVulnerabilityGate = sigmoid(1.0 - f2_shield, 10, 0.70);
+
     const logicTrace: string[] = [];
     logicTrace.push(`[INIT] Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR=${f4_solar.toFixed(2)}, VEDIC=${f5_vedic.toFixed(2)}, EPHEM=${f6_ephem.toFixed(2)}, ASTRO=${f7_astro.toFixed(2)}, RAG=${f8_rag.toFixed(2)}, PERSONAL=${f9_personal.toFixed(2)}`);
     if (personalLog) {
@@ -493,7 +540,7 @@ export class NBAEngine {
       logicTrace.push(`[DOYOU] Active Doyou Hazard (土用殺) detected. Restricting active/purge relocation actions.`);
     }
 
-    // 2. Calculate Q-values for each action
+    // Calculate Q-values for each action
     const qValues: Record<ActionType, number> = {} as any;
     const actions = Object.keys(PolicyWeights) as ActionType[];
 
@@ -501,18 +548,17 @@ export class NBAEngine {
     let bestAction: ActionType = 'PREPARE_AND_WAIT';
 
     for (const action of actions) {
-      // Time-Gate Architecture: Prune active relocation candidates in Void Time (天中殺)
       if (action === 'EXECUTE_RELOCATION' && isVoidTime) {
         const prunedQ = -999.0;
         qValues[action] = prunedQ;
-        logicTrace.push(`[TIME-GATE] Action ${action} is pruned (deactivated) due to active Void Time (天中殺). Q value set to ${prunedQ.toFixed(1)}`);
+        logicTrace.push(`[TIME-GATE] Action ${action} is pruned due to active Void Time (天中殺). Q = ${prunedQ.toFixed(1)}`);
         continue;
       }
 
-      // 1. Calculate static immediate reward R(S, A)
-      const currentQStatic = this.evaluateStateStatic(params.stateVector, action);
+      // Calculate static immediate reward R(S, A) with Sigmoid gates and Attention adjustments
+      const currentQStatic = this.evaluateStateStatic(params.stateVector, action, attentionRiskAdjustment);
       
-      // 2. Predict next state S' (FQI transition trajectory modeling)
+      // Predict next state S' (FQI transition modeling)
       const nextState = { ...params.stateVector };
       if (action === 'PREPARE_AND_WAIT') {
         nextState.ansLoad = Math.max(0, ansLoad - 10);
@@ -524,7 +570,6 @@ export class NBAEngine {
         nextState.ansLoad = Math.min(100, ansLoad + 20);
         nextState.shieldCapacity = Math.max(0, shieldCapacity - 15);
       } else if (action === 'EXECUTE_PURGE_RELOCATION') {
-        // High penalty on shield because moving during Void Time drains resources heavily.
         nextState.ansLoad = Math.min(100, ansLoad + 30);
         nextState.shieldCapacity = Math.max(0, shieldCapacity - 40);
       } else if (action === 'GATHER_INTEL') {
@@ -532,13 +577,13 @@ export class NBAEngine {
         nextState.shieldCapacity = Math.max(0, shieldCapacity - 5);
       }
       
-      // 3. Compute Max_A' Q(S', A')
+      // Compute Max_A' Q(S', A')
       let maxNextQ = -Infinity;
       for (const nextAct of actions) {
         if (nextAct === 'EXECUTE_RELOCATION' && nextState.isVoidTime) {
           continue;
         }
-        const nextQ = this.evaluateStateStatic(nextState, nextAct);
+        const nextQ = this.evaluateStateStatic(nextState, nextAct, attentionRiskAdjustment);
         if (nextQ > maxNextQ) {
           maxNextQ = nextQ;
         }
@@ -549,7 +594,6 @@ export class NBAEngine {
       const q = currentQStatic + gamma * maxNextQ;
       
       qValues[action] = q;
-      
       logicTrace.push(`[BELLMAN] Q(${action}) = R(S,A): ${currentQStatic.toFixed(3)} + γ*maxQ(S',A'): (${gamma} * ${maxNextQ.toFixed(3)}) = ${q.toFixed(3)}`);
 
       if (q > maxQ) {
@@ -560,7 +604,7 @@ export class NBAEngine {
     
     logicTrace.push(`[SELECTION] Selected Action: ${bestAction} (Max Q-Value: ${maxQ.toFixed(3)})`);
 
-    // 3. Calculate Confidence using Softmax probability distribution
+    // Calculate Confidence using Softmax probability distribution
     const temperature = 0.2; // Controls confidence sharpness
     const expQ = actions.map(a => Math.exp(qValues[a] / temperature));
     const sumExpQ = expQ.reduce((a, b) => a + b, 0);
@@ -576,7 +620,7 @@ export class NBAEngine {
       logicTrace.push(`[CONFIDENCE] Post-modifier Confidence Adjusted to ${(confidence * 100).toFixed(1)}%`);
     }
 
-    // Scale Q-value to a more readable reward format (e.g., -100 to 100 scale)
+    // Scale Q-value to expected reward (-100 to 100)
     const expectedReward = Math.max(-100, Math.min(100, maxQ * 50));
 
     const probabilitiesObj: Record<ActionType, number> = {} as any;
@@ -584,14 +628,33 @@ export class NBAEngine {
       probabilitiesObj[a] = probabilities[idx];
     });
 
+    // --- LLM Token Generation Mimicry Trace ---
+    const llmPredictionTrace: string[] = [];
+    const dayMasterName = ragContext?.personalBazi?.summary?.dayMaster || "甲";
+    llmPredictionTrace.push(`[Token 1: <s_start>] Initializing Metaphysical Decision Transformer...`);
+    llmPredictionTrace.push(`[Token 2: Attention] Day Master "${dayMasterName}" attends to environment. Max attention weight on key "Macro Risk": ${(dmToRiskAttention * 100).toFixed(1)}%.`);
+    llmPredictionTrace.push(`[Token 3: Gate] Sigmoid ANS load gate activated at ${(ansStressGate * 100).toFixed(1)}% intensity (Threshold: 65%).`);
+    llmPredictionTrace.push(`[Token 4: Gate] Sigmoid Shield vulnerability gate activated at ${(shieldVulnerabilityGate * 100).toFixed(1)}% intensity (Threshold: 70%).`);
+    llmPredictionTrace.push(`[Token 5: Logits] Mapping adjusted state vector to action logits: [${actions.map(a => `${a.replace('EXECUTE_', '')}:${qValues[a].toFixed(2)}`).join(', ')}].`);
+    llmPredictionTrace.push(`[Token 6: Softmax] Softmax probability distribution: [${actions.map(a => `${a.replace('EXECUTE_', '')}:${(probabilitiesObj[a] * 100).toFixed(1)}%`).join(', ')}].`);
+    llmPredictionTrace.push(`[Token 7: Prediction] Predicted action token: "${bestAction}" with confidence ${(confidence * 100).toFixed(1)}%.`);
+    llmPredictionTrace.push(`[Token 8: <s_end>] Optimal action sequence generated.`);
+
     return {
       suggestedAction: bestAction,
       confidence,
       expectedReward: parseFloat(expectedReward.toFixed(2)),
-      policyType: 'Offline_FQI_Bellman_Transition',
+      policyType: 'Decision_Transformer_Softmax_Bellman_FQI',
       qValues,
       probabilities: probabilitiesObj,
-      logicTrace
+      logicTrace,
+      attentionMatrix,
+      sigmoidGates: {
+        ansStressGate,
+        shieldVulnerabilityGate
+      },
+      llmPredictionTrace
     };
   }
 }
+

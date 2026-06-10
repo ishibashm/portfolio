@@ -1841,7 +1841,11 @@ export const SolarTimeClock = () => {
         use_true_north: useTrueNorth.toString(),
         layer_mode: activeLayerMode,
         direction_filter_mode: directionFilterMode,
-        date: evalDate.toISOString()
+        date: evalDate.toISOString(),
+        action_intent: actionIntent,
+        target_lat: targetLat?.toString() || '',
+        target_lon: targetLon?.toString() || '',
+        target_elevation: targetElevation?.toString() || ''
       });
       const res = await fetch(`/api/relocation/export?${queryParams.toString()}`);
       if (!res.ok) throw new Error("エクスポートAPIエラー");
@@ -1857,6 +1861,85 @@ export const SolarTimeClock = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleDownloadUnifiedDataset = async () => {
+    setIsExporting(true);
+    try {
+      const queryParams = new URLSearchParams({
+        birth_date: birthDate || '',
+        birth_lat: birthLat?.toString() || '',
+        birth_lon: birthLon?.toString() || '',
+        base_lat: lat?.toString() || '',
+        base_lon: lon?.toString() || '',
+        use_classical: useClassicalBoard.toString(),
+        physical_month_mode: physicalMonthMode,
+        use_true_north: useTrueNorth.toString(),
+        layer_mode: activeLayerMode,
+        direction_filter_mode: directionFilterMode,
+        date: evalDate.toISOString(),
+        action_intent: actionIntent,
+        target_lat: targetLat?.toString() || '',
+        target_lon: targetLon?.toString() || '',
+        target_elevation: targetElevation?.toString() || ''
+      });
+      const res = await fetch(`/api/relocation/export?${queryParams.toString()}`);
+      if (!res.ok) throw new Error("エクスポートAPIエラー");
+      const apiData = await res.json();
+      
+      const voidZodiacArray = voidZodiacOverride ? voidZodiacOverride.split('') : getPersonalVoidZodiac(new Date(birthDate));
+      
+      const unifiedPayload = {
+        ...apiData,
+        exportedAt: new Date().toISOString(),
+        realtimeBiometrics: {
+          hrv,
+          gsr,
+          ansLoad,
+          shieldCapacity,
+          zScoreHRV,
+          hardwareDisplacementPenalty,
+          circadianMultiplier,
+          baselines: {
+            hrvMean: baselineHrvMean,
+            hrvStd: baselineHrvStd,
+            gsrMean: baselineGsrMean,
+            gsrStd: baselineGsrStd
+          }
+        },
+        realtimeGeomagnetism: geoData,
+        realtimeSpaceWeather: spaceWeather,
+        voidTimeDiagnostics: {
+          kimon,
+          currentZodiac,
+          isPersonalVoid,
+          isYearVoid,
+          isMonthVoid,
+          isDayVoid,
+          isGlobalVoid
+        },
+        prompt_suggestion: `あなたは超科学・生体磁気学・東洋占星術（九星気学、四柱推命）を融合したメタフィジカル意思決定のアドバイザーです。
+以下のJSONデータをもとに、目標日（${evalDate.toLocaleDateString()}）の判定、および現在時刻の生体磁気状態や将来のバイオリズムを総合的に解釈し、行動方針のアドバイスを日本語で論理的に解説してください。
+特に、生体センサーデータ（HRV、GSR、ANS Overload）と環境磁場、九星の衝突配置、マルチインテントマトリクス（DEFAULT, MIGRATION, BUSINESS, RESTの差）、天中殺やドラゴニックノードの干渉などを関連付けて説明し、実用的なアドバイスを提供してください。`
+      };
+
+      const jsonStr = JSON.stringify(unifiedPayload, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const dateStr = evalDate.toISOString().split('T')[0];
+      link.download = `metaphysical_unified_master_${dateStr}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      console.error(e);
+      alert(`エクスポートに失敗しました: ${e.message}`);
     } finally {
       setIsExporting(false);
     }
@@ -3597,6 +3680,24 @@ ${timingOptimization?.recommendationText || "特になし"}
                   ) : (
                     <>
                       <span>EXPORT FOR GEMINI</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Unified Master Export Button */}
+                <button
+                  onClick={handleDownloadUnifiedDataset}
+                  disabled={isExporting}
+                  className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      エクスポート中...
+                    </>
+                  ) : (
+                    <>
+                      <span>UNIFIED MASTER EXPORT</span>
                     </>
                   )}
                 </button>

@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from 'react';
 import { getUpcomingDoyouPeriod } from '../utils/ephemerisEngine';
+import { useRouter } from 'next/navigation';
+
 
 interface ExpertCouncilPanelProps {
   actionIntent: string;
@@ -74,6 +76,94 @@ export default function ExpertCouncilPanel({
 }: ExpertCouncilPanelProps) {
 
   const anyVoid = isPersonalVoid || isYearVoid || isMonthVoid || isDayVoid;
+
+  const router = useRouter();
+  const [messages, setMessages] = useState<{ role: 'user' | 'assistant', text: string }[]>([
+    { role: 'assistant', text: 'システムコンソールアクティブ。現在の宇宙天気およびバイオデータは同期されています。調整の指示、または本日のアドバイスを求めてください。' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsLoading(true);
+
+    const statusSteps = [
+      '🧬 [TELEMETRY] 生体測定データ(HRV/ANS負荷)同期中...',
+      '📡 [SPACE-WEATHER] 地磁気偏角およびKp-Index読み込み中...',
+      '🔮 [ASTROLOGY] 九星・天体配置ベクトル計算中...',
+      '🧠 [AGENT-COGNITIVE] 思考プロセスを構築中...',
+    ];
+
+    let stepIdx = 0;
+    setLoadingStatus(statusSteps[0]);
+    const interval = setInterval(() => {
+      stepIdx++;
+      if (stepIdx < statusSteps.length) {
+        setLoadingStatus(statusSteps[stepIdx]);
+      }
+    }, 2000);
+
+    try {
+      const response = await fetch('/api/agent/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMsg,
+          telemetry: {
+            kpIndex,
+            ansLoad,
+            magneticF,
+            isPersonalVoid: anyVoid,
+            actionIntent,
+            targetDirection,
+            targetLat,
+            targetLon
+          }
+        })
+      });
+
+      clearInterval(interval);
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || '通信エラーが発生しました。');
+      }
+
+      const data = await response.json();
+      setMessages(prev => [...prev, { role: 'assistant', text: data.textResponse }]);
+
+      if (data.themeApplied && data.theme) {
+        const t = data.theme;
+        document.documentElement.style.setProperty('--background', t.background, 'important');
+        document.documentElement.style.setProperty('--foreground', t.foreground, 'important');
+        document.documentElement.style.setProperty('--color-accent', t.accent, 'important');
+        document.documentElement.style.setProperty('--glow-color', t.glowColor, 'important');
+        document.documentElement.style.setProperty('--glow-intensity', String(t.glowIntensity), 'important');
+        document.documentElement.style.setProperty('--animation-speed', t.animationSpeed, 'important');
+        document.documentElement.style.setProperty('--noise-opacity', String(t.noiseOpacity), 'important');
+        document.documentElement.style.setProperty('--border-radius', t.borderRadius, 'important');
+        
+        const fontVarName = t.fontTheme === 'serif' ? 'var(--font-serif)' : 'var(--font-sans)';
+        document.documentElement.style.setProperty('--font-family', fontVarName, 'important');
+        router.refresh();
+      }
+
+    } catch (err: any) {
+      clearInterval(interval);
+      setMessages(prev => [...prev, { role: 'assistant', text: `⚠️ エラーが発生しました: ${err.message}` }]);
+    } finally {
+      setIsLoading(false);
+      setLoadingStatus('');
+    }
+  };
+
 
   // Calculate a reliable local score and generate the breakdown of conditions
   const scoreData = useMemo(() => {
@@ -351,7 +441,7 @@ export default function ExpertCouncilPanel({
         );
       })()}
 
-      {/* AI Consultation Prompt Generation Area */}
+      {/* AI Consultation & System Control Chat Area */}
       <div className="mt-6 p-5 border border-purple-500/30 bg-purple-950/5 backdrop-blur-md rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
         {/* Decorative background glow */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -359,16 +449,15 @@ export default function ExpertCouncilPanel({
         <div className="flex justify-between items-center border-b border-purple-500/25 pb-2 mb-1">
           <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 font-mono">
             <span className="text-purple-400 animate-pulse">🔮</span>
-            AI Consultation Hub / AI相談プロンプト生成
+            Agent Console / 常駐エージェント対話
           </h4>
           <span className="text-[7.5px] font-mono text-purple-400/60 bg-purple-500/10 px-1.5 py-0.5 border border-purple-500/25 rounded-sm">
-            PROMPT ENGINE ACTIVE
+            SECURE LINK ACTIVE
           </span>
         </div>
 
         <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
-          現在アクティブな生体測定（HRV/ANS負荷）、地磁気偏角、宇宙天気、および九星・干支の軌道干渉データを統合した高度なAI指示文（プロンプト）を自動生成しました。
-          下のボタンを押すとプロンプトが自動でコピーされ、外部のGeminiが別タブで開くため、そのまま貼り付けて（Ctrl+V）相談が開始できます。
+          常駐エージェントとの直接対話コンソールです。現在の生体測定値や地磁気データをもとに相談したり、テーマ変更を指示できます（例: 「青系の落ち着いた色にして」「心を落ち着かせるために明朝体に変更して」など）。
         </p>
 
         {/* Selected Coordinates Indicator */}
@@ -391,41 +480,55 @@ export default function ExpertCouncilPanel({
           <div className="p-3 bg-amber-950/15 border border-amber-500/20 text-amber-400 text-[10px] font-sans rounded-md leading-relaxed flex items-start gap-2 animate-pulse">
             <span>⚠️</span>
             <div>
-              <strong>【目的地未設定】</strong> 現在、目的地の緯度・経度が設定されていません。<br />
-              「2. 目的地/健康」タブの地図上で行きたい場所をクリックするか物件のピンを選択すると、その座標と吉凶評価がこのAI相談プロンプトに自動的に同期・マッピングされます。
+              <strong>【目的地未設定】</strong> 現在、目的地の緯度・経度が設定されていません。「2. 目的地/健康」タブの地図上で行きたい場所をクリックすると同期されます。
             </div>
           </div>
         ) : null}
 
-        <div className="relative">
-          <textarea
-            readOnly
-            value={aiPromptText}
-            className="w-full h-36 bg-zinc-950/80 border border-zinc-800 rounded-md p-2.5 text-zinc-400 outline-none text-[9px] leading-relaxed custom-scrollbar font-mono resize-y"
-            onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-            placeholder="[ 目的地情報を含むプロンプトがここに生成されます ]"
-          />
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2 mt-1 z-10">
-          <button
-            onClick={() => {
-              onCopyPrompt?.();
-              window.open("https://gemini.google.com/", "_blank");
-            }}
-            className="flex-1 bg-purple-900/30 text-purple-400 hover:bg-purple-800/50 border border-purple-800/50 text-[10px] uppercase tracking-widest px-3 py-2 rounded-md transition-all font-bold flex items-center justify-center gap-1.5 font-mono shadow-[0_0_15px_rgba(168,85,247,0.1)] active:scale-[0.98]"
-          >
-            📋 {copiedPrompt ? "コピー完了！Geminiを開きます..." : "コピーしてGeminiを起動"}
-          </button>
-          {onDownloadJson && (
-            <button
-              onClick={onDownloadJson}
-              className="bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 text-[10px] uppercase tracking-widest px-3 py-2 rounded-md transition-all font-bold flex items-center justify-center gap-1.5 font-mono active:scale-[0.98]"
-            >
-              📥 JSONダウンロード
-            </button>
+        {/* Chat Log Window */}
+        <div className="h-48 overflow-y-auto bg-black/80 border border-zinc-800 rounded-md p-3 flex flex-col gap-2 font-mono text-[10px] leading-relaxed custom-scrollbar">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex flex-col gap-0.5 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <span className={`text-[8px] uppercase tracking-wider ${msg.role === 'user' ? 'text-zinc-500' : 'text-purple-400'}`}>
+                {msg.role === 'user' ? '[ADMIN]' : '[AGENT]'}
+              </span>
+              <div className={`max-w-[85%] px-3 py-1.5 rounded-md ${
+                msg.role === 'user' 
+                  ? 'bg-zinc-800 text-zinc-100 self-end' 
+                  : 'bg-purple-950/40 text-zinc-300 border border-purple-900/30 self-start whitespace-pre-wrap'
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex flex-col gap-1 items-start animate-pulse">
+              <span className="text-[8px] text-purple-400 uppercase tracking-wider">[PROCESS]</span>
+              <div className="bg-purple-950/20 text-purple-300 border border-purple-900/20 px-3 py-1.5 rounded-md font-mono text-[9px]">
+                {loadingStatus}
+              </div>
+            </div>
           )}
         </div>
+
+        {/* Input Form */}
+        <form onSubmit={handleSendMessage} className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
+            placeholder={isLoading ? "エージェントが思考中..." : "アドバイスを求める、またはテーマ変更を指示..."}
+            className="flex-1 bg-zinc-950 border border-zinc-800 focus:border-purple-500/50 rounded-md px-3 py-2 text-zinc-300 outline-none text-xs font-mono disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="bg-purple-900/30 hover:bg-purple-800/50 text-purple-400 border border-purple-800/50 disabled:opacity-40 disabled:hover:bg-purple-900/30 text-xs px-4 py-2 rounded-md font-mono font-bold transition-all active:scale-[0.98]"
+          >
+            送信
+          </button>
+        </form>
       </div>
     </div>
   );

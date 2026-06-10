@@ -216,6 +216,9 @@ async function fetchCitiesForPrefecture(page: Page, prefAlpha: string): Promise<
   console.log(`Fetching city list for prefecture: ${prefAlpha}...`);
   await page.goto(url, { waitUntil: 'domcontentloaded' });
 
+  // Wait a moment for dynamic elements or additional links to be populated
+  await page.waitForTimeout(2000);
+
   // Extract all links that end with _ct/
   const links = await page.$$eval('a', anchors =>
     anchors.map(a => a.href)
@@ -242,14 +245,18 @@ const PREFECTURES = [
   'fukuoka', 'saga', 'nagasaki', 'kumamoto', 'oita', 'miyazaki', 'kagoshima', 'okinawa'
 ];
 
-const STATE_FILE = path.join(__dirname, 'scraper_state.json');
+const STATE_FILE = path.join(process.cwd(), 'scripts', 'scraper_state.json');
 
 function loadState(): { pref: string | null, city: string | null, page: number } {
+  console.log(`Checking state file at: ${STATE_FILE}`);
   try {
     if (fs.existsSync(STATE_FILE)) {
       const data = fs.readFileSync(STATE_FILE, 'utf-8');
       const parsed = JSON.parse(data);
+      console.log(`Loaded state: ${JSON.stringify(parsed)}`);
       return { pref: parsed.pref || null, city: parsed.city || null, page: parsed.page || 1 };
+    } else {
+      console.log("State file does not exist.");
     }
   } catch (e) {
     console.warn("Failed to load state, starting from beginning.");
@@ -283,8 +290,22 @@ async function main() {
   const browser = await chromium.launch(BROWSER_OPTIONS);
 
   try {
-    // ターゲット都道府県（愛知のみ）
-    const targetPrefectures = ['aichi'];
+    // ターゲット都道府県（愛知、岐阜、三重）
+    const targetPrefectures = ['aichi', 'gifu', 'mie'];
+
+    // 刈谷市への通勤圏となる市区町村（Nifty不動産のURLキー）
+    const kariyaCommutingCities = new Set([
+      // 愛知県（西三河・名古屋南部等）
+      'kariyashi', 'chiryushi', 'anjoshi', 'takahamashi', 'hekinanshi',
+      'toyotashi', 'okazakishi', 'nishioshi', 'obushi', 'tokaishi', 'handashi',
+      'miyoshishi', 'aichiguntogocho', 'nagoyashimidoriku', 'nagoyashiminamiku',
+      // 三重県（桑名・四日市・川越等）
+      'kuwanashi', 'yokkaichishi', 'kuwanagunkisosakicho', 'miegunkawagoecho', 'miegunasahicho',
+      // 岐阜県（JR・名鉄通勤圏）
+      'gifushi', 'kakamigaharashi', 'ogakishi', 'tajimishi'
+    ]);
+
+    const useCommutingFilter = true; // 刈谷通勤圏に絞り込んでスキャンを大幅に高速化するフラグ
 
     // 進行状況の読み込み
     const state = loadState();
@@ -321,11 +342,20 @@ async function main() {
       await new Promise(res => setTimeout(res, 1500 + Math.random() * 1500));
 
       for (const city of cities) {
-        if (skipCity && city !== state.city) {
-          console.log(`Skipping city: ${city}`);
+        if (skipCity) {
+          if (city === state.city) {
+            skipCity = false;
+            console.log(`Reached resume target city: ${city}`);
+          } else {
+            console.log(`Skipping city for resume: ${city}`);
+            continue;
+          }
+        }
+
+        if (useCommutingFilter && !kariyaCommutingCities.has(city)) {
+          // 刈谷通勤圏外の市区町村はスキップして高速化とDB肥大化を防止
           continue;
         }
-        skipCity = false; // 目的の市に到達したので、これ以降の市はスキップしない
 
         console.log(`\n======================================================`);
         console.log(` Starting extraction for ${pref} - ${city}`);

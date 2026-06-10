@@ -376,3 +376,31 @@ model RelocationSimulation {
   @@index([userId])
 }
 
+model AgentTheme {
+  id             String   @id @default(cuid())
+  background     String
+  foreground     String
+  accent         String
+  glowColor      String
+  glowIntensity  Float
+  animationSpeed String
+  fontTheme      String
+  noiseOpacity   Float
+  borderRadius   String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model AgentActivityLog {
+  id             String   @id @default(cuid())
+  timestamp      DateTime @default(now())
+  triggerType    String
+  details        String
+  thoughtProcess String
+  actions        String
+  codeChange     Json?
+  status         String
+  errorMessage   String?
+}
+
+

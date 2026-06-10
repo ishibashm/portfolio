@@ -5,7 +5,7 @@ import { OuraClient } from '@/lib/ouraClient';
 import { TavilyClient } from '@/lib/tavilyClient';
 import { IChingClient } from '@/lib/ichingClient';
 import { NBAEngine, NBAParams } from '@/utils/nbaEngine';
-import { AstroEngine, getPersonalVoidZodiac, calculateTideScore, getLunarDistance, getCurrentZodiac, clashMap, checkIsDoyouHazard } from '@/utils/ephemerisEngine';
+import { AstroEngine, getPersonalVoidZodiac, calculateTideScore, getLunarDistance, getCurrentZodiac, clashMap, checkIsDoyouHazard, getCurrentEnvironmentalFrequencies } from '@/utils/ephemerisEngine';
 import { baziEngine } from '@/utils/baziEngine';
 import { AspectEngine } from '@/utils/aspectEngine';
 import { VedicEngine } from '@/utils/vedicEngine';
@@ -284,6 +284,8 @@ export async function POST(req: Request) {
     };
     const tendoDirection = monthlyTendoMap[currentZodiac.monthZodiac];
 
+    const env = getCurrentEnvironmentalFrequencies(today, lon, useClassical ? 'coupled' : 'independent');
+
     const stateVector: NBAParams['stateVector'] = {
       ansLoad: ansLoad,
       shieldCapacity: shieldCapacity,
@@ -302,7 +304,13 @@ export async function POST(req: Request) {
       ichingHexagram: iching.calculateHexagram(ansLoad, shieldCapacity, envRisk, sunLon),
       environmentalNoise: 'Low',
       tendoDirection,
-      qiMenGate: metaphysicalData.chineseMetasoft?.qiMenGate
+      qiMenGate: metaphysicalData.chineseMetasoft?.qiMenGate,
+      nineStarKi: {
+        yearStar: env.yearStar,
+        monthStar: env.monthStar,
+        dayStar: env.dayStar
+      },
+      spaceWeather: macroContexts.spaceWeather
     };
 
     // 4. Infer Next Best Action

@@ -15,6 +15,7 @@ import {
   filterCollisionByMode,
   getPhysicalMonthStar
 } from '@/utils/ephemerisEngine';
+import { getGeomagneticData } from '@/utils/geomagnetism';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +43,12 @@ export async function GET(request: Request) {
     const lunarPhaseModifier = config.lunar_phase_modifier !== undefined ? config.lunar_phase_modifier : true;
     const layerMode = url.searchParams.get('layer_mode') || config.layer_mode || 'final';
     const directionFilterMode = url.searchParams.get('direction_filter_mode') || config.direction_filter_mode || 'composite';
+
+    // New parameters
+    const actionIntent = (url.searchParams.get('action_intent') || config.action_intent || 'MIGRATION') as 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
+    const targetLat = url.searchParams.get('target_lat') ? parseFloat(url.searchParams.get('target_lat')!) : null;
+    const targetLon = url.searchParams.get('target_lon') ? parseFloat(url.searchParams.get('target_lon')!) : null;
+    const targetElevation = url.searchParams.get('target_elevation') ? parseFloat(url.searchParams.get('target_elevation')!) : null;
 
     const parseSafeDate = (dateStr: string | null | undefined): Date => {
       if (!dateStr) return new Date();
@@ -71,70 +78,39 @@ export async function GET(request: Request) {
     const cmB = generateBoard(env.classicalMonthStar);
     const cdB = generateBoard(env.classicalDayStar);
 
-    // Compute classical collision
-    const classicalCollisionRaw = calculateVectorCollision(
-      honmeiStar.classical,
-      cyB, cmB, cdB,
-      voidZodiacs,
-      env.raw.lunarNode,
-      'MIGRATION',
-      targetDate,
-      baseLon,
-      getsuMeiStar,
-      'traditional'
-    );
-    const classicalCollision = filterCollisionByMode(
-      classicalCollisionRaw,
-      honmeiStar.classical,
-      getsuMeiStar,
-      voidZodiacs,
-      directionFilterMode,
-      cyB, cmB, cdB
-    );
+    // Helper to calculate vector collision for a specific intent across all models
+    const getCollisionForIntent = (intent: 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION') => {
+      const classicalCollision = filterCollisionByMode(
+        calculateVectorCollision(honmeiStar.classical, cyB, cmB, cdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, getsuMeiStar, 'traditional'),
+        honmeiStar.classical, getsuMeiStar, voidZodiacs, directionFilterMode, cyB, cmB, cdB
+      );
+      
+      const physicalIndepCollision = filterCollisionByMode(
+        calculateVectorCollision(honmeiStar.physical, pyB, pmB_indep, pdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, undefined, 'physical'),
+        honmeiStar.physical, null, voidZodiacs, directionFilterMode, pyB, pmB_indep, pdB
+      );
+      
+      const physicalCoupledCollision = filterCollisionByMode(
+        calculateVectorCollision(honmeiStar.physical, pyB, pmB_coupled, pdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, undefined, 'physical'),
+        honmeiStar.physical, null, voidZodiacs, directionFilterMode, pyB, pmB_coupled, pdB
+      );
 
-    // Compute physical independent collision
-    const physicalIndepCollisionRaw = calculateVectorCollision(
-      honmeiStar.physical,
-      pyB, pmB_indep, pdB,
-      voidZodiacs,
-      env.raw.lunarNode,
-      'MIGRATION',
-      targetDate,
-      baseLon,
-      undefined,
-      'physical'
-    );
-    const physicalIndepCollision = filterCollisionByMode(
-      physicalIndepCollisionRaw,
-      honmeiStar.physical,
-      null,
-      voidZodiacs,
-      directionFilterMode,
-      pyB, pmB_indep, pdB
-    );
+      return {
+        classical: classicalCollision.finalVectors,
+        physicalIndependent: physicalIndepCollision.finalVectors,
+        physicalCoupled: physicalCoupledCollision.finalVectors
+      };
+    };
 
-    // Compute physical coupled collision
-    const physicalCoupledCollisionRaw = calculateVectorCollision(
-      honmeiStar.physical,
-      pyB, pmB_coupled, pdB,
-      voidZodiacs,
-      env.raw.lunarNode,
-      'MIGRATION',
-      targetDate,
-      baseLon,
-      undefined,
-      'physical'
-    );
-    const physicalCoupledCollision = filterCollisionByMode(
-      physicalCoupledCollisionRaw,
-      honmeiStar.physical,
-      null,
-      voidZodiacs,
-      directionFilterMode,
-      pyB, pmB_coupled, pdB
-    );
+    // Precompute comparison matrix for all four intents
+    const intentsComparison = {
+      DEFAULT: getCollisionForIntent('DEFAULT'),
+      MIGRATION: getCollisionForIntent('MIGRATION'),
+      BUSINESS: getCollisionForIntent('BUSINESS'),
+      REST: getCollisionForIntent('REST')
+    };
 
-    // For backwards compatibility and the default return:
+    // Calculate main active vectors based on user configurations and query actionIntent
     const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
     const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
     const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
@@ -145,7 +121,7 @@ export async function GET(request: Request) {
       yB, mB, dB,
       voidZodiacs,
       env.raw.lunarNode,
-      'MIGRATION',
+      actionIntent, // Aligned with search param
       targetDate,
       baseLon,
       useClassical ? getsuMeiStar : undefined,
@@ -161,7 +137,7 @@ export async function GET(request: Request) {
       yB, mB, dB
     );
 
-    // Compute 30-day forecast matrix
+    // Compute 30-day forecast matrix using aligned actionIntent
     const forecast30Days = [];
     const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     
@@ -177,7 +153,7 @@ export async function GET(request: Request) {
         tyB, tmB, tdB,
         voidZodiacs,
         testEnv.raw.lunarNode,
-        'MIGRATION',
+        actionIntent, // Aligned with search param
         testDate,
         baseLon,
         useClassical ? getsuMeiStar : undefined,
@@ -228,25 +204,91 @@ export async function GET(request: Request) {
       forecast30Days.push({
         date: testDate.toISOString().split('T')[0],
         rokuyo: getCurrentZodiac(testDate, baseLon).dayZodiac,
-        lunarPhase: calculateLunarPhaseCondition(testDate, 'MIGRATION').phaseLabel,
+        lunarPhase: calculateLunarPhaseCondition(testDate, actionIntent).phaseLabel,
         scores: dayScores,
         statuses: dayStatuses
       });
     }
 
-    // 3. Query TimingAstrology
+    // 3. Optional Destination Evaluation if target coordinates are provided
+    let targetEvaluation: any = null;
+    if (targetLat !== null && targetLon !== null) {
+      const toRad = (val: number) => val * Math.PI / 180;
+      const toDeg = (val: number) => val * 180 / Math.PI;
+      const dLon = toRad(targetLon - baseLon);
+      const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
+      const x = Math.cos(toRad(baseLat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(baseLat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
+      let trueBrng = toDeg(Math.atan2(y, x));
+      trueBrng = (trueBrng + 360) % 360;
+
+      // Get geomagnetism data for declination
+      let declination = -8.2; // default
+      try {
+        const geoData = await getGeomagneticData(baseLat, baseLon, targetDate.getTime());
+        if (geoData?.declination !== undefined) {
+          declination = geoData.declination;
+        }
+      } catch (e) {
+        console.warn("Failed to fetch geomagnetic data in export API:", e);
+      }
+      
+      const magBrng = (trueBrng - declination + 360) % 360;
+
+      const getDir = (bearing: number): Direction => {
+        const b = (bearing % 360 + 360) % 360;
+        if (useClassical) {
+          if (b >= 345 || b < 15) return 'N';
+          if (b >= 15 && b < 75) return 'NE';
+          if (b >= 75 && b < 105) return 'E';
+          if (b >= 105 && b < 165) return 'SE';
+          if (b >= 165 && b < 195) return 'S';
+          if (b >= 195 && b < 255) return 'SW';
+          if (b >= 255 && b < 285) return 'W';
+          return 'NW';
+        } else {
+          const index = Math.floor(((b + 22.5) % 360) / 45);
+          const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+          return dirs[index];
+        }
+      };
+
+      const targetDir = {
+        trueDirection: getDir(trueBrng),
+        magneticDirection: getDir(magBrng)
+      };
+
+      const targetDirName = useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection;
+
+      targetEvaluation = {
+        targetCoordinates: { lat: targetLat, lon: targetLon, elevation: targetElevation },
+        heading: {
+          trueDirection: targetDir.trueDirection,
+          magneticDirection: targetDir.magneticDirection,
+          trueBearing: trueBrng,
+          magneticBearing: magBrng,
+          declination
+        },
+        targetStatuses: {
+          classical: intentsComparison[actionIntent].classical[targetDirName] || 'SAFE',
+          physicalIndependent: intentsComparison[actionIntent].physicalIndependent[targetDirName] || 'SAFE',
+          physicalCoupled: intentsComparison[actionIntent].physicalCoupled[targetDirName] || 'SAFE'
+        }
+      };
+    }
+
+    // 4. Query TimingAstrology
     const timingAstrology = await prisma.timingAstrology.findMany({
       orderBy: { date: 'asc' },
       take: 100
     });
 
-    // 4. Query MetaphysicalStateLog (recent logs)
+    // 5. Query MetaphysicalStateLog (recent logs)
     const stateLogs = await prisma.metaphysicalStateLog.findMany({
       orderBy: { targetDate: 'desc' },
       take: 15
     });
 
-    // 5. Query relevant KnowledgeDocuments
+    // 6. Query relevant KnowledgeDocuments
     let relevantNotes = await prisma.knowledgeDocument.findMany({
       where: {
         OR: [
@@ -264,7 +306,6 @@ export async function GET(request: Request) {
     });
 
     if (relevantNotes.length === 0) {
-      // Fallback 1: metaphysical Notes
       relevantNotes = await prisma.knowledgeDocument.findMany({
         where: {
           OR: [
@@ -278,14 +319,12 @@ export async function GET(request: Request) {
     }
 
     if (relevantNotes.length === 0) {
-      // Fallback 2: general latest notes
       relevantNotes = await prisma.knowledgeDocument.findMany({
         take: 5,
         orderBy: { created_at: 'desc' }
       });
     }
 
-    // Map documents to clean key-value for Gemini
     const cleanNotes = relevantNotes.map(doc => ({
       title: doc.title,
       content: doc.content,
@@ -312,8 +351,10 @@ export async function GET(request: Request) {
         trueNorth: useTrueNorth,
         lunarPhaseModifier,
         layerMode,
-        directionFilterMode
+        directionFilterMode,
+        actionIntent // Export aligned intent
       },
+      targetEvaluation, // Destination details if computed
       currentAstrologyState: {
         date: targetDate.toISOString().split('T')[0],
         environmentalStars: {
@@ -333,11 +374,8 @@ export async function GET(request: Request) {
           tendoDirection: vectorCollision.tendoDirection,
           doyouState: vectorCollision.doyouState
         },
-        modelsComparison: {
-          classical: classicalCollision.finalVectors,
-          physicalIndependent: physicalIndepCollision.finalVectors,
-          physicalCoupled: physicalCoupledCollision.finalVectors
-        }
+        modelsComparison: intentsComparison[actionIntent], // Selected intent comparison
+        intentsComparison // Full multi-intent matrix
       },
       forecast30Days,
       auspiciousTimingsDictionary: timingAstrology.map(t => ({

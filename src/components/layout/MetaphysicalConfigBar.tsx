@@ -115,7 +115,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({ on
     if (updatedConfig.birthLat !== undefined) apiBody.birth_lat = updatedConfig.birthLat;
     if (updatedConfig.birthLon !== undefined) apiBody.birth_lon = updatedConfig.birthLon;
     if (updatedConfig.baseLat !== undefined) apiBody.base_lat = updatedConfig.baseLat;
-    if (updatedConfig.base_lon !== undefined) apiBody.base_lon = updatedConfig.baseLon;
+    if (updatedConfig.baseLon !== undefined) apiBody.base_lon = updatedConfig.baseLon;
 
     // Save locally
     try {

@@ -226,6 +226,12 @@ export interface NBAData {
       qValues?: Record<string, number>;
       probabilities?: Record<string, number>;
       logicTrace?: string[];
+      attentionMatrix?: number[][];
+      sigmoidGates?: {
+        ansStressGate: number;
+        shieldVulnerabilityGate: number;
+      };
+      llmPredictionTrace?: string[];
     };
   };
 }
@@ -1544,6 +1550,120 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                 </div>
               </div>
 
+              {/* Sigmoid Gating Thresholds Card */}
+              <div className="md:col-span-1 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-3">
+                    <div className="p-1.5 rounded-lg bg-emerald-500/20">
+                      <Activity className="w-4 h-4 text-emerald-400" />
+                    </div>
+                    <h3 className="font-bold text-sm text-emerald-100">シグモイド活性化ゲート</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {/* ANS Stress Gate */}
+                    <div>
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="text-gray-400 text-[10px]">ANS負荷ゲート</span>
+                        <span className="font-mono text-[10px] text-gray-300">{(data.nba.actionResult.sigmoidGates?.ansStressGate !== undefined ? data.nba.actionResult.sigmoidGates.ansStressGate * 100 : 0).toFixed(0)}%</span>
+                      </div>
+                      <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${data.nba.stateVector.ansLoad >= 65 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-emerald-500'}`}
+                          style={{ width: `${data.nba.stateVector.ansLoad}%` }}
+                        />
+                        <div className="absolute left-[65%] top-0 w-0.5 h-full bg-red-400/80" title="閾値 65%" />
+                      </div>
+                      <div className="flex justify-between items-center text-[8px] text-gray-500 mt-1 font-mono">
+                        <span>負荷: {Number(data.nba.stateVector.ansLoad).toFixed(0)}%</span>
+                        <span className={data.nba.stateVector.ansLoad >= 65 ? "text-red-400 font-bold" : "text-gray-500"}>閾値: 65%</span>
+                      </div>
+                    </div>
+
+                    {/* Shield Vulnerability Gate */}
+                    <div>
+                      <div className="flex justify-between items-center text-xs mb-1">
+                        <span className="text-gray-400 text-[10px]">シールド脆弱性ゲート</span>
+                        <span className="font-mono text-[10px] text-gray-300">{(data.nba.actionResult.sigmoidGates?.shieldVulnerabilityGate !== undefined ? data.nba.actionResult.sigmoidGates.shieldVulnerabilityGate * 100 : 0).toFixed(0)}%</span>
+                      </div>
+                      <div className="relative h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${(100 - data.nba.stateVector.shieldCapacity) >= 70 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse' : 'bg-emerald-500'}`}
+                          style={{ width: `${100 - data.nba.stateVector.shieldCapacity}%` }}
+                        />
+                        <div className="absolute left-[70%] top-0 w-0.5 h-full bg-red-400/80" title="閾値 70%" />
+                      </div>
+                      <div className="flex justify-between items-center text-[8px] text-gray-500 mt-1 font-mono">
+                        <span>脆弱性: {(100 - data.nba.stateVector.shieldCapacity).toFixed(0)}%</span>
+                        <span className={(100 - data.nba.stateVector.shieldCapacity) >= 70 ? "text-red-400 font-bold" : "text-gray-500"}>閾値: 70%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-[9px] text-gray-400/80 bg-black/20 p-1.5 rounded-xl border border-white/5">
+                  {data.nba.stateVector.ansLoad >= 65 || (100 - data.nba.stateVector.shieldCapacity) >= 70 ? (
+                    <span className="text-red-400 font-bold flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 text-red-400 animate-pulse" /> ストレス閾値突破
+                    </span>
+                  ) : (
+                    <span className="text-emerald-400 font-bold flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3 text-emerald-400" /> 自律神経安定
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* LLM Self-Attention Heatmap Card */}
+              <div className="md:col-span-1 p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md shadow-xl flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-4 border-b border-white/5 pb-3">
+                    <div className="p-1.5 rounded-lg bg-indigo-500/20">
+                      <BrainCircuit className="w-4 h-4 text-indigo-400" />
+                    </div>
+                    <h3 className="font-bold text-sm text-indigo-100">自己アテンション行列</h3>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-7 gap-1 text-[8px] font-mono text-gray-500 text-center font-bold">
+                      <div>Q \ K</div>
+                      <div title="Year Star">年星</div>
+                      <div title="Month Star">月星</div>
+                      <div title="Day Star">日星</div>
+                      <div title="Lunar Phase">月相</div>
+                      <div title="Space Kp">宇宙</div>
+                      <div title="VIX Risk">リスク</div>
+                    </div>
+
+                    {['本命', '月命', '日主'].map((queryName, qIdx) => {
+                      const rowWeights = data.nba.actionResult.attentionMatrix?.[qIdx] || [0.16, 0.16, 0.16, 0.16, 0.16, 0.17];
+                      return (
+                        <div key={qIdx} className="grid grid-cols-7 gap-1 items-center">
+                          <div className="text-[9px] font-bold text-gray-400 font-mono text-left truncate">{queryName}</div>
+                          {rowWeights.map((weight, kIdx) => {
+                            const opacity = Math.min(1.0, weight * 4.5);
+                            const isHigh = weight > 0.22;
+                            return (
+                              <div 
+                                key={kIdx} 
+                                className={`h-6 rounded flex items-center justify-center text-[8px] font-mono font-bold transition-all relative group ${isHigh ? 'text-white border border-indigo-400/40 shadow-[0_0_8px_rgba(99,102,241,0.4)]' : 'text-gray-300'}`}
+                                style={{ 
+                                  backgroundColor: `rgba(99, 102, 241, ${opacity})`
+                                }}
+                                title={`Query: ${queryName}, Key: ${kIdx}, Weight: ${(weight * 100).toFixed(1)}%`}
+                              >
+                                {(weight * 100).toFixed(0)}%
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="mt-2 text-[8px] text-gray-500 font-mono text-center">
+                  Softmax(QKᵀ / √d_k) 特徴量相関
+                </div>
+              </div>
+
               {/* 1-Year Forecast Simulation */}
               <div className="md:col-span-4 p-6 rounded-[2rem] bg-indigo-900/20 border border-indigo-500/20 backdrop-blur-md shadow-xl mt-2">
                 <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
@@ -1621,6 +1741,59 @@ export function NBADashboard({ externalData, onRefresh }: { externalData?: NBADa
                   )}
                 </div>
               </div>
+
+              {/* Token Generation Console */}
+              {data.nba.actionResult.llmPredictionTrace && (
+                <div className="md:col-span-4 p-6 rounded-[2rem] bg-[#0c0c0e] border border-zinc-800/80 backdrop-blur-md shadow-2xl mt-2 relative overflow-hidden group">
+                  {/* Console Header */}
+                  <div className="absolute top-0 left-0 right-0 h-8 bg-zinc-950 border-b border-zinc-800/80 px-4 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-red-500/80" />
+                      <div className="w-2 h-2 rounded-full bg-amber-500/80" />
+                      <div className="w-2 h-2 rounded-full bg-emerald-500/80" />
+                      <span className="text-[10px] text-zinc-500 font-mono ml-2">decision_transformer_inference.log</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-emerald-400 font-mono animate-pulse">● ACTIVE</span>
+                      <BrainCircuit className="w-3.5 h-3.5 text-zinc-600" />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 pt-2">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                        <TerminalSquare className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <h3 className="font-bold text-sm text-zinc-300">Decision Transformer Token Trace (意思決定トークン推移)</h3>
+                    </div>
+                    <div className="bg-black/95 rounded-xl p-4 font-mono text-xs text-emerald-400/95 overflow-y-auto max-h-[200px] border border-zinc-900 shadow-inner custom-scrollbar relative">
+                      {data.nba.actionResult.llmPredictionTrace.map((trace: string, idx: number) => {
+                        let lineClass = "mb-1 last:mb-0 leading-relaxed";
+                        if (trace.includes('Prediction')) {
+                          lineClass += " text-cyan-400 font-bold border-l-2 border-cyan-500 pl-2 bg-cyan-950/20 py-0.5 my-1 rounded-r";
+                        } else if (trace.includes('Gate') && trace.includes('activated at')) {
+                          const hasStress = trace.includes('ANS') && parseFloat(trace.match(/[\d\.]+/)?.[1] || '0') >= 65;
+                          const hasVuln = trace.includes('Shield') && parseFloat(trace.match(/[\d\.]+/)?.[1] || '0') >= 70;
+                          if (hasStress || hasVuln) {
+                            lineClass += " text-red-400 font-bold border-l-2 border-red-500 pl-2 bg-red-950/10 py-0.5 my-1 rounded-r";
+                          }
+                        }
+                        return (
+                          <div key={idx} className={lineClass}>
+                            <span className="text-zinc-700 select-none mr-2 font-bold">{String(idx + 1).padStart(2, '0')}</span>
+                            {trace}
+                          </div>
+                        );
+                      })}
+                      <div className="flex items-center mt-1 text-emerald-400/50">
+                        <span className="text-zinc-700 select-none mr-2 font-bold">{String(data.nba.actionResult.llmPredictionTrace.length + 1).padStart(2, '0')}</span>
+                        <span>$ await next best action token...</span>
+                        <span className="w-1.5 h-3.5 bg-emerald-400/80 ml-1 animate-ping" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* System Logic Trace (因果推論ログ) */}
               {data.nba.actionResult.logicTrace && (
