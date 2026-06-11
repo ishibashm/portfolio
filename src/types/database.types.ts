@@ -179,51 +179,69 @@ export type Database = {
       }
       rental_properties: {
         Row: {
+          address: string | null
           area: string | null
+          building_age: number | null
           created_at: string | null
           first_seen_at: string | null
+          floor: string | null
           id: string
           is_new_build: boolean | null
           last_seen_at: string | null
+          lat: number | null
           layout: string | null
+          lon: number | null
           management_fee: number | null
           minutes_to_station: number | null
           property_name: string
           rent: number | null
           size_sqm: number | null
           source_emails: string[] | null
+          source_scraper: string | null
           url: string | null
         }
         Insert: {
+          address?: string | null
           area?: string | null
+          building_age?: number | null
           created_at?: string | null
           first_seen_at?: string | null
+          floor?: string | null
           id?: string
           is_new_build?: boolean | null
           last_seen_at?: string | null
+          lat?: number | null
           layout?: string | null
+          lon?: number | null
           management_fee?: number | null
           minutes_to_station?: number | null
           property_name: string
           rent?: number | null
           size_sqm?: number | null
           source_emails?: string[] | null
+          source_scraper?: string | null
           url?: string | null
         }
         Update: {
+          address?: string | null
           area?: string | null
+          building_age?: number | null
           created_at?: string | null
           first_seen_at?: string | null
+          floor?: string | null
           id?: string
           is_new_build?: boolean | null
           last_seen_at?: string | null
+          lat?: number | null
           layout?: string | null
+          lon?: number | null
           management_fee?: number | null
           minutes_to_station?: number | null
           property_name?: string
           rent?: number | null
           size_sqm?: number | null
           source_emails?: string[] | null
+          source_scraper?: string | null
           url?: string | null
         }
         Relationships: []
