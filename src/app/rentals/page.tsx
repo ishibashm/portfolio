@@ -7,11 +7,21 @@ import {
   Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, 
   ArrowUpDown, ArrowUp, ArrowDown, Plus, LayoutGrid, List, 
   FileDown, RefreshCw, BarChart2, Building2, Eye, EyeOff,
-  Star, StarOff, Bell, Settings
+  Star, StarOff, Bell, Settings, TrendingUp
 } from "lucide-react";
 import type { Database } from "@/types/database.types";
 import { addSampleData, triggerRealScrape, sendTestNotification, type WebhookConfig } from "./actions";
 import { RentalsMap } from "@/components/realestate/RentalsMap";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend
+} from "recharts";
 
 export type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
 type SortField = 'rent' | 'size_sqm' | 'first_seen_at';
@@ -55,6 +65,8 @@ export default function RentalsDashboard() {
     loading: false
   });
 
+  const [mounted, setMounted] = useState(false);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -79,6 +91,8 @@ export default function RentalsDashboard() {
     } catch (e) {
       console.error("Error loading webhook config:", e);
     }
+
+    setMounted(true);
   }, []);
 
   const handleSaveWebhookConfig = (config: WebhookConfig) => {
@@ -326,6 +340,43 @@ export default function RentalsDashboard() {
     };
   }, [filteredAndSortedProperties]);
 
+  // 家賃・平米単価の歴史的な推移データを作成
+  const trendData = useMemo(() => {
+    if (properties.length === 0) return [];
+
+    // 日付ごとにデータをグループ化
+    const dateMap: Record<string, { rentSum: number; sizeSum: number; count: number }> = {};
+
+    properties.forEach(p => {
+      if (!p.first_seen_at) return;
+      const dateStr = p.first_seen_at.split('T')[0]; // YYYY-MM-DD
+      const totalRent = (p.rent || 0) + (p.management_fee || 0);
+      const size = Number(p.size_sqm) || 0;
+
+      if (!dateMap[dateStr]) {
+        dateMap[dateStr] = { rentSum: 0, sizeSum: 0, count: 0 };
+      }
+      dateMap[dateStr].rentSum += totalRent;
+      dateMap[dateStr].sizeSum += size;
+      dateMap[dateStr].count += 1;
+    });
+
+    // 日付順にソートしてRecharts用の配列に変換
+    return Object.entries(dateMap)
+      .map(([date, data]) => {
+        const avgRent = Math.round(data.rentSum / data.count);
+        const avgSqmCost = data.sizeSum > 0 ? Math.round(data.rentSum / data.sizeSum) : 0;
+        return {
+          dateStr: date, // "2026-05-15"
+          formattedDate: date.substring(5), // "05-15"
+          avgRent: Math.round((avgRent / 10000) * 10) / 10, // 万円単位 (例: 12.5)
+          avgSqmCost, // 円/m²
+          count: data.count
+        };
+      })
+      .sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+  }, [properties]);
+
   // CSVエクスポート
   const handleExportCSV = () => {
     if (filteredAndSortedProperties.length === 0) return;
@@ -558,6 +609,109 @@ export default function RentalsDashboard() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Historic Trends Section */}
+        {properties.length > 0 && mounted && (
+          <div className="bg-zinc-950/60 border border-zinc-900 p-5 rounded-2xl shadow-xl space-y-4">
+            <div className="flex justify-between items-center border-b border-zinc-900/60 pb-3">
+              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                家賃・平米単価推移トレンド (Historic Price Trends)
+              </h3>
+              <span className="text-[10px] text-zinc-500 font-mono">
+                {trendData.length} 日間のデータを集計中
+              </span>
+            </div>
+
+            <div className="h-72 w-full text-zinc-350">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
+                  <XAxis 
+                    dataKey="formattedDate" 
+                    stroke="#52525b" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis 
+                    yAxisId="left"
+                    stroke="#10b981" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    unit="万"
+                    domain={['auto', 'auto']}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#3b82f6" 
+                    fontSize={10} 
+                    tickLine={false} 
+                    axisLine={false} 
+                    unit="円"
+                    domain={['auto', 'auto']}
+                  />
+                  <RechartsTooltip
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-[#0b0b0d] border border-zinc-850 p-3 rounded-xl shadow-xl text-xs font-mono space-y-1.5">
+                            <p className="text-zinc-400 font-bold border-b border-zinc-900 pb-1 mb-1">
+                              2026-{label}
+                            </p>
+                            <p className="text-emerald-400 flex justify-between gap-4">
+                              <span>平均家賃:</span>
+                              <span className="font-bold">{payload[0].value} 万円</span>
+                            </p>
+                            {payload[1] && (
+                              <p className="text-blue-450 flex justify-between gap-4">
+                                <span>平米単価:</span>
+                                <span className="font-bold">{(payload[1].value as number).toLocaleString()} 円/m²</span>
+                              </p>
+                            )}
+                            <p className="text-zinc-550 text-[10px] pt-1 border-t border-zinc-900/60 mt-1">
+                              登録数: {payload[0].payload.count} 件
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Legend 
+                    verticalAlign="top" 
+                    height={36} 
+                    iconType="circle" 
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 10, fontFamily: 'monospace' }}
+                  />
+                  <Line 
+                    yAxisId="left"
+                    type="monotone" 
+                    dataKey="avgRent" 
+                    name="平均家賃 (万円)" 
+                    stroke="#10b981" 
+                    strokeWidth={2}
+                    activeDot={{ r: 4 }}
+                    dot={{ r: 2 }}
+                  />
+                  <Line 
+                    yAxisId="right"
+                    type="monotone" 
+                    dataKey="avgSqmCost" 
+                    name="平米単価 (円/m²)" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    activeDot={{ r: 4 }}
+                    dot={{ r: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}
