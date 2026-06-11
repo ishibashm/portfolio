@@ -6,15 +6,17 @@ import { formatDistanceToNow, differenceInDays } from "date-fns";
 import { 
   Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, 
   ArrowUpDown, ArrowUp, ArrowDown, Plus, LayoutGrid, List, 
-  FileDown, RefreshCw, BarChart2, Building2, Eye, EyeOff
+  FileDown, RefreshCw, BarChart2, Building2, Eye, EyeOff,
+  Star, StarOff
 } from "lucide-react";
 import type { Database } from "@/types/database.types";
 import { addSampleData, triggerRealScrape } from "./actions";
+import { RentalsMap } from "@/components/realestate/RentalsMap";
 
-type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
+export type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
 type SortField = 'rent' | 'size_sqm' | 'first_seen_at';
 type SortOrder = 'asc' | 'desc';
-type ViewMode = 'grid' | 'table';
+type ViewMode = 'grid' | 'table' | 'map';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +26,7 @@ export default function RentalsDashboard() {
   const [sortField, setSortField] = useState<SortField>('first_seen_at');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [filterNewBuild, setFilterNewBuild] = useState(false);
+  const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false);
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMaxAge, setFilterMaxAge] = useState<string>("");
   const [search, setSearch] = useState("");
@@ -31,11 +34,40 @@ export default function RentalsDashboard() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isFetchingReal, setIsFetchingReal] = useState(false);
 
+  // Favorites/Bookmarks states
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     fetchProperties();
+
+    // Load favorites from localStorage
+    try {
+      const saved = localStorage.getItem("rentals_favorites");
+      if (saved) {
+        setFavorites(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error("Error loading favorites:", e);
+    }
   }, []);
+
+  const handleToggleFavorite = (id: string) => {
+    setFavorites(prev => {
+      const next = prev.includes(id) 
+        ? prev.filter(x => x !== id) 
+        : [...prev, id];
+      try {
+        localStorage.setItem("rentals_favorites", JSON.stringify(next));
+      } catch (e) {
+        console.error("Error saving favorites:", e);
+      }
+      return next;
+    });
+  };
 
   async function fetchProperties() {
     setLoading(true);
@@ -93,6 +125,11 @@ export default function RentalsDashboard() {
       result = result.filter(p => p.is_new_build);
     }
 
+    // Filter by favorites only
+    if (filterFavoritesOnly) {
+      result = result.filter(p => favorites.includes(p.id));
+    }
+
     // Filter by Max Rent (万円)
     if (filterMaxRent) {
       const maxRent = Number(filterMaxRent) * 10000;
@@ -137,7 +174,7 @@ export default function RentalsDashboard() {
     });
 
     return result;
-  }, [properties, sortField, sortOrder, filterNewBuild, filterMaxRent, filterMaxAge, search]);
+  }, [properties, sortField, sortOrder, filterNewBuild, filterFavoritesOnly, favorites, filterMaxRent, filterMaxAge, search]);
 
   // アナリティクスデータ計算
   const stats = useMemo(() => {
@@ -490,6 +527,20 @@ export default function RentalsDashboard() {
               />
               <span className="text-xs font-semibold text-zinc-400">New Builds Only</span>
             </label>
+
+            {/* Favorites Only Toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none border-l border-zinc-900 pl-4">
+              <input 
+                type="checkbox" 
+                checked={filterFavoritesOnly}
+                onChange={(e) => setFilterFavoritesOnly(e.target.checked)}
+                className="rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5 cursor-pointer"
+              />
+              <span className="text-xs font-semibold text-zinc-400 flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/25" />
+                お気に入り
+              </span>
+            </label>
           </div>
 
           {/* View Mode Toggle & Export */}
@@ -522,6 +573,15 @@ export default function RentalsDashboard() {
                 <List className="w-3.5 h-3.5" />
                 TABLE
               </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
+                  viewMode === 'map' ? 'bg-emerald-600 text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                MAP VIEW
+              </button>
             </div>
           </div>
         </div>
@@ -551,6 +611,7 @@ export default function RentalsDashboard() {
                   <table className="w-full text-left text-xs sm:text-sm">
                     <thead className="bg-zinc-900/50 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider border-b border-zinc-900">
                       <tr>
+                        <th className="px-4 py-4 w-10 text-center"></th>
                         <th className="px-6 py-4">Property</th>
                         <th className="px-6 py-4 cursor-pointer hover:bg-zinc-900/40 transition-colors" onClick={() => handleSort('rent')}>
                           <div className="flex items-center">Rent & Fee <SortIcon field="rent" /></div>
@@ -575,6 +636,15 @@ export default function RentalsDashboard() {
 
                         return (
                           <tr key={prop.id} className="hover:bg-zinc-900/30 transition-colors group">
+                            <td className="px-4 py-4 whitespace-nowrap w-10 text-center">
+                              <button
+                                onClick={() => handleToggleFavorite(prop.id)}
+                                className="text-zinc-600 hover:text-amber-400 transition-colors active:scale-95"
+                                title={favorites.includes(prop.id) ? "お気に入り解除" : "お気に入り登録"}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? 'text-amber-400 fill-amber-400/20' : ''}`} />
+                              </button>
+                            </td>
                             <td className="px-6 py-4">
                               <div className="flex flex-col gap-1">
                                 {prop.url ? (
@@ -652,7 +722,7 @@ export default function RentalsDashboard() {
                   </table>
                 </div>
               </div>
-            ) : (
+            ) : viewMode === 'grid' ? (
               /* --- CARD GRID VIEW --- */
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {filteredAndSortedProperties.map((prop) => {
@@ -671,11 +741,24 @@ export default function RentalsDashboard() {
                       key={prop.id} 
                       className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/30 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(16,185,129,0.03)] group relative overflow-hidden"
                     >
-                      {/* Interactive top-right DOM badge */}
+                      {/* Interactive top-right DOM badge & Star Favorite */}
                       <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-10">
-                        <span className={`px-2 py-0.5 border rounded text-[9px] font-mono font-bold ${domStyle}`}>
-                          {daysOnMarket === 0 ? 'NEW TODAY' : `${daysOnMarket} DOM`}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleToggleFavorite(prop.id);
+                            }}
+                            className="p-1 rounded bg-zinc-900/80 border border-zinc-850 hover:border-zinc-750 hover:bg-zinc-800 text-zinc-500 hover:text-amber-400 transition-all active:scale-95 shadow-md"
+                            title={favorites.includes(prop.id) ? "お気に入り解除" : "お気に入り登録"}
+                          >
+                            <Star className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? 'text-amber-400 fill-amber-400/20' : ''}`} />
+                          </button>
+                          <span className={`px-2 py-0.5 border rounded text-[9px] font-mono font-bold ${domStyle}`}>
+                            {daysOnMarket === 0 ? 'NEW TODAY' : `${daysOnMarket} DOM`}
+                          </span>
+                        </div>
                         {prop.is_new_build && (
                           <span className="px-1.5 py-0.5 bg-blue-950/20 text-blue-400 border border-blue-900/30 rounded text-[9px] font-bold">
                             新築
@@ -757,6 +840,130 @@ export default function RentalsDashboard() {
                     </div>
                   );
                 })}
+              </div>
+            ) : (
+              /* --- MAP VIEW (SPLIT-SCREEN) --- */
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[550px] border border-zinc-900 rounded-2xl overflow-hidden bg-zinc-950/60 shadow-2xl relative">
+                {/* Sidebar - compact cards (hidden on mobile, takes 1/3 on lg) */}
+                <div className="hidden lg:block lg:col-span-1 border-r border-zinc-900 overflow-y-auto p-4 space-y-3 max-h-[550px] scrollbar-thin scrollbar-thumb-zinc-800">
+                  <div className="flex justify-between items-center pb-2 border-b border-zinc-900 mb-2">
+                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+                      物件リスト ({filteredAndSortedProperties.length} 件)
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {filteredAndSortedProperties.map((prop) => {
+                      const isFav = favorites.includes(prop.id);
+                      const isHovered = prop.id === hoveredPropertyId;
+                      const totalRent = (prop.rent || 0) + (prop.management_fee || 0);
+                      return (
+                        <div
+                          key={prop.id}
+                          onMouseEnter={() => setHoveredPropertyId(prop.id)}
+                          onMouseLeave={() => setHoveredPropertyId(null)}
+                          onClick={() => setSelectedPropertyId(prop.id)}
+                          className={`p-3 rounded-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between relative ${
+                            isHovered 
+                              ? 'bg-zinc-900/40 border-emerald-500/30 shadow-[0_4px_15px_rgba(16,185,129,0.02)]' 
+                              : 'bg-zinc-950 border-zinc-900 hover:border-zinc-850'
+                          }`}
+                        >
+                          {/* Star Button */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleFavorite(prop.id);
+                            }}
+                            className="absolute top-2.5 right-2.5 p-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 hover:border-zinc-750 text-zinc-500 hover:text-amber-400 transition-all active:scale-95 z-10"
+                            title={isFav ? "お気に入り解除" : "お気に入り登録"}
+                          >
+                            <Star className={`w-3 h-3 ${isFav ? 'text-amber-400 fill-amber-400/20' : ''}`} />
+                          </button>
+
+                          <div className="space-y-2 pr-6">
+                            <h4 className="font-bold text-zinc-200 text-xs truncate max-w-[150px]" title={prop.property_name}>
+                              {prop.property_name}
+                            </h4>
+                            <div className="flex items-center gap-2 text-zinc-500 text-[8px] font-mono">
+                              {prop.area && (
+                                <span className="flex items-center gap-0.5">
+                                  <MapPin className="w-2.5 h-2.5 text-zinc-600" /> {prop.area}
+                                </span>
+                              )}
+                              {prop.minutes_to_station !== null && (
+                                <span className="flex items-center gap-0.5">
+                                  <Clock className="w-2.5 h-2.5 text-zinc-600" /> {prop.minutes_to_station}分
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-baseline justify-between pt-0.5 border-t border-zinc-900/60 mt-1">
+                              <span className="text-xs font-mono font-extrabold text-zinc-200">
+                                ¥{totalRent.toLocaleString()}
+                              </span>
+                              <span className="text-[8px] text-zinc-500 font-mono">
+                                {prop.layout || 'N/A'} • {prop.size_sqm ? `${prop.size_sqm}m²` : '-'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Map View Area (takes 2/3 on lg, 100% on mobile) */}
+                <div className="col-span-1 lg:col-span-2 h-full relative">
+                  <RentalsMap
+                    properties={filteredAndSortedProperties}
+                    favorites={favorites}
+                    onToggleFavorite={handleToggleFavorite}
+                    hoveredPropertyId={hoveredPropertyId}
+                  />
+
+                  {/* Floating Overlay for Mobile when card is selected */}
+                  {selectedPropertyId && (
+                    (() => {
+                      const prop = filteredAndSortedProperties.find(p => p.id === selectedPropertyId);
+                      if (!prop) return null;
+                      const isFav = favorites.includes(prop.id);
+                      const totalRent = (prop.rent || 0) + (prop.management_fee || 0);
+                      return (
+                        <div className="lg:hidden absolute bottom-4 left-4 right-4 z-[1000] p-4 bg-zinc-950/95 border border-zinc-900 rounded-2xl shadow-2xl flex flex-col gap-2 backdrop-blur-md">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-0.5">
+                              <h4 className="font-bold text-zinc-100 text-xs">{prop.property_name}</h4>
+                              <p className="text-[9px] text-zinc-500 font-mono flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-zinc-650" /> {prop.area || 'Unknown Area'}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={() => handleToggleFavorite(prop.id)}
+                                className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-400"
+                              >
+                                <Star className={`w-3.5 h-3.5 ${isFav ? 'text-amber-400 fill-amber-400/20' : ''}`} />
+                              </button>
+                              <button
+                                onClick={() => setSelectedPropertyId(null)}
+                                className="px-2 py-1 text-[9px] bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-850 rounded-lg font-bold font-mono"
+                              >
+                                CLOSE
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-baseline justify-between border-t border-zinc-900 pt-2 mt-1">
+                            <span className="text-xs font-mono font-extrabold text-zinc-100">
+                              ¥{totalRent.toLocaleString()}
+                            </span>
+                            <span className="text-[9px] text-zinc-400 font-mono">
+                              {prop.layout || 'N/A'} • {prop.size_sqm ? `${prop.size_sqm}m²` : '-'} • {prop.minutes_to_station !== null ? `${prop.minutes_to_station}分` : '-'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
               </div>
             )}
           </div>
