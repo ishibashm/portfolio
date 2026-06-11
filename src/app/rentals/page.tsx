@@ -39,6 +39,10 @@ export default function RentalsDashboard() {
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
 
+  // Comparison states
+  const [compareList, setCompareList] = useState<string[]>([]);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -67,6 +71,24 @@ export default function RentalsDashboard() {
       }
       return next;
     });
+  };
+
+  const handleToggleCompare = (id: string) => {
+    setCompareList(prev => {
+      const exists = prev.includes(id);
+      if (exists) {
+        return prev.filter(x => x !== id);
+      }
+      if (prev.length >= 3) {
+        alert("最大3件まで同時に比較できます。");
+        return prev;
+      }
+      return [...prev, id];
+    });
+  };
+
+  const clearCompare = () => {
+    setCompareList([]);
   };
 
   async function fetchProperties() {
@@ -611,7 +633,8 @@ export default function RentalsDashboard() {
                   <table className="w-full text-left text-xs sm:text-sm">
                     <thead className="bg-zinc-900/50 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider border-b border-zinc-900">
                       <tr>
-                        <th className="px-4 py-4 w-10 text-center"></th>
+                        <th className="px-4 py-4 w-10 text-center" title="お気に入り"></th>
+                        <th className="px-4 py-4 w-12 text-center" title="比較">比較</th>
                         <th className="px-6 py-4">Property</th>
                         <th className="px-6 py-4 cursor-pointer hover:bg-zinc-900/40 transition-colors" onClick={() => handleSort('rent')}>
                           <div className="flex items-center">Rent & Fee <SortIcon field="rent" /></div>
@@ -639,11 +662,19 @@ export default function RentalsDashboard() {
                             <td className="px-4 py-4 whitespace-nowrap w-10 text-center">
                               <button
                                 onClick={() => handleToggleFavorite(prop.id)}
-                                className="text-zinc-600 hover:text-amber-400 transition-colors active:scale-95"
+                                className="text-zinc-650 hover:text-amber-400 transition-colors active:scale-95"
                                 title={favorites.includes(prop.id) ? "お気に入り解除" : "お気に入り登録"}
                               >
                                 <Star className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? 'text-amber-400 fill-amber-400/20' : ''}`} />
                               </button>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap w-12 text-center">
+                              <input
+                                type="checkbox"
+                                checked={compareList.includes(prop.id)}
+                                onChange={() => handleToggleCompare(prop.id)}
+                                className="rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                              />
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex flex-col gap-1">
@@ -826,16 +857,29 @@ export default function RentalsDashboard() {
                       </div>
 
                       {/* Footer Info */}
-                      <div className="mt-5 pt-3 border-t border-zinc-900 flex items-center justify-between text-[9px] text-zinc-600 font-mono">
+                      <div className="mt-5 pt-3 border-t border-zinc-900 flex items-center justify-between text-[9px] text-zinc-655 font-mono">
                         <span>
                           {prop.building_age !== null ? `築年数: ${prop.building_age}年` : '築年数: 不明'}
                         </span>
-                        {prop.first_seen_at && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-zinc-750" />
-                            {formatDistanceToNow(new Date(prop.last_seen_at || prop.first_seen_at), { addSuffix: true })}
-                          </span>
-                        )}
+                        
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-1 cursor-pointer text-zinc-550 hover:text-zinc-350 select-none">
+                            <input
+                              type="checkbox"
+                              checked={compareList.includes(prop.id)}
+                              onChange={() => handleToggleCompare(prop.id)}
+                              className="rounded border-zinc-850 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                            />
+                            <span>比較</span>
+                          </label>
+
+                          {prop.first_seen_at && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-zinc-750" />
+                              {formatDistanceToNow(new Date(prop.last_seen_at || prop.first_seen_at), { addSuffix: true })}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -896,13 +940,22 @@ export default function RentalsDashboard() {
                                 </span>
                               )}
                             </div>
-                            <div className="flex items-baseline justify-between pt-0.5 border-t border-zinc-900/60 mt-1">
+                            <div className="flex items-baseline justify-between pt-0.5">
                               <span className="text-xs font-mono font-extrabold text-zinc-200">
                                 ¥{totalRent.toLocaleString()}
                               </span>
-                              <span className="text-[8px] text-zinc-500 font-mono">
-                                {prop.layout || 'N/A'} • {prop.size_sqm ? `${prop.size_sqm}m²` : '-'}
-                              </span>
+                            </div>
+                            <div className="flex items-center justify-between pt-1 border-t border-zinc-900/60 mt-1 text-[8px] text-zinc-500 font-mono">
+                              <label className="flex items-center gap-1 cursor-pointer select-none text-zinc-600 hover:text-zinc-400" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={compareList.includes(prop.id)}
+                                  onChange={() => handleToggleCompare(prop.id)}
+                                  className="rounded border-zinc-850 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-2.5 h-2.5 cursor-pointer"
+                                />
+                                <span>比較</span>
+                              </label>
+                              <span>{prop.layout || 'N/A'} • {prop.size_sqm ? `${prop.size_sqm}m²` : '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -969,6 +1022,200 @@ export default function RentalsDashboard() {
           </div>
         </div>
 
+        {/* Floating Compare Bar */}
+        {compareList.length > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-950/95 border border-zinc-850 px-5 py-3.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[2000] flex items-center gap-5 backdrop-blur-md animate-in slide-in-from-bottom-5 duration-350 w-[90%] max-w-lg justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+              <span className="text-xs font-bold text-zinc-350 font-mono">
+                比較対象: <span className="text-emerald-400 text-sm font-extrabold">{compareList.length}</span> / 3 件
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsCompareOpen(true)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-[0_2px_10px_rgba(16,185,129,0.2)]"
+              >
+                比較する
+              </button>
+              <button
+                onClick={clearCompare}
+                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-250 border border-zinc-800 rounded-xl text-xs font-bold transition-all active:scale-95"
+              >
+                クリア
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Compare Modal */}
+        {isCompareOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-[#0b0b0d] border border-zinc-850 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900">
+                <div className="space-y-0.5">
+                  <h3 className="text-base font-extrabold text-zinc-100 flex items-center gap-2">
+                    <ArrowUpDown className="w-5 h-5 text-emerald-400 animate-bounce" />
+                    物件スペック比較 (Compare Properties)
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 font-mono">
+                    家賃・面積・築年数の好条件（最安・最大・最浅）項目は、自動的にエメラルドグリーンでハイライトされます。
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsCompareOpen(false)}
+                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-450 hover:text-zinc-200 border border-zinc-800 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
+                >
+                  CLOSE
+                </button>
+              </div>
+
+              {/* Grid content */}
+              <div className="flex-1 overflow-auto p-6">
+                {(() => {
+                  // Find selected properties
+                  const selectedProps = properties.filter(p => compareList.includes(p.id));
+                  if (selectedProps.length === 0) return <div className="text-center text-zinc-500 py-12">No properties selected.</div>;
+
+                  // Precompute min/max values for highlights
+                  const totalRents = selectedProps.map(p => (p.rent || 0) + (p.management_fee || 0));
+                  const minRent = Math.min(...totalRents);
+
+                  const sizes = selectedProps.map(p => Number(p.size_sqm) || 0);
+                  const maxSize = Math.max(...sizes);
+
+                  const ages = selectedProps.map(p => p.building_age !== null && p.building_age !== undefined ? p.building_age : Infinity);
+                  const minAge = Math.min(...ages);
+
+                  // Rows definitions
+                  return (
+                    <div className="grid gap-4" style={{ gridTemplateColumns: `140px repeat(${selectedProps.length}, minmax(0, 1fr))` }}>
+                      {/* Label Column */}
+                      <div className="space-y-4 text-[10px] font-mono font-bold text-zinc-500 flex flex-col justify-between pt-[76px] pb-3 shrink-0">
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">月額総家賃</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">内訳 (家賃/管理費)</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">間取り</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">専旧面積</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">平米単価</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">最寄り駅徒歩</div>
+                        <div className="h-10 flex items-center border-b border-zinc-900/60">築年数</div>
+                        <div className="h-10 flex items-center">市場滞留日数</div>
+                      </div>
+
+                      {/* Property Columns */}
+                      {selectedProps.map((prop) => {
+                        const totalRent = (prop.rent || 0) + (prop.management_fee || 0);
+                        const sqm = Number(prop.size_sqm) || 0;
+                        const costPerSqm = sqm > 0 ? Math.round(totalRent / sqm) : 0;
+                        const daysOnMarket = prop.first_seen_at 
+                          ? Math.max(0, differenceInDays(new Date(), new Date(prop.first_seen_at)))
+                          : 0;
+
+                        const isCheapestRent = totalRent === minRent && minRent > 0;
+                        const isLargestSize = sqm === maxSize && maxSize > 0;
+                        const isNewestAge = prop.building_age !== null && prop.building_age !== undefined && prop.building_age === minAge && minAge < Infinity;
+
+                        const isFav = favorites.includes(prop.id);
+
+                        return (
+                          <div key={prop.id} className="flex flex-col justify-between border border-zinc-900 rounded-2xl p-4 bg-zinc-950/40 relative">
+                            {/* Column Action Row */}
+                            <div className="flex justify-between items-center pb-3 border-b border-zinc-900 mb-3">
+                              <button
+                                onClick={() => handleToggleFavorite(prop.id)}
+                                className="p-1.5 rounded bg-zinc-900 border border-zinc-850 hover:border-zinc-750 text-zinc-500 hover:text-amber-400 active:scale-95"
+                                title={isFav ? "お気に入り解除" : "お気に入り登録"}
+                              >
+                                <Star className={`w-3.5 h-3.5 ${isFav ? 'text-amber-400 fill-amber-400/20' : ''}`} />
+                              </button>
+                              <button
+                                onClick={() => handleToggleCompare(prop.id)}
+                                className="px-2 py-1 bg-zinc-900 hover:bg-rose-950/20 border border-zinc-850 hover:border-rose-900/30 text-zinc-500 hover:text-rose-400 rounded-lg text-[9px] font-bold font-mono transition-all active:scale-95"
+                              >
+                                比較から外す
+                              </button>
+                            </div>
+
+                            {/* Title (Header) */}
+                            <div className="mb-4">
+                              {prop.url ? (
+                                <a
+                                  href={prop.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-bold text-zinc-200 text-xs truncate max-w-full hover:text-emerald-400 flex items-center gap-0.5 leading-snug"
+                                  title={prop.property_name}
+                                >
+                                  <span className="truncate">{prop.property_name}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 shrink-0" />
+                                </a>
+                              ) : (
+                                <h4 className="font-bold text-zinc-200 text-xs truncate" title={prop.property_name}>
+                                  {prop.property_name}
+                                </h4>
+                              )}
+                              <p className="text-[9px] text-zinc-500 font-mono mt-0.5 truncate">{prop.area || "-"}</p>
+                            </div>
+
+                            {/* Spec Rows */}
+                            <div className="space-y-4 text-[11px] font-mono text-zinc-300">
+                              {/* Rent */}
+                              <div className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isCheapestRent ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold' : ''}`}>
+                                <span>¥{totalRent.toLocaleString()}</span>
+                                {isCheapestRent && <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">CHEAPEST</span>}
+                              </div>
+
+                              {/* Breakdown */}
+                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                                <span className="text-[9px] text-zinc-500">
+                                  ¥{prop.rent ? prop.rent.toLocaleString() : "0"} + 管理 ¥{prop.management_fee ? prop.management_fee.toLocaleString() : "0"}
+                                </span>
+                              </div>
+
+                              {/* Layout */}
+                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                                <span className="bg-zinc-900 border border-zinc-850 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-350">{prop.layout || "-"}</span>
+                              </div>
+
+                              {/* Size */}
+                              <div className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isLargestSize ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold' : ''}`}>
+                                <span>{prop.size_sqm ? `${prop.size_sqm} m²` : "-"}</span>
+                                {isLargestSize && <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">LARGEST</span>}
+                              </div>
+
+                              {/* Sqm Cost */}
+                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                                <span>¥{costPerSqm.toLocaleString()} / m²</span>
+                              </div>
+
+                              {/* Station walk */}
+                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                                <span>{prop.minutes_to_station !== null ? `${prop.minutes_to_station} 分` : "-"}</span>
+                              </div>
+
+                              {/* Building age */}
+                              <div className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isNewestAge ? 'bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold' : ''}`}>
+                                <span>{prop.building_age !== null ? `${prop.building_age} 年` : "不明"}</span>
+                                {isNewestAge && <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">NEWEST</span>}
+                              </div>
+
+                              {/* DOM */}
+                              <div className="h-10 flex items-center px-2">
+                                <span>{daysOnMarket === 0 ? "本日新着" : `${daysOnMarket} 日`}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
