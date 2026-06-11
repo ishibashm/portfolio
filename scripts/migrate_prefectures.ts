@@ -1,26 +1,35 @@
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import * as dotenv from 'dotenv';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
-const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
-  ? path.resolve(process.cwd(), '.env')
-  : path.resolve(process.cwd(), '../.env');
+const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
+  ? path.resolve(process.cwd(), ".env")
+  : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
 
 async function main() {
   const targetUrl = process.argv[2];
   if (!targetUrl) {
-    console.error("\n❌ エラー: 移行先（本番環境）の接続URLを引数に指定してください。");
-    console.error("使用例: npx tsx scripts/migrate_prefectures.ts \"postgresql://...\"\n");
+    console.error(
+      "\n❌ エラー: 移行先（本番環境）の接続URLを引数に指定してください。",
+    );
+    console.error(
+      '使用例: npx tsx scripts/migrate_prefectures.ts "postgresql://..."\n',
+    );
     process.exit(1);
   }
 
   // 1. ローカルDBからデータを取得する
-  console.log("\n1. ローカルデータベースから愛知県・岐阜県・滋賀県の物件を取得しています...");
-  const localPool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
+  console.log(
+    "\n1. ローカルデータベースから愛知県・岐阜県・滋賀県の物件を取得しています...",
+  );
+  const localPool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 1,
+  });
   const localAdapter = new PrismaPg(localPool);
   const localPrisma = new PrismaClient({ adapter: localAdapter } as any);
 
@@ -29,13 +38,15 @@ async function main() {
     properties = await localPrisma.rental_properties.findMany({
       where: {
         OR: [
-          { address: { contains: '愛知県' } },
-          { address: { contains: '岐阜県' } },
-          { address: { contains: '滋賀県' } }
-        ]
-      }
+          { address: { contains: "愛知県" } },
+          { address: { contains: "岐阜県" } },
+          { address: { contains: "滋賀県" } },
+        ],
+      },
     });
-    console.log(`   ローカルから取得完了: ${properties.length.toLocaleString()} 件`);
+    console.log(
+      `   ローカルから取得完了: ${properties.length.toLocaleString()} 件`,
+    );
   } catch (err) {
     console.error("❌ ローカルからの取得中にエラーが発生しました:", err);
     await localPrisma.$disconnect();
@@ -58,15 +69,17 @@ async function main() {
   const targetPrisma = new PrismaClient({ adapter: targetAdapter } as any);
 
   try {
-    console.log("   本番データベースへ物件データを流し込み中 (skipDuplicates: true)...");
-    
+    console.log(
+      "   本番データベースへ物件データを流し込み中 (skipDuplicates: true)...",
+    );
+
     const CHUNK_SIZE = 1000;
     let successCount = 0;
-    
+
     for (let i = 0; i < properties.length; i += CHUNK_SIZE) {
       const chunk = properties.slice(i, i + CHUNK_SIZE);
-      
-      const mappedChunk = chunk.map(p => ({
+
+      const mappedChunk = chunk.map((p) => ({
         id: p.id,
         property_name: p.property_name,
         area: p.area,
@@ -86,21 +99,28 @@ async function main() {
         lon: p.lon,
         building_age: p.building_age,
         floor: p.floor,
-        source_scraper: p.source_scraper
+        source_scraper: p.source_scraper,
       }));
 
       await targetPrisma.rental_properties.createMany({
         data: mappedChunk,
-        skipDuplicates: true
+        skipDuplicates: true,
       });
-      
+
       successCount += chunk.length;
-      console.log(`   進行状況: ${successCount.toLocaleString()} / ${properties.length.toLocaleString()} 件を挿入完了`);
+      console.log(
+        `   進行状況: ${successCount.toLocaleString()} / ${properties.length.toLocaleString()} 件を挿入完了`,
+      );
     }
 
-    console.log(`\n🎉 移行が成功しました！合計 ${successCount.toLocaleString()} 件の物件を書き込みました。`);
+    console.log(
+      `\n🎉 移行が成功しました！合計 ${successCount.toLocaleString()} 件の物件を書き込みました。`,
+    );
   } catch (err) {
-    console.error("\n❌ 本番データベースへの書き込み中にエラーが発生しました:", err);
+    console.error(
+      "\n❌ 本番データベースへの書き込み中にエラーが発生しました:",
+      err,
+    );
   } finally {
     await targetPrisma.$disconnect();
     await targetPool.end();

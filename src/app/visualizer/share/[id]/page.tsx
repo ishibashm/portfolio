@@ -1,7 +1,7 @@
-import React from 'react';
-import prisma from '@/lib/prisma';
-import { notFound } from 'next/navigation';
-import SharePageClient from './SharePageClient';
+import React from "react";
+import prisma from "@/lib/prisma";
+import { notFound } from "next/navigation";
+import SharePageClient from "./SharePageClient";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps) {
 
   if (!component) {
     return {
-      title: 'Component Not Found | AI Visualizer Studio',
+      title: "Component Not Found | AI Visualizer Studio",
     };
   }
 
@@ -40,7 +40,10 @@ export default async function SharePage({ params }: PageProps) {
     id: component.id,
     title: component.title,
     style: component.style,
-    inputData: typeof component.inputData === 'string' ? JSON.parse(component.inputData) : component.inputData,
+    inputData:
+      typeof component.inputData === "string"
+        ? JSON.parse(component.inputData)
+        : component.inputData,
     cleanHtml: component.cleanHtml,
     createdAt: component.createdAt.toISOString(),
   };

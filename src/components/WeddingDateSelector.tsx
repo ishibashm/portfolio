@@ -5,7 +5,7 @@ import { getRokuyo, isWeddingFriendly, getWeedingScore } from "../utils/lunar";
 
 /**
  * Wedding Date Selector Component
- * 
+ *
  * Demonstrates:
  * 1. Complex Calendar Logic (Rokuyo + Weekend + Custom Rules)
  * 2. React State Management (Year/Month Selection)
@@ -27,24 +27,24 @@ export const WeddingDateSelector: React.FC = () => {
 
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, month - 1, d); // Month is 0-indexed in JS Date
-      
+
       // Calculate Logic
       // 1. Rokuyo (Six Labels)
       // Note: Our simple lunar logic might need offset tuning, but for demo visualization it works.
       // Need consistent "Solar -> Lunar" mapping.
       // We'll use a simplified cyclic pattern for demonstration if the lookup fails,
       // but let's try our utility first.
-      
+
       // Since our simple utility is naive, we will display whatever comes out to prove logic integration.
       // Just ensure the cycle (Sensho -> Tomobiki...) is visible.
       // Actually, let's just use a simple cycle based on JD or similar if strict accuracy isn't critical.
       // BUT we implemented getRokuyo in utils, so let's use it.
-      
+
       const rokuyo = getRokuyo(date); // This returns "大安 (Taian)" etc.
-      
+
       // 2. Score
       const score = getWeedingScore(date, rokuyo);
-      
+
       // 3. Recommendation Label
       let label = "";
       if (score >= 8) label = "◎ 大変おすすめ";
@@ -54,11 +54,11 @@ export const WeddingDateSelector: React.FC = () => {
 
       list.push({
         date: date,
-        dayOfWeek: ['日', '月', '火', '水', '木', '金', '土'][date.getDay()],
+        dayOfWeek: ["日", "月", "火", "水", "木", "金", "土"][date.getDay()],
         rokuyo: rokuyo,
         score: score,
         label: label,
-        isWeekend: (date.getDay() === 0 || date.getDay() === 6)
+        isWeekend: date.getDay() === 0 || date.getDay() === 6,
       });
     }
     setDates(list);
@@ -77,8 +77,8 @@ export const WeddingDateSelector: React.FC = () => {
 
       {/* Controls */}
       <div className="flex justify-center gap-4 mb-8">
-        <select 
-          value={year} 
+        <select
+          value={year}
           onChange={(e) => setYear(Number(e.target.value))}
           className="px-4 py-2 border rounded-lg bg-gray-50 hover:bg-white transition-colors cursor-pointer"
         >
@@ -86,14 +86,16 @@ export const WeddingDateSelector: React.FC = () => {
           <option value={2026}>2026</option>
           <option value={2027}>2027</option>
         </select>
-        
-        <select 
-          value={month} 
+
+        <select
+          value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
           className="px-4 py-2 border rounded-lg bg-gray-50 hover:bg-white transition-colors cursor-pointer"
         >
-          {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-            <option key={m} value={m}>{m}月</option>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+            <option key={m} value={m}>
+              {m}月
+            </option>
           ))}
         </select>
       </div>
@@ -112,34 +114,40 @@ export const WeddingDateSelector: React.FC = () => {
           </thead>
           <tbody>
             {dates.map((item, index) => (
-              <tr 
-                key={index} 
-                className={`border-b transition-colors hover:bg-gray-50 ${item.score >= 8 ? 'bg-amber-50' : ''}`}
+              <tr
+                key={index}
+                className={`border-b transition-colors hover:bg-gray-50 ${item.score >= 8 ? "bg-amber-50" : ""}`}
               >
-                <td className="p-4 text-gray-800">
-                  {item.date.getDate()}
-                </td>
-                <td className={`p-4 font-medium ${item.dayOfWeek === '日' ? 'text-red-500' : item.dayOfWeek === '土' ? 'text-blue-500' : 'text-gray-600'}`}>
+                <td className="p-4 text-gray-800">{item.date.getDate()}</td>
+                <td
+                  className={`p-4 font-medium ${item.dayOfWeek === "日" ? "text-red-500" : item.dayOfWeek === "土" ? "text-blue-500" : "text-gray-600"}`}
+                >
                   {item.dayOfWeek}
                 </td>
                 <td className="p-4">
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${
-                    item.rokuyo.includes("大安") ? 'bg-red-100 text-red-700' :
-                    item.rokuyo.includes("仏滅") ? 'bg-gray-200 text-gray-500' :
-                    'bg-blue-50 text-blue-600'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded text-xs font-bold ${
+                      item.rokuyo.includes("大安")
+                        ? "bg-red-100 text-red-700"
+                        : item.rokuyo.includes("仏滅")
+                          ? "bg-gray-200 text-gray-500"
+                          : "bg-blue-50 text-blue-600"
+                    }`}
+                  >
                     {item.rokuyo}
                   </span>
                 </td>
-                <td className="p-4 font-mono text-gray-600">
-                    {item.score}
-                </td>
+                <td className="p-4 font-mono text-gray-600">{item.score}</td>
                 <td className="p-4">
-                  <span className={`font-bold ${
-                    item.score >= 8 ? 'text-amber-600' :
-                    item.score >= 5 ? 'text-green-600' :
-                    'text-gray-400'
-                  }`}>
+                  <span
+                    className={`font-bold ${
+                      item.score >= 8
+                        ? "text-amber-600"
+                        : item.score >= 5
+                          ? "text-green-600"
+                          : "text-gray-400"
+                    }`}
+                  >
                     {item.label}
                   </span>
                 </td>
@@ -148,9 +156,10 @@ export const WeddingDateSelector: React.FC = () => {
           </tbody>
         </table>
       </div>
-      
+
       <div className="mt-6 text-xs text-gray-400 text-center">
-        ※実装ロジック: (太陽暦 &rarr; 簡易旧暦計算 &rarr; 六曜算出) + 土日祝ウェイト
+        ※実装ロジック: (太陽暦 &rarr; 簡易旧暦計算 &rarr; 六曜算出) +
+        土日祝ウェイト
       </div>
     </div>
   );

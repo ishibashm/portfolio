@@ -1,8 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, Activity, AlertCircle, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import React, { useState, useEffect } from "react";
+import {
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Activity,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+import { format } from "date-fns";
 
 interface QuoteData {
   regularMarketPrice: number;
@@ -25,25 +32,27 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
 
   const fetchQuote = async (targetTicker: string) => {
     if (!targetTicker) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      const res = await fetch(`/api/finance?ticker=${encodeURIComponent(targetTicker)}&type=quote`);
+      const res = await fetch(
+        `/api/finance?ticker=${encodeURIComponent(targetTicker)}&type=quote`,
+      );
       const result = await res.json();
-      
+
       if (!res.ok) {
-        throw new Error(result.error || 'Failed to fetch quote');
+        throw new Error(result.error || "Failed to fetch quote");
       }
-      
+
       if (result.success && result.data) {
         setData(result.data);
         setTicker(targetTicker);
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Error fetching data');
+      setError(err.message || "Error fetching data");
     } finally {
       setLoading(false);
     }
@@ -51,7 +60,6 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
 
   useEffect(() => {
     fetchQuote(symbol);
-     
   }, [symbol]);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -63,10 +71,10 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
   };
 
   const formatNumber = (num?: number) => {
-    if (num === undefined || num === null) return 'N/A';
-    if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
-    if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
-    if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+    if (num === undefined || num === null) return "N/A";
+    if (num >= 1e12) return (num / 1e12).toFixed(2) + "T";
+    if (num >= 1e9) return (num / 1e9).toFixed(2) + "B";
+    if (num >= 1e6) return (num / 1e6).toFixed(2) + "M";
     return num.toLocaleString();
   };
 
@@ -75,9 +83,11 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
       <div className="p-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-md flex justify-between items-center">
         <div className="flex items-center gap-2 text-zinc-100">
           <Activity className="w-4 h-4 text-emerald-400" />
-          <h2 className="font-semibold tracking-tight text-sm">Market Intelligence</h2>
+          <h2 className="font-semibold tracking-tight text-sm">
+            Market Intelligence
+          </h2>
         </div>
-        
+
         <form onSubmit={handleSearch} className="flex relative">
           <input
             type="text"
@@ -104,7 +114,9 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
         )}
 
         {data && !error && (
-          <div className={`transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+          <div
+            className={`transition-opacity duration-300 ${loading ? "opacity-50" : "opacity-100"}`}
+          >
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h3 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -113,41 +125,66 @@ export function FinanceWidget({ symbol = "AAPL" }: { symbol?: string }) {
                     {data.currency}
                   </span>
                 </h3>
-                <p className="text-sm text-zinc-400 truncate max-w-[200px]">{data.longName}</p>
+                <p className="text-sm text-zinc-400 truncate max-w-[200px]">
+                  {data.longName}
+                </p>
               </div>
-              
+
               <div className="text-right">
                 <div className="text-3xl font-mono font-medium text-white flex items-center justify-end gap-1">
                   <DollarSign className="w-5 h-5 text-zinc-500" />
                   {data.regularMarketPrice?.toFixed(2)}
                 </div>
-                <div className={`flex items-center justify-end gap-1 text-sm font-medium ${
-                  data.regularMarketChange >= 0 ? 'text-emerald-400' : 'text-red-400'
-                }`}>
-                  {data.regularMarketChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  {data.regularMarketChange > 0 ? '+' : ''}{data.regularMarketChange?.toFixed(2)} 
-                  ({data.regularMarketChangePercent?.toFixed(2)}%)
+                <div
+                  className={`flex items-center justify-end gap-1 text-sm font-medium ${
+                    data.regularMarketChange >= 0
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {data.regularMarketChange >= 0 ? (
+                    <TrendingUp className="w-3 h-3" />
+                  ) : (
+                    <TrendingDown className="w-3 h-3" />
+                  )}
+                  {data.regularMarketChange > 0 ? "+" : ""}
+                  {data.regularMarketChange?.toFixed(2)}(
+                  {data.regularMarketChangePercent?.toFixed(2)}%)
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4 border-t border-zinc-800/50">
               <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">Market Cap</span>
-                <span className="text-sm font-medium text-zinc-300">{formatNumber(data.marketCap)}</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+                  Market Cap
+                </span>
+                <span className="text-sm font-medium text-zinc-300">
+                  {formatNumber(data.marketCap)}
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">52W High</span>
-                <span className="text-sm font-medium text-zinc-300">${data.fiftyTwoWeekHigh?.toFixed(2)}</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+                  52W High
+                </span>
+                <span className="text-sm font-medium text-zinc-300">
+                  ${data.fiftyTwoWeekHigh?.toFixed(2)}
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">52W Low</span>
-                <span className="text-sm font-medium text-zinc-300">${data.fiftyTwoWeekLow?.toFixed(2)}</span>
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
+                  52W Low
+                </span>
+                <span className="text-sm font-medium text-zinc-300">
+                  ${data.fiftyTwoWeekLow?.toFixed(2)}
+                </span>
               </div>
             </div>
-            
+
             <div className="mt-3 text-right">
-              <span className="text-[9px] text-zinc-600 font-mono">LIVE TELEMETRY ACTIVE</span>
+              <span className="text-[9px] text-zinc-600 font-mono">
+                LIVE TELEMETRY ACTIVE
+              </span>
             </div>
           </div>
         )}

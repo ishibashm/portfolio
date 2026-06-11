@@ -1,4 +1,4 @@
-declare module 'lunar-javascript' {
+declare module "lunar-javascript" {
   export const Solar: any;
   export const Lunar: any;
   export const EightChar: any;

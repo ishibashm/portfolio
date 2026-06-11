@@ -1,26 +1,26 @@
 export class TavilyClient {
   private apiKey: string;
-  private baseUrl = 'https://api.tavily.com';
+  private baseUrl = "https://api.tavily.com";
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.TAVILY_API_KEY || '';
+    this.apiKey = apiKey || process.env.TAVILY_API_KEY || "";
   }
 
   async search(query: string, options?: any) {
     if (!this.apiKey) {
-      console.warn('Tavily API Key is not set.');
+      console.warn("Tavily API Key is not set.");
       return null;
     }
     const res = await fetch(`${this.baseUrl}/search`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         api_key: this.apiKey,
         query,
-        ...options
-      })
+        ...options,
+      }),
     });
     if (!res.ok) {
       throw new Error(`Tavily API error: ${res.statusText}`);

@@ -1,11 +1,37 @@
-import { SwissEphemerisEngine, CelestialBody, AyanamsaSystem } from './swissEphemerisEngine';
+import {
+  SwissEphemerisEngine,
+  CelestialBody,
+  AyanamsaSystem,
+} from "./swissEphemerisEngine";
 
 export const NAKSHATRAS = [
-  'Ashvini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
-  'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
-  'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
-  'Mula', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha',
-  'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'
+  "Ashvini",
+  "Bharani",
+  "Krittika",
+  "Rohini",
+  "Mrigashira",
+  "Ardra",
+  "Punarvasu",
+  "Pushya",
+  "Ashlesha",
+  "Magha",
+  "Purva Phalguni",
+  "Uttara Phalguni",
+  "Hasta",
+  "Chitra",
+  "Swati",
+  "Vishakha",
+  "Anuradha",
+  "Jyeshtha",
+  "Mula",
+  "Purva Ashadha",
+  "Uttara Ashadha",
+  "Shravana",
+  "Dhanishta",
+  "Shatabhisha",
+  "Purva Bhadrapada",
+  "Uttara Bhadrapada",
+  "Revati",
 ];
 
 export interface NakshatraData {
@@ -46,8 +72,8 @@ export class VedicEngine {
     const PADA_SPAN = NAKSHATRA_SPAN / 4; // 3.333333...
 
     const nakshatraIndex = Math.floor(lon / NAKSHATRA_SPAN);
-    const longitudeWithinNakshatra = lon - (nakshatraIndex * NAKSHATRA_SPAN);
-    
+    const longitudeWithinNakshatra = lon - nakshatraIndex * NAKSHATRA_SPAN;
+
     const pada = Math.floor(longitudeWithinNakshatra / PADA_SPAN) + 1;
     const progress = longitudeWithinNakshatra / NAKSHATRA_SPAN;
 
@@ -55,7 +81,7 @@ export class VedicEngine {
       index: nakshatraIndex,
       name: NAKSHATRAS[nakshatraIndex],
       pada: pada,
-      longitudeRemaining: progress
+      longitudeRemaining: progress,
     };
   }
 
@@ -63,28 +89,39 @@ export class VedicEngine {
    * Generates base Vedic chart data, including Moon and Sun Nakshatras.
    * The Moon's Nakshatra (Janma Nakshatra) is the most critical element in Vedic astrology.
    */
-  public generateVedicChart(date: Date, system: AyanamsaSystem = AyanamsaSystem.Lahiri): VedicChartData {
+  public generateVedicChart(
+    date: Date,
+    system: AyanamsaSystem = AyanamsaSystem.Lahiri,
+  ): VedicChartData {
     const ayanamsa = this.swissEngine.getAyanamsa(date, system);
-    
+
     // Pass true for sidereal to get Vedic coordinates
-    const moonPos = this.swissEngine.getPlanetCoordinates(date, CelestialBody.Moon, true);
-    const sunPos = this.swissEngine.getPlanetCoordinates(date, CelestialBody.Sun, true);
+    const moonPos = this.swissEngine.getPlanetCoordinates(
+      date,
+      CelestialBody.Moon,
+      true,
+    );
+    const sunPos = this.swissEngine.getPlanetCoordinates(
+      date,
+      CelestialBody.Sun,
+      true,
+    );
 
     const moonNakshatra = this.getNakshatra(moonPos.longitude);
     const sunNakshatra = this.getNakshatra(sunPos.longitude);
 
     const planetaryNakshatras: Record<string, NakshatraData> = {};
     const bodies = [
-      { name: 'Sun', body: CelestialBody.Sun },
-      { name: 'Moon', body: CelestialBody.Moon },
-      { name: 'Mercury', body: CelestialBody.Mercury },
-      { name: 'Venus', body: CelestialBody.Venus },
-      { name: 'Mars', body: CelestialBody.Mars },
-      { name: 'Jupiter', body: CelestialBody.Jupiter },
-      { name: 'Saturn', body: CelestialBody.Saturn },
-      { name: 'Uranus', body: CelestialBody.Uranus },
-      { name: 'Neptune', body: CelestialBody.Neptune },
-      { name: 'Pluto', body: CelestialBody.Pluto }
+      { name: "Sun", body: CelestialBody.Sun },
+      { name: "Moon", body: CelestialBody.Moon },
+      { name: "Mercury", body: CelestialBody.Mercury },
+      { name: "Venus", body: CelestialBody.Venus },
+      { name: "Mars", body: CelestialBody.Mars },
+      { name: "Jupiter", body: CelestialBody.Jupiter },
+      { name: "Saturn", body: CelestialBody.Saturn },
+      { name: "Uranus", body: CelestialBody.Uranus },
+      { name: "Neptune", body: CelestialBody.Neptune },
+      { name: "Pluto", body: CelestialBody.Pluto },
     ];
 
     for (const b of bodies) {
@@ -98,7 +135,7 @@ export class VedicEngine {
       ayanamsaSystem: system,
       moonNakshatra,
       sunNakshatra,
-      planetaryNakshatras
+      planetaryNakshatras,
     };
   }
 }

@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 // Import your engine calculations here
 // import { calculateNbaState } from '@/utils/nbaEngine';
 
 export async function GET(request: Request) {
   // Check authorization header for cron job security
-  const authHeader = request.headers.get('authorization');
+  const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -32,13 +32,13 @@ export async function GET(request: Request) {
         hazardRisk,
         kpIndex,
         isPersonalVoid: Math.random() > 0.9, // 10% chance
-        metadata: JSON.stringify({ source: 'cron_batch', version: '1.0' })
-      }
+        metadata: JSON.stringify({ source: "cron_batch", version: "1.0" }),
+      },
     });
 
     return NextResponse.json({ success: true, logId: log.id });
   } catch (error) {
     console.error("Batch Job Failed:", error);
-    return NextResponse.json({ error: 'Batch job failed' }, { status: 500 });
+    return NextResponse.json({ error: "Batch job failed" }, { status: 500 });
   }
 }

@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     console.error("Screenshot error:", error);
     return NextResponse.json(
       { error: error.message || "Failed to take screenshot" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

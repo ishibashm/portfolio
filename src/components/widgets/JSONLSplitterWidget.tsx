@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 
 interface SplitFile {
   name: string;
@@ -11,11 +11,11 @@ interface SplitFile {
 
 export default function JSONLSplitterWidget() {
   const [isDragging, setIsDragging] = useState(false);
-  const [originalFileName, setOriginalFileName] = useState('');
+  const [originalFileName, setOriginalFileName] = useState("");
   const [linesPerChunk, setLinesPerChunk] = useState(100);
   const [splitFiles, setSplitFiles] = useState<SplitFile[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -31,7 +31,7 @@ export default function JSONLSplitterWidget() {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -48,35 +48,43 @@ export default function JSONLSplitterWidget() {
     setSplitFiles([]);
     setOriginalFileName(file.name);
 
-    if (!file.name.toLowerCase().endsWith('.jsonl') && !file.name.toLowerCase().endsWith('.json') && !file.name.toLowerCase().endsWith('.txt')) {
-      setError('JSONL, JSON, またはテキストファイルのみ対応しています。');
+    if (
+      !file.name.toLowerCase().endsWith(".jsonl") &&
+      !file.name.toLowerCase().endsWith(".json") &&
+      !file.name.toLowerCase().endsWith(".txt")
+    ) {
+      setError("JSONL, JSON, またはテキストファイルのみ対応しています。");
       return;
     }
 
     try {
       const text = await file.text();
-      const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
-      
+      const lines = text
+        .split(/\r?\n/)
+        .filter((line) => line.trim().length > 0);
+
       if (lines.length === 0) {
-        setError('ファイルが空であるか、有効なテキストが含まれていません。');
+        setError("ファイルが空であるか、有効なテキストが含まれていません。");
         return;
       }
 
       const chunks: SplitFile[] = [];
-      const baseName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-      const extension = file.name.substring(file.name.lastIndexOf('.')) || '.jsonl';
+      const baseName =
+        file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
+      const extension =
+        file.name.substring(file.name.lastIndexOf(".")) || ".jsonl";
 
       for (let i = 0; i < lines.length; i += linesPerChunk) {
         const chunkLines = lines.slice(i, i + linesPerChunk);
-        const chunkContent = chunkLines.join('\n');
-        const blob = new Blob([chunkContent], { type: 'text/plain' });
+        const chunkContent = chunkLines.join("\n");
+        const blob = new Blob([chunkContent], { type: "text/plain" });
         const partNumber = Math.floor(i / linesPerChunk) + 1;
-        
+
         chunks.push({
-          name: `${baseName}_part${partNumber.toString().padStart(3, '0')}${extension}`,
+          name: `${baseName}_part${partNumber.toString().padStart(3, "0")}${extension}`,
           linesCount: chunkLines.length,
           content: chunkContent,
-          blobUrl: URL.createObjectURL(blob)
+          blobUrl: URL.createObjectURL(blob),
         });
       }
 
@@ -106,26 +114,32 @@ export default function JSONLSplitterWidget() {
               Chunk Size (Lines per file)
             </label>
             <div className="flex items-center gap-2">
-              <input 
-                type="number" 
-                min="10" 
+              <input
+                type="number"
+                min="10"
                 max="10000"
                 value={linesPerChunk}
-                onChange={(e) => setLinesPerChunk(Number(e.target.value) || 100)}
+                onChange={(e) =>
+                  setLinesPerChunk(Number(e.target.value) || 100)
+                }
                 className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm w-24 text-center focus:outline-none focus:border-orange-500 transition-colors"
               />
               <span className="text-xs text-slate-500">行ごとに分割</span>
             </div>
           </div>
           <div className="text-[10px] text-slate-500 leading-tight border-l border-slate-700 pl-4">
-            ローカルLLMのコンテキスト制限（Context Window）を<br/>回避するため、巨大なファイルを小さく分割します。
+            ローカルLLMのコンテキスト制限（Context Window）を
+            <br />
+            回避するため、巨大なファイルを小さく分割します。
           </div>
         </div>
 
         {/* Drop Zone */}
-        <div 
+        <div
           className={`h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-            isDragging ? 'border-orange-400 bg-orange-900/20 text-orange-300' : 'border-slate-600 bg-slate-800/30 text-slate-400 hover:border-slate-500'
+            isDragging
+              ? "border-orange-400 bg-orange-900/20 text-orange-300"
+              : "border-slate-600 bg-slate-800/30 text-slate-400 hover:border-slate-500"
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -133,14 +147,18 @@ export default function JSONLSplitterWidget() {
           onClick={() => fileInputRef.current?.click()}
         >
           <span className="text-3xl mb-2">📥</span>
-          <p className="font-bold text-sm">JSONL / テキストファイルをドロップ</p>
-          <p className="text-xs opacity-70 mt-1">またはクリックしてファイルを選択</p>
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            className="hidden" 
-            accept=".jsonl,.json,.txt" 
+          <p className="font-bold text-sm">
+            JSONL / テキストファイルをドロップ
+          </p>
+          <p className="text-xs opacity-70 mt-1">
+            またはクリックしてファイルを選択
+          </p>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".jsonl,.json,.txt"
           />
         </div>
 
@@ -159,16 +177,23 @@ export default function JSONLSplitterWidget() {
                 分割結果: {originalFileName} ({splitFiles.length} files)
               </h3>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto bg-slate-950 rounded-lg border border-slate-800 p-2 custom-scrollbar space-y-2">
               {splitFiles.map((file, idx) => (
-                <div key={idx} className="bg-slate-900 border border-slate-700/80 p-3 rounded flex justify-between items-center group hover:border-orange-500/50 transition-colors">
+                <div
+                  key={idx}
+                  className="bg-slate-900 border border-slate-700/80 p-3 rounded flex justify-between items-center group hover:border-orange-500/50 transition-colors"
+                >
                   <div className="flex flex-col min-w-0 pr-4">
-                    <span className="text-sm font-bold text-slate-200 truncate">{file.name}</span>
-                    <span className="text-xs text-slate-500">{file.linesCount} 行</span>
+                    <span className="text-sm font-bold text-slate-200 truncate">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {file.linesCount} 行
+                    </span>
                   </div>
-                  <a 
-                    href={file.blobUrl} 
+                  <a
+                    href={file.blobUrl}
                     download={file.name}
                     className="flex-shrink-0 bg-slate-800 hover:bg-orange-600 text-slate-300 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
                   >

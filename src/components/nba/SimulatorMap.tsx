@@ -1,45 +1,59 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Polygon, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { Search } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Polyline,
+  Polygon,
+  useMap,
+} from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Search } from "lucide-react";
 
 // Fix Leaflet marker icons in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconRetinaUrl:
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
 // Custom Icons for Source and Step coordinates
 const startIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const stepIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 const activeStepIcon = L.icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+  iconUrl:
+    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
-  shadowSize: [41, 41]
+  shadowSize: [41, 41],
 });
 
 // Component to dynamically fit bounds of the map to display all markers in the chain
@@ -62,7 +76,7 @@ interface SimulatorStep {
   toLat: number;
   toLon: number;
   departureDate: string;
-  purpose: 'MIGRATION' | 'TRAVEL';
+  purpose: "MIGRATION" | "TRAVEL";
   notes: string | null;
   evaluation?: {
     status: string;
@@ -77,7 +91,12 @@ interface SimulatorMapProps {
   steps: SimulatorStep[];
   activeStepIndex: number | null;
   onStartLocationChange: (lat: number, lon: number, name?: string) => void;
-  onStepDestinationChange: (index: number, lat: number, lon: number, name?: string) => void;
+  onStepDestinationChange: (
+    index: number,
+    lat: number,
+    lon: number,
+    name?: string,
+  ) => void;
   detourPolygons: [number, number][][]; // Polygons representing detour zones
 }
 
@@ -88,32 +107,36 @@ export default function SimulatorMap({
   activeStepIndex,
   onStartLocationChange,
   onStepDestinationChange,
-  detourPolygons
+  detourPolygons,
 }: SimulatorMapProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark');
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     setIsMounted(true);
-    const saved = localStorage.getItem('map_theme') as 'dark' | 'light';
+    const saved = localStorage.getItem("map_theme") as "dark" | "light";
     if (saved) setMapTheme(saved);
 
     const handleThemeChange = () => {
-      const current = localStorage.getItem('map_theme') as 'dark' | 'light';
+      const current = localStorage.getItem("map_theme") as "dark" | "light";
       if (current) setMapTheme(current);
     };
-    window.addEventListener('mapThemeChanged', handleThemeChange);
-    return () => window.removeEventListener('mapThemeChanged', handleThemeChange);
+    window.addEventListener("mapThemeChanged", handleThemeChange);
+    return () =>
+      window.removeEventListener("mapThemeChanged", handleThemeChange);
   }, []);
 
-  const startPos: [number, number] = useMemo(() => [startLat || 35.6895, startLon || 139.6917], [startLat, startLon]);
+  const startPos: [number, number] = useMemo(
+    () => [startLat || 35.6895, startLon || 139.6917],
+    [startLat, startLon],
+  );
 
   // Combine starting position and all destination positions for boundary fitting
   const allPositions: [number, number][] = useMemo(() => {
     const list: [number, number][] = [startPos];
-    steps.forEach(s => {
+    steps.forEach((s) => {
       if (s.toLat && s.toLon) {
         list.push([s.toLat, s.toLon]);
       }
@@ -130,16 +153,21 @@ export default function SimulatorMap({
         const data = await res.json();
         // If active step is selected, update that step's destination. Otherwise, update start position.
         if (activeStepIndex !== null && activeStepIndex >= 0) {
-          onStepDestinationChange(activeStepIndex, data.lat, data.lon, data.name);
+          onStepDestinationChange(
+            activeStepIndex,
+            data.lat,
+            data.lon,
+            data.name,
+          );
         } else {
           onStartLocationChange(data.lat, data.lon, data.name);
         }
       } else {
-        alert('指定された地名が見つかりませんでした。');
+        alert("指定された地名が見つかりませんでした。");
       }
     } catch (e) {
-      console.error('Geocoding failed:', e);
-      alert('地名検索中にエラーが発生しました。');
+      console.error("Geocoding failed:", e);
+      alert("地名検索中にエラーが発生しました。");
     } finally {
       setIsSearching(false);
     }
@@ -161,23 +189,28 @@ export default function SimulatorMap({
           <input
             type="text"
             placeholder={
-              activeStepIndex !== null 
-                ? `ステップ ${activeStepIndex + 1} の目的地を検索...` 
+              activeStepIndex !== null
+                ? `ステップ ${activeStepIndex + 1} の目的地を検索...`
                 : "スタート地（初期拠点）を検索..."
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleGeocodeSearch(searchQuery))}
+            onKeyDown={(e) =>
+              e.key === "Enter" &&
+              (e.preventDefault(), handleGeocodeSearch(searchQuery))
+            }
             className="w-full pl-9 pr-20 py-2.5 bg-black/90 border border-zinc-800 rounded-2xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/50 transition-all backdrop-blur-md"
           />
-          <span className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 flex items-center justify-center">🔍</span>
+          <span className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 flex items-center justify-center">
+            🔍
+          </span>
           <button
             type="button"
             onClick={() => handleGeocodeSearch(searchQuery)}
             disabled={isSearching}
             className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
           >
-            {isSearching ? '検索中...' : '検索'}
+            {isSearching ? "検索中..." : "検索"}
           </button>
         </div>
       </div>
@@ -188,31 +221,38 @@ export default function SimulatorMap({
           center={startPos}
           zoom={6}
           maxZoom={20}
-          style={{ height: '100%', width: '100%', background: '#09090b', zIndex: 0 }}
+          style={{
+            height: "100%",
+            width: "100%",
+            background: "#09090b",
+            zIndex: 0,
+          }}
           attributionControl={false}
         >
           <TileLayer
             key={`tile-layer-${mapTheme}`}
-            url={mapTheme === 'dark'
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"}
+            url={
+              mapTheme === "dark"
+                ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            }
             maxZoom={20}
             maxNativeZoom={19}
           />
-          
+
           {/* Fit map view dynamically */}
           <FitBounds positions={allPositions} />
 
           {/* Start Location Marker (Gold) */}
-          <Marker 
-            position={startPos} 
+          <Marker
+            position={startPos}
             icon={startIcon}
-            draggable={true} 
+            draggable={true}
             eventHandlers={{
               dragend: (e) => {
                 const position = e.target.getLatLng();
                 onStartLocationChange(position.lat, position.lng);
-              }
+              },
             }}
           />
 
@@ -230,7 +270,7 @@ export default function SimulatorMap({
                   dragend: (e) => {
                     const position = e.target.getLatLng();
                     onStepDestinationChange(idx, position.lat, position.lng);
-                  }
+                  },
                 }}
               />
             );
@@ -238,16 +278,19 @@ export default function SimulatorMap({
 
           {/* Render Connecting Polyline Vectors */}
           {steps.map((step, idx) => {
-            const prevPos: [number, number] = idx === 0 
-              ? startPos 
-              : [steps[idx - 1].toLat, steps[idx - 1].toLon];
+            const prevPos: [number, number] =
+              idx === 0
+                ? startPos
+                : [steps[idx - 1].toLat, steps[idx - 1].toLon];
             const currentPos: [number, number] = [step.toLat, step.toLon];
 
-            const rating = step.evaluation?.rating || '普通';
-            let lineColor = '#a1a1aa'; // default gray (SAFE/N/A)
-            if (rating === '大吉' || rating === '吉') lineColor = '#10b981'; // green
-            else if (rating === '凶') lineColor = '#f59e0b'; // orange
-            else if (rating === '大凶') lineColor = '#ef4444'; // red
+            const rating = step.evaluation?.rating || "普通";
+            let lineColor = "#a1a1aa"; // default gray (SAFE/N/A)
+            if (rating === "大吉" || rating === "吉")
+              lineColor = "#10b981"; // green
+            else if (rating === "凶")
+              lineColor = "#f59e0b"; // orange
+            else if (rating === "大凶") lineColor = "#ef4444"; // red
 
             return (
               <Polyline
@@ -255,7 +298,7 @@ export default function SimulatorMap({
                 positions={[prevPos, currentPos]}
                 color={lineColor}
                 weight={idx === activeStepIndex ? 4 : 2}
-                dashArray={step.purpose === 'TRAVEL' ? '5, 8' : undefined}
+                dashArray={step.purpose === "TRAVEL" ? "5, 8" : undefined}
               />
             );
           })}
@@ -266,56 +309,62 @@ export default function SimulatorMap({
               key={`poly-${idx}`}
               positions={poly}
               pathOptions={{
-                color: '#6366f1',
-                fillColor: '#818cf8',
+                color: "#6366f1",
+                fillColor: "#818cf8",
                 fillOpacity: 0.15,
                 weight: 1.5,
-                dashArray: '3, 6'
+                dashArray: "3, 6",
               }}
             />
           ))}
-
         </MapContainer>
 
         {/* Theme Switcher Button */}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto">
           <button
             onClick={() => {
-              const nextTheme = mapTheme === 'dark' ? 'light' : 'dark';
+              const nextTheme = mapTheme === "dark" ? "light" : "dark";
               setMapTheme(nextTheme);
-              localStorage.setItem('map_theme', nextTheme);
-              window.dispatchEvent(new Event('mapThemeChanged'));
+              localStorage.setItem("map_theme", nextTheme);
+              window.dispatchEvent(new Event("mapThemeChanged"));
             }}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/90 text-zinc-200 border border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
           >
-            {mapTheme === 'dark' ? '☀️ ライトマップ' : '🌙 ダークマップ'}
+            {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
         </div>
 
         {/* Legend Overlay HUD */}
         <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-black/90 border border-zinc-800 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-zinc-400">
           <div className="flex items-center gap-2 font-bold text-amber-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span> 出発起点 (ゴールド)
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>{" "}
+            出発起点 (ゴールド)
           </div>
           <div className="flex items-center gap-2 font-bold text-indigo-400 mt-0.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span> 経由地 (青)
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>{" "}
+            経由地 (青)
           </div>
           <div className="flex items-center gap-2 font-bold text-rose-400 mt-0.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span> 選択中の目的地 (赤)
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span>{" "}
+            選択中の目的地 (赤)
           </div>
           <div className="border-t border-zinc-800 my-1"></div>
           <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-emerald-500 inline-block"></span> 吉 / 大吉 方位ベクトル
+            <span className="w-4 h-0.5 bg-emerald-500 inline-block"></span> 吉 /
+            大吉 方位ベクトル
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-red-500 inline-block"></span> 凶 / 大凶 方位ベクトル
+            <span className="w-4 h-0.5 bg-red-500 inline-block"></span> 凶 /
+            大凶 方位ベクトル
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-4 h-0.5 bg-zinc-500 border border-dashed border-zinc-400 inline-block"></span> 旅行（TRAVEL）ステップ
+            <span className="w-4 h-0.5 bg-zinc-500 border border-dashed border-zinc-400 inline-block"></span>{" "}
+            旅行（TRAVEL）ステップ
           </div>
           {detourPolygons.length > 0 && (
             <div className="flex items-center gap-2 text-indigo-300 font-bold mt-0.5">
-              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-500/50 inline-block"></span> 吉方位迂回ゾーン (仮吉方領域)
+              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-500/50 inline-block"></span>{" "}
+              吉方位迂回ゾーン (仮吉方領域)
             </div>
           )}
         </div>

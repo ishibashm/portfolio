@@ -1,5 +1,5 @@
-import { Lunar, Solar } from 'lunar-javascript';
-import { calculateSolarTime, getZonedDateTimeFields } from './solarTime';
+import { Lunar, Solar } from "lunar-javascript";
+import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
 
 /**
  * BaZi (Four Pillars of Destiny) Engine
@@ -50,7 +50,11 @@ export class BaziEngine {
    * @param longitude Longitude for True Solar Time
    * @param gender 1 for male, 0 for female (default 1)
    */
-  public calculate(date: Date, longitude: number, gender: number = 1): BaziResult {
+  public calculate(
+    date: Date,
+    longitude: number,
+    gender: number = 1,
+  ): BaziResult {
     // 1. Adjust for True Solar Time
     const solarResult = calculateSolarTime(date, longitude);
     const solarTime = solarResult.solarTime;
@@ -60,16 +64,23 @@ export class BaziEngine {
     const solar = Solar.fromDate(solarTime);
     */
     const fields = getZonedDateTimeFields(solarTime, 9);
-    const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+    const solar = Solar.fromYmdHms(
+      fields.year,
+      fields.month,
+      fields.day,
+      fields.hours,
+      fields.minutes,
+      fields.seconds,
+    );
     const lunar = solar.getLunar();
     const eightChar = lunar.getEightChar();
 
     // 3. Extract Pillars
     const pillars = {
-      year: this.extractPillar(eightChar, 'Year'),
-      month: this.extractPillar(eightChar, 'Month'),
-      day: this.extractPillar(eightChar, 'Day'),
-      hour: this.extractPillar(eightChar, 'Time')
+      year: this.extractPillar(eightChar, "Year"),
+      month: this.extractPillar(eightChar, "Month"),
+      day: this.extractPillar(eightChar, "Day"),
+      hour: this.extractPillar(eightChar, "Time"),
     };
 
     // 4. Calculate Five Elements Balance
@@ -87,7 +98,11 @@ export class BaziEngine {
     // 8. Generate Summary
     const dayMaster = eightChar.getDayGan();
     const dayMasterWuxing = eightChar.getDayWuXing().substring(0, 1);
-    const summary = this.generateSummary(dayMaster, dayMasterWuxing, fiveElements);
+    const summary = this.generateSummary(
+      dayMaster,
+      dayMasterWuxing,
+      fiveElements,
+    );
 
     return {
       solarTime,
@@ -96,14 +111,14 @@ export class BaziEngine {
       shenSha,
       solarTerms,
       luckCycles,
-      summary
+      summary,
     };
   }
 
   private extractPillar(eightChar: any, type: string): BaziPillar {
     const gan = eightChar[`get${type}Gan`]();
     const zhi = eightChar[`get${type}Zhi`]();
-    const ganTenGod = eightChar[`get${type}ShiShenGan`]() || '日主';
+    const ganTenGod = eightChar[`get${type}ShiShenGan`]() || "日主";
     const hiddenStems = eightChar[`get${type}HideGan`]();
     const hiddenStemTenGods = eightChar[`get${type}ShiShenZhi`]();
     const lifeStage = eightChar[`get${type}DiShi`]();
@@ -118,13 +133,17 @@ export class BaziEngine {
       hiddenStemTenGods,
       lifeStage,
       nayin,
-      wuxing
+      wuxing,
     };
   }
 
   private calculateFiveElements(pillars: any): Record<string, number> {
     const balance: Record<string, number> = {
-      '木': 0, '火': 0, '土': 0, '金': 0, '水': 0
+      木: 0,
+      火: 0,
+      土: 0,
+      金: 0,
+      水: 0,
     };
 
     const count = (str: string) => {
@@ -145,7 +164,7 @@ export class BaziEngine {
 
   private calculateShenSha(eightChar: any, lunar: any): string[] {
     const stars: string[] = [];
-    
+
     // Add logic for specific Shen Sha if needed
     // For now, extract from Lunar object's general auspicious stars
     const jiShen = lunar.getDayJiShen();
@@ -156,11 +175,12 @@ export class BaziEngine {
     // Special BaZi Shen Sha
     const dayGan = eightChar.getDayGan();
     const yearZhi = eightChar.getYearZhi();
-    
+
     // Example: Tian Yi Gui Ren (Simplified logic)
     // (Actual logic is more complex, but this shows how to add them)
-    if (['甲', '戊'].includes(dayGan) && ['丑', '未'].includes(yearZhi)) stars.push('天乙貴人');
-    
+    if (["甲", "戊"].includes(dayGan) && ["丑", "未"].includes(yearZhi))
+      stars.push("天乙貴人");
+
     // Kong Wang (Void)
     const voidZhi = eightChar.getDayXunKong();
     stars.push(`空亡(${voidZhi})`);
@@ -183,30 +203,34 @@ export class BaziEngine {
     return daYun.slice(1, 9).map((dy: any) => ({
       startYear: dy.getStartYear(),
       endYear: dy.getEndYear(),
-      ganZhi: dy.getGanZhi()
+      ganZhi: dy.getGanZhi(),
     }));
   }
 
-  private generateSummary(dayMaster: string, wuxing: string, balance: Record<string, number>): any {
-    let strength = '中庸';
-    if (balance[wuxing] > 3) strength = '極強';
-    else if (balance[wuxing] > 2) strength = '身強';
-    else if (balance[wuxing] < 1) strength = '極弱';
-    else if (balance[wuxing] < 2) strength = '身弱';
+  private generateSummary(
+    dayMaster: string,
+    wuxing: string,
+    balance: Record<string, number>,
+  ): any {
+    let strength = "中庸";
+    if (balance[wuxing] > 3) strength = "極強";
+    else if (balance[wuxing] > 2) strength = "身強";
+    else if (balance[wuxing] < 1) strength = "極弱";
+    else if (balance[wuxing] < 2) strength = "身弱";
 
     const descriptions: Record<string, string> = {
-      '木': '向上心があり、慈悲深く、成長を象徴します。',
-      '火': '情熱的で、明朗、礼儀を重んじます。',
-      '土': '誠実で、包容力があり、信用を重んじます。',
-      '金': '義理堅く、決断力があり、鋭い知性を持ちます。',
-      '水': '知恵があり、柔軟で、流動性を持ちます。'
+      木: "向上心があり、慈悲深く、成長を象徴します。",
+      火: "情熱的で、明朗、礼儀を重んじます。",
+      土: "誠実で、包容力があり、信用を重んじます。",
+      金: "義理堅く、決断力があり、鋭い知性を持ちます。",
+      水: "知恵があり、柔軟で、流動性を持ちます。",
     };
 
     return {
       dayMaster,
       dayMasterWuxing: wuxing,
-      description: descriptions[wuxing] || '分析中...',
-      strength
+      description: descriptions[wuxing] || "分析中...",
+      strength,
     };
   }
 }

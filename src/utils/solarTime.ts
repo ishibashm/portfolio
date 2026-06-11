@@ -1,5 +1,5 @@
-import { getHourlyKyusei, getHourlyHachimon, KYUSEI, HACHIMON } from './kigaku';
-import { Solar } from 'lunar-javascript';
+import { getHourlyKyusei, getHourlyHachimon, KYUSEI, HACHIMON } from "./kigaku";
+import { Solar } from "lunar-javascript";
 
 /**
  * Helper to extract local date fields in a specific timezone offset (in hours).
@@ -14,7 +14,7 @@ export function getZonedDateTimeFields(date: Date, offsetHours: number = 9) {
     day: shiftedDate.getUTCDate(),
     hours: shiftedDate.getUTCHours(),
     minutes: shiftedDate.getUTCMinutes(),
-    seconds: shiftedDate.getUTCSeconds()
+    seconds: shiftedDate.getUTCSeconds(),
   };
 }
 
@@ -39,7 +39,7 @@ export interface SolarTimeResult {
 export function calculateSolarTime(
   date: Date,
   longitude: number,
-  timezoneOffset: number = 9
+  timezoneOffset: number = 9,
 ): SolarTimeResult {
   // 1. Day of Year (n)
   const start = new Date(date.getFullYear(), 0, 0);
@@ -54,9 +54,7 @@ export function calculateSolarTime(
 
   // EoT = 9.87 * sin(2B) - 7.53 * cos(B) - 1.5 * sin(B) (in minutes)
   const eot =
-    9.87 * Math.sin(2 * B_rad) -
-    7.53 * Math.cos(B_rad) -
-    1.5 * Math.sin(B_rad);
+    9.87 * Math.sin(2 * B_rad) - 7.53 * Math.cos(B_rad) - 1.5 * Math.sin(B_rad);
 
   // 3. Longitude Correction (4 minutes per degree difference from standard meridian)
   const standardMeridian = timezoneOffset * 15; // 135 degrees for JST
@@ -108,7 +106,14 @@ function getDayStemIndex(date: Date): number {
   return idx;
   */
   const fields = getZonedDateTimeFields(date, 9);
-  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const solar = Solar.fromYmdHms(
+    fields.year,
+    fields.month,
+    fields.day,
+    fields.hours,
+    fields.minutes,
+    fields.seconds,
+  );
   const lunar = solar.getLunar();
   const eightChar = lunar.getEightChar();
   const dayGan = eightChar.getDayGan();
@@ -126,7 +131,7 @@ function getDayStemIndex(date: Date): number {
  * 丙(2), 辛(7) -> 戊(4) (Tsuchinoe-Ne)
  * 丁(3), 壬(8) -> 庚(6) (Kanoe-Ne)
  * 戊(4), 癸(9) -> 壬(8) (Mizunoe-Ne)
- * 
+ *
  * Formula: ((DayStem % 5) * 2 + HourBranchOffset) % 10
  * HourBranchOffset: Rat=0, Ox=1, ...
  */
@@ -134,11 +139,11 @@ function getHourStemIndex(dayStemIdx: number, hourBranchIdx: number): number {
   const startStem = (dayStemIdx % 5) * 2;
   return (startStem + hourBranchIdx) % 10;
 }
-export function getKimonHour(solarDt: Date): { 
-  name: string; 
-  japanese: string; 
+export function getKimonHour(solarDt: Date): {
+  name: string;
+  japanese: string;
   reading: string;
-  note?: string; 
+  note?: string;
 } {
   const hour = solarDt.getHours();
 
@@ -147,7 +152,12 @@ export function getKimonHour(solarDt: Date): {
   } else if (hour >= 1 && hour < 3) {
     return { name: "Ox", japanese: "丑", reading: "Ushi" };
   } else if (hour >= 3 && hour < 5) {
-    return { name: "Tiger", japanese: "寅", reading: "Tora", note: "Devils Gate (Kimon)" };
+    return {
+      name: "Tiger",
+      japanese: "寅",
+      reading: "Tora",
+      note: "Devils Gate (Kimon)",
+    };
   } else if (hour >= 5 && hour < 7) {
     return { name: "Rabbit", japanese: "卯", reading: "U" };
   } else if (hour >= 7 && hour < 9) {
@@ -157,7 +167,12 @@ export function getKimonHour(solarDt: Date): {
   } else if (hour >= 11 && hour < 13) {
     return { name: "Horse", japanese: "午", reading: "Uma" };
   } else if (hour >= 13 && hour < 15) {
-    return { name: "Sheep", japanese: "未", reading: "Hitsuji", note: "Tenchusatsu (Void)" };
+    return {
+      name: "Sheep",
+      japanese: "未",
+      reading: "Hitsuji",
+      note: "Tenchusatsu (Void)",
+    };
   } else if (hour >= 15 && hour < 17) {
     return { name: "Monkey", japanese: "申", reading: "Saru" };
   } else if (hour >= 17 && hour < 19) {
@@ -181,8 +196,8 @@ export interface KimonScheduleItem {
   note?: string;
   startStandard: Date;
   endStandard: Date;
-  kyusei: typeof KYUSEI[0];   // Added
-  hachimon: typeof HACHIMON[0]; // Added
+  kyusei: (typeof KYUSEI)[0]; // Added
+  hachimon: (typeof HACHIMON)[0]; // Added
 }
 
 /**
@@ -192,13 +207,17 @@ export interface KimonScheduleItem {
 export function getDailySolarSchedule(
   date: Date,
   longitude: number,
-  timezoneOffset: number = 9
+  timezoneOffset: number = 9,
 ): KimonScheduleItem[] {
   // 1. Calculate correction at noon (representative for the day)
   const noon = new Date(date);
   noon.setHours(12, 0, 0, 0);
-  const { totalCorrection } = calculateSolarTime(noon, longitude, timezoneOffset);
-  
+  const { totalCorrection } = calculateSolarTime(
+    noon,
+    longitude,
+    timezoneOffset,
+  );
+
   // Calculate Day Stem and Branch for the specific day
   const dayStemIdx = getDayStemIndex(noon);
   const dayJunishiIdx = getDayJunishiIndex(noon); // Ensure this function exists or calculate it here
@@ -217,21 +236,23 @@ export function getDailySolarSchedule(
     solarStart.setHours(hour, 0, 0, 0);
 
     // Standard Start = Solar Start - Correction
-    const startStandard = new Date(solarStart.getTime() - totalCorrection * 60000);
+    const startStandard = new Date(
+      solarStart.getTime() - totalCorrection * 60000,
+    );
     const endStandard = new Date(startStandard.getTime() + 2 * 60 * 60 * 1000); // +2 hours
 
     // Get Name info
     const midSolar = new Date(solarStart);
     midSolar.setHours(midSolar.getHours() + 1); // Use getHours + 1 to handle date rollover safely
     const properties = getKimonHour(midSolar);
-    
+
     // Calculate Hour Stem
     const stemIdx = getHourStemIndex(dayStemIdx, i);
     const stem = JIKKAN[stemIdx];
 
     // Calculate Kyusei & Hachimon
     // i corresponds to the branch index starting from Rat (0) to Boar (11)
-    const kyusei = getHourlyKyusei(dayJunishiIdx, i); 
+    const kyusei = getHourlyKyusei(dayJunishiIdx, i);
     const hachimon = getHourlyHachimon(dayStemIdx, i, date.getMonth());
 
     schedule.push({
@@ -258,10 +279,30 @@ function getDayJunishiIndex(date: Date): number {
   return ((days % 12) + 12) % 12; 
   */
   const fields = getZonedDateTimeFields(date, 9);
-  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const solar = Solar.fromYmdHms(
+    fields.year,
+    fields.month,
+    fields.day,
+    fields.hours,
+    fields.minutes,
+    fields.seconds,
+  );
   const lunar = solar.getLunar();
   const eightChar = lunar.getEightChar();
   const dayZhi = eightChar.getDayZhi();
-  const JUNISHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  const JUNISHI = [
+    "子",
+    "丑",
+    "寅",
+    "卯",
+    "辰",
+    "巳",
+    "午",
+    "未",
+    "申",
+    "酉",
+    "戌",
+    "亥",
+  ];
   return JUNISHI.indexOf(dayZhi);
 }

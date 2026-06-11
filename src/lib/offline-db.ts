@@ -39,18 +39,20 @@ export const db = new OmniTerminalDB();
  * オフライン環境でのチャット入力を IndexedDB に貯め、復旧時に送信する。
  */
 export const saveToOutbox = async (workspaceId: string, message: string) => {
-  console.log(`[Offline-First] Saving message to IndexedDB Outbox for Workspace ${workspaceId}: ${message}`);
+  console.log(
+    `[Offline-First] Saving message to IndexedDB Outbox for Workspace ${workspaceId}: ${message}`,
+  );
   // await db.chatOutbox.add({ id: uuid(), workspaceId, content: message, isSynced: false, timestamp: Date.now() });
-  
+
   // ネットワーク復旧時に再送を試みるための Sync Tag を登録
-  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+  if ("serviceWorker" in navigator && "SyncManager" in window) {
     try {
       const swRegistration = await navigator.serviceWorker.ready;
       // @ts-ignore
-      await swRegistration.sync.register('sync-chat-outbox');
-      console.log('[Background Sync] Registered sync event.');
+      await swRegistration.sync.register("sync-chat-outbox");
+      console.log("[Background Sync] Registered sync event.");
     } catch (e) {
-      console.warn('Background sync not supported or failed.', e);
+      console.warn("Background sync not supported or failed.", e);
     }
   }
 };
@@ -59,7 +61,10 @@ export const saveToOutbox = async (workspaceId: string, message: string) => {
  * CRDT (Conflict-free Replicated Data Type) を用いた
  * Yjs によるウィジェットの共有ワークスペース同期の実装例
  */
-export const setupCollaborativeWorkspace = (workspaceId: string, roomName: string) => {
+export const setupCollaborativeWorkspace = (
+  workspaceId: string,
+  roomName: string,
+) => {
   // const ydoc = new Y.Doc();
   // const provider = new WebsocketProvider('wss://ws.omni-terminal.com', roomName, ydoc);
   // const yWidgets = ydoc.getArray('widgets');
@@ -69,8 +74,10 @@ export const setupCollaborativeWorkspace = (workspaceId: string, roomName: strin
   //   // ここで Zustand ストア (omniStore) に変更を同期する
   // });
 
-  console.log(`[CRDT] Setup collaborative Yjs provider for workspace: ${workspaceId}, room: ${roomName}`);
-  
+  console.log(
+    `[CRDT] Setup collaborative Yjs provider for workspace: ${workspaceId}, room: ${roomName}`,
+  );
+
   return {
     // ydoc,
     // yWidgets,

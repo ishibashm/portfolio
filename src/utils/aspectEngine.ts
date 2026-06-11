@@ -1,6 +1,11 @@
-import { AstroEngine } from './ephemerisEngine';
+import { AstroEngine } from "./ephemerisEngine";
 
-export type AspectType = 'CONJUNCTION' | 'OPPOSITION' | 'SQUARE' | 'TRINE' | 'SEXTILE';
+export type AspectType =
+  | "CONJUNCTION"
+  | "OPPOSITION"
+  | "SQUARE"
+  | "TRINE"
+  | "SEXTILE";
 
 export interface Aspect {
   body1: string;
@@ -15,7 +20,7 @@ const ASPECT_DEFINITIONS: Record<AspectType, number> = {
   OPPOSITION: 180,
   SQUARE: 90,
   TRINE: 120,
-  SEXTILE: 60
+  SEXTILE: 60,
 };
 
 export class AspectEngine {
@@ -24,16 +29,16 @@ export class AspectEngine {
    */
   public static calculateAspects(date: Date, orb: number = 5): Aspect[] {
     const bodies = [
-      { name: 'Sun', lon: AstroEngine.getSolarLongitude(date) },
-      { name: 'Moon', lon: AstroEngine.getLunarLongitude(date) },
-      { name: 'Mercury', lon: AstroEngine.getMercuryLongitude(date) },
-      { name: 'Venus', lon: AstroEngine.getVenusLongitude(date) },
-      { name: 'Mars', lon: AstroEngine.getMarsLongitude(date) },
-      { name: 'Jupiter', lon: AstroEngine.getJupiterLongitude(date) },
-      { name: 'Saturn', lon: AstroEngine.getSaturnLongitude(date) },
-      { name: 'Uranus', lon: AstroEngine.getUranusLongitude(date) },
-      { name: 'Neptune', lon: AstroEngine.getNeptuneLongitude(date) },
-      { name: 'Pluto', lon: AstroEngine.getPlutoLongitude(date) }
+      { name: "Sun", lon: AstroEngine.getSolarLongitude(date) },
+      { name: "Moon", lon: AstroEngine.getLunarLongitude(date) },
+      { name: "Mercury", lon: AstroEngine.getMercuryLongitude(date) },
+      { name: "Venus", lon: AstroEngine.getVenusLongitude(date) },
+      { name: "Mars", lon: AstroEngine.getMarsLongitude(date) },
+      { name: "Jupiter", lon: AstroEngine.getJupiterLongitude(date) },
+      { name: "Saturn", lon: AstroEngine.getSaturnLongitude(date) },
+      { name: "Uranus", lon: AstroEngine.getUranusLongitude(date) },
+      { name: "Neptune", lon: AstroEngine.getNeptuneLongitude(date) },
+      { name: "Pluto", lon: AstroEngine.getPlutoLongitude(date) },
     ];
 
     const aspects: Aspect[] = [];
@@ -42,7 +47,7 @@ export class AspectEngine {
       for (let j = i + 1; j < bodies.length; j++) {
         const b1 = bodies[i];
         const b2 = bodies[j];
-        
+
         let diff = Math.abs(b1.lon - b2.lon);
         if (diff > 180) diff = 360 - diff;
 
@@ -54,7 +59,7 @@ export class AspectEngine {
               body2: b2.name,
               type: type as AspectType,
               angle: diff,
-              orb: currentOrb
+              orb: currentOrb,
             });
           }
         }
@@ -68,6 +73,8 @@ export class AspectEngine {
    * Formats aspects into human-readable strings.
    */
   public static formatAspects(aspects: Aspect[]): string[] {
-    return aspects.map(a => `${a.body1} ${a.type} ${a.body2} (Orb: ${a.orb.toFixed(2)}°)`);
+    return aspects.map(
+      (a) => `${a.body1} ${a.type} ${a.body2} (Orb: ${a.orb.toFixed(2)}°)`,
+    );
   }
 }

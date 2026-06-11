@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import fs from 'fs';
-import path from 'path';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import fs from "fs";
+import path from "path";
 
 export async function GET() {
   const accountSet = new Set<string>();
@@ -10,16 +10,19 @@ export async function GET() {
   try {
     const dbAccounts = await prisma.xPost.findMany({
       select: { authorHandle: true },
-      distinct: ['authorHandle'],
+      distinct: ["authorHandle"],
     });
-    dbAccounts.forEach(a => accountSet.add(a.authorHandle));
+    dbAccounts.forEach((a) => accountSet.add(a.authorHandle));
   } catch (error) {
-    console.warn('Database connection failed, continuing with local files only:', error);
+    console.warn(
+      "Database connection failed, continuing with local files only:",
+      error,
+    );
   }
 
   // 2. Also get accounts from local jsonl files
   try {
-    const downloadsDir = path.join(process.cwd(), 'x_downloads');
+    const downloadsDir = path.join(process.cwd(), "x_downloads");
     if (fs.existsSync(downloadsDir)) {
       const files = fs.readdirSync(downloadsDir);
       for (const file of files) {
@@ -30,10 +33,9 @@ export async function GET() {
       }
     }
   } catch (fsError) {
-    console.error('Error reading local accounts:', fsError);
+    console.error("Error reading local accounts:", fsError);
   }
 
   const uniqueAccounts = Array.from(accountSet).sort();
   return NextResponse.json({ accounts: uniqueAccounts });
 }
-

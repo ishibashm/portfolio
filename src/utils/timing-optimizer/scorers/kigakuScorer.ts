@@ -1,17 +1,28 @@
-import { EvaluationContext, TimingScorer } from '../types';
-import { 
-  getDayStar, getYearStar, getMonthStar, getCurrentZodiac, AstroEngine,
-  getClassicalYearStar, getClassicalMonthStar, getClassicalDayStar,
-  generateBoard, calculateVectorCollision, getPersonalVoidZodiac,
-  StarFrequency
-} from '../../ephemerisEngine';
+import { EvaluationContext, TimingScorer } from "../types";
+import {
+  getDayStar,
+  getYearStar,
+  getMonthStar,
+  getCurrentZodiac,
+  AstroEngine,
+  getClassicalYearStar,
+  getClassicalMonthStar,
+  getClassicalDayStar,
+  generateBoard,
+  calculateVectorCollision,
+  getPersonalVoidZodiac,
+  StarFrequency,
+} from "../../ephemerisEngine";
 
 export class KigakuScorer implements TimingScorer {
   name = "Kigaku (Oriental Astrology)";
 
   observe(ctx: EvaluationContext) {
     if (!ctx.userKigakuStar) {
-        return { phenomenon: "Insufficient Data", detail: "本命星の登録がないため観測不能です。" };
+      return {
+        phenomenon: "Insufficient Data",
+        detail: "本命星の登録がないため観測不能です。",
+      };
     }
 
     if (
@@ -26,100 +37,152 @@ export class KigakuScorer implements TimingScorer {
       return null;
     }
 
-    const yearStar = ctx.useClassical ? getClassicalYearStar(ctx.targetDate) : getYearStar(ctx.targetDate);
-    const monthStar = ctx.useClassical ? getClassicalMonthStar(ctx.targetDate) : getMonthStar(ctx.targetDate);
-    const dailyStar = ctx.useClassical ? getClassicalDayStar(ctx.targetDate) : getDayStar(ctx.targetDate);
+    const yearStar = ctx.useClassical
+      ? getClassicalYearStar(ctx.targetDate)
+      : getYearStar(ctx.targetDate);
+    const monthStar = ctx.useClassical
+      ? getClassicalMonthStar(ctx.targetDate)
+      : getMonthStar(ctx.targetDate);
+    const dailyStar = ctx.useClassical
+      ? getClassicalDayStar(ctx.targetDate)
+      : getDayStar(ctx.targetDate);
 
     const yB = generateBoard(yearStar);
     const mB = generateBoard(monthStar);
     const dB = generateBoard(dailyStar);
 
     // If targetDirection is specified, look up the star in that direction for phase compatibility check
-    const activeYearStar = ctx.targetDirection ? yB[ctx.targetDirection] : yearStar;
-    const activeMonthStar = ctx.targetDirection ? mB[ctx.targetDirection] : monthStar;
-    const activeDailyStar = ctx.targetDirection ? dB[ctx.targetDirection] : dailyStar;
-    
+    const activeYearStar = ctx.targetDirection
+      ? yB[ctx.targetDirection]
+      : yearStar;
+    const activeMonthStar = ctx.targetDirection
+      ? mB[ctx.targetDirection]
+      : monthStar;
+    const activeDailyStar = ctx.targetDirection
+      ? dB[ctx.targetDirection]
+      : dailyStar;
+
     const elementMap: Record<number, string> = {
-        1: 'water', 2: 'earth', 3: 'wood', 4: 'wood', 5: 'earth',
-        6: 'metal', 7: 'metal', 8: 'earth', 9: 'fire'
+      1: "water",
+      2: "earth",
+      3: "wood",
+      4: "wood",
+      5: "earth",
+      6: "metal",
+      7: "metal",
+      8: "earth",
+      9: "fire",
     };
 
     const userElement = elementMap[ctx.userKigakuStar];
 
     const evaluatePhase = (star: number) => {
-        const el = elementMap[star];
-        if (ctx.userKigakuStar === star) return '比和';
-        
-        const sojoRules: Record<string, string> = {
-            'wood': 'fire', 'fire': 'earth', 'earth': 'metal', 'metal': 'water', 'water': 'wood'
-        };
-        const sojoRulesReverse: Record<string, string> = {
-             'fire': 'wood', 'earth': 'fire', 'metal': 'earth', 'water': 'metal', 'wood': 'water'
-        };
-        if (sojoRules[userElement] === el || sojoRulesReverse[userElement] === el) return '相生';
-        
-        const sokokuRules: Record<string, string> = {
-            'wood': 'earth', 'earth': 'water', 'water': 'fire', 'fire': 'metal', 'metal': 'wood'
-        };
-        if (sokokuRules[userElement] === el || sokokuRules[el] === userElement) return '相剋';
+      const el = elementMap[star];
+      if (ctx.userKigakuStar === star) return "比和";
 
-        return '独立';
+      const sojoRules: Record<string, string> = {
+        wood: "fire",
+        fire: "earth",
+        earth: "metal",
+        metal: "water",
+        water: "wood",
+      };
+      const sojoRulesReverse: Record<string, string> = {
+        fire: "wood",
+        earth: "fire",
+        metal: "earth",
+        water: "metal",
+        wood: "water",
+      };
+      if (sojoRules[userElement] === el || sojoRulesReverse[userElement] === el)
+        return "相生";
+
+      const sokokuRules: Record<string, string> = {
+        wood: "earth",
+        earth: "water",
+        water: "fire",
+        fire: "metal",
+        metal: "wood",
+      };
+      if (sokokuRules[userElement] === el || sokokuRules[el] === userElement)
+        return "相剋";
+
+      return "独立";
     };
 
     const yPhase = evaluatePhase(activeYearStar);
     const mPhase = evaluatePhase(activeMonthStar);
     const dPhase = evaluatePhase(activeDailyStar);
 
-    const isGood = (p: string) => p === '比和' || p === '相生';
+    const isGood = (p: string) => p === "比和" || p === "相生";
     let overallGood = isGood(yPhase) && isGood(mPhase) && isGood(dPhase);
 
     // Direction-based Collision Validation
     let targetClashStatus: string | null = null;
     let isDayWarning = false;
     if (ctx.targetDirection && ctx.userKigakuStar) {
-      const voidZodiacs = ctx.userBirthDate ? getPersonalVoidZodiac(ctx.userBirthDate) : [];
+      const voidZodiacs = ctx.userBirthDate
+        ? getPersonalVoidZodiac(ctx.userBirthDate)
+        : [];
       const lunarNodeLon = AstroEngine.getLunarNodeLongitude(ctx.targetDate);
       const collision = calculateVectorCollision(
         ctx.userKigakuStar as StarFrequency,
-        yB, mB, dB,
+        yB,
+        mB,
+        dB,
         voidZodiacs,
         lunarNodeLon,
-        ctx.actionIntent || 'DEFAULT',
+        ctx.actionIntent || "DEFAULT",
         ctx.targetDate,
         ctx.longitude || 139.6917,
         undefined,
-        ctx.useClassical ? 'traditional' : 'physical'
+        ctx.useClassical ? "traditional" : "physical",
       );
       const status = collision.finalVectors[ctx.targetDirection];
-      if (['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA', 'NOISE_HONMEI', 'NOISE_TEKI'].includes(status)) {
+      if (
+        [
+          "NOISE_GOU",
+          "NOISE_ANKEN",
+          "NOISE_HA",
+          "NOISE_HONMEI",
+          "NOISE_TEKI",
+        ].includes(status)
+      ) {
         targetClashStatus = status;
         overallGood = false; // Prevent Complete Resonance on clashing directions
-      } else if (status === 'WARNING') {
+      } else if (status === "WARNING") {
         isDayWarning = true;
       }
     }
 
     // Doyou (土用) & Mabi (間日) Check
     const L0 = AstroEngine.getSolarLongitude(ctx.targetDate);
-    let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
-    if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
-    else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
-    else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
-    else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+    let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
+    if (L0 >= 27 && L0 < 45) doyouType = "SPRING";
+    else if (L0 >= 117 && L0 < 135) doyouType = "SUMMER";
+    else if (L0 >= 207 && L0 < 225) doyouType = "AUTUMN";
+    else if (L0 >= 297 && L0 < 315) doyouType = "WINTER";
 
     const inDoyou = doyouType !== null;
     let isMabi = false;
     if (inDoyou) {
-      const zodiacs = getCurrentZodiac(ctx.targetDate, ctx.longitude || 139.6917);
+      const zodiacs = getCurrentZodiac(
+        ctx.targetDate,
+        ctx.longitude || 139.6917,
+      );
       if (zodiacs?.dayZodiac) {
-        if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
-        else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
-        else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
-        else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+        if (doyouType === "SPRING")
+          isMabi = ["巳", "午", "酉"].includes(zodiacs.dayZodiac);
+        else if (doyouType === "SUMMER")
+          isMabi = ["卯", "辰", "申"].includes(zodiacs.dayZodiac);
+        else if (doyouType === "AUTUMN")
+          isMabi = ["未", "酉", "亥"].includes(zodiacs.dayZodiac);
+        else if (doyouType === "WINTER")
+          isMabi = ["寅", "卯", "巳"].includes(zodiacs.dayZodiac);
       }
     }
     const isDoyouHazard = inDoyou && !isMabi;
-    
+
     let mainPhenomenon = "";
     if (isDoyouHazard) {
       mainPhenomenon = `土用殺 (Doyou Hazard)`;
@@ -133,15 +196,17 @@ export class KigakuScorer implements TimingScorer {
       mainPhenomenon = `混在干渉 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     }
 
-    let doyouDetail = isDoyouHazard ? `【大凶・土用殺 (${doyouType === 'SPRING' ? '春土用' : doyouType === 'SUMMER' ? '夏土用' : doyouType === 'AUTUMN' ? '秋土用' : '冬土用'})】土地の契約、引越しなどの基礎に関わる活動は避けてください。 ` : "";
+    let doyouDetail = isDoyouHazard
+      ? `【大凶・土用殺 (${doyouType === "SPRING" ? "春土用" : doyouType === "SUMMER" ? "夏土用" : doyouType === "AUTUMN" ? "秋土用" : "冬土用"})】土地の契約、引越しなどの基礎に関わる活動は避けてください。 `
+      : "";
 
     if (targetClashStatus) {
       const translateStatus = (s: string) => {
-        if (s === 'NOISE_GOU') return '五黄殺 (大凶)';
-        if (s === 'NOISE_ANKEN') return '暗剣殺 (大凶)';
-        if (s === 'NOISE_HA') return '破 (大凶・不整合波)';
-        if (s === 'NOISE_HONMEI') return '本命殺 (自滅・健康害)';
-        if (s === 'NOISE_TEKI') return '的殺 (目的喪失・精神負荷)';
+        if (s === "NOISE_GOU") return "五黄殺 (大凶)";
+        if (s === "NOISE_ANKEN") return "暗剣殺 (大凶)";
+        if (s === "NOISE_HA") return "破 (大凶・不整合波)";
+        if (s === "NOISE_HONMEI") return "本命殺 (自滅・健康害)";
+        if (s === "NOISE_TEKI") return "的殺 (目的喪失・精神負荷)";
         return s;
       };
       const clashName = translateStatus(targetClashStatus);
@@ -150,9 +215,11 @@ export class KigakuScorer implements TimingScorer {
       doyouDetail += `【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。当日の荷物の紛失、配送遅延、または軽微なケガや体調管理に普段より注意を払い、時間に余裕を持って行動してください。移住後の長期的な生活への悪影響はありません。 `;
     }
 
-    return { 
-      phenomenon: mainPhenomenon, 
-      detail: doyouDetail + `[目的地${ctx.targetDirection}方位の年星:${activeYearStar}(${yPhase})] [月星:${activeMonthStar}(${mPhase})] [日星:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。` 
+    return {
+      phenomenon: mainPhenomenon,
+      detail:
+        doyouDetail +
+        `[目的地${ctx.targetDirection}方位の年星:${activeYearStar}(${yPhase})] [月星:${activeMonthStar}(${mPhase})] [日星:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。`,
     };
   }
 }

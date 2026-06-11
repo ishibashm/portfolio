@@ -2,22 +2,22 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { 
-  BookOpen, 
-  Database, 
-  Link as LinkIcon, 
-  Save, 
-  Search, 
-  Server, 
-  FileText, 
-  CheckCircle2, 
-  Trash2, 
+import {
+  BookOpen,
+  Database,
+  Link as LinkIcon,
+  Save,
+  Search,
+  Server,
+  FileText,
+  CheckCircle2,
+  Trash2,
   RefreshCw,
   Tag,
   Clock,
   ExternalLink,
   ChevronRight,
-  Shield
+  Shield,
 } from "lucide-react";
 import { extractAndSaveArticle, getArticles, deleteArticle } from "./actions";
 
@@ -78,7 +78,7 @@ export default function KnowledgePage() {
         setResult(response.data);
         setUrl(""); // Clear input on success
         await fetchList(); // Refresh the list
-        
+
         // Auto select the newly created article
         const newArt: Article = {
           id: response.data.kb_id, // temporarily use kb_id or query list
@@ -90,7 +90,7 @@ export default function KnowledgePage() {
           type: "Note",
           status: "Draft",
           priority: "Medium",
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         };
         setSelectedArticle(newArt);
       } else {
@@ -130,7 +130,7 @@ export default function KnowledgePage() {
         a.title.toLowerCase().includes(q) ||
         (a.content && a.content.toLowerCase().includes(q)) ||
         (a.kb_id && a.kb_id.toLowerCase().includes(q)) ||
-        (a.domain && a.domain.toLowerCase().includes(q))
+        (a.domain && a.domain.toLowerCase().includes(q)),
     );
   }, [articles, search]);
 
@@ -139,24 +139,28 @@ export default function KnowledgePage() {
       {/* Background Glow Effects */}
       <div className="absolute top-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-600/10 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-600/10 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
-      
+
       {/* Navigation */}
       <nav className="w-full px-6 py-6 border-b border-white/5 relative z-10 flex items-center justify-between bg-black/20 backdrop-blur-md">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium"
+          >
             <BookOpen className="w-4 h-4" />
             オラクルハブ (Oracle Hub)
           </Link>
           <div className="h-4 w-px bg-zinc-800"></div>
           <div className="flex items-center gap-2">
             <Database className="w-4 h-4 text-purple-400" />
-            <span className="font-mono text-sm tracking-widest uppercase text-purple-50">セカンドブレイン (Second Brain)</span>
+            <span className="font-mono text-sm tracking-widest uppercase text-purple-50">
+              セカンドブレイン (Second Brain)
+            </span>
           </div>
         </div>
       </nav>
 
       <main className="flex-1 max-w-[1400px] w-full mx-auto px-6 py-8 relative z-10 flex flex-col gap-8">
-        
         {/* Header Section */}
         <header className="mb-2">
           <h1 className="text-4xl font-bold tracking-tighter bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent flex items-center gap-3">
@@ -170,10 +174,8 @@ export default function KnowledgePage() {
 
         {/* Split Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
           {/* Left Column: Form & Document List (5 cols) */}
           <div className="lg:col-span-5 flex flex-col gap-6 w-full">
-            
             {/* Extraction Form */}
             <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl">
               <div className="text-xs font-mono text-purple-400 uppercase tracking-widest mb-3 flex items-center gap-2">
@@ -224,13 +226,15 @@ export default function KnowledgePage() {
                   <FileText className="w-3.5 h-3.5" />
                   ナレッジドキュメント一覧 ({filteredArticles.length})
                 </div>
-                <button 
-                  onClick={fetchList} 
+                <button
+                  onClick={fetchList}
                   disabled={articlesLoading}
                   className="p-1.5 bg-white/5 border border-white/10 hover:bg-white/10 text-zinc-400 hover:text-white rounded-lg transition-colors disabled:opacity-50"
                   title="一覧を更新"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${articlesLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${articlesLoading ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
 
@@ -299,7 +303,6 @@ export default function KnowledgePage() {
                 )}
               </div>
             </div>
-
           </div>
 
           {/* Right Column: Reader Panel (7 cols) */}
@@ -307,7 +310,7 @@ export default function KnowledgePage() {
             {selectedArticle ? (
               <div className="rounded-2xl bg-black border border-purple-900/30 shadow-[0_0_40px_rgba(168,85,247,0.05)] overflow-hidden flex flex-col relative animate-fade-in min-h-[600px]">
                 <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%] z-20 opacity-10"></div>
-                
+
                 {/* Header */}
                 <div className="bg-purple-950/10 border-b border-purple-900/30 px-6 py-5 z-30 relative flex flex-col gap-3">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -324,15 +327,16 @@ export default function KnowledgePage() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <h2 className="text-xl font-bold text-white leading-tight">
                     {selectedArticle.title}
                   </h2>
-                  
+
                   <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-500 font-mono pt-1">
                     <span className="flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5" />
-                      Created: {new Date(selectedArticle.created_at).toLocaleString()}
+                      Created:{" "}
+                      {new Date(selectedArticle.created_at).toLocaleString()}
                     </span>
                     {selectedArticle.domain && (
                       <span className="flex items-center gap-1">
@@ -353,16 +357,21 @@ export default function KnowledgePage() {
                       </span>
                     </div>
                     {/* If domain exists and looks like a URL, allow opening it */}
-                    {selectedArticle.domain && selectedArticle.domain.includes('.') && (
-                      <a
-                        href={selectedArticle.domain.startsWith('http') ? selectedArticle.domain : `https://${selectedArticle.domain}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline font-mono"
-                      >
-                        元のURLを開く <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
+                    {selectedArticle.domain &&
+                      selectedArticle.domain.includes(".") && (
+                        <a
+                          href={
+                            selectedArticle.domain.startsWith("http")
+                              ? selectedArticle.domain
+                              : `https://${selectedArticle.domain}`
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline font-mono"
+                        >
+                          元のURLを開く <ExternalLink className="w-3 h-3" />
+                        </a>
+                      )}
                   </div>
                   <textarea
                     readOnly
@@ -375,7 +384,9 @@ export default function KnowledgePage() {
               <div className="rounded-2xl border border-dashed border-zinc-800 bg-black/10 flex flex-col items-center justify-center text-center p-12 min-h-[600px] text-zinc-500 gap-3">
                 <BookOpen className="w-12 h-12 text-zinc-700 animate-pulse" />
                 <div>
-                  <h3 className="text-sm font-semibold text-zinc-400">ナレッジが選択されていません</h3>
+                  <h3 className="text-sm font-semibold text-zinc-400">
+                    ナレッジが選択されていません
+                  </h3>
                   <p className="text-xs text-zinc-600 mt-1 max-w-[280px] leading-relaxed">
                     左側のドキュメント一覧から表示したいナレッジチケットを選択するか、新しいウェブページを登録してください。
                   </p>
@@ -383,9 +394,7 @@ export default function KnowledgePage() {
               </div>
             )}
           </div>
-
         </div>
-
       </main>
     </div>
   );

@@ -14,16 +14,23 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/ban-ts-comment": "warn",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/rules-of-hooks": "warn",
-      "react/no-unescaped-entities": "warn"
-    }
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-html-link-for-pages": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "@typescript-eslint/no-non-null-asserted-optional-chain": "warn",
+      "react-hooks/immutability": "warn",
+    },
   },
-  // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "tools/**",
+    "packages/**",
+    "x_downloads/**",
   ]),
 ]);
 

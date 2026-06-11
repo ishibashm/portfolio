@@ -1,24 +1,31 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Save, Loader2, UploadCloud, FileText, Network, Share2 } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import {
+  Save,
+  Loader2,
+  UploadCloud,
+  FileText,
+  Network,
+  Share2,
+} from "lucide-react";
 
 export default function KnowledgeEditorWidget() {
-  const [activeTab, setActiveTab] = useState<'editor' | 'graph'>('graph');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [activeTab, setActiveTab] = useState<"editor" | "graph">("graph");
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [successMsg, setSuccessMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // グラフ用のアニメーション状態
   const [showAhaMoment, setShowAhaMoment] = useState(false);
 
   useEffect(() => {
-    if (activeTab === 'graph') {
+    if (activeTab === "graph") {
       // グラフタブが開かれたら少し遅れてAha Momentアニメーションを発火
       const timer = setTimeout(() => {
         setShowAhaMoment(true);
@@ -32,28 +39,28 @@ export default function KnowledgeEditorWidget() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !content) {
-      setError('タイトルと内容を入力してください。');
+      setError("タイトルと内容を入力してください。");
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
-    setSuccessMsg('');
+    setError("");
+    setSuccessMsg("");
 
     try {
       // モックとしての保存体験（API不要）
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setSuccessMsg('ドキュメントが保存され、ナレッジグラフに統合されました！');
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setSuccessMsg("ドキュメントが保存され、ナレッジグラフに統合されました！");
+
       setTimeout(() => {
-        setTitle('');
-        setContent('');
-        setSuccessMsg('');
+        setTitle("");
+        setContent("");
+        setSuccessMsg("");
         // 保存後にグラフビューへ自動遷移してAha Momentを見せるデモフロー
-        setActiveTab('graph');
+        setActiveTab("graph");
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'エラーが発生しました');
+      setError(err.message || "エラーが発生しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -61,22 +68,30 @@ export default function KnowledgeEditorWidget() {
 
   const handleFileUpload = async (file: File) => {
     setIsUploading(true);
-    setError('');
-    setSuccessMsg('');
-    
+    setError("");
+    setSuccessMsg("");
+
     try {
       // モックとしての解析体験（API不要）
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      if (file.name.endsWith('.md') || file.name.endsWith('.txt') || file.name.endsWith('.jsonl')) {
-          const text = await file.text();
-          setContent(text);
-          if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ""));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (
+        file.name.endsWith(".md") ||
+        file.name.endsWith(".txt") ||
+        file.name.endsWith(".jsonl")
+      ) {
+        const text = await file.text();
+        setContent(text);
+        if (!title) setTitle(file.name.replace(/\.[^/.]+$/, ""));
       } else {
-          setContent("（自動抽出されたテキスト）\n\n" + file.name + " の内容からAIがエンティティを抽出しました。");
-          setTitle(file.name);
+        setContent(
+          "（自動抽出されたテキスト）\n\n" +
+            file.name +
+            " の内容からAIがエンティティを抽出しました。",
+        );
+        setTitle(file.name);
       }
     } catch (err: any) {
-      setError('ファイルの解析に失敗しました');
+      setError("ファイルの解析に失敗しました");
     } finally {
       setIsUploading(false);
     }
@@ -107,22 +122,26 @@ export default function KnowledgeEditorWidget() {
           <FileText size={20} className="text-blue-400" />
           <h2 className="font-semibold text-white">Local Knowledge Builder</h2>
         </div>
-        
+
         {/* タブ切り替え */}
         <div className="flex p-1 bg-slate-950 rounded-lg border border-slate-800">
           <button
-            onClick={() => setActiveTab('graph')}
+            onClick={() => setActiveTab("graph")}
             className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'graph' ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30' : 'text-slate-400 hover:text-slate-200'
+              activeTab === "graph"
+                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             <Network size={14} />
             Graph Explorer
           </button>
           <button
-            onClick={() => setActiveTab('editor')}
+            onClick={() => setActiveTab("editor")}
             className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              activeTab === 'editor' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-slate-400 hover:text-slate-200'
+              activeTab === "editor"
+                ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
             <FileText size={14} />
@@ -133,55 +152,105 @@ export default function KnowledgeEditorWidget() {
 
       <div className="flex-1 overflow-hidden relative">
         {/* Graph Explorer Tab (Aha Moment Demo) */}
-        {activeTab === 'graph' && (
+        {activeTab === "graph" && (
           <div className="absolute inset-0 bg-slate-950 p-4 flex flex-col">
             <div className="mb-4">
               <h3 className="text-sm font-bold text-indigo-400 mb-1 flex items-center gap-2">
                 <Share2 size={16} />
                 Knowledge Triplet Network
               </h3>
-              <p className="text-xs text-slate-500">抽出されたエンティティと関係性の可視化</p>
+              <p className="text-xs text-slate-500">
+                抽出されたエンティティと関係性の可視化
+              </p>
             </div>
-            
+
             <div className="flex-1 border border-slate-800 rounded-xl bg-[#0a0f1c] relative overflow-hidden flex items-center justify-center">
               {/* 背景のグリッド */}
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
-              
+              <div
+                className="absolute inset-0 opacity-10"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 2px 2px, white 1px, transparent 0)",
+                  backgroundSize: "24px 24px",
+                }}
+              ></div>
+
               {/* デモ用ネットワークグラフ */}
               <div className="relative w-full h-full max-w-lg max-h-96">
-                
                 {/* エッジ（線） */}
-                <svg className="absolute inset-0 w-full h-full" style={{ pointerEvents: 'none' }}>
-                  <line x1="20%" y1="30%" x2="50%" y2="50%" stroke="#334155" strokeWidth="2" />
-                  <line x1="80%" y1="20%" x2="50%" y2="50%" stroke="#334155" strokeWidth="2" />
-                  <line x1="50%" y1="50%" x2="50%" y2="80%" stroke="#334155" strokeWidth="2" />
-                  
+                <svg
+                  className="absolute inset-0 w-full h-full"
+                  style={{ pointerEvents: "none" }}
+                >
+                  <line
+                    x1="20%"
+                    y1="30%"
+                    x2="50%"
+                    y2="50%"
+                    stroke="#334155"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="80%"
+                    y1="20%"
+                    x2="50%"
+                    y2="50%"
+                    stroke="#334155"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="50%"
+                    y1="50%"
+                    x2="50%"
+                    y2="80%"
+                    stroke="#334155"
+                    strokeWidth="2"
+                  />
+
                   {/* Aha Moment アニメーション用の光るエッジ */}
-                  <line 
-                    x1="20%" y1="70%" 
-                    x2="50%" y2="80%" 
-                    stroke={showAhaMoment ? "#818cf8" : "#334155"} 
+                  <line
+                    x1="20%"
+                    y1="70%"
+                    x2="50%"
+                    y2="80%"
+                    stroke={showAhaMoment ? "#818cf8" : "#334155"}
                     strokeWidth={showAhaMoment ? "3" : "2"}
-                    className={`transition-all duration-1000 ${showAhaMoment ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.8)]' : ''}`}
+                    className={`transition-all duration-1000 ${showAhaMoment ? "drop-shadow-[0_0_8px_rgba(129,140,248,0.8)]" : ""}`}
                     strokeDasharray={showAhaMoment ? "5,5" : "none"}
                   >
                     {showAhaMoment && (
-                      <animate attributeName="stroke-dashoffset" from="10" to="0" dur="1s" repeatCount="indefinite" />
+                      <animate
+                        attributeName="stroke-dashoffset"
+                        from="10"
+                        to="0"
+                        dur="1s"
+                        repeatCount="indefinite"
+                      />
                     )}
                   </line>
                 </svg>
 
                 {/* エッジのラベル */}
-                <div className={`absolute top-[75%] left-[30%] text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 border transition-all duration-1000 ${showAhaMoment ? 'text-indigo-300 border-indigo-500/50 scale-110 z-10' : 'text-slate-500 border-slate-700 opacity-0'}`} style={{ transform: 'translate(-50%, -50%)' }}>
+                <div
+                  className={`absolute top-[75%] left-[30%] text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-900 border transition-all duration-1000 ${showAhaMoment ? "text-indigo-300 border-indigo-500/50 scale-110 z-10" : "text-slate-500 border-slate-700 opacity-0"}`}
+                  style={{ transform: "translate(-50%, -50%)" }}
+                >
                   SUPPORTS
                 </div>
-                <div className="absolute top-[40%] left-[35%] text-[9px] font-mono text-slate-500 bg-slate-900 border border-slate-700 px-1 rounded" style={{ transform: 'translate(-50%, -50%)' }}>USED_BY</div>
-                
+                <div
+                  className="absolute top-[40%] left-[35%] text-[9px] font-mono text-slate-500 bg-slate-900 border border-slate-700 px-1 rounded"
+                  style={{ transform: "translate(-50%, -50%)" }}
+                >
+                  USED_BY
+                </div>
+
                 {/* ノード */}
                 {/* 既存ノード 1 */}
                 <div className="absolute top-[30%] left-[20%] w-24 h-24 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-center shadow-lg transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-transform cursor-pointer">
                   <div className="text-center">
-                    <div className="text-[10px] text-slate-400 mb-1">Technology</div>
+                    <div className="text-[10px] text-slate-400 mb-1">
+                      Technology
+                    </div>
                     <div className="text-xs font-bold">Ollama</div>
                   </div>
                 </div>
@@ -189,7 +258,9 @@ export default function KnowledgeEditorWidget() {
                 {/* 既存ノード 2 */}
                 <div className="absolute top-[20%] left-[80%] w-20 h-20 bg-slate-800 rounded-full border-2 border-slate-600 flex items-center justify-center shadow-lg transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-transform cursor-pointer">
                   <div className="text-center">
-                    <div className="text-[10px] text-slate-400 mb-1">Concept</div>
+                    <div className="text-[10px] text-slate-400 mb-1">
+                      Concept
+                    </div>
                     <div className="text-xs font-bold">RAG</div>
                   </div>
                 </div>
@@ -197,22 +268,36 @@ export default function KnowledgeEditorWidget() {
                 {/* 中心ノード */}
                 <div className="absolute top-[50%] left-[50%] w-28 h-28 bg-blue-900/40 rounded-full border-2 border-blue-500/50 flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.3)] transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-transform cursor-pointer z-10">
                   <div className="text-center">
-                    <div className="text-[10px] text-blue-300 mb-1">My Note</div>
-                    <div className="text-sm font-bold text-blue-100">MCPの設計</div>
+                    <div className="text-[10px] text-blue-300 mb-1">
+                      My Note
+                    </div>
+                    <div className="text-sm font-bold text-blue-100">
+                      MCPの設計
+                    </div>
                   </div>
                 </div>
 
                 {/* 新しいノード (Aha Momentで繋がるXのポスト) */}
-                <div className={`absolute top-[70%] left-[20%] w-24 h-24 rounded-full border-2 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-1000 z-10 ${
-                  showAhaMoment 
-                    ? 'bg-indigo-900/60 border-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.6)] scale-110' 
-                    : 'bg-slate-800 border-slate-600 shadow-lg scale-100 opacity-50'
-                }`}>
+                <div
+                  className={`absolute top-[70%] left-[20%] w-24 h-24 rounded-full border-2 flex items-center justify-center transform -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-1000 z-10 ${
+                    showAhaMoment
+                      ? "bg-indigo-900/60 border-indigo-400 shadow-[0_0_20px_rgba(129,140,248,0.6)] scale-110"
+                      : "bg-slate-800 border-slate-600 shadow-lg scale-100 opacity-50"
+                  }`}
+                >
                   <div className="text-center">
-                    <div className={`text-[10px] mb-1 transition-colors ${showAhaMoment ? 'text-indigo-300' : 'text-slate-400'}`}>X Post</div>
-                    <div className={`text-xs font-bold transition-colors ${showAhaMoment ? 'text-white' : 'text-slate-300'}`}>自律エージェント</div>
+                    <div
+                      className={`text-[10px] mb-1 transition-colors ${showAhaMoment ? "text-indigo-300" : "text-slate-400"}`}
+                    >
+                      X Post
+                    </div>
+                    <div
+                      className={`text-xs font-bold transition-colors ${showAhaMoment ? "text-white" : "text-slate-300"}`}
+                    >
+                      自律エージェント
+                    </div>
                   </div>
-                  
+
                   {/* Aha Moment用 パルスエフェクト */}
                   {showAhaMoment && (
                     <div className="absolute inset-0 rounded-full border-2 border-indigo-500 animate-ping opacity-20"></div>
@@ -226,13 +311,16 @@ export default function KnowledgeEditorWidget() {
                     <div className="text-xs font-bold">xurl</div>
                   </div>
                 </div>
-
               </div>
-              
+
               {/* Aha Moment 発生時のツールチップポップアップ */}
-              <div className={`absolute bottom-6 right-6 max-w-xs bg-indigo-950 border border-indigo-500/50 rounded-lg p-3 shadow-xl shadow-indigo-900/20 transition-all duration-700 transform ${
-                showAhaMoment ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-              }`}>
+              <div
+                className={`absolute bottom-6 right-6 max-w-xs bg-indigo-950 border border-indigo-500/50 rounded-lg p-3 shadow-xl shadow-indigo-900/20 transition-all duration-700 transform ${
+                  showAhaMoment
+                    ? "translate-y-0 opacity-100"
+                    : "translate-y-10 opacity-0"
+                }`}
+              >
                 <div className="text-xs font-bold text-indigo-300 mb-1 flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
                   New Discovery!
@@ -241,13 +329,12 @@ export default function KnowledgeEditorWidget() {
                   あなたのメモ「MCPの設計」は、最近保存したXのポスト「自律エージェント」を理論的にサポート（SUPPORTS）しています。
                 </p>
               </div>
-
             </div>
           </div>
         )}
 
         {/* Editor Tab */}
-        {activeTab === 'editor' && (
+        {activeTab === "editor" && (
           <div className="absolute inset-0 p-4 overflow-y-auto custom-scrollbar flex flex-col gap-4">
             {/* Upload Zone */}
             <div
@@ -257,8 +344,8 @@ export default function KnowledgeEditorWidget() {
               onClick={() => fileInputRef.current?.click()}
               className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
                 isDragging
-                  ? 'border-blue-500 bg-blue-900/20'
-                  : 'border-slate-600 hover:bg-slate-800/50'
+                  ? "border-blue-500 bg-blue-900/20"
+                  : "border-slate-600 hover:bg-slate-800/50"
               }`}
             >
               <input
@@ -275,15 +362,22 @@ export default function KnowledgeEditorWidget() {
               {isUploading ? (
                 <div className="flex flex-col items-center gap-3 text-slate-400">
                   <Loader2 size={24} className="animate-spin text-blue-500" />
-                  <p className="font-medium text-xs">AIによる文書解析・抽出中...</p>
+                  <p className="font-medium text-xs">
+                    AIによる文書解析・抽出中...
+                  </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
-                  <UploadCloud size={24} className={isDragging ? 'text-blue-400' : 'text-slate-500'} />
+                  <UploadCloud
+                    size={24}
+                    className={isDragging ? "text-blue-400" : "text-slate-500"}
+                  />
                   <p className="font-medium text-xs text-slate-300">
                     ここにファイルをドラッグ＆ドロップするか、クリックして選択
                   </p>
-                  <p className="text-[10px] opacity-70">対応形式: .md, .txt, .pdf, .jsonl etc.</p>
+                  <p className="text-[10px] opacity-70">
+                    対応形式: .md, .txt, .pdf, .jsonl etc.
+                  </p>
                 </div>
               )}
             </div>
@@ -301,9 +395,15 @@ export default function KnowledgeEditorWidget() {
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4 flex-1">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col gap-4 flex-1"
+            >
               <div className="space-y-1.5">
-                <label htmlFor="title" className="block text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <label
+                  htmlFor="title"
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-widest"
+                >
                   タイトル (Document Title)
                 </label>
                 <input
@@ -318,9 +418,14 @@ export default function KnowledgeEditorWidget() {
               </div>
 
               <div className="space-y-1.5 flex-1 flex flex-col">
-                <label htmlFor="content" className="block text-xs font-bold text-slate-400 uppercase tracking-widest flex justify-between">
+                <label
+                  htmlFor="content"
+                  className="block text-xs font-bold text-slate-400 uppercase tracking-widest flex justify-between"
+                >
                   <span>本文 (Content)</span>
-                  <span className="font-normal opacity-70 normal-case">Markdown supported</span>
+                  <span className="font-normal opacity-70 normal-case">
+                    Markdown supported
+                  </span>
                 </label>
                 <textarea
                   id="content"

@@ -6,15 +6,15 @@
 // 設定 (Settings)
 // ==============================
 // 賃貸情報が届くGmailのラベル名（ご自身の環境に合わせて変更してください）
-const GMAIL_LABEL = "不動産"; 
+const GMAIL_LABEL = "不動産";
 
 // ポートフォリオサイト（デプロイ先）のWebhook URL
 // ローカルテスト時は ngrok のURLなどを指定します
-const WEBHOOK_URL = "https://cloud-palette.com/api/rentals/webhook"; 
+const WEBHOOK_URL = "https://cloud-palette.com/api/rentals/webhook";
 
 // 不正アクセスを防ぐためのシークレットキー (必須)
 // Next.jsの環境変数(API_SECRET_KEY)と同じ文字列を設定してください
-const API_SECRET_KEY = "PLEASE_SET_YOUR_SECRET_KEY_HERE"; 
+const API_SECRET_KEY = "PLEASE_SET_YOUR_SECRET_KEY_HERE";
 
 /**
  * フィルターに合致する新着（未読）メールを取得してWebhookに送信するメイン関数
@@ -24,38 +24,38 @@ function fetchAndSendRealEstateEmails() {
   // 指定したラベルが付いている未読メールを検索
   const searchQuery = `label:${GMAIL_LABEL} is:unread`;
   const threads = GmailApp.search(searchQuery, 0, 10); // 一度に最大10スレッド処理
-  
+
   const stats = {
     threadsFound: threads.length,
     emailsProcessed: 0,
     webhooksSent: 0,
     webhooksSucceeded: 0,
-    errors: []
+    errors: [],
   };
 
   if (threads.length === 0) {
     Logger.log("新着の不動産メールはありませんでした。");
     return stats;
   }
-  
+
   for (const thread of threads) {
     const messages = thread.getMessages();
-    
+
     for (const message of messages) {
       if (message.isUnread()) {
         stats.emailsProcessed++;
-        
+
         const emailData = {
           email_id: message.getId(),
           subject: message.getSubject(),
           date: message.getDate().toISOString(),
-          body: message.getPlainBody()
+          body: message.getPlainBody(),
         };
-        
+
         // Webhookの呼び出し
         stats.webhooksSent++;
         const result = sendToWebhook(emailData);
-        
+
         // 成功したら既読にする（同じメールを何度も処理しないため）
         if (result.success) {
           stats.webhooksSucceeded++;
@@ -66,7 +66,7 @@ function fetchAndSendRealEstateEmails() {
       }
     }
   }
-  
+
   return stats;
 }
 
@@ -76,20 +76,20 @@ function fetchAndSendRealEstateEmails() {
  */
 function sendToWebhook(data) {
   const options = {
-    method: 'post',
+    method: "post",
     headers: {
-      'Authorization': `Bearer ${API_SECRET_KEY}`
+      Authorization: `Bearer ${API_SECRET_KEY}`,
     },
-    contentType: 'application/json',
+    contentType: "application/json",
     payload: JSON.stringify(data),
-    muteHttpExceptions: true // エラー時も例外を投げずにレスポンスを取得
+    muteHttpExceptions: true, // エラー時も例外を投げずにレスポンスを取得
   };
-  
+
   try {
     const response = UrlFetchApp.fetch(WEBHOOK_URL, options);
     const responseCode = response.getResponseCode();
     const responseText = response.getContentText();
-    
+
     if (responseCode >= 200 && responseCode < 300) {
       Logger.log(`✅ Webhook送信成功: ${data.subject}`);
       return { success: true };
@@ -111,14 +111,16 @@ function sendToWebhook(data) {
 function doGet(e) {
   try {
     const stats = fetchAndSendRealEstateEmails();
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      message: `Scraper executed. Threads found: ${stats.threadsFound}, Emails processed: ${stats.emailsProcessed}, Sent to Webhook: ${stats.webhooksSent}, Succeeded: ${stats.webhooksSucceeded}`,
-      stats: stats
-    }))
-    .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(
+      JSON.stringify({
+        success: true,
+        message: `Scraper executed. Threads found: ${stats.threadsFound}, Emails processed: ${stats.emailsProcessed}, Sent to Webhook: ${stats.webhooksSent}, Succeeded: ${stats.webhooksSucceeded}`,
+        stats: stats,
+      }),
+    ).setMimeType(ContentService.MimeType.JSON);
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: false, error: error.message }),
+    ).setMimeType(ContentService.MimeType.JSON);
   }
 }

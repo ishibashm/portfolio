@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -12,10 +12,10 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/v1/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL 
+        source: "/api/v1/:path*",
+        destination: process.env.NEXT_PUBLIC_API_URL
           ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
-          : 'http://127.0.0.1:8000/api/v1/:path*',
+          : "http://127.0.0.1:8000/api/v1/:path*",
       },
     ];
   },

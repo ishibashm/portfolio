@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 interface MarkdownFile {
   name: string;
@@ -13,7 +13,7 @@ interface MarkdownFile {
 export default function MarkdownViewerWidget() {
   const [files, setFiles] = useState<MarkdownFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<MarkdownFile | null>(null);
-  const [content, setContent] = useState<string>('');
+  const [content, setContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +21,8 @@ export default function MarkdownViewerWidget() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/files/list');
-      if (!res.ok) throw new Error('ファイル一覧の取得に失敗しました');
+      const res = await fetch("/api/v1/files/list");
+      if (!res.ok) throw new Error("ファイル一覧の取得に失敗しました");
       const data = await res.json();
       setFiles(data.files || []);
     } catch (err: any) {
@@ -34,16 +34,16 @@ export default function MarkdownViewerWidget() {
 
   const handleSelectFile = async (file: MarkdownFile) => {
     setSelectedFile(file);
-    setContent('読み込み中...');
+    setContent("読み込み中...");
     try {
-      const res = await fetch('/api/v1/files/read', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/v1/files/read", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filepath: file.path }),
       });
-      if (!res.ok) throw new Error('ファイルの読み込みに失敗しました');
+      if (!res.ok) throw new Error("ファイルの読み込みに失敗しました");
       const data = await res.json();
-      setContent(data.content || '');
+      setContent(data.content || "");
     } catch (err: any) {
       setContent(`エラー: ${err.message}`);
     }
@@ -60,14 +60,13 @@ export default function MarkdownViewerWidget() {
 
   return (
     <div className="flex h-full bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden text-slate-200">
-      
       {/* Sidebar: File List */}
       <div className="w-1/3 border-r border-slate-700 flex flex-col bg-slate-800/30">
         <div className="px-4 py-3 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center">
           <h2 className="font-semibold flex items-center gap-2 text-white text-sm">
             <span className="text-emerald-400">📄</span> ダウンロード/レポート
           </h2>
-          <button 
+          <button
             onClick={fetchFiles}
             className="text-[10px] bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded transition-colors"
           >
@@ -76,18 +75,22 @@ export default function MarkdownViewerWidget() {
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {isLoading && files.length === 0 ? (
-            <p className="text-xs text-slate-400 text-center mt-4">読み込み中...</p>
+            <p className="text-xs text-slate-400 text-center mt-4">
+              読み込み中...
+            </p>
           ) : files.length === 0 ? (
-            <p className="text-xs text-slate-500 text-center mt-4">ファイルがありません</p>
+            <p className="text-xs text-slate-500 text-center mt-4">
+              ファイルがありません
+            </p>
           ) : (
             <ul className="space-y-1">
               {files.map((file) => (
                 <li key={file.path}>
                   <div
                     className={`w-full flex flex-col px-3 py-2 rounded-md text-xs transition-colors truncate ${
-                      selectedFile?.path === file.path 
-                        ? 'bg-emerald-600/20 text-emerald-400 font-medium border border-emerald-500/30' 
-                        : 'text-slate-300 hover:bg-slate-700/50'
+                      selectedFile?.path === file.path
+                        ? "bg-emerald-600/20 text-emerald-400 font-medium border border-emerald-500/30"
+                        : "text-slate-300 hover:bg-slate-700/50"
                     }`}
                   >
                     <button
@@ -96,7 +99,9 @@ export default function MarkdownViewerWidget() {
                       title={file.name}
                     >
                       <div className="truncate">{file.name}</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">{file.folder}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">
+                        {file.folder}
+                      </div>
                     </button>
                     <div className="flex justify-end mt-2 border-t border-slate-700/50 pt-2">
                       <button
@@ -119,7 +124,10 @@ export default function MarkdownViewerWidget() {
         {selectedFile ? (
           <>
             <div className="px-4 py-3 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center">
-              <span className="text-xs font-mono text-slate-300 truncate" title={selectedFile.name}>
+              <span
+                className="text-xs font-mono text-slate-300 truncate"
+                title={selectedFile.name}
+              >
                 {selectedFile.name}
               </span>
               <span className="text-[10px] text-slate-500">
@@ -138,7 +146,6 @@ export default function MarkdownViewerWidget() {
           </div>
         )}
       </div>
-
     </div>
   );
 }

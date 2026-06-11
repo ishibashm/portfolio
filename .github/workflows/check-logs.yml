@@ -6,7 +6,7 @@ on:
 jobs:
   check-logs:
     runs-on: ubuntu-latest
-    
+
     env:
       INSTANCE_NAME: wordpress-1-vm
       ZONE: us-central1-f

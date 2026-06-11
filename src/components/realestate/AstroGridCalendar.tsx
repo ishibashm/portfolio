@@ -1,21 +1,31 @@
 "use client";
 
-import React from 'react';
+import React from "react";
 
 // 凶要素の解説辞書
 const DISASTER_EXPLANATIONS: Record<string, string> = {
-  "五黄殺": "五黄殺（ごおうさつ）：周囲を巻き込み、自滅をもたらす最大凶方位。全ての人に大凶。",
-  "暗剣殺": "暗剣殺（あんけんさつ）：突発的な事故や他者からの災難がもたらされる最大凶方位。全ての人に大凶。",
-  "歳破": "歳破（さいは）：時のエネルギーが壊れる方位。契約や引っ越し、旅行が大破する大凶方位。",
-  "日破": "日破（にっぱ）：その日の十二支と対極にある方位。交渉事や移動が破綻しやすい凶方位。",
-  "本命殺": "本命殺（ほんめいさつ）：自分自身の身体や判断ミスが元でトラブルが生じる大凶方位（個人影響）。",
-  "本命的殺": "本命的殺（ほんめいてきさつ）：目標や目的が妨害され、精神的な苦痛を受ける大凶方位（個人影響）。",
-  "月命殺": "月命殺（げつめいさつ）：身体に悪い影響が出やすい凶方位（本命殺より穏やか）。",
-  "月命的殺": "月命的殺（げつめいてきさつ）：仕事や目標が邪魔されやすい凶方位（本命的殺より穏やか）。",
-  "天中殺": "天中殺（てんちゅうさつ）：運気が停滞し、新しい行動（引っ越し・契約）を慎むべきとされる時期的な凶。",
-  "土用殺": "土用（どよう）：季節の変わり目の土用期間中。大地の気が乱れるため、引っ越しや土いじりは非推奨。",
-  "月交点ノイズ": "月交点（ノード）：天体軌道の交点による磁気・空間ノイズが発生しているエリア。",
-  "偏角境界": "偏角境界：真北と磁北の方位境界線上に位置し、磁気的なブレが生じやすい場所。"
+  五黄殺:
+    "五黄殺（ごおうさつ）：周囲を巻き込み、自滅をもたらす最大凶方位。全ての人に大凶。",
+  暗剣殺:
+    "暗剣殺（あんけんさつ）：突発的な事故や他者からの災難がもたらされる最大凶方位。全ての人に大凶。",
+  歳破: "歳破（さいは）：時のエネルギーが壊れる方位。契約や引っ越し、旅行が大破する大凶方位。",
+  日破: "日破（にっぱ）：その日の十二支と対極にある方位。交渉事や移動が破綻しやすい凶方位。",
+  本命殺:
+    "本命殺（ほんめいさつ）：自分自身の身体や判断ミスが元でトラブルが生じる大凶方位（個人影響）。",
+  本命的殺:
+    "本命的殺（ほんめいてきさつ）：目標や目的が妨害され、精神的な苦痛を受ける大凶方位（個人影響）。",
+  月命殺:
+    "月命殺（げつめいさつ）：身体に悪い影響が出やすい凶方位（本命殺より穏やか）。",
+  月命的殺:
+    "月命的殺（げつめいてきさつ）：仕事や目標が邪魔されやすい凶方位（本命的殺より穏やか）。",
+  天中殺:
+    "天中殺（てんちゅうさつ）：運気が停滞し、新しい行動（引っ越し・契約）を慎むべきとされる時期的な凶。",
+  土用殺:
+    "土用（どよう）：季節の変わり目の土用期間中。大地の気が乱れるため、引っ越しや土いじりは非推奨。",
+  月交点ノイズ:
+    "月交点（ノード）：天体軌道の交点による磁気・空間ノイズが発生しているエリア。",
+  偏角境界:
+    "偏角境界：真北と磁北の方位境界線上に位置し、磁気的なブレが生じやすい場所。",
 };
 
 interface DateScore {
@@ -51,7 +61,11 @@ interface AstroGridCalendarProps {
   isTransitioning?: boolean;
 }
 
-export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = false }: AstroGridCalendarProps) {
+export function AstroGridCalendar({
+  dateScores,
+  onDateChange,
+  isTransitioning = false,
+}: AstroGridCalendarProps) {
   if (!dateScores || dateScores.length === 0) return null;
 
   // 曜日名
@@ -73,17 +87,22 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
       return "bg-zinc-800/50 border border-zinc-800 animate-pulse cursor-wait";
     }
 
-    let baseClass = "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all relative ";
+    let baseClass =
+      "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all relative ";
 
     // 目標日（当日）の立体強調スタイル (白フチ + 濃い影 + 1.05倍拡大)
     if (isToday) {
-      baseClass += "scale-105 border-2 border-white dark:border-white shadow-[0_4px_12px_rgba(0,0,0,0.6)] z-10 ";
+      baseClass +=
+        "scale-105 border-2 border-white dark:border-white shadow-[0_4px_12px_rgba(0,0,0,0.6)] z-10 ";
     } else {
       baseClass += "border ";
     }
 
     if (day.isUltraLucky) {
-      return baseClass + "bg-gradient-to-br from-amber-400 to-yellow-500 text-amber-950 font-bold border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:scale-110";
+      return (
+        baseClass +
+        "bg-gradient-to-br from-amber-400 to-yellow-500 text-amber-950 font-bold border-amber-300 shadow-[0_0_10px_rgba(251,191,36,0.3)] hover:scale-110"
+      );
     }
 
     const status = day.status;
@@ -91,31 +110,54 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
 
     // 重い凶があるか判定
     const isHeavyBad = [
-      'NOISE_GOU', 
-      'NOISE_ANKEN', 
-      'NOISE_HA', 
-      'NOISE_HONMEI', 
-      'NOISE_TEKI'
+      "NOISE_GOU",
+      "NOISE_ANKEN",
+      "NOISE_HA",
+      "NOISE_HONMEI",
+      "NOISE_TEKI",
     ].includes(status);
 
     if (isHeavyBad) {
-      return baseClass + "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30 hover:scale-110";
+      return (
+        baseClass +
+        "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30 hover:scale-110"
+      );
     }
 
     // 吉のみ (凶ゼロ) か判定
-    const hasLucky = day.luckyDays.isTendo || day.luckyDays.isIchiryumanbai || day.luckyDays.isTensho || day.rokuyo.includes("大安") || 
-                     (details && (details.sunLineBonus > 0 || details.venusLineBonus > 0 || details.jupiterLineBonus > 0 || details.lunarPhaseScore > 0));
-    
-    const hasAnyBad = (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) || 
-                      ['NOISE_VOID', 'NOISE_NODE', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(status);
+    const hasLucky =
+      day.luckyDays.isTendo ||
+      day.luckyDays.isIchiryumanbai ||
+      day.luckyDays.isTensho ||
+      day.rokuyo.includes("大安") ||
+      (details &&
+        (details.sunLineBonus > 0 ||
+          details.venusLineBonus > 0 ||
+          details.jupiterLineBonus > 0 ||
+          details.lunarPhaseScore > 0));
+
+    const hasAnyBad =
+      (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
+      [
+        "NOISE_VOID",
+        "NOISE_NODE",
+        "NOISE_GETSUMEI",
+        "NOISE_GETSUTEKI",
+      ].includes(status);
 
     if (hasLucky && !hasAnyBad) {
-      return baseClass + "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 hover:scale-110";
+      return (
+        baseClass +
+        "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 hover:scale-110"
+      );
     }
 
     // 軽い凶がある場合はグレー背景（丸ドットは別途付与）
     // 通常 (グレー) の日
-    return baseClass + "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80 hover:scale-110";
+    return (
+      baseClass +
+      "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80 hover:scale-110"
+    );
   };
 
   // 曜日表示カラー
@@ -130,31 +172,38 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
       <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold tracking-wider">
         前後7日間の吉凶カレンダー (タップで切替 / ホバーで内訳)
       </div>
-      
+
       <div className="flex items-center gap-1.5">
         {dateScores.map((day, idx) => {
-          const dayNum = day.date.split('-')[2];
+          const dayNum = day.date.split("-")[2];
           const isToday = idx === 3; // 配列の真ん中が指定日(当日)
 
-          const tooltipTitle = `${day.date} (${WEEKDAYS[day.weekday]}${day.holiday.isHoliday ? `・${day.holiday.name}` : ''})`;
+          const tooltipTitle = `${day.date} (${WEEKDAYS[day.weekday]}${day.holiday.isHoliday ? `・${day.holiday.name}` : ""})`;
           const lucksList = [
             day.rokuyo,
             ...(day.luckyDays.isIchiryumanbai ? ["一粒万倍日"] : []),
             ...(day.luckyDays.isTensho ? ["天赦日"] : []),
-            ...(day.luckyDays.isTendo ? ["天道方位"] : [])
+            ...(day.luckyDays.isTendo ? ["天道方位"] : []),
           ].join(" ・ ");
 
           // 軽い凶があるかチェック
           const details = day.scoreDetails;
-          const hasLightBad = (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) || 
-                            ['NOISE_VOID', 'NOISE_NODE', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(day.status);
+          const hasLightBad =
+            (details &&
+              (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
+            [
+              "NOISE_VOID",
+              "NOISE_NODE",
+              "NOISE_GETSUMEI",
+              "NOISE_GETSUTEKI",
+            ].includes(day.status);
 
           const isHeavyBad = [
-            'NOISE_GOU', 
-            'NOISE_ANKEN', 
-            'NOISE_HA', 
-            'NOISE_HONMEI', 
-            'NOISE_TEKI'
+            "NOISE_GOU",
+            "NOISE_ANKEN",
+            "NOISE_HA",
+            "NOISE_HONMEI",
+            "NOISE_TEKI",
           ].includes(day.status);
 
           // 軽い凶があるが重い凶がない場合、黄ドットを表示
@@ -167,37 +216,53 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
             // 計算式のテキスト組み立て
             const parts: string[] = [];
             parts.push(`${details.baseAstrologyScore} (基本方位)`);
-            if (details.tendoBonus > 0) parts.push(`+${details.tendoBonus} (天道)`);
-            if (details.jupiterLineBonus > 0) parts.push(`+${details.jupiterLineBonus} (木星ライン)`);
-            if (details.venusLineBonus > 0) parts.push(`+${details.venusLineBonus} (金星ライン)`);
-            if (details.sunLineBonus > 0) parts.push(`+${details.sunLineBonus} (太陽ライン)`);
-            if (details.lunarPhaseScore > 0) parts.push(`+${details.lunarPhaseScore} (月相加点)`);
-            else if (details.lunarPhaseScore < 0) parts.push(`${details.lunarPhaseScore} (月相減点)`);
-            
-            if (details.doyouPenalty < 0) parts.push(`${details.doyouPenalty} (土用期間)`);
-            if (details.voidPenalty < 0) parts.push(`${details.voidPenalty} (天中殺)`);
+            if (details.tendoBonus > 0)
+              parts.push(`+${details.tendoBonus} (天道)`);
+            if (details.jupiterLineBonus > 0)
+              parts.push(`+${details.jupiterLineBonus} (木星ライン)`);
+            if (details.venusLineBonus > 0)
+              parts.push(`+${details.venusLineBonus} (金星ライン)`);
+            if (details.sunLineBonus > 0)
+              parts.push(`+${details.sunLineBonus} (太陽ライン)`);
+            if (details.lunarPhaseScore > 0)
+              parts.push(`+${details.lunarPhaseScore} (月相加点)`);
+            else if (details.lunarPhaseScore < 0)
+              parts.push(`${details.lunarPhaseScore} (月相減点)`);
+
+            if (details.doyouPenalty < 0)
+              parts.push(`${details.doyouPenalty} (土用期間)`);
+            if (details.voidPenalty < 0)
+              parts.push(`${details.voidPenalty} (天中殺)`);
 
             const rawSum = details.rawTotalScore;
-            const clipInfo = rawSum > 100 ? " ➔ 100点(最大値)" : rawSum < 0 ? " ➔ 0点(最小値)" : "";
+            const clipInfo =
+              rawSum > 100
+                ? " ➔ 100点(最大値)"
+                : rawSum < 0
+                  ? " ➔ 0点(最小値)"
+                  : "";
 
             // 凶要素の解説のリストアップ
             const badFactors: string[] = [];
-            if (day.status === 'NOISE_GOU') badFactors.push("五黄殺");
-            if (day.status === 'NOISE_ANKEN') badFactors.push("暗剣殺");
-            if (day.status === 'NOISE_HA') badFactors.push("歳破");
-            if (day.status === 'NOISE_HONMEI') badFactors.push("本命殺");
-            if (day.status === 'NOISE_TEKI') badFactors.push("本命的殺");
-            if (day.status === 'NOISE_GETSUMEI') badFactors.push("月命殺");
-            if (day.status === 'NOISE_GETSUTEKI') badFactors.push("月命的殺");
-            if (day.status === 'NOISE_VOID' || details.voidPenalty < 0) badFactors.push("天中殺");
+            if (day.status === "NOISE_GOU") badFactors.push("五黄殺");
+            if (day.status === "NOISE_ANKEN") badFactors.push("暗剣殺");
+            if (day.status === "NOISE_HA") badFactors.push("歳破");
+            if (day.status === "NOISE_HONMEI") badFactors.push("本命殺");
+            if (day.status === "NOISE_TEKI") badFactors.push("本命的殺");
+            if (day.status === "NOISE_GETSUMEI") badFactors.push("月命殺");
+            if (day.status === "NOISE_GETSUTEKI") badFactors.push("月命的殺");
+            if (day.status === "NOISE_VOID" || details.voidPenalty < 0)
+              badFactors.push("天中殺");
             if (details.doyouPenalty < 0) badFactors.push("土用殺");
-            if (day.status === 'NOISE_NODE') badFactors.push("月交点ノイズ");
+            if (day.status === "NOISE_NODE") badFactors.push("月交点ノイズ");
 
             return (
               <div className="space-y-2 border-t border-zinc-900 pt-2 mt-2">
                 {/* 算出内訳 */}
                 <div>
-                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">吉凶の内訳式:</div>
+                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                    吉凶の内訳式:
+                  </div>
                   <div className="text-[9.5px] font-mono text-zinc-300 leading-normal">
                     {parts.join(" ")} = {rawSum}点{clipInfo}
                   </div>
@@ -206,10 +271,16 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
                 {/* 凶要素の解説 */}
                 {badFactors.length > 0 && (
                   <div className="space-y-1 pt-1.5 border-t border-zinc-900/60">
-                    <div className="text-red-400 font-bold text-[9px] tracking-wider mb-0.5">注意すべき凶兆:</div>
-                    {badFactors.map(factor => (
-                      <div key={factor} className="text-zinc-400 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-500/30">
-                        {DISASTER_EXPLANATIONS[factor] || `${factor}の影響があります。`}
+                    <div className="text-red-400 font-bold text-[9px] tracking-wider mb-0.5">
+                      注意すべき凶兆:
+                    </div>
+                    {badFactors.map((factor) => (
+                      <div
+                        key={factor}
+                        className="text-zinc-400 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-500/30"
+                      >
+                        {DISASTER_EXPLANATIONS[factor] ||
+                          `${factor}の影響があります。`}
                       </div>
                     ))}
                   </div>
@@ -219,8 +290,8 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
           };
 
           return (
-            <div 
-              key={day.date} 
+            <div
+              key={day.date}
               className="group relative cursor-pointer"
               onClick={() => {
                 if (onDateChange && !isTransitioning) {
@@ -238,13 +309,20 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
               {/* カレンダーマス */}
               <div className={getBoxStyle(day, isToday)}>
                 {/* 1. 日付の数字 (曜日カラー) */}
-                <div className={`text-[9px] font-bold ${getWeekdayColor(day)} leading-none`}>
+                <div
+                  className={`text-[9px] font-bold ${getWeekdayColor(day)} leading-none`}
+                >
                   {dayNum}
                 </div>
                 {/* 2. 軽い凶の黄ドット 🟡 or 吉兆文字 */}
                 <div className="flex justify-between items-end w-full leading-none mt-1">
                   {showYellowDot ? (
-                    <span className="text-[12px] text-yellow-400 leading-none" title="注意すべき軽い凶兆があります">●</span>
+                    <span
+                      className="text-[12px] text-yellow-400 leading-none"
+                      title="注意すべき軽い凶兆があります"
+                    >
+                      ●
+                    </span>
                   ) : (
                     <span />
                   )}
@@ -259,13 +337,21 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
                 {/* 日付ヘッダー */}
                 <div className="font-bold text-white border-b border-zinc-800 pb-1.5 mb-1.5 flex justify-between items-center text-xs">
                   <span>{tooltipTitle}</span>
-                  {isToday && <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30">指定日</span>}
+                  {isToday && (
+                    <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30">
+                      指定日
+                    </span>
+                  )}
                 </div>
 
                 {/* 暦情報 */}
                 <div className="mb-2 text-zinc-300">
-                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">当日の暦注:</div>
-                  <div className="font-semibold text-white">{lucksList || "特別な暦注なし"}</div>
+                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                    当日の暦注:
+                  </div>
+                  <div className="font-semibold text-white">
+                    {lucksList || "特別な暦注なし"}
+                  </div>
                 </div>
 
                 {/* 吉日解説 */}
@@ -278,7 +364,9 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
                   )}
                   {day.luckyDays.isIchiryumanbai && (
                     <div className="flex gap-1 text-zinc-400">
-                      <span className="font-bold text-emerald-400">一粒万倍日:</span>
+                      <span className="font-bold text-emerald-400">
+                        一粒万倍日:
+                      </span>
                       <span>一粒の籾が万倍に実る、事始めに最適な日</span>
                     </div>
                   )}
@@ -291,7 +379,9 @@ export function AstroGridCalendar({ dateScores, onDateChange, isTransitioning = 
                   {day.luckyDays.isTendo && (
                     <div className="flex gap-1 text-zinc-400">
                       <span className="font-bold text-amber-400">★天道:</span>
-                      <span>その月の最大吉方位。すべての人に大吉をもたらす</span>
+                      <span>
+                        その月の最大吉方位。すべての人に大吉をもたらす
+                      </span>
                     </div>
                   )}
                   {day.isUltraLucky && (

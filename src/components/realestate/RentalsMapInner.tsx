@@ -4,22 +4,35 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Home, ExternalLink, Calendar, MapPin, Clock, Star, StarOff } from "lucide-react";
+import {
+  Home,
+  ExternalLink,
+  Calendar,
+  MapPin,
+  Clock,
+  Star,
+  StarOff,
+} from "lucide-react";
 import type { RentalProperty } from "@/app/rentals/page";
 
 // Fix Leaflet default icon problem in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+  iconRetinaUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+  iconUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+  shadowUrl:
+    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
 // Custom SVG Icons for markers
 const createCustomIcon = (isFavorite: boolean) => {
   const pinColor = isFavorite ? "#fbbf24" : "#10b981"; // gold vs emerald
-  const glowColor = isFavorite ? "rgba(251, 191, 36, 0.4)" : "rgba(16, 185, 129, 0.4)";
-  const innerSymbol = isFavorite 
+  const glowColor = isFavorite
+    ? "rgba(251, 191, 36, 0.4)"
+    : "rgba(16, 185, 129, 0.4)";
+  const innerSymbol = isFavorite
     ? `<polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#000" stroke="#000" stroke-width="1" transform="scale(0.5) translate(12, 12)" />`
     : `<circle cx="12" cy="12" r="4" fill="#000" />`;
 
@@ -42,17 +55,23 @@ const createCustomIcon = (isFavorite: boolean) => {
     html: html,
     iconSize: [36, 36],
     iconAnchor: [18, 36],
-    popupAnchor: [0, -32]
+    popupAnchor: [0, -32],
   });
 };
 
 // Component to handle map re-centering / flying to hovered property
-function SyncHoveredProperty({ properties, hoveredPropertyId }: { properties: RentalProperty[]; hoveredPropertyId: string | null }) {
+function SyncHoveredProperty({
+  properties,
+  hoveredPropertyId,
+}: {
+  properties: RentalProperty[];
+  hoveredPropertyId: string | null;
+}) {
   const map = useMap();
-  
+
   useEffect(() => {
     if (!hoveredPropertyId) return;
-    const prop = properties.find(p => p.id === hoveredPropertyId);
+    const prop = properties.find((p) => p.id === hoveredPropertyId);
     if (prop && prop.lat !== null && prop.lon !== null) {
       map.flyTo([prop.lat, prop.lon], 15, { duration: 1.0 });
     }
@@ -68,11 +87,13 @@ function AutoFitBounds({ properties }: { properties: RentalProperty[] }) {
 
   useEffect(() => {
     // Only auto-fit if the property list changed from empty or length changed significantly
-    const validProps = properties.filter(p => p.lat !== null && p.lon !== null);
+    const validProps = properties.filter(
+      (p) => p.lat !== null && p.lon !== null,
+    );
     if (validProps.length === 0) return;
 
     if (prevPropsLength.current !== validProps.length) {
-      const bounds = L.latLngBounds(validProps.map(p => [p.lat!, p.lon!]));
+      const bounds = L.latLngBounds(validProps.map((p) => [p.lat!, p.lon!]));
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       prevPropsLength.current = validProps.length;
     }
@@ -105,7 +126,7 @@ export default function RentalsMapInner({
   properties,
   favorites,
   onToggleFavorite,
-  hoveredPropertyId
+  hoveredPropertyId,
 }: RentalsMapInnerProps) {
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
 
@@ -119,7 +140,7 @@ export default function RentalsMapInner({
 
   // Filter properties that have valid latitude & longitude
   const mapProperties = useMemo(() => {
-    return properties.filter(p => p.lat !== null && p.lon !== null);
+    return properties.filter((p) => p.lat !== null && p.lon !== null);
   }, [properties]);
 
   // Compute center of map
@@ -141,7 +162,10 @@ export default function RentalsMapInner({
         style={{ height: "100%", width: "100%", background: "#0c0c0e" }}
         zoomControl={false}
       >
-        <SyncHoveredProperty properties={properties} hoveredPropertyId={hoveredPropertyId} />
+        <SyncHoveredProperty
+          properties={properties}
+          hoveredPropertyId={hoveredPropertyId}
+        />
         <AutoFitBounds properties={mapProperties} />
         <InvalidateMapSize />
 
@@ -201,7 +225,7 @@ export default function RentalsMapInner({
                         {prop.property_name}
                       </span>
                     )}
-                    
+
                     {prop.area && (
                       <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-mono">
                         <MapPin className="w-3 h-3 text-zinc-500" />
@@ -213,36 +237,64 @@ export default function RentalsMapInner({
                   {/* Rent Summary */}
                   <div className="bg-zinc-900/60 border border-zinc-900 p-2 rounded-lg flex items-center justify-between">
                     <div>
-                      <span className="text-[8px] text-zinc-500 block uppercase tracking-wider">月額総家賃</span>
+                      <span className="text-[8px] text-zinc-500 block uppercase tracking-wider">
+                        月額総家賃
+                      </span>
                       <span className="font-extrabold text-zinc-200 text-sm font-mono">
                         ¥{totalRent.toLocaleString()}
                       </span>
                     </div>
                     <div className="text-right text-[8px] text-zinc-500 font-mono">
-                      <span>家賃: ¥{prop.rent ? prop.rent.toLocaleString() : "0"}</span>
-                      <span className="block">共益費: ¥{prop.management_fee ? prop.management_fee.toLocaleString() : "0"}</span>
+                      <span>
+                        家賃: ¥{prop.rent ? prop.rent.toLocaleString() : "0"}
+                      </span>
+                      <span className="block">
+                        共益費: ¥
+                        {prop.management_fee
+                          ? prop.management_fee.toLocaleString()
+                          : "0"}
+                      </span>
                     </div>
                   </div>
 
                   {/* Specs */}
                   <div className="grid grid-cols-3 gap-1.5 text-[10px] text-center font-mono">
                     <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">間取り</span>
-                      <span className="font-bold text-zinc-300">{prop.layout || "-"}</span>
+                      <span className="text-[7px] text-zinc-500 block">
+                        間取り
+                      </span>
+                      <span className="font-bold text-zinc-300">
+                        {prop.layout || "-"}
+                      </span>
                     </div>
                     <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">面積</span>
-                      <span className="font-bold text-zinc-300">{prop.size_sqm ? `${prop.size_sqm}m²` : "-"}</span>
+                      <span className="text-[7px] text-zinc-500 block">
+                        面積
+                      </span>
+                      <span className="font-bold text-zinc-300">
+                        {prop.size_sqm ? `${prop.size_sqm}m²` : "-"}
+                      </span>
                     </div>
                     <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">駅徒歩</span>
-                      <span className="font-bold text-zinc-300">{prop.minutes_to_station !== null ? `${prop.minutes_to_station}分` : "-"}</span>
+                      <span className="text-[7px] text-zinc-500 block">
+                        駅徒歩
+                      </span>
+                      <span className="font-bold text-zinc-300">
+                        {prop.minutes_to_station !== null
+                          ? `${prop.minutes_to_station}分`
+                          : "-"}
+                      </span>
                     </div>
                   </div>
 
                   {/* Footer Info */}
                   <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono border-t border-zinc-900 pt-2">
-                    <span>築年数: {prop.building_age !== null ? `${prop.building_age}年` : "不明"}</span>
+                    <span>
+                      築年数:{" "}
+                      {prop.building_age !== null
+                        ? `${prop.building_age}年`
+                        : "不明"}
+                    </span>
                     <span>{prop.is_new_build ? "新築" : ""}</span>
                   </div>
 

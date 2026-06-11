@@ -15,16 +15,18 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value, options }) =>
+            request.cookies.set(name, value),
+          );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   // IMPORTANT: Avoid writing any logic between createServerClient and
@@ -35,45 +37,66 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (process.env.NODE_ENV === 'development') {
-    const bypassEmail = request.cookies.get('dev_bypass_user')?.value;
+  if (process.env.NODE_ENV === "development") {
+    const bypassEmail = request.cookies.get("dev_bypass_user")?.value;
     if (bypassEmail) {
       user = {
-        id: 'dev-bypass-id',
+        id: "dev-bypass-id",
         email: bypassEmail,
-        role: 'authenticated',
+        role: "authenticated",
       } as any;
     }
   }
 
   const adminEmail = process.env.ADMIN_EMAIL;
-  const isAuthorized = !adminEmail || (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
+  const isAuthorized =
+    !adminEmail ||
+    (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
 
-  const protectedRoutes = ['/research', '/knowledge', '/x-viewer', '/visualizer', '/omni', '/dashboard', '/relocation', '/rentals', '/metaphysical', '/trends'];
-  const isProtectedRoute = protectedRoutes.some(route => request.nextUrl.pathname.startsWith(route));
+  const protectedRoutes = [
+    "/research",
+    "/knowledge",
+    "/x-viewer",
+    "/visualizer",
+    "/omni",
+    "/dashboard",
+    "/relocation",
+    "/rentals",
+    "/metaphysical",
+    "/trends",
+  ];
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    request.nextUrl.pathname.startsWith(route),
+  );
 
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search);
+    url.pathname = "/login";
+    url.searchParams.set(
+      "next",
+      request.nextUrl.pathname + request.nextUrl.search,
+    );
     return NextResponse.redirect(url);
   }
 
   // If the user is logged in, but their email does NOT match the owner's ADMIN_EMAIL
   if (user && !isAuthorized && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('error', 'Unauthorized access.');
-    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search);
+    url.pathname = "/login";
+    url.searchParams.set("error", "Unauthorized access.");
+    url.searchParams.set(
+      "next",
+      request.nextUrl.pathname + request.nextUrl.search,
+    );
     return NextResponse.redirect(url);
   }
 
   // If authorized user is logged in, and tries to visit login page, redirect to dashboard
-  if (user && isAuthorized && request.nextUrl.pathname === '/login') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
-      return NextResponse.redirect(url);
+  if (user && isAuthorized && request.nextUrl.pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

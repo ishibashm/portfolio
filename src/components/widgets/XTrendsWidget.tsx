@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
 export default function XTrendsWidget() {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [days, setDays] = useState(1);
   const [result, setResult] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,15 +15,15 @@ export default function XTrendsWidget() {
     setError(null);
 
     try {
-      const response = await fetch('/api/v1/xtrends/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/v1/xtrends/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: query || undefined, days }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || '通信エラーが発生しました');
+        throw new Error(errorData.detail || "通信エラーが発生しました");
       }
 
       const data = await response.json();
@@ -41,12 +41,16 @@ export default function XTrendsWidget() {
         <h2 className="font-semibold flex items-center gap-2 text-white">
           <span className="text-blue-400">𝕏</span> X Trends Researcher
         </h2>
-        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] rounded border border-blue-500/30">Powered by Grok</span>
+        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] rounded border border-blue-500/30">
+          Powered by Grok
+        </span>
       </div>
 
       <div className="p-4 flex flex-col gap-4 border-b border-slate-700 bg-slate-800/30">
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-slate-400">検索対象期間 (過去 N 日間)</label>
+          <label className="text-xs font-medium text-slate-400">
+            検索対象期間 (過去 N 日間)
+          </label>
           <input
             type="number"
             min="1"
@@ -57,9 +61,11 @@ export default function XTrendsWidget() {
             disabled={isProcessing}
           />
         </div>
-        
+
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-slate-400">カスタムクエリ (空欄でデフォルトの網羅的トレンド取得)</label>
+          <label className="text-xs font-medium text-slate-400">
+            カスタムクエリ (空欄でデフォルトの網羅的トレンド取得)
+          </label>
           <textarea
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -90,7 +96,8 @@ export default function XTrendsWidget() {
         )}
         {!result && !error && !isProcessing && (
           <div className="h-full flex items-center justify-center text-slate-500 italic text-center px-4">
-            「トレンドレポートを生成」ボタンを押すと、X (Twitter) から情報を収集し、詳細なレポートを作成します。
+            「トレンドレポートを生成」ボタンを押すと、X (Twitter)
+            から情報を収集し、詳細なレポートを作成します。
           </div>
         )}
         {result && (

@@ -1,31 +1,31 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import fs from 'fs/promises';
-import path from 'path';
-import { 
-  getHonmeiStar, 
-  getCurrentEnvironmentalFrequencies, 
-  generateBoard, 
-  calculateVectorCollision, 
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import fs from "fs/promises";
+import path from "path";
+import {
+  getHonmeiStar,
+  getCurrentEnvironmentalFrequencies,
+  generateBoard,
+  calculateVectorCollision,
   getPersonalVoidZodiac,
   Direction,
   calculateLunarPhaseCondition,
   getCurrentZodiac,
   getClassicalMonthStar,
   filterCollisionByMode,
-  getPhysicalMonthStar
-} from '@/utils/ephemerisEngine';
-import { getGeomagneticData } from '@/utils/geomagnetism';
+  getPhysicalMonthStar,
+} from "@/utils/ephemerisEngine";
+import { getGeomagneticData } from "@/utils/geomagnetism";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   try {
     // 1. Read user config from local_tactical_config.json
-    const configPath = path.join(process.cwd(), 'local_tactical_config.json');
+    const configPath = path.join(process.cwd(), "local_tactical_config.json");
     let config: any = {};
     try {
-      const configContent = await fs.readFile(configPath, 'utf8');
+      const configContent = await fs.readFile(configPath, "utf8");
       config = JSON.parse(configContent);
     } catch (e) {
       console.warn("Failed to read local_tactical_config.json for export API.");
@@ -33,45 +33,103 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url);
 
-    const birthDateStr = url.searchParams.get('birth_date') || config.birth_date || '2000-01-01T12:00';
-    const birthLat = url.searchParams.get('birth_lat') ? parseFloat(url.searchParams.get('birth_lat')!) : (config.birth_lat !== undefined ? config.birth_lat : 35.6895);
-    const birthLon = url.searchParams.get('birth_lon') ? parseFloat(url.searchParams.get('birth_lon')!) : (config.birth_lon !== undefined ? config.birth_lon : 139.6917);
-    const baseLat = url.searchParams.get('base_lat') ? parseFloat(url.searchParams.get('base_lat')!) : (config.base_lat !== undefined ? config.base_lat : 35.6895);
-    const baseLon = url.searchParams.get('base_lon') ? parseFloat(url.searchParams.get('base_lon')!) : (config.base_lon !== undefined ? config.base_lon : 139.6917);
-    const useClassical = url.searchParams.get('use_classical') ? url.searchParams.get('use_classical') === 'true' : (config.use_classical_board !== undefined ? config.use_classical_board : true);
-    const useTrueNorth = url.searchParams.get('use_true_north') ? url.searchParams.get('use_true_north') === 'true' : (config.use_true_north !== undefined ? config.use_true_north : false);
-    const lunarPhaseModifier = config.lunar_phase_modifier !== undefined ? config.lunar_phase_modifier : true;
-    const layerMode = url.searchParams.get('layer_mode') || config.layer_mode || 'final';
-    const directionFilterMode = url.searchParams.get('direction_filter_mode') || config.direction_filter_mode || 'composite';
+    const birthDateStr =
+      url.searchParams.get("birth_date") ||
+      config.birth_date ||
+      "2000-01-01T12:00";
+    const birthLat = url.searchParams.get("birth_lat")
+      ? parseFloat(url.searchParams.get("birth_lat")!)
+      : config.birth_lat !== undefined
+        ? config.birth_lat
+        : 35.6895;
+    const birthLon = url.searchParams.get("birth_lon")
+      ? parseFloat(url.searchParams.get("birth_lon")!)
+      : config.birth_lon !== undefined
+        ? config.birth_lon
+        : 139.6917;
+    const baseLat = url.searchParams.get("base_lat")
+      ? parseFloat(url.searchParams.get("base_lat")!)
+      : config.base_lat !== undefined
+        ? config.base_lat
+        : 35.6895;
+    const baseLon = url.searchParams.get("base_lon")
+      ? parseFloat(url.searchParams.get("base_lon")!)
+      : config.base_lon !== undefined
+        ? config.base_lon
+        : 139.6917;
+    const useClassical = url.searchParams.get("use_classical")
+      ? url.searchParams.get("use_classical") === "true"
+      : config.use_classical_board !== undefined
+        ? config.use_classical_board
+        : true;
+    const useTrueNorth = url.searchParams.get("use_true_north")
+      ? url.searchParams.get("use_true_north") === "true"
+      : config.use_true_north !== undefined
+        ? config.use_true_north
+        : false;
+    const lunarPhaseModifier =
+      config.lunar_phase_modifier !== undefined
+        ? config.lunar_phase_modifier
+        : true;
+    const layerMode =
+      url.searchParams.get("layer_mode") || config.layer_mode || "final";
+    const directionFilterMode =
+      url.searchParams.get("direction_filter_mode") ||
+      config.direction_filter_mode ||
+      "composite";
 
     // New parameters
-    const actionIntent = (url.searchParams.get('action_intent') || config.action_intent || 'MIGRATION') as 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
-    const targetLat = url.searchParams.get('target_lat') ? parseFloat(url.searchParams.get('target_lat')!) : null;
-    const targetLon = url.searchParams.get('target_lon') ? parseFloat(url.searchParams.get('target_lon')!) : null;
-    const targetElevation = url.searchParams.get('target_elevation') ? parseFloat(url.searchParams.get('target_elevation')!) : null;
+    const actionIntent = (url.searchParams.get("action_intent") ||
+      config.action_intent ||
+      "MIGRATION") as "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
+    const targetLat = url.searchParams.get("target_lat")
+      ? parseFloat(url.searchParams.get("target_lat")!)
+      : null;
+    const targetLon = url.searchParams.get("target_lon")
+      ? parseFloat(url.searchParams.get("target_lon")!)
+      : null;
+    const targetElevation = url.searchParams.get("target_elevation")
+      ? parseFloat(url.searchParams.get("target_elevation")!)
+      : null;
 
     const parseSafeDate = (dateStr: string | null | undefined): Date => {
       if (!dateStr) return new Date();
-      if (dateStr.includes('T') && !dateStr.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(dateStr)) {
-        return new Date(dateStr + '+09:00');
+      if (
+        dateStr.includes("T") &&
+        !dateStr.endsWith("Z") &&
+        !/[+-]\d{2}:?\d{2}$/.test(dateStr)
+      ) {
+        return new Date(dateStr + "+09:00");
       }
       return new Date(dateStr);
     };
 
     const bDate = parseSafeDate(birthDateStr);
-    const targetDate = url.searchParams.get('date') ? new Date(url.searchParams.get('date')!) : new Date(); // Custom target date or current date
+    const targetDate = url.searchParams.get("date")
+      ? new Date(url.searchParams.get("date")!)
+      : new Date(); // Custom target date or current date
 
     // 2. Compute Astro & Kigaku data
-    const physicalMonthMode = (url.searchParams.get('physical_month_mode') || config.physical_month_mode || 'independent') as 'coupled' | 'independent';
+    const physicalMonthMode = (url.searchParams.get("physical_month_mode") ||
+      config.physical_month_mode ||
+      "independent") as "coupled" | "independent";
     const honmeiStar = getHonmeiStar(bDate);
     const getsuMeiStar = getClassicalMonthStar(bDate);
     const voidZodiacs = getPersonalVoidZodiac(bDate);
-    const env = getCurrentEnvironmentalFrequencies(targetDate, baseLon, physicalMonthMode);
+    const env = getCurrentEnvironmentalFrequencies(
+      targetDate,
+      baseLon,
+      physicalMonthMode,
+    );
 
     // Strict boards for multi-model calculations
     const pyB = generateBoard(env.yearStar);
-    const pmB_indep = generateBoard(getPhysicalMonthStar(targetDate, 'independent'));
-    const pmB_coupled = generateBoard(getPhysicalMonthStar(targetDate, 'coupled'));
+    const pmB_indep = generateBoard(
+      getPhysicalMonthStar(targetDate, "independent"),
+    );
+    const pmB_coupled = generateBoard(
+      getPhysicalMonthStar(targetDate, "coupled"),
+    );
     const pdB = generateBoard(env.dayStar);
 
     const cyB = generateBoard(env.classicalYearStar);
@@ -79,53 +137,115 @@ export async function GET(request: Request) {
     const cdB = generateBoard(env.classicalDayStar);
 
     // Helper to calculate vector collision for a specific intent across all models
-    const getCollisionForIntent = (intent: 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION') => {
+    const getCollisionForIntent = (
+      intent: "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION",
+    ) => {
       const classicalCollision = filterCollisionByMode(
-        calculateVectorCollision(honmeiStar.classical, cyB, cmB, cdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, getsuMeiStar, 'traditional'),
-        honmeiStar.classical, getsuMeiStar, voidZodiacs, directionFilterMode, cyB, cmB, cdB
+        calculateVectorCollision(
+          honmeiStar.classical,
+          cyB,
+          cmB,
+          cdB,
+          voidZodiacs,
+          env.raw.lunarNode,
+          intent,
+          targetDate,
+          baseLon,
+          getsuMeiStar,
+          "traditional",
+        ),
+        honmeiStar.classical,
+        getsuMeiStar,
+        voidZodiacs,
+        directionFilterMode,
+        cyB,
+        cmB,
+        cdB,
       );
-      
+
       const physicalIndepCollision = filterCollisionByMode(
-        calculateVectorCollision(honmeiStar.physical, pyB, pmB_indep, pdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, undefined, 'physical'),
-        honmeiStar.physical, null, voidZodiacs, directionFilterMode, pyB, pmB_indep, pdB
+        calculateVectorCollision(
+          honmeiStar.physical,
+          pyB,
+          pmB_indep,
+          pdB,
+          voidZodiacs,
+          env.raw.lunarNode,
+          intent,
+          targetDate,
+          baseLon,
+          undefined,
+          "physical",
+        ),
+        honmeiStar.physical,
+        null,
+        voidZodiacs,
+        directionFilterMode,
+        pyB,
+        pmB_indep,
+        pdB,
       );
-      
+
       const physicalCoupledCollision = filterCollisionByMode(
-        calculateVectorCollision(honmeiStar.physical, pyB, pmB_coupled, pdB, voidZodiacs, env.raw.lunarNode, intent, targetDate, baseLon, undefined, 'physical'),
-        honmeiStar.physical, null, voidZodiacs, directionFilterMode, pyB, pmB_coupled, pdB
+        calculateVectorCollision(
+          honmeiStar.physical,
+          pyB,
+          pmB_coupled,
+          pdB,
+          voidZodiacs,
+          env.raw.lunarNode,
+          intent,
+          targetDate,
+          baseLon,
+          undefined,
+          "physical",
+        ),
+        honmeiStar.physical,
+        null,
+        voidZodiacs,
+        directionFilterMode,
+        pyB,
+        pmB_coupled,
+        pdB,
       );
 
       return {
         classical: classicalCollision.finalVectors,
         physicalIndependent: physicalIndepCollision.finalVectors,
-        physicalCoupled: physicalCoupledCollision.finalVectors
+        physicalCoupled: physicalCoupledCollision.finalVectors,
       };
     };
 
     // Precompute comparison matrix for all four intents
     const intentsComparison = {
-      DEFAULT: getCollisionForIntent('DEFAULT'),
-      MIGRATION: getCollisionForIntent('MIGRATION'),
-      BUSINESS: getCollisionForIntent('BUSINESS'),
-      REST: getCollisionForIntent('REST')
+      DEFAULT: getCollisionForIntent("DEFAULT"),
+      MIGRATION: getCollisionForIntent("MIGRATION"),
+      BUSINESS: getCollisionForIntent("BUSINESS"),
+      REST: getCollisionForIntent("REST"),
     };
 
     // Calculate main active vectors based on user configurations and query actionIntent
-    const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
-    const mB = generateBoard(useClassical ? env.classicalMonthStar : env.monthStar);
+    const yB = generateBoard(
+      useClassical ? env.classicalYearStar : env.yearStar,
+    );
+    const mB = generateBoard(
+      useClassical ? env.classicalMonthStar : env.monthStar,
+    );
     const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
-    const nodeMapping = useClassical ? 'traditional' : 'physical';
+    const nodeMapping = useClassical ? "traditional" : "physical";
     const rawVectorCollision = calculateVectorCollision(
       useClassical ? honmeiStar.classical : honmeiStar.physical,
-      yB, mB, dB,
+      yB,
+      mB,
+      dB,
       voidZodiacs,
       env.raw.lunarNode,
       actionIntent, // Aligned with search param
       targetDate,
       baseLon,
       useClassical ? getsuMeiStar : undefined,
-      nodeMapping
+      nodeMapping,
     );
 
     const vectorCollision = filterCollisionByMode(
@@ -134,30 +254,53 @@ export async function GET(request: Request) {
       useClassical ? getsuMeiStar : null,
       voidZodiacs,
       directionFilterMode,
-      yB, mB, dB
+      yB,
+      mB,
+      dB,
     );
 
     // Compute 30-day forecast matrix using aligned actionIntent
     const forecast30Days = [];
-    const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    
+    const directions: Direction[] = [
+      "N",
+      "NE",
+      "E",
+      "SE",
+      "S",
+      "SW",
+      "W",
+      "NW",
+    ];
+
     for (let i = 0; i < 30; i++) {
       const testDate = new Date(targetDate.getTime() + i * 86400000);
-      const testEnv = getCurrentEnvironmentalFrequencies(testDate, baseLon, physicalMonthMode);
-      const tyB = generateBoard(useClassical ? testEnv.classicalYearStar : testEnv.yearStar);
-      const tmB = generateBoard(useClassical ? testEnv.classicalMonthStar : testEnv.monthStar);
-      const tdB = generateBoard(useClassical ? testEnv.classicalDayStar : testEnv.dayStar);
-      
+      const testEnv = getCurrentEnvironmentalFrequencies(
+        testDate,
+        baseLon,
+        physicalMonthMode,
+      );
+      const tyB = generateBoard(
+        useClassical ? testEnv.classicalYearStar : testEnv.yearStar,
+      );
+      const tmB = generateBoard(
+        useClassical ? testEnv.classicalMonthStar : testEnv.monthStar,
+      );
+      const tdB = generateBoard(
+        useClassical ? testEnv.classicalDayStar : testEnv.dayStar,
+      );
+
       const rawTc = calculateVectorCollision(
         useClassical ? honmeiStar.classical : honmeiStar.physical,
-        tyB, tmB, tdB,
+        tyB,
+        tmB,
+        tdB,
         voidZodiacs,
         testEnv.raw.lunarNode,
         actionIntent, // Aligned with search param
         testDate,
         baseLon,
         useClassical ? getsuMeiStar : undefined,
-        nodeMapping
+        nodeMapping,
       );
 
       const tc = filterCollisionByMode(
@@ -166,170 +309,228 @@ export async function GET(request: Request) {
         useClassical ? getsuMeiStar : null,
         voidZodiacs,
         directionFilterMode,
-        tyB, tmB, tdB
+        tyB,
+        tmB,
+        tdB,
       );
 
       // Score each direction on this day
       const dayScores: Record<string, number> = {};
       const dayStatuses: Record<string, string> = {};
-      
-      directions.forEach(dir => {
-        let status = 'SAFE';
-        if (layerMode === 'year') status = tc.yearLayer[dir] || 'SAFE';
-        else if (layerMode === 'month') status = tc.monthLayer[dir] || 'SAFE';
-        else if (layerMode === 'day') status = tc.dayLayer[dir] || 'SAFE';
-        else status = tc.finalVectors[dir] || 'SAFE';
+
+      directions.forEach((dir) => {
+        let status = "SAFE";
+        if (layerMode === "year") status = tc.yearLayer[dir] || "SAFE";
+        else if (layerMode === "month") status = tc.monthLayer[dir] || "SAFE";
+        else if (layerMode === "day") status = tc.dayLayer[dir] || "SAFE";
+        else status = tc.finalVectors[dir] || "SAFE";
 
         let score = 50;
         switch (status) {
-          case 'OPTIMAL': score = 100; break;
-          case 'OPTIMAL_REGULAR': score = 90; break;
-          case 'SAFE': score = 80; break;
-          case 'WARNING': score = 60; break;
-          case 'NOISE_VOID': 
-          case 'NOISE_NODE': score = 40; break;
-          case 'NOISE_HONMEI':
-          case 'NOISE_TEKI':
-          case 'NOISE_GETSUMEI':
-          case 'NOISE_GETSUTEKI': score = 20; break;
-          case 'NOISE_GOU':
-          case 'NOISE_ANKEN':
-          case 'NOISE_HA': score = 10; break;
-          default: score = 50; break;
+          case "OPTIMAL":
+            score = 100;
+            break;
+          case "OPTIMAL_REGULAR":
+            score = 90;
+            break;
+          case "SAFE":
+            score = 80;
+            break;
+          case "WARNING":
+            score = 60;
+            break;
+          case "NOISE_VOID":
+          case "NOISE_NODE":
+            score = 40;
+            break;
+          case "NOISE_HONMEI":
+          case "NOISE_TEKI":
+          case "NOISE_GETSUMEI":
+          case "NOISE_GETSUTEKI":
+            score = 20;
+            break;
+          case "NOISE_GOU":
+          case "NOISE_ANKEN":
+          case "NOISE_HA":
+            score = 10;
+            break;
+          default:
+            score = 50;
+            break;
         }
         dayScores[dir] = score;
         dayStatuses[dir] = status;
       });
 
       forecast30Days.push({
-        date: testDate.toISOString().split('T')[0],
+        date: testDate.toISOString().split("T")[0],
         rokuyo: getCurrentZodiac(testDate, baseLon).dayZodiac,
-        lunarPhase: calculateLunarPhaseCondition(testDate, actionIntent).phaseLabel,
+        lunarPhase: calculateLunarPhaseCondition(testDate, actionIntent)
+          .phaseLabel,
         scores: dayScores,
-        statuses: dayStatuses
+        statuses: dayStatuses,
       });
     }
 
     // 3. Optional Destination Evaluation if target coordinates are provided
     let targetEvaluation: any = null;
     if (targetLat !== null && targetLon !== null) {
-      const toRad = (val: number) => val * Math.PI / 180;
-      const toDeg = (val: number) => val * 180 / Math.PI;
+      const toRad = (val: number) => (val * Math.PI) / 180;
+      const toDeg = (val: number) => (val * 180) / Math.PI;
       const dLon = toRad(targetLon - baseLon);
       const y = Math.sin(dLon) * Math.cos(toRad(targetLat));
-      const x = Math.cos(toRad(baseLat)) * Math.sin(toRad(targetLat)) - Math.sin(toRad(baseLat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
+      const x =
+        Math.cos(toRad(baseLat)) * Math.sin(toRad(targetLat)) -
+        Math.sin(toRad(baseLat)) * Math.cos(toRad(targetLat)) * Math.cos(dLon);
       let trueBrng = toDeg(Math.atan2(y, x));
       trueBrng = (trueBrng + 360) % 360;
 
       // Get geomagnetism data for declination
       let declination = -8.2; // default
       try {
-        const geoData = await getGeomagneticData(baseLat, baseLon, targetDate.getTime());
+        const geoData = await getGeomagneticData(
+          baseLat,
+          baseLon,
+          targetDate.getTime(),
+        );
         if (geoData?.declination !== undefined) {
           declination = geoData.declination;
         }
       } catch (e) {
         console.warn("Failed to fetch geomagnetic data in export API:", e);
       }
-      
+
       const magBrng = (trueBrng - declination + 360) % 360;
 
       const getDir = (bearing: number): Direction => {
-        const b = (bearing % 360 + 360) % 360;
+        const b = ((bearing % 360) + 360) % 360;
         if (useClassical) {
-          if (b >= 345 || b < 15) return 'N';
-          if (b >= 15 && b < 75) return 'NE';
-          if (b >= 75 && b < 105) return 'E';
-          if (b >= 105 && b < 165) return 'SE';
-          if (b >= 165 && b < 195) return 'S';
-          if (b >= 195 && b < 255) return 'SW';
-          if (b >= 255 && b < 285) return 'W';
-          return 'NW';
+          if (b >= 345 || b < 15) return "N";
+          if (b >= 15 && b < 75) return "NE";
+          if (b >= 75 && b < 105) return "E";
+          if (b >= 105 && b < 165) return "SE";
+          if (b >= 165 && b < 195) return "S";
+          if (b >= 195 && b < 255) return "SW";
+          if (b >= 255 && b < 285) return "W";
+          return "NW";
         } else {
           const index = Math.floor(((b + 22.5) % 360) / 45);
-          const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+          const dirs: Direction[] = [
+            "N",
+            "NE",
+            "E",
+            "SE",
+            "S",
+            "SW",
+            "W",
+            "NW",
+          ];
           return dirs[index];
         }
       };
 
       const targetDir = {
         trueDirection: getDir(trueBrng),
-        magneticDirection: getDir(magBrng)
+        magneticDirection: getDir(magBrng),
       };
 
-      const targetDirName = useTrueNorth ? targetDir.trueDirection : targetDir.magneticDirection;
+      const targetDirName = useTrueNorth
+        ? targetDir.trueDirection
+        : targetDir.magneticDirection;
 
       targetEvaluation = {
-        targetCoordinates: { lat: targetLat, lon: targetLon, elevation: targetElevation },
+        targetCoordinates: {
+          lat: targetLat,
+          lon: targetLon,
+          elevation: targetElevation,
+        },
         heading: {
           trueDirection: targetDir.trueDirection,
           magneticDirection: targetDir.magneticDirection,
           trueBearing: trueBrng,
           magneticBearing: magBrng,
-          declination
+          declination,
         },
         targetStatuses: {
-          classical: intentsComparison[actionIntent].classical[targetDirName] || 'SAFE',
-          physicalIndependent: intentsComparison[actionIntent].physicalIndependent[targetDirName] || 'SAFE',
-          physicalCoupled: intentsComparison[actionIntent].physicalCoupled[targetDirName] || 'SAFE'
-        }
+          classical:
+            intentsComparison[actionIntent].classical[targetDirName] || "SAFE",
+          physicalIndependent:
+            intentsComparison[actionIntent].physicalIndependent[
+              targetDirName
+            ] || "SAFE",
+          physicalCoupled:
+            intentsComparison[actionIntent].physicalCoupled[targetDirName] ||
+            "SAFE",
+        },
       };
     }
 
     // 4. Query TimingAstrology
     const timingAstrology = await prisma.timingAstrology.findMany({
-      orderBy: { date: 'asc' },
-      take: 100
+      orderBy: { date: "asc" },
+      take: 100,
     });
 
     // 5. Query MetaphysicalStateLog (recent logs)
     const stateLogs = await prisma.metaphysicalStateLog.findMany({
-      orderBy: { targetDate: 'desc' },
-      take: 15
+      orderBy: { targetDate: "desc" },
+      take: 15,
     });
 
     // 6. Query relevant KnowledgeDocuments
     let relevantNotes = await prisma.knowledgeDocument.findMany({
       where: {
         OR: [
-          { tags: { hasSome: ['relocation', 'timing', 'astrology', 'kigaku', 'fengshui', 'direction', 'metaphysical'] } },
-          { title: { contains: '引越し', mode: 'insensitive' } },
-          { title: { contains: '方位', mode: 'insensitive' } },
-          { title: { contains: '吉凶', mode: 'insensitive' } },
-          { title: { contains: 'timing', mode: 'insensitive' } },
-          { title: { contains: 'astrology', mode: 'insensitive' } },
-          { title: { contains: 'kigaku', mode: 'insensitive' } }
-        ]
+          {
+            tags: {
+              hasSome: [
+                "relocation",
+                "timing",
+                "astrology",
+                "kigaku",
+                "fengshui",
+                "direction",
+                "metaphysical",
+              ],
+            },
+          },
+          { title: { contains: "引越し", mode: "insensitive" } },
+          { title: { contains: "方位", mode: "insensitive" } },
+          { title: { contains: "吉凶", mode: "insensitive" } },
+          { title: { contains: "timing", mode: "insensitive" } },
+          { title: { contains: "astrology", mode: "insensitive" } },
+          { title: { contains: "kigaku", mode: "insensitive" } },
+        ],
       },
       take: 10,
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: "desc" },
     });
 
     if (relevantNotes.length === 0) {
       relevantNotes = await prisma.knowledgeDocument.findMany({
         where: {
           OR: [
-            { domain: { equals: 'metaphysical', mode: 'insensitive' } },
-            { type: { equals: 'Note', mode: 'insensitive' } }
-          ]
+            { domain: { equals: "metaphysical", mode: "insensitive" } },
+            { type: { equals: "Note", mode: "insensitive" } },
+          ],
         },
         take: 5,
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: "desc" },
       });
     }
 
     if (relevantNotes.length === 0) {
       relevantNotes = await prisma.knowledgeDocument.findMany({
         take: 5,
-        orderBy: { created_at: 'desc' }
+        orderBy: { created_at: "desc" },
       });
     }
 
-    const cleanNotes = relevantNotes.map(doc => ({
+    const cleanNotes = relevantNotes.map((doc) => ({
       title: doc.title,
       content: doc.content,
       tags: doc.tags,
-      category: doc.category
+      category: doc.category,
     }));
 
     // Assemble payload
@@ -342,21 +543,21 @@ export async function GET(request: Request) {
         astrologicalStars: {
           honmeiStarPhysical: honmeiStar.physical,
           honmeiStarClassical: honmeiStar.classical,
-          voidZodiac: voidZodiacs
-        }
+          voidZodiac: voidZodiacs,
+        },
       },
       configurations: {
-        engineType: useClassical ? 'classical' : 'physical',
+        engineType: useClassical ? "classical" : "physical",
         physicalMonthMode,
         trueNorth: useTrueNorth,
         lunarPhaseModifier,
         layerMode,
         directionFilterMode,
-        actionIntent // Export aligned intent
+        actionIntent, // Export aligned intent
       },
       targetEvaluation, // Destination details if computed
       currentAstrologyState: {
-        date: targetDate.toISOString().split('T')[0],
+        date: targetDate.toISOString().split("T")[0],
         environmentalStars: {
           yearStar: env.yearStar,
           classicalYearStar: env.classicalYearStar,
@@ -364,7 +565,7 @@ export async function GET(request: Request) {
           classicalMonthStar: env.classicalMonthStar,
           dayStar: env.dayStar,
           classicalDayStar: env.classicalDayStar,
-          isYinPhase: env.isYinPhase
+          isYinPhase: env.isYinPhase,
         },
         directionsCollision: {
           yearLayer: vectorCollision.yearLayer,
@@ -372,30 +573,33 @@ export async function GET(request: Request) {
           dayLayer: vectorCollision.dayLayer,
           finalVectors: vectorCollision.finalVectors,
           tendoDirection: vectorCollision.tendoDirection,
-          doyouState: vectorCollision.doyouState
+          doyouState: vectorCollision.doyouState,
         },
         modelsComparison: intentsComparison[actionIntent], // Selected intent comparison
-        intentsComparison // Full multi-intent matrix
+        intentsComparison, // Full multi-intent matrix
       },
       forecast30Days,
-      auspiciousTimingsDictionary: timingAstrology.map(t => ({
-        date: t.date.toISOString().split('T')[0],
+      auspiciousTimingsDictionary: timingAstrology.map((t) => ({
+        date: t.date.toISOString().split("T")[0],
         kuseiType: t.kuseiType,
         insight: t.insight,
-        source: t.source
+        source: t.source,
       })),
-      recentMetaphysicalLogs: stateLogs.map(log => ({
-        targetDate: log.targetDate.toISOString().split('T')[0],
+      recentMetaphysicalLogs: stateLogs.map((log) => ({
+        targetDate: log.targetDate.toISOString().split("T")[0],
         ansLoad: log.ansLoad,
         kpIndex: log.kpIndex,
-        metadata: log.metadata
+        metadata: log.metadata,
       })),
-      advisorPersonalNotes: cleanNotes
+      advisorPersonalNotes: cleanNotes,
     };
 
     return NextResponse.json(payload);
   } catch (error: any) {
     console.error("Export Dataset Error:", error);
-    return NextResponse.json({ success: false, error: error.message || String(error) }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || String(error) },
+      { status: 500 },
+    );
   }
 }

@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "research": "npx tsx scripts/ai_quant_researcher.ts",
     "review-harness": "node scripts/review-harness.mjs",
+    "verify": "node scripts/self-verify.mjs",
     "export-calculated-wealth": "npx tsx scripts/export_all_calculated_wealth_data.ts"
   },
   "dependencies": {

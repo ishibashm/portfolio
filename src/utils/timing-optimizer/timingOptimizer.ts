@@ -1,4 +1,4 @@
-import { EvaluationContext, TimingScorer } from './types';
+import { EvaluationContext, TimingScorer } from "./types";
 
 export interface ScorerConfig {
   scorer: TimingScorer;
@@ -22,21 +22,22 @@ export class TimingOptimizer {
     for (const { scorer } of this.configs) {
       const result = scorer.observe(context);
       if (result === null) continue;
-      
+
       details.push({
         name: scorer.name,
         phenomenon: result.phenomenon,
-        detail: result.detail
+        detail: result.detail,
       });
     }
 
     const recommendationText = details
-      .map(d => `- [${d.name}] ${d.phenomenon}: ${d.detail}`)
-      .join('\n');
+      .map((d) => `- [${d.name}] ${d.phenomenon}: ${d.detail}`)
+      .join("\n");
 
     return {
       details,
-      recommendationText: recommendationText || "観測可能な特異なタイミング現象はありません。"
+      recommendationText:
+        recommendationText || "観測可能な特異なタイミング現象はありません。",
     };
   }
 }

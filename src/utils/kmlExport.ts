@@ -1,4 +1,9 @@
-export function getDestinationKML(lat: number, lon: number, bearing: number, distanceKm: number): [number, number] {
+export function getDestinationKML(
+  lat: number,
+  lon: number,
+  bearing: number,
+  distanceKm: number,
+): [number, number] {
   const R = 6371; // Earth radius in km
   const lat1 = (lat * Math.PI) / 180;
   const lon1 = (lon * Math.PI) / 180;
@@ -6,51 +11,67 @@ export function getDestinationKML(lat: number, lon: number, bearing: number, dis
 
   const lat2 = Math.asin(
     Math.sin(lat1) * Math.cos(distanceKm / R) +
-    Math.cos(lat1) * Math.sin(distanceKm / R) * Math.cos(brng)
+      Math.cos(lat1) * Math.sin(distanceKm / R) * Math.cos(brng),
   );
-  
-  const lon2 = lon1 + Math.atan2(
-    Math.sin(brng) * Math.sin(distanceKm / R) * Math.cos(lat1),
-    Math.cos(distanceKm / R) - Math.sin(lat1) * Math.sin(lat2)
-  );
+
+  const lon2 =
+    lon1 +
+    Math.atan2(
+      Math.sin(brng) * Math.sin(distanceKm / R) * Math.cos(lat1),
+      Math.cos(distanceKm / R) - Math.sin(lat1) * Math.sin(lat2),
+    );
 
   return [(lon2 * 180) / Math.PI, (lat2 * 180) / Math.PI]; // KML needs [lon, lat]
 }
 
-function generateArcPolygonCoords(lat: number, lon: number, centerBearing: number, spreadDeg: number, distanceKm: number): string {
+function generateArcPolygonCoords(
+  lat: number,
+  lon: number,
+  centerBearing: number,
+  spreadDeg: number,
+  distanceKm: number,
+): string {
   const coords: string[] = [];
   coords.push(`${lon},${lat},0`);
-  
-  for (let b = centerBearing - spreadDeg; b <= centerBearing + spreadDeg; b += 2) {
+
+  for (
+    let b = centerBearing - spreadDeg;
+    b <= centerBearing + spreadDeg;
+    b += 2
+  ) {
     const [pLon, pLat] = getDestinationKML(lat, lon, b, distanceKm);
     coords.push(`${pLon},${pLat},0`);
   }
-  
+
   coords.push(`${lon},${lat},0`);
-  return coords.join(' ');
+  return coords.join(" ");
 }
 
-function generateCircleCoords(lat: number, lon: number, radiusKm: number): string {
+function generateCircleCoords(
+  lat: number,
+  lon: number,
+  radiusKm: number,
+): string {
   const coords: string[] = [];
   for (let b = 0; b <= 360; b += 5) {
     const [pLon, pLat] = getDestinationKML(lat, lon, b, radiusKm);
     coords.push(`${pLon},${pLat},0`);
   }
-  return coords.join(' ');
+  return coords.join(" ");
 }
 
 function getStatusLabel(status: string): string {
-  if (status === 'NOISE_GOU') return '五黄';
-  if (status === 'NOISE_ANKEN') return '暗剣';
-  if (status === 'NOISE_HA') return '破';
-  if (status === 'NOISE_HONMEI') return '本命';
-  if (status === 'NOISE_TEKI') return '的殺';
-  if (status === 'NOISE_VOID') return 'ボイド';
-  if (status === 'NOISE_NODE') return '交点';
-  if (status === 'OPTIMAL') return '大吉';
-  if (status === 'OPTIMAL_REGULAR') return '吉';
-  if (status === 'WARNING') return '注意';
-  return '';
+  if (status === "NOISE_GOU") return "五黄";
+  if (status === "NOISE_ANKEN") return "暗剣";
+  if (status === "NOISE_HA") return "破";
+  if (status === "NOISE_HONMEI") return "本命";
+  if (status === "NOISE_TEKI") return "的殺";
+  if (status === "NOISE_VOID") return "ボイド";
+  if (status === "NOISE_NODE") return "交点";
+  if (status === "OPTIMAL") return "大吉";
+  if (status === "OPTIMAL_REGULAR") return "吉";
+  if (status === "WARNING") return "注意";
+  return "";
 }
 
 export function generateMagneticMapKML(
@@ -59,35 +80,42 @@ export function generateMagneticMapKML(
   declination: number,
   useTrueNorth: boolean = false,
   vectors?: Record<string, string>,
-  nodeMapping: 'traditional' | 'physical' = 'traditional',
-  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean },
-  maxRadiusKm: number = 1000
+  nodeMapping: "traditional" | "physical" = "traditional",
+  hudLayers?: {
+    terrain: boolean;
+    weather: boolean;
+    bio: boolean;
+    hazard?: boolean;
+  },
+  maxRadiusKm: number = 1000,
 ): string {
   const magNorthBearing = useTrueNorth ? 0 : declination;
 
   // Directions mapping
   const directions = [
-    { dir: 'N', deg: 0, isCorner: false },
-    { dir: 'NE', deg: 45, isCorner: true },
-    { dir: 'E', deg: 90, isCorner: false },
-    { dir: 'SE', deg: 135, isCorner: true },
-    { dir: 'S', deg: 180, isCorner: false },
-    { dir: 'SW', deg: 225, isCorner: true },
-    { dir: 'W', deg: 270, isCorner: false },
-    { dir: 'NW', deg: 315, isCorner: true },
+    { dir: "N", deg: 0, isCorner: false },
+    { dir: "NE", deg: 45, isCorner: true },
+    { dir: "E", deg: 90, isCorner: false },
+    { dir: "SE", deg: 135, isCorner: true },
+    { dir: "S", deg: 180, isCorner: false },
+    { dir: "SW", deg: 225, isCorner: true },
+    { dir: "W", deg: 270, isCorner: false },
+    { dir: "NW", deg: 315, isCorner: true },
   ];
 
-  let sectorsKML = '';
-  let labelsKML = '';
+  let sectorsKML = "";
+  let labelsKML = "";
 
   directions.forEach((d) => {
-    const rawStatus = vectors ? (vectors[d.dir] || 'SAFE') : 'SAFE';
-    
+    const rawStatus = vectors ? vectors[d.dir] || "SAFE" : "SAFE";
+
     // Apply HUD Layer Filtering to match Leaflet map visual state
-    let displayStatus = 'SAFE';
-    const hasTerrainNoise = rawStatus === 'NOISE';
-    const hasBioNoise = rawStatus.includes('HONMEI') || rawStatus.includes('TEKI');
-    const hasWeatherNoise = rawStatus.includes('NOISE') && !hasBioNoise && !hasTerrainNoise;
+    let displayStatus = "SAFE";
+    const hasTerrainNoise = rawStatus === "NOISE";
+    const hasBioNoise =
+      rawStatus.includes("HONMEI") || rawStatus.includes("TEKI");
+    const hasWeatherNoise =
+      rawStatus.includes("NOISE") && !hasBioNoise && !hasTerrainNoise;
 
     if (!hudLayers) {
       displayStatus = rawStatus;
@@ -95,16 +123,20 @@ export function generateMagneticMapKML(
       if (hudLayers.terrain && hasTerrainNoise) displayStatus = rawStatus;
       if (hudLayers.weather && hasWeatherNoise) displayStatus = rawStatus;
       if (hudLayers.bio && hasBioNoise) displayStatus = rawStatus;
-      if (!rawStatus.includes('NOISE')) displayStatus = rawStatus;
+      if (!rawStatus.includes("NOISE")) displayStatus = rawStatus;
     }
 
     // Determine sector angles layout
-    const spread = nodeMapping === 'physical'
-      ? 22.5
-      : (d.isCorner ? 30 : 15);
+    const spread = nodeMapping === "physical" ? 22.5 : d.isCorner ? 30 : 15;
 
-    const coords = generateArcPolygonCoords(lat, lon, magNorthBearing + d.deg, spread, maxRadiusKm);
-    
+    const coords = generateArcPolygonCoords(
+      lat,
+      lon,
+      magNorthBearing + d.deg,
+      spread,
+      maxRadiusKm,
+    );
+
     sectorsKML += `
       <Placemark>
         <name>Sector ${d.dir} (${displayStatus})</name>
@@ -117,7 +149,12 @@ export function generateMagneticMapKML(
 
     const label = getStatusLabel(displayStatus);
     if (label) {
-      const [labelLon, labelLat] = getDestinationKML(lat, lon, magNorthBearing + d.deg, maxRadiusKm * 0.4);
+      const [labelLon, labelLat] = getDestinationKML(
+        lat,
+        lon,
+        magNorthBearing + d.deg,
+        maxRadiusKm * 0.4,
+      );
       labelsKML += `
       <Placemark>
         <name>${label}</name>
@@ -131,14 +168,21 @@ export function generateMagneticMapKML(
   });
 
   // Boundary Danger Zones (Red Wedges)
-  const boundaries = nodeMapping === 'physical'
-    ? [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]
-    : [15, 75, 105, 165, 195, 255, 285, 345];
+  const boundaries =
+    nodeMapping === "physical"
+      ? [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]
+      : [15, 75, 105, 165, 195, 255, 285, 345];
 
-  let dangerWedgesKML = '';
+  let dangerWedgesKML = "";
   boundaries.forEach((b, idx) => {
     const baseBearing = magNorthBearing + b;
-    const coords = generateArcPolygonCoords(lat, lon, baseBearing, 2, maxRadiusKm);
+    const coords = generateArcPolygonCoords(
+      lat,
+      lon,
+      baseBearing,
+      2,
+      maxRadiusKm,
+    );
     dangerWedgesKML += `
       <Placemark>
         <name>Boundary Danger Zone ${idx + 1}</name>
@@ -152,7 +196,7 @@ export function generateMagneticMapKML(
 
   // Attenuation Rings (Zinc) - 250km, 500km, 1000km to match Leaflet map
   const attenuationRings = [250, 500, 1000];
-  let ringsKML = '';
+  let ringsKML = "";
   attenuationRings.forEach((radius) => {
     const coords = generateCircleCoords(lat, lon, radius);
     ringsKML += `
@@ -336,7 +380,7 @@ export function generateMagneticMapKML(
     </Folder>
 
     <Folder>
-      <name>Evaluated Sectors (${nodeMapping === 'physical' ? '45 Degree' : '30/60 Degree'})</name>
+      <name>Evaluated Sectors (${nodeMapping === "physical" ? "45 Degree" : "30/60 Degree"})</name>
       ${sectorsKML}
     </Folder>
 
@@ -366,13 +410,28 @@ export function downloadKML(
   declination: number,
   useTrueNorth: boolean = false,
   vectors?: Record<string, string>,
-  nodeMapping: 'traditional' | 'physical' = 'traditional',
-  hudLayers?: { terrain: boolean; weather: boolean; bio: boolean; hazard?: boolean }
+  nodeMapping: "traditional" | "physical" = "traditional",
+  hudLayers?: {
+    terrain: boolean;
+    weather: boolean;
+    bio: boolean;
+    hazard?: boolean;
+  },
 ) {
-  const kmlString = generateMagneticMapKML(lat, lon, declination, useTrueNorth, vectors, nodeMapping, hudLayers);
-  const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+  const kmlString = generateMagneticMapKML(
+    lat,
+    lon,
+    declination,
+    useTrueNorth,
+    vectors,
+    nodeMapping,
+    hudLayers,
+  );
+  const blob = new Blob([kmlString], {
+    type: "application/vnd.google-earth.kml+xml",
+  });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = `bio-magnetic_spatial_map_${lat.toFixed(2)}_${lon.toFixed(2)}.kml`;
   document.body.appendChild(a);

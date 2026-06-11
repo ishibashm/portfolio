@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Database, MapPin, CalendarClock, Crosshair, Fingerprint } from "lucide-react";
+import {
+  Database,
+  MapPin,
+  CalendarClock,
+  Crosshair,
+  Fingerprint,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
@@ -48,40 +54,63 @@ interface PersonalProfileProps {
   useAstrologyScorer?: boolean;
   setUseAstrologyScorer?: (v: boolean) => void;
   // --- Derived Metrics (Read-only feedback) ---
-  derivedHonmeiStar?: { physical: number | string, classical: number | string } | null;
+  derivedHonmeiStar?: {
+    physical: number | string;
+    classical: number | string;
+  } | null;
   derivedPersonalVoid?: string[];
 }
 
 export function PersonalProfileConfig({
-  birthDate, setBirthDate,
-  birthLat, setBirthLat,
-  birthLon, setBirthLon,
-  baseLat, setBaseLat,
-  baseLon, setBaseLon,
-  onSave, isSaving, onLoad, onGetGPS,
-  voidZodiacOverride, setVoidZodiacOverride,
-  geminiKey, setGeminiKey,
-  baselineHrvMean, setBaselineHrvMean,
-  baselineHrvStd, setBaselineHrvStd,
-  baselineGsrMean, setBaselineGsrMean,
-  baselineGsrStd, setBaselineGsrStd,
-  baseSyncTimestamp, setBaseSyncTimestamp,
-  usePsychologyScorer, setUsePsychologyScorer,
-  useKigakuScorer, setUseKigakuScorer,
-  useAstrologyScorer, setUseAstrologyScorer,
-  derivedHonmeiStar, derivedPersonalVoid
+  birthDate,
+  setBirthDate,
+  birthLat,
+  setBirthLat,
+  birthLon,
+  setBirthLon,
+  baseLat,
+  setBaseLat,
+  baseLon,
+  setBaseLon,
+  onSave,
+  isSaving,
+  onLoad,
+  onGetGPS,
+  voidZodiacOverride,
+  setVoidZodiacOverride,
+  geminiKey,
+  setGeminiKey,
+  baselineHrvMean,
+  setBaselineHrvMean,
+  baselineHrvStd,
+  setBaselineHrvStd,
+  baselineGsrMean,
+  setBaselineGsrMean,
+  baselineGsrStd,
+  setBaselineGsrStd,
+  baseSyncTimestamp,
+  setBaseSyncTimestamp,
+  usePsychologyScorer,
+  setUsePsychologyScorer,
+  useKigakuScorer,
+  setUseKigakuScorer,
+  useAstrologyScorer,
+  setUseAstrologyScorer,
+  derivedHonmeiStar,
+  derivedPersonalVoid,
 }: PersonalProfileProps) {
-
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
 
   const [presets, setPresets] = useState<any[]>([]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedPresetsStr = localStorage.getItem('wealth_presets');
+    if (typeof window !== "undefined") {
+      const savedPresetsStr = localStorage.getItem("wealth_presets");
       if (savedPresetsStr) {
-        try { setPresets(JSON.parse(savedPresetsStr)); } catch (e) { }
+        try {
+          setPresets(JSON.parse(savedPresetsStr));
+        } catch (e) {}
       }
     }
   }, []);
@@ -108,49 +137,70 @@ export function PersonalProfileConfig({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 font-mono text-xs">
-
         {/* Factory Settings (Birth) */}
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-zinc-900 pb-1">
             <CalendarClock size={12} className="text-zinc-500" />
-            <span className="text-[9px] text-zinc-400 tracking-wider">ハードウェア初期値 (生年月日・出生地)</span>
+            <span className="text-[9px] text-zinc-400 tracking-wider">
+              ハードウェア初期値 (生年月日・出生地)
+            </span>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[8px] text-zinc-500 uppercase">生年月日・出生時間 (Birth Timestamp)</label>
+            <label className="text-[8px] text-zinc-500 uppercase">
+              生年月日・出生時間 (Birth Timestamp)
+            </label>
             <input
               type="datetime-local"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
               className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full"
             />
-            <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">自律神経の初期ベースライン（本命星システム）を設定。</span>
+            <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">
+              自律神経の初期ベースライン（本命星システム）を設定。
+            </span>
           </div>
 
           {/* Derived Identity Summary Box */}
           <div className="bg-blue-900/10 border border-blue-900/30 p-2.5 rounded-sm mt-2">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Fingerprint size={12} className="text-blue-400" />
-              <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest">算出された特性 (Derived Identity)</span>
+              <span className="text-[8px] text-blue-400 font-bold uppercase tracking-widest">
+                算出された特性 (Derived Identity)
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div>
-                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Honmei Star (Physical)</span>
-                <span className="text-sm text-emerald-400 font-bold">{derivedHonmeiStar?.physical || "---"}</span>
+                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">
+                  Honmei Star (Physical)
+                </span>
+                <span className="text-sm text-emerald-400 font-bold">
+                  {derivedHonmeiStar?.physical || "---"}
+                </span>
               </div>
               <div>
-                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Honmei Star (Classical)</span>
-                <span className="text-sm text-zinc-400 font-bold">{derivedHonmeiStar?.classical || "---"}</span>
+                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">
+                  Honmei Star (Classical)
+                </span>
+                <span className="text-sm text-zinc-400 font-bold">
+                  {derivedHonmeiStar?.classical || "---"}
+                </span>
               </div>
               <div className="col-span-2 border-t border-blue-900/20 pt-1 mt-1">
-                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">Void Zodiac (天中殺)</span>
-                <span className="text-xs text-red-400 font-bold tracking-widest">{derivedPersonalVoid?.join("・") || "---"}</span>
+                <span className="text-[7px] text-zinc-500 uppercase block mb-0.5">
+                  Void Zodiac (天中殺)
+                </span>
+                <span className="text-xs text-red-400 font-bold tracking-widest">
+                  {derivedPersonalVoid?.join("・") || "---"}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
-            <label className="text-[8px] text-zinc-500 uppercase">Void Zodiac (天中殺) Override</label>
+            <label className="text-[8px] text-zinc-500 uppercase">
+              Void Zodiac (天中殺) Override
+            </label>
             <select
               value={voidZodiacOverride || ""}
               onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
@@ -164,17 +214,21 @@ export function PersonalProfileConfig({
               <option value="寅卯">寅卯 (Torau)</option>
               <option value="子丑">子丑 (Neushi)</option>
             </select>
-            <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">独自の流派や自覚に基づく天中殺の上書き。</span>
+            <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">
+              独自の流派や自覚に基づく天中殺の上書き。
+            </span>
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center justify-between">
-              <label className="text-[8px] text-zinc-500 uppercase">出生地座標 (緯度・経度)</label>
+              <label className="text-[8px] text-zinc-500 uppercase">
+                出生地座標 (緯度・経度)
+              </label>
               <button
                 onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-blue-500/20 text-blue-400 border-blue-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
+                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-blue-500/20 text-blue-400 border-blue-500/40" : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"}`}
               >
-                {showBirthMapPicker ? '[ 地図を閉じる ]' : '[ 地図検索 ]'}
+                {showBirthMapPicker ? "[ 地図を閉じる ]" : "[ 地図検索 ]"}
               </button>
             </div>
             {showBirthMapPicker && (
@@ -191,27 +245,33 @@ export function PersonalProfileConfig({
             )}
             <div className="grid grid-cols-2 gap-2 mt-1">
               <input
-                type="number" step="0.000001"
+                type="number"
+                step="0.000001"
                 value={birthLat}
                 onChange={(e) => setBirthLat(Number(e.target.value))}
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase text-center"
                 placeholder="Lat"
               />
               <input
-                type="number" step="0.000001"
+                type="number"
+                step="0.000001"
                 value={birthLon}
                 onChange={(e) => setBirthLon(Number(e.target.value))}
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase text-center"
                 placeholder="Lon"
               />
             </div>
-            <div className="col-span-2 text-[7px] text-zinc-600 mt-0.5 text-justify">生まれた瞬間の磁場（磁束密度と伏角）がハードの防御力係数を決定。</div>
+            <div className="col-span-2 text-[7px] text-zinc-600 mt-0.5 text-justify">
+              生まれた瞬間の磁場（磁束密度と伏角）がハードの防御力係数を決定。
+            </div>
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
             <label className="text-[8px] text-zinc-500 uppercase flex items-center justify-between">
               <span>Gemini API Key (Expert Council)</span>
-              <span className="text-[7px] text-zinc-600">※ 暗号化されてDBに保存されます</span>
+              <span className="text-[7px] text-zinc-600">
+                ※ 暗号化されてDBに保存されます
+              </span>
             </label>
             <input
               type="password"
@@ -221,7 +281,8 @@ export function PersonalProfileConfig({
               className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
             />
             <span className="text-[7px] text-zinc-600 mt-0.5 text-justify">
-              Knowledge Baseとは異なり、こちらは高度推論用のため gemini-2.5-pro が指定されています。
+              Knowledge Baseとは異なり、こちらは高度推論用のため gemini-2.5-pro
+              が指定されています。
             </span>
           </div>
         </div>
@@ -230,17 +291,21 @@ export function PersonalProfileConfig({
         <div className="space-y-4">
           <div className="flex items-center gap-1.5 mb-2 border-b border-zinc-900 pb-1">
             <Crosshair size={12} className="text-zinc-500" />
-            <span className="text-[9px] text-zinc-400 tracking-wider">現在の居住地 (基準座標・±0V基準)</span>
+            <span className="text-[9px] text-zinc-400 tracking-wider">
+              現在の居住地 (基準座標・±0V基準)
+            </span>
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center justify-between">
-              <label className="text-[8px] text-zinc-500 uppercase">現在地の座標 (緯度・経度)</label>
+              <label className="text-[8px] text-zinc-500 uppercase">
+                現在地の座標 (緯度・経度)
+              </label>
               <button
                 onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700'}`}
+                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"}`}
               >
-                {showBaseMapPicker ? '[ 地図を閉じる ]' : '[ 地図検索 ]'}
+                {showBaseMapPicker ? "[ 地図を閉じる ]" : "[ 地図検索 ]"}
               </button>
             </div>
             {showBaseMapPicker && (
@@ -257,14 +322,16 @@ export function PersonalProfileConfig({
             )}
             <div className="grid grid-cols-2 gap-2 mt-1">
               <input
-                type="number" step="0.000001"
+                type="number"
+                step="0.000001"
                 value={baseLat}
                 onChange={(e) => setBaseLat(Number(e.target.value))}
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-emerald-500 transition-colors w-full uppercase text-center"
                 placeholder="Lat"
               />
               <input
-                type="number" step="0.000001"
+                type="number"
+                step="0.000001"
                 value={baseLon}
                 onChange={(e) => setBaseLon(Number(e.target.value))}
                 className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-emerald-500 transition-colors w-full uppercase text-center"
@@ -280,7 +347,8 @@ export function PersonalProfileConfig({
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-400 mt-0.5 min-w-[10px]" />
               <p className="text-[8px] text-blue-200/70 leading-relaxed text-justify">
-                現在位置のGPS（{baseLat.toFixed(2)}, {baseLon.toFixed(2)}）を基準に、タクティカルマップの磁気偏角とベクトルがリアルタイム生成されています。
+                現在位置のGPS（{baseLat.toFixed(2)}, {baseLon.toFixed(2)}
+                ）を基準に、タクティカルマップの磁気偏角とベクトルがリアルタイム生成されています。
               </p>
             </div>
           </div>
@@ -288,24 +356,36 @@ export function PersonalProfileConfig({
           {/* Bio-Baseline Configuration */}
           <div className="mt-4 pt-4 border-t border-zinc-900">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] text-zinc-400 tracking-wider font-bold">生体情報ベースライン (Z-Score)</span>
-              <span className="text-[7px] text-emerald-500">{baseSyncTimestamp ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}` : "Not Synced"}</span>
+              <span className="text-[9px] text-zinc-400 tracking-wider font-bold">
+                生体情報ベースライン (Z-Score)
+              </span>
+              <span className="text-[7px] text-emerald-500">
+                {baseSyncTimestamp
+                  ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}`
+                  : "Not Synced"}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2 mt-2">
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-zinc-500 uppercase">HRV Mean (ms)</label>
+                <label className="text-[8px] text-zinc-500 uppercase">
+                  HRV Mean (ms)
+                </label>
                 <input
-                  type="number" step="0.1"
+                  type="number"
+                  step="0.1"
                   value={baselineHrvMean || ""}
                   onChange={(e) => setBaselineHrvMean?.(Number(e.target.value))}
                   className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-zinc-500 uppercase">HRV StdDev</label>
+                <label className="text-[8px] text-zinc-500 uppercase">
+                  HRV StdDev
+                </label>
                 <input
-                  type="number" step="0.1"
+                  type="number"
+                  step="0.1"
                   value={baselineHrvStd || ""}
                   onChange={(e) => setBaselineHrvStd?.(Number(e.target.value))}
                   className="bg-zinc-900 border border-zinc-700 text-zinc-300 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
@@ -313,22 +393,29 @@ export function PersonalProfileConfig({
               </div>
             </div>
             <p className="text-[7px] text-zinc-600 mt-1 text-justify">
-              あなたの直近1ヶ月のHRV（心拍変動）の平均値と標準偏差。Oura等のデータを入力することで、ANS LoadのZ-Score異常検知があなた専用にパーソナライズされます。
+              あなたの直近1ヶ月のHRV（心拍変動）の平均値と標準偏差。Oura等のデータを入力することで、ANS
+              LoadのZ-Score異常検知があなた専用にパーソナライズされます。
             </p>
           </div>
 
           {/* Timing Optimizer Engine Configuration */}
           <div className="mt-4 pt-4 border-t border-zinc-900">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[9px] text-purple-400 tracking-wider font-bold uppercase">Multi-Dimensional Timing Engine</span>
+              <span className="text-[9px] text-purple-400 tracking-wider font-bold uppercase">
+                Multi-Dimensional Timing Engine
+              </span>
             </div>
 
             <div className="flex flex-col gap-3 mt-3">
               {/* 心理学スコアラー */}
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-zinc-400 font-bold uppercase">Behavioral Psychology (Fresh Start)</span>
-                  <span className="text-[7px] text-zinc-600">月初や月曜、誕生日などのモチベーションブーストを加味します</span>
+                  <span className="text-[8px] text-zinc-400 font-bold uppercase">
+                    Behavioral Psychology (Fresh Start)
+                  </span>
+                  <span className="text-[7px] text-zinc-600">
+                    月初や月曜、誕生日などのモチベーションブーストを加味します
+                  </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -344,8 +431,12 @@ export function PersonalProfileConfig({
               {/* 気学スコアラー */}
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-zinc-400 font-bold uppercase">Oriental Astrology (Kigaku)</span>
-                  <span className="text-[7px] text-zinc-600">東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します</span>
+                  <span className="text-[8px] text-zinc-400 font-bold uppercase">
+                    Oriental Astrology (Kigaku)
+                  </span>
+                  <span className="text-[7px] text-zinc-600">
+                    東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します
+                  </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -361,8 +452,12 @@ export function PersonalProfileConfig({
               {/* 西洋占星術スコアラー */}
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
-                  <span className="text-[8px] text-zinc-400 font-bold uppercase">Western Astrology (Transits & Void)</span>
-                  <span className="text-[7px] text-zinc-600">月星座やボイドタイムによる警告と適性を判定します</span>
+                  <span className="text-[8px] text-zinc-400 font-bold uppercase">
+                    Western Astrology (Transits & Void)
+                  </span>
+                  <span className="text-[7px] text-zinc-600">
+                    月星座やボイドタイムによる警告と適性を判定します
+                  </span>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -376,7 +471,6 @@ export function PersonalProfileConfig({
               </div>
             </div>
           </div>
-
         </div>
 
         <div className="md:col-span-2 pt-4 flex justify-between gap-2 border-t border-zinc-900 mt-2 flex-wrap">
@@ -399,7 +493,7 @@ export function PersonalProfileConfig({
                 onChange={(e) => {
                   const presetId = e.target.value;
                   if (!presetId) return;
-                  const preset = presets.find(p => p.id === presetId);
+                  const preset = presets.find((p) => p.id === presetId);
                   if (preset) {
                     if (preset.birthDate) setBirthDate(preset.birthDate);
                     if (preset.birthLat) setBirthLat(Number(preset.birthLat));
@@ -411,8 +505,10 @@ export function PersonalProfileConfig({
                 }}
               >
                 <option value="">[ プリセットを読込... ]</option>
-                {presets.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
                 ))}
               </select>
             )}
@@ -420,16 +516,16 @@ export function PersonalProfileConfig({
           <button
             onClick={onSave}
             disabled={isSaving}
-            className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group ${isSaving
-              ? "bg-zinc-800 text-zinc-500 cursor-wait"
-              : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
-              }`}
+            className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group ${
+              isSaving
+                ? "bg-zinc-800 text-zinc-500 cursor-wait"
+                : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
+            }`}
           >
             {isSaving ? "[ 同期中... ]" : "[ 設定をローカルに永久保存 ]"}
             <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
           </button>
         </div>
-
       </div>
     </div>
   );

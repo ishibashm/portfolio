@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-import { NBAEngine, NBAParams, ActionType } from '@/utils/nbaEngine';
-import { AspectEngine } from '@/utils/aspectEngine';
-import { AstroEngine, getPersonalVoidZodiac, getCurrentZodiac, clashMap, checkIsDoyouHazard } from '@/utils/ephemerisEngine';
-import { baziEngine } from '@/utils/baziEngine';
-import { fetchMetaphysicalData } from '@/utils/metaphysicalApis';
-import { VedicEngine } from '@/utils/vedicEngine';
+import { NextResponse } from "next/server";
+import fs from "fs/promises";
+import path from "path";
+import { NBAEngine, NBAParams, ActionType } from "@/utils/nbaEngine";
+import { AspectEngine } from "@/utils/aspectEngine";
+import {
+  AstroEngine,
+  getPersonalVoidZodiac,
+  getCurrentZodiac,
+  clashMap,
+  checkIsDoyouHazard,
+} from "@/utils/ephemerisEngine";
+import { baziEngine } from "@/utils/baziEngine";
+import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
+import { VedicEngine } from "@/utils/vedicEngine";
 
 export async function POST(req: Request) {
   try {
@@ -15,7 +21,13 @@ export async function POST(req: Request) {
       clientBody = await req.json();
     } catch (e) {}
 
-    const { currentShield = 100, currentAnsLoad = 20, clientBirthDate, lon = 139.6917, useClassical: clientUseClassical } = clientBody;
+    const {
+      currentShield = 100,
+      currentAnsLoad = 20,
+      clientBirthDate,
+      lon = 139.6917,
+      useClassical: clientUseClassical,
+    } = clientBody;
 
     let birthDateStr: string | null = clientBirthDate || null;
     let useClassical = true;
@@ -23,8 +35,11 @@ export async function POST(req: Request) {
       useClassical = clientUseClassical;
     } else {
       try {
-        const configPath = path.join(process.cwd(), 'local_tactical_config.json');
-        const configContent = await fs.readFile(configPath, 'utf8');
+        const configPath = path.join(
+          process.cwd(),
+          "local_tactical_config.json",
+        );
+        const configContent = await fs.readFile(configPath, "utf8");
         const config = JSON.parse(configContent);
         if (config.birth_date) {
           birthDateStr = config.birth_date;
@@ -37,11 +52,13 @@ export async function POST(req: Request) {
 
     const birthDate = birthDateStr ? new Date(birthDateStr) : null;
     const voidZodiacArray = birthDate ? getPersonalVoidZodiac(birthDate) : [];
-    const personalBaziData = birthDate ? baziEngine.calculate(birthDate, lon) : null;
+    const personalBaziData = birthDate
+      ? baziEngine.calculate(birthDate, lon)
+      : null;
 
     const engine = new NBAEngine();
     const vedicEngine = new VedicEngine();
-    
+
     let simulatedShield = Number(currentShield);
     let simulatedAns = Number(currentAnsLoad);
     const forecast = [];
@@ -49,15 +66,25 @@ export async function POST(req: Request) {
     const today = new Date();
 
     for (let i = 0; i < 12; i++) {
-      const targetDate = new Date(today.getFullYear(), today.getMonth() + i, 15); // Middle of the month
+      const targetDate = new Date(
+        today.getFullYear(),
+        today.getMonth() + i,
+        15,
+      ); // Middle of the month
       const monthLabel = `${targetDate.getMonth() + 1}月`;
 
       // 1. Calculate Astrological Factors
       const allAspects = AspectEngine.calculateAspects(targetDate);
       let aspectRisk = 0;
-      allAspects.forEach(asp => {
-        if (asp.type === 'SQUARE' || asp.type === 'OPPOSITION') aspectRisk += 5;
-        if (asp.type === 'CONJUNCTION' && (asp.body1 === 'Mars' || asp.body2 === 'Mars' || asp.body1 === 'Saturn' || asp.body2 === 'Saturn')) {
+      allAspects.forEach((asp) => {
+        if (asp.type === "SQUARE" || asp.type === "OPPOSITION") aspectRisk += 5;
+        if (
+          asp.type === "CONJUNCTION" &&
+          (asp.body1 === "Mars" ||
+            asp.body2 === "Mars" ||
+            asp.body1 === "Saturn" ||
+            asp.body2 === "Saturn")
+        ) {
           aspectRisk += 10;
         }
       });
@@ -65,35 +92,48 @@ export async function POST(req: Request) {
       // 2. Calculate Bazi & Void Time
       const environmentalBaziData = baziEngine.calculate(targetDate, lon);
       const currentZodiac = getCurrentZodiac(targetDate, lon);
-      const isVoidTime = voidZodiacArray.includes(currentZodiac.yearZodiac) ||
-                         voidZodiacArray.includes(currentZodiac.monthZodiac); // checking year/month for long-term forecast
+      const isVoidTime =
+        voidZodiacArray.includes(currentZodiac.yearZodiac) ||
+        voidZodiacArray.includes(currentZodiac.monthZodiac); // checking year/month for long-term forecast
 
       let isConflictMonth = false;
       if (personalBaziData) {
-        const targetMonthZhi = environmentalBaziData.pillars.month?.zhi || '';
-        const targetYearZhi = environmentalBaziData.pillars.year?.zhi || '';
+        const targetMonthZhi = environmentalBaziData.pillars.month?.zhi || "";
+        const targetYearZhi = environmentalBaziData.pillars.year?.zhi || "";
         const natalDayZhi = personalBaziData.pillars.day.zhi;
         const natalYearZhi = personalBaziData.pillars.year.zhi;
-        const clashPartnerDay = clashMap[natalDayZhi] || '';
-        const clashPartnerYear = clashMap[natalYearZhi] || '';
-        
-        isConflictMonth = (targetMonthZhi === clashPartnerDay) || (targetMonthZhi === clashPartnerYear) || 
-                          (targetYearZhi === clashPartnerDay) || (targetYearZhi === clashPartnerYear);
+        const clashPartnerDay = clashMap[natalDayZhi] || "";
+        const clashPartnerYear = clashMap[natalYearZhi] || "";
+
+        isConflictMonth =
+          targetMonthZhi === clashPartnerDay ||
+          targetMonthZhi === clashPartnerYear ||
+          targetYearZhi === clashPartnerDay ||
+          targetYearZhi === clashPartnerYear;
       }
 
       const isDoyouHazard = checkIsDoyouHazard(targetDate);
 
       // 3. Generate Metaphysical Deterministic Mock
-      const metaData = birthDate ? fetchMetaphysicalData(birthDate, targetDate, personalBaziData, useClassical) : null;
-      
+      const metaData = birthDate
+        ? fetchMetaphysicalData(
+            birthDate,
+            targetDate,
+            personalBaziData,
+            useClassical,
+          )
+        : null;
+
       // Calculate Base Environmental Cost (0-100)
       let envCost = 30 + aspectRisk;
       if (isVoidTime) envCost += 30;
       if (isConflictMonth) envCost += 20;
       if (isDoyouHazard) envCost += 25;
-      if (metaData?.chineseMetasoft.qiMenGate.status === 'Inauspicious') envCost += 10;
-      if (metaData?.chineseMetasoft.qiMenGate.status === 'Auspicious') envCost -= 15;
-      
+      if (metaData?.chineseMetasoft.qiMenGate.status === "Inauspicious")
+        envCost += 10;
+      if (metaData?.chineseMetasoft.qiMenGate.status === "Auspicious")
+        envCost -= 15;
+
       envCost = Math.max(0, Math.min(100, envCost));
 
       // Construct State Vector for Engine
@@ -101,18 +141,25 @@ export async function POST(req: Request) {
         stateVector: {
           ansLoad: simulatedAns,
           shieldCapacity: simulatedShield,
-          environmentalNoise: 'simulation',
+          environmentalNoise: "simulation",
           environmentalRisk: envCost,
           solarPhase: AstroEngine.getSolarLongitude(targetDate),
           isVoidTime,
           isConflictDay: isConflictMonth,
           isDoyouHazard,
-          astrologyData: { source: 'sim', transits: allAspects.map(a => a.type) },
-          ragContext: { source: 'sim', classicalRules: environmentalBaziData, personalBazi: personalBaziData },
+          astrologyData: {
+            source: "sim",
+            transits: allAspects.map((a) => a.type),
+          },
+          ragContext: {
+            source: "sim",
+            classicalRules: environmentalBaziData,
+            personalBazi: personalBaziData,
+          },
           vedicAstrology: vedicEngine.generateVedicChart(targetDate) as any,
           ichingHexagram: metaData?.roxyApi.ichingCast as any,
-          qiMenGate: metaData?.chineseMetasoft.qiMenGate
-        }
+          qiMenGate: metaData?.chineseMetasoft.qiMenGate,
+        },
       };
 
       // Get optimal action
@@ -120,14 +167,29 @@ export async function POST(req: Request) {
       const suggestedAction = actionResult.suggestedAction;
 
       // Map action to icons
-      let icon = 'Clock';
-      let displayAction = '待機';
-      if (suggestedAction === 'EXECUTE_RELOCATION') { icon = 'Rocket'; displayAction = '実行前進'; }
-      if (suggestedAction === 'EXECUTE_PURGE_RELOCATION') { icon = 'Zap'; displayAction = '浄化移住'; }
-      if (suggestedAction === 'ABORT_AND_SHIELD') { icon = 'ShieldAlert'; displayAction = '撤退'; }
-      if (suggestedAction === 'GATHER_INTEL') { icon = 'Eye'; displayAction = '情報収集'; }
-      if (suggestedAction === 'PREPARE_AND_WAIT' && actionResult.expectedReward < 0) {
-        displayAction = '警戒待機';
+      let icon = "Clock";
+      let displayAction = "待機";
+      if (suggestedAction === "EXECUTE_RELOCATION") {
+        icon = "Rocket";
+        displayAction = "実行前進";
+      }
+      if (suggestedAction === "EXECUTE_PURGE_RELOCATION") {
+        icon = "Zap";
+        displayAction = "浄化移住";
+      }
+      if (suggestedAction === "ABORT_AND_SHIELD") {
+        icon = "ShieldAlert";
+        displayAction = "撤退";
+      }
+      if (suggestedAction === "GATHER_INTEL") {
+        icon = "Eye";
+        displayAction = "情報収集";
+      }
+      if (
+        suggestedAction === "PREPARE_AND_WAIT" &&
+        actionResult.expectedReward < 0
+      ) {
+        displayAction = "警戒待機";
       }
 
       forecast.push({
@@ -139,32 +201,34 @@ export async function POST(req: Request) {
         rawAction: suggestedAction,
         icon,
         isVoidTime,
-        qValue: actionResult.expectedReward
+        qValue: actionResult.expectedReward,
       });
 
       // Update Shield for NEXT month based on action
-      if (suggestedAction === 'EXECUTE_RELOCATION') {
+      if (suggestedAction === "EXECUTE_RELOCATION") {
         simulatedShield = Math.max(0, simulatedShield - 15);
         simulatedAns = Math.min(100, simulatedAns + 20);
-      } else if (suggestedAction === 'EXECUTE_PURGE_RELOCATION') {
+      } else if (suggestedAction === "EXECUTE_PURGE_RELOCATION") {
         simulatedShield = Math.max(0, simulatedShield - 40);
         simulatedAns = Math.min(100, simulatedAns + 30);
-      } else if (suggestedAction === 'PREPARE_AND_WAIT') {
+      } else if (suggestedAction === "PREPARE_AND_WAIT") {
         simulatedShield = Math.min(100, simulatedShield + 15);
         simulatedAns = Math.max(0, simulatedAns - 10);
-      } else if (suggestedAction === 'ABORT_AND_SHIELD') {
+      } else if (suggestedAction === "ABORT_AND_SHIELD") {
         simulatedShield = Math.min(100, simulatedShield + 25);
         simulatedAns = Math.max(0, simulatedAns - 20);
-      } else if (suggestedAction === 'GATHER_INTEL') {
+      } else if (suggestedAction === "GATHER_INTEL") {
         simulatedShield = Math.max(0, simulatedShield - 5);
         simulatedAns = Math.min(100, simulatedAns + 5);
       }
     }
 
     return NextResponse.json({ success: true, data: forecast });
-
   } catch (error: any) {
     console.error("Forecast Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }

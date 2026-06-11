@@ -9,7 +9,7 @@ import path from "path";
 async function main() {
   console.log("=== AI Quant Researcher (JQuants + Gemini) ===");
 
-// Set up Gemini API Key from existing GEMINI_API_KEY if needed
+  // Set up Gemini API Key from existing GEMINI_API_KEY if needed
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && process.env.GEMINI_API_KEY) {
     process.env.GOOGLE_GENERATIVE_AI_API_KEY = process.env.GEMINI_API_KEY;
   }
@@ -17,7 +17,9 @@ async function main() {
   const apiKey = process.env.JQUANTS_API_KEY;
   if (!apiKey) {
     console.error("❌ Error: Missing JQUANTS_API_KEY in .env");
-    console.log("Please add JQUANTS_API_KEY=\"your_v2_api_key\" to your .env file.");
+    console.log(
+      'Please add JQUANTS_API_KEY="your_v2_api_key" to your .env file.',
+    );
     process.exit(1);
   }
 
@@ -30,15 +32,27 @@ async function main() {
     const FROM_DATE = "20240110";
     const TO_DATE = "20251231";
 
-    console.log(`📈 Fetching daily quotes for ${TARGET_CODE} (${FROM_DATE} - ${TO_DATE})...`);
-    const quotes = await getQuotes(TARGET_CODE, undefined, FROM_DATE, TO_DATE, apiKey);
-    
+    console.log(
+      `📈 Fetching daily quotes for ${TARGET_CODE} (${FROM_DATE} - ${TO_DATE})...`,
+    );
+    const quotes = await getQuotes(
+      TARGET_CODE,
+      undefined,
+      FROM_DATE,
+      TO_DATE,
+      apiKey,
+    );
+
     // Sub-sample to avoid huge payload, maybe weekly close prices or last N days
     const recentQuotes = quotes.slice(-60); // Last 60 trading days
-    
+
     console.log(`📑 Fetching financial statements for ${TARGET_CODE}...`);
     // Not filtering by date so it gets recent ones (JQuants returns multiple past quarters if we don't filter carefully)
-    const statements = await getFinancialStatements(TARGET_CODE, undefined, apiKey);
+    const statements = await getFinancialStatements(
+      TARGET_CODE,
+      undefined,
+      apiKey,
+    );
     // Grab the last 4 quarters to give the AI context of growth
     const recentStatements = statements.slice(-4);
 
@@ -57,7 +71,7 @@ ${JSON.stringify(
     Volume: q.Vo,
   })),
   null,
-  2
+  2,
 )}
 
 ## Recent Financial Statements (Last 4 items)
@@ -69,15 +83,15 @@ ${JSON.stringify(
     OrdinaryProfit: s.OrdinaryProfit,
     Profit: s.Profit,
     EarningsPerShare: s.EarningsPerShare,
-    EquityToAssetRatio: s.EquityToAssetRatio
+    EquityToAssetRatio: s.EquityToAssetRatio,
   })),
   null,
-  2
+  2,
 )}
 `;
 
     console.log("💬 Sending data to Gemini AI for Hypothesis Generation...");
-    
+
     // We prompt the AI to act as a Quant Researcher
     const systemPrompt = `
 あなたは世界トップクラスのクオンツ・リサーチャーです。
@@ -93,23 +107,25 @@ ${JSON.stringify(
     const { text: result } = await generateText({
       model: google("gemini-2.5-pro"),
       system: systemPrompt,
-      prompt: `以下のデータを分析してレポートを作成してください：\n\n${dataContext}`
+      prompt: `以下のデータを分析してレポートを作成してください：\n\n${dataContext}`,
     });
 
     console.log("\n==================================");
     console.log("📊 AI Quant Researcher Final Report");
     console.log("==================================\n");
     console.log(result);
-    
+
     // Save report to file
     const reportDir = path.join(process.cwd(), "reports");
     if (!fs.existsSync(reportDir)) fs.mkdirSync(reportDir);
-    
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const filepath = path.join(reportDir, `report_${TARGET_CODE}_${timestamp}.md`);
+    const filepath = path.join(
+      reportDir,
+      `report_${TARGET_CODE}_${timestamp}.md`,
+    );
     fs.writeFileSync(filepath, result, "utf-8");
     console.log(`\n💾 Report saved to ${filepath}`);
-
   } catch (error) {
     console.error("❌ Execution Error:", error);
   }

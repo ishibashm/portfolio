@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
-import { generateText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { NextResponse } from "next/server";
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  apiKey:
+    process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
 export async function POST(req: Request) {
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
     const { title, artist, duration } = await req.json();
 
     if (!title) {
-      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
 
     const trackDuration = duration ? parseFloat(duration) : 240; // Default to 4 minutes
@@ -48,22 +49,25 @@ Example Output Format:
 ]`;
 
     const { text } = await generateText({
-      model: google('gemini-3.5-flash'),
+      model: google("gemini-3.5-flash"),
       prompt,
       temperature: 0.2,
     });
 
     let cleanJson = text.trim();
-    if (cleanJson.startsWith('```json')) {
-      cleanJson = cleanJson.replace(/^```json/, '').replace(/```$/, '').trim();
-    } else if (cleanJson.startsWith('```')) {
-      cleanJson = cleanJson.replace(/^```/, '').replace(/```$/, '').trim();
+    if (cleanJson.startsWith("```json")) {
+      cleanJson = cleanJson
+        .replace(/^```json/, "")
+        .replace(/```$/, "")
+        .trim();
+    } else if (cleanJson.startsWith("```")) {
+      cleanJson = cleanJson.replace(/^```/, "").replace(/```$/, "").trim();
     }
 
     let sections = [];
     try {
       sections = JSON.parse(cleanJson);
-      
+
       // Post-process to ensure strict validation of start/end times and contiguity
       if (Array.isArray(sections) && sections.length > 0) {
         sections[0].startTime = 0;
@@ -73,17 +77,23 @@ Example Output Format:
         sections[sections.length - 1].endTime = trackDuration;
       }
     } catch (e) {
-      console.warn("Failed to parse Gemini json output, using fallback generator:", e);
+      console.warn(
+        "Failed to parse Gemini json output, using fallback generator:",
+        e,
+      );
       // Fallback generator in case JSON parsing fails
       sections = generateFallbackSections(trackDuration);
     }
 
     return NextResponse.json({
-      sections
+      sections,
     });
   } catch (error: any) {
-    console.error('Error analyzing music structure:', error);
-    return NextResponse.json({ error: 'Failed to analyze music structure' }, { status: 500 });
+    console.error("Error analyzing music structure:", error);
+    return NextResponse.json(
+      { error: "Failed to analyze music structure" },
+      { status: 500 },
+    );
   }
 }
 
@@ -95,21 +105,77 @@ function generateFallbackSections(duration: number) {
   const verse2Len = Math.floor(duration * 0.15);
   const chorus2Len = Math.floor(duration * 0.15);
   const bridgeLen = Math.floor(duration * 0.12);
-  const outroLen = duration - (introLen + verse1Len + prechorus1Len + chorus1Len + verse2Len + chorus2Len + bridgeLen);
+  const outroLen =
+    duration -
+    (introLen +
+      verse1Len +
+      prechorus1Len +
+      chorus1Len +
+      verse2Len +
+      chorus2Len +
+      bridgeLen);
 
   const rawStructure = [
-    { name: "Intro", label: "イントロ", duration: introLen, energy: 2, note: "演奏のみ - 導入部" },
-    { name: "Verse 1", label: "Aメロ (1番)", duration: verse1Len, energy: 2, note: "歌唱スタート" },
-    { name: "Pre-Chorus 1", label: "Bメロ (1番)", duration: prechorus1Len, energy: 3, note: "サビへのビルドアップ" },
-    { name: "Chorus 1", label: "サビ (1番)", duration: chorus1Len, energy: 4, note: "メインテーマ・メロディ" },
-    { name: "Verse 2", label: "Aメロ (2番)", duration: verse2Len, energy: 2, note: "2コーラス目" },
-    { name: "Chorus 2", label: "サビ (2番)", duration: chorus2Len, energy: 4, note: "サビ繰り返し" },
-    { name: "Bridge", label: "Cメロ (ブリッジ)", duration: bridgeLen, energy: 3, note: "楽曲の展開部" },
-    { name: "Outro", label: "アウトロ", duration: outroLen, energy: 2, note: "フェードアウト" }
+    {
+      name: "Intro",
+      label: "イントロ",
+      duration: introLen,
+      energy: 2,
+      note: "演奏のみ - 導入部",
+    },
+    {
+      name: "Verse 1",
+      label: "Aメロ (1番)",
+      duration: verse1Len,
+      energy: 2,
+      note: "歌唱スタート",
+    },
+    {
+      name: "Pre-Chorus 1",
+      label: "Bメロ (1番)",
+      duration: prechorus1Len,
+      energy: 3,
+      note: "サビへのビルドアップ",
+    },
+    {
+      name: "Chorus 1",
+      label: "サビ (1番)",
+      duration: chorus1Len,
+      energy: 4,
+      note: "メインテーマ・メロディ",
+    },
+    {
+      name: "Verse 2",
+      label: "Aメロ (2番)",
+      duration: verse2Len,
+      energy: 2,
+      note: "2コーラス目",
+    },
+    {
+      name: "Chorus 2",
+      label: "サビ (2番)",
+      duration: chorus2Len,
+      energy: 4,
+      note: "サビ繰り返し",
+    },
+    {
+      name: "Bridge",
+      label: "Cメロ (ブリッジ)",
+      duration: bridgeLen,
+      energy: 3,
+      note: "楽曲の展開部",
+    },
+    {
+      name: "Outro",
+      label: "アウトロ",
+      duration: outroLen,
+      energy: 2,
+      note: "フェードアウト",
+    },
   ];
 
   let current = 0;
-  return rawStructure.map(sec => {
+  return rawStructure.map((sec) => {
     const start = current;
     const end = Math.min(duration, current + sec.duration);
     current = end;
@@ -119,7 +185,7 @@ function generateFallbackSections(duration: number) {
       startTime: start,
       endTime: end,
       energy: sec.energy,
-      note: sec.note
+      note: sec.note,
     };
   });
 }

@@ -1,17 +1,19 @@
-import 'dotenv/config';
-import fs from 'fs';
-import path from 'path';
-import readline from 'readline';
-import prisma from '../src/lib/prisma';
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import readline from "readline";
+import prisma from "../src/lib/prisma";
 
 async function main() {
-  const downloadsDir = path.join(process.cwd(), 'x_downloads');
+  const downloadsDir = path.join(process.cwd(), "x_downloads");
   if (!fs.existsSync(downloadsDir)) {
-    console.log('No x_downloads directory found.');
+    console.log("No x_downloads directory found.");
     return;
   }
 
-  const files = fs.readdirSync(downloadsDir).filter(file => file.endsWith('_data.jsonl'));
+  const files = fs
+    .readdirSync(downloadsDir)
+    .filter((file) => file.endsWith("_data.jsonl"));
   let totalImported = 0;
 
   for (const file of files) {
@@ -20,7 +22,7 @@ async function main() {
     const fileStream = fs.createReadStream(filePath);
     const rl = readline.createInterface({
       input: fileStream,
-      crlfDelay: Infinity
+      crlfDelay: Infinity,
     });
 
     let count = 0;
@@ -28,30 +30,30 @@ async function main() {
       if (!line.trim()) continue;
       try {
         const data = JSON.parse(line);
-        
+
         await prisma.xPost.upsert({
           where: { id: data.id },
           update: {
-            url: data.url || '',
-            authorHandle: data.author_handle || '',
-            authorDisplay: data.author_display || '',
+            url: data.url || "",
+            authorHandle: data.author_handle || "",
+            authorDisplay: data.author_display || "",
             datetime: data.datetime ? new Date(data.datetime) : new Date(),
-            text: data.text || '',
+            text: data.text || "",
             quotedUrls: data.quoted_urls || [],
             externalLinks: data.external_links || [],
             savedMedia: data.saved_media || [],
           },
           create: {
             id: data.id,
-            url: data.url || '',
-            authorHandle: data.author_handle || '',
-            authorDisplay: data.author_display || '',
+            url: data.url || "",
+            authorHandle: data.author_handle || "",
+            authorDisplay: data.author_display || "",
             datetime: data.datetime ? new Date(data.datetime) : new Date(),
-            text: data.text || '',
+            text: data.text || "",
             quotedUrls: data.quoted_urls || [],
             externalLinks: data.external_links || [],
             savedMedia: data.saved_media || [],
-          }
+          },
         });
         count++;
         totalImported++;
@@ -66,7 +68,7 @@ async function main() {
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error(e);
     process.exit(1);
   })

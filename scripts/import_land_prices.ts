@@ -2,21 +2,23 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
-const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
-  ? path.resolve(process.cwd(), '.env')
-  : path.resolve(process.cwd(), '../.env');
+const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
+  ? path.resolve(process.cwd(), ".env")
+  : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
-const localEnvPath = envPath + '.local';
+const localEnvPath = envPath + ".local";
 if (fs.existsSync(localEnvPath)) {
   dotenv.config({ path: localEnvPath, override: true });
 }
 
 import { PrismaClient } from "@prisma/client";
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is not set. Please ensure your .env file exists and contains DATABASE_URL.");
+  throw new Error(
+    "DATABASE_URL is not set. Please ensure your .env file exists and contains DATABASE_URL.",
+  );
 }
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
@@ -32,9 +34,12 @@ if (!API_KEY) {
 
 // 緯度経度からタイル座標(z, x, y)を計算する関数 (ズームレベル15固定)
 function latLonToTile(lat: number, lon: number, zoom: number = 15) {
-  const x = Math.floor((lon + 180) / 360 * Math.pow(2, zoom));
-  const latRad = lat * Math.PI / 180;
-  const y = Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * Math.pow(2, zoom));
+  const x = Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
+  const latRad = (lat * Math.PI) / 180;
+  const y = Math.floor(
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) *
+      Math.pow(2, zoom),
+  );
   return { z: zoom, x, y };
 }
 
@@ -50,7 +55,9 @@ async function main() {
     },
   });
 
-  console.log(`Found ${municipalities.length} municipalities with coordinates.`);
+  console.log(
+    `Found ${municipalities.length} municipalities with coordinates.`,
+  );
 
   let updatedCount = 0;
 
@@ -69,8 +76,8 @@ async function main() {
         const res = await fetch(url, {
           headers: {
             "Ocp-Apim-Subscription-Key": API_KEY,
-            "Accept": "*/*"
-          }
+            Accept: "*/*",
+          },
         });
 
         if (res.status === 404) {
@@ -78,13 +85,15 @@ async function main() {
           geojsonData = { features: [] };
           tileCache[tileKey] = geojsonData;
         } else if (!res.ok) {
-          console.error(`API Error for tile ${tileKey} (City: ${m.areaName}): ${res.status} ${res.statusText}`);
+          console.error(
+            `API Error for tile ${tileKey} (City: ${m.areaName}): ${res.status} ${res.statusText}`,
+          );
           continue;
         } else {
           geojsonData = await res.json();
           tileCache[tileKey] = geojsonData;
           // Rate limit対策のために1秒待機
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
       } catch (err: any) {
         console.error(`Fetch failed for tile ${tileKey}: ${err.message}`);
@@ -101,7 +110,12 @@ async function main() {
       // API仕様によると、地価は properties.price 等に入っているはずだが、念のためダンプして確認が必要
       // 国交省APIの一般的なプロパティ名は「price」または「地価」に関連するもの
       // 今回は柔軟に複数パターンを試す
-      const price = feature.properties?.price || feature.properties?.LandPrice || feature.properties?.["地価"] || feature.properties?.P01 || parseInt(feature.properties?.P01_006 || "0"); // P01_006 is commonly used for price in some MLIT datasets
+      const price =
+        feature.properties?.price ||
+        feature.properties?.LandPrice ||
+        feature.properties?.["地価"] ||
+        feature.properties?.P01 ||
+        parseInt(feature.properties?.P01_006 || "0"); // P01_006 is commonly used for price in some MLIT datasets
       if (price) {
         const numPrice = Number(price);
         if (!isNaN(numPrice)) {
@@ -112,7 +126,9 @@ async function main() {
         // デバッグ用: プロパティのキーを確認
         // console.log("Available properties:", Object.keys(feature.properties || {}));
         // 値のパースに努める
-        const anyPrice = Object.values(feature.properties || {}).find(v => typeof v === 'number' && v > 1000);
+        const anyPrice = Object.values(feature.properties || {}).find(
+          (v) => typeof v === "number" && v > 1000,
+        );
         if (anyPrice) {
           totalPrice += anyPrice as number;
           count++;
@@ -124,12 +140,16 @@ async function main() {
       const avgPrice = Math.round(totalPrice / count);
       await prisma.municipalityWealth.update({
         where: { id: m.id },
-        data: { landPricePerSqm: avgPrice }
+        data: { landPricePerSqm: avgPrice },
       });
-      console.log(`Updated ${m.areaName} - Avg Price: ¥${avgPrice}/sqm (from ${count} points)`);
+      console.log(
+        `Updated ${m.areaName} - Avg Price: ¥${avgPrice}/sqm (from ${count} points)`,
+      );
       updatedCount++;
     } else {
-      console.log(`No land price points found for ${m.areaName} in tile ${tileKey}.`);
+      console.log(
+        `No land price points found for ${m.areaName} in tile ${tileKey}.`,
+      );
     }
 
     // 定期的な進捗報告
@@ -138,11 +158,13 @@ async function main() {
     }
   }
 
-  console.log(`Finished! Updated ${updatedCount} municipalities with land price data.`);
+  console.log(
+    `Finished! Updated ${updatedCount} municipalities with land price data.`,
+  );
 }
 
 main()
-  .catch(e => {
+  .catch((e) => {
     console.error("Unhandled Error:", e);
     process.exit(1);
   })

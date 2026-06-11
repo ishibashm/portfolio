@@ -1,25 +1,34 @@
-import { NextResponse } from 'next/server';
-import { generateText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { NextResponse } from "next/server";
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 
 const google = createGoogleGenerativeAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+  apiKey:
+    process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
 export const maxDuration = 60; // Allow more time for generation
 
 export async function POST(req: Request) {
   try {
-    const { inputData, style = 'twitter-card', previousHtml, iterationInstruction } = await req.json();
+    const {
+      inputData,
+      style = "twitter-card",
+      previousHtml,
+      iterationInstruction,
+    } = await req.json();
 
     const isIteration = !!(previousHtml && iterationInstruction);
 
     if (!isIteration && !inputData) {
-      return NextResponse.json({ error: 'Input data is required for new visualizations' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Input data is required for new visualizations" },
+        { status: 400 },
+      );
     }
 
-    let systemPrompt = '';
-    let prompt = '';
+    let systemPrompt = "";
+    let prompt = "";
 
     if (isIteration) {
       systemPrompt = `You are an expert UI/UX designer and a master of Tailwind CSS.
@@ -63,21 +72,27 @@ If it's 'magazine-article', make it look like an editorial magazine layout.
 If it's 'music-dashboard', make it look like a gorgeous, glassmorphic Spotify/Apple Music-style song card or dashboard, featuring a beautiful record sleeve/cover gradient, track meta info (BPM, Key, Energy), a stylish progress bar, and play/pause controls. If the input data contains a 'sections' array, the dashboard MUST include a 'Song Structure Analysis' panel. This panel should feature: 1) A segmented horizontal timeline bar (widths proportional to section durations, color-coded by section type like Intro, Verse, Chorus, Bridge, Outro), 2) An aligned bar chart showing the energy/intensity of each section, and 3) A clean, dark-themed sections table listing Index, Section Name (with color dot), Time Range, Duration, Energy (represented by star icons), and Notes/Lyrics. Make sure clicking any timeline block or table row seeks the playback (by calling a mock seek function or linking interactive buttons).`;
 
       prompt = `Raw Data to Visualize:
-${typeof inputData === 'string' ? inputData : JSON.stringify(inputData, null, 2)}`;
+${typeof inputData === "string" ? inputData : JSON.stringify(inputData, null, 2)}`;
     }
 
     const { text } = await generateText({
-      model: google('gemini-3.5-flash'),
+      model: google("gemini-3.5-flash"),
       prompt: `${systemPrompt}\n\n${prompt}`,
       temperature: 0.7,
     });
 
     // Clean up potential markdown formatting if the model disobeys
     let cleanHtml = text.trim();
-    if (cleanHtml.startsWith('\`\`\`html')) {
-      cleanHtml = cleanHtml.replace(/^\`\`\`html/, '').replace(/\`\`\`$/, '').trim();
-    } else if (cleanHtml.startsWith('\`\`\`')) {
-      cleanHtml = cleanHtml.replace(/^\`\`\`/, '').replace(/\`\`\`$/, '').trim();
+    if (cleanHtml.startsWith("\`\`\`html")) {
+      cleanHtml = cleanHtml
+        .replace(/^\`\`\`html/, "")
+        .replace(/\`\`\`$/, "")
+        .trim();
+    } else if (cleanHtml.startsWith("\`\`\`")) {
+      cleanHtml = cleanHtml
+        .replace(/^\`\`\`/, "")
+        .replace(/\`\`\`$/, "")
+        .trim();
     }
 
     // Add necessary Tailwind script and default base styles for the iframe sandbox preview to work
@@ -109,11 +124,13 @@ ${typeof inputData === 'string' ? inputData : JSON.stringify(inputData, null, 2)
 
     return NextResponse.json({
       cleanHtml,
-      html: htmlWithTailwind
+      html: htmlWithTailwind,
     });
-
   } catch (error) {
-    console.error('Error in visualize API:', error);
-    return NextResponse.json({ error: 'Failed to generate visualization' }, { status: 500 });
+    console.error("Error in visualize API:", error);
+    return NextResponse.json(
+      { error: "Failed to generate visualization" },
+      { status: 500 },
+    );
   }
 }

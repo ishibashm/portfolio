@@ -12,16 +12,24 @@ async function fetchWithAuth(endpoint: string, apiKey: string) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`JQuants API error on ${endpoint}: ${response.status} ${errorText}`);
+    throw new Error(
+      `JQuants API error on ${endpoint}: ${response.status} ${errorText}`,
+    );
   }
 
   return response.json();
 }
 
 // Get OHLCV Quotes for a specific code
-export async function getQuotes(code: string, date?: string, from?: string, to?: string, apiKey?: string) {
+export async function getQuotes(
+  code: string,
+  date?: string,
+  from?: string,
+  to?: string,
+  apiKey?: string,
+) {
   if (!apiKey) throw new Error("API Key is required");
-  
+
   let endpoint = `/equities/bars/daily?code=${code}`;
   if (date) endpoint += `&date=${date}`;
   if (from) endpoint += `&from=${from}`;
@@ -33,7 +41,11 @@ export async function getQuotes(code: string, date?: string, from?: string, to?:
 }
 
 // Get Financial Statements (Fins) for a specific code
-export async function getFinancialStatements(code: string, date?: string, apiKey?: string) {
+export async function getFinancialStatements(
+  code: string,
+  date?: string,
+  apiKey?: string,
+) {
   if (!apiKey) throw new Error("API Key is required");
 
   let endpoint = `/fins/summary?code=${code}`;

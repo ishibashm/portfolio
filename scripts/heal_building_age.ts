@@ -1,13 +1,13 @@
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import * as dotenv from 'dotenv';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
-const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
-  ? path.resolve(process.cwd(), '.env')
-  : path.resolve(process.cwd(), '../.env');
+const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
+  ? path.resolve(process.cwd(), ".env")
+  : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
 
 async function main() {
@@ -16,8 +16,8 @@ async function main() {
   const prisma = new PrismaClient({ adapter } as any);
 
   try {
-    console.log('🔄 データベース内の築年数データを高速補正中...');
-    console.log('⚡ 超高速一括SQLを実行しています...');
+    console.log("🔄 データベース内の築年数データを高速補正中...");
+    console.log("⚡ 超高速一括SQLを実行しています...");
 
     const start = Date.now();
 
@@ -48,9 +48,8 @@ async function main() {
     console.log(`✅ データベースの一括高速修復が完了しました！`);
     console.log(`- 補正された物件レコード数: ${updatedCount} 件`);
     console.log(`- 所要時間: ${duration} 秒`);
-
   } catch (error) {
-    console.error('❌ 修復処理中にエラーが発生しました:', error);
+    console.error("❌ 修復処理中にエラーが発生しました:", error);
   } finally {
     await prisma.$disconnect();
     await pool.end();

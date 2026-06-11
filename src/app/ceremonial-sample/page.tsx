@@ -1,10 +1,10 @@
-import React from 'react';
-import { WeddingDateSelector } from '../../components/WeddingDateSelector';
-import { TenchusatsuVisualizer } from '../../components/TenchusatsuVisualizer';
+import React from "react";
+import { WeddingDateSelector } from "../../components/WeddingDateSelector";
+import { TenchusatsuVisualizer } from "../../components/TenchusatsuVisualizer";
 
 /**
  * Ceremonial Logic Demo Page
- * 
+ *
  * Shows the "Wedding Date Selection" logic in action.
  * This page serves as a "Plan B" artifact:
  * "I practiced implementing the complex logic required for your system using AI."
@@ -15,16 +15,21 @@ export default function CeremonialSamplePage() {
       <div className="max-w-7xl mx-auto align-middle">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl md:text-6xl mb-4">
-            <span className="block xl:inline">冠婚葬祭システム</span>{' '}
-            <span className="block text-indigo-600 xl:inline">ロジックデモ</span>
+            <span className="block xl:inline">冠婚葬祭システム</span>{" "}
+            <span className="block text-indigo-600 xl:inline">
+              ロジックデモ
+            </span>
           </h1>
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            ブライダルシステム用の業務ロジックのデモンストレーション: <br/>
+            ブライダルシステム用の業務ロジックのデモンストレーション: <br />
             <strong>六曜の計算と吉日選択</strong>
           </p>
           <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
-             <div className="rounded-md shadow">
-              <a href="/" className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">
+            <div className="rounded-md shadow">
+              <a
+                href="/"
+                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
+              >
                 ポータルへ戻る
               </a>
             </div>
@@ -48,9 +53,7 @@ export default function CeremonialSamplePage() {
           <div className="border-t border-gray-200">
             <dl>
               <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                <dt className="text-sm font-medium text-gray-500">
-                  対象年度
-                </dt>
+                <dt className="text-sm font-medium text-gray-500">対象年度</dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                   2026-2027年（現在の予約関連）
                 </dd>
@@ -69,14 +72,16 @@ export default function CeremonialSamplePage() {
                   これが重要な理由
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                  <strong>「ローコードツールでは定義が困難な独自の業務ルール」</strong>を処理する能力を示しています。
+                  <strong>
+                    「ローコードツールでは定義が困難な独自の業務ルール」
+                  </strong>
+                  を処理する能力を示しています。
                   WebPerformerがCRUDを担当する一方で、このカスタムロジックは冠婚葬祭ビジネスのコアバリューを処理します。
                 </dd>
               </div>
             </dl>
           </div>
         </div>
-
       </div>
     </div>
   );

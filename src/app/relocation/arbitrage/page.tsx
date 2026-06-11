@@ -1,16 +1,30 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { Loader2, MapPin, TrendingUp, Sparkles, Filter, ChevronRight, Download, Search, Settings, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  MapPin,
+  TrendingUp,
+  Sparkles,
+  Filter,
+  ChevronRight,
+  Download,
+  Search,
+  Settings,
+  RefreshCw,
+} from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
-import { MetaphysicalConfigBar, MetaphysicalConfig } from "@/components/layout/MetaphysicalConfigBar";
+import {
+  MetaphysicalConfigBar,
+  MetaphysicalConfig,
+} from "@/components/layout/MetaphysicalConfigBar";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 
 // 吉凶バッジ定義のインターフェース
 interface BadgeItem {
   label: string;
-  type: 'calendar' | 'individual'; // 枠線のみ or 塗りつぶし
+  type: "calendar" | "individual"; // 枠線のみ or 塗りつぶし
   colorClass: string;
   priority: number;
 }
@@ -18,8 +32,8 @@ interface BadgeItem {
 const getTodayString = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 };
 
@@ -29,14 +43,14 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
       const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const hours = String(d.getHours()).padStart(2, '0');
-      const minutes = String(d.getMinutes()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
   } catch (e) {}
-  if (dateStr.includes('T')) {
+  if (dateStr.includes("T")) {
     return dateStr.substring(0, 16);
   }
   return `${dateStr}T12:00`;
@@ -44,14 +58,17 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 
 import dynamic from "next/dynamic";
 
-const LocationPickerInner = dynamic(() => import("@/components/LocationPickerInner"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
-      マップを読み込み中...
-    </div>
-  ),
-});
+const LocationPickerInner = dynamic(
+  () => import("@/components/LocationPickerInner"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
+        マップを読み込み中...
+      </div>
+    ),
+  },
+);
 
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);
@@ -83,7 +100,13 @@ export default function ArbitrageScannerPage() {
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0, 137.0]); // Default to Japan center
 
   // Viewport bounds for map searching
-  const [mapBounds, setMapBounds] = useState<{minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number} | null>(null);
+  const [mapBounds, setMapBounds] = useState<{
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+    zoom: number;
+  } | null>(null);
 
   // 前回のパラメータを保持して比較する ref
   const prevParamsRef = useRef({
@@ -100,7 +123,7 @@ export default function ArbitrageScannerPage() {
     lunarPhaseModifier,
     directionFilterMode,
     actionIntent,
-    mapBounds
+    mapBounds,
   });
 
   // Temporary local inputs to avoid API hammering during typing
@@ -121,9 +144,19 @@ export default function ArbitrageScannerPage() {
     else if (score >= 50) starCount = 2;
 
     return (
-      <div className="flex gap-0.5 text-amber-400 text-xs" title={`おすすめ度: ${score.toFixed(1)}`}>
+      <div
+        className="flex gap-0.5 text-amber-400 text-xs"
+        title={`おすすめ度: ${score.toFixed(1)}`}
+      >
         {Array.from({ length: 5 }).map((_, i) => (
-          <span key={i} className={i < starCount ? "opacity-100 text-amber-400" : "opacity-20 text-zinc-600"}>
+          <span
+            key={i}
+            className={
+              i < starCount
+                ? "opacity-100 text-amber-400"
+                : "opacity-20 text-zinc-600"
+            }
+          >
             ★
           </span>
         ))}
@@ -140,43 +173,161 @@ export default function ArbitrageScannerPage() {
     const badges: BadgeItem[] = [];
 
     // 1. 大凶要因
-    if (item.astrologyStatus === 'NOISE_GOU') badges.push({ label: '五黄殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
-    if (item.astrologyStatus === 'NOISE_ANKEN') badges.push({ label: '暗剣殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
-    if (item.astrologyStatus === 'NOISE_HA') badges.push({ label: '歳破', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
-    if (item.astrologyStatus === 'NOISE_HONMEI') badges.push({ label: '本命殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
-    if (item.astrologyStatus === 'NOISE_TEKI') badges.push({ label: '本命的殺', type: 'individual', colorClass: 'bg-red-500/25 text-red-300 border border-red-500/40', priority: 1 });
+    if (item.astrologyStatus === "NOISE_GOU")
+      badges.push({
+        label: "五黄殺",
+        type: "individual",
+        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        priority: 1,
+      });
+    if (item.astrologyStatus === "NOISE_ANKEN")
+      badges.push({
+        label: "暗剣殺",
+        type: "individual",
+        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        priority: 1,
+      });
+    if (item.astrologyStatus === "NOISE_HA")
+      badges.push({
+        label: "歳破",
+        type: "individual",
+        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        priority: 1,
+      });
+    if (item.astrologyStatus === "NOISE_HONMEI")
+      badges.push({
+        label: "本命殺",
+        type: "individual",
+        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        priority: 1,
+      });
+    if (item.astrologyStatus === "NOISE_TEKI")
+      badges.push({
+        label: "本命的殺",
+        type: "individual",
+        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        priority: 1,
+      });
 
     // 2. 最大吉要因
-    if (item.isTendo) badges.push({ label: '天道方位', type: 'individual', colorClass: 'bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-300 border border-amber-400/40 font-bold', priority: 2 });
-    if (targetDay.luckyDays?.isTensho) badges.push({ label: '天赦日', type: 'calendar', colorClass: 'border border-yellow-400/50 text-yellow-300 bg-yellow-400/5', priority: 2 });
+    if (item.isTendo)
+      badges.push({
+        label: "天道方位",
+        type: "individual",
+        colorClass:
+          "bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-300 border border-amber-400/40 font-bold",
+        priority: 2,
+      });
+    if (targetDay.luckyDays?.isTensho)
+      badges.push({
+        label: "天赦日",
+        type: "calendar",
+        colorClass:
+          "border border-yellow-400/50 text-yellow-300 bg-yellow-400/5",
+        priority: 2,
+      });
 
     // 3. 通常の吉要因
-    if (targetDay.rokuyo?.includes("大安")) badges.push({ label: '大安', type: 'calendar', colorClass: 'border border-indigo-400/50 text-indigo-300 bg-indigo-400/5', priority: 3 });
-    if (targetDay.luckyDays?.isIchiryumanbai) badges.push({ label: '一粒万倍', type: 'calendar', colorClass: 'border border-emerald-400/50 text-emerald-300 bg-emerald-400/5', priority: 3 });
-    if (item.astroFlags?.includes("JUPITER_LINE")) badges.push({ label: '木星ライン', type: 'individual', colorClass: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30', priority: 3 });
-    if (item.astroFlags?.includes("VENUS_LINE")) badges.push({ label: '金星ライン', type: 'individual', colorClass: 'bg-blue-500/15 text-blue-300 border border-blue-500/30', priority: 3 });
-    if (item.astroFlags?.includes("SUN_LINE")) badges.push({ label: '太陽ライン', type: 'individual', colorClass: 'bg-purple-500/15 text-purple-300 border border-purple-500/30', priority: 3 });
+    if (targetDay.rokuyo?.includes("大安"))
+      badges.push({
+        label: "大安",
+        type: "calendar",
+        colorClass:
+          "border border-indigo-400/50 text-indigo-300 bg-indigo-400/5",
+        priority: 3,
+      });
+    if (targetDay.luckyDays?.isIchiryumanbai)
+      badges.push({
+        label: "一粒万倍",
+        type: "calendar",
+        colorClass:
+          "border border-emerald-400/50 text-emerald-300 bg-emerald-400/5",
+        priority: 3,
+      });
+    if (item.astroFlags?.includes("JUPITER_LINE"))
+      badges.push({
+        label: "木星ライン",
+        type: "individual",
+        colorClass:
+          "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+        priority: 3,
+      });
+    if (item.astroFlags?.includes("VENUS_LINE"))
+      badges.push({
+        label: "金星ライン",
+        type: "individual",
+        colorClass: "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+        priority: 3,
+      });
+    if (item.astroFlags?.includes("SUN_LINE"))
+      badges.push({
+        label: "太陽ライン",
+        type: "individual",
+        colorClass:
+          "bg-purple-500/15 text-purple-300 border border-purple-500/30",
+        priority: 3,
+      });
 
     // 4. 軽い凶や警告
-    if (targetDay.status === 'NOISE_VOID' || (details && details.voidPenalty < 0) || item.astroFlags?.includes("VOID_TIME_HAZARD")) {
+    if (
+      targetDay.status === "NOISE_VOID" ||
+      (details && details.voidPenalty < 0) ||
+      item.astroFlags?.includes("VOID_TIME_HAZARD")
+    ) {
       const isBlocker = item.maxAstroFactor === "天中殺期間 (移転NG)";
       badges.push({
-        label: isBlocker ? '天中殺 (移転NG)' : '天中殺',
-        type: 'individual',
-        colorClass: isBlocker ? 'bg-red-500/25 text-red-300 border border-red-500/40 font-bold' : 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
-        priority: isBlocker ? 1 : 4
+        label: isBlocker ? "天中殺 (移転NG)" : "天中殺",
+        type: "individual",
+        colorClass: isBlocker
+          ? "bg-red-500/25 text-red-300 border border-red-500/40 font-bold"
+          : "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+        priority: isBlocker ? 1 : 4,
       });
     }
-    if (item.astroFlags?.includes("DOYOU_HAZARD") || (details && details.doyouPenalty < 0)) badges.push({ label: '土用期間', type: 'calendar', colorClass: 'border border-zinc-600 text-zinc-400 bg-zinc-700/5', priority: 4 });
-    if (item.astrologyStatus === 'NOISE_GETSUMEI') badges.push({ label: '月命殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
-    if (item.astrologyStatus === 'NOISE_GETSUTEKI') badges.push({ label: '月命的殺', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
-    if (item.astrologyStatus === 'NOISE_NODE') badges.push({ label: '月交点', type: 'individual', colorClass: 'bg-zinc-800 text-zinc-400 border border-zinc-700', priority: 4 });
-    if (item.astroFlags?.includes("DECLINATION_WARNING")) badges.push({ label: '偏角ズレ', type: 'individual', colorClass: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20', priority: 4 });
+    if (
+      item.astroFlags?.includes("DOYOU_HAZARD") ||
+      (details && details.doyouPenalty < 0)
+    )
+      badges.push({
+        label: "土用期間",
+        type: "calendar",
+        colorClass: "border border-zinc-600 text-zinc-400 bg-zinc-700/5",
+        priority: 4,
+      });
+    if (item.astrologyStatus === "NOISE_GETSUMEI")
+      badges.push({
+        label: "月命殺",
+        type: "individual",
+        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        priority: 4,
+      });
+    if (item.astrologyStatus === "NOISE_GETSUTEKI")
+      badges.push({
+        label: "月命的殺",
+        type: "individual",
+        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        priority: 4,
+      });
+    if (item.astrologyStatus === "NOISE_NODE")
+      badges.push({
+        label: "月交点",
+        type: "individual",
+        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        priority: 4,
+      });
+    if (item.astroFlags?.includes("DECLINATION_WARNING"))
+      badges.push({
+        label: "偏角ズレ",
+        type: "individual",
+        colorClass:
+          "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20",
+        priority: 4,
+      });
 
     // 優先度順、かつ同じ優先度なら「カレンダー共通（暦）」を左、「個別」を右に配置
     badges.sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority;
-      if (a.type !== b.type) return a.type === 'calendar' ? -1 : 1;
+      if (a.type !== b.type) return a.type === "calendar" ? -1 : 1;
       return 0;
     });
 
@@ -187,7 +338,7 @@ export default function ArbitrageScannerPage() {
     return (
       <div className="flex flex-wrap gap-1.5 items-center mt-2.5">
         {visibleBadges.map((badge, idx) => (
-          <span 
+          <span
             key={idx}
             className={`px-2 py-0.5 rounded text-[9.5px] font-medium leading-none ${badge.colorClass}`}
           >
@@ -201,10 +352,15 @@ export default function ArbitrageScannerPage() {
             </span>
             {/* ポップオーバー */}
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-zinc-950/95 border border-zinc-800 rounded-lg p-2.5 shadow-xl text-[10px] text-zinc-300 hidden group-hover:block z-50 backdrop-blur-sm">
-              <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 mb-1.5">すべての吉凶要因:</div>
+              <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 mb-1.5">
+                すべての吉凶要因:
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {badges.map((badge, idx) => (
-                  <span key={idx} className={`px-1.5 py-0.5 rounded text-[8.5px] font-medium leading-none ${badge.colorClass}`}>
+                  <span
+                    key={idx}
+                    className={`px-1.5 py-0.5 rounded text-[8.5px] font-medium leading-none ${badge.colorClass}`}
+                  >
                     {badge.label}
                   </span>
                 ))}
@@ -219,7 +375,10 @@ export default function ArbitrageScannerPage() {
   // 全体ロード時のカード型スケルトン
   const renderCardSkeletons = () => {
     return Array.from({ length: 4 }).map((_, idx) => (
-      <tr key={idx} className="border-b border-gray-100 dark:border-gray-900 animate-pulse">
+      <tr
+        key={idx}
+        className="border-b border-gray-100 dark:border-gray-900 animate-pulse"
+      >
         <td className="px-6 py-4">
           <div className="w-16 h-4 bg-zinc-800/40 rounded-md" />
         </td>
@@ -255,9 +414,14 @@ export default function ArbitrageScannerPage() {
   const itemsPerPage = 50;
 
   // Sorting state
-  type SortColumn = 'arbitrage' | 'yield' | 'astrology' | 'rent' | 'distance';
-  interface SortConfig { key: SortColumn; direction: 'desc' | 'asc' }
-  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([{ key: 'arbitrage', direction: 'desc' }]);
+  type SortColumn = "arbitrage" | "yield" | "astrology" | "rent" | "distance";
+  interface SortConfig {
+    key: SortColumn;
+    direction: "desc" | "asc";
+  }
+  const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([
+    { key: "arbitrage", direction: "desc" },
+  ]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -274,7 +438,7 @@ export default function ArbitrageScannerPage() {
     let trueNorth = false;
 
     // Load from unified tactical config
-    const tacticalConfig = localStorage.getItem('tactical_config_v1');
+    const tacticalConfig = localStorage.getItem("tactical_config_v1");
     let filter = "composite";
     let intent = "MIGRATION";
     if (tacticalConfig) {
@@ -286,15 +450,28 @@ export default function ArbitrageScannerPage() {
         if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
         if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
         // Skip loading base_lat/lon to preserve the Japan-wide view unless specifically zooming in
-        if (config.base_lat !== undefined && config.prefecture && config.prefecture !== "all") bsLat = config.base_lat.toString();
-        if (config.base_lon !== undefined && config.prefecture && config.prefecture !== "all") bsLon = config.base_lon.toString();
-        if (config.use_classical_board !== undefined) classical = config.use_classical_board;
-        if (config.use_true_north !== undefined) trueNorth = config.use_true_north;
+        if (
+          config.base_lat !== undefined &&
+          config.prefecture &&
+          config.prefecture !== "all"
+        )
+          bsLat = config.base_lat.toString();
+        if (
+          config.base_lon !== undefined &&
+          config.prefecture &&
+          config.prefecture !== "all"
+        )
+          bsLon = config.base_lon.toString();
+        if (config.use_classical_board !== undefined)
+          classical = config.use_classical_board;
+        if (config.use_true_north !== undefined)
+          trueNorth = config.use_true_north;
         if (config.layer_mode !== undefined) layer = config.layer_mode;
         if (config.target_date) tDate = config.target_date;
-        if (config.direction_filter_mode !== undefined) filter = config.direction_filter_mode;
+        if (config.direction_filter_mode !== undefined)
+          filter = config.direction_filter_mode;
         if (config.action_intent !== undefined) intent = config.action_intent;
-      } catch (e) { }
+      } catch (e) {}
     } else {
       // Fallback to legacy isolated keys
       const storedLat = localStorage.getItem("arb_baseLat");
@@ -309,10 +486,10 @@ export default function ArbitrageScannerPage() {
 
       if (storedPrefecture) pref = storedPrefecture;
       if (storedRadius) rKm = storedRadius;
-      
+
       if (storedLat && pref !== "all") bsLat = storedLat;
       if (storedLon && pref !== "all") bsLon = storedLon;
-      
+
       if (storedBirth) bDate = storedBirth;
       if (storedTarget) tDate = storedTarget;
       if (storedClassical) classical = storedClassical === "true";
@@ -320,13 +497,19 @@ export default function ArbitrageScannerPage() {
       if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
     }
 
-    setBaseLat(bsLat); setLocalLat(bsLat);
-    setBaseLon(bsLon); setLocalLon(bsLon);
+    setBaseLat(bsLat);
+    setLocalLat(bsLat);
+    setBaseLon(bsLon);
+    setLocalLon(bsLon);
     setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
-    setBirthLat(bLat); setLocalBirthLat(bLat);
-    setBirthLon(bLon); setLocalBirthLon(bLon);
-    setBirthDate(bDate); setLocalBirthDate(normalizeDateTimeLocal(bDate));
-    setTargetDate(tDate); setLocalTargetDate(tDate);
+    setBirthLat(bLat);
+    setLocalBirthLat(bLat);
+    setBirthLon(bLon);
+    setLocalBirthLon(bLon);
+    setBirthDate(bDate);
+    setLocalBirthDate(normalizeDateTimeLocal(bDate));
+    setTargetDate(tDate);
+    setLocalTargetDate(tDate);
     setRadiusKm(rKm);
     setPrefecture(pref);
     setUseClassical(classical);
@@ -341,16 +524,40 @@ export default function ArbitrageScannerPage() {
       const customEvent = e as CustomEvent<any>;
       if (customEvent.detail) {
         const detail = customEvent.detail;
-        
+
         const newTargetDate = detail.targetDate || detail.target_date;
-        const newUseClassical = detail.useClassicalBoard !== undefined ? detail.useClassicalBoard : detail.use_classical_board;
-        const newFilterMode = detail.directionFilterMode || detail.direction_filter_mode;
+        const newUseClassical =
+          detail.useClassicalBoard !== undefined
+            ? detail.useClassicalBoard
+            : detail.use_classical_board;
+        const newFilterMode =
+          detail.directionFilterMode || detail.direction_filter_mode;
         const newIntent = detail.actionIntent || detail.action_intent;
         const newBirthDate = detail.birthDate || detail.birth_date;
-        const newBirthLat = detail.birthLat !== undefined ? detail.birthLat.toString() : (detail.birth_lat !== undefined ? detail.birth_lat.toString() : undefined);
-        const newBirthLon = detail.birthLon !== undefined ? detail.birthLon.toString() : (detail.birth_lon !== undefined ? detail.birth_lon.toString() : undefined);
-        const newBaseLat = detail.baseLat !== undefined ? detail.baseLat.toString() : (detail.base_lat !== undefined ? detail.base_lat.toString() : undefined);
-        const newBaseLon = detail.baseLon !== undefined ? detail.baseLon.toString() : (detail.base_lon !== undefined ? detail.base_lon.toString() : undefined);
+        const newBirthLat =
+          detail.birthLat !== undefined
+            ? detail.birthLat.toString()
+            : detail.birth_lat !== undefined
+              ? detail.birth_lat.toString()
+              : undefined;
+        const newBirthLon =
+          detail.birthLon !== undefined
+            ? detail.birthLon.toString()
+            : detail.birth_lon !== undefined
+              ? detail.birth_lon.toString()
+              : undefined;
+        const newBaseLat =
+          detail.baseLat !== undefined
+            ? detail.baseLat.toString()
+            : detail.base_lat !== undefined
+              ? detail.base_lat.toString()
+              : undefined;
+        const newBaseLon =
+          detail.baseLon !== undefined
+            ? detail.baseLon.toString()
+            : detail.base_lon !== undefined
+              ? detail.base_lon.toString()
+              : undefined;
 
         if (newTargetDate) {
           setTargetDate(newTargetDate);
@@ -387,9 +594,15 @@ export default function ArbitrageScannerPage() {
       }
     };
 
-    window.addEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+    window.addEventListener(
+      "metaphysical-config-updated",
+      handleGlobalConfigUpdate,
+    );
     return () => {
-      window.removeEventListener('metaphysical-config-updated', handleGlobalConfigUpdate);
+      window.removeEventListener(
+        "metaphysical-config-updated",
+        handleGlobalConfigUpdate,
+      );
     };
   }, []);
 
@@ -409,8 +622,8 @@ export default function ArbitrageScannerPage() {
       params.append("birthLon", birthLon);
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
-      
-       // Send either radius or map bounding box depending on mapBounds
+
+      // Send either radius or map bounding box depending on mapBounds
       if (mapBounds) {
         if (mapBounds.zoom >= 10) {
           params.append("minLat", mapBounds.minLat.toString());
@@ -468,8 +681,8 @@ export default function ArbitrageScannerPage() {
         targetDate: newDateStr,
         useClassicalBoard: useClassical,
         directionFilterMode: directionFilterMode,
-        actionIntent: actionIntent
-      }
+        actionIntent: actionIntent,
+      },
     });
     window.dispatchEvent(event);
   };
@@ -479,7 +692,7 @@ export default function ArbitrageScannerPage() {
     if (!initialLoaded) return;
 
     const prev = prevParamsRef.current;
-    const isOtherChanged = 
+    const isOtherChanged =
       prev.baseLat !== baseLat ||
       prev.baseLon !== baseLon ||
       prev.birthLat !== birthLat ||
@@ -509,46 +722,81 @@ export default function ArbitrageScannerPage() {
       lunarPhaseModifier,
       directionFilterMode,
       actionIntent,
-      mapBounds
+      mapBounds,
     };
 
     fetchData(!isOtherChanged);
-  }, [baseLat, baseLon, birthLat, birthLon, birthDate, targetDate, radiusKm, prefecture, useClassical, layerMode, useTrueNorth, lunarPhaseModifier, directionFilterMode, actionIntent, mapBounds, initialLoaded]);
+  }, [
+    baseLat,
+    baseLon,
+    birthLat,
+    birthLon,
+    birthDate,
+    targetDate,
+    radiusKm,
+    prefecture,
+    useClassical,
+    layerMode,
+    useTrueNorth,
+    lunarPhaseModifier,
+    directionFilterMode,
+    actionIntent,
+    mapBounds,
+    initialLoaded,
+  ]);
 
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
-      const localData = localStorage.getItem('tactical_config_v1');
+      const localData = localStorage.getItem("tactical_config_v1");
       let currentLocal: any = {};
       if (localData) {
-        try { currentLocal = JSON.parse(localData); } catch (e) {}
+        try {
+          currentLocal = JSON.parse(localData);
+        } catch (e) {}
       }
-      
+
       const mergedConfig = {
         ...currentLocal,
-        ...updatedFields
+        ...updatedFields,
       };
-      
-      localStorage.setItem('tactical_config_v1', JSON.stringify(mergedConfig));
 
-      await fetch('/api/user-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedFields)
+      localStorage.setItem("tactical_config_v1", JSON.stringify(mergedConfig));
+
+      await fetch("/api/user-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedFields),
       });
 
       // Dispatch global config update event for instant sync
       const event = new CustomEvent("metaphysical-config-updated", {
         detail: {
           targetDate: mergedConfig.target_date || targetDate,
-          useClassicalBoard: mergedConfig.use_classical_board !== undefined ? mergedConfig.use_classical_board : useClassical,
-          directionFilterMode: mergedConfig.direction_filter_mode || directionFilterMode,
+          useClassicalBoard:
+            mergedConfig.use_classical_board !== undefined
+              ? mergedConfig.use_classical_board
+              : useClassical,
+          directionFilterMode:
+            mergedConfig.direction_filter_mode || directionFilterMode,
           actionIntent: mergedConfig.action_intent || actionIntent,
           birthDate: mergedConfig.birth_date || birthDate,
-          birthLat: mergedConfig.birth_lat !== undefined ? mergedConfig.birth_lat : parseFloat(birthLat),
-          birthLon: mergedConfig.birth_lon !== undefined ? mergedConfig.birth_lon : parseFloat(birthLon),
-          baseLat: mergedConfig.base_lat !== undefined ? mergedConfig.base_lat : parseFloat(baseLat),
-          baseLon: mergedConfig.base_lon !== undefined ? mergedConfig.base_lon : parseFloat(baseLon)
-        }
+          birthLat:
+            mergedConfig.birth_lat !== undefined
+              ? mergedConfig.birth_lat
+              : parseFloat(birthLat),
+          birthLon:
+            mergedConfig.birth_lon !== undefined
+              ? mergedConfig.birth_lon
+              : parseFloat(birthLon),
+          baseLat:
+            mergedConfig.base_lat !== undefined
+              ? mergedConfig.base_lat
+              : parseFloat(baseLat),
+          baseLon:
+            mergedConfig.base_lon !== undefined
+              ? mergedConfig.base_lon
+              : parseFloat(baseLon),
+        },
       });
       window.dispatchEvent(event);
     } catch (e) {
@@ -571,7 +819,7 @@ export default function ArbitrageScannerPage() {
     saveUnifiedConfig({
       base_lat: parseFloat(localLat),
       base_lon: parseFloat(localLon),
-      birth_date: localBirthDate
+      birth_date: localBirthDate,
     });
   };
 
@@ -610,16 +858,21 @@ export default function ArbitrageScannerPage() {
 
     setRadiusKm(nextRadius);
     setMapCenter(nextCenter);
-    
+
     localStorage.setItem("arb_radiusKm", nextRadius);
 
-    saveUnifiedConfig({ 
+    saveUnifiedConfig({
       prefecture: newPref,
-      radius_km: nextRadius
+      radius_km: nextRadius,
     });
   };
 
-  const applyPreset = (presetName: string, lat: string, lon: string, pref: string) => {
+  const applyPreset = (
+    presetName: string,
+    lat: string,
+    lon: string,
+    pref: string,
+  ) => {
     setLocalLat(lat);
     setLocalLon(lon);
     setBaseLat(lat);
@@ -632,7 +885,7 @@ export default function ArbitrageScannerPage() {
     saveUnifiedConfig({
       base_lat: parseFloat(lat),
       base_lon: parseFloat(lon),
-      prefecture: pref
+      prefecture: pref,
     });
   };
 
@@ -649,8 +902,8 @@ export default function ArbitrageScannerPage() {
         targetDate: targetDate,
         useClassicalBoard: val,
         directionFilterMode: directionFilterMode,
-        actionIntent: actionIntent
-      }
+        actionIntent: actionIntent,
+      },
     });
     window.dispatchEvent(event);
   };
@@ -685,7 +938,7 @@ export default function ArbitrageScannerPage() {
         },
         (error) => {
           alert("位置情報の取得に失敗しました: " + error.message);
-        }
+        },
       );
     } else {
       alert("お使いのブラウザは位置情報をサポートしていません。");
@@ -698,16 +951,22 @@ export default function ArbitrageScannerPage() {
     setCurrentPage(1);
   };
 
-  const handleFilterStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleFilterStatusChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
     setFilterStatus(e.target.value);
     setCurrentPage(1);
   };
 
-  const safeData = data.filter(d => d.astrologyScore >= 0);
+  const safeData = data.filter((d) => d.astrologyScore >= 0);
 
-  const filteredData = safeData.filter(d => {
-    if (filterStatus !== "ALL" && (!d.astrologyStatus || !d.astrologyStatus.includes(filterStatus))) return false;
-    
+  const filteredData = safeData.filter((d) => {
+    if (
+      filterStatus !== "ALL" &&
+      (!d.astrologyStatus || !d.astrologyStatus.includes(filterStatus))
+    )
+      return false;
+
     if (filterMaxRent) {
       const maxRent = Number(filterMaxRent) * 10000;
       if (d.totalRent > maxRent) return false;
@@ -720,13 +979,18 @@ export default function ArbitrageScannerPage() {
 
     if (filterMaxAge) {
       const maxAge = Number(filterMaxAge);
-      if (d.building_age === null || d.building_age === undefined || d.building_age > maxAge) return false;
+      if (
+        d.building_age === null ||
+        d.building_age === undefined ||
+        d.building_age > maxAge
+      )
+        return false;
     }
 
     if (filterName) {
       const term = filterName.toLowerCase();
-      const addr = (d.address || '').toLowerCase();
-      const name = (d.property_name || '').toLowerCase();
+      const addr = (d.address || "").toLowerCase();
+      const name = (d.property_name || "").toLowerCase();
       if (!addr.includes(term) && !name.includes(term)) return false;
     }
     return true;
@@ -736,14 +1000,16 @@ export default function ArbitrageScannerPage() {
     for (const config of sortConfigs) {
       let result = 0;
       const key = config.key;
-      if (key === 'arbitrage') result = b.arbitrageScore - a.arbitrageScore;
-      else if (key === 'yield') result = b.yieldScore - a.yieldScore;
-      else if (key === 'astrology') result = b.astrologyScore - a.astrologyScore;
-      else if (key === 'rent') result = b.totalRent - a.totalRent;
-      else if (key === 'distance') result = (a.distanceKm || 0) - (b.distanceKm || 0);
+      if (key === "arbitrage") result = b.arbitrageScore - a.arbitrageScore;
+      else if (key === "yield") result = b.yieldScore - a.yieldScore;
+      else if (key === "astrology")
+        result = b.astrologyScore - a.astrologyScore;
+      else if (key === "rent") result = b.totalRent - a.totalRent;
+      else if (key === "distance")
+        result = (a.distanceKm || 0) - (b.distanceKm || 0);
 
       if (result !== 0) {
-        return config.direction === 'desc' ? result : -result;
+        return config.direction === "desc" ? result : -result;
       }
     }
     return 0;
@@ -751,12 +1017,14 @@ export default function ArbitrageScannerPage() {
 
   const propertiesInBounds = useMemo(() => {
     if (!mapBounds) return sortedTableData;
-    return sortedTableData.filter(d => {
+    return sortedTableData.filter((d) => {
       if (d.lat === null || d.lon === null) return false;
-      return d.lat >= mapBounds.minLat &&
-             d.lat <= mapBounds.maxLat &&
-             d.lon >= mapBounds.minLon &&
-             d.lon <= mapBounds.maxLon;
+      return (
+        d.lat >= mapBounds.minLat &&
+        d.lat <= mapBounds.maxLat &&
+        d.lon >= mapBounds.minLon &&
+        d.lon <= mapBounds.maxLon
+      );
     });
   }, [sortedTableData, mapBounds]);
 
@@ -771,28 +1039,43 @@ export default function ArbitrageScannerPage() {
   }, [filterName, filterStatus, filterMaxRent, filterMinYield, filterMaxAge]);
 
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
-  const currentTableData = sortedTableData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const currentTableData = sortedTableData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   const handleSortChange = (newSort: SortColumn, e: React.MouseEvent) => {
-    setSortConfigs(prev => {
+    setSortConfigs((prev) => {
       const isMultiSort = e.shiftKey;
-      const existingSortIndex = prev.findIndex(config => config.key === newSort);
+      const existingSortIndex = prev.findIndex(
+        (config) => config.key === newSort,
+      );
       let newConfigs = [...prev];
 
-      if (newConfigs.length === 0) newConfigs = [{ key: 'arbitrage', direction: 'desc' }];
+      if (newConfigs.length === 0)
+        newConfigs = [{ key: "arbitrage", direction: "desc" }];
       return newConfigs;
     });
     setCurrentPage(1);
   };
 
   const renderSortIndicator = (key: SortColumn) => {
-    const configIndex = sortConfigs.findIndex(c => c.key === key);
-    if (configIndex === -1) return <span className="inline-block w-4 text-transparent group-hover:text-gray-400">↑</span>;
+    const configIndex = sortConfigs.findIndex((c) => c.key === key);
+    if (configIndex === -1)
+      return (
+        <span className="inline-block w-4 text-transparent group-hover:text-gray-400">
+          ↑
+        </span>
+      );
     const config = sortConfigs[configIndex];
     return (
       <span className="inline-flex items-center text-indigo-500">
-        <span className="w-3">{config.direction === 'desc' ? '↓' : '↑'}</span>
-        {sortConfigs.length > 1 && <span className="text-[10px] ml-0.5 opacity-70 font-mono">{configIndex + 1}</span>}
+        <span className="w-3">{config.direction === "desc" ? "↓" : "↑"}</span>
+        {sortConfigs.length > 1 && (
+          <span className="text-[10px] ml-0.5 opacity-70 font-mono">
+            {configIndex + 1}
+          </span>
+        )}
       </span>
     );
   };
@@ -800,9 +1083,8 @@ export default function ArbitrageScannerPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#050505] p-3 sm:p-5 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
       <div className="max-w-7xl mx-auto space-y-5">
-        
         {/* Metaphysical Configuration Bar */}
-        <MetaphysicalConfigBar 
+        <MetaphysicalConfigBar
           onConfigChange={(newConfig) => {
             setTargetDate(newConfig.targetDate);
             setUseClassical(newConfig.useClassicalBoard);
@@ -810,7 +1092,7 @@ export default function ArbitrageScannerPage() {
             setActionIntent(newConfig.actionIntent);
           }}
         />
-        
+
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-900 pb-4">
           <div>
@@ -822,23 +1104,26 @@ export default function ArbitrageScannerPage() {
               吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、運気とコスパが最強の割安物件をスキャンします。
             </p>
           </div>
-          <button 
+          <button
             onClick={() => fetchData()}
             disabled={loading}
             className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-xs font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+            />
             再スキャン
           </button>
         </div>
 
         {/* 2-Column Split Dashboard Layout */}
         <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[600px] relative">
-          
           {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode) */}
-          <div 
+          <div
             className={`transition-all duration-300 ease-in-out ${
-              showTableView && showListView ? 'w-full lg:w-[50%]' : 'w-full lg:w-[30%]'
+              showTableView && showListView
+                ? "w-full lg:w-[50%]"
+                : "w-full lg:w-[30%]"
             } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
           >
             {/* Sticky Header */}
@@ -848,18 +1133,22 @@ export default function ArbitrageScannerPage() {
                   条件 ({activeFiltersCount})
                 </span>
                 <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
-                  表示範囲内: <b className="text-gray-900 dark:text-white font-mono text-xs">{propertiesInBounds.length}</b> 件
+                  表示範囲内:{" "}
+                  <b className="text-gray-900 dark:text-white font-mono text-xs">
+                    {propertiesInBounds.length}
+                  </b>{" "}
+                  件
                 </span>
               </div>
-              
+
               {/* Toggle Button for Filter/List View (Only when <= 100 properties) */}
               {propertiesInBounds.length <= 100 ? (
                 <button
                   onClick={() => setShowListView(!showListView)}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    showListView 
-                      ? 'bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300' 
-                      : 'bg-teal-500 hover:bg-teal-600 text-white shadow-sm'
+                    showListView
+                      ? "bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300"
+                      : "bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
                   }`}
                 >
                   <Filter className="w-3.5 h-3.5" />
@@ -879,8 +1168,10 @@ export default function ArbitrageScannerPage() {
                 <>
                   {/* Geographic & Calculations Settings */}
                   <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">スキャン地域と計算方式</h3>
-                    
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      スキャン地域と計算方式
+                    </h3>
+
                     {/* Prefecture Selection */}
                     <div className="space-y-1">
                       <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
@@ -888,7 +1179,7 @@ export default function ArbitrageScannerPage() {
                       </label>
                       <select
                         value={prefecture}
-                        onChange={e => handlePrefectureChange(e.target.value)}
+                        onChange={(e) => handlePrefectureChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="all">全国 / すべて</option>
@@ -902,12 +1193,14 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block flex items-center justify-between">
                         <span>生年月日 (吉方位用)</span>
-                        <span className="text-[9px] text-zinc-500 font-normal">時間指定可</span>
+                        <span className="text-[9px] text-zinc-500 font-normal">
+                          時間指定可
+                        </span>
                       </label>
                       <input
                         type="datetime-local"
                         value={localBirthDate}
-                        onChange={e => {
+                        onChange={(e) => {
                           setLocalBirthDate(e.target.value);
                           setBirthDate(e.target.value);
                           localStorage.setItem("arb_birthDate", e.target.value);
@@ -925,10 +1218,12 @@ export default function ArbitrageScannerPage() {
                         </label>
                         <button
                           type="button"
-                          onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800' : 'bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800'}`}
+                          onClick={() =>
+                            setShowBirthMapPicker(!showBirthMapPicker)
+                          }
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800"}`}
                         >
-                          {showBirthMapPicker ? '閉じる' : '地図で検索'}
+                          {showBirthMapPicker ? "閉じる" : "地図で検索"}
                         </button>
                       </div>
                       <div className="flex gap-2">
@@ -936,10 +1231,12 @@ export default function ArbitrageScannerPage() {
                           type="number"
                           step="0.00001"
                           value={localBirthLat}
-                          onChange={e => {
+                          onChange={(e) => {
                             setLocalBirthLat(e.target.value);
                             setBirthLat(e.target.value);
-                            saveUnifiedConfig({ birth_lat: parseFloat(e.target.value) });
+                            saveUnifiedConfig({
+                              birth_lat: parseFloat(e.target.value),
+                            });
                           }}
                           className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                           placeholder="緯度"
@@ -948,10 +1245,12 @@ export default function ArbitrageScannerPage() {
                           type="number"
                           step="0.00001"
                           value={localBirthLon}
-                          onChange={e => {
+                          onChange={(e) => {
                             setLocalBirthLon(e.target.value);
                             setBirthLon(e.target.value);
-                            saveUnifiedConfig({ birth_lon: parseFloat(e.target.value) });
+                            saveUnifiedConfig({
+                              birth_lon: parseFloat(e.target.value),
+                            });
                           }}
                           className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                           placeholder="経度"
@@ -971,7 +1270,10 @@ export default function ArbitrageScannerPage() {
                             setBirthLat(latStr);
                             setLocalBirthLon(lonStr);
                             setBirthLon(lonStr);
-                            saveUnifiedConfig({ birth_lat: newLat, birth_lon: newLon });
+                            saveUnifiedConfig({
+                              birth_lat: newLat,
+                              birth_lon: newLon,
+                            });
                           }}
                         />
                       </div>
@@ -984,13 +1286,15 @@ export default function ArbitrageScannerPage() {
                       </label>
                       <select
                         value={layerMode}
-                        onChange={e => handleLayerModeChange(e.target.value)}
+                        onChange={(e) => handleLayerModeChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="year">年盤 (長期・引越し向き)</option>
                         <option value="month">月盤 (中期・旅行向き)</option>
                         <option value="day">日盤 (短期・出張向き)</option>
-                        <option value="final">総合ベクトル (全レイヤー統合)</option>
+                        <option value="final">
+                          総合ベクトル (全レイヤー統合)
+                        </option>
                       </select>
                     </div>
 
@@ -1000,7 +1304,9 @@ export default function ArbitrageScannerPage() {
                         <input
                           type="checkbox"
                           checked={useTrueNorth}
-                          onChange={e => handleTrueNorthToggle(e.target.checked)}
+                          onChange={(e) =>
+                            handleTrueNorthToggle(e.target.checked)
+                          }
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                         />
                         真北を使用 (無効時は磁北補正)
@@ -1009,7 +1315,7 @@ export default function ArbitrageScannerPage() {
                         <input
                           type="checkbox"
                           checked={lunarPhaseModifier}
-                          onChange={e => {
+                          onChange={(e) => {
                             setLunarPhaseModifier(e.target.checked);
                             setCurrentPage(1);
                           }}
@@ -1022,11 +1328,15 @@ export default function ArbitrageScannerPage() {
 
                   {/* Filter Criteria Panel */}
                   <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider font-semibold">絞り込みフィルター</h3>
-                    
+                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider font-semibold">
+                      絞り込みフィルター
+                    </h3>
+
                     {/* Search query input */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">物件名・住所検索</label>
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        物件名・住所検索
+                      </label>
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                         <input
@@ -1041,7 +1351,9 @@ export default function ArbitrageScannerPage() {
 
                     {/* Status Select */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">吉凶ステータス</label>
+                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        吉凶ステータス
+                      </label>
                       <select
                         value={filterStatus}
                         onChange={handleFilterStatusChange}
@@ -1057,32 +1369,47 @@ export default function ArbitrageScannerPage() {
                     {/* Rent & Age & Yield filters */}
                     <div className="grid grid-cols-2 gap-3.5">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">総家賃上限 (万円)</label>
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                          総家賃上限 (万円)
+                        </label>
                         <input
                           type="number"
                           placeholder="例: 15"
                           value={filterMaxRent}
-                          onChange={e => { setFilterMaxRent(e.target.value); setCurrentPage(1); }}
+                          onChange={(e) => {
+                            setFilterMaxRent(e.target.value);
+                            setCurrentPage(1);
+                          }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">築年数上限 (年)</label>
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                          築年数上限 (年)
+                        </label>
                         <input
                           type="number"
                           placeholder="例: 15"
                           value={filterMaxAge}
-                          onChange={e => { setFilterMaxAge(e.target.value); setCurrentPage(1); }}
+                          onChange={(e) => {
+                            setFilterMaxAge(e.target.value);
+                            setCurrentPage(1);
+                          }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1 col-span-2">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">最小利回り偏差値</label>
+                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                          最小利回り偏差値
+                        </label>
                         <input
                           type="number"
                           placeholder="例: 60"
                           value={filterMinYield}
-                          onChange={e => { setFilterMinYield(e.target.value); setCurrentPage(1); }}
+                          onChange={(e) => {
+                            setFilterMinYield(e.target.value);
+                            setCurrentPage(1);
+                          }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
@@ -1090,7 +1417,10 @@ export default function ArbitrageScannerPage() {
                   </div>
 
                   {/* TOP 5 お買い得アコーディオン (HTML5 details) */}
-                  <details className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-100 dark:border-zinc-900 overflow-hidden shadow-xs group" open>
+                  <details
+                    className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-100 dark:border-zinc-900 overflow-hidden shadow-xs group"
+                    open
+                  >
                     <summary className="p-4 font-bold text-xs text-gray-900 dark:text-white flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-zinc-900">
                       <span className="flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />
@@ -1101,8 +1431,11 @@ export default function ArbitrageScannerPage() {
                     <div className="p-3.5 space-y-3.5">
                       {loading ? (
                         <div className="space-y-3">
-                          {[1, 2, 3].map(i => (
-                            <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-zinc-900 animate-pulse" />
+                          {[1, 2, 3].map((i) => (
+                            <div
+                              key={i}
+                              className="h-14 rounded-xl bg-gray-100 dark:bg-zinc-900 animate-pulse"
+                            />
                           ))}
                         </div>
                       ) : filteredData.length === 0 ? (
@@ -1111,7 +1444,7 @@ export default function ArbitrageScannerPage() {
                         </div>
                       ) : (
                         filteredData.slice(0, 5).map((item) => (
-                          <div 
+                          <div
                             key={item.id}
                             onClick={() => {
                               setMapCenter([item.lat, item.lon]);
@@ -1120,15 +1453,24 @@ export default function ArbitrageScannerPage() {
                           >
                             <div className="truncate pr-2 max-w-[70%]">
                               {item.url ? (
-                                <a href={item.url} target="_blank" rel="noreferrer" className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block">
+                                <a
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block"
+                                >
                                   {item.property_name}
                                 </a>
                               ) : (
-                                <div className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate">{item.property_name}</div>
+                                <div className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate">
+                                  {item.property_name}
+                                </div>
                               )}
                               <div className="text-[10px] text-gray-500 mt-1 flex flex-col gap-0.5">
                                 <span className="font-semibold">
-                                  {item.direction ? `${item.direction} (${item.maxAstroFactor || '計算中'})` : '方位不明'}
+                                  {item.direction
+                                    ? `${item.direction} (${item.maxAstroFactor || "計算中"})`
+                                    : "方位不明"}
                                 </span>
                               </div>
                             </div>
@@ -1153,18 +1495,18 @@ export default function ArbitrageScannerPage() {
                     <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       物件リスト ({sortedTableData.length}件中、表示範囲内)
                     </h3>
-                    
+
                     {/* Card vs Table toggle switches */}
                     <div className="flex items-center gap-1 bg-zinc-200 dark:bg-zinc-900 p-0.5 rounded-lg shrink-0 select-none">
-                      <button 
+                      <button
                         onClick={() => setShowTableView(false)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
                       >
                         カード
                       </button>
-                      <button 
+                      <button
                         onClick={() => setShowTableView(true)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
                       >
                         テーブル
                       </button>
@@ -1178,11 +1520,11 @@ export default function ArbitrageScannerPage() {
                   ) : !showTableView ? (
                     // Card View List inside sidebar
                     <div className="space-y-3.5">
-                      {propertiesInBounds.map(item => {
+                      {propertiesInBounds.map((item) => {
                         const pinColors = getPropertyPinColors(item);
                         return (
-                          <div 
-                            key={item.id} 
+                          <div
+                            key={item.id}
                             onClick={() => {
                               setMapCenter([item.lat, item.lon]);
                             }}
@@ -1191,56 +1533,76 @@ export default function ArbitrageScannerPage() {
                             <div className="flex justify-between items-start gap-1 mb-1">
                               <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs leading-snug line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                 {item.url ? (
-                                  <a href={item.url} target="_blank" rel="noreferrer" className="hover:underline">
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="hover:underline"
+                                  >
                                     {item.property_name}
                                   </a>
                                 ) : (
                                   item.property_name
                                 )}
                               </h4>
-                              <span className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold shrink-0 leading-none ${pinColors.bgClass} ${pinColors.textClass}`}>
+                              <span
+                                className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold shrink-0 leading-none ${pinColors.bgClass} ${pinColors.textClass}`}
+                              >
                                 {pinColors.label}
                               </span>
                             </div>
 
-                            <div className="text-[10px] text-gray-500 truncate max-w-xs">{item.address || '住所情報なし'}</div>
-                            
+                            <div className="text-[10px] text-gray-500 truncate max-w-xs">
+                              {item.address || "住所情報なし"}
+                            </div>
+
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-zinc-900 text-[10px] text-gray-600 dark:text-gray-400 font-mono">
                               <div className="flex justify-between">
                                 <span>総賃料:</span>
                                 <span className="font-bold text-gray-900 dark:text-white">
-                                  {item.totalRent ? `${(item.totalRent / 10000).toFixed(1)}万円` : "不明"}
+                                  {item.totalRent
+                                    ? `${(item.totalRent / 10000).toFixed(1)}万円`
+                                    : "不明"}
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span>利回り偏差値:</span>
-                                <span className={`font-bold ${item.yieldScore > 60 ? 'text-emerald-500' : 'text-gray-900 dark:text-white'}`}>
+                                <span
+                                  className={`font-bold ${item.yieldScore > 60 ? "text-emerald-500" : "text-gray-900 dark:text-white"}`}
+                                >
                                   {item.yieldScore.toFixed(1)}
                                 </span>
                               </div>
                               <div className="flex justify-between col-span-2">
                                 <span>広さ/築年/徒歩:</span>
                                 <span className="font-semibold text-gray-800 dark:text-gray-200">
-                                  {item.size_sqm}㎡ / 築{item.building_age || 0}年 / {item.minutes_to_station || '不明'}分
+                                  {item.size_sqm}㎡ / 築{item.building_age || 0}
+                                  年 / {item.minutes_to_station || "不明"}分
                                 </span>
                               </div>
                               <div className="flex justify-between col-span-2 pt-1 border-t border-zinc-100 dark:border-zinc-900/60">
                                 <span>方位・吉凶:</span>
-                                <span className={`font-bold ${pinColors.textClass}`}>
-                                  {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
+                                <span
+                                  className={`font-bold ${pinColors.textClass}`}
+                                >
+                                  {item.direction
+                                    ? `${item.direction} (${item.maxAstroFactor})`
+                                    : "不明"}
                                 </span>
                               </div>
                             </div>
 
                             <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-zinc-900/40 rounded-lg px-2 py-1.5">
                               {renderStars(item.arbitrageScore)}
-                              <span className="text-[8px] text-gray-400 font-semibold">推奨スコア: {item.arbitrageScore.toFixed(1)}</span>
+                              <span className="text-[8px] text-gray-400 font-semibold">
+                                推奨スコア: {item.arbitrageScore.toFixed(1)}
+                              </span>
                             </div>
 
                             {/* Small date calendar row inside card */}
                             <div className="mt-2.5">
-                              <AstroGridCalendar 
-                                dateScores={item.dateScores} 
+                              <AstroGridCalendar
+                                dateScores={item.dateScores}
                                 onDateChange={handleDateChange}
                                 isTransitioning={isTransitioningDate}
                               />
@@ -1255,28 +1617,44 @@ export default function ArbitrageScannerPage() {
                       <table className="w-full text-xs text-left min-w-[500px]">
                         <thead className="text-[10px] text-gray-500 uppercase bg-gray-50 dark:bg-zinc-900/50 border-b border-gray-200 dark:border-zinc-800">
                           <tr>
-                            <th className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('arbitrage', e)}>
-                              おすすめ度 {renderSortIndicator('arbitrage')}
+                            <th
+                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              onClick={(e) => handleSortChange("arbitrage", e)}
+                            >
+                              おすすめ度 {renderSortIndicator("arbitrage")}
                             </th>
-                            <th className="px-4 py-2.5 font-bold">物件名 / 住所</th>
-                            <th className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('astrology', e)}>
-                              方位・吉凶 {renderSortIndicator('astrology')}
+                            <th className="px-4 py-2.5 font-bold">
+                              物件名 / 住所
                             </th>
-                            <th className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('rent', e)}>
-                              総家賃 {renderSortIndicator('rent')}
+                            <th
+                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              onClick={(e) => handleSortChange("astrology", e)}
+                            >
+                              方位・吉凶 {renderSortIndicator("astrology")}
                             </th>
-                            <th className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold" onClick={(e) => handleSortChange('yield', e)}>
-                              利回り偏差 {renderSortIndicator('yield')}
+                            <th
+                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              onClick={(e) => handleSortChange("rent", e)}
+                            >
+                              総家賃 {renderSortIndicator("rent")}
                             </th>
-                            <th className="px-4 py-2.5 text-right font-bold">平米 / 築年 / 徒歩</th>
+                            <th
+                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              onClick={(e) => handleSortChange("yield", e)}
+                            >
+                              利回り偏差 {renderSortIndicator("yield")}
+                            </th>
+                            <th className="px-4 py-2.5 text-right font-bold">
+                              平米 / 築年 / 徒歩
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
                           {propertiesInBounds.map((item) => {
                             const pinColors = getPropertyPinColors(item);
                             return (
-                              <tr 
-                                key={item.id} 
+                              <tr
+                                key={item.id}
                                 onClick={() => {
                                   setMapCenter([item.lat, item.lon]);
                                 }}
@@ -1288,19 +1666,30 @@ export default function ArbitrageScannerPage() {
                                 <td className="px-4 py-3">
                                   <div className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-[180px]">
                                     {item.url ? (
-                                      <a href={item.url} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
+                                      <a
+                                        href={item.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                                      >
                                         {item.property_name}
                                       </a>
                                     ) : (
                                       item.property_name
                                     )}
                                   </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[180px]">{item.address}</div>
+                                  <div className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[180px]">
+                                    {item.address}
+                                  </div>
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="flex flex-col gap-0.5">
-                                    <span className={`font-semibold ${pinColors.textClass}`}>
-                                      {item.direction ? `${item.direction} (${item.maxAstroFactor})` : '不明'}
+                                    <span
+                                      className={`font-semibold ${pinColors.textClass}`}
+                                    >
+                                      {item.direction
+                                        ? `${item.direction} (${item.maxAstroFactor})`
+                                        : "不明"}
                                     </span>
                                   </div>
                                 </td>
@@ -1308,12 +1697,19 @@ export default function ArbitrageScannerPage() {
                                   {item.totalRent.toLocaleString()}円
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono">
-                                  <span className={item.yieldScore > 60 ? "text-emerald-500 font-bold" : ""}>
+                                  <span
+                                    className={
+                                      item.yieldScore > 60
+                                        ? "text-emerald-500 font-bold"
+                                        : ""
+                                    }
+                                  >
                                     {item.yieldScore.toFixed(1)}
                                   </span>
                                 </td>
                                 <td className="px-4 py-3 text-right text-gray-500 font-mono text-[10px]">
-                                  {item.size_sqm}㎡ / 築{item.building_age || 0}年 / {item.minutes_to_station || '不明'}分
+                                  {item.size_sqm}㎡ / 築{item.building_age || 0}
+                                  年 / {item.minutes_to_station || "不明"}分
                                 </td>
                               </tr>
                             );
@@ -1326,11 +1722,13 @@ export default function ArbitrageScannerPage() {
               )}
             </div>
           </div>
-          
+
           {/* Right Column: Leaflet Map (shrinks to 50% width when table mode is expanded) */}
-          <div 
+          <div
             className={`transition-all duration-300 ease-in-out ${
-              showTableView && showListView ? 'w-full lg:w-[50%]' : 'w-full lg:w-[70%]'
+              showTableView && showListView
+                ? "w-full lg:w-[50%]"
+                : "w-full lg:w-[70%]"
             } h-[calc(100vh-220px)] min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900 shrink-0`}
           >
             <ArbitrageMap
@@ -1347,15 +1745,20 @@ export default function ArbitrageScannerPage() {
               useClassical={useClassical}
               onDateChange={handleDateChange}
               onBoundsChange={(b) => {
-                setMapBounds(prev => {
-                  if (!prev || Math.abs(prev.minLat - b.minLat) > 0.001 || Math.abs(prev.minLon - b.minLon) > 0.001 || prev.zoom !== b.zoom) {
+                setMapBounds((prev) => {
+                  if (
+                    !prev ||
+                    Math.abs(prev.minLat - b.minLat) > 0.001 ||
+                    Math.abs(prev.minLon - b.minLon) > 0.001 ||
+                    prev.zoom !== b.zoom
+                  ) {
                     return b;
                   }
                   return prev;
                 });
               }}
             />
-            {(loading && data.length === 0) ? (
+            {loading && data.length === 0 ? (
               <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                 データベースから割安物件を走査中...
@@ -1368,7 +1771,6 @@ export default function ArbitrageScannerPage() {
               </div>
             )}
           </div>
-          
         </div>
       </div>
     </div>

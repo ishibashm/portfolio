@@ -4,7 +4,6 @@ import "./globals.css";
 import "katex/dist/katex.min.css";
 import prisma from "@/lib/prisma";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -27,11 +26,13 @@ export const metadata: Metadata = {
     default: "真太陽時クロック | 禅モード",
     template: "%s | 真太陽時クロック",
   },
-  description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
+  description:
+    "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
   openGraph: {
     title: "真太陽時クロック",
-    description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
-    url: "https://example.com", 
+    description:
+      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
+    url: "https://example.com",
     siteName: "真太陽時クロック",
     locale: "ja_JP",
     type: "website",
@@ -39,7 +40,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "真太陽時クロック",
-    description: "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
+    description:
+      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
   },
 };
 
@@ -54,7 +56,7 @@ export default async function RootLayout({
   let theme = null;
   try {
     theme = await prisma.agentTheme.findFirst({
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
   } catch (err) {
     console.error("Failed to load active agent theme:", err);
@@ -65,20 +67,26 @@ export default async function RootLayout({
   const fg = theme?.foreground || "#ededed";
   const accent = theme?.accent || "#10b981";
   const glowColor = theme?.glowColor || "#10b981";
-  const glowIntensity = theme?.glowIntensity !== undefined ? theme.glowIntensity : 0.5;
+  const glowIntensity =
+    theme?.glowIntensity !== undefined ? theme.glowIntensity : 0.5;
   const animationSpeed = theme?.animationSpeed || "4s";
   const fontTheme = theme?.fontTheme || "sans";
-  const noiseOpacity = theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.05;
+  const noiseOpacity =
+    theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.05;
   const borderRadius = theme?.borderRadius || "8px";
 
   // Dynamic font-family binding
-  const fontStyleClass = fontTheme === "serif" ? shipporiMincho.variable : geistSans.variable;
-  const fontVarName = fontTheme === "serif" ? "var(--font-serif)" : "var(--font-sans)";
+  const fontStyleClass =
+    fontTheme === "serif" ? shipporiMincho.variable : geistSans.variable;
+  const fontVarName =
+    fontTheme === "serif" ? "var(--font-serif)" : "var(--font-sans)";
 
   return (
     <html lang="ja">
       <head>
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           :root {
             --background: ${bg} !important;
             --foreground: ${fg} !important;
@@ -127,19 +135,18 @@ export default async function RootLayout({
             z-index: 9999;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
           }
-        `}} />
+        `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased bg-black text-white`}
       >
         <div className="flex min-h-screen">
           <GlobalSidebar />
-          <main className="flex-1 w-full min-w-0">
-            {children}
-          </main>
+          <main className="flex-1 w-full min-w-0">{children}</main>
         </div>
       </body>
     </html>
   );
 }
-

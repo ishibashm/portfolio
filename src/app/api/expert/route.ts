@@ -1,36 +1,46 @@
-import { NextResponse } from 'next/server';
-import { streamText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createClient } from '@/utils/supabase/server';
-import { decrypt } from '@/utils/encryption';
-import { maskPII } from '@/utils/anonymizer';
+import { NextResponse } from "next/server";
+import { streamText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createClient } from "@/utils/supabase/server";
+import { decrypt } from "@/utils/encryption";
+import { maskPII } from "@/utils/anonymizer";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
     if (!user || authError) {
-      return NextResponse.json({ error: 'Unauthorized. Please login first.' }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized. Please login first." },
+        { status: 401 },
+      );
     }
 
     const body = await req.json();
     const { prompt } = body;
 
     if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Prompt is required" },
+        { status: 400 },
+      );
     }
 
     // Get the user's config to fetch the encrypted API key
     const { data: userConfig, error: configError } = await supabase
-      .from('user_configs')
-      .select('encrypted_gemini_key')
-      .eq('user_email', user.email)
+      .from("user_configs")
+      .select("encrypted_gemini_key")
+      .eq("user_email", user.email)
       .single();
 
-    let apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    let apiKey =
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
     if (userConfig?.encrypted_gemini_key) {
       const decryptedKey = decrypt(userConfig.encrypted_gemini_key);
@@ -38,7 +48,13 @@ export async function POST(req: Request) {
     }
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'No Gemini API key found. Please configure it in your settings.' }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            "No Gemini API key found. Please configure it in your settings.",
+        },
+        { status: 403 },
+      );
     }
 
     const google = createGoogleGenerativeAI({ apiKey });
@@ -46,14 +62,16 @@ export async function POST(req: Request) {
     const maskedPrompt = maskPII(prompt);
 
     const result = await streamText({
-      model: google('gemini-2.5-pro') as any,
+      model: google("gemini-2.5-pro") as any,
       prompt: maskedPrompt,
     });
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error('Expert API Error:', error);
-    return NextResponse.json({ error: 'Failed to process request.' }, { status: 500 });
+    console.error("Expert API Error:", error);
+    return NextResponse.json(
+      { error: "Failed to process request." },
+      { status: 500 },
+    );
   }
 }
-

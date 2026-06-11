@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 export async function GET() {
   try {
@@ -9,15 +9,15 @@ export async function GET() {
         edinet_code: true,
       },
       orderBy: {
-        company_name: 'asc'
-      }
+        company_name: "asc",
+      },
     });
 
-    return NextResponse.json({ 
-      companies: companies.map(c => ({
+    return NextResponse.json({
+      companies: companies.map((c) => ({
         name: c.company_name,
-        edinet_code: c.edinet_code
-      }))
+        edinet_code: c.edinet_code,
+      })),
     });
   } catch (error: any) {
     console.error("Failed to fetch companies:", error);

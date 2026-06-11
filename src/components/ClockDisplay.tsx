@@ -4,7 +4,12 @@ import React, { useState, useEffect } from "react";
 import { Lunar } from "lunar-javascript";
 
 interface ClockDisplayProps {
-  kimon: { name: string; japanese: string; reading: string; note?: string } | null;
+  kimon: {
+    name: string;
+    japanese: string;
+    reading: string;
+    note?: string;
+  } | null;
   isVoidTime: boolean;
   solarTime: Date;
   eot: number;
@@ -12,7 +17,14 @@ interface ClockDisplayProps {
   targetDate?: Date;
 }
 
-export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, targetDate = new Date() }: ClockDisplayProps) {
+export function ClockDisplay({
+  kimon,
+  isVoidTime,
+  solarTime,
+  eot,
+  longOffset,
+  targetDate = new Date(),
+}: ClockDisplayProps) {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -20,14 +32,32 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (date: Date) => date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+  const formatTime = (date: Date) =>
+    date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
 
   // Calculate Lunar & Rokuyo from targetDate (evaluation date) instead of now
   const displayDate = new Date(targetDate);
-  displayDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+  displayDate.setHours(
+    now.getHours(),
+    now.getMinutes(),
+    now.getSeconds(),
+    now.getMilliseconds(),
+  );
 
   const lunarDate = Lunar.fromDate(displayDate);
-  const ROKUYO_MAP = ["大安 (Taian)", "赤口 (Shakku)", "先勝 (Sensho)", "友引 (Tomobiki)", "先負 (Sakimake)", "仏滅 (Butsumetsu)"];
+  const ROKUYO_MAP = [
+    "大安 (Taian)",
+    "赤口 (Shakku)",
+    "先勝 (Sensho)",
+    "友引 (Tomobiki)",
+    "先負 (Sakimake)",
+    "仏滅 (Butsumetsu)",
+  ];
   const lunarMonth = lunarDate.getMonth();
   const lunarDay = lunarDate.getDay();
   const rokuyoName = ROKUYO_MAP[(lunarMonth + lunarDay) % 6];
@@ -35,10 +65,11 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
   const lunarDateString = `旧暦 ${lunarMonth}月${lunarDay}日`;
 
   const getRokuyoColor = (r: string) => {
-    if (r.startsWith('大安')) return 'text-emerald-400 font-bold';
-    if (r.startsWith('友引')) return 'text-blue-400 font-bold';
-    if (r.startsWith('仏滅') || r.startsWith('赤口')) return 'text-red-400 font-bold';
-    return 'text-zinc-300';
+    if (r.startsWith("大安")) return "text-emerald-400 font-bold";
+    if (r.startsWith("友引")) return "text-blue-400 font-bold";
+    if (r.startsWith("仏滅") || r.startsWith("赤口"))
+      return "text-red-400 font-bold";
+    return "text-zinc-300";
   };
 
   return (
@@ -48,12 +79,15 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
 
       {/* 1. Spatial Phase (Kimon) */}
       <div className="text-center md:text-left space-y-1 w-1/3">
-        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-zinc-500 uppercase font-mono mb-1">Matrix Phase
+        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-zinc-500 uppercase font-mono mb-1">
+          Matrix Phase
           <span className="block text-[7px] tracking-normal text-zinc-600 mt-1 normal-case font-sans">
             (地磁気と太陽角による空間位相)
           </span>
         </div>
-        <div className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red md:animate-pulse' : 'text-emerald-500 text-glow'}`}>
+        <div
+          className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? "text-red-500 text-glow-red md:animate-pulse" : "text-emerald-500 text-glow"}`}
+        >
           {kimon?.japanese || "--"}
         </div>
         <div className="text-xs md:text-sm tracking-widest text-zinc-400 font-serif">
@@ -63,13 +97,16 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
 
       {/* 2. Lunar Phase & Rokuyo */}
       <div className="text-center space-y-1 border-x border-zinc-800/50 px-4 w-1/3">
-        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-purple-400/80 uppercase font-mono mb-1">Lunar Cycle
+        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-purple-400/80 uppercase font-mono mb-1">
+          Lunar Cycle
           <span className="block text-[7px] tracking-normal text-zinc-600 mt-1 normal-case font-sans">
             (太陰暦 / 東洋カレンダー基準)
           </span>
         </div>
-        <div className={`text-2xl sm:text-3xl font-serif tracking-widest ${getRokuyoColor(rokuyoName)}`}>
-          {rokuyoName.split(' ')[0]}
+        <div
+          className={`text-2xl sm:text-3xl font-serif tracking-widest ${getRokuyoColor(rokuyoName)}`}
+        >
+          {rokuyoName.split(" ")[0]}
         </div>
         <div className="text-[10px] md:text-xs tracking-widest text-zinc-400 font-mono mt-2">
           {lunarDateString} / {yueXiang}
@@ -79,13 +116,17 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
       {/* 3. Temporal Phase (Time) */}
       <div className="flex flex-col items-center md:items-end space-y-3 w-1/3">
         <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">True Solar Time</div>
+          <div className="text-[9px] uppercase tracking-widest text-emerald-900/80 font-mono">
+            True Solar Time
+          </div>
           <div className="text-2xl sm:text-3xl font-mono font-light text-emerald-400">
             {formatTime(new Date(now.getTime() + (eot + longOffset) * 60000))}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-zinc-600 font-mono">Standard JST</div>
+          <div className="text-[9px] uppercase tracking-widest text-zinc-600 font-mono">
+            Standard JST
+          </div>
           <div className="text-lg font-mono font-light text-zinc-500">
             {formatTime(now)}
           </div>

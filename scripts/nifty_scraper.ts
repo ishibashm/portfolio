@@ -1,21 +1,61 @@
-import { chromium, Page } from 'playwright';
-import { PrismaClient } from '@prisma/client';
+import { chromium, Page } from "playwright";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 const PREFECTURES = [
-  'hokkaido', 'aomori', 'iwate', 'miyagi', 'akita', 'yamagata', 'fukushima',
-  'ibaraki', 'tochigi', 'gunma', 'saitama', 'chiba', 'tokyo', 'kanagawa',
-  'niigata', 'toyama', 'ishikawa', 'fukui', 'yamanashi', 'nagano', 'gifu',
-  'shizuoka', 'aichi', 'mie', 'shiga', 'kyoto', 'osaka', 'hyogo', 'nara',
-  'wakayama', 'tottori', 'shimane', 'okayama', 'hiroshima', 'yamaguchi',
-  'tokushima', 'kagawa', 'ehime', 'kochi', 'fukuoka', 'saga', 'nagasaki',
-  'kumamoto', 'oita', 'miyazaki', 'kagoshima', 'okinawa'
+  "hokkaido",
+  "aomori",
+  "iwate",
+  "miyagi",
+  "akita",
+  "yamagata",
+  "fukushima",
+  "ibaraki",
+  "tochigi",
+  "gunma",
+  "saitama",
+  "chiba",
+  "tokyo",
+  "kanagawa",
+  "niigata",
+  "toyama",
+  "ishikawa",
+  "fukui",
+  "yamanashi",
+  "nagano",
+  "gifu",
+  "shizuoka",
+  "aichi",
+  "mie",
+  "shiga",
+  "kyoto",
+  "osaka",
+  "hyogo",
+  "nara",
+  "wakayama",
+  "tottori",
+  "shimane",
+  "okayama",
+  "hiroshima",
+  "yamaguchi",
+  "tokushima",
+  "kagawa",
+  "ehime",
+  "kochi",
+  "fukuoka",
+  "saga",
+  "nagasaki",
+  "kumamoto",
+  "oita",
+  "miyazaki",
+  "kagoshima",
+  "okinawa",
 ];
 
 async function scrapePrefecture(page: Page, pref: string) {
   const url = `https://myhome.nifty.com/rent/${pref}/`;
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
   // TODO: Add logic to extract listings and paginate
   console.log(`Navigated to ${pref}`);
 }
@@ -32,7 +72,7 @@ async function main() {
       console.error(`Error scraping ${pref}:`, error);
     }
     // Add sleep to avoid rate limiting
-    await new Promise(res => setTimeout(res, 2000));
+    await new Promise((res) => setTimeout(res, 2000));
   }
 
   await browser.close();

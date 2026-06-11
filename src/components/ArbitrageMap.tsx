@@ -28,7 +28,13 @@ interface ArbitrageMapProps {
   showListView?: boolean;
   useClassical?: boolean;
   onDateChange?: (date: string) => void;
-  onBoundsChange?: (bounds: { minLat: number; maxLat: number; minLon: number; maxLon: number; zoom: number }) => void;
+  onBoundsChange?: (bounds: {
+    minLat: number;
+    maxLat: number;
+    minLon: number;
+    maxLon: number;
+    zoom: number;
+  }) => void;
 }
 
 export function ArbitrageMap(props: ArbitrageMapProps) {

@@ -1,19 +1,18 @@
-
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Attempting to delete dummy posts...');
-  
+  console.log("Attempting to delete dummy posts...");
+
   const result1 = await prisma.blogPost.deleteMany({
-      where: {
-          OR: [
-              { title: 'First Post' },
-              { title: 'Hello World' },
-              { title: { contains: '最初の記事' } }
-          ]
-      }
+    where: {
+      OR: [
+        { title: "First Post" },
+        { title: "Hello World" },
+        { title: { contains: "最初の記事" } },
+      ],
+    },
   });
 
   console.log(`Deleted ${result1.count} posts containing dummy titles.`);
@@ -22,5 +21,5 @@ async function main() {
 main()
   .catch(console.error)
   .finally(async () => {
-      await prisma.$disconnect();
+    await prisma.$disconnect();
   });

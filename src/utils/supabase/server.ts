@@ -15,7 +15,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // The `setAll` method was called from a Server Component.
@@ -24,23 +24,23 @@ export async function createClient() {
           }
         },
       },
-    }
+    },
   );
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     const originalGetUser = client.auth.getUser.bind(client.auth);
     client.auth.getUser = async (token?: string) => {
-      const bypassEmail = cookieStore.get('dev_bypass_user')?.value;
+      const bypassEmail = cookieStore.get("dev_bypass_user")?.value;
       if (bypassEmail) {
         return {
           data: {
             user: {
-              id: 'dev-bypass-id',
+              id: "dev-bypass-id",
               email: bypassEmail,
-              role: 'authenticated',
-            } as any
+              role: "authenticated",
+            } as any,
           },
-          error: null
+          error: null,
         };
       }
       return originalGetUser(token);

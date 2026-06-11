@@ -1,14 +1,17 @@
-import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
+import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
+
     if (!body.targetDate) {
-      return NextResponse.json({ error: "targetDate is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "targetDate is required" },
+        { status: 400 },
+      );
     }
 
     // ローカルファイル保存用のデータ構造を作成
@@ -29,18 +32,25 @@ export async function POST(req: Request) {
     };
 
     // プロジェクトのルートディレクトリにある 'data' フォルダのパス
-    const dataDir = path.join(process.cwd(), 'data');
+    const dataDir = path.join(process.cwd(), "data");
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
-    
-    // JSONL（1行1JSON）形式で追記保存する
-    const filePath = path.join(dataDir, 'metaphysical_logs.jsonl');
-    fs.appendFileSync(filePath, JSON.stringify(logEntry) + '\n', 'utf8');
 
-    return NextResponse.json({ success: true, log: logEntry, message: "Saved to local JSONL" });
+    // JSONL（1行1JSON）形式で追記保存する
+    const filePath = path.join(dataDir, "metaphysical_logs.jsonl");
+    fs.appendFileSync(filePath, JSON.stringify(logEntry) + "\n", "utf8");
+
+    return NextResponse.json({
+      success: true,
+      log: logEntry,
+      message: "Saved to local JSONL",
+    });
   } catch (error: any) {
     console.error("Failed to save metaphysical log locally:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 },
+    );
   }
 }

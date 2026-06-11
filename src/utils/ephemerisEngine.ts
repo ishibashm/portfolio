@@ -1,6 +1,6 @@
 /**
  * Ephemeris Engine (Personal Frequency & Temporal Vector Calculator)
- * 
+ *
  * 物理エンジンとしての気学・四柱推命：
  * - 星 (Star 1-9): 固有の電磁気的な波長・周波数帯域を表す
  * - 天中殺 (Void Time): 地球の磁気シールドが薄まる、あるいは自律神経がエラーを起こしやすい時間的・空間的スリット
@@ -9,13 +9,22 @@
 export type StarFrequency = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export interface PersonalProfile {
-  honmeiStar: StarFrequency;       // Base Hardware Frequency
-  getsuMeiStar: StarFrequency;     // Secondary Hardware Frequency
-  tenchusatsuGroup: string;        // Shield Vulnerability Group (e.g., '午未')
+  honmeiStar: StarFrequency; // Base Hardware Frequency
+  getsuMeiStar: StarFrequency; // Secondary Hardware Frequency
+  tenchusatsuGroup: string; // Shield Vulnerability Group (e.g., '午未')
 }
 
 // 方位の型定義 (8方向 + 中央)
-export type Direction = 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' | 'CENTER';
+export type Direction =
+  | "N"
+  | "NE"
+  | "E"
+  | "SE"
+  | "S"
+  | "SW"
+  | "W"
+  | "NW"
+  | "CENTER";
 
 // 盤面（Board）の型: 各方向にどの星が配置されているか
 export type BoardLayout = Record<Direction, StarFrequency>;
@@ -34,25 +43,25 @@ export function generateBoard(centerStar: StarFrequency): BoardLayout {
   return {
     CENTER: centerStar,
     NW: calc(1),
-    W:  calc(2),
+    W: calc(2),
     NE: calc(3),
-    S:  calc(4),
-    N:  calc(5),
+    S: calc(4),
+    N: calc(5),
     SW: calc(6),
-    E:  calc(7),
-    SE: calc(8)
+    E: calc(7),
+    SE: calc(8),
   };
 }
 
-import { 
-  AstroTime, 
-  Body, 
-  Ecliptic, 
+import {
+  AstroTime,
+  Body,
+  Ecliptic,
   GeoVector,
-  SiderealTime
-} from 'astronomy-engine';
-import { Solar, Lunar } from 'lunar-javascript';
-import { getZonedDateTimeFields } from './solarTime';
+  SiderealTime,
+} from "astronomy-engine";
+import { Solar, Lunar } from "lunar-javascript";
+import { getZonedDateTimeFields } from "./solarTime";
 
 /**
  * Astronomical Engine: Validated Physical Orbital Coordinates
@@ -62,7 +71,7 @@ export const AstroEngine = {
   getJulianDay(date: Date): number {
     return new AstroTime(date).ut + 2451545.0; // Astronomy-engine 'ut' is days since J2000
   },
-  
+
   // 太陽の黄経 (Ecliptic Longitude of the Sun)
   getSolarLongitude(date: Date): number {
     const time = new AstroTime(date);
@@ -140,7 +149,7 @@ export const AstroEngine = {
 
   // 地方恒星時 (Local Sidereal Time)
   getLocalSiderealTime(date: Date, lon: number): number {
-    return AstroEngine.getGreenwichSiderealTime(date) + (lon / 15);
+    return AstroEngine.getGreenwichSiderealTime(date) + lon / 15;
   },
 
   /**
@@ -150,23 +159,25 @@ export const AstroEngine = {
    * @param lon 経度
    */
   getAscendant(date: Date, lat: number, lon: number, gst?: number): number {
-    const sidereal = gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
-    const lst = (sidereal + (lon / 15)) * 15; // 時間(0-24)を角度(0-360)に変換
+    const sidereal =
+      gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
+    const lst = (sidereal + lon / 15) * 15; // 時間(0-24)を角度(0-360)に変換
     const lstRad = (lst * Math.PI) / 180;
     const latRad = (lat * Math.PI) / 180;
-    
+
     // 黄道傾斜角 (Obliquity of the Ecliptic) 約 23.44度
     const epsilonRad = (23.4392911 * Math.PI) / 180;
 
     const ascRad = Math.atan2(
       Math.cos(lstRad),
-      -Math.sin(lstRad) * Math.cos(epsilonRad) - Math.tan(latRad) * Math.sin(epsilonRad)
+      -Math.sin(lstRad) * Math.cos(epsilonRad) -
+        Math.tan(latRad) * Math.sin(epsilonRad),
     );
-    
+
     let ascDeg = (ascRad * 180) / Math.PI;
     while (ascDeg < 0) ascDeg += 360;
     while (ascDeg >= 360) ascDeg -= 360;
-    
+
     return ascDeg;
   },
 
@@ -175,26 +186,27 @@ export const AstroEngine = {
    * MCは緯度に依存せず、地方恒星時と黄道傾斜角のみで決まります。
    */
   getMidheaven(date: Date, lon: number, gst?: number): number {
-    const sidereal = gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
-    const lst = (sidereal + (lon / 15)) * 15;
+    const sidereal =
+      gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
+    const lst = (sidereal + lon / 15) * 15;
     const lstRad = (lst * Math.PI) / 180;
-    
+
     // 黄道傾斜角 (Obliquity of the Ecliptic) 約 23.44度
     const epsilonRad = (23.4392911 * Math.PI) / 180;
-    
+
     const mcRad = Math.atan2(Math.tan(lstRad), Math.cos(epsilonRad));
     let mcDeg = (mcRad * 180) / Math.PI;
-    
+
     // atan2の性質上、LSTの象限に合わせる補正が必要
     if (lst >= 90 && lst < 270) {
-       mcDeg += 180;
+      mcDeg += 180;
     } else if (lst >= 270 && lst < 360) {
-       mcDeg += 360;
+      mcDeg += 360;
     }
-    
+
     while (mcDeg < 0) mcDeg += 360;
     while (mcDeg >= 360) mcDeg -= 360;
-    
+
     return mcDeg;
   },
 
@@ -204,7 +216,7 @@ export const AstroEngine = {
     const T = (jd - 2451545.0) / 36525;
     const node = (125.04452 - 1934.136261 * T) % 360;
     return node < 0 ? node + 360 : node;
-  }
+  },
 };
 
 /**
@@ -222,33 +234,36 @@ export function getClassicalYearStar(date: Date): StarFrequency {
  * - 物理モデル：生誕時の地球と太陽の幾何学的位相から天体学的に判定する物理モデル。
  * - 古典モデル：伝統的な暦（立春）に基づく精密な九星判定。
  */
-export function getHonmeiStar(birthDate: Date): { physical: StarFrequency, classical: StarFrequency } {
+export function getHonmeiStar(birthDate: Date): {
+  physical: StarFrequency;
+  classical: StarFrequency;
+} {
   return {
     physical: getYearStar(birthDate),
-    classical: getClassicalYearStar(birthDate)
+    classical: getClassicalYearStar(birthDate),
   };
 }
 
 /**
  * Long-term Wave (年盤) の算出：
  * 設計書に基づく完全な天体物理モデリング。
- * 
+ *
  * 物理的根拠:
  * 木星の公転周期は約11.86年であり、地球の磁気圏に巨大な重力・電磁波干渉を与えます。
  * 年ごとのマトリクスの中心周波数は、この木星の黄経に直接依存して決定されます。
  */
 export function getYearStar(date: Date): StarFrequency {
   const jupiterLon = AstroEngine.getJupiterLongitude(date);
-  
+
   // 木星の黄経(0〜360度)を9つの周波数帯域(各40度)にマッピングする
   const phaseIndex = Math.floor(jupiterLon / 40); // 0〜8
-  
+
   // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
   let star = 9 - phaseIndex;
   if (star <= 0) star += 9;
   if (star > 9) star %= 9;
   if (star === 0) star = 9;
-  
+
   return star as StarFrequency;
 }
 
@@ -273,23 +288,23 @@ export function getClassicalDayStar(date: Date): StarFrequency {
 /**
  * Mid-term Wave (月盤) の算出：
  * 設計書に基づく完全な天体物理モデリング。
- * 
+ *
  * 物理的根拠:
  * 月の黄経と、太陽軌道の相対位相（太陽と月の位置関係）に依存して中心周波数を決定します。
  * これにより、約29.5日の引力波のサイクルを計算します。
  */
 export function getMonthStar(date: Date): StarFrequency {
   const L0 = AstroEngine.getSolarLongitude(date);
-  
+
   // 地球の太陽黄経 (0〜360度) を12の位相帯域 (各30度) にマッピングする
   const phaseIndex = Math.floor(L0 / 30); // 0〜11
-  
+
   // 陰陽五行の基本サイクルに合わせて逆行(9 -> 1)させる
   let star = 9 - phaseIndex;
   while (star <= 0) star += 9;
   star %= 9;
   if (star === 0) star = 9;
-  
+
   return star as StarFrequency;
 }
 
@@ -309,12 +324,15 @@ export function getSolarMonthIndex(L0: number): number {
  * - independent: 年盤に依存せず太陽黄経から直接算出（従来の仕様）
  * - coupled: 年盤の星（木星黄経ベース）に依存して伝統的な規則で連動算出
  */
-export function getPhysicalMonthStar(date: Date, mode: 'coupled' | 'independent' = 'independent'): StarFrequency {
-  if (mode === 'coupled') {
+export function getPhysicalMonthStar(
+  date: Date,
+  mode: "coupled" | "independent" = "independent",
+): StarFrequency {
+  if (mode === "coupled") {
     const yStar = getYearStar(date);
     const L0 = AstroEngine.getSolarLongitude(date);
     const mIndex = getSolarMonthIndex(L0);
-    
+
     let startStar: StarFrequency;
     const mod = yStar % 3;
     if (mod === 1) {
@@ -324,7 +342,7 @@ export function getPhysicalMonthStar(date: Date, mode: 'coupled' | 'independent'
     } else {
       startStar = 2;
     }
-    
+
     let star = startStar - mIndex;
     while (star <= 0) {
       star += 9;
@@ -343,80 +361,95 @@ export function getPhysicalMonthStar(date: Date, mode: 'coupled' | 'independent'
  * Calculates a daily timing modifier based on the lunar phase.
  * Returns a scoreModifier (+/- 10 points) and custom advice text.
  */
-export function calculateLunarPhaseCondition(date: Date, actionIntent: ActionIntent = 'DEFAULT'): {
+export function calculateLunarPhaseCondition(
+  date: Date,
+  actionIntent: ActionIntent = "DEFAULT",
+): {
   scoreModifier: number;
   phaseLabel: string;
   adviceText: string;
 } {
   const sunLon = AstroEngine.getSolarLongitude(date);
   const moonLon = AstroEngine.getLunarLongitude(date);
-  
+
   // 太陽と月の相対位相 (0〜360度)
   let relativePhase = moonLon - sunLon;
   if (relativePhase < 0) {
     relativePhase += 360;
   }
-  
+
   let phaseLabel = "Waning Moon (欠けていく月)";
   let scoreModifier = 0;
-  let adviceText = "月相のバイオリズムは標準的です。通常の行動計画に支障はありません。";
+  let adviceText =
+    "月相のバイオリズムは標準的です。通常の行動計画に支障はありません。";
 
   if (relativePhase >= 345 || relativePhase < 15) {
     phaseLabel = "New Moon (新月)";
-    if (actionIntent === 'REST') {
+    if (actionIntent === "REST") {
       scoreModifier = 10;
-      adviceText = "新月です。浄化とリセット、休息に最適なタイミングです。エネルギーを充電してください。";
-    } else if (actionIntent === 'BUSINESS' || actionIntent === 'MIGRATION') {
+      adviceText =
+        "新月です。浄化とリセット、休息に最適なタイミングです。エネルギーを充電してください。";
+    } else if (actionIntent === "BUSINESS" || actionIntent === "MIGRATION") {
       scoreModifier = -10;
-      adviceText = "新月です。新しいプロジェクトの本格始動や大きな移動には、エネルギー不足を伴う可能性があります。";
+      adviceText =
+        "新月です。新しいプロジェクトの本格始動や大きな移動には、エネルギー不足を伴う可能性があります。";
     } else {
       scoreModifier = -5;
-      adviceText = "新月です。内省や計画立案に適した静かなフェーズです。大きな対外活動は控えめが吉。";
+      adviceText =
+        "新月です。内省や計画立案に適した静かなフェーズです。大きな対外活動は控えめが吉。";
     }
   } else if (relativePhase >= 15 && relativePhase < 75) {
     phaseLabel = "Waxing Crescent (満ちていく月)";
     scoreModifier = 5;
-    adviceText = "満ちていく月です。新たな目標に向けて行動を少しずつ進めるのに適しています。";
+    adviceText =
+      "満ちていく月です。新たな目標に向けて行動を少しずつ進めるのに適しています。";
   } else if (relativePhase >= 75 && relativePhase < 105) {
     phaseLabel = "First Quarter (上弦の月)";
     scoreModifier = 8;
-    adviceText = "上弦 of the Moon. 成長と発展のエネルギーが高まっています。決断と実行の好機です。";
+    adviceText =
+      "上弦 of the Moon. 成長と発展のエネルギーが高まっています。決断と実行の好機です。";
   } else if (relativePhase >= 105 && relativePhase < 165) {
     phaseLabel = "Waxing Gibbous (満月へ向かう月)";
     scoreModifier = 5;
-    adviceText = "満月に近づく月です。これまでの努力が形になり始める活動的なフェーズです。";
+    adviceText =
+      "満月に近づく月です。これまでの努力が形になり始める活動的なフェーズです。";
   } else if (relativePhase >= 165 && relativePhase < 195) {
     phaseLabel = "Full Moon (満月)";
-    if (actionIntent === 'REST') {
+    if (actionIntent === "REST") {
       scoreModifier = -10;
-      adviceText = "満月です。エネルギーが最大化し感情や自律神経が昂ぶりやすいため、深いリラックスは困難です。";
-    } else if (actionIntent === 'BUSINESS' || actionIntent === 'MIGRATION') {
+      adviceText =
+        "満月です。エネルギーが最大化し感情や自律神経が昂ぶりやすいため、深いリラックスは困難です。";
+    } else if (actionIntent === "BUSINESS" || actionIntent === "MIGRATION") {
       scoreModifier = 10;
-      adviceText = "満月です。引き寄せの力が最大化し、契約や門出に大吉のタイミングです。自信を持って行動を。";
+      adviceText =
+        "満月です。引き寄せの力が最大化し、契約や門出に大吉のタイミングです。自信を持って行動を。";
     } else {
       scoreModifier = 10;
-      adviceText = "満月です。エネルギーがピークに達しています。社交的な集まりや決断に非常に適しています。";
+      adviceText =
+        "満月です。エネルギーがピークに達しています。社交的な集まりや決断に非常に適しています。";
     }
   } else if (relativePhase >= 195 && relativePhase < 255) {
     phaseLabel = "Waning Gibbous (下弦へ向かう月)";
     scoreModifier = 0;
-    adviceText = "欠けていく月です。物事の整理や、不要な習慣の手放し、整理整頓に適しています。";
+    adviceText =
+      "欠けていく月です。物事の整理や、不要な習慣の手放し、整理整頓に適しています。";
   } else if (relativePhase >= 255 && relativePhase < 285) {
     phaseLabel = "Last Quarter (下弦の月)";
     scoreModifier = -5;
-    if (actionIntent === 'REST') {
+    if (actionIntent === "REST") {
       scoreModifier = 5;
     }
-    adviceText = "下弦の月です。デトックスや心身の整理に適したクールダウン期です。";
+    adviceText =
+      "下弦の月です。デトックスや心身の整理に適したクールダウン期です。";
   }
-  
+
   return { scoreModifier, phaseLabel, adviceText };
 }
 
 /**
  * Short-term Wave (日盤) の算出：
  * 暦ではなく、ユリウス日（Julian Day）と太陽黄経を用いた最新の軌道物理モデリング。
- * 
+ *
  * 物理的根拠:
  * 地球の自転による昼夜サイクルを基調とし、太陽光子の入射角（太陽黄経）による「陽遁・陰遁」の位相反転を再現。
  * 夏至（L0=90°）と冬至（L0=270°）を物理的な極性反転ポイント（至点）として厳密に定義。
@@ -424,57 +457,61 @@ export function calculateLunarPhaseCondition(date: Date, actionIntent: ActionInt
 export function getDayStar(date: Date): StarFrequency {
   const jd = AstroEngine.getJulianDay(date);
   const L0 = AstroEngine.getSolarLongitude(date);
-  
+
   // 物理モデル: 夏至(L0=90)から冬至(L0=270)は太陽エネルギーが減衰する「負の位相（陰遁）」
   // 冬至(L0=270)から夏至(L0=90)はエネルギーが増幅する「正の位相（陽遁）」
-  const isYinPhase = (L0 >= 90 && L0 < 270);
-  
+  const isYinPhase = L0 >= 90 && L0 < 270;
+
   // Base rotation phase using Julian Day
   const cycle = Math.floor(jd) % 9;
-  
+
   // 逆相（キャンセリング） / 正相（アンプリファイング）の適用
-  let star = isYinPhase ? (9 - cycle) : (cycle + 1);
+  let star = isYinPhase ? 9 - cycle : cycle + 1;
   if (star <= 0) star += 9;
   if (star > 9) star %= 9;
   if (star === 0) star = 9;
-  
+
   return star as StarFrequency;
 }
 
 /**
  * Micro-term Wave (時盤) の算出：
  * プレースホルダーを廃止し、地方恒星時（Local Sidereal Time）を用いた物理モデリング。
- * 
+ *
  * 物理的根拠:
  * 地球の自転に伴う、宇宙空間（銀河中心・恒星背景）に対する絶対的な向き（位相）。
  * 恒星時（0〜24時）を12の位相帯域に分割し、日のサイクル（陽遁・陰遁）と合成する。
  */
-export function getHourStar(date: Date, isYinPhase: boolean, lon: number = 139.6917): StarFrequency {
+export function getHourStar(
+  date: Date,
+  isYinPhase: boolean,
+  lon: number = 139.6917,
+): StarFrequency {
   // 地方恒星時(Local Sidereal Time: 0〜24時間)
   const lst = AstroEngine.getLocalSiderealTime(date, lon);
-  
+
   // 2時間ごとのフェーズ(0〜11)に分割
   const phaseIndex = Math.floor(lst / 2);
-  
+
   // ベースとなる日のサイクル (Julian Day)
   const jd = AstroEngine.getJulianDay(date);
   const dayCycle = Math.floor(jd + 0.5) % 9;
-  
+
   // 位相の合成（陽遁は加算、陰遁は減算で波をモジュレーション）
-  let star = isYinPhase ? (dayCycle - phaseIndex) : (dayCycle + phaseIndex);
-  
+  let star = isYinPhase ? dayCycle - phaseIndex : dayCycle + phaseIndex;
+
   // 1〜9のフラクタルに丸め込み
   while (star <= 0) star += 9;
   star %= 9;
   if (star === 0) star = 9;
-  
+
   return star as StarFrequency;
 }
 
 export function getCurrentEnvironmentalFrequencies(
   date: Date,
   lon: number = 139.6917,
-  physicalMonthMode: 'coupled' | 'independent' = 'independent'
+  physicalMonthMode: "coupled" | "independent" = "independent",
 ) {
   const physY = getYearStar(date);
   const classY = getClassicalYearStar(date);
@@ -483,9 +520,9 @@ export function getCurrentEnvironmentalFrequencies(
   const m = getPhysicalMonthStar(date, physicalMonthMode);
   const d = getDayStar(date);
   const L0 = AstroEngine.getSolarLongitude(date);
-  const isYinPhase = (L0 >= 90 && L0 < 270);
+  const isYinPhase = L0 >= 90 && L0 < 270;
   const h = getHourStar(date, isYinPhase, lon);
-  
+
   return {
     yearStar: physY,
     classicalYearStar: classY,
@@ -500,174 +537,233 @@ export function getCurrentEnvironmentalFrequencies(
       moonLon: AstroEngine.getLunarLongitude(date),
       jupiterLon: AstroEngine.getJupiterLongitude(date),
       lunarNode: AstroEngine.getLunarNodeLongitude(date),
-      lst: AstroEngine.getLocalSiderealTime(date, lon)
-    }
+      lst: AstroEngine.getLocalSiderealTime(date, lon),
+    },
   };
 }
 
 const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-  switch(star) {
-    case 1: return [6, 7, 3, 4];
-    case 2: return [9, 6, 7];
-    case 3: return [1, 9];
-    case 4: return [1, 9];
-    case 5: return [9, 6, 7];
-    case 6: return [2, 5, 8, 1];
-    case 7: return [2, 5, 8, 1];
-    case 8: return [9, 6, 7];
-    case 9: return [3, 4, 2, 5, 8];
-    default: return [];
+  switch (star) {
+    case 1:
+      return [6, 7, 3, 4];
+    case 2:
+      return [9, 6, 7];
+    case 3:
+      return [1, 9];
+    case 4:
+      return [1, 9];
+    case 5:
+      return [9, 6, 7];
+    case 6:
+      return [2, 5, 8, 1];
+    case 7:
+      return [2, 5, 8, 1];
+    case 8:
+      return [9, 6, 7];
+    case 9:
+      return [3, 4, 2, 5, 8];
+    default:
+      return [];
   }
 };
 
 /**
  * アクション目的に応じた最適化フラグ
  */
-export type ActionIntent = 'DEFAULT' | 'REST' | 'BUSINESS' | 'MIGRATION';
+export type ActionIntent = "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
 
 /**
  * ベクトル衝突計算（吉凶方位の物理的割り出し）
  */
 export function calculateVectorCollision(
-  personalStar: StarFrequency, 
+  personalStar: StarFrequency,
   yearBoard: BoardLayout,
   monthBoard: BoardLayout,
   dayBoard: BoardLayout,
   voidZodiacs: string[] = [],
   lunarNodeLon: number | null = null,
-  actionIntent: ActionIntent = 'DEFAULT',
+  actionIntent: ActionIntent = "DEFAULT",
   targetDate?: Date,
   lon: number = 139.6917,
   getsuMeiStar?: StarFrequency,
-  nodeMapping: 'traditional' | 'physical' = 'traditional'
+  nodeMapping: "traditional" | "physical" = "traditional",
 ): {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' | 'WARNING' | 'NOISE_GOU' | 'NOISE_ANKEN' | 'NOISE_HONMEI' | 'NOISE_TEKI' | 'NOISE_GETSUMEI' | 'NOISE_GETSUTEKI' | 'NOISE_VOID' | 'NOISE_NODE' | 'NOISE' | 'NOISE_HA'>;
+  finalVectors: Record<
+    Direction,
+    | "OPTIMAL"
+    | "OPTIMAL_REGULAR"
+    | "SAFE"
+    | "WARNING"
+    | "NOISE_GOU"
+    | "NOISE_ANKEN"
+    | "NOISE_HONMEI"
+    | "NOISE_TEKI"
+    | "NOISE_GETSUMEI"
+    | "NOISE_GETSUTEKI"
+    | "NOISE_VOID"
+    | "NOISE_NODE"
+    | "NOISE"
+    | "NOISE_HA"
+  >;
   tendoDirection?: Direction;
   doyouState?: {
     inDoyou: boolean;
-    doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null;
+    doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null;
     isMabi: boolean;
     isDoyouHazard: boolean;
   };
 } {
-  
-  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  
+  const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
   // 天中殺（Void Zodiac）の方位マッピング
   const z2d: Record<string, Direction[]> = {
-    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
-    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
-    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+    子: ["N"],
+    丑: ["NE"],
+    寅: ["NE"],
+    卯: ["E"],
+    辰: ["SE"],
+    巳: ["SE"],
+    午: ["S"],
+    未: ["SW"],
+    申: ["SW"],
+    酉: ["W"],
+    戌: ["NW"],
+    亥: ["NW"],
   };
   const voidDirs = new Set<Direction>();
-  voidZodiacs.forEach(z => {
-    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  voidZodiacs.forEach((z) => {
+    (z2d[z] || []).forEach((d) => voidDirs.add(d));
   });
 
   // ドラゴンヘッド/テールの侵犯方向
   const nodeDirs = new Set<Direction>();
   if (lunarNodeLon !== null) {
-    const dirs: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const getBearing = (lon: number): Direction => {
       let val = 0;
-      if (nodeMapping === 'physical') {
-        let b = (lon - 90) % 360; 
+      if (nodeMapping === "physical") {
+        let b = (lon - 90) % 360;
         if (b < 0) b += 360;
-        b = 360 - b; 
-        val = (b % 360 + 360) % 360;
+        b = 360 - b;
+        val = ((b % 360) + 360) % 360;
       } else {
         // 'traditional' model: Spring (0) = East (90), Summer (90) = South (180), Autumn (180) = West (270), Winter (270) = North (0)
         val = (lon + 90) % 360;
       }
-      
-      if (val >= 345 || val < 15) return 'N';
-      if (val >= 15 && val < 75) return 'NE';
-      if (val >= 75 && val < 105) return 'E';
-      if (val >= 105 && val < 165) return 'SE';
-      if (val >= 165 && val < 195) return 'S';
-      if (val >= 195 && val < 255) return 'SW';
-      if (val >= 255 && val < 285) return 'W';
-      return 'NW';
+
+      if (val >= 345 || val < 15) return "N";
+      if (val >= 15 && val < 75) return "NE";
+      if (val >= 75 && val < 105) return "E";
+      if (val >= 105 && val < 165) return "SE";
+      if (val >= 165 && val < 195) return "S";
+      if (val >= 195 && val < 255) return "SW";
+      if (val >= 255 && val < 285) return "W";
+      return "NW";
     };
     nodeDirs.add(getBearing(lunarNodeLon));
     nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
   }
-  
+
   let compatiblesHonmei = getCompatibleStars(personalStar);
-  
-  if (actionIntent === 'REST') {
+
+  if (actionIntent === "REST") {
     if (personalStar === 3 || personalStar === 4) compatiblesHonmei = [1];
     else if (personalStar === 1) compatiblesHonmei = [6, 7];
-  } else if (actionIntent === 'BUSINESS') {
+  } else if (actionIntent === "BUSINESS") {
     if (personalStar === 1) compatiblesHonmei = [3, 4];
     else if (personalStar === 3 || personalStar === 4) compatiblesHonmei = [9];
   }
 
-  const compatiblesGetsumei = getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+  const compatiblesGetsumei = getsuMeiStar
+    ? getCompatibleStars(getsuMeiStar)
+    : [];
 
-  const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+  const getOptimalStatus = (
+    starNum: StarFrequency,
+  ): "OPTIMAL" | "OPTIMAL_REGULAR" | "SAFE" => {
     const isHonmeiComp = compatiblesHonmei.includes(starNum);
     if (!getsuMeiStar) {
-      return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+      return isHonmeiComp ? "OPTIMAL" : "SAFE";
     }
     const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
     if (isHonmeiComp && isGetsumeiComp) {
-      return 'OPTIMAL'; // Max lucky
+      return "OPTIMAL"; // Max lucky
     } else if (isHonmeiComp) {
-      return 'OPTIMAL_REGULAR'; // Regular lucky
+      return "OPTIMAL_REGULAR"; // Regular lucky
     }
-    return 'SAFE';
+    return "SAFE";
   };
 
   // 十二支情報・天道・土用の計算
   const zodiacs = targetDate ? getCurrentZodiac(targetDate, lon) : null;
-  
+
   // 天道 (Tendo)
   const monthlyTendoMap: Record<string, Direction> = {
-    '寅': 'S', '卯': 'SW', '辰': 'N', '巳': 'W',
-    '午': 'NW', '未': 'E', '申': 'N', '酉': 'NE',
-    '戌': 'S', '亥': 'E', '子': 'SE', '丑': 'W'
+    寅: "S",
+    卯: "SW",
+    辰: "N",
+    巳: "W",
+    午: "NW",
+    未: "E",
+    申: "N",
+    酉: "NE",
+    戌: "S",
+    亥: "E",
+    子: "SE",
+    丑: "W",
   };
-  const tendoDir = zodiacs?.monthZodiac ? monthlyTendoMap[zodiacs.monthZodiac] : undefined;
+  const tendoDir = zodiacs?.monthZodiac
+    ? monthlyTendoMap[zodiacs.monthZodiac]
+    : undefined;
 
   // 土用 (Doyou) & 間日 (Mabi)
   let doyouState: any = undefined;
   if (targetDate) {
     const L0 = AstroEngine.getSolarLongitude(targetDate);
-    let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
-    if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
-    else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
-    else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
-    else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+    let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
+    if (L0 >= 27 && L0 < 45) doyouType = "SPRING";
+    else if (L0 >= 117 && L0 < 135) doyouType = "SUMMER";
+    else if (L0 >= 207 && L0 < 225) doyouType = "AUTUMN";
+    else if (L0 >= 297 && L0 < 315) doyouType = "WINTER";
 
     const inDoyou = doyouType !== null;
     let isMabi = false;
     if (zodiacs?.dayZodiac) {
-      if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
-      else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
-      else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
-      else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+      if (doyouType === "SPRING")
+        isMabi = ["巳", "午", "酉"].includes(zodiacs.dayZodiac);
+      else if (doyouType === "SUMMER")
+        isMabi = ["卯", "辰", "申"].includes(zodiacs.dayZodiac);
+      else if (doyouType === "AUTUMN")
+        isMabi = ["未", "酉", "亥"].includes(zodiacs.dayZodiac);
+      else if (doyouType === "WINTER")
+        isMabi = ["寅", "卯", "巳"].includes(zodiacs.dayZodiac);
     }
-    
+
     doyouState = {
       inDoyou,
       doyouType,
       isMabi,
-      isDoyouHazard: inDoyou && !isMabi
+      isDoyouHazard: inDoyou && !isMabi,
     };
   }
 
   const processLayer = (board: BoardLayout) => {
     const res: Partial<Record<Direction, string>> = {};
-    directions.forEach(d => res[d] = 'SAFE');
+    directions.forEach((d) => (res[d] = "SAFE"));
 
     const getOpposite = (dir: Direction): Direction => {
       const opposites: Record<string, Direction> = {
-        'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
-        'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+        N: "S",
+        S: "N",
+        E: "W",
+        W: "E",
+        NE: "SW",
+        SW: "NE",
+        NW: "SE",
+        SE: "NW",
       };
       return opposites[dir];
     };
@@ -675,8 +771,8 @@ export function calculateVectorCollision(
     // 1. 五黄殺・暗剣殺
     for (const dir of directions) {
       if (board[dir] === 5) {
-        res[dir] = 'NOISE_GOU';
-        res[getOpposite(dir)] = 'NOISE_ANKEN';
+        res[dir] = "NOISE_GOU";
+        res[getOpposite(dir)] = "NOISE_ANKEN";
         break;
       }
     }
@@ -684,9 +780,9 @@ export function calculateVectorCollision(
     // 2. 本命殺・的殺
     for (const dir of directions) {
       if (board[dir] === personalStar) {
-        if (res[dir] === 'SAFE') res[dir] = 'NOISE_HONMEI';
+        if (res[dir] === "SAFE") res[dir] = "NOISE_HONMEI";
         const opp = getOpposite(dir);
-        if (res[opp] === 'SAFE') res[opp] = 'NOISE_TEKI';
+        if (res[opp] === "SAFE") res[opp] = "NOISE_TEKI";
         break;
       }
     }
@@ -695,9 +791,9 @@ export function calculateVectorCollision(
     if (getsuMeiStar) {
       for (const dir of directions) {
         if (board[dir] === getsuMeiStar) {
-          if (res[dir] === 'SAFE') res[dir] = 'NOISE_GETSUMEI';
+          if (res[dir] === "SAFE") res[dir] = "NOISE_GETSUMEI";
           const opp = getOpposite(dir);
-          if (res[opp] === 'SAFE') res[opp] = 'NOISE_GETSUTEKI';
+          if (res[opp] === "SAFE") res[opp] = "NOISE_GETSUTEKI";
           break;
         }
       }
@@ -705,14 +801,14 @@ export function calculateVectorCollision(
 
     // 3. グローバルノイズと最適化の適用
     for (const dir of directions) {
-      if (res[dir] === 'SAFE') {
+      if (res[dir] === "SAFE") {
         if (voidDirs.has(dir)) {
-          res[dir] = 'NOISE_VOID';
+          res[dir] = "NOISE_VOID";
         } else if (nodeDirs.has(dir)) {
-          res[dir] = 'NOISE_NODE';
+          res[dir] = "NOISE_NODE";
         } else {
           const optStatus = getOptimalStatus(board[dir]);
-          if (optStatus !== 'SAFE') {
+          if (optStatus !== "SAFE") {
             res[dir] = optStatus;
           }
         }
@@ -727,8 +823,8 @@ export function calculateVectorCollision(
   if (zodiacs?.yearZodiac) {
     const clashZodiac = clashMap[zodiacs.yearZodiac];
     const clashDirs = z2d[clashZodiac] || [];
-    clashDirs.forEach(d => {
-      yearLayer[d] = 'NOISE_HA';
+    clashDirs.forEach((d) => {
+      yearLayer[d] = "NOISE_HA";
     });
   }
 
@@ -737,8 +833,8 @@ export function calculateVectorCollision(
   if (zodiacs?.monthZodiac) {
     const clashZodiac = clashMap[zodiacs.monthZodiac];
     const clashDirs = z2d[clashZodiac] || [];
-    clashDirs.forEach(d => {
-      monthLayer[d] = 'NOISE_HA';
+    clashDirs.forEach((d) => {
+      monthLayer[d] = "NOISE_HA";
     });
   }
 
@@ -747,8 +843,8 @@ export function calculateVectorCollision(
   if (zodiacs?.dayZodiac) {
     const clashZodiac = clashMap[zodiacs.dayZodiac];
     const clashDirs = z2d[clashZodiac] || [];
-    clashDirs.forEach(d => {
-      dayLayer[d] = 'NOISE_HA';
+    clashDirs.forEach((d) => {
+      dayLayer[d] = "NOISE_HA";
     });
   }
 
@@ -756,19 +852,32 @@ export function calculateVectorCollision(
 
   function getLayerScore(status: string): number {
     switch (status) {
-      case 'OPTIMAL': return 100;
-      case 'OPTIMAL_REGULAR': return 50;
-      case 'SAFE': return 0;
-      case 'NOISE_HONMEI': return -30;
-      case 'NOISE_TEKI': return -30;
-      case 'NOISE_GETSUMEI': return -30;
-      case 'NOISE_GETSUTEKI': return -30;
-      case 'NOISE_NODE': return -40;
-      case 'NOISE_VOID': return -80;
-      case 'NOISE_GOU': return -100;
-      case 'NOISE_ANKEN': return -100;
-      case 'NOISE_HA': return -100;
-      default: return 0;
+      case "OPTIMAL":
+        return 100;
+      case "OPTIMAL_REGULAR":
+        return 50;
+      case "SAFE":
+        return 0;
+      case "NOISE_HONMEI":
+        return -30;
+      case "NOISE_TEKI":
+        return -30;
+      case "NOISE_GETSUMEI":
+        return -30;
+      case "NOISE_GETSUTEKI":
+        return -30;
+      case "NOISE_NODE":
+        return -40;
+      case "NOISE_VOID":
+        return -80;
+      case "NOISE_GOU":
+        return -100;
+      case "NOISE_ANKEN":
+        return -100;
+      case "NOISE_HA":
+        return -100;
+      default:
+        return 0;
     }
   }
 
@@ -777,22 +886,46 @@ export function calculateVectorCollision(
     let mStatus = monthLayer[dir]!;
     let dStatus = dayLayer[dir]!;
 
-    const isTendo = (tendoDir && dir === tendoDir);
-    
+    const isTendo = tendoDir && dir === tendoDir;
+
     // Tendo overrides minor personal noise on any layer
     if (isTendo) {
-      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(yStatus)) yStatus = 'OPTIMAL';
-      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(mStatus)) mStatus = 'OPTIMAL';
-      if (['NOISE_HONMEI', 'NOISE_TEKI', 'NOISE_GETSUMEI', 'NOISE_GETSUTEKI'].includes(dStatus)) dStatus = 'OPTIMAL';
+      if (
+        [
+          "NOISE_HONMEI",
+          "NOISE_TEKI",
+          "NOISE_GETSUMEI",
+          "NOISE_GETSUTEKI",
+        ].includes(yStatus)
+      )
+        yStatus = "OPTIMAL";
+      if (
+        [
+          "NOISE_HONMEI",
+          "NOISE_TEKI",
+          "NOISE_GETSUMEI",
+          "NOISE_GETSUTEKI",
+        ].includes(mStatus)
+      )
+        mStatus = "OPTIMAL";
+      if (
+        [
+          "NOISE_HONMEI",
+          "NOISE_TEKI",
+          "NOISE_GETSUMEI",
+          "NOISE_GETSUTEKI",
+        ].includes(dStatus)
+      )
+        dStatus = "OPTIMAL";
     }
 
     const layers = [yStatus, mStatus, dStatus];
 
-    if (actionIntent === 'MIGRATION') {
+    if (actionIntent === "MIGRATION") {
       // For relocation, Year and Month layers are extremely critical (long-term), Day is short-term.
-      const yRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(yStatus);
-      const mRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(mStatus);
-      const dRed = ['NOISE_GOU', 'NOISE_ANKEN', 'NOISE_HA'].includes(dStatus);
+      const yRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(yStatus);
+      const mRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(mStatus);
+      const dRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(dStatus);
 
       if (yRed) {
         finalVectors[dir] = yStatus as any; // Year red noise is absolute blocker
@@ -800,72 +933,72 @@ export function calculateVectorCollision(
         finalVectors[dir] = mStatus as any; // Month red noise is absolute blocker
       } else if (dRed) {
         // If Year/Month are safe, but only Day has red noise, downgrade to WARNING
-        finalVectors[dir] = 'WARNING';
+        finalVectors[dir] = "WARNING";
       } else {
         // Evaluate other noises on critical layers (Year and Month)
         // Order of severity: VOID > HONMEI > TEKI > GETSUMEI > GETSUTEKI > NODE
         const criticalLayers = [yStatus, mStatus];
-        if (criticalLayers.includes('NOISE_VOID')) {
-          finalVectors[dir] = 'NOISE_VOID';
-        } else if (criticalLayers.includes('NOISE_HONMEI')) {
-          finalVectors[dir] = 'NOISE_HONMEI';
-        } else if (criticalLayers.includes('NOISE_TEKI')) {
-          finalVectors[dir] = 'NOISE_TEKI';
-        } else if (criticalLayers.includes('NOISE_GETSUMEI')) {
-          finalVectors[dir] = 'NOISE_GETSUMEI';
-        } else if (criticalLayers.includes('NOISE_GETSUTEKI')) {
-          finalVectors[dir] = 'NOISE_GETSUTEKI';
-        } else if (criticalLayers.includes('NOISE_NODE')) {
-          finalVectors[dir] = 'NOISE_NODE';
+        if (criticalLayers.includes("NOISE_VOID")) {
+          finalVectors[dir] = "NOISE_VOID";
+        } else if (criticalLayers.includes("NOISE_HONMEI")) {
+          finalVectors[dir] = "NOISE_HONMEI";
+        } else if (criticalLayers.includes("NOISE_TEKI")) {
+          finalVectors[dir] = "NOISE_TEKI";
+        } else if (criticalLayers.includes("NOISE_GETSUMEI")) {
+          finalVectors[dir] = "NOISE_GETSUMEI";
+        } else if (criticalLayers.includes("NOISE_GETSUTEKI")) {
+          finalVectors[dir] = "NOISE_GETSUTEKI";
+        } else if (criticalLayers.includes("NOISE_NODE")) {
+          finalVectors[dir] = "NOISE_NODE";
         } else {
           // No active noises on Year and Month. Now we can check if it is OPTIMAL.
-          const hasOpt = criticalLayers.includes('OPTIMAL');
-          const hasOptReg = criticalLayers.includes('OPTIMAL_REGULAR');
+          const hasOpt = criticalLayers.includes("OPTIMAL");
+          const hasOptReg = criticalLayers.includes("OPTIMAL_REGULAR");
           if (hasOpt) {
-            finalVectors[dir] = 'OPTIMAL';
+            finalVectors[dir] = "OPTIMAL";
           } else if (hasOptReg) {
-            finalVectors[dir] = 'OPTIMAL_REGULAR';
+            finalVectors[dir] = "OPTIMAL_REGULAR";
           } else {
-            finalVectors[dir] = 'SAFE';
+            finalVectors[dir] = "SAFE";
           }
         }
       }
     } else {
       // General Ops: Year, Month, and Day are all active.
       const layers = [yStatus, mStatus, dStatus];
-      
-      const hasGou = layers.includes('NOISE_GOU');
-      const hasAnken = layers.includes('NOISE_ANKEN');
-      const hasHa = layers.includes('NOISE_HA');
+
+      const hasGou = layers.includes("NOISE_GOU");
+      const hasAnken = layers.includes("NOISE_ANKEN");
+      const hasHa = layers.includes("NOISE_HA");
 
       if (hasGou) {
-        finalVectors[dir] = 'NOISE_GOU';
+        finalVectors[dir] = "NOISE_GOU";
       } else if (hasAnken) {
-        finalVectors[dir] = 'NOISE_ANKEN';
+        finalVectors[dir] = "NOISE_ANKEN";
       } else if (hasHa) {
-        finalVectors[dir] = 'NOISE_HA';
-      } else if (layers.includes('NOISE_VOID')) {
-        finalVectors[dir] = 'NOISE_VOID';
-      } else if (layers.includes('NOISE_HONMEI')) {
-        finalVectors[dir] = 'NOISE_HONMEI';
-      } else if (layers.includes('NOISE_TEKI')) {
-        finalVectors[dir] = 'NOISE_TEKI';
-      } else if (layers.includes('NOISE_GETSUMEI')) {
-        finalVectors[dir] = 'NOISE_GETSUMEI';
-      } else if (layers.includes('NOISE_GETSUTEKI')) {
-        finalVectors[dir] = 'NOISE_GETSUTEKI';
-      } else if (layers.includes('NOISE_NODE')) {
-        finalVectors[dir] = 'NOISE_NODE';
+        finalVectors[dir] = "NOISE_HA";
+      } else if (layers.includes("NOISE_VOID")) {
+        finalVectors[dir] = "NOISE_VOID";
+      } else if (layers.includes("NOISE_HONMEI")) {
+        finalVectors[dir] = "NOISE_HONMEI";
+      } else if (layers.includes("NOISE_TEKI")) {
+        finalVectors[dir] = "NOISE_TEKI";
+      } else if (layers.includes("NOISE_GETSUMEI")) {
+        finalVectors[dir] = "NOISE_GETSUMEI";
+      } else if (layers.includes("NOISE_GETSUTEKI")) {
+        finalVectors[dir] = "NOISE_GETSUTEKI";
+      } else if (layers.includes("NOISE_NODE")) {
+        finalVectors[dir] = "NOISE_NODE";
       } else {
         // No noises. Determine if lucky.
-        const hasOpt = layers.includes('OPTIMAL');
-        const hasOptReg = layers.includes('OPTIMAL_REGULAR');
+        const hasOpt = layers.includes("OPTIMAL");
+        const hasOptReg = layers.includes("OPTIMAL_REGULAR");
         if (hasOpt) {
-          finalVectors[dir] = 'OPTIMAL';
+          finalVectors[dir] = "OPTIMAL";
         } else if (hasOptReg) {
-          finalVectors[dir] = 'OPTIMAL_REGULAR';
+          finalVectors[dir] = "OPTIMAL_REGULAR";
         } else {
-          finalVectors[dir] = 'SAFE';
+          finalVectors[dir] = "SAFE";
         }
       }
     }
@@ -873,14 +1006,14 @@ export function calculateVectorCollision(
   // Apply 土用殺 (Doyou-satsu) to finalVectors
   if (doyouState && doyouState.isDoyouHazard) {
     const doyouSatsuDirections: Record<string, Direction> = {
-      'SPRING': 'SE',
-      'SUMMER': 'SW',
-      'AUTUMN': 'NW',
-      'WINTER': 'NE'
+      SPRING: "SE",
+      SUMMER: "SW",
+      AUTUMN: "NW",
+      WINTER: "NE",
     };
     const targetDoyouSatsuDir = doyouSatsuDirections[doyouState.doyouType];
     if (targetDoyouSatsuDir) {
-      finalVectors[targetDoyouSatsuDir] = 'NOISE_GOU';
+      finalVectors[targetDoyouSatsuDir] = "NOISE_GOU";
     }
   }
 
@@ -890,10 +1023,9 @@ export function calculateVectorCollision(
     dayLayer,
     finalVectors,
     tendoDirection: tendoDir,
-    doyouState
+    doyouState,
   };
 }
-
 
 /**
  * 生年月日の「日干支」から個人の天中殺（Void Zodiac）を算出する。
@@ -913,56 +1045,117 @@ export function getPersonalVoidZodiac(birthDate: Date): string[] {
   */
 
   const fields = getZonedDateTimeFields(birthDate, 9);
-  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const solar = Solar.fromYmdHms(
+    fields.year,
+    fields.month,
+    fields.day,
+    fields.hours,
+    fields.minutes,
+    fields.seconds,
+  );
   const lunar = solar.getLunar();
   const eightChar = lunar.getEightChar();
   const dayGan = eightChar.getDayGan();
   const dayZhi = eightChar.getDayZhi();
-  
+
   const JIKKAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
-  const JUNISHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-  
+  const JUNISHI = [
+    "子",
+    "丑",
+    "寅",
+    "卯",
+    "辰",
+    "巳",
+    "午",
+    "未",
+    "申",
+    "酉",
+    "戌",
+    "亥",
+  ];
+
   const gan = JIKKAN.indexOf(dayGan);
   const zhi = JUNISHI.indexOf(dayZhi);
-  
+
   if (gan === -1 || zhi === -1) {
     return ["午", "未"]; // Fallback
   }
-  
+
   const voidDiff = (zhi - gan + 12) % 12;
-  
+
   switch (voidDiff) {
-    case 0: return ["戌", "亥"]; // 甲子旬
-    case 10: return ["申", "酉"]; // 甲戌旬
-    case 8: return ["午", "未"];  // 甲申旬
-    case 6: return ["辰", "巳"];  // 甲午旬
-    case 4: return ["寅", "卯"];  // 甲辰旬
-    case 2: return ["子", "丑"];  // 甲寅旬
-    default: return ["午", "未"]; // フォールバック
+    case 0:
+      return ["戌", "亥"]; // 甲子旬
+    case 10:
+      return ["申", "酉"]; // 甲戌旬
+    case 8:
+      return ["午", "未"]; // 甲申旬
+    case 6:
+      return ["辰", "巳"]; // 甲午旬
+    case 4:
+      return ["寅", "卯"]; // 甲辰旬
+    case 2:
+      return ["子", "丑"]; // 甲寅旬
+    default:
+      return ["午", "未"]; // フォールバック
   }
 }
 
 /**
  * 日付と経度から、その時点の「年・月・日・時」の十二支（文字列）を天体物理学的に取得する
  */
-export function getCurrentZodiac(date: Date, lon: number = 139.6917): { yearZodiac: string, monthZodiac: string, dayZodiac: string, hourZodiac: string } {
+export function getCurrentZodiac(
+  date: Date,
+  lon: number = 139.6917,
+): {
+  yearZodiac: string;
+  monthZodiac: string;
+  dayZodiac: string;
+  hourZodiac: string;
+} {
   // 年の干支: 木星黄経ベース（物理モデル）
   // 木星の黄経（0〜360度）を12分割し、実際の天体位置から「年の干支」を算出する。
   // 黄道0度(春分点)付近を卯とし、30度ごとに進む。
   // (例: 2026年4月頃の木星黄経は約106度 -> インデックス3 -> 「午」となる)
   const jupiterLon = AstroEngine.getJupiterLongitude(date);
   const yearIndex = Math.floor(jupiterLon / 30);
-  const ZODIACS_JUPITER = ["卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑", "寅"];
+  const ZODIACS_JUPITER = [
+    "卯",
+    "辰",
+    "巳",
+    "午",
+    "未",
+    "申",
+    "酉",
+    "戌",
+    "亥",
+    "子",
+    "丑",
+    "寅",
+  ];
   const yearZodiac = ZODIACS_JUPITER[yearIndex];
-  
+
   // 月の干支: 太陽黄経ベース（立春(315度)から寅月が始まる）
   // 315〜345:寅(3), 345〜15:卯(4), 15〜45:辰(5)...
   const sunLon = AstroEngine.getSolarLongitude(date);
   const monthIndex = Math.floor(((sunLon + 45) % 360) / 30);
   // monthIndex 0(立春〜):寅
-  const ZODIACS_MONTH = ["亥", "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌"];
+  const ZODIACS_MONTH = [
+    "亥",
+    "子",
+    "丑",
+    "寅",
+    "卯",
+    "辰",
+    "巳",
+    "午",
+    "未",
+    "申",
+    "酉",
+    "戌",
+  ];
   const monthZodiac = ZODIACS_MONTH[(monthIndex + 3) % 12];
-  
+
   // 日の干支: ユリウス日ベース
   /* ORIGINAL FORMULA (Preserved for reference):
   const jd = AstroEngine.getJulianDay(date);
@@ -972,17 +1165,37 @@ export function getCurrentZodiac(date: Date, lon: number = 139.6917): { yearZodi
   const dayZodiac = ZODIACS_GANZHI[zhi];
   */
   const fields = getZonedDateTimeFields(date, 9);
-  const solar = Solar.fromYmdHms(fields.year, fields.month, fields.day, fields.hours, fields.minutes, fields.seconds);
+  const solar = Solar.fromYmdHms(
+    fields.year,
+    fields.month,
+    fields.day,
+    fields.hours,
+    fields.minutes,
+    fields.seconds,
+  );
   const lunar = solar.getLunar();
   const eightChar = lunar.getEightChar();
   const dayZodiac = eightChar.getDayZhi();
-  
+
   // 時の干支: 地方恒星時ベース
-  const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  const ZODIACS_GANZHI = [
+    "子",
+    "丑",
+    "寅",
+    "卯",
+    "辰",
+    "巳",
+    "午",
+    "未",
+    "申",
+    "酉",
+    "戌",
+    "亥",
+  ];
   const lst = AstroEngine.getLocalSiderealTime(date, lon);
   const hourIndex = Math.floor(lst / 2) % 12;
   const hourZodiac = ZODIACS_GANZHI[hourIndex];
-  
+
   return { yearZodiac, monthZodiac, dayZodiac, hourZodiac };
 }
 
@@ -1000,31 +1213,46 @@ export function getLunarDistance(date: Date): number {
 /**
  * Calculates a gravitational tide intensity and score (0 to 20) based on lunar phase alignment and distance closeness.
  */
-export function calculateTideScore(date: Date): { tideIntensity: number; distanceCloseness: number; gravitationalTideScore: number } {
+export function calculateTideScore(date: Date): {
+  tideIntensity: number;
+  distanceCloseness: number;
+  gravitationalTideScore: number;
+} {
   const sunLon = AstroEngine.getSolarLongitude(date);
   const moonLon = AstroEngine.getLunarLongitude(date);
   const distance_km = getLunarDistance(date);
 
   // Lunar Phase (0.0 to 1.0)
   const lunarPhase = ((moonLon - sunLon + 360) % 360) / 360.0;
-  
+
   // Closeness to extreme (Spring Tide alignment at 0.0, 0.5, 1.0)
-  const closenessToExtreme = Math.min(lunarPhase, Math.abs(lunarPhase - 0.5), 1.0 - lunarPhase);
-  
+  const closenessToExtreme = Math.min(
+    lunarPhase,
+    Math.abs(lunarPhase - 0.5),
+    1.0 - lunarPhase,
+  );
+
   // Normalized tide intensity (1.0 at full/new moon, 0.0 at quarter moon)
   const tideIntensity = (0.25 - closenessToExtreme) / 0.25;
 
   // Closeness to perigee (closest point: 356,400km is 1.0, apogee: 406,700km is 0.0)
-  const distanceCloseness = Math.max(0, Math.min(1, (406700 - distance_km) / (406700 - 356400)));
+  const distanceCloseness = Math.max(
+    0,
+    Math.min(1, (406700 - distance_km) / (406700 - 356400)),
+  );
 
   // Combine both factors to form score out of 20
-  let gravitationalTideScore = (tideIntensity * 10) + (distanceCloseness * 10);
+  let gravitationalTideScore = tideIntensity * 10 + distanceCloseness * 10;
 
   let intensityVal = tideIntensity;
   let closenessVal = distanceCloseness;
 
   // Safeguard against NaN computations in case astronomical outputs or divisions fail
-  if (Number.isNaN(intensityVal) || Number.isNaN(closenessVal) || Number.isNaN(gravitationalTideScore)) {
+  if (
+    Number.isNaN(intensityVal) ||
+    Number.isNaN(closenessVal) ||
+    Number.isNaN(gravitationalTideScore)
+  ) {
     intensityVal = 0.5;
     closenessVal = 0.5;
     gravitationalTideScore = 10.0; // Neutral midpoint
@@ -1033,7 +1261,7 @@ export function calculateTideScore(date: Date): { tideIntensity: number; distanc
   return {
     tideIntensity: parseFloat(intensityVal.toFixed(3)),
     distanceCloseness: parseFloat(closenessVal.toFixed(3)),
-    gravitationalTideScore: parseFloat(gravitationalTideScore.toFixed(3))
+    gravitationalTideScore: parseFloat(gravitationalTideScore.toFixed(3)),
   };
 }
 
@@ -1041,41 +1269,51 @@ export function calculateTideScore(date: Date): { tideIntensity: number; distanc
  * Opposite branches for Conflict Day calculation.
  */
 export const clashMap: Record<string, string> = {
-  "子": "午", "午": "子",
-  "丑": "未", "未": "丑",
-  "寅": "申", "申": "寅",
-  "卯": "酉", "酉": "卯",
-  "辰": "戌", "戌": "辰",
-  "巳": "亥", "亥": "巳"
+  子: "午",
+  午: "子",
+  丑: "未",
+  未: "丑",
+  寅: "申",
+  申: "寅",
+  卯: "酉",
+  酉: "卯",
+  辰: "戌",
+  戌: "辰",
+  巳: "亥",
+  亥: "巳",
 };
 
 export interface DoyouPeriodInfo {
   start: string;
   end: string;
-  type: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER';
+  type: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER";
   mabiDays: string[];
 }
 
 export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
-  const getDoyouType = (L0: number): 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null => {
-    if (L0 >= 27 && L0 < 45) return 'SPRING';
-    if (L0 >= 117 && L0 < 135) return 'SUMMER';
-    if (L0 >= 207 && L0 < 225) return 'AUTUMN';
-    if (L0 >= 297 && L0 < 315) return 'WINTER';
+  const getDoyouType = (
+    L0: number,
+  ): "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null => {
+    if (L0 >= 27 && L0 < 45) return "SPRING";
+    if (L0 >= 117 && L0 < 135) return "SUMMER";
+    if (L0 >= 207 && L0 < 225) return "AUTUMN";
+    if (L0 >= 297 && L0 < 315) return "WINTER";
     return null;
   };
 
-  const getMabiZodiacs = (type: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER'): string[] => {
-    if (type === 'SPRING') return ['巳', '午', '酉'];
-    if (type === 'SUMMER') return ['卯', '辰', '申'];
-    if (type === 'AUTUMN') return ['未', '酉', '亥'];
-    return ['寅', '卯', '巳']; // WINTER
+  const getMabiZodiacs = (
+    type: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER",
+  ): string[] => {
+    if (type === "SPRING") return ["巳", "午", "酉"];
+    if (type === "SUMMER") return ["卯", "辰", "申"];
+    if (type === "AUTUMN") return ["未", "酉", "亥"];
+    return ["寅", "卯", "巳"]; // WINTER
   };
 
   // Find the first day in a Doyou period, starting from baseDate
   let current = new Date(baseDate.getTime());
   current.setHours(12, 0, 0, 0); // normalize
-  let foundType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
+  let foundType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
   let targetDate = new Date(current.getTime());
 
   for (let i = 0; i < 365; i++) {
@@ -1118,31 +1356,32 @@ export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
   // Find Mabi days in this period
   const mabiDays: string[] = [];
   const mabiZodiacs = getMabiZodiacs(foundType);
-  const totalDays = Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
+  const totalDays =
+    Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
 
   for (let i = 0; i < totalDays; i++) {
     const d = new Date(startDate.getTime() + i * 86400000);
     const zodiacs = getCurrentZodiac(d);
     if (zodiacs?.dayZodiac && mabiZodiacs.includes(zodiacs.dayZodiac)) {
-      mabiDays.push(d.toISOString().split('T')[0]);
+      mabiDays.push(d.toISOString().split("T")[0]);
     }
   }
 
   return {
-    start: startDate.toISOString().split('T')[0],
-    end: endDate.toISOString().split('T')[0],
+    start: startDate.toISOString().split("T")[0],
+    end: endDate.toISOString().split("T")[0],
     type: foundType,
-    mabiDays
+    mabiDays,
   };
 }
 
 export function checkIsDoyouHazard(date: Date): boolean {
   const L0 = AstroEngine.getSolarLongitude(date);
-  let doyouType: 'SPRING' | 'SUMMER' | 'AUTUMN' | 'WINTER' | null = null;
-  if (L0 >= 27 && L0 < 45) doyouType = 'SPRING';
-  else if (L0 >= 117 && L0 < 135) doyouType = 'SUMMER';
-  else if (L0 >= 207 && L0 < 225) doyouType = 'AUTUMN';
-  else if (L0 >= 297 && L0 < 315) doyouType = 'WINTER';
+  let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
+  if (L0 >= 27 && L0 < 45) doyouType = "SPRING";
+  else if (L0 >= 117 && L0 < 135) doyouType = "SUMMER";
+  else if (L0 >= 207 && L0 < 225) doyouType = "AUTUMN";
+  else if (L0 >= 297 && L0 < 315) doyouType = "WINTER";
 
   const inDoyou = doyouType !== null;
   if (!inDoyou) return false;
@@ -1150,10 +1389,14 @@ export function checkIsDoyouHazard(date: Date): boolean {
   const zodiacs = getCurrentZodiac(date);
   let isMabi = false;
   if (zodiacs?.dayZodiac) {
-    if (doyouType === 'SPRING') isMabi = ['巳', '午', '酉'].includes(zodiacs.dayZodiac);
-    else if (doyouType === 'SUMMER') isMabi = ['卯', '辰', '申'].includes(zodiacs.dayZodiac);
-    else if (doyouType === 'AUTUMN') isMabi = ['未', '酉', '亥'].includes(zodiacs.dayZodiac);
-    else if (doyouType === 'WINTER') isMabi = ['寅', '卯', '巳'].includes(zodiacs.dayZodiac);
+    if (doyouType === "SPRING")
+      isMabi = ["巳", "午", "酉"].includes(zodiacs.dayZodiac);
+    else if (doyouType === "SUMMER")
+      isMabi = ["卯", "辰", "申"].includes(zodiacs.dayZodiac);
+    else if (doyouType === "AUTUMN")
+      isMabi = ["未", "酉", "亥"].includes(zodiacs.dayZodiac);
+    else if (doyouType === "WINTER")
+      isMabi = ["寅", "卯", "巳"].includes(zodiacs.dayZodiac);
   }
   return inDoyou && !isMabi;
 }
@@ -1163,98 +1406,135 @@ export function filterCollisionByMode(
   personalStar: StarFrequency,
   getsuMeiStar: StarFrequency | null,
   voidZodiacs: string[],
-  directionFilterMode: 'composite' | 'personal_kigaku' | 'personal_bazi' | 'environmental',
+  directionFilterMode:
+    | "composite"
+    | "personal_kigaku"
+    | "personal_bazi"
+    | "environmental",
   yBoard: any,
   mBoard: any,
-  dBoard: any
+  dBoard: any,
 ) {
-  if (directionFilterMode === 'composite') {
+  if (directionFilterMode === "composite") {
     return collision;
   }
 
-  const directions: Direction[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
-    switch(star) {
-      case 1: return [6, 7, 3, 4];
-      case 2: return [9, 6, 7];
-      case 3: return [1, 9];
-      case 4: return [1, 9];
-      case 5: return [9, 6, 7];
-      case 6: return [2, 5, 8, 1];
-      case 7: return [2, 5, 8, 1];
-      case 8: return [9, 6, 7];
-      case 9: return [3, 4, 2, 5, 8];
-      default: return [];
+    switch (star) {
+      case 1:
+        return [6, 7, 3, 4];
+      case 2:
+        return [9, 6, 7];
+      case 3:
+        return [1, 9];
+      case 4:
+        return [1, 9];
+      case 5:
+        return [9, 6, 7];
+      case 6:
+        return [2, 5, 8, 1];
+      case 7:
+        return [2, 5, 8, 1];
+      case 8:
+        return [9, 6, 7];
+      case 9:
+        return [3, 4, 2, 5, 8];
+      default:
+        return [];
     }
   };
   const compatiblesHonmei = getCompatibleStars(personalStar);
-  const compatiblesGetsumei = getsuMeiStar ? getCompatibleStars(getsuMeiStar) : [];
+  const compatiblesGetsumei = getsuMeiStar
+    ? getCompatibleStars(getsuMeiStar)
+    : [];
 
-  const getOptimalStatus = (starNum: StarFrequency): 'OPTIMAL' | 'OPTIMAL_REGULAR' | 'SAFE' => {
+  const getOptimalStatus = (
+    starNum: StarFrequency,
+  ): "OPTIMAL" | "OPTIMAL_REGULAR" | "SAFE" => {
     const isHonmeiComp = compatiblesHonmei.includes(starNum);
     if (!getsuMeiStar) {
-      return isHonmeiComp ? 'OPTIMAL' : 'SAFE';
+      return isHonmeiComp ? "OPTIMAL" : "SAFE";
     }
     const isGetsumeiComp = compatiblesGetsumei.includes(starNum);
     if (isHonmeiComp && isGetsumeiComp) {
-      return 'OPTIMAL';
+      return "OPTIMAL";
     } else if (isHonmeiComp) {
-      return 'OPTIMAL_REGULAR';
+      return "OPTIMAL_REGULAR";
     }
-    return 'SAFE';
+    return "SAFE";
   };
 
   const z2d: Record<string, Direction[]> = {
-    '子': ['N'], '丑': ['NE'], '寅': ['NE'], '卯': ['E'],
-    '辰': ['SE'], '巳': ['SE'], '午': ['S'], '未': ['SW'],
-    '申': ['SW'], '酉': ['W'], '戌': ['NW'], '亥': ['NW']
+    子: ["N"],
+    丑: ["NE"],
+    寅: ["NE"],
+    卯: ["E"],
+    辰: ["SE"],
+    巳: ["SE"],
+    午: ["S"],
+    未: ["SW"],
+    申: ["SW"],
+    酉: ["W"],
+    戌: ["NW"],
+    亥: ["NW"],
   };
   const voidDirs = new Set<Direction>();
-  voidZodiacs.forEach(z => {
-    (z2d[z] || []).forEach(d => voidDirs.add(d));
+  voidZodiacs.forEach((z) => {
+    (z2d[z] || []).forEach((d) => voidDirs.add(d));
   });
 
   const getOpposite = (d: Direction): Direction => {
     const opposites: Record<string, Direction> = {
-      'N': 'S', 'S': 'N', 'E': 'W', 'W': 'E',
-      'NE': 'SW', 'SW': 'NE', 'NW': 'SE', 'SE': 'NW'
+      N: "S",
+      S: "N",
+      E: "W",
+      W: "E",
+      NE: "SW",
+      SW: "NE",
+      NW: "SE",
+      SE: "NW",
     };
     return opposites[d];
   };
 
-  const filterStatus = (status: string | undefined, dir: Direction, activeBoard: any) => {
-    if (!status) return 'SAFE';
-    if (directionFilterMode === 'personal_kigaku') {
+  const filterStatus = (
+    status: string | undefined,
+    dir: Direction,
+    activeBoard: any,
+  ) => {
+    if (!status) return "SAFE";
+    if (directionFilterMode === "personal_kigaku") {
       let honmeiD: Direction | null = null;
-      directions.forEach(d => {
+      directions.forEach((d) => {
         if (activeBoard && activeBoard[d] === personalStar) {
           honmeiD = d;
         }
       });
-      if (dir === honmeiD) return 'NOISE_HONMEI';
-      if (honmeiD && dir === getOpposite(honmeiD)) return 'NOISE_TEKI';
+      if (dir === honmeiD) return "NOISE_HONMEI";
+      if (honmeiD && dir === getOpposite(honmeiD)) return "NOISE_TEKI";
       const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
       return optStatus;
-    } else if (directionFilterMode === 'personal_bazi') {
-      if (voidDirs.has(dir)) return 'NOISE_VOID';
-      return 'SAFE';
+    } else if (directionFilterMode === "personal_bazi") {
+      if (voidDirs.has(dir)) return "NOISE_VOID";
+      return "SAFE";
     } else {
       let isGou = false;
       let isAnken = false;
       if (activeBoard) {
-        directions.forEach(d => {
+        directions.forEach((d) => {
           if (activeBoard[d] === 5) {
             if (d === dir) isGou = true;
             if (getOpposite(d) === dir) isAnken = true;
           }
         });
       }
-      if (isGou) return 'NOISE_GOU';
-      if (isAnken) return 'NOISE_ANKEN';
-      if (status === 'NOISE_HA') return 'NOISE_HA';
-      if (status === 'NOISE_NODE') return 'NOISE_NODE';
-      return 'SAFE';
+      if (isGou) return "NOISE_GOU";
+      if (isAnken) return "NOISE_ANKEN";
+      if (status === "NOISE_HA") return "NOISE_HA";
+      if (status === "NOISE_NODE") return "NOISE_NODE";
+      return "SAFE";
     }
   };
 
@@ -1263,43 +1543,47 @@ export function filterCollisionByMode(
   const newDayLayer: any = {};
   const newFinalVectors: any = {};
 
-  directions.forEach(d => {
+  directions.forEach((d) => {
     newYearLayer[d] = filterStatus(collision.yearLayer[d], d, yBoard);
     newMonthLayer[d] = filterStatus(collision.monthLayer[d], d, mBoard);
     newDayLayer[d] = filterStatus(collision.dayLayer[d], d, dBoard);
-    
-    if (directionFilterMode === 'personal_kigaku') {
+
+    if (directionFilterMode === "personal_kigaku") {
       const y = newYearLayer[d];
       const m = newMonthLayer[d];
       const dStatus = newDayLayer[d];
       const list = [y, m, dStatus];
-      const hasPurple = list.find(s => s === 'NOISE_HONMEI' || s === 'NOISE_TEKI');
-      const hasOpt = list.find(s => s === 'OPTIMAL');
-      const hasOptReg = list.find(s => s === 'OPTIMAL_REGULAR');
+      const hasPurple = list.find(
+        (s) => s === "NOISE_HONMEI" || s === "NOISE_TEKI",
+      );
+      const hasOpt = list.find((s) => s === "OPTIMAL");
+      const hasOptReg = list.find((s) => s === "OPTIMAL_REGULAR");
 
       if (hasPurple) newFinalVectors[d] = hasPurple;
-      else if (hasOpt) newFinalVectors[d] = 'OPTIMAL';
-      else if (hasOptReg) newFinalVectors[d] = 'OPTIMAL_REGULAR';
-      else newFinalVectors[d] = 'SAFE';
-    } else if (directionFilterMode === 'personal_bazi') {
+      else if (hasOpt) newFinalVectors[d] = "OPTIMAL";
+      else if (hasOptReg) newFinalVectors[d] = "OPTIMAL_REGULAR";
+      else newFinalVectors[d] = "SAFE";
+    } else if (directionFilterMode === "personal_bazi") {
       const y = newYearLayer[d];
       const m = newMonthLayer[d];
       const dStatus = newDayLayer[d];
       const list = [y, m, dStatus];
-      const hasVoid = list.find(s => s === 'NOISE_VOID');
-      if (hasVoid) newFinalVectors[d] = 'NOISE_VOID';
-      else newFinalVectors[d] = 'SAFE';
+      const hasVoid = list.find((s) => s === "NOISE_VOID");
+      if (hasVoid) newFinalVectors[d] = "NOISE_VOID";
+      else newFinalVectors[d] = "SAFE";
     } else {
       const y = newYearLayer[d];
       const m = newMonthLayer[d];
       const dStatus = newDayLayer[d];
       const list = [y, m, dStatus];
-      const hasRed = list.find(s => s === 'NOISE_GOU' || s === 'NOISE_ANKEN' || s === 'NOISE_HA');
-      const hasNode = list.find(s => s === 'NOISE_NODE');
+      const hasRed = list.find(
+        (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
+      );
+      const hasNode = list.find((s) => s === "NOISE_NODE");
 
       if (hasRed) newFinalVectors[d] = hasRed;
-      else if (hasNode) newFinalVectors[d] = 'NOISE_NODE';
-      else newFinalVectors[d] = 'SAFE';
+      else if (hasNode) newFinalVectors[d] = "NOISE_NODE";
+      else newFinalVectors[d] = "SAFE";
     }
   });
 
@@ -1308,8 +1592,6 @@ export function filterCollisionByMode(
     yearLayer: newYearLayer,
     monthLayer: newMonthLayer,
     dayLayer: newDayLayer,
-    finalVectors: newFinalVectors
+    finalVectors: newFinalVectors,
   };
 }
-
-

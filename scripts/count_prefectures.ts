@@ -1,13 +1,13 @@
-import { PrismaClient } from '@prisma/client';
-import { Pool } from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import * as dotenv from 'dotenv';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 
-const envPath = fs.existsSync(path.resolve(process.cwd(), '.env'))
-  ? path.resolve(process.cwd(), '.env')
-  : path.resolve(process.cwd(), '../.env');
+const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
+  ? path.resolve(process.cwd(), ".env")
+  : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
 
 async function main() {
@@ -17,15 +17,15 @@ async function main() {
 
   try {
     const aichi = await prisma.rental_properties.count({
-      where: { address: { contains: '愛知県' } }
+      where: { address: { contains: "愛知県" } },
     });
     const gifu = await prisma.rental_properties.count({
-      where: { address: { contains: '岐阜県' } }
+      where: { address: { contains: "岐阜県" } },
     });
     const shiga = await prisma.rental_properties.count({
-      where: { address: { contains: '滋賀県' } }
+      where: { address: { contains: "滋賀県" } },
     });
-    
+
     console.log(`\n🏢 愛知県: ${aichi.toLocaleString()} 件`);
     console.log(`🏢 岐阜県: ${gifu.toLocaleString()} 件`);
     console.log(`🏢 滋賀県: ${shiga.toLocaleString()} 件`);

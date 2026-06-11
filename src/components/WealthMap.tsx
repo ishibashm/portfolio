@@ -6,11 +6,12 @@ import {
   Geographies,
   Geography,
   Marker,
-  ZoomableGroup
+  ZoomableGroup,
 } from "react-simple-maps";
 import { scaleLinear } from "d3-scale";
 
-const geoUrl = "https://raw.githubusercontent.com/dataofjapan/land/master/japan.topojson";
+const geoUrl =
+  "https://raw.githubusercontent.com/dataofjapan/land/master/japan.topojson";
 
 interface MunicipalityData {
   id: string;
@@ -34,15 +35,20 @@ interface WealthMapProps {
   useTrueNorth?: boolean;
 }
 
-export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrueNorth = false }: WealthMapProps) {
+export function WealthMap({
+  data,
+  baseLat = 35.6895,
+  baseLon = 139.6917,
+  useTrueNorth = false,
+}: WealthMapProps) {
   const [tooltipContent, setTooltipContent] = useState("");
 
   // Create color scale for income
   const colorScale = useMemo(() => {
-    const incomes = data.map(d => d.incomePerCapita);
-    const min = Math.min(...incomes.length ? incomes : [0]);
-    const max = Math.max(...incomes.length ? incomes : [10000000]);
-    
+    const incomes = data.map((d) => d.incomePerCapita);
+    const min = Math.min(...(incomes.length ? incomes : [0]));
+    const max = Math.max(...(incomes.length ? incomes : [10000000]));
+
     return scaleLinear<string>()
       .domain([min, max])
       .range(["#818cf8", "#f43f5e"]); // Indigo to Rose
@@ -54,7 +60,7 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrue
         projection="geoMercator"
         projectionConfig={{
           scale: 2500,
-          center: [137, 38] // Center on Japan
+          center: [137, 38], // Center on Japan
         }}
         width={800}
         height={600}
@@ -63,7 +69,7 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrue
         <ZoomableGroup zoom={1} maxZoom={10} center={[137, 38]}>
           <Geographies geography={geoUrl}>
             {({ geographies }) =>
-              geographies.map(geo => (
+              geographies.map((geo) => (
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
@@ -83,11 +89,21 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrue
           {/* Render Base Location */}
           <Marker coordinates={[baseLon, baseLat]}>
             <circle r={6} fill="#10b981" />
-            <circle r={12} fill="#10b981" fillOpacity={0.3} className="animate-ping" />
+            <circle
+              r={12}
+              fill="#10b981"
+              fillOpacity={0.3}
+              className="animate-ping"
+            />
             <text
               textAnchor="middle"
               y={-15}
-              style={{ fontFamily: "sans-serif", fill: "#10b981", fontSize: "10px", fontWeight: "bold" }}
+              style={{
+                fontFamily: "sans-serif",
+                fill: "#10b981",
+                fontSize: "10px",
+                fontWeight: "bold",
+              }}
             >
               現在地
             </text>
@@ -96,27 +112,35 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrue
           {/* Render Municipalities */}
           {data.map((m) => {
             if (!m.lon || !m.lat) return null;
-            
+
             // Highlight optimal directions
-            const isOptimal = m.astrologyStatus.includes('OPTIMAL');
-            const isSafe = m.astrologyStatus.includes('SAFE');
-            const isNoise = m.astrologyStatus?.includes('NOISE') && !m.astrologyStatus?.includes('WARNING');
-            const hasWarning = m.astrologyStatus.includes('DECLINATION_WARNING');
-            
+            const isOptimal = m.astrologyStatus.includes("OPTIMAL");
+            const isSafe = m.astrologyStatus.includes("SAFE");
+            const isNoise =
+              m.astrologyStatus?.includes("NOISE") &&
+              !m.astrologyStatus?.includes("WARNING");
+            const hasWarning = m.astrologyStatus.includes(
+              "DECLINATION_WARNING",
+            );
+
             if (isNoise) return null; // Hide bad directions to reduce clutter
-            
+
             const radius = isOptimal ? 6 : isSafe ? 4 : hasWarning ? 3 : 2;
             const opacity = isOptimal ? 0.9 : 0.6;
-            
+
             return (
-              <Marker 
-                key={m.id} 
+              <Marker
+                key={m.id}
                 coordinates={[m.lon, m.lat]}
                 onMouseEnter={() => {
-                  const dirStr = useTrueNorth 
-                    ? `${m.direction}(真北)` 
-                    : (m.direction !== m.magneticDirection ? `${m.direction}(真)→${m.magneticDirection}(磁)` : `${m.direction}(一致)`);
-                  setTooltipContent(`${m.areaName}: ${Math.round(m.incomePerCapita/10000)}万円 (${dirStr} - ${m.astrologyStatus})`);
+                  const dirStr = useTrueNorth
+                    ? `${m.direction}(真北)`
+                    : m.direction !== m.magneticDirection
+                      ? `${m.direction}(真)→${m.magneticDirection}(磁)`
+                      : `${m.direction}(一致)`;
+                  setTooltipContent(
+                    `${m.areaName}: ${Math.round(m.incomePerCapita / 10000)}万円 (${dirStr} - ${m.astrologyStatus})`,
+                  );
                 }}
                 onMouseLeave={() => {
                   setTooltipContent("");
@@ -135,31 +159,37 @@ export function WealthMap({ data, baseLat = 35.6895, baseLon = 139.6917, useTrue
           })}
         </ZoomableGroup>
       </ComposableMap>
-      
+
       {/* Legend / Tooltip Overlay */}
       {tooltipContent && (
         <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
           {tooltipContent}
         </div>
       )}
-      
+
       <div className="absolute bottom-4 right-4 bg-black/80 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur text-xs pointer-events-none border border-gray-800 z-10 flex flex-col gap-2">
-        <div className="font-bold border-b border-gray-700 pb-1 mb-1">一人当たり所得</div>
+        <div className="font-bold border-b border-gray-700 pb-1 mb-1">
+          一人当たり所得
+        </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-rose-500"></span> 高い
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-indigo-400"></span> 低い
         </div>
-        <div className="font-bold border-b border-gray-700 pb-1 mb-1 mt-2">吉凶ステータス</div>
+        <div className="font-bold border-b border-gray-700 pb-1 mb-1 mt-2">
+          吉凶ステータス
+        </div>
         <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full border border-white bg-rose-500"></span> 大吉 (OPTIMAL)
+          <span className="w-3 h-3 rounded-full border border-white bg-rose-500"></span>{" "}
+          大吉 (OPTIMAL)
         </div>
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-rose-500"></span> 吉 (SAFE)
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full border border-amber-500 bg-amber-400"></span> 偏角警告 (磁北ズレ)
+          <span className="w-2 h-2 rounded-full border border-amber-500 bg-amber-400"></span>{" "}
+          偏角警告 (磁北ズレ)
         </div>
       </div>
     </div>

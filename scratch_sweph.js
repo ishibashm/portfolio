@@ -1,4 +1,4 @@
-const sweph = require('sweph-wasm');
+const sweph = require("sweph-wasm");
 
 async function test() {
   // sweph-wasm might need to be initialized if it's wasm
