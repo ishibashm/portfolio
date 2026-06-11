@@ -157,6 +157,8 @@ export async function GET(request: Request) {
   const radiusKmStr = searchParams.get('radiusKm') || '10';
   const radiusKm = radiusKmStr === 'all' ? 0 : parseFloat(radiusKmStr);
   const prefecture = searchParams.get('prefecture') || 'all';
+  const maxBuildingAgeStr = searchParams.get('maxBuildingAge');
+  const maxBuildingAge = maxBuildingAgeStr ? parseInt(maxBuildingAgeStr, 10) : null;
 
   const minLat = parseFloat(searchParams.get('minLat') || 'NaN');
   const maxLat = parseFloat(searchParams.get('maxLat') || 'NaN');
@@ -251,6 +253,12 @@ export async function GET(request: Request) {
       rent: { not: null },
       size_sqm: { not: null }
     };
+
+    if (maxBuildingAge !== null && !isNaN(maxBuildingAge)) {
+      whereClause.building_age = {
+        lte: maxBuildingAge
+      };
+    }
 
     if (radiusKm > 0 && !isNaN(baseLat) && !isNaN(baseLon)) {
       const deltaLat = radiusKm / 111.0;

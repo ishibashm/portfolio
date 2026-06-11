@@ -511,6 +511,7 @@ export const SolarTimeClock = () => {
           aParams.append("layerMode", activeLayerMode);
           aParams.append("useTrueNorth", useTrueNorth.toString());
           aParams.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+          aParams.append("maxBuildingAge", "5");
 
           const aRes = await fetch(`/api/rentals/arbitrage?${aParams.toString()}`);
           const aJson = await aRes.json();
@@ -3704,13 +3705,16 @@ ${timingOptimization?.recommendationText || "特になし"}
               </div>
             </div>
 
-            {scorecardLoading ? (
+            {(scorecardLoading && wealthData.length === 0) ? (
               <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
                 <span className="text-[10px] font-mono text-zinc-500 tracking-[0.2em] uppercase">Loading Relocation Scenarios...</span>
               </div>
             ) : (
-              <div className="w-full overflow-hidden bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl">
+              <div className={`w-full overflow-hidden bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative transition-opacity duration-300 ${scorecardLoading ? 'opacity-65 pointer-events-none' : ''}`}>
+                {scorecardLoading && (
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
+                )}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>

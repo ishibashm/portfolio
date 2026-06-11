@@ -251,7 +251,7 @@ export default function ArbitrageScannerPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMinYield, setFilterMinYield] = useState<string>("");
-  const [filterMaxAge, setFilterMaxAge] = useState<string>("");
+  const [filterMaxAge, setFilterMaxAge] = useState<string>("5");
   const itemsPerPage = 50;
 
   // Sorting state
@@ -433,6 +433,9 @@ export default function ArbitrageScannerPage() {
       params.append("lunarPhaseModifier", lunarPhaseModifier.toString());
       params.append("directionFilterMode", directionFilterMode);
       params.append("actionIntent", actionIntent);
+      if (filterMaxAge) {
+        params.append("maxBuildingAge", filterMaxAge);
+      }
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -1352,10 +1355,16 @@ export default function ArbitrageScannerPage() {
                 });
               }}
             />
-            {loading && (
+            {(loading && data.length === 0) ? (
               <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                 データベースから割安物件を走査中...
+              </div>
+            ) : null}
+            {loading && data.length > 0 && (
+              <div className="absolute top-4 right-4 bg-black/80 border border-indigo-500/30 text-indigo-400 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-[1001] shadow-lg">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                SCANNING...
               </div>
             )}
           </div>
