@@ -7,10 +7,10 @@ import {
   Home, ExternalLink, Calendar, MapPin, JapaneseYen, Clock, 
   ArrowUpDown, ArrowUp, ArrowDown, Plus, LayoutGrid, List, 
   FileDown, RefreshCw, BarChart2, Building2, Eye, EyeOff,
-  Star, StarOff
+  Star, StarOff, Bell, Settings
 } from "lucide-react";
 import type { Database } from "@/types/database.types";
-import { addSampleData, triggerRealScrape } from "./actions";
+import { addSampleData, triggerRealScrape, sendTestNotification, type WebhookConfig } from "./actions";
 import { RentalsMap } from "@/components/realestate/RentalsMap";
 
 export type RentalProperty = Database["public"]["Tables"]["rental_properties"]["Row"];
@@ -43,6 +43,18 @@ export default function RentalsDashboard() {
   const [compareList, setCompareList] = useState<string[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
 
+  // Webhook settings states
+  const [isWebhookModalOpen, setIsWebhookModalOpen] = useState(false);
+  const [webhookConfig, setWebhookConfig] = useState<WebhookConfig>({
+    enabled: false,
+    url: "",
+    onlyYoungAge: false,
+    maxRent: null
+  });
+  const [testStatus, setTestStatus] = useState<{ loading: boolean; success?: boolean; error?: string }>({
+    loading: false
+  });
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -57,7 +69,44 @@ export default function RentalsDashboard() {
     } catch (e) {
       console.error("Error loading favorites:", e);
     }
+
+    // Load webhook config from localStorage
+    try {
+      const savedConfig = localStorage.getItem("rentals_webhook_config");
+      if (savedConfig) {
+        setWebhookConfig(JSON.parse(savedConfig));
+      }
+    } catch (e) {
+      console.error("Error loading webhook config:", e);
+    }
   }, []);
+
+  const handleSaveWebhookConfig = (config: WebhookConfig) => {
+    setWebhookConfig(config);
+    try {
+      localStorage.setItem("rentals_webhook_config", JSON.stringify(config));
+    } catch (e) {
+      console.error("Error saving webhook config:", e);
+    }
+    setIsWebhookModalOpen(false);
+  };
+
+  const handleTestWebhook = async (url: string) => {
+    if (!url) {
+      setTestStatus({ loading: false, error: "Webhook URLが空です。" });
+      return;
+    }
+    setTestStatus({ loading: true, error: undefined, success: undefined });
+    const res = await sendTestNotification(url);
+    if (res.success) {
+      setTestStatus({ loading: false, success: true });
+      setTimeout(() => {
+        setTestStatus(prev => ({ ...prev, success: undefined }));
+      }, 3000);
+    } else {
+      setTestStatus({ loading: false, error: res.error || "送信に失敗しました。" });
+    }
+  };
 
   const handleToggleFavorite = (id: string) => {
     setFavorites(prev => {
@@ -117,7 +166,7 @@ export default function RentalsDashboard() {
 
   const handleGenerateSample = async () => {
     setIsGenerating(true);
-    const result = await addSampleData();
+    const result = await addSampleData(webhookConfig);
     if (result.success) {
       await fetchProperties();
     } else {
@@ -128,7 +177,7 @@ export default function RentalsDashboard() {
 
   const handleFetchReal = async () => {
     setIsFetchingReal(true);
-    const result = await triggerRealScrape();
+    const result = await triggerRealScrape(webhookConfig);
     if (result.success) {
       alert(`✅ 取得完了\n結果: ${result.message || "取得リクエストを送信しました。"}`);
       await fetchProperties();
@@ -358,6 +407,17 @@ export default function RentalsDashboard() {
               className="px-4 py-2 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 border border-zinc-900 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50"
             >
               更新
+            </button>
+            <button 
+              onClick={() => setIsWebhookModalOpen(true)}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
+                webhookConfig.enabled 
+                  ? 'bg-amber-950/20 text-amber-450 border-amber-900/30 hover:border-amber-850/50 shadow-[0_2px_10px_rgba(245,158,11,0.05)]' 
+                  : 'bg-zinc-950 hover:bg-zinc-900 text-zinc-450 border-zinc-900 hover:border-zinc-850'
+              }`}
+            >
+              <Bell className={`w-3.5 h-3.5 ${webhookConfig.enabled ? 'animate-pulse' : ''}`} />
+              <span>通知設定</span>
             </button>
           </div>
         </div>
@@ -1212,6 +1272,141 @@ export default function RentalsDashboard() {
                     </div>
                   );
                 })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Webhook Settings Modal */}
+        {isWebhookModalOpen && (
+          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-[#0b0b0d] border border-zinc-850 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+              {/* Header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900">
+                <h3 className="text-base font-extrabold text-zinc-100 flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+                  通知設定 (Webhook Settings)
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsWebhookModalOpen(false);
+                    setTestStatus({ loading: false });
+                  }}
+                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-450 hover:text-zinc-200 border border-zinc-800 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
+                >
+                  CLOSE
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="p-6 space-y-5">
+                {/* Enabled Toggle */}
+                <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
+                  <div className="space-y-0.5">
+                    <label className="text-xs font-bold text-zinc-200 block">通知を有効にする</label>
+                    <span className="text-[10px] text-zinc-500 font-mono">新着物件検出時にWebhookを送信</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={webhookConfig.enabled}
+                    onChange={(e) => setWebhookConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                    className="w-4 h-4 rounded border-zinc-800 text-emerald-500 focus:ring-emerald-500 bg-zinc-900"
+                  />
+                </div>
+
+                {/* Webhook URL Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-zinc-350 block">Webhook URL (Discord / Slack)</label>
+                  <input
+                    type="text"
+                    value={webhookConfig.url}
+                    onChange={(e) => setWebhookConfig(prev => ({ ...prev, url: e.target.value }))}
+                    placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/..."
+                    className="w-full bg-zinc-950 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono placeholder-zinc-700"
+                  />
+                </div>
+
+                {/* Filtering options */}
+                <div className="space-y-3 pt-2 border-t border-zinc-900/60">
+                  <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">通知フィルター (Filters)</h4>
+
+                  {/* Young Age Filter */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <label className="text-[11px] text-zinc-300">築浅物件のみ通知</label>
+                      <span className="text-[9px] text-zinc-500 block">築5年以内の物件に限定</span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={webhookConfig.onlyYoungAge}
+                      onChange={(e) => setWebhookConfig(prev => ({ ...prev, onlyYoungAge: e.target.checked }))}
+                      className="w-3.5 h-3.5 rounded border-zinc-800 text-emerald-500 focus:ring-emerald-500 bg-zinc-900"
+                    />
+                  </div>
+
+                  {/* Max Rent Filter */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-0.5">
+                      <label className="text-[11px] text-zinc-300">家賃上限で絞り込む</label>
+                      <span className="text-[9px] text-zinc-500 block">管理費込みの総家賃額</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <input
+                        type="number"
+                        value={webhookConfig.maxRent || ""}
+                        onChange={(e) => {
+                          const val = e.target.value ? parseInt(e.target.value, 10) : null;
+                          setWebhookConfig(prev => ({ ...prev, maxRent: val }));
+                        }}
+                        placeholder="上限なし"
+                        className="w-20 bg-zinc-950 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-lg px-2 py-1 text-xs text-right text-zinc-200 font-mono"
+                      />
+                      <span className="text-[10px] text-zinc-500 font-mono">円</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Test Webhook Actions */}
+                <div className="pt-4 border-t border-zinc-900/60 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={testStatus.loading || !webhookConfig.url}
+                    onClick={() => handleTestWebhook(webhookConfig.url)}
+                    className="w-full px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    {testStatus.loading ? (
+                      <div className="animate-spin w-3 h-3 border-2 border-zinc-300 border-t-transparent rounded-full" />
+                    ) : (
+                      <Settings className="w-3.5 h-3.5 text-zinc-400" />
+                    )}
+                    テスト送信 (Send Test)
+                  </button>
+                  {testStatus.success && (
+                    <p className="text-[10px] text-emerald-400 font-mono text-center">✅ テストWebhookの送信に成功しました！</p>
+                  )}
+                  {testStatus.error && (
+                    <p className="text-[10px] text-rose-400 font-mono text-center">❌ 送信エラー: {testStatus.error}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Actions */}
+              <div className="px-6 py-4 bg-zinc-950 border-t border-zinc-900 flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setIsWebhookModalOpen(false);
+                    setTestStatus({ loading: false });
+                  }}
+                  className="px-4 py-2 text-zinc-500 hover:text-zinc-300 text-xs font-bold transition-all"
+                >
+                  キャンセル
+                </button>
+                <button
+                  onClick={() => handleSaveWebhookConfig(webhookConfig)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-[0_2px_8px_rgba(16,185,129,0.15)]"
+                >
+                  保存する
+                </button>
               </div>
             </div>
           </div>
