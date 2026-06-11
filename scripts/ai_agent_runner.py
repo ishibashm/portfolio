@@ -82,9 +82,21 @@ def write_log(message: str):
         except Exception:
             print(message.encode('ascii', errors='replace').decode('ascii'), file=sys.stderr)
             
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
-    with open(LOG_FILE, 'a', encoding='utf-8') as f:
-        f.write(formatted_message)
+    global LOG_FILE
+    try:
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        with open(LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(formatted_message)
+    except (PermissionError, OSError):
+        # Fallback to system temp directory (like /tmp in Cloud Run)
+        temp_log = os.path.join('/tmp', 'agent_evolution.log') if sys.platform != 'win32' else os.path.join(os.environ.get('TEMP', 'C:\\Temp'), 'agent_evolution.log')
+        try:
+            os.makedirs(os.path.dirname(temp_log), exist_ok=True)
+            with open(temp_log, 'a', encoding='utf-8') as f:
+                f.write(formatted_message)
+            LOG_FILE = temp_log  # Update LOG_FILE location so subsequent logs go here directly
+        except Exception:
+            pass  # If even temp dir fails, print is already done to stderr
 
 def load_dotenv():
     # Load .env manually to avoid extra dependencies like python-dotenv
