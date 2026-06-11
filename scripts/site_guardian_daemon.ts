@@ -69,7 +69,9 @@ function triggerAgentEvolution(triggerType: string, details: string, value: any)
   const runnerScript = path.join(process.cwd(), 'scripts', 'ai_agent_runner.py');
   const base64Value = Buffer.from(JSON.stringify(value)).toString('base64');
   
-  const child = spawn('py', [
+  const pythonCmd = process.platform === 'win32' ? 'py' : 'python3';
+  
+  const child = spawn(pythonCmd, [
     runnerScript, 
     `--trigger=${triggerType}`, 
     `--details=${details}`, 

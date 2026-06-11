@@ -28,8 +28,10 @@ export async function POST(req: Request) {
     const runnerScript = path.join(process.cwd(), 'scripts', 'ai_agent_runner.py');
     const base64Value = Buffer.from(JSON.stringify(telemetry || {})).toString('base64');
 
+    const pythonCmd = process.platform === 'win32' ? 'py' : 'python3';
+
     const result = await new Promise<string>((resolve, reject) => {
-      const child = spawn('py', [
+      const child = spawn(pythonCmd, [
         runnerScript,
         `--trigger=USER_CHAT`,
         `--details=${message}`,
