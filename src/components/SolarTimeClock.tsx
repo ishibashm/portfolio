@@ -10,7 +10,7 @@ import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { Solar } from "lunar-javascript";
 
 import { ClockDisplay } from "./ClockDisplay";
-import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition, getPhysicalMonthStar } from "../utils/ephemerisEngine";
+import { getHonmeiStar, getClassicalMonthStar, getCurrentEnvironmentalFrequencies, generateBoard, calculateVectorCollision, getPersonalVoidZodiac, getCurrentZodiac, ActionIntent, Direction, StarFrequency, calculateLunarPhaseCondition, getPhysicalMonthStar, checkIsDoyouHazard } from "../utils/ephemerisEngine";
 import { createPersonalizedOptimizer, OptimizationResult } from "../utils/timing-optimizer";
 import { InlineMath, BlockMath } from 'react-katex';
 import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
@@ -1451,7 +1451,7 @@ export const SolarTimeClock = () => {
       }>>;
     }[] = [];
 
-    const doyou_today = testEnv.raw.doyouState?.isDoyouHazard ? -30 : 0;
+    const doyou_today = checkIsDoyouHazard(testDate) ? -30 : 0;
     const lp_today = calculateLunarPhaseCondition(testDate, 'MIGRATION');
     const lunarPhase_today = lp_today.scoreModifier;
     const timeGate_today = doyou_today + (lunarPhaseModifier ? lunarPhase_today : 0);
@@ -4034,7 +4034,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               <td className="p-2 text-left text-[9px] text-zinc-400 border-r border-zinc-900 whitespace-nowrap">
                                 {day.dateStr} <span className={wdayColor}>({wdayJa})</span>
                               </td>
-                              {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((dir: Direction) => {
+                              {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as Direction[]).map((dir: Direction) => {
                                 const classData = day.models.classical[dir];
                                 const indepData = day.models.physicalIndep[dir];
                                 const coupledData = day.models.physicalCoupled[dir];
@@ -4145,7 +4145,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 {isUserStar && <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>}
                                 {star.label}
                               </td>
-                              {['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'].map((dir: Direction) => {
+                              {(['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as Direction[]).map((dir: Direction) => {
                                 const classData = star.models.classical[dir];
                                 const indepData = star.models.physicalIndep[dir];
                                 const coupledData = star.models.physicalCoupled[dir];

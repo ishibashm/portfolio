@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Lunar } from "lunar-javascript";
 
 interface ClockDisplayProps {
-  kimon: { name: string; japanese: string; reading: string; note?: string };
+  kimon: { name: string; japanese: string; reading: string; note?: string } | null;
   isVoidTime: boolean;
   solarTime: Date;
   eot: number;
@@ -54,10 +54,10 @@ export function ClockDisplay({ kimon, isVoidTime, solarTime, eot, longOffset, ta
           </span>
         </div>
         <div className={`text-4xl sm:text-5xl font-serif font-thin tracking-widest ${isVoidTime ? 'text-red-500 text-glow-red md:animate-pulse' : 'text-emerald-500 text-glow'}`}>
-          {kimon.japanese}
+          {kimon?.japanese || "--"}
         </div>
         <div className="text-xs md:text-sm tracking-widest text-zinc-400 font-serif">
-          {kimon.reading}
+          {kimon?.reading || "--"}
         </div>
       </div>
 

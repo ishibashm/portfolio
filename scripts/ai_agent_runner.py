@@ -251,6 +251,7 @@ async def run_agent(trigger: str, details: str, value: dict):
     try:
         write_log("Initializing Antigravity Agent and requesting execution planning...")
         config = LocalAgentConfig(
+            model="gemini-3.5-flash",
             system_instructions="You are a self-evolving portal system daemon capable of designing CSS themes and executing visual layout operations.",
             tools=[set_color_theme],
             policies=[policy.allow_all()]
