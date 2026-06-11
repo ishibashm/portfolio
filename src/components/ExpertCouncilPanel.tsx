@@ -374,90 +374,102 @@ export default function ExpertCouncilPanel({
                 <span className="text-base">{agency.icon}</span>
                 <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">{agency.agency}</span>
               </div>
-              <span className={`text-[10px] px-2 py-0.5 rounded-sm font-mono font-bold tracking-wider ${agency.status === 'OPTIMAL' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
-                agency.status === 'WARNING' ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' :
-                  agency.status === 'CRITICAL' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
-                    'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                }`}>
-                {agency.status}
-              </span>
-            </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-sm font-mono font-bold tracking-wider ${agency.status === 'OPTIMAL' ? 'bg-emer      {/* AI Consultation & System Control Chat Area */}
+      <div className="mt-6 p-5 border border-purple-500/20 bg-purple-950/5 backdrop-blur-lg rounded-xl flex flex-col gap-4 relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.05)] transition-all duration-300">
+        {/* Background glow decoration */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-            <div className="text-[10px] text-zinc-500 mb-3 border-b border-white/5 pb-2">
-              {agency.description}
-            </div>
-
-            <div className="flex flex-col gap-1.5 mt-auto">
-              {agency.dataItems.map((item, i) => (
-                <div key={i} className="flex justify-between items-center bg-white/[0.02] px-2 py-1.5 rounded-md">
-                  <span className={`text-[10px] font-mono ${item.label.startsWith(' ├') ? 'text-zinc-500' : 'text-zinc-400'}`}>{item.label}</span>
-                  <span className={`text-[11px] font-mono font-bold ${item.colorClass || (String(item.value).includes('NOISE') ? 'text-red-400' :
-                    String(item.value).includes('SAFE') || String(item.value).includes('OPTIMAL') || String(item.value).includes('CLEAR') ? 'text-emerald-400' :
-                      item.value === 'YES' ? 'text-yellow-400' :
-                        'text-zinc-200'
-                  )}`}>
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-4 bg-indigo-950/20 border border-indigo-500/30 p-4 rounded-xl">
-        <h4 className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
-          Timing Optimizer Recommendation / 推奨行動
-        </h4>
-        <p className="text-xs text-zinc-300 leading-relaxed font-sans text-justify whitespace-pre-wrap">
-          {displayRecommendation}
-        </p>
-      </div>
-
-      {(() => {
-        const upcoming = targetDate ? getUpcomingDoyouPeriod(targetDate) : null;
-        if (!upcoming) return null;
-        
-        return (
-          <div className="mt-3 bg-amber-950/10 border border-amber-900/30 p-4 rounded-xl flex flex-col gap-2 text-xs font-sans">
-            <div className="flex items-center gap-2 font-bold text-amber-400 text-[10px]">
-              <span>🗓️</span>
-              <span className="uppercase tracking-wider">Doyou & Mabi Forecast / 土用・間日予報</span>
-            </div>
-            <div className="text-zinc-300">
-              直近の土用期間 ({upcoming.type === 'SPRING' ? '春土用' : upcoming.type === 'SUMMER' ? '夏土用' : upcoming.type === 'AUTUMN' ? '秋土用' : '冬土用'}): 
-              <strong className="text-amber-500 font-mono ml-2 text-sm">{upcoming.start} 〜 {upcoming.end}</strong>
-            </div>
-            {upcoming.mabiDays.length > 0 && (
-              <div className="text-zinc-400 flex flex-wrap gap-1.5 items-center mt-1">
-                <span className="text-[10px] text-zinc-500">🍀 期間内の間日 (安全な日):</span>
-                {upcoming.mabiDays.map(day => (
-                  <span key={day} className="bg-emerald-950/30 border border-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded-md font-mono text-[10px]">{day}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* AI Consultation & System Control Chat Area */}
-      <div className="mt-6 p-5 border border-purple-500/30 bg-purple-950/5 backdrop-blur-md rounded-xl flex flex-col gap-3 relative overflow-hidden group shadow-lg">
-        {/* Decorative background glow */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
-        <div className="flex justify-between items-center border-b border-purple-500/25 pb-2 mb-1">
+        <div className="flex justify-between items-center border-b border-purple-500/20 pb-3">
           <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 font-mono">
             <span className="text-purple-400 animate-pulse">🔮</span>
-            Agent Console / 常駐エージェント対話
+            Agent Console / 守護精霊対話
           </h4>
-          <span className="text-[7.5px] font-mono text-purple-400/60 bg-purple-500/10 px-1.5 py-0.5 border border-purple-500/25 rounded-sm">
+          <span className="text-[7.5px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 border border-purple-500/30 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)]">
             SECURE LINK ACTIVE
           </span>
         </div>
 
         <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
           常駐エージェントとの直接対話コンソールです。現在の生体測定値や地磁気データをもとに相談したり、テーマ変更を指示できます（例: 「青系の落ち着いた色にして」「心を落ち着かせるために明朝体に変更して」など）。
+        </p>
+
+        {/* Selected Coordinates Indicator */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/50 border border-zinc-800/80 p-2.5 rounded-lg font-mono text-[10px]">
+          <div className="flex justify-between items-center bg-white/[0.01] px-2.5 py-1.5 rounded border border-white/[0.02]">
+            <span className="text-zinc-500">目標方位 (Direction):</span>
+            <span className={targetDirection ? "text-emerald-400 font-bold" : "text-amber-500"}>
+              {targetDirection || "未選択"}
+            </span>
+          </div>
+          <div className="flex justify-between items-center bg-white/[0.01] px-2.5 py-1.5 rounded border border-white/[0.02]">
+            <span className="text-zinc-500">目標座標 (Coordinates):</span>
+            <span className={targetLat && targetLon ? "text-emerald-400 font-bold" : "text-amber-500"}>
+              {targetLat && targetLon ? `${targetLat.toFixed(4)}, ${targetLon.toFixed(4)}` : "地図上でクリックして選択"}
+            </span>
+          </div>
+        </div>
+
+        {!targetLat || !targetLon ? (
+          <div className="p-3 bg-amber-950/20 border border-amber-500/20 text-amber-400 text-[10px] font-sans rounded-lg leading-relaxed flex items-start gap-2 animate-pulse">
+            <span>⚠️</span>
+            <div>
+              <strong>【目的地未設定】</strong> 現在、目的地の緯度・経度が設定されていません。「2. 目的地/健康」タブの地図上で行きたい場所をクリックすると同期されます。
+            </div>
+          </div>
+        ) : null}
+
+        {/* Chat Log Window */}
+        <div className="h-56 overflow-y-auto bg-black/60 border border-zinc-800/80 rounded-lg p-4 flex flex-col gap-3 font-mono text-[10px] leading-relaxed custom-scrollbar shadow-inner">
+          {messages.map((msg, idx) => (
+            <div key={idx} className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+              <div className="flex items-center gap-1">
+                <span className="text-[9px]">{msg.role === 'user' ? '🛡️' : '🔮'}</span>
+                <span className={`text-[8px] uppercase tracking-wider font-bold ${msg.role === 'user' ? 'text-zinc-500' : 'text-purple-400'}`}>
+                  {msg.role === 'user' ? 'Admin / 管理者' : 'Agent / 守護精霊'}
+                </span>
+              </div>
+              <div className={`max-w-[85%] px-3.5 py-2 rounded-xl text-[11px] border leading-normal ${
+                msg.role === 'user' 
+                  ? 'bg-zinc-900 border-zinc-800 text-zinc-100 self-end rounded-tr-none shadow-[0_2px_10px_rgba(0,0,0,0.2)]' 
+                  : 'bg-purple-950/10 border-purple-500/10 text-zinc-300 self-start rounded-tl-none whitespace-pre-wrap shadow-[0_2px_15px_rgba(168,85,247,0.02)]'
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex flex-col gap-1 items-start animate-pulse">
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] animate-spin text-purple-400">🔄</span>
+                <span className="text-[8px] text-purple-400 uppercase tracking-wider font-bold">[Processing / 思考同期中]</span>
+              </div>
+              <div className="bg-purple-950/10 border border-purple-500/10 text-purple-300 px-3.5 py-2 rounded-xl rounded-tl-none font-mono text-[10px] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping"></span>
+                {loadingStatus}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={handleSendMessage} className="flex gap-2 relative">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={isLoading}
+            placeholder={isLoading ? "エージェントが思考を同期中..." : "アドバイスを求める、またはテーマ変更を指示..."}
+            className="flex-1 bg-zinc-950 border border-zinc-800/80 focus:border-purple-500/40 rounded-lg px-4 py-2.5 text-zinc-200 outline-none text-xs font-mono disabled:opacity-50 transition-all duration-300 focus:shadow-[0_0_15px_rgba(168,85,247,0.1)]"
+          />
+          <button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 hover:text-white border border-purple-800/50 disabled:opacity-40 disabled:hover:bg-purple-900/40 text-xs px-5 py-2.5 rounded-lg font-mono font-bold transition-all active:scale-[0.98] shadow-[0_2px_10px_rgba(168,85,247,0.1)] hover:shadow-[0_4px_15px_rgba(168,85,247,0.2)]"
+          >
+            送信
+          </button>
+        </form>
+      </div>��めに明朝体に変更して」など）。
         </p>
 
         {/* Selected Coordinates Indicator */}
