@@ -220,7 +220,9 @@ export async function POST(req: Request) {
       Math.min(100, ((vixVal - 10) / 30) * 100),
     );
 
-    const tideRisk = (tideScore.gravitationalTideScore / 20.0) * 100;
+    // Scale and cap the tidal risk score to prevent monthly perigees from overwhelming the model
+    const rawTideRisk = (tideScore.gravitationalTideScore / 20.0) * 100;
+    const tideRisk = Math.min(30, rawTideRisk * 0.4);
 
     const unifiedRiskScore = parseFloat(
       (spaceWeatherRisk * 0.4 + economicsRisk * 0.4 + tideRisk * 0.2).toFixed(

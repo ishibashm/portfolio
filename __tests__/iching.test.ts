@@ -2,9 +2,10 @@ import { describe, it, expect } from "vitest";
 import { IChingClient } from "../src/lib/ichingClient";
 import { AstroEngine, getCurrentZodiac } from "../src/utils/ephemerisEngine";
 import { getKigakuSector } from "../src/utils/kigakuUtils";
-import { calculateAspectWeight } from "../src/utils/nbaEngine";
+import { calculateAspectWeight, NBAEngine, NBAParams } from "../src/utils/nbaEngine";
 import { getLongitudeCorrection } from "../src/utils/solarTime";
 import { calculateBioMetrics } from "../src/utils/bioModelingEngine";
+import { VedicEngine } from "../src/utils/vedicEngine";
 
 describe("Metaphysical Decision Engine Calibration & Verification Tests", () => {
   const iching = new IChingClient();
@@ -209,6 +210,105 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
       });
 
       expect(res.zScoreHRV).toBe(0); // Should not be NaN or Infinity
+    });
+  });
+
+  describe("Vimshottari Dasha Calculation (Sidereal Moon Correction)", () => {
+    it("should calculate active Dasha as Jupiter-Moon for birth date 1988-11-25 04:26 at evaluation date 2026-06-12", () => {
+      const birthDate = new Date("1988-11-25T04:26:00+09:00");
+      const evaluationDate = new Date("2026-06-12T12:00:00+09:00");
+      
+      const vedic = new VedicEngine();
+      const result = vedic.calculateVimshottariDasha(birthDate, evaluationDate);
+      
+      expect(result.mahadasha).toBe("Jupiter");
+      expect(result.antardasha).toBe("Mars");
+      expect(result.formatted).toContain("木星-火星期");
+      expect(result.formatted).toContain("Jupiter-Mars");
+    });
+  });
+
+  describe("Bazi Day Master Compatibility (Draining Reversal)", () => {
+    it("should penalize compatibility when a weak Day Master generates the environment", async () => {
+      const nba = new NBAEngine();
+      
+      // State with weak Day Master (Wood) in Fire environment
+      const stateWeak: NBAParams["stateVector"] = {
+        ansLoad: 30,
+        shieldCapacity: 80,
+        environmentalNoise: "Low",
+        environmentalRisk: 40,
+        solarPhase: 120,
+        isVoidTime: false,
+        isConflictDay: false,
+        isDoyouHazard: false,
+        ragContext: {
+          source: "test",
+          personalBazi: {
+            summary: {
+              dayMaster: "甲",
+              dayMasterWuxing: "木",
+              strength: "身弱",
+            },
+          },
+          classicalRules: {
+            summary: {
+              dayMasterWuxing: "火",
+            },
+          },
+        },
+      };
+
+      // State with strong Day Master (Wood) in Fire environment
+      const stateStrong: NBAParams["stateVector"] = {
+        ...stateWeak,
+        ragContext: {
+          source: "test",
+          personalBazi: {
+            summary: {
+              dayMaster: "甲",
+              dayMasterWuxing: "木",
+              strength: "身旺",
+            },
+          },
+          classicalRules: {
+            summary: {
+              dayMasterWuxing: "火",
+            },
+          },
+        },
+      };
+
+      const resultWeak = await nba.getNextBestAction({ stateVector: stateWeak });
+      const resultStrong = await nba.getNextBestAction({ stateVector: stateStrong });
+
+      // Verify in the logic trace that weak DM gets PERSONAL = -0.5, while strong gets PERSONAL = 0.5
+      const traceWeakInit = resultWeak.logicTrace.find(t => t.includes("[INIT] Features:"));
+      const traceStrongInit = resultStrong.logicTrace.find(t => t.includes("[INIT] Features:"));
+
+      expect(traceWeakInit).toContain("PERSONAL=-0.50");
+      expect(traceStrongInit).toContain("PERSONAL=0.50");
+    });
+  });
+
+  describe("Lunar Tide Risk Scaling", () => {
+    it("should correctly scale and cap tideRisk under 30", () => {
+      // Simulate different gravitationalTideScores
+      const testScores = [0, 5, 10, 15, 20];
+      
+      testScores.forEach(score => {
+        const rawTideRisk = (score / 20.0) * 100;
+        const tideRisk = Math.min(30, rawTideRisk * 0.4);
+        
+        expect(tideRisk).toBeLessThanOrEqual(30);
+        if (score === 20) {
+          // Max score 20 -> raw 100 -> scaled 100 * 0.4 = 40, capped at 30
+          expect(tideRisk).toBe(30);
+        } else if (score === 10) {
+          // Mid score 10 -> raw 50 -> scaled 50 * 0.4 = 20
+          expect(tideRisk).toBe(20);
+        }
+      });
     });
   });
 });

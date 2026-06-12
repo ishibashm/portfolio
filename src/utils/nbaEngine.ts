@@ -505,10 +505,18 @@ export class NBAEngine {
           金: "木",
         };
 
+        const strength = personalBazi.summary?.strength || "中庸";
+        const isWeak = strength === "身弱" || strength === "極弱";
+
         if (pm === em) {
           compatibilityScore = 0.2;
         } else if (shengCycle[pm] === em) {
-          compatibilityScore = 0.5;
+          // User generates Environment (泄気)
+          if (isWeak) {
+            compatibilityScore = -0.5; // Draining energy is a penalty for weak Day Master
+          } else {
+            compatibilityScore = 0.5;  // Venting energy is a bonus for strong/balanced
+          }
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
         } else if (keCycle[pm] === em) {
@@ -777,12 +785,21 @@ export class NBAEngine {
           金: "木",
         };
 
+        const strength = personalBazi.summary?.strength || "中庸";
+        const isWeak = strength === "身弱" || strength === "極弱";
+
         if (pm === em) {
           compatibilityScore = 0.2;
           personalLog += `Compatibility: Same Element (+0.2). `;
         } else if (shengCycle[pm] === em) {
-          compatibilityScore = 0.5;
-          personalLog += `Compatibility: You generate Env (+0.5). `;
+          // User generates Environment (泄気)
+          if (isWeak) {
+            compatibilityScore = -0.5;
+            personalLog += `Compatibility: Draining (You generate weak Env) (-0.5). `;
+          } else {
+            compatibilityScore = 0.5;
+            personalLog += `Compatibility: You generate Env (+0.5). `;
+          }
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
           personalLog += `Compatibility: Env generates You (+0.8). `;

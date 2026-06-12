@@ -8,6 +8,7 @@
 
 import { BaziResult } from "./baziEngine";
 import { getCurrentZodiac, getHonmeiStar, getClassicalDayStar, getDayStar } from "./ephemerisEngine";
+import { VedicEngine } from "./vedicEngine";
 
 export interface TarotCard {
   name: string;
@@ -1205,15 +1206,9 @@ export function fetchMetaphysicalData(
   ];
 
   // 3. VedAstro
-  const dashas = [
-    "木星-土星期 (Jupiter-Saturn)",
-    "木星-水星期 (Jupiter-Mercury)",
-    "土星-土星期 (Saturn-Saturn)",
-    "土星-水星期 (Saturn-Mercury)",
-  ];
-  const activeDasha =
-    dashas[Math.floor(rand() * dashas.length)] +
-    ` (現在のアクティブ・サブ期間)`;
+  const vedicEngine = new VedicEngine();
+  const dashaResult = vedicEngine.calculateVimshottariDasha(birthDate, currentDate);
+  const activeDasha = dashaResult.formatted + " (現在のアクティブ・サブ期間)";
   const ashtakavargaPoints = {
     "太陽 (Sun)": 28 + Math.floor(rand() * 10),
     "月 (Moon)": 28 + Math.floor(rand() * 10),

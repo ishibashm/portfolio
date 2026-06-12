@@ -138,4 +138,97 @@ export class VedicEngine {
       planetaryNakshatras,
     };
   }
+
+  /**
+   * Calculates the active Vimshottari Dasha (Mahadasha and Antardasha)
+   * for a given birth date and evaluation date.
+   */
+  public calculateVimshottariDasha(
+    birthDate: Date,
+    evaluationDate: Date,
+  ): { mahadasha: string; antardasha: string; formatted: string } {
+    // 1. Generate birth chart using Lahiri to get the birth Moon Nakshatra and progress
+    const birthChart = this.generateVedicChart(birthDate);
+    
+    // Nakshatras are 0-indexed, each spans 13.333333 degrees.
+    const nakshatraIndex = birthChart.moonNakshatra.index;
+    const progress = birthChart.moonNakshatra.longitudeRemaining; // 0 to 1
+
+    const LORDS = ["Ketu", "Venus", "Sun", "Moon", "Mars", "Rahu", "Jupiter", "Saturn", "Mercury"];
+    const LORDS_JA = ["ケートゥ", "金星", "太陽", "月", "火星", "ラーフ", "木星", "土星", "水星"];
+    const LORD_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17];
+    const TOTAL_CYCLE_YEARS = 120;
+
+    // The starting Dasha lord is based on the Nakshatra index
+    const startLordIndex = nakshatraIndex % 9;
+    
+    // Remaining time in the first Dasha (in milliseconds)
+    const firstDashaYears = (1 - progress) * LORD_YEARS[startLordIndex];
+    const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+    const firstDashaEndMs = birthDate.getTime() + firstDashaYears * msPerYear;
+
+    const evalMs = evaluationDate.getTime();
+
+    let activeMahadashaIndex = 0;
+    let activeMahadashaStartMs = birthDate.getTime();
+    let activeMahadashaEndMs = firstDashaEndMs;
+
+    if (evalMs < firstDashaEndMs) {
+      activeMahadashaIndex = startLordIndex;
+      activeMahadashaStartMs = birthDate.getTime();
+      activeMahadashaEndMs = firstDashaEndMs;
+    } else {
+      let currentEndMs = firstDashaEndMs;
+      let currentLordIndex = (startLordIndex + 1) % 9;
+      
+      while (currentEndMs <= evalMs) {
+        const startMs = currentEndMs;
+        const years = LORD_YEARS[currentLordIndex];
+        currentEndMs += years * msPerYear;
+        
+        if (evalMs < currentEndMs) {
+          activeMahadashaIndex = currentLordIndex;
+          activeMahadashaStartMs = startMs;
+          activeMahadashaEndMs = currentEndMs;
+          break;
+        }
+        currentLordIndex = (currentLordIndex + 1) % 9;
+        
+        // Safety guard for extremely far future evaluation dates
+        if (currentEndMs - birthDate.getTime() > 200 * msPerYear) {
+          break; 
+        }
+      }
+    }
+
+    // Calculate the Antardasha (Bhukti) within the active Mahadasha
+    const mahadashaLord = LORDS[activeMahadashaIndex];
+    const mahadashaLordJa = LORDS_JA[activeMahadashaIndex];
+
+    let activeAntardashaIndex = 0;
+    let currentAntardashaEndMs = activeMahadashaStartMs;
+
+    for (let i = 0; i < 9; i++) {
+      const lordIndex = (activeMahadashaIndex + i) % 9;
+      // Antardasha duration is proportional to (Mahadasha Years * Antardasha Years / 120)
+      const antardashaYears = (LORD_YEARS[activeMahadashaIndex] * LORD_YEARS[lordIndex]) / TOTAL_CYCLE_YEARS;
+      currentAntardashaEndMs += antardashaYears * msPerYear;
+
+      if (evalMs < currentAntardashaEndMs) {
+        activeAntardashaIndex = lordIndex;
+        break;
+      }
+    }
+
+    const antardashaLord = LORDS[activeAntardashaIndex];
+    const antardashaLordJa = LORDS_JA[activeAntardashaIndex];
+
+    const formatted = `${mahadashaLordJa}-${antardashaLordJa}期 (${mahadashaLord}-${antardashaLord})`;
+
+    return {
+      mahadasha: mahadashaLord,
+      antardasha: antardashaLord,
+      formatted,
+    };
+  }
 }
