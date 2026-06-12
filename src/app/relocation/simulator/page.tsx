@@ -318,8 +318,18 @@ export default function RelocationSimulatorPage() {
     const dateParam = params.get("date");
     const dirParam = params.get("direction");
     const bearingParam = params.get("bearing");
+    const toLatParam = params.get("toLat");
+    const toLonParam = params.get("toLon");
+    const toNameParam = params.get("toName");
 
-    if (dateParam || dirParam || bearingParam) {
+    if (
+      dateParam ||
+      dirParam ||
+      bearingParam ||
+      toLatParam ||
+      toLonParam ||
+      toNameParam
+    ) {
       const updatedSteps = [...steps];
       if (dateParam) {
         updatedSteps[0].departureDate = dateParam;
@@ -345,7 +355,11 @@ export default function RelocationSimulatorPage() {
         hasTarget = true;
       }
 
-      if (hasTarget) {
+      if (toLatParam && toLonParam) {
+        updatedSteps[0].toLat = parseFloat(toLatParam);
+        updatedSteps[0].toLon = parseFloat(toLonParam);
+        updatedSteps[0].toName = toNameParam || "指定された目的地";
+      } else if (hasTarget) {
         // Approximate coordinates (0.9 degrees is roughly 100km distance)
         const rad = (bearingVal * Math.PI) / 180;
         updatedSteps[0].toLat = startLat + Math.cos(rad) * 0.9;

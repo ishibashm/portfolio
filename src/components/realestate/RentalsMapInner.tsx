@@ -12,6 +12,7 @@ import {
   Clock,
   Star,
   StarOff,
+  Compass,
 } from "lucide-react";
 import type { RentalProperty } from "@/app/rentals/page";
 
@@ -120,6 +121,17 @@ interface RentalsMapInnerProps {
   favorites: string[];
   onToggleFavorite: (id: string) => void;
   hoveredPropertyId: string | null;
+  metaphysicalProperties?: Record<
+    string,
+    {
+      distance: number;
+      bearing: number;
+      direction: string;
+      rating: string;
+      color: string;
+      score: number;
+    }
+  >;
 }
 
 export default function RentalsMapInner({
@@ -127,6 +139,7 @@ export default function RentalsMapInner({
   favorites,
   onToggleFavorite,
   hoveredPropertyId,
+  metaphysicalProperties,
 }: RentalsMapInnerProps) {
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
 
@@ -286,6 +299,39 @@ export default function RentalsMapInner({
                       </span>
                     </div>
                   </div>
+
+                  {/* Metaphysical compatibility section */}
+                  {(() => {
+                    const meta = metaphysicalProperties?.[prop.id];
+                    if (!meta) return null;
+                    return (
+                      <div className="bg-purple-950/10 border border-purple-900/20 p-2 rounded-lg flex items-center justify-between text-[10px]">
+                        <div className="space-y-0.5">
+                          <span className="text-[7px] text-purple-400 font-mono uppercase tracking-wider block">
+                            方位適合度
+                          </span>
+                          <span className="font-bold text-zinc-200 flex items-center gap-1 font-mono">
+                            <Compass className="w-3 h-3 text-purple-400 shrink-0 animate-pulse" />
+                            {meta.direction} ({meta.distance} km)
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span
+                            className={`px-1 rounded text-[8px] font-bold ${meta.color}`}
+                          >
+                            {meta.rating}
+                          </span>
+                          <a
+                            href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
+                            className="text-[8px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                          >
+                            シミュレート
+                            <ExternalLink className="w-2 h-2" />
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Footer Info */}
                   <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono border-t border-zinc-900 pt-2">

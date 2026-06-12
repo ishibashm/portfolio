@@ -27,6 +27,9 @@ import {
   Bell,
   Settings,
   TrendingUp,
+  Compass,
+  Sliders,
+  CheckCircle2,
 } from "lucide-react";
 import type { Database } from "@/types/database.types";
 import {
@@ -46,6 +49,14 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
 } from "recharts";
+import {
+  getCurrentEnvironmentalFrequencies,
+  generateBoard,
+  calculateVectorCollision,
+  getPersonalVoidZodiac,
+  getHonmeiStar,
+  type Direction,
+} from "@/utils/ephemerisEngine";
 
 export type RentalProperty =
   Database["public"]["Tables"]["rental_properties"]["Row"];
@@ -53,7 +64,71 @@ type SortField = "rent" | "size_sqm" | "first_seen_at";
 type SortOrder = "asc" | "desc";
 type ViewMode = "grid" | "table" | "map";
 
-export const dynamic = "force-dynamic";
+function getBearing(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const y = Math.sin(deltaLambda) * Math.cos(phi2);
+  const x =
+    Math.cos(phi1) * Math.sin(phi2) -
+    Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
+  const theta = Math.atan2(y, x);
+  const bearing = (theta * 180) / Math.PI;
+  return (bearing + 360) % 360;
+}
+
+function bearingToDirection(
+  bearing: number,
+  useClassical: boolean = false,
+): Direction {
+  const b = ((bearing % 360) + 360) % 360;
+  if (useClassical) {
+    if (b >= 345 || b < 15) return "N";
+    if (b >= 15 && b < 75) return "NE";
+    if (b >= 75 && b < 105) return "E";
+    if (b >= 105 && b < 165) return "SE";
+    if (b >= 165 && b < 195) return "S";
+    if (b >= 195 && b < 255) return "SW";
+    if (b >= 255 && b < 285) return "W";
+    return "NW";
+  } else {
+    const index = Math.floor(((b + 22.5) % 360) / 45);
+    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    return dirs[index];
+  }
+}
+
+function getDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const R = 6371; // Radius of the earth in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+}
+
+const getApproximateDeclination = (lat: number, lon: number): number => {
+  const baseDecl = -7.5;
+  const latDiff = lat - 35.0;
+  return baseDecl - latDiff * 0.15;
+};
 
 export default function RentalsDashboard() {
   const [properties, setProperties] = useState<RentalProperty[]>([]);
@@ -100,6 +175,16 @@ export default function RentalsDashboard() {
 
   const [mounted, setMounted] = useState(false);
 
+  // Metaphysical Profile States
+  const [birthDate, setBirthDate] = useState("1988-11-25T04:26");
+  const [baseLat, setBaseLat] = useState(34.9911); // Kyoto default
+  const [baseLon, setBaseLon] = useState(135.7248);
+  const [baseName, setBaseName] = useState("京都市右京区西京極");
+  const [useTrueNorth, setUseTrueNorth] = useState(false);
+  const [useClassical, setUseClassical] = useState(true);
+  const [isMetaphysicalOpen, setIsMetaphysicalOpen] = useState(false);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -125,8 +210,55 @@ export default function RentalsDashboard() {
       console.error("Error loading webhook config:", e);
     }
 
+    // Load user metaphysical config
+    const fetchUserConfig = async () => {
+      try {
+        const res = await fetch("/api/user-config");
+        if (res.ok) {
+          const config = await res.json();
+          if (config.birth_date) setBirthDate(config.birth_date);
+          if (config.base_lat !== undefined) setBaseLat(config.base_lat);
+          if (config.base_lon !== undefined) setBaseLon(config.base_lon);
+          if (config.use_true_north !== undefined)
+            setUseTrueNorth(config.use_true_north);
+          if (config.use_classical_board !== undefined)
+            setUseClassical(config.use_classical_board);
+        }
+      } catch (e) {
+        console.error("Failed to load user config:", e);
+      }
+    };
+    fetchUserConfig();
+
     setMounted(true);
   }, []);
+
+  const handleSaveMetaphysicalConfig = async () => {
+    setIsSavingConfig(true);
+    try {
+      const res = await fetch("/api/user-config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birth_date: birthDate,
+          base_lat: baseLat,
+          base_lon: baseLon,
+          use_true_north: useTrueNorth,
+          use_classical_board: useClassical,
+        }),
+      });
+      if (res.ok) {
+        alert("開運プロファイル設定を保存しました。");
+      } else {
+        alert("設定の保存に失敗しました。");
+      }
+    } catch (e) {
+      console.error("Failed to save config:", e);
+      alert("設定の保存中にエラーが発生しました。");
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
 
   const handleSaveWebhookConfig = (config: WebhookConfig) => {
     setWebhookConfig(config);
@@ -318,6 +450,133 @@ export default function RentalsDashboard() {
     filterMaxAge,
     search,
   ]);
+
+  // 開運・方位適合度の計算 (Metaphysical Relocation Compatibility)
+  const metaphysicalProperties = useMemo(() => {
+    if (!birthDate) return {};
+
+    const birthDateObj = new Date(birthDate);
+    const voidZodiacs = getPersonalVoidZodiac(birthDateObj);
+    const honmeiStar = getHonmeiStar(birthDateObj);
+    const personalStar = useClassical
+      ? honmeiStar.classical
+      : honmeiStar.physical;
+
+    // 現在の日付をもとに環境の星を算出
+    const targetDate = new Date();
+    const env = getCurrentEnvironmentalFrequencies(
+      targetDate,
+      baseLon,
+      "independent",
+    );
+
+    const yearBoard = generateBoard(
+      useClassical ? env.classicalYearStar : env.yearStar,
+    );
+    const monthBoard = generateBoard(
+      useClassical ? env.classicalMonthStar : env.monthStar,
+    );
+    const dayBoard = generateBoard(
+      useClassical ? env.classicalDayStar : env.dayStar,
+    );
+
+    // ベクトル衝突計算 (引越モード "MIGRATION")
+    const collision = calculateVectorCollision(
+      personalStar,
+      yearBoard,
+      monthBoard,
+      dayBoard,
+      voidZodiacs,
+      env.raw.lunarNode,
+      "MIGRATION",
+      targetDate,
+      baseLon,
+    );
+
+    const results: Record<
+      string,
+      {
+        distance: number;
+        bearing: number;
+        direction: Direction;
+        rating: string;
+        color: string;
+        score: number;
+      }
+    > = {};
+
+    properties.forEach((prop) => {
+      if (prop.lat === null || prop.lon === null) return;
+      const dist = getDistanceKm(baseLat, baseLon, prop.lat, prop.lon);
+      const rawBearing = getBearing(baseLat, baseLon, prop.lat, prop.lon);
+
+      let decl = 0;
+      if (!useTrueNorth) {
+        decl = getApproximateDeclination(baseLat, baseLon);
+      }
+      const adjustedBearing = (rawBearing - decl + 360) % 360;
+      const direction = bearingToDirection(adjustedBearing, useClassical);
+
+      const finalStatus = collision.finalVectors[direction] || "SAFE";
+
+      let rating = "普通";
+      let color = "text-zinc-400 bg-zinc-950 border border-zinc-900";
+      let score = 0;
+
+      switch (finalStatus) {
+        case "OPTIMAL":
+          rating = "大吉";
+          color =
+            "text-emerald-400 border border-emerald-500/30 bg-emerald-500/10";
+          score = 100;
+          break;
+        case "OPTIMAL_REGULAR":
+          rating = "吉";
+          color =
+            "text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5";
+          score = 50;
+          break;
+        case "SAFE":
+          rating = "普通";
+          color = "text-zinc-400 border border-white/10 bg-white/5";
+          score = 0;
+          break;
+        case "WARNING":
+          rating = "注意";
+          color = "text-amber-400 border border-amber-500/20 bg-amber-500/5";
+          score = -10;
+          break;
+        case "NOISE_HONMEI":
+        case "NOISE_TEKI":
+        case "NOISE_GETSUMEI":
+        case "NOISE_GETSUTEKI":
+        case "NOISE_NODE":
+          rating = "凶";
+          color = "text-orange-400 border border-orange-500/20 bg-orange-500/5";
+          score = -30;
+          break;
+        case "NOISE_VOID":
+        case "NOISE_GOU":
+        case "NOISE_ANKEN":
+        case "NOISE_HA":
+          rating = "大凶";
+          color = "text-red-400 border border-red-500/30 bg-red-500/10";
+          score = -100;
+          break;
+      }
+
+      results[prop.id] = {
+        distance: Math.round(dist * 10) / 10,
+        bearing: adjustedBearing,
+        direction,
+        rating,
+        color,
+        score,
+      };
+    });
+
+    return results;
+  }, [properties, birthDate, baseLat, baseLon, useTrueNorth, useClassical]);
 
   // アナリティクスデータ計算
   const stats = useMemo(() => {
@@ -580,8 +839,134 @@ export default function RentalsDashboard() {
               />
               <span>通知設定</span>
             </button>
+            <button
+              onClick={() => setIsMetaphysicalOpen(!isMetaphysicalOpen)}
+              className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
+                isMetaphysicalOpen
+                  ? "bg-purple-950/20 text-purple-400 border-purple-900/30 hover:border-purple-850/50 shadow-[0_2px_10px_rgba(168,85,247,0.05)]"
+                  : "bg-zinc-950 hover:bg-zinc-900 text-zinc-450 border-zinc-900 hover:border-zinc-850"
+              }`}
+            >
+              <Compass
+                className={`w-3.5 h-3.5 ${isMetaphysicalOpen ? "animate-spin" : ""}`}
+                style={{ animationDuration: "6s" }}
+              />
+              <span>開運方位設定</span>
+            </button>
           </div>
         </div>
+
+        {/* Metaphysical Profile Config Accordion */}
+        {isMetaphysicalOpen && (
+          <div className="p-5 sm:p-6 bg-zinc-950 border border-zinc-900 rounded-2xl shadow-xl flex flex-col gap-5 animate-in slide-in-from-top-3 duration-200">
+            <div className="flex items-center gap-2.5 border-b border-zinc-900 pb-3">
+              <Compass className="w-5 h-5 text-purple-400" />
+              <h2 className="text-sm sm:text-base font-extrabold text-zinc-100">
+                開運・方位適合プロファイル設定 (Metaphysical Profile)
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Birth Date */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                  生年月日・時間 (Birth Date & Time)
+                </label>
+                <input
+                  type="datetime-local"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250 font-mono"
+                />
+              </div>
+
+              {/* Current Residence Name */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                  現住所・基準地点名 (Current Location Name)
+                </label>
+                <input
+                  type="text"
+                  value={baseName}
+                  onChange={(e) => setBaseName(e.target.value)}
+                  className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250"
+                />
+              </div>
+
+              {/* Coordinates (Lat / Lon) */}
+              <div className="space-y-1.5 grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                    緯度 (Lat)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={baseLat}
+                    onChange={(e) =>
+                      setBaseLat(parseFloat(e.target.value) || 0)
+                    }
+                    className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                    経度 (Lon)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={baseLon}
+                    onChange={(e) =>
+                      setBaseLon(parseFloat(e.target.value) || 0)
+                    }
+                    className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Toggle North & Classical */}
+              <div className="space-y-1.5 flex flex-col justify-center">
+                <div className="flex items-center justify-between text-xs py-1">
+                  <span className="text-zinc-400">
+                    真北を使用 (磁北ではなく)
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={useTrueNorth}
+                    onChange={(e) => setUseTrueNorth(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-zinc-800 text-purple-500 focus:ring-purple-500 bg-zinc-900 cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs py-1">
+                  <span className="text-zinc-400">クラシカル盤を使用</span>
+                  <input
+                    type="checkbox"
+                    checked={useClassical}
+                    onChange={(e) => setUseClassical(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-zinc-800 text-purple-500 focus:ring-purple-500 bg-zinc-900 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-zinc-900/60">
+              <span className="text-[10px] text-zinc-500 self-center font-mono mr-auto">
+                ※設定変更は、物件への方位・距離・適合度計算にリアルタイムで反映されます。
+              </span>
+              <button
+                onClick={handleSaveMetaphysicalConfig}
+                disabled={isSavingConfig}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isSavingConfig && (
+                  <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
+                )}
+                <span>設定を保存する</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* KPI Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1024,7 +1409,6 @@ export default function RentalsDashboard() {
           {loading && properties.length > 0 && (
             <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
           )}
-
           <div
             className={`transition-opacity duration-300 ${loading ? "opacity-65 pointer-events-none" : ""}`}
           >
@@ -1083,6 +1467,7 @@ export default function RentalsDashboard() {
                             Market Time <SortIcon field="first_seen_at" />
                           </div>
                         </th>
+                        <th className="px-6 py-4">開運吉凶方位</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-900/50">
@@ -1236,6 +1621,40 @@ export default function RentalsDashboard() {
                                 )}
                               </div>
                             </td>
+                            {(() => {
+                              const meta = metaphysicalProperties[prop.id];
+                              if (!meta) {
+                                return (
+                                  <td className="px-6 py-4 text-zinc-600 font-mono text-[10px]">
+                                    位置情報なし
+                                  </td>
+                                );
+                              }
+                              return (
+                                <td className="px-6 py-4">
+                                  <div className="flex flex-col gap-1 items-start">
+                                    <span className="text-zinc-200 font-bold text-xs flex items-center gap-1 font-mono">
+                                      <Compass className="w-3.5 h-3.5 text-purple-400 shrink-0 animate-pulse" />
+                                      {meta.direction} ({meta.distance} km)
+                                    </span>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${meta.color}`}
+                                      >
+                                        {meta.rating}
+                                      </span>
+                                      <a
+                                        href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
+                                        className="text-[9px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                      >
+                                        シミュレート
+                                        <ExternalLink className="w-2.5 h-2.5" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                </td>
+                              );
+                            })()}
                           </tr>
                         );
                       })}
@@ -1387,6 +1806,39 @@ export default function RentalsDashboard() {
                             </span>
                           </div>
                         </div>
+
+                        {/* Metaphysical compatibility section */}
+                        {(() => {
+                          const meta = metaphysicalProperties[prop.id];
+                          if (!meta) return null;
+                          return (
+                            <div className="bg-purple-950/10 border border-purple-900/20 p-3 rounded-xl flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <span className="text-[8px] text-purple-400 font-mono uppercase tracking-wider block">
+                                  方位適合度
+                                </span>
+                                <span className="text-xs font-bold text-zinc-200 flex items-center gap-1 font-mono">
+                                  <Compass className="w-3.5 h-3.5 text-purple-400 shrink-0 animate-pulse" />
+                                  {meta.direction} ({meta.distance} km)
+                                </span>
+                              </div>
+                              <div className="flex flex-col items-end gap-1.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${meta.color}`}
+                                >
+                                  {meta.rating}
+                                </span>
+                                <a
+                                  href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
+                                  className="text-[9px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                >
+                                  シミュレート
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Footer Info */}
@@ -1468,12 +1920,28 @@ export default function RentalsDashboard() {
                           </button>
 
                           <div className="space-y-2 pr-6">
-                            <h4
-                              className="font-bold text-zinc-200 text-xs truncate max-w-[150px]"
-                              title={prop.property_name}
-                            >
-                              {prop.property_name}
-                            </h4>
+                            {prop.url ? (
+                              <a
+                                href={prop.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-bold text-zinc-200 hover:text-emerald-400 text-xs truncate max-w-[150px] flex items-center gap-0.5 hover:underline"
+                                title={prop.property_name}
+                              >
+                                <span className="truncate">
+                                  {prop.property_name}
+                                </span>
+                                <ExternalLink className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                              </a>
+                            ) : (
+                              <h4
+                                className="font-bold text-zinc-200 text-xs truncate max-w-[150px]"
+                                title={prop.property_name}
+                              >
+                                {prop.property_name}
+                              </h4>
+                            )}
                             <div className="flex items-center gap-2 text-zinc-500 text-[8px] font-mono">
                               {prop.area && (
                                 <span className="flex items-center gap-0.5">
@@ -1493,6 +1961,35 @@ export default function RentalsDashboard() {
                                 ¥{totalRent.toLocaleString()}
                               </span>
                             </div>
+
+                            {(() => {
+                              const meta = metaphysicalProperties[prop.id];
+                              if (!meta) return null;
+                              return (
+                                <div className="flex items-center justify-between border-t border-purple-950/20 pt-1.5 mt-1 text-[8px] font-mono">
+                                  <span className="text-purple-400 font-bold flex items-center gap-0.5">
+                                    <Compass className="w-3 h-3 text-purple-400 animate-pulse" />
+                                    {meta.direction} ({meta.distance} km)
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className={`px-1 rounded font-bold ${meta.color}`}
+                                    >
+                                      {meta.rating}
+                                    </span>
+                                    <a
+                                      href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
+                                      className="text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      シミュレート
+                                      <ExternalLink className="w-2 h-2" />
+                                    </a>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
                             <div className="flex items-center justify-between pt-1 border-t border-zinc-900/60 mt-1 text-[8px] text-zinc-500 font-mono">
                               <label
                                 className="flex items-center gap-1 cursor-pointer select-none text-zinc-600 hover:text-zinc-400"
@@ -1525,6 +2022,7 @@ export default function RentalsDashboard() {
                     favorites={favorites}
                     onToggleFavorite={handleToggleFavorite}
                     hoveredPropertyId={hoveredPropertyId}
+                    metaphysicalProperties={metaphysicalProperties}
                   />
 
                   {/* Floating Overlay for Mobile when card is selected */}
@@ -1541,9 +2039,21 @@ export default function RentalsDashboard() {
                         <div className="lg:hidden absolute bottom-4 left-4 right-4 z-[1000] p-4 bg-zinc-950/95 border border-zinc-900 rounded-2xl shadow-2xl flex flex-col gap-2 backdrop-blur-md">
                           <div className="flex justify-between items-start">
                             <div className="space-y-0.5">
-                              <h4 className="font-bold text-zinc-100 text-xs">
-                                {prop.property_name}
-                              </h4>
+                              {prop.url ? (
+                                <a
+                                  href={prop.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-bold text-zinc-100 hover:text-emerald-400 text-xs flex items-center gap-0.5 hover:underline"
+                                >
+                                  <span>{prop.property_name}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 text-zinc-650 shrink-0" />
+                                </a>
+                              ) : (
+                                <h4 className="font-bold text-zinc-100 text-xs">
+                                  {prop.property_name}
+                                </h4>
+                              )}
                               <p className="text-[9px] text-zinc-500 font-mono flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-zinc-650" />{" "}
                                 {prop.area || "Unknown Area"}
@@ -1578,6 +2088,33 @@ export default function RentalsDashboard() {
                                 : "-"}
                             </span>
                           </div>
+
+                          {(() => {
+                            const meta = metaphysicalProperties[prop.id];
+                            if (!meta) return null;
+                            return (
+                              <div className="flex items-center justify-between border-t border-purple-950/20 pt-2 mt-1 text-[9px] font-mono">
+                                <span className="text-purple-400 font-bold flex items-center gap-0.5">
+                                  <Compass className="w-3 h-3 text-purple-400 animate-pulse" />
+                                  {meta.direction} ({meta.distance} km)
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`px-1 rounded font-bold ${meta.color}`}
+                                  >
+                                    {meta.rating}
+                                  </span>
+                                  <a
+                                    href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
+                                    className="text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                  >
+                                    シミュレート
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })()}

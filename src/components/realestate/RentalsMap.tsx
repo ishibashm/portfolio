@@ -20,6 +20,17 @@ interface RentalsMapProps {
   favorites: string[];
   onToggleFavorite: (id: string) => void;
   hoveredPropertyId: string | null;
+  metaphysicalProperties?: Record<
+    string,
+    {
+      distance: number;
+      bearing: number;
+      direction: string;
+      rating: string;
+      color: string;
+      score: number;
+    }
+  >;
 }
 
 export function RentalsMap(props: RentalsMapProps) {
