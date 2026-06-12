@@ -1,19 +1,25 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine AS base
+FROM node:20-bookworm-slim AS base
 
-# Install Python 3, pip, and pre-compiled Pandas, Numpy, and LXML
-RUN apk add --no-cache python3 py3-pip py3-pandas py3-numpy py3-lxml && \
-    ln -sf /usr/bin/python3 /usr/bin/python
+# Install Python 3, pip, and system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    python3-pandas \
+    python3-numpy \
+    python3-lxml \
+    build-essential \
+    python3-dev \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install yfinance and google-antigravity in system packages with build dependencies
-RUN apk add --no-cache --virtual .build-deps gcc g++ musl-dev python3-dev libffi-dev openssl-dev make && \
-    pip install --no-cache-dir --break-system-packages yfinance google-antigravity && \
-    apk del .build-deps
+# Install yfinance and google-antigravity
+# Use --break-system-packages as PEP 668 is active in debian bookworm
+RUN pip3 install --no-cache-dir --break-system-packages yfinance google-antigravity
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
