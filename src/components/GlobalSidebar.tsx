@@ -27,7 +27,11 @@ import {
   Home,
 } from "lucide-react";
 
-const PUBLIC_ITEMS = [{ href: "/", icon: Clock, label: "Portal" }];
+const PUBLIC_ITEMS = [
+  { href: "/", icon: Clock, label: "Portal" },
+  { href: "/agent-log", icon: Terminal, label: "Agent Log" }
+];
+
 
 const PROTECTED_ITEMS = [
   { href: "/relocation/wealth", icon: Map, label: "Relocation Matrix" },
