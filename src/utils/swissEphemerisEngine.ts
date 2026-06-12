@@ -263,10 +263,9 @@ export class SwissEphemerisEngine {
 
     // True Sidereal Time at Greenwich
     const gst = SiderealTime(time);
-    // Local Sidereal Time
+    // Local Sidereal Time wrapped strictly to [0, 24)
     let lst = gst + longitude / 15.0;
-    if (lst < 0) lst += 24;
-    if (lst >= 24) lst -= 24;
+    lst = ((lst % 24) + 24) % 24;
 
     // Approximate MC (Midheaven) based on RAMC
     const ramc = lst * 15; // in degrees

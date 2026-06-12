@@ -9,10 +9,12 @@ import {
   getCurrentZodiac,
   clashMap,
   checkIsDoyouHazard,
+  getCurrentEnvironmentalFrequencies,
 } from "@/utils/ephemerisEngine";
 import { baziEngine } from "@/utils/baziEngine";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
 import { VedicEngine } from "@/utils/vedicEngine";
+import { IChingClient } from "@/lib/ichingClient";
 
 export async function POST(req: Request) {
   try {
@@ -58,6 +60,7 @@ export async function POST(req: Request) {
 
     const engine = new NBAEngine();
     const vedicEngine = new VedicEngine();
+    const iching = new IChingClient();
 
     let simulatedShield = Number(currentShield);
     let simulatedAns = Number(currentAnsLoad);
@@ -136,6 +139,69 @@ export async function POST(req: Request) {
 
       envCost = Math.max(0, Math.min(100, envCost));
 
+      // Calculate Target Nine Star Ki
+      const targetEnv = getCurrentEnvironmentalFrequencies(
+        targetDate,
+        lon,
+        useClassical ? "coupled" : "independent"
+      );
+      const nineStarKi = {
+        yearStar: targetEnv.yearStar,
+        monthStar: targetEnv.monthStar,
+        dayStar: targetEnv.dayStar,
+      };
+
+      // Formatted Vedic Astrology
+      const targetSunLon = AstroEngine.getSolarLongitude(targetDate);
+      const targetMoonLon = AstroEngine.getLunarLongitude(targetDate);
+      const targetVedicChart = vedicEngine.generateVedicChart(targetDate);
+      const targetVedicAstrology = {
+        nakshatra: `${targetVedicChart.moonNakshatra.name} (Pada ${targetVedicChart.moonNakshatra.pada})`,
+        moonProgress: targetVedicChart.moonNakshatra.longitudeRemaining,
+        sunNakshatra: `${targetVedicChart.sunNakshatra.name} (Pada ${targetVedicChart.sunNakshatra.pada})`,
+        sunProgress: targetVedicChart.sunNakshatra.longitudeRemaining,
+        tithi: `Lunar Day: ${Math.floor(((targetMoonLon - targetSunLon + 360) % 360) / 12) + 1}`,
+        ayanamsa: targetVedicChart.ayanamsa.toFixed(4),
+      };
+
+      // Format Iching Hexagram
+      const targetIchingHexagram = metaData?.roxyApi.ichingCast
+        ? iching.getHexagramByNumber(
+            metaData.roxyApi.ichingCast.hexagramNumber,
+            metaData.roxyApi.ichingCast.interpretation || "",
+          )
+        : undefined;
+
+      const ephemerisData = {
+        source: "astronomy-engine",
+        status: "Active",
+        planetaryPositions: {
+          sun: `${targetSunLon.toFixed(2)}°`,
+          moon: `${targetMoonLon.toFixed(2)}°`,
+        },
+      };
+
+      const astrologyData = {
+        source: "sim",
+        status: "Active",
+        transits: AspectEngine.formatAspects(allAspects),
+      };
+
+      const ragContext = {
+        source: "sim",
+        status: "Active",
+        classicalRules: environmentalBaziData,
+        personalBazi: personalBaziData,
+      };
+
+      const spaceWeatherDefault = {
+        kpIndex: 3.0,
+        xrayFlux: "B1.0",
+        solarWindSpeed: 400,
+        timestamp: today.toISOString(),
+        riskScore: 20,
+      };
+
       // Construct State Vector for Engine
       const params: NBAParams = {
         stateVector: {
@@ -143,22 +209,44 @@ export async function POST(req: Request) {
           shieldCapacity: simulatedShield,
           environmentalNoise: "simulation",
           environmentalRisk: envCost,
-          solarPhase: AstroEngine.getSolarLongitude(targetDate),
+          solarPhase: targetSunLon,
           isVoidTime,
           isConflictDay: isConflictMonth,
           isDoyouHazard,
-          astrologyData: {
-            source: "sim",
-            transits: allAspects.map((a) => a.type),
-          },
-          ragContext: {
-            source: "sim",
-            classicalRules: environmentalBaziData,
-            personalBazi: personalBaziData,
-          },
-          vedicAstrology: vedicEngine.generateVedicChart(targetDate) as any,
-          ichingHexagram: metaData?.roxyApi.ichingCast as any,
+          astrologyData,
+          ragContext,
+          vedicAstrology: targetVedicAstrology,
+          ichingHexagram: targetIchingHexagram,
           qiMenGate: metaData?.chineseMetasoft.qiMenGate,
+          nineStarKi,
+          spaceWeather: spaceWeatherDefault,
+
+          // Nested structures
+          currentEphemeris: {
+            date: today.toISOString().split("T")[0],
+            solarPhase: AstroEngine.getSolarLongitude(today),
+            vedicAstrology: targetVedicAstrology,
+            spaceWeather: spaceWeatherDefault,
+            ansLoad: simulatedAns,
+            shieldCapacity: simulatedShield,
+            stressLevel: 50,
+            resilience: "adequate",
+          },
+          targetEphemeris: {
+            date: targetDate.toISOString().split("T")[0],
+            solarPhase: targetSunLon,
+            isVoidTime,
+            isConflictDay: isConflictMonth,
+            isDoyouHazard,
+            environmentalRisk: envCost,
+            nineStarKi,
+            qiMenGate: metaData?.chineseMetasoft.qiMenGate,
+            vedicAstrology: targetVedicAstrology,
+            ephemerisData,
+            astrologyData,
+            ragContext,
+            ichingHexagram: targetIchingHexagram,
+          },
         },
       };
 

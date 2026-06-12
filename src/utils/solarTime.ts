@@ -30,6 +30,12 @@ export interface SolarTimeResult {
   totalCorrection: number; // minutes
 }
 
+export function getLongitudeCorrection(lon: number, timezoneOffsetHours: number): number {
+  const standardMeridian = timezoneOffsetHours * 15.0;
+  const degreeDelta = lon - standardMeridian;
+  return degreeDelta * 4.0;
+}
+
 /**
  * Calculate True Solar Time (Local Solar Time).
  * @param date The standard time date object.
@@ -39,8 +45,10 @@ export interface SolarTimeResult {
 export function calculateSolarTime(
   date: Date,
   longitude: number,
-  timezoneOffset: number = 9,
+  timezoneOffset?: number,
 ): SolarTimeResult {
+  const tzOffset = timezoneOffset !== undefined ? timezoneOffset : Math.round(longitude / 15);
+
   // 1. Day of Year (n)
   const start = new Date(date.getFullYear(), 0, 0);
   const diff = date.getTime() - start.getTime();
@@ -57,9 +65,7 @@ export function calculateSolarTime(
     9.87 * Math.sin(2 * B_rad) - 7.53 * Math.cos(B_rad) - 1.5 * Math.sin(B_rad);
 
   // 3. Longitude Correction (4 minutes per degree difference from standard meridian)
-  const standardMeridian = timezoneOffset * 15; // 135 degrees for JST
-  const longitudeDiff = longitude - standardMeridian;
-  const longitudeCorrection = longitudeDiff * 4;
+  const longitudeCorrection = getLongitudeCorrection(longitude, tzOffset);
 
   // Total Correction
   const totalCorrectionMinutes = eot + longitudeCorrection;

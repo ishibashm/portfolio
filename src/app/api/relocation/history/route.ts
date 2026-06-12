@@ -35,10 +35,22 @@ function getBearing(
   return (bearing + 360) % 360;
 }
 
-function bearingToDirection(bearing: number): Direction {
-  const index = Math.floor(((bearing + 22.5) % 360) / 45);
-  const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  return dirs[index];
+export function bearingToDirection(bearing: number, useClassical: boolean = false): Direction {
+  const b = ((bearing % 360) + 360) % 360;
+  if (useClassical) {
+    if (b >= 345 || b < 15) return "N";
+    if (b >= 15 && b < 75) return "NE";
+    if (b >= 75 && b < 105) return "E";
+    if (b >= 105 && b < 165) return "SE";
+    if (b >= 165 && b < 195) return "S";
+    if (b >= 195 && b < 255) return "SW";
+    if (b >= 255 && b < 285) return "W";
+    return "NW";
+  } else {
+    const index = Math.floor(((b + 22.5) % 360) / 45);
+    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    return dirs[index];
+  }
 }
 
 // Map auspice codes to clean UX ratings
@@ -191,7 +203,7 @@ export async function GET(request: Request) {
         decl = geoData?.declination || 0;
       }
       const adjustedBearing = (rawBearing - decl + 360) % 360;
-      const direction = bearingToDirection(adjustedBearing);
+      const direction = bearingToDirection(adjustedBearing, useClassical);
 
       // Evaluate physical/classical orbital positions at time of departure
       const env = getCurrentEnvironmentalFrequencies(

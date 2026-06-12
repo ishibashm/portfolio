@@ -105,4 +105,53 @@ describe("NBAEngine Enhancements", () => {
     expect(negativeResult.closedLoopRewardFeedback.actionAdjustments.EXECUTE_RELOCATION).toBeLessThan(0);
     expect(negativeResult.closedLoopRewardFeedback.actionAdjustments.PREPARE_AND_WAIT).toBeGreaterThan(0);
   });
+
+  it("should evaluate state correctly using nested temporal structures (current vs target ephemeris)", async () => {
+    const nestedState: NBAParams["stateVector"] = {
+      // Flat fallbacks that are wrong / different
+      ansLoad: 90,
+      shieldCapacity: 10,
+      environmentalNoise: "Low",
+      solarPhase: 80,
+      spaceWeather: {
+        kpIndex: 8.0, // high storm
+        xrayFlux: "X1.0",
+        solarWindSpeed: 900,
+        timestamp: "2026-06-12T12:00:00Z",
+        riskScore: 90,
+      },
+      isVoidTime: true,
+
+      // Nested structures
+      currentEphemeris: {
+        date: "2026-06-12",
+        solarPhase: 80,
+        ansLoad: 30, // Good biometric load
+        shieldCapacity: 85, // Good shield
+        spaceWeather: {
+          kpIndex: 1.0, // Quiet space weather
+          xrayFlux: "A1.0",
+          solarWindSpeed: 320,
+          timestamp: "2026-06-12T12:00:00Z",
+          riskScore: 10,
+        },
+      },
+      targetEphemeris: {
+        date: "2026-06-26",
+        solarPhase: 95,
+        isVoidTime: false, // Target day is NOT void time
+        isConflictDay: false,
+        isDoyouHazard: false,
+        environmentalRisk: 10,
+      },
+    };
+
+    const result = await engine.getNextBestAction({ stateVector: nestedState });
+
+    // Since current biometrics are good (ansLoad: 30, shieldCapacity: 85) and target is not void (isVoidTime: false),
+    // the relocation action should NOT be pruned (-999.0).
+    expect(result.qValues.EXECUTE_RELOCATION).toBeGreaterThan(-999.0);
+    // Since current space weather is good (kpIndex 1.0), the space risk in Q calculation should be low.
+    expect(result.suggestedAction).toBe("GATHER_INTEL");
+  });
 });

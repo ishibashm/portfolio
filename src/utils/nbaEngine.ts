@@ -29,6 +29,7 @@ export interface StateLayers {
 
 export interface NBAParams {
   stateVector: {
+    // Legacy flat fields for backward compatibility
     ansLoad: number; // 0-100
     shieldCapacity: number; // 0-100
     environmentalNoise: string;
@@ -87,6 +88,78 @@ export interface NBAParams {
       solarWindSpeed: number | null;
       timestamp: string | null;
       riskScore: number;
+    };
+
+    // --- Proposal 1: Temporal Anchoring (Nested Structures) ---
+    currentEphemeris?: {
+      date: string;
+      solarPhase: number;
+      vedicAstrology?: {
+        nakshatra: string;
+        moonProgress?: number;
+        sunNakshatra?: string;
+        sunProgress?: number;
+        tithi: string;
+        ayanamsa?: string;
+      };
+      spaceWeather?: {
+        kpIndex: number | null;
+        xrayFlux: string | null;
+        solarWindSpeed: number | null;
+        timestamp: string | null;
+        riskScore: number;
+      };
+      ansLoad: number;
+      shieldCapacity: number;
+      stressLevel?: number;
+      resilience?: string;
+    };
+    targetEphemeris?: {
+      date: string;
+      solarPhase: number;
+      isVoidTime: boolean;
+      isConflictDay: boolean;
+      isDoyouHazard: boolean;
+      environmentalRisk?: number;
+      nineStarKi?: {
+        yearStar: number;
+        monthStar: number;
+        dayStar: number;
+      };
+      qiMenGate?: {
+        name: string;
+        direction: string;
+        description: string;
+        status: "Auspicious" | "Inauspicious" | "Neutral";
+      };
+      vedicAstrology?: {
+        nakshatra: string;
+        moonProgress?: number;
+        sunNakshatra?: string;
+        sunProgress?: number;
+        tithi: string;
+        ayanamsa?: string;
+      };
+      ephemerisData?: {
+        source: string;
+        planetaryPositions: any;
+      };
+      astrologyData?: {
+        source: string;
+        transits: any;
+      };
+      ragContext?: {
+        source: string;
+        classicalRules: any;
+        personalBazi?: any;
+      };
+      ichingHexagram?: {
+        number: number;
+        name: string;
+        riskModifier: number;
+        confidenceBoost: number;
+        actionAdvice: string;
+      };
     };
   };
   closedLoopFeedback?: number; // Proposed closed-loop reward delta (-1.0 to 1.0)
@@ -196,58 +269,94 @@ function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
   return 0.0;
 }
 
+export function calculateAspectWeight(currentOrb: number, maxOrb: number): number {
+  if (currentOrb >= maxOrb) return 0.0;
+  return Math.cos((currentOrb / maxOrb) * (Math.PI / 2));
+}
+
+function getAspectsScoresFromTransits(transits: string[]): { hardWeight: number; softWeight: number } {
+  let hardWeight = 0;
+  let softWeight = 0;
+
+  for (const t of transits) {
+    const tUpper = t.toUpperCase();
+    const isHard = tUpper.includes("SQUARE") || tUpper.includes("OPPOSITION");
+    const isSoft = tUpper.includes("TRINE") || tUpper.includes("SEXTILE");
+
+    if (isHard || isSoft) {
+      const orbMatch = tUpper.match(/ORB:\s*([0-9.]+)/);
+      const orb = orbMatch ? parseFloat(orbMatch[1]) : 2.5;
+      const weight = calculateAspectWeight(orb, 5.0);
+
+      if (isHard) {
+        hardWeight += weight;
+      } else {
+        softWeight += weight;
+      }
+    }
+  }
+
+  return { hardWeight, softWeight };
+}
+
 export class NBAEngine {
   /**
    * Encodes the flat state vector into three distinct sub-states (layers)
    * with custom normalization, scaling, and trigonometric/cyclical mapping.
+   * Leverages temporal anchoring nested scopes when provided.
    */
   public encodeStateLayers(state: any): StateLayers {
-    // --- Layer 1: Biometric & Dynamic Physical State ---
-    const ansLoadNorm = (state.ansLoad ?? 50) / 100.0;
-    const shieldCapacityNorm = (state.shieldCapacity ?? 50) / 100.0;
-    const stressLevelNorm = (state.stressLevel ?? state.ansLoad ?? 50) / 100.0;
+    const current = state.currentEphemeris ?? state;
+    const target = state.targetEphemeris ?? state;
+
+    // --- Layer 1: Biometric & Dynamic Physical State (Execution Date) ---
+    const ansLoadNorm = (current.ansLoad ?? 50) / 100.0;
+    const shieldCapacityNorm = (current.shieldCapacity ?? 50) / 100.0;
+    const stressLevelNorm = (current.stressLevel ?? current.ansLoad ?? 50) / 100.0;
     
     let resilienceScore = 0.5;
-    if (state.resilience) {
-      const r = String(state.resilience).toLowerCase();
+    if (current.resilience) {
+      const r = String(current.resilience).toLowerCase();
       if (r === "high" || r === "strong" || r === "optimal") resilienceScore = 1.0;
       else if (r === "adequate" || r === "normal") resilienceScore = 0.6;
       else if (r === "low" || r === "weak" || r === "vulnerable") resilienceScore = 0.2;
     }
 
-    // --- Layer 2: Astrophysical & Space Weather State ---
-    const solarPhaseRad = ((state.solarPhase ?? 0) * Math.PI) / 180.0;
+    // --- Layer 2: Astrophysical & Space Weather State (Target Date for orbits, Execution Date for weather) ---
+    const solarPhaseRad = ((target.solarPhase ?? 0) * Math.PI) / 180.0;
     const solarPhaseSin = Math.sin(solarPhaseRad);
     const solarPhaseCos = Math.cos(solarPhaseRad);
 
-    const kpVal = state.spaceWeather?.kpIndex ?? 3.0;
+    const spaceWeatherSource = current.spaceWeather ?? target.spaceWeather ?? state.spaceWeather;
+    const kpVal = spaceWeatherSource?.kpIndex ?? 3.0;
     const kpIndexNorm = kpVal / 9.0;
 
-    const windSpeedVal = state.spaceWeather?.solarWindSpeed ?? 400;
+    const windSpeedVal = spaceWeatherSource?.solarWindSpeed ?? 400;
     const solarWindSpeedNorm = Math.max(0, Math.min(1.0, (windSpeedVal - 300) / 500));
 
-    let aspectsRiskScore = (state.environmentalRisk ?? 50) / 100.0;
-    if (state.astrologyData?.transits && Array.isArray(state.astrologyData.transits)) {
-      const aspects = state.astrologyData.transits.join(" ").toUpperCase();
-      const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
-      const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
-      aspectsRiskScore = Math.max(0, Math.min(1.0, aspectsRiskScore + (hard * 0.1) - (soft * 0.05)));
+    const astrologySource = target.astrologyData ?? state.astrologyData;
+    let aspectsRiskScore = (target.environmentalRisk ?? state.environmentalRisk ?? 50) / 100.0;
+    if (astrologySource?.transits && Array.isArray(astrologySource.transits)) {
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologySource.transits);
+      aspectsRiskScore = Math.max(0, Math.min(1.0, aspectsRiskScore + (hardWeight * 0.1) - (softWeight * 0.05)));
     }
 
-    // --- Layer 3: Metaphysical & Calendrical State ---
+    // --- Layer 3: Metaphysical & Calendrical State (Target Date) ---
+    const qiMenGateSource = target.qiMenGate ?? state.qiMenGate;
     let qiMenGateScore = 0.0;
-    if (state.qiMenGate) {
-      if (state.qiMenGate.status === "Auspicious") qiMenGateScore = 1.0;
-      else if (state.qiMenGate.status === "Inauspicious") qiMenGateScore = -1.0;
+    if (qiMenGateSource) {
+      if (qiMenGateSource.status === "Auspicious") qiMenGateScore = 1.0;
+      else if (qiMenGateSource.status === "Inauspicious") qiMenGateScore = -1.0;
     }
 
-    const isVoidTime = state.isVoidTime ? 1.0 : 0.0;
-    const isConflictDay = state.isConflictDay ? 1.0 : 0.0;
-    const isDoyouHazard = state.isDoyouHazard ? 1.0 : 0.0;
+    const isVoidTime = (target.isVoidTime ?? state.isVoidTime) ? 1.0 : 0.0;
+    const isConflictDay = (target.isConflictDay ?? state.isConflictDay) ? 1.0 : 0.0;
+    const isDoyouHazard = (target.isDoyouHazard ?? state.isDoyouHazard) ? 1.0 : 0.0;
 
-    const yStar = state.nineStarKi?.yearStar ?? 5;
-    const mStar = state.nineStarKi?.monthStar ?? 5;
-    const dStar = state.nineStarKi?.dayStar ?? 5;
+    const nineStarKiSource = target.nineStarKi ?? state.nineStarKi;
+    const yStar = nineStarKiSource?.yearStar ?? 5;
+    const mStar = nineStarKiSource?.monthStar ?? 5;
+    const dStar = nineStarKiSource?.dayStar ?? 5;
     const nineStarKiWeight = (yStar + mStar + dStar) / 27.0;
 
     return {
@@ -285,6 +394,8 @@ export class NBAEngine {
     encodedLayers: StateLayers,
     macroInstruction: "BLOCK_ACTIVE_RELOCATION" | "FAVOR_PREPARATION" | "PERMIT_ALL" = "PERMIT_ALL",
   ): number {
+    const target = state.targetEphemeris ?? state;
+
     const {
       unifiedRiskScore,
       tendoDirection,
@@ -293,7 +404,7 @@ export class NBAEngine {
       ephemerisData,
       astrologyData,
       ragContext,
-    } = state;
+    } = target;
 
     const f1_ans = encodedLayers.biometricDynamic.ansLoadNorm;
     const f2_shield = encodedLayers.biometricDynamic.shieldCapacityNorm;
@@ -302,7 +413,7 @@ export class NBAEngine {
 
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
-      const match = vedicAstrology.tithi.match(/\d+/);
+      const match = String(vedicAstrology.tithi).match(/\d+/);
       if (match) {
         const tithiNum = parseInt(match[0], 10);
         const tithiPhase = (tithiNum - 1) / 30;
@@ -329,10 +440,8 @@ export class NBAEngine {
       astrologyData.transits &&
       Array.isArray(astrologyData.transits)
     ) {
-      const aspects = astrologyData.transits.join(" ").toUpperCase();
-      const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
-      const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
-      f7_astro = (soft - hard) * 0.25;
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologyData.transits);
+      f7_astro = (softWeight - hardWeight) * 0.25;
       f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
     }
 
@@ -553,6 +662,10 @@ export class NBAEngine {
     const state = params.stateVector;
     const closedLoopFeedback = params.closedLoopFeedback ?? 0;
 
+    // Anchors for nested parameters
+    const current = state.currentEphemeris ?? state;
+    const target = state.targetEphemeris ?? state;
+
     // 1. Encode state space layers (Proposal A)
     const encodedLayers = this.encodeStateLayers(state);
 
@@ -561,12 +674,12 @@ export class NBAEngine {
     const f3_risk = encodedLayers.astrophysical.aspectsRiskScore;
     const f4_solar = encodedLayers.astrophysical.solarPhaseCos;
 
-    // Derived classical features for legacy alignment
-    const { vedicAstrology, ephemerisData, astrologyData, ragContext } = state;
+    // Derived classical features for legacy alignment (pulled from target)
+    const { vedicAstrology, ephemerisData, astrologyData, ragContext } = target;
     
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
-      const match = vedicAstrology.tithi.match(/\d+/);
+      const match = String(vedicAstrology.tithi).match(/\d+/);
       if (match) {
         const tithiNum = parseInt(match[0], 10);
         const tithiPhase = (tithiNum - 1) / 30;
@@ -593,10 +706,8 @@ export class NBAEngine {
       astrologyData.transits &&
       Array.isArray(astrologyData.transits)
     ) {
-      const aspects = astrologyData.transits.join(" ").toUpperCase();
-      const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
-      const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
-      f7_astro = (soft - hard) * 0.25;
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologyData.transits);
+      f7_astro = (softWeight - hardWeight) * 0.25;
       f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
     }
 
@@ -693,17 +804,20 @@ export class NBAEngine {
 
     // --- LLM Self-Attention Mimicry Block ---
     const q_honmei =
-      (state.ragContext?.personalBazi?.honmeiStar?.physical || 5) / 9.0;
+      (target.ragContext?.personalBazi?.honmeiStar?.physical || 5) / 9.0;
     const q_getsumei =
-      (state.ragContext?.personalBazi?.honmeiStar?.classical || 5) / 9.0;
+      (target.ragContext?.personalBazi?.honmeiStar?.classical || 5) / 9.0;
     const q_daymaster = f9_personal;
     const queries = [q_honmei, q_getsumei, q_daymaster];
 
-    const k_year = (state.nineStarKi?.yearStar || 5) / 9.0;
-    const k_month = (state.nineStarKi?.monthStar || 5) / 9.0;
-    const k_day = (state.nineStarKi?.dayStar || 5) / 9.0;
+    const nineStarKiSource = target.nineStarKi ?? state.nineStarKi;
+    const k_year = (nineStarKiSource?.yearStar || 5) / 9.0;
+    const k_month = (nineStarKiSource?.monthStar || 5) / 9.0;
+    const k_day = (nineStarKiSource?.dayStar || 5) / 9.0;
     const k_lunar = f5_vedic;
-    const k_space = (state.spaceWeather?.kpIndex || 3.0) / 9.0;
+
+    const spaceWeatherSource = current.spaceWeather ?? state.spaceWeather;
+    const k_space = (spaceWeatherSource?.kpIndex || 3.0) / 9.0;
     const k_vix = f3_risk;
     const keys = [k_year, k_month, k_day, k_lunar, k_space, k_vix];
 
@@ -777,12 +891,12 @@ export class NBAEngine {
     if (personalLog) {
       logicTrace.push(`[PERSONAL] ${personalLog.trim()}`);
     }
-    if (state.ichingHexagram) {
+    if (target.ichingHexagram) {
       logicTrace.push(
-        `[MODIFIER] I-Ching Hexagram ${state.ichingHexagram.number} applied: Risk Modifier ${state.ichingHexagram.riskModifier > 0 ? "+" : ""}${state.ichingHexagram.riskModifier}, Confidence Boost ${state.ichingHexagram.confidenceBoost > 0 ? "+" : ""}${state.ichingHexagram.confidenceBoost}`,
+        `[MODIFIER] I-Ching Hexagram ${target.ichingHexagram.number} applied: Risk Modifier ${target.ichingHexagram.riskModifier > 0 ? "+" : ""}${target.ichingHexagram.riskModifier}, Confidence Boost ${target.ichingHexagram.confidenceBoost > 0 ? "+" : ""}${target.ichingHexagram.confidenceBoost}`,
       );
     }
-    if (state.isDoyouHazard) {
+    if (target.isDoyouHazard) {
       logicTrace.push(
         `[DOYOU] Active Doyou Hazard (土用殺) detected. Restricting active/purge relocation actions.`,
       );
@@ -822,21 +936,42 @@ export class NBAEngine {
 
       // Predict next state S' (FQI transition modeling)
       const nextState = { ...state };
-      if (action === "PREPARE_AND_WAIT") {
-        nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 10);
-        nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 5);
-      } else if (action === "ABORT_AND_SHIELD") {
-        nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 15);
-        nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 10);
-      } else if (action === "EXECUTE_RELOCATION") {
-        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 20);
-        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 15);
-      } else if (action === "EXECUTE_PURGE_RELOCATION") {
-        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 30);
-        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 40);
-      } else if (action === "GATHER_INTEL") {
-        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 5);
-        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 5);
+      if (state.currentEphemeris) {
+        const nextCurrent = { ...state.currentEphemeris };
+        if (action === "PREPARE_AND_WAIT") {
+          nextCurrent.ansLoad = Math.max(0, (state.currentEphemeris.ansLoad ?? 50) - 10);
+          nextCurrent.shieldCapacity = Math.min(100, (state.currentEphemeris.shieldCapacity ?? 50) + 5);
+        } else if (action === "ABORT_AND_SHIELD") {
+          nextCurrent.ansLoad = Math.max(0, (state.currentEphemeris.ansLoad ?? 50) - 15);
+          nextCurrent.shieldCapacity = Math.min(100, (state.currentEphemeris.shieldCapacity ?? 50) + 10);
+        } else if (action === "EXECUTE_RELOCATION") {
+          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 20);
+          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 15);
+        } else if (action === "EXECUTE_PURGE_RELOCATION") {
+          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 30);
+          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 40);
+        } else if (action === "GATHER_INTEL") {
+          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 5);
+          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 5);
+        }
+        nextState.currentEphemeris = nextCurrent;
+      } else {
+        if (action === "PREPARE_AND_WAIT") {
+          nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 10);
+          nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 5);
+        } else if (action === "ABORT_AND_SHIELD") {
+          nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 15);
+          nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 10);
+        } else if (action === "EXECUTE_RELOCATION") {
+          nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 20);
+          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 15);
+        } else if (action === "EXECUTE_PURGE_RELOCATION") {
+          nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 30);
+          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 40);
+        } else if (action === "GATHER_INTEL") {
+          nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 5);
+          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 5);
+        }
       }
 
       const nextEncodedLayers = this.encodeStateLayers(nextState);
@@ -888,8 +1023,8 @@ export class NBAEngine {
     let confidence = probabilities[bestActionIndex];
 
     // Apply I-Ching confidence boost
-    if (state.ichingHexagram) {
-      confidence += state.ichingHexagram.confidenceBoost;
+    if (target.ichingHexagram) {
+      confidence += target.ichingHexagram.confidenceBoost;
       confidence = Math.max(0, Math.min(1, confidence));
       logicTrace.push(
         `[CONFIDENCE] Post-modifier Confidence Adjusted to ${(confidence * 100).toFixed(1)}%`,
@@ -906,7 +1041,7 @@ export class NBAEngine {
 
     // --- LLM Token Generation Mimicry Trace ---
     const llmPredictionTrace: string[] = [];
-    const dayMasterName = state.ragContext?.personalBazi?.summary?.dayMaster || "甲";
+    const dayMasterName = target.ragContext?.personalBazi?.summary?.dayMaster || "甲";
     llmPredictionTrace.push(
       `[Token 1: <s_start>] Initializing Metaphysical Decision Transformer...`,
     );

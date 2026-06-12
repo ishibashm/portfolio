@@ -7,7 +7,7 @@
  */
 
 import { BaziResult } from "./baziEngine";
-import { getCurrentZodiac, getHonmeiStar } from "./ephemerisEngine";
+import { getCurrentZodiac, getHonmeiStar, getClassicalDayStar, getDayStar } from "./ephemerisEngine";
 
 export interface TarotCard {
   name: string;
@@ -315,6 +315,92 @@ const TAROT_DECK: Omit<TarotCard, "orientation">[] = [
   },
 ];
 
+const ICHING_GRID = [
+  // Row 0 (Upper 坤): 坤, 震, 坎, 兌, 艮, 離, 巽, 乾
+  [2, 24, 7, 19, 15, 36, 46, 11],
+  // Row 1 (Upper 震)
+  [16, 51, 40, 54, 62, 55, 32, 34],
+  // Row 2 (Upper 坎)
+  [8, 3, 29, 60, 39, 63, 48, 5],
+  // Row 3 (Upper 兌)
+  [45, 17, 47, 58, 31, 49, 28, 43],
+  // Row 4 (Upper 艮)
+  [23, 27, 4, 41, 52, 22, 18, 26],
+  // Row 5 (Upper 離)
+  [35, 21, 64, 38, 56, 30, 50, 14],
+  // Row 6 (Upper 巽)
+  [20, 42, 59, 61, 53, 37, 57, 9],
+  // Row 7 (Upper 乾)
+  [12, 25, 6, 10, 33, 13, 44, 1]
+];
+
+export const ICHING_HEXAGRAMS_ROXY: Record<number, string> = {
+  1: "乾 (Qian) - The Creative / Force (創造・天)",
+  2: "坤 (Kun) - The Receptive / Field (受容・地)",
+  3: "屯 (Zhun) - Difficulty at the Beginning / Sprouting (生みの苦しみ)",
+  4: "蒙 (Meng) - Youthful Folly / Enveloping (無知の啓蒙)",
+  5: "需 (Xu) - Waiting (Nourishment) / Attending (待機・恵みの雨)",
+  6: "訟 (Song) - Conflict / Arguing (争い・訴訟)",
+  7: "師 (Shi) - The Army / Leading (軍隊・指導)",
+  8: "比 (Bi) - Holding Together (Union) / Grouping (親密・結束)",
+  9: "小畜 (Xiao Xu) - Small Accumulation / Taming (少しの蓄積)",
+  10: "履 (Lv) - Treading (Conduct) / Treading (実践・礼儀)",
+  11: "泰 (Tai) - Peace / Pervading (安泰・調和)",
+  12: "否 (Pi) - Standstill (Obstruction) / Obstruction (閉塞・停滞)",
+  13: "同人 (Tong Ren) - Fellowship with Men (協同・志を同じくする)",
+  14: "大有 (Da You) - Possession in Great Measure (大いなる所有)",
+  15: "謙 (Qian) - Modesty (謙遜・謙虚)",
+  16: "豫 (Yu) - Enthusiasm / Providing (歓喜・準備)",
+  17: "隨 (Sui) - Following (随順・流れに従う)",
+  18: "蠱 (Gu) - Work on what has been spoiled (腐敗・立て直し)",
+  19: "臨 (Lin) - Approach (臨む・盛大)",
+  20: "觀 (Guan) - Contemplation / View (観察・静観)",
+  21: "噬嗑 (Shi He) - Biting Through (噛み砕き・障害除去)",
+  22: "賁 (Bi) - Grace / Adornning (装飾・内面の美)",
+  23: "剝 (Bo) - Splitting Apart (剥落・衰退)",
+  24: "復 (Fu) - Return (The Turning Point) (復帰・一陽来復)",
+  25: "無妄 (Wu Wang) - Innocence / Unexpected (無垢・誠実)",
+  26: "大畜 (Da Chu) - Great Accumulation (大いなる蓄積)",
+  27: "頤 (Yi) - The Corners of the Mouth / Nourishment (養育・健康)",
+  28: "大過 (Da Guo) - Preponderance of the Great (大過・重大な過失)",
+  29: "坎 (Kan) - The Abysmal (Water) / Gorge (困難・水)",
+  30: "離 (Li) - The Clinging (Fire) / Radiance (付着・火・明知)",
+  31: "咸 (Xian) - Influence / Wooing (感応・引き寄せ)",
+  32: "恒 (Heng) - Duration / Persevering (恒常・継続)",
+  33: "遯 (Dun) - Retreat / Retiring (退避・逃れる)",
+  34: "大壮 (Da Zhuang) - Great Power / Great Invigorating (大壮・勢い)",
+  35: "晋 (Jin) - Progress / Prospering (進出・発展)",
+  36: "明夷 (Ming Yi) - Darkening of the Light (明夷・試練)",
+  37: "家人 (Jia Ren) - The Family / Dwelling People (家人・身内との絆)",
+  38: "睽 (Kui) - Opposition / Polarising (対立・不和)",
+  39: "蹇 (Jian) - Obstruction / Limping (険難・困難)",
+  40: "解 (Xie) - Deliverance / Taking Apart (解決・解放)",
+  41: "損 (Sun) - Decrease / Diminishing (損失・謙譲)",
+  42: "益 (Yi) - Increase / Augmenting (利益・拡大)",
+  43: "夬 (Guai) - Resoluteness / Parting (決断・打破)",
+  44: "姤 (Gou) - Meeting / Coupling (邂逅・予期せぬ出会い)",
+  45: "萃 (Cui) - Gathering Together / Clustering (集結・繁栄)",
+  46: "升 (Sheng) - Pushing Upward / Ascending (上昇・昇進)",
+  47: "困 (Kun) - Oppression (Exhaustion) / Confining (困難・忍耐)",
+  48: "井 (Jing) - The Well (源泉・永続的供給)",
+  49: "革 (Ge) - Revolution (Molting) / Skinning (変革・リセット)",
+  50: "鼎 (Ding) - The Cauldron / Holding (安定・新体制の確立)",
+  51: "震 (Zhen) - The Arousing (Thunder) / Shake (奮起・雷)",
+  52: "艮 (Gen) - Keeping Still (Mountain) / Bound (静止・山)",
+  53: "漸 (Jian) - Development (Gradual Progress) / Infiltrating (順調な進展)",
+  54: "歸妹 (Gui Mei) - The Marrying Maiden / Converting Maiden (不適切な関係・衝動性)",
+  55: "豐 (Feng) - Abundance / Fullness / Abounding (豊大・最盛期)",
+  56: "旅 (Lv) - The Wanderer / Sojourning (旅路・不安定)",
+  57: "巽 (Xun) - The Gentle (Wind) / Ground (従順・風)",
+  58: "兌 (Dui) - The Joyous (Lake) / Open (喜び・沢)",
+  59: "渙 (Huan) - Dispersion (Dissolution) / Dispersing (氷解・散らす)",
+  60: "節 (Jie) - Limitation / Articulating (節度・ルール)",
+  61: "中孚 (Zhong Fu) - Inner Truth / Center Returning (至誠・信頼関係)",
+  62: "小過 (Xiao Guo) - Preponderance of the Small / Small Exceeding (些細な過失・慎重さ)",
+  63: "既濟 (Ji Ji) - After Completion / Already Fording (完成・秩序)",
+  64: "未濟 (Wei Ji) - Before Completion / Not Yet Fording (未完成・希望)",
+};
+
 const QI_MEN_GATES = [
   {
     name: "開門 (Kai Men - Open)",
@@ -327,7 +413,7 @@ const QI_MEN_GATES = [
     name: "休門 (Xiu Men - Rest)",
     direction: "N",
     description:
-      "休息、癒し、家族関係の修復に吉。【活用法】リフレッシュ目的の移住や、ワークライフバランスを重視する引越しに最適です。",
+      "休息、癒し、家族関係の修復に吉。【活用法】リフレッシュ目的 of 移住や、ワークライフバランスを重視する引越しに最適です。",
     status: "Auspicious" as const,
   },
   {
@@ -373,29 +459,6 @@ const QI_MEN_GATES = [
     status: "Inauspicious" as const,
   },
 ];
-
-const ICHING_HEXAGRAMS_ROXY: Record<number, string> = {
-  1: "乾 (Qian) - The Creative / Force (創造・天)",
-  2: "坤 (Kun) - The Receptive / Field (受容・地)",
-  3: "屯 (Zhun) - Difficulty at the Beginning / Sprouting (生みの苦しみ)",
-  4: "蒙 (Meng) - Youthful Folly / Enveloping (無知の啓蒙)",
-  5: "需 (Xu) - Waiting (Nourishment) / Attending (待機・恵みの雨)",
-  6: "訟 (Song) - Conflict / Arguing (争い・訴訟)",
-  7: "師 (Shi) - The Army / Leading (軍隊・指導)",
-  8: "比 (Bi) - Holding Together (Union) / Grouping (親密・結束)",
-  9: "小畜 (Xiao Xu) - Small Accumulation / Taming (少しの蓄積)",
-  10: "履 (Lv) - Treading (Conduct) / Treading (実践・礼儀)",
-  11: "泰 (Tai) - Peace / Pervading (安泰・調和)",
-  12: "否 (Pi) - Standstill (Obstruction) / Obstruction (閉塞・停滞)",
-  29: "坎 (Kan) - The Abysmal (Water) / Gorge (困難・水)",
-  30: "離 (Li) - The Clinging (Fire) / Radiance (付着・火・明知)",
-  51: "震 (Zhen) - The Arousing (Thunder) / Shake (奮起・雷)",
-  52: "艮 (Gen) - Keeping Still (Mountain) / Bound (静止・山)",
-  57: "巽 (Xun) - The Gentle (Wind) / Ground (従順・風)",
-  58: "兌 (Dui) - The Joyous (Lake) / Open (喜び・沢)",
-  63: "既濟 (Ji Ji) - After Completion / Already Fording (完成・秩序)",
-  64: "未濟 (Wei Ji) - Before Completion / Not Yet Fording (未完成・希望)",
-};
 
 export function getLifePathNumber(birthDate: Date): NumerologyData {
   const year = birthDate.getFullYear();
@@ -476,9 +539,9 @@ function getSunSign(birthDate: Date): string {
 
 function calculateHexagramFromLines(lines: number[]): number {
   const bits: number[] = lines.map((l) => (l === 7 || l === 9 ? 1 : 0));
-  const val = bits.reduce((acc, bit, idx) => acc + bit * Math.pow(2, idx), 0);
-  const keys = Object.keys(ICHING_HEXAGRAMS_ROXY).map(Number);
-  return keys[val % keys.length];
+  const lowerVal = bits[0] * 1 + bits[1] * 2 + bits[2] * 4;
+  const upperVal = bits[3] * 1 + bits[4] * 2 + bits[5] * 4;
+  return ICHING_GRID[upperVal][lowerVal];
 }
 
 function getNineStarKi(
@@ -507,8 +570,8 @@ function getNineStarKi(
   const mStarNum = ((birthDate.getMonth() + yrStarNum) % 9) + 1;
   const monthStar = starsMap[mStarNum];
 
-  const dayHash = currentDate.getDate() + currentDate.getMonth() * 31;
-  const dStarNum = (dayHash % 9) + 1;
+  // Natal Day Star (Nichimei) should be calculated based on user's birthDate
+  const dStarNum = useClassical ? getClassicalDayStar(birthDate) : getDayStar(birthDate);
   const dayStar = starsMap[dStarNum];
 
   // Calculate dynamic Tendo direction

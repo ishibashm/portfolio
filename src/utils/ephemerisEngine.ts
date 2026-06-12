@@ -149,7 +149,8 @@ export const AstroEngine = {
 
   // 地方恒星時 (Local Sidereal Time)
   getLocalSiderealTime(date: Date, lon: number): number {
-    return AstroEngine.getGreenwichSiderealTime(date) + lon / 15;
+    const rawLst = AstroEngine.getGreenwichSiderealTime(date) + lon / 15;
+    return ((rawLst % 24) + 24) % 24;
   },
 
   /**
@@ -161,7 +162,9 @@ export const AstroEngine = {
   getAscendant(date: Date, lat: number, lon: number, gst?: number): number {
     const sidereal =
       gst !== undefined ? gst : AstroEngine.getGreenwichSiderealTime(date);
-    const lst = (sidereal + lon / 15) * 15; // 時間(0-24)を角度(0-360)に変換
+    const rawLstHours = sidereal + lon / 15;
+    const lstHours = ((rawLstHours % 24) + 24) % 24;
+    const lst = lstHours * 15; // 時間(0-24)を角度(0-360)に変換
     const lstRad = (lst * Math.PI) / 180;
     const latRad = (lat * Math.PI) / 180;
 
@@ -1177,24 +1180,7 @@ export function getCurrentZodiac(
   const eightChar = lunar.getEightChar();
   const dayZodiac = eightChar.getDayZhi();
 
-  // 時の干支: 地方恒星時ベース
-  const ZODIACS_GANZHI = [
-    "子",
-    "丑",
-    "寅",
-    "卯",
-    "辰",
-    "巳",
-    "午",
-    "未",
-    "申",
-    "酉",
-    "戌",
-    "亥",
-  ];
-  const lst = AstroEngine.getLocalSiderealTime(date, lon);
-  const hourIndex = Math.floor(lst / 2) % 12;
-  const hourZodiac = ZODIACS_GANZHI[hourIndex];
+  const hourZodiac = eightChar.getTimeZhi();
 
   return { yearZodiac, monthZodiac, dayZodiac, hourZodiac };
 }

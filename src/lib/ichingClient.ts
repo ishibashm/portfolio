@@ -1,3 +1,5 @@
+import { ICHING_HEXAGRAMS_ROXY } from "@/utils/metaphysicalApis";
+
 export interface Hexagram {
   number: number;
   name: string;
@@ -180,5 +182,26 @@ export class IChingClient {
     }
 
     return HEXAGRAM_DATA[hexagramNumber] || DEFAULT_HEXAGRAM;
+  }
+
+  public getHexagramByNumber(num: number, adviceFallback?: string): Hexagram {
+    if (HEXAGRAM_DATA[num]) {
+      return HEXAGRAM_DATA[num];
+    }
+    const name = ICHING_HEXAGRAMS_ROXY[num] || `Hexagram ${num}`;
+    const charMatch = name.match(/^([^\s(]+)/);
+    const character = charMatch ? charMatch[1] : "卦";
+    const pinyinMatch = name.match(/\(([^)]+)\)/);
+    const pinyin = pinyinMatch ? pinyinMatch[1] : `Hexagram ${num}`;
+
+    return {
+      number: num,
+      name,
+      pinyin,
+      character,
+      riskModifier: 0,
+      confidenceBoost: 0,
+      actionAdvice: adviceFallback || "安定した状態です。慎重に状況を見極めましょう。",
+    };
   }
 }

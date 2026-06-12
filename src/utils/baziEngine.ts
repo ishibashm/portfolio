@@ -137,6 +137,17 @@ export class BaziEngine {
     };
   }
 
+  private getStemWuxing(stem: string): string {
+    const map: Record<string, string> = {
+      甲: "木", 乙: "木",
+      丙: "火", 丁: "火",
+      戊: "土", 己: "土",
+      庚: "金", 辛: "金",
+      壬: "水", 癸: "水",
+    };
+    return map[stem] || "";
+  }
+
   private calculateFiveElements(pillars: any): Record<string, number> {
     const balance: Record<string, number> = {
       木: 0,
@@ -146,18 +157,50 @@ export class BaziEngine {
       水: 0,
     };
 
-    const count = (str: string) => {
-      for (const char of str) {
-        if (balance[char] !== undefined) {
-          balance[char]++;
-        }
+    const addWeight = (element: string, weight: number) => {
+      if (balance[element] !== undefined) {
+        balance[element] += weight;
       }
     };
 
-    count(pillars.year.wuxing);
-    count(pillars.month.wuxing);
-    count(pillars.day.wuxing);
-    count(pillars.hour.wuxing);
+    const processPillar = (pillar: any) => {
+      // 1. Celestial Stem (gan) gets weight 1.0
+      if (pillar.gan) {
+        const stemWuxing = this.getStemWuxing(pillar.gan);
+        if (stemWuxing) {
+          addWeight(stemWuxing, 1.0);
+        }
+      }
+
+      // 2. Earthly Branch (zhi) total weight = 1.0, distributed among hidden stems
+      const hidden = pillar.hiddenStems || [];
+      if (hidden.length === 1) {
+        const h0 = this.getStemWuxing(hidden[0]);
+        if (h0) addWeight(h0, 1.0);
+      } else if (hidden.length === 2) {
+        const h0 = this.getStemWuxing(hidden[0]);
+        const h1 = this.getStemWuxing(hidden[1]);
+        if (h0) addWeight(h0, 0.7);
+        if (h1) addWeight(h1, 0.3);
+      } else if (hidden.length >= 3) {
+        const h0 = this.getStemWuxing(hidden[0]);
+        const h1 = this.getStemWuxing(hidden[1]);
+        const h2 = this.getStemWuxing(hidden[2]);
+        if (h0) addWeight(h0, 0.6);
+        if (h1) addWeight(h1, 0.3);
+        if (h2) addWeight(h2, 0.1);
+      }
+    };
+
+    processPillar(pillars.year);
+    processPillar(pillars.month);
+    processPillar(pillars.day);
+    processPillar(pillars.hour);
+
+    // Round values to 2 decimal places to avoid floating point precision issues
+    for (const key in balance) {
+      balance[key] = Math.round(balance[key] * 100) / 100;
+    }
 
     return balance;
   }

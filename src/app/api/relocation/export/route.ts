@@ -19,6 +19,56 @@ import { getGeomagneticData } from "@/utils/geomagnetism";
 
 export const dynamic = "force-dynamic";
 
+function interpolateKpIndex(logs: any[]): any[] {
+  // Sort ascending by targetDate time to do chronological interpolation
+  const sorted = [...logs].sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+
+  for (let k = 0; k < sorted.length; k++) {
+    if (sorted[k].kpIndex === null || sorted[k].kpIndex === undefined) {
+      // Find nearest preceding non-null
+      let i = k - 1;
+      while (i >= 0 && (sorted[i].kpIndex === null || sorted[i].kpIndex === undefined)) {
+        i--;
+      }
+
+      // Find nearest succeeding non-null
+      let j = k + 1;
+      while (j < sorted.length && (sorted[j].kpIndex === null || sorted[j].kpIndex === undefined)) {
+        j++;
+      }
+
+      const t_k = sorted[k].targetDate.getTime();
+
+      if (i >= 0 && j < sorted.length) {
+        const t_i = sorted[i].targetDate.getTime();
+        const t_j = sorted[j].targetDate.getTime();
+        const v_i = sorted[i].kpIndex;
+        const v_j = sorted[j].kpIndex;
+        if (t_j !== t_i) {
+          sorted[k].kpIndex = v_i + (v_j - v_i) * ((t_k - t_i) / (t_j - t_i));
+        } else {
+          sorted[k].kpIndex = v_i;
+        }
+      } else if (i >= 0) {
+        sorted[k].kpIndex = sorted[i].kpIndex;
+      } else if (j < sorted.length) {
+        sorted[k].kpIndex = sorted[j].kpIndex;
+      } else {
+        sorted[k].kpIndex = 3.0; // Default fallback
+      }
+    }
+  }
+
+  // Round kpIndex to 2 decimal places if it's a number
+  for (const log of sorted) {
+    if (typeof log.kpIndex === "number") {
+      log.kpIndex = Math.round(log.kpIndex * 100) / 100;
+    }
+  }
+
+  return sorted;
+}
+
 export async function GET(request: Request) {
   try {
     // 1. Read user config from local_tactical_config.json
@@ -210,9 +260,9 @@ export async function GET(request: Request) {
       );
 
       return {
-        classical: classicalCollision.finalVectors,
-        physicalIndependent: physicalIndepCollision.finalVectors,
-        physicalCoupled: physicalCoupledCollision.finalVectors,
+        classical: classicalCollision,
+        physicalIndependent: physicalIndepCollision,
+        physicalCoupled: physicalCoupledCollision,
       };
     };
 
@@ -452,15 +502,27 @@ export async function GET(request: Request) {
           declination,
         },
         targetStatuses: {
-          classical:
-            intentsComparison[actionIntent].classical[targetDirName] || "SAFE",
-          physicalIndependent:
-            intentsComparison[actionIntent].physicalIndependent[
-              targetDirName
-            ] || "SAFE",
-          physicalCoupled:
-            intentsComparison[actionIntent].physicalCoupled[targetDirName] ||
-            "SAFE",
+          classical: (() => {
+            const coll = intentsComparison[actionIntent].classical;
+            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            return coll.finalVectors[targetDirName] || "SAFE";
+          })(),
+          physicalIndependent: (() => {
+            const coll = intentsComparison[actionIntent].physicalIndependent;
+            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            return coll.finalVectors[targetDirName] || "SAFE";
+          })(),
+          physicalCoupled: (() => {
+            const coll = intentsComparison[actionIntent].physicalCoupled;
+            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            return coll.finalVectors[targetDirName] || "SAFE";
+          })(),
         },
       };
     }
@@ -476,6 +538,9 @@ export async function GET(request: Request) {
       orderBy: { targetDate: "desc" },
       take: 15,
     });
+    const interpolatedLogs = interpolateKpIndex(stateLogs).sort(
+      (a, b) => b.targetDate.getTime() - a.targetDate.getTime()
+    );
 
     // 6. Query relevant KnowledgeDocuments
     const relevantNotes = await prisma.knowledgeDocument.findMany({
@@ -623,8 +688,33 @@ export async function GET(request: Request) {
           tendoDirection: vectorCollision.tendoDirection,
           doyouState: vectorCollision.doyouState,
         },
-        modelsComparison: intentsComparison[actionIntent], // Selected intent comparison
-        intentsComparison, // Full multi-intent matrix
+        modelsComparison: {
+          classical: intentsComparison[actionIntent].classical.finalVectors,
+          physicalIndependent: intentsComparison[actionIntent].physicalIndependent.finalVectors,
+          physicalCoupled: intentsComparison[actionIntent].physicalCoupled.finalVectors,
+        },
+        intentsComparison: {
+          DEFAULT: {
+            classical: intentsComparison.DEFAULT.classical.finalVectors,
+            physicalIndependent: intentsComparison.DEFAULT.physicalIndependent.finalVectors,
+            physicalCoupled: intentsComparison.DEFAULT.physicalCoupled.finalVectors,
+          },
+          MIGRATION: {
+            classical: intentsComparison.MIGRATION.classical.finalVectors,
+            physicalIndependent: intentsComparison.MIGRATION.physicalIndependent.finalVectors,
+            physicalCoupled: intentsComparison.MIGRATION.physicalCoupled.finalVectors,
+          },
+          BUSINESS: {
+            classical: intentsComparison.BUSINESS.classical.finalVectors,
+            physicalIndependent: intentsComparison.BUSINESS.physicalIndependent.finalVectors,
+            physicalCoupled: intentsComparison.BUSINESS.physicalCoupled.finalVectors,
+          },
+          REST: {
+            classical: intentsComparison.REST.classical.finalVectors,
+            physicalIndependent: intentsComparison.REST.physicalIndependent.finalVectors,
+            physicalCoupled: intentsComparison.REST.physicalCoupled.finalVectors,
+          },
+        },
       },
       forecast30Days,
       auspiciousTimingsDictionary: timingAstrology.map((t) => ({
@@ -633,7 +723,7 @@ export async function GET(request: Request) {
         insight: t.insight,
         source: t.source,
       })),
-      recentMetaphysicalLogs: stateLogs.map((log) => ({
+      recentMetaphysicalLogs: interpolatedLogs.map((log) => ({
         targetDate: log.targetDate.toISOString().split("T")[0],
         ansLoad: log.ansLoad,
         kpIndex: log.kpIndex,

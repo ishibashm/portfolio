@@ -259,6 +259,14 @@ export async function POST(req: Request) {
       }
     }
 
+    const imputedSpaceWeather = {
+      kpIndex: spaceWeatherData.kpIndex !== null ? spaceWeatherData.kpIndex : 3.0,
+      xrayFlux: spaceWeatherData.xrayFlux !== null ? spaceWeatherData.xrayFlux : "B1.0",
+      solarWindSpeed: spaceWeatherData.solarWindSpeed !== null ? spaceWeatherData.solarWindSpeed : 400.0,
+      timestamp: spaceWeatherData.timestamp !== null ? spaceWeatherData.timestamp : new Date().toISOString(),
+      riskScore: parseFloat(spaceWeatherRisk.toFixed(2)),
+    };
+
     const macroContexts = {
       ephemeris: {
         sun: `${sunLon.toFixed(2)}°`,
@@ -306,13 +314,7 @@ export async function POST(req: Request) {
           {} as Record<string, string>,
         ),
       },
-      spaceWeather: {
-        kpIndex: spaceWeatherData.kpIndex,
-        xrayFlux: spaceWeatherData.xrayFlux,
-        solarWindSpeed: spaceWeatherData.solarWindSpeed,
-        timestamp: spaceWeatherData.timestamp,
-        riskScore: parseFloat(spaceWeatherRisk.toFixed(2)),
-      },
+      spaceWeather: imputedSpaceWeather,
       macroEconomics: {
         vix: macroEconomicsData.vix,
         creditSpread: macroEconomicsData.creditSpread,
@@ -390,6 +392,11 @@ export async function POST(req: Request) {
       useClassical ? "coupled" : "independent",
     );
 
+    const ichingHexagram = iching.getHexagramByNumber(
+      metaphysicalData.roxyApi.ichingCast.hexagramNumber,
+      metaphysicalData.roxyApi.ichingCast.interpretation,
+    );
+
     const stateVector: NBAParams["stateVector"] = {
       ansLoad: ansLoad,
       shieldCapacity: shieldCapacity,
@@ -405,21 +412,47 @@ export async function POST(req: Request) {
       astrologyData,
       ragContext,
       vedicAstrology: macroContexts.vedicAstrology,
-      ichingHexagram: iching.calculateHexagram(
-        ansLoad,
-        shieldCapacity,
-        envRisk,
-        sunLon,
-      ),
+      ichingHexagram,
       environmentalNoise: "Low",
       tendoDirection,
       qiMenGate: metaphysicalData.chineseMetasoft?.qiMenGate,
       nineStarKi: {
-        yearStar: env.yearStar,
-        monthStar: env.monthStar,
-        dayStar: env.dayStar,
+        yearStar: useClassical ? env.classicalYearStar : env.yearStar,
+        monthStar: useClassical ? env.classicalMonthStar : env.monthStar,
+        dayStar: useClassical ? env.classicalDayStar : env.dayStar,
       },
-      spaceWeather: macroContexts.spaceWeather,
+      spaceWeather: imputedSpaceWeather,
+
+      // Nested Ephemeris Structures
+      currentEphemeris: {
+        date: today.toISOString().split("T")[0],
+        solarPhase: sunLon,
+        vedicAstrology: macroContexts.vedicAstrology,
+        spaceWeather: imputedSpaceWeather,
+        ansLoad: ansLoad,
+        shieldCapacity: shieldCapacity,
+        stressLevel: typeof stressScore === "number" ? stressScore : 50,
+        resilience: resilienceScore,
+      },
+      targetEphemeris: {
+        date: today.toISOString().split("T")[0],
+        solarPhase: sunLon,
+        isVoidTime,
+        isConflictDay,
+        isDoyouHazard,
+        environmentalRisk: envRisk,
+        nineStarKi: {
+          yearStar: useClassical ? env.classicalYearStar : env.yearStar,
+          monthStar: useClassical ? env.classicalMonthStar : env.monthStar,
+          dayStar: useClassical ? env.classicalDayStar : env.dayStar,
+        },
+        qiMenGate: metaphysicalData.chineseMetasoft?.qiMenGate,
+        vedicAstrology: macroContexts.vedicAstrology,
+        ephemerisData,
+        astrologyData,
+        ragContext,
+        ichingHexagram,
+      },
     };
 
     // 4. Calculate Closed-Loop Biometric Feedback (Proposal D)
