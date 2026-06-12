@@ -478,7 +478,7 @@ export async function GET(request: Request) {
     });
 
     // 6. Query relevant KnowledgeDocuments
-    let relevantNotes = await prisma.knowledgeDocument.findMany({
+    const relevantNotes = await prisma.knowledgeDocument.findMany({
       where: {
         OR: [
           {
@@ -491,6 +491,9 @@ export async function GET(request: Request) {
                 "fengshui",
                 "direction",
                 "metaphysical",
+                "health",
+                "wellness",
+                "biometrics",
               ],
             },
           },
@@ -502,31 +505,76 @@ export async function GET(request: Request) {
           { title: { contains: "kigaku", mode: "insensitive" } },
         ],
       },
-      take: 10,
+      take: 50,
       orderBy: { created_at: "desc" },
     });
 
-    if (relevantNotes.length === 0) {
-      relevantNotes = await prisma.knowledgeDocument.findMany({
+    const blocklist = [
+      "aws", "cloud", "multicloud", "kubernetes", "docker", "typescript", "javascript", 
+      "npm", "serverless", "devops", "pipeline", "database", "git", "backend", "frontend",
+      "react", "next.js", "nextjs", "css", "html", "rest api", "api gateway"
+    ];
+
+    const isRelocationRelevant = (doc: any): boolean => {
+      const titleLower = (doc.title || "").toLowerCase();
+      const contentLower = (doc.content || "").toLowerCase();
+      const tagsStr = (doc.tags || []).join(" ").toLowerCase();
+      const categoryLower = (doc.category || "").toLowerCase();
+      const domainLower = (doc.domain || "").toLowerCase();
+
+      // Explicitly reject if any blocklist keyword is in title, content, domain, or category
+      const hasBlocklistedWord = blocklist.some(word => 
+        titleLower.includes(word) || 
+        contentLower.includes(word) ||
+        domainLower.includes(word) ||
+        categoryLower.includes(word)
+      );
+      if (hasBlocklistedWord) return false;
+
+      // Positive check: Must contain at least one keyword related to wellness, health, astrology, geomancy, direction, or relocation
+      const positiveKeywords = [
+        "relocation", "direction", "astrology", "kigaku", "fengshui", "metaphysical",
+        "wellness", "health", "biometrics", "stress", "sleep", "hrv", "gsr", "readiness",
+        "引越し", "移住", "方位", "吉凶", "天中殺", "空亡", "九星", "占い", "風水",
+        "地磁気", "太陽フレア", "宇宙天気", "生体", "ストレス", "回復"
+      ];
+
+      return positiveKeywords.some(keyword => 
+        titleLower.includes(keyword) || 
+        contentLower.includes(keyword) ||
+        tagsStr.includes(keyword) ||
+        categoryLower.includes(keyword)
+      );
+    };
+
+    let filteredNotes = relevantNotes.filter(isRelocationRelevant);
+
+    if (filteredNotes.length === 0) {
+      const fallbackNotes = await prisma.knowledgeDocument.findMany({
         where: {
           OR: [
             { domain: { equals: "metaphysical", mode: "insensitive" } },
             { type: { equals: "Note", mode: "insensitive" } },
           ],
         },
-        take: 5,
+        take: 50,
         orderBy: { created_at: "desc" },
       });
+      filteredNotes = fallbackNotes.filter(isRelocationRelevant);
     }
 
-    if (relevantNotes.length === 0) {
-      relevantNotes = await prisma.knowledgeDocument.findMany({
-        take: 5,
+    if (filteredNotes.length === 0) {
+      const allNotes = await prisma.knowledgeDocument.findMany({
+        take: 100,
         orderBy: { created_at: "desc" },
       });
+      filteredNotes = allNotes.filter(isRelocationRelevant);
     }
 
-    const cleanNotes = relevantNotes.map((doc) => ({
+    // Slice to top 5 clean notes
+    const finalNotes = filteredNotes.slice(0, 5);
+
+    const cleanNotes = finalNotes.map((doc) => ({
       title: doc.title,
       content: doc.content,
       tags: doc.tags,

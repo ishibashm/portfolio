@@ -4,6 +4,29 @@
  * Incorporates Sigmoid Activation Gates (Biological Stress/Vulnerability) and LLM Self-Attention Mimicry.
  */
 
+export interface StateLayers {
+  biometricDynamic: {
+    ansLoadNorm: number;
+    shieldCapacityNorm: number;
+    stressLevelNorm: number;
+    resilienceScore: number;
+  };
+  astrophysical: {
+    solarPhaseSin: number;
+    solarPhaseCos: number;
+    kpIndexNorm: number;
+    solarWindSpeedNorm: number;
+    aspectsRiskScore: number;
+  };
+  metaphysical: {
+    qiMenGateScore: number;
+    isVoidTime: number;
+    isConflictDay: number;
+    isDoyouHazard: number;
+    nineStarKiWeight: number;
+  };
+}
+
 export interface NBAParams {
   stateVector: {
     ansLoad: number; // 0-100
@@ -66,6 +89,7 @@ export interface NBAParams {
       riskScore: number;
     };
   };
+  closedLoopFeedback?: number; // Proposed closed-loop reward delta (-1.0 to 1.0)
 }
 
 // Pre-defined Actions in our Markov Decision Process (Relocation Context)
@@ -174,43 +198,107 @@ function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
 
 export class NBAEngine {
   /**
+   * Encodes the flat state vector into three distinct sub-states (layers)
+   * with custom normalization, scaling, and trigonometric/cyclical mapping.
+   */
+  public encodeStateLayers(state: any): StateLayers {
+    // --- Layer 1: Biometric & Dynamic Physical State ---
+    const ansLoadNorm = (state.ansLoad ?? 50) / 100.0;
+    const shieldCapacityNorm = (state.shieldCapacity ?? 50) / 100.0;
+    const stressLevelNorm = (state.stressLevel ?? state.ansLoad ?? 50) / 100.0;
+    
+    let resilienceScore = 0.5;
+    if (state.resilience) {
+      const r = String(state.resilience).toLowerCase();
+      if (r === "high" || r === "strong" || r === "optimal") resilienceScore = 1.0;
+      else if (r === "adequate" || r === "normal") resilienceScore = 0.6;
+      else if (r === "low" || r === "weak" || r === "vulnerable") resilienceScore = 0.2;
+    }
+
+    // --- Layer 2: Astrophysical & Space Weather State ---
+    const solarPhaseRad = ((state.solarPhase ?? 0) * Math.PI) / 180.0;
+    const solarPhaseSin = Math.sin(solarPhaseRad);
+    const solarPhaseCos = Math.cos(solarPhaseRad);
+
+    const kpVal = state.spaceWeather?.kpIndex ?? 3.0;
+    const kpIndexNorm = kpVal / 9.0;
+
+    const windSpeedVal = state.spaceWeather?.solarWindSpeed ?? 400;
+    const solarWindSpeedNorm = Math.max(0, Math.min(1.0, (windSpeedVal - 300) / 500));
+
+    let aspectsRiskScore = (state.environmentalRisk ?? 50) / 100.0;
+    if (state.astrologyData?.transits && Array.isArray(state.astrologyData.transits)) {
+      const aspects = state.astrologyData.transits.join(" ").toUpperCase();
+      const hard = (aspects.match(/SQUARE|OPPOSITION/g) || []).length;
+      const soft = (aspects.match(/TRINE|SEXTILE/g) || []).length;
+      aspectsRiskScore = Math.max(0, Math.min(1.0, aspectsRiskScore + (hard * 0.1) - (soft * 0.05)));
+    }
+
+    // --- Layer 3: Metaphysical & Calendrical State ---
+    let qiMenGateScore = 0.0;
+    if (state.qiMenGate) {
+      if (state.qiMenGate.status === "Auspicious") qiMenGateScore = 1.0;
+      else if (state.qiMenGate.status === "Inauspicious") qiMenGateScore = -1.0;
+    }
+
+    const isVoidTime = state.isVoidTime ? 1.0 : 0.0;
+    const isConflictDay = state.isConflictDay ? 1.0 : 0.0;
+    const isDoyouHazard = state.isDoyouHazard ? 1.0 : 0.0;
+
+    const yStar = state.nineStarKi?.yearStar ?? 5;
+    const mStar = state.nineStarKi?.monthStar ?? 5;
+    const dStar = state.nineStarKi?.dayStar ?? 5;
+    const nineStarKiWeight = (yStar + mStar + dStar) / 27.0;
+
+    return {
+      biometricDynamic: {
+        ansLoadNorm,
+        shieldCapacityNorm,
+        stressLevelNorm,
+        resilienceScore,
+      },
+      astrophysical: {
+        solarPhaseSin,
+        solarPhaseCos,
+        kpIndexNorm,
+        solarWindSpeedNorm,
+        aspectsRiskScore,
+      },
+      metaphysical: {
+        qiMenGateScore,
+        isVoidTime,
+        isConflictDay,
+        isDoyouHazard,
+        nineStarKiWeight,
+      },
+    };
+  }
+
+  /**
    * Helper to calculate the static Q-value for a given state vector and action.
-   * Incorporates Action-Type Weighting (攻守分離), Sigmoid Gates, and Attention adjustments.
+   * Incorporates Action-Type Weighting, Sigmoid Gates, Attention adjustments, and HRL constraints.
    */
   private evaluateStateStatic(
     state: any,
     action: ActionType,
     attentionRiskAdjustment: number = 0,
+    encodedLayers: StateLayers,
+    macroInstruction: "BLOCK_ACTIVE_RELOCATION" | "FAVOR_PREPARATION" | "PERMIT_ALL" = "PERMIT_ALL",
   ): number {
     const {
-      ansLoad,
-      shieldCapacity,
-      environmentalRisk = 50,
-      solarPhase,
-      ichingHexagram,
+      unifiedRiskScore,
+      tendoDirection,
+      qiMenGate,
       vedicAstrology,
       ephemerisData,
       astrologyData,
       ragContext,
-      isVoidTime = false,
-      isConflictDay = false,
-      isDoyouHazard = false,
-      unifiedRiskScore,
-      tendoDirection,
-      qiMenGate,
     } = state;
 
-    // Apply dynamic risk calculation
-    let finalRisk = environmentalRisk;
-    if (ichingHexagram) {
-      finalRisk += ichingHexagram.riskModifier;
-    }
-    finalRisk = Math.max(0, Math.min(100, finalRisk));
-
-    const f1_ans = ansLoad / 100.0;
-    const f2_shield = shieldCapacity / 100.0;
-    const f3_risk = finalRisk / 100.0;
-    const f4_solar = Math.cos((solarPhase * Math.PI) / 180.0);
+    const f1_ans = encodedLayers.biometricDynamic.ansLoadNorm;
+    const f2_shield = encodedLayers.biometricDynamic.shieldCapacityNorm;
+    const f3_risk = encodedLayers.astrophysical.aspectsRiskScore;
+    const f4_solar = encodedLayers.astrophysical.solarPhaseCos;
 
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
@@ -335,7 +423,7 @@ export class NBAEngine {
       f9_personal = Math.max(-1.0, Math.min(1.0, f9_personal));
     }
 
-    // Action-Type Weighting (攻守分離型スコアラー)
+    // Action-Type Weighting
     const W = PolicyWeights[action];
     let w_rag = W.w_rag;
     let w_personal = W.w_personal;
@@ -354,12 +442,7 @@ export class NBAEngine {
     // Qimen Dunjia & Kigaku Switch
     let combinedClassical = f8_rag;
     if (qiMenGate) {
-      const qiMenScore =
-        qiMenGate.status === "Auspicious"
-          ? 1.0
-          : qiMenGate.status === "Inauspicious"
-            ? -1.0
-            : 0.0;
+      const qiMenScore = encodedLayers.metaphysical.qiMenGateScore;
       if (action === "EXECUTE_RELOCATION") {
         combinedClassical = f8_rag * 0.8 + qiMenScore * 0.2;
       } else if (action === "EXECUTE_PURGE_RELOCATION") {
@@ -384,10 +467,8 @@ export class NBAEngine {
       w_personal * f9_personal +
       W.bias;
 
-    // 2. Apply Sigmoid Activation Gates (Biological Stress & Exhaustion Thresholds)
-    // Stress gate activates heavily past 65% ANS Load
+    // 2. Apply Sigmoid Activation Gates
     const ansStressGate = sigmoid(f1_ans, 12, 0.65);
-    // Vulnerability gate activates when shield drops below 30% (equivalent to 1 - shield capacity > 70%)
     const shieldVulnerabilityGate = sigmoid(1.0 - f2_shield, 10, 0.7);
 
     const stressPenalty = ansStressGate * 0.8;
@@ -400,13 +481,13 @@ export class NBAEngine {
     ) {
       q -= stressPenalty + vulnerabilityPenalty + attentionRiskAdjustment;
     } else if (action === "ABORT_AND_SHIELD" || action === "PREPARE_AND_WAIT") {
-      q += (stressPenalty + vulnerabilityPenalty) * 0.5; // Boost safety actions under stress
+      q += (stressPenalty + vulnerabilityPenalty) * 0.5;
     }
 
-    // Time-Gate Risk triggers
+    // Time-Gate Risk triggers (Micro-level)
     const hasRiskTrigger =
-      isVoidTime ||
-      isConflictDay ||
+      encodedLayers.metaphysical.isVoidTime > 0 ||
+      encodedLayers.metaphysical.isConflictDay > 0 ||
       (unifiedRiskScore !== undefined && unifiedRiskScore >= 60);
     let riskModifier = 0;
     if (hasRiskTrigger) {
@@ -414,7 +495,7 @@ export class NBAEngine {
         riskModifier = -0.5;
       } else if (action === "EXECUTE_PURGE_RELOCATION") {
         const hasExternalClash =
-          isConflictDay ||
+          encodedLayers.metaphysical.isConflictDay > 0 ||
           (unifiedRiskScore !== undefined && unifiedRiskScore >= 60);
         riskModifier = hasExternalClash ? -0.5 : 0.0;
       } else if (
@@ -427,14 +508,14 @@ export class NBAEngine {
     }
 
     // Redirect Tendo energy to boost defensive Q-values during Void Time (天中殺)
-    if (tendoDirection && isVoidTime) {
+    if (tendoDirection && encodedLayers.metaphysical.isVoidTime > 0) {
       if (action === "PREPARE_AND_WAIT" || action === "ABORT_AND_SHIELD") {
         q += 0.3;
       }
     }
 
     // Doyou Hazard penalty
-    if (isDoyouHazard) {
+    if (encodedLayers.metaphysical.isDoyouHazard > 0) {
       if (
         action === "EXECUTE_RELOCATION" ||
         action === "EXECUTE_PURGE_RELOCATION"
@@ -448,47 +529,41 @@ export class NBAEngine {
       }
     }
 
+    // --- Apply Hierarchical Reinforcement Learning constraints and biases ---
+    if (macroInstruction === "BLOCK_ACTIVE_RELOCATION") {
+      if (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") {
+        q = -999.0;
+      }
+    } else if (macroInstruction === "FAVOR_PREPARATION") {
+      if (action === "PREPARE_AND_WAIT" || action === "GATHER_INTEL") {
+        q += 0.3;
+      } else if (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") {
+        q -= 0.4;
+      }
+    }
+
     return q;
   }
 
   /**
    * Evaluates the current state vector using a deterministic Q-value heuristic with Fitted Q-Iteration principles.
-   * Incorporates Sigmoid stress gates, Attention weight mapping, and LLM token sequence generation.
+   * Enriched with Layered State Space encoding, Hierarchical RL routing, and Closed-loop feedback.
    */
   async getNextBestAction(params: NBAParams) {
-    const {
-      ansLoad,
-      shieldCapacity,
-      environmentalRisk = 50,
-      solarPhase,
-      ichingHexagram,
-      vedicAstrology,
-      ephemerisData,
-      astrologyData,
-      ragContext,
-      isVoidTime = false,
-      isConflictDay = false,
-      isDoyouHazard = false,
-      unifiedRiskScore,
-      tendoDirection,
-      qiMenGate,
-      nineStarKi,
-      spaceWeather,
-    } = params.stateVector;
+    const state = params.stateVector;
+    const closedLoopFeedback = params.closedLoopFeedback ?? 0;
 
-    // Apply I-Ching metaphysical modifiers if available
-    let finalRisk = environmentalRisk;
-    if (ichingHexagram) {
-      finalRisk += ichingHexagram.riskModifier;
-    }
-    finalRisk = Math.max(0, Math.min(100, finalRisk));
+    // 1. Encode state space layers (Proposal A)
+    const encodedLayers = this.encodeStateLayers(state);
 
-    // Normalize State Features
-    const f1_ans = ansLoad / 100.0;
-    const f2_shield = shieldCapacity / 100.0;
-    const f3_risk = finalRisk / 100.0;
-    const f4_solar = Math.cos((solarPhase * Math.PI) / 180.0);
+    const f1_ans = encodedLayers.biometricDynamic.ansLoadNorm;
+    const f2_shield = encodedLayers.biometricDynamic.shieldCapacityNorm;
+    const f3_risk = encodedLayers.astrophysical.aspectsRiskScore;
+    const f4_solar = encodedLayers.astrophysical.solarPhaseCos;
 
+    // Derived classical features for legacy alignment
+    const { vedicAstrology, ephemerisData, astrologyData, ragContext } = state;
+    
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
       const match = vedicAstrology.tithi.match(/\d+/);
@@ -617,63 +692,102 @@ export class NBAEngine {
     }
 
     // --- LLM Self-Attention Mimicry Block ---
-    // Q (Queries): Natal Profile parameters
-    // K (Keys): Environmental parameters
     const q_honmei =
-      (ragContext?.personalBazi?.honmeiStar?.physical || 5) / 9.0;
+      (state.ragContext?.personalBazi?.honmeiStar?.physical || 5) / 9.0;
     const q_getsumei =
-      (ragContext?.personalBazi?.honmeiStar?.classical || 5) / 9.0;
+      (state.ragContext?.personalBazi?.honmeiStar?.classical || 5) / 9.0;
     const q_daymaster = f9_personal;
     const queries = [q_honmei, q_getsumei, q_daymaster];
 
-    const k_year = (nineStarKi?.yearStar || 5) / 9.0;
-    const k_month = (nineStarKi?.monthStar || 5) / 9.0;
-    const k_day = (nineStarKi?.dayStar || 5) / 9.0;
+    const k_year = (state.nineStarKi?.yearStar || 5) / 9.0;
+    const k_month = (state.nineStarKi?.monthStar || 5) / 9.0;
+    const k_day = (state.nineStarKi?.dayStar || 5) / 9.0;
     const k_lunar = f5_vedic;
-    const k_space = (spaceWeather?.kpIndex || 3.0) / 9.0;
-    const k_vix = f3_risk; // Unified environmental risk
+    const k_space = (state.spaceWeather?.kpIndex || 3.0) / 9.0;
+    const k_vix = f3_risk;
     const keys = [k_year, k_month, k_day, k_lunar, k_space, k_vix];
 
-    // Compute Query-Key dot products and apply Softmax to get Attention weights
     const attentionMatrix: number[][] = [];
-    const d_k = 3.0; // Scaled dimension
+    const d_k = 3.0;
 
     for (let i = 0; i < queries.length; i++) {
       const rowScores = keys.map((k) => (queries[i] * k) / Math.sqrt(d_k));
-      // Softmax over keys
       const expScores = rowScores.map((s) => Math.exp(s));
       const sumExp = expScores.reduce((a, b) => a + b, 0);
       const rowWeights = expScores.map((es) => es / (sumExp || 1.0));
       attentionMatrix.push(rowWeights);
     }
 
-    // Day Master (index 2) attention to Macro Risk (index 5)
     const dmToRiskAttention = attentionMatrix[2][5] || 0.16;
     const attentionRiskAdjustment = dmToRiskAttention * f3_risk * 0.2;
 
-    // --- Sigmoid Gating Thresholds ---
     const ansStressGate = sigmoid(f1_ans, 12, 0.65);
     const shieldVulnerabilityGate = sigmoid(1.0 - f2_shield, 10, 0.7);
+
+    // --- Proposal B: Hierarchical Reinforcement Learning (HRL) ---
+    // Macro Agent operates on year/month slow-moving horizons.
+    const macroRiskFactor = (encodedLayers.astrophysical.aspectsRiskScore * 0.4) + (encodedLayers.metaphysical.isVoidTime * 0.6);
+    let macroInstruction: "BLOCK_ACTIVE_RELOCATION" | "FAVOR_PREPARATION" | "PERMIT_ALL" = "PERMIT_ALL";
+    if (encodedLayers.metaphysical.isVoidTime > 0 || macroRiskFactor > 0.75) {
+      macroInstruction = "BLOCK_ACTIVE_RELOCATION";
+    } else if (macroRiskFactor > 0.45) {
+      macroInstruction = "FAVOR_PREPARATION";
+    }
+
+    const macroQValues = {
+      EXECUTE_RELOCATION: -1.0 * encodedLayers.metaphysical.isVoidTime - 0.4 * encodedLayers.astrophysical.aspectsRiskScore,
+      EXECUTE_PURGE_RELOCATION: -1.5 * encodedLayers.metaphysical.isVoidTime - 0.6 * encodedLayers.astrophysical.aspectsRiskScore,
+      PREPARE_AND_WAIT: 0.5 * encodedLayers.metaphysical.isVoidTime + 0.3 * encodedLayers.astrophysical.aspectsRiskScore + 0.2,
+    };
+
+    // --- Proposal D: Closed-Loop Reward Feedback Adjustments ---
+    let temperature = 0.2;
+    const actionAdjustments: Record<ActionType, number> = {
+      EXECUTE_RELOCATION: 0,
+      EXECUTE_PURGE_RELOCATION: 0,
+      PREPARE_AND_WAIT: 0,
+      GATHER_INTEL: 0,
+      ABORT_AND_SHIELD: 0,
+    };
+
+    if (closedLoopFeedback !== 0) {
+      if (closedLoopFeedback < 0) {
+        temperature += Math.abs(closedLoopFeedback) * 0.15;
+        actionAdjustments.EXECUTE_RELOCATION = -0.5 * Math.abs(closedLoopFeedback);
+        actionAdjustments.EXECUTE_PURGE_RELOCATION = -0.8 * Math.abs(closedLoopFeedback);
+        actionAdjustments.ABORT_AND_SHIELD = 0.4 * Math.abs(closedLoopFeedback);
+        actionAdjustments.PREPARE_AND_WAIT = 0.3 * Math.abs(closedLoopFeedback);
+      } else {
+        temperature = Math.max(0.05, temperature - closedLoopFeedback * 0.05);
+      }
+    }
 
     const logicTrace: string[] = [];
     logicTrace.push(
       `[INIT] Features: ANS=${f1_ans.toFixed(2)}, SHIELD=${f2_shield.toFixed(2)}, RISK=${f3_risk.toFixed(2)}, SOLAR=${f4_solar.toFixed(2)}, VEDIC=${f5_vedic.toFixed(2)}, EPHEM=${f6_ephem.toFixed(2)}, ASTRO=${f7_astro.toFixed(2)}, RAG=${f8_rag.toFixed(2)}, PERSONAL=${f9_personal.toFixed(2)}`,
     );
+    logicTrace.push(
+      `[HRL] Macro-Agent State: RiskFactor=${macroRiskFactor.toFixed(2)}, Instruction=${macroInstruction}.`,
+    );
+    if (closedLoopFeedback !== 0) {
+      logicTrace.push(
+        `[CLOSED-LOOP] Biometric Feedback applied: RewardDelta=${closedLoopFeedback > 0 ? "+" : ""}${closedLoopFeedback.toFixed(2)}. Adjusted Temperature: ${temperature.toFixed(2)}.`,
+      );
+    }
     if (personalLog) {
       logicTrace.push(`[PERSONAL] ${personalLog.trim()}`);
     }
-    if (ichingHexagram) {
+    if (state.ichingHexagram) {
       logicTrace.push(
-        `[MODIFIER] I-Ching Hexagram ${ichingHexagram.number} applied: Risk Modifier ${ichingHexagram.riskModifier > 0 ? "+" : ""}${ichingHexagram.riskModifier}, Confidence Boost ${ichingHexagram.confidenceBoost > 0 ? "+" : ""}${ichingHexagram.confidenceBoost}`,
+        `[MODIFIER] I-Ching Hexagram ${state.ichingHexagram.number} applied: Risk Modifier ${state.ichingHexagram.riskModifier > 0 ? "+" : ""}${state.ichingHexagram.riskModifier}, Confidence Boost ${state.ichingHexagram.confidenceBoost > 0 ? "+" : ""}${state.ichingHexagram.confidenceBoost}`,
       );
     }
-    if (isDoyouHazard) {
+    if (state.isDoyouHazard) {
       logicTrace.push(
         `[DOYOU] Active Doyou Hazard (土用殺) detected. Restricting active/purge relocation actions.`,
       );
     }
 
-    // Calculate Q-values for each action
     const qValues: Record<ActionType, number> = {} as any;
     const actions = Object.keys(PolicyWeights) as ActionType[];
 
@@ -681,51 +795,65 @@ export class NBAEngine {
     let bestAction: ActionType = "PREPARE_AND_WAIT";
 
     for (const action of actions) {
-      if (action === "EXECUTE_RELOCATION" && isVoidTime) {
+      // Apply Macro Agent hard constraint
+      if (macroInstruction === "BLOCK_ACTIVE_RELOCATION" && 
+          (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION")) {
         const prunedQ = -999.0;
         qValues[action] = prunedQ;
         logicTrace.push(
-          `[TIME-GATE] Action ${action} is pruned due to active Void Time (天中殺). Q = ${prunedQ.toFixed(1)}`,
+          `[HRL-CONSTRAINT] Action ${action} is pruned due to active Void Time / High Macro Risk. Q = ${prunedQ.toFixed(1)}`,
         );
         continue;
       }
 
-      // Calculate static immediate reward R(S, A) with Sigmoid gates and Attention adjustments
-      const currentQStatic = this.evaluateStateStatic(
-        params.stateVector,
+      // Calculate static immediate reward R(S, A) with Sigmoid gates, HRL constraints, and Attention adjustments
+      let currentQStatic = this.evaluateStateStatic(
+        state,
         action,
         attentionRiskAdjustment,
+        encodedLayers,
+        macroInstruction,
       );
 
-      // Predict next state S' (FQI transition modeling)
-      const nextState = { ...params.stateVector };
-      if (action === "PREPARE_AND_WAIT") {
-        nextState.ansLoad = Math.max(0, ansLoad - 10);
-        nextState.shieldCapacity = Math.min(100, shieldCapacity + 5);
-      } else if (action === "ABORT_AND_SHIELD") {
-        nextState.ansLoad = Math.max(0, ansLoad - 15);
-        nextState.shieldCapacity = Math.min(100, shieldCapacity + 10);
-      } else if (action === "EXECUTE_RELOCATION") {
-        nextState.ansLoad = Math.min(100, ansLoad + 20);
-        nextState.shieldCapacity = Math.max(0, shieldCapacity - 15);
-      } else if (action === "EXECUTE_PURGE_RELOCATION") {
-        nextState.ansLoad = Math.min(100, ansLoad + 30);
-        nextState.shieldCapacity = Math.max(0, shieldCapacity - 40);
-      } else if (action === "GATHER_INTEL") {
-        nextState.ansLoad = Math.min(100, ansLoad + 5);
-        nextState.shieldCapacity = Math.max(0, shieldCapacity - 5);
+      // Apply closed-loop biometric feedback adjustments
+      if (actionAdjustments[action] !== 0) {
+        currentQStatic += actionAdjustments[action];
       }
 
-      // Compute Max_A' Q(S', A')
+      // Predict next state S' (FQI transition modeling)
+      const nextState = { ...state };
+      if (action === "PREPARE_AND_WAIT") {
+        nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 10);
+        nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 5);
+      } else if (action === "ABORT_AND_SHIELD") {
+        nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 15);
+        nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 10);
+      } else if (action === "EXECUTE_RELOCATION") {
+        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 20);
+        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 15);
+      } else if (action === "EXECUTE_PURGE_RELOCATION") {
+        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 30);
+        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 40);
+      } else if (action === "GATHER_INTEL") {
+        nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 5);
+        nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 5);
+      }
+
+      const nextEncodedLayers = this.encodeStateLayers(nextState);
+
+      // Compute Max_A' Q(S', A') using next encoded layers
       let maxNextQ = -Infinity;
       for (const nextAct of actions) {
-        if (nextAct === "EXECUTE_RELOCATION" && nextState.isVoidTime) {
+        if (macroInstruction === "BLOCK_ACTIVE_RELOCATION" && 
+            (nextAct === "EXECUTE_RELOCATION" || nextAct === "EXECUTE_PURGE_RELOCATION")) {
           continue;
         }
         const nextQ = this.evaluateStateStatic(
           nextState,
           nextAct,
           attentionRiskAdjustment,
+          nextEncodedLayers,
+          macroInstruction,
         );
         if (nextQ > maxNextQ) {
           maxNextQ = nextQ;
@@ -751,8 +879,7 @@ export class NBAEngine {
       `[SELECTION] Selected Action: ${bestAction} (Max Q-Value: ${maxQ.toFixed(3)})`,
     );
 
-    // Calculate Confidence using Softmax probability distribution
-    const temperature = 0.2; // Controls confidence sharpness
+    // Calculate Confidence using Softmax probability distribution with adjusted temperature
     const expQ = actions.map((a) => Math.exp(qValues[a] / temperature));
     const sumExpQ = expQ.reduce((a, b) => a + b, 0);
     const probabilities = expQ.map((eq) => eq / sumExpQ);
@@ -761,8 +888,8 @@ export class NBAEngine {
     let confidence = probabilities[bestActionIndex];
 
     // Apply I-Ching confidence boost
-    if (ichingHexagram) {
-      confidence += ichingHexagram.confidenceBoost;
+    if (state.ichingHexagram) {
+      confidence += state.ichingHexagram.confidenceBoost;
       confidence = Math.max(0, Math.min(1, confidence));
       logicTrace.push(
         `[CONFIDENCE] Post-modifier Confidence Adjusted to ${(confidence * 100).toFixed(1)}%`,
@@ -779,7 +906,7 @@ export class NBAEngine {
 
     // --- LLM Token Generation Mimicry Trace ---
     const llmPredictionTrace: string[] = [];
-    const dayMasterName = ragContext?.personalBazi?.summary?.dayMaster || "甲";
+    const dayMasterName = state.ragContext?.personalBazi?.summary?.dayMaster || "甲";
     llmPredictionTrace.push(
       `[Token 1: <s_start>] Initializing Metaphysical Decision Transformer...`,
     );
@@ -796,7 +923,7 @@ export class NBAEngine {
       `[Token 5: Logits] Mapping adjusted state vector to action logits: [${actions.map((a) => `${a.replace("EXECUTE_", "")}:${qValues[a].toFixed(2)}`).join(", ")}].`,
     );
     llmPredictionTrace.push(
-      `[Token 6: Softmax] Softmax probability distribution: [${actions.map((a) => `${a.replace("EXECUTE_", "")}:${(probabilitiesObj[a] * 100).toFixed(1)}%`).join(", ")}].`,
+      `[Token 6: Softmax] Softmax probability distribution (Temp=${temperature.toFixed(2)}): [${actions.map((a) => `${a.replace("EXECUTE_", "")}:${(probabilitiesObj[a] * 100).toFixed(1)}%`).join(", ")}].`,
     );
     llmPredictionTrace.push(
       `[Token 7: Prediction] Predicted action token: "${bestAction}" with confidence ${(confidence * 100).toFixed(1)}%.`,
@@ -819,6 +946,18 @@ export class NBAEngine {
         shieldVulnerabilityGate,
       },
       llmPredictionTrace,
+      // Enhanced layered/hierarchical metrics
+      stateVectorLayers: encodedLayers,
+      macroAgentEvaluation: {
+        macroQValues,
+        macroInstruction,
+        macroRiskFactor,
+      },
+      closedLoopRewardFeedback: {
+        feedbackValue: closedLoopFeedback,
+        adjustedTemperature: temperature,
+        actionAdjustments,
+      },
     };
   }
 }
