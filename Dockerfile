@@ -5,9 +5,9 @@ FROM node:20-alpine AS base
 RUN apk add --no-cache python3 py3-pip py3-pandas py3-numpy py3-lxml && \
     ln -sf /usr/bin/python3 /usr/bin/python
 
-# Install yfinance in system packages with build dependencies
+# Install yfinance and google-antigravity in system packages with build dependencies
 RUN apk add --no-cache --virtual .build-deps gcc g++ musl-dev python3-dev libffi-dev openssl-dev make && \
-    pip install --no-cache-dir --break-system-packages yfinance && \
+    pip install --no-cache-dir --break-system-packages yfinance google-antigravity && \
     apk del .build-deps
 
 # Install dependencies only when needed
