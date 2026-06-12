@@ -11,6 +11,7 @@ import {
   filterCollisionByMode,
   Direction,
 } from "@/utils/ephemerisEngine";
+import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
@@ -35,22 +36,8 @@ function getBearing(
   return (bearing + 360) % 360;
 }
 
-export function bearingToDirection(bearing: number, useClassical: boolean = false): Direction {
-  const b = ((bearing % 360) + 360) % 360;
-  if (useClassical) {
-    if (b >= 345 || b < 15) return "N";
-    if (b >= 15 && b < 75) return "NE";
-    if (b >= 75 && b < 105) return "E";
-    if (b >= 105 && b < 165) return "SE";
-    if (b >= 165 && b < 195) return "S";
-    if (b >= 195 && b < 255) return "SW";
-    if (b >= 255 && b < 285) return "W";
-    return "NW";
-  } else {
-    const index = Math.floor(((b + 22.5) % 360) / 45);
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    return dirs[index];
-  }
+function bearingToDirection(bearing: number, useClassical: boolean = false): Direction {
+  return getKigakuSector(bearing, useClassical);
 }
 
 // Map auspice codes to clean UX ratings

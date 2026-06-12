@@ -87,17 +87,7 @@ export function calculateBioMetrics(params: BioModelParams): BioModelResult {
     baseSyncDays,
   } = params;
 
-  // 1. 個人の生体ベースライン（Z-score化）
-  // HRVは高いほど良い（副交感神経優位）、低いほど負荷が高い。Zスコアを反転させて負荷とする。
-  const zScoreHRV = (currentHRV - baselineHRVMean) / baselineHRVStd;
-  // Zスコアがマイナス (平均より低い) でペナルティ発生。1Z下がるごとに+15%負荷
-  const hrvPenalty = Math.max(0, -zScoreHRV * 15);
-
-  // GSR（皮膚電気活動/発汗）は高いほど交感神経興奮・ストレス
-  const zScoreGSR = (currentGSR - baselineGSRMean) / baselineGSRStd;
-  const gsrPenalty = Math.max(0, zScoreGSR * 10); // 1Z上がるごとに+10%負荷
-
-  // 2. 出生地磁気と現在地の「ベクトル差分（Displacement）」によるハードウェア変位負荷
+  // 1. 出生地磁気と現在地の「ベクトル差分（Displacement）」によるハードウェア変位負荷
   // 緯度が離れるほど、伏角（地磁気の傾き）が大きく変わり、自律神経への影響が大きい。
   // 簡易的にハバースサイン距離(km)を用いて、1000km離れるごとにベース負荷が上がるモデルとする。
   const distanceKm = calculateHaversineDistance(
@@ -108,6 +98,27 @@ export function calculateBioMetrics(params: BioModelParams): BioModelResult {
   );
   // 出生地から離れているほど、生物学的ハードウェアとしての基礎負荷(アロスタティック負荷)が恒常的にかかる
   const hardwareDisplacementPenalty = Math.min(30, (distanceKm / 1000) * 2.5); // 最大30%
+
+  // 2. 個人の生体ベースライン（Z-score化）
+  // Zero-division guards for standard deviations to prevent NaN/Infinity
+  const hrvStd = Math.max(baselineHRVStd, 0.1);
+  const gsrStd = Math.max(baselineGSRStd, 0.1);
+
+  // HRVは高いほど良い（副交感神経優位）、低いほど負荷が高い。Zスコアを反転させて負荷とする。
+  const rawZScoreHRV = (currentHRV - baselineHRVMean) / hrvStd;
+  
+  let zScoreHRV = rawZScoreHRV;
+  if (hardwareDisplacementPenalty > 1.0) {
+    // 装着ズレ・環境変化（Displacement）ペナルティによるZ-Scoreの信頼度補正（減衰）
+    // 心拍変動のZスコアを減衰させることで、偽陽性のストレス警告（ansLoad上昇）を防ぐ
+    zScoreHRV = rawZScoreHRV / hardwareDisplacementPenalty;
+  }
+  // Zスコアがマイナス (平均より低い) でペナルティ発生。1Z下がるごとに+15%負荷
+  const hrvPenalty = Math.max(0, -zScoreHRV * 15);
+
+  // GSR（皮膚電気活動/発汗）は高いほど交感神経興奮・ストレス
+  const zScoreGSR = (currentGSR - baselineGSRMean) / gsrStd;
+  const gsrPenalty = Math.max(0, zScoreGSR * 10); // 1Z上がるごとに+10%負荷
 
   // 3. 環境順化の非線形モデリング（Exponential Decay）
   // 時定数 tau = 14日。2週間で約63%順化、4週間で86%順化する指数関数曲線。

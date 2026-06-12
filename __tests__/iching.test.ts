@@ -1,9 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { IChingClient } from "../src/lib/ichingClient";
 import { AstroEngine, getCurrentZodiac } from "../src/utils/ephemerisEngine";
-import { bearingToDirection } from "../src/app/api/relocation/history/route";
+import { getKigakuSector } from "../src/utils/kigakuUtils";
 import { calculateAspectWeight } from "../src/utils/nbaEngine";
 import { getLongitudeCorrection } from "../src/utils/solarTime";
+import { calculateBioMetrics } from "../src/utils/bioModelingEngine";
 
 describe("Metaphysical Decision Engine Calibration & Verification Tests", () => {
   const iching = new IChingClient();
@@ -73,18 +74,25 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
 
   describe("Kigaku Asymmetric Direction Sector Mapping", () => {
     it("should map 70° to E (East) under standard 45-degree equal division", () => {
-      const dirStandard = bearingToDirection(70, false);
+      const dirStandard = getKigakuSector(70, false);
       expect(dirStandard).toBe("E");
     });
 
     it("should map 70° to NE (North-East) under Kigaku asymmetric 30/60 degree division", () => {
-      const dirClassical = bearingToDirection(70, true);
+      const dirClassical = getKigakuSector(70, true);
       expect(dirClassical).toBe("NE");
     });
 
     it("should map 76° to E (East) under Kigaku asymmetric 30/60 degree division", () => {
-      const dirClassical = bearingToDirection(76, true);
+      const dirClassical = getKigakuSector(76, true);
       expect(dirClassical).toBe("E");
+    });
+
+    it("should map to correct sectors using the getKigakuSector utility directly", () => {
+      expect(getKigakuSector(70, false)).toBe("E");
+      expect(getKigakuSector(70, true)).toBe("NE");
+      expect(getKigakuSector(76, true)).toBe("E");
+      expect(getKigakuSector(-30, true)).toBe("NW"); // Negative wrap-around (-30° -> 330° is NW classical)
     });
   });
 
@@ -117,6 +125,90 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
     it("should calculate correct longitude correction for Tokyo (139.6917°) as exactly 18.7668 minutes for JST timezone", () => {
       const correction = getLongitudeCorrection(139.6917, 9);
       expect(correction).toBeCloseTo(18.7668, 4);
+    });
+  });
+
+  describe("Biometric Z-Score Reliability Correction (Wearable Displacement Decay)", () => {
+    it("should apply reliability attenuation to zScoreHRV when hardwareDisplacementPenalty > 1.0", () => {
+      // Base parameters
+      const baseParams = {
+        currentHRV: 45, // below baseline mean (stress condition)
+        currentGSR: 5,
+        baselineHRVMean: 60,
+        baselineHRVStd: 10,
+        baselineGSRMean: 5,
+        baselineGSRStd: 2,
+        elevation: 0,
+        kpIndex: 3,
+        solarTimeHours: 12,
+        baseSyncDays: 0,
+      };
+
+      // Case A: No displacement (birth coordinates same as current coordinates)
+      const resNoDisplacement = calculateBioMetrics({
+        ...baseParams,
+        birthLat: 35.6762,
+        birthLon: 139.6503,
+        currentLat: 35.6762,
+        currentLon: 139.6503,
+      });
+
+      // Case B: Relocation displacement (Tokyo to Kyoto, ~370km away, displacement penalty ~0.925 <= 1.0)
+      const resSmallDisplacement = calculateBioMetrics({
+        ...baseParams,
+        birthLat: 35.6762, // Tokyo
+        birthLon: 139.6503,
+        currentLat: 35.0116, // Kyoto
+        currentLon: 135.7681,
+      });
+
+      // Case C: Large relocation displacement (Tokyo to London, ~9500km away, penalty > 1.0)
+      const resLargeDisplacement = calculateBioMetrics({
+        ...baseParams,
+        birthLat: 35.6762, // Tokyo
+        birthLon: 139.6503,
+        currentLat: 51.5074, // London
+        currentLon: -0.1278,
+      });
+
+      // Without displacement (A), raw Z-score is (45 - 60)/10 = -1.5. No attenuation since penalty is 0.
+      expect(resNoDisplacement.hardwareDisplacementPenalty).toBe(0);
+      expect(resNoDisplacement.zScoreHRV).toBeCloseTo(-1.5, 4);
+
+      // With small displacement (B), penalty is ~0.92, which is <= 1.0. Still no attenuation.
+      expect(resSmallDisplacement.hardwareDisplacementPenalty).toBeLessThanOrEqual(1.0);
+      expect(resSmallDisplacement.zScoreHRV).toBeCloseTo(-1.5, 4);
+
+      // With large displacement (C), penalty is > 1.0. Z-Score should be attenuated (divided by penalty).
+      expect(resLargeDisplacement.hardwareDisplacementPenalty).toBeGreaterThan(1.0);
+      expect(Math.abs(resLargeDisplacement.zScoreHRV)).toBeLessThan(1.5);
+      
+      const expectedAttenuatedZ = -1.5 / resLargeDisplacement.hardwareDisplacementPenalty;
+      expect(resLargeDisplacement.zScoreHRV).toBeCloseTo(expectedAttenuatedZ, 4);
+
+      // Verify it reduces ansLoad (prevents false-positive stress) compared to the unattenuated case (which would be ~56)
+      expect(resLargeDisplacement.ansLoad).toBeLessThan(56);
+    });
+
+    it("should safely handle zero-division via guards when baseline std devs are zero", () => {
+      const res = calculateBioMetrics({
+        currentHRV: 60,
+        currentGSR: 5,
+        baselineHRVMean: 60,
+        baselineHRVStd: 0, // Zero standard deviation
+        baselineGSRMean: 5,
+        baselineGSRStd: 0, // Zero standard deviation
+        birthLat: 35.6762,
+        birthLon: 139.6503,
+        currentLat: 35.6762,
+        currentLon: 139.6503,
+        elevation: 0,
+        kpIndex: 3,
+        solarTimeHours: 12,
+        baseSyncDays: 0,
+      });
+
+      expect(res.zScoreHRV).toBe(0); // Should not be NaN or Infinity
     });
   });
 });
