@@ -22,6 +22,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // [SECURITY] Require Admin Email
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ishibashm@gmail.com";
+    if (user.email !== ADMIN_EMAIL) {
+      return NextResponse.json(
+        { error: "Forbidden. Admin access required." },
+        { status: 403 },
+      );
+    }
+
     // 2. Parse request payload
     const body = await req.json();
     const { message, telemetry } = body;
