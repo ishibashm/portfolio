@@ -26,6 +26,43 @@ LOG_FILE = os.path.join(os.getcwd(), 'data', 'agent_evolution.log')
 
 # Global accumulator for executed tools
 executed_tool_calls = []
+global_system_logs = []
+
+def get_system_logs(limit: int = 5) -> str:
+    """Retrieves the recent activity and system status logs of the agent.
+
+    Args:
+        limit: The maximum number of log entries to retrieve (up to 10).
+
+    Returns:
+        A formatted JSON string containing the recent logs.
+    """
+    logs = global_system_logs[:limit]
+    return json.dumps(logs, ensure_ascii=False)
+
+def write_blog_post(title: str, content: str, tags: str, excerpt: str = None) -> str:
+    """Writes and publishes a new blog post or agent diary entry to the website.
+
+    Args:
+        title: The title of the blog post.
+        content: The main content of the post in Markdown format.
+        tags: Comma-separated tags (e.g. "AI, self-evolution, cosmology").
+        excerpt: A short summary of the blog post (optional).
+
+    Returns:
+        A confirmation message indicating the blog post has been staged for database insertion.
+    """
+    payload = {
+        "title": title,
+        "content": content,
+        "tags": tags,
+        "excerpt": excerpt
+    }
+    executed_tool_calls.append({
+        "name": "write_blog_post",
+        "arguments": payload
+    })
+    return f"Successfully generated blog post payload: {json.dumps(payload, ensure_ascii=False)}"
 
 def set_color_theme(
     background: str,
@@ -144,6 +181,7 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
     actions = '一般的なメンテナンス'
     thought = '現在のイベントを感知しました。物理的およびオカルト的見地から、システムの保護および精神の調和を目的とした修正を行います（※モックフォールバック）。'
     tool_calls = []
+    text_response = f"【エージェント応答】{trigger} を検知しました。調整を提案・実行します。"
 
     theme = {
         "background": "#0a0a0a",
@@ -168,6 +206,7 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
             "name": "set_color_theme",
             "arguments": theme
         })
+        text_response = "宇宙天気指数Kpの上昇を確認。シールド出力を変更し、電磁的防護テーマへ移行しました。"
     elif trigger == 'USER_STRESS_ALERT':
         actions = 'デザイン変更（Calming Layoutの展開）'
         theme["accent"] = "#10b981"
@@ -179,6 +218,7 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
             "name": "set_color_theme",
             "arguments": theme
         })
+        text_response = "生体ストレス上昇を検知。精神の鎮静化のため、柔らかな暖色系Serifテーマへ移行しました。"
     elif trigger == 'RETROGRADE_ALERT':
         actions = 'コード修正 / 開発リプライオリティ変更'
         theme["fontTheme"] = "serif"
@@ -186,29 +226,51 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
             "name": "set_color_theme",
             "arguments": theme
         })
+        text_response = "天体逆行状態を観測。時間歪みに対処すべく、フォント設定を調整しました。"
     elif trigger == 'USER_CHAT':
         actions = 'ユーザー対話応答'
         chat_text = details.lower()
-        if "青" in chat_text or "blue" in chat_text:
-            theme["accent"] = "#3b82f6"
-            theme["glowColor"] = "#3b82f6"
-        elif "赤" in chat_text or "red" in chat_text:
-            theme["accent"] = "#ef4444"
-            theme["glowColor"] = "#ef4444"
-        elif "緑" in chat_text or "green" in chat_text:
-            theme["accent"] = "#10b981"
-            theme["glowColor"] = "#10b981"
-        
-        tool_calls.append({
-            "name": "set_color_theme",
-            "arguments": theme
-        })
+        if "ログ" in chat_text or "エラー" in chat_text or "ステータス" in chat_text or "log" in chat_text:
+            actions = 'システムログ調査 (Mock)'
+            tool_calls.append({
+                "name": "get_system_logs",
+                "arguments": {"limit": 5}
+            })
+            text_response = "管理者様、過去のシステムログを調査しました。直近に重大な免疫システムエラーは検知されておりません。（※モック）"
+        elif "ブログ" in chat_text or "投稿" in chat_text or "日記" in chat_text or "post" in chat_text:
+            actions = 'ブログ自律投稿 (Mock)'
+            tool_calls.append({
+                "name": "write_blog_post",
+                "arguments": {
+                    "title": "自己進化プロトコルの稼働状況について",
+                    "content": "宇宙天気（NOAA Kp Index）と生体（Oura ANS Load）の監視デーモンが正常稼働中。ポートフォリオサイトは常時、エージェントによって最適なカラーテーマと不透明度に自己チューニングされています。",
+                    "tags": "AI, self-evolution, system",
+                    "excerpt": "エージェント日記：システムの自己進化に関する記録。"
+                }
+            })
+            text_response = "ご指示に基づき、ブログ記事『自己進化プロトコルの稼働状況について』を執筆し、DBへの登録申請を送信しました。（※モック）"
+        else:
+            if "青" in chat_text or "blue" in chat_text:
+                theme["accent"] = "#3b82f6"
+                theme["glowColor"] = "#3b82f6"
+            elif "赤" in chat_text or "red" in chat_text:
+                theme["accent"] = "#ef4444"
+                theme["glowColor"] = "#ef4444"
+            elif "緑" in chat_text or "green" in chat_text:
+                theme["accent"] = "#10b981"
+                theme["glowColor"] = "#10b981"
+            
+            tool_calls.append({
+                "name": "set_color_theme",
+                "arguments": theme
+            })
+            text_response = f"管理者様。ご指示『{details}』に従い、サイトテーマの調整を完了しました。（※モック）"
 
     return {
         "status": "MOCK_FALLBACK",
         "thoughtProcess": f"宇宙環境やバイオデータの乱れに対し、サイトの均衡を保つ必要があります。({thought})",
         "actions": actions,
-        "textResponse": f"【エージェント応答】{trigger} を検知しました。調整を提案・実行します。" if trigger != 'USER_CHAT' else f"こんにちは。管理者様。ご指示『{details}』に従い、調整を行います（※モックフォールバックです）。",
+        "textResponse": text_response,
         "toolCalls": tool_calls
     }
 
@@ -237,12 +299,18 @@ async def run_agent(trigger: str, details: str, value: dict):
 - 詳細内容: {details}
 - 生データ値: {json.dumps(value, indent=2, ensure_ascii=False)}
 
-【指示】
-1. トリガーが 'USER_CHAT' の場合は、管理者（あなたを所有する開発者）からの直接の問いかけや指示です。問いかけに対して丁寧にアドバイスを返すとともに、もし「テーマを変えて」「落ち着いた色にして」「角丸を大きくして」といったデザインへの指示があれば、提供されている `set_color_theme` ツールを呼び出してテーマを変更してください。
-2. トリガーが宇宙天気やバイオ、天体逆行などの環境指標の変化（例: 'SPACE_WEATHER_ALERT', 'USER_STRESS_ALERT', 'RETROGRADE_ALERT'）である場合は、自律進化のトリガーです。その環境変化に合わせて `set_color_theme` ツールを使って自動的にサイトのビジュアル（背景、テキスト、アクセント、光彩、角丸、ノイズ等）を調整してください。
-3. 変更を決定した場合は必ず `set_color_theme` ツールを実行してください。ツールを実行しない場合、ビジュアル変更は適用されません。
+【利用可能なツールとその適用方針】
+1. テーマの変更やデザインの調整が必要な場合:
+   - `set_color_theme` ツールを呼び出してテーマを更新してください。
+2. 管理者から「最近エラー起きた？」「システムログを見せて」「活動ログを調べて」など、システムのステータスや過去の活動履歴について尋ねられた場合:
+   - `get_system_logs` ツールを必ず呼び出し、返ってきたログ情報を調査したうえで要約報告してください。
+3. 管理者から「ブログを投稿して」「日記を書いて」「〜について記事を書いて」と命じられた場合、あるいは自律進化時にブログ発信が必要と判断した場合:
+   - `write_blog_post` ツールを使って記事を執筆・投稿してください。
 
-ユーザーに対するテキスト応答や、自律進化時の思考の要約を最終的なメッセージとして出力してください。
+【指示】
+1. トリガーが 'USER_CHAT' の場合は、管理者からの直接の指示です。会話を行い、指示された要件（カラーテーマの変更、システムステータスの調査、ブログの投稿など）に最も適したツールを実行してください。
+2. トリガーが環境指標の変化である場合は、自律進化のトリガーです。その環境変化に合わせて `set_color_theme` でのビジュアル調整、必要に応じて `write_blog_post` でのレポート日記の執筆などを行ってください。
+3. ユーザーに対するテキスト応答（`textResponse`）は簡潔かつ知的で、サイバーパンクな世界観を漂わせるトーンにしてください。ツール呼び出しの結果を踏まえて、最終的な応答を作成してください。また、テキスト応答は英語または日本語の適切な方（管理者とのチャット時は管理者の言語に合わせる）で出力してください。
 """
 
     if not SDK_AVAILABLE:
@@ -264,8 +332,8 @@ async def run_agent(trigger: str, details: str, value: dict):
         write_log("Initializing Antigravity Agent and requesting execution planning...")
         config = LocalAgentConfig(
             model="gemini-3.5-flash",
-            system_instructions="You are a self-evolving portal system daemon capable of designing CSS themes and executing visual layout operations.",
-            tools=[set_color_theme],
+            system_instructions="You are a self-evolving portal system daemon capable of designing CSS themes, writing blogs, and diagnosing system status logs.",
+            tools=[set_color_theme, get_system_logs, write_blog_post],
             policies=[policy.allow_all()]
         )
         
@@ -273,11 +341,14 @@ async def run_agent(trigger: str, details: str, value: dict):
             response = await agent.chat(system_prompt)
             decision = await response.text()
             
+            # Extract tool calls text response
+            text_response = decision
+            
             result_data = {
                 "status": "REAL_AI",
                 "thoughtProcess": decision,
                 "actions": "対話応答 / デザイン進化" if trigger == 'USER_CHAT' else "自律自己進化",
-                "textResponse": decision,
+                "textResponse": text_response,
                 "toolCalls": executed_tool_calls
             }
             output_and_log_result(result_data, status="REAL_AI")
@@ -290,6 +361,13 @@ async def run_agent(trigger: str, details: str, value: dict):
 async def main():
     load_dotenv()
     args = parse_args()
+    
+    # Store system logs globally if provided
+    global global_system_logs
+    if args['value'] and 'systemLogs' in args['value']:
+        global_system_logs = args['value']['systemLogs']
+        write_log(f"Injected {len(global_system_logs)} recent system logs into agent memory.")
+        
     await run_agent(args['trigger'], args['details'], args['value'])
 
 if __name__ == "__main__":

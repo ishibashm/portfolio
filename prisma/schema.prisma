@@ -398,6 +398,7 @@ model AgentActivityLog {
   details        String
   thoughtProcess String
   actions        String
+  textResponse   String?
   codeChange     Json?
   status         String
   errorMessage   String?

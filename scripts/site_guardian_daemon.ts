@@ -65,7 +65,7 @@ function saveState(state: DaemonState) {
 }
 
 // Spawn Agent Runner Child Process and handle DB insertion/validation
-function triggerAgentEvolution(
+async function triggerAgentEvolution(
   triggerType: string,
   details: string,
   value: any,
@@ -74,12 +74,36 @@ function triggerAgentEvolution(
     `🔥 Triggering Agent Evolution. Reason: [${triggerType}] ${details}`,
   );
 
+  // [NEW] Fetch recent logs to provide context to the agent
+  let systemLogs: any[] = [];
+  try {
+    systemLogs = await prisma.agentActivityLog.findMany({
+      take: 10,
+      orderBy: { timestamp: "desc" },
+      select: {
+        timestamp: true,
+        triggerType: true,
+        status: true,
+        actions: true,
+        errorMessage: true,
+        details: true,
+      },
+    });
+  } catch (e: any) {
+    writeLog(`Failed to fetch recent agent activity logs: ${e.message}`);
+  }
+
+  const combinedValue = {
+    ...(value || {}),
+    systemLogs,
+  };
+
   const runnerScript = path.join(
     process.cwd(),
     "scripts",
     "ai_agent_runner.py",
   );
-  const base64Value = Buffer.from(JSON.stringify(value)).toString("base64");
+  const base64Value = Buffer.from(JSON.stringify(combinedValue)).toString("base64");
 
   const pythonCmd = process.platform === "win32" ? "py" : "python3";
 
@@ -202,6 +226,54 @@ function triggerAgentEvolution(
                 `🛡️ [Immunization Rollback] Theme rejected: ${e.message}`,
               );
             }
+          } else if (call.name === "write_blog_post") {
+            try {
+              const args = call.arguments;
+
+              if (!args.title || !args.content) {
+                throw new Error(
+                  "Validation Error: Title and Content are required for blog posts",
+                );
+              }
+
+              // Get default author (first user)
+              const firstUser = await prisma.user.findFirst();
+              if (!firstUser) {
+                throw new Error(
+                  "Validation Error: No user found in User table to assign as author",
+                );
+              }
+
+              // Generate unique slug
+              const dateStr = Date.now().toString();
+              const cleanTitle = args.title
+                .toLowerCase()
+                .replace(/[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g, "-")
+                .replace(/-+/g, "-");
+              const slug = `agent-${cleanTitle}-${dateStr}`;
+
+              await prisma.blogPost.create({
+                data: {
+                  id: `blog-${dateStr}-${Math.random().toString(36).substring(2, 7)}`,
+                  title: args.title,
+                  slug: slug,
+                  content: args.content,
+                  excerpt: args.excerpt || null,
+                  tags: args.tags || "AI, self-evolution",
+                  authorId: firstUser.id,
+                  published: true,
+                  updatedAt: new Date(),
+                },
+              });
+              writeLog(
+                `📝 [Blog Posted] Autonomous diary post saved to DB: ${args.title}`,
+              );
+            } catch (e: any) {
+              errorMessage = e.message;
+              writeLog(
+                `🛡️ [Immunization Rollback] Blog post rejected: ${e.message}`,
+              );
+            }
           }
         }
       }
@@ -213,6 +285,7 @@ function triggerAgentEvolution(
           details,
           thoughtProcess: agentResponse.thoughtProcess,
           actions: agentResponse.actions,
+          textResponse: agentResponse.textResponse || null,
           codeChange: agentResponse.toolCalls
             ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
             : null,

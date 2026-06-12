@@ -33,13 +33,37 @@ export async function POST(req: Request) {
       );
     }
 
+    // [NEW] Fetch recent logs to provide context to the agent
+    let systemLogs: any[] = [];
+    try {
+      systemLogs = await prisma.agentActivityLog.findMany({
+        take: 10,
+        orderBy: { timestamp: "desc" },
+        select: {
+          timestamp: true,
+          triggerType: true,
+          status: true,
+          actions: true,
+          errorMessage: true,
+          details: true,
+        },
+      });
+    } catch (e: any) {
+      console.warn("Failed to fetch recent agent activity logs:", e.message);
+    }
+
+    const combinedTelemetry = {
+      ...(telemetry || {}),
+      systemLogs,
+    };
+
     // 3. Spawn Python Agent Runner (USER_CHAT mode)
     const runnerScript = path.join(
       process.cwd(),
       "scripts",
       "ai_agent_runner.py",
     );
-    const base64Value = Buffer.from(JSON.stringify(telemetry || {})).toString(
+    const base64Value = Buffer.from(JSON.stringify(combinedTelemetry)).toString(
       "base64",
     );
 
@@ -150,6 +174,56 @@ export async function POST(req: Request) {
             errorMessage = e.message;
             // Rollback is implicit: Skip applying changes on validation failure
           }
+        } else if (call.name === "write_blog_post") {
+          try {
+            const args = call.arguments;
+
+            if (!args.title || !args.content) {
+              throw new Error(
+                "Validation Error: Title and Content are required for blog posts",
+              );
+            }
+
+            // Verify author exists in User table
+            let authorId = user.id;
+            const userExists = await prisma.user.findUnique({
+              where: { id: user.id },
+            });
+            if (!userExists) {
+              const firstUser = await prisma.user.findFirst();
+              if (firstUser) {
+                authorId = firstUser.id;
+              } else {
+                throw new Error(
+                  "Validation Error: Logged in user not found in User table",
+                );
+              }
+            }
+
+            // Generate unique slug
+            const dateStr = Date.now().toString();
+            const cleanTitle = args.title
+              .toLowerCase()
+              .replace(/[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g, "-")
+              .replace(/-+/g, "-");
+            const slug = `agent-${cleanTitle}-${dateStr}`;
+
+            await prisma.blogPost.create({
+              data: {
+                id: `blog-${dateStr}-${Math.random().toString(36).substring(2, 7)}`,
+                title: args.title,
+                slug: slug,
+                content: args.content,
+                excerpt: args.excerpt || null,
+                tags: args.tags || "AI, self-evolution",
+                authorId: authorId,
+                published: true,
+                updatedAt: new Date(),
+              },
+            });
+          } catch (e: any) {
+            errorMessage = e.message;
+          }
         }
       }
     }
@@ -161,6 +235,7 @@ export async function POST(req: Request) {
         details: message,
         thoughtProcess: agentResponse.thoughtProcess,
         actions: agentResponse.actions,
+        textResponse: agentResponse.textResponse || null,
         codeChange: agentResponse.toolCalls
           ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
           : null,
