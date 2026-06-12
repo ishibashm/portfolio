@@ -3,7 +3,7 @@ import { IChingClient } from "../src/lib/ichingClient";
 import { AstroEngine, getCurrentZodiac } from "../src/utils/ephemerisEngine";
 import { getKigakuSector } from "../src/utils/kigakuUtils";
 import { calculateAspectWeight, NBAEngine, NBAParams } from "../src/utils/nbaEngine";
-import { getLongitudeCorrection } from "../src/utils/solarTime";
+import { getLongitudeCorrection, calculateSolarTime } from "../src/utils/solarTime";
 import { calculateBioMetrics } from "../src/utils/bioModelingEngine";
 import { VedicEngine } from "../src/utils/vedicEngine";
 
@@ -308,6 +308,128 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
           // Mid score 10 -> raw 50 -> scaled 50 * 0.4 = 20
           expect(tideRisk).toBe(20);
         }
+      });
+    });
+
+    describe("Phase 5 Production Optimizations and Edge-Case Guards", () => {
+      it("should format solarTime to JSON as local ISO string with captured timezone offset", () => {
+        const testDate = new Date("2026-06-13T00:14:03Z");
+        const solarResult = calculateSolarTime(testDate, 135.75, 9);
+        const jsonStr = JSON.stringify(solarResult.solarTime);
+        // Assert that the JSON string has correct timezone offset (+09:00)
+        expect(jsonStr).toContain("+09:00");
+        // Check formatting structure: e.g. "YYYY-MM-DDTHH:mm:ss.sss+09:00" (enclosed in quotes)
+        expect(jsonStr).toMatch(/^"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+09:00"$/);
+      });
+
+      it("should apply retrograde celestial aspect weight decay", async () => {
+        const nba = new NBAEngine();
+        
+        // Define transits including retrograde planet (e.g. MERCURY)
+        const transits = ["MERCURY SQUARE SUN ORB: 2.50"];
+        
+        const stateNoRetrograde: NBAParams["stateVector"] = {
+          ansLoad: 50,
+          shieldCapacity: 50,
+          environmentalNoise: "test",
+          solarPhase: 120,
+          astrologyData: {
+            source: "test",
+            transits,
+            retrogrades: [],
+          },
+        };
+
+        const stateWithRetrograde: NBAParams["stateVector"] = {
+          ansLoad: 50,
+          shieldCapacity: 50,
+          environmentalNoise: "test",
+          solarPhase: 120,
+          astrologyData: {
+            source: "test",
+            transits,
+            retrogrades: ["MERCURY"],
+          },
+        };
+
+        // Call encodeStateLayers
+        const layersNoRetro = nba.encodeStateLayers(stateNoRetrograde);
+        const layersWithRetro = nba.encodeStateLayers(stateWithRetrograde);
+
+        // Aspect risk score should be lower for retrograde transit due to weight decay
+        expect(layersWithRetro.astrophysical.aspectsRiskScore).toBeLessThan(
+          layersNoRetro.astrophysical.aspectsRiskScore,
+        );
+      });
+
+      it("should default displacement penalty to 1.0 at Null Island (GPS loss)", () => {
+          // Normal coordinates
+          const normalResult = calculateBioMetrics({
+            currentHRV: 60,
+            currentGSR: 5,
+            birthLat: 35.6762,
+            birthLon: 139.6503,
+            currentLat: 33.5902,
+            currentLon: 130.4017, // Tokyo to Fukuoka
+            elevation: 50,
+            kpIndex: 3,
+            solarTimeHours: 12,
+            baseSyncDays: 5,
+          });
+          expect(normalResult.hardwareDisplacementPenalty).toBeGreaterThan(1.0);
+
+        // Null Island coords (birth coordinates lost)
+        const birthLostResult = calculateBioMetrics({
+          currentHRV: 60,
+          currentGSR: 5,
+          birthLat: 0.0,
+          birthLon: 0.0,
+          currentLat: 34.6937,
+          currentLon: 135.5023,
+          elevation: 50,
+          kpIndex: 3,
+          solarTimeHours: 12,
+          baseSyncDays: 5,
+        });
+        expect(birthLostResult.hardwareDisplacementPenalty).toBe(1.0);
+
+        // Epsilon coords (almost zero)
+        const epsilonResult = calculateBioMetrics({
+          currentHRV: 60,
+          currentGSR: 5,
+          birthLat: 35.6762,
+          birthLon: 139.6503,
+          currentLat: 0.000002,
+          currentLon: -0.000001,
+          elevation: 50,
+          kpIndex: 3,
+          solarTimeHours: 12,
+          baseSyncDays: 5,
+        });
+        expect(epsilonResult.hardwareDisplacementPenalty).toBe(1.0);
+      });
+
+      it("should apply dynamic Bellman discount factor based on action type", async () => {
+        const nba = new NBAEngine();
+        
+        // Define base state vector
+        const state: NBAParams["stateVector"] = {
+          ansLoad: 50,
+          shieldCapacity: 50,
+          environmentalNoise: "test",
+          solarPhase: 120,
+        };
+
+        const result = await nba.getNextBestAction({ stateVector: state });
+        
+        // Verify discount factors in the logic trace:
+        // Relocation actions should have gamma = 0.90
+        const relocationTrace = result.logicTrace.find(t => t.includes("[BELLMAN] Q(EXECUTE_RELOCATION)"));
+        // Micro daily actions (like PREPARE_AND_WAIT) should have gamma = 0.50
+        const microTrace = result.logicTrace.find(t => t.includes("[BELLMAN] Q(PREPARE_AND_WAIT)"));
+
+        expect(relocationTrace).toContain("γ*maxQ(S',A'): (0.9 *");
+        expect(microTrace).toContain("γ*maxQ(S',A'): (0.5 *");
       });
     });
   });

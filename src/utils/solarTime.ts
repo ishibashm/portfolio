@@ -74,6 +74,17 @@ export function calculateSolarTime(
   // Create a new date object adjusted by minutes
   const solarTime = new Date(date.getTime() + totalCorrectionMinutes * 60000);
 
+  // Override toJSON to prevent the "Z" suffix leak and capture local tzOffset
+  solarTime.toJSON = function (this: Date) {
+    const pad = (n: number, w: number = 2) => String(n).padStart(w, '0');
+    const absOffset = Math.abs(tzOffset);
+    const offsetHours = Math.floor(absOffset);
+    const offsetMinutes = Math.round((absOffset - offsetHours) * 60);
+    const sign = tzOffset >= 0 ? "+" : "-";
+    const tzString = tzOffset === 0 ? "Z" : `${sign}${pad(offsetHours)}:${pad(offsetMinutes)}`;
+    return `${this.getFullYear()}-${pad(this.getMonth() + 1)}-${pad(this.getDate())}T${pad(this.getHours())}:${pad(this.getMinutes())}:${pad(this.getSeconds())}.${pad(this.getMilliseconds(), 3)}${tzString}`;
+  };
+
   return {
     solarTime,
     equationOfTime: eot,

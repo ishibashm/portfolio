@@ -49,6 +49,7 @@ export interface NBAParams {
     astrologyData?: {
       source: string;
       transits: any;
+      retrogrades?: string[];
     };
     ragContext?: {
       source: string;
@@ -147,6 +148,7 @@ export interface NBAParams {
       astrologyData?: {
         source: string;
         transits: any;
+        retrogrades?: string[];
       };
       ragContext?: {
         source: string;
@@ -274,9 +276,14 @@ export function calculateAspectWeight(currentOrb: number, maxOrb: number): numbe
   return Math.cos((currentOrb / maxOrb) * (Math.PI / 2));
 }
 
-function getAspectsScoresFromTransits(transits: string[]): { hardWeight: number; softWeight: number } {
+function getAspectsScoresFromTransits(
+  transits: string[],
+  retrogrades: string[] = [],
+): { hardWeight: number; softWeight: number } {
   let hardWeight = 0;
   let softWeight = 0;
+
+  const retrogradesUpper = retrogrades.map((r) => r.toUpperCase());
 
   for (const t of transits) {
     const tUpper = t.toUpperCase();
@@ -286,7 +293,16 @@ function getAspectsScoresFromTransits(transits: string[]): { hardWeight: number;
     if (isHard || isSoft) {
       const orbMatch = tUpper.match(/ORB:\s*([0-9.]+)/);
       const orb = orbMatch ? parseFloat(orbMatch[1]) : 2.5;
-      const weight = calculateAspectWeight(orb, 5.0);
+
+      // Apply a 0.8 decay multiplier per retrograde celestial body involved in the transit aspect
+      let multiplier = 1.0;
+      for (const rUpper of retrogradesUpper) {
+        if (tUpper.includes(rUpper)) {
+          multiplier *= 0.8;
+        }
+      }
+
+      const weight = calculateAspectWeight(orb, 5.0) * multiplier;
 
       if (isHard) {
         hardWeight += weight;
@@ -337,7 +353,10 @@ export class NBAEngine {
     const astrologySource = target.astrologyData ?? state.astrologyData;
     let aspectsRiskScore = (target.environmentalRisk ?? state.environmentalRisk ?? 50) / 100.0;
     if (astrologySource?.transits && Array.isArray(astrologySource.transits)) {
-      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologySource.transits);
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(
+        astrologySource.transits,
+        astrologySource.retrogrades ?? [],
+      );
       aspectsRiskScore = Math.max(0, Math.min(1.0, aspectsRiskScore + (hardWeight * 0.1) - (softWeight * 0.05)));
     }
 
@@ -440,7 +459,10 @@ export class NBAEngine {
       astrologyData.transits &&
       Array.isArray(astrologyData.transits)
     ) {
-      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologyData.transits);
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(
+        astrologyData.transits,
+        astrologyData.retrogrades ?? [],
+      );
       f7_astro = (softWeight - hardWeight) * 0.25;
       f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
     }
@@ -714,7 +736,10 @@ export class NBAEngine {
       astrologyData.transits &&
       Array.isArray(astrologyData.transits)
     ) {
-      const { hardWeight, softWeight } = getAspectsScoresFromTransits(astrologyData.transits);
+      const { hardWeight, softWeight } = getAspectsScoresFromTransits(
+        astrologyData.transits,
+        astrologyData.retrogrades ?? [],
+      );
       f7_astro = (softWeight - hardWeight) * 0.25;
       f7_astro = Math.max(-1.0, Math.min(1.0, f7_astro));
     }
@@ -1013,7 +1038,7 @@ export class NBAEngine {
       }
 
       // Bellman Equation: Q(S, A) = R(S, A) + gamma * max_A' Q(S', A')
-      const gamma = 0.5;
+      const gamma = (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") ? 0.90 : 0.50;
       const q = currentQStatic + gamma * maxNextQ;
 
       qValues[action] = q;

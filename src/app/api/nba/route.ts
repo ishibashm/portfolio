@@ -346,6 +346,7 @@ export async function POST(req: Request) {
       source: "astronomy-engine",
       status: "Active",
       transits: macroContexts.westernAstrology.aspects,
+      retrogrades: macroContexts.westernAstrology.retrogrades,
     };
     const ragContext = {
       source: "Local Deterministic Model",

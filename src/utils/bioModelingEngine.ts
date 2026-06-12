@@ -97,7 +97,14 @@ export function calculateBioMetrics(params: BioModelParams): BioModelResult {
     currentLon,
   );
   // 出生地から離れているほど、生物学的ハードウェアとしての基礎負荷(アロスタティック負荷)が恒常的にかかる
-  const hardwareDisplacementPenalty = Math.min(30, (distanceKm / 1000) * 2.5); // 最大30%
+  let hardwareDisplacementPenalty = Math.min(30, (distanceKm / 1000) * 2.5); // 最大30%
+
+  // GPSロスト（Null Island）判定：許容誤差 1e-5 未満の場合、装着ズレペナルティを 1.0 にフォールバックする
+  const isBirthNullIsland = Math.abs(birthLat) < 1e-5 && Math.abs(birthLon) < 1e-5;
+  const isCurrentNullIsland = Math.abs(currentLat) < 1e-5 && Math.abs(currentLon) < 1e-5;
+  if (isBirthNullIsland || isCurrentNullIsland) {
+    hardwareDisplacementPenalty = 1.0;
+  }
 
   // 2. 個人の生体ベースライン（Z-score化）
   // Zero-division guards for standard deviations to prevent NaN/Infinity

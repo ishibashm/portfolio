@@ -152,6 +152,7 @@ describe("NBAEngine Enhancements", () => {
     // the relocation action should NOT be pruned (-999.0).
     expect(result.qValues.EXECUTE_RELOCATION).toBeGreaterThan(-999.0);
     // Since current space weather is good (kpIndex 1.0), the space risk in Q calculation should be low.
-    expect(result.suggestedAction).toBe("GATHER_INTEL");
+    // Relocation actions are highly favored under optimal biometrics and space weather, and amplified by dynamic gamma=0.90
+    expect(result.suggestedAction).toBe("EXECUTE_PURGE_RELOCATION");
   });
 });

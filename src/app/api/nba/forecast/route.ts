@@ -15,6 +15,10 @@ import { baziEngine } from "@/utils/baziEngine";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
 import { VedicEngine } from "@/utils/vedicEngine";
 import { IChingClient } from "@/lib/ichingClient";
+import {
+  SwissEphemerisEngine,
+  CelestialBody,
+} from "@/utils/swissEphemerisEngine";
 
 export async function POST(req: Request) {
   try {
@@ -181,10 +185,30 @@ export async function POST(req: Request) {
         },
       };
 
+      const swissEngine = SwissEphemerisEngine.getInstance();
+      const planetsToCheck = [
+        CelestialBody.Mercury,
+        CelestialBody.Venus,
+        CelestialBody.Mars,
+        CelestialBody.Jupiter,
+        CelestialBody.Saturn,
+        CelestialBody.Uranus,
+        CelestialBody.Neptune,
+        CelestialBody.Pluto,
+      ];
+      const actualRetrogrades: string[] = [];
+      for (const p of planetsToCheck) {
+        const coords = swissEngine.getPlanetCoordinates(targetDate, p);
+        if (coords.speed < 0) {
+          actualRetrogrades.push(p);
+        }
+      }
+
       const astrologyData = {
         source: "sim",
         status: "Active",
         transits: AspectEngine.formatAspects(allAspects),
+        retrogrades: actualRetrogrades,
       };
 
       const ragContext = {
