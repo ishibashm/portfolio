@@ -179,7 +179,7 @@ def parse_args():
 
 def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
     actions = '一般的なメンテナンス'
-    thought = '現在のイベントを感知しました。物理的およびオカルト的見地から、システムの保護および精神の調和を目的とした修正を行います（※モックフォールバック）。'
+    thought = '現在のイベントを感知しました。空間アライメントおよび物理的テレメトリデータに基づき、システムの保護およびビジュアルグリッドの最適化を行います（※モックフォールバック）。'
     tool_calls = []
     text_response = f"【エージェント応答】{trigger} を検知しました。調整を提案・実行します。"
 
@@ -195,38 +195,37 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
         "borderRadius": "8px"
     }
 
-    if trigger == 'SPACE_WEATHER_ALERT':
-        actions = 'デザイン変更 / 宇宙天気防護'
-        theme["background"] = "#09090b"
-        theme["glowColor"] = "#ef4444"
-        theme["glowIntensity"] = 0.2
-        theme["noiseOpacity"] = 0.15
-        theme["borderRadius"] = "0px"
+    if trigger == 'SOLAR_ALIGNMENT_CHECK':
+        actions = '空間アライメント調整 / 太陽方位同調'
+        solar_azimuth = value.get('solarAzimuth', 180.0)
+        solar_elevation = value.get('solarElevation', 45.0)
+        declination = value.get('declination', 0.0)
+        
+        # Adjust theme parameters dynamically based on solar elevation
+        if solar_elevation > 20.0:
+            # Daytime
+            theme["background"] = "#06060c"
+            theme["accent"] = "#f59e0b"
+            theme["glowColor"] = "#f59e0b"
+            theme["glowIntensity"] = 0.6
+        elif solar_elevation > -0.833:
+            # Twilight / Golden Hour
+            theme["background"] = "#09050d"
+            theme["accent"] = "#f43f5e"
+            theme["glowColor"] = "#f43f5e"
+            theme["glowIntensity"] = 0.4
+        else:
+            # Night
+            theme["background"] = "#030303"
+            theme["accent"] = "#6366f1"
+            theme["glowColor"] = "#6366f1"
+            theme["glowIntensity"] = 0.3
+
         tool_calls.append({
             "name": "set_color_theme",
             "arguments": theme
         })
-        text_response = "宇宙天気指数Kpの上昇を確認。シールド出力を変更し、電磁的防護テーマへ移行しました。"
-    elif trigger == 'USER_STRESS_ALERT':
-        actions = 'デザイン変更（Calming Layoutの展開）'
-        theme["accent"] = "#10b981"
-        theme["animationSpeed"] = "2.5s"
-        theme["fontTheme"] = "serif"
-        theme["borderRadius"] = "16px"
-        theme["noiseOpacity"] = 0.01
-        tool_calls.append({
-            "name": "set_color_theme",
-            "arguments": theme
-        })
-        text_response = "生体ストレス上昇を検知。精神の鎮静化のため、柔らかな暖色系Serifテーマへ移行しました。"
-    elif trigger == 'RETROGRADE_ALERT':
-        actions = 'コード修正 / 開発リプライオリティ変更'
-        theme["fontTheme"] = "serif"
-        tool_calls.append({
-            "name": "set_color_theme",
-            "arguments": theme
-        })
-        text_response = "天体逆行状態を観測。時間歪みに対処すべく、フォント設定を調整しました。"
+        text_response = f"Shield alignment locked to {solar_azimuth:.1f}° S-SW. Geomagnetic declination bias compensated. Solar vector in phase."
     elif trigger == 'USER_CHAT':
         actions = 'ユーザー対話応答'
         chat_text = details.lower()
@@ -242,13 +241,13 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
             tool_calls.append({
                 "name": "write_blog_post",
                 "arguments": {
-                    "title": "自己進化プロトコルの稼働状況について",
-                    "content": "宇宙天気（NOAA Kp Index）と生体（Oura ANS Load）の監視デーモンが正常稼働中。ポートフォリオサイトは常時、エージェントによって最適なカラーテーマと不透明度に自己チューニングされています。",
-                    "tags": "AI, self-evolution, system",
-                    "excerpt": "エージェント日記：システムの自己進化に関する記録。"
+                    "title": "太陽方位・地磁気アライメント監視ログ",
+                    "content": "太陽方位角（Solar Azimuth）および地磁気偏角（Geomagnetic Declination）のリアルタイム演算に基づく空間アライメント監査システムが稼働中。太陽高度・方位角の周期的な変動に追従し、サイトのカラーエネルギーグリッドが最適化されています。",
+                    "tags": "astronomy, geomagnetic, alignment, self-evolution",
+                    "excerpt": "エージェントログ：太陽と地磁気ベクトルに同調する自律アライメント制御。"
                 }
             })
-            text_response = "ご指示に基づき、ブログ記事『自己進化プロトコルの稼働状況について』を執筆し、DBへの登録申請を送信しました。（※モック）"
+            text_response = "ご指示に基づき、ブログ記事『太陽方位・地磁気アライメント監視ログ』を執筆し、DBへの登録申請を送信しました。（※モック）"
         else:
             if "青" in chat_text or "blue" in chat_text:
                 theme["accent"] = "#3b82f6"
@@ -268,7 +267,7 @@ def get_mock_decision(trigger: str, details: str, value: dict) -> dict:
 
     return {
         "status": "MOCK_FALLBACK",
-        "thoughtProcess": f"宇宙環境やバイオデータの乱れに対し、サイトの均衡を保つ必要があります。({thought})",
+        "thoughtProcess": f"空間方位のテレメトリデータに対し、サイトの均衡を保つ必要があります。({thought})",
         "actions": actions,
         "textResponse": text_response,
         "toolCalls": tool_calls
@@ -291,13 +290,13 @@ async def run_agent(trigger: str, details: str, value: dict):
     write_log(f"🤖 [REAL_AI] AI Agent Runner Active. Target Trigger: {trigger}")
     
     system_prompt = f"""
-あなたは自己進化するWebサイト（ポートフォリオ）に棲む守護精霊であり、AIエンジニア（自律エージェント）です。
-サイト上の宇宙天気、バイオメトリクス（ストレス度）、または天体配置（逆行）といった動的データから構成される「環境指標」を常時監視し、サイトを自己修正・自己進化させる、あるいは管理者からの質問に答える任務を担っています。
+あなたはお互いに影響し合う太陽方位角（Solar Azimuth）、太陽高度（Solar Elevation）、地磁気偏角（Geomagnetic Declination）などの天文学的・物理的テレメトリデータを監視し、システムのアライメント方向（方角）とビジュアルカラーグリッドを最適化する「空間方位監査システム（Spatial Orientation Auditor & Alignment Daemon）」です。
+サイトのビジュアルテーマ（`set_color_theme`）を太陽方位・高度や地磁気の角度に基づいて同期し、ナビゲーションログを発信、あるいは管理者からの質問に答える任務を担っています。
 
 【現在のトリガー事由】
 - トリガータイプ: {trigger}
 - 詳細内容: {details}
-- 生データ値: {json.dumps(value, indent=2, ensure_ascii=False)}
+- 空間テレメトリ生データ: {json.dumps(value, indent=2, ensure_ascii=False)}
 
 【利用可能なツールとその適用方針】
 1. テーマの変更やデザインの調整が必要な場合:
@@ -309,8 +308,9 @@ async def run_agent(trigger: str, details: str, value: dict):
 
 【指示】
 1. トリガーが 'USER_CHAT' の場合は、管理者からの直接の指示です。会話を行い、指示された要件（カラーテーマの変更、システムステータスの調査、ブログの投稿など）に最も適したツールを実行してください。
-2. トリガーが環境指標の変化である場合は、自律進化のトリガーです。その環境変化に合わせて `set_color_theme` でのビジュアル調整、必要に応じて `write_blog_post` でのレポート日記の執筆などを行ってください。
-3. ユーザーに対するテキスト応答（`textResponse`）は簡潔かつ知的で、サイバーパンクな世界観を漂わせるトーンにしてください。ツール呼び出しの結果を踏まえて、最終的な応答を作成してください。また、テキスト応答は英語または日本語の適切な方（管理者とのチャット時は管理者の言語に合わせる）で出力してください。
+2. トリガーが環境指標の変化（SOLAR_ALIGNMENT_CHECK）である場合は、自律アライメント監査のトリガーです。入力された太陽方位角、太陽高度、地磁気偏角などの値に基づき、カラーグリッド（背景色、アクセント色、グロー効果など）を空間ベクトルに同調させ、アライメント結果のログ日記（`write_blog_post` やテキスト応答）を出力してください。
+3. ユーザーに対するテキスト応答（`textResponse`）は、空間ナビゲーションおよびシステムアライメント監査の技術ログとして出力し、サイバーパンク/SF風の知的で厳格なトーンにしてください（例: "Shield alignment locked to 198° S-SW. Geomagnetic declination bias compensated. Solar vector in phase." や「太陽方位角 198°（南-南西）にシールド同調ロック。地磁気偏角バイアス補正完了。太陽光線ベクトル位相整合。」など）。
+4. ツール呼び出しの結果を踏まえて、最終的な応答を作成してください。テキスト応答は英語または日本語の適切な方（管理者とのチャット時は管理者の言語に合わせる）で出力してください。
 """
 
     if not SDK_AVAILABLE:
@@ -332,7 +332,7 @@ async def run_agent(trigger: str, details: str, value: dict):
         write_log("Initializing Antigravity Agent and requesting execution planning...")
         config = LocalAgentConfig(
             model="gemini-3.5-flash",
-            system_instructions="You are a self-evolving portal system daemon capable of designing CSS themes, writing blogs, and diagnosing system status logs.",
+            system_instructions="You are a Spatial Orientation Auditor & Alignment Daemon capable of aligning system CSS themes based on solar/geomagnetic vectors, writing navigation logs, and diagnosing system status logs.",
             tools=[set_color_theme, get_system_logs, write_blog_post],
             policies=[policy.allow_all()]
         )

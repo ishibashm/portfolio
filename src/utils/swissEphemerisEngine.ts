@@ -258,11 +258,16 @@ export class SwissEphemerisEngine {
     // This is a placeholder that calculates the Ascendant/MC roughly using
     // local sidereal time, waiting for true swisseph replacement.
 
-    const obs = new Observer(latitude, longitude, 0);
+    const lat =
+      typeof latitude === "number" && !isNaN(latitude) ? latitude : 35.6895;
+    const lon =
+      typeof longitude === "number" && !isNaN(longitude) ? longitude : 139.6917;
+    const obs = new Observer(lat, lon, 0);
     const time = new AstroTime(date);
 
     // True Sidereal Time at Greenwich
     const gst = SiderealTime(time);
+
     // Local Sidereal Time wrapped strictly to [0, 24)
     let lst = gst + longitude / 15.0;
     lst = ((lst % 24) + 24) % 24;

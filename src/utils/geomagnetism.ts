@@ -19,19 +19,37 @@ export async function getGeomagneticData(
   timestamp: number = Date.now(),
 ): Promise<GeomagneticData | null> {
   let date = new Date(timestamp);
+  let model: any = null;
 
-  // Clamp date to the validity range of the geomagnetism WMM-2015 model
-  // to prevent "Model is only valid from Mon Dec 15 2014 to Sun Dec 15 2019" errors.
-  const minDate = new Date("2014-12-16");
-  const maxDate = new Date("2019-12-14");
-  if (date < minDate) {
-    date = minDate;
-  } else if (date > maxDate) {
-    date = maxDate;
+  // Try to load the model with the requested date.
+  // Catch RangeErrors if the model validity period in the installed library version is exceeded.
+  try {
+    model = geomagnetism.model(date);
+  } catch (e) {
+    // Fallback 1: Try WMM-2020 limit (typically valid up to Dec 10, 2024)
+    try {
+      date = new Date("2024-12-01");
+      model = geomagnetism.model(date);
+    } catch (e2) {
+      // Fallback 2: Try WMM-2015 max limit
+      try {
+        date = new Date("2019-12-14");
+        model = geomagnetism.model(date);
+      } catch (e3) {
+        // Fallback 3: Try WMM-2015 min limit
+        try {
+          date = new Date("2014-12-16");
+          model = geomagnetism.model(date);
+        } catch (e4) {
+          console.error("All geomagnetism model fallbacks failed:", e4);
+          return null;
+        }
+      }
+    }
   }
 
   try {
-    const model = geomagnetism.model(date);
+    if (!model) return null;
     const info = model.point([lat, lon]);
 
     if (info) {

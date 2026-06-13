@@ -2,12 +2,14 @@ import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
-import { fetchSpaceWeather } from "../src/utils/spaceWeather";
 import {
-  SwissEphemerisEngine,
-  CelestialBody,
-} from "../src/utils/swissEphemerisEngine";
-import { OuraClient } from "../src/lib/ouraClient";
+  Body,
+  Observer,
+  AstroTime,
+  Equator,
+  Horizontal,
+} from "astronomy-engine";
+import { getGeomagneticData } from "../src/utils/geomagnetism";
 import prisma from "../src/lib/prisma";
 
 // Load environmental variables
@@ -20,9 +22,8 @@ const STATE_FILE = path.join(process.cwd(), "scripts", "daemon_state.json");
 const LOG_FILE = path.join(process.cwd(), "data", "daemon_output.log");
 
 interface DaemonState {
-  lastKpIndexAlert: number | null;
-  lastAnsLoadAlert: number | null;
-  lastRetrogradeState: Record<string, boolean>; // planetName -> isRetrograde
+  lastSolarAzimuth: number | null;
+  lastSolarElevation: number | null;
   lastCheckedTime: string | null;
 }
 
@@ -49,9 +50,8 @@ function loadState(): DaemonState {
     writeLog(`Failed to load daemon state, using default state.`);
   }
   return {
-    lastKpIndexAlert: null,
-    lastAnsLoadAlert: null,
-    lastRetrogradeState: {},
+    lastSolarAzimuth: null,
+    lastSolarElevation: null,
     lastCheckedTime: null,
   };
 }
@@ -306,102 +306,92 @@ async function triggerAgentEvolution(
 
 async function checkEnvironment(state: DaemonState): Promise<DaemonState> {
   const updatedState = { ...state, lastCheckedTime: new Date().toISOString() };
-  writeLog("--- Starting Environment Health Check ---");
+  writeLog("--- Starting Spatial Orientation & Alignment Check ---");
 
-  // 1. Check Space Weather (Kp Index)
+  const today = new Date();
+
+  // Baseline observer location: Tokyo (35.6895° N, 139.6917° E)
+  const defaultLat = 35.6895;
+  const defaultLon = 139.6917;
+  let lat = defaultLat;
+  let lon = defaultLon;
+
   try {
-    const spaceWeather = await fetchSpaceWeather();
-    const kpIndex = spaceWeather.kpIndex ?? 3.0;
-    writeLog(`[Space Weather] Current Kp Index: ${kpIndex}`);
-
-    if (kpIndex >= 5.0) {
-      // Trigger if no alert triggered recently, or if index increased significantly
-      if (state.lastKpIndexAlert === null || kpIndex > state.lastKpIndexAlert) {
-        triggerAgentEvolution(
-          "SPACE_WEATHER_ALERT",
-          `High solar magnetic activity detected (Kp Index: ${kpIndex}). Security hardening and dark-mode optimization advised.`,
-          { kpIndex },
-        );
-        updatedState.lastKpIndexAlert = kpIndex;
-      }
-    } else {
-      updatedState.lastKpIndexAlert = null; // Reset when back to normal
+    const envLat = process.env.OBSERVER_LAT
+      ? parseFloat(process.env.OBSERVER_LAT)
+      : NaN;
+    const envLon = process.env.OBSERVER_LON
+      ? parseFloat(process.env.OBSERVER_LON)
+      : NaN;
+    if (!isNaN(envLat) && envLat >= -90 && envLat <= 90) {
+      lat = envLat;
+    }
+    if (!isNaN(envLon) && envLon >= -180 && envLon <= 180) {
+      lon = envLon;
     }
   } catch (e: any) {
-    writeLog(`[Warning] Failed to fetch space weather: ${e.message}`);
-  }
-
-  // 2. Check Oura Biometrics (ANS Load)
-  try {
-    const oura = new OuraClient();
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    const startDate = yesterday.toISOString().split("T")[0];
-    const endDate = today.toISOString().split("T")[0];
-
-    const readinessData = await oura.getDailyReadiness(startDate, endDate);
-    const score = readinessData?.data?.[0]?.score ?? 80;
-    const ansLoad = 100 - score;
     writeLog(
-      `[Oura Biometrics] Current User ANS Load: ${ansLoad}% (Readiness: ${score})`,
+      `[Warning] Failed to parse observer coordinates from env: ${e.message}`,
     );
-
-    if (ansLoad >= 80) {
-      if (state.lastAnsLoadAlert === null || ansLoad > state.lastAnsLoadAlert) {
-        triggerAgentEvolution(
-          "USER_STRESS_ALERT",
-          `High user ANS Load detected (${ansLoad}%). Dynamic calming layout parameters should be deployed.`,
-          { ansLoad },
-        );
-        updatedState.lastAnsLoadAlert = ansLoad;
-      }
-    } else {
-      updatedState.lastAnsLoadAlert = null; // Reset when back to normal
-    }
-  } catch (e: any) {
-    writeLog(`[Warning] Failed to fetch Oura biometric data: ${e.message}`);
   }
 
-  // 3. Check Planet Retrogrades (Mercury / Venus)
+  // 1. Calculate Solar Coordinates (Azimuth & Elevation)
+  let solarAzimuth = 180;
+  let solarElevation = 45;
   try {
-    const swissEngine = SwissEphemerisEngine.getInstance();
-    const today = new Date();
-
-    const planetsToCheck = {
-      Mercury: CelestialBody.Mercury,
-      Venus: CelestialBody.Venus,
-    };
-
-    const currentRetrogradeState: Record<string, boolean> = {};
-
-    for (const [name, body] of Object.entries(planetsToCheck)) {
-      const coords = swissEngine.getPlanetCoordinates(today, body);
-      const isRetrograde = coords.speed < 0;
-      currentRetrogradeState[name] = isRetrograde;
-
-      const previousState = state.lastRetrogradeState[name] ?? false;
-      writeLog(
-        `[Ephemeris] ${name} is Retrograde: ${isRetrograde} (Previous: ${previousState})`,
-      );
-
-      if (isRetrograde !== previousState) {
-        // State has changed!
-        const direction = isRetrograde ? "started" : "ended";
-        triggerAgentEvolution(
-          "RETROGRADE_ALERT",
-          `${name} Retrograde has ${direction}. Realigning development priorities.`,
-          { planet: name, isRetrograde },
-        );
-      }
-    }
-    updatedState.lastRetrogradeState = currentRetrogradeState;
+    const observer = new Observer(lat, lon, 0);
+    const time = new AstroTime(today);
+    const equ = Equator(Body.Sun, time, observer, true, true);
+    const hor = Horizontal(time, observer, equ.ra, equ.dec, "apparent");
+    solarAzimuth = hor.azimuth;
+    solarElevation = hor.altitude;
+    writeLog(
+      `[Solar Telemetry] Azimuth: ${solarAzimuth.toFixed(2)}°, Elevation: ${solarElevation.toFixed(2)}°`,
+    );
   } catch (e: any) {
-    writeLog(`[Warning] Failed to check planet coordinates: ${e.message}`);
+    writeLog(`[Warning] Failed to calculate solar positions: ${e.message}`);
   }
 
-  writeLog("--- Environmental Health Check Completed ---");
+  // 2. Fetch Geomagnetic Vectoring
+  let declination = 0;
+  let inclination = 0;
+  try {
+    const geoData = await getGeomagneticData(lat, lon, today.getTime());
+    if (geoData) {
+      declination = geoData.declination;
+      inclination = geoData.inclination;
+      writeLog(
+        `[Geomagnetic Telemetry] Declination: ${declination.toFixed(2)}°, Inclination: ${inclination.toFixed(2)}°`,
+      );
+    }
+  } catch (e: any) {
+    writeLog(`[Warning] Failed to calculate geomagnetism: ${e.message}`);
+  }
+
+  // 3. Trigger alignment optimization audit
+  // Trigger on state change or periodically (if azimuth changes more than 15 degrees)
+  const angleDelta =
+    state.lastSolarAzimuth !== null
+      ? Math.abs(solarAzimuth - state.lastSolarAzimuth)
+      : 999;
+
+  if (angleDelta >= 15.0) {
+    triggerAgentEvolution(
+      "SOLAR_ALIGNMENT_CHECK",
+      `System spatial alignment audit triggered. Solar Azimuth at ${solarAzimuth.toFixed(1)}°, Geomagnetic Declination at ${declination.toFixed(2)}°. Realigning focus vectors.`,
+      {
+        solarAzimuth,
+        solarElevation,
+        declination,
+        inclination,
+        timestamp: today.toISOString(),
+      },
+    );
+    updatedState.lastSolarAzimuth = solarAzimuth;
+    updatedState.lastSolarElevation = solarElevation;
+  }
+
+  writeLog("--- Spatial Orientation & Alignment Check Completed ---");
   return updatedState;
 }
 
