@@ -329,6 +329,19 @@ export function NBADashboard({
       const activeIntent =
         cfg?.actionIntent !== undefined ? cfg.actionIntent : actionIntent;
 
+      let birthDateVal: string | undefined = undefined;
+      try {
+        const localData = localStorage.getItem("tactical_config_v1");
+        if (localData) {
+          const config = JSON.parse(localData);
+          if (config.birth_date) {
+            birthDateVal = config.birth_date;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to read birthDate from localStorage:", e);
+      }
+
       const res = await fetch("/api/nba", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -336,6 +349,7 @@ export function NBADashboard({
           useClassical: activeClassical,
           directionFilterMode: activeFilter,
           actionIntent: activeIntent,
+          birthDate: birthDateVal,
         }),
       });
       if (!res.ok) throw new Error("Failed to fetch NBA data");
@@ -362,6 +376,20 @@ export function NBADashboard({
         cfg?.useClassicalBoard !== undefined
           ? cfg.useClassicalBoard
           : useClassical;
+
+      let birthDateVal: string | undefined = undefined;
+      try {
+        const localData = localStorage.getItem("tactical_config_v1");
+        if (localData) {
+          const config = JSON.parse(localData);
+          if (config.birth_date) {
+            birthDateVal = config.birth_date;
+          }
+        }
+      } catch (e) {
+        console.error("Failed to read birthDate from localStorage:", e);
+      }
+
       const res = await fetch("/api/nba/forecast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -369,6 +397,7 @@ export function NBADashboard({
           currentShield: currentData.nba.stateVector.shieldCapacity,
           currentAnsLoad: currentData.nba.stateVector.ansLoad,
           useClassical: activeClassical,
+          clientBirthDate: birthDateVal,
         }),
       });
       const json = await res.json();
