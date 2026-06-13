@@ -19,7 +19,7 @@ describe("BaziEngine Zanggan element balance", () => {
     // Since 2026 is Bing-Wu (丙午) year, and 丙 is Fire (1.0) and 午 contains 丁 (Fire, 0.7) and 己 (Earth, 0.3)
     // Fire (火) must be significantly greater than 0.
     expect(result.fiveElements.火).toBeGreaterThan(0);
-    
+
     // Check that all 5 elements are represented in the balance map
     expect(result.fiveElements).toHaveProperty("木");
     expect(result.fiveElements).toHaveProperty("火");

@@ -7,7 +7,12 @@
  */
 
 import { BaziResult } from "./baziEngine";
-import { getCurrentZodiac, getHonmeiStar, getClassicalDayStar, getDayStar } from "./ephemerisEngine";
+import {
+  getCurrentZodiac,
+  getHonmeiStar,
+  getClassicalDayStar,
+  getDayStar,
+} from "./ephemerisEngine";
 import { VedicEngine } from "./vedicEngine";
 
 export interface TarotCard {
@@ -332,7 +337,7 @@ const ICHING_GRID = [
   // Row 6 (Upper 巽)
   [20, 42, 59, 61, 53, 37, 57, 9],
   // Row 7 (Upper 乾)
-  [12, 25, 6, 10, 33, 13, 44, 1]
+  [12, 25, 6, 10, 33, 13, 44, 1],
 ];
 
 export const ICHING_HEXAGRAMS_ROXY: Record<number, string> = {
@@ -572,7 +577,9 @@ function getNineStarKi(
   const monthStar = starsMap[mStarNum];
 
   // Natal Day Star (Nichimei) should be calculated based on user's birthDate
-  const dStarNum = useClassical ? getClassicalDayStar(birthDate) : getDayStar(birthDate);
+  const dStarNum = useClassical
+    ? getClassicalDayStar(birthDate)
+    : getDayStar(birthDate);
   const dayStar = starsMap[dStarNum];
 
   // Calculate dynamic Tendo direction
@@ -1207,7 +1214,10 @@ export function fetchMetaphysicalData(
 
   // 3. VedAstro
   const vedicEngine = new VedicEngine();
-  const dashaResult = vedicEngine.calculateVimshottariDasha(birthDate, currentDate);
+  const dashaResult = vedicEngine.calculateVimshottariDasha(
+    birthDate,
+    currentDate,
+  );
   const activeDasha = dashaResult.formatted + " (現在のアクティブ・サブ期間)";
   const ashtakavargaPoints = {
     "太陽 (Sun)": 28 + Math.floor(rand() * 10),

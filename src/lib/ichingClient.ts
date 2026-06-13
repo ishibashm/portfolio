@@ -201,7 +201,8 @@ export class IChingClient {
       character,
       riskModifier: 0,
       confidenceBoost: 0,
-      actionAdvice: adviceFallback || "安定した状態です。慎重に状況を見極めましょう。",
+      actionAdvice:
+        adviceFallback || "安定した状態です。慎重に状況を見極めましょう。",
     };
   }
 }

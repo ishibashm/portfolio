@@ -4192,7 +4192,7 @@ ${timingOptimization?.recommendationText || "特になし"}
           <div className="w-full max-w-3xl bg-zinc-950/80 border border-purple-500/20 rounded-2xl p-4 shadow-[0_0_20px_rgba(168,85,247,0.05)] backdrop-blur-md flex items-start gap-4 transition-all hover:border-purple-500/40 relative overflow-hidden group">
             {/* Ambient subtle glow */}
             <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 blur-2xl rounded-full pointer-events-none group-hover:bg-purple-500/20 transition-all"></div>
-            
+
             {/* Avatar block */}
             <div className="relative shrink-0">
               <div className="w-12 h-12 rounded-full bg-purple-950/30 border border-purple-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(168,85,247,0.2)] animate-pulse relative overflow-hidden">
@@ -4222,7 +4222,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
                 <span className="text-[9px] text-zinc-500 font-mono">
                   {(() => {
-                    const diffMs = Date.now() - new Date(latestTweet.timestamp).getTime();
+                    const diffMs =
+                      Date.now() - new Date(latestTweet.timestamp).getTime();
                     const diffMins = Math.floor(diffMs / 60000);
                     if (diffMins < 1) return "JUST NOW";
                     if (diffMins < 60) return `${diffMins}M AGO`;
@@ -4233,16 +4234,19 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </span>
               </div>
               <p className="text-zinc-300 text-xs leading-relaxed font-sans mt-1">
-                {latestTweet.textResponse || "System tuned. Stability index: optimal."}
+                {latestTweet.textResponse ||
+                  "System tuned. Stability index: optimal."}
               </p>
-              
+
               <div className="mt-2 flex justify-end">
-                <Link 
-                  href="/agent-log" 
+                <Link
+                  href="/agent-log"
                   className="text-[9px] text-purple-400 hover:text-purple-300 font-mono uppercase tracking-widest flex items-center gap-1 group/link"
                 >
                   [ View Full Thought Feed ]
-                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">
+                    →
+                  </span>
                 </Link>
               </div>
             </div>

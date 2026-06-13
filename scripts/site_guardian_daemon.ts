@@ -103,7 +103,9 @@ async function triggerAgentEvolution(
     "scripts",
     "ai_agent_runner.py",
   );
-  const base64Value = Buffer.from(JSON.stringify(combinedValue)).toString("base64");
+  const base64Value = Buffer.from(JSON.stringify(combinedValue)).toString(
+    "base64",
+  );
 
   const pythonCmd = process.platform === "win32" ? "py" : "python3";
 
@@ -248,7 +250,10 @@ async function triggerAgentEvolution(
               const dateStr = Date.now().toString();
               const cleanTitle = args.title
                 .toLowerCase()
-                .replace(/[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g, "-")
+                .replace(
+                  /[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g,
+                  "-",
+                )
                 .replace(/-+/g, "-");
               const slug = `agent-${cleanTitle}-${dateStr}`;
 

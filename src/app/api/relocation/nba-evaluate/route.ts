@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       const targetEnv = getCurrentEnvironmentalFrequencies(
         targetDate,
         lon,
-        useClassical ? "coupled" : "independent"
+        useClassical ? "coupled" : "independent",
       );
       const nineStarKi = {
         yearStar: targetEnv.yearStar,

@@ -15,7 +15,10 @@ import { Direction } from "./ephemerisEngine";
  * - W (West): 255° ~ 285° (30 degrees)
  * - NW (North-West): 285° ~ 345° (60 degrees)
  */
-export function getKigakuSector(bearing: number, useClassical: boolean = false): Direction {
+export function getKigakuSector(
+  bearing: number,
+  useClassical: boolean = false,
+): Direction {
   const b = ((bearing % 360) + 360) % 360;
 
   if (useClassical) {

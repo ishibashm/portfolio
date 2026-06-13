@@ -271,7 +271,10 @@ function calculateMarsSaturnAspectScore(mars: number, saturn: number): number {
   return 0.0;
 }
 
-export function calculateAspectWeight(currentOrb: number, maxOrb: number): number {
+export function calculateAspectWeight(
+  currentOrb: number,
+  maxOrb: number,
+): number {
   if (currentOrb >= maxOrb) return 0.0;
   return Math.cos((currentOrb / maxOrb) * (Math.PI / 2));
 }
@@ -328,14 +331,17 @@ export class NBAEngine {
     // --- Layer 1: Biometric & Dynamic Physical State (Execution Date) ---
     const ansLoadNorm = (current.ansLoad ?? 50) / 100.0;
     const shieldCapacityNorm = (current.shieldCapacity ?? 50) / 100.0;
-    const stressLevelNorm = (current.stressLevel ?? current.ansLoad ?? 50) / 100.0;
-    
+    const stressLevelNorm =
+      (current.stressLevel ?? current.ansLoad ?? 50) / 100.0;
+
     let resilienceScore = 0.5;
     if (current.resilience) {
       const r = String(current.resilience).toLowerCase();
-      if (r === "high" || r === "strong" || r === "optimal") resilienceScore = 1.0;
+      if (r === "high" || r === "strong" || r === "optimal")
+        resilienceScore = 1.0;
       else if (r === "adequate" || r === "normal") resilienceScore = 0.6;
-      else if (r === "low" || r === "weak" || r === "vulnerable") resilienceScore = 0.2;
+      else if (r === "low" || r === "weak" || r === "vulnerable")
+        resilienceScore = 0.2;
     }
 
     // --- Layer 2: Astrophysical & Space Weather State (Target Date for orbits, Execution Date for weather) ---
@@ -343,21 +349,29 @@ export class NBAEngine {
     const solarPhaseSin = Math.sin(solarPhaseRad);
     const solarPhaseCos = Math.cos(solarPhaseRad);
 
-    const spaceWeatherSource = current.spaceWeather ?? target.spaceWeather ?? state.spaceWeather;
+    const spaceWeatherSource =
+      current.spaceWeather ?? target.spaceWeather ?? state.spaceWeather;
     const kpVal = spaceWeatherSource?.kpIndex ?? 3.0;
     const kpIndexNorm = kpVal / 9.0;
 
     const windSpeedVal = spaceWeatherSource?.solarWindSpeed ?? 400;
-    const solarWindSpeedNorm = Math.max(0, Math.min(1.0, (windSpeedVal - 300) / 500));
+    const solarWindSpeedNorm = Math.max(
+      0,
+      Math.min(1.0, (windSpeedVal - 300) / 500),
+    );
 
     const astrologySource = target.astrologyData ?? state.astrologyData;
-    let aspectsRiskScore = (target.environmentalRisk ?? state.environmentalRisk ?? 50) / 100.0;
+    let aspectsRiskScore =
+      (target.environmentalRisk ?? state.environmentalRisk ?? 50) / 100.0;
     if (astrologySource?.transits && Array.isArray(astrologySource.transits)) {
       const { hardWeight, softWeight } = getAspectsScoresFromTransits(
         astrologySource.transits,
         astrologySource.retrogrades ?? [],
       );
-      aspectsRiskScore = Math.max(0, Math.min(1.0, aspectsRiskScore + (hardWeight * 0.1) - (softWeight * 0.05)));
+      aspectsRiskScore = Math.max(
+        0,
+        Math.min(1.0, aspectsRiskScore + hardWeight * 0.1 - softWeight * 0.05),
+      );
     }
 
     // --- Layer 3: Metaphysical & Calendrical State (Target Date) ---
@@ -369,8 +383,10 @@ export class NBAEngine {
     }
 
     const isVoidTime = (target.isVoidTime ?? state.isVoidTime) ? 1.0 : 0.0;
-    const isConflictDay = (target.isConflictDay ?? state.isConflictDay) ? 1.0 : 0.0;
-    const isDoyouHazard = (target.isDoyouHazard ?? state.isDoyouHazard) ? 1.0 : 0.0;
+    const isConflictDay =
+      (target.isConflictDay ?? state.isConflictDay) ? 1.0 : 0.0;
+    const isDoyouHazard =
+      (target.isDoyouHazard ?? state.isDoyouHazard) ? 1.0 : 0.0;
 
     const nineStarKiSource = target.nineStarKi ?? state.nineStarKi;
     const yStar = nineStarKiSource?.yearStar ?? 5;
@@ -411,7 +427,10 @@ export class NBAEngine {
     action: ActionType,
     attentionRiskAdjustment: number = 0,
     encodedLayers: StateLayers,
-    macroInstruction: "BLOCK_ACTIVE_RELOCATION" | "FAVOR_PREPARATION" | "PERMIT_ALL" = "PERMIT_ALL",
+    macroInstruction:
+      | "BLOCK_ACTIVE_RELOCATION"
+      | "FAVOR_PREPARATION"
+      | "PERMIT_ALL" = "PERMIT_ALL",
   ): number {
     const target = state.targetEphemeris ?? state;
 
@@ -537,7 +556,7 @@ export class NBAEngine {
           if (isWeak) {
             compatibilityScore = -0.5; // Draining energy is a penalty for weak Day Master
           } else {
-            compatibilityScore = 0.5;  // Venting energy is a bonus for strong/balanced
+            compatibilityScore = 0.5; // Venting energy is a bonus for strong/balanced
           }
         } else if (shengCycle[em] === pm) {
           compatibilityScore = 0.8;
@@ -670,13 +689,19 @@ export class NBAEngine {
 
     // --- Apply Hierarchical Reinforcement Learning constraints and biases ---
     if (macroInstruction === "BLOCK_ACTIVE_RELOCATION") {
-      if (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") {
+      if (
+        action === "EXECUTE_RELOCATION" ||
+        action === "EXECUTE_PURGE_RELOCATION"
+      ) {
         q = -999.0;
       }
     } else if (macroInstruction === "FAVOR_PREPARATION") {
       if (action === "PREPARE_AND_WAIT" || action === "GATHER_INTEL") {
         q += 0.3;
-      } else if (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") {
+      } else if (
+        action === "EXECUTE_RELOCATION" ||
+        action === "EXECUTE_PURGE_RELOCATION"
+      ) {
         q -= 0.4;
       }
     }
@@ -706,7 +731,7 @@ export class NBAEngine {
 
     // Derived classical features for legacy alignment (pulled from target)
     const { vedicAstrology, ephemerisData, astrologyData, ragContext } = target;
-    
+
     let f5_vedic = 0;
     if (vedicAstrology && vedicAstrology.tithi) {
       const match = String(vedicAstrology.tithi).match(/\d+/);
@@ -882,8 +907,13 @@ export class NBAEngine {
 
     // --- Proposal B: Hierarchical Reinforcement Learning (HRL) ---
     // Macro Agent operates on year/month slow-moving horizons.
-    const macroRiskFactor = (encodedLayers.astrophysical.aspectsRiskScore * 0.4) + (encodedLayers.metaphysical.isVoidTime * 0.6);
-    let macroInstruction: "BLOCK_ACTIVE_RELOCATION" | "FAVOR_PREPARATION" | "PERMIT_ALL" = "PERMIT_ALL";
+    const macroRiskFactor =
+      encodedLayers.astrophysical.aspectsRiskScore * 0.4 +
+      encodedLayers.metaphysical.isVoidTime * 0.6;
+    let macroInstruction:
+      | "BLOCK_ACTIVE_RELOCATION"
+      | "FAVOR_PREPARATION"
+      | "PERMIT_ALL" = "PERMIT_ALL";
     if (encodedLayers.metaphysical.isVoidTime > 0 || macroRiskFactor > 0.75) {
       macroInstruction = "BLOCK_ACTIVE_RELOCATION";
     } else if (macroRiskFactor > 0.45) {
@@ -891,9 +921,16 @@ export class NBAEngine {
     }
 
     const macroQValues = {
-      EXECUTE_RELOCATION: -1.0 * encodedLayers.metaphysical.isVoidTime - 0.4 * encodedLayers.astrophysical.aspectsRiskScore,
-      EXECUTE_PURGE_RELOCATION: -1.5 * encodedLayers.metaphysical.isVoidTime - 0.6 * encodedLayers.astrophysical.aspectsRiskScore,
-      PREPARE_AND_WAIT: 0.5 * encodedLayers.metaphysical.isVoidTime + 0.3 * encodedLayers.astrophysical.aspectsRiskScore + 0.2,
+      EXECUTE_RELOCATION:
+        -1.0 * encodedLayers.metaphysical.isVoidTime -
+        0.4 * encodedLayers.astrophysical.aspectsRiskScore,
+      EXECUTE_PURGE_RELOCATION:
+        -1.5 * encodedLayers.metaphysical.isVoidTime -
+        0.6 * encodedLayers.astrophysical.aspectsRiskScore,
+      PREPARE_AND_WAIT:
+        0.5 * encodedLayers.metaphysical.isVoidTime +
+        0.3 * encodedLayers.astrophysical.aspectsRiskScore +
+        0.2,
     };
 
     // --- Proposal D: Closed-Loop Reward Feedback Adjustments ---
@@ -909,8 +946,10 @@ export class NBAEngine {
     if (closedLoopFeedback !== 0) {
       if (closedLoopFeedback < 0) {
         temperature += Math.abs(closedLoopFeedback) * 0.15;
-        actionAdjustments.EXECUTE_RELOCATION = -0.5 * Math.abs(closedLoopFeedback);
-        actionAdjustments.EXECUTE_PURGE_RELOCATION = -0.8 * Math.abs(closedLoopFeedback);
+        actionAdjustments.EXECUTE_RELOCATION =
+          -0.5 * Math.abs(closedLoopFeedback);
+        actionAdjustments.EXECUTE_PURGE_RELOCATION =
+          -0.8 * Math.abs(closedLoopFeedback);
         actionAdjustments.ABORT_AND_SHIELD = 0.4 * Math.abs(closedLoopFeedback);
         actionAdjustments.PREPARE_AND_WAIT = 0.3 * Math.abs(closedLoopFeedback);
       } else {
@@ -952,8 +991,11 @@ export class NBAEngine {
 
     for (const action of actions) {
       // Apply Macro Agent hard constraint
-      if (macroInstruction === "BLOCK_ACTIVE_RELOCATION" && 
-          (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION")) {
+      if (
+        macroInstruction === "BLOCK_ACTIVE_RELOCATION" &&
+        (action === "EXECUTE_RELOCATION" ||
+          action === "EXECUTE_PURGE_RELOCATION")
+      ) {
         const prunedQ = -999.0;
         qValues[action] = prunedQ;
         logicTrace.push(
@@ -981,38 +1023,83 @@ export class NBAEngine {
       if (state.currentEphemeris) {
         const nextCurrent = { ...state.currentEphemeris };
         if (action === "PREPARE_AND_WAIT") {
-          nextCurrent.ansLoad = Math.max(0, (state.currentEphemeris.ansLoad ?? 50) - 10);
-          nextCurrent.shieldCapacity = Math.min(100, (state.currentEphemeris.shieldCapacity ?? 50) + 5);
+          nextCurrent.ansLoad = Math.max(
+            0,
+            (state.currentEphemeris.ansLoad ?? 50) - 10,
+          );
+          nextCurrent.shieldCapacity = Math.min(
+            100,
+            (state.currentEphemeris.shieldCapacity ?? 50) + 5,
+          );
         } else if (action === "ABORT_AND_SHIELD") {
-          nextCurrent.ansLoad = Math.max(0, (state.currentEphemeris.ansLoad ?? 50) - 15);
-          nextCurrent.shieldCapacity = Math.min(100, (state.currentEphemeris.shieldCapacity ?? 50) + 10);
+          nextCurrent.ansLoad = Math.max(
+            0,
+            (state.currentEphemeris.ansLoad ?? 50) - 15,
+          );
+          nextCurrent.shieldCapacity = Math.min(
+            100,
+            (state.currentEphemeris.shieldCapacity ?? 50) + 10,
+          );
         } else if (action === "EXECUTE_RELOCATION") {
-          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 20);
-          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 15);
+          nextCurrent.ansLoad = Math.min(
+            100,
+            (state.currentEphemeris.ansLoad ?? 50) + 20,
+          );
+          nextCurrent.shieldCapacity = Math.max(
+            0,
+            (state.currentEphemeris.shieldCapacity ?? 50) - 15,
+          );
         } else if (action === "EXECUTE_PURGE_RELOCATION") {
-          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 30);
-          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 40);
+          nextCurrent.ansLoad = Math.min(
+            100,
+            (state.currentEphemeris.ansLoad ?? 50) + 30,
+          );
+          nextCurrent.shieldCapacity = Math.max(
+            0,
+            (state.currentEphemeris.shieldCapacity ?? 50) - 40,
+          );
         } else if (action === "GATHER_INTEL") {
-          nextCurrent.ansLoad = Math.min(100, (state.currentEphemeris.ansLoad ?? 50) + 5);
-          nextCurrent.shieldCapacity = Math.max(0, (state.currentEphemeris.shieldCapacity ?? 50) - 5);
+          nextCurrent.ansLoad = Math.min(
+            100,
+            (state.currentEphemeris.ansLoad ?? 50) + 5,
+          );
+          nextCurrent.shieldCapacity = Math.max(
+            0,
+            (state.currentEphemeris.shieldCapacity ?? 50) - 5,
+          );
         }
         nextState.currentEphemeris = nextCurrent;
       } else {
         if (action === "PREPARE_AND_WAIT") {
           nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 10);
-          nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 5);
+          nextState.shieldCapacity = Math.min(
+            100,
+            (state.shieldCapacity ?? 50) + 5,
+          );
         } else if (action === "ABORT_AND_SHIELD") {
           nextState.ansLoad = Math.max(0, (state.ansLoad ?? 50) - 15);
-          nextState.shieldCapacity = Math.min(100, (state.shieldCapacity ?? 50) + 10);
+          nextState.shieldCapacity = Math.min(
+            100,
+            (state.shieldCapacity ?? 50) + 10,
+          );
         } else if (action === "EXECUTE_RELOCATION") {
           nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 20);
-          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 15);
+          nextState.shieldCapacity = Math.max(
+            0,
+            (state.shieldCapacity ?? 50) - 15,
+          );
         } else if (action === "EXECUTE_PURGE_RELOCATION") {
           nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 30);
-          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 40);
+          nextState.shieldCapacity = Math.max(
+            0,
+            (state.shieldCapacity ?? 50) - 40,
+          );
         } else if (action === "GATHER_INTEL") {
           nextState.ansLoad = Math.min(100, (state.ansLoad ?? 50) + 5);
-          nextState.shieldCapacity = Math.max(0, (state.shieldCapacity ?? 50) - 5);
+          nextState.shieldCapacity = Math.max(
+            0,
+            (state.shieldCapacity ?? 50) - 5,
+          );
         }
       }
 
@@ -1021,8 +1108,11 @@ export class NBAEngine {
       // Compute Max_A' Q(S', A') using next encoded layers
       let maxNextQ = -Infinity;
       for (const nextAct of actions) {
-        if (macroInstruction === "BLOCK_ACTIVE_RELOCATION" && 
-            (nextAct === "EXECUTE_RELOCATION" || nextAct === "EXECUTE_PURGE_RELOCATION")) {
+        if (
+          macroInstruction === "BLOCK_ACTIVE_RELOCATION" &&
+          (nextAct === "EXECUTE_RELOCATION" ||
+            nextAct === "EXECUTE_PURGE_RELOCATION")
+        ) {
           continue;
         }
         const nextQ = this.evaluateStateStatic(
@@ -1038,7 +1128,10 @@ export class NBAEngine {
       }
 
       // Bellman Equation: Q(S, A) = R(S, A) + gamma * max_A' Q(S', A')
-      const gamma = (action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION") ? 0.90 : 0.50;
+      const gamma =
+        action === "EXECUTE_RELOCATION" || action === "EXECUTE_PURGE_RELOCATION"
+          ? 0.9
+          : 0.5;
       const q = currentQStatic + gamma * maxNextQ;
 
       qValues[action] = q;
@@ -1083,7 +1176,8 @@ export class NBAEngine {
 
     // --- LLM Token Generation Mimicry Trace ---
     const llmPredictionTrace: string[] = [];
-    const dayMasterName = target.ragContext?.personalBazi?.summary?.dayMaster || "甲";
+    const dayMasterName =
+      target.ragContext?.personalBazi?.summary?.dayMaster || "甲";
     llmPredictionTrace.push(
       `[Token 1: <s_start>] Initializing Metaphysical Decision Transformer...`,
     );

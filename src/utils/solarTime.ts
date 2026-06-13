@@ -30,7 +30,10 @@ export interface SolarTimeResult {
   totalCorrection: number; // minutes
 }
 
-export function getLongitudeCorrection(lon: number, timezoneOffsetHours: number): number {
+export function getLongitudeCorrection(
+  lon: number,
+  timezoneOffsetHours: number,
+): number {
   const standardMeridian = timezoneOffsetHours * 15.0;
   const degreeDelta = lon - standardMeridian;
   return degreeDelta * 4.0;
@@ -47,7 +50,8 @@ export function calculateSolarTime(
   longitude: number,
   timezoneOffset?: number,
 ): SolarTimeResult {
-  const tzOffset = timezoneOffset !== undefined ? timezoneOffset : Math.round(longitude / 15);
+  const tzOffset =
+    timezoneOffset !== undefined ? timezoneOffset : Math.round(longitude / 15);
 
   // 1. Day of Year (n)
   const start = new Date(date.getFullYear(), 0, 0);
@@ -75,14 +79,20 @@ export function calculateSolarTime(
   const solarTime = new Date(date.getTime() + totalCorrectionMinutes * 60000);
 
   // Override toJSON to prevent the "Z" suffix leak and capture local tzOffset
-  solarTime.toJSON = function (this: Date) {
-    const pad = (n: number, w: number = 2) => String(n).padStart(w, '0');
+  solarTime.toJSON = () => {
+    const pad = (n: number, w: number = 2) => String(n).padStart(w, "0");
     const absOffset = Math.abs(tzOffset);
     const offsetHours = Math.floor(absOffset);
     const offsetMinutes = Math.round((absOffset - offsetHours) * 60);
     const sign = tzOffset >= 0 ? "+" : "-";
-    const tzString = tzOffset === 0 ? "Z" : `${sign}${pad(offsetHours)}:${pad(offsetMinutes)}`;
-    return `${this.getFullYear()}-${pad(this.getMonth() + 1)}-${pad(this.getDate())}T${pad(this.getHours())}:${pad(this.getMinutes())}:${pad(this.getSeconds())}.${pad(this.getMilliseconds(), 3)}${tzString}`;
+    const tzString =
+      tzOffset === 0 ? "Z" : `${sign}${pad(offsetHours)}:${pad(offsetMinutes)}`;
+
+    // Shift the date based on tzOffset to build timezone-independent UTC components
+    const localTimeMs = solarTime.getTime() + tzOffset * 3600000;
+    const localDate = new Date(localTimeMs);
+
+    return `${localDate.getUTCFullYear()}-${pad(localDate.getUTCMonth() + 1)}-${pad(localDate.getUTCDate())}T${pad(localDate.getUTCHours())}:${pad(localDate.getUTCMinutes())}:${pad(localDate.getUTCSeconds())}.${pad(localDate.getUTCMilliseconds(), 3)}${tzString}`;
   };
 
   return {

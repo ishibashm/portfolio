@@ -262,10 +262,18 @@ export async function POST(req: Request) {
     }
 
     const imputedSpaceWeather = {
-      kpIndex: spaceWeatherData.kpIndex !== null ? spaceWeatherData.kpIndex : 3.0,
-      xrayFlux: spaceWeatherData.xrayFlux !== null ? spaceWeatherData.xrayFlux : "B1.0",
-      solarWindSpeed: spaceWeatherData.solarWindSpeed !== null ? spaceWeatherData.solarWindSpeed : 400.0,
-      timestamp: spaceWeatherData.timestamp !== null ? spaceWeatherData.timestamp : new Date().toISOString(),
+      kpIndex:
+        spaceWeatherData.kpIndex !== null ? spaceWeatherData.kpIndex : 3.0,
+      xrayFlux:
+        spaceWeatherData.xrayFlux !== null ? spaceWeatherData.xrayFlux : "B1.0",
+      solarWindSpeed:
+        spaceWeatherData.solarWindSpeed !== null
+          ? spaceWeatherData.solarWindSpeed
+          : 400.0,
+      timestamp:
+        spaceWeatherData.timestamp !== null
+          ? spaceWeatherData.timestamp
+          : new Date().toISOString(),
       riskScore: parseFloat(spaceWeatherRisk.toFixed(2)),
     };
 
@@ -472,8 +480,14 @@ export async function POST(req: Request) {
     };
 
     try {
-      const historyFilePath = path.join(process.cwd(), "data", "nba_history.jsonl");
-      const fileContent = await fs.readFile(historyFilePath, "utf8").catch(() => "");
+      const historyFilePath = path.join(
+        process.cwd(),
+        "data",
+        "nba_history.jsonl",
+      );
+      const fileContent = await fs
+        .readFile(historyFilePath, "utf8")
+        .catch(() => "");
       if (fileContent) {
         const lines = fileContent.trim().split("\n");
         if (lines.length > 0) {
@@ -494,15 +508,21 @@ export async function POST(req: Request) {
             const prevAnsLoad = lastRecord.nba.stateVector.ansLoad ?? 50;
             const prevShield = lastRecord.nba.stateVector.shieldCapacity ?? 50;
 
-            const ansDelta = ansLoad - prevAnsLoad; 
-            const shieldDelta = shieldCapacity - prevShield; 
+            const ansDelta = ansLoad - prevAnsLoad;
+            const shieldDelta = shieldCapacity - prevShield;
 
             let rewardDelta = 0;
-            if (prevAction === "PREPARE_AND_WAIT" || prevAction === "ABORT_AND_SHIELD") {
+            if (
+              prevAction === "PREPARE_AND_WAIT" ||
+              prevAction === "ABORT_AND_SHIELD"
+            ) {
               if (ansDelta < 0) rewardDelta += 0.8;
               if (shieldDelta > 0) rewardDelta += 0.5;
               if (ansDelta > 15) rewardDelta -= 0.8;
-            } else if (prevAction === "EXECUTE_RELOCATION" || prevAction === "EXECUTE_PURGE_RELOCATION") {
+            } else if (
+              prevAction === "EXECUTE_RELOCATION" ||
+              prevAction === "EXECUTE_PURGE_RELOCATION"
+            ) {
               if (ansDelta <= 20) rewardDelta += 0.3;
               if (ansDelta > 30) rewardDelta -= 0.6;
               if (shieldDelta < -25) rewardDelta -= 0.5;
@@ -526,11 +546,17 @@ export async function POST(req: Request) {
         }
       }
     } catch (err) {
-      console.warn("Failed to compute closed-loop feedback from nba_history.jsonl:", err);
+      console.warn(
+        "Failed to compute closed-loop feedback from nba_history.jsonl:",
+        err,
+      );
     }
 
     // 5. Infer Next Best Action
-    const actionResult = await nbaEngine.getNextBestAction({ stateVector, closedLoopFeedback });
+    const actionResult = await nbaEngine.getNextBestAction({
+      stateVector,
+      closedLoopFeedback,
+    });
 
     const responseData = {
       micro: {

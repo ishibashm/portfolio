@@ -21,19 +21,27 @@ export const dynamic = "force-dynamic";
 
 function interpolateKpIndex(logs: any[]): any[] {
   // Sort ascending by targetDate time to do chronological interpolation
-  const sorted = [...logs].sort((a, b) => a.targetDate.getTime() - b.targetDate.getTime());
+  const sorted = [...logs].sort(
+    (a, b) => a.targetDate.getTime() - b.targetDate.getTime(),
+  );
 
   for (let k = 0; k < sorted.length; k++) {
     if (sorted[k].kpIndex === null || sorted[k].kpIndex === undefined) {
       // Find nearest preceding non-null
       let i = k - 1;
-      while (i >= 0 && (sorted[i].kpIndex === null || sorted[i].kpIndex === undefined)) {
+      while (
+        i >= 0 &&
+        (sorted[i].kpIndex === null || sorted[i].kpIndex === undefined)
+      ) {
         i--;
       }
 
       // Find nearest succeeding non-null
       let j = k + 1;
-      while (j < sorted.length && (sorted[j].kpIndex === null || sorted[j].kpIndex === undefined)) {
+      while (
+        j < sorted.length &&
+        (sorted[j].kpIndex === null || sorted[j].kpIndex === undefined)
+      ) {
         j++;
       }
 
@@ -504,23 +512,32 @@ export async function GET(request: Request) {
         targetStatuses: {
           classical: (() => {
             const coll = intentsComparison[actionIntent].classical;
-            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            if (layerMode === "year")
+              return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month")
+              return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day")
+              return coll.dayLayer[targetDirName] || "SAFE";
             return coll.finalVectors[targetDirName] || "SAFE";
           })(),
           physicalIndependent: (() => {
             const coll = intentsComparison[actionIntent].physicalIndependent;
-            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            if (layerMode === "year")
+              return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month")
+              return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day")
+              return coll.dayLayer[targetDirName] || "SAFE";
             return coll.finalVectors[targetDirName] || "SAFE";
           })(),
           physicalCoupled: (() => {
             const coll = intentsComparison[actionIntent].physicalCoupled;
-            if (layerMode === "year") return coll.yearLayer[targetDirName] || "SAFE";
-            if (layerMode === "month") return coll.monthLayer[targetDirName] || "SAFE";
-            if (layerMode === "day") return coll.dayLayer[targetDirName] || "SAFE";
+            if (layerMode === "year")
+              return coll.yearLayer[targetDirName] || "SAFE";
+            if (layerMode === "month")
+              return coll.monthLayer[targetDirName] || "SAFE";
+            if (layerMode === "day")
+              return coll.dayLayer[targetDirName] || "SAFE";
             return coll.finalVectors[targetDirName] || "SAFE";
           })(),
         },
@@ -539,7 +556,7 @@ export async function GET(request: Request) {
       take: 15,
     });
     const interpolatedLogs = interpolateKpIndex(stateLogs).sort(
-      (a, b) => b.targetDate.getTime() - a.targetDate.getTime()
+      (a, b) => b.targetDate.getTime() - a.targetDate.getTime(),
     );
 
     // 6. Query relevant KnowledgeDocuments
@@ -575,9 +592,28 @@ export async function GET(request: Request) {
     });
 
     const blocklist = [
-      "aws", "cloud", "multicloud", "kubernetes", "docker", "typescript", "javascript", 
-      "npm", "serverless", "devops", "pipeline", "database", "git", "backend", "frontend",
-      "react", "next.js", "nextjs", "css", "html", "rest api", "api gateway"
+      "aws",
+      "cloud",
+      "multicloud",
+      "kubernetes",
+      "docker",
+      "typescript",
+      "javascript",
+      "npm",
+      "serverless",
+      "devops",
+      "pipeline",
+      "database",
+      "git",
+      "backend",
+      "frontend",
+      "react",
+      "next.js",
+      "nextjs",
+      "css",
+      "html",
+      "rest api",
+      "api gateway",
     ];
 
     const isRelocationRelevant = (doc: any): boolean => {
@@ -588,27 +624,54 @@ export async function GET(request: Request) {
       const domainLower = (doc.domain || "").toLowerCase();
 
       // Explicitly reject if any blocklist keyword is in title, content, domain, or category
-      const hasBlocklistedWord = blocklist.some(word => 
-        titleLower.includes(word) || 
-        contentLower.includes(word) ||
-        domainLower.includes(word) ||
-        categoryLower.includes(word)
+      const hasBlocklistedWord = blocklist.some(
+        (word) =>
+          titleLower.includes(word) ||
+          contentLower.includes(word) ||
+          domainLower.includes(word) ||
+          categoryLower.includes(word),
       );
       if (hasBlocklistedWord) return false;
 
       // Positive check: Must contain at least one keyword related to wellness, health, astrology, geomancy, direction, or relocation
       const positiveKeywords = [
-        "relocation", "direction", "astrology", "kigaku", "fengshui", "metaphysical",
-        "wellness", "health", "biometrics", "stress", "sleep", "hrv", "gsr", "readiness",
-        "引越し", "移住", "方位", "吉凶", "天中殺", "空亡", "九星", "占い", "風水",
-        "地磁気", "太陽フレア", "宇宙天気", "生体", "ストレス", "回復"
+        "relocation",
+        "direction",
+        "astrology",
+        "kigaku",
+        "fengshui",
+        "metaphysical",
+        "wellness",
+        "health",
+        "biometrics",
+        "stress",
+        "sleep",
+        "hrv",
+        "gsr",
+        "readiness",
+        "引越し",
+        "移住",
+        "方位",
+        "吉凶",
+        "天中殺",
+        "空亡",
+        "九星",
+        "占い",
+        "風水",
+        "地磁気",
+        "太陽フレア",
+        "宇宙天気",
+        "生体",
+        "ストレス",
+        "回復",
       ];
 
-      return positiveKeywords.some(keyword => 
-        titleLower.includes(keyword) || 
-        contentLower.includes(keyword) ||
-        tagsStr.includes(keyword) ||
-        categoryLower.includes(keyword)
+      return positiveKeywords.some(
+        (keyword) =>
+          titleLower.includes(keyword) ||
+          contentLower.includes(keyword) ||
+          tagsStr.includes(keyword) ||
+          categoryLower.includes(keyword),
       );
     };
 
@@ -690,29 +753,39 @@ export async function GET(request: Request) {
         },
         modelsComparison: {
           classical: intentsComparison[actionIntent].classical.finalVectors,
-          physicalIndependent: intentsComparison[actionIntent].physicalIndependent.finalVectors,
-          physicalCoupled: intentsComparison[actionIntent].physicalCoupled.finalVectors,
+          physicalIndependent:
+            intentsComparison[actionIntent].physicalIndependent.finalVectors,
+          physicalCoupled:
+            intentsComparison[actionIntent].physicalCoupled.finalVectors,
         },
         intentsComparison: {
           DEFAULT: {
             classical: intentsComparison.DEFAULT.classical.finalVectors,
-            physicalIndependent: intentsComparison.DEFAULT.physicalIndependent.finalVectors,
-            physicalCoupled: intentsComparison.DEFAULT.physicalCoupled.finalVectors,
+            physicalIndependent:
+              intentsComparison.DEFAULT.physicalIndependent.finalVectors,
+            physicalCoupled:
+              intentsComparison.DEFAULT.physicalCoupled.finalVectors,
           },
           MIGRATION: {
             classical: intentsComparison.MIGRATION.classical.finalVectors,
-            physicalIndependent: intentsComparison.MIGRATION.physicalIndependent.finalVectors,
-            physicalCoupled: intentsComparison.MIGRATION.physicalCoupled.finalVectors,
+            physicalIndependent:
+              intentsComparison.MIGRATION.physicalIndependent.finalVectors,
+            physicalCoupled:
+              intentsComparison.MIGRATION.physicalCoupled.finalVectors,
           },
           BUSINESS: {
             classical: intentsComparison.BUSINESS.classical.finalVectors,
-            physicalIndependent: intentsComparison.BUSINESS.physicalIndependent.finalVectors,
-            physicalCoupled: intentsComparison.BUSINESS.physicalCoupled.finalVectors,
+            physicalIndependent:
+              intentsComparison.BUSINESS.physicalIndependent.finalVectors,
+            physicalCoupled:
+              intentsComparison.BUSINESS.physicalCoupled.finalVectors,
           },
           REST: {
             classical: intentsComparison.REST.classical.finalVectors,
-            physicalIndependent: intentsComparison.REST.physicalIndependent.finalVectors,
-            physicalCoupled: intentsComparison.REST.physicalCoupled.finalVectors,
+            physicalIndependent:
+              intentsComparison.REST.physicalIndependent.finalVectors,
+            physicalCoupled:
+              intentsComparison.REST.physicalCoupled.finalVectors,
           },
         },
       },

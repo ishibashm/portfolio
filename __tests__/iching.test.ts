@@ -2,8 +2,15 @@ import { describe, it, expect } from "vitest";
 import { IChingClient } from "../src/lib/ichingClient";
 import { AstroEngine, getCurrentZodiac } from "../src/utils/ephemerisEngine";
 import { getKigakuSector } from "../src/utils/kigakuUtils";
-import { calculateAspectWeight, NBAEngine, NBAParams } from "../src/utils/nbaEngine";
-import { getLongitudeCorrection, calculateSolarTime } from "../src/utils/solarTime";
+import {
+  calculateAspectWeight,
+  NBAEngine,
+  NBAParams,
+} from "../src/utils/nbaEngine";
+import {
+  getLongitudeCorrection,
+  calculateSolarTime,
+} from "../src/utils/solarTime";
 import { calculateBioMetrics } from "../src/utils/bioModelingEngine";
 import { VedicEngine } from "../src/utils/vedicEngine";
 
@@ -33,7 +40,9 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
       expect(hex15.pinyin).toBe("Qian");
       expect(hex15.riskModifier).toBe(0);
       expect(hex15.confidenceBoost).toBe(0);
-      expect(hex15.actionAdvice).toBe("安定した状態です。慎重に状況を見極めましょう。");
+      expect(hex15.actionAdvice).toBe(
+        "安定した状態です。慎重に状況を見極めましょう。",
+      );
     });
   });
 
@@ -177,15 +186,23 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
       expect(resNoDisplacement.zScoreHRV).toBeCloseTo(-1.5, 4);
 
       // With small displacement (B), penalty is ~0.92, which is <= 1.0. Still no attenuation.
-      expect(resSmallDisplacement.hardwareDisplacementPenalty).toBeLessThanOrEqual(1.0);
+      expect(
+        resSmallDisplacement.hardwareDisplacementPenalty,
+      ).toBeLessThanOrEqual(1.0);
       expect(resSmallDisplacement.zScoreHRV).toBeCloseTo(-1.5, 4);
 
       // With large displacement (C), penalty is > 1.0. Z-Score should be attenuated (divided by penalty).
-      expect(resLargeDisplacement.hardwareDisplacementPenalty).toBeGreaterThan(1.0);
+      expect(resLargeDisplacement.hardwareDisplacementPenalty).toBeGreaterThan(
+        1.0,
+      );
       expect(Math.abs(resLargeDisplacement.zScoreHRV)).toBeLessThan(1.5);
-      
-      const expectedAttenuatedZ = -1.5 / resLargeDisplacement.hardwareDisplacementPenalty;
-      expect(resLargeDisplacement.zScoreHRV).toBeCloseTo(expectedAttenuatedZ, 4);
+
+      const expectedAttenuatedZ =
+        -1.5 / resLargeDisplacement.hardwareDisplacementPenalty;
+      expect(resLargeDisplacement.zScoreHRV).toBeCloseTo(
+        expectedAttenuatedZ,
+        4,
+      );
 
       // Verify it reduces ansLoad (prevents false-positive stress) compared to the unattenuated case (which would be ~56)
       expect(resLargeDisplacement.ansLoad).toBeLessThan(56);
@@ -217,10 +234,10 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
     it("should calculate active Dasha as Jupiter-Moon for birth date 1988-11-25 04:26 at evaluation date 2026-06-12", () => {
       const birthDate = new Date("1988-11-25T04:26:00+09:00");
       const evaluationDate = new Date("2026-06-12T12:00:00+09:00");
-      
+
       const vedic = new VedicEngine();
       const result = vedic.calculateVimshottariDasha(birthDate, evaluationDate);
-      
+
       expect(result.mahadasha).toBe("Jupiter");
       expect(result.antardasha).toBe("Mars");
       expect(result.formatted).toContain("木星-火星期");
@@ -231,7 +248,7 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
   describe("Bazi Day Master Compatibility (Draining Reversal)", () => {
     it("should penalize compatibility when a weak Day Master generates the environment", async () => {
       const nba = new NBAEngine();
-      
+
       // State with weak Day Master (Wood) in Fire environment
       const stateWeak: NBAParams["stateVector"] = {
         ansLoad: 30,
@@ -279,12 +296,20 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
         },
       };
 
-      const resultWeak = await nba.getNextBestAction({ stateVector: stateWeak });
-      const resultStrong = await nba.getNextBestAction({ stateVector: stateStrong });
+      const resultWeak = await nba.getNextBestAction({
+        stateVector: stateWeak,
+      });
+      const resultStrong = await nba.getNextBestAction({
+        stateVector: stateStrong,
+      });
 
       // Verify in the logic trace that weak DM gets PERSONAL = -0.5, while strong gets PERSONAL = 0.5
-      const traceWeakInit = resultWeak.logicTrace.find(t => t.includes("[INIT] Features:"));
-      const traceStrongInit = resultStrong.logicTrace.find(t => t.includes("[INIT] Features:"));
+      const traceWeakInit = resultWeak.logicTrace.find((t) =>
+        t.includes("[INIT] Features:"),
+      );
+      const traceStrongInit = resultStrong.logicTrace.find((t) =>
+        t.includes("[INIT] Features:"),
+      );
 
       expect(traceWeakInit).toContain("PERSONAL=-0.50");
       expect(traceStrongInit).toContain("PERSONAL=0.50");
@@ -295,11 +320,11 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
     it("should correctly scale and cap tideRisk under 30", () => {
       // Simulate different gravitationalTideScores
       const testScores = [0, 5, 10, 15, 20];
-      
-      testScores.forEach(score => {
+
+      testScores.forEach((score) => {
         const rawTideRisk = (score / 20.0) * 100;
         const tideRisk = Math.min(30, rawTideRisk * 0.4);
-        
+
         expect(tideRisk).toBeLessThanOrEqual(30);
         if (score === 20) {
           // Max score 20 -> raw 100 -> scaled 100 * 0.4 = 40, capped at 30
@@ -319,15 +344,17 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
         // Assert that the JSON string has correct timezone offset (+09:00)
         expect(jsonStr).toContain("+09:00");
         // Check formatting structure: e.g. "YYYY-MM-DDTHH:mm:ss.sss+09:00" (enclosed in quotes)
-        expect(jsonStr).toMatch(/^"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+09:00"$/);
+        expect(jsonStr).toMatch(
+          /^"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}\+09:00"$/,
+        );
       });
 
       it("should apply retrograde celestial aspect weight decay", async () => {
         const nba = new NBAEngine();
-        
+
         // Define transits including retrograde planet (e.g. MERCURY)
         const transits = ["MERCURY SQUARE SUN ORB: 2.50"];
-        
+
         const stateNoRetrograde: NBAParams["stateVector"] = {
           ansLoad: 50,
           shieldCapacity: 50,
@@ -363,20 +390,20 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
       });
 
       it("should default displacement penalty to 1.0 at Null Island (GPS loss)", () => {
-          // Normal coordinates
-          const normalResult = calculateBioMetrics({
-            currentHRV: 60,
-            currentGSR: 5,
-            birthLat: 35.6762,
-            birthLon: 139.6503,
-            currentLat: 33.5902,
-            currentLon: 130.4017, // Tokyo to Fukuoka
-            elevation: 50,
-            kpIndex: 3,
-            solarTimeHours: 12,
-            baseSyncDays: 5,
-          });
-          expect(normalResult.hardwareDisplacementPenalty).toBeGreaterThan(1.0);
+        // Normal coordinates
+        const normalResult = calculateBioMetrics({
+          currentHRV: 60,
+          currentGSR: 5,
+          birthLat: 35.6762,
+          birthLon: 139.6503,
+          currentLat: 33.5902,
+          currentLon: 130.4017, // Tokyo to Fukuoka
+          elevation: 50,
+          kpIndex: 3,
+          solarTimeHours: 12,
+          baseSyncDays: 5,
+        });
+        expect(normalResult.hardwareDisplacementPenalty).toBeGreaterThan(1.0);
 
         // Null Island coords (birth coordinates lost)
         const birthLostResult = calculateBioMetrics({
@@ -411,7 +438,7 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
 
       it("should apply dynamic Bellman discount factor based on action type", async () => {
         const nba = new NBAEngine();
-        
+
         // Define base state vector
         const state: NBAParams["stateVector"] = {
           ansLoad: 50,
@@ -421,12 +448,16 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
         };
 
         const result = await nba.getNextBestAction({ stateVector: state });
-        
+
         // Verify discount factors in the logic trace:
         // Relocation actions should have gamma = 0.90
-        const relocationTrace = result.logicTrace.find(t => t.includes("[BELLMAN] Q(EXECUTE_RELOCATION)"));
+        const relocationTrace = result.logicTrace.find((t) =>
+          t.includes("[BELLMAN] Q(EXECUTE_RELOCATION)"),
+        );
         // Micro daily actions (like PREPARE_AND_WAIT) should have gamma = 0.50
-        const microTrace = result.logicTrace.find(t => t.includes("[BELLMAN] Q(PREPARE_AND_WAIT)"));
+        const microTrace = result.logicTrace.find((t) =>
+          t.includes("[BELLMAN] Q(PREPARE_AND_WAIT)"),
+        );
 
         expect(relocationTrace).toContain("γ*maxQ(S',A'): (0.9 *");
         expect(microTrace).toContain("γ*maxQ(S',A'): (0.5 *");

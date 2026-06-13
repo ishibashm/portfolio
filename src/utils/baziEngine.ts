@@ -139,11 +139,16 @@ export class BaziEngine {
 
   private getStemWuxing(stem: string): string {
     const map: Record<string, string> = {
-      甲: "木", 乙: "木",
-      丙: "火", 丁: "火",
-      戊: "土", 己: "土",
-      庚: "金", 辛: "金",
-      壬: "水", 癸: "水",
+      甲: "木",
+      乙: "木",
+      丙: "火",
+      丁: "火",
+      戊: "土",
+      己: "土",
+      庚: "金",
+      辛: "金",
+      壬: "水",
+      癸: "水",
     };
     return map[stem] || "";
   }

@@ -45,8 +45,12 @@ describe("NBAEngine Enhancements", () => {
     expect(layers.biometricDynamic.shieldCapacityNorm).toBe(0.8);
 
     // Astrophysical Layer
-    expect(layers.astrophysical.solarPhaseSin).toBeCloseTo(Math.sin((120 * Math.PI) / 180.0));
-    expect(layers.astrophysical.solarPhaseCos).toBeCloseTo(Math.cos((120 * Math.PI) / 180.0));
+    expect(layers.astrophysical.solarPhaseSin).toBeCloseTo(
+      Math.sin((120 * Math.PI) / 180.0),
+    );
+    expect(layers.astrophysical.solarPhaseCos).toBeCloseTo(
+      Math.cos((120 * Math.PI) / 180.0),
+    );
     expect(layers.astrophysical.kpIndexNorm).toBe(2.0 / 9.0);
 
     // Metaphysical Layer
@@ -69,7 +73,9 @@ describe("NBAEngine Enhancements", () => {
     // Selected action must be a safe option (e.g. PREPARE_AND_WAIT or ABORT_AND_SHIELD)
     expect(result.suggestedAction).not.toBe("EXECUTE_RELOCATION");
     expect(result.suggestedAction).not.toBe("EXECUTE_PURGE_RELOCATION");
-    expect(result.macroAgentEvaluation.macroInstruction).toBe("BLOCK_ACTIVE_RELOCATION");
+    expect(result.macroAgentEvaluation.macroInstruction).toBe(
+      "BLOCK_ACTIVE_RELOCATION",
+    );
   });
 
   it("should adjust behavior based on positive closed-loop feedback", async () => {
@@ -84,8 +90,12 @@ describe("NBAEngine Enhancements", () => {
     });
 
     // Positive feedback lowers the decision temperature, making probabilities more confident/sharper
-    expect(positiveResult.closedLoopRewardFeedback.adjustedTemperature).toBeLessThan(0.2);
-    expect(positiveResult.confidence).toBeGreaterThanOrEqual(baseResult.confidence);
+    expect(
+      positiveResult.closedLoopRewardFeedback.adjustedTemperature,
+    ).toBeLessThan(0.2);
+    expect(positiveResult.confidence).toBeGreaterThanOrEqual(
+      baseResult.confidence,
+    );
   });
 
   it("should adjust behavior based on negative closed-loop feedback", async () => {
@@ -100,10 +110,18 @@ describe("NBAEngine Enhancements", () => {
     });
 
     // Negative feedback increases the temperature (explore safety actions)
-    expect(negativeResult.closedLoopRewardFeedback.adjustedTemperature).toBeGreaterThan(0.2);
+    expect(
+      negativeResult.closedLoopRewardFeedback.adjustedTemperature,
+    ).toBeGreaterThan(0.2);
     // Relocation action Q-values should be penalized
-    expect(negativeResult.closedLoopRewardFeedback.actionAdjustments.EXECUTE_RELOCATION).toBeLessThan(0);
-    expect(negativeResult.closedLoopRewardFeedback.actionAdjustments.PREPARE_AND_WAIT).toBeGreaterThan(0);
+    expect(
+      negativeResult.closedLoopRewardFeedback.actionAdjustments
+        .EXECUTE_RELOCATION,
+    ).toBeLessThan(0);
+    expect(
+      negativeResult.closedLoopRewardFeedback.actionAdjustments
+        .PREPARE_AND_WAIT,
+    ).toBeGreaterThan(0);
   });
 
   it("should evaluate state correctly using nested temporal structures (current vs target ephemeris)", async () => {

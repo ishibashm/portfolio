@@ -36,7 +36,10 @@ function getBearing(
   return (bearing + 360) % 360;
 }
 
-function bearingToDirection(bearing: number, useClassical: boolean = false): Direction {
+function bearingToDirection(
+  bearing: number,
+  useClassical: boolean = false,
+): Direction {
   return getKigakuSector(bearing, useClassical);
 }
 

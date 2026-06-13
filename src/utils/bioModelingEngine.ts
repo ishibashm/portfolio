@@ -100,8 +100,10 @@ export function calculateBioMetrics(params: BioModelParams): BioModelResult {
   let hardwareDisplacementPenalty = Math.min(30, (distanceKm / 1000) * 2.5); // 最大30%
 
   // GPSロスト（Null Island）判定：許容誤差 1e-5 未満の場合、装着ズレペナルティを 1.0 にフォールバックする
-  const isBirthNullIsland = Math.abs(birthLat) < 1e-5 && Math.abs(birthLon) < 1e-5;
-  const isCurrentNullIsland = Math.abs(currentLat) < 1e-5 && Math.abs(currentLon) < 1e-5;
+  const isBirthNullIsland =
+    Math.abs(birthLat) < 1e-5 && Math.abs(birthLon) < 1e-5;
+  const isCurrentNullIsland =
+    Math.abs(currentLat) < 1e-5 && Math.abs(currentLon) < 1e-5;
   if (isBirthNullIsland || isCurrentNullIsland) {
     hardwareDisplacementPenalty = 1.0;
   }
@@ -113,7 +115,7 @@ export function calculateBioMetrics(params: BioModelParams): BioModelResult {
 
   // HRVは高いほど良い（副交感神経優位）、低いほど負荷が高い。Zスコアを反転させて負荷とする。
   const rawZScoreHRV = (currentHRV - baselineHRVMean) / hrvStd;
-  
+
   let zScoreHRV = rawZScoreHRV;
   if (hardwareDisplacementPenalty > 1.0) {
     // 装着ズレ・環境変化（Displacement）ペナルティによるZ-Scoreの信頼度補正（減衰）
