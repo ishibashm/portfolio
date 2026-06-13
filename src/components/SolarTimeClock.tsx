@@ -35,6 +35,8 @@ import "katex/dist/katex.min.css";
 import type { NBAData } from "./nba/NBADashboard";
 import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const NBADashboard = dynamic(
   () => import("./nba/NBADashboard").then((mod) => mod.NBADashboard),
@@ -497,6 +499,36 @@ const filterVectors = (
 };
 
 export const SolarTimeClock = () => {
+  const [sentinelNotification, setSentinelNotification] = useState<
+    string | null
+  >(null);
+  const sentinelTimeoutRef = React.useRef<any>(null);
+
+  const handleSentinelAction = (actionName: string) => {
+    let msg = "";
+    if (actionName.includes("set_color_theme")) {
+      msg =
+        "System: Portal color theme synchronized to Midnight Indigo (#06060c).";
+    } else if (actionName.includes("write_blog_post")) {
+      msg =
+        "System: Technical log '[Cosmic Report] Void-of-Course Alignment' posted.";
+    } else if (actionName.includes("get_system_logs")) {
+      msg = "System: Deep telemetry logs synchronized successfully (SUCCESS).";
+    } else {
+      msg = `System: Executed daemon action '${actionName}'.`;
+    }
+
+    if (sentinelTimeoutRef.current) {
+      clearTimeout(sentinelTimeoutRef.current);
+    }
+
+    setSentinelNotification(msg);
+    sentinelTimeoutRef.current = setTimeout(() => {
+      setSentinelNotification(null);
+      sentinelTimeoutRef.current = null;
+    }, 4000);
+  };
+
   const [baseTime, setBaseTime] = useState<Date | null>(null);
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
@@ -4233,10 +4265,62 @@ ${timingOptimization?.recommendationText || "特になし"}
                   })()}
                 </span>
               </div>
-              <p className="text-zinc-300 text-xs leading-relaxed font-sans mt-1">
-                {latestTweet.textResponse ||
-                  "System tuned. Stability index: optimal."}
-              </p>
+              <div className="text-zinc-300 text-xs leading-relaxed font-sans mt-1 antialiased markdown-content">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children, ...props }: any) => (
+                      <p className="mb-2 last:mb-0" {...props}>
+                        {children}
+                      </p>
+                    ),
+                    strong: ({ children, ...props }: any) => (
+                      <strong
+                        className="font-semibold text-purple-200"
+                        {...props}
+                      >
+                        {children}
+                      </strong>
+                    ),
+                    a: ({ children, href, ...props }: any) => {
+                      const safeHref = href || "";
+                      const isAppAction = safeHref.startsWith("file:///");
+                      if (isAppAction) {
+                        const actionName = safeHref.replace("file:///", "");
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handleSentinelAction(actionName)}
+                            className="inline-flex items-center gap-1 bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800/40 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium transition-colors mx-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-purple-500"
+                          >
+                            🔧 {children}
+                          </button>
+                        );
+                      }
+                      return (
+                        <a
+                          href={safeHref}
+                          className="text-purple-400 hover:text-purple-300 hover:underline transition-colors"
+                          {...props}
+                        >
+                          {children}
+                        </a>
+                      );
+                    },
+                    code: ({ children, ...props }: any) => (
+                      <code
+                        className="bg-zinc-900 text-purple-300 px-1 py-0.5 rounded font-mono text-[10px] border border-zinc-800"
+                        {...props}
+                      >
+                        {children}
+                      </code>
+                    ),
+                  }}
+                >
+                  {latestTweet.textResponse ||
+                    "System tuned. Stability index: optimal."}
+                </ReactMarkdown>
+              </div>
 
               <div className="mt-2 flex justify-end">
                 <Link
@@ -7870,6 +7954,12 @@ ${timingOptimization?.recommendationText || "特になし"}
           マスター状態を出力 (CSV/JSON)
         </button>
       </div>
+      {sentinelNotification && (
+        <div className="fixed bottom-24 right-6 lg:right-12 z-50 bg-purple-950/90 border border-purple-500/50 text-purple-200 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-mono flex items-center gap-2 animate-fade-in backdrop-blur-sm">
+          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+          {sentinelNotification}
+        </div>
+      )}
     </div>
   );
 };
