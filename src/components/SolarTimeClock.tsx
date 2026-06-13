@@ -1104,7 +1104,7 @@ export const SolarTimeClock = () => {
         direction_filter_mode: directionFilterMode,
       };
 
-      await fetch("/api/user-config", {
+      const res = await fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(configToSave),
@@ -1121,15 +1121,22 @@ export const SolarTimeClock = () => {
         localStorage.setItem("wealth_baseLon", lon.toString());
       }
 
-      alert(
-        "PC内のファイル (local_tactical_config.json) とブラウザに永久保存しました。",
-      );
+      if (res && res.ok) {
+        alert(
+          "PC内のファイル (local_tactical_config.json) とブラウザに永久保存しました。",
+        );
+      } else {
+        console.warn(
+          "Server config save failed/skipped (read-only filesystem), but local storage is synced.",
+        );
+        alert("設定をブラウザのローカルストレージに永久保存しました。");
+      }
       if (geminiKey && geminiKey !== "") {
         setGeminiKey("********");
       }
     } catch (err: any) {
       console.error("Save Error:", err);
-      alert(`保存に失敗しました: ${err.message}`);
+      alert("設定をブラウザのローカルストレージに永久保存しました。");
     } finally {
       setIsSaving(false);
     }

@@ -199,6 +199,24 @@ export default function RentalsDashboard() {
 
     // Load user metaphysical config
     const fetchUserConfig = async () => {
+      // 1. Try to load from localStorage first for immediate local recovery
+      try {
+        const localData = localStorage.getItem("tactical_config_v1");
+        if (localData) {
+          const config = JSON.parse(localData);
+          if (config.birth_date) setBirthDate(config.birth_date);
+          if (config.base_lat !== undefined) setBaseLat(config.base_lat);
+          if (config.base_lon !== undefined) setBaseLon(config.base_lon);
+          if (config.use_true_north !== undefined)
+            setUseTrueNorth(config.use_true_north);
+          if (config.use_classical_board !== undefined)
+            setUseClassical(config.use_classical_board);
+        }
+      } catch (e) {
+        console.error("Failed to load user config from localStorage:", e);
+      }
+
+      // 2. Fetch from API to get server state
       try {
         const res = await fetch("/api/user-config");
         if (res.ok) {
@@ -210,9 +228,21 @@ export default function RentalsDashboard() {
             setUseTrueNorth(config.use_true_north);
           if (config.use_classical_board !== undefined)
             setUseClassical(config.use_classical_board);
+
+          // Sync back to localStorage
+          try {
+            const localData = localStorage.getItem("tactical_config_v1");
+            const currentLocal = localData ? JSON.parse(localData) : {};
+            localStorage.setItem(
+              "tactical_config_v1",
+              JSON.stringify({ ...currentLocal, ...config }),
+            );
+          } catch (e) {
+            console.error("Failed to sync loaded config to localStorage:", e);
+          }
         }
       } catch (e) {
-        console.error("Failed to load user config:", e);
+        console.error("Failed to load user config from API:", e);
       }
     };
     fetchUserConfig();
@@ -222,26 +252,49 @@ export default function RentalsDashboard() {
 
   const handleSaveMetaphysicalConfig = async () => {
     setIsSavingConfig(true);
+    const configToSave = {
+      birth_date: birthDate,
+      base_lat: baseLat,
+      base_lon: baseLon,
+      use_true_north: useTrueNorth,
+      use_classical_board: useClassical,
+    };
+
+    // 1. Save to localStorage immediately
+    try {
+      const localData = localStorage.getItem("tactical_config_v1");
+      const currentLocal = localData ? JSON.parse(localData) : {};
+      localStorage.setItem(
+        "tactical_config_v1",
+        JSON.stringify({ ...currentLocal, ...configToSave }),
+      );
+    } catch (e) {
+      console.error("Failed to save config to localStorage:", e);
+    }
+
+    // 2. Attempt to save to API
     try {
       const res = await fetch("/api/user-config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          birth_date: birthDate,
-          base_lat: baseLat,
-          base_lon: baseLon,
-          use_true_north: useTrueNorth,
-          use_classical_board: useClassical,
-        }),
+        body: JSON.stringify(configToSave),
       });
       if (res.ok) {
         alert("開運プロファイル設定を保存しました。");
       } else {
-        alert("設定の保存に失敗しました。");
+        // Safe fallback for read-only filesystem environments (returns status 500)
+        console.warn(
+          "Server config save failed/skipped (read-only filesystem), but local storage is synced.",
+        );
+        alert(
+          "開運プロファイル設定をブラウザに保存しました（ローカル同期完了）。",
+        );
       }
     } catch (e) {
-      console.error("Failed to save config:", e);
-      alert("設定の保存中にエラーが発生しました。");
+      console.error("Failed to save config to API:", e);
+      alert(
+        "開運プロファイル設定をブラウザに保存しました（ローカル同期完了）。",
+      );
     } finally {
       setIsSavingConfig(false);
     }
