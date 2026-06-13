@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface MarkdownFile {
   name: string;
@@ -134,10 +136,15 @@ export default function MarkdownViewerWidget() {
                 {new Date(selectedFile.updated_at * 1000).toLocaleString()}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 font-mono text-sm text-slate-300">
-              <pre className="whitespace-pre-wrap break-words font-sans leading-relaxed">
-                {content}
-              </pre>
+            <div className="flex-1 overflow-y-auto p-6 text-sm text-slate-300 bg-slate-950/40">
+              <div className="max-w-4xl mx-auto">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={markdownComponents}
+                >
+                  {content}
+                </ReactMarkdown>
+              </div>
             </div>
           </>
         ) : (
@@ -149,3 +156,124 @@ export default function MarkdownViewerWidget() {
     </div>
   );
 }
+
+const markdownComponents = {
+  h1: ({ children, ...props }: any) => (
+    <h1
+      className="text-2xl font-bold text-white mt-6 mb-4 border-b border-slate-800 pb-2"
+      {...props}
+    >
+      {children}
+    </h1>
+  ),
+  h2: ({ children, ...props }: any) => (
+    <h2 className="text-xl font-semibold text-emerald-400 mt-5 mb-3" {...props}>
+      {children}
+    </h2>
+  ),
+  h3: ({ children, ...props }: any) => (
+    <h3 className="text-lg font-medium text-slate-100 mt-4 mb-2" {...props}>
+      {children}
+    </h3>
+  ),
+  p: ({ children, ...props }: any) => (
+    <p className="text-sm text-slate-300 leading-relaxed mb-4" {...props}>
+      {children}
+    </p>
+  ),
+  ul: ({ children, ...props }: any) => (
+    <ul
+      className="list-disc list-inside space-y-1.5 mb-4 text-slate-300 pl-2"
+      {...props}
+    >
+      {children}
+    </ul>
+  ),
+  ol: ({ children, ...props }: any) => (
+    <ol
+      className="list-decimal list-inside space-y-1.5 mb-4 text-slate-300 pl-2"
+      {...props}
+    >
+      {children}
+    </ol>
+  ),
+  li: ({ children, ...props }: any) => (
+    <li className="text-sm leading-relaxed" {...props}>
+      {children}
+    </li>
+  ),
+  blockquote: ({ children, ...props }: any) => (
+    <blockquote
+      className="border-l-4 border-emerald-500 bg-slate-900/50 px-4 py-2 my-4 rounded-r text-slate-400 italic"
+      {...props}
+    >
+      {children}
+    </blockquote>
+  ),
+  code: ({ className, children, ...props }: any) => {
+    const isInline = !className || !className.startsWith("language-");
+    return !isInline ? (
+      <pre className="bg-slate-900 border border-slate-800 rounded-lg p-4 my-4 overflow-x-auto text-xs font-mono text-emerald-300 leading-normal">
+        <code className={className} {...props}>
+          {children}
+        </code>
+      </pre>
+    ) : (
+      <code
+        className="bg-slate-900 text-emerald-400 px-1.5 py-0.5 rounded font-mono text-xs border border-slate-800/80"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
+  table: ({ children, ...props }: any) => (
+    <div className="overflow-x-auto my-6 border border-slate-800 rounded-lg">
+      <table className="min-w-full divide-y divide-slate-800" {...props}>
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children, ...props }: any) => (
+    <thead className="bg-slate-900/50" {...props}>
+      {children}
+    </thead>
+  ),
+  tbody: ({ children, ...props }: any) => (
+    <tbody className="divide-y divide-slate-800/50 bg-slate-950/20" {...props}>
+      {children}
+    </tbody>
+  ),
+  tr: ({ children, ...props }: any) => (
+    <tr className="hover:bg-slate-900/20 transition-colors" {...props}>
+      {children}
+    </tr>
+  ),
+  th: ({ children, ...props }: any) => (
+    <th
+      className="px-4 py-3 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider border-b border-slate-800"
+      {...props}
+    >
+      {children}
+    </th>
+  ),
+  td: ({ children, ...props }: any) => (
+    <td
+      className="px-4 py-3 text-sm text-slate-400 border-b border-slate-800/50"
+      {...props}
+    >
+      {children}
+    </td>
+  ),
+  a: ({ children, ...props }: any) => (
+    <a
+      className="text-emerald-400 hover:underline hover:text-emerald-300 transition-colors"
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+  hr: ({ ...props }: any) => (
+    <hr className="my-6 border-t border-slate-800" {...props} />
+  ),
+};
