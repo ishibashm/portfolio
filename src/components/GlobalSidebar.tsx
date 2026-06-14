@@ -25,6 +25,7 @@ import {
   Route,
   Rss,
   Home,
+  Calendar,
 } from "lucide-react";
 
 const PUBLIC_ITEMS = [
@@ -44,6 +45,7 @@ const PROTECTED_ITEMS = [
   { href: "/relocation/simulator", icon: Route, label: "Relocation Simulator" },
   { href: "/metaphysical", icon: Compass, label: "Metaphysical Engine" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub" },
+  { href: "/calendar", icon: Calendar, label: "Cosmic Calendar" },
   { href: "/research", icon: Database, label: "Data Engine" },
   { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
   { href: "/trends", icon: Rss, label: "Tech Trends" },

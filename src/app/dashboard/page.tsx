@@ -29,6 +29,7 @@ import Link from "next/link";
 import { TwitterFeed } from "@/components/twitter/TwitterFeed";
 import { FinanceWidget } from "@/components/finance/FinanceWidget";
 import { RealEstateWidget } from "@/components/realestate/RealEstateWidget";
+import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient";
@@ -626,6 +627,33 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             )}
+          </section>
+
+          {/* BENTO ITEM 8: Cosmic Calendar (Full Width) */}
+          <section className="lg:col-span-4 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-white/95">
+                    吉凶・天体テレメトリカレンダー
+                  </h2>
+                  <p className="text-[11px] text-zinc-500 font-mono uppercase">
+                    {"// Cosmic Alignment & Orbit Track"}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/calendar"
+                className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-mono text-[11px] text-zinc-300 flex items-center gap-1.5"
+              >
+                <span>全画面で開く</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-400" />
+              </Link>
+            </div>
+            <CosmicCalendar />
           </section>
         </div>
       </main>
