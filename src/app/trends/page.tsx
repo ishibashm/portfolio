@@ -466,48 +466,108 @@ export default function TrendsPage() {
               </div>
             ) : (
               // Article Cards
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {displayedArticles.map((article, idx) => {
                   const details = getSourceDetails(article.source);
                   return (
                     <article
                       key={idx}
-                      className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 transition-all duration-300 hover:-translate-y-[2px] group relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                      style={{
-                        contentVisibility: "auto",
-                      }}
+                      className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 transition-all duration-300 hover:-translate-y-[2px] group relative overflow-hidden flex flex-col justify-between min-h-[170px]"
+                      style={
+                        {
+                          "--hover-color": details.color,
+                          contentVisibility: "auto",
+                          containIntrinsicSize: "0 170px",
+                        } as React.CSSProperties
+                      }
                     >
+                      {/* Micro-dot grid background */}
+                      <div
+                        className="absolute inset-0 opacity-15 pointer-events-none"
+                        style={{
+                          backgroundImage:
+                            "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)",
+                          backgroundSize: "8px 8px",
+                        }}
+                      />
+
                       {/* Hover Glow Effect */}
                       <div
                         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none -z-10"
                         style={{
-                          background: `linear-gradient(90deg, color-mix(in srgb, ${details.color} 4%, transparent), transparent)`,
+                          background: `linear-gradient(135deg, color-mix(in srgb, ${details.color} 5%, transparent), transparent)`,
                         }}
                       />
 
-                      {/* Source Color Side Accent Indicator */}
-                      <div
-                        className="absolute top-0 left-0 w-[3px] h-full transition-all duration-300 group-hover:h-full"
-                        style={{
-                          backgroundColor: details.color,
-                          boxShadow: `0 0 10px ${details.color}`,
-                        }}
-                      />
+                      {/* L-shaped glowing corner brackets */}
+                      <div className="absolute top-2.5 left-2.5 w-2 h-2 border-t border-l border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute top-2.5 right-2.5 w-2 h-2 border-t border-r border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute bottom-2.5 left-2.5 w-2 h-2 border-b border-l border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute bottom-2.5 right-2.5 w-2 h-2 border-b border-r border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
 
-                      <div className="space-y-3 flex-1 pl-2">
+                      {/* Card Header (Telemetry spec) */}
+                      <div className="flex items-center justify-between w-full mb-3 select-none relative z-10">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] font-mono text-zinc-600 tracking-wider">
+                            SIG_STR:
+                          </span>
+                          <div className="flex gap-[1.5px] items-end h-2">
+                            {[...Array(5)].map((_, i) => {
+                              let maxBar = 3;
+                              if (
+                                article.source.includes("Zenn") ||
+                                article.source.includes("Qiita")
+                              )
+                                maxBar = 5;
+                              else if (
+                                article.source.includes("はてな") ||
+                                article.source.includes("DevelopersIO")
+                              )
+                                maxBar = 4;
+
+                              const isActive = i < maxBar;
+                              return (
+                                <div
+                                  key={i}
+                                  className="w-[3px] rounded-sm transition-all duration-500"
+                                  style={{
+                                    height: `${(i + 1) * 20}%`,
+                                    backgroundColor: isActive
+                                      ? details.color
+                                      : "rgba(255,255,255,0.05)",
+                                    boxShadow: isActive
+                                      ? `0 0 4px ${details.color}`
+                                      : "none",
+                                  }}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <span className="text-[9px] font-mono text-zinc-500 tracking-widest">
+                          INTEGRITY_OK
+                        </span>
+                      </div>
+
+                      {/* Card Middle (Article Title) */}
+                      <div className="flex-grow flex flex-col justify-start relative z-10">
                         <a
                           href={article.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-bold text-zinc-100 group-hover:text-white transition-colors leading-snug line-clamp-2 block hover:underline text-base md:text-lg"
+                          className="font-bold text-zinc-100 group-hover:text-white transition-colors leading-snug line-clamp-2 hover:underline text-sm md:text-[14px] mb-3"
                         >
                           {article.title}
                         </a>
+                      </div>
 
-                        <div className="flex items-center gap-3">
+                      {/* Card Footer (Node category details & Action) */}
+                      <div className="flex items-end justify-between w-full mt-2 pt-3 border-t border-white/5 relative z-10">
+                        <div className="flex flex-col gap-1 items-start">
                           {/* Source Badge with Glow */}
                           <span
-                            className="text-[10px] px-2.5 py-0.5 rounded-md border font-mono uppercase tracking-wider font-semibold"
+                            className="text-[9px] px-2 py-0.5 rounded border font-mono uppercase tracking-wider font-semibold"
                             style={{
                               color: details.color,
                               backgroundColor: details.bg,
@@ -517,41 +577,40 @@ export default function TrendsPage() {
                             {details.name}
                           </span>
 
-                          <span className="text-[10px] text-zinc-600 font-mono">
-                            {"// FEED_REF:0"}
-                            {idx + 1}
+                          <span className="text-[8px] text-zinc-600 font-mono scale-90 -translate-x-1 select-none">
+                            LAT 35.689 N / LON 139.691 E
                           </span>
                         </div>
-                      </div>
 
-                      <a
-                        href={article.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 w-11 h-11 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 group-hover:text-white transition-all duration-300"
-                        style={{
-                          borderColor:
-                            "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            "var(--color-accent, #10b981)";
-                          e.currentTarget.style.borderColor =
-                            "var(--color-accent, #10b981)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor =
-                            "rgba(255, 255, 255, 0.05)";
-                          e.currentTarget.style.borderColor =
-                            "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))";
-                        }}
-                        title="記事を読む"
-                      >
-                        <ExternalLink
-                          size={16}
-                          className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
-                        />
-                      </a>
+                        <a
+                          href={article.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 group-hover:text-white transition-all duration-300"
+                          style={{
+                            borderColor:
+                              "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "var(--color-accent, #10b981)";
+                            e.currentTarget.style.borderColor =
+                              "var(--color-accent, #10b981)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor =
+                              "rgba(255, 255, 255, 0.05)";
+                            e.currentTarget.style.borderColor =
+                              "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))";
+                          }}
+                          title="記事を読む"
+                        >
+                          <ExternalLink
+                            size={13}
+                            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
+                          />
+                        </a>
+                      </div>
                     </article>
                   );
                 })}
