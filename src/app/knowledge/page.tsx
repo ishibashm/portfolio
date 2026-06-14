@@ -20,7 +20,6 @@ import {
   Filter,
   X,
   AlertCircle,
-  HelpCircle,
 } from "lucide-react";
 import { extractAndSaveArticle, getArticles, deleteArticle } from "./actions";
 
@@ -35,6 +34,119 @@ interface Article {
   status: string;
   priority: string;
   created_at: string;
+}
+
+// Helper to escape regex special characters
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Regex-based Text Highlighting Component
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const escaped = escapeRegExp(query);
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark
+            key={i}
+            className="bg-yellow-250 text-neutral-900 rounded-sm px-0.5"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        ),
+      )}
+    </>
+  );
+}
+
+// Content Snippets Generator (VS Code Style matching original defuddle search)
+function ContentSnippets({
+  content,
+  query,
+}: {
+  content?: string;
+  query: string;
+}) {
+  if (!content || !query) return null;
+
+  const maxSnippets = 5;
+  const contextLength = 40;
+  const lowerContent = content.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+
+  let mergedIndices: [number, number][] = [];
+  let startIndex = 0;
+
+  while (true) {
+    const idx = lowerContent.indexOf(lowerQuery, startIndex);
+    if (idx === -1) break;
+
+    const end = idx + lowerQuery.length - 1;
+    if (mergedIndices.length === 0) {
+      mergedIndices.push([idx, end]);
+    } else {
+      const last = mergedIndices[mergedIndices.length - 1];
+      if (idx <= last[1] + contextLength) {
+        last[1] = Math.max(last[1], end);
+      } else {
+        mergedIndices.push([idx, end]);
+      }
+    }
+    startIndex = idx + 1;
+    if (mergedIndices.length > 50) break; // Infinite loop prevention
+  }
+
+  if (mergedIndices.length === 0) return null;
+
+  const displayIndices = mergedIndices.slice(0, maxSnippets);
+
+  return (
+    <div className="pl-44 py-2 bg-neutral-50/50 border-b border-neutral-150">
+      <div className="flex flex-col gap-1.5">
+        {displayIndices.map(([start, end], i) => {
+          let s = Math.max(0, start - contextLength);
+          let e = Math.min(content.length, end + 1 + contextLength);
+
+          const prefix = content.substring(s, start).replace(/[\r\n]+/g, " ");
+          const hit = content
+            .substring(start, end + 1)
+            .replace(/[\r\n]+/g, " ");
+          const suffix = content.substring(end + 1, e).replace(/[\r\n]+/g, " ");
+
+          return (
+            <div
+              key={i}
+              className="flex items-center gap-2 text-[11px] font-mono text-neutral-500 group/snippet"
+            >
+              <FileText
+                size={12}
+                className="shrink-0 opacity-40 group-hover/snippet:text-blue-500 transition-colors"
+              />
+              <div className="truncate max-w-4xl cursor-default hover:text-neutral-800 transition-colors">
+                <span className="opacity-50 tracking-widest mr-1">...</span>
+                {prefix}
+                <mark className="bg-yellow-200/80 text-neutral-900 rounded-sm px-0.5 shadow-sm font-semibold">
+                  {hit}
+                </mark>
+                {suffix}
+                <span className="opacity-50 tracking-widest ml-1">...</span>
+              </div>
+            </div>
+          );
+        })}
+        {mergedIndices.length > maxSnippets && (
+          <div className="text-[10px] text-neutral-400 italic pl-5 mt-1">
+            ... and {mergedIndices.length - maxSnippets} more matching areas
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function ServiceNowKnowledgePage() {
@@ -368,60 +480,85 @@ export default function ServiceNowKnowledgePage() {
                 ) : (
                   filteredArticles.map((art, index) => {
                     const isSelected = selectedArticle?.id === art.id;
+                    const showSnippet =
+                      !!search &&
+                      !!art.content &&
+                      art.content.toLowerCase().includes(search.toLowerCase());
                     return (
-                      <tr
-                        key={art.id}
-                        onClick={() => setSelectedArticle(art)}
-                        className={`hover:bg-blue-50/20 transition-colors cursor-pointer border-b border-neutral-100 ${
-                          isSelected ? "bg-blue-50/40" : ""
-                        }`}
-                      >
-                        <td className="px-6 py-3.5 text-center text-neutral-400 text-xs">
-                          {index + 1}
-                        </td>
-                        <td className="px-6 py-3.5 font-mono text-blue-600 hover:underline">
-                          {art.kb_id}
-                        </td>
-                        <td
-                          className="px-6 py-3.5 font-medium text-neutral-900 truncate max-w-xs"
-                          title={art.title}
+                      <React.Fragment key={art.id}>
+                        <tr
+                          onClick={() => setSelectedArticle(art)}
+                          className={`hover:bg-blue-50/20 transition-colors cursor-pointer border-b border-neutral-100 ${
+                            isSelected ? "bg-blue-50/40" : ""
+                          } ${showSnippet ? "border-b-0" : ""}`}
                         >
-                          {art.title}
-                        </td>
-                        <td className="px-6 py-3.5">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeStyle(art.status)}`}
+                          <td className="px-6 py-3.5 text-center text-neutral-400 text-xs">
+                            {index + 1}
+                          </td>
+                          <td className="px-6 py-3.5 font-mono text-blue-600 hover:underline">
+                            {art.kb_id}
+                          </td>
+                          <td
+                            className="px-6 py-3.5 font-medium text-neutral-900 truncate max-w-xs"
+                            title={art.title}
                           >
-                            {art.status || "Draft"}
-                          </span>
-                        </td>
-                        <td
-                          className={`px-6 py-3.5 text-xs ${getPriorityStyle(art.priority)}`}
-                        >
-                          {art.priority || "Medium"}
-                        </td>
-                        <td className="px-6 py-3.5 text-neutral-500 text-xs">
-                          {art.type || "Note"}
-                        </td>
-                        <td className="px-6 py-3.5 text-neutral-600 text-xs">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                            <span>{art.category || "General"}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-3.5 text-neutral-500 text-xs font-mono">
-                          {new Date(art.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-3.5 text-right">
-                          <button
-                            onClick={(e) => handleDelete(art.id, art.title, e)}
-                            className="p-1 hover:bg-red-50 text-neutral-400 hover:text-red-600 rounded transition-colors"
-                            title="Delete record"
+                            <HighlightText text={art.title} query={search} />
+                          </td>
+                          <td className="px-6 py-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeStyle(art.status)}`}
+                            >
+                              {art.status || "Draft"}
+                            </span>
+                          </td>
+                          <td
+                            className={`px-6 py-3.5 text-xs ${getPriorityStyle(art.priority)}`}
                           >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
+                            {art.priority || "Medium"}
+                          </td>
+                          <td className="px-6 py-3.5 text-neutral-500 text-xs">
+                            {art.type || "Note"}
+                          </td>
+                          <td className="px-6 py-3.5 text-neutral-600 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                              <span>
+                                <HighlightText
+                                  text={art.category || "General"}
+                                  query={search}
+                                />
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-3.5 text-neutral-500 text-xs font-mono">
+                            {new Date(art.created_at).toLocaleString()}
+                          </td>
+                          <td className="px-6 py-3.5 text-right">
+                            <button
+                              onClick={(e) =>
+                                handleDelete(art.id, art.title, e)
+                              }
+                              className="p-1 hover:bg-red-50 text-neutral-400 hover:text-red-600 rounded transition-colors"
+                              title="Delete record"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                        {showSnippet && (
+                          <tr>
+                            <td
+                              colSpan={9}
+                              className="p-0 border-b border-neutral-100"
+                            >
+                              <ContentSnippets
+                                content={art.content}
+                                query={search}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })
                 )}
