@@ -1,4 +1,3 @@
-import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
@@ -11,6 +10,7 @@ import {
 } from "astronomy-engine";
 import { getGeomagneticData } from "../src/utils/geomagnetism";
 import prisma from "../src/lib/prisma";
+import { getLocalAgentDecision } from "../src/utils/localAgentEngine";
 
 // Load environmental variables
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -64,17 +64,17 @@ function saveState(state: DaemonState) {
   }
 }
 
-// Spawn Agent Runner Child Process and handle DB insertion/validation
+// Handle agent evolution using native local agent decision engine
 async function triggerAgentEvolution(
   triggerType: string,
   details: string,
   value: any,
 ) {
   writeLog(
-    `🔥 Triggering Agent Evolution. Reason: [${triggerType}] ${details}`,
+    `🔥 Triggering Agent Evolution (Local TS Engine). Reason: [${triggerType}] ${details}`,
   );
 
-  // [NEW] Fetch recent logs to provide context to the agent
+  // Fetch recent logs to provide context to the agent
   let systemLogs: any[] = [];
   try {
     systemLogs = await prisma.agentActivityLog.findMany({
@@ -98,210 +98,162 @@ async function triggerAgentEvolution(
     systemLogs,
   };
 
-  const runnerScript = path.join(
-    process.cwd(),
-    "scripts",
-    "ai_agent_runner.py",
-  );
-  const base64Value = Buffer.from(JSON.stringify(combinedValue)).toString(
-    "base64",
-  );
+  try {
+    // Native execution of rules-based themes and chat responses
+    const agentResponse = getLocalAgentDecision(
+      triggerType,
+      details,
+      combinedValue,
+    );
+    let themeApplied = false;
+    let errorMessage: string | null = null;
 
-  const pythonCmd = process.platform === "win32" ? "py" : "python3";
+    if (agentResponse.toolCalls && agentResponse.toolCalls.length > 0) {
+      for (const call of agentResponse.toolCalls) {
+        if (call.name === "set_color_theme") {
+          try {
+            const args = call.arguments;
 
-  const child = spawn(
-    pythonCmd,
-    [
-      runnerScript,
-      `--trigger=${triggerType}`,
-      `--details=${details}`,
-      `--value=${base64Value}`,
-    ],
-    {
-      shell: true,
-    },
-  );
-
-  let stdout = "";
-  let stderr = "";
-
-  child.stdout?.on("data", (data) => {
-    stdout += data.toString();
-  });
-
-  child.stderr?.on("data", (data) => {
-    stderr += data.toString();
-  });
-
-  child.on("close", async (code) => {
-    if (code !== 0) {
-      writeLog(
-        `[Error] Agent runner failed with code ${code}. Stderr: ${stderr}`,
-      );
-      try {
-        await prisma.agentActivityLog.create({
-          data: {
-            triggerType,
-            details,
-            thoughtProcess: "Agent execution failed at runtime.",
-            actions: "自律自己進化 (システムエラー)",
-            codeChange: null,
-            status: "FAILURE_ROLLEDBACK",
-            errorMessage: `Exit code ${code}. Stderr: ${stderr}`,
-          },
-        });
-      } catch (logErr: any) {
-        writeLog(`Failed to log agent failure to DB: ${logErr.message}`);
-      }
-      return;
-    }
-
-    try {
-      const match = stdout.match(
-        /---AGENT_RESULT_START---([\s\S]*?)---AGENT_RESULT_END---/,
-      );
-      if (!match) {
-        throw new Error(
-          `Failed to find structured JSON in runner output. Raw stdout: ${stdout}`,
-        );
-      }
-
-      const agentResponse = JSON.parse(match[1].trim());
-      let themeApplied = false;
-      let errorMessage: string | null = null;
-
-      if (agentResponse.toolCalls && agentResponse.toolCalls.length > 0) {
-        for (const call of agentResponse.toolCalls) {
-          if (call.name === "set_color_theme") {
-            try {
-              const args = call.arguments;
-
-              // Level 1 Validation (Hex pattern and number range check)
-              const hexRegex = /^#[0-9A-Fa-f]{6}$/;
-              if (
-                !hexRegex.test(args.background) ||
-                !hexRegex.test(args.foreground) ||
-                !hexRegex.test(args.accent) ||
-                !hexRegex.test(args.glowColor)
-              ) {
-                throw new Error("Validation Error: Invalid Color Hex Format");
-              }
-              if (
-                typeof args.glowIntensity !== "number" ||
-                args.glowIntensity < 0 ||
-                args.glowIntensity > 1 ||
-                typeof args.noiseOpacity !== "number" ||
-                args.noiseOpacity < 0 ||
-                args.noiseOpacity > 0.2
-              ) {
-                throw new Error(
-                  "Validation Error: Numeric Parameters out of safety range",
-                );
-              }
-              if (args.fontTheme !== "sans" && args.fontTheme !== "serif") {
-                throw new Error(
-                  "Validation Error: fontTheme must be either 'sans' or 'serif'",
-                );
-              }
-
-              // Save to database
-              await prisma.agentTheme.create({
-                data: {
-                  background: args.background,
-                  foreground: args.foreground,
-                  accent: args.accent,
-                  glowColor: args.glowColor,
-                  glowIntensity: args.glowIntensity,
-                  animationSpeed: args.animationSpeed || "4s",
-                  fontTheme: args.fontTheme,
-                  noiseOpacity: args.noiseOpacity,
-                  borderRadius: args.borderRadius || "8px",
-                },
-              });
-              themeApplied = true;
-              writeLog(
-                `🎨 [Theme Applied] New self-evolved theme written to DB.`,
-              );
-            } catch (e: any) {
-              errorMessage = e.message;
-              writeLog(
-                `🛡️ [Immunization Rollback] Theme rejected: ${e.message}`,
+            // Level 1 Validation (Hex pattern and number range check)
+            const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+            if (
+              !hexRegex.test(args.background) ||
+              !hexRegex.test(args.foreground) ||
+              !hexRegex.test(args.accent) ||
+              !hexRegex.test(args.glowColor)
+            ) {
+              throw new Error("Validation Error: Invalid Color Hex Format");
+            }
+            if (
+              typeof args.glowIntensity !== "number" ||
+              args.glowIntensity < 0 ||
+              args.glowIntensity > 1 ||
+              typeof args.noiseOpacity !== "number" ||
+              args.noiseOpacity < 0 ||
+              args.noiseOpacity > 0.2
+            ) {
+              throw new Error(
+                "Validation Error: Numeric Parameters out of safety range",
               );
             }
-          } else if (call.name === "write_blog_post") {
-            try {
-              const args = call.arguments;
-
-              if (!args.title || !args.content) {
-                throw new Error(
-                  "Validation Error: Title and Content are required for blog posts",
-                );
-              }
-
-              // Get default author (first user)
-              const firstUser = await prisma.user.findFirst();
-              if (!firstUser) {
-                throw new Error(
-                  "Validation Error: No user found in User table to assign as author",
-                );
-              }
-
-              // Generate unique slug
-              const dateStr = Date.now().toString();
-              const cleanTitle = args.title
-                .toLowerCase()
-                .replace(
-                  /[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g,
-                  "-",
-                )
-                .replace(/-+/g, "-");
-              const slug = `agent-${cleanTitle}-${dateStr}`;
-
-              await prisma.blogPost.create({
-                data: {
-                  id: `blog-${dateStr}-${Math.random().toString(36).substring(2, 7)}`,
-                  title: args.title,
-                  slug: slug,
-                  content: args.content,
-                  excerpt: args.excerpt || null,
-                  tags: args.tags || "AI, self-evolution",
-                  authorId: firstUser.id,
-                  published: true,
-                  updatedAt: new Date(),
-                },
-              });
-              writeLog(
-                `📝 [Blog Posted] Autonomous diary post saved to DB: ${args.title}`,
-              );
-            } catch (e: any) {
-              errorMessage = e.message;
-              writeLog(
-                `🛡️ [Immunization Rollback] Blog post rejected: ${e.message}`,
+            if (args.fontTheme !== "sans" && args.fontTheme !== "serif") {
+              throw new Error(
+                "Validation Error: fontTheme must be either 'sans' or 'serif'",
               );
             }
+
+            // Save to database
+            await prisma.agentTheme.create({
+              data: {
+                background: args.background,
+                foreground: args.foreground,
+                accent: args.accent,
+                glowColor: args.glowColor,
+                glowIntensity: args.glowIntensity,
+                animationSpeed: args.animationSpeed || "4s",
+                fontTheme: args.fontTheme,
+                noiseOpacity: args.noiseOpacity,
+                borderRadius: args.borderRadius || "8px",
+              },
+            });
+            themeApplied = true;
+            writeLog(
+              `🎨 [Theme Applied] New self-evolved theme written to DB.`,
+            );
+          } catch (e: any) {
+            errorMessage = e.message;
+            writeLog(`🛡️ [Immunization Rollback] Theme rejected: ${e.message}`);
+          }
+        } else if (call.name === "write_blog_post") {
+          try {
+            const args = call.arguments;
+
+            if (!args.title || !args.content) {
+              throw new Error(
+                "Validation Error: Title and Content are required for blog posts",
+              );
+            }
+
+            // Get default author (first user)
+            const firstUser = await prisma.user.findFirst();
+            if (!firstUser) {
+              throw new Error(
+                "Validation Error: No user found in User table to assign as author",
+              );
+            }
+
+            // Generate unique slug
+            const dateStr = Date.now().toString();
+            const cleanTitle = args.title
+              .toLowerCase()
+              .replace(
+                /[^a-z0-9\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/g,
+                "-",
+              )
+              .replace(/-+/g, "-");
+            const slug = `agent-${cleanTitle}-${dateStr}`;
+
+            await prisma.blogPost.create({
+              data: {
+                id: `blog-${dateStr}-${Math.random().toString(36).substring(2, 7)}`,
+                title: args.title,
+                slug: slug,
+                content: args.content,
+                excerpt: args.excerpt || null,
+                tags: args.tags || "AI, self-evolution",
+                authorId: firstUser.id,
+                published: true,
+                updatedAt: new Date(),
+              },
+            });
+            writeLog(
+              `📝 [Blog Posted] Autonomous diary post saved to DB: ${args.title}`,
+            );
+          } catch (e: any) {
+            errorMessage = e.message;
+            writeLog(
+              `🛡️ [Immunization Rollback] Blog post rejected: ${e.message}`,
+            );
           }
         }
       }
+    }
 
-      // Save Activity Log
+    // Save Activity Log
+    await prisma.agentActivityLog.create({
+      data: {
+        triggerType,
+        details,
+        thoughtProcess: agentResponse.thoughtProcess,
+        actions: agentResponse.actions,
+        textResponse: agentResponse.textResponse || null,
+        codeChange: agentResponse.toolCalls
+          ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
+          : null,
+        status: errorMessage ? "FAILURE_ROLLEDBACK" : "SUCCESS",
+        errorMessage: errorMessage,
+      },
+    });
+  } catch (err: any) {
+    writeLog(
+      `[Error] Failed to process agent local engine execution: ${err.message}`,
+    );
+    try {
       await prisma.agentActivityLog.create({
         data: {
           triggerType,
           details,
-          thoughtProcess: agentResponse.thoughtProcess,
-          actions: agentResponse.actions,
-          textResponse: agentResponse.textResponse || null,
-          codeChange: agentResponse.toolCalls
-            ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
-            : null,
-          status: errorMessage ? "FAILURE_ROLLEDBACK" : "SUCCESS",
-          errorMessage: errorMessage,
+          thoughtProcess: "Agent local engine failed at runtime.",
+          actions: "自律自己進化 (システムエラー)",
+          codeChange: null,
+          status: "FAILURE_ROLLEDBACK",
+          errorMessage: err.message,
         },
       });
-    } catch (err: any) {
-      writeLog(`[Error] Failed to process agent runner output: ${err.message}`);
+    } catch (logErr: any) {
+      writeLog(`Failed to log agent failure to DB: ${logErr.message}`);
     }
-  });
+  }
 }
 
 async function checkEnvironment(state: DaemonState): Promise<DaemonState> {

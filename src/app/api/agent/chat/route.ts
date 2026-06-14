@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { spawn } from "child_process";
-import * as path from "path";
 import prisma from "@/lib/prisma";
+import { getLocalAgentDecision } from "@/utils/localAgentEngine";
 
 export const runtime = "nodejs";
 
@@ -66,63 +65,12 @@ export async function POST(req: Request) {
       systemLogs,
     };
 
-    // 3. Spawn Python Agent Runner (USER_CHAT mode)
-    const runnerScript = path.join(
-      process.cwd(),
-      "scripts",
-      "ai_agent_runner.py",
+    // 3. Invoke local TypeScript agent engine directly (Zero API Costs)
+    const agentResponse = getLocalAgentDecision(
+      "USER_CHAT",
+      message,
+      combinedTelemetry,
     );
-    const base64Value = Buffer.from(JSON.stringify(combinedTelemetry)).toString(
-      "base64",
-    );
-
-    const pythonCmd = process.platform === "win32" ? "py" : "python3";
-
-    const result = await new Promise<string>((resolve, reject) => {
-      const child = spawn(
-        pythonCmd,
-        [
-          runnerScript,
-          `--trigger=USER_CHAT`,
-          `--details=${message}`,
-          `--value=${base64Value}`,
-        ],
-        { shell: true },
-      );
-
-      let stdout = "";
-      let stderr = "";
-
-      child.stdout.on("data", (data) => {
-        stdout += data.toString();
-      });
-
-      child.stderr.on("data", (data) => {
-        stderr += data.toString();
-      });
-
-      child.on("close", (code) => {
-        if (code !== 0) {
-          reject(
-            new Error(`Runner failed with code ${code}. Stderr: ${stderr}`),
-          );
-        } else {
-          resolve(stdout);
-        }
-      });
-    });
-
-    // 4. Parse JSON out of Agent stdout
-    const match = result.match(
-      /---AGENT_RESULT_START---([\s\S]*?)---AGENT_RESULT_END---/,
-    );
-    if (!match) {
-      throw new Error(
-        `Failed to find structured JSON in runner output. Raw output: ${result}`,
-      );
-    }
-
-    const agentResponse = JSON.parse(match[1].trim());
     let themeApplied = false;
     let errorMessage: string | null = null;
     let appliedThemeData: any = null;

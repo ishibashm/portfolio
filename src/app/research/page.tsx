@@ -31,7 +31,7 @@ interface ExtractedFile {
 }
 
 export default function DataEnginePage() {
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState("Tokyo");
   const [scrolls, setScrolls] = useState(10);
   const [isExtracting, setIsExtracting] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -137,10 +137,10 @@ export default function DataEnginePage() {
 
     setIsExtracting(true);
     setLogs([]);
-    addLog(`Initiating X Data Extraction for: ${url}`, "info");
+    addLog(`Initiating Astro-Alignment Audit for: ${url}`, "info");
 
     const sse = new EventSource(
-      `/api/research/x-extract?url=${encodeURIComponent(url)}&scrolls=${scrolls}`,
+      `/api/research/generate-report?url=${encodeURIComponent(url)}&scrolls=${scrolls}`,
     );
 
     sse.addEventListener("info", (e) =>
@@ -344,10 +344,11 @@ export default function DataEnginePage() {
               <FolderOpen className="w-5 h-5 text-blue-400" />
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-white/90">
-                  ローカルデータ金庫 (Local Data Vault)
+                  アライメント監査レポート金庫 (Audit Report Vault)
                 </h2>
                 <p className="text-xs text-zinc-500">
-                  ダウンロードされたMarkdownファイル (./x_downloads に保存)
+                  生成されたアライメントレポート Markdown ファイル
+                  (./x_downloads に保存)
                 </p>
               </div>
             </div>

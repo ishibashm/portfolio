@@ -15,13 +15,13 @@ export async function generateMetadata({ params }: PageProps) {
 
   if (!component) {
     return {
-      title: "Component Not Found | AI Visualizer Studio",
+      title: "Wave Not Found | Resonance Sandbox",
     };
   }
 
   return {
-    title: `${component.title} | AI Visualizer Studio`,
-    description: `Check out this custom ${component.style} design generated using AI Visualizer Studio.`,
+    title: `${component.title} | Resonance Sandbox`,
+    description: `Check out this custom resonance waveform configuration: ${component.title} simulated in the Resonance Sandbox.`,
   };
 }
 

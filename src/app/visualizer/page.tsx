@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import {
   Loader2,
-  Palette,
+  Activity,
   Database,
   LayoutTemplate,
   Copy,
@@ -18,275 +18,355 @@ import {
   Code,
   Play,
   Pause,
-  ChevronRight,
   ArrowRight,
   Eye,
-  History,
-  Settings,
-  Undo2,
-  Redo2,
   HelpCircle,
   Music,
   Headphones,
-  Upload,
-  Youtube,
-  Link,
   Save,
   Share2,
   Trash2,
 } from "lucide-react";
 import html2canvas from "html2canvas";
 
-// Data presets for quick loading
+// Telemetry Wave Presets
 const DATA_PRESETS = {
-  twitter: {
-    name: "X (Twitter) Post",
-    icon: "🐦",
+  solar_wind: {
+    name: "Solar Wind Pulse",
+    icon: "☀️",
     data: {
-      id: "1809000000000000000",
-      author_handle: "elonmusk",
-      author_display: "Elon Musk",
-      avatar_url:
-        "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=100&h=100&q=80",
-      datetime: "2026-05-21T12:00:00Z",
-      text: "The future of AI is looking incredibly bright. The interfaces we build today will define the next generation of human-computer interaction. 🌌🛸 #AI #Design #Technology",
-      likes: "125K",
-      retweets: "18.4K",
-      replies: "9.2K",
-      views: "4.8M",
+      title: "Solar Wind Particle Flux",
+      frequency: 4.5,
+      amplitude: 1.5,
+      noiseLevel: 0.4,
+      colorTheme: "solar",
+      glowColor: "#f59e0b",
+      gridSpeed: 1.2,
+      shieldDensity: 45,
+      waveType: "sine",
     },
   },
-  music: {
-    name: "Music Track Metadata",
-    icon: "🎵",
+  magnetosphere: {
+    name: "Magnetosphere Resonance",
+    icon: "🛡️",
     data: {
-      title: "Midnight City Lights",
-      artist: "Lofi Horizon",
-      album: "Neon Dreams EP",
-      bpm: 88,
-      key: "F# Major",
-      energy: "Moderate",
-      duration: "2:45",
-      file_name: "midnight_city_lights.mp3",
-      release_year: 2026,
-      spotify_popularity: 82,
-      acousticness: "85%",
-      danceability: "70%",
-      valence: "Happy",
-      sections: [
-        {
-          name: "Intro",
-          label: "イントロ",
-          startTime: 0,
-          endTime: 15,
-          energy: 2,
-          note: "チルアウトなエレピでスタート",
-        },
-        {
-          name: "Verse 1",
-          label: "Aメロ (1番)",
-          startTime: 15,
-          endTime: 45,
-          energy: 2,
-          note: "ドラムが入る、リラックスしたメロディ",
-        },
-        {
-          name: "Chorus 1",
-          label: "サビ (1番)",
-          startTime: 45,
-          endTime: 75,
-          energy: 3,
-          note: "豊かなシンセとベースラインの広がり",
-        },
-        {
-          name: "Verse 2",
-          label: "Aメロ (2番)",
-          startTime: 75,
-          endTime: 105,
-          energy: 2,
-          note: "少し変化したビートとパーカッション",
-        },
-        {
-          name: "Chorus 2",
-          label: "サビ (2番)",
-          startTime: 105,
-          endTime: 135,
-          energy: 4,
-          note: "最も盛り上がるフルアレンジのサビ",
-        },
-        {
-          name: "Outro",
-          label: "アウトロ",
-          startTime: 135,
-          endTime: 165,
-          energy: 1,
-          note: "徐々にフェードアウトしていくエレピ",
-        },
-      ],
+      title: "Magnetosphere Shield Resonance",
+      frequency: 1.2,
+      amplitude: 2.5,
+      noiseLevel: 0.1,
+      colorTheme: "aurora",
+      glowColor: "#10b981",
+      gridSpeed: 0.5,
+      shieldDensity: 85,
+      waveType: "complex",
     },
   },
-  realestate: {
-    name: "Real Estate Card",
-    icon: "🏠",
+  cosmic_noise: {
+    name: "Cosmic Noise Background",
+    icon: "🌌",
     data: {
-      id: "prop_90210",
-      title: "Minimalist Glass & Concrete Villa",
-      location: "Beverly Hills, California",
-      price: "$12,500,000",
-      beds: 5,
-      baths: 6.5,
-      sqft: 6800,
-      image_url:
-        "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&h=450&q=80",
-      amenities: [
-        "Infinity Pool",
-        "Wine Cellar",
-        "Home Cinema",
-        "Smart Automation",
-      ],
-      agent: {
-        name: "Sarah Jenkins",
-        phone: "+1 (555) 019-2834",
-      },
-    },
-  },
-  pricing: {
-    name: "SaaS Pricing Tier",
-    icon: "💳",
-    data: {
-      tier: "Developer Pro",
-      price_monthly: "$29",
-      price_yearly: "$24",
-      description:
-        "Perfect for individual developers and small teams building next-gen web apps.",
-      features: [
-        "Unlimited deployments",
-        "Custom domains & SSL",
-        "Edge Functions (10M requests)",
-        "Advanced analytics & insights",
-        "24/7 Support",
-      ],
-      is_popular: true,
-      cta_text: "Start 14-day free trial",
-    },
-  },
-  dashboard: {
-    name: "Analytics Widget",
-    icon: "📊",
-    data: {
-      metric_name: "Monthly Active Users",
-      value: "248,390",
-      change_percentage: "+14.2%",
-      change_direction: "up",
-      timeline_label: "vs. last month",
-      chart_data: [120, 150, 134, 180, 210, 248],
-      recent_activities: [
-        { user: "Alex K.", action: "Signed up", time: "2m ago" },
-        { user: "Maria S.", action: "Upgraded to Pro", time: "15m ago" },
-      ],
+      title: "Cosmic Ray Noise Background",
+      frequency: 8.0,
+      amplitude: 0.6,
+      noiseLevel: 0.9,
+      colorTheme: "cosmic",
+      glowColor: "#8b5cf6",
+      gridSpeed: 2.5,
+      shieldDensity: 10,
+      waveType: "sawtooth",
     },
   },
 };
 
-interface HistoryItem {
-  cleanHtml: string;
-  html: string;
-  description: string;
-  timestamp: string;
-}
+const styleLabels: Record<string, string> = {
+  "music-dashboard": "Resonance Synth",
+  "twitter-card": "Solar HUD",
+  "realestate-card": "Magnetosphere Shield",
+  "pricing-tier": "Cosmic Flux Dashboard",
+  "analytics-widget": "Space Weather Alert",
+};
 
-const getSectionColor = (name: string) => {
-  const n = name.toLowerCase();
-  if (n.includes("intro"))
-    return {
-      bg: "bg-rose-500",
-      border: "border-rose-400",
-      text: "text-rose-400",
-      dot: "#f43f5e",
+// Standalone HTML5 Canvas waveform drawing script generator
+const generateWaveformHtml = (configStr: string, styleId: string) => {
+  let config: any = {};
+  try {
+    config = JSON.parse(configStr);
+  } catch (e) {
+    config = {
+      title: "Custom Resonance Wave",
+      frequency: 2.5,
+      amplitude: 1.5,
+      noiseLevel: 0.3,
+      colorTheme: "aurora",
+      glowColor: "#10b981",
+      gridSpeed: 0.5,
+      shieldDensity: 50,
+      waveType: "sine",
     };
-  if (n.includes("verse")) {
-    if (n.includes("2") || n.includes("b")) {
-      return {
-        bg: "bg-blue-600",
-        border: "border-blue-500",
-        text: "text-blue-400",
-        dot: "#2563eb",
-      };
+  }
+
+  const title = config.title || "Resonance Core";
+  const frequency = Number(config.frequency) || 2.0;
+  const amplitude = Number(config.amplitude) || 1.0;
+  const noiseLevel = Number(config.noiseLevel) || 0.2;
+  const glowColor = config.glowColor || "#38bdf8";
+  const colorTheme = config.colorTheme || "cosmic";
+  const gridSpeed = Number(config.gridSpeed) || 1.0;
+  const shieldDensity = Number(config.shieldDensity) || 50;
+  const waveType = config.waveType || "sine";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #09090b;
+      color: white;
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      padding: 1.5rem;
+      overflow: hidden;
     }
-    return {
-      bg: "bg-sky-500",
-      border: "border-sky-400",
-      text: "text-sky-450",
-      dot: "#0ea5e9",
-    };
-  }
-  if (
-    n.includes("pre-chorus") ||
-    n.includes("prechorus") ||
-    n.includes("bメロ")
-  ) {
-    return {
-      bg: "bg-indigo-500",
-      border: "border-indigo-455",
-      text: "text-indigo-400",
-      dot: "#6366f1",
-    };
-  }
-  if (n.includes("chorus") || n.includes("refrain") || n.includes("サビ")) {
-    return {
-      bg: "bg-amber-500",
-      border: "border-amber-400",
-      text: "text-amber-450",
-      dot: "#f59e0b",
-    };
-  }
-  if (n.includes("bridge") || n.includes("cメロ")) {
-    return {
-      bg: "bg-emerald-500",
-      border: "border-emerald-450",
-      text: "text-emerald-400",
-      dot: "#10b981",
-    };
-  }
-  if (n.includes("solo")) {
-    return {
-      bg: "bg-pink-500",
-      border: "border-pink-400",
-      text: "text-pink-450",
-      dot: "#ec4899",
-    };
-  }
-  if (n.includes("outro") || n.includes("coda")) {
-    return {
-      bg: "bg-zinc-500",
-      border: "border-zinc-400",
-      text: "text-zinc-405",
-      dot: "#71717a",
-    };
-  }
-  return {
-    bg: "bg-violet-500",
-    border: "border-violet-400",
-    text: "text-violet-400",
-    dot: "#8b5cf6",
-  };
-};
-
-const renderEnergyStars = (energy: number) => {
-  return (
-    <div className="flex justify-center gap-0.5 text-amber-400">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <span key={i} className="text-[10px]">
-          {i < energy ? "★" : "☆"}
-        </span>
-      ))}
+    .neon-glow {
+      box-shadow: 0 0 20px ${glowColor}40, inset 0 0 20px ${glowColor}20;
+    }
+  </style>
+</head>
+<body>
+  <div class="w-full max-w-4xl p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 backdrop-blur-xl flex flex-col gap-6 shadow-2xl relative overflow-hidden neon-glow">
+    <div class="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:20px_20px] opacity-30 pointer-events-none"></div>
+    
+    <div class="flex items-center justify-between z-10">
+      <div>
+        <h2 class="text-lg font-bold text-white tracking-wide uppercase">${title}</h2>
+        <p class="text-xs text-zinc-400 mt-0.5">Resonance Alignment Simulator — Theme: ${colorTheme}</p>
+      </div>
+      <div class="flex items-center gap-4 text-right font-mono text-xs">
+        <div>
+          <span class="text-zinc-500">FREQ:</span> <span class="text-white">${frequency.toFixed(2)} Hz</span>
+        </div>
+        <div>
+          <span class="text-zinc-500">AMP:</span> <span class="text-white">${amplitude.toFixed(2)}m</span>
+        </div>
+        <div>
+          <span class="text-zinc-500">ALIGN:</span> <span class="text-emerald-400 font-semibold">STABLE</span>
+        </div>
+      </div>
     </div>
-  );
+
+    <div class="w-full h-80 rounded-xl bg-black/50 border border-zinc-800 overflow-hidden relative z-10 flex items-center justify-center">
+      <canvas id="waveform-canvas" class="w-full h-full"></canvas>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 z-10 text-xs">
+      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
+        <p class="text-zinc-500 font-semibold">Wave Mode</p>
+        <p class="text-sm font-bold text-white capitalize mt-1">${waveType}</p>
+      </div>
+      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
+        <p class="text-zinc-500 font-semibold">Stochastic Noise</p>
+        <p class="text-sm font-bold text-white mt-1">${(noiseLevel * 100).toFixed(0)}%</p>
+      </div>
+      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
+        <p class="text-zinc-500 font-semibold">Flux Velocity</p>
+        <p class="text-sm font-bold text-white mt-1">${gridSpeed.toFixed(2)}c</p>
+      </div>
+      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
+        <p class="text-zinc-500 font-semibold">Shield Density</p>
+        <p class="text-sm font-bold text-white mt-1">${shieldDensity}%</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("waveform-canvas");
+    const ctx = canvas.getContext("2d");
+
+    function resize() {
+      canvas.width = canvas.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.clientHeight * window.devicePixelRatio;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    let t = 0;
+    const style = "${styleId}";
+    const glowColor = "${glowColor}";
+    const freq = ${frequency};
+    const amp = ${amplitude};
+    const noise = ${noiseLevel};
+    const speed = ${gridSpeed};
+    const density = ${shieldDensity};
+    const waveType = "${waveType}";
+
+    function draw() {
+      requestAnimationFrame(draw);
+      t += 0.05 * speed;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "rgba(39, 39, 42, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+
+      const midY = canvas.height / 2;
+      const width = canvas.width;
+      const height = canvas.height;
+
+      if (style === "twitter-card") {
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const radius = Math.min(width, height) * 0.4;
+
+        ctx.strokeStyle = glowColor + "30";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, radius * 0.7, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, radius * 0.4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = glowColor + "15";
+        ctx.beginPath();
+        ctx.moveTo(centerX - radius * 1.1, centerY);
+        ctx.lineTo(centerX + radius * 1.1, centerY);
+        ctx.moveTo(centerX, centerY - radius * 1.1);
+        ctx.lineTo(centerX, centerY + radius * 1.1);
+        ctx.stroke();
+
+        const sweepAngle = t * 0.5;
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 2.0;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(sweepAngle) * radius, centerY + Math.sin(sweepAngle) * radius);
+        ctx.stroke();
+
+        const targetAngle = freq * 0.8;
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(targetAngle) * radius * amp * 0.4, centerY + Math.sin(targetAngle) * radius * amp * 0.4);
+        ctx.stroke();
+
+        ctx.fillStyle = glowColor;
+        for (let i = 0; i < 5; i++) {
+          const blipAngle = (i * Math.PI * 2) / 5 + targetAngle;
+          const blipDist = radius * (0.3 + 0.6 * Math.sin(t + i));
+          ctx.beginPath();
+          ctx.arc(centerX + Math.cos(blipAngle) * blipDist, centerY + Math.sin(blipAngle) * blipDist, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (style === "realestate-card") {
+        ctx.strokeStyle = glowColor + "50";
+        ctx.lineWidth = 2;
+        const shieldX = width * 0.6;
+        ctx.beginPath();
+        for (let j = -3; j <= 3; j++) {
+          const offset = j * 40;
+          ctx.moveTo(shieldX - 20 * Math.cos(j * 0.5), midY + offset);
+          ctx.quadraticCurveTo(
+            shieldX - 80 * amp - Math.abs(offset) * 0.2,
+            midY + offset / 2,
+            shieldX - 20 * Math.cos(j * 0.5),
+            midY + offset * 2
+          );
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = "#e11d48";
+        for (let i = 0; i < density; i++) {
+          const px = ((t * 80 + i * 140) % (width * 0.8));
+          const py = (Math.sin(i * 0.7 + t) * 60 + midY + (i % 5 - 2) * 50);
+
+          let renderX = px;
+          let renderY = py;
+          if (px > shieldX - 120 && px < shieldX + 50) {
+            const dx = px - (shieldX - 100);
+            renderX = px - dx * 0.3;
+            renderY = py + (py > midY ? 80 : -80) * (1 - (px - (shieldX - 100)) / 150);
+          }
+
+          ctx.beginPath();
+          ctx.arc(renderX, renderY, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (style === "pricing-tier") {
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        for (let x = 0; x < width; x += 5) {
+          const ratio = x / width;
+          const sample = Math.sin(ratio * Math.PI * 4 * freq + t) * Math.cos(ratio * Math.PI * freq);
+          const randNoise = (Math.random() - 0.5) * noise * 80;
+          const y = midY + sample * 80 * amp + randNoise;
+          
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+        ctx.beginPath();
+        for (let x = 0; x < width; x += 10) {
+          const ratio = x / width;
+          const y = midY + Math.sin(ratio * Math.PI * 2 + t * 0.2) * 110;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = glowColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        for (let x = 0; x < width; x += 2) {
+          const ratio = x / width;
+          let waveVal = 0;
+
+          if (waveType === "sawtooth") {
+            waveVal = ((ratio * freq * 10 + t) % 2) - 1;
+          } else if (waveType === "triangle") {
+            waveVal = Math.abs(((ratio * freq * 10 + t) % 2) - 1) * 2 - 1;
+          } else if (waveType === "square") {
+            waveVal = Math.sin(ratio * Math.PI * 2 * freq + t) >= 0 ? 1 : -1;
+          } else {
+            const baseSine = Math.sin(ratio * Math.PI * 2 * freq + t);
+            const subharmonic = 0.5 * Math.sin(ratio * Math.PI * freq + t * 0.5);
+            waveVal = baseSine + subharmonic;
+          }
+
+          const noiseVal = (Math.random() - 0.5) * noise;
+          const y = midY + (waveVal + noiseVal) * 90 * amp;
+
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
+    draw();
+  </script>
+</body>
+</html>`;
 };
 
 export default function VisualizerPage() {
   const [isMounted, setIsMounted] = useState(false);
-  const [dataSources, setDataSources] = useState<any[]>([]);
   const [selectedData, setSelectedData] = useState<string>("");
   const [style, setStyle] = useState("twitter-card");
   const [customStyleHint, setCustomStyleHint] = useState("");
@@ -300,11 +380,9 @@ export default function VisualizerPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [refinementPrompt, setRefinementPrompt] = useState("");
-  const [activeTab, setActiveTab] = useState<
-    "preview" | "code" | "html-anything"
-  >("preview");
+  const [activeTab, setActiveTab] = useState<"preview" | "code">("preview");
   const [viewportWidth, setViewportWidth] = useState<
-    "100%" | "768px" | "667px" | "375px"
+    "100%" | "768px" | "375px"
   >("100%");
   const [sidebarTab, setSidebarTab] = useState<"input" | "style">("input");
 
@@ -321,7 +399,7 @@ export default function VisualizerPage() {
   const [isExportingPng, setIsExportingPng] = useState(false);
   const [shareAfterSave, setShareAfterSave] = useState(false);
 
-  // Audio Upload & Web Audio API playback states
+  // Audio / Synth states
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -335,47 +413,15 @@ export default function VisualizerPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const analyserNodeRef = useRef<AnalyserNode | null>(null);
+  const synthOscRef = useRef<OscillatorNode | null>(null);
+  const synthGainRef = useRef<GainNode | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
   const audioPlayStartTimeRef = useRef<number>(0);
   const audioOffsetRef = useRef<number>(0);
   const audioFileInputRef = useRef<HTMLInputElement>(null);
-
-  // YouTube states
-  const [youtubeUrl, setYoutubeUrl] = useState("");
-  const [youtubeId, setYoutubeId] = useState<string | null>(null);
-  const [youtubeTitle, setYoutubeTitle] = useState<string | null>(null);
-  const [youtubeThumbnail, setYoutubeThumbnail] = useState<string | null>(null);
-  const [isFetchingYoutube, setIsFetchingYoutube] = useState(false);
-  const ytPlayerRef = useRef<any>(null);
-
-  // Song Structure Analysis states
-  const [songSections, setSongSections] = useState<any[]>([]);
-  const [isAnalyzingStructure, setIsAnalyzingStructure] = useState(false);
-
-  // Keep a reference of selectedData for event closures
-  const selectedDataRef = useRef(selectedData);
-  useEffect(() => {
-    selectedDataRef.current = selectedData;
-  }, [selectedData]);
-
-  // Synchronize song sections from manual edits in Monaco editor JSON
-  useEffect(() => {
-    if (!selectedData) return;
-    try {
-      const parsed = JSON.parse(selectedData);
-      if (parsed && Array.isArray(parsed.sections)) {
-        setSongSections(parsed.sections);
-      }
-    } catch (e) {
-      // Ignore invalid JSON while user is typing
-    }
-  }, [selectedData]);
-
-  // History State
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
   // Notifications
   const [toast, setToast] = useState<{
@@ -384,101 +430,117 @@ export default function VisualizerPage() {
   } | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const htmlAnythingIframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     setIsMounted(true);
     fetchGallery();
 
-    // Check if we came from share page or elsewhere
     const storedData = sessionStorage.getItem("visualizer_input_data");
     const storedStyle = sessionStorage.getItem("visualizer_initial_style");
     const storedHtml = sessionStorage.getItem("visualizer_initial_html");
     const storedTitle = sessionStorage.getItem("visualizer_initial_title");
     const storedId = sessionStorage.getItem("visualizer_initial_id");
 
-    let initializedFromSession = false;
-
-    if (storedData) {
+    if (storedData && storedHtml) {
       setSelectedData(storedData);
-      sessionStorage.removeItem("visualizer_input_data");
-      initializedFromSession = true;
-    }
-    if (storedStyle) {
-      setStyle(storedStyle);
-      sessionStorage.removeItem("visualizer_initial_style");
-    }
-    if (storedHtml) {
+      setStyle(storedStyle || "twitter-card");
       setCleanHtml(storedHtml);
       setGeneratedHtml(wrapHtmlWithTailwind(storedHtml));
       setEditedCode(storedHtml);
+      if (storedTitle) setSaveTitle(storedTitle);
+      if (storedId) setActiveComponentId(storedId);
+
+      sessionStorage.removeItem("visualizer_input_data");
+      sessionStorage.removeItem("visualizer_initial_style");
       sessionStorage.removeItem("visualizer_initial_html");
-    }
-    if (storedTitle) {
-      setSaveTitle(storedTitle);
       sessionStorage.removeItem("visualizer_initial_title");
-    }
-    if (storedId) {
-      setActiveComponentId(storedId);
       sessionStorage.removeItem("visualizer_initial_id");
+      showToast("Loaded component config!", "info");
+    } else {
+      loadPreset("solar_wind");
     }
-
-    if (initializedFromSession) {
-      showToast("Loaded component from share link!", "info");
-      return;
-    }
-
-    // Attempt to load sample data from our existing X Posts DB
-    fetch("/api/x-viewer/accounts")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.accounts && data.accounts.length > 0) {
-          fetch(
-            `/api/x-viewer/posts?handle=${encodeURIComponent(data.accounts[0])}`,
-          )
-            .then((res) => res.json())
-            .then((postData) => {
-              if (postData.posts && postData.posts.length > 0) {
-                // Keep the fetched posts as potential quick samples
-                setDataSources(postData.posts.slice(0, 3));
-                if (!storedData) {
-                  // Default to first post from DB if no session storage
-                  setSelectedData(JSON.stringify(postData.posts[0], null, 2));
-                }
-              } else if (!storedData) {
-                // Fallback to first preset if DB is empty
-                loadPreset("twitter");
-              }
-            });
-        } else if (!storedData) {
-          loadPreset("twitter");
-        }
-      })
-      .catch((err) => {
-        console.warn("Could not fetch account posts, loading defaults:", err);
-        if (!storedData) loadPreset("twitter");
-      });
   }, []);
 
-  const handleSyncToHtmlAnything = () => {
-    if (
-      htmlAnythingIframeRef.current &&
-      htmlAnythingIframeRef.current.contentWindow
-    ) {
-      const isJson =
-        style.includes("card") ||
-        style.includes("music") ||
-        style.includes("pricing") ||
-        style.includes("dashboard");
-      htmlAnythingIframeRef.current.contentWindow.postMessage(
-        {
-          type: "load_content",
-          content: isJson ? selectedData : editedCode,
-          format: isJson ? "json" : "text",
-          filename: isJson ? "preset_data.json" : "component.html",
-        },
-        "*",
-      );
+  const handleGenerate = () => {
+    if (!selectedData) return;
+    setIsGenerating(true);
+
+    try {
+      const generatedHtmlContent = generateWaveformHtml(selectedData, style);
+      setCleanHtml(generatedHtmlContent);
+      setGeneratedHtml(wrapHtmlWithTailwind(generatedHtmlContent));
+      setEditedCode(generatedHtmlContent);
+      showToast("Updated Resonance Sandbox visual!");
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to compile parameters.", "error");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRefine = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!refinementPrompt || !cleanHtml) return;
+
+    setIsRefining(true);
+    const instruction = refinementPrompt;
+    setRefinementPrompt("");
+
+    try {
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(selectedData);
+      } catch (e) {}
+
+      const lowerInstr = instruction.toLowerCase();
+      let updated = false;
+
+      if (lowerInstr.includes("frequency") || lowerInstr.includes("freq")) {
+        const match = lowerInstr.match(/\d+(\.\d+)?/);
+        if (match) {
+          parsed.frequency = parseFloat(match[0]);
+          updated = true;
+        }
+      }
+      if (lowerInstr.includes("amplitude") || lowerInstr.includes("amp")) {
+        const match = lowerInstr.match(/\d+(\.\d+)?/);
+        if (match) {
+          parsed.amplitude = parseFloat(match[0]);
+          updated = true;
+        }
+      }
+      if (lowerInstr.includes("noise")) {
+        const match = lowerInstr.match(/\d+(\.\d+)?/);
+        if (match) {
+          parsed.noiseLevel = parseFloat(match[0]);
+          updated = true;
+        }
+      }
+      if (lowerInstr.includes("speed")) {
+        const match = lowerInstr.match(/\d+(\.\d+)?/);
+        if (match) {
+          parsed.gridSpeed = parseFloat(match[0]);
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        const updatedStr = JSON.stringify(parsed, null, 2);
+        setSelectedData(updatedStr);
+        const generatedHtmlContent = generateWaveformHtml(updatedStr, style);
+        setCleanHtml(generatedHtmlContent);
+        setGeneratedHtml(wrapHtmlWithTailwind(generatedHtmlContent));
+        setEditedCode(generatedHtmlContent);
+        showToast("Tuned wave parameters locally!");
+      } else {
+        showToast("Adjust parameters directly in the JSON panel.", "info");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Failed to tune parameters.", "error");
+    } finally {
+      setIsRefining(false);
     }
   };
 
@@ -496,17 +558,7 @@ export default function VisualizerPage() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlayingAudio) {
-      if (youtubeId) {
-        interval = setInterval(() => {
-          if (
-            ytPlayerRef.current &&
-            typeof ytPlayerRef.current.getCurrentTime === "function"
-          ) {
-            const current = ytPlayerRef.current.getCurrentTime();
-            setAudioPlaybackTime(current);
-          }
-        }, 200);
-      } else if (audioContextRef.current) {
+      if (audioContextRef.current) {
         interval = setInterval(() => {
           const audioCtx = audioContextRef.current;
           if (audioCtx) {
@@ -526,7 +578,7 @@ export default function VisualizerPage() {
       }
     }
     return () => clearInterval(interval);
-  }, [isPlayingAudio, audioDuration, youtubeId]);
+  }, [isPlayingAudio, audioDuration]);
 
   // Cleanup audio nodes on unmount
   useEffect(() => {
@@ -534,6 +586,11 @@ export default function VisualizerPage() {
       if (sourceNodeRef.current) {
         try {
           sourceNodeRef.current.stop();
+        } catch (e) {}
+      }
+      if (synthOscRef.current) {
+        try {
+          synthOscRef.current.stop();
         } catch (e) {}
       }
       if (audioContextRef.current) {
@@ -554,14 +611,6 @@ export default function VisualizerPage() {
   ) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
-  };
-
-  const styleLabels: Record<string, string> = {
-    "twitter-card": "X (Twitter) Post",
-    "music-dashboard": "Music Track Visualizer",
-    "realestate-card": "Real Estate Showcase",
-    "pricing-tier": "SaaS Pricing Card",
-    "analytics-widget": "Dashboard Analytics",
   };
 
   const fetchGallery = async () => {
@@ -614,7 +663,7 @@ export default function VisualizerPage() {
         const savedId = data.component.id;
         setActiveComponentId(savedId);
         setSaveModalOpen(false);
-        fetchGallery(); // Refresh the sidebar gallery list
+        fetchGallery();
 
         if (shareAfterSave) {
           const shareUrl = `${window.location.origin}/visualizer/share/${savedId}`;
@@ -639,7 +688,7 @@ export default function VisualizerPage() {
   };
 
   const handleDeleteComponent = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Avoid triggering loading the component
+    e.stopPropagation();
     if (!confirm("Are you sure you want to delete this visualization?")) return;
 
     try {
@@ -700,7 +749,7 @@ export default function VisualizerPage() {
 
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
-      link.download = `ai-visualizer-${style}-${Date.now()}.png`;
+      link.download = `resonance-wave-${style}-${Date.now()}.png`;
       link.href = dataUrl;
       link.click();
       showToast("PNG exported successfully", "success");
@@ -713,497 +762,50 @@ export default function VisualizerPage() {
   };
 
   const loadPreset = (key: keyof typeof DATA_PRESETS) => {
-    setSelectedData(JSON.stringify(DATA_PRESETS[key].data, null, 2));
-    if (key === "music") {
-      setStyle("music-dashboard");
-      setSongSections((DATA_PRESETS.music.data as any).sections || []);
-    } else {
-      // Clear audio / youtube state when loading a non-music preset
-      setAudioFile(null);
-      setAudioUrl(null);
-      setAudioBuffer(null);
-      setIsPlayingAudio(false);
-      setAudioPlaybackTime(0);
-      setAudioDuration(0);
-      setYoutubeId(null);
-      setYoutubeTitle(null);
-      setYoutubeThumbnail(null);
-      setSongSections([]);
+    const preset = DATA_PRESETS[key as keyof typeof DATA_PRESETS];
+    if (!preset) return;
+
+    const presetDataStr = JSON.stringify(preset.data, null, 2);
+    setSelectedData(presetDataStr);
+
+    let targetStyle = "twitter-card";
+    if (key === "solar_wind") targetStyle = "twitter-card";
+    else if (key === "magnetosphere") targetStyle = "realestate-card";
+    else if (key === "cosmic_noise") targetStyle = "pricing-tier";
+
+    setStyle(targetStyle);
+
+    // Compile locally
+    const generatedHtmlContent = generateWaveformHtml(
+      presetDataStr,
+      targetStyle,
+    );
+    setCleanHtml(generatedHtmlContent);
+    setGeneratedHtml(wrapHtmlWithTailwind(generatedHtmlContent));
+    setEditedCode(generatedHtmlContent);
+
+    // Reset synthesisers
+    if (synthOscRef.current) {
+      try {
+        synthOscRef.current.stop();
+      } catch (e) {}
+      synthOscRef.current = null;
     }
-    showToast(`Loaded ${DATA_PRESETS[key].name} Preset`, "info");
+    setIsPlayingAudio(false);
+    setAudioFile(null);
+    setAudioUrl(null);
+    setAudioBuffer(null);
+    setAudioPlaybackTime(0);
+    setAudioDuration(0);
+
+    showToast(`Loaded ${preset.name} Preset`, "info");
   };
 
   const wrapHtmlWithTailwind = (htmlContent: string) => {
-    return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #09090b;
-      color: white;
-      font-family: system-ui, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-      padding: 1.5rem;
-    }
-  </style>
-</head>
-<body>
-  ${htmlContent}
-</body>
-</html>`;
+    return htmlContent; // Standalone compiled page needs no wrapping
   };
 
-  // YouTube ID extractor & API metadata fetcher
-  const extractYoutubeId = (url: string) => {
-    const regExp =
-      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    if (match && match[2].length === 11) {
-      return match[2];
-    }
-    if (url.trim().length === 11 && !url.includes("/") && !url.includes(".")) {
-      return url.trim();
-    }
-    return null;
-  };
-
-  const handleFetchYoutube = async () => {
-    if (!youtubeUrl) return;
-
-    const id = extractYoutubeId(youtubeUrl);
-    if (!id) {
-      showToast("Invalid YouTube URL or Video ID", "error");
-      return;
-    }
-
-    setIsFetchingYoutube(true);
-    showToast("Fetching video metadata...", "info");
-
-    try {
-      const fetchUrl = youtubeUrl.includes("/")
-        ? youtubeUrl
-        : `https://www.youtube.com/watch?v=${id}`;
-      const res = await fetch(
-        `/api/youtube/metadata?url=${encodeURIComponent(fetchUrl)}`,
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch video metadata");
-      }
-
-      const meta = await res.json();
-
-      let titleHash = 0;
-      const titleStr = meta.title || "YouTube Video";
-      for (let i = 0; i < titleStr.length; i++) {
-        titleHash += titleStr.charCodeAt(i);
-      }
-
-      const bpm = 75 + (titleHash % 81);
-      const keys = [
-        "C Major",
-        "G Major",
-        "D Major",
-        "A Major",
-        "E Major",
-        "F Major",
-        "A Minor",
-        "E Minor",
-        "D Minor",
-        "F# Minor",
-      ];
-      const key = keys[titleHash % keys.length];
-      const energy =
-        titleHash % 3 === 0 ? "High" : titleHash % 3 === 1 ? "Moderate" : "Low";
-
-      const youtubeMetadata = {
-        title: titleStr,
-        artist: meta.author || "YouTube Creator",
-        album: "YouTube Video",
-        bpm,
-        key,
-        energy,
-        duration: "0:00", // Will update dynamically once video loads
-        youtube_id: id,
-        thumbnail_url:
-          meta.thumbnail || `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-        provider: meta.provider || "YouTube",
-      };
-
-      setSelectedData(JSON.stringify(youtubeMetadata, null, 2));
-      setStyle("music-dashboard");
-      setSidebarTab("input");
-
-      setYoutubeId(id);
-      setYoutubeTitle(titleStr);
-      setYoutubeThumbnail(
-        meta.thumbnail || `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-      );
-
-      setAudioFile(null);
-      setAudioUrl(null);
-      setAudioBuffer(null);
-      setIsPlayingAudio(false);
-      setAudioPlaybackTime(0);
-      setAudioDuration(0);
-
-      showToast("YouTube video loaded!", "success");
-    } catch (err: any) {
-      console.error(err);
-      showToast(
-        "Could not load YouTube video metadata. Using offline mock.",
-        "error",
-      );
-
-      const mockMeta = {
-        title: "YouTube Video",
-        artist: "YouTube Creator",
-        album: "YouTube Video",
-        bpm: 120,
-        key: "C Major",
-        energy: "Moderate",
-        duration: "3:00",
-        youtube_id: id,
-        thumbnail_url: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-        provider: "YouTube",
-      };
-
-      setSelectedData(JSON.stringify(mockMeta, null, 2));
-      setStyle("music-dashboard");
-      setSidebarTab("input");
-
-      setYoutubeId(id);
-      setYoutubeTitle("YouTube Video");
-      setYoutubeThumbnail(`https://img.youtube.com/vi/${id}/mqdefault.jpg`);
-
-      setAudioFile(null);
-      setAudioUrl(null);
-      setAudioBuffer(null);
-      setIsPlayingAudio(false);
-      setAudioPlaybackTime(0);
-      setAudioDuration(180);
-    } finally {
-      setIsFetchingYoutube(false);
-    }
-  };
-
-  // Load YouTube Player API and initialize player
-  useEffect(() => {
-    if (!isMounted) return;
-    if (!youtubeId) {
-      if (ytPlayerRef.current) {
-        try {
-          ytPlayerRef.current.destroy();
-        } catch (e) {}
-        ytPlayerRef.current = null;
-      }
-      return;
-    }
-
-    const initPlayer = () => {
-      const el = document.getElementById("youtube-player-element");
-      if (!el) {
-        setTimeout(initPlayer, 100);
-        return;
-      }
-
-      if (ytPlayerRef.current) {
-        try {
-          ytPlayerRef.current.destroy();
-        } catch (e) {}
-        ytPlayerRef.current = null;
-      }
-
-      ytPlayerRef.current = new (window as any).YT.Player(
-        "youtube-player-element",
-        {
-          videoId: youtubeId,
-          width: "100%",
-          height: "100%",
-          playerVars: {
-            autoplay: 0,
-            controls: 0,
-            disablekb: 1,
-            fs: 0,
-            modestbranding: 1,
-            rel: 0,
-            showinfo: 0,
-            iv_load_policy: 3,
-          },
-          events: {
-            onReady: async (event: any) => {
-              const duration = event.target.getDuration();
-              if (duration) {
-                setAudioDuration(duration);
-                let parsed: any = null;
-                try {
-                  parsed = JSON.parse(selectedDataRef.current);
-                } catch (e) {}
-
-                const mins = Math.floor(duration / 60);
-                const secs = Math.floor(duration % 60);
-                const durationStr = `${mins}:${secs < 10 ? "0" : ""}${secs}`;
-
-                if (parsed && parsed.youtube_id === youtubeId) {
-                  parsed.duration = durationStr;
-                  setSelectedData(JSON.stringify(parsed, null, 2));
-                }
-
-                // Trigger song structure analysis for YouTube
-                try {
-                  setIsAnalyzingStructure(true);
-                  const title =
-                    parsed?.title || youtubeTitle || "YouTube Video";
-                  const artist = parsed?.artist || "YouTube Creator";
-                  const response = await fetch("/api/music/analyze", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      title,
-                      artist,
-                      duration,
-                    }),
-                  });
-                  if (response.ok) {
-                    const result = await response.json();
-                    if (result.sections) {
-                      setSongSections(result.sections);
-                      if (parsed && parsed.youtube_id === youtubeId) {
-                        parsed.sections = result.sections;
-                        setSelectedData(JSON.stringify(parsed, null, 2));
-                      }
-                      showToast(
-                        "YouTube structure analysis complete!",
-                        "success",
-                      );
-                    }
-                  }
-                } catch (err) {
-                  console.error("Failed to analyze YouTube structure:", err);
-                } finally {
-                  setIsAnalyzingStructure(false);
-                }
-              }
-            },
-            onStateChange: (event: any) => {
-              const state = event.data;
-              if (state === 1) {
-                // PLAYING
-                setIsPlayingAudio(true);
-                setTimeout(() => {
-                  startCanvasRef();
-                }, 50);
-              } else if (state === 2) {
-                // PAUSED
-                setIsPlayingAudio(false);
-              } else if (state === 0) {
-                // ENDED
-                setIsPlayingAudio(false);
-                setAudioPlaybackTime(0);
-                if (ytPlayerRef.current) {
-                  ytPlayerRef.current.seekTo(0, true);
-                }
-              }
-            },
-          },
-        },
-      );
-    };
-
-    if (!(window as any).YT) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-      const previousCallback = (window as any).onYouTubeIframeAPIReady;
-      (window as any).onYouTubeIframeAPIReady = () => {
-        if (previousCallback) previousCallback();
-        initPlayer();
-      };
-    } else {
-      initPlayer();
-    }
-
-    return () => {
-      setIsPlayingAudio(false);
-      if (ytPlayerRef.current) {
-        try {
-          ytPlayerRef.current.destroy();
-        } catch (e) {}
-        ytPlayerRef.current = null;
-      }
-    };
-  }, [youtubeId, isMounted]);
-
-  // DSP Audio Processing
-  const analyzeAudio = async (file: File) => {
-    setIsAnalyzingAudio(true);
-    showToast("Reading audio file...", "info");
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const AudioContextClass =
-        window.AudioContext || (window as any).webkitAudioContext;
-      const audioCtx = new AudioContextClass();
-
-      showToast("Decoding audio data...", "info");
-      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-      setAudioBuffer(decodedBuffer);
-      setAudioDuration(decodedBuffer.duration);
-
-      showToast("Analyzing tempo & frequencies...", "info");
-
-      const channelData = decodedBuffer.getChannelData(0);
-      const sampleRate = decodedBuffer.sampleRate;
-
-      // Calculate BPM (Beats Per Minute) - Peak detection
-      const step = Math.max(1, Math.floor(channelData.length / 500000));
-      let maxVal = 0;
-      for (let i = 0; i < channelData.length; i += step) {
-        const absVal = Math.abs(channelData[i]);
-        if (absVal > maxVal) maxVal = absVal;
-      }
-
-      const threshold = maxVal * 0.75;
-      const peaks: number[] = [];
-      const minInterval = sampleRate * 0.3; // Limit peak distance (~200BPM max)
-
-      let lastPeakIndex = -minInterval;
-      for (let i = 0; i < channelData.length; i += step) {
-        if (Math.abs(channelData[i]) > threshold) {
-          if (i - lastPeakIndex > minInterval) {
-            peaks.push(i);
-            lastPeakIndex = i;
-          }
-        }
-      }
-
-      let bpm = 120;
-      if (peaks.length > 1) {
-        let sumIntervals = 0;
-        for (let i = 1; i < peaks.length; i++) {
-          sumIntervals += peaks[i] - peaks[i - 1];
-        }
-        const avgIntervalSamples = sumIntervals / (peaks.length - 1);
-        const avgIntervalSeconds = avgIntervalSamples / sampleRate;
-        bpm = Math.round(60 / avgIntervalSeconds);
-
-        // Normalize estimated BPM to sensible standard range
-        while (bpm < 65) bpm *= 2;
-        while (bpm > 170) bpm /= 2;
-        bpm = Math.round(bpm);
-      }
-
-      // Compute RMS (Volume Energy)
-      let rmsSum = 0;
-      const sampleStep = Math.max(1, Math.floor(channelData.length / 100000));
-      let sampledCount = 0;
-      for (let i = 0; i < channelData.length; i += sampleStep) {
-        rmsSum += channelData[i] * channelData[i];
-        sampledCount++;
-      }
-      const rms = Math.sqrt(rmsSum / sampledCount);
-      const energy = rms > 0.15 ? "High" : rms > 0.05 ? "Moderate" : "Low";
-
-      // Fun keys based on sample specs
-      const keys = [
-        "C Major",
-        "G Major",
-        "D Major",
-        "A Major",
-        "E Major",
-        "F Major",
-        "A Minor",
-        "E Minor",
-        "D Minor",
-        "F# Minor",
-      ];
-      const estimatedKey = keys[Math.abs(bpm + peaks.length) % keys.length];
-
-      const durationMin = Math.floor(decodedBuffer.duration / 60);
-      const durationSec = Math.floor(decodedBuffer.duration % 60);
-      const durationStr = `${durationMin}:${durationSec < 10 ? "0" : ""}${durationSec}`;
-
-      const musicMetadata = {
-        title: file.name.replace(/\.[^/.]+$/, ""), // Strip extension
-        artist: "Uploaded Audio",
-        album: "DSP Analysis",
-        bpm,
-        key: estimatedKey,
-        energy,
-        duration: durationStr,
-        file_name: file.name,
-        file_size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-        sample_rate: `${(sampleRate / 1000).toFixed(1)} kHz`,
-        channels: decodedBuffer.numberOfChannels,
-        rms_energy: parseFloat(rms.toFixed(4)),
-        peak_amplitude: parseFloat(maxVal.toFixed(3)),
-      };
-
-      setSelectedData(JSON.stringify(musicMetadata, null, 2));
-      setStyle("music-dashboard");
-      setSidebarTab("input");
-
-      // Create local URL for HTML5 playbacks
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-      const url = URL.createObjectURL(file);
-      setAudioUrl(url);
-      setAudioFile(file);
-
-      showToast("Audio analysis complete!", "success");
-
-      // Trigger song structure analysis API
-      const analyzeSongStructure = async () => {
-        try {
-          setIsAnalyzingStructure(true);
-          const response = await fetch("/api/music/analyze", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: file.name.replace(/\.[^/.]+$/, ""),
-              artist: "Uploaded Audio",
-              duration: decodedBuffer.duration,
-            }),
-          });
-          if (response.ok) {
-            const result = await response.json();
-            if (result.sections) {
-              setSongSections(result.sections);
-              const updatedMetadata = {
-                ...musicMetadata,
-                sections: result.sections,
-              };
-              setSelectedData(JSON.stringify(updatedMetadata, null, 2));
-              showToast("Structure analysis complete!", "success");
-            }
-          }
-        } catch (err) {
-          console.error("Failed to analyze song structure:", err);
-        } finally {
-          setIsAnalyzingStructure(false);
-        }
-      };
-
-      analyzeSongStructure();
-    } catch (err: any) {
-      console.error(err);
-      showToast("Failed to analyze audio file.", "error");
-    } finally {
-      setIsAnalyzingAudio(false);
-    }
-  };
-
-  // Canvas visualizer loop
+  // Web Audio Visualizer canvas loop
   const startCanvasRef = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -1212,81 +814,6 @@ export default function VisualizerPage() {
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    if (youtubeId) {
-      // YouTube Simulated Visualizer
-      let t = 0;
-      const drawSimulated = () => {
-        if (!isPlayingAudio) {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          const numBars = 16;
-          const barWidth = (canvas.width / numBars) * 1.6;
-          let x = 0;
-          for (let i = 0; i < numBars; i++) {
-            const envelope = Math.sin((i / numBars) * Math.PI);
-            let barHeight = 0.05 * envelope * canvas.height * 0.85;
-            if (barHeight < 3) barHeight = 3;
-            ctx.fillStyle = "#6366f1";
-            ctx.beginPath();
-            ctx.roundRect(
-              x,
-              canvas.height - barHeight,
-              barWidth - 2,
-              barHeight,
-              2,
-            );
-            ctx.fill();
-            x += barWidth;
-          }
-          return;
-        }
-
-        animationFrameRef.current = requestAnimationFrame(drawSimulated);
-        t += 0.15;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const numBars = 16;
-        const barWidth = (canvas.width / numBars) * 1.6;
-        let x = 0;
-
-        for (let i = 0; i < numBars; i++) {
-          const sinValue = Math.sin(t + i * 0.3) * 0.4 + 0.6;
-          const envelope = Math.sin((i / numBars) * Math.PI);
-          const noise = Math.random() * 0.15;
-          const rawVal = (sinValue + noise) * envelope;
-
-          let barHeight = rawVal * canvas.height * 0.85;
-          if (barHeight < 3) barHeight = 3;
-
-          const gradient = ctx.createLinearGradient(
-            0,
-            canvas.height,
-            0,
-            canvas.height - barHeight,
-          );
-          gradient.addColorStop(0, "#6366f1"); // Indigo
-          gradient.addColorStop(1, "#a855f7"); // Purple
-
-          ctx.fillStyle = gradient;
-
-          ctx.beginPath();
-          ctx.roundRect(
-            x,
-            canvas.height - barHeight,
-            barWidth - 2,
-            barHeight,
-            2,
-          );
-          ctx.fill();
-
-          x += barWidth;
-        }
-      };
-
-      drawSimulated();
-      return;
     }
 
     if (!analyserNodeRef.current) return;
@@ -1307,7 +834,7 @@ export default function VisualizerPage() {
 
       for (let i = 0; i < bufferLength; i++) {
         barHeight = (dataArray[i] / 255) * canvas.height * 0.9;
-        if (barHeight < 3) barHeight = 3; // Keep minimal visual height
+        if (barHeight < 3) barHeight = 3;
 
         const gradient = ctx.createLinearGradient(
           0,
@@ -1315,12 +842,11 @@ export default function VisualizerPage() {
           0,
           canvas.height - barHeight,
         );
-        gradient.addColorStop(0, "#6366f1"); // Indigo
-        gradient.addColorStop(1, "#a855f7"); // Purple
+        gradient.addColorStop(0, "#8b5cf6");
+        gradient.addColorStop(1, "#3b82f6");
 
         ctx.fillStyle = gradient;
 
-        // Draw elegant rounded bars
         ctx.beginPath();
         ctx.roundRect(x, canvas.height - barHeight, barWidth - 2, barHeight, 2);
         ctx.fill();
@@ -1333,25 +859,73 @@ export default function VisualizerPage() {
   };
 
   const playAudio = () => {
-    if (youtubeId && ytPlayerRef.current) {
-      ytPlayerRef.current.playVideo();
+    if (!audioBuffer) {
+      // Offline space synthesizer tone playbacks!
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContextClass();
+      }
+      const audioCtx = audioContextRef.current;
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+
+      if (synthOscRef.current) {
+        try {
+          synthOscRef.current.stop();
+        } catch (e) {}
+      }
+
+      let parsed: any = {};
+      try {
+        parsed = JSON.parse(selectedData);
+      } catch (e) {
+        parsed = {};
+      }
+
+      const frequency = Number(parsed.frequency) || 2.5;
+      const amplitude = Number(parsed.amplitude) || 1.5;
+      const waveType = parsed.waveType || "sine";
+
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 64;
+
+      osc.frequency.setValueAtTime(110 * frequency, audioCtx.currentTime);
+      osc.type = ["sine", "sawtooth", "triangle", "square"].includes(waveType)
+        ? waveType
+        : "sine";
+
+      gainNode.gain.setValueAtTime(0.08 * amplitude, audioCtx.currentTime);
+
+      osc.connect(gainNode);
+      gainNode.connect(analyser);
+      analyser.connect(audioCtx.destination);
+
+      synthOscRef.current = osc;
+      synthGainRef.current = gainNode;
+      analyserNodeRef.current = analyser;
+
+      osc.start();
       setIsPlayingAudio(true);
+      setAudioDuration(180);
+      audioPlayStartTimeRef.current = audioCtx.currentTime;
+
       setTimeout(() => {
         startCanvasRef();
       }, 50);
       return;
     }
 
-    if (!audioBuffer) return;
-
-    // Instantiate AudioContext if not already created
+    // Fallback: If they dragged/dropped audio file, play decoded buffer
     const AudioContextClass =
       window.AudioContext || (window as any).webkitAudioContext;
     if (!audioContextRef.current) {
       audioContextRef.current = new AudioContextClass();
     }
     const audioCtx = audioContextRef.current;
-
     if (audioCtx.state === "suspended") {
       audioCtx.resume();
     }
@@ -1379,7 +953,6 @@ export default function VisualizerPage() {
     audioPlayStartTimeRef.current = audioCtx.currentTime - offset;
 
     source.onended = () => {
-      // Clean up when playing hits the end of track naturally
       if (
         audioCtx.currentTime - audioPlayStartTimeRef.current >=
         audioDuration - 0.1
@@ -1393,15 +966,18 @@ export default function VisualizerPage() {
     };
 
     setIsPlayingAudio(true);
-
     setTimeout(() => {
       startCanvasRef();
     }, 50);
   };
 
   const pauseAudio = () => {
-    if (youtubeId && ytPlayerRef.current) {
-      ytPlayerRef.current.pauseVideo();
+    if (synthOscRef.current) {
+      try {
+        synthOscRef.current.stop();
+      } catch (e) {}
+      synthOscRef.current = null;
+      synthGainRef.current = null;
       setIsPlayingAudio(false);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -1410,7 +986,6 @@ export default function VisualizerPage() {
     }
 
     if (!sourceNodeRef.current || !audioContextRef.current) return;
-
     const audioCtx = audioContextRef.current;
     try {
       sourceNodeRef.current.stop();
@@ -1428,12 +1003,6 @@ export default function VisualizerPage() {
   const handleSeek = (newTime: number) => {
     audioOffsetRef.current = newTime;
     setAudioPlaybackTime(newTime);
-
-    if (youtubeId && ytPlayerRef.current) {
-      ytPlayerRef.current.seekTo(newTime, true);
-      return;
-    }
-
     if (isPlayingAudio) {
       playAudio();
     }
@@ -1451,133 +1020,111 @@ export default function VisualizerPage() {
     wrapped: string,
     description: string,
   ) => {
-    const newItem: HistoryItem = {
-      cleanHtml: clean,
-      html: wrapped,
-      description,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      }),
-    };
-    const updatedHistory = [...history.slice(0, historyIndex + 1), newItem];
-    setHistory(updatedHistory);
-    setHistoryIndex(updatedHistory.length - 1);
-
     setCleanHtml(clean);
     setGeneratedHtml(wrapped);
     setEditedCode(clean);
   };
 
-  const handleGenerate = async () => {
-    if (!selectedData) return;
-    setIsGenerating(true);
+  const analyzeAudio = async (file: File) => {
+    setIsAnalyzingAudio(true);
+    showToast("Reading audio file...", "info");
 
     try {
-      let parsedData = selectedData;
-      try {
-        parsedData = JSON.parse(selectedData);
-      } catch (e) {
-        // Leave as string if not valid JSON
+      const arrayBuffer = await file.arrayBuffer();
+      const AudioContextClass =
+        window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+
+      showToast("Decoding audio data...", "info");
+      const decodedBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      setAudioBuffer(decodedBuffer);
+      setAudioDuration(decodedBuffer.duration);
+
+      showToast("Analyzing tempo...", "info");
+      const channelData = decodedBuffer.getChannelData(0);
+      const sampleRate = decodedBuffer.sampleRate;
+
+      const step = Math.max(1, Math.floor(channelData.length / 500000));
+      let maxVal = 0;
+      for (let i = 0; i < channelData.length; i += step) {
+        const absVal = Math.abs(channelData[i]);
+        if (absVal > maxVal) maxVal = absVal;
       }
 
-      const payloadStyle = customStyleHint
-        ? `${style} (Design instructions: ${customStyleHint})`
-        : style;
+      const threshold = maxVal * 0.75;
+      const peaks: number[] = [];
+      const minInterval = sampleRate * 0.3;
 
-      const res = await fetch("/api/visualize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inputData: parsedData, style: payloadStyle }),
-      });
-
-      if (!res.ok) throw new Error("API request failed");
-      const data = await res.json();
-
-      if (data.cleanHtml && data.html) {
-        const styleName = style
-          .split("-")
-          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-          .join(" ");
-        addHistoryItem(
-          data.cleanHtml,
-          data.html,
-          `Initial Generation (${styleName})`,
-        );
-        showToast("Successfully generated UI component");
-      } else {
-        throw new Error("Invalid API response structure");
+      let lastPeakIndex = -minInterval;
+      for (let i = 0; i < channelData.length; i += step) {
+        if (Math.abs(channelData[i]) > threshold) {
+          if (i - lastPeakIndex > minInterval) {
+            peaks.push(i);
+            lastPeakIndex = i;
+          }
+        }
       }
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to generate component.", "error");
+
+      let bpm = 120;
+      if (peaks.length > 1) {
+        let sumIntervals = 0;
+        for (let i = 1; i < peaks.length; i++) {
+          sumIntervals += peaks[i] - peaks[i - 1];
+        }
+        const avgIntervalSamples = sumIntervals / (peaks.length - 1);
+        bpm = Math.round(60 / (avgIntervalSamples / sampleRate));
+
+        while (bpm < 65) bpm *= 2;
+        while (bpm > 170) bpm /= 2;
+      }
+
+      const musicMetadata = {
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        frequency: bpm / 30, // Map BPM to a local synth frequency
+        amplitude: 1.5,
+        noiseLevel: 0.2,
+        colorTheme: "aurora",
+        glowColor: "#10b981",
+        gridSpeed: 1.0,
+        shieldDensity: 60,
+        waveType: "triangle",
+        file_name: file.name,
+      };
+
+      setSelectedData(JSON.stringify(musicMetadata, null, 2));
+      setStyle("music-dashboard");
+      setSidebarTab("input");
+
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      const url = URL.createObjectURL(file);
+      setAudioUrl(url);
+      setAudioFile(file);
+
+      // Re-compile local visuals
+      const compiled = generateWaveformHtml(
+        JSON.stringify(musicMetadata),
+        "music-dashboard",
+      );
+      setCleanHtml(compiled);
+      setGeneratedHtml(compiled);
+      setEditedCode(compiled);
+
+      showToast("Audio parsed successfully!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to analyze audio file.", "error");
     } finally {
-      setIsGenerating(false);
+      setIsAnalyzingAudio(false);
     }
-  };
-
-  const handleRefine = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!refinementPrompt || !cleanHtml) return;
-
-    setIsRefining(true);
-    const instruction = refinementPrompt;
-    setRefinementPrompt(""); // Clear input
-
-    try {
-      const res = await fetch("/api/visualize", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          previousHtml: cleanHtml,
-          iterationInstruction: instruction,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Refinement request failed");
-      const data = await res.json();
-
-      if (data.cleanHtml && data.html) {
-        addHistoryItem(data.cleanHtml, data.html, `Refined: "${instruction}"`);
-        showToast("Component updated!");
-      } else {
-        throw new Error("Invalid API response structure");
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("Failed to apply refinement instructions.", "error");
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  const navigateHistory = (index: number) => {
-    if (index >= 0 && index < history.length) {
-      setHistoryIndex(index);
-      const item = history[index];
-      setCleanHtml(item.cleanHtml);
-      setGeneratedHtml(item.html);
-      setEditedCode(item.cleanHtml);
-      showToast(`Reverted to version ${index + 1}`, "info");
-    }
-  };
-
-  const handleCopyCode = () => {
-    if (!cleanHtml) return;
-    navigator.clipboard.writeText(cleanHtml);
-    showToast("HTML code copied to clipboard!");
   };
 
   const handleDownload = () => {
     if (!cleanHtml) return;
-    const blob = new Blob([wrapHtmlWithTailwind(cleanHtml)], {
-      type: "text/html",
-    });
+    const blob = new Blob([cleanHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ai-component-${style}-${Date.now()}.html`;
+    a.download = `resonance-wave-${style}-${Date.now()}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1586,11 +1133,11 @@ export default function VisualizerPage() {
   };
 
   const resetAll = () => {
-    // Clean audio playback nodes
-    if (sourceNodeRef.current) {
+    if (synthOscRef.current) {
       try {
-        sourceNodeRef.current.stop();
+        synthOscRef.current.stop();
       } catch (e) {}
+      synthOscRef.current = null;
     }
     setIsPlayingAudio(false);
     setAudioFile(null);
@@ -1598,13 +1145,8 @@ export default function VisualizerPage() {
     setAudioPlaybackTime(0);
     audioOffsetRef.current = 0;
 
-    setCleanHtml(null);
-    setGeneratedHtml(null);
-    setEditedCode("");
-    setHistory([]);
-    setHistoryIndex(-1);
-    setSongSections([]);
-    showToast("Workspace reset complete");
+    loadPreset("solar_wind");
+    showToast("Sandbox reset complete");
   };
 
   if (!isMounted) {
@@ -1636,28 +1178,26 @@ export default function VisualizerPage() {
       {/* Header Bar */}
       <header className="h-14 border-b border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md px-6 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/20">
-            <Palette className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-indigo-650 flex items-center justify-center shadow-lg shadow-indigo-600/20">
+            <Activity className="w-4 h-4 text-white animate-pulse" />
           </div>
           <div>
             <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
-              AI Visualizer Studio
-              <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">
-                v1.3
+              Resonance Sandbox
+              <span className="text-[10px] bg-indigo-550/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">
+                v2.0-Offline
               </span>
             </h1>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          {cleanHtml && (
-            <button
-              onClick={resetAll}
-              className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 hover:bg-zinc-800/80 text-xs font-semibold text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
-            >
-              <RotateCcw className="w-3.5 h-3.5" /> Reset
-            </button>
-          )}
+          <button
+            onClick={resetAll}
+            className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 hover:bg-zinc-800/80 text-xs font-semibold text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> Reset Sandbox
+          </button>
         </div>
       </header>
 
@@ -1665,7 +1205,6 @@ export default function VisualizerPage() {
       <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
         {/* Left Side: Control Panel */}
         <div className="w-[420px] shrink-0 border-r border-zinc-800/80 bg-zinc-900/20 flex flex-col h-full overflow-hidden">
-          {/* Navigation Tabs for input */}
           <div className="flex border-b border-zinc-800/80 shrink-0 p-2 gap-1 bg-zinc-950/40">
             <button
               onClick={() => setSidebarTab("input")}
@@ -1675,7 +1214,7 @@ export default function VisualizerPage() {
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
               }`}
             >
-              <Database className="w-3.5 h-3.5" /> 1. Input Data
+              <Database className="w-3.5 h-3.5" /> 1. Input Telemetry
             </button>
             <button
               onClick={() => setSidebarTab("style")}
@@ -1685,18 +1224,17 @@ export default function VisualizerPage() {
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
               }`}
             >
-              <LayoutTemplate className="w-3.5 h-3.5" /> 2. Style Options
+              <LayoutTemplate className="w-3.5 h-3.5" /> 2. Wave Layout
             </button>
           </div>
 
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
             {sidebarTab === "input" ? (
-              /* TAB 1: Input Data Selection and Code Editor */
               <div className="space-y-4">
-                {/* Real-time Audio DSP analysis drag-drop box */}
+                {/* Audio upload box for custom tempo mapping */}
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                    Analyze Audio File
+                    Parse Custom Audio Tempo
                   </h3>
                   <div
                     onDragOver={(e) => {
@@ -1715,7 +1253,7 @@ export default function VisualizerPage() {
                     className={`border border-dashed p-3.5 rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
                       isDragAudio
                         ? "border-indigo-500 bg-indigo-600/10 text-indigo-400 shadow-md shadow-indigo-500/5"
-                        : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 text-zinc-400 hover:text-zinc-350"
+                        : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 text-zinc-400 hover:text-zinc-300"
                     }`}
                   >
                     <input
@@ -1733,18 +1271,18 @@ export default function VisualizerPage() {
                       <>
                         <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
                         <span className="text-xs font-semibold text-zinc-300">
-                          Extracting Waveform & BPM...
+                          Extracting Tempo...
                         </span>
                       </>
                     ) : (
                       <>
                         <Headphones className="w-5 h-5 text-indigo-400" />
                         <div className="text-xs">
-                          <p className="font-semibold text-zinc-350">
-                            Drop MP3/WAV file here
+                          <p className="font-semibold text-zinc-300">
+                            Drop audio file or click to select
                           </p>
                           <p className="text-[10px] text-zinc-500 mt-0.5">
-                            Automates BPM estimation & energy analysis
+                            Extracts frequency metadata from local audio tracks
                           </p>
                         </div>
                       </>
@@ -1752,52 +1290,9 @@ export default function VisualizerPage() {
                   </div>
                 </div>
 
-                {/* YouTube Link Analyzer */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                    <Youtube className="w-3.5 h-3.5 text-red-500" />
-                    Load from YouTube
-                  </h3>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <input
-                        type="text"
-                        placeholder="Paste YouTube Video URL..."
-                        value={youtubeUrl}
-                        onChange={(e) => setYoutubeUrl(e.target.value)}
-                        className="w-full pl-3 pr-8 py-2.5 bg-zinc-900/40 border border-zinc-800 focus:border-red-500 rounded-xl text-xs text-zinc-300 focus:outline-none placeholder-zinc-600 transition-colors"
-                        disabled={isFetchingYoutube}
-                      />
-                      {youtubeUrl && (
-                        <button
-                          onClick={() => setYoutubeUrl("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs font-bold"
-                          type="button"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleFetchYoutube}
-                      disabled={isFetchingYoutube || !youtubeUrl}
-                      className="px-3.5 bg-red-650 hover:bg-red-600 active:bg-red-700 disabled:bg-zinc-850 disabled:text-zinc-600 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center shrink-0"
-                    >
-                      {isFetchingYoutube ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      ) : (
-                        "Fetch"
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-zinc-500">
-                    Imports metadata, thumbnail, & streams playback
-                  </p>
-                </div>
-
                 <div>
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                    Presets
+                    Space Telemetry Presets
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(DATA_PRESETS).map(([key, preset]) => (
@@ -1817,56 +1312,27 @@ export default function VisualizerPage() {
                       </button>
                     ))}
                   </div>
-
-                  {dataSources.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-zinc-800/60">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                        Recent Database Posts
-                      </p>
-                      <div className="flex gap-2">
-                        {dataSources.map((post, i) => (
-                          <button
-                            key={post.id}
-                            onClick={() => {
-                              setSelectedData(JSON.stringify(post, null, 2));
-                              showToast(
-                                `Loaded Database Post #${i + 1}`,
-                                "info",
-                              );
-                            }}
-                            className="flex-1 py-1.5 px-2.5 bg-zinc-900 border border-zinc-855 hover:border-zinc-700 hover:bg-zinc-800/40 text-[11px] text-zinc-400 hover:text-zinc-200 rounded-lg truncate text-center"
-                          >
-                            DB Post {i + 1}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Divider */}
                 <div className="border-t border-zinc-800/60 my-4" />
 
-                {/* Saved Gallery Section */}
+                {/* Saved Presets Gallery */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
-                    <span>Saved Gallery</span>
+                    <span>Saved Wave Configurations</span>
                     {isLoadingGallery && (
                       <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />
                     )}
                   </h3>
 
                   {savedComponents.length === 0 ? (
-                    <div className="border border-dashed border-zinc-800 p-4 rounded-xl text-center text-zinc-600 text-[11px]">
-                      No saved components yet. Design something and click "Save
-                      to Gallery"!
+                    <div className="border border-dashed border-zinc-800 p-4 rounded-xl text-center text-zinc-500 text-[11px]">
+                      No custom configurations saved yet.
                     </div>
                   ) : (
-                    <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
                       {savedComponents.map((comp) => {
-                        const styleIcon =
-                          DATA_PRESETS[comp.style as keyof typeof DATA_PRESETS]
-                            ?.icon || "🎨";
+                        const styleIcon = "🌌";
                         const isCurrent = activeComponentId === comp.id;
                         return (
                           <div
@@ -1878,9 +1344,7 @@ export default function VisualizerPage() {
                                 JSON.stringify(comp.inputData, null, 2),
                               );
                               setCleanHtml(comp.cleanHtml);
-                              setGeneratedHtml(
-                                wrapHtmlWithTailwind(comp.cleanHtml),
-                              );
+                              setGeneratedHtml(comp.cleanHtml);
                               setEditedCode(comp.cleanHtml);
                               showToast(`Loaded "${comp.title}"`, "info");
                             }}
@@ -1907,8 +1371,7 @@ export default function VisualizerPage() {
                             </div>
                             <button
                               onClick={(e) => handleDeleteComponent(comp.id, e)}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-855 text-zinc-500 hover:text-rose-400 rounded transition-all shrink-0 ml-1.5"
-                              title="Delete Visualization"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-800 text-zinc-500 hover:text-rose-400 rounded transition-all shrink-0 ml-1.5"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1918,192 +1381,11 @@ export default function VisualizerPage() {
                     </div>
                   )}
                 </div>
-                {/* Song Structure Analysis Dashboard */}
-                {(isAnalyzingStructure ||
-                  (songSections && songSections.length > 0)) && (
-                  <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/60 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                          Song Structure Analysis
-                        </h4>
-                        <p className="text-[10px] text-zinc-500">
-                          Analyzed by Gemini 3.5 Flash
-                        </p>
-                      </div>
-                      {isAnalyzingStructure && (
-                        <div className="flex items-center gap-1.5 text-xs text-indigo-400">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Analyzing...</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isAnalyzingStructure &&
-                      songSections &&
-                      songSections.length > 0 && (
-                        <div className="space-y-4">
-                          {/* 1. Timeline Bar */}
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] text-zinc-500">
-                              <span>Timeline</span>
-                              <span>Click blocks to seek</span>
-                            </div>
-                            <div className="h-8 w-full flex bg-zinc-950 rounded-lg overflow-hidden border border-zinc-800/80 p-0.5 gap-0.5">
-                              {songSections.map((sec, idx) => {
-                                const colors = getSectionColor(sec.name);
-                                const duration = sec.endTime - sec.startTime;
-                                const isActive =
-                                  audioPlaybackTime >= sec.startTime &&
-                                  audioPlaybackTime < sec.endTime;
-                                return (
-                                  <button
-                                    key={idx}
-                                    onClick={() => handleSeek(sec.startTime)}
-                                    style={{ flexGrow: Math.max(1, duration) }}
-                                    className={`h-full rounded-md transition-all relative group cursor-pointer ${colors.bg} ${
-                                      isActive
-                                        ? "ring-2 ring-white scale-[1.02] z-10 shadow-md shadow-white/10"
-                                        : "opacity-85 hover:opacity-100 hover:scale-[1.01]"
-                                    }`}
-                                    title={`${sec.name} (${sec.label}): ${formatTime(sec.startTime)} - ${formatTime(sec.endTime)}`}
-                                  >
-                                    <span className="absolute inset-0 flex items-center justify-center text-[9px] text-white font-bold opacity-0 group-hover:opacity-100 transition-opacity bg-black/45 rounded-md">
-                                      {sec.name}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* 2. Energy Level Graph */}
-                          <div className="space-y-1.5">
-                            <div className="flex justify-between text-[10px] text-zinc-500">
-                              <span>Energy Profile</span>
-                              <span>Intensity (1-5)</span>
-                            </div>
-                            <div className="h-12 w-full flex items-end bg-zinc-950 rounded-lg border border-zinc-800/80 p-1 gap-0.5">
-                              {songSections.map((sec, idx) => {
-                                const colors = getSectionColor(sec.name);
-                                const duration = sec.endTime - sec.startTime;
-                                const isActive =
-                                  audioPlaybackTime >= sec.startTime &&
-                                  audioPlaybackTime < sec.endTime;
-                                const pctHeight = (sec.energy / 5) * 100;
-                                return (
-                                  <div
-                                    key={idx}
-                                    style={{ flexGrow: Math.max(1, duration) }}
-                                    className="h-full flex items-end cursor-pointer group"
-                                    onClick={() => handleSeek(sec.startTime)}
-                                  >
-                                    <div
-                                      style={{ height: `${pctHeight}%` }}
-                                      className={`w-full rounded-t transition-all ${colors.bg} ${
-                                        isActive
-                                          ? "opacity-100 shadow-md shadow-indigo-500/20"
-                                          : "opacity-40 group-hover:opacity-75"
-                                      }`}
-                                      title={`${sec.name} Energy: ${sec.energy}/5`}
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-
-                          {/* 3. Sections Table */}
-                          <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block">
-                              Sections Detailed List
-                            </label>
-                            <div className="max-h-60 overflow-y-auto border border-zinc-805 rounded-lg bg-black/40">
-                              <table className="w-full text-left text-xs border-collapse">
-                                <thead>
-                                  <tr className="border-b border-zinc-850 bg-zinc-900/30 text-zinc-500 text-[10px] uppercase font-bold">
-                                    <th className="py-2 px-3 w-8">#</th>
-                                    <th className="py-2 px-2">Section</th>
-                                    <th className="py-2 px-2">Time</th>
-                                    <th className="py-2 px-2 text-center">
-                                      Energy
-                                    </th>
-                                    <th className="py-2 px-3">Note/Lyrics</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {songSections.map((sec, idx) => {
-                                    const colors = getSectionColor(sec.name);
-                                    const isActive =
-                                      audioPlaybackTime >= sec.startTime &&
-                                      audioPlaybackTime < sec.endTime;
-                                    const rowDuration = Math.round(
-                                      sec.endTime - sec.startTime,
-                                    );
-                                    return (
-                                      <tr
-                                        key={idx}
-                                        onClick={() =>
-                                          handleSeek(sec.startTime)
-                                        }
-                                        className={`border-b border-zinc-900/60 transition-colors cursor-pointer group hover:bg-zinc-800/20 ${
-                                          isActive
-                                            ? "bg-zinc-800/40 text-white font-medium border-l-2 border-indigo-500"
-                                            : "text-zinc-400 hover:text-zinc-200 border-l-2 border-transparent"
-                                        }`}
-                                      >
-                                        <td className="py-2 px-3 font-mono opacity-60 text-[10px]">
-                                          {idx + 1}
-                                        </td>
-                                        <td className="py-2 px-2">
-                                          <div className="flex items-center gap-1.5">
-                                            <span
-                                              className={`w-2 h-2 rounded-full shrink-0 ${colors.bg}`}
-                                            />
-                                            <div className="flex flex-col">
-                                              <span className="font-semibold text-zinc-200 group-hover:text-white leading-tight">
-                                                {sec.name}
-                                              </span>
-                                              <span className="text-[10px] text-zinc-500 leading-tight">
-                                                {sec.label}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        </td>
-                                        <td className="py-2 px-2 font-mono text-[10px] whitespace-nowrap">
-                                          <div>
-                                            {formatTime(sec.startTime)} -{" "}
-                                            {formatTime(sec.endTime)}
-                                          </div>
-                                          <div className="text-[9px] text-zinc-500">
-                                            {rowDuration}s
-                                          </div>
-                                        </td>
-                                        <td className="py-2 px-2 text-center whitespace-nowrap">
-                                          {renderEnergyStars(sec.energy)}
-                                        </td>
-                                        <td
-                                          className="py-2 px-3 text-[10px] text-zinc-400 group-hover:text-zinc-300 italic max-w-[120px] truncate"
-                                          title={sec.note}
-                                        >
-                                          {sec.note}
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                  </div>
-                )}
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                      Raw Data (JSON/Text)
+                      Wave parameters (JSON)
                     </label>
                     <button
                       onClick={() => {
@@ -2113,7 +1395,7 @@ export default function VisualizerPage() {
                           );
                           showToast("Formatted JSON");
                         } catch (e) {
-                          showToast("Invalid JSON structure", "error");
+                          showToast("Invalid JSON", "error");
                         }
                       }}
                       className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold"
@@ -2121,7 +1403,7 @@ export default function VisualizerPage() {
                       Format JSON
                     </button>
                   </div>
-                  <div className="border border-zinc-850 rounded-xl overflow-hidden bg-black/40 h-64 shadow-inner">
+                  <div className="border border-zinc-800 rounded-xl overflow-hidden bg-black/40 h-64 shadow-inner">
                     <Editor
                       height="100%"
                       defaultLanguage="json"
@@ -2135,54 +1417,57 @@ export default function VisualizerPage() {
                         scrollBeyondLastLine: false,
                         wordWrap: "on",
                         padding: { top: 8, bottom: 8 },
-                        backgroundColor: "#09090b",
                       }}
                     />
                   </div>
                 </div>
               </div>
             ) : (
-              /* TAB 2: Style Selector and Advanced Hints */
+              /* TAB 2: Style Selector */
               <div className="space-y-5">
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block">
-                    Target Layout Style
+                    Telemetry Display Style
                   </label>
                   <div className="space-y-2">
                     {[
                       {
                         id: "music-dashboard",
-                        title: "🎵 Music Player Dashboard",
-                        desc: "Spotify/Apple Music audio controllers, track details, BPM stats.",
+                        title: "🎵 Resonance Synth Oscilloscope",
+                        desc: "Displays simple audio-synth frequency signals with wave type parameters.",
                       },
                       {
                         id: "twitter-card",
-                        title: "🐦 Social Media Poster (16:9)",
-                        desc: "Quotes, tweets, or statements in a poster layout.",
+                        title: "☀️ Solar Azimuth Vector HUD",
+                        desc: "Circular sweep crosshair visualizing angular sun position vectors.",
                       },
                       {
-                        id: "real-estate",
-                        title: "🏠 Real Estate Card",
-                        desc: "Property listing with price, photos, and key specs.",
+                        id: "realestate-card",
+                        title: "🛡️ Magnetosphere Shield Matrix",
+                        desc: "Visualizes curved magnetic fields deflecting solar wind particles.",
                       },
                       {
-                        id: "dashboard-widget",
-                        title: "📊 Analytical Dashboard Widget",
-                        desc: "Complex graphs, stats charts, metrics, and trends.",
-                      },
-                      {
-                        id: "magazine-article",
-                        title: "📄 Editorial Magazine Layout",
-                        desc: "Newspaper columns, header text, and stylish editorial feel.",
+                        id: "pricing-tier",
+                        title: "🌌 Cosmic Flux Dashboard",
+                        desc: "Two scrolling noise graphs tracking high-altitude cosmic ray radiation.",
                       },
                     ].map((item) => (
                       <button
                         key={item.id}
-                        onClick={() => setStyle(item.id)}
+                        onClick={() => {
+                          setStyle(item.id);
+                          const compiled = generateWaveformHtml(
+                            selectedData,
+                            item.id,
+                          );
+                          setCleanHtml(compiled);
+                          setGeneratedHtml(compiled);
+                          setEditedCode(compiled);
+                        }}
                         className={`w-full p-3.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
                           style === item.id
                             ? "bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-500/5"
-                            : "bg-zinc-900/40 border-zinc-850 hover:border-zinc-700 hover:bg-zinc-800/20"
+                            : "bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/20"
                         }`}
                       >
                         <p
@@ -2200,13 +1485,13 @@ export default function VisualizerPage() {
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">
-                    Design Directives (Optional)
+                    Local Wave Tuner Instructions
                   </label>
                   <textarea
                     className="w-full h-24 p-3 bg-zinc-950 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 placeholder-zinc-650 transition-colors"
                     value={customStyleHint}
                     onChange={(e) => setCustomStyleHint(e.target.value)}
-                    placeholder="e.g., Cyberpunk dark theme with neon purple accents, glassmorphism card, rounded borders, Outfit google font..."
+                    placeholder="Describe adjustments (e.g. set frequency to 5.0, increase noise level to 0.8)..."
                   />
                 </div>
               </div>
@@ -2216,94 +1501,49 @@ export default function VisualizerPage() {
             <button
               onClick={handleGenerate}
               disabled={isGenerating || isRefining || !selectedData}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-850 disabled:text-zinc-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-indigo-600/10 active:scale-[0.98] flex items-center justify-center gap-2 group relative overflow-hidden shrink-0"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-850 disabled:text-zinc-650 text-white font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 group shrink-0"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Generating UI Code...
+                  Updating simulation...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4 text-indigo-200 group-hover:animate-pulse" />
-                  Generate UI Component
+                  Update Simulation
                 </>
               )}
             </button>
 
-            {/* Iterative AI Refine Input Section */}
+            {/* Refinement local input */}
             {cleanHtml && (
-              <div className="pt-4 border-t border-zinc-800/80 space-y-4">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5 mb-2">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                    Refine Design with AI
-                  </h4>
-                  <form onSubmit={handleRefine} className="flex gap-2">
-                    <input
-                      type="text"
-                      className="flex-1 px-3 py-2 bg-zinc-950 border border-zinc-850 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 placeholder-zinc-600"
-                      value={refinementPrompt}
-                      onChange={(e) => setRefinementPrompt(e.target.value)}
-                      placeholder="e.g., change background to gold, add a footer..."
-                      disabled={isRefining || isGenerating}
-                    />
-                    <button
-                      type="submit"
-                      disabled={isRefining || isGenerating || !refinementPrompt}
-                      className="px-3 bg-zinc-900 border border-zinc-800 hover:border-indigo-500 disabled:bg-zinc-855 disabled:border-transparent text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center"
-                    >
-                      {isRefining ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </form>
-                </div>
-
-                {/* History Timeline */}
-                {history.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center text-xs text-zinc-500">
-                      <span className="font-bold uppercase tracking-wider">
-                        Version History
-                      </span>
-                      <span>
-                        {historyIndex + 1} of {history.length}
-                      </span>
-                    </div>
-                    <div className="max-h-36 overflow-y-auto space-y-1.5 border border-zinc-850/60 rounded-xl p-2.5 bg-zinc-950/40">
-                      {history.map((item, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => navigateHistory(idx)}
-                          className={`w-full p-2 rounded-lg text-left text-xs transition-all flex items-start gap-2 ${
-                            idx === historyIndex
-                              ? "bg-indigo-600/10 border border-indigo-500/30 text-zinc-200 font-medium"
-                              : "border border-transparent hover:bg-zinc-900/60 text-zinc-400 hover:text-zinc-300"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${
-                              idx === historyIndex
-                                ? "bg-indigo-400 animate-pulse"
-                                : "bg-zinc-700"
-                            }`}
-                          />
-                          <div className="overflow-hidden flex-1">
-                            <p className="truncate text-[11px] leading-tight">
-                              {item.description}
-                            </p>
-                            <p className="text-[9px] opacity-60 mt-0.5">
-                              {item.timestamp}
-                            </p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="pt-4 border-t border-zinc-800/80 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  Tune Wave Parameters via Command
+                </h4>
+                <form onSubmit={handleRefine} className="flex gap-2">
+                  <input
+                    type="text"
+                    className="flex-1 px-3 py-2 bg-zinc-950 border border-zinc-850 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 placeholder-zinc-600"
+                    value={refinementPrompt}
+                    onChange={(e) => setRefinementPrompt(e.target.value)}
+                    placeholder="e.g. increase frequency, set noise to 0.4..."
+                    disabled={isRefining || isGenerating}
+                  />
+                  <button
+                    type="submit"
+                    disabled={isRefining || isGenerating || !refinementPrompt}
+                    className="px-3 bg-zinc-900 border border-zinc-800 hover:border-indigo-500 disabled:bg-zinc-850 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center"
+                  >
+                    {isRefining ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </form>
               </div>
             )}
           </div>
@@ -2312,7 +1552,7 @@ export default function VisualizerPage() {
         {/* Right Side: Output Canvas / Preview Panel */}
         <div className="flex-1 flex flex-col bg-zinc-950 relative overflow-hidden h-full">
           {/* Action Toolbar */}
-          <div className="h-12 border-b border-zinc-800/80 bg-zinc-900/20 px-6 flex items-center justify-between shrink-0 text-zinc-300">
+          <div className="h-12 border-b border-zinc-800/80 bg-zinc-900/20 px-6 flex items-center justify-between shrink-0 text-zinc-350">
             <div className="flex items-center gap-1.5 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
               <button
                 onClick={() => setActiveTab("preview")}
@@ -2322,7 +1562,7 @@ export default function VisualizerPage() {
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <Eye className="w-3.5 h-3.5" /> Preview
+                <Eye className="w-3.5 h-3.5" /> Preview Simulation
               </button>
               <button
                 onClick={() => setActiveTab("code")}
@@ -2332,73 +1572,36 @@ export default function VisualizerPage() {
                     : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
-                <Code className="w-3.5 h-3.5" /> Code HTML
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("html-anything");
-                  setTimeout(() => {
-                    handleSyncToHtmlAnything();
-                  }, 400);
-                }}
-                className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                  activeTab === "html-anything"
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 animate-pulse text-indigo-400" />{" "}
-                HTML Anything
+                <Code className="w-3.5 h-3.5" /> Compiled HTML Code
               </button>
             </div>
 
-            {activeTab === "html-anything" && (
-              <button
-                onClick={handleSyncToHtmlAnything}
-                className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-[0_0_12px_rgba(99,102,241,0.3)] border border-indigo-500/20 animate-fade-in"
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Sync Data
-              </button>
-            )}
-
-            {/* Viewport size buttons (Only visible in Preview tab) */}
             {activeTab === "preview" && cleanHtml && (
               <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
                 <button
                   onClick={() => setViewportWidth("100%")}
                   className={`p-1.5 rounded-md transition-all ${viewportWidth === "100%" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
-                  title="Desktop (Full Width)"
+                  title="Full Width"
                 >
                   <Monitor className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewportWidth("768px")}
                   className={`p-1.5 rounded-md transition-all ${viewportWidth === "768px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
-                  title="Tablet (768px)"
+                  title="Tablet Width"
                 >
                   <Tablet className="w-3.5 h-3.5" />
                 </button>
                 <button
-                  onClick={() => setViewportWidth("667px")}
-                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "667px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
-                  title="Mobile Landscape (667px)"
-                >
-                  <Smartphone className="w-3.5 h-3.5 rotate-90" />
-                </button>
-                <button
                   onClick={() => setViewportWidth("375px")}
-                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "375px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
-                  title="Mobile Portrait (375px)"
+                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "375px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-250"}`}
+                  title="Mobile Width"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[10px] text-zinc-550 border-l border-zinc-800 pl-2 pr-1.5 font-mono">
-                  {viewportWidth === "100%" ? "Desktop" : viewportWidth}
-                </span>
               </div>
             )}
 
-            {/* Actions for generated HTML */}
             <div className="flex items-center gap-2">
               {cleanHtml && (
                 <>
@@ -2410,18 +1613,16 @@ export default function VisualizerPage() {
                       setSaveModalOpen(true);
                     }}
                     className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center gap-1.5"
-                    title="Save to Gallery"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>
-                      {activeComponentId ? "Update" : "Save to Gallery"}
+                      {activeComponentId ? "Update Presets" : "Save Presets"}
                     </span>
                   </button>
 
                   <button
                     onClick={handleShareLink}
-                    className="px-3 py-1.5 rounded-lg border border-indigo-900/50 hover:border-indigo-850 bg-indigo-950/20 text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition-all flex items-center gap-1.5"
-                    title="Copy shareable sandbox URL"
+                    className="px-3 py-1.5 rounded-lg border border-indigo-900/50 hover:border-indigo-800 bg-indigo-950/20 text-xs font-semibold text-indigo-300 hover:text-indigo-200 transition-all flex items-center gap-1.5"
                   >
                     {copiedShareLink ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -2429,7 +1630,7 @@ export default function VisualizerPage() {
                       <Share2 className="w-3.5 h-3.5" />
                     )}
                     <span>
-                      {copiedShareLink ? "Link Copied!" : "Share Link"}
+                      {copiedShareLink ? "Copied URL!" : "Share Preset"}
                     </span>
                   </button>
 
@@ -2437,31 +1638,20 @@ export default function VisualizerPage() {
                     onClick={handleExportPng}
                     disabled={isExportingPng}
                     className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 disabled:opacity-50"
-                    title="Export static PNG image"
                   >
                     {isExportingPng ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <Download className="w-3.5 h-3.5" />
                     )}
-                    <span>
-                      {isExportingPng ? "Exporting..." : "Export PNG"}
-                    </span>
+                    <span>Export PNG</span>
                   </button>
 
                   <button
-                    onClick={handleCopyCode}
-                    className="p-2 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white transition-all"
-                    title="Copy Component HTML"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  <button
                     onClick={handleDownload}
-                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md shadow-zinc-100/5 active:scale-[0.98]"
-                    title="Download HTML File"
+                    className="px-3.5 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-[0.98]"
                   >
-                    <Download className="w-3.5 h-3.5" /> Download
+                    <Download className="w-3.5 h-3.5" /> Download HTML
                   </button>
                 </>
               )}
@@ -2470,76 +1660,42 @@ export default function VisualizerPage() {
 
           {/* Sandbox Canvas */}
           <div className="flex-1 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:20px_20px] bg-zinc-950 overflow-hidden flex flex-col items-center justify-center p-6 relative pb-24">
-            {activeTab === "html-anything" ? (
-              /* HTML ANYTHING TAB */
-              <div className="w-full h-full bg-zinc-900 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col relative">
-                <iframe
-                  ref={htmlAnythingIframeRef}
-                  src={
-                    typeof window !== "undefined" &&
-                    window.location.hostname !== "localhost"
-                      ? "/html-anything"
-                      : "http://localhost:3000"
-                  }
-                  className="w-full h-full border-none bg-zinc-950"
-                  title="HTML Anything Workspace"
-                />
-              </div>
-            ) : activeTab === "preview" ? (
-              /* PREVIEW TAB */
+            {activeTab === "preview" ? (
               generatedHtml ? (
                 <div
                   className="h-full bg-zinc-900 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col relative w-full"
                   style={{ width: viewportWidth }}
                 >
-                  {/* Small Browser Address Bar mockup for viewports */}
-                  {viewportWidth !== "100%" && (
-                    <div className="bg-zinc-950 border-b border-zinc-850 px-3 py-1.5 flex items-center gap-2 shrink-0">
-                      <div className="flex gap-1.5 shrink-0">
-                        <div className="w-2 h-2 rounded-full bg-rose-500/60" />
-                        <div className="w-2 h-2 rounded-full bg-amber-500/60" />
-                        <div className="w-2 h-2 rounded-full bg-emerald-500/60" />
-                      </div>
-                      <div className="flex-1 bg-zinc-900 border border-zinc-850 rounded text-[9px] text-zinc-500 py-0.5 px-2 text-center select-none truncate">
-                        local-component-preview
-                      </div>
-                    </div>
-                  )}
                   <iframe
                     ref={iframeRef}
                     srcDoc={generatedHtml}
                     className="w-full flex-1 border-none bg-zinc-950"
                     sandbox="allow-scripts"
-                    title="AI Generated UI Preview"
+                    title="Telemetry Sandbox Preview"
                   />
                 </div>
               ) : (
-                /* Empty State (Preview) */
-                <div className="text-center text-zinc-500 flex flex-col items-center gap-4 animate-pulse">
+                <div className="text-center text-zinc-500 flex flex-col items-center gap-4">
                   <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg">
-                    <Palette className="w-8 h-8 text-zinc-600" />
+                    <Activity className="w-8 h-8 text-zinc-650" />
                   </div>
                   <div className="space-y-1">
                     <p className="font-bold text-zinc-400">
-                      Design Preview Space
+                      Alignment Visualizer Pane
                     </p>
                     <p className="text-xs text-zinc-650 max-w-sm">
-                      Provide some data on the left panel and click generate to
-                      preview your Tailwind component.
+                      Select a preset or input wave parameters on the left to
+                      start telemetry simulation.
                     </p>
                   </div>
                 </div>
               )
-            ) : /* CODE TAB */
-            cleanHtml ? (
+            ) : cleanHtml ? (
               <div className="w-full h-full border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl bg-black">
                 <div className="bg-zinc-950 border-b border-zinc-850 px-4 py-2 flex justify-between items-center shrink-0">
                   <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5">
                     <Code className="w-3.5 h-3.5 text-indigo-400" />{" "}
-                    component.html (Editable)
-                  </span>
-                  <span className="text-[9px] bg-indigo-500/10 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20">
-                    Changes auto-sync to preview
+                    component.html (Local Editable Code)
                   </span>
                 </div>
                 <div className="h-[calc(100%-36px)]">
@@ -2555,116 +1711,81 @@ export default function VisualizerPage() {
                       lineNumbers: "on",
                       scrollBeyondLastLine: false,
                       wordWrap: "on",
-                      padding: { top: 12, bottom: 12 },
                     }}
                   />
                 </div>
               </div>
             ) : (
-              /* Empty State (Code) */
-              <div className="text-center text-zinc-500 flex flex-col items-center gap-4">
+              <div className="text-center text-zinc-550 flex flex-col items-center gap-4">
                 <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg">
-                  <Code className="w-8 h-8 text-zinc-600" />
+                  <Code className="w-8 h-8 text-zinc-650" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-bold text-zinc-400">No Code Available</p>
-                  <p className="text-xs text-zinc-650 max-w-sm">
-                    Generating a component will output beautiful clean HTML code
-                    that you can inspect and manually edit here.
+                  <p className="font-bold text-zinc-400">No compiled code</p>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom Synthesizer Playback Bar */}
+            <div className="absolute bottom-4 left-4 right-4 bg-zinc-900/80 border border-zinc-800/80 px-4 py-3 rounded-2xl flex items-center justify-between backdrop-blur-md shadow-xl z-20 gap-4">
+              <div className="flex items-center gap-3 w-1/3 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-indigo-650/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                  <Activity className="w-4.5 h-4.5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">
+                    {audioFile ? audioFile.name : "Space Resonance Synth Drone"}
+                  </p>
+                  <p className="text-[9px] text-zinc-400 font-medium">
+                    {audioFile
+                      ? "Uploaded File Output"
+                      : "Geomagnetic Alignment Frequency"}
                   </p>
                 </div>
               </div>
-            )}
 
-            {/* Glassmorphic Playback visualizer controller bar at bottom of preview canvas */}
-            {activeTab === "preview" && (audioFile || youtubeId) && (
-              <div className="absolute bottom-4 left-4 right-4 bg-zinc-900/80 border border-zinc-800/80 px-4 py-3 rounded-2xl flex items-center justify-between backdrop-blur-md shadow-xl z-20 gap-4">
-                {/* Audio file or YouTube video name detail */}
-                <div className="flex items-center gap-3 w-1/3 min-w-0">
-                  {youtubeId ? (
-                    youtubeThumbnail ? (
-                      <img
-                        src={youtubeThumbnail}
-                        alt={youtubeTitle || "Video cover"}
-                        className="w-9 h-9 rounded-lg object-cover border border-zinc-800 shrink-0"
-                      />
+              <div className="flex-1 max-w-md flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={isPlayingAudio ? pauseAudio : playAudio}
+                    className="w-8 h-8 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    {isPlayingAudio ? (
+                      <Pause className="w-4 h-4 fill-zinc-950 text-zinc-950" />
                     ) : (
-                      <div className="w-9 h-9 rounded-lg bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0">
-                        <Youtube className="w-4.5 h-4.5" />
-                      </div>
-                    )
-                  ) : (
-                    <div className="w-9 h-9 rounded-lg bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
-                      <Music className="w-4.5 h-4.5" />
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-white truncate">
-                      {youtubeId
-                        ? youtubeTitle || "YouTube Audio"
-                        : audioFile
-                          ? audioFile.name
-                          : ""}
-                    </p>
-                    <p className="text-[9px] text-zinc-400 font-medium">
-                      {youtubeId ? "YouTube Stream" : "BPM Estimated"}
-                    </p>
-                  </div>
+                      <Play className="w-4 h-4 fill-zinc-950 text-zinc-950 ml-0.5" />
+                    )}
+                  </button>
                 </div>
 
-                {/* Play/Pause progress slider */}
-                <div className="flex-1 max-w-md flex flex-col items-center gap-1.5">
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={isPlayingAudio ? pauseAudio : playAudio}
-                      className="w-8 h-8 rounded-full bg-white hover:bg-zinc-200 text-zinc-950 flex items-center justify-center transition-all shadow-md active:scale-95 cursor-pointer"
-                    >
-                      {isPlayingAudio ? (
-                        <Pause className="w-4 h-4 fill-zinc-950 text-zinc-950" />
-                      ) : (
-                        <Play className="w-4 h-4 fill-zinc-950 text-zinc-950 ml-0.5" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div className="w-full flex items-center gap-2.5">
-                    <span className="text-[9px] font-mono text-zinc-550 min-w-[28px] text-right">
-                      {formatTime(audioPlaybackTime)}
-                    </span>
-                    <input
-                      type="range"
-                      min={0}
-                      max={audioDuration || 1}
-                      step={0.1}
-                      value={audioPlaybackTime}
-                      onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                      className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 outline-none"
-                    />
-                    <span className="text-[9px] font-mono text-zinc-550 min-w-[28px]">
-                      {formatTime(audioDuration)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* YouTube player and Real-time spectrum visualizer canvas */}
-                <div className="w-1/3 flex justify-end items-center gap-3">
-                  {youtubeId && (
-                    <div className="w-[120px] h-[67px] rounded-lg overflow-hidden border border-zinc-800 bg-black relative shrink-0">
-                      <div
-                        id="youtube-player-element"
-                        className="w-full h-full"
-                      />
-                    </div>
-                  )}
-                  <canvas
-                    ref={canvasRef}
-                    width={110}
-                    height={28}
-                    className="bg-black/40 rounded-lg border border-zinc-850/60"
+                <div className="w-full flex items-center gap-2.5">
+                  <span className="text-[9px] font-mono text-zinc-500 min-w-[28px] text-right">
+                    {formatTime(audioPlaybackTime)}
+                  </span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={audioDuration || 180}
+                    step={0.1}
+                    value={audioPlaybackTime}
+                    onChange={(e) => handleSeek(parseFloat(e.target.value))}
+                    className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 outline-none"
                   />
+                  <span className="text-[9px] font-mono text-zinc-500 min-w-[28px]">
+                    {formatTime(audioDuration || 180)}
+                  </span>
                 </div>
               </div>
-            )}
+
+              <div className="w-1/3 flex justify-end items-center gap-3">
+                <canvas
+                  ref={canvasRef}
+                  width={140}
+                  height={28}
+                  className="bg-black/40 rounded-lg border border-zinc-850/60"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2674,17 +1795,17 @@ export default function VisualizerPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-              Save Component to Gallery
+              Save Configuration to Presets
             </h3>
             <div className="space-y-1.5">
               <label className="text-[10px] uppercase font-bold text-zinc-500">
-                Component Title
+                Preset Title
               </label>
               <input
                 type="text"
                 value={saveTitle}
                 onChange={(e) => setSaveTitle(e.target.value)}
-                placeholder="e.g. My Modern X Post"
+                placeholder="e.g. High Altitude Aurora Wave"
                 className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-xl text-xs text-white focus:outline-none transition-colors"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && saveTitle.trim()) {
@@ -2707,14 +1828,14 @@ export default function VisualizerPage() {
               <button
                 onClick={() => handleSaveComponent(saveTitle)}
                 disabled={isSaving || !saveTitle.trim()}
-                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-zinc-850 rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-indigo-500/20 transition-all flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-zinc-800 rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
                 {isSaving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <Save className="w-3.5 h-3.5" />
                 )}
-                Save
+                Save Configuration
               </button>
             </div>
           </div>

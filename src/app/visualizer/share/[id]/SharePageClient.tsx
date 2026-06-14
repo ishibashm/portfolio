@@ -141,11 +141,11 @@ export default function SharePageClient({ component }: SharePageClientProps) {
   };
 
   const styleLabels: Record<string, string> = {
-    "twitter-card": "X (Twitter) Post",
-    "music-visualizer": "Music Track Visualizer",
-    "realestate-card": "Real Estate Showcase",
-    "pricing-tier": "SaaS Pricing Card",
-    "analytics-widget": "Dashboard Analytics",
+    "music-dashboard": "Resonance Synth",
+    "twitter-card": "Solar HUD",
+    "realestate-card": "Magnetosphere Shield",
+    "pricing-tier": "Cosmic Flux Dashboard",
+    "analytics-widget": "Space Weather Alert",
   };
 
   return (
@@ -169,7 +169,7 @@ export default function SharePageClient({ component }: SharePageClientProps) {
               </span>
             </div>
             <p className="text-[11px] text-zinc-500">
-              Shared via AI Visualizer Studio
+              Shared via Resonance Sandbox
             </p>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function SharePageClient({ component }: SharePageClientProps) {
             className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-600/10 hover:shadow-indigo-500/20 transition-all font-semibold"
           >
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Open in Studio</span>
+            <span>Open in Sandbox</span>
           </Link>
         </div>
       </header>
@@ -266,7 +266,7 @@ export default function SharePageClient({ component }: SharePageClientProps) {
             </div>
             <div className="flex-1 flex justify-center pr-10">
               <div className="px-6 py-0.5 rounded-lg bg-zinc-950/80 border border-white/5 text-[10px] text-zinc-500 font-mono tracking-wider w-80 truncate text-center select-all">
-                ai-visualizer-sandbox://{component.id}.local
+                resonance-sandbox://{component.id}.local
               </div>
             </div>
           </div>

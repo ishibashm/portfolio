@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Database,
   Twitter,
-  Palette,
+  Activity,
   Terminal,
   PanelLeftClose,
   PanelLeftOpen,
@@ -47,8 +47,8 @@ const PROTECTED_ITEMS = [
   { href: "/research", icon: Database, label: "Data Engine" },
   { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
   { href: "/trends", icon: Rss, label: "Tech Trends" },
-  { href: "/x-viewer", icon: Twitter, label: "X Archive" },
-  { href: "/visualizer", icon: Palette, label: "AI Visualizer" },
+  { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
+  { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },
   { href: "/omni", icon: Terminal, label: "Omni-Terminal" },
 ];
 
