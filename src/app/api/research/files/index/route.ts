@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const filePath = path.join(process.cwd(), "x_downloads", filename);
+    const filePath = path.join(process.cwd(), "audit_reports", filename);
 
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
@@ -34,17 +34,21 @@ export async function POST(req: NextRequest) {
 
     const content = fs.readFileSync(filePath, "utf-8");
 
-    // Extract the author handle from the filename (e.g., x_karpathy_data.md -> karpathy)
-    const match = filename.match(/^x_(.*)_data\.md$/);
-    const author = match ? match[1] : filename.replace(/\.md$/, "");
+    // Extract the city name from the filename (e.g., alignment_report_tokyo.md -> Tokyo)
+    const match = filename.match(/^alignment_report_(.*)\.md$/);
+    let city = "Unknown";
+    if (match) {
+      const rawCity = match[1];
+      city = rawCity.charAt(0).toUpperCase() + rawCity.slice(1);
+    }
 
     // Save to the KnowledgeDocument table
     const document = await prisma.knowledgeDocument.create({
       data: {
-        title: `X Intelligence: @${author}`,
+        title: `Alignment Audit: ${city}`,
         content: content,
-        domain: "x.com",
-        category: "Social Intelligence",
+        domain: "astro-geomagnetic",
+        category: "Spatial Telemetry",
         type: "Note",
         status: "Draft",
         priority: "Medium",

@@ -145,23 +145,22 @@ export async function GET(req: NextRequest) {
       reportMarkdown += `- **Geomagnetic Declination Bias**: Magnetic North offset compensated.\n`;
       reportMarkdown += `- **Sun Elevation Peak**: High solar altitude stabilizes timing score threshold gates.\n`;
       reportMarkdown += `- **System Status**: Optimization is locked in phase.\n\n`;
-      reportMarkdown += `### Tweet ID: simulated-auth-block\n`; // Add dummy tweet structure so tweetCount regex passes
       reportMarkdown += `This report is verified by the local TypeScript simulation engine. Zero Gemini API fees incurred.\n`;
 
-      // Write report to downloads directory
+      // Write report to audit_reports directory
       try {
-        const downloadsDir = path.join(process.cwd(), "x_downloads");
-        if (!fs.existsSync(downloadsDir)) {
-          fs.mkdirSync(downloadsDir, { recursive: true });
+        const auditDir = path.join(process.cwd(), "audit_reports");
+        if (!fs.existsSync(auditDir)) {
+          fs.mkdirSync(auditDir, { recursive: true });
         }
 
-        const filename = `x_${cleanCity.toLowerCase()}_data.md`; // reuse filename format so files API parses it
-        const filePath = path.join(downloadsDir, filename);
+        const filename = `alignment_report_${cleanCity.toLowerCase()}.md`;
+        const filePath = path.join(auditDir, filename);
         fs.writeFileSync(filePath, reportMarkdown, "utf-8");
 
         sendEvent(
           "success",
-          `[SUCCESS] レポートファイル「${filename}」を x_downloads に出力し、DBへの書き込みを完了しました！`,
+          `[SUCCESS] レポートファイル「${filename}」を audit_reports に出力し、DBへの書き込みを完了しました！`,
         );
         sendEvent("done", "Process exited with code 0");
       } catch (fileErr: any) {

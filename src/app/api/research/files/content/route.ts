@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const filePath = path.join(process.cwd(), "x_downloads", filename);
+    const filePath = path.join(process.cwd(), "audit_reports", filename);
 
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });

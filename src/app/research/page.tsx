@@ -24,10 +24,10 @@ interface LogEntry {
 
 interface ExtractedFile {
   filename: string;
-  author: string;
+  city: string;
   sizeBytes: number;
   createdAt: string;
-  tweetCount: number;
+  days: number;
 }
 
 export default function DataEnginePage() {
@@ -75,7 +75,7 @@ export default function DataEnginePage() {
         const data = await res.json();
         setSelectedFileContent(data.content);
         setSelectedFileName(filename);
-        setIndexStatus(null); // Clear status when switching files
+        setIndexStatus(null);
       }
     } catch (e) {
       console.error("Failed to read file", e);
@@ -131,13 +131,16 @@ export default function DataEnginePage() {
 
   const handleExtract = () => {
     if (!url) {
-      addLog("URL is required", "error");
+      addLog("Observer Node is required", "error");
       return;
     }
 
     setIsExtracting(true);
     setLogs([]);
-    addLog(`Initiating Astro-Alignment Audit for: ${url}`, "info");
+    addLog(
+      `Initiating Astro-Alignment Audit for observer node: ${url}`,
+      "info",
+    );
 
     const sse = new EventSource(
       `/api/research/generate-report?url=${encodeURIComponent(url)}&scrolls=${scrolls}`,
@@ -160,12 +163,11 @@ export default function DataEnginePage() {
       addLog(JSON.parse((e as MessageEvent).data).message, "done");
       setIsExtracting(false);
       sse.close();
-      // Refresh files list after extraction completes
       fetchFiles();
     });
 
     sse.onerror = () => {
-      addLog("Lost connection to extraction engine.", "error");
+      addLog("Lost connection to telemetry stream.", "error");
       setIsExtracting(false);
       sse.close();
       fetchFiles();
@@ -218,7 +220,7 @@ export default function DataEnginePage() {
             className={`w-2 h-2 rounded-full ${isExtracting ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`}
           ></div>
           <span className="text-[10px] font-mono tracking-widest text-emerald-300 uppercase">
-            {isExtracting ? "データ抽出中..." : "システム待機中"}
+            {isExtracting ? "監査レポート生成中..." : "システム待機中"}
           </span>
         </div>
       </nav>
@@ -235,10 +237,10 @@ export default function DataEnginePage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold tracking-tight text-white/90">
-                    Xデータ抽出エンジン
+                    アライメント監査レポート生成エンジン
                   </h2>
                   <p className="text-xs text-zinc-500">
-                    感情分析用のRaw JSONL/MDデータを収集
+                    天体と地磁気の空間同期状態を検証
                   </p>
                 </div>
               </div>
@@ -246,27 +248,33 @@ export default function DataEnginePage() {
               <div className="flex flex-col gap-4 flex-1">
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">
-                    対象URL
+                    観測ノード (都市)
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://x.com/search?q=... (検索またはタイムラインのURL)"
-                    className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono placeholder:text-zinc-700"
-                  />
+                    className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
+                  >
+                    <option value="Tokyo">Tokyo</option>
+                    <option value="London">London</option>
+                    <option value="NewYork">New York</option>
+                    <option value="Reykjavik">Reykjavik</option>
+                    <option value="Sydney">Sydney</option>
+                    <option value="Cairo">Cairo</option>
+                    <option value="Honolulu">Honolulu</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">
-                    最大スクロール数
+                    シミュレーション期間 (日数)
                   </label>
                   <input
                     type="number"
                     value={scrolls}
                     onChange={(e) => setScrolls(Number(e.target.value))}
                     min="1"
-                    max="100"
+                    max="30"
                     className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
                   />
                 </div>
@@ -275,10 +283,12 @@ export default function DataEnginePage() {
                   <button
                     onClick={handleExtract}
                     disabled={isExtracting || !url}
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:shadow-none"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-550 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:shadow-none"
                   >
                     <Play className="w-4 h-4" />
-                    {isExtracting ? "抽出を実行中..." : "抽出を実行"}
+                    {isExtracting
+                      ? "レポートを生成中..."
+                      : "監査レポートを生成"}
                   </button>
                 </div>
               </div>
@@ -291,7 +301,7 @@ export default function DataEnginePage() {
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-emerald-500" />
                 <span className="text-xs font-mono text-emerald-400 uppercase tracking-widest">
-                  抽出コンソール // ライブストリーム
+                  監査実行コンソール // リアルタイム・テレメトリ・ストリーム
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -300,7 +310,7 @@ export default function DataEnginePage() {
                     className={`w-1.5 h-1.5 rounded-full ${isExtracting ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"}`}
                   ></div>
                   <span className="text-[9px] font-mono text-zinc-500 tracking-wider">
-                    WEBSOCKET
+                    TELEMETRY STREAM
                   </span>
                 </div>
               </div>
@@ -314,7 +324,7 @@ export default function DataEnginePage() {
                 <div className="h-full flex flex-col items-center justify-center opacity-30 text-emerald-500">
                   <Activity className="w-10 h-10 mb-2" />
                   <p className="tracking-widest uppercase">
-                    コマンドの実行を待機中...
+                    監査の実行を待機中...
                   </p>
                 </div>
               ) : (
@@ -344,11 +354,11 @@ export default function DataEnginePage() {
               <FolderOpen className="w-5 h-5 text-blue-400" />
               <div>
                 <h2 className="text-lg font-semibold tracking-tight text-white/90">
-                  アライメント監査レポート金庫 (Audit Report Vault)
+                  監査レポートアーカイブ金庫 (Audit Report Archive)
                 </h2>
                 <p className="text-xs text-zinc-500">
-                  生成されたアライメントレポート Markdown ファイル
-                  (./x_downloads に保存)
+                  生成された空間アライメント監査報告書 Markdownファイル
+                  (./audit_reports に保存)
                 </p>
               </div>
             </div>
@@ -394,10 +404,10 @@ export default function DataEnginePage() {
                           <p
                             className={`text-sm font-medium truncate ${selectedFileName === file.filename ? "text-blue-100" : "text-zinc-300"}`}
                           >
-                            @{file.author}
+                            Observer Node: {file.city}
                           </p>
                           <p className="text-xs text-zinc-500 mt-0.5 font-mono">
-                            {file.tweetCount} tweets •{" "}
+                            Span: {file.days} Days •{" "}
                             {(file.sizeBytes / 1024).toFixed(1)} KB
                           </p>
                         </div>
@@ -446,7 +456,7 @@ export default function DataEnginePage() {
                   />
                 </>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-650">
                   <Eye className="w-12 h-12 mb-3 opacity-20" />
                   <p className="text-sm font-mono">
                     金庫からファイルを選択してプレビューを表示
