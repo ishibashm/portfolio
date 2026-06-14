@@ -17,7 +17,13 @@ import {
   Wifi,
   Zap,
   Terminal,
+  Star,
 } from "lucide-react";
+import {
+  saveFavoriteArticle,
+  getFavoriteArticles,
+  removeFavoriteArticle,
+} from "./actions";
 
 interface Article {
   title: string;
@@ -44,6 +50,102 @@ export default function TrendsPage() {
 
   // Tab state: "All" or a specific source name
   const [activeTab, setActiveTab] = useState<string>("All");
+
+  // Favorite states
+  const [favorites, setFavorites] = useState<
+    { title: string; domain: string }[]
+  >([]);
+  const [favoriteLoading, setFavoriteLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // HUD Alert/Toast states
+  const [hudNotification, setHudNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+    visible: boolean;
+  }>({ message: "", type: "info", visible: false });
+
+  // Fetch favorites from database
+  const fetchFavorites = async () => {
+    try {
+      const res = await getFavoriteArticles();
+      if (res.success && res.data) {
+        setFavorites(res.data as { title: string; domain: string }[]);
+      }
+    } catch (err) {
+      console.error("Failed to load favorites:", err);
+    }
+  };
+
+  const showHudNotification = (
+    message: string,
+    type: "success" | "error" | "info",
+  ) => {
+    setHudNotification({ message, type, visible: true });
+    // Automatically hide after 5 seconds
+    setTimeout(() => {
+      setHudNotification((prev) => {
+        if (prev.message === message) {
+          return { ...prev, visible: false };
+        }
+        return prev;
+      });
+    }, 5000);
+  };
+
+  const handleToggleFavorite = async (
+    title: string,
+    url: string,
+    source: string,
+  ) => {
+    const loadingKey = `${title}-${source}`;
+    if (favoriteLoading[loadingKey]) return;
+
+    setFavoriteLoading((prev) => ({ ...prev, [loadingKey]: true }));
+
+    const isFav = favorites.some(
+      (fav) => fav.title === title && fav.domain === source,
+    );
+
+    try {
+      if (isFav) {
+        const res = await removeFavoriteArticle(title, source);
+        if (res.success) {
+          setFavorites((prev) =>
+            prev.filter(
+              (fav) => !(fav.title === title && fav.domain === source),
+            ),
+          );
+          showHudNotification("お気に入りを解除しました。", "success");
+        } else {
+          showHudNotification(
+            res.error || "お気に入りの解除に失敗しました。",
+            "error",
+          );
+        }
+      } else {
+        const res = await saveFavoriteArticle(title, url, source);
+        if (res.success) {
+          setFavorites((prev) => [...prev, { title, domain: source }]);
+          showHudNotification(
+            res.message || "ナレッジベースに保存しました。",
+            "success",
+          );
+        } else {
+          showHudNotification(res.error || "保存に失敗しました。", "error");
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      showHudNotification(
+        err.message || "処理中にエラーが発生しました。",
+        "error",
+      );
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [loadingKey]: false }));
+    }
+  };
 
   // Fetch articles from our API route proxy
   const fetchTrends = async () => {
@@ -72,6 +174,7 @@ export default function TrendsPage() {
 
   useEffect(() => {
     fetchTrends();
+    fetchFavorites();
   }, []);
 
   // Handle newsletter signup
@@ -582,34 +685,99 @@ export default function TrendsPage() {
                           </span>
                         </div>
 
-                        <a
-                          href={article.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 group-hover:text-white transition-all duration-300"
-                          style={{
-                            borderColor:
-                              "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "var(--color-accent, #10b981)";
-                            e.currentTarget.style.borderColor =
-                              "var(--color-accent, #10b981)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor =
-                              "rgba(255, 255, 255, 0.05)";
-                            e.currentTarget.style.borderColor =
-                              "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))";
-                          }}
-                          title="記事を読む"
-                        >
-                          <ExternalLink
-                            size={13}
-                            className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
-                          />
-                        </a>
+                        <div className="flex gap-2 items-center">
+                          <button
+                            onClick={() =>
+                              handleToggleFavorite(
+                                article.title,
+                                article.link,
+                                article.source,
+                              )
+                            }
+                            disabled={
+                              favoriteLoading[
+                                `${article.title}-${article.source}`
+                              ]
+                            }
+                            className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-amber-400 transition-all duration-300 relative cursor-pointer"
+                            style={{
+                              borderColor: favorites.some(
+                                (fav) =>
+                                  fav.title === article.title &&
+                                  fav.domain === article.source,
+                              )
+                                ? "rgba(245, 158, 11, 0.4)"
+                                : "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
+                              backgroundColor: favorites.some(
+                                (fav) =>
+                                  fav.title === article.title &&
+                                  fav.domain === article.source,
+                              )
+                                ? "rgba(245, 158, 11, 0.08)"
+                                : "rgba(255, 255, 255, 0.05)",
+                            }}
+                            title={
+                              favorites.some(
+                                (fav) =>
+                                  fav.title === article.title &&
+                                  fav.domain === article.source,
+                              )
+                                ? "お気に入りを解除"
+                                : "ナレッジベースに保存"
+                            }
+                          >
+                            {favoriteLoading[
+                              `${article.title}-${article.source}`
+                            ] ? (
+                              <Loader2
+                                size={13}
+                                className="animate-spin text-amber-400"
+                              />
+                            ) : (
+                              <Star
+                                size={13}
+                                className={`transition-all duration-300 ${
+                                  favorites.some(
+                                    (fav) =>
+                                      fav.title === article.title &&
+                                      fav.domain === article.source,
+                                  )
+                                    ? "fill-amber-400 text-amber-400 scale-110 drop-shadow-[0_0_4px_rgba(245,158,11,0.5)]"
+                                    : ""
+                                }`}
+                              />
+                            )}
+                          </button>
+
+                          <a
+                            href={article.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 group-hover:text-white transition-all duration-300"
+                            style={{
+                              borderColor:
+                                "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                "var(--color-accent, #10b981)";
+                              e.currentTarget.style.borderColor =
+                                "var(--color-accent, #10b981)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor =
+                                "rgba(255, 255, 255, 0.05)";
+                              e.currentTarget.style.borderColor =
+                                "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))";
+                            }}
+                            title="記事を読む"
+                          >
+                            <ExternalLink
+                              size={13}
+                              className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300"
+                            />
+                          </a>
+                        </div>
                       </div>
                     </article>
                   );
@@ -883,6 +1051,49 @@ export default function TrendsPage() {
           </div>
         </div>
       </main>
+
+      {/* HUD Notification Toast */}
+      {hudNotification.visible && (
+        <div
+          className="fixed bottom-6 right-6 z-50 max-w-sm p-4 rounded-xl border bg-[#0a0a0ad9] backdrop-blur-md shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300"
+          style={{
+            borderColor:
+              hudNotification.type === "success"
+                ? "rgba(16, 185, 129, 0.3)"
+                : hudNotification.type === "error"
+                  ? "rgba(239, 68, 68, 0.3)"
+                  : "rgba(255, 255, 255, 0.1)",
+          }}
+        >
+          {hudNotification.type === "success" ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          ) : hudNotification.type === "error" ? (
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+          ) : (
+            <Terminal className="w-5 h-5 text-zinc-400 shrink-0 mt-0.5" />
+          )}
+          <div className="flex-grow">
+            <div className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-0.5">
+              {hudNotification.type === "success"
+                ? "SYS_LOG_OK"
+                : hudNotification.type === "error"
+                  ? "SYS_LOG_ERR"
+                  : "SYS_LOG_INFO"}
+            </div>
+            <p className="text-xs font-mono text-zinc-200">
+              {hudNotification.message}
+            </p>
+          </div>
+          <button
+            onClick={() =>
+              setHudNotification((prev) => ({ ...prev, visible: false }))
+            }
+            className="text-zinc-500 hover:text-zinc-300 text-xs font-mono select-none cursor-pointer"
+          >
+            {"[X]"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
