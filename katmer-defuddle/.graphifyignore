@@ -1,0 +1,11 @@
+# .graphifyignore
+node_modules/
+.next/
+venv/
+dist/
+build/
+.git/
+.env
+.DS_Store
+.opencode/
+llm-wiki/raw/

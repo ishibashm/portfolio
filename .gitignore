@@ -128,3 +128,8 @@ download/
 
 # Environment configurations
 env.json
+
+# Katmer-Defuddle Data and Artifacts
+katmer-defuddle/llm-wiki/raw/
+katmer-defuddle/graphify-out/
+katmer-defuddle/knowledge-base/public/analytics_data.json

@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       const observer = new Observer(lat, lon, 0);
       const time = new AstroTime(today);
       const equ = Equator(Body.Sun, time, observer, true, true);
-      const hor = Horizon(time, observer, equ.ra, equ.dec, "apparent");
+      const hor = Horizon(time, observer, equ.ra, equ.dec, "normal");
       solarAzimuth = hor.azimuth;
       solarElevation = hor.altitude;
       solarCalcSuccess = true;

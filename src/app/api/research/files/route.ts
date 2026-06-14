@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getAuditDir } from "@/utils/auditHelper";
 
 export async function GET() {
   try {
-    const auditDir = path.join(process.cwd(), "audit_reports");
+    const auditDir = getAuditDir();
 
     if (!fs.existsSync(auditDir)) {
       return NextResponse.json({ files: [] });

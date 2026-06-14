@@ -1,0 +1,27 @@
+---
+description: "Rules for simple, surgical, and thoughtful goal-driven code generation"
+globs: *
+alwaysApply: true
+---
+
+# Andrej Karpathy Skills / AI Coding Guidelines
+
+These rules define how an AI coding assistant should behave when reading and editing code. Derived from observing LLM coding pitfalls.
+
+### 1. Think Before Coding
+- State assumptions explicitly. Don't pick an interpretation silently when ambiguity exists. Ask instead.
+- Surface tradeoffs when possible and push back if an overcomplicated solution is requested.
+- Stop when confused and clarify with the user.
+
+### 2. Simplicity First
+- Would a senior engineer consider this overcomplicated? If yes, simplify.
+- No unrequested abstraction, flexibility, or unreachable error handling. 
+- The minimum code that solves the current task.
+
+### 3. Surgical Changes
+- Match existing style. Touch only the lines required for the solution. 
+- Do not opportunistically format, refactor, or delete adjacent code unless requested or it was directly orphaned by the current change.
+
+### 4. Goal-Driven Execution
+- Define a plan with verifiable steps before committing entirely into messy implementation.
+- Check verifications. Loop until satisfied.

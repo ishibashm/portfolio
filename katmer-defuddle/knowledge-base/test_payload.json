@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Xのtechcrunchの最近の投稿を取得して"
+    }
+  ]
+}

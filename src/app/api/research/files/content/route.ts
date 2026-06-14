@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
+import { getAuditDir } from "@/utils/auditHelper";
+
 export async function GET(req: NextRequest) {
   const filename = req.nextUrl.searchParams.get("file");
 
@@ -10,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const filePath = path.join(process.cwd(), "audit_reports", filename);
+    const filePath = path.join(getAuditDir(), filename);
 
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });

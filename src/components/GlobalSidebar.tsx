@@ -26,6 +26,7 @@ import {
   Rss,
   Home,
   Calendar,
+  Globe,
 } from "lucide-react";
 
 const PUBLIC_ITEMS = [
@@ -48,6 +49,7 @@ const PROTECTED_ITEMS = [
   { href: "/calendar", icon: Calendar, label: "Cosmic Calendar" },
   { href: "/research", icon: Database, label: "Data Engine" },
   { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
+  { href: "/extract", icon: Globe, label: "Web Extractor" },
   { href: "/trends", icon: Rss, label: "Tech Trends" },
   { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
   { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },

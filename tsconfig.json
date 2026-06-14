@@ -31,5 +31,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "temp_newsletter", "scripts", "tools"]
+  "exclude": [
+    "node_modules",
+    "temp_newsletter",
+    "scripts",
+    "tools",
+    "katmer-defuddle"
+  ]
 }

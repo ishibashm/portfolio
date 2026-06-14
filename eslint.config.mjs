@@ -31,6 +31,7 @@ const eslintConfig = defineConfig([
     "tools/**",
     "packages/**",
     "x_downloads/**",
+    "katmer-defuddle/**",
   ]),
 ]);
 

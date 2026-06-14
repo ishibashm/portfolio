@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { Body, Observer, AstroTime, Equator, Horizon } from "astronomy-engine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { getAuditDir } from "@/utils/auditHelper";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -95,7 +96,7 @@ export async function GET(req: NextRequest) {
         let el = 45;
         try {
           const equ = Equator(Body.Sun, time, observer, true, true);
-          const hor = Horizon(time, observer, equ.ra, equ.dec, "apparent");
+          const hor = Horizon(time, observer, equ.ra, equ.dec, "normal");
           az = hor.azimuth;
           el = hor.altitude;
         } catch (e) {}
@@ -149,7 +150,7 @@ export async function GET(req: NextRequest) {
 
       // Write report to audit_reports directory
       try {
-        const auditDir = path.join(process.cwd(), "audit_reports");
+        const auditDir = getAuditDir();
         if (!fs.existsSync(auditDir)) {
           fs.mkdirSync(auditDir, { recursive: true });
         }
