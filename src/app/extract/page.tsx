@@ -1,26 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  Globe,
-  Loader2,
-  Copy,
-  Download,
-  Image as ImageIcon,
-  BookOpen,
-  ArrowUpRight,
-  Wifi,
-  Sparkles,
-  Terminal,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  ChevronRight,
-} from "lucide-react";
+import { useState, useEffect } from "react";
 import { extractArticle, saveToKnowledgeBase } from "./actions";
 
-export default function DefuddleExtractorPage() {
+export default function DefuddlePage() {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -30,15 +14,8 @@ export default function DefuddleExtractorPage() {
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
 
-  // KB Saving states
+  // KB Saving state
   const [kbSaving, setKbSaving] = useState(false);
-
-  // HUD Alert/Toast states
-  const [hudNotification, setHudNotification] = useState<{
-    message: string;
-    type: "success" | "error" | "info";
-    visible: boolean;
-  }>({ message: "", type: "info", visible: false });
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -53,21 +30,6 @@ export default function DefuddleExtractorPage() {
     };
   }, []);
 
-  const showHudNotification = (
-    message: string,
-    type: "success" | "error" | "info",
-  ) => {
-    setHudNotification({ message, type, visible: true });
-    setTimeout(() => {
-      setHudNotification((prev) => {
-        if (prev.message === message) {
-          return { ...prev, visible: false };
-        }
-        return prev;
-      });
-    }, 5000);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
@@ -75,21 +37,16 @@ export default function DefuddleExtractorPage() {
     setLoading(true);
     setError(null);
     setResult(null);
-    setScreenshotUrl(null);
-    setScreenshotError(null);
 
     try {
       const response = await extractArticle(url);
       if (response.success) {
         setResult(response.data);
-        showHudNotification("記事の抽出に成功しました！", "success");
       } else {
-        setError(response.error || "抽出に失敗しました。");
-        showHudNotification("抽出に失敗しました。", "error");
+        setError(response.error || "An error occurred during extraction.");
       }
     } catch (err: any) {
-      setError(err.message || "予期しないエラーが発生しました。");
-      showHudNotification(err.message || "エラーが発生しました。", "error");
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -98,7 +55,7 @@ export default function DefuddleExtractorPage() {
   const copyToClipboard = () => {
     if (result?.content) {
       navigator.clipboard.writeText(result.content);
-      showHudNotification("クリップボードにコピーしました！", "success");
+      alert("Copied directly to clipboard!");
     }
   };
 
@@ -122,13 +79,8 @@ export default function DefuddleExtractorPage() {
       }
       const blob = await res.blob();
       setScreenshotUrl(URL.createObjectURL(blob));
-      showHudNotification(
-        "スクリーンショットの撮影に成功しました！",
-        "success",
-      );
     } catch (err: any) {
       setScreenshotError(err.message || "Failed to take screenshot");
-      showHudNotification("スクリーンショットの撮影に失敗しました。", "error");
     } finally {
       setScreenshotLoading(false);
     }
@@ -161,10 +113,6 @@ export default function DefuddleExtractorPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showHudNotification(
-        "Markdownファイルとしてダウンロードしました。",
-        "success",
-      );
     }
   };
 
@@ -184,6 +132,7 @@ export default function DefuddleExtractorPage() {
       };
 
       const fileContent = result.content;
+
       const form = new FormData();
       form.append(
         "metadata",
@@ -203,24 +152,17 @@ export default function DefuddleExtractorPage() {
       );
 
       if (response.ok) {
-        showHudNotification(
-          "Google Driveへのアップロードが完了しました！",
-          "success",
-        );
+        alert(`Successfully saved "${fileName}" to Google Drive!`);
       } else {
         const errData = await response.json();
         console.error("Drive Error:", errData);
-        showHudNotification(
-          `アップロード失敗: ${errData.error?.message || response.statusText}`,
-          "error",
+        alert(
+          `Failed to save to Google Drive: ${errData.error?.message || response.statusText}`,
         );
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Upload Error:", err);
-      showHudNotification(
-        "Google Drive保存中にエラーが発生しました。",
-        "error",
-      );
+      alert("An error occurred while uploading to Google Drive.");
     } finally {
       setDriveSaving(false);
     }
@@ -229,9 +171,8 @@ export default function DefuddleExtractorPage() {
   const handleSaveToDrive = () => {
     const win = window as any;
     if (!win.google?.accounts?.oauth2) {
-      showHudNotification(
-        "Google APIクライアントの読み込みに失敗しました。",
-        "error",
+      alert(
+        "Google Identity Services failed to load. Please refresh the page.",
       );
       return;
     }
@@ -245,7 +186,7 @@ export default function DefuddleExtractorPage() {
       callback: (tokenResponse: any) => {
         if (tokenResponse.error !== undefined) {
           console.error("Token Error:", tokenResponse);
-          showHudNotification("認証に失敗しました。", "error");
+          alert("Authentication failed. Please try again.");
           setDriveSaving(false);
           return;
         }
@@ -266,452 +207,310 @@ export default function DefuddleExtractorPage() {
         result.site,
       );
       if (res.success) {
-        showHudNotification(
-          `Second Brainに保存しました！ (${res.kb_id})`,
-          "success",
-        );
+        alert(`Saved to Second Brain successfully! (ID: ${res.kb_id})`);
       } else {
-        showHudNotification(res.error || "保存に失敗しました。", "error");
+        alert(res.error || "Failed to save to Second Brain.");
       }
     } catch (err: any) {
       console.error(err);
-      showHudNotification(err.message || "エラーが発生しました。", "error");
+      alert(err.message || "An error occurred while saving to Second Brain.");
     } finally {
       setKbSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-[color-mix(in_srgb,var(--color-accent,#10b981)_30%,transparent)] font-sans relative overflow-hidden flex flex-col">
-      {/* Background Liquid Glass Glows */}
-      <div
-        className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] -z-10 pointer-events-none"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-accent, #10b981) 8%, transparent)",
-        }}
-      />
-      <div
-        className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[150px] -z-10 pointer-events-none"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-accent, #10b981) 6%, transparent)",
-        }}
-      />
-
-      <main className="flex-grow max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
-        {/* Header Section */}
-        <header
-          className="relative mb-8 p-6 md:p-8 rounded-2xl border bg-white/[0.01] backdrop-blur-md overflow-hidden"
-          style={{
-            borderColor: "rgba(255, 255, 255, 0.05)",
-          }}
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 py-12 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute top-6 left-6">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-neutral-600 bg-white border border-neutral-200 rounded-full shadow-sm hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
         >
-          {/* Cyber Decorative Lines */}
-          <div
-            className="absolute top-0 left-0 w-full h-[1px] opacity-70"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent, #10b981) 30%, transparent), transparent)",
-            }}
-          />
-          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
-          <div
-            className="absolute top-0 left-8 w-[1px] h-4"
-            style={{
-              backgroundColor:
-                "color-mix(in srgb, var(--color-accent, #10b981) 50%, transparent)",
-            }}
-          />
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="relative flex h-2 w-2">
-                  <span
-                    className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                    style={{ backgroundColor: "var(--color-accent, #10b981)" }}
-                  />
-                  <span
-                    className="relative inline-flex rounded-full h-2 w-2"
-                    style={{ backgroundColor: "var(--color-accent, #10b981)" }}
-                  />
-                </span>
-                <span
-                  className="text-xs font-mono tracking-widest uppercase font-semibold flex items-center gap-1.5"
-                  style={{ color: "var(--color-accent, #10b981)" }}
-                >
-                  <Wifi className="w-3.5 h-3.5" /> Defuddle Content Extractor
-                  Node
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-zinc-100 to-[color-mix(in_srgb,var(--color-accent,#10b981)_60%,white)] bg-clip-text text-transparent">
-                Web Extractor
-              </h1>
-              <p className="text-zinc-400 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
-                任意のWebサイトから、広告やナビゲーションを除去したクリーンなマークダウン原稿を抽出します。
-                抽出されたデータはそのままローカルナレッジベースやGoogle
-                Driveに格納できます。
-              </p>
-            </div>
-          </div>
-        </header>
-
-        {/* URL Input Form */}
-        <section
-          className="p-6 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden mb-8"
-          style={{
-            borderColor: "rgba(255, 255, 255, 0.05)",
-          }}
-        >
-          <div
-            className="absolute inset-0 opacity-10 pointer-events-none"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255,255,255,0.15) 1px, transparent 1px)",
-              backgroundSize: "8px 8px",
-            }}
-          />
-
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col md:flex-row gap-4 items-end relative z-10"
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <div className="flex-grow space-y-2 w-full">
-              <label
-                htmlFor="url-input"
-                className="text-[10px] text-zinc-500 uppercase tracking-widest block font-mono"
-              >
-                Target Site URL
-              </label>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Back to Home
+        </Link>
+      </div>
+      <div className="max-w-3xl mx-auto pt-8">
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl text-neutral-900">
+            Defuddle <span className="text-blue-600">Web</span>
+          </h1>
+          <p className="mt-4 text-lg text-neutral-600">
+            Extract clean, readable markdown from any web page URL instantly.
+          </p>
+        </div>
+
+        <div className="bg-white shadow-xl rounded-2xl overflow-hidden mb-8 border border-neutral-100">
+          <div className="p-6 sm:p-8">
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row gap-4"
+            >
               <input
-                id="url-input"
                 type="url"
                 required
-                placeholder="https://example.com/article"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/5 text-white placeholder-zinc-700 focus:outline-none text-sm font-mono transition-all"
-                style={{
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "var(--color-accent, #10b981)";
-                  e.target.style.boxShadow =
-                    "0 0 10px color-mix(in srgb, var(--color-accent, #10b981) 15%, transparent)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(255, 255, 255, 0.05)";
-                  e.target.style.boxShadow = "none";
-                }}
+                placeholder="https://example.com/article"
+                className="flex-1 rounded-xl border-neutral-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-lg py-3 px-4 border"
+                disabled={loading || driveSaving}
               />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl text-white font-mono text-xs uppercase tracking-widest font-bold transition-all cursor-pointer whitespace-nowrap"
-              style={{
-                backgroundColor: "var(--color-accent, #10b981)",
-                boxShadow:
-                  "0 4px 20px color-mix(in srgb, var(--color-accent, #10b981) 20%, transparent)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.filter = "brightness(1.1)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.filter = "none";
-              }}
-            >
-              {loading ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>EXTRACTING...</span>
-                </>
-              ) : (
-                <>
-                  <Globe size={16} />
-                  <span>START_EXTRACTION</span>
-                </>
-              )}
-            </button>
-          </form>
-        </section>
-
-        {/* Display Error if any */}
-        {error && (
-          <div className="mb-8 p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="text-[10px] text-rose-400 font-mono uppercase font-bold tracking-wider">
-                ERR: EXTRACT_OPERATION_FAILED
-              </span>
-              <p className="text-xs text-zinc-300 font-mono mt-1">{error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Display Result Grid */}
-        {result && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            {/* Document Content Column */}
-            <div className="lg:col-span-2 space-y-6">
-              <div
-                className="p-6 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden"
-                style={{
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
+              <button
+                type="submit"
+                disabled={loading || driveSaving}
+                className="inline-flex justify-center items-center px-8 py-3 border border-transparent text-lg font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {/* L-shaped corner brackets */}
-                <div className="absolute top-2.5 left-2.5 w-2 h-2 border-t border-l border-white/5 pointer-events-none" />
-                <div className="absolute top-2.5 right-2.5 w-2 h-2 border-t border-r border-white/5 pointer-events-none" />
-                <div className="absolute bottom-2.5 left-2.5 w-2 h-2 border-b border-l border-white/5 pointer-events-none" />
-                <div className="absolute bottom-2.5 right-2.5 w-2 h-2 border-b border-r border-white/5 pointer-events-none" />
-
-                <div className="border-b border-white/5 pb-4 mb-4">
-                  <span
-                    className="text-[9px] px-2 py-0.5 rounded border font-mono uppercase tracking-wider font-semibold"
-                    style={{
-                      color: "var(--color-accent, #10b981)",
-                      backgroundColor:
-                        "color-mix(in srgb, var(--color-accent, #10b981) 5%, transparent)",
-                      borderColor:
-                        "color-mix(in srgb, var(--color-accent, #10b981) 15%, transparent)",
-                    }}
-                  >
-                    {result.site || "Web Page"}
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Extracting...
                   </span>
-                  <h2 className="text-xl font-bold tracking-tight text-white/90 mt-3">
-                    {result.title}
-                  </h2>
-                  {result.author && (
-                    <p className="text-xs text-zinc-500 font-mono mt-1">
-                      Author: {result.author}
-                    </p>
-                  )}
-                </div>
-
-                <div className="prose prose-invert max-w-none text-zinc-300 text-xs md:text-sm font-mono leading-relaxed max-h-[500px] overflow-y-auto pr-2 bg-black/40 p-4 rounded-xl border border-white/5 whitespace-pre-wrap">
-                  {result.content}
-                </div>
-              </div>
-            </div>
-
-            {/* Actions Panel Column */}
-            <div className="space-y-6">
-              {/* Main Actions Box */}
-              <div
-                className="p-6 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden"
-                style={{
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
+                ) : (
+                  "Extract"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={takeScreenshot}
+                disabled={screenshotLoading || !url}
+                className="inline-flex justify-center items-center px-6 py-3 border border-neutral-300 text-lg font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-neutral-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="flex items-center gap-3 mb-6">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center border"
-                    style={{
-                      backgroundColor:
-                        "color-mix(in srgb, var(--color-accent, #10b981) 8%, transparent)",
-                      borderColor:
-                        "color-mix(in srgb, var(--color-accent, #10b981) 25%, transparent)",
-                    }}
-                  >
-                    <FileText
-                      className="w-5 h-5"
-                      style={{ color: "var(--color-accent, #10b981)" }}
-                    />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-mono tracking-wider text-zinc-500 uppercase">
-                      {"// Export Console"}
-                    </h2>
-                    <h3 className="text-lg font-bold tracking-tight text-white">
-                      データ出力・保存
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Save to Second Brain */}
-                  <button
-                    onClick={handleSaveToSecondBrain}
-                    disabled={kbSaving}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/15 transition-all text-xs font-mono select-none cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <BookOpen size={14} className="text-indigo-400" />
-                      <span>ナレッジベース (Second Brain) に保存</span>
-                    </span>
-                    {kbSaving ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <ChevronRightIcon />
-                    )}
-                  </button>
-
-                  {/* Save to Google Drive */}
-                  <button
-                    onClick={handleSaveToDrive}
-                    disabled={driveSaving}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/15 transition-all text-xs font-mono select-none cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Globe size={14} className="text-emerald-400" />
-                      <span>Google Drive に保存</span>
-                    </span>
-                    {driveSaving ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <ChevronRightIcon />
-                    )}
-                  </button>
-
-                  {/* Copy to Clipboard */}
-                  <button
-                    onClick={copyToClipboard}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/15 transition-all text-xs font-mono select-none cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Copy size={14} className="text-cyan-400" />
-                      <span>クリップボードにコピー</span>
-                    </span>
-                    <ChevronRightIcon />
-                  </button>
-
-                  {/* Download MD file */}
-                  <button
-                    onClick={downloadAsFile}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/15 transition-all text-xs font-mono select-none cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Download size={14} className="text-amber-400" />
-                      <span>Markdownファイルをダウンロード</span>
-                    </span>
-                    <ChevronRightIcon />
-                  </button>
-
-                  {/* Capture Screenshot */}
-                  <button
-                    onClick={takeScreenshot}
-                    disabled={screenshotLoading}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/5 bg-white/5 text-zinc-300 hover:text-white hover:bg-white/10 hover:border-white/15 transition-all text-xs font-mono select-none cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <ImageIcon size={14} className="text-rose-400" />
-                      <span>Webサイトのスクリーンショット撮影</span>
-                    </span>
-                    {screenshotLoading ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <ChevronRightIcon />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Screenshot Preview Box */}
-              {(screenshotLoading || screenshotUrl || screenshotError) && (
-                <div
-                  className="p-6 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden"
-                  style={{
-                    borderColor: "rgba(255, 255, 255, 0.05)",
-                  }}
-                >
-                  <h3 className="text-xs font-bold font-mono text-zinc-500 uppercase tracking-widest mb-3">
-                    {"// Screenshot Node"}
-                  </h3>
-
-                  {screenshotLoading && (
-                    <div className="h-48 rounded-xl border border-white/5 bg-black/40 flex flex-col items-center justify-center text-zinc-500 gap-2">
-                      <Loader2
-                        size={24}
-                        className="animate-spin text-rose-400"
+                {screenshotLoading ? (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="animate-spin h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Capturing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <svg
+                      className="h-5 w-5"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
                       />
-                      <span className="text-[10px] font-mono tracking-widest uppercase">
-                        Capturing Node Screen...
-                      </span>
-                    </div>
-                  )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                    Screenshot
+                  </span>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
 
-                  {screenshotError && (
-                    <div className="p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 text-xs font-mono text-rose-300">
-                      ERR_SCREENSHOT_CAPTURE_FAILED: {screenshotError}
-                    </div>
-                  )}
-
-                  {screenshotUrl && !screenshotLoading && (
-                    <div className="space-y-4">
-                      <div className="relative rounded-xl border border-white/5 overflow-hidden bg-black/40 max-h-60">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={screenshotUrl}
-                          alt="Web page screenshot"
-                          className="w-full h-auto object-contain"
-                        />
-                      </div>
-                      <button
-                        onClick={downloadScreenshot}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-rose-500/30 bg-rose-500/5 text-rose-300 hover:bg-rose-500/10 hover:text-white transition-all text-xs font-mono cursor-pointer"
-                      >
-                        <Download size={14} />
-                        <span>DOWNLOAD_SCREENSHOT_IMAGE</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded-r-lg">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-red-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
             </div>
           </div>
         )}
-      </main>
 
-      {/* HUD Notification Toast */}
-      {hudNotification.visible && (
-        <div
-          className="fixed bottom-6 right-6 z-50 max-w-sm p-4 rounded-xl border bg-[#0a0a0ad9] backdrop-blur-md shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300"
-          style={{
-            borderColor:
-              hudNotification.type === "success"
-                ? "rgba(16, 185, 129, 0.3)"
-                : hudNotification.type === "error"
-                  ? "rgba(239, 68, 68, 0.3)"
-                  : "rgba(255, 255, 255, 0.1)",
-          }}
-        >
-          {hudNotification.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-          ) : hudNotification.type === "error" ? (
-            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-          ) : (
-            <Terminal className="w-5 h-5 text-zinc-400 shrink-0 mt-0.5" />
-          )}
-          <div className="flex-grow">
-            <div className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-0.5">
-              {hudNotification.type === "success"
-                ? "SYS_LOG_OK"
-                : hudNotification.type === "error"
-                  ? "SYS_LOG_ERR"
-                  : "SYS_LOG_INFO"}
-            </div>
-            <p className="text-xs font-mono text-zinc-200">
-              {hudNotification.message}
+        {screenshotError && (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-8 rounded-r-lg">
+            <p className="text-sm text-orange-700">
+              Screenshot error: {screenshotError}
             </p>
           </div>
-          <button
-            onClick={() =>
-              setHudNotification((prev) => ({ ...prev, visible: false }))
-            }
-            className="text-zinc-500 hover:text-zinc-300 text-xs font-mono select-none cursor-pointer"
-          >
-            {"[X]"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+        )}
 
-function ChevronRightIcon() {
-  return (
-    <ChevronRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+        {screenshotUrl && (
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-neutral-100 mb-8">
+            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-base font-semibold text-neutral-700">
+                📸 Screenshot
+              </h2>
+              <button
+                onClick={downloadScreenshot}
+                className="inline-flex items-center gap-1 px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-neutral-700 hover:bg-neutral-800 transition-colors"
+              >
+                Download PNG
+              </button>
+            </div>
+            <div className="p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={screenshotUrl}
+                alt="Screenshot"
+                className="w-full rounded-lg border border-neutral-100 shadow-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {result && (
+          <div className="bg-white shadow-xl rounded-2xl overflow-hidden border border-neutral-100 flex flex-col">
+            <div className="bg-neutral-50 border-b border-neutral-100 px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="flex-1 w-full">
+                <h2 className="text-lg font-bold text-neutral-800 line-clamp-1">
+                  {result.title}
+                </h2>
+                <div className="text-sm text-neutral-500 flex flex-wrap gap-4 mt-1">
+                  {result.author && <span>By {result.author}</span>}
+                  {result.site && <span>From {result.site}</span>}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button
+                  onClick={handleSaveToSecondBrain}
+                  disabled={kbSaving}
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-indigo-600 text-sm font-medium rounded-lg text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
+                >
+                  {kbSaving ? "Saving..." : "Save to Second Brain"}
+                </button>
+                <button
+                  onClick={copyToClipboard}
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-blue-600 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Copy Markdown
+                </button>
+                <button
+                  onClick={downloadAsFile}
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                >
+                  Download .md
+                </button>
+                <button
+                  onClick={handleSaveToDrive}
+                  disabled={driveSaving}
+                  className="flex-1 sm:flex-none inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-[#1fa463] hover:bg-[#198751] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1fa463] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                >
+                  {driveSaving ? (
+                    <span className="flex items-center gap-1">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 87.3 78"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M58.3 52l29-50-29.2-2L0 52l29 50 29.3-50z"
+                          fill="#FFC107"
+                        />
+                        <path
+                          d="M87.3 52l-29 50H0l29-50h58.3z"
+                          fill="#1976D2"
+                        />
+                        <path d="M29 0h58.3l-29 50H0L29 0z" fill="#4CAF50" />
+                      </svg>
+                      Save to Drive
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="p-6">
+              <textarea
+                readOnly
+                value={result.content}
+                className="w-full h-[500px] p-4 text-sm font-mono text-neutral-800 bg-neutral-50 border border-neutral-200 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
