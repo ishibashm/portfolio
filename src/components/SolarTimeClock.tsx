@@ -77,6 +77,10 @@ const TenchusatsuVisualizer = dynamic(
     import("./TenchusatsuVisualizer").then((mod) => mod.TenchusatsuVisualizer),
   { ssr: false },
 );
+const CosmicCalendar = dynamic(
+  () => import("./widgets/CosmicCalendar").then((mod) => mod.CosmicCalendar),
+  { ssr: false },
+);
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -4226,123 +4230,10 @@ ${timingOptimization?.recommendationText || "特になし"}
           </button>
         </div>
 
-        {/* [NEW] Agent Live Tweet Widget */}
-        {latestTweet && (
-          <div className="w-full max-w-3xl bg-zinc-950/80 border border-purple-500/20 rounded-2xl p-4 shadow-[0_0_20px_rgba(168,85,247,0.05)] backdrop-blur-md flex items-start gap-4 transition-all hover:border-purple-500/40 relative overflow-hidden group">
-            {/* Ambient subtle glow */}
-            <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 blur-2xl rounded-full pointer-events-none group-hover:bg-purple-500/20 transition-all"></div>
-
-            {/* Avatar block */}
-            <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-full bg-purple-950/30 border border-purple-500/40 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(168,85,247,0.2)] animate-pulse relative overflow-hidden">
-                <span className="relative z-10">🔮</span>
-                {/* Background scanning effect */}
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-500/20 to-transparent animate-pulse"></div>
-              </div>
-              <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
-              </span>
-            </div>
-
-            {/* Content block */}
-            <div className="flex-grow flex flex-col gap-1 text-left">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-purple-300 font-mono tracking-wider uppercase">
-                    Antigravity Sentinel
-                  </span>
-                  <span className="text-[8px] bg-purple-950/60 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded font-mono font-bold uppercase shrink-0">
-                    {latestTweet.triggerType}
-                  </span>
-                  <span className="text-[8px] text-zinc-500 font-mono">
-                    {latestTweet.actions}
-                  </span>
-                </div>
-                <span className="text-[9px] text-zinc-500 font-mono">
-                  {(() => {
-                    const diffMs =
-                      Date.now() - new Date(latestTweet.timestamp).getTime();
-                    const diffMins = Math.floor(diffMs / 60000);
-                    if (diffMins < 1) return "JUST NOW";
-                    if (diffMins < 60) return `${diffMins}M AGO`;
-                    const diffHours = Math.floor(diffMins / 60);
-                    if (diffHours < 24) return `${diffHours}H AGO`;
-                    return new Date(latestTweet.timestamp).toLocaleDateString();
-                  })()}
-                </span>
-              </div>
-              <div className="text-zinc-300 text-xs leading-relaxed font-sans mt-1 antialiased markdown-content">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({ children, ...props }: any) => (
-                      <p className="mb-2 last:mb-0" {...props}>
-                        {children}
-                      </p>
-                    ),
-                    strong: ({ children, ...props }: any) => (
-                      <strong
-                        className="font-semibold text-purple-200"
-                        {...props}
-                      >
-                        {children}
-                      </strong>
-                    ),
-                    a: ({ children, href, ...props }: any) => {
-                      const safeHref = href || "";
-                      const isAppAction = safeHref.startsWith("file:///");
-                      if (isAppAction) {
-                        const actionName = safeHref.replace("file:///", "");
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => handleSentinelAction(actionName)}
-                            className="inline-flex items-center gap-1 bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800/40 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium transition-colors mx-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-purple-500"
-                          >
-                            🔧 {children}
-                          </button>
-                        );
-                      }
-                      return (
-                        <a
-                          href={safeHref}
-                          className="text-purple-400 hover:text-purple-300 hover:underline transition-colors"
-                          {...props}
-                        >
-                          {children}
-                        </a>
-                      );
-                    },
-                    code: ({ children, ...props }: any) => (
-                      <code
-                        className="bg-zinc-900 text-purple-300 px-1 py-0.5 rounded font-mono text-[10px] border border-zinc-800"
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    ),
-                  }}
-                >
-                  {latestTweet.textResponse ||
-                    "System tuned. Stability index: optimal."}
-                </ReactMarkdown>
-              </div>
-
-              <div className="mt-2 flex justify-end">
-                <Link
-                  href="/agent-log"
-                  className="text-[9px] text-purple-400 hover:text-purple-300 font-mono uppercase tracking-widest flex items-center gap-1 group/link"
-                >
-                  [ View Full Thought Feed ]
-                  <span className="group-hover:translate-x-0.5 transition-transform">
-                    →
-                  </span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Cosmic Calendar Widget */}
+        <div className="w-full max-w-4xl bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all">
+          <CosmicCalendar />
+        </div>
 
         {showHowItWorks && (
           <div className="w-full max-w-4xl animate-fade-in px-4">

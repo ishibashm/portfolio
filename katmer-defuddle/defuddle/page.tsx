@@ -13,6 +13,8 @@ export default function DefuddlePage() {
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [screenshotLoading, setScreenshotLoading] = useState(false);
   const [screenshotError, setScreenshotError] = useState<string | null>(null);
+  const [selectedTicker, setSelectedTicker] = useState("7203.T");
+  const [targetSite, setTargetSite] = useState("yahoo");
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -227,7 +229,94 @@ export default function DefuddlePage() {
         </div>
 
         <div className="bg-white shadow-xl rounded-2xl overflow-hidden mb-8 border border-neutral-100">
-          <div className="p-6 sm:p-8">
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Auto-fill and Selection Controls */}
+            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200/80 space-y-4">
+              {/* Presets and Clipboard */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mr-1">クイック選択 (Presets):</span>
+                  {[
+                    { name: "Yahoo!ニュース", url: "https://news.yahoo.co.jp" },
+                    { name: "日本経済新聞", url: "https://www.nikkei.com" },
+                    { name: "株探 (Kabutan)", url: "https://kabutan.jp" },
+                    { name: "TechCrunch", url: "https://techcrunch.com" },
+                    { name: "Wired JP", url: "https://wired.jp" },
+                  ].map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={() => setUrl(p.url)}
+                      className="px-2.5 py-1 text-xs bg-white hover:bg-neutral-100 border border-neutral-200 rounded-lg text-neutral-700 transition-colors shadow-sm font-medium"
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText();
+                      if (text && (text.startsWith("http://") || text.startsWith("https://"))) {
+                        setUrl(text);
+                      } else {
+                        alert("Clipboard does not contain a valid URL.");
+                      }
+                    } catch (e) {
+                      alert("Failed to read clipboard. Please paste manually.");
+                    }
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg transition-colors font-semibold shadow-sm self-start sm:self-auto"
+                >
+                  <span>📋 クリップボードから自動入力</span>
+                </button>
+              </div>
+
+              {/* Stock Tickers Selection */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-3 border-t border-neutral-200">
+                <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">株式ニュース自動入力:</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={selectedTicker}
+                    onChange={(e) => setSelectedTicker(e.target.value)}
+                    className="bg-white border border-neutral-300 rounded-lg px-2.5 py-1 text-xs text-neutral-800 focus:outline-none focus:border-blue-500 font-mono font-medium shadow-sm"
+                  >
+                    <option value="7203.T">7203.T (トヨタ)</option>
+                    <option value="9984.T">9984.T (ソフトバンクG)</option>
+                    <option value="6758.T">6758.T (ソニーG)</option>
+                    <option value="8031.T">8031.T (三井物産)</option>
+                    <option value="6857.T">6857.T (アドバンテスト)</option>
+                    <option value="8058.T">8058.T (三菱商事)</option>
+                  </select>
+
+                  <select
+                    value={targetSite}
+                    onChange={(e) => setTargetSite(e.target.value)}
+                    className="bg-white border border-neutral-300 rounded-lg px-2.5 py-1 text-xs text-neutral-800 focus:outline-none focus:border-blue-500 font-medium shadow-sm"
+                  >
+                    <option value="yahoo">Yahoo!ファイナンス</option>
+                    <option value="kabutan">株探 (Kabutan)</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (targetSite === "yahoo") {
+                        setUrl(`https://finance.yahoo.co.jp/quote/${selectedTicker}`);
+                      } else {
+                        setUrl(`https://kabutan.jp/stock/news?code=${selectedTicker.split(".")[0]}`);
+                      }
+                    }}
+                    className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium shadow-sm"
+                  >
+                    URL生成・入力
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <form
               onSubmit={handleSubmit}
               className="flex flex-col sm:flex-row gap-4"

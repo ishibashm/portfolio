@@ -29,6 +29,7 @@ import Link from "next/link";
 import { TwitterFeed } from "@/components/twitter/TwitterFeed";
 import { FinanceWidget } from "@/components/finance/FinanceWidget";
 import { RealEstateWidget } from "@/components/realestate/RealEstateWidget";
+import { EconomicIntelligence } from "@/components/finance/EconomicIntelligence";
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient";
@@ -535,97 +536,9 @@ export default async function DashboardPage() {
             </div>
           </section>
 
-          {/* BENTO ITEM 8: AI Visualizer Gallery */}
+          {/* BENTO ITEM 8: Economic & Market Intelligence */}
           <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
-                  <Palette className="w-5 h-5 text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-white/90">
-                    AIビジュアライザ・ギャラリー
-                  </h2>
-                  <p className="text-[11px] text-gray-500 font-light">
-                    最新の生成コンポーネント
-                  </p>
-                </div>
-              </div>
-              {latestVisualization && (
-                <Link
-                  href={`/visualizer/share/${latestVisualization.id}`}
-                  className="px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-[11px] text-gray-300 flex items-center gap-1"
-                >
-                  <span>共有ページを表示</span>
-                  <ArrowUpRight className="w-3 h-3" />
-                </Link>
-              )}
-            </div>
-
-            {latestVisualization ? (
-              <div className="flex flex-col sm:flex-row gap-4 items-center flex-grow">
-                {/* Scaled Preview */}
-                <div className="relative w-full sm:w-2/3 h-[180px] overflow-hidden rounded-2xl border border-white/5 bg-[#09090b]">
-                  <iframe
-                    srcDoc={wrapHtmlWithTailwind(latestVisualization.cleanHtml)}
-                    className="absolute top-0 left-0 border-0"
-                    style={{
-                      width: "153.8%",
-                      height: "153.8%",
-                      transform: "scale(0.65)",
-                      transformOrigin: "top left",
-                      pointerEvents: "none",
-                    }}
-                    title={latestVisualization.title}
-                  />
-                  <div className="absolute inset-0 bg-transparent" />
-                </div>
-
-                {/* Meta details & Action */}
-                <div className="w-full sm:w-1/3 flex flex-col justify-between h-full py-1">
-                  <div>
-                    <h3 className="font-semibold text-white text-sm line-clamp-1 mb-1">
-                      {latestVisualization.title}
-                    </h3>
-                    <p className="text-xs text-indigo-300 font-mono mb-2 uppercase tracking-wider">
-                      {latestVisualization.style}
-                    </p>
-                    <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
-                      生成日:{" "}
-                      {new Date(
-                        latestVisualization.createdAt,
-                      ).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="mt-4">
-                    <Link
-                      href="/visualizer"
-                      className="inline-flex w-full justify-center items-center px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs transition-all shadow-md shadow-indigo-600/10 hover:shadow-indigo-500/20"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                      <span>スタジオを開く</span>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-grow flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-                <Palette className="w-8 h-8 text-gray-600 mb-2" />
-                <p className="text-sm font-medium text-gray-400">
-                  コンポーネントはまだ生成されていません
-                </p>
-                <p className="text-xs text-gray-500 max-w-[240px] mt-1 leading-normal">
-                  ビジュアルスタジオでカスタムレイアウトを作成・保存すると、ここに表示されます。
-                </p>
-                <Link
-                  href="/visualizer"
-                  className="mt-4 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all font-medium text-xs text-white flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>デザインを開始</span>
-                </Link>
-              </div>
-            )}
+            <EconomicIntelligence />
           </section>
         </div>
       </main>

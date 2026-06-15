@@ -25,9 +25,15 @@ export async function GET(req: Request) {
     );
 
     // Call the python script. Ensure python is in PATH or specify absolute path to python executable if needed.
-    // Here we assume `python` works. In production, you might need a more robust way to find the python binary.
+    let pythonCmd = "python3";
+    try {
+      await execPromise("python3 --version");
+    } catch {
+      pythonCmd = "python";
+    }
+
     const { stdout, stderr } = await execPromise(
-      `python "${scriptPath}" "${ticker}"`,
+      `${pythonCmd} "${scriptPath}" "${ticker}"`,
     );
 
     if (stderr) {

@@ -43,16 +43,22 @@ function escapeRegExp(string: string) {
 
 // Regex-based Text Highlighting Component
 function HighlightText({ text, query }: { text: string; query: string }) {
-  if (!query) return <>{text}</>;
-  const escaped = escapeRegExp(query);
-  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  if (!query.trim()) return <>{text}</>;
+  const queryWords = query.split(/[\s　]+/).filter(Boolean);
+  if (queryWords.length === 0) return <>{text}</>;
+
+  const escapedWords = queryWords.map(escapeRegExp);
+  const regex = new RegExp(`(${escapedWords.join("|")})`, "gi");
+  const parts = text.split(regex);
+  const wordSet = new Set(queryWords.map((w) => w.toLowerCase()));
+
   return (
     <>
       {parts.map((part, i) =>
-        part.toLowerCase() === query.toLowerCase() ? (
+        wordSet.has(part.toLowerCase()) ? (
           <mark
             key={i}
-            className="bg-yellow-250 text-neutral-900 rounded-sm px-0.5"
+            className="bg-yellow-200 text-neutral-900 rounded-sm px-0.5"
           >
             {part}
           </mark>
@@ -76,8 +82,10 @@ function ContentSnippets({
 
   const maxSnippets = 5;
   const contextLength = 40;
+  const queryWords = query.toLowerCase().split(/[\s　]+/).filter(Boolean);
+  if (queryWords.length === 0) return null;
+  const lowerQuery = queryWords[0];
   const lowerContent = content.toLowerCase();
-  const lowerQuery = query.toLowerCase();
 
   let mergedIndices: [number, number][] = [];
   let startIndex = 0;
@@ -252,14 +260,19 @@ export default function ServiceNowKnowledgePage() {
   // Filter list
   const filteredArticles = useMemo(() => {
     return articles.filter((a) => {
-      // Search term check
-      const query = search.toLowerCase();
-      const matchSearch =
-        !search ||
-        a.title.toLowerCase().includes(query) ||
-        (a.content && a.content.toLowerCase().includes(query)) ||
-        a.kb_id.toLowerCase().includes(query) ||
-        (a.domain && a.domain.toLowerCase().includes(query));
+      // Search term check: split by space for multi-word match (AND search)
+      let matchSearch = true;
+      if (search.trim()) {
+        const queryWords = search.toLowerCase().split(/[\s　]+/).filter(Boolean);
+        matchSearch = queryWords.every((word) => {
+          return (
+            a.title.toLowerCase().includes(word) ||
+            (a.content && a.content.toLowerCase().includes(word)) ||
+            a.kb_id.toLowerCase().includes(word) ||
+            (a.domain && a.domain.toLowerCase().includes(word))
+          );
+        });
+      }
 
       // Category check
       const matchCategory = !categoryFilter || a.category === categoryFilter;

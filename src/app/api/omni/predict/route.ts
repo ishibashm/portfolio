@@ -21,8 +21,14 @@ export async function POST(req: Request) {
       "python_tools",
       "predict_stock.py",
     );
+    let pythonCmd = "python3";
+    try {
+      await execPromise("python3 --version");
+    } catch {
+      pythonCmd = "python";
+    }
     const { stdout, stderr } = await execPromise(
-      `python "${scriptPath}" "${ticker}"`,
+      `${pythonCmd} "${scriptPath}" "${ticker}"`,
     );
 
     if (stderr) {
