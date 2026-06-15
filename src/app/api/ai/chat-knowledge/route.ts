@@ -52,7 +52,7 @@ ${contextText}`;
 
     // Get response from Gemini
     const result = await generateText({
-      model: google("gemini-1.5-pro"),
+      model: google("gemini-2.5-pro"),
       system: systemPrompt,
       messages: messages.map((m: any) => ({
         role: m.role,

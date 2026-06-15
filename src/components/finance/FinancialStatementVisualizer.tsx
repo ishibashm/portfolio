@@ -67,6 +67,249 @@ interface PLData {
   net_income: number;
 }
 
+function parseStockTable(text: string): StockPoint[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length === 0) return [];
+
+  // Parse header to find column indexes
+  let dateIdx = -1;
+  let openIdx = -1;
+  let highIdx = -1;
+  let lowIdx = -1;
+  let closeIdx = -1;
+  let changeIdx = -1;
+  let volumeIdx = -1;
+
+  const firstLine = lines[0];
+  const headers = firstLine.split(/\s+/);
+  const hasHeader = headers.some(
+    (h) =>
+      h.includes("日") ||
+      h.includes("値") ||
+      h.includes("高") ||
+      h.includes("安") ||
+      h.includes("出来") ||
+      h.includes("売買"),
+  );
+
+  let startRow = 0;
+  if (hasHeader && lines.length > 1) {
+    startRow = 1;
+    headers.forEach((h, idx) => {
+      const cleanH = h.trim();
+      if (cleanH.includes("日")) dateIdx = idx;
+      else if (cleanH.includes("始")) openIdx = idx;
+      else if (
+        cleanH.includes("高") &&
+        !cleanH.includes("売買") &&
+        !cleanH.includes("出来") &&
+        !cleanH.includes("高(")
+      ) {
+        highIdx = idx;
+      } else if (cleanH.includes("安")) lowIdx = idx;
+      else if (cleanH.includes("終")) closeIdx = idx;
+      else if (cleanH.includes("比")) changeIdx = idx;
+      else if (
+        cleanH.includes("出来") ||
+        cleanH.includes("売買") ||
+        cleanH.includes("量") ||
+        cleanH.includes("高(")
+      ) {
+        volumeIdx = idx;
+      }
+    });
+  }
+
+  // Fallbacks
+  if (dateIdx === -1) dateIdx = 0;
+  if (openIdx === -1) openIdx = 1;
+  if (highIdx === -1) highIdx = 2;
+  if (lowIdx === -1) lowIdx = 3;
+  if (closeIdx === -1) closeIdx = 4;
+  if (changeIdx === -1) changeIdx = 5;
+  if (volumeIdx === -1) volumeIdx = headers.length - 1;
+
+  const dataPoints: StockPoint[] = [];
+
+  const cleanNum = (str: string) => {
+    if (!str) return 0;
+    const clean = str.replace(/[^\d.+\-]/g, "");
+    const val = parseFloat(clean);
+    return isNaN(val) ? 0 : val;
+  };
+
+  for (let i = startRow; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const cols = line.split(/\s+/);
+    if (cols.length < 5) continue; // Need at least Date, O, H, L, C
+
+    const dateVal = cols[dateIdx] || "";
+    const openVal = cleanNum(cols[openIdx]);
+    const highVal = cleanNum(cols[highIdx]);
+    const lowVal = cleanNum(cols[lowIdx]);
+    const closeVal = cleanNum(cols[closeIdx]);
+    const changeVal = changeIdx !== -1 && cols[changeIdx] ? cleanNum(cols[changeIdx]) : 0;
+    const volumeVal = volumeIdx !== -1 && cols[volumeIdx] ? cleanNum(cols[volumeIdx]) : 0;
+
+    dataPoints.push({
+      date: dateVal,
+      open: openVal,
+      high: highVal,
+      low: lowVal,
+      close: closeVal,
+      change: changeVal,
+      volume: volumeVal,
+    });
+  }
+
+  // Sort chronologically (oldest to newest)
+  const parseDateForSorting = (dateStr: string) => {
+    const parts = dateStr.split(/[\/\-]/);
+    if (parts.length === 3) {
+      let year = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1;
+      const day = parseInt(parts[2]);
+      if (year < 100) year += 2000;
+      return new Date(year, month, day).getTime();
+    } else if (parts.length === 2) {
+      const year = new Date().getFullYear();
+      const month = parseInt(parts[0]) - 1;
+      const day = parseInt(parts[1]);
+      return new Date(year, month, day).getTime();
+    }
+    return 0;
+  };
+
+  dataPoints.sort((a, b) => parseDateForSorting(a.date) - parseDateForSorting(b.date));
+  return dataPoints;
+}
+
+function parseBSTable(text: string): BSData {
+  const lines = text.split(/\r?\n/);
+  const data = {
+    currentAssets: 0,
+    nonCurrentAssets: 0,
+    totalAssets: 0,
+    currentLiabilities: 0,
+    nonCurrentLiabilities: 0,
+    totalLiabilities: 0,
+    shareCapital: 0,
+    retainedEarnings: 0,
+    totalEquity: 0,
+  };
+
+  const cleanVal = (str: string) => {
+    const match = str.replace(/,/g, "").match(/[\d.]+/);
+    if (!match) return 0;
+    return parseFloat(match[0]);
+  };
+
+  lines.forEach((line) => {
+    const cleanLine = line.trim();
+    if (!cleanLine) return;
+
+    const val = cleanVal(cleanLine);
+    if (val === 0) return;
+
+    if (/流動.*資/.test(cleanLine)) data.currentAssets = val;
+    else if (/固定.*資/.test(cleanLine)) data.nonCurrentAssets = val;
+    else if (/(資産合計|資産の部合計|総資産)/.test(cleanLine)) data.totalAssets = val;
+    else if (/流動.*負/.test(cleanLine)) data.currentLiabilities = val;
+    else if (/固定.*負/.test(cleanLine)) data.nonCurrentLiabilities = val;
+    else if (/(負債合計|負債の部合計|総負債)/.test(cleanLine)) data.totalLiabilities = val;
+    else if (/資本金/.test(cleanLine)) data.shareCapital = val;
+    else if (/利益.*剰/.test(cleanLine)) data.retainedEarnings = val;
+    else if (/(純資産合計|自己資本|総純資産|純資産の部合計)/.test(cleanLine)) data.totalEquity = val;
+  });
+
+  // Fallbacks
+  if (data.totalAssets === 0) {
+    data.totalAssets = data.currentAssets + data.nonCurrentAssets;
+  }
+  if (data.totalLiabilities === 0) {
+    data.totalLiabilities = data.currentLiabilities + data.nonCurrentLiabilities;
+  }
+  if (data.totalEquity === 0) {
+    data.totalEquity = data.totalAssets - data.totalLiabilities;
+  }
+
+  return {
+    assets: {
+      current: data.currentAssets,
+      non_current: data.nonCurrentAssets,
+      total: data.totalAssets,
+    },
+    liabilities: {
+      current: data.currentLiabilities,
+      non_current: data.nonCurrentLiabilities,
+      total: data.totalLiabilities,
+    },
+    equity: {
+      share_capital: data.shareCapital,
+      retained_earnings: data.retainedEarnings,
+      other: Math.max(0, data.totalEquity - data.shareCapital - data.retainedEarnings),
+      total: data.totalEquity,
+    },
+  };
+}
+
+function parsePLTable(text: string): PLData {
+  const lines = text.split(/\r?\n/);
+  const data = {
+    netSales: 0,
+    costOfSales: 0,
+    grossProfit: 0,
+    sgaExpenses: 0,
+    operatingIncome: 0,
+    ordinaryIncome: 0,
+    netIncome: 0,
+  };
+
+  const cleanVal = (str: string) => {
+    const match = str.replace(/,/g, "").match(/[\d.]+/);
+    if (!match) return 0;
+    return parseFloat(match[0]);
+  };
+
+  lines.forEach((line) => {
+    const cleanLine = line.trim();
+    if (!cleanLine) return;
+
+    const val = cleanVal(cleanLine);
+    if (val === 0) return;
+
+    if (/(売上高|売上収益|営業収益)/.test(cleanLine)) data.netSales = val;
+    else if (/(売上原価|売上高原価)/.test(cleanLine)) data.costOfSales = val;
+    else if (/売上総利益/.test(cleanLine)) data.grossProfit = val;
+    else if (/(販売費|一般管理|販管費)/.test(cleanLine)) data.sgaExpenses = val;
+    else if (/営業利益/.test(cleanLine)) data.operatingIncome = val;
+    else if (/経常利益/.test(cleanLine)) data.ordinaryIncome = val;
+    else if (/(当期純利益|当期利益|純利益)/.test(cleanLine)) data.netIncome = val;
+  });
+
+  // Fallbacks
+  if (data.grossProfit === 0 && data.netSales > 0) {
+    data.grossProfit = data.netSales - data.costOfSales;
+  }
+  if (data.operatingIncome === 0 && data.grossProfit > 0) {
+    data.operatingIncome = data.grossProfit - data.sgaExpenses;
+  }
+  if (data.ordinaryIncome === 0) {
+    data.ordinaryIncome = data.operatingIncome;
+  }
+
+  return {
+    net_sales: data.netSales,
+    cost_of_sales: data.costOfSales,
+    gross_profit: data.grossProfit,
+    sga_expenses: data.sgaExpenses,
+    operating_income: data.operatingIncome,
+    ordinary_income: data.ordinaryIncome,
+    net_income: data.netIncome,
+  };
+}
+
 export function FinancialStatementVisualizer() {
   const [activeMode, setActiveMode] = useState<"stock" | "bs" | "pl">("stock");
   const [inputText, setInputText] = useState("");
@@ -120,38 +363,45 @@ export function FinancialStatementVisualizer() {
     }
   };
 
-  const handleParse = async () => {
+  const handleParse = () => {
     if (!inputText.trim()) return;
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch("/api/ai/finance-parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: inputText, type: activeMode }),
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "データの解析に失敗しました。");
+    setTimeout(() => {
+      try {
+        if (activeMode === "stock") {
+          const parsed = parseStockTable(inputText);
+          if (parsed.length === 0) {
+            throw new Error(
+              "有効な株価データ（日付、始値、高値、安値、終値）が見つかりませんでした。タブ区切りやスペース区切りのテキストを入力してください。",
+            );
+          }
+          setStockResult(parsed);
+        } else if (activeMode === "bs") {
+          const parsed = parseBSTable(inputText);
+          if (parsed.assets.total === 0) {
+            throw new Error(
+              "有効な貸借対照表（流動資産、固定資産、負債、純資産など）の数値が見つかりませんでした。",
+            );
+          }
+          setBsResult(parsed);
+        } else if (activeMode === "pl") {
+          const parsed = parsePLTable(inputText);
+          if (parsed.net_sales === 0) {
+            throw new Error(
+              "有効な損益計算書（売上高、営業利益、当期純利益など）の数値が見つかりませんでした。",
+            );
+          }
+          setPlResult(parsed);
+        }
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message || "パース処理中にエラーが発生しました。");
+      } finally {
+        setLoading(false);
       }
-
-      if (activeMode === "stock") {
-        // Reverse order so it displays left-to-right (oldest to newest)
-        const sorted = [...data.data.data].reverse();
-        setStockResult(sorted);
-      } else if (activeMode === "bs") {
-        setBsResult(data.data);
-      } else if (activeMode === "pl") {
-        setPlResult(data.data);
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "予期せぬエラーが発生しました。");
-    } finally {
-      setLoading(false);
-    }
+    }, 300);
   };
 
   const formatNumber = (num?: number) => {
@@ -180,6 +430,19 @@ export function FinancialStatementVisualizer() {
       minClose,
       totalVolume,
     };
+  }, [stockResult]);
+
+  // Calculate dynamic chart min/max domain
+  const yDomain = useMemo(() => {
+    if (!stockResult || stockResult.length === 0) return ["auto", "auto"];
+    const prices = stockResult.map((d) => d.close);
+    const minVal = Math.min(...prices);
+    const maxVal = Math.max(...prices);
+    const diff = maxVal - minVal;
+    const buffer = Math.max(10, diff * 0.05);
+    const minDomain = Math.max(0, Math.floor(minVal - buffer));
+    const maxDomain = Math.ceil(maxVal + buffer);
+    return [minDomain, maxDomain];
   }, [stockResult]);
 
   return (
@@ -281,12 +544,12 @@ export function FinancialStatementVisualizer() {
             {loading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>AI解析・可視化実行中...</span>
+                <span>データパース・可視化中...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>データをAI解析して可視化する</span>
+                <span>データをパースして可視化する</span>
               </>
             )}
           </button>
@@ -369,7 +632,7 @@ export function FinancialStatementVisualizer() {
                   />
                   <YAxis
                     yAxisId="left"
-                    domain={["dataMin - 100", "dataMax + 100"]}
+                    domain={yDomain}
                     stroke="#475569"
                     tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "monospace" }}
                     tickLine={false}

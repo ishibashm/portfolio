@@ -44,6 +44,7 @@ export function EconomicIntelligence() {
       source: "日本経済新聞",
       time: "15:15",
       title: "日経平均大引け、急騰3297円高の6万9317円 過去2番目の上げ幅で史上最高値更新",
+      url: "https://www.nikkei.com/markets/kabu/",
       desc: "米国とイランの戦闘終結合意の報道を受けリスクオン。半導体、建設株中心に全面高の展開。",
       badge: "株式市場",
       badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
@@ -52,6 +53,7 @@ export function EconomicIntelligence() {
       source: "株探 (Kabutan)",
       time: "15:00",
       title: "キオクシアHDが急騰で初の9万円台。村田製、三井ハイテはストップ高比例配分",
+      url: "https://kabutan.jp/news/marketnews/",
       desc: "AI関連需要と地政学リスク後退のダブルの追い風。電子部品・半導体材料セクターに巨額の買い。",
       badge: "注目銘柄",
       badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20"
@@ -60,6 +62,7 @@ export function EconomicIntelligence() {
       source: "日本経済新聞",
       time: "09:00",
       title: "日銀、金融政策決定会合がスタート。国債買い入れ減額の具体策を協議へ",
+      url: "https://www.nikkei.com/economy/central_bank/",
       desc: "15-16日の2日間の日程。長期金利上昇局面における国債減額プランのペースと利上げ時期が焦点。",
       badge: "金融政策",
       badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20"

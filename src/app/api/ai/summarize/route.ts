@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     // Call Gemini to generate summary, key takeaways, and action items
     const result = await generateObject({
-      model: google("gemini-1.5-pro"),
+      model: google("gemini-2.5-pro"),
       schema: z.object({
         summary: z
           .string()
