@@ -18,7 +18,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
-import { AstroEngine } from "@/utils/ephemerisEngine";
+import { AstroEngine, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
+import { baziEngine } from "@/utils/baziEngine";
+import { Solar, Lunar } from "lunar-javascript";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 interface DayData {
   date: Date;
@@ -49,6 +52,12 @@ interface DayData {
     saturn: boolean;
   };
   score: number;
+  personalFortune?: {
+    isVoid: boolean;
+    isClash: boolean;
+    isHarmony: boolean;
+    dayZhi: string;
+  };
 }
 
 // 24 seasonal nodes (24節気) mapping
@@ -167,12 +176,46 @@ function getLunarPhase(date: Date) {
   }
 }
 
+const CLASH_MAP: Record<string, string> = {
+  "子": "午", "午": "子",
+  "丑": "未", "未": "丑",
+  "寅": "申", "申": "寅",
+  "卯": "酉", "酉": "卯",
+  "辰": "戌", "戌": "辰",
+  "巳": "亥", "亥": "巳"
+};
+
+const HARMONY_MAP: Record<string, string> = {
+  "子": "丑", "丑": "子",
+  "寅": "亥", "亥": "寅",
+  "卯": "戌", "戌": "卯",
+  "辰": "酉", "酉": "辰",
+  "巳": "申", "申": "巳",
+  "午": "未", "未": "午"
+};
+
+const ZHI_ELEMENTS: Record<string, string> = {
+  "子": "水 (Water)",
+  "丑": "土 (Earth)",
+  "寅": "木 (Wood)",
+  "卯": "木 (Wood)",
+  "辰": "土 (Earth)",
+  "巳": "火 (Fire)",
+  "午": "火 (Fire)",
+  "未": "土 (Earth)",
+  "申": "金 (Metal)",
+  "酉": "金 (Metal)",
+  "戌": "土 (Earth)",
+  "亥": "水 (Water)",
+};
+
 // Ingestion score calculation
 function calculateAlignmentScore(
   rokuyo: string,
   luckyDays: { isIchiryumanbai: boolean; isTensho: boolean },
   retrogrades: { mercury: boolean; venus: boolean; mars: boolean },
   lunarPhase: string,
+  personalFortune?: { isVoid: boolean; isClash: boolean; isHarmony: boolean; dayZhi: string },
 ): number {
   let score = 60;
 
@@ -195,12 +238,32 @@ function calculateAlignmentScore(
   // Lunar adjustments
   if (lunarPhase === "満月" || lunarPhase === "新月") score += 5;
 
+  // Personal Fortune adjustments
+  if (personalFortune) {
+    if (personalFortune.isVoid) score -= 15;
+    if (personalFortune.isClash) score -= 10;
+    if (personalFortune.isHarmony) score += 10;
+  }
+
   return Math.max(0, Math.min(100, score));
 }
 
 // Actionable advice logic
 function getActionableAdvice(day: DayData): string {
   const retrogradeCount = Object.values(day.retrogrades).filter(Boolean).length;
+
+  // Personal Fortune overrides
+  if (day.personalFortune) {
+    if (day.personalFortune.isVoid) {
+      return "🌀 [天中殺/VOID] 本日はあなたにとって「天中殺（空亡）」の日です。天のシールドが薄く、想定外のエラーが起きやすい時。新しい契約や高額な買い物は避け、内省や心身のメンテナンス、清掃に専念することをおすすめします。";
+    }
+    if (day.personalFortune.isClash) {
+      return "⚡ [日破/CLASH] 本日はあなたの日支と対沖（日破）する日です。他者との衝突や突発的な障害が生じやすい不安定な気流があります。感情的にならず、一歩引いて慎重に行動すると災いを避けられます。";
+    }
+    if (day.personalFortune.isHarmony) {
+      return "🤝 [支合/HARMONY] 本日はあなたの日支と支合（合運）する調和の日です。周囲との繋がりが強化され、交渉、契約、協力関係の構築が極めてスムーズに進みます。重要な打ち合わせや自己アピールに最適なタイミングです。";
+    }
+  }
 
   if (day.score >= 80) {
     return "🪐 [OPTIMAL_ALIGNMENT] 宇宙エネルギーとの共鳴が極めて高い吉日です。新規事業、大きな契約、引っ越し、旅立ちに最適。自信を持って前進してください。";
@@ -222,10 +285,46 @@ export function CosmicCalendar() {
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [days, setDays] = useState<DayData[]>([]);
 
+  // Birthdate settings for personal calculations
+  const [birthDate, setBirthDate] = useState<string>("");
+  const [birthLon, setBirthLon] = useState<string>("139.6917");
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedDate = localStorage.getItem("wealth_birthDate");
+      const storedLon = localStorage.getItem("wealth_birthLon");
+      if (storedDate) {
+        setBirthDate(storedDate);
+      } else {
+        setIsSettingsOpen(true); // Default open if not configured
+      }
+      if (storedLon) setBirthLon(storedLon);
+    }
+  }, []);
+
+  // Compute user's natal day branch and void zodiacs
+  let userDayZhi = "";
+  let userVoidZodiacs: string[] = [];
+  if (birthDate) {
+    try {
+      const bDate = new Date(birthDate);
+      if (!isNaN(bDate.getTime())) {
+        const bLonVal = parseFloat(birthLon) || 139.6917;
+        const bazi = baziEngine.calculate(bDate, bLonVal);
+        userDayZhi = bazi.pillars.day.zhi;
+        userVoidZodiacs = getPersonalVoidZodiac(bDate);
+      }
+    } catch (e) {
+      console.error("Failed to parse birthdate or calculate Bazi:", e);
+    }
+  }
+
   // JST weekday titles
   const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
-  // Compute days in grid when month changes
+  // Compute days in grid when month or birthdate config changes
   useEffect(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -269,7 +368,7 @@ export function CosmicCalendar() {
     setSelectedDay(
       matchedToday || result.find((d) => d.isCurrentMonth) || null,
     );
-  }, [currentDate]);
+  }, [currentDate, birthDate, birthLon]);
 
   const generateDayData = (date: Date, isCurrentMonth: boolean): DayData => {
     const rokuyo = getRokuyo(date);
@@ -288,11 +387,43 @@ export function CosmicCalendar() {
       saturn: isPlanetRetrograde(AstroEngine.getSaturnLongitude, date),
     };
 
+    // Calculate personal transit fortunes
+    let personalFortune = undefined;
+    if (userDayZhi && userVoidZodiacs.length > 0) {
+      try {
+        const fields = getZonedDateTimeFields(date, 9);
+        const solar = Solar.fromYmdHms(
+          fields.year,
+          fields.month,
+          fields.day,
+          12, // Standardize to noon to avoid boundary issues
+          0,
+          0
+        );
+        const lunar = solar.getLunar();
+        const dayZhi = lunar.getEightChar().getDayZhi();
+
+        const isVoid = userVoidZodiacs.includes(dayZhi);
+        const isClash = dayZhi === CLASH_MAP[userDayZhi];
+        const isHarmony = dayZhi === HARMONY_MAP[userDayZhi];
+
+        personalFortune = {
+          isVoid,
+          isClash,
+          isHarmony,
+          dayZhi
+        };
+      } catch (e) {
+        console.error("Personal fortune calculation failed:", e);
+      }
+    }
+
     const score = calculateAlignmentScore(
       rokuyo,
       luckyDays,
       retrogrades,
       lunarPhase.name,
+      personalFortune,
     );
 
     return {
@@ -307,6 +438,7 @@ export function CosmicCalendar() {
       sekki,
       retrogrades,
       score,
+      personalFortune,
     };
   };
 
@@ -455,22 +587,41 @@ export function CosmicCalendar() {
                 </div>
 
                 {/* Score LED indicator */}
-                <div className="w-full flex items-center justify-between mt-2.5">
+                <div className="w-full flex items-center justify-between mt-2">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${getScoreColor(day.score)}`}
                   />
 
-                  {/* Tiny label for major days */}
-                  {day.luckyDays.isTensho && (
-                    <span className="text-[8px] font-bold text-amber-400 font-mono scale-90 select-none">
-                      赦
-                    </span>
-                  )}
-                  {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
-                    <span className="text-[8px] font-bold text-emerald-400 font-mono scale-90 select-none">
-                      万
-                    </span>
-                  )}
+                  <div className="flex gap-0.5 items-center leading-none">
+                    {/* Tiny label for major days */}
+                    {day.luckyDays.isTensho && (
+                      <span className="text-[8px] font-bold text-amber-400 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
+                        赦
+                      </span>
+                    )}
+                    {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
+                      <span className="text-[8px] font-bold text-emerald-400 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
+                        万
+                      </span>
+                    )}
+
+                    {/* Personal Astro Fortunes */}
+                    {day.personalFortune?.isVoid && (
+                      <span className="text-[8px] font-bold text-purple-400 font-mono scale-90 select-none bg-purple-500/20 border border-purple-500/30 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
+                        殺
+                      </span>
+                    )}
+                    {day.personalFortune?.isClash && (
+                      <span className="text-[8px] font-bold text-rose-400 font-mono scale-90 select-none bg-rose-500/20 border border-rose-500/30 px-0.5 rounded" title="日破 (Clash)">
+                        破
+                      </span>
+                    )}
+                    {day.personalFortune?.isHarmony && (
+                      <span className="text-[8px] font-bold text-sky-400 font-mono scale-90 select-none bg-sky-500/20 border border-sky-500/30 px-0.5 rounded" title="支合 (Harmony)">
+                        合
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Cyber decoration dot */}
@@ -616,6 +767,61 @@ export function CosmicCalendar() {
                 </div>
               </div>
 
+              {/* Personal Fortune Telemetry */}
+              {selectedDay.personalFortune && (
+                <div className="p-3 bg-black/30 border border-white/5 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5 text-purple-400" />
+                    Personal Fortune Telemetry
+                  </div>
+                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
+                    <span className="text-zinc-500">本日の地支 (Day Branch):</span>
+                    <span className="text-white font-bold">
+                      {selectedDay.personalFortune.dayZhi} ({ZHI_ELEMENTS[selectedDay.personalFortune.dayZhi]})
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
+                    <span className="text-zinc-500">宿命の日支 (Natal Day Branch):</span>
+                    <span className="text-white font-bold">
+                      {userDayZhi} ({ZHI_ELEMENTS[userDayZhi]})
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
+                    <span className="text-zinc-500">宿命の空亡 (Personal Void):</span>
+                    <span className="text-purple-400 font-bold">
+                      {userVoidZodiacs.join("")}天中殺
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[11px] font-mono">
+                    <span className="text-zinc-500">個人相性 (Astro Status):</span>
+                    <span className="font-bold">
+                      {selectedDay.personalFortune.isVoid && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                          天中殺 (Void Day)
+                        </span>
+                      )}
+                      {selectedDay.personalFortune.isClash && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                          対沖 (Clash / 日破)
+                        </span>
+                      )}
+                      {selectedDay.personalFortune.isHarmony && (
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                          支合 (Harmony / 合運)
+                        </span>
+                      )}
+                      {!selectedDay.personalFortune.isVoid &&
+                        !selectedDay.personalFortune.isClash &&
+                        !selectedDay.personalFortune.isHarmony && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                            平常 (Neutral Day)
+                          </span>
+                        )}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Planet retrograde telemetry */}
               <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
                 <div className="flex items-center gap-2 mb-2 text-[10px] text-zinc-500 uppercase tracking-wider">
@@ -686,9 +892,66 @@ export function CosmicCalendar() {
                   <Activity className="w-3.5 h-3.5 text-zinc-400" />
                   Next Best Action Recommendation
                 </div>
-                <p className="text-[11px] text-zinc-300 leading-relaxed font-mono">
+                <p className="text-[11px] text-zinc-300 leading-relaxed font-mono font-medium">
                   {getActionAdvice(selectedDay)}
                 </p>
+              </div>
+
+              {/* Personal Setup / Info Settings */}
+              <div className="mt-4 pt-4 border-t border-white/5 font-mono text-[11px]">
+                <button
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                  className="w-full flex justify-between items-center text-zinc-500 hover:text-zinc-300 py-1 transition-colors"
+                >
+                  <span className="flex items-center gap-1.5">
+                    ⚙️ [Astro Telemetry Config]
+                  </span>
+                  <span>{isSettingsOpen ? "▲" : "▼"}</span>
+                </button>
+
+                {isSettingsOpen && (
+                  <div className="mt-3 p-3 bg-black/40 border border-white/5 rounded-xl space-y-3">
+                    <div>
+                      <label className="block text-[9px] text-zinc-500 uppercase mb-1">
+                        Birth Date & Time (JST)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={birthDate}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBirthDate(val);
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("wealth_birthDate", val);
+                          }
+                        }}
+                        className="w-full bg-black/60 border border-white/10 rounded px-2 py-1 text-white text-[11px] focus:outline-none focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] text-zinc-500 uppercase mb-1">
+                        Birth Longitude
+                      </label>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        value={birthLon}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setBirthLon(val);
+                          if (typeof window !== "undefined") {
+                            localStorage.setItem("wealth_birthLon", val);
+                          }
+                        }}
+                        className="w-full bg-black/60 border border-white/10 rounded px-2 py-1 text-white text-[11px] focus:outline-none focus:border-emerald-500/50"
+                        placeholder="139.6917"
+                      />
+                    </div>
+                    <p className="text-[9px] text-zinc-500 leading-normal">
+                      ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
