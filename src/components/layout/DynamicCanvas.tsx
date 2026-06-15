@@ -13,6 +13,7 @@ import JSONLSplitterWidget from "../widgets/JSONLSplitterWidget";
 import OmniPipelineWidget from "../widgets/OmniPipelineWidget";
 import KnowledgeEditorWidget from "../widgets/KnowledgeEditorWidget";
 import IRAnalysisWidget from "../widgets/IRAnalysisWidget";
+import { FinancialStatementVisualizer } from "../finance/FinancialStatementVisualizer";
 
 interface DynamicCanvasProps {
   widgets: WidgetConfig[];
@@ -360,6 +361,7 @@ export const DynamicCanvas = ({ widgets }: DynamicCanvasProps) => {
                     <KnowledgeEditorWidget />
                   )}
                   {widget.type === "ir_analysis" && <IRAnalysisWidget />}
+                  {widget.type === "finance_paste_visualizer" && <FinancialStatementVisualizer />}
                 </div>
               </div>
             );

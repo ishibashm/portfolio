@@ -15,7 +15,8 @@ export interface WidgetConfig {
     | "jsonl_splitter"
     | "omni_pipeline"
     | "knowledge_editor"
-    | "ir_analysis";
+    | "ir_analysis"
+    | "finance_paste_visualizer";
   data: any;
   title?: string;
   size?: "normal" | "large" | "full" | "tall" | "wide" | "half";
@@ -70,6 +71,12 @@ const workspaceDefaults: Record<string, WidgetConfig[]> = {
       title: "IR & EDINET Analysis",
       size: "large",
     },
+    {
+      type: "finance_paste_visualizer",
+      data: {},
+      title: "決算書＆株価コピペ解析ボード",
+      size: "large",
+    },
   ],
   "ws-2": [],
   default: [
@@ -89,6 +96,12 @@ const workspaceDefaults: Record<string, WidgetConfig[]> = {
       type: "ir_analysis",
       data: {},
       title: "IR & EDINET Analysis",
+      size: "large",
+    },
+    {
+      type: "finance_paste_visualizer",
+      data: {},
+      title: "決算書＆株価コピペ解析ボード",
       size: "large",
     },
   ],

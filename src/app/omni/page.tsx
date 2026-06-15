@@ -32,14 +32,16 @@ import {
   Line,
 } from "recharts";
 
+import { Sparkles } from "lucide-react";
 import IRAnalysisWidget from "@/components/widgets/IRAnalysisWidget";
 import { EconomicBbsAnalyzer } from "@/components/finance/EconomicBbsAnalyzer";
+import { FinancialStatementVisualizer } from "@/components/finance/FinancialStatementVisualizer";
 
 export default function OmniTerminalPage() {
   const [ticker, setTicker] = useState("7203.T");
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "chart" | "fundamentals" | "forecast" | "bbs_analyzer"
+    "chart" | "fundamentals" | "forecast" | "bbs_analyzer" | "finance_paste"
   >("chart");
   const [stockData, setStockData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -309,6 +311,18 @@ export default function OmniTerminalPage() {
                   />
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab("finance_paste")}
+                className={`py-3 px-5 text-sm font-bold relative transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === "finance_paste" ? "text-indigo-400" : "text-gray-500 hover:text-gray-300"}`}
+              >
+                <Sparkles className="w-4 h-4" /> 財務・株価コピペ解析
+                {activeTab === "finance_paste" && (
+                  <motion.div
+                    layoutId="omniTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"
+                  />
+                )}
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -475,6 +489,12 @@ export default function OmniTerminalPage() {
               {activeTab === "bbs_analyzer" && (
                 <div className="w-full">
                   <EconomicBbsAnalyzer ticker={stockData.ticker} />
+                </div>
+              )}
+
+              {activeTab === "finance_paste" && (
+                <div className="w-full">
+                  <FinancialStatementVisualizer />
                 </div>
               )}
             </div>
