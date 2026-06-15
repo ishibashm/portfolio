@@ -12,16 +12,35 @@ interface Props {
 function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
   const reactId = useId();
   const containerId = `tv_widget_${reactId.replace(/:/g, "")}`;
-  // 無効なシンボルを弾くフォールバック
-  const safeSymbol =
+  
+  // 初期シンボルの決定
+  const initialSafeSymbol =
     symbol && symbol !== "UNKNOWN" && symbol.trim() !== ""
       ? symbol
       : "NASDAQ:AAPL";
 
+  const [currentSymbol, setCurrentSymbol] = useState(initialSafeSymbol);
+  const [inputSymbol, setInputSymbol] = useState(initialSafeSymbol);
   const [isExporting, setIsExporting] = useState(false);
   const [dcfData, setDcfData] = useState<any>(null);
   const [financialSummary, setFinancialSummary] = useState<any>(null);
   const [isLoadingDcf, setIsLoadingDcf] = useState(false);
+
+  // 親コンポーネントからのprops変更に同期
+  useEffect(() => {
+    const updatedSafeSymbol =
+      symbol && symbol !== "UNKNOWN" && symbol.trim() !== ""
+        ? symbol
+        : "NASDAQ:AAPL";
+    setCurrentSymbol(updatedSafeSymbol);
+    setInputSymbol(updatedSafeSymbol);
+  }, [symbol]);
+
+  // 無効なシンボルを弾くフォールバック
+  const safeSymbol =
+    currentSymbol && currentSymbol !== "UNKNOWN" && currentSymbol.trim() !== ""
+      ? currentSymbol
+      : "NASDAQ:AAPL";
 
   // グローバルウォッチリストを取得
   const globalWatchlist = useOmniStore((state) => state.globalWatchlist);
@@ -32,7 +51,7 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
       const res = await fetch("/api/v1/export/tradingview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ symbol: currentSymbol }),
       });
 
       if (!res.ok) {
@@ -118,11 +137,11 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
     return () => {
       if (container) container.innerHTML = "";
     };
-  }, [symbol, containerId, globalWatchlist]);
+  }, [currentSymbol, containerId, globalWatchlist]);
 
   useEffect(() => {
     // 決算資料（DCF）の取得
-    if (!symbol || symbol === "UNKNOWN") return;
+    if (!currentSymbol || currentSymbol === "UNKNOWN") return;
 
     const fetchDcf = async () => {
       setIsLoadingDcf(true);
@@ -131,7 +150,7 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ticker: symbol,
+            ticker: currentSymbol,
             discount_rate: 0.08,
             terminal_growth_rate: 0.025,
           }),
@@ -150,7 +169,7 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
       try {
         const queryName = name ? `?name=${encodeURIComponent(name)}` : "";
         const res = await fetch(
-          `/api/v1/finance/summary/${symbol}${queryName}`,
+          `/api/v1/finance/summary/${currentSymbol}${queryName}`,
         );
         if (res.ok) {
           const data = await res.json();
@@ -165,7 +184,7 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
 
     fetchDcf();
     fetchFinancials();
-  }, [symbol, name]);
+  }, [currentSymbol, name]);
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden text-slate-200">
@@ -200,7 +219,7 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <span className="text-3xl">🏢</span>
-            <h3 className="text-2xl font-bold text-white">{name || symbol}</h3>
+            <h3 className="text-2xl font-bold text-white">{name || currentSymbol}</h3>
           </div>
           <p className="text-slate-400 text-sm flex items-center gap-2">
             Symbol:{" "}
@@ -255,6 +274,76 @@ function TradingViewWidget({ symbol = "NASDAQ:AAPL", name, reason }: Props) {
         className="flex-1 w-full relative min-h-[400px] h-full"
         id={containerId}
       ></div>
+
+      {/* 企業業績＆チャート確認ツール (Tkinter参考) */}
+      <div className="bg-slate-800/40 p-4 border-t border-slate-700/50 shrink-0 font-sans text-xs">
+        <div className="max-w-xl mx-auto space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-400 text-sm">📈</span>
+            <h4 className="text-xs font-bold text-slate-100 uppercase tracking-widest">
+              企業業績＆チャート確認ターミナル
+            </h4>
+          </div>
+          <p className="text-[11px] text-slate-400">
+            確認したい企業のティッカー（例: <span className="font-mono text-emerald-400">TSE:6838</span>, <span className="font-mono text-emerald-400">285A</span>, <span className="font-mono text-emerald-400">NASDAQ:TSLA</span>）を入力してください：
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              value={inputSymbol}
+              onChange={(e) => setInputSymbol(e.target.value)}
+              placeholder="例: TSE:6838"
+              className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputSymbol.trim()) {
+                    setCurrentSymbol(inputSymbol.trim());
+                  } else {
+                    alert("警告: ティッカーシンボルや企業名を入力してください");
+                  }
+                }}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[110px]"
+              >
+                ウィジェットで描画
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputSymbol.trim()) {
+                    const url = `https://jp.tradingview.com/chart/?symbol=${encodeURIComponent(inputSymbol.trim())}`;
+                    window.open(url, "_blank");
+                  } else {
+                    alert("警告: ティッカーシンボルや企業名を入力してください");
+                  }
+                }}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer flex items-center justify-center min-w-[110px]"
+              >
+                外部ブラウザで開く
+              </button>
+            </div>
+          </div>
+          {/* クイックプリセット */}
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500">
+            <span>クイック選択:</span>
+            {["TSE:6838", "285A", "NASDAQ:AAPL", "NASDAQ:TSLA"].map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => {
+                  setInputSymbol(preset);
+                  setCurrentSymbol(preset);
+                }}
+                className="bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 px-2 py-0.5 rounded text-[10px] text-slate-400 hover:text-slate-200 font-mono transition-colors cursor-pointer"
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -201,8 +201,10 @@ export function EconomicIntelligence() {
                     {news.badge}
                   </span>
                 </div>
-                <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors cursor-pointer">
-                  {news.title}
+                <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors">
+                  <a href={news.url} target="_blank" rel="noopener noreferrer" className="block hover:underline underline-offset-4 decoration-emerald-500/50">
+                    {news.title}
+                  </a>
                 </h3>
                 <p className="text-[10px] text-zinc-500 leading-relaxed">
                   {news.desc}
@@ -217,7 +219,11 @@ export function EconomicIntelligence() {
       <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500">
         <div className="flex items-center gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>データソース: 日経平均・株探・Yahoo Finance API (LIVE)</span>
+          <span>データソース: 
+            <a href="https://www.nikkei.com/markets/kabu/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 mx-1 underline decoration-zinc-700 underline-offset-2 transition-colors">日経平均</a>・
+            <a href="https://kabutan.jp/" target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 mx-1 underline decoration-zinc-700 underline-offset-2 transition-colors">株探</a>・
+            Yahoo Finance API (LIVE)
+          </span>
         </div>
         <a
           href="/trends"

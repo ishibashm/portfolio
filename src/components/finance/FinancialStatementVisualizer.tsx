@@ -315,6 +315,7 @@ export function FinancialStatementVisualizer() {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stockCode, setStockCode] = useState("285A");
 
   // Parsed Results
   const [stockResult, setStockResult] = useState<StockPoint[] | null>(null);
@@ -402,6 +403,33 @@ export function FinancialStatementVisualizer() {
         setLoading(false);
       }
     }, 300);
+  };
+
+  const handleFetchKabutan = async () => {
+    if (!stockCode.trim()) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/finance/kabutan?code=${stockCode.trim().toUpperCase()}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "株探からのデータ取得に失敗しました。");
+      }
+
+      setStockResult(data.data);
+      // Pre-fill input text with formatted tab-separated values (TSV) in reverse order (newest first like clipboard)
+      const tsvLines = data.data.map(
+        (pt: any) => `${pt.date}\t${pt.open}\t${pt.high}\t${pt.low}\t${pt.close}\t${pt.change}\t${pt.volume}`
+      );
+      setInputText(["日付\t始値\t高値\t安値\t終値\t前日比\t売買高(株)", ...[...tsvLines].reverse()].join("\n"));
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "予期セぬエラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatNumber = (num?: number) => {
@@ -521,6 +549,30 @@ export function FinancialStatementVisualizer() {
               </button>
             </div>
           </div>
+
+          {activeMode === "stock" && (
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
+              <span className="text-[10px] text-indigo-400 font-bold font-mono tracking-wider">
+                [AUTO FETCH]
+              </span>
+              <input
+                type="text"
+                value={stockCode}
+                onChange={(e) => setStockCode(e.target.value)}
+                placeholder="コード (e.g. 285A)"
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-32 font-bold font-mono text-center uppercase"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={handleFetchKabutan}
+                disabled={loading || !stockCode.trim()}
+                className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>株探から時系列データを自動取得</span>
+              </button>
+            </div>
+          )}
 
           <textarea
             value={inputText}
