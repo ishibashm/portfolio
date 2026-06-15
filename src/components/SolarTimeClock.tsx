@@ -81,6 +81,10 @@ const CosmicCalendar = dynamic(
   () => import("./widgets/CosmicCalendar").then((mod) => mod.CosmicCalendar),
   { ssr: false },
 );
+const EconomicIntelligence = dynamic(
+  () => import("./finance/EconomicIntelligence").then((mod) => mod.EconomicIntelligence),
+  { ssr: false },
+);
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -4176,7 +4180,7 @@ ${timingOptimization?.recommendationText || "特になし"}
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-4 md:pt-16 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-2 md:pt-8 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-10"
         style={{
@@ -4206,7 +4210,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         </div>
       )}
 
-      <div className="flex flex-col items-center space-y-6 md:space-y-8 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
+      <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
         <div className="w-full max-w-4xl text-center mb-2 px-4">
           <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
@@ -4233,6 +4237,11 @@ ${timingOptimization?.recommendationText || "特になし"}
         {/* Cosmic Calendar Widget */}
         <div className="w-full max-w-4xl bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all">
           <CosmicCalendar />
+        </div>
+
+        {/* Market Intelligence Widget */}
+        <div className="w-full max-w-4xl bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all">
+          <EconomicIntelligence />
         </div>
 
         {showHowItWorks && (
