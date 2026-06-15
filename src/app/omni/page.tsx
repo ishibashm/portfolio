@@ -15,6 +15,7 @@ import {
   PieChart,
   ShieldAlert,
   RefreshCcw,
+  MessageSquare,
 } from "lucide-react";
 import {
   AreaChart,
@@ -32,12 +33,13 @@ import {
 } from "recharts";
 
 import IRAnalysisWidget from "@/components/widgets/IRAnalysisWidget";
+import { EconomicBbsAnalyzer } from "@/components/finance/EconomicBbsAnalyzer";
 
 export default function OmniTerminalPage() {
   const [ticker, setTicker] = useState("7203.T");
   const [isSearching, setIsSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "chart" | "fundamentals" | "forecast"
+    "chart" | "fundamentals" | "forecast" | "bbs_analyzer"
   >("chart");
   const [stockData, setStockData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -295,6 +297,18 @@ export default function OmniTerminalPage() {
                   />
                 )}
               </button>
+              <button
+                onClick={() => setActiveTab("bbs_analyzer")}
+                className={`py-3 px-5 text-sm font-bold relative transition-colors whitespace-nowrap flex items-center gap-2 ${activeTab === "bbs_analyzer" ? "text-indigo-400" : "text-gray-500 hover:text-gray-300"}`}
+              >
+                <MessageSquare className="w-4 h-4" /> Yahoo掲示板分析
+                {activeTab === "bbs_analyzer" && (
+                  <motion.div
+                    layoutId="omniTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500"
+                  />
+                )}
+              </button>
             </div>
 
             {/* Tab Contents */}
@@ -455,6 +469,12 @@ export default function OmniTerminalPage() {
                   >
                     {isPredicting ? "PREDICTING..." : "RUN FORECAST (TimesFM)"}
                   </button>
+                </div>
+              )}
+
+              {activeTab === "bbs_analyzer" && (
+                <div className="w-full">
+                  <EconomicBbsAnalyzer ticker={stockData.ticker} />
                 </div>
               )}
             </div>
