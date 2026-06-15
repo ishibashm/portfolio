@@ -2072,7 +2072,10 @@ export function NBADashboard({
                   animate={{ opacity: 1, height: "auto" }}
                   className="p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden shadow-xl"
                 >
-                  <BaziReport data={data.macro.streams.personalBazi} />
+                  <BaziReport 
+                    data={data.macro.streams.personalBazi} 
+                    title="四柱推命 精密命式分析 (ネイタル)"
+                  />
                 </motion.div>
               )}
 
@@ -2082,7 +2085,10 @@ export function NBADashboard({
                   animate={{ opacity: 1, height: "auto" }}
                   className="p-8 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md overflow-hidden shadow-xl"
                 >
-                  <BaziReport data={data.macro.streams.environmentalBazi} />
+                  <BaziReport 
+                    data={data.macro.streams.environmentalBazi} 
+                    title="四柱推命 精密命式分析 (環境・トランジット)"
+                  />
                 </motion.div>
               )}
 

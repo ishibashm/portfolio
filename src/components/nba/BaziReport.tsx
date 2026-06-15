@@ -42,7 +42,13 @@ export interface BaziData {
   luckCycles: Array<{ startYear: number; endYear: number; ganZhi: string }>;
 }
 
-export const BaziReport = ({ data }: { data: BaziData }) => {
+export const BaziReport = ({
+  data,
+  title = "四柱推命 精密命式分析",
+}: {
+  data: BaziData;
+  title?: string;
+}) => {
   const getElementIcon = (wuxing: string) => {
     if (wuxing.includes("木"))
       return <Wind className="w-4 h-4 text-emerald-400" />;
@@ -100,7 +106,7 @@ export const BaziReport = ({ data }: { data: BaziData }) => {
         <div className="p-2 rounded-xl bg-purple-500/20">
           <BookOpen className="w-5 h-5 text-purple-400" />
         </div>
-        <h3 className="font-semibold text-purple-100">四柱推命 精密命式分析</h3>
+        <h3 className="font-semibold text-purple-100">{title}</h3>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
