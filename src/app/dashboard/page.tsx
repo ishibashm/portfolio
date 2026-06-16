@@ -146,26 +146,46 @@ export default async function DashboardPage() {
 
   // 3. Process Astrology / Ephemeris (Physical Engine)
   const now = new Date();
-  const solarPhase = AstroEngine.getSolarLongitude(now);
-  const marsLon = AstroEngine.getMarsLongitude(now);
-  const saturnLon = AstroEngine.getSaturnLongitude(now);
+  let solarPhase = 0;
+  let marsLon = 0;
+  let saturnLon = 0;
+
+  try {
+    solarPhase = AstroEngine.getSolarLongitude(now);
+    marsLon = AstroEngine.getMarsLongitude(now);
+    saturnLon = AstroEngine.getSaturnLongitude(now);
+  } catch (astroErr) {
+    console.error("AstroEngine Calculation Error:", astroErr);
+  }
 
   // --- LUNAR & ROKUYO LOGIC ---
-  const lunarDate = Lunar.fromDate(now);
-  const ROKUYO_MAP = [
-    "大安 (Taian)",
-    "赤口 (Shakku)",
-    "先勝 (Sensho)",
-    "友引 (Tomobiki)",
-    "先負 (Sakimake)",
-    "仏滅 (Butsumetsu)",
-  ];
-  // Note: getMonth() / getDay() typically return absolute month/day numbers in lunar-javascript
-  const lunarMonth = lunarDate.getMonth();
-  const lunarDay = lunarDate.getDay();
-  const rokuyoName = ROKUYO_MAP[(lunarMonth + lunarDay) % 6];
-  const yueXiang = lunarDate.getYueXiang(); // Phase name
-  const lunarDateString = `旧暦 ${lunarMonth}月${lunarDay}日`;
+  let rokuyoName = "大安 (Taian)";
+  let yueXiang = "不明";
+  let lunarMonth = 1;
+  let lunarDay = 1;
+  let lunarDateString = "旧暦 1月1日";
+
+  try {
+    const lunarDate = Lunar.fromDate(now);
+    const ROKUYO_MAP = [
+      "大安 (Taian)",
+      "赤口 (Shakku)",
+      "先勝 (Sensho)",
+      "友引 (Tomobiki)",
+      "先負 (Sakimake)",
+      "仏滅 (Butsumetsu)",
+    ];
+    lunarMonth = lunarDate.getMonth();
+    lunarDay = lunarDate.getDay();
+    
+    const rawIndex = lunarMonth + lunarDay;
+    const absIndex = isNaN(rawIndex) ? 0 : Math.abs(rawIndex) % 6;
+    rokuyoName = ROKUYO_MAP[absIndex] || "大安 (Taian)";
+    yueXiang = lunarDate.getYueXiang() || "不明";
+    lunarDateString = `旧暦 ${lunarMonth}月${lunarDay}日`;
+  } catch (lunarErr) {
+    console.error("Lunar Calendar Calculation Error:", lunarErr);
+  }
 
   // 4. Calculate Next Best Action deterministically
   const nbaResult = await nbaEngine
@@ -441,7 +461,7 @@ export default async function DashboardPage() {
               </div>
               <div className="flex justify-between items-end mt-2">
                 <span className="text-xl font-bold text-white tracking-widest">
-                  {rokuyoName.split(" ")[0]}
+                  {rokuyoName?.split(" ")[0] ?? "大安"}
                 </span>
                 <span className="text-sm text-purple-200">
                   月相: {yueXiang}
