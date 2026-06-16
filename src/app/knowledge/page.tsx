@@ -256,34 +256,98 @@ export default function ServiceNowKnowledgePage() {
     setChatMessages((prev) => [...prev, { role: "user", content: userMessage }]);
     setChatLoading(true);
 
+    // --- 1. キーワード検索（ローカル） ---
     const words = userMessage.toLowerCase().split(/[\s　]+/).filter(Boolean);
     
-    // Priority 1: multi-word AND search (all terms match)
-    let matchedDocs = articles.filter((a) => {
+    // AND検索
+    let keywordMatchedDocs = articles.filter((a) => {
       if (words.length === 0) return false;
       return words.every((word) => {
         return (
           a.title.toLowerCase().includes(word) ||
           (a.content && a.content.toLowerCase().includes(word)) ||
+          a.kb_id.toLowerCase().includes(word) ||
           (a.category && a.category.toLowerCase().includes(word))
         );
       });
     });
 
-    // Priority 2: Fallback to OR search if AND search yields nothing
-    if (matchedDocs.length === 0 && words.length > 0) {
-      matchedDocs = articles.filter((a) => {
+    // ヒットしなければOR検索
+    if (keywordMatchedDocs.length === 0 && words.length > 0) {
+      keywordMatchedDocs = articles.filter((a) => {
         return words.some((word) => {
           return (
             a.title.toLowerCase().includes(word) ||
             (a.content && a.content.toLowerCase().includes(word)) ||
+            a.kb_id.toLowerCase().includes(word) ||
             (a.category && a.category.toLowerCase().includes(word))
           );
         });
       });
     }
 
-    const slicedMatchedDocs = matchedDocs.slice(0, 10);
+    // --- 2. ベクトル検索（API）: チャンク検索 ---
+    let vectorMatchedDocs: any[] = [];
+    try {
+      const searchRes = await fetch("/api/ai/search-chunks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: userMessage }), 
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        // マップしてArticleの型（UI互換）に変換
+        vectorMatchedDocs = (searchData.chunks || []).map((chunk: any) => ({
+          id: chunk.chunk_id,
+          kb_id: chunk.kb_id, // 親記事のID
+          chunk_index: chunk.chunk_index, // チャンクインデックス
+          title: `${chunk.title} (Part ${chunk.chunk_index + 1})`,
+          content: chunk.chunk_content,
+          domain: chunk.domain || "Web Extract",
+          category: chunk.category || "General",
+          type: "Chunk",
+          status: "Draft",
+          priority: "Medium",
+          created_at: new Date().toISOString(),
+        }));
+      }
+    } catch (err) {
+      console.warn("Chunk vector search failed", err);
+    }
+
+    // --- 3. 検索結果のマージと重複排除（ハイブリッド検索） ---
+    // まず、キーワード検索の結果をArticle形式のまま扱うか、Chunk互換にするかですが、
+    // API側では kb_id, chunk_index, title, content (または chunk_content) を想定しています。
+    // キーワード検索のヒットは記事全体（chunk_index=0扱い、またはそのまま）として追加します。
+
+    const mergedDocsMap = new Map<string, any>();
+    
+    // ベクトル検索結果を優先して追加
+    vectorMatchedDocs.forEach((doc) => mergedDocsMap.set(doc.id, doc));
+    
+    // キーワード検索結果を追加（最大5件）
+    keywordMatchedDocs.slice(0, 5).forEach((doc) => {
+      // id（記事ID）がベクトル検索のチャンク元記事と被るかもしれないが、
+      // 表示用のidとしてはそのまま使う
+      if (!mergedDocsMap.has(doc.id)) {
+        mergedDocsMap.set(doc.id, {
+          id: doc.id,
+          kb_id: doc.kb_id,
+          chunk_index: 0, // 記事全体は便宜上Part 1扱い
+          title: doc.title, // チャンク化されていない全体記事
+          content: doc.content,
+          domain: doc.domain,
+          category: doc.category,
+          type: doc.type,
+          status: doc.status,
+          priority: doc.priority,
+          created_at: doc.created_at,
+        });
+      }
+    });
+
+    // 配列に戻して最大10件に制限
+    const slicedMatchedDocs = Array.from(mergedDocsMap.values()).slice(0, 10);
     setChatDocs(slicedMatchedDocs);
 
     try {

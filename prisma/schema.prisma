@@ -240,7 +240,26 @@ model KnowledgeDocument {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
+  chunks     KnowledgeChunk[]
+
   @@index([user_id])
+}
+
+model KnowledgeChunk {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id    String   @db.Uuid
+  document       KnowledgeDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  
+  chunk_index    Int
+  content        String
+  token_count    Int?
+  
+  // Storing embedding as JSON to maintain compatibility with the root schema's approach
+  embedding      Json?
+  
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([document_id])
 }
 
 model XPost {

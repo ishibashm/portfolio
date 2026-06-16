@@ -3,6 +3,21 @@
 import { JSDOM } from "jsdom";
 import { Defuddle } from "defuddle/node";
 import prisma from "@/lib/prisma";
+import { embed, embedMany } from "ai";
+import { google } from "@ai-sdk/google";
+
+// テキストを指定文字数で分割（チャンク化）し、少しオーバーラップさせる関数
+function chunkText(text: string, chunkSize = 1000, overlap = 200): string[] {
+  const chunks: string[] = [];
+  let i = 0;
+  while (i < text.length) {
+    chunks.push(text.slice(i, i + chunkSize));
+    if (i + chunkSize >= text.length) break;
+    // 次のチャンクは、前のチャンクの末尾とオーバーラップ（重複）させて文脈の分断を防ぐ
+    i += chunkSize - overlap;
+  }
+  return chunks;
+}
 
 export async function extractAndSaveArticle(url: string) {
   try {
@@ -25,17 +40,42 @@ export async function extractAndSaveArticle(url: string) {
       };
     }
 
-    // Save to the ServiceNow-like KnowledgeDocument table
+    // Save the main document
     const document = await prisma.knowledgeDocument.create({
       data: {
         title: result.title,
-        content: result.content,
+        content: result.content || "",
         domain: result.site || new URL(url).hostname,
         category: "Web Extract",
         type: "Note",
         status: "Draft",
         priority: "Medium",
       },
+    });
+
+    // 本文をチャンクに分割
+    const fullText = result.content || "";
+    const chunks = chunkText(fullText, 1000, 200);
+    
+    // 分割したチャンクが1つもない場合はタイトルのみをチャンクにする
+    if (chunks.length === 0) chunks.push(result.title);
+
+    // すべてのチャンクを一括でベクトル化
+    const { embeddings } = await embedMany({
+      model: google.textEmbeddingModel("text-embedding-004"),
+      values: chunks.map(chunk => `${result.title}\n\n${chunk}`), // 検索精度を上げるため、各チャンクの先頭にタイトルを付与
+    });
+
+    // チャンクデータを構築して保存
+    const chunkData = chunks.map((chunkContent, i) => ({
+      document_id: document.id,
+      chunk_index: i,
+      content: chunkContent,
+      embedding: embeddings[i], // JSONとして保存
+    }));
+
+    await prisma.knowledgeChunk.createMany({
+      data: chunkData,
     });
 
     return {

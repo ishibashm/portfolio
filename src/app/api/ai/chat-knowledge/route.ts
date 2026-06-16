@@ -25,29 +25,29 @@ export async function POST(req: Request) {
       );
     }
 
-    // Format knowledge documents as the context for the model
+    // Format knowledge chunks as the context for the model
     const contextText =
       docs && docs.length > 0
         ? docs
-            .map((doc: any) => {
-              const kbPrefix = typeof doc.kb_id === "string" && doc.kb_id.startsWith("KB")
-                ? doc.kb_id
-                : "KB" + String(doc.kb_id).padStart(6, "0");
-              return `<document id="${kbPrefix}" title="${doc.title}">\n${doc.content}\n</document>`;
+            .map((chunk: any) => {
+              const kbPrefix = typeof chunk.kb_id === "string" && chunk.kb_id.startsWith("KB")
+                ? chunk.kb_id
+                : "KB" + String(chunk.kb_id).padStart(6, "0");
+              return `<chunk id="${kbPrefix}-Part${chunk.chunk_index + 1}" source="${kbPrefix}" title="${chunk.title}">\n${chunk.chunk_content || chunk.content}\n</chunk>`;
             })
             .join("\n\n")
         : "No relevant knowledge documents found.";
 
-    const systemPrompt = `You are an advanced RAG (Retrieval-Augmented Generation) assistant for the user's ITSM / Personal Knowledge Base. Your task is to answer the user's queries accurately, objectively, and ONLY based on the provided documents.
+    const systemPrompt = `You are an advanced RAG (Retrieval-Augmented Generation) assistant for the user's ITSM / Personal Knowledge Base. Your task is to answer the user's queries accurately, objectively, and ONLY based on the provided document chunks.
 
 Guidelines:
-1. Ground all your answers strictly in the text contained within the <document> tags.
-2. In your answers, cite the documents you reference using their ID in brackets, e.g., [KB000001]. Multiple citations should be separated by commas, e.g., [KB000001], [KB000002].
-3. Make the citations clickable links in markdown if you want, but formatting them simply as text [KB000001] is fine. The UI will automatically detect and linkify [KBxxxxxx] strings.
-4. If the provided documents do not contain enough information to answer the question, state: "提供されたナレッジドキュメントから該当する情報を特定できませんでした。" (Could not identify the relevant information from the provided knowledge documents) and do not make up any information.
+1. Ground all your answers strictly in the text contained within the <chunk> tags.
+2. In your answers, cite the chunks you reference using their source ID and part in brackets, e.g., [KB000001-Part1]. Multiple citations should be separated by commas.
+3. Make the citations clickable links in markdown if you want, but formatting them simply as text [KB000001-Part1] is fine.
+4. If the provided chunks do not contain enough information to answer the question, state: "提供されたナレッジドキュメントから該当する情報を特定できませんでした。" (Could not identify the relevant information from the provided knowledge chunks) and do not make up any information.
 5. Always respond in Japanese unless the query is in another language.
 
-Knowledge Base Documents:
+Knowledge Base Chunks:
 ${contextText}`;
 
     // Get response from Gemini
