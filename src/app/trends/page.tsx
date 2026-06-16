@@ -223,6 +223,14 @@ export default function TrendsPage() {
 
   // Helper to color source tags and borders dynamically
   const getSourceDetails = (source: string) => {
+    if (source.includes("マクロ経済") || source.includes("市場インテリジェンス")) {
+      return {
+        color: "rgb(16, 185, 129)", // emerald-500
+        bg: "rgba(16, 185, 129, 0.05)",
+        border: "rgba(16, 185, 129, 0.15)",
+        name: "マクロ経済・市場インテリジェンス",
+      };
+    }
     if (source.includes("Zenn")) {
       return {
         color: "rgb(56, 189, 248)", // sky-400

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -13,11 +13,44 @@ import {
   ChevronRight,
   Flame,
   Award,
-  BookOpen
+  BookOpen,
+  Loader2
 } from "lucide-react";
 
 export function EconomicIntelligence() {
   const [activeTab, setActiveTab] = useState<"prices" | "macro" | "news">("prices");
+  const [newsData, setNewsData] = useState<any[]>([]);
+  const [loadingNews, setLoadingNews] = useState<boolean>(true);
+  const [newsError, setNewsError] = useState<boolean>(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchNews() {
+      try {
+        const response = await fetch("/api/trends");
+        if (!response.ok) throw new Error("Failed to fetch");
+        const data = await response.json();
+        const econNews = data["マクロ経済・市場インテリジェンス"];
+        if (isMounted && Array.isArray(econNews)) {
+          setNewsData(econNews);
+          setNewsError(false);
+        }
+      } catch (err) {
+        console.error("Failed to load economic news:", err);
+        if (isMounted) {
+          setNewsError(true);
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingNews(false);
+        }
+      }
+    }
+    fetchNews();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const pricesData = [
     { label: "ドル円 (USD/JPY)", value: "160.09", change: "+0.15%", isPositive: true, category: "Forex" },
@@ -37,36 +70,6 @@ export function EconomicIntelligence() {
     { indicator: "米生産者物価指数 (PPI)", value: "+6.5%", period: "2026年5月実績", status: "3年半ぶりの大幅な伸び", trend: "up" },
     { indicator: "日本消費者物価指数 (CPI)", value: "+1.4%", period: "2026年4月実績", status: "5月分は6/19発表予定", trend: "stable" },
     { indicator: "不動産キャップレート", value: "4.2% - 5.5%", period: "2026年6月現在", status: "金利上昇に伴い上昇圧迫", trend: "up" },
-  ];
-
-  const newsData = [
-    {
-      source: "日本経済新聞",
-      time: "15:15",
-      title: "日経平均大引け、急騰3297円高の6万9317円 過去2番目の上げ幅で史上最高値更新",
-      url: "https://www.nikkei.com/markets/kabu/",
-      desc: "米国とイランの戦闘終結合意の報道を受けリスクオン。半導体、建設株中心に全面高の展開。",
-      badge: "株式市場",
-      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-    },
-    {
-      source: "株探 (Kabutan)",
-      time: "15:00",
-      title: "キオクシアHDが急騰で初の9万円台。村田製、三井ハイテはストップ高比例配分",
-      url: "https://kabutan.jp/news/marketnews/",
-      desc: "AI関連需要と地政学リスク後退のダブルの追い風。電子部品・半導体材料セクターに巨額の買い。",
-      badge: "注目銘柄",
-      badgeColor: "bg-blue-500/10 text-blue-400 border-blue-500/20"
-    },
-    {
-      source: "日本経済新聞",
-      time: "09:00",
-      title: "日銀、金融政策決定会合がスタート。国債買い入れ減額の具体策を協議へ",
-      url: "https://www.nikkei.com/economy/central_bank/",
-      desc: "15-16日の2日間の日程。長期金利上昇局面における国債減額プランのペースと利上げ時期が焦点。",
-      badge: "金融政策",
-      badgeColor: "bg-purple-500/10 text-purple-400 border-purple-500/20"
-    },
   ];
 
   return (
@@ -183,34 +186,52 @@ export function EconomicIntelligence() {
 
         {activeTab === "news" && (
           <div className="space-y-3">
-            {newsData.map((news, idx) => (
-              <div
-                key={idx}
-                className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col gap-1.5"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-zinc-400">
-                      {news.source}
-                    </span>
-                    <span className="text-[9px] text-zinc-600 font-mono">
-                      {news.time}
+            {loadingNews ? (
+              <div className="flex flex-col items-center justify-center py-10 text-zinc-500 gap-2">
+                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                <span className="text-[9px] font-mono tracking-wider uppercase opacity-80">LOADING FEEDSTREAM...</span>
+              </div>
+            ) : newsError ? (
+              <div className="text-center py-10 text-zinc-500 text-[11px] font-mono">
+                ⚠️ [ERR_CONNECTION_FAILED]
+                <p className="text-[10px] text-zinc-600 mt-1">ニュースの取得に失敗しました</p>
+              </div>
+            ) : newsData.length === 0 ? (
+              <div className="text-center py-10 text-zinc-500 text-[11px]">
+                現在表示できるニュースはありません。
+              </div>
+            ) : (
+              newsData.map((news, idx) => (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col gap-1.5"
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-zinc-400">
+                        {news.source}
+                      </span>
+                      <span className="text-[9px] text-zinc-600 font-mono">
+                        {news.time}
+                      </span>
+                    </div>
+                    <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor}`}>
+                      {news.badge}
                     </span>
                   </div>
-                  <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor}`}>
-                    {news.badge}
-                  </span>
+                  <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors">
+                    <a href={news.link} target="_blank" rel="noopener noreferrer" className="block hover:underline underline-offset-4 decoration-emerald-500/50">
+                      {news.title}
+                    </a>
+                  </h3>
+                  {news.desc && (
+                    <p className="text-[10px] text-zinc-500 leading-relaxed">
+                      {news.desc}
+                    </p>
+                  )}
                 </div>
-                <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors">
-                  <a href={news.url} target="_blank" rel="noopener noreferrer" className="block hover:underline underline-offset-4 decoration-emerald-500/50">
-                    {news.title}
-                  </a>
-                </h3>
-                <p className="text-[10px] text-zinc-500 leading-relaxed">
-                  {news.desc}
-                </p>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
