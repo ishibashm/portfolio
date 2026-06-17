@@ -51,7 +51,6 @@ def calculate_quant_metrics(df):
         return {}
 
     # 1. Annualized Return (Geometric mean)
-    # Using 252 trading days
     num_years = len(df) / 252.0
     total_return = (df['Close'].iloc[-1] / df['Close'].iloc[0]) - 1
     annualized_return = (total_return + 1) ** (1.0 / max(num_years, 0.1)) - 1
@@ -70,10 +69,7 @@ def calculate_quant_metrics(df):
     max_drawdown = float(drawdown.min())
 
     # 5. Value at Risk (VaR 95%, 1-day)
-    # Historical VaR
     hist_var_95 = float(-np.percentile(returns, 5))
-    
-    # Parametric VaR (Normal Distribution)
     param_var_95 = float(stats.norm.ppf(0.95) * daily_vol)
 
     # 6. Skewness and Kurtosis
@@ -137,11 +133,8 @@ def run_monte_carlo_simulation(df, horizon=30, simulations=1000):
 def scrape_yahoo_finance_jp_valuation(ticker, max_pages=2):
     """
     Scrapes valuation ratios (PER, PBR) from Yahoo Finance Japan's history page.
-    Returns a dictionary mapping date string 'YYYY-MM-DD' to (per, pbr).
     """
     valuation_data = {}
-    
-    # Only try for Japanese stocks (ending in .T)
     if not ticker.endswith('.T'):
         return valuation_data
         
@@ -165,7 +158,7 @@ def scrape_yahoo_finance_jp_valuation(ticker, max_pages=2):
             if len(rows) <= 1:
                 break
                 
-            for row in rows[1:]: # skip header
+            for row in rows[1:]:
                 cols = [col.text.strip() for col in row.find_all(["td", "th"])]
                 if len(cols) >= 9:
                     date_str = cols[0]
@@ -173,50 +166,161 @@ def scrape_yahoo_finance_jp_valuation(ticker, max_pages=2):
                     pbr_str = cols[8]
                     
                     try:
-                        # Parse date like '2026/6/17' -> '2026-06-17'
                         dt = datetime.strptime(date_str, "%Y/%m/%d")
                         formatted_date = dt.strftime("%Y-%m-%d")
-                        
-                        # Parse PER
                         per = float(per_str.replace(',', '')) if per_str and per_str != '-' else None
-                        # Parse PBR
                         pbr = float(pbr_str.replace(',', '')) if pbr_str and pbr_str != '-' else None
-                        
                         valuation_data[formatted_date] = (per, pbr)
                     except:
-                        # Ignore rows that fail parsing (e.g. dividend announcement rows or invalid formats)
                         continue
         except Exception as e:
-            # Silence connection errors or other scrap failures
             break
             
     return valuation_data
 
+def parse_yfinance_html(html_content):
+    """
+    Parses a Yahoo Finance Japan history page HTML table.
+    Returns a pandas DataFrame.
+    """
+    soup = BeautifulSoup(html_content, "html.parser")
+    tables = soup.find_all("table")
+    if not tables:
+        # Try finding table by class or ID
+        table = soup.find(id="histlist") or soup.find(class_=lambda x: x and 'table' in x.lower())
+    else:
+        table = tables[0]
+        
+    if not table:
+        raise ValueError("Could not find any tables in the pasted HTML.")
+        
+    rows = table.find_all("tr")
+    data_list = []
+    
+    for row in rows[1:]: # Skip header
+        cols = row.find_all(["td", "th"])
+        if len(cols) < 7:
+            continue
+            
+        try:
+            date_str = cols[0].text.strip()
+            # Try to parse date like YYYY/MM/DD or YYYY-MM-DD
+            try:
+                dt = datetime.strptime(date_str, "%Y/%m/%d")
+            except:
+                dt = datetime.strptime(date_str, "%Y-%m-%d")
+                
+            formatted_date = dt.strftime("%Y-%m-%d")
+            
+            # Helper to extract value from nested StyledNumber spans or regular text
+            def extract_val(cell):
+                # Check for lock icon (masked PER/PBR)
+                if cell.find(class_=lambda x: x and 'lock' in x.lower()) or 'styles_HistoryContainer__tableData--mask' in str(cell):
+                    return None
+                    
+                val_span = cell.find(class_=lambda x: x and 'value' in x.lower())
+                text = val_span.text.strip() if val_span else cell.text.strip()
+                
+                if not text or text == '-':
+                    return None
+                return float(text.replace(',', ''))
+
+            open_val = extract_val(cols[1])
+            high_val = extract_val(cols[2])
+            low_val = extract_val(cols[3])
+            close_val = extract_val(cols[4])
+            volume_val = extract_val(cols[5])
+            adj_close_val = extract_val(cols[6])
+            
+            per_val = None
+            pbr_val = None
+            if len(cols) >= 9:
+                per_val = extract_val(cols[7])
+                pbr_val = extract_val(cols[8])
+                
+            data_list.append({
+                "Date": formatted_date,
+                "Open": open_val,
+                "High": high_val,
+                "Low": low_val,
+                "Close": close_val,
+                "Volume": volume_val,
+                "Adj Close": adj_close_val,
+                "PER": per_val,
+                "PBR": pbr_val
+            })
+        except Exception as e:
+            continue
+            
+    if not data_list:
+        raise ValueError("No valid rows could be parsed from the HTML table.")
+        
+    df = pd.DataFrame(data_list)
+    df.set_index("Date", inplace=True)
+    df.index = pd.to_datetime(df.index)
+    df.sort_index(ascending=True, inplace=True)
+    
+    # Fill missing values using interpolation for technicals if necessary
+    df['Close'] = df['Close'].ffill().bfill()
+    
+    return df
+
 def main():
     if len(sys.argv) < 2:
-        print(json.dumps({"success": False, "error": "No ticker provided"}))
+        print(json.dumps({"success": False, "error": "No arguments provided"}))
         return
 
-    raw_ticker = sys.argv[1]
-    
-    # Helper: Auto-append .T for Japanese Stock Codes (4 digits)
-    ticker = raw_ticker
-    if raw_ticker.isdigit() and len(raw_ticker) == 4:
-        ticker = f"{raw_ticker}.T"
-    
-    try:
-        stock = yf.Ticker(ticker)
-        # Fetch 2 years of history to calculate stable indicators like SMA 200
-        df = stock.history(period="2y")
-        
-        if df.empty:
-            print(json.dumps({"success": False, "error": f"No historical data found for symbol: {ticker}"}))
+    # Check for --html mode
+    html_mode = False
+    if sys.argv[1] == "--html":
+        html_mode = True
+        if len(sys.argv) < 3:
+            print(json.dumps({"success": False, "error": "No HTML content provided"}))
             return
+        html_source = sys.argv[2]
+    else:
+        raw_ticker = sys.argv[1]
+
+    try:
+        if html_mode:
+            # If html_source is a filepath, read it. Otherwise treat as raw html.
+            try:
+                with open(html_source, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+            except:
+                html_content = html_source
+                
+            df = parse_yfinance_html(html_content)
+            ticker = "PASTED_HTML"
+            meta = {
+                "name": "Pasted HTML Stock Data",
+                "symbol": "PASTED",
+                "currency": "JPY",
+                "sector": "Pasted Data",
+                "industry": "User Uploaded",
+                "website": "",
+                "summary": "This stock data was imported from pasted HTML source.",
+                "market_cap": None,
+                "pe_ratio": None,
+                "dividend_yield": None,
+            }
+        else:
+            # Helper: Auto-append .T for Japanese Stock Codes (4 digits)
+            ticker = raw_ticker
+            if raw_ticker.isdigit() and len(raw_ticker) == 4:
+                ticker = f"{raw_ticker}.T"
+                
+            stock = yf.Ticker(ticker)
+            df = stock.history(period="2y")
             
-        # Remove timezone information from index to match naive datetimes
-        if df.index.tz is not None:
-            df.index = df.index.tz_localize(None)
-            
+            if df.empty:
+                print(json.dumps({"success": False, "error": f"No historical data found for symbol: {ticker}"}))
+                return
+                
+            # Remove timezone information from index to match naive datetimes
+            if df.index.tz is not None:
+                df.index = df.index.tz_localize(None)
+
         # Add technical analysis indicators
         df = calculate_technical_indicators(df)
         
@@ -226,22 +330,24 @@ def main():
         # Run Monte Carlo Forecast
         forecast = run_monte_carlo_simulation(df, horizon=30)
         
-        # Fetch valuation data from Yahoo Finance JP
-        val_map = scrape_yahoo_finance_jp_valuation(ticker, max_pages=2)
-        
-        # Add PER/PBR columns to df
-        df['PER'] = np.nan
-        df['PBR'] = np.nan
-        
-        for date_str, (per, pbr) in val_map.items():
-            try:
-                ts = pd.Timestamp(date_str)
-                if ts in df.index:
-                    df.at[ts, 'PER'] = per
-                    df.at[ts, 'PBR'] = pbr
-            except:
-                pass
-                
+        # For HTML mode, if PER/PBR columns don't exist, create them
+        if 'PER' not in df.columns:
+            df['PER'] = np.nan
+        if 'PBR' not in df.columns:
+            df['PBR'] = np.nan
+            
+        if not html_mode:
+            # Fetch valuation data from Yahoo Finance JP
+            val_map = scrape_yahoo_finance_jp_valuation(ticker, max_pages=2)
+            for date_str, (per, pbr) in val_map.items():
+                try:
+                    ts = pd.Timestamp(date_str)
+                    if ts in df.index:
+                        df.at[ts, 'PER'] = per
+                        df.at[ts, 'PBR'] = pbr
+                except:
+                    pass
+                    
         # Slice df to the last 1 year (approx 252 trading days) to send to UI
         df_sliced = df.iloc[-252:]
         
@@ -269,20 +375,20 @@ def main():
                 "pbr": round(float(row['PBR']), 2) if not pd.isna(row['PBR']) else None,
             })
             
-        # Retrieve Meta Information
-        info = stock.info
-        meta = {
-            "name": info.get("longName", ticker),
-            "symbol": ticker,
-            "currency": info.get("currency", "JPY"),
-            "sector": info.get("sector", "Unknown"),
-            "industry": info.get("industry", "Unknown"),
-            "website": info.get("website", ""),
-            "summary": info.get("longBusinessSummary", ""),
-            "market_cap": info.get("marketCap", None),
-            "pe_ratio": info.get("trailingPE", None),
-            "dividend_yield": info.get("dividendYield", None),
-        }
+        if not html_mode:
+            info = stock.info
+            meta = {
+                "name": info.get("longName", ticker),
+                "symbol": ticker,
+                "currency": info.get("currency", "JPY"),
+                "sector": info.get("sector", "Unknown"),
+                "industry": info.get("industry", "Unknown"),
+                "website": info.get("website", ""),
+                "summary": info.get("longBusinessSummary", ""),
+                "market_cap": info.get("marketCap", None),
+                "pe_ratio": info.get("trailingPE", None),
+                "dividend_yield": info.get("dividendYield", None),
+            }
         
         output = {
             "success": True,

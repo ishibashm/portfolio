@@ -110,6 +110,8 @@ export default function YFinanceQuantPage() {
   const [chartMode, setChartMode] = useState<"price" | "rsi" | "macd" | "valuation">("price");
   const [showBB, setShowBB] = useState(true);
   const [showSMA, setShowSMA] = useState(true);
+  const [inputMode, setInputMode] = useState<"api" | "html">("api");
+  const [htmlInput, setHtmlInput] = useState("");
 
   // Format big numbers
   const formatMarketCap = (num: number | null, currency: string) => {
@@ -123,7 +125,8 @@ export default function YFinanceQuantPage() {
   };
 
   const handleExecute = async () => {
-    if (!tickerInput.trim()) return;
+    if (inputMode === "api" && !tickerInput.trim()) return;
+    if (inputMode === "html" && !htmlInput.trim()) return;
     setIsLoading(true);
     setError(null);
     setMeta(null);
@@ -133,17 +136,22 @@ export default function YFinanceQuantPage() {
     setAiReport(null);
     setSavedKbId(null);
 
-    // Auto-補正 check
-    let ticker = tickerInput.trim();
-    if (/^\d{4}$/.test(ticker)) {
-      ticker = `${ticker}.T`;
+    let requestBody: any = {};
+    if (inputMode === "html") {
+      requestBody = { html: htmlInput };
+    } else {
+      let ticker = tickerInput.trim();
+      if (/^\d{4}$/.test(ticker)) {
+        ticker = `${ticker}.T`;
+      }
+      requestBody = { ticker };
     }
 
     try {
       const res = await fetch("/api/research/yfinance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticker }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await res.json();
@@ -299,38 +307,79 @@ export default function YFinanceQuantPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left: Input Console */}
           <div className="lg:col-span-4 p-6 rounded-2xl bg-white/[0.01] border border-emerald-950/50 backdrop-blur-xl shadow-2xl flex flex-col justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sliders className="w-4 h-4 text-emerald-400" />
-                <h2 className="text-sm font-mono text-emerald-400 uppercase tracking-widest">
-                  Quant Engine Inputs
-                </h2>
+            <div className="flex flex-col gap-4 h-full justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  <h2 className="text-sm font-mono text-emerald-400 uppercase tracking-widest">
+                    Quant Engine Inputs
+                  </h2>
+                </div>
+                <p className="text-xs text-zinc-500 mb-4">
+                  分析データを取得するソース形式を選択し、入力してください。
+                </p>
               </div>
-              <p className="text-xs text-zinc-500 mb-4">
-                株価を取得する日本株の銘柄コードを入力してください。プログラム側で `.T` を補助します。
-              </p>
               
-              <div className="relative">
-                <input
-                  type="text"
-                  value={tickerInput}
-                  onChange={(e) => setTickerInput(e.target.value)}
-                  placeholder="7203 または 7203.T"
-                  className="w-full bg-black/60 border border-emerald-900/40 rounded-xl pl-4 pr-12 py-3 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
-                  onKeyDown={(e) => e.key === "Enter" && handleExecute()}
-                />
+              <div className="flex rounded-lg bg-black/60 p-0.5 border border-emerald-950/40">
                 <button
-                  onClick={handleExecute}
-                  disabled={isLoading}
-                  className="absolute right-2 top-2 p-2 rounded-lg bg-emerald-900/30 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-400 transition-colors disabled:opacity-50"
+                  onClick={() => setInputMode("api")}
+                  className={`flex-1 py-1.5 rounded-md text-[10px] font-mono tracking-wider transition-colors ${inputMode === "api" ? "bg-emerald-900/40 text-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
                 >
-                  {isLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Search className="w-4 h-4" />
-                  )}
+                  API AUTO FETCH
+                </button>
+                <button
+                  onClick={() => setInputMode("html")}
+                  className={`flex-1 py-1.5 rounded-md text-[10px] font-mono tracking-wider transition-colors ${inputMode === "html" ? "bg-emerald-900/40 text-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
+                >
+                  PASTE HTML
                 </button>
               </div>
+
+              {inputMode === "api" ? (
+                <div>
+                  <label className="block text-[10px] font-mono text-zinc-500 mb-1.5 uppercase tracking-wider">
+                    Ticker Code / 銘柄コード
+                  </label>
+                  <input
+                    type="text"
+                    value={tickerInput}
+                    onChange={(e) => setTickerInput(e.target.value)}
+                    placeholder="7203 (Toyota) or 7203.T"
+                    className="w-full bg-black/60 border border-emerald-900/40 rounded-xl px-4 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
+                    onKeyDown={(e) => e.key === "Enter" && handleExecute()}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col min-h-[140px]">
+                  <label className="block text-[10px] font-mono text-zinc-500 mb-1.5 uppercase tracking-wider">
+                    Yahoo Finance JP Table HTML
+                  </label>
+                  <textarea
+                    value={htmlInput}
+                    onChange={(e) => setHtmlInput(e.target.value)}
+                    placeholder="<table class=... id='histlist'> ... </table> などをここにペースト"
+                    className="w-full flex-1 min-h-[120px] bg-black/60 border border-emerald-900/40 rounded-xl px-4 py-2.5 text-[9px] text-zinc-300 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono custom-scrollbar resize-none"
+                  />
+                </div>
+              )}
+
+              <button
+                onClick={handleExecute}
+                disabled={isLoading}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-900/30 hover:bg-emerald-900/60 disabled:bg-zinc-900 border border-emerald-800/30 text-emerald-400 font-mono text-xs py-3 rounded-xl transition-all disabled:opacity-50 shrink-0"
+              >
+                {isLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>EXECUTING ANALYTICS...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    <span>RUN QUANT SUITE</span>
+                  </>
+                )}
+              </button>
             </div>
 
             {error && (
