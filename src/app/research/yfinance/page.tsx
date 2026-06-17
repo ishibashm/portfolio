@@ -102,6 +102,10 @@ export default function YFinanceQuantPage() {
   const [aiReport, setAiReport] = useState<string | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
+  // Save Note States
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [savedKbId, setSavedKbId] = useState<string | null>(null);
+
   // UI States
   const [chartMode, setChartMode] = useState<"price" | "rsi" | "macd" | "valuation">("price");
   const [showBB, setShowBB] = useState(true);
@@ -127,6 +131,7 @@ export default function YFinanceQuantPage() {
     setHistory([]);
     setForecast([]);
     setAiReport(null);
+    setSavedKbId(null);
 
     // Auto-補正 check
     let ticker = tickerInput.trim();
@@ -190,6 +195,35 @@ export default function YFinanceQuantPage() {
       setAiReport("AI 接続中にネットワークエラーが発生しました。");
     } finally {
       setIsGeneratingReport(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!meta || !metrics) return;
+    setIsSavingNote(true);
+    try {
+      const res = await fetch("/api/research/yfinance/save-note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          meta,
+          metrics,
+          aiReport,
+          history,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSavedKbId(data.kb_id);
+      } else {
+        alert("ノートの保存に失敗しました: " + (data.error || "Unknown error"));
+      }
+    } catch (e) {
+      console.error(e);
+      alert("ノート保存中にネットワークエラーが発生しました。");
+    } finally {
+      setIsSavingNote(false);
     }
   };
 
@@ -749,11 +783,42 @@ export default function YFinanceQuantPage() {
                     <Sparkles className="w-4 h-4 text-amber-400" />
                     <h3 className="text-sm font-mono text-zinc-300 uppercase tracking-wider">AI Quant Analyst Insights</h3>
                   </div>
-                  {isGeneratingReport && (
-                    <span className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400">
-                      <RefreshCw className="w-3 h-3 animate-spin" /> Generating...
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {isGeneratingReport && (
+                      <span className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400">
+                        <RefreshCw className="w-3 h-3 animate-spin" /> Generating...
+                      </span>
+                    )}
+                    {aiReport && !isGeneratingReport && (
+                      <>
+                        {savedKbId ? (
+                          <Link
+                            href="/knowledge"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-800/50 text-[10px] font-mono text-emerald-400 hover:text-emerald-350 transition-colors"
+                          >
+                            <span>Saved: {savedKbId}</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        ) : (
+                          <button
+                            onClick={handleSaveNote}
+                            disabled={isSavingNote}
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-[10px] font-mono text-zinc-300 hover:text-zinc-200 transition-colors disabled:opacity-50"
+                          >
+                            {isSavingNote ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin" /> Saving...
+                              </>
+                            ) : (
+                              <>
+                                <span>Save to KB Note</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex-1 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar font-sans text-xs text-zinc-300 leading-relaxed prose prose-invert prose-xs">
