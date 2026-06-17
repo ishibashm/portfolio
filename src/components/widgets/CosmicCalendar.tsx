@@ -472,10 +472,10 @@ export function CosmicCalendar() {
   };
 
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       {/* Calendar Grid Section */}
       <div
-        className="lg:col-span-2 p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden"
+        className="lg:col-span-2 p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col"
         style={{
           borderColor: "rgba(255, 255, 255, 0.05)",
         }}
@@ -540,7 +540,7 @@ export function CosmicCalendar() {
         </div>
 
         {/* Day Grid */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 auto-rows-fr gap-1.5 flex-grow">
           {days.map((day, idx) => {
             const isToday =
               new Date().toDateString() === day.date.toDateString();
@@ -551,7 +551,7 @@ export function CosmicCalendar() {
               <button
                 key={idx}
                 onClick={() => setSelectedDay(day)}
-                className={`p-1.5 min-h-[56px] rounded-xl border flex flex-col justify-between items-start transition-all duration-300 relative group cursor-pointer ${
+                className={`p-1.5 min-h-[80px] h-full rounded-xl border flex flex-col justify-between items-start transition-all duration-300 relative group cursor-pointer ${
                   day.isCurrentMonth
                     ? "bg-white/[0.01] hover:bg-white/[0.03]"
                     : "bg-transparent opacity-20 pointer-events-none"

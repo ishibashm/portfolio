@@ -23,7 +23,7 @@ export default function CalendarPage() {
         }}
       />
 
-      <main className="flex-grow max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
+      <main className="max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
         <header
           className="relative mb-12 p-6 md:p-8 rounded-2xl border bg-white/[0.01] backdrop-blur-md overflow-hidden"
