@@ -73,6 +73,8 @@ interface HistoryData {
   macd: number | null;
   macd_signal: number | null;
   macd_hist: number | null;
+  per?: number | null;
+  pbr?: number | null;
 }
 
 interface ForecastData {
@@ -101,7 +103,7 @@ export default function YFinanceQuantPage() {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // UI States
-  const [chartMode, setChartMode] = useState<"price" | "rsi" | "macd">("price");
+  const [chartMode, setChartMode] = useState<"price" | "rsi" | "macd" | "valuation">("price");
   const [showBB, setShowBB] = useState(true);
   const [showSMA, setShowSMA] = useState(true);
 
@@ -500,6 +502,12 @@ export default function YFinanceQuantPage() {
                       >
                         MACD
                       </button>
+                      <button
+                        onClick={() => setChartMode("valuation")}
+                        className={`px-3 py-1 rounded-md text-[10px] font-mono tracking-wider transition-colors ${chartMode === "valuation" ? "bg-emerald-900/40 text-emerald-400" : "text-zinc-500 hover:text-zinc-300"}`}
+                      >
+                        VALUATION
+                      </button>
                     </div>
                   </div>
 
@@ -624,7 +632,7 @@ export default function YFinanceQuantPage() {
                         <Line type="monotone" dataKey={() => 70} stroke="#ef4444" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Overbought (70)" />
                         <Line type="monotone" dataKey={() => 30} stroke="#10b981" strokeWidth={1} strokeDasharray="5 5" dot={false} name="Oversold (30)" />
                       </ComposedChart>
-                    ) : (
+                    ) : chartMode === "macd" ? (
                       <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
                         <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
@@ -636,6 +644,21 @@ export default function YFinanceQuantPage() {
                         />
                         <Line name="MACD" type="monotone" dataKey="macd" stroke="#eab308" strokeWidth={1} dot={false} />
                         <Line name="Signal" type="monotone" dataKey="macd_signal" stroke="#f43f5e" strokeWidth={1} dot={false} />
+                      </ComposedChart>
+                    ) : (
+                      <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
+                        <YAxis yAxisId="left" stroke="#3b82f6" fontSize={9} fontClassName="font-mono" label={{ value: 'PER', angle: -90, position: 'insideLeft', style: { fill: '#3b82f6', fontSize: 10, fontFamily: 'monospace' } }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={9} fontClassName="font-mono" label={{ value: 'PBR', angle: 90, position: 'insideRight', style: { fill: '#f59e0b', fontSize: 10, fontFamily: 'monospace' } }} />
+                        <Tooltip
+                          contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
+                          labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}
+                          itemStyle={{ color: "#d1d5db", fontSize: 11 }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 10, fontFamily: "monospace", paddingTop: 10 }} />
+                        <Line yAxisId="left" name="PER" type="monotone" dataKey="per" stroke="#3b82f6" strokeWidth={1.5} dot={true} activeDot={{ r: 4 }} connectNulls={true} />
+                        <Line yAxisId="right" name="PBR" type="monotone" dataKey="pbr" stroke="#f59e0b" strokeWidth={1.5} dot={true} activeDot={{ r: 4 }} connectNulls={true} />
                       </ComposedChart>
                     )}
                   </ResponsiveContainer>

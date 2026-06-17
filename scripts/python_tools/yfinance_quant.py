@@ -1,6 +1,9 @@
 import sys
 import json
 import math
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -131,6 +134,64 @@ def run_monte_carlo_simulation(df, horizon=30, simulations=1000):
         
     return simulation_results
 
+def scrape_yahoo_finance_jp_valuation(ticker, max_pages=2):
+    """
+    Scrapes valuation ratios (PER, PBR) from Yahoo Finance Japan's history page.
+    Returns a dictionary mapping date string 'YYYY-MM-DD' to (per, pbr).
+    """
+    valuation_data = {}
+    
+    # Only try for Japanese stocks (ending in .T)
+    if not ticker.endswith('.T'):
+        return valuation_data
+        
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    
+    for page in range(1, max_pages + 1):
+        url = f"https://finance.yahoo.co.jp/quote/{ticker}/history?page={page}"
+        try:
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code != 200:
+                break
+                
+            soup = BeautifulSoup(res.text, "html.parser")
+            tables = soup.find_all("table")
+            if not tables:
+                break
+                
+            rows = tables[0].find_all("tr")
+            if len(rows) <= 1:
+                break
+                
+            for row in rows[1:]: # skip header
+                cols = [col.text.strip() for col in row.find_all(["td", "th"])]
+                if len(cols) >= 9:
+                    date_str = cols[0]
+                    per_str = cols[7]
+                    pbr_str = cols[8]
+                    
+                    try:
+                        # Parse date like '2026/6/17' -> '2026-06-17'
+                        dt = datetime.strptime(date_str, "%Y/%m/%d")
+                        formatted_date = dt.strftime("%Y-%m-%d")
+                        
+                        # Parse PER
+                        per = float(per_str.replace(',', '')) if per_str and per_str != '-' else None
+                        # Parse PBR
+                        pbr = float(pbr_str.replace(',', '')) if pbr_str and pbr_str != '-' else None
+                        
+                        valuation_data[formatted_date] = (per, pbr)
+                    except:
+                        # Ignore rows that fail parsing (e.g. dividend announcement rows or invalid formats)
+                        continue
+        except Exception as e:
+            # Silence connection errors or other scrap failures
+            break
+            
+    return valuation_data
+
 def main():
     if len(sys.argv) < 2:
         print(json.dumps({"success": False, "error": "No ticker provided"}))
@@ -152,6 +213,10 @@ def main():
             print(json.dumps({"success": False, "error": f"No historical data found for symbol: {ticker}"}))
             return
             
+        # Remove timezone information from index to match naive datetimes
+        if df.index.tz is not None:
+            df.index = df.index.tz_localize(None)
+            
         # Add technical analysis indicators
         df = calculate_technical_indicators(df)
         
@@ -161,9 +226,24 @@ def main():
         # Run Monte Carlo Forecast
         forecast = run_monte_carlo_simulation(df, horizon=30)
         
+        # Fetch valuation data from Yahoo Finance JP
+        val_map = scrape_yahoo_finance_jp_valuation(ticker, max_pages=2)
+        
+        # Add PER/PBR columns to df
+        df['PER'] = np.nan
+        df['PBR'] = np.nan
+        
+        for date_str, (per, pbr) in val_map.items():
+            try:
+                ts = pd.Timestamp(date_str)
+                if ts in df.index:
+                    df.at[ts, 'PER'] = per
+                    df.at[ts, 'PBR'] = pbr
+            except:
+                pass
+                
         # Slice df to the last 1 year (approx 252 trading days) to send to UI
-        df_recent = df.slice_indexer(start=df.index[-252])
-        df_sliced = df.iloc[df_recent]
+        df_sliced = df.iloc[-252:]
         
         # Format historical data for UI
         history_list = []
@@ -185,6 +265,8 @@ def main():
                 "macd": round(float(row['MACD']), 4) if not pd.isna(row['MACD']) else None,
                 "macd_signal": round(float(row['MACD_Signal']), 4) if not pd.isna(row['MACD_Signal']) else None,
                 "macd_hist": round(float(row['MACD_Hist']), 4) if not pd.isna(row['MACD_Hist']) else None,
+                "per": round(float(row['PER']), 2) if not pd.isna(row['PER']) else None,
+                "pbr": round(float(row['PBR']), 2) if not pd.isna(row['PBR']) else None,
             })
             
         # Retrieve Meta Information
