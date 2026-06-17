@@ -843,7 +843,7 @@ export default function YFinanceQuantPage() {
                         {savedKbId ? (
                           <Link
                             href="/knowledge"
-                            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-800/50 text-[10px] font-mono text-emerald-400 hover:text-emerald-350 transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-800/50 text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors"
                           >
                             <span>Saved: {savedKbId}</span>
                             <ExternalLink className="w-3 h-3" />

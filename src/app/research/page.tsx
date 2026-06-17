@@ -216,7 +216,7 @@ export default function DataEnginePage() {
           <div className="h-4 w-px bg-zinc-800"></div>
           <Link
             href="/research/yfinance"
-            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-350 transition-colors text-sm font-medium font-mono"
+            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors text-sm font-medium font-mono"
           >
             <TrendingUp className="w-4 h-4" />
             GS-Quant Analyzer
