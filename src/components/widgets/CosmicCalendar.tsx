@@ -472,10 +472,10 @@ export function CosmicCalendar() {
   };
 
   return (
-    <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+    <div className="w-full grid grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3 gap-6 items-stretch">
       {/* Calendar Grid Section */}
       <div
-        className="lg:col-span-2 p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col"
+        className="2xl:col-span-2 p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col"
         style={{
           borderColor: "rgba(255, 255, 255, 0.05)",
         }}

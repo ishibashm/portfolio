@@ -126,20 +126,20 @@ export function EconomicIntelligence() {
       </div>
 
       {/* Tab Contents */}
-      <div className="flex-grow min-h-[180px] overflow-y-auto custom-scrollbar pr-1">
+      <div className="flex-grow overflow-y-auto custom-scrollbar pr-1">
         {activeTab === "prices" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {pricesData.map((item, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between"
+                className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between"
               >
                 <div className="flex justify-between items-center mb-1">
-                  <span className="text-[9px] font-mono text-zinc-500 uppercase">
+                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
                     {item.category}
                   </span>
                   <span
-                    className={`text-[9px] font-mono font-bold px-1.5 py-0.25 rounded-md ${
+                    className={`text-[8px] font-mono font-bold px-1 py-0.25 rounded-md ${
                       item.isPositive
                         ? "bg-emerald-500/10 text-emerald-400"
                         : "bg-rose-500/10 text-rose-400"
@@ -148,10 +148,10 @@ export function EconomicIntelligence() {
                     {item.change}
                   </span>
                 </div>
-                <h4 className="text-[11px] font-bold text-zinc-300 truncate">
+                <h4 className="text-[10px] font-bold text-zinc-300 truncate">
                   {item.label}
                 </h4>
-                <p className="text-lg font-mono font-bold text-white mt-1">
+                <p className="text-base font-mono font-bold text-white mt-0.5">
                   {item.value}
                 </p>
               </div>

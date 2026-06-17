@@ -4234,14 +4234,40 @@ ${timingOptimization?.recommendationText || "特になし"}
           </button>
         </div>
 
-        {/* Cosmic Calendar Widget */}
-        <div className="w-full max-w-4xl bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all">
-          <CosmicCalendar />
-        </div>
+        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-2 gap-6 px-4">
+          {/* Cosmic Calendar Widget */}
+          <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+            <CosmicCalendar />
+          </div>
 
-        {/* Market Intelligence Widget */}
-        <div className="w-full max-w-4xl bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all">
-          <EconomicIntelligence />
+          <div className="flex flex-col gap-6">
+            {/* Market Intelligence Widget */}
+            <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col h-full overflow-hidden">
+              <EconomicIntelligence />
+            </div>
+
+            {/* AI Agent Status Quickview (Placeholder/New Section to fill space) */}
+            {latestTweet && (
+              <div className="bg-emerald-950/10 border border-emerald-900/30 rounded-2xl p-5 shadow-inner backdrop-blur-md">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[10px] font-mono text-emerald-500 uppercase tracking-widest font-bold">
+                    Latest Agent Transmission
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-300 font-mono leading-relaxed bg-black/40 p-3 rounded-lg border border-white/5">
+                  <span className="text-emerald-500 opacity-50 mr-1">&gt;</span>
+                  {latestTweet.textResponse}
+                </p>
+                <div className="mt-3 flex justify-between items-center text-[9px] text-zinc-500 font-mono">
+                  <span>TIMESTAMP: {new Date(latestTweet.timestamp).toLocaleTimeString()}</span>
+                  <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">
+                    {latestTweet.triggerType}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {showHowItWorks && (
