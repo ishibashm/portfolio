@@ -1159,7 +1159,7 @@ export default function AegisAnalyticsPage() {
                 </section>
 
                 {/* [Panel D] Correlation Matrix & MPT */}
-                <section className="p-5 rounded-3xl bg-white/[0.01] border border-white/5 flex flex-col justify-between min-h-[460px]">
+                <section className="lg:col-span-3 p-5 rounded-3xl bg-white/[0.01] border border-white/5 flex flex-col justify-between min-h-[360px]">
                   <div>
                     <h2 className="text-sm font-bold tracking-tight text-white mb-2 flex items-center gap-2">
                       <Crosshair className="w-4 h-4 text-emerald-400" /> [D] 相関マップ ＆ 現代ポートフォリオ理論(MPT)
@@ -1188,92 +1188,115 @@ export default function AegisAnalyticsPage() {
                     </div>
                   </div>
 
-                  {/* Correlation Map Render */}
-                  <div className="space-y-2 font-mono text-[10px] mb-4">
-                    <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Correlation Matrix</span>
-                    <div className="grid grid-cols-5 gap-1.5 text-center">
-                      <span className="text-zinc-500 text-[8px] flex items-center justify-center">TICK</span>
-                      <span className="text-zinc-300 font-bold">7203</span>
-                      <span className="text-zinc-300 font-bold">9984</span>
-                      <span className="text-zinc-300 font-bold">6758</span>
-                      <span className="text-zinc-300 font-bold">TOPIX</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                    {/* Correlation Map Render */}
+                    <div className="lg:col-span-4 space-y-2 font-mono text-[10px]">
+                      <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Correlation Matrix</span>
+                      <div className="grid grid-cols-5 gap-1.5 text-center">
+                        <span className="text-zinc-500 text-[8px] flex items-center justify-center">TICK</span>
+                        <span className="text-zinc-300 font-bold">7203</span>
+                        <span className="text-zinc-300 font-bold">9984</span>
+                        <span className="text-zinc-300 font-bold">6758</span>
+                        <span className="text-zinc-300 font-bold">TOPIX</span>
 
-                      <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">7203</span>
-                      <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
-                      <div className="p-1.5 rounded bg-white/5 text-zinc-400">0.2</div>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.5</div>
-                      <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.8*</div>
+                        <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">7203</span>
+                        <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
+                        <div className="p-1.5 rounded bg-white/5 text-zinc-400">0.2</div>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.5</div>
+                        <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.8*</div>
 
-                      <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">9984</span>
-                      <div className="p-1.5 rounded bg-white/5 text-zinc-400">0.2</div>
-                      <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.4</div>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500 font-bold">0.6</div>
+                        <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">9984</span>
+                        <div className="p-1.5 rounded bg-white/5 text-zinc-400">0.2</div>
+                        <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.4</div>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500 font-bold">0.6</div>
 
-                      <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">6758</span>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.5</div>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.4</div>
-                      <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
-                      <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.7*</div>
+                        <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">6758</span>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.5</div>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500">0.4</div>
+                        <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
+                        <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.7*</div>
 
-                      <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">TOPIX</span>
-                      <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.8*</div>
-                      <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500 font-bold">0.6</div>
-                      <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.7*</div>
-                      <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
+                        <span className="text-zinc-300 font-bold text-[8px] flex items-center justify-center">TOPIX</span>
+                        <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.8*</div>
+                        <div className="p-1.5 rounded bg-emerald-500/5 text-emerald-500 font-bold">0.6</div>
+                        <div className="p-1.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold">0.7*</div>
+                        <div className="p-1.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">1.0</div>
+                      </div>
+                      <span className="text-[8px] text-rose-400 block pt-1 animate-pulse">* 0.7以上: 強相関の警告検知（ヘッジを推奨）</span>
                     </div>
-                    <span className="text-[8px] text-rose-400 block pt-1 animate-pulse">* 0.7以上: 強相関の警告検知（ヘッジを推奨）</span>
-                  </div>
 
-                  {/* MPT Scatter Plot */}
-                  <div className="h-[140px] w-full mt-2">
-                    <span className="text-[9px] text-zinc-500 font-mono block mb-1.5 uppercase tracking-wider font-bold">Efficient Frontier (モンテカルロ)</span>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: -20 }}>
-                        <XAxis type="number" dataKey="risk" name="ボラティリティ (Risk)" unit="%" stroke="#3f3f46" fontSize={8} />
-                        <YAxis type="number" dataKey="return" name="期待リターン (Return)" unit="%" stroke="#3f3f46" fontSize={8} />
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              const isOptimal = optimalPortfolio && data.id === optimalPortfolio.id;
-                              return (
-                                <div className="bg-[#09090c] border border-[#1f1f23] rounded-xl p-2.5 text-[10px] font-mono shadow-xl">
-                                  {isOptimal && (
-                                    <div className="text-amber-400 font-bold mb-1.5 flex items-center gap-1">
-                                      ⭐ 最適化ポートフォリオ (最大シャープレシオ)
+                    {/* MPT Scatter Plot */}
+                    <div className="lg:col-span-5 h-[230px] w-full">
+                      <span className="text-[9px] text-zinc-500 font-mono block mb-1.5 uppercase tracking-wider font-bold">Efficient Frontier (モンテカルロ)</span>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 10, right: 18, bottom: 10, left: -10 }}>
+                          <XAxis type="number" dataKey="risk" name="ボラティリティ (Risk)" unit="%" stroke="#3f3f46" fontSize={8} />
+                          <YAxis type="number" dataKey="return" name="期待リターン (Return)" unit="%" stroke="#3f3f46" fontSize={8} />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const data = payload[0].payload;
+                                const isOptimal = optimalPortfolio && data.id === optimalPortfolio.id;
+                                return (
+                                  <div className="bg-[#09090c] border border-[#1f1f23] rounded-xl p-2.5 text-[10px] font-mono shadow-xl">
+                                    {isOptimal && (
+                                      <div className="text-amber-400 font-bold mb-1.5 flex items-center gap-1">
+                                        ⭐ 最適化ポートフォリオ (最大シャープレシオ)
+                                      </div>
+                                    )}
+                                    <div className="flex justify-between gap-6 mb-1">
+                                      <span className="text-zinc-400">ボラティリティ (Risk):</span>
+                                      <span className="font-bold text-white">{data.risk}%</span>
                                     </div>
-                                  )}
-                                  <div className="flex justify-between gap-6 mb-1">
-                                    <span className="text-zinc-400">ボラティリティ (Risk):</span>
-                                    <span className="font-bold text-white">{data.risk}%</span>
+                                    <div className="flex justify-between gap-6 mb-1">
+                                      <span className="text-zinc-400">期待リターン (Return):</span>
+                                      <span className="font-bold text-white">{data.return}%</span>
+                                    </div>
+                                    <div className="flex justify-between gap-6 pt-1 mt-1 border-t border-white/10">
+                                      <span className="text-indigo-300">シャープレシオ:</span>
+                                      <span className="font-bold text-indigo-300">{data.sharpe}</span>
+                                    </div>
                                   </div>
-                                  <div className="flex justify-between gap-6 mb-1">
-                                    <span className="text-zinc-400">期待リターン (Return):</span>
-                                    <span className="font-bold text-white">{data.return}%</span>
-                                  </div>
-                                  <div className="flex justify-between gap-6 pt-1 mt-1 border-t border-white/10">
-                                    <span className="text-indigo-300">シャープレシオ:</span>
-                                    <span className="font-bold text-indigo-300">{data.sharpe}</span>
-                                  </div>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Scatter name="シミュレーション" data={mptSimulation} fill="#818cf8" opacity={0.3} />
-                        {optimalPortfolio && (
-                          <Scatter
-                            name="最適ポートフォリオ"
-                            data={[optimalPortfolio]}
-                            fill="#fbbf24"
-                            shape={<CustomStarShape />}
-                            line={false}
+                                );
+                              }
+                              return null;
+                            }}
                           />
-                        )}
-                      </ScatterChart>
-                    </ResponsiveContainer>
+                          <Scatter name="シミュレーション" data={mptSimulation} fill="#818cf8" opacity={0.3} />
+                          {optimalPortfolio && (
+                            <Scatter
+                              name="最適ポートフォリオ"
+                              data={[optimalPortfolio]}
+                              fill="#fbbf24"
+                              shape={<CustomStarShape />}
+                              line={false}
+                            />
+                          )}
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3">
+                      <div className="p-3 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/15">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Optimal Sharpe</p>
+                        <p className="text-xl font-black text-emerald-300 mt-1">
+                          {optimalPortfolio ? optimalPortfolio.sharpe : "--"}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-indigo-500/[0.04] border border-indigo-500/15">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Risk / Return</p>
+                        <p className="text-sm font-bold text-white mt-1">
+                          {optimalPortfolio ? `${optimalPortfolio.risk}% / ${optimalPortfolio.return}%` : "Simulation pending"}
+                        </p>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-amber-500/[0.04] border border-amber-500/15">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Next Action</p>
+                        <p className="text-xs text-zinc-300 leading-relaxed mt-1">
+                          強相関ペアを避け、TOPIX連動リスクをヘッジ候補として確認。
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </section>
 

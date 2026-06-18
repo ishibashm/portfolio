@@ -72,8 +72,38 @@ export function EconomicIntelligence() {
     { indicator: "不動産キャップレート", value: "4.2% - 5.5%", period: "2026年6月現在", status: "金利上昇に伴い上昇圧迫", trend: "up" },
   ];
 
+  const fallbackNews = [
+    {
+      title: "日経平均・ドル円・米10年金利を同時監視し、当日のリスクオン/オフを判定",
+      link: "https://www.nikkei.com/markets/kabu/",
+      source: "Market Desk",
+      time: "Live",
+      badge: "市場概況",
+      badgeColor: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      desc: "ニュース取得待ちでも、指数・為替・金利の組み合わせから先に相場環境を確認できます。",
+    },
+    {
+      title: "VIX低下と金上昇が同時発生。ヘッジ需要とリスク選好のねじれを確認",
+      link: "https://kabutan.jp/",
+      source: "Macro Watch",
+      time: "Live",
+      badge: "リスク",
+      badgeColor: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      desc: "ボラティリティだけでなく、金・原油・債券利回りを合わせて見ると資金の逃避先が見えます。",
+    },
+  ];
+
+  const visibleNews = newsData.length > 0 ? newsData : fallbackNews;
+  const riskOffSignals = pricesData.filter((item) => !item.isPositive).length;
+  const marketTone =
+    riskOffSignals >= 5
+      ? "Defensive"
+      : riskOffSignals >= 3
+        ? "Mixed"
+        : "Risk-on";
+
   return (
-    <div className="flex flex-col h-full justify-between">
+    <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-3">
@@ -128,34 +158,73 @@ export function EconomicIntelligence() {
       {/* Tab Contents */}
       <div className="flex-grow overflow-y-auto custom-scrollbar pr-1">
         {activeTab === "prices" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {pricesData.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between"
-              >
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase">
-                    {item.category}
-                  </span>
-                  <span
-                    className={`text-[8px] font-mono font-bold px-1 py-0.25 rounded-md ${
-                      item.isPositive
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-rose-500/10 text-rose-400"
-                    }`}
-                  >
-                    {item.change}
-                  </span>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {pricesData.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between"
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[8px] font-mono text-zinc-500 uppercase">
+                      {item.category}
+                    </span>
+                    <span
+                      className={`text-[8px] font-mono font-bold px-1 py-0.25 rounded-md ${
+                        item.isPositive
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-rose-500/10 text-rose-400"
+                      }`}
+                    >
+                      {item.change}
+                    </span>
+                  </div>
+                  <h4 className="text-[10px] font-bold text-zinc-300 truncate">
+                    {item.label}
+                  </h4>
+                  <p className="text-base font-mono font-bold text-white mt-0.5">
+                    {item.value}
+                  </p>
                 </div>
-                <h4 className="text-[10px] font-bold text-zinc-300 truncate">
-                  {item.label}
-                </h4>
-                <p className="text-base font-mono font-bold text-white mt-0.5">
-                  {item.value}
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="lg:col-span-1 p-4 rounded-2xl bg-emerald-500/[0.04] border border-emerald-500/15">
+                <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-emerald-400">
+                  <Activity className="w-3.5 h-3.5" />
+                  Market Tone
+                </div>
+                <p className="text-2xl font-black text-white mt-2">{marketTone}</p>
+                <p className="text-[10px] text-zinc-500 leading-relaxed mt-1">
+                  下落・低下シグナル {riskOffSignals}/8。為替、金利、商品、VIXを合わせて今日の地合いを確認します。
                 </p>
               </div>
-            ))}
+              <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {visibleNews.slice(0, 2).map((news, idx) => (
+                  <a
+                    key={idx}
+                    href={news.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group p-4 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[9px] text-zinc-500 font-mono">{news.source}</span>
+                      <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor}`}>
+                        {news.badge}
+                      </span>
+                    </div>
+                    <h3 className="text-xs font-bold text-zinc-200 group-hover:text-emerald-300 leading-normal mt-2 line-clamp-2">
+                      {news.title}
+                    </h3>
+                    <p className="text-[10px] text-zinc-500 leading-relaxed mt-1 line-clamp-2">
+                      {news.desc || "マクロ環境と市場テーマの確認用ニュースです。"}
+                    </p>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -196,12 +265,8 @@ export function EconomicIntelligence() {
                 ⚠️ [ERR_CONNECTION_FAILED]
                 <p className="text-[10px] text-zinc-600 mt-1">ニュースの取得に失敗しました</p>
               </div>
-            ) : newsData.length === 0 ? (
-              <div className="text-center py-10 text-zinc-500 text-[11px]">
-                現在表示できるニュースはありません。
-              </div>
             ) : (
-              newsData.map((news, idx) => (
+              visibleNews.map((news, idx) => (
                 <div
                   key={idx}
                   className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col gap-1.5"

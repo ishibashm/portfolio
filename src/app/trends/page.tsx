@@ -567,13 +567,56 @@ export default function TrendsPage() {
               </div>
             ) : displayedArticles.length === 0 ? (
               // Empty State
-              <div className="p-12 rounded-2xl bg-white/[0.01] border border-white/5 text-center space-y-2">
-                <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
-                  {"// NO_ACTIVE_TELEMETRY_LOGS"}
-                </p>
-                <p className="text-sm text-zinc-400">
-                  表示する記事がありません。
-                </p>
+              <div className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 space-y-5">
+                <div className="text-center">
+                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
+                    {"// FEED_STANDBY_MODE"}
+                  </p>
+                  <p className="text-sm text-zinc-400 mt-2">
+                    現在のタブには記事がありません。市場確認用の代替導線を表示しています。
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {[
+                    {
+                      title: "日経平均を確認",
+                      desc: "指数、先物、値上がり/値下がり銘柄から地合いを見る",
+                      href: "https://www.nikkei.com/markets/kabu/",
+                    },
+                    {
+                      title: "株探の注目材料",
+                      desc: "決算、材料、ランキングから個別テーマを拾う",
+                      href: "https://kabutan.jp/",
+                    },
+                    {
+                      title: "再同期",
+                      desc: "ニュース取得を再試行して最新フィードを読み込む",
+                      href: "",
+                    },
+                  ].map((item) =>
+                    item.href ? (
+                      <a
+                        key={item.title}
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-2xl border border-white/5 bg-black/20 p-4 hover:border-emerald-500/20 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-zinc-100">{item.title}</h3>
+                        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{item.desc}</p>
+                      </a>
+                    ) : (
+                      <button
+                        key={item.title}
+                        onClick={fetchTrends}
+                        className="rounded-2xl border border-white/5 bg-black/20 p-4 text-left hover:border-emerald-500/20 transition-colors"
+                      >
+                        <h3 className="text-sm font-bold text-zinc-100">{item.title}</h3>
+                        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{item.desc}</p>
+                      </button>
+                    ),
+                  )}
+                </div>
               </div>
             ) : (
               // Article Cards

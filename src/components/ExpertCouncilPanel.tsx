@@ -653,7 +653,7 @@ export default function ExpertCouncilPanel({
         <div className="flex justify-between items-center border-b border-purple-500/20 pb-3">
           <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 font-mono">
             <span className="text-purple-400 animate-pulse">🔮</span>
-            Agent Console / 守護精霊対話
+            Agent Console / AIコンシェルジュ
           </h4>
           <span className="text-[7.5px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 border border-purple-500/30 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)]">
             SECURE LINK ACTIVE
@@ -661,7 +661,7 @@ export default function ExpertCouncilPanel({
         </div>
 
         <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
-          常駐エージェントとの直接対話コンソールです。現在の生体測定値や地磁気データをもとに相談したり、テーマ変更を指示できます（例:
+          常駐AIコンシェルジュとの直接対話コンソールです。現在の生体測定値や地磁気データをもとに相談したり、テーマ変更を指示できます（例:
           「青系の落ち着いた色にして」「心を落ち着かせるために明朝体に変更して」など）。
         </p>
 
@@ -720,7 +720,7 @@ export default function ExpertCouncilPanel({
                 <span
                   className={`text-[8px] uppercase tracking-wider font-bold ${msg.role === "user" ? "text-zinc-500" : "text-purple-400"}`}
                 >
-                  {msg.role === "user" ? "Admin / 管理者" : "Agent / 守護精霊"}
+                  {msg.role === "user" ? "Admin / 管理者" : "Agent / AIコンシェルジュ"}
                 </span>
               </div>
               <div
