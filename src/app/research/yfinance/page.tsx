@@ -623,8 +623,8 @@ export default function YFinanceQuantPage() {
                     {chartMode === "price" ? (
                       <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
-                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
-                        <YAxis stroke="#4b5563" fontSize={9} fontClassName="font-mono" domain={["auto", "auto"]} />
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} className="font-mono" />
+                        <YAxis stroke="#4b5563" fontSize={9} className="font-mono" domain={["auto", "auto"]} />
                         <Tooltip
                           contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
                           labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}
@@ -696,8 +696,8 @@ export default function YFinanceQuantPage() {
                     ) : chartMode === "rsi" ? (
                       <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
-                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
-                        <YAxis stroke="#4b5563" fontSize={9} fontClassName="font-mono" domain={[0, 100]} ticks={[30, 50, 70]} />
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} className="font-mono" />
+                        <YAxis stroke="#4b5563" fontSize={9} className="font-mono" domain={[0, 100]} ticks={[30, 50, 70]} />
                         <Tooltip
                           contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
                           labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}
@@ -718,8 +718,8 @@ export default function YFinanceQuantPage() {
                     ) : chartMode === "macd" ? (
                       <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
-                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
-                        <YAxis stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} className="font-mono" />
+                        <YAxis stroke="#4b5563" fontSize={9} className="font-mono" />
                         <Tooltip
                           contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
                           labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}
@@ -731,9 +731,9 @@ export default function YFinanceQuantPage() {
                     ) : (
                       <ComposedChart data={history} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
-                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
-                        <YAxis yAxisId="left" stroke="#3b82f6" fontSize={9} fontClassName="font-mono" label={{ value: 'PER', angle: -90, position: 'insideLeft', style: { fill: '#3b82f6', fontSize: 10, fontFamily: 'monospace' } }} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={9} fontClassName="font-mono" label={{ value: 'PBR', angle: 90, position: 'insideRight', style: { fill: '#f59e0b', fontSize: 10, fontFamily: 'monospace' } }} />
+                        <XAxis dataKey="date" stroke="#4b5563" fontSize={9} className="font-mono" />
+                        <YAxis yAxisId="left" stroke="#3b82f6" fontSize={9} className="font-mono" label={{ value: 'PER', angle: -90, position: 'insideLeft', style: { fill: '#3b82f6', fontSize: 10, fontFamily: 'monospace' } }} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#f59e0b" fontSize={9} className="font-mono" label={{ value: 'PBR', angle: 90, position: 'insideRight', style: { fill: '#f59e0b', fontSize: 10, fontFamily: 'monospace' } }} />
                         <Tooltip
                           contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
                           labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}
@@ -762,8 +762,8 @@ export default function YFinanceQuantPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={combinedForecastData} margin={{ left: 10, right: 10, top: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#0f1911" vertical={false} />
-                      <XAxis dataKey="date" stroke="#4b5563" fontSize={9} fontClassName="font-mono" />
-                      <YAxis stroke="#4b5563" fontSize={9} fontClassName="font-mono" domain={["auto", "auto"]} />
+                      <XAxis dataKey="date" stroke="#4b5563" fontSize={9} className="font-mono" />
+                      <YAxis stroke="#4b5563" fontSize={9} className="font-mono" domain={["auto", "auto"]} />
                       <Tooltip
                         contentStyle={{ backgroundColor: "#060a07", border: "1px solid #10b981", borderRadius: 8 }}
                         labelStyle={{ color: "#10b981", fontFamily: "monospace", fontSize: 11 }}

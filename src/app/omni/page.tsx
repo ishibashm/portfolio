@@ -46,12 +46,50 @@ import {
   ScatterChart,
   Scatter,
   ZAxis,
-  Cell
+  Cell,
+  ReferenceArea
 } from "recharts";
 
 import IRAnalysisWidget from "@/components/widgets/IRAnalysisWidget";
 import { EconomicBbsAnalyzer } from "@/components/finance/EconomicBbsAnalyzer";
 import { FinancialStatementVisualizer } from "@/components/finance/FinancialStatementVisualizer";
+
+const TypewriterMessage = ({ text, animate }: { text: string; animate?: boolean }) => {
+  const [displayedText, setDisplayedText] = useState(animate ? "" : text);
+
+  useEffect(() => {
+    if (!animate) {
+      setDisplayedText(text);
+      return;
+    }
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.slice(0, i + 1));
+      i++;
+      if (i > text.length) {
+        clearInterval(interval);
+      }
+    }, 20); // 20ms per character for streaming effect
+    return () => clearInterval(interval);
+  }, [text, animate]);
+
+  return <span>{displayedText}</span>;
+};
+
+// カスタムSVGシェイプ: 最適ポートフォリオの光る星
+const CustomStarShape = (props: any) => {
+  const { cx, cy, fill } = props;
+  return (
+    <g transform={`translate(${cx},${cy})`}>
+      <circle cx="0" cy="0" r="14" fill={fill} opacity="0.4" className="animate-ping" />
+      <path
+        d="M0,-8 L2.35,-1.62 L9.05,-1.62 L3.63,2.32 L5.7,8.8 L0,4.86 L-5.7,8.8 L-3.63,2.32 L-9.05,-1.62 L-2.35,-1.62 Z"
+        fill={fill}
+        transform="scale(1.2)"
+      />
+    </g>
+  );
+};
 
 // Mock financial database for peers and simulation baseline
 const STOCK_DATABASE: Record<string, {
@@ -162,13 +200,18 @@ export default function AegisAnalyticsPage() {
   const [dcfGrowth, setDcfGrowth] = useState(6.5); // Revenue Growth %
   const [dcfWacc, setDcfWacc] = useState(7.5); // WACC %
   const [dcfTerminal, setDcfTerminal] = useState(1.5); // Terminal Growth %
+  const [dcfTaxRate, setDcfTaxRate] = useState(30.0); // Corporate Tax Rate %
+  const [dcfDaMargin, setDcfDaMargin] = useState(5.0); // D&A Margin %
+  const [dcfCapexMargin, setDcfCapexMargin] = useState(6.0); // CapEx Margin %
+  const [dcfWcMargin, setDcfWcMargin] = useState(2.0); // WC Margin % (Change in Working Capital)
 
   // Quant Backtest State Variables
   const [backtestRules, setBacktestRules] = useState({
     peFilter: true,
     roeFilter: true,
     rsiFilter: false,
-    goldenCross: false
+    goldenCross: false,
+    maCross: false
   });
   const [isRunningBacktest, setIsRunningBacktest] = useState(false);
   const [backtestResults, setBacktestResults] = useState<any | null>(null);
@@ -177,20 +220,105 @@ export default function AegisAnalyticsPage() {
   const [mptSelectedPeriod, setMptSelectedPeriod] = useState<"30" | "90" | "365">("90");
   const [mptSimulation, setMptSimulation] = useState<any[]>([]);
 
+  // 最適ポートフォリオ (最大シャープレシオ)
+  const optimalPortfolio = useMemo(() => {
+    if (!mptSimulation || mptSimulation.length === 0) return null;
+    return mptSimulation.reduce((max: any, p: any) => p.sharpe > max.sharpe ? p : max, mptSimulation[0]);
+  }, [mptSimulation]);
+
   // AI Chat State
   const [chatInput, setChatInput] = useState("");
-  const [chatHistory, setChatHistory] = useState<{ sender: "user" | "ai"; text: string }[]>([
-    {
-      sender: "ai",
-      text: "Aegis AI 共同研究者へようこそ。この銘柄（トヨタ）の財務構造や有報リスク差分についてのご質問にリアルタイムで回答します。"
-    }
-  ]);
+  const [chatHistory, setChatHistory] = useState<{ sender: "user" | "ai"; text: string; animate?: boolean }[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
-  // Fetch / Get Stock Data
-  const stock = useMemo(() => {
-    return STOCK_DATABASE[activeTicker] || STOCK_DATABASE["7203"];
+  // マウント時に localStorage からチャット履歴を読み込む
+  useEffect(() => {
+    const savedChat = localStorage.getItem("aegis_chat_history");
+    if (savedChat) {
+      try {
+        const parsed = JSON.parse(savedChat).map((msg: any) => ({ ...msg, animate: false }));
+        setChatHistory(parsed);
+      } catch (e) {
+        console.error("Failed to parse chat history:", e);
+      }
+    } else {
+      // 初期メッセージをセット
+      setChatHistory([
+        {
+          sender: "ai",
+          text: "Aegis AI 共同研究者へようこそ。この銘柄（トヨタ）の財務構造や有報リスク差分についてのご質問にリアルタイムで回答します。",
+          animate: true
+        }
+      ]);
+    }
+  }, []);
+
+  // チャット履歴が変更されたら localStorage に保存
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      const toSave = chatHistory.map(msg => ({ ...msg, animate: false }));
+      localStorage.setItem("aegis_chat_history", JSON.stringify(toSave));
+    }
+  }, [chatHistory]);
+
+  // API Data State (API通信用のステート)
+  const [apiStockData, setApiStockData] = useState<any>(STOCK_DATABASE["7203"]);
+  const [isLoadingStock, setIsLoadingStock] = useState(false);
+
+  // Fetch Stock Data with useEffect (API連携の土台)
+  useEffect(() => {
+    let isMounted = true; // メモリリーク防止用フラグ
+
+    const fetchStockData = async () => {
+      setIsLoadingStock(true);
+      try {
+        // TODO: ここを実際の金融APIエンドポイントに置き換えます
+        // const response = await fetch(`/api/finance/stock/${activeTicker}`);
+        // const data = await response.json();
+        // if (isMounted) setApiStockData(data);
+
+        // 今回は実装例として、モックデータによる通信の遅延（500ms）をシミュレートします
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (isMounted) {
+          setApiStockData(STOCK_DATABASE[activeTicker] || STOCK_DATABASE["7203"]);
+        }
+      } catch (error) {
+        console.error("銘柄データの取得に失敗しました:", error);
+      } finally {
+        if (isMounted) setIsLoadingStock(false);
+      }
+    };
+
+    fetchStockData();
+    return () => { isMounted = false; }; // コンポーネントアンマウント時のクリーンアップ
   }, [activeTicker]);
+
+  const stock = useMemo(() => {
+    return apiStockData;
+  }, [apiStockData]);
+
+  // 銘柄切り替え時にDCFスライダーの初期値を自動設定
+  useEffect(() => {
+    if (stock) {
+      // 売上高成長率: peersの中に自身があればその成長率、なければセクターに応じた推計値
+      const selfPeer = stock.peers.find((p: any) => p.symbol === activeTicker);
+      const impliedGrowth = selfPeer ? selfPeer.growth : (stock.sector === "情報・通信業" ? 15.0 : 5.0);
+      
+      // WACC: リスクフリーレート(1.5%) + Beta * マーケットリスクプレミアム(5.5%)
+      const impliedWacc = 1.5 + (stock.beta * 5.5);
+
+      // セクターごとのD&A, CapEx, WCマージンの推計
+      const newDaMargin = stock.sector === "情報・通信業" ? 8.0 : 5.0;
+      const newCapexMargin = stock.sector === "情報・通信業" ? 4.0 : 6.0;
+      const newWcMargin = stock.sector === "情報・通信業" ? 1.0 : 2.0;
+
+      setDcfGrowth(parseFloat(impliedGrowth.toFixed(1)));
+      setDcfWacc(parseFloat(impliedWacc.toFixed(1)));
+      setDcfDaMargin(newDaMargin);
+      setDcfCapexMargin(newCapexMargin);
+      setDcfWcMargin(newWcMargin);
+    }
+  }, [stock, activeTicker]);
 
   // Handle stock change
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -250,7 +378,13 @@ export default function AegisAnalyticsPage() {
   // Perform DCF calculation dynamically
   const dcfResult = useMemo(() => {
     const freeCashFlows = [];
-    const baseFcf = stock.revenue * stock.operatingMargin * 0.6; // Proxy Free Cash Flow (NOPAT base)
+    const taxRate = dcfTaxRate / 100;
+    const daRate = dcfDaMargin / 100;
+    const capexRate = dcfCapexMargin / 100;
+    const wcRate = dcfWcMargin / 100;
+    // 本格的な算出: FCF = NOPAT(税引後営業利益) + 減価償却費(D&A) - 設備投資(CapEx) - 運転資本増減(ΔWC)
+    const nopat = stock.revenue * stock.operatingMargin * (1 - taxRate);
+    const baseFcf = nopat + (stock.revenue * daRate) - (stock.revenue * capexRate) - (stock.revenue * wcRate);
     let totalPV = 0;
     const g = dcfGrowth / 100;
     const r = dcfWacc / 100;
@@ -288,11 +422,12 @@ export default function AegisAnalyticsPage() {
       totalPV: Math.round(totalPV / 1e8) / 100,
       terminalPV: Math.round(terminalPV / 1e8) / 100
     };
-  }, [stock, dcfGrowth, dcfWacc, dcfTerminal]);
+  }, [stock, dcfGrowth, dcfWacc, dcfTerminal, dcfTaxRate, dcfDaMargin, dcfCapexMargin, dcfWcMargin]);
 
   // Backtest run trigger
-  const handleRunBacktest = () => {
+  const handleRunBacktest = (overrideRules?: any) => {
     setIsRunningBacktest(true);
+    const activeRules = overrideRules && overrideRules.peFilter !== undefined ? overrideRules : backtestRules;
     setTimeout(() => {
       // Mathematical backtest result generation based on parameters selected
       let totalReturn = 45.2;
@@ -300,31 +435,139 @@ export default function AegisAnalyticsPage() {
       let sharpe = 1.05;
       let maxDrawdown = -18.5;
 
-      if (backtestRules.peFilter && backtestRules.roeFilter) {
+      if (activeRules.peFilter && activeRules.roeFilter && activeRules.maCross) {
+        totalReturn = 185.5;
+        winRate = 0.72;
+        sharpe = 1.65;
+        maxDrawdown = -9.5;
+      } else if (activeRules.peFilter && activeRules.roeFilter) {
         totalReturn = 145.2;
         winRate = 0.68;
         sharpe = 1.42;
         maxDrawdown = -12.5;
-      } else if (backtestRules.rsiFilter && backtestRules.goldenCross) {
+      } else if (activeRules.rsiFilter && activeRules.goldenCross) {
         totalReturn = 88.4;
         winRate = 0.61;
         sharpe = 1.21;
         maxDrawdown = -15.2;
-      } else if (backtestRules.peFilter || backtestRules.roeFilter) {
+      } else if (activeRules.peFilter || activeRules.roeFilter) {
         totalReturn = 62.1;
         winRate = 0.55;
         sharpe = 1.11;
         maxDrawdown = -16.8;
       }
 
-      // Generate 20-period performance data
-      const performanceData = Array.from({ length: 20 }).map((_, idx) => {
-        const factor = totalReturn / 20;
-        const randomness = Math.sin(idx * 0.5) * 10 + (Math.random() - 0.5) * 15;
+      // 勝率、最大ドローダウンに数学的に連動した時系列シミュレーション
+      const targetValue = 100 + totalReturn;
+      const numSteps = 19;
+      const numWins = Math.round(numSteps * winRate);
+      const numLosses = numSteps - numWins;
+
+      // 中盤のドローダウン期間を index 8, 9, 10 (3ステップ) と定義し、すべて負け(false)とする
+      const ddLosses = 3;
+      const remainingWins = numWins;
+      const remainingLosses = Math.max(0, numLosses - ddLosses);
+
+      // 残り16ステップの勝敗フラグを生成
+      const remainingSteps: boolean[] = [];
+      for (let i = 0; i < remainingWins; i++) remainingSteps.push(true);
+      for (let i = 0; i < remainingLosses; i++) remainingSteps.push(false);
+
+      // サイズ調整 (ちょうど16になるように)
+      while (remainingSteps.length < 16) {
+        remainingSteps.push(false);
+      }
+      while (remainingSteps.length > 16) {
+        remainingSteps.pop();
+      }
+
+      // シャッフル関数 (Fisher-Yates)
+      const shuffle = (array: boolean[]) => {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+      const shuffledSteps = shuffle(remainingSteps);
+
+      // フェーズごとの勝敗フラグ配列に分割
+      const phase1Wins = shuffledSteps.slice(0, 7); // インデックス1~7用 (7ステップ)
+      const phase3Wins = shuffledSteps.slice(7);    // インデックス11~19用 (9ステップ)
+
+      // ピーク値 S7 の設計
+      // maxDrawdown は負のパーセンテージ (例: -12.5)。よって ddFraction = 0.125
+      const ddFraction = Math.abs(maxDrawdown) / 100;
+      
+      // S7 (ピーク値) の設定: ドローダウン後に回復して targetValue になるよう、targetValue より十分高く設定
+      const S7 = Math.max(115, targetValue / (1 - ddFraction * 0.3));
+
+      // 各フェーズの値を計算
+      const values: number[] = new Array(20);
+      values[0] = 100; // S0
+
+      // --- フェーズ1: t = 1 ~ 7 (S0 -> S7) ---
+      let p1TempDiffs = phase1Wins.map(isWin => {
+        return isWin ? (1.5 + Math.random() * 2.0) : (-0.5 - Math.random() * 0.5);
+      });
+      let p1Sum = p1TempDiffs.reduce((a, b) => a + b, 0);
+      if (p1Sum <= 0) p1Sum = 1.0; // ゼロ除算防止
+      
+      const p1TargetDiff = S7 - 100;
+      let valCursor = 100;
+      for (let t = 1; t <= 7; t++) {
+        const diff = p1TempDiffs[t - 1] * (p1TargetDiff / p1Sum);
+        valCursor += diff;
+        values[t] = valCursor;
+      }
+      values[7] = S7; // 正確に合わせる
+
+      // --- フェーズ2: t = 8 ~ 10 (S7 -> S10) ---
+      // 等比的に減少させることで、S10 が S7 * (1 - ddFraction) に一致するようにする
+      const dropRate = Math.pow(1 - ddFraction, 1 / 3);
+      values[8] = values[7] * dropRate;
+      values[9] = values[8] * dropRate;
+      values[10] = values[7] * (1 - ddFraction); // 正確に最大ドローダウンに一致させる
+
+      // --- フェーズ3: t = 11 ~ 19 (S10 -> S19) ---
+      let p3TempDiffs = phase3Wins.map(isWin => {
+        return isWin ? (1.5 + Math.random() * 2.0) : (-0.5 - Math.random() * 0.5);
+      });
+      let p3Sum = p3TempDiffs.reduce((a, b) => a + b, 0);
+      if (p3Sum <= 0) p3Sum = 1.0;
+
+      const p3TargetDiff = targetValue - values[10];
+      valCursor = values[10];
+      for (let t = 11; t <= 19; t++) {
+        const diff = p3TempDiffs[t - 11] * (p3TargetDiff / p3Sum);
+        valCursor += diff;
+        values[t] = valCursor;
+      }
+      values[19] = targetValue; // 誤差吸収
+
+      // チャートデータの構築とドローダウン率の計算
+      let peak = 100;
+      const performanceData = values.map((val, idx) => {
+        if (val > peak) peak = val;
+        const ddRate = peak > 0 ? ((val - peak) / peak) * 100 : 0;
+        
+        // idx = 0 のときは初期点なので isWin = true とする
+        let isWin = true;
+        if (idx >= 1 && idx <= 7) {
+          isWin = phase1Wins[idx - 1];
+        } else if (idx >= 8 && idx <= 10) {
+          isWin = false;
+        } else if (idx >= 11 && idx <= 19) {
+          isWin = phase3Wins[idx - 11];
+        }
+
         return {
           period: `Yr ${idx + 1}`,
-          Strategy: Math.round(100 + idx * factor + randomness),
-          Benchmark: Math.round(100 + idx * 4.5 + Math.sin(idx * 0.3) * 8)
+          Strategy: Math.round(val),
+          Benchmark: Math.round(100 + idx * 4.5 + Math.sin(idx * 0.3) * 8),
+          Drawdown: parseFloat(ddRate.toFixed(1)),
+          isWin
         };
       });
 
@@ -345,7 +588,7 @@ export default function AegisAnalyticsPage() {
     if (!chatInput.trim() || isChatLoading) return;
 
     const userMessage = chatInput;
-    setChatHistory(prev => [...prev, { sender: "user", text: userMessage }]);
+    setChatHistory(prev => [...prev, { sender: "user", text: userMessage, animate: false }]);
     setChatInput("");
     setIsChatLoading(true);
 
@@ -354,17 +597,83 @@ export default function AegisAnalyticsPage() {
       setTimeout(() => {
         let aiReply = "";
         const msgLower = userMessage.toLowerCase();
-        if (msgLower.includes("リスク") || msgLower.includes("risk")) {
+
+        // Command parsing for DCF Sliders (AIによるスライダーの自動操作)
+        const waccMatch = msgLower.match(/(?:wacc|割引率).*?([0-9.]+)/);
+        const terminalMatch = msgLower.match(/(?:ターミナル成長率|ターミナル).*?([0-9.]+)/);
+        const growthMatch = msgLower.match(/(?:売上成長率|成長率).*?([0-9.]+)/);
+        const taxMatch = msgLower.match(/(?:法人税率|税率).*?([0-9.]+)/);
+        const daMatch = msgLower.match(/(?:減価償却費|d&a|da).*?([0-9.]+)/i);
+        const capexMatch = msgLower.match(/(?:設備投資|capex).*?([0-9.]+)/i);
+        const wcMatch = msgLower.match(/(?:運転資本|運転資本増減|wc).*?([+\-]?[0-9.]+)/i);
+        
+        // Command parsing for Backtest
+        const backtestFundaMatch = msgLower.match(/(?:ファンダメンタル|ファンダ).*?バックテスト/);
+        const backtestTechMatch = msgLower.match(/(?:テクニカル).*?バックテスト/);
+
+        if (waccMatch) {
+          const val = parseFloat(waccMatch[1]);
+          setDcfWacc(val);
+          aiReply = `承知いたしました。WACC（割引率）を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (terminalMatch) {
+          const val = parseFloat(terminalMatch[1]);
+          setDcfTerminal(val);
+          aiReply = `承知いたしました。ターミナル成長率を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (growthMatch) {
+          const val = parseFloat(growthMatch[1]);
+          setDcfGrowth(val);
+          aiReply = `承知いたしました。売上高成長率を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (taxMatch) {
+          const val = parseFloat(taxMatch[1]);
+          setDcfTaxRate(val);
+          aiReply = `承知いたしました。実効法人税率を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (daMatch) {
+          const val = parseFloat(daMatch[1]);
+          setDcfDaMargin(val);
+          aiReply = `承知いたしました。減価償却費（売上比）を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (capexMatch) {
+          const val = parseFloat(capexMatch[1]);
+          setDcfCapexMargin(val);
+          aiReply = `承知いたしました。設備投資（売上比）を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (wcMatch) {
+          const val = parseFloat(wcMatch[1]);
+          setDcfWcMargin(val);
+          aiReply = `承知いたしました。運転資本増減（売上比）を ${val}% に自動設定し、DCFシミュレーションを再計算しました。右側のパネルで新しい理論株価をご確認ください。`;
+        } else if (backtestFundaMatch) {
+          const newRules = {
+            ...backtestRules,
+            peFilter: true,
+            roeFilter: true,
+            rsiFilter: false,
+            goldenCross: false,
+            maCross: false
+          };
+          setBacktestRules(newRules);
+          handleRunBacktest(newRules);
+          aiReply = "承知いたしました。ファンダメンタル条件（PER < 15, ROE > 10%）を設定し、バックテストを実行しました。下のパネルで結果をご確認ください。";
+        } else if (backtestTechMatch) {
+          const newRules = {
+            ...backtestRules,
+            peFilter: false,
+            roeFilter: false,
+            rsiFilter: true,
+            goldenCross: true,
+            maCross: false
+          };
+          setBacktestRules(newRules);
+          handleRunBacktest(newRules);
+          aiReply = "承知いたしました。テクニカル条件（RSI < 30, ゴールデンクロス）を設定し、バックテストを実行しました。下のパネルで結果をご確認ください。";
+        } else if (msgLower.includes("リスク") || msgLower.includes("risk")) {
           aiReply = `${stock.name} (${activeTicker}) の有価証券報告書「事業等のリスク」セクションでは、今年度に入り「地政学的対立に伴う半導体サプライチェーンの分断リスク」が前年比で42%加筆されています。また、原材料費高騰への耐性に関して、現在のマージンは ${ (stock.operatingMargin * 100).toFixed(1) }% を維持していますが、DCFシミュレーションの通りWACCが0.5%上昇すると理論株価に約8%の引下げ圧力がかかります。`;
         } else if (msgLower.includes("roe") || msgLower.includes("財務") || msgLower.includes("ファンダ")) {
-          aiReply = `デュポン分析によると、${stock.name} のROEは ${ (stock.roe * 100).toFixed(1) }% です。これは純利益率、総資産回転率、及び財務レバレッジの積として分解されます。同業他社のバブルチャートが示す通り、現在のPERは ${stock.peRatio}倍 となっており、成長性 ${ stock.peers.find(p => p.symbol === activeTicker)?.growth }% に対し、セクター対比で極めて合理的なバリュエーション位置（PEGレシオ換算）にあります。`;
+          aiReply = `デュポン分析によると、${stock.name} のROEは ${ (stock.roe * 100).toFixed(1) }% です。これは純利益率、総資産回転率、及び財務レバレッジの積として分解されます。同業他社のバブルチャートが示す通り、現在のPERは ${stock.peRatio}倍 となっており、成長性 ${ stock.peers.find((p: any) => p.symbol === activeTicker)?.growth }% に対し、セクター対比で極めて合理的なバリュエーション位置（PEGレシオ換算）にあります。`;
         } else if (msgLower.includes("dcf") || msgLower.includes("目標株価") || msgLower.includes("理論株価")) {
-          aiReply = `現在のDCFシナリオ（売上成長率 ${dcfGrowth}%、WACC ${dcfWacc}%）では、理論株価は ¥${dcfResult.fairValue} と算出され、現在価格 (¥${stock.price}) に対し ${dcfResult.discountRatio >= 0 ? `${dcfResult.discountRatio}%の割安` : `${Math.abs(dcfResult.discountRatio)}%の割高`} を示しています。売上利益成長の安定度を考慮すると、割引率をさらに絞ることが可能かもしれません。`;
+          aiReply = `最新のDCF設定（売上成長率 ${dcfGrowth}%、WACC ${dcfWacc}%、ターミナル成長率 ${dcfTerminal}%）に基づくと、理論株価は ¥${dcfResult.fairValue.toLocaleString()} と算出されます。現在価格 (¥${stock.price.toLocaleString()}) に対して ${dcfResult.discountRatio >= 0 ? `${dcfResult.discountRatio}%の割安` : `${Math.abs(dcfResult.discountRatio)}%の割高`} と評価しています。D&A(${dcfDaMargin}%)やCapEx(${dcfCapexMargin}%)、運転資本増減(${dcfWcMargin}%)などの設定値も精緻に反映されています。`;
         } else {
           aiReply = `${stock.name} についてのクエリを受信しました。Aegis Analyticsのインテリジェンス・レイヤーは、TimesFM株価予測モデル（予測値Close平均）及び同業他社との財務スプレッドを複合解析しています。具体的なリスク要素、DCF計算時のパラメータ設定による理論価格のブレ幅など、どのような詳細を計算しますか？`;
         }
 
-        setChatHistory(prev => [...prev, { sender: "ai", text: aiReply }]);
+        setChatHistory(prev => [...prev, { sender: "ai", text: aiReply, animate: true }]);
         setIsChatLoading(false);
       }, 1500);
     } catch (err) {
@@ -372,6 +681,12 @@ export default function AegisAnalyticsPage() {
       setIsChatLoading(false);
     }
   };
+
+  // 前日比に基づく株価のカラー計算
+  const isPriceUp = stock.history.length >= 2 
+    ? stock.history[stock.history.length - 1].close >= stock.history[stock.history.length - 2].close 
+    : true;
+  const priceColor = isPriceUp ? "#10b981" : "#ef4444"; // emerald-500 or red-500
 
   return (
     <div className="w-full min-h-screen bg-[#050508] text-zinc-100 font-sans p-4 md:p-6 overflow-x-hidden selection:bg-emerald-500/25 relative">
@@ -385,7 +700,7 @@ export default function AegisAnalyticsPage() {
           <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <Crosshair className="w-6 h-6 text-emerald-400 animate-spin" />
+              <Crosshair className={`w-6 h-6 text-emerald-400 ${isLoadingStock ? "animate-spin" : ""}`} />
             </div>
             <div>
               <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-white">
@@ -468,7 +783,7 @@ export default function AegisAnalyticsPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-xl font-bold font-mono text-emerald-400">{activeTicker}</span>
                   <div className="h-4 w-px bg-white/10" />
-                  <span className="text-base font-extrabold text-white">{stock.name}</span>
+                  <span className="text-base font-extrabold text-white">{isLoadingStock ? "データ取得中..." : stock.name}</span>
                   <span className="text-xs text-zinc-500 bg-white/5 border border-white/5 px-2 py-0.5 rounded-lg">{stock.sector}</span>
                 </div>
                 <div className="flex flex-wrap items-center gap-6 text-xs font-mono">
@@ -544,8 +859,8 @@ export default function AegisAnalyticsPage() {
                       <ComposedChart data={stock.history}>
                         <defs>
                           <linearGradient id="chartCloseGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                            <stop offset="5%" stopColor={priceColor} stopOpacity={0.4} />
+                            <stop offset="95%" stopColor={priceColor} stopOpacity={0} />
                           </linearGradient>
                         </defs>
                         <XAxis dataKey="date" stroke="#3f3f46" fontSize={9} tickFormatter={(d) => d.substring(8)} />
@@ -559,7 +874,7 @@ export default function AegisAnalyticsPage() {
                         />
                         <Legend wrapperStyle={{ fontSize: "10px" }} />
                         {chartToggles.price && (
-                          <Area yAxisId="price" type="monotone" dataKey="close" name="株価 (Close)" stroke="#10b981" fill="url(#chartCloseGrad)" strokeWidth={2} />
+                          <Area yAxisId="price" type="monotone" dataKey="close" name="株価 (Close)" stroke={priceColor} fill="url(#chartCloseGrad)" strokeWidth={2} />
                         )}
                         {chartToggles.roe && (
                           <Line yAxisId="percentage" type="monotone" dataKey="roe" name="ROE" stroke="#818cf8" strokeWidth={1.5} dot={false} />
@@ -597,7 +912,7 @@ export default function AegisAnalyticsPage() {
                           contentStyle={{ backgroundColor: "#09090c", borderColor: "#1f1f23", borderRadius: "12px", fontSize: "11px" }}
                         />
                         <Scatter name="同業セクター" data={stock.peers} fill="#10b981">
-                          {stock.peers.map((entry, index) => (
+                          {stock.peers.map((entry: any, index: number) => (
                             <Cell
                               key={`cell-${index}`}
                               fill={entry.symbol === activeTicker ? "#10b981" : "rgba(255,255,255,0.15)"}
@@ -651,7 +966,7 @@ export default function AegisAnalyticsPage() {
                         <div key={i} className={`p-2 rounded-xl leading-relaxed ${
                           msg.sender === "user" ? "bg-white/5 text-emerald-300 text-right ml-4" : "bg-black/30 text-zinc-300 mr-4"
                         }`}>
-                          {msg.text}
+                          <TypewriterMessage text={msg.text} animate={msg.animate} />
                         </div>
                       ))}
                       {isChatLoading && (
@@ -715,7 +1030,7 @@ export default function AegisAnalyticsPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center flex-grow">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start flex-grow">
                     {/* Future FCF Chart */}
                     <div className="h-[180px]">
                       <span className="text-[9px] text-zinc-500 font-mono block mb-2 uppercase tracking-wider font-bold">5-Year Projected FCF & PV</span>
@@ -777,6 +1092,66 @@ export default function AegisAnalyticsPage() {
                           value={dcfTerminal}
                           onChange={(e) => setDcfTerminal(parseFloat(e.target.value))}
                           className="w-full accent-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-zinc-400">実効法人税率:</span>
+                          <span className="text-rose-400 font-bold">{dcfTaxRate}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="10"
+                          max="40"
+                          step="0.5"
+                          value={dcfTaxRate}
+                          onChange={(e) => setDcfTaxRate(parseFloat(e.target.value))}
+                          className="w-full accent-rose-500"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-zinc-400">減価償却費 (売上比):</span>
+                          <span className="text-teal-400 font-bold">{dcfDaMargin}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="20"
+                          step="0.5"
+                          value={dcfDaMargin}
+                          onChange={(e) => setDcfDaMargin(parseFloat(e.target.value))}
+                          className="w-full accent-teal-500"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-zinc-400">設備投資 (売上比):</span>
+                          <span className="text-blue-400 font-bold">{dcfCapexMargin}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="0"
+                          max="30"
+                          step="0.5"
+                          value={dcfCapexMargin}
+                          onChange={(e) => setDcfCapexMargin(parseFloat(e.target.value))}
+                          className="w-full accent-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-zinc-400">運転資本増減 (売上比):</span>
+                          <span className="text-purple-400 font-bold">{dcfWcMargin}%</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="-10"
+                          max="10"
+                          step="0.5"
+                          value={dcfWcMargin}
+                          onChange={(e) => setDcfWcMargin(parseFloat(e.target.value))}
+                          className="w-full accent-purple-500"
                         />
                       </div>
                     </div>
@@ -858,9 +1233,45 @@ export default function AegisAnalyticsPage() {
                         <XAxis type="number" dataKey="risk" name="ボラティリティ (Risk)" unit="%" stroke="#3f3f46" fontSize={8} />
                         <YAxis type="number" dataKey="return" name="期待リターン (Return)" unit="%" stroke="#3f3f46" fontSize={8} />
                         <Tooltip
-                          contentStyle={{ backgroundColor: "#09090c", borderColor: "#1f1f23", borderRadius: "12px", fontSize: "10px" }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const isOptimal = optimalPortfolio && data.id === optimalPortfolio.id;
+                              return (
+                                <div className="bg-[#09090c] border border-[#1f1f23] rounded-xl p-2.5 text-[10px] font-mono shadow-xl">
+                                  {isOptimal && (
+                                    <div className="text-amber-400 font-bold mb-1.5 flex items-center gap-1">
+                                      ⭐ 最適化ポートフォリオ (最大シャープレシオ)
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between gap-6 mb-1">
+                                    <span className="text-zinc-400">ボラティリティ (Risk):</span>
+                                    <span className="font-bold text-white">{data.risk}%</span>
+                                  </div>
+                                  <div className="flex justify-between gap-6 mb-1">
+                                    <span className="text-zinc-400">期待リターン (Return):</span>
+                                    <span className="font-bold text-white">{data.return}%</span>
+                                  </div>
+                                  <div className="flex justify-between gap-6 pt-1 mt-1 border-t border-white/10">
+                                    <span className="text-indigo-300">シャープレシオ:</span>
+                                    <span className="font-bold text-indigo-300">{data.sharpe}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
                         />
-                        <Scatter name="シミュレーション" data={mptSimulation} fill="#818cf8" opacity={0.5} />
+                        <Scatter name="シミュレーション" data={mptSimulation} fill="#818cf8" opacity={0.3} />
+                        {optimalPortfolio && (
+                          <Scatter
+                            name="最適ポートフォリオ"
+                            data={[optimalPortfolio]}
+                            fill="#fbbf24"
+                            shape={<CustomStarShape />}
+                            line={false}
+                          />
+                        )}
                       </ScatterChart>
                     </ResponsiveContainer>
                   </div>
@@ -922,6 +1333,16 @@ export default function AegisAnalyticsPage() {
                         />
                       </label>
 
+                      <label className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                        <span className="text-zinc-300">テクニカル条件: 移動平均線クロス</span>
+                        <input
+                          type="checkbox"
+                          checked={backtestRules.maCross}
+                          onChange={(e) => setBacktestRules(prev => ({ ...prev, maCross: e.target.checked }))}
+                          className="accent-emerald-500 rounded"
+                        />
+                      </label>
+
                       <button
                         onClick={handleRunBacktest}
                         disabled={isRunningBacktest}
@@ -972,10 +1393,25 @@ export default function AegisAnalyticsPage() {
                     </div>
 
                     {/* Backtest Return Chart */}
-                    <div className="h-[180px] w-full">
-                      <span className="text-[9px] text-zinc-500 font-mono block mb-2 uppercase tracking-wider font-bold">Strategy Asset Curve (累積リターン)</span>
+                    <div className="h-[180px] w-full flex flex-col">
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider font-bold">Strategy Asset Curve (累積リターン)</span>
+                        {backtestResults && (
+                          <div className="flex items-center gap-0.5">
+                            <span className="text-[8px] text-zinc-600 mr-1 font-mono uppercase">Annual Win/Loss:</span>
+                            {backtestResults.chartData.slice(1).map((data: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`w-1.5 h-3 rounded-sm ${data.isWin ? "bg-emerald-500" : "bg-rose-500"} opacity-80`}
+                                title={`${data.period}: ${data.isWin ? "WIN" : "LOSS"}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                       {backtestResults ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <div className="flex-grow">
+                          <ResponsiveContainer width="100%" height="100%">
                           <AreaChart data={backtestResults.chartData}>
                             <defs>
                               <linearGradient id="backtestStrategyGrad" x1="0" y1="0" x2="0" y2="1">
@@ -986,12 +1422,49 @@ export default function AegisAnalyticsPage() {
                             <XAxis dataKey="period" stroke="#3f3f46" fontSize={8} />
                             <YAxis stroke="#3f3f46" fontSize={8} />
                             <Tooltip
-                              contentStyle={{ backgroundColor: "#09090c", borderColor: "#1f1f23", borderRadius: "12px", fontSize: "10px" }}
+                              content={({ active, payload, label }) => {
+                                if (active && payload && payload.length) {
+                                  const drawdown = payload[0].payload.Drawdown;
+                                  return (
+                                    <div className="bg-[#09090c] border border-[#1f1f23] rounded-xl p-2.5 text-[10px] font-mono shadow-xl">
+                                      <p className="text-zinc-500 mb-1.5 font-bold uppercase">{label}</p>
+                                      {payload.map((entry: any, index: number) => (
+                                        <div key={index} className="flex justify-between gap-6 mb-1">
+                                          <span style={{ color: entry.color }}>{entry.name}:</span>
+                                          <span className="font-bold text-white">{entry.value}</span>
+                                        </div>
+                                      ))}
+                                      <div className="flex justify-between gap-6 mt-1.5 pt-1.5 border-t border-white/10">
+                                        <span className="text-rose-400">Drawdown:</span>
+                                        <span className="font-bold text-rose-400">{drawdown}%</span>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
                             />
+                            
+                            {/* 勝った年の背景をうっすら緑、負けた年の背景をより目立つ赤にする ReferenceArea */}
+                            {backtestResults.chartData.slice(0, -1).map((data: any, idx: number) => {
+                              const nextData = backtestResults.chartData[idx + 1];
+                              const isWin = nextData ? nextData.isWin : false;
+                              return (
+                                <ReferenceArea
+                                  key={`ref-${idx}`}
+                                  x1={data.period}
+                                  x2={nextData?.period || data.period}
+                                  fill={isWin ? "#10b981" : "#ef4444"}
+                                  fillOpacity={isWin ? 0.02 : 0.3}
+                                />
+                              );
+                            })}
+
                             <Area type="monotone" dataKey="Strategy" name="戦略リターン" stroke="#10b981" fill="url(#backtestStrategyGrad)" strokeWidth={2} />
                             <Line type="monotone" dataKey="Benchmark" name="TOPIX" stroke="#4b5563" strokeWidth={1} dot={false} />
                           </AreaChart>
                         </ResponsiveContainer>
+                        </div>
                       ) : (
                         <div className="h-full flex items-center justify-center bg-white/[0.01] border border-dashed border-white/5 rounded-2xl opacity-40 text-center">
                           <span className="text-[10px] font-mono">Awaiting backtest run...</span>
