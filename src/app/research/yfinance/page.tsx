@@ -16,7 +16,10 @@ import {
   ChevronRight,
   RefreshCw,
   Sliders,
-  DollarSign
+  DollarSign,
+  Target,
+  Gauge,
+  CheckCircle2
 } from "lucide-react";
 import {
   ComposedChart,
@@ -87,6 +90,12 @@ interface ForecastData {
   upper_50: number;
 }
 
+const sampleTickers = [
+  { symbol: "7203", name: "Toyota", tone: "Core Japan" },
+  { symbol: "6758", name: "Sony", tone: "Quality growth" },
+  { symbol: "9984", name: "SoftBank G", tone: "High beta" },
+];
+
 export default function YFinanceQuantPage() {
   const [tickerInput, setTickerInput] = useState("7203"); // Default to Toyota
   const [isLoading, setIsLoading] = useState(false);
@@ -123,6 +132,46 @@ export default function YFinanceQuantPage() {
     }
     return `${bill.toFixed(2)}B ${currency}`;
   };
+
+  const signalBrief = React.useMemo(() => {
+    if (!metrics || history.length === 0) return null;
+
+    const latest = history[history.length - 1];
+    const forecastEnd = forecast[forecast.length - 1];
+    const projectedMove =
+      latest.close && forecastEnd
+        ? ((forecastEnd.mean - latest.close) / latest.close) * 100
+        : null;
+
+    const riskState =
+      metrics.max_drawdown <= -0.25 || metrics.var_historical_95 <= -0.035
+        ? "High"
+        : metrics.max_drawdown <= -0.12 || metrics.var_historical_95 <= -0.02
+          ? "Medium"
+          : "Controlled";
+
+    const momentumState =
+      metrics.annualized_return > 0.12 && metrics.sharpe_ratio >= 1
+        ? "Constructive"
+        : metrics.annualized_return > 0
+          ? "Neutral"
+          : "Defensive";
+
+    const action =
+      momentumState === "Constructive" && riskState !== "High"
+        ? "ウォッチリスト上位。押し目と出来高確認を優先。"
+        : riskState === "High"
+          ? "ポジションサイズを抑え、下落耐性を先に検証。"
+          : "AIレポートとバリュエーション推移で追加材料を確認。";
+
+    return {
+      riskState,
+      momentumState,
+      projectedMove,
+      action,
+      latestClose: latest.close,
+    };
+  }, [forecast, history, metrics]);
 
   const handleExecute = async () => {
     if (inputMode === "api" && !tickerInput.trim()) return;
@@ -252,7 +301,6 @@ export default function YFinanceQuantPage() {
 
     // Connect forecast. We want the first forecast step to align with last history price for continuity
     const lastHistoryPrice = history[history.length - 1].close;
-    const lastHistoryDate = history[history.length - 1].date;
 
     const forecastData = forecast.map((f, idx) => ({
       date: f.date,
@@ -388,13 +436,40 @@ export default function YFinanceQuantPage() {
               </div>
             )}
 
-            <div className="pt-4 border-t border-emerald-950/50 flex flex-wrap gap-2 text-[10px] text-zinc-500 font-mono">
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">GBM simulation</span>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Volatility</span>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Value at Risk</span>
-              <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Sharpe Ratio</span>
+              <div className="pt-4 border-t border-emerald-950/50 flex flex-wrap gap-2 text-[10px] text-zinc-500 font-mono">
+                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">GBM simulation</span>
+                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Volatility</span>
+                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Value at Risk</span>
+                <span className="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800">Sharpe Ratio</span>
+              </div>
+
+              {!meta && inputMode === "api" && (
+                <div className="pt-4 border-t border-emerald-950/50">
+                  <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-2">
+                    Quick Start
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2">
+                    {sampleTickers.map((item) => (
+                      <button
+                        key={item.symbol}
+                        type="button"
+                        onClick={() => setTickerInput(item.symbol)}
+                        className="group flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950/70 px-3 py-2 text-left transition-colors hover:border-emerald-800/60 hover:bg-emerald-950/20"
+                      >
+                        <span>
+                          <span className="block text-xs font-mono text-zinc-200">{item.symbol}</span>
+                          <span className="block text-[10px] text-zinc-500">{item.name}</span>
+                        </span>
+                        <span className="flex items-center gap-1 text-[9px] font-mono uppercase tracking-wider text-zinc-600 group-hover:text-emerald-400">
+                          {item.tone}
+                          <ChevronRight className="h-3 w-3" />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
 
           {/* Right: Meta Information Header */}
           <div className="lg:col-span-8 p-6 rounded-2xl bg-white/[0.01] border border-emerald-950/50 backdrop-blur-xl flex flex-col justify-between gap-4 min-h-[170px]">
@@ -452,13 +527,63 @@ export default function YFinanceQuantPage() {
                     </p>
                   </div>
                 </div>
+
+                {signalBrief && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-emerald-950/50">
+                    <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/10 p-3">
+                      <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                        Risk Posture
+                        <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                      </div>
+                      <p className="mt-1 text-lg font-semibold text-white">{signalBrief.riskState}</p>
+                    </div>
+                    <div className="rounded-xl border border-cyan-900/30 bg-cyan-950/10 p-3">
+                      <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                        Momentum
+                        <Gauge className="h-3.5 w-3.5 text-cyan-400" />
+                      </div>
+                      <p className="mt-1 text-lg font-semibold text-white">{signalBrief.momentumState}</p>
+                    </div>
+                    <div className="rounded-xl border border-amber-900/30 bg-amber-950/10 p-3">
+                      <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-zinc-500">
+                        30D Mean
+                        <Target className="h-3.5 w-3.5 text-amber-400" />
+                      </div>
+                      <p className="mt-1 text-lg font-semibold text-white">
+                        {signalBrief.projectedMove === null
+                          ? "N/A"
+                          : `${signalBrief.projectedMove >= 0 ? "+" : ""}${signalBrief.projectedMove.toFixed(2)}%`}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="h-full flex flex-col justify-center items-center opacity-30 text-center">
-                <Info className="w-8 h-8 text-emerald-500 mb-2" />
-                <p className="text-xs font-mono tracking-widest uppercase">
+              <div className="h-full flex flex-col justify-center items-center text-center">
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-800/30 bg-emerald-950/20">
+                  <Info className="w-7 h-7 text-emerald-400" />
+                </div>
+                <p className="text-sm font-mono tracking-widest uppercase text-zinc-300">
                   銘柄コードを入力し、分析を実行してください。
                 </p>
+                <p className="mt-2 max-w-xl text-xs leading-relaxed text-zinc-500">
+                  価格推移、リスク指標、30日予測、AIレポートを一画面で確認できます。左のショートカットから代表銘柄を選ぶとすぐに始められます。
+                </p>
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+                  {[
+                    ["Data", "OHLC・PER・PBRを取得"],
+                    ["Risk", "VaR・歪度・尖度を計算"],
+                    ["Note", "AIレポートをKB保存"],
+                  ].map(([label, text]) => (
+                    <div key={label} className="rounded-xl border border-zinc-800 bg-zinc-950/70 px-4 py-3">
+                      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-emerald-400">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {label}
+                      </div>
+                      <p className="mt-1 text-[11px] text-zinc-500">{text}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -466,6 +591,54 @@ export default function YFinanceQuantPage() {
 
         {meta && metrics && history.length > 0 && (
           <>
+            {signalBrief && (
+              <section className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-8 rounded-2xl border border-emerald-900/30 bg-emerald-950/[0.08] p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-emerald-400">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Signal Brief
+                      </div>
+                      <p className="mt-2 text-lg font-semibold text-white">
+                        {meta.symbol} は {signalBrief.momentumState.toLowerCase()} / {signalBrief.riskState.toLowerCase()} 判定です。
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                        {signalBrief.action}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 text-center md:min-w-[360px]">
+                      <div className="rounded-xl bg-black/30 border border-white/5 p-3">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Close</p>
+                        <p className="mt-1 text-sm font-mono text-zinc-100">
+                          {signalBrief.latestClose ? signalBrief.latestClose.toLocaleString() : "N/A"}
+                        </p>
+                      </div>
+                      <div className="rounded-xl bg-black/30 border border-white/5 p-3">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">Sharpe</p>
+                        <p className="mt-1 text-sm font-mono text-amber-300">{metrics.sharpe_ratio.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded-xl bg-black/30 border border-white/5 p-3">
+                        <p className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">VaR 95</p>
+                        <p className="mt-1 text-sm font-mono text-rose-300">
+                          {(metrics.var_historical_95 * 100).toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:col-span-4 rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
+                  <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
+                    <DollarSign className="h-3.5 w-3.5 text-emerald-400" />
+                    Valuation Cue
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-zinc-400">
+                    PER/PBRはチャートの <span className="font-mono text-zinc-200">VALUATION</span> タブで時系列確認できます。AIレポート保存前に、直近の倍率変化と予測レンジをセットで見るのが次の確認ポイントです。
+                  </p>
+                </div>
+              </section>
+            )}
+
             {/* Row 2: Metrics Panel */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {/* Metric 1 */}
