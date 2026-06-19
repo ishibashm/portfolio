@@ -23,7 +23,7 @@ import { baziEngine } from "@/utils/baziEngine";
 import { Solar, Lunar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 
-interface DayData {
+export interface DayData {
   date: Date;
   dayOfMonth: number;
   isCurrentMonth: boolean;
@@ -280,9 +280,23 @@ function getActionableAdvice(day: DayData): string {
   return "🌐 [NEUTRAL_COGNITION] エネルギーのバランスが取れた日常の日です。新しい動きを起こすよりは、これまでの進捗確認や整理整頓に向いています。";
 }
 
-export function CosmicCalendar({ compact = false }: { compact?: boolean }) {
+export function CosmicCalendar({
+  compact = false,
+  view = "both",
+  selectedDayState,
+  setSelectedDayState,
+}: {
+  compact?: boolean;
+  view?: "both" | "calendar" | "telemetry";
+  selectedDayState?: DayData | null;
+  setSelectedDayState?: (day: DayData | null) => void;
+}) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
+  const [internalSelectedDay, setInternalSelectedDay] = useState<DayData | null>(null);
+  
+  const selectedDay = selectedDayState !== undefined ? selectedDayState : internalSelectedDay;
+  const setSelectedDay = setSelectedDayState !== undefined ? setSelectedDayState : setInternalSelectedDay;
+  
   const [days, setDays] = useState<DayData[]>([]);
 
   // Birthdate settings for personal calculations
@@ -471,174 +485,174 @@ export function CosmicCalendar({ compact = false }: { compact?: boolean }) {
     return "border-white/5";
   };
 
-  return (
-    <div className={`w-full grid gap-6 items-stretch ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
-      {/* Calendar Grid Section */}
+  const renderCalendar = (wrapperClassName: string) => (
+    <div
+      className={`${wrapperClassName} p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col`}
+      style={{
+        borderColor: "rgba(255, 255, 255, 0.05)",
+      }}
+    >
+      {/* Decorative Grid Lightbar */}
       <div
-        className={`${compact ? "" : "2xl:col-span-2"} p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col`}
+        className="absolute top-0 left-0 w-full h-[1px] opacity-50"
         style={{
-          borderColor: "rgba(255, 255, 255, 0.05)",
+          background:
+            "linear-gradient(90deg, transparent, var(--color-accent, #10b981), transparent)",
         }}
-      >
-        {/* Decorative Grid Lightbar */}
-        <div
-          className="absolute top-0 left-0 w-full h-[1px] opacity-50"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, var(--color-accent, #10b981), transparent)",
-          }}
-        />
+      />
 
-        {/* Calendar Navigation */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <span
-              className="w-1.5 h-1.5 rounded-full animate-ping"
-              style={{ backgroundColor: "var(--color-accent, #10b981)" }}
-            />
-            <span className="text-xs font-mono text-zinc-500 tracking-widest">
-              {"// Cosmic Calendar Telemetry"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handlePrevMonth}
-              className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <h2 className="text-lg font-bold font-mono tracking-wider text-white select-none">
-              {currentDate.getFullYear()}.
-              {String(currentDate.getMonth() + 1).padStart(2, "0")}
-            </h2>
-            <button
-              onClick={handleNextMonth}
-              className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+      {/* Calendar Navigation */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-ping"
+            style={{ backgroundColor: "var(--color-accent, #10b981)" }}
+          />
+          <span className="text-xs font-mono text-zinc-500 tracking-widest">
+            {"// Cosmic Calendar Telemetry"}
+          </span>
         </div>
 
-        {/* Weekday Labels */}
-        <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
-          {WEEKDAYS.map((w, i) => (
-            <div
-              key={w}
-              className={`text-[9px] font-mono font-bold tracking-wider py-1 select-none ${
-                i === 0
-                  ? "text-rose-500/80"
-                  : i === 6
-                    ? "text-sky-500/80"
-                    : "text-zinc-600"
-              }`}
-            >
-              {w}
-            </div>
-          ))}
-        </div>
-
-        {/* Day Grid */}
-        <div className="grid grid-cols-7 auto-rows-fr gap-1.5 flex-grow">
-          {days.map((day, idx) => {
-            const isToday =
-              new Date().toDateString() === day.date.toDateString();
-            const isSelected =
-              selectedDay?.date.toDateString() === day.date.toDateString();
-
-            return (
-              <button
-                key={idx}
-                onClick={() => setSelectedDay(day)}
-                className={`p-1.5 min-h-[80px] h-full rounded-xl border flex flex-col justify-between items-start transition-all duration-300 relative group cursor-pointer ${
-                  day.isCurrentMonth
-                    ? "bg-white/[0.01] hover:bg-white/[0.03]"
-                    : "bg-transparent opacity-20 pointer-events-none"
-                } ${getScoreBorder(day)}`}
-                style={{
-                  borderColor: isSelected
-                    ? "var(--color-accent, #10b981)"
-                    : undefined,
-                  boxShadow: isSelected
-                    ? "0 0 12px color-mix(in srgb, var(--color-accent, #10b981) 15%, transparent)"
-                    : undefined,
-                }}
-              >
-                {/* Visual Indicators */}
-                <div className="flex justify-between items-center w-full leading-none">
-                  {/* Date number */}
-                  <span
-                    className={`text-xs font-mono font-bold ${
-                      day.holiday.isHoliday || day.date.getDay() === 0
-                        ? "text-rose-400"
-                        : day.date.getDay() === 6
-                          ? "text-sky-400"
-                          : "text-zinc-300"
-                    }`}
-                  >
-                    {day.dayOfMonth}
-                  </span>
-
-                  {/* Moon icon */}
-                  <span className="text-[10px] select-none text-zinc-500 leading-none">
-                    {day.lunarPhase.symbol}
-                  </span>
-                </div>
-
-                {/* Score LED indicator */}
-                <div className="w-full flex items-center justify-between mt-2">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${getScoreColor(day.score)}`}
-                  />
-
-                  <div className="flex gap-0.5 items-center leading-none">
-                    {/* Tiny label for major days */}
-                    {day.luckyDays.isTensho && (
-                      <span className="text-[8px] font-bold text-amber-400 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
-                        赦
-                      </span>
-                    )}
-                    {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
-                      <span className="text-[8px] font-bold text-emerald-400 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
-                        万
-                      </span>
-                    )}
-
-                    {/* Personal Astro Fortunes */}
-                    {day.personalFortune?.isVoid && (
-                      <span className="text-[8px] font-bold text-purple-400 font-mono scale-90 select-none bg-purple-500/20 border border-purple-500/30 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
-                        殺
-                      </span>
-                    )}
-                    {day.personalFortune?.isClash && (
-                      <span className="text-[8px] font-bold text-rose-400 font-mono scale-90 select-none bg-rose-500/20 border border-rose-500/30 px-0.5 rounded" title="日破 (Clash)">
-                        破
-                      </span>
-                    )}
-                    {day.personalFortune?.isHarmony && (
-                      <span className="text-[8px] font-bold text-sky-400 font-mono scale-90 select-none bg-sky-500/20 border border-sky-500/30 px-0.5 rounded" title="支合 (Harmony)">
-                        合
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Cyber decoration dot */}
-                {isToday && (
-                  <span
-                    className="absolute -top-[1.5px] -left-[1.5px] w-2 h-2 border-t-2 border-l-2 rounded-tl-sm"
-                    style={{ borderColor: "var(--color-accent, #10b981)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handlePrevMonth}
+            className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <h2 className="text-lg font-bold font-mono tracking-wider text-white select-none">
+            {currentDate.getFullYear()}.
+            {String(currentDate.getMonth() + 1).padStart(2, "0")}
+          </h2>
+          <button
+            onClick={handleNextMonth}
+            className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Inspector Details Column */}
-      <div className="space-y-6">
+      {/* Weekday Labels */}
+      <div className="grid grid-cols-7 gap-1.5 text-center mb-2">
+        {WEEKDAYS.map((w, i) => (
+          <div
+            key={w}
+            className={`text-[9px] font-mono font-bold tracking-wider py-1 select-none ${
+              i === 0
+                ? "text-rose-500/80"
+                : i === 6
+                  ? "text-sky-500/80"
+                  : "text-zinc-600"
+            }`}
+          >
+            {w}
+          </div>
+        ))}
+      </div>
+
+      {/* Day Grid */}
+      <div className="grid grid-cols-7 auto-rows-fr gap-1.5 flex-grow">
+        {days.map((day, idx) => {
+          const isToday =
+            new Date().toDateString() === day.date.toDateString();
+          const isSelected =
+            selectedDay?.date.toDateString() === day.date.toDateString();
+
+          return (
+            <button
+              key={idx}
+              onClick={() => setSelectedDay(day)}
+              className={`p-1.5 min-h-[80px] h-full rounded-xl border flex flex-col justify-between items-start transition-all duration-300 relative group cursor-pointer ${
+                day.isCurrentMonth
+                  ? "bg-white/[0.01] hover:bg-white/[0.03]"
+                  : "bg-transparent opacity-20 pointer-events-none"
+              } ${getScoreBorder(day)}`}
+              style={{
+                borderColor: isSelected
+                  ? "var(--color-accent, #10b981)"
+                  : undefined,
+                boxShadow: isSelected
+                  ? "0 0 12px color-mix(in srgb, var(--color-accent, #10b981) 15%, transparent)"
+                  : undefined,
+              }}
+            >
+              {/* Visual Indicators */}
+              <div className="flex justify-between items-center w-full leading-none">
+                {/* Date number */}
+                <span
+                  className={`text-xs font-mono font-bold ${
+                    day.holiday.isHoliday || day.date.getDay() === 0
+                      ? "text-rose-400"
+                      : day.date.getDay() === 6
+                        ? "text-sky-400"
+                        : "text-zinc-300"
+                  }`}
+                >
+                  {day.dayOfMonth}
+                </span>
+
+                {/* Moon icon */}
+                <span className="text-[10px] select-none text-zinc-500 leading-none">
+                  {day.lunarPhase.symbol}
+                </span>
+              </div>
+
+              {/* Score LED indicator */}
+              <div className="w-full flex items-center justify-between mt-2">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${getScoreColor(day.score)}`}
+                />
+
+                <div className="flex gap-0.5 items-center leading-none">
+                  {/* Tiny label for major days */}
+                  {day.luckyDays.isTensho && (
+                    <span className="text-[8px] font-bold text-amber-400 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
+                      赦
+                    </span>
+                  )}
+                  {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
+                    <span className="text-[8px] font-bold text-emerald-400 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
+                      万
+                    </span>
+                  )}
+
+                  {/* Personal Astro Fortunes */}
+                  {day.personalFortune?.isVoid && (
+                    <span className="text-[8px] font-bold text-purple-400 font-mono scale-90 select-none bg-purple-500/20 border border-purple-500/30 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
+                      殺
+                    </span>
+                  )}
+                  {day.personalFortune?.isClash && (
+                    <span className="text-[8px] font-bold text-rose-400 font-mono scale-90 select-none bg-rose-500/20 border border-rose-500/30 px-0.5 rounded" title="日破 (Clash)">
+                      破
+                    </span>
+                  )}
+                  {day.personalFortune?.isHarmony && (
+                    <span className="text-[8px] font-bold text-sky-400 font-mono scale-90 select-none bg-sky-500/20 border border-sky-500/30 px-0.5 rounded" title="支合 (Harmony)">
+                      合
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Cyber decoration dot */}
+              {isToday && (
+                <span
+                  className="absolute -top-[1.5px] -left-[1.5px] w-2 h-2 border-t-2 border-l-2 rounded-tl-sm"
+                  style={{ borderColor: "var(--color-accent, #10b981)" }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderTelemetry = (wrapperClassName: string) => {
+    return (
+      <div className={wrapperClassName}>
         {selectedDay ? (
           <div
             className="p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden transition-all duration-300"
@@ -961,6 +975,21 @@ export function CosmicCalendar({ compact = false }: { compact?: boolean }) {
           </div>
         )}
       </div>
+    );
+  };
+
+  if (view === "calendar") {
+    return renderCalendar("w-full");
+  }
+
+  if (view === "telemetry") {
+    return renderTelemetry("w-full space-y-6");
+  }
+
+  return (
+    <div className={`w-full grid gap-6 items-stretch ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
+      {renderCalendar(compact ? "" : "2xl:col-span-2")}
+      {renderTelemetry("space-y-6")}
     </div>
   );
 

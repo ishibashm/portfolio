@@ -432,6 +432,53 @@ export function FinancialStatementVisualizer() {
     }
   };
 
+  const handleFetchJQuants = async () => {
+    if (!stockCode.trim()) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`/api/finance/jquants/details?code=${stockCode.trim().toUpperCase()}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "J-Quantsからのデータ取得に失敗しました。");
+      }
+
+      const { bs, pl } = data.data;
+      setBsResult(bs);
+      setPlResult(pl);
+
+      const bsTsv = [
+        `流動資産\t${formatNumber(bs.currentAssets)}`,
+        `固定資産\t${formatNumber(bs.nonCurrentAssets)}`,
+        `資産合計\t${formatNumber(bs.totalAssets)}`,
+        `流動負債\t${formatNumber(bs.currentLiabilities)}`,
+        `固定負債\t${formatNumber(bs.nonCurrentLiabilities)}`,
+        `負債合計\t${formatNumber(bs.totalLiabilities)}`,
+        `資本金\t${formatNumber(bs.shareCapital)}`,
+        `利益剰余金\t${formatNumber(bs.retainedEarnings)}`,
+        `純資産合計\t${formatNumber(bs.totalEquity)}`
+      ].join("\n");
+
+      const plTsv = [
+        `売上高\t${formatNumber(pl.net_sales)}`,
+        `売上原価\t${formatNumber(pl.cost_of_sales)}`,
+        `販売費及び一般管理費\t${formatNumber(pl.sga_expenses)}`,
+        `営業利益\t${formatNumber(pl.operating_income)}`,
+        `経常利益\t${formatNumber(pl.ordinary_income)}`,
+        `当期純利益\t${formatNumber(pl.net_income)}`
+      ].join("\n");
+
+      setInputText(activeMode === "bs" ? bsTsv : plTsv);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "J-Quantsからのデータ取得中にエラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatNumber = (num?: number) => {
     if (num === undefined || num === null) return "0";
     return new Intl.NumberFormat("ja-JP").format(num);
@@ -570,6 +617,30 @@ export function FinancialStatementVisualizer() {
                 className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <span>株探から時系列データを自動取得</span>
+              </button>
+            </div>
+          )}
+
+          {(activeMode === "bs" || activeMode === "pl") && (
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
+              <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-wider">
+                [J-QUANTS AUTO]
+              </span>
+              <input
+                type="text"
+                value={stockCode}
+                onChange={(e) => setStockCode(e.target.value)}
+                placeholder="コード (e.g. 8697)"
+                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-32 font-bold font-mono text-center uppercase"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={handleFetchJQuants}
+                disabled={loading || !stockCode.trim()}
+                className="px-3 py-1 bg-emerald-600/80 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>J-Quantsから財務諸表を自動取得</span>
               </button>
             </div>
           )}

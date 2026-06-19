@@ -81,6 +81,7 @@ const CosmicCalendar = dynamic(
   () => import("./widgets/CosmicCalendar").then((mod) => mod.CosmicCalendar),
   { ssr: false },
 );
+import type { DayData } from "./widgets/CosmicCalendar";
 const EconomicIntelligence = dynamic(
   () => import("./finance/EconomicIntelligence").then((mod) => mod.EconomicIntelligence),
   { ssr: false },
@@ -507,6 +508,7 @@ const filterVectors = (
 };
 
 export const SolarTimeClock = () => {
+  const [calendarSelectedDay, setCalendarSelectedDay] = useState<DayData | null>(null);
   const [sentinelNotification, setSentinelNotification] = useState<
     string | null
   >(null);
@@ -4234,14 +4236,27 @@ ${timingOptimization?.recommendationText || "特になし"}
           </button>
         </div>
 
-        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-2 gap-6 px-4">
-          {/* Cosmic Calendar Widget */}
-          <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar compact={true} />
+        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-12 gap-6 px-4">
+          {/* Cosmic Calendar Widget (Calendar Grid) */}
+          <div className="xl:col-span-7 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+            <CosmicCalendar
+              view="calendar"
+              selectedDayState={calendarSelectedDay}
+              setSelectedDayState={setCalendarSelectedDay}
+            />
+          </div>
+
+          {/* Cosmic Calendar Widget (Telemetry Details) */}
+          <div className="xl:col-span-5 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+            <CosmicCalendar
+              view="telemetry"
+              selectedDayState={calendarSelectedDay}
+              setSelectedDayState={setCalendarSelectedDay}
+            />
           </div>
 
           {/* Market Intelligence Widget */}
-          <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+          <div className="xl:col-span-12 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
             <EconomicIntelligence />
           </div>
         </div>
