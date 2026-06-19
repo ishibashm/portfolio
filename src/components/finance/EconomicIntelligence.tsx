@@ -19,7 +19,7 @@ import {
 
 export function EconomicIntelligence() {
   const [activeTab, setActiveTab] = useState<"prices" | "macro" | "news">("prices");
-  const [newsData, setNewsData] = useState<any[]>([]);
+  const [apiData, setApiData] = useState<any>(null);
   const [loadingNews, setLoadingNews] = useState<boolean>(true);
   const [newsError, setNewsError] = useState<boolean>(false);
 
@@ -30,13 +30,12 @@ export function EconomicIntelligence() {
         const response = await fetch("/api/trends");
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
-        const econNews = data["マクロ経済・市場インテリジェンス"];
-        if (isMounted && Array.isArray(econNews)) {
-          setNewsData(econNews);
+        if (isMounted) {
+          setApiData(data);
           setNewsError(false);
         }
       } catch (err) {
-        console.error("Failed to load economic news:", err);
+        console.error("Failed to load economic data:", err);
         if (isMounted) {
           setNewsError(true);
         }
@@ -66,6 +65,48 @@ export function EconomicIntelligence() {
     { label: "NVIDIA (NVDA)", value: "$127.40", change: "+4.12%", isPositive: true, category: "Equities" },
     { label: "Apple (AAPL)", value: "$214.30", change: "+0.85%", isPositive: true, category: "Equities" },
   ];
+
+  const symbolLabels: Record<string, { label: string; category: string }> = {
+    "^N225": { label: "日経平均株価", category: "Index" },
+    "USDJPY=X": { label: "ドル円 (USD/JPY)", category: "Forex" },
+    "EURUSD=X": { label: "ユーロドル (EUR/USD)", category: "Forex" },
+    "GC=F": { label: "金先物 (Gold)", category: "Commodity" },
+    "CL=F": { label: "原油先物 (WTI)", category: "Commodity" },
+    "^TNX": { label: "米10年金利 (US10Y)", category: "Bond" },
+    "^VIX": { label: "恐怖指数 (VIX)", category: "Risk" },
+    "1343.T": { label: "J-REIT指数 (1343)", category: "REIT" },
+    "BTC-USD": { label: "ビットコイン (BTC)", category: "Crypto" },
+    "ETH-USD": { label: "イーサリアム (ETH)", category: "Crypto" },
+    "NVDA": { label: "NVIDIA (NVDA)", category: "Equities" },
+    "AAPL": { label: "Apple (AAPL)", category: "Equities" },
+  };
+
+  const displayPrices = apiData?.marketIndices && apiData.marketIndices.length > 0
+    ? apiData.marketIndices.map((idx: any) => {
+        const meta = symbolLabels[idx.symbol] || { label: idx.name, category: "Equities" };
+        const isPositive = idx.changePercent >= 0;
+        const sign = isPositive ? "+" : "";
+        
+        let formattedValue = idx.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (idx.symbol === "USDJPY=X" || idx.symbol === "EURUSD=X") {
+          formattedValue = idx.price.toFixed(4);
+        } else if (idx.symbol === "^TNX") {
+          formattedValue = idx.price.toFixed(3) + "%";
+        } else if (idx.symbol.includes("USD") || idx.symbol === "GC=F" || idx.symbol === "CL=F" || idx.symbol === "NVDA" || idx.symbol === "AAPL" || idx.symbol === "BTC-USD" || idx.symbol === "ETH-USD") {
+          formattedValue = "$" + formattedValue;
+        } else if (idx.symbol === "^N225" || idx.symbol === "1343.T") {
+          formattedValue = "¥" + idx.price.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        }
+
+        return {
+          label: meta.label,
+          value: formattedValue,
+          change: `${sign}${idx.changePercent.toFixed(2)}%`,
+          isPositive,
+          category: meta.category,
+        };
+      })
+    : pricesData;
 
   const macroData = [
     { indicator: "日本のマネーストック (M2)", value: "+2.3%", period: "2026年5月実績", status: "予想(+1.9%)を上回る", trend: "up" },
@@ -115,12 +156,15 @@ export function EconomicIntelligence() {
     },
   ];
 
-  const visibleNews = newsData.length > 0 ? newsData : fallbackNews;
-  const riskOffSignals = pricesData.filter((item) => !item.isPositive).length;
+  const visibleNews = apiData?.["マクロ経済・市場インテリジェンス"] && apiData["マクロ経済・市場インテリジェンス"].length > 0
+    ? apiData["マクロ経済・市場インテリジェンス"]
+    : fallbackNews;
+
+  const riskOffSignals = displayPrices.filter((item: any) => !item.isPositive).length;
   const marketTone =
-    riskOffSignals >= 5
+    riskOffSignals >= 7
       ? "Defensive"
-      : riskOffSignals >= 3
+      : riskOffSignals >= 4
         ? "Mixed"
         : "Risk-on";
 
@@ -172,7 +216,7 @@ export function EconomicIntelligence() {
                 : "text-zinc-400 hover:text-white"
             }`}
           >
-            日経・株探ニュース
+            適時開示・ニュース
           </button>
         </div>
       </div>
@@ -182,7 +226,7 @@ export function EconomicIntelligence() {
         {activeTab === "prices" && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {pricesData.map((item, idx) => (
+              {displayPrices.map((item: any, idx: number) => (
                 <div
                   key={idx}
                   className="p-2.5 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between"
@@ -238,7 +282,7 @@ export function EconomicIntelligence() {
                 </div>
               </div>
               <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {visibleNews.slice(0, 4).map((news, idx) => (
+                {visibleNews.slice(0, 4).map((news: any, idx: number) => (
                   <a
                     key={idx}
                     href={news.link}
@@ -249,8 +293,8 @@ export function EconomicIntelligence() {
                     <div>
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[9px] text-zinc-500 font-mono">{news.source}</span>
-                        <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor}`}>
-                          {news.badge}
+                        <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor || "border-zinc-700 bg-zinc-800/40 text-zinc-400"}`}>
+                          {news.badge || "NEWS"}
                         </span>
                       </div>
                       <h3 className="text-xs font-bold text-zinc-200 group-hover:text-emerald-300 leading-normal mt-1.5 line-clamp-2">
@@ -281,74 +325,158 @@ export function EconomicIntelligence() {
         )}
 
         {activeTab === "macro" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {macroData.map((item, idx) => (
-              <div
-                key={idx}
-                className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex items-center justify-between gap-4"
-              >
-                <div className="flex flex-col gap-0.5 truncate">
-                  <span className="text-[11px] font-bold text-zinc-300 truncate">
-                    {item.indicator}
-                  </span>
-                  <span className="text-[9px] text-zinc-500">
-                    {item.period} • {item.status}
-                  </span>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {macroData.map((item: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex items-center justify-between gap-4"
+                >
+                  <div className="flex flex-col gap-0.5 truncate">
+                    <span className="text-[11px] font-bold text-zinc-300 truncate">
+                      {item.indicator}
+                    </span>
+                    <span className="text-[9px] text-zinc-500">
+                      {item.period} • {item.status}
+                    </span>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-base font-mono font-black text-emerald-400 bg-emerald-500/5 px-2.5 py-1 rounded-xl border border-emerald-500/10">
+                      {item.value}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <span className="text-base font-mono font-black text-emerald-400 bg-emerald-500/5 px-2.5 py-1 rounded-xl border border-emerald-500/10">
-                    {item.value}
-                  </span>
+              ))}
+            </div>
+
+            {/* Live Macro Releases from API */}
+            {apiData?.macroIndicators && apiData.macroIndicators.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-white/5">
+                <h4 className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest mb-2.5 flex items-center gap-1.5">
+                  <Newspaper className="w-3.5 h-3.5 text-emerald-400" /> Latest Official Releases (最新の公的発表資料)
+                </h4>
+                <div className="space-y-2">
+                  {apiData.macroIndicators.slice(0, 4).map((ind: any, idx: number) => (
+                    <a
+                      key={idx}
+                      href={ind.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-3 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all"
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[9px] text-zinc-500 font-mono">{ind.source}</span>
+                        <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${ind.badgeColor || "border-zinc-700 bg-zinc-800/40 text-zinc-400"}`}>
+                          {ind.badge || "RELEASE"}
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-bold text-zinc-300 hover:text-emerald-400 truncate">
+                        {ind.title}
+                      </h5>
+                      <span className="text-[9px] text-zinc-500 font-mono mt-0.5 block">
+                        {ind.publishedAt}
+                      </span>
+                    </a>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
 
         {activeTab === "news" && (
-          <div className="space-y-3">
-            {loadingNews ? (
-              <div className="flex flex-col items-center justify-center py-10 text-zinc-500 gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
-                <span className="text-[9px] font-mono tracking-wider uppercase opacity-80">LOADING FEEDSTREAM...</span>
-              </div>
-            ) : newsError ? (
-              <div className="text-center py-10 text-zinc-500 text-[11px] font-mono">
-                ⚠️ [ERR_CONNECTION_FAILED]
-                <p className="text-[10px] text-zinc-600 mt-1">ニュースの取得に失敗しました</p>
-              </div>
-            ) : (
-              visibleNews.map((news, idx) => (
-                <div
-                  key={idx}
-                  className="p-3.5 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col gap-1.5"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-zinc-400">
-                        {news.source}
-                      </span>
-                      <span className="text-[9px] text-zinc-600 font-mono">
-                        {news.time}
+          <div className="space-y-4">
+            {/* Live TDnet Disclosures */}
+            {apiData?.corporateDisclosures && apiData.corporateDisclosures.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Award className="w-3.5 h-3.5 text-emerald-400" /> Corporate Disclosures (企業適時開示・IR)
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {apiData.corporateDisclosures.slice(0, 4).map((disc: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col justify-between min-h-[100px]"
+                    >
+                      <div className="flex justify-between items-center mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          {disc.code && (
+                            <span className="text-[8px] font-mono font-bold px-1.5 py-0.25 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded">
+                              {disc.code}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-zinc-300 truncate max-w-[120px]">
+                            {disc.companyName}
+                          </span>
+                        </div>
+                        <span className={`text-[8px] font-mono px-1.5 py-0.25 rounded border border-zinc-700 bg-zinc-800/40 text-zinc-500`}>
+                          {disc.source}
+                        </span>
+                      </div>
+                      <h5 className="text-xs font-bold text-zinc-100 hover:text-emerald-400 leading-normal line-clamp-2">
+                        <a href={disc.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          {disc.title}
+                        </a>
+                      </h5>
+                      <span className="text-[8px] text-zinc-600 font-mono mt-1 block">
+                        {disc.publishedAt}
                       </span>
                     </div>
-                    <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor}`}>
-                      {news.badge}
-                    </span>
-                  </div>
-                  <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors">
-                    <a href={news.link} target="_blank" rel="noopener noreferrer" className="block hover:underline underline-offset-4 decoration-emerald-500/50">
-                      {news.title}
-                    </a>
-                  </h3>
-                  {news.desc && (
-                    <p className="text-[10px] text-zinc-500 leading-relaxed">
-                      {news.desc}
-                    </p>
-                  )}
+                  ))}
                 </div>
-              ))
+              </div>
             )}
+
+            {/* General News Section */}
+            <div>
+              <h4 className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                <Newspaper className="w-3.5 h-3.5 text-emerald-400" /> Market & Macro News Headlines (市場ニュース)
+              </h4>
+              <div className="space-y-2.5">
+                {loadingNews ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-zinc-500 gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-emerald-400" />
+                    <span className="text-[9px] font-mono tracking-wider uppercase opacity-80">LOADING FEEDSTREAM...</span>
+                  </div>
+                ) : newsError ? (
+                  <div className="text-center py-10 text-zinc-500 text-[11px] font-mono">
+                    ⚠️ [ERR_CONNECTION_FAILED]
+                    <p className="text-[10px] text-zinc-600 mt-1">ニュースの取得に失敗しました</p>
+                  </div>
+                ) : (
+                  visibleNews.map((news: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="p-3 rounded-2xl bg-white/[0.01] border border-white/5 hover:border-emerald-500/20 transition-all flex flex-col gap-1"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-zinc-400">
+                            {news.source}
+                          </span>
+                          <span className="text-[9px] text-zinc-600 font-mono">
+                            {news.time}
+                          </span>
+                        </div>
+                        <span className={`text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-full border ${news.badgeColor || "border-zinc-700 bg-zinc-800/40 text-zinc-400"}`}>
+                          {news.badge || "NEWS"}
+                        </span>
+                      </div>
+                      <h3 className="text-xs font-bold text-white leading-normal hover:text-emerald-400 transition-colors">
+                        <a href={news.link} target="_blank" rel="noopener noreferrer" className="block hover:underline underline-offset-4 decoration-emerald-500/50">
+                          {news.title}
+                        </a>
+                      </h3>
+                      {news.desc && (
+                        <p className="text-[10px] text-zinc-500 leading-relaxed">
+                          {news.desc}
+                        </p>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
