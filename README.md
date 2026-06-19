@@ -126,6 +126,8 @@ TAVILY_API_KEY="..."
 TWITTER_BEARER_TOKEN="..."
 ```
 
+`JQUANTS_API_KEY` を設定すると、銘柄分析画面はJPX公式のJ-Quants API v2から最新の決算短信サマリーを取得します。未設定時や一時的な制限時はYahoo Financeの無料四半期財務データへ自動で切り替わり、APIキーはブラウザへ送信されません。
+
 ### 3. データベーススキーマの同期
 
 Prismaを使用して、Supabase等のPostgreSQLインスタンスにテーブル定義を反映します。

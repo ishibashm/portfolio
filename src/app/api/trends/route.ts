@@ -65,7 +65,7 @@ export async function GET() {
     corporateDisclosures: disclosureRes.data.map(disc => ({ ...disc, link: disc.url })), // support both link and url
     _meta: {
       mode: metaMode,
-      sources: [...macroRes.sources, "Yahoo Finance", "TDnet/Google News"],
+      sources: [...macroRes.sources, "Yahoo Finance", "TDnet", "Yanoshin TDnet RSS"],
       generatedAt: new Date().toISOString(),
     },
   });

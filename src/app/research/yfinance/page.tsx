@@ -90,6 +90,43 @@ interface ForecastData {
   upper_50: number;
 }
 
+interface LatestFinancials {
+  code: string;
+  companyName: string | null;
+  disclosureDate: string | null;
+  disclosureTime: string | null;
+  fiscalPeriod: string | null;
+  fiscalYearEnd: string | null;
+  documentType: string | null;
+  revenue: number | null;
+  operatingIncome: number | null;
+  ordinaryIncome: number | null;
+  netIncome: number | null;
+  eps: number | null;
+  totalAssets: number | null;
+  equity: number | null;
+  equityRatio: number | null;
+  operatingCashFlow: number | null;
+  forecastRevenue: number | null;
+  forecastOperatingIncome: number | null;
+  forecastNetIncome: number | null;
+  forecastEps: number | null;
+}
+
+interface FinancialSnapshot {
+  latest: LatestFinancials;
+  previous: LatestFinancials | null;
+  records: number;
+}
+
+interface FinancialSourceMeta {
+  source: string;
+  sourceUrl: string;
+  mode: "primary" | "fallback" | "free_fallback";
+  asOf: string;
+  note: string;
+}
+
 const sampleTickers = [
   { symbol: "7203", name: "Toyota", tone: "Core Japan" },
   { symbol: "6758", name: "Sony", tone: "Quality growth" },
@@ -106,6 +143,10 @@ export default function YFinanceQuantPage() {
   const [metrics, setMetrics] = useState<QuantMetrics | null>(null);
   const [history, setHistory] = useState<HistoryData[]>([]);
   const [forecast, setForecast] = useState<ForecastData[]>([]);
+  const [financials, setFinancials] = useState<FinancialSnapshot | null>(null);
+  const [financialMeta, setFinancialMeta] = useState<FinancialSourceMeta | null>(null);
+  const [isLoadingFinancials, setIsLoadingFinancials] = useState(false);
+  const [financialError, setFinancialError] = useState<string | null>(null);
 
   // AI Report
   const [aiReport, setAiReport] = useState<string | null>(null);
@@ -131,6 +172,44 @@ export default function YFinanceQuantPage() {
       return `${trill.toFixed(2)}T ${currency}`;
     }
     return `${bill.toFixed(2)}B ${currency}`;
+  };
+
+  const formatFinancialValue = (value: number | null) => {
+    if (value === null) return "N/A";
+    const absolute = Math.abs(value);
+    if (absolute >= 1e12) return `${(value / 1e12).toFixed(2)}兆円`;
+    if (absolute >= 1e8) return `${(value / 1e8).toFixed(1)}億円`;
+    if (absolute >= 1e6) return `${(value / 1e6).toFixed(1)}百万円`;
+    return `${value.toLocaleString("ja-JP")}円`;
+  };
+
+  const fetchLatestFinancials = async (ticker: string) => {
+    const code = ticker.trim().toUpperCase().replace(/\.T$/, "");
+    if (!/^\d{4,5}$/.test(code)) {
+      setFinancials(null);
+      setFinancialMeta(null);
+      return;
+    }
+
+    setIsLoadingFinancials(true);
+    setFinancialError(null);
+    try {
+      const response = await fetch(`/api/finance/jquants?code=${encodeURIComponent(code)}`);
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "最新財務情報を取得できませんでした。");
+      }
+      setFinancials(result.data);
+      setFinancialMeta(result.meta);
+    } catch (fetchError) {
+      setFinancials(null);
+      setFinancialMeta(null);
+      setFinancialError(
+        fetchError instanceof Error ? fetchError.message : "最新財務情報を取得できませんでした。",
+      );
+    } finally {
+      setIsLoadingFinancials(false);
+    }
   };
 
   const signalBrief = React.useMemo(() => {
@@ -182,6 +261,9 @@ export default function YFinanceQuantPage() {
     setMetrics(null);
     setHistory([]);
     setForecast([]);
+    setFinancials(null);
+    setFinancialMeta(null);
+    setFinancialError(null);
     setAiReport(null);
     setSavedKbId(null);
 
@@ -212,6 +294,10 @@ export default function YFinanceQuantPage() {
       setMetrics(data.metrics);
       setHistory(data.history);
       setForecast(data.forecast);
+
+      if (inputMode === "api") {
+        void fetchLatestFinancials(tickerInput);
+      }
 
       // Trigger AI Analysis
       generateAIReport(data.meta, data.metrics, data.history.slice(-5));
@@ -588,6 +674,94 @@ export default function YFinanceQuantPage() {
             )}
           </div>
         </div>
+
+        {meta && inputMode === "api" && (
+          <section className="border-y border-emerald-950/50 bg-black/20 px-5 py-5">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-emerald-400" />
+                  <h2 className="text-sm font-semibold text-white">最新の企業財務</h2>
+                </div>
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  決算短信の主要数値と会社予想を、取得元と基準日付きで表示します。
+                </p>
+              </div>
+              {financialMeta && (
+                <a
+                  href={financialMeta.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 hover:text-emerald-300"
+                >
+                  {financialMeta.source}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+
+            {isLoadingFinancials ? (
+              <div className="flex min-h-28 items-center justify-center gap-2 text-xs text-zinc-500">
+                <RefreshCw className="h-4 w-4 animate-spin text-emerald-400" />
+                最新の決算情報を確認しています...
+              </div>
+            ) : financials ? (
+              <>
+                <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-800 md:grid-cols-4 xl:grid-cols-8">
+                  {[
+                    ["売上高", formatFinancialValue(financials.latest.revenue)],
+                    ["営業利益", formatFinancialValue(financials.latest.operatingIncome)],
+                    ["経常利益", formatFinancialValue(financials.latest.ordinaryIncome)],
+                    ["純利益", formatFinancialValue(financials.latest.netIncome)],
+                    ["EPS", financials.latest.eps === null ? "N/A" : `${financials.latest.eps.toLocaleString("ja-JP")}円`],
+                    ["総資産", formatFinancialValue(financials.latest.totalAssets)],
+                    ["自己資本", formatFinancialValue(financials.latest.equity)],
+                    ["営業CF", formatFinancialValue(financials.latest.operatingCashFlow)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="min-w-0 bg-[#070a08] px-3 py-3">
+                      <p className="text-[9px] font-mono uppercase text-zinc-600">{label}</p>
+                      <p className="mt-1 truncate text-sm font-semibold text-zinc-200" title={value}>
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_2fr]">
+                  <div className="border-l-2 border-emerald-500/50 bg-emerald-950/10 px-4 py-3">
+                    <p className="text-[9px] font-mono uppercase text-zinc-600">開示・データ基準</p>
+                    <p className="mt-1 text-xs font-medium text-zinc-300">
+                      {financials.latest.disclosureDate || "最新取得値"}
+                      {financials.latest.disclosureTime ? ` ${financials.latest.disclosureTime}` : ""}
+                      {financials.latest.fiscalPeriod ? ` / ${financials.latest.fiscalPeriod}` : ""}
+                    </p>
+                    <p className="mt-1 text-[10px] leading-relaxed text-zinc-500">
+                      {financialMeta?.note}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-zinc-800 bg-zinc-800 sm:grid-cols-4">
+                    {[
+                      ["予想売上高", formatFinancialValue(financials.latest.forecastRevenue)],
+                      ["予想営業利益", formatFinancialValue(financials.latest.forecastOperatingIncome)],
+                      ["予想純利益", formatFinancialValue(financials.latest.forecastNetIncome)],
+                      ["予想EPS", financials.latest.forecastEps === null ? "N/A" : `${financials.latest.forecastEps.toLocaleString("ja-JP")}円`],
+                    ].map(([label, value]) => (
+                      <div key={label} className="bg-zinc-950 px-3 py-3">
+                        <p className="text-[9px] font-mono text-zinc-600">{label}</p>
+                        <p className="mt-1 text-xs font-semibold text-amber-200">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="border-l-2 border-rose-500/50 bg-rose-950/10 px-4 py-3 text-xs text-rose-300">
+                {financialError || "財務情報は現在利用できません。"}
+              </div>
+            )}
+          </section>
+        )}
 
         {meta && metrics && history.length > 0 && (
           <>
