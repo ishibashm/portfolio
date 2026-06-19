@@ -21,6 +21,15 @@ import {
   getPersonalVoidZodiac,
 } from "@/utils/ephemerisEngine";
 
+function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+  if (!dateStr) return fallback;
+  const d = new Date(dateStr);
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    return d;
+  }
+  return fallback;
+}
+
 // Nine star element mappings
 const STAR_WUXING: Record<number, string> = {
   1: "水",
@@ -128,7 +137,7 @@ export function TenChiJinEvaluation({
   birthDate = "1988-11-25T04:26",
 }: TenChiJinEvaluationProps) {
   // Main User astrological hardware
-  const mainUserBirthDateObj = useMemo(() => new Date(birthDate), [birthDate]);
+  const mainUserBirthDateObj = useMemo(() => parseSafeDate(birthDate), [birthDate]);
   const mainUserStar = useMemo(
     () => getClassicalYearStar(mainUserBirthDateObj),
     [mainUserBirthDateObj],
@@ -227,7 +236,7 @@ export function TenChiJinEvaluation({
       members.forEach((m) => {
         // We mock Bazi calculations for companions client-side
         // To maintain architectural consistency, we compute their star and void
-        const mBirth = new Date(m.birthDate);
+        const mBirth = parseSafeDate(m.birthDate);
         const mStar = getClassicalYearStar(mBirth);
         // Simple direction check placeholder simulating calculations inside overall scorer
         // If a member triggers a conflict in the same direction, it reflects in spaceScore
@@ -270,7 +279,7 @@ export function TenChiJinEvaluation({
     const clashingCompanions: string[] = [];
 
     members.forEach((m) => {
-      const mBirth = new Date(m.birthDate);
+      const mBirth = parseSafeDate(m.birthDate);
       const mStar = getClassicalYearStar(mBirth);
       const compat = getCompatibility(mainUserStar, mStar);
       totalCompat += compat;

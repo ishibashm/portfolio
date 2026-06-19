@@ -38,6 +38,15 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+  if (!dateStr) return fallback;
+  const d = new Date(dateStr);
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    return d;
+  }
+  return fallback;
+}
+
 const NBADashboard = dynamic(
   () => import("./nba/NBADashboard").then((mod) => mod.NBADashboard),
   { ssr: false },
@@ -1690,7 +1699,7 @@ export const SolarTimeClock = () => {
     const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
-      : getPersonalVoidZodiac(new Date(birthDate));
+      : getPersonalVoidZodiac(parseSafeDate(birthDate));
 
     const result: Record<
       Direction,
@@ -1793,7 +1802,7 @@ export const SolarTimeClock = () => {
     const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
-      : getPersonalVoidZodiac(new Date(birthDate));
+      : getPersonalVoidZodiac(parseSafeDate(birthDate));
 
     // APIデータからアストロボーナスを抽出してマップ化する
     const astroBonusMap: Record<Direction, number> = {
@@ -2734,7 +2743,7 @@ export const SolarTimeClock = () => {
 
       const voidZodiacArray = voidZodiacOverride
         ? voidZodiacOverride.split("")
-        : getPersonalVoidZodiac(new Date(birthDate));
+        : getPersonalVoidZodiac(parseSafeDate(birthDate));
 
       const unifiedPayload = {
         ...apiData,
@@ -2813,7 +2822,7 @@ export const SolarTimeClock = () => {
     );
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
-      : getPersonalVoidZodiac(new Date(birthDate));
+      : getPersonalVoidZodiac(parseSafeDate(birthDate));
     const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
 
     const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
@@ -3018,7 +3027,7 @@ export const SolarTimeClock = () => {
     );
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
-      : getPersonalVoidZodiac(new Date(birthDate));
+      : getPersonalVoidZodiac(parseSafeDate(birthDate));
     const zodiacData = getCurrentZodiac(targetDate, lon || 139.6917);
 
     const LUNAR_MONTH = 29.530588853 * 24 * 60 * 60 * 1000;
@@ -3118,7 +3127,7 @@ ${timingOptimization?.recommendationText || "特になし"}
     const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
-      : getPersonalVoidZodiac(new Date(birthDate));
+      : getPersonalVoidZodiac(parseSafeDate(birthDate));
 
     if (heatmapMode === "30days") {
       for (let i = 0; i < 30; i++) {
@@ -3867,7 +3876,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
     const result = optimizer.evaluate({
       targetDate,
-      userBirthDate: birthDate ? new Date(birthDate) : undefined,
+      userBirthDate: birthDate ? parseSafeDate(birthDate) : undefined,
       userKigakuStar,
       actionType: timingActionType,
       latitude: targetLat || lat,
