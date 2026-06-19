@@ -60,6 +60,7 @@ interface SimulatorStep {
   departureDate: string;
   purpose: "MIGRATION" | "TRAVEL";
   notes: string | null;
+  companionIds?: string[];
   evaluation?: {
     status: string;
     rating: string;
@@ -105,6 +106,15 @@ const candidates = [
   { name: "兵庫県姫路周辺", lat: 34.815, lon: 134.685 },
   { name: "和歌山県田辺周辺", lat: 33.729, lon: 135.378 },
 ];
+
+function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+  if (!dateStr) return fallback;
+  const d = new Date(dateStr);
+  if (d instanceof Date && !isNaN(d.getTime())) {
+    return d;
+  }
+  return fallback;
+}
 
 function getBearing(
   lat1: number,
@@ -448,7 +458,7 @@ export default function RelocationSimulatorPage() {
   };
 
   // Compute Personal Hardware baseline metrics
-  const birthDateObj = new Date(birthDate);
+  const birthDateObj = parseSafeDate(birthDate);
   const voidZodiacs = getPersonalVoidZodiac(birthDateObj);
   const honmeiStar = getHonmeiStar(birthDateObj);
   const personalStar = useClassical
@@ -471,7 +481,7 @@ export default function RelocationSimulatorPage() {
     const list: SimulatorStep[] = [];
 
     steps.forEach((step, idx) => {
-      const depDate = new Date(step.departureDate);
+      const depDate = parseSafeDate(step.departureDate);
 
       const rawBearing = getBearing(
         currentBaseLat,
@@ -594,14 +604,17 @@ export default function RelocationSimulatorPage() {
 
       let stayDuration = 999;
       if (idx < steps.length - 1) {
-        const nextDep = new Date(steps[idx + 1].departureDate);
+        const nextDep = parseSafeDate(steps[idx + 1].departureDate, depDate);
         const diffMs = nextDep.getTime() - depDate.getTime();
         stayDuration = Math.round(diffMs / (1000 * 60 * 60 * 24));
       }
 
-      // Precompute companion metrics
-      const mEvals = members.map((m) => {
-        const mBirthDate = new Date(m.birthDate);
+      // Precompute companion metrics (Only evaluated if companion is selected for this step)
+      const stepCompanionIds = step.companionIds || [];
+      const activeMembers = members.filter(m => stepCompanionIds.includes(m.id));
+
+      const mEvals = activeMembers.map((m) => {
+        const mBirthDate = parseSafeDate(m.birthDate);
         const mPersonalStar = getClassicalYearStar(mBirthDate);
         const mVoidZodiacs = getPersonalVoidZodiac(mBirthDate);
 
@@ -719,7 +732,7 @@ export default function RelocationSimulatorPage() {
     let candidateDates: string[] = [];
     if (activeStepIndex !== null && activeStepIndex < steps.length) {
       const activeStep = steps[activeStepIndex];
-      const baseDate = new Date(activeStep.departureDate);
+      const baseDate = parseSafeDate(activeStep.departureDate);
       candidateDates = [activeStep.departureDate];
       // Generate 7 weekly options (+7 to +49 days) for timing scan
       for (let i = 1; i <= 7; i++) {
@@ -816,7 +829,7 @@ export default function RelocationSimulatorPage() {
     const currentEval = nbaEvaluations[activeStep.departureDate];
     if (!currentEval) return [];
 
-    const baseDate = new Date(activeStep.departureDate);
+    const baseDate = parseSafeDate(activeStep.departureDate);
     const list = [];
 
     for (let i = 1; i <= 7; i++) {
@@ -879,7 +892,7 @@ export default function RelocationSimulatorPage() {
       const dirB = bearingToDirection(adjustedB, useClassical);
 
       const envA = getCurrentEnvironmentalFrequencies(
-        new Date(currentStep.departureDate),
+        parseSafeDate(currentStep.departureDate),
         lonA,
         physicalMonthMode,
       );
@@ -901,7 +914,7 @@ export default function RelocationSimulatorPage() {
         voidZodiacs,
         envA.raw.lunarNode,
         "MIGRATION",
-        new Date(currentStep.departureDate),
+        parseSafeDate(currentStep.departureDate),
         lonA,
       );
       const filteredCollisionC = filterCollisionByMode(
@@ -916,7 +929,7 @@ export default function RelocationSimulatorPage() {
       );
       const statusC = filteredCollisionC.finalVectors[dirC] || "SAFE";
 
-      const depDateB = new Date(currentStep.departureDate);
+      const depDateB = parseSafeDate(currentStep.departureDate);
       depDateB.setDate(depDateB.getDate() + 75);
       const envC = getCurrentEnvironmentalFrequencies(
         depDateB,
@@ -999,7 +1012,7 @@ export default function RelocationSimulatorPage() {
       return { polygons: [], recommendations: [] };
     }
 
-    const depDate = new Date(currentStep.departureDate);
+    const depDate = parseSafeDate(currentStep.departureDate);
     const env = getCurrentEnvironmentalFrequencies(
       depDate,
       currentStep.fromLon,
@@ -1219,13 +1232,14 @@ export default function RelocationSimulatorPage() {
   // Handle step updates & inserts
   const handleAddStep = () => {
     const lastStep = steps[steps.length - 1];
-    const baseDate = lastStep ? new Date(lastStep.departureDate) : new Date();
+    const baseDate = lastStep ? parseSafeDate(lastStep.departureDate) : new Date();
     const nextDate = new Date(baseDate.getTime() + 90 * 24 * 60 * 60 * 1000);
     const dateStr = nextDate.toISOString().slice(0, 10);
 
     const fromLat = lastStep ? lastStep.toLat : startLat;
     const fromLon = lastStep ? lastStep.toLon : startLon;
     const fromName = lastStep ? lastStep.toName : startName;
+    const companionIds = lastStep ? (lastStep.companionIds || []) : [];
 
     const newSteps = [
       ...steps,
@@ -1239,6 +1253,7 @@ export default function RelocationSimulatorPage() {
         departureDate: dateStr,
         purpose: "MIGRATION" as const,
         notes: "",
+        companionIds,
       },
     ];
 
@@ -1293,7 +1308,7 @@ export default function RelocationSimulatorPage() {
     if (activeStepIndex === null || activeStepIndex >= steps.length) return;
     const currentStep = steps[activeStepIndex];
 
-    const depDate = new Date(currentStep.departureDate);
+    const depDate = parseSafeDate(currentStep.departureDate);
     const nextDepDate = new Date(depDate);
     nextDepDate.setDate(nextDepDate.getDate() + 75);
     const nextDepStr = nextDepDate.toISOString().slice(0, 10);
@@ -1316,6 +1331,7 @@ export default function RelocationSimulatorPage() {
       departureDate: nextDepStr,
       purpose: currentStep.purpose,
       notes: `${currentStep.toName}への本目的移動`,
+      companionIds: currentStep.companionIds || [],
     };
 
     const newSteps = [...steps];
@@ -1894,10 +1910,10 @@ export default function RelocationSimulatorPage() {
                         </span>
                         <span className="text-[9px] font-mono text-zinc-500">
                           生年月日: {member.birthDate} (
-                          {getClassicalYearStar(new Date(member.birthDate))}
+                          {getClassicalYearStar(parseSafeDate(member.birthDate))}
                           ・空亡:{" "}
                           {getPersonalVoidZodiac(
-                            new Date(member.birthDate),
+                            parseSafeDate(member.birthDate),
                           ).join("")}
                           )
                         </span>
@@ -1938,8 +1954,8 @@ export default function RelocationSimulatorPage() {
                 let isStayShort = false;
                 let stayDays = 999;
                 if (idx < steps.length - 1) {
-                  const currentDep = new Date(step.departureDate);
-                  const nextDep = new Date(steps[idx + 1].departureDate);
+                  const currentDep = parseSafeDate(step.departureDate);
+                  const nextDep = parseSafeDate(steps[idx + 1].departureDate, currentDep);
                   stayDays = Math.round(
                     (nextDep.getTime() - currentDep.getTime()) /
                       (1000 * 60 * 60 * 24),
@@ -2105,6 +2121,48 @@ export default function RelocationSimulatorPage() {
                           <option value="MIGRATION">長期移住 (拠点移動)</option>
                           <option value="TRAVEL">短期旅行 (拠点不動)</option>
                         </select>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 md:col-span-3 border-t border-white/5 pt-3">
+                        <label className="text-[9px] uppercase font-bold text-zinc-500">
+                          同行する同伴者 (ACCOMPANYING COMPANIONS FOR THIS STEP)
+                        </label>
+                        {members.length === 0 ? (
+                          <span className="text-[10px] text-zinc-600 italic">
+                            登録されている同伴者がいません。「同伴者の設定」から追加してください。
+                          </span>
+                        ) : (
+                          <div className="flex flex-wrap gap-2.5 mt-1">
+                            {members.map((member) => {
+                              const isSelected = (step.companionIds || []).includes(member.id);
+                              return (
+                                <label
+                                  key={member.id}
+                                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[10px] font-mono cursor-pointer transition-all ${
+                                    isSelected
+                                      ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-300 font-bold"
+                                      : "bg-black/40 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => {
+                                      const currentIds = step.companionIds || [];
+                                      const nextIds = currentIds.includes(member.id)
+                                        ? currentIds.filter((id: string) => id !== member.id)
+                                        : [...currentIds, member.id];
+                                      handleUpdateStep(idx, { companionIds: nextIds });
+                                    }}
+                                    className="sr-only"
+                                  />
+                                  <span>{isSelected ? "●" : "○"}</span>
+                                  <span>{member.name}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -2583,9 +2641,10 @@ export default function RelocationSimulatorPage() {
                     {(() => {
                       const step = steps[activeStepIndex];
                       if (activeStepIndex === steps.length - 1) return null;
-                      const currentDep = new Date(step.departureDate);
-                      const nextDep = new Date(
+                      const currentDep = parseSafeDate(step.departureDate);
+                      const nextDep = parseSafeDate(
                         steps[activeStepIndex + 1].departureDate,
+                        currentDep
                       );
                       const stayDays = Math.round(
                         (nextDep.getTime() - currentDep.getTime()) /
