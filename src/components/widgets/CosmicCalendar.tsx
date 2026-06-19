@@ -280,7 +280,7 @@ function getActionableAdvice(day: DayData): string {
   return "🌐 [NEUTRAL_COGNITION] エネルギーのバランスが取れた日常の日です。新しい動きを起こすよりは、これまでの進捗確認や整理整頓に向いています。";
 }
 
-export function CosmicCalendar() {
+export function CosmicCalendar({ compact = false }: { compact?: boolean }) {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDay, setSelectedDay] = useState<DayData | null>(null);
   const [days, setDays] = useState<DayData[]>([]);
@@ -472,10 +472,10 @@ export function CosmicCalendar() {
   };
 
   return (
-    <div className="w-full grid grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3 gap-6 items-stretch">
+    <div className={`w-full grid gap-6 items-stretch ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
       {/* Calendar Grid Section */}
       <div
-        className="2xl:col-span-2 p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col"
+        className={`${compact ? "" : "2xl:col-span-2"} p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col`}
         style={{
           borderColor: "rgba(255, 255, 255, 0.05)",
         }}

@@ -4237,7 +4237,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-2 gap-6 px-4">
           {/* Cosmic Calendar Widget */}
           <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar />
+            <CosmicCalendar compact={true} />
           </div>
 
           <div className="flex flex-col gap-6">
