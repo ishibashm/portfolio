@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line } from "recharts";
 import { TrendingUp, TrendingDown, Sparkles, Activity, FileText, Loader2, PieChart, BarChart3, Calendar, AlertCircle, HelpCircle } from "lucide-react";
 
@@ -287,6 +287,97 @@ function parsePLTable(text: string): PLData {
   };
 }
 
+interface StockSearchInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder: string;
+  className: string;
+  disabled: boolean;
+}
+
+function StockSearchInput({
+  value,
+  onChange,
+  placeholder,
+  className,
+  disabled,
+}: StockSearchInputProps) {
+  const [suggestions, setSuggestions] = useState<{ code: string; name: string }[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!value.trim()) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/finance/search?q=${encodeURIComponent(value)}`);
+        if (!res.ok) throw new Error("Search error");
+        const json = await res.json();
+        if (json.success) {
+          setSuggestions(json.data);
+          const hasExactMatch = json.data.some(
+            (item: any) => item.code.toUpperCase() === value.toUpperCase().trim()
+          );
+          setShowSuggestions(json.data.length > 0 && !hasExactMatch);
+        }
+      } catch (e) {
+        console.error("Failed to fetch suggestions:", e);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 200);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative w-32">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => {
+          if (suggestions.length > 0) setShowSuggestions(true);
+        }}
+        placeholder={placeholder}
+        className={className}
+        disabled={disabled}
+      />
+      {showSuggestions && (
+        <div className="absolute z-50 mt-1 w-72 bg-slate-950/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl overflow-y-auto max-h-60 custom-scrollbar left-0">
+          {suggestions.map((item) => (
+            <div
+              key={item.code}
+              onClick={() => {
+                onChange(item.code);
+                setShowSuggestions(false);
+              }}
+              className="px-3 py-2.5 text-xs hover:bg-indigo-600/30 cursor-pointer flex justify-between items-center border-b border-slate-800/40 last:border-0 transition-colors"
+            >
+              <span className="text-slate-200 font-medium truncate max-w-[190px]">{item.name}</span>
+              <span className="text-slate-400 font-mono font-bold bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800/80">{item.code}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FinancialStatementVisualizer() {
   const [activeMode, setActiveMode] = useState<"stock" | "bs" | "pl">("stock");
   const [inputText, setInputText] = useState("");
@@ -562,7 +653,7 @@ export function FinancialStatementVisualizer() {
           {activeMode === "stock" && (
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
               <span className="text-[10px] text-indigo-400 font-bold font-mono tracking-wider">[AUTO FETCH]</span>
-              <input type="text" value={stockCode} onChange={(e) => setStockCode(e.target.value)} placeholder="コード (e.g. 285A)" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
+              <StockSearchInput value={stockCode} onChange={setStockCode} placeholder="コードまたは企業名" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
               <button type="button" onClick={handleFetchKabutan} disabled={loading || !stockCode.trim()} className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5">
                 <span>株探から時系列データを自動取得</span>
               </button>
@@ -572,7 +663,7 @@ export function FinancialStatementVisualizer() {
           {(activeMode === "bs" || activeMode === "pl") && (
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
               <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-wider">[FINANCIAL AUTO]</span>
-              <input type="text" value={stockCode} onChange={(e) => setStockCode(e.target.value)} placeholder="コード (e.g. 8697)" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
+              <StockSearchInput value={stockCode} onChange={setStockCode} placeholder="コードまたは企業名" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
               <button type="button" onClick={handleFetchJQuants} disabled={loading || !stockCode.trim()} className="px-3 py-1 bg-emerald-600/80 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5">
                 <span>財務諸表を自動取得</span>
               </button>
