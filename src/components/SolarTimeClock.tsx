@@ -91,10 +91,6 @@ const CosmicCalendar = dynamic(
   { ssr: false },
 );
 import type { DayData } from "./widgets/CosmicCalendar";
-const EconomicIntelligence = dynamic(
-  () => import("./finance/EconomicIntelligence").then((mod) => mod.EconomicIntelligence),
-  { ssr: false },
-);
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -4262,11 +4258,6 @@ ${timingOptimization?.recommendationText || "特になし"}
               selectedDayState={calendarSelectedDay}
               setSelectedDayState={setCalendarSelectedDay}
             />
-          </div>
-
-          {/* Market Intelligence Widget */}
-          <div className="xl:col-span-12 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <EconomicIntelligence />
           </div>
         </div>
 

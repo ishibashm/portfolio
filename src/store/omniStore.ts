@@ -10,13 +10,9 @@ export interface WidgetConfig {
     | "xtrends"
     | "markdown_viewer"
     | "data_analyzer"
-    | "tradingview"
-    | "pine_editor"
     | "jsonl_splitter"
     | "omni_pipeline"
-    | "knowledge_editor"
-    | "ir_analysis"
-    | "finance_paste_visualizer";
+    | "knowledge_editor";
   data: any;
   title?: string;
   size?: "normal" | "large" | "full" | "tall" | "wide" | "half";
@@ -59,50 +55,14 @@ const workspaceDefaults: Record<string, WidgetConfig[]> = {
       title: "JSONL形態素解析・キーワード抽出 (AI分析)",
       size: "full",
     },
-    {
-      type: "tradingview",
-      data: {},
-      title: "Charts & Financials",
-      size: "full",
-    },
-    {
-      type: "ir_analysis",
-      data: {},
-      title: "IR & EDINET Analysis",
-      size: "large",
-    },
-    {
-      type: "finance_paste_visualizer",
-      data: {},
-      title: "決算書＆株価コピペ解析ボード",
-      size: "large",
-    },
   ],
   "ws-2": [],
   default: [
     {
       type: "data_analyzer",
       data: {},
-      title: "X Information & Financial Analysis",
+      title: "X Information Analysis",
       size: "full",
-    },
-    {
-      type: "tradingview",
-      data: {},
-      title: "Charts & Financials",
-      size: "full",
-    },
-    {
-      type: "ir_analysis",
-      data: {},
-      title: "IR & EDINET Analysis",
-      size: "large",
-    },
-    {
-      type: "finance_paste_visualizer",
-      data: {},
-      title: "決算書＆株価コピペ解析ボード",
-      size: "large",
     },
   ],
 };
@@ -120,18 +80,7 @@ export const useOmniStore = create<OmniTerminalStore>()(
         "NASDAQ:NVDA",
         "CRYPTO:BTCUSD",
       ],
-      knowledgeSuggestions: [
-        {
-          id: "sug-1",
-          title: "企業名の特定とチャート連携",
-          description:
-            "Xの情報収集から「多摩川くん」という隠語を検出し、企業名「多摩川ホールディングス (6838)」を特定しました。チャートと業績を確認しますか？",
-          sourceType: "x",
-          targetType: "note",
-          relation: "IDENTIFIED",
-          timestamp: new Date().toISOString(),
-        },
-      ],
+      knowledgeSuggestions: [],
 
       setActiveWorkspace: (id) =>
         set((state) => {
@@ -151,24 +100,10 @@ export const useOmniStore = create<OmniTerminalStore>()(
         set((state) => {
           let newWidgets = [...state.canvasWidgets];
 
-          if (widget.type === "tradingview") {
-            const existingIndex = newWidgets.findIndex(
-              (w) => w.type === "tradingview",
-            );
-            if (existingIndex >= 0) {
-              newWidgets[existingIndex] = {
-                ...newWidgets[existingIndex],
-                ...widget,
-              };
-              return { canvasWidgets: newWidgets };
-            }
-          }
           if (
-            widget.type === "pine_editor" ||
             widget.type === "data_analyzer" ||
             widget.type === "omni_pipeline" ||
-            widget.type === "knowledge_editor" ||
-            widget.type === "ir_analysis"
+            widget.type === "knowledge_editor"
           ) {
             const existingIndex = newWidgets.findIndex(
               (w) => w.type === widget.type,
@@ -248,18 +183,7 @@ export const useOmniStore = create<OmniTerminalStore>()(
             ...persistedState,
             workspaces: workspaceDefaults,
             activeWorkspaceId: "ws-1",
-            knowledgeSuggestions: [
-              {
-                id: "sug-1",
-                title: "企業名の特定とチャート連携",
-                description:
-                  "Xの情報収集から「多摩川くん」という隠語を検出し、企業名「多摩川ホールディングス (6838)」を特定しました。チャートと業績を確認しますか？",
-                sourceType: "x",
-                targetType: "note",
-                relation: "IDENTIFIED",
-                timestamp: new Date().toISOString(),
-              },
-            ],
+            knowledgeSuggestions: [],
           };
         }
         return persistedState;

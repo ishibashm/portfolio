@@ -14,8 +14,7 @@ export default function DataAnalyzerWidget() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const addWidgetToCanvas = useOmniStore((state) => state.addWidgetToCanvas);
-  const addToWatchlist = useOmniStore((state) => state.addToWatchlist);
+
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -163,85 +162,7 @@ export default function DataAnalyzerWidget() {
     }
   };
 
-  const runBatchIdentify = async (keywords: string[], posts: any[]) => {
-    setIsIdentifying(true);
-    try {
-      // Clean up keywords and context
-      const cleanKeywords = keywords
-        .slice(0, 10)
-        .map((k) => k.replace(/^[名動形]:\s*/, ""));
-      const relevantPosts = posts
-        .map((p) => p.text)
-        .filter((t) => t && t.length > 0)
-        .slice(0, 20); // 制限をかけて送る
 
-      const res = await fetch("/api/v1/finance/identify/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          keywords: cleanKeywords,
-          context_texts: relevantPosts,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.items && data.items.length > 0) {
-          // 結果をUIに反映
-          setResult((prev: any) => ({
-            ...prev,
-            category: "finance",
-            items: data.items,
-          }));
-
-          // 有効なティッカーの収集
-          const validTickers = data.items
-            .map((item: any) => item.ticker)
-            .filter((t: string) => t !== "UNKNOWN" && t.trim() !== "");
-
-          // ウォッチリストへ自動追加
-          if (validTickers.length > 0) {
-            addToWatchlist(validTickers);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Batch identify failed:", err);
-    } finally {
-      setIsIdentifying(false);
-    }
-  };
-
-  const handleOpenIRAnalysis = async (ticker: string, companyName: string) => {
-    // Streamlitの可視化ウィジェットを開く
-    addWidgetToCanvas({
-      type: "ir_analysis",
-      data: { ticker, companyName },
-      title: `IR Analysis: ${companyName} (${ticker})`,
-      size: "large",
-    });
-
-    // 並行して、企業名を利用してEDINETから最新決算データをDBに自動取り込み（インポート）を試みる
-    try {
-      // ユーザーが企業名を入力したとみなして import-edinet API を叩く
-      const searchName = companyName.split(" ")[0].split("（")[0]; // "トヨタ自動車 (TSE:7203)" などの場合、名前部分だけ抽出
-
-      const res = await fetch("/api/v1/finance/import-edinet", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: searchName, context_texts: [] }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.message) {
-          console.log("EDINET Auto-Import Success:", data.message);
-          // 取り込みに成功した場合、iframe (Streamlit) が最新のデータを読み込めるようになる
-        }
-      }
-    } catch (e) {
-      console.error("Auto import failed:", e);
-    }
-  };
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden text-slate-200">
@@ -494,128 +415,10 @@ export default function DataAnalyzerWidget() {
                             <span>📥</span>
                             テキストとして保存
                           </button>
-                          <button
-                            onClick={() =>
-                              runBatchIdentify(selectedKeywords, result.posts)
-                            }
-                            disabled={isIdentifying}
-                            className={`bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-sm font-bold py-2.5 px-5 rounded-lg shadow-lg flex items-center gap-2 transition-all ${isIdentifying ? "opacity-50 cursor-not-allowed" : "hover:scale-[1.02] active:scale-95"}`}
-                          >
-                            <span className="text-lg">
-                              {isIdentifying ? "⏳" : "📈"}
-                            </span>
-                            {isIdentifying
-                              ? "読み込み中..."
-                              : "選択したキーワードから銘柄を特定"}
-                          </button>
                         </div>
                       </div>
                     )}
 
-                    {/* Dynamic UI based on Category */}
-                    {result.category === "finance" &&
-                      result.items &&
-                      result.items.length > 0 && (
-                        <div className="space-y-2 2xl:space-y-3">
-                          <h3 className="text-[10px] 2xl:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                            抽出された関連企業・銘柄
-                          </h3>
-                          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-2 2xl:gap-3">
-                            {result.items.map((item: any, i: number) => (
-                              <div
-                                key={i}
-                                className="bg-slate-900/80 border border-slate-800 p-3 2xl:p-4 rounded-lg flex flex-col gap-2 2xl:gap-3 hover:bg-slate-800/80 transition-colors"
-                              >
-                                <div className="flex items-start gap-3 2xl:gap-4">
-                                  <div
-                                    className={`flex flex-col items-center justify-center p-1.5 2xl:p-2 rounded-md min-w-[60px] 2xl:min-w-[70px] ${
-                                      item.type?.toLowerCase().includes("bull")
-                                        ? "bg-emerald-950/50 text-emerald-400 border border-emerald-900/50"
-                                        : item.type
-                                              ?.toLowerCase()
-                                              .includes("bear")
-                                          ? "bg-red-950/50 text-red-400 border border-red-900/50"
-                                          : "bg-slate-800 text-slate-400 border border-slate-700/50"
-                                    }`}
-                                  >
-                                    <span className="text-[9px] 2xl:text-[10px] uppercase font-semibold">
-                                      {item.type || item.sentiment || "STOCK"}
-                                    </span>
-                                    {item.ticker && (
-                                      <span className="font-mono text-[10px] 2xl:text-xs opacity-70 tracking-wider mt-0.5 2xl:mt-1">
-                                        {item.ticker.split(":")[1] ||
-                                          item.ticker}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 overflow-hidden">
-                                    <div className="text-sm 2xl:text-base font-bold text-slate-100 mb-0.5 2xl:mb-1 truncate">
-                                      {item.name ||
-                                        item.company ||
-                                        "不明な企業"}
-                                    </div>
-                                    <div className="text-[10px] 2xl:text-xs text-slate-400 leading-snug 2xl:leading-relaxed line-clamp-2 2xl:line-clamp-none">
-                                      {item.reason}
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {(item.key_points || item.chart_analysis) && (
-                                  <div className="mt-1 2xl:mt-2 pt-2 2xl:pt-3 border-t border-slate-800/80 space-y-1.5 2xl:space-y-2">
-                                    {item.key_points &&
-                                      item.key_points.length > 0 && (
-                                        <div>
-                                          <span className="text-[9px] 2xl:text-[10px] font-bold text-slate-500 uppercase">
-                                            注目ポイント
-                                          </span>
-                                          <ul className="list-disc list-inside text-[10px] 2xl:text-xs text-slate-300 mt-0.5 2xl:mt-1 space-y-0.5">
-                                            {item.key_points.map(
-                                              (point: string, idx: number) => (
-                                                <li
-                                                  key={idx}
-                                                  className="truncate 2xl:whitespace-normal"
-                                                >
-                                                  {point}
-                                                </li>
-                                              ),
-                                            )}
-                                          </ul>
-                                        </div>
-                                      )}
-                                    {item.chart_analysis && (
-                                      <div>
-                                        <span className="text-[9px] 2xl:text-[10px] font-bold text-slate-500 uppercase">
-                                          チャート・文脈分析
-                                        </span>
-                                        <p className="text-[10px] 2xl:text-xs text-slate-300 mt-0.5 2xl:mt-1 italic border-l-2 border-slate-700 pl-2 line-clamp-2 2xl:line-clamp-none">
-                                          {item.chart_analysis}
-                                        </p>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* 導線: IR Analysis */}
-                                {item.ticker && item.ticker !== "UNKNOWN" && (
-                                  <div className="mt-2 flex justify-end">
-                                    <button
-                                      onClick={() =>
-                                        handleOpenIRAnalysis(
-                                          item.ticker,
-                                          item.name || item.company,
-                                        )
-                                      }
-                                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] 2xl:text-xs font-bold py-1.5 px-3 rounded shadow transition-colors flex items-center gap-1"
-                                    >
-                                      <span>📊</span> IR・決算可視化
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
 
                     {result.category === "vision" &&
                       result.items &&

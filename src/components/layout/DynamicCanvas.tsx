@@ -7,13 +7,9 @@ import YouTubeChat from "../widgets/YouTubeChat";
 import XTrendsWidget from "../widgets/XTrendsWidget";
 import DataAnalyzerWidget from "../widgets/DataAnalyzerWidget";
 import MarkdownViewerWidget from "../widgets/MarkdownViewerWidget";
-import TradingViewWidget from "../widgets/TradingViewWidget";
-import PineEditorWidget from "../widgets/PineEditorWidget";
 import JSONLSplitterWidget from "../widgets/JSONLSplitterWidget";
 import OmniPipelineWidget from "../widgets/OmniPipelineWidget";
 import KnowledgeEditorWidget from "../widgets/KnowledgeEditorWidget";
-import IRAnalysisWidget from "../widgets/IRAnalysisWidget";
-import { FinancialStatementVisualizer } from "../finance/FinancialStatementVisualizer";
 
 interface DynamicCanvasProps {
   widgets: WidgetConfig[];
@@ -29,12 +25,11 @@ export const DynamicCanvas = ({ widgets }: DynamicCanvasProps) => {
   } = useOmniStore();
 
   const handleOpenKnowledge = (suggestionId: string) => {
-    // 投資・企業分析に特化したジャーニーに合わせて、サジェストからTradingViewを開く
     addWidgetToCanvas({
-      type: "tradingview",
-      data: { symbol: "TSE:6838", name: "多摩川HD" },
-      title: "Charts & Financials",
-      size: "full",
+      type: "knowledge_editor",
+      data: {},
+      title: "Knowledge Editor",
+      size: "wide",
     });
     dismissSuggestion(suggestionId);
   };
@@ -278,15 +273,7 @@ export const DynamicCanvas = ({ widgets }: DynamicCanvasProps) => {
                   break;
               }
 
-              // 最終オーバーライド：特定のウィジェットはサイズに依存せず最低限の高さを確保する
-              if (widget.type === "tradingview") {
-                // TradingViewは常に高い高さを要求する
-                if (widget.size === "full") {
-                  heightClass = "h-[750px] 2xl:h-[85vh]"; // フルサイズのときは超特大
-                } else {
-                  heightClass = "h-[650px] 2xl:h-[750px]";
-                }
-              }
+
             }
 
             return (
@@ -347,21 +334,11 @@ export const DynamicCanvas = ({ widgets }: DynamicCanvasProps) => {
                   {widget.type === "markdown_viewer" && (
                     <MarkdownViewerWidget />
                   )}
-                  {widget.type === "tradingview" && (
-                    <TradingViewWidget
-                      symbol={widget.data.symbol || "NASDAQ:AAPL"}
-                      name={widget.data.name}
-                      reason={widget.data.reason}
-                    />
-                  )}
-                  {widget.type === "pine_editor" && <PineEditorWidget />}
                   {widget.type === "jsonl_splitter" && <JSONLSplitterWidget />}
                   {widget.type === "omni_pipeline" && <OmniPipelineWidget />}
                   {widget.type === "knowledge_editor" && (
                     <KnowledgeEditorWidget />
                   )}
-                  {widget.type === "ir_analysis" && <IRAnalysisWidget />}
-                  {widget.type === "finance_paste_visualizer" && <FinancialStatementVisualizer />}
                 </div>
               </div>
             );

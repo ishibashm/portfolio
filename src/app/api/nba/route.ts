@@ -4,6 +4,7 @@ import path from "path";
 import { OuraClient } from "@/lib/ouraClient";
 import { TavilyClient } from "@/lib/tavilyClient";
 import { IChingClient } from "@/lib/ichingClient";
+import { findLastRecordBackwards } from "@/utils/jsonlReader";
 import { NBAEngine, NBAParams } from "@/utils/nbaEngine";
 import {
   AstroEngine,
@@ -485,65 +486,50 @@ export async function POST(req: Request) {
         "data",
         "nba_history.jsonl",
       );
-      const fileContent = await fs
-        .readFile(historyFilePath, "utf8")
-        .catch(() => "");
-      if (fileContent) {
-        const lines = fileContent.trim().split("\n");
-        if (lines.length > 0) {
-          let lastRecord: any = null;
-          // Parse lines backwards to find the last valid action evaluation record
-          for (let idx = lines.length - 1; idx >= 0; idx--) {
-            try {
-              const rec = JSON.parse(lines[idx]);
-              if (rec && rec.nba && rec.nba.actionResult) {
-                lastRecord = rec;
-                break;
-              }
-            } catch (e) {}
-          }
+      const lastRecord = await findLastRecordBackwards(
+        historyFilePath,
+        (rec: any) => !!(rec && rec.nba && rec.nba.actionResult)
+      );
 
-          if (lastRecord) {
-            const prevAction = lastRecord.nba.actionResult.suggestedAction;
-            const prevAnsLoad = lastRecord.nba.stateVector.ansLoad ?? 50;
-            const prevShield = lastRecord.nba.stateVector.shieldCapacity ?? 50;
+      if (lastRecord) {
+        const prevAction = lastRecord.nba.actionResult.suggestedAction;
+        const prevAnsLoad = lastRecord.nba.stateVector.ansLoad ?? 50;
+        const prevShield = lastRecord.nba.stateVector.shieldCapacity ?? 50;
 
-            const ansDelta = ansLoad - prevAnsLoad;
-            const shieldDelta = shieldCapacity - prevShield;
+        const ansDelta = ansLoad - prevAnsLoad;
+        const shieldDelta = shieldCapacity - prevShield;
 
-            let rewardDelta = 0;
-            if (
-              prevAction === "PREPARE_AND_WAIT" ||
-              prevAction === "ABORT_AND_SHIELD"
-            ) {
-              if (ansDelta < 0) rewardDelta += 0.8;
-              if (shieldDelta > 0) rewardDelta += 0.5;
-              if (ansDelta > 15) rewardDelta -= 0.8;
-            } else if (
-              prevAction === "EXECUTE_RELOCATION" ||
-              prevAction === "EXECUTE_PURGE_RELOCATION"
-            ) {
-              if (ansDelta <= 20) rewardDelta += 0.3;
-              if (ansDelta > 30) rewardDelta -= 0.6;
-              if (shieldDelta < -25) rewardDelta -= 0.5;
-            } else if (prevAction === "GATHER_INTEL") {
-              if (ansDelta <= 5) rewardDelta += 0.2;
-            }
-
-            closedLoopFeedback = Math.max(-1.0, Math.min(1.0, rewardDelta));
-
-            feedbackDetails = {
-              previousAction: prevAction,
-              previousAnsLoad: prevAnsLoad,
-              previousShieldCapacity: prevShield,
-              todayAnsLoad: ansLoad,
-              todayShieldCapacity: shieldCapacity,
-              ansDelta,
-              shieldDelta,
-              rewardDelta: closedLoopFeedback,
-            };
-          }
+        let rewardDelta = 0;
+        if (
+          prevAction === "PREPARE_AND_WAIT" ||
+          prevAction === "ABORT_AND_SHIELD"
+        ) {
+          if (ansDelta < 0) rewardDelta += 0.8;
+          if (shieldDelta > 0) rewardDelta += 0.5;
+          if (ansDelta > 15) rewardDelta -= 0.8;
+        } else if (
+          prevAction === "EXECUTE_RELOCATION" ||
+          prevAction === "EXECUTE_PURGE_RELOCATION"
+        ) {
+          if (ansDelta <= 20) rewardDelta += 0.3;
+          if (ansDelta > 30) rewardDelta -= 0.6;
+          if (shieldDelta < -25) rewardDelta -= 0.5;
+        } else if (prevAction === "GATHER_INTEL") {
+          if (ansDelta <= 5) rewardDelta += 0.2;
         }
+
+        closedLoopFeedback = Math.max(-1.0, Math.min(1.0, rewardDelta));
+
+        feedbackDetails = {
+          previousAction: prevAction,
+          previousAnsLoad: prevAnsLoad,
+          previousShieldCapacity: prevShield,
+          todayAnsLoad: ansLoad,
+          todayShieldCapacity: shieldCapacity,
+          ansDelta,
+          shieldDelta,
+          rewardDelta: closedLoopFeedback,
+        };
       }
     } catch (err) {
       console.warn(

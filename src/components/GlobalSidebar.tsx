@@ -51,7 +51,6 @@ const PROTECTED_ITEMS = [
   { href: "/trends", icon: Rss, label: "Tech Trends" },
   { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
   { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },
-  { href: "/omni", icon: Terminal, label: "Omni-Terminal" },
 ];
 
 export function GlobalSidebar() {

@@ -1,7 +1,6 @@
 import prisma from "@/lib/prisma";
 import {
   rental_properties,
-  StockTarget,
   TimingAstrology,
 } from "@prisma/client";
 import {
@@ -27,9 +26,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { TwitterFeed } from "@/components/twitter/TwitterFeed";
-import { FinanceWidget } from "@/components/finance/FinanceWidget";
 import { RealEstateWidget } from "@/components/realestate/RealEstateWidget";
-import { EconomicIntelligence } from "@/components/finance/EconomicIntelligence";
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient";
@@ -53,7 +50,6 @@ export default async function DashboardPage() {
   // Fetch data concurrently with error handling
   const [
     realEstates,
-    stocks,
     timings,
     ouraReadiness,
     tavilyResult,
@@ -67,15 +63,6 @@ export default async function DashboardPage() {
       })
       .catch((e: any) => {
         console.warn("Failed to fetch rental_properties:", e.message);
-        return [];
-      }),
-    prisma.stockTarget
-      .findMany({
-        orderBy: { createdAt: "desc" },
-        take: 4,
-      })
-      .catch((e: any) => {
-        console.warn("Failed to fetch stockTarget:", e.message);
         return [];
       }),
     prisma.timingAstrology
@@ -257,58 +244,6 @@ export default async function DashboardPage() {
         </header>
         {/* BENTO GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(180px,auto)] gap-6">
-          {/* BENTO ITEM 1: Quant Equities (Large Span) */}
-          <section className="lg:col-span-2 lg:row-span-2 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-[inset_0_0_20px_rgba(59,130,246,0.1)]">
-                <TrendingUp className="w-6 h-6 text-blue-400" />
-              </div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white/90">
-                クオンツ株式シグナル
-              </h2>
-            </div>
-
-            <div className="mb-6">
-              <FinanceWidget symbol="^N225" />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-grow">
-              {stocks.length === 0 ? (
-                <div className="col-span-2 p-6 rounded-2xl bg-white/5 border border-white/5 text-center flex items-center justify-center">
-                  <p className="text-gray-500 text-sm">
-                    株式シグナルはまだ生成されていません。
-                  </p>
-                </div>
-              ) : (
-                stocks.slice(0, 4).map((stock: StockTarget) => (
-                  <div
-                    key={stock.id}
-                    className="p-4 rounded-2xl bg-gradient-to-b from-white/[0.06] to-white/[0.01] border border-white/5 hover:border-blue-500/30 transition-all relative overflow-hidden group"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="text-xs font-mono text-blue-400 mb-0.5">
-                          {stock.code}
-                        </p>
-                        <h3 className="font-medium text-gray-200 text-sm truncate max-w-[120px]">
-                          {stock.companyName}
-                        </h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium text-white">
-                          ¥{stock.price?.toLocaleString() ?? "---"}
-                        </p>
-                        <p className="text-[10px] text-emerald-400 mt-0.5">
-                          PER {stock.per?.toFixed(1) ?? "-"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
-
           {/* BENTO ITEM 2: NBA Engine Status */}
           <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] relative overflow-hidden">
             <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/20 blur-2xl rounded-full"></div>
@@ -414,11 +349,11 @@ export default async function DashboardPage() {
               {tavilyResults.length > 0 ? (
                 tavilyResults.map((result: any, i: number) => (
                   <a
-                    key={i}
-                    href={result.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group flex gap-3 items-start p-2.5 rounded-xl hover:bg-white/5 transition-colors"
+                     key={i}
+                     href={result.url}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="group flex gap-3 items-start p-2.5 rounded-xl hover:bg-white/5 transition-colors"
                   >
                     <Zap className="w-4 h-4 text-cyan-500/50 mt-0.5 flex-shrink-0 group-hover:text-cyan-400 transition-colors" />
                     <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed group-hover:text-white transition-colors">
@@ -554,11 +489,6 @@ export default async function DashboardPage() {
                 ))
               )}
             </div>
-          </section>
-
-          {/* BENTO ITEM 8: Economic & Market Intelligence */}
-          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col justify-between">
-            <EconomicIntelligence />
           </section>
         </div>
       </main>

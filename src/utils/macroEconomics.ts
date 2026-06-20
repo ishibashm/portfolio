@@ -1,10 +1,3 @@
-import yahooFinanceModule from "yahoo-finance2";
-
-const yahooFinance =
-  typeof yahooFinanceModule === "function"
-    ? new (yahooFinanceModule as any)()
-    : yahooFinanceModule;
-
 export interface MacroEconomicsData {
   vix: number;
   creditSpread: number;
@@ -12,26 +5,38 @@ export interface MacroEconomicsData {
 }
 
 export async function fetchMacroEconomics(): Promise<MacroEconomicsData> {
-  try {
-    // Disable historical data notice console logs if yahoo-finance2 has any.
-    // Fetch ^VIX quote
-    const quote = await yahooFinance.quote("^VIX");
+  const url = "https://query1.finance.yahoo.com/v8/finance/chart/%5EVIX?interval=1d&range=1d";
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 4000);
 
-    if (
-      quote &&
-      typeof quote.regularMarketPrice === "number" &&
-      !Number.isNaN(quote.regularMarketPrice)
-    ) {
-      const vix = quote.regularMarketPrice;
-      const creditSpread = 1.5 + vix * 0.15;
-      return {
-        vix,
-        creditSpread: parseFloat(creditSpread.toFixed(3)),
-        isMocked: false,
-      };
+  try {
+    const res = await fetch(url, {
+      signal: controller.signal,
+      next: { revalidate: 300 },
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`Status ${res.status}`);
     }
 
-    throw new Error("Invalid VIX quote format");
+    const json = await res.json();
+    const result = json?.chart?.result?.[0];
+    const meta = result?.meta;
+    
+    if (!meta || typeof meta.regularMarketPrice !== "number" || Number.isNaN(meta.regularMarketPrice)) {
+      throw new Error("Invalid VIX quote format");
+    }
+
+    const vix = meta.regularMarketPrice;
+    const creditSpread = 1.5 + vix * 0.15;
+    return {
+      vix,
+      creditSpread: parseFloat(creditSpread.toFixed(3)),
+      isMocked: false,
+    };
   } catch (error) {
     console.error(
       "Error fetching macro economics (VIX), falling back to offline defaults:",
@@ -43,5 +48,7 @@ export async function fetchMacroEconomics(): Promise<MacroEconomicsData> {
       creditSpread: 4.2,
       isMocked: true,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }

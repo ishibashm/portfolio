@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useOmniStore } from "../../store/omniStore";
-import TradingViewWidget from "./TradingViewWidget";
 
 export default function OmniPipelineWidget() {
   const [step, setStep] = useState<number>(1);
