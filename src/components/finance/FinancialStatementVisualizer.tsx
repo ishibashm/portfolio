@@ -1,32 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  ComposedChart,
-  Line,
-} from "recharts";
-import {
-  TrendingUp,
-  TrendingDown,
-  Sparkles,
-  Activity,
-  FileText,
-  Loader2,
-  PieChart,
-  BarChart3,
-  Calendar,
-  AlertCircle,
-  HelpCircle,
-} from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, ComposedChart, Line } from "recharts";
+import { TrendingUp, TrendingDown, Sparkles, Activity, FileText, Loader2, PieChart, BarChart3, Calendar, AlertCircle, HelpCircle } from "lucide-react";
 
 interface StockPoint {
   date: string;
@@ -67,6 +43,25 @@ interface PLData {
   net_income: number;
 }
 
+interface FinancialApiBS {
+  currentAssets: number;
+  nonCurrentAssets: number;
+  totalAssets: number;
+  currentLiabilities: number;
+  nonCurrentLiabilities: number;
+  totalLiabilities: number;
+  shareCapital: number;
+  retainedEarnings: number;
+  totalEquity: number;
+}
+
+interface FinancialFetchMeta {
+  source: string;
+  mode: "primary" | "fallback" | "free_fallback";
+  note?: string;
+  asOf?: string;
+}
+
 function parseStockTable(text: string): StockPoint[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length === 0) return [];
@@ -82,15 +77,7 @@ function parseStockTable(text: string): StockPoint[] {
 
   const firstLine = lines[0];
   const headers = firstLine.split(/\s+/);
-  const hasHeader = headers.some(
-    (h) =>
-      h.includes("日") ||
-      h.includes("値") ||
-      h.includes("高") ||
-      h.includes("安") ||
-      h.includes("出来") ||
-      h.includes("売買"),
-  );
+  const hasHeader = headers.some((h) => h.includes("日") || h.includes("値") || h.includes("高") || h.includes("安") || h.includes("出来") || h.includes("売買"));
 
   let startRow = 0;
   if (hasHeader && lines.length > 1) {
@@ -99,22 +86,12 @@ function parseStockTable(text: string): StockPoint[] {
       const cleanH = h.trim();
       if (cleanH.includes("日")) dateIdx = idx;
       else if (cleanH.includes("始")) openIdx = idx;
-      else if (
-        cleanH.includes("高") &&
-        !cleanH.includes("売買") &&
-        !cleanH.includes("出来") &&
-        !cleanH.includes("高(")
-      ) {
+      else if (cleanH.includes("高") && !cleanH.includes("売買") && !cleanH.includes("出来") && !cleanH.includes("高(")) {
         highIdx = idx;
       } else if (cleanH.includes("安")) lowIdx = idx;
       else if (cleanH.includes("終")) closeIdx = idx;
       else if (cleanH.includes("比")) changeIdx = idx;
-      else if (
-        cleanH.includes("出来") ||
-        cleanH.includes("売買") ||
-        cleanH.includes("量") ||
-        cleanH.includes("高(")
-      ) {
+      else if (cleanH.includes("出来") || cleanH.includes("売買") || cleanH.includes("量") || cleanH.includes("高(")) {
         volumeIdx = idx;
       }
     });
@@ -315,6 +292,7 @@ export function FinancialStatementVisualizer() {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [financialFetchMeta, setFinancialFetchMeta] = useState<FinancialFetchMeta | null>(null);
   const [stockCode, setStockCode] = useState("285A");
 
   // Parsed Results
@@ -374,25 +352,19 @@ export function FinancialStatementVisualizer() {
         if (activeMode === "stock") {
           const parsed = parseStockTable(inputText);
           if (parsed.length === 0) {
-            throw new Error(
-              "有効な株価データ（日付、始値、高値、安値、終値）が見つかりませんでした。タブ区切りやスペース区切りのテキストを入力してください。",
-            );
+            throw new Error("有効な株価データ（日付、始値、高値、安値、終値）が見つかりませんでした。タブ区切りやスペース区切りのテキストを入力してください。");
           }
           setStockResult(parsed);
         } else if (activeMode === "bs") {
           const parsed = parseBSTable(inputText);
           if (parsed.assets.total === 0) {
-            throw new Error(
-              "有効な貸借対照表（流動資産、固定資産、負債、純資産など）の数値が見つかりませんでした。",
-            );
+            throw new Error("有効な貸借対照表（流動資産、固定資産、負債、純資産など）の数値が見つかりませんでした。");
           }
           setBsResult(parsed);
         } else if (activeMode === "pl") {
           const parsed = parsePLTable(inputText);
           if (parsed.net_sales === 0) {
-            throw new Error(
-              "有効な損益計算書（売上高、営業利益、当期純利益など）の数値が見つかりませんでした。",
-            );
+            throw new Error("有効な損益計算書（売上高、営業利益、当期純利益など）の数値が見つかりませんでした。");
           }
           setPlResult(parsed);
         }
@@ -409,6 +381,7 @@ export function FinancialStatementVisualizer() {
     if (!stockCode.trim()) return;
     setLoading(true);
     setError(null);
+    setFinancialFetchMeta(null);
 
     try {
       const res = await fetch(`/api/finance/kabutan?code=${stockCode.trim().toUpperCase()}`);
@@ -420,9 +393,7 @@ export function FinancialStatementVisualizer() {
 
       setStockResult(data.data);
       // Pre-fill input text with formatted tab-separated values (TSV) in reverse order (newest first like clipboard)
-      const tsvLines = data.data.map(
-        (pt: any) => `${pt.date}\t${pt.open}\t${pt.high}\t${pt.low}\t${pt.close}\t${pt.change}\t${pt.volume}`
-      );
+      const tsvLines = data.data.map((pt: any) => `${pt.date}\t${pt.open}\t${pt.high}\t${pt.low}\t${pt.close}\t${pt.change}\t${pt.volume}`);
       setInputText(["日付\t始値\t高値\t安値\t終値\t前日比\t売買高(株)", ...[...tsvLines].reverse()].join("\n"));
     } catch (err: any) {
       console.error(err);
@@ -436,6 +407,7 @@ export function FinancialStatementVisualizer() {
     if (!stockCode.trim()) return;
     setLoading(true);
     setError(null);
+    setFinancialFetchMeta(null);
 
     try {
       const res = await fetch(`/api/finance/jquants/details?code=${stockCode.trim().toUpperCase()}`);
@@ -445,30 +417,31 @@ export function FinancialStatementVisualizer() {
         throw new Error(data.error || "J-Quantsからのデータ取得に失敗しました。");
       }
 
-      const { bs, pl } = data.data;
-      setBsResult(bs);
+      const { bs, pl } = data.data as { bs: FinancialApiBS; pl: PLData };
+      setBsResult({
+        assets: {
+          current: bs.currentAssets,
+          non_current: bs.nonCurrentAssets,
+          total: bs.totalAssets,
+        },
+        liabilities: {
+          current: bs.currentLiabilities,
+          non_current: bs.nonCurrentLiabilities,
+          total: bs.totalLiabilities,
+        },
+        equity: {
+          share_capital: bs.shareCapital,
+          retained_earnings: bs.retainedEarnings,
+          other: Math.max(0, bs.totalEquity - bs.shareCapital - bs.retainedEarnings),
+          total: bs.totalEquity,
+        },
+      });
       setPlResult(pl);
+      setFinancialFetchMeta(data.meta as FinancialFetchMeta);
 
-      const bsTsv = [
-        `流動資産\t${formatNumber(bs.currentAssets)}`,
-        `固定資産\t${formatNumber(bs.nonCurrentAssets)}`,
-        `資産合計\t${formatNumber(bs.totalAssets)}`,
-        `流動負債\t${formatNumber(bs.currentLiabilities)}`,
-        `固定負債\t${formatNumber(bs.nonCurrentLiabilities)}`,
-        `負債合計\t${formatNumber(bs.totalLiabilities)}`,
-        `資本金\t${formatNumber(bs.shareCapital)}`,
-        `利益剰余金\t${formatNumber(bs.retainedEarnings)}`,
-        `純資産合計\t${formatNumber(bs.totalEquity)}`
-      ].join("\n");
+      const bsTsv = [`流動資産\t${formatNumber(bs.currentAssets)}`, `固定資産\t${formatNumber(bs.nonCurrentAssets)}`, `資産合計\t${formatNumber(bs.totalAssets)}`, `流動負債\t${formatNumber(bs.currentLiabilities)}`, `固定負債\t${formatNumber(bs.nonCurrentLiabilities)}`, `負債合計\t${formatNumber(bs.totalLiabilities)}`, `資本金\t${formatNumber(bs.shareCapital)}`, `利益剰余金\t${formatNumber(bs.retainedEarnings)}`, `純資産合計\t${formatNumber(bs.totalEquity)}`].join("\n");
 
-      const plTsv = [
-        `売上高\t${formatNumber(pl.net_sales)}`,
-        `売上原価\t${formatNumber(pl.cost_of_sales)}`,
-        `販売費及び一般管理費\t${formatNumber(pl.sga_expenses)}`,
-        `営業利益\t${formatNumber(pl.operating_income)}`,
-        `経常利益\t${formatNumber(pl.ordinary_income)}`,
-        `当期純利益\t${formatNumber(pl.net_income)}`
-      ].join("\n");
+      const plTsv = [`売上高\t${formatNumber(pl.net_sales)}`, `売上原価\t${formatNumber(pl.cost_of_sales)}`, `販売費及び一般管理費\t${formatNumber(pl.sga_expenses)}`, `営業利益\t${formatNumber(pl.operating_income)}`, `経常利益\t${formatNumber(pl.ordinary_income)}`, `当期純利益\t${formatNumber(pl.net_income)}`].join("\n");
 
       setInputText(activeMode === "bs" ? bsTsv : plTsv);
     } catch (err: any) {
@@ -537,10 +510,9 @@ export function FinancialStatementVisualizer() {
               setActiveMode("stock");
               setInputText("");
               setError(null);
+              setFinancialFetchMeta(null);
             }}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeMode === "stock" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-            }`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeMode === "stock" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}
           >
             時系列株価
           </button>
@@ -549,10 +521,9 @@ export function FinancialStatementVisualizer() {
               setActiveMode("bs");
               setInputText("");
               setError(null);
+              setFinancialFetchMeta(null);
             }}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeMode === "bs" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-            }`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeMode === "bs" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}
           >
             貸借対照表 (B/S)
           </button>
@@ -561,10 +532,9 @@ export function FinancialStatementVisualizer() {
               setActiveMode("pl");
               setInputText("");
               setError(null);
+              setFinancialFetchMeta(null);
             }}
-            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-              activeMode === "pl" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"
-            }`}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${activeMode === "pl" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}
           >
             損益計算書 (P/L)
           </button>
@@ -580,18 +550,10 @@ export function FinancialStatementVisualizer() {
               コピーしたテキストを貼り付けてください:
             </span>
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={loadExample}
-                className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold uppercase tracking-wider"
-              >
+              <button type="button" onClick={loadExample} className="text-[10px] text-indigo-400 hover:text-indigo-300 font-semibold uppercase tracking-wider">
                 [ サンプル入力 ]
               </button>
-              <button
-                type="button"
-                onClick={() => setInputText("")}
-                className="text-[10px] text-slate-500 hover:text-slate-300 uppercase tracking-wider"
-              >
+              <button type="button" onClick={() => setInputText("")} className="text-[10px] text-slate-500 hover:text-slate-300 uppercase tracking-wider">
                 [ クリア ]
               </button>
             </div>
@@ -599,23 +561,9 @@ export function FinancialStatementVisualizer() {
 
           {activeMode === "stock" && (
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
-              <span className="text-[10px] text-indigo-400 font-bold font-mono tracking-wider">
-                [AUTO FETCH]
-              </span>
-              <input
-                type="text"
-                value={stockCode}
-                onChange={(e) => setStockCode(e.target.value)}
-                placeholder="コード (e.g. 285A)"
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-32 font-bold font-mono text-center uppercase"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={handleFetchKabutan}
-                disabled={loading || !stockCode.trim()}
-                className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
-              >
+              <span className="text-[10px] text-indigo-400 font-bold font-mono tracking-wider">[AUTO FETCH]</span>
+              <input type="text" value={stockCode} onChange={(e) => setStockCode(e.target.value)} placeholder="コード (e.g. 285A)" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
+              <button type="button" onClick={handleFetchKabutan} disabled={loading || !stockCode.trim()} className="px-3 py-1 bg-indigo-600/80 hover:bg-indigo-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5">
                 <span>株探から時系列データを自動取得</span>
               </button>
             </div>
@@ -623,47 +571,17 @@ export function FinancialStatementVisualizer() {
 
           {(activeMode === "bs" || activeMode === "pl") && (
             <div className="flex items-center gap-2 pb-2 border-b border-slate-800/80">
-              <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-wider">
-                [J-QUANTS AUTO]
-              </span>
-              <input
-                type="text"
-                value={stockCode}
-                onChange={(e) => setStockCode(e.target.value)}
-                placeholder="コード (e.g. 8697)"
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-32 font-bold font-mono text-center uppercase"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={handleFetchJQuants}
-                disabled={loading || !stockCode.trim()}
-                className="px-3 py-1 bg-emerald-600/80 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <span>J-Quantsから財務諸表を自動取得</span>
+              <span className="text-[10px] text-emerald-400 font-bold font-mono tracking-wider">[FINANCIAL AUTO]</span>
+              <input type="text" value={stockCode} onChange={(e) => setStockCode(e.target.value)} placeholder="コード (e.g. 8697)" className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 w-32 font-bold font-mono text-center uppercase" disabled={loading} />
+              <button type="button" onClick={handleFetchJQuants} disabled={loading || !stockCode.trim()} className="px-3 py-1 bg-emerald-600/80 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-xs rounded-lg transition-all cursor-pointer flex items-center gap-1.5">
+                <span>財務諸表を自動取得</span>
               </button>
             </div>
           )}
 
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder={
-              activeMode === "stock"
-                ? "証券会社やYahooファイナンス等の時系列株価テーブルをコピペしてください..."
-                : activeMode === "bs"
-                  ? "決算短信や決算説明資料等のB/Sデータ（資産・負債・純資産）をコピペしてください..."
-                  : "決算短信等のP/Lデータ（売上高・各種利益・費用）をコピペしてください..."
-            }
-            className="w-full h-28 p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 resize-none font-mono leading-relaxed"
-            disabled={loading}
-          />
+          <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={activeMode === "stock" ? "証券会社やYahooファイナンス等の時系列株価テーブルをコピペしてください..." : activeMode === "bs" ? "決算短信や決算説明資料等のB/Sデータ（資産・負債・純資産）をコピペしてください..." : "決算短信等のP/Lデータ（売上高・各種利益・費用）をコピペしてください..."} className="w-full h-28 p-3 bg-slate-900 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-indigo-500 placeholder:text-slate-600 resize-none font-mono leading-relaxed" disabled={loading} />
 
-          <button
-            onClick={handleParse}
-            disabled={loading || !inputText.trim()}
-            className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-950/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
+          <button onClick={handleParse} disabled={loading || !inputText.trim()} className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-950/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
             {loading ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -686,6 +604,16 @@ export function FinancialStatementVisualizer() {
           </div>
         )}
 
+        {financialFetchMeta && activeMode !== "stock" && (
+          <div className={`p-3 rounded-xl text-xs flex items-start gap-2 animate-in fade-in duration-200 ${financialFetchMeta.mode === "primary" ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border border-amber-500/20 text-amber-300"}`}>
+            <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div className="leading-relaxed">
+              <p className="font-semibold">取得元: {financialFetchMeta.source}</p>
+              {financialFetchMeta.note && <p className="opacity-80">{financialFetchMeta.note}</p>}
+            </div>
+          </div>
+        )}
+
         {/* Visualized Results */}
 
         {/* 1. STOCK CHART RESULT */}
@@ -697,11 +625,7 @@ export function FinancialStatementVisualizer() {
                 <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
                   <span className="text-[10px] text-slate-500 block uppercase font-mono">Period Change</span>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span
-                      className={`text-lg font-bold font-mono ${
-                        stockStats.changePct >= 0 ? "text-emerald-400" : "text-rose-400"
-                      }`}
-                    >
+                    <span className={`text-lg font-bold font-mono ${stockStats.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                       {stockStats.changePct >= 0 ? "+" : ""}
                       {stockStats.changePct.toFixed(2)}%
                     </span>
@@ -714,23 +638,17 @@ export function FinancialStatementVisualizer() {
 
                 <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
                   <span className="text-[10px] text-slate-500 block uppercase font-mono">High Price</span>
-                  <span className="text-lg font-bold font-mono text-slate-100 mt-1 block">
-                    {formatNumber(stockStats.maxClose)}
-                  </span>
+                  <span className="text-lg font-bold font-mono text-slate-100 mt-1 block">{formatNumber(stockStats.maxClose)}</span>
                 </div>
 
                 <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
                   <span className="text-[10px] text-slate-500 block uppercase font-mono">Low Price</span>
-                  <span className="text-lg font-bold font-mono text-slate-100 mt-1 block">
-                    {formatNumber(stockStats.minClose)}
-                  </span>
+                  <span className="text-lg font-bold font-mono text-slate-100 mt-1 block">{formatNumber(stockStats.minClose)}</span>
                 </div>
 
                 <div className="bg-slate-900/50 border border-slate-800 p-3 rounded-xl">
                   <span className="text-[10px] text-slate-500 block uppercase font-mono">Total Vol</span>
-                  <span className="text-lg font-bold font-mono text-indigo-400 mt-1 block">
-                    {formatNumber(stockStats.totalVolume)}
-                  </span>
+                  <span className="text-lg font-bold font-mono text-indigo-400 mt-1 block">{formatNumber(stockStats.totalVolume)}</span>
                 </div>
               </div>
             )}
@@ -749,7 +667,11 @@ export function FinancialStatementVisualizer() {
                   <XAxis
                     dataKey="date"
                     stroke="#475569"
-                    tick={{ fill: "#64748b", fontSize: 10, fontFamily: "monospace" }}
+                    tick={{
+                      fill: "#64748b",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -757,7 +679,11 @@ export function FinancialStatementVisualizer() {
                     yAxisId="left"
                     domain={yDomain}
                     stroke="#475569"
-                    tick={{ fill: "#94a3b8", fontSize: 10, fontFamily: "monospace" }}
+                    tick={{
+                      fill: "#94a3b8",
+                      fontSize: 10,
+                      fontFamily: "monospace",
+                    }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(val) => `¥${val}`}
@@ -766,33 +692,30 @@ export function FinancialStatementVisualizer() {
                     yAxisId="right"
                     orientation="right"
                     stroke="#475569"
-                    tick={{ fill: "#475569", fontSize: 9, fontFamily: "monospace" }}
+                    tick={{
+                      fill: "#475569",
+                      fontSize: 9,
+                      fontFamily: "monospace",
+                    }}
                     tickLine={false}
                     axisLine={false}
                     tickFormatter={(val) => `${(val / 1000000).toFixed(0)}M`}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #334155", borderRadius: "10px" }}
-                    labelStyle={{ color: "#64748b", fontFamily: "monospace", fontSize: "10px" }}
+                    contentStyle={{
+                      backgroundColor: "#0f172a",
+                      border: "1px solid #334155",
+                      borderRadius: "10px",
+                    }}
+                    labelStyle={{
+                      color: "#64748b",
+                      fontFamily: "monospace",
+                      fontSize: "10px",
+                    }}
                     itemStyle={{ fontSize: "12px" }}
                   />
-                  <Area
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="close"
-                    name="終値 (Close)"
-                    stroke="#6366f1"
-                    strokeWidth={2}
-                    fill="url(#chartCloseGrad)"
-                  />
-                  <Bar
-                    yAxisId="right"
-                    dataKey="volume"
-                    name="出来高 (Vol)"
-                    fill="#3b82f6"
-                    opacity={0.35}
-                    barSize={15}
-                  />
+                  <Area yAxisId="left" type="monotone" dataKey="close" name="終値 (Close)" stroke="#6366f1" strokeWidth={2} fill="url(#chartCloseGrad)" />
+                  <Bar yAxisId="right" dataKey="volume" name="出来高 (Vol)" fill="#3b82f6" opacity={0.35} barSize={15} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -824,9 +747,7 @@ export function FinancialStatementVisualizer() {
                       title={`固定資産: ${formatNumber(bsResult.assets.non_current)} 百万円`}
                     >
                       <span className="text-[9px] font-bold text-white block">固定資産</span>
-                      <span className="text-[9px] font-mono text-indigo-200">
-                        {((bsResult.assets.non_current / bsResult.assets.total) * 100).toFixed(0)}%
-                      </span>
+                      <span className="text-[9px] font-mono text-indigo-200">{((bsResult.assets.non_current / bsResult.assets.total) * 100).toFixed(0)}%</span>
                     </div>
 
                     {/* Current Assets segment */}
@@ -838,14 +759,10 @@ export function FinancialStatementVisualizer() {
                       title={`流動資産: ${formatNumber(bsResult.assets.current)} 百万円`}
                     >
                       <span className="text-[9px] font-bold text-neutral-900 block">流動資産</span>
-                      <span className="text-[9px] font-mono text-indigo-950">
-                        {((bsResult.assets.current / bsResult.assets.total) * 100).toFixed(0)}%
-                      </span>
+                      <span className="text-[9px] font-mono text-indigo-950">{((bsResult.assets.current / bsResult.assets.total) * 100).toFixed(0)}%</span>
                     </div>
                   </div>
-                  <span className="font-mono text-xs font-bold text-indigo-400 mt-2.5">
-                    Total: {formatNumber(bsResult.assets.total)}
-                  </span>
+                  <span className="font-mono text-xs font-bold text-indigo-400 mt-2.5">Total: {formatNumber(bsResult.assets.total)}</span>
                 </div>
 
                 {/* Column 2: Liabilities + Equity */}
@@ -861,9 +778,7 @@ export function FinancialStatementVisualizer() {
                       title={`純資産: ${formatNumber(bsResult.equity.total)} 百万円`}
                     >
                       <span className="text-[9px] font-bold text-neutral-950 block">純資産</span>
-                      <span className="text-[9px] font-mono text-emerald-950">
-                        {((bsResult.equity.total / bsResult.assets.total) * 100).toFixed(0)}%
-                      </span>
+                      <span className="text-[9px] font-mono text-emerald-950">{((bsResult.equity.total / bsResult.assets.total) * 100).toFixed(0)}%</span>
                     </div>
 
                     {/* Non-current Liabilities segment */}
@@ -875,9 +790,7 @@ export function FinancialStatementVisualizer() {
                       title={`固定負債: ${formatNumber(bsResult.liabilities.non_current)} 百万円`}
                     >
                       <span className="text-[9px] font-bold text-white block">固定負債</span>
-                      <span className="text-[9px] font-mono text-amber-200">
-                        {((bsResult.liabilities.non_current / bsResult.assets.total) * 100).toFixed(0)}%
-                      </span>
+                      <span className="text-[9px] font-mono text-amber-200">{((bsResult.liabilities.non_current / bsResult.assets.total) * 100).toFixed(0)}%</span>
                     </div>
 
                     {/* Current Liabilities segment */}
@@ -889,20 +802,14 @@ export function FinancialStatementVisualizer() {
                       title={`流動負債: ${formatNumber(bsResult.liabilities.current)} 百万円`}
                     >
                       <span className="text-[9px] font-bold text-neutral-900 block">流動負債</span>
-                      <span className="text-[9px] font-mono text-amber-950">
-                        {((bsResult.liabilities.current / bsResult.assets.total) * 100).toFixed(0)}%
-                      </span>
+                      <span className="text-[9px] font-mono text-amber-950">{((bsResult.liabilities.current / bsResult.assets.total) * 100).toFixed(0)}%</span>
                     </div>
                   </div>
-                  <span className="font-mono text-xs font-bold text-amber-400 mt-2.5">
-                    Total: {formatNumber(bsResult.liabilities.total + bsResult.equity.total)}
-                  </span>
+                  <span className="font-mono text-xs font-bold text-amber-400 mt-2.5">Total: {formatNumber(bsResult.liabilities.total + bsResult.equity.total)}</span>
                 </div>
               </div>
 
-              <div className="text-[10px] text-slate-500 text-center leading-relaxed">
-                ※左右の棒の高さは等しく一致します（資産合計 ＝ 負債合計 ＋ 純資産合計）
-              </div>
+              <div className="text-[10px] text-slate-500 text-center leading-relaxed">※左右の棒の高さは等しく一致します（資産合計 ＝ 負債合計 ＋ 純資産合計）</div>
             </div>
 
             {/* B/S detailed data list */}
@@ -1003,12 +910,48 @@ export function FinancialStatementVisualizer() {
                   };
 
                   const bars = [
-                    { label: "売上高", start: 0, end: sales, color: "#6366f1", isTotal: true },
-                    { label: "売上原価", start: sales, end: sales + cost, color: "#f43f5e", isTotal: false },
-                    { label: "売上総利益", start: 0, end: gross, color: "#3b82f6", isTotal: true },
-                    { label: "販管費", start: gross, end: gross + sga, color: "#f43f5e", isTotal: false },
-                    { label: "営業利益", start: 0, end: operating, color: "#10b981", isTotal: true },
-                    { label: "当期利益", start: 0, end: net, color: "#059669", isTotal: true },
+                    {
+                      label: "売上高",
+                      start: 0,
+                      end: sales,
+                      color: "#6366f1",
+                      isTotal: true,
+                    },
+                    {
+                      label: "売上原価",
+                      start: sales,
+                      end: sales + cost,
+                      color: "#f43f5e",
+                      isTotal: false,
+                    },
+                    {
+                      label: "売上総利益",
+                      start: 0,
+                      end: gross,
+                      color: "#3b82f6",
+                      isTotal: true,
+                    },
+                    {
+                      label: "販管費",
+                      start: gross,
+                      end: gross + sga,
+                      color: "#f43f5e",
+                      isTotal: false,
+                    },
+                    {
+                      label: "営業利益",
+                      start: 0,
+                      end: operating,
+                      color: "#10b981",
+                      isTotal: true,
+                    },
+                    {
+                      label: "当期利益",
+                      start: 0,
+                      end: net,
+                      color: "#059669",
+                      isTotal: true,
+                    },
                   ];
 
                   const barWidth = 55;
@@ -1017,14 +960,7 @@ export function FinancialStatementVisualizer() {
                   return (
                     <svg width={svgWidth} height={svgHeight} className="select-none font-mono">
                       {/* Gridline for zero */}
-                      <line
-                        x1={padding}
-                        y1={scaleY(0)}
-                        x2={svgWidth - padding}
-                        y2={scaleY(0)}
-                        stroke="#334155"
-                        strokeDasharray="2 2"
-                      />
+                      <line x1={padding} y1={scaleY(0)} x2={svgWidth - padding} y2={scaleY(0)} stroke="#334155" strokeDasharray="2 2" />
 
                       {bars.map((bar, i) => {
                         const x = padding + i * (barWidth + gap);
@@ -1038,49 +974,18 @@ export function FinancialStatementVisualizer() {
                         return (
                           <g key={i}>
                             {/* Bar rectangle */}
-                            <rect
-                              x={x}
-                              y={yEnd}
-                              width={barWidth}
-                              height={height}
-                              fill={bar.color}
-                              rx={4}
-                              className="transition-all hover:brightness-110 cursor-default"
-                            />
+                            <rect x={x} y={yEnd} width={barWidth} height={height} fill={bar.color} rx={4} className="transition-all hover:brightness-110 cursor-default" />
 
                             {/* Connect lines between step bars */}
-                            {i < bars.length - 1 && (
-                              <line
-                                x1={x + barWidth}
-                                y1={scaleY(bar.end)}
-                                x2={x + barWidth + gap}
-                                y2={scaleY(bar.end)}
-                                stroke="#475569"
-                                strokeWidth={1}
-                                strokeDasharray="3 3"
-                              />
-                            )}
+                            {i < bars.length - 1 && <line x1={x + barWidth} y1={scaleY(bar.end)} x2={x + barWidth + gap} y2={scaleY(bar.end)} stroke="#475569" strokeWidth={1} strokeDasharray="3 3" />}
 
                             {/* Label on top of bar */}
-                            <text
-                              x={x + barWidth / 2}
-                              y={yEnd - 6}
-                              textAnchor="middle"
-                              fill="#94a3b8"
-                              fontSize={8}
-                              fontWeight="bold"
-                            >
+                            <text x={x + barWidth / 2} y={yEnd - 6} textAnchor="middle" fill="#94a3b8" fontSize={8} fontWeight="bold">
                               {displayVal}
                             </text>
 
                             {/* Bottom Label (Truncated in JP) */}
-                            <text
-                              x={x + barWidth / 2}
-                              y={svgHeight - 4}
-                              textAnchor="middle"
-                              fill="#64748b"
-                              fontSize={8}
-                            >
+                            <text x={x + barWidth / 2} y={svgHeight - 4} textAnchor="middle" fill="#64748b" fontSize={8}>
                               {bar.label}
                             </text>
                           </g>
@@ -1091,9 +996,7 @@ export function FinancialStatementVisualizer() {
                 })()}
               </div>
 
-              <div className="text-[10px] text-slate-500 text-center leading-relaxed">
-                ※売上高から各費用（赤）が差し引かれ、営業利益、最終利益（緑）へ至る階段図です。
-              </div>
+              <div className="text-[10px] text-slate-500 text-center leading-relaxed">※売上高から各費用（赤）が差し引かれ、営業利益、最終利益（緑）へ至る階段図です。</div>
             </div>
 
             {/* P/L detailed data list */}
@@ -1139,15 +1042,11 @@ export function FinancialStatementVisualizer() {
               <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 grid grid-cols-2 gap-3">
                 <div className="bg-slate-950 border border-slate-800/80 p-3 rounded-lg text-center">
                   <span className="text-[10px] text-slate-500 block">売上総利益率</span>
-                  <span className="text-base font-bold font-mono text-indigo-400 block mt-1">
-                    {((plResult.gross_profit / plResult.net_sales) * 100).toFixed(1)}%
-                  </span>
+                  <span className="text-base font-bold font-mono text-indigo-400 block mt-1">{((plResult.gross_profit / plResult.net_sales) * 100).toFixed(1)}%</span>
                 </div>
                 <div className="bg-slate-950 border border-slate-800/80 p-3 rounded-lg text-center">
                   <span className="text-[10px] text-slate-500 block">営業利益率</span>
-                  <span className="text-base font-bold font-mono text-emerald-400 block mt-1">
-                    {((plResult.operating_income / plResult.net_sales) * 100).toFixed(1)}%
-                  </span>
+                  <span className="text-base font-bold font-mono text-emerald-400 block mt-1">{((plResult.operating_income / plResult.net_sales) * 100).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
