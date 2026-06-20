@@ -122,6 +122,13 @@ function getBearing(
   lat2: number,
   lon2: number,
 ): number {
+  if (
+    isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2) ||
+    lat1 === null || lon1 === null || lat2 === null || lon2 === null ||
+    lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined
+  ) {
+    return 0;
+  }
   const phi1 = (lat1 * Math.PI) / 180;
   const phi2 = (lat2 * Math.PI) / 180;
   const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
@@ -467,6 +474,9 @@ export default function RelocationSimulatorPage() {
 
   // Declination calculation approximation (Clamped to 2017)
   const getApproximateDeclination = (lat: number, lon: number): number => {
+    if (isNaN(lat) || isNaN(lon) || lat === null || lon === null || lat === undefined || lon === undefined) {
+      return -7.5;
+    }
     const baseDecl = -7.5;
     const latDiff = lat - 35.0;
     return baseDecl - latDiff * 0.15;
@@ -474,20 +484,22 @@ export default function RelocationSimulatorPage() {
 
   // Evaluation pipeline with Base Shifting State Machine
   const evaluatedSteps = useMemo(() => {
-    let currentBaseLat = startLat;
-    let currentBaseLon = startLon;
-    let currentBaseName = startName;
+    let currentBaseLat = isNaN(startLat) || startLat === null || startLat === undefined ? 34.9911 : startLat;
+    let currentBaseLon = isNaN(startLon) || startLon === null || startLon === undefined ? 135.7248 : startLon;
+    let currentBaseName = startName || "起点";
 
     const list: SimulatorStep[] = [];
 
     steps.forEach((step, idx) => {
       const depDate = parseSafeDate(step.departureDate);
+      const targetLat = isNaN(step.toLat) || step.toLat === null || step.toLat === undefined ? 34.9911 : step.toLat;
+      const targetLon = isNaN(step.toLon) || step.toLon === null || step.toLon === undefined ? 135.7248 : step.toLon;
 
       const rawBearing = getBearing(
         currentBaseLat,
         currentBaseLon,
-        step.toLat,
-        step.toLon,
+        targetLat,
+        targetLon,
       );
       let decl = 0;
       if (!useTrueNorth) {

@@ -19,6 +19,7 @@ export function getKigakuSector(
   bearing: number,
   useClassical: boolean = false,
 ): Direction {
+  if (isNaN(bearing)) return "N";
   const b = ((bearing % 360) + 360) % 360;
 
   if (useClassical) {

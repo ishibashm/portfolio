@@ -129,7 +129,10 @@ export default function SimulatorMap({
   }, []);
 
   const startPos: [number, number] = useMemo(
-    () => [startLat || 35.6895, startLon || 139.6917],
+    () => [
+      isNaN(startLat) || startLat === null || startLat === undefined ? 35.6895 : (startLat || 35.6895),
+      isNaN(startLon) || startLon === null || startLon === undefined ? 139.6917 : (startLon || 139.6917),
+    ],
     [startLat, startLon],
   );
 
@@ -137,7 +140,11 @@ export default function SimulatorMap({
   const allPositions: [number, number][] = useMemo(() => {
     const list: [number, number][] = [startPos];
     steps.forEach((s) => {
-      if (s.toLat && s.toLon) {
+      if (
+        s.toLat !== undefined && s.toLon !== undefined &&
+        s.toLat !== null && s.toLon !== null &&
+        !isNaN(s.toLat) && !isNaN(s.toLon)
+      ) {
         list.push([s.toLat, s.toLon]);
       }
     });
@@ -258,6 +265,16 @@ export default function SimulatorMap({
 
           {/* Render Step Destination Markers */}
           {steps.map((step, idx) => {
+            if (
+              step.toLat === undefined ||
+              step.toLon === undefined ||
+              step.toLat === null ||
+              step.toLon === null ||
+              isNaN(step.toLat) ||
+              isNaN(step.toLon)
+            ) {
+              return null;
+            }
             const isSelected = activeStepIndex === idx;
             const pos: [number, number] = [step.toLat, step.toLon];
             return (
@@ -283,6 +300,17 @@ export default function SimulatorMap({
                 ? startPos
                 : [steps[idx - 1].toLat, steps[idx - 1].toLon];
             const currentPos: [number, number] = [step.toLat, step.toLon];
+
+            if (
+              isNaN(prevPos[0]) || isNaN(prevPos[1]) ||
+              isNaN(currentPos[0]) || isNaN(currentPos[1]) ||
+              prevPos[0] === undefined || prevPos[1] === undefined ||
+              currentPos[0] === undefined || currentPos[1] === undefined ||
+              prevPos[0] === null || prevPos[1] === null ||
+              currentPos[0] === null || currentPos[1] === null
+            ) {
+              return null;
+            }
 
             const rating = step.evaluation?.rating || "普通";
             let lineColor = "#a1a1aa"; // default gray (SAFE/N/A)
