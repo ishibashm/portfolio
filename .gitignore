@@ -89,6 +89,7 @@ public/robots.txt
 # Data and Logs
 data/
 .gemini/
+.npm-cache/
 
 # Personal and Config Information
 local_tactical_config.json
