@@ -1780,7 +1780,7 @@ export default function RelocationSimulatorPage() {
                   <strong className="text-zinc-400">{lastSyncTime}</strong>
                 </span>
               )}
-              {portalSpaceWeather && portalSpaceWeather.kpIndex !== null && (
+              {portalSpaceWeather && typeof portalSpaceWeather.kpIndex === "number" && !isNaN(portalSpaceWeather.kpIndex) && (
                 <span className="flex items-center gap-1">
                   宇宙天気 Kp:{" "}
                   <strong
@@ -1859,8 +1859,8 @@ export default function RelocationSimulatorPage() {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-[10px] font-mono text-zinc-500 self-end py-2.5">
-                  <div>緯度: {startLat.toFixed(4)}</div>
-                  <div>経度: {startLon.toFixed(4)}</div>
+                  <div>緯度: {typeof startLat === "number" && !isNaN(startLat) ? startLat.toFixed(4) : "---"}</div>
+                  <div>経度: {typeof startLon === "number" && !isNaN(startLon) ? startLon.toFixed(4) : "---"}</div>
                 </div>
               </div>
             </div>
@@ -2242,7 +2242,7 @@ export default function RelocationSimulatorPage() {
                             °)
                           </span>
                         </div>
-                        {timingEval && (
+                        {timingEval && typeof timingEval.qValue === "number" && !isNaN(timingEval.qValue) && (
                           <div className="flex items-center gap-1.5 border-l border-zinc-800 pl-4">
                             <span>Q値:</span>
                             <span
@@ -2417,9 +2417,11 @@ export default function RelocationSimulatorPage() {
                         </div>
                         <div className="text-right">
                           <span
-                            className={`text-2xl font-black ${ev.qValue < 0 ? "text-red-400" : "text-emerald-400"}`}
+                            className={`text-2xl font-black ${typeof ev.qValue === "number" && ev.qValue < 0 ? "text-red-400" : "text-emerald-400"}`}
                           >
-                            {ev.qValue.toFixed(1)}
+                            {typeof ev.qValue === "number" && !isNaN(ev.qValue)
+                              ? ev.qValue.toFixed(1)
+                              : "---"}
                           </span>
                         </div>
                       </div>
@@ -2724,7 +2726,7 @@ export default function RelocationSimulatorPage() {
                                 </span>
                               </span>
                               <span className="font-bold text-emerald-400 font-mono">
-                                Q: {rec.qValue.toFixed(1)}
+                                Q: {typeof rec.qValue === "number" && !isNaN(rec.qValue) ? rec.qValue.toFixed(1) : "---"}
                               </span>
                             </button>
                           ))}
