@@ -46,11 +46,11 @@ const PROTECTED_ITEMS = [
   { href: "/metaphysical", icon: Compass, label: "Metaphysical Engine" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub" },
   { href: "/research", icon: Database, label: "Data Engine" },
-  { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
-  { href: "/extract", icon: Globe, label: "Web Extractor" },
   { href: "/trends", icon: Rss, label: "Tech Trends" },
-  { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
-  { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },
+  // { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
+  // { href: "/extract", icon: Globe, label: "Web Extractor" },
+  // { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
+  // { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },
 ];
 
 export function GlobalSidebar() {

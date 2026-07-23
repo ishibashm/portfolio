@@ -5,8 +5,33 @@ import {
   CalendarClock,
   Crosshair,
   Fingerprint,
+  Save,
+  Plus,
+  Trash2,
+  FolderOpen,
+  UserCheck,
 } from "lucide-react";
 import dynamic from "next/dynamic";
+
+export interface ProfilePreset {
+  id: string;
+  name: string;
+  birthDate: string;
+  birthLat: number;
+  birthLon: number;
+  baseLat: number;
+  baseLon: number;
+  voidZodiacOverride?: string;
+  geminiKey?: string;
+  baselineHrvMean?: number;
+  baselineHrvStd?: number;
+  baselineGsrMean?: number;
+  baselineGsrStd?: number;
+  usePsychologyScorer?: boolean;
+  useKigakuScorer?: boolean;
+  useAstrologyScorer?: boolean;
+  createdAt: string;
+}
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -102,18 +127,173 @@ export function PersonalProfileConfig({
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
 
-  const [presets, setPresets] = useState<any[]>([]);
+  const [presets, setPresets] = useState<ProfilePreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>("");
+  const [newPresetName, setNewPresetName] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedPresetsStr = localStorage.getItem("wealth_presets");
-      if (savedPresetsStr) {
-        try {
-          setPresets(JSON.parse(savedPresetsStr));
-        } catch (e) {}
+    const loadPresets = async () => {
+      let loaded: ProfilePreset[] | null = null;
+      // 1. Try server API first for cross-browser / cross-device availability
+      try {
+        const res = await fetch("/api/user-config");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.presets) && data.presets.length > 0) {
+            loaded = data.presets;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Fallback to local storage
+      if (!loaded && typeof window !== "undefined") {
+        const savedPresetsStr =
+          localStorage.getItem("profile_presets_v1") ||
+          localStorage.getItem("wealth_presets");
+        if (savedPresetsStr) {
+          try {
+            loaded = JSON.parse(savedPresetsStr);
+          } catch (e) {}
+        }
       }
-    }
+
+      if (loaded) {
+        setPresets(loaded);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("wealth_presets", JSON.stringify(loaded));
+          localStorage.setItem("profile_presets_v1", JSON.stringify(loaded));
+        }
+      }
+    };
+
+    loadPresets();
   }, []);
+
+  const savePresetsToStorage = (newPresets: ProfilePreset[]) => {
+    setPresets(newPresets);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("wealth_presets", JSON.stringify(newPresets));
+      localStorage.setItem("profile_presets_v1", JSON.stringify(newPresets));
+    }
+    // Sync to server config file for cross-browser / device availability
+    fetch("/api/user-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ presets: newPresets }),
+    }).catch((err) => console.warn("Server preset sync notice:", err));
+  };
+
+  const handleSaveNewPreset = () => {
+    const name = newPresetName.trim() || `プロファイル ${presets.length + 1}`;
+    const newPreset: ProfilePreset = {
+      id: `preset_${Date.now()}`,
+      name,
+      birthDate,
+      birthLat,
+      birthLon,
+      baseLat,
+      baseLon,
+      voidZodiacOverride,
+      geminiKey,
+      baselineHrvMean,
+      baselineHrvStd,
+      baselineGsrMean,
+      baselineGsrStd,
+      usePsychologyScorer,
+      useKigakuScorer,
+      useAstrologyScorer,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [...presets, newPreset];
+    savePresetsToStorage(updated);
+    setSelectedPresetId(newPreset.id);
+    setNewPresetName("");
+    if (onSave) onSave();
+    alert(`プリセット「${name}」を保存しました。`);
+  };
+
+  const handleUpdateSelectedPreset = () => {
+    if (!selectedPresetId) return;
+    const target = presets.find((p) => p.id === selectedPresetId);
+    const updatedName = newPresetName.trim() || target?.name || "プロファイル";
+    const updated = presets.map((p) => {
+      if (p.id === selectedPresetId) {
+        return {
+          ...p,
+          name: updatedName,
+          birthDate,
+          birthLat,
+          birthLon,
+          baseLat,
+          baseLon,
+          voidZodiacOverride,
+          geminiKey,
+          baselineHrvMean,
+          baselineHrvStd,
+          baselineGsrMean,
+          baselineGsrStd,
+          usePsychologyScorer,
+          useKigakuScorer,
+          useAstrologyScorer,
+        };
+      }
+      return p;
+    });
+    savePresetsToStorage(updated);
+    if (onSave) onSave();
+    alert(`プリセット「${updatedName}」を更新しました。`);
+  };
+
+  const handleDeletePreset = () => {
+    if (!selectedPresetId) return;
+    const target = presets.find((p) => p.id === selectedPresetId);
+    if (
+      !confirm(`プリセット「${target?.name}」を削除してもよろしいですか？`)
+    )
+      return;
+    const updated = presets.filter((p) => p.id !== selectedPresetId);
+    savePresetsToStorage(updated);
+    setSelectedPresetId("");
+    setNewPresetName("");
+  };
+
+  const handleLoadPreset = (presetId: string) => {
+    setSelectedPresetId(presetId);
+    if (!presetId) return;
+    const preset = presets.find((p) => p.id === presetId);
+    if (preset) {
+      if (preset.birthDate) setBirthDate(preset.birthDate);
+      if (preset.birthLat !== undefined) setBirthLat(Number(preset.birthLat));
+      if (preset.birthLon !== undefined) setBirthLon(Number(preset.birthLon));
+      if (preset.baseLat !== undefined) setBaseLat(Number(preset.baseLat));
+      if (preset.baseLon !== undefined) setBaseLon(Number(preset.baseLon));
+      if (preset.voidZodiacOverride !== undefined && setVoidZodiacOverride) {
+        setVoidZodiacOverride(preset.voidZodiacOverride);
+      }
+      if (preset.geminiKey !== undefined && setGeminiKey) {
+        setGeminiKey(preset.geminiKey);
+      }
+      if (preset.baselineHrvMean !== undefined && setBaselineHrvMean) {
+        setBaselineHrvMean(preset.baselineHrvMean);
+      }
+      if (preset.baselineHrvStd !== undefined && setBaselineHrvStd) {
+        setBaselineHrvStd(preset.baselineHrvStd);
+      }
+      if (preset.baselineGsrMean !== undefined && setBaselineGsrMean) {
+        setBaselineGsrMean(preset.baselineGsrMean);
+      }
+      if (preset.usePsychologyScorer !== undefined && setUsePsychologyScorer) {
+        setUsePsychologyScorer(preset.usePsychologyScorer);
+      }
+      if (preset.useKigakuScorer !== undefined && setUseKigakuScorer) {
+        setUseKigakuScorer(preset.useKigakuScorer);
+      }
+      if (preset.useAstrologyScorer !== undefined && setUseAstrologyScorer) {
+        setUseAstrologyScorer(preset.useAstrologyScorer);
+      }
+      setNewPresetName(preset.name);
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mt-4 bg-zinc-950/80 border border-zinc-800/80 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
@@ -133,6 +313,84 @@ export function PersonalProfileConfig({
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 md:animate-pulse"></span>
             LOCAL MODE ONLY
           </span>
+        </div>
+      </div>
+
+      {/* Profile Presets Manager Card */}
+      <div className="mb-6 p-3 bg-zinc-900/60 border border-purple-500/30 rounded-sm relative z-10 font-mono text-xs">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <UserCheck size={14} className="text-purple-400" />
+            <span className="text-[10px] font-bold text-purple-300 uppercase tracking-widest">
+              保存済みプロフィールの呼び出し・マルチ管理
+            </span>
+          </div>
+          {selectedPresetId && (
+            <span className="text-[9px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-xs">
+              選択中: {presets.find((p) => p.id === selectedPresetId)?.name}
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-2 items-center">
+          {/* Preset Dropdown */}
+          <div className="flex-1 w-full">
+            <select
+              value={selectedPresetId}
+              onChange={(e) => handleLoadPreset(e.target.value)}
+              className="w-full bg-zinc-950 border border-purple-500/40 text-purple-300 px-3 py-1.5 rounded-sm outline-none focus:border-purple-400 text-xs font-mono"
+            >
+              <option value="">-- 保存済みプロフィールを選択 --</option>
+              {presets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({new Date(p.createdAt).toLocaleDateString()})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Preset Name Input */}
+          <div className="w-full md:w-48">
+            <input
+              type="text"
+              value={newPresetName}
+              onChange={(e) => setNewPresetName(e.target.value)}
+              placeholder="プロフィール名を入力..."
+              className="w-full bg-zinc-950 border border-zinc-700 text-zinc-200 px-3 py-1.5 rounded-sm outline-none focus:border-purple-400 text-xs font-mono"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={handleSaveNewPreset}
+              className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm bg-purple-600 hover:bg-purple-500 text-white text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+              title="現在の設定を新規プロフィールとして追加保存"
+            >
+              <Plus size={12} />
+              新規保存
+            </button>
+            {selectedPresetId && (
+              <>
+                <button
+                  onClick={handleUpdateSelectedPreset}
+                  className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm bg-blue-600 hover:bg-blue-500 text-white text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+                  title="選択中プロフィールの内容を上書き更新"
+                >
+                  <Save size={12} />
+                  更新
+                </button>
+                <button
+                  onClick={handleDeletePreset}
+                  className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-sm bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+                  title="選択中のプロフィールを削除"
+                >
+                  <Trash2 size={12} />
+                  削除
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -477,34 +735,23 @@ export function PersonalProfileConfig({
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={onGetGPS}
-              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
             >
               [ デバイスのGPSを取得 ]
             </button>
             <button
               onClick={onLoad}
-              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 transition-colors"
+              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer"
             >
-              [ 保存された設定を読込 ]
+              [ 画面設定を再読込 ]
             </button>
             {presets.length > 0 && (
               <select
+                value={selectedPresetId}
                 className="bg-zinc-900 border border-purple-500/50 text-purple-400 px-2 py-2 rounded-sm outline-none focus:border-purple-500 transition-colors text-[10px] font-mono cursor-pointer uppercase tracking-wider"
-                onChange={(e) => {
-                  const presetId = e.target.value;
-                  if (!presetId) return;
-                  const preset = presets.find((p) => p.id === presetId);
-                  if (preset) {
-                    if (preset.birthDate) setBirthDate(preset.birthDate);
-                    if (preset.birthLat) setBirthLat(Number(preset.birthLat));
-                    if (preset.birthLon) setBirthLon(Number(preset.birthLon));
-                    if (preset.baseLat) setBaseLat(Number(preset.baseLat));
-                    if (preset.baseLon) setBaseLon(Number(preset.baseLon));
-                  }
-                  e.target.value = ""; // Reset after load
-                }}
+                onChange={(e) => handleLoadPreset(e.target.value)}
               >
-                <option value="">[ プリセットを読込... ]</option>
+                <option value="">[ プリセットを選択... ]</option>
                 {presets.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -516,13 +763,13 @@ export function PersonalProfileConfig({
           <button
             onClick={onSave}
             disabled={isSaving}
-            className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group ${
+            className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group cursor-pointer ${
               isSaving
                 ? "bg-zinc-800 text-zinc-500 cursor-wait"
                 : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
             }`}
           >
-            {isSaving ? "[ 同期中... ]" : "[ 設定をローカルに永久保存 ]"}
+            {isSaving ? "[ 同期中... ]" : "[ アクティブ設定を永久保存 ]"}
             <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
           </button>
         </div>

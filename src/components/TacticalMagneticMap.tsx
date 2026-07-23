@@ -54,8 +54,8 @@ interface MapProps {
     hazard?: boolean;
   };
   toggleLayer?: (layer: "terrain" | "weather" | "bio" | "hazard") => void;
-  activeLayerMode?: "final" | "year" | "month" | "day";
-  setActiveLayerMode?: (mode: "final" | "year" | "month" | "day") => void;
+  activeLayerMode?: string;
+  setActiveLayerMode?: (mode: any) => void;
   activeModel?: "physical" | "classical";
   properties?: any[];
   useTrueNorth?: boolean;
@@ -133,39 +133,66 @@ export function TacticalMagneticMapComponent({
                 [稼働環境] 地磁気・太陽風ベクター観測
               </h2>
 
-              {/* Layer Mode Switcher */}
-              <div className="pointer-events-auto flex items-center mt-1.5 bg-zinc-950/80 border border-zinc-800 rounded-sm overflow-hidden text-[9px] font-mono w-max">
+              {/* Layer Mode Switcher with Combinations */}
+              <div className="pointer-events-auto flex items-center mt-1.5 bg-zinc-950/90 border border-zinc-800 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
+                <span className="px-1.5 py-1 text-[8px] text-zinc-500 bg-zinc-900 border-r border-zinc-800">
+                  時間軸:
+                </span>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("final")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" ? "bg-zinc-800 text-white font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-900/60 text-emerald-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
                 >
-                  FINAL(統合)
+                  🪐 全統合(年+月+日)
+                </button>
+                <button
+                  onClick={() =>
+                    setActiveLayerMode && setActiveLayerMode("year_month")
+                  }
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-900/60 text-purple-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                >
+                  📅 年+月
+                </button>
+                <button
+                  onClick={() =>
+                    setActiveLayerMode && setActiveLayerMode("month_day")
+                  }
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-900/60 text-blue-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                >
+                  🌓 月+日
+                </button>
+                <button
+                  onClick={() =>
+                    setActiveLayerMode && setActiveLayerMode("year_day")
+                  }
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-900/60 text-amber-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                >
+                  ☀️ 年+日
                 </button>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-900/50 text-indigo-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-900/50 text-indigo-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
                 >
-                  YEAR(年)
+                  年
                 </button>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-900/50 text-purple-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-900/50 text-purple-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
                 >
-                  MONTH(月)
+                  月
                 </button>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-900/50 text-cyan-400 font-bold" : "text-zinc-500 hover:text-zinc-300"}`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-900/50 text-cyan-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} cursor-pointer`}
                 >
-                  DAY(日)
+                  日
                 </button>
               </div>
             </div>

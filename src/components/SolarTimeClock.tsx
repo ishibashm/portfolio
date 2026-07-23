@@ -285,16 +285,25 @@ const filterLayerData = (
   personalStar: StarFrequency,
   getsuMeiStar: StarFrequency | null,
   voidZodiacArray: string[],
-  directionFilterMode:
-    | "composite"
-    | "personal_kigaku"
-    | "personal_bazi"
-    | "environmental",
+  directionFilterMode: string,
   yBoard: any,
   mBoard: any,
   dBoard: any,
 ) => {
-  if (directionFilterMode === "composite") {
+  const showKigaku =
+    directionFilterMode === "composite" ||
+    directionFilterMode === "personal_kigaku" ||
+    directionFilterMode.includes("kigaku");
+  const showBazi =
+    directionFilterMode === "composite" ||
+    directionFilterMode === "personal_bazi" ||
+    directionFilterMode.includes("bazi");
+  const showEnv =
+    directionFilterMode === "composite" ||
+    directionFilterMode === "environmental" ||
+    directionFilterMode.includes("env");
+
+  if (showKigaku && showBazi && showEnv) {
     return layer;
   }
 
@@ -378,27 +387,48 @@ const filterLayerData = (
     return opposites[d];
   };
 
+  const combineStatuses = (list: string[]): string => {
+    if (list.includes("NOISE_GOU")) return "NOISE_GOU";
+    if (list.includes("NOISE_ANKEN")) return "NOISE_ANKEN";
+    if (list.includes("NOISE_HONMEI")) return "NOISE_HONMEI";
+    if (list.includes("NOISE_TEKI")) return "NOISE_TEKI";
+    if (list.includes("NOISE_VOID")) return "NOISE_VOID";
+    if (list.includes("NOISE_HA")) return "NOISE_HA";
+    if (list.includes("NOISE_NODE")) return "NOISE_NODE";
+    if (list.includes("NOISE")) return "NOISE";
+    if (list.includes("OPTIMAL")) return "OPTIMAL";
+    if (list.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
+    return "SAFE";
+  };
+
   const filterStatus = (
     status: string | undefined,
     dir: Direction,
     activeBoard: any,
   ) => {
     if (!status) return "SAFE";
-    if (directionFilterMode === "personal_kigaku") {
+    const resList: string[] = [];
+
+    if (showKigaku) {
       let honmeiD: Direction | null = null;
       directions.forEach((d) => {
         if (activeBoard && activeBoard[d] === personalStar) {
           honmeiD = d;
         }
       });
-      if (dir === honmeiD) return "NOISE_HONMEI";
-      if (honmeiD && dir === getOpposite(honmeiD)) return "NOISE_TEKI";
-      const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
-      return optStatus;
-    } else if (directionFilterMode === "personal_bazi") {
-      if (voidDirs.has(dir)) return "NOISE_VOID";
-      return "SAFE";
-    } else {
+      if (dir === honmeiD) resList.push("NOISE_HONMEI");
+      else if (honmeiD && dir === getOpposite(honmeiD)) resList.push("NOISE_TEKI");
+      else {
+        const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+        if (optStatus !== "SAFE") resList.push(optStatus);
+      }
+    }
+
+    if (showBazi) {
+      if (voidDirs.has(dir)) resList.push("NOISE_VOID");
+    }
+
+    if (showEnv) {
       let isGou = false;
       let isAnken = false;
       if (activeBoard) {
@@ -409,12 +439,13 @@ const filterLayerData = (
           }
         });
       }
-      if (isGou) return "NOISE_GOU";
-      if (isAnken) return "NOISE_ANKEN";
-      if (status === "NOISE_HA") return "NOISE_HA";
-      if (status === "NOISE_NODE") return "NOISE_NODE";
-      return "SAFE";
+      if (isGou) resList.push("NOISE_GOU");
+      if (isAnken) resList.push("NOISE_ANKEN");
+      if (status === "NOISE_HA") resList.push("NOISE_HA");
+      if (status === "NOISE_NODE") resList.push("NOISE_NODE");
     }
+
+    return combineStatuses(resList);
   };
 
   const newYearLayer: any = {};
@@ -427,43 +458,8 @@ const filterLayerData = (
     newMonthLayer[d] = filterStatus(layer.monthLayer[d], d, mBoard);
     newDayLayer[d] = filterStatus(layer.dayLayer[d], d, dBoard);
 
-    if (directionFilterMode === "personal_kigaku") {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasPurple = list.find(
-        (s) => s === "NOISE_HONMEI" || s === "NOISE_TEKI",
-      );
-      const hasOpt = list.find((s) => s === "OPTIMAL");
-      const hasOptReg = list.find((s) => s === "OPTIMAL_REGULAR");
-
-      if (hasPurple) newFinalVectors[d] = hasPurple;
-      else if (hasOpt) newFinalVectors[d] = "OPTIMAL";
-      else if (hasOptReg) newFinalVectors[d] = "OPTIMAL_REGULAR";
-      else newFinalVectors[d] = "SAFE";
-    } else if (directionFilterMode === "personal_bazi") {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasVoid = list.find((s) => s === "NOISE_VOID");
-      if (hasVoid) newFinalVectors[d] = "NOISE_VOID";
-      else newFinalVectors[d] = "SAFE";
-    } else {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasRed = list.find(
-        (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
-      );
-      const hasNode = list.find((s) => s === "NOISE_NODE");
-
-      if (hasRed) newFinalVectors[d] = hasRed;
-      else if (hasNode) newFinalVectors[d] = hasNode;
-      else newFinalVectors[d] = "SAFE";
-    }
+    const list = [newYearLayer[d], newMonthLayer[d], newDayLayer[d]];
+    newFinalVectors[d] = combineStatuses(list);
   });
 
   return {
@@ -488,9 +484,9 @@ const filterVectors = (
   yB: any,
   mB: any,
   dB: any,
-  mode: "composite" | "personal_kigaku" | "personal_bazi" | "environmental",
+  mode: string,
   getsuMeiStar: StarFrequency | null = null,
-  activeLayerMode: "final" | "year" | "month" | "day" = "final",
+  activeLayerMode: string = "final",
 ): Record<Direction, string> => {
   const filtered = filterLayerData(
     vectorData,
@@ -616,9 +612,7 @@ export const SolarTimeClock = () => {
     "none" | "30days" | "12months"
   >("none");
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
-  const [directionFilterMode, setDirectionFilterMode] = useState<
-    "composite" | "personal_kigaku" | "personal_bazi" | "environmental"
-  >("composite");
+  const [directionFilterMode, setDirectionFilterMode] = useState<string>("composite");
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
@@ -899,6 +893,10 @@ export const SolarTimeClock = () => {
             setActiveLayerMode(data.layer_mode);
           if (data.direction_filter_mode !== undefined)
             setDirectionFilterMode(data.direction_filter_mode);
+          if (Array.isArray(data.presets) && data.presets.length > 0) {
+            localStorage.setItem("profile_presets_v1", JSON.stringify(data.presets));
+            localStorage.setItem("wealth_presets", JSON.stringify(data.presets));
+          }
           isLoaded = true;
         }
       }
@@ -1090,6 +1088,18 @@ export const SolarTimeClock = () => {
   const handleSaveConfig = async () => {
     setIsSaving(true);
     try {
+      let currentPresets = [];
+      if (typeof window !== "undefined") {
+        const savedPresetsStr =
+          localStorage.getItem("profile_presets_v1") ||
+          localStorage.getItem("wealth_presets");
+        if (savedPresetsStr) {
+          try {
+            currentPresets = JSON.parse(savedPresetsStr);
+          } catch (e) {}
+        }
+      }
+
       const configToSave = {
         birth_date: birthDate,
         birth_lat: birthLat,
@@ -1117,6 +1127,7 @@ export const SolarTimeClock = () => {
         lunar_phase_modifier: lunarPhaseModifier,
         layer_mode: activeLayerMode,
         direction_filter_mode: directionFilterMode,
+        presets: currentPresets,
       };
 
       const res = await fetch("/api/user-config", {
@@ -7562,13 +7573,13 @@ ${timingOptimization?.recommendationText || "特になし"}
             <div className="w-full max-w-4xl mt-0">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
                 {/* Cyberpunk Filter Selector */}
-                <div className="flex items-center gap-1.5 bg-zinc-950 p-1 border border-zinc-800 rounded-sm">
+                <div className="flex items-center gap-1.5 bg-zinc-950 p-1 border border-zinc-800 rounded-sm flex-wrap">
                   <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider px-1">
-                    Filter:
+                    観点Filter:
                   </span>
                   <button
                     onClick={() => setDirectionFilterMode("composite")}
-                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "composite"
                         ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
                         : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
@@ -7577,28 +7588,58 @@ ${timingOptimization?.recommendationText || "特になし"}
                     🪐 総合判定
                   </button>
                   <button
+                    onClick={() => setDirectionFilterMode("kigaku_env")}
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                      directionFilterMode === "kigaku_env"
+                        ? "bg-purple-950/40 text-purple-300 border-purple-500/50 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
+                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                    }`}
+                  >
+                    👤+🌍 吉凶+環境
+                  </button>
+                  <button
+                    onClick={() => setDirectionFilterMode("kigaku_bazi")}
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                      directionFilterMode === "kigaku_bazi"
+                        ? "bg-indigo-950/40 text-indigo-300 border-indigo-500/50 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
+                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                    }`}
+                  >
+                    👤+☯ 吉凶+天中殺
+                  </button>
+                  <button
+                    onClick={() => setDirectionFilterMode("bazi_env")}
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
+                      directionFilterMode === "bazi_env"
+                        ? "bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
+                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                    }`}
+                  >
+                    ☯+🌍 天中殺+環境
+                  </button>
+                  <button
                     onClick={() => setDirectionFilterMode("personal_kigaku")}
-                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "personal_kigaku"
                         ? "bg-purple-950/40 text-purple-400 border-purple-500/50 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
                         : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
                     }`}
                   >
-                    👤 個人吉凶 (九星)
+                    👤 個人吉凶
                   </button>
                   <button
                     onClick={() => setDirectionFilterMode("personal_bazi")}
-                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "personal_bazi"
                         ? "bg-yellow-950/40 text-yellow-400 border-yellow-500/50 shadow-[0_0_5px_rgba(234,179,8,0.2)]"
                         : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
                     }`}
                   >
-                    ☯ 個人天中殺 (四柱)
+                    ☯ 個人天中殺
                   </button>
                   <button
                     onClick={() => setDirectionFilterMode("environmental")}
-                    className={`px-2.5 py-1 text-[9px] font-mono rounded-xs transition-all border ${
+                    className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "environmental"
                         ? "bg-rose-950/40 text-rose-400 border-rose-500/50 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
                         : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
@@ -7653,21 +7694,45 @@ ${timingOptimization?.recommendationText || "特になし"}
               {directionFilterMode !== "composite" && (
                 <div
                   className={`mb-3 p-2 border text-[10px] font-mono leading-tight flex items-start gap-2 ${
-                    directionFilterMode === "personal_kigaku"
+                    directionFilterMode.includes("kigaku")
                       ? "bg-purple-950/20 border-purple-500/30 text-purple-400"
-                      : directionFilterMode === "personal_bazi"
+                      : directionFilterMode.includes("bazi")
                         ? "bg-yellow-950/20 border-yellow-500/30 text-yellow-400"
                         : "bg-rose-950/20 border-rose-500/30 text-rose-400"
                   }`}
                 >
                   <span className="text-xs">⚠️</span>
                   <div>
+                    {directionFilterMode === "kigaku_env" && (
+                      <>
+                        <span className="font-bold">
+                          【個人吉凶 ＋ 環境方位 複合表示】
+                        </span>
+                        本命星・月命星による吉凶および空間環境凶殺（五黄/暗剣/破）を合成してマッピングしています。
+                      </>
+                    )}
+                    {directionFilterMode === "kigaku_bazi" && (
+                      <>
+                        <span className="font-bold">
+                          【個人吉凶 ＋ 天中殺 複合表示】
+                        </span>
+                        九星気学の個人吉凶と四柱推命の天中殺（空亡）を重ね合わせてマッピングしています。
+                      </>
+                    )}
+                    {directionFilterMode === "bazi_env" && (
+                      <>
+                        <span className="font-bold">
+                          【個人天中殺 ＋ 環境方位 複合表示】
+                        </span>
+                        四柱推命の天中殺（空亡）と空間環境凶殺（五黄/暗剣/破）を重ね合わせてマッピングしています。
+                      </>
+                    )}
                     {directionFilterMode === "personal_kigaku" && (
                       <>
                         <span className="font-bold">
                           【個人九星気学表示モード】
                         </span>
-                        本命星・月命星による吉凶方位のみをマッピングしています（天中殺および万人共通の環境凶殺は非表示）。実際の移動にあたっては必ず総合判定を確認してください。
+                        本命星・月命星による吉凶方位のみをマッピングしています。
                       </>
                     )}
                     {directionFilterMode === "personal_bazi" && (
@@ -7675,7 +7740,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         <span className="font-bold">
                           【個人天中殺表示モード】
                         </span>
-                        四柱推命の生年月日（日柱干支・年柱干支）から算出される天中殺（空亡）方位のみをマッピングしています（九星吉凶および環境凶殺は非表示）。
+                        四柱推命の生年月日干支から算出される天中殺方位のみをマッピングしています。
                       </>
                     )}
                     {directionFilterMode === "environmental" && (
@@ -7683,7 +7748,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         <span className="font-bold">
                           【環境方位表示モード】
                         </span>
-                        空間全体の定在波（五黄殺・暗剣殺）および「破」などの環境凶殺のみをマッピングしています。あなた自身の本命殺・的殺や、相生による吉方位は非表示になっています。実際の移動にあたっては必ず総合判定を確認してください。
+                        空間全体の定在波（五黄殺・暗剣殺）および「破」などの環境凶殺のみをマッピングしています。
                       </>
                     )}
                   </div>

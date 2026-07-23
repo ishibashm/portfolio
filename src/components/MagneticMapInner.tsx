@@ -48,7 +48,7 @@ interface MapInnerProps {
     bio: boolean;
     hazard?: boolean;
   };
-  activeLayerMode?: "final" | "year" | "month" | "day";
+  activeLayerMode?: string;
   useTrueNorth?: boolean;
   properties?: any[];
   onSelectTarget?: (lat: number, lon: number) => void;
@@ -207,6 +207,22 @@ export default function MagneticMapInner({
     [declination, useTrueNorth],
   );
 
+function mergeStatuses(list: (string | undefined)[]): string {
+  const valid = list.filter(Boolean) as string[];
+  if (valid.length === 0) return "SAFE";
+  if (valid.includes("NOISE_GOU")) return "NOISE_GOU";
+  if (valid.includes("NOISE_ANKEN")) return "NOISE_ANKEN";
+  if (valid.includes("NOISE_HONMEI")) return "NOISE_HONMEI";
+  if (valid.includes("NOISE_TEKI")) return "NOISE_TEKI";
+  if (valid.includes("NOISE_VOID")) return "NOISE_VOID";
+  if (valid.includes("NOISE_HA")) return "NOISE_HA";
+  if (valid.includes("NOISE_NODE")) return "NOISE_NODE";
+  if (valid.some((s) => s.startsWith("NOISE"))) return "NOISE";
+  if (valid.includes("OPTIMAL")) return "OPTIMAL";
+  if (valid.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
+  return "SAFE";
+}
+
   // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
     const dirMap = [
@@ -223,14 +239,23 @@ export default function MagneticMapInner({
     return dirMap.map((d) => {
       let status = "SAFE";
       if (layers) {
-        if (activeLayerMode === "final" && layers.finalVectors) {
+        const mode = activeLayerMode || "final";
+        if (mode === "final" && layers.finalVectors) {
           status = layers.finalVectors[d.dir] || "SAFE";
-        } else if (activeLayerMode === "year" && layers.yearLayer) {
+        } else if (mode === "year" && layers.yearLayer) {
           status = layers.yearLayer[d.dir] || "SAFE";
-        } else if (activeLayerMode === "month" && layers.monthLayer) {
+        } else if (mode === "month" && layers.monthLayer) {
           status = layers.monthLayer[d.dir] || "SAFE";
-        } else if (activeLayerMode === "day" && layers.dayLayer) {
+        } else if (mode === "day" && layers.dayLayer) {
           status = layers.dayLayer[d.dir] || "SAFE";
+        } else if (mode === "year_month") {
+          status = mergeStatuses([layers.yearLayer[d.dir], layers.monthLayer[d.dir]]);
+        } else if (mode === "month_day") {
+          status = mergeStatuses([layers.monthLayer[d.dir], layers.dayLayer[d.dir]]);
+        } else if (mode === "year_day") {
+          status = mergeStatuses([layers.yearLayer[d.dir], layers.dayLayer[d.dir]]);
+        } else {
+          status = layers.finalVectors[d.dir] || "SAFE";
         }
       } else if (vectors && vectors[d.dir]) {
         status = vectors[d.dir];
