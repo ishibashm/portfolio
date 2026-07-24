@@ -27,25 +27,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // Auto-Categorization logic using Gemini (Vercel AI SDK)
-    const maskedContent = maskPII(content);
-
-    const result = await generateObject({
-      model: google("gemini-2.5-pro"),
-      schema: z.object({
-        tags: z
-          .array(z.string())
-          .describe(
-            "List of 3 to 5 highly relevant tags/categories for this document.",
-          ),
-        summary: z
-          .string()
-          .describe("A concise 1-2 sentence summary of the document."),
-      }),
-      prompt: `Please analyze the following markdown document and extract relevant tags and a short summary.\n\nDocument Content:\n${maskedContent}`,
-    });
-
-    return NextResponse.json(result.object);
+    // Paid Gemini API call is disabled to prevent API charges
+    return NextResponse.json(
+      {
+        error: "課金API（Gemini API）の呼び出しは設定により現在除外・無効化されています。",
+      },
+      { status: 403 },
+    );
   } catch (error) {
     console.error("Categorize API Error:", error);
     return NextResponse.json(

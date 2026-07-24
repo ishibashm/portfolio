@@ -39,34 +39,13 @@ export async function POST(req: Request) {
       .eq("user_email", user.email)
       .single();
 
-    let apiKey =
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-
-    if (userConfig?.encrypted_gemini_key) {
-      const decryptedKey = decrypt(userConfig.encrypted_gemini_key);
-      if (decryptedKey) apiKey = decryptedKey;
-    }
-
-    if (!apiKey) {
-      return NextResponse.json(
-        {
-          error:
-            "No Gemini API key found. Please configure it in your settings.",
-        },
-        { status: 403 },
-      );
-    }
-
-    const google = createGoogleGenerativeAI({ apiKey });
-
-    const maskedPrompt = maskPII(prompt);
-
-    const result = await streamText({
-      model: google("gemini-2.5-pro") as any,
-      prompt: maskedPrompt,
-    });
-
-    return result.toTextStreamResponse();
+    // Paid Gemini API call is disabled to prevent API charges
+    return NextResponse.json(
+      {
+        error: "課金API（Gemini API）の呼び出しは設定により現在除外・無効化されています。",
+      },
+      { status: 403 },
+    );
   } catch (error) {
     console.error("Expert API Error:", error);
     return NextResponse.json(

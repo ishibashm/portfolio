@@ -50,17 +50,14 @@ Guidelines:
 Knowledge Base Chunks:
 ${contextText}`;
 
-    // Get response from Gemini
-    const result = await generateText({
-      model: google("gemini-2.5-pro"),
-      system: systemPrompt,
-      messages: messages.map((m: any) => ({
-        role: m.role,
-        content: m.content,
-      })),
+    // Paid Gemini API call is disabled to prevent API charges
+    return NextResponse.json({
+      success: true,
+      text:
+        docs && docs.length > 0
+          ? `【ナレッジ検索結果】\n${docs.map((d: any) => `- ${d.title} (${d.kb_id || "KB"})`).join("\n")}\n\n⚠️ 課金AI機能（Gemini API）は現在除外・無効化されています。上記の検索結果ドキュメントを直接参照してください。`
+          : "⚠️ 課金AI機能（Gemini API）は現在除外・無効化されています。",
     });
-
-    return NextResponse.json({ success: true, text: result.text });
   } catch (error: any) {
     console.error("Chat Knowledge API Error:", error);
     return NextResponse.json(

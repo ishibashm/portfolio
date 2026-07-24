@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   Clock,
   LayoutDashboard,
@@ -27,6 +28,7 @@ import {
   Home,
   Calendar,
   Globe,
+  ExternalLink,
 } from "lucide-react";
 
 const PUBLIC_ITEMS = [
@@ -45,12 +47,10 @@ const PROTECTED_ITEMS = [
   { href: "/relocation/simulator", icon: Route, label: "Relocation Simulator" },
   { href: "/metaphysical", icon: Compass, label: "Metaphysical Engine" },
   { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub" },
+  { href: "https://katmer.cloud-palette.com", icon: BookOpen, label: "Katmer Cloud", external: true },
+  { href: "/knowledge", icon: Database, label: "Knowledge Base" },
   { href: "/research", icon: Database, label: "Data Engine" },
   { href: "/trends", icon: Rss, label: "Tech Trends" },
-  // { href: "/knowledge", icon: BookOpen, label: "Second Brain" },
-  // { href: "/extract", icon: Globe, label: "Web Extractor" },
-  // { href: "/x-viewer", icon: Compass, label: "Magnetic HUD" },
-  // { href: "/visualizer", icon: Activity, label: "Resonance Sandbox" },
 ];
 
 export function GlobalSidebar() {
@@ -76,11 +76,45 @@ export function GlobalSidebar() {
     return null;
   }
 
-  const renderNavItem = (item: (typeof PUBLIC_ITEMS)[0]) => {
+  const renderNavItem = (item: (typeof PROTECTED_ITEMS)[0]) => {
     const isActive =
-      pathname === item.href ||
-      (item.href !== "/" && pathname?.startsWith(item.href));
+      !item.external &&
+      (pathname === item.href ||
+        (item.href !== "/" && pathname?.startsWith(item.href)));
     const Icon = item.icon;
+
+    if (item.external) {
+      return (
+        <a
+          key={item.href}
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={closeSidebar}
+          title={isCollapsed ? item.label : undefined}
+          className={`
+            flex items-center justify-between px-3 py-3 rounded-xl transition-all group
+            text-amber-300/90 hover:bg-amber-500/10 hover:text-amber-200 border border-amber-500/20 bg-amber-500/5
+            ${isCollapsed ? "justify-center" : ""}
+          `}
+        >
+          <div className="flex items-center gap-3">
+            <Icon
+              size={18}
+              className="shrink-0 text-amber-400 group-hover:scale-110 transition-transform"
+            />
+            {!isCollapsed && (
+              <span className="text-sm font-semibold whitespace-nowrap">
+                {item.label}
+              </span>
+            )}
+          </div>
+          {!isCollapsed && (
+            <ExternalLink size={14} className="text-amber-400/70 shrink-0" />
+          )}
+        </a>
+      );
+    }
 
     return (
       <Link
@@ -182,6 +216,9 @@ export function GlobalSidebar() {
 
         {/* Footer Area */}
         <div className="p-4 border-t border-white/5 bg-zinc-950 z-10 shrink-0 flex flex-col gap-2">
+          {/* PWA App Install Widget */}
+          {!isCollapsed && <PWAInstallPrompt />}
+
           {/* Logout Button */}
           <button
             onClick={handleLogout}

@@ -23,25 +23,32 @@ const shipporiMincho = Shippori_Mincho({
 
 export const metadata: Metadata = {
   title: {
-    default: "真太陽時クロック | 禅モード",
-    template: "%s | 真太陽時クロック",
+    default: "Cloud Palette Meta-Hub | 真太陽時クロック",
+    template: "%s | Cloud Palette",
   },
   description:
-    "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
+    "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+  manifest: "/manifest.json",
+  themeColor: "#0a0a0a",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Cloud Palette",
+  },
   openGraph: {
-    title: "真太陽時クロック",
+    title: "Cloud Palette Meta-Hub",
     description:
-      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
-    url: "https://example.com",
-    siteName: "真太陽時クロック",
+      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+    url: "https://cloud-palette.com",
+    siteName: "Cloud Palette",
     locale: "ja_JP",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "真太陽時クロック",
+    title: "Cloud Palette Meta-Hub",
     description:
-      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロック。",
+      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
   },
 };
 
@@ -84,6 +91,22 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <head>
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.log('SW registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
         <style
           dangerouslySetInnerHTML={{
             __html: `

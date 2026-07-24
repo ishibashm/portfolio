@@ -30,28 +30,13 @@ export async function POST(req: Request) {
     // Mask sensitive details
     const maskedContent = maskPII(content);
 
-    // Call Gemini to generate summary, key takeaways, and action items
-    const result = await generateObject({
-      model: google("gemini-2.5-pro"),
-      schema: z.object({
-        summary: z
-          .string()
-          .describe("A concise 1-2 sentence executive summary of the document."),
-        takeaways: z
-          .array(z.string())
-          .min(1)
-          .max(5)
-          .describe("3 to 5 highly relevant key points or takeaways from the document."),
-        actions: z
-          .array(z.string())
-          .min(1)
-          .max(4)
-          .describe("2 to 4 recommended next steps, action items, or follow-ups based on the content."),
-      }),
-      prompt: `Please analyze the following markdown document and extract an executive summary, key takeaways, and action items/next steps.\n\nDocument Content:\n${maskedContent}`,
-    });
-
-    return NextResponse.json(result.object);
+    // Paid Gemini API call is disabled to prevent API charges
+    return NextResponse.json(
+      {
+        error: "課金API（Gemini API）の呼び出しは設定により現在除外・無効化されています。",
+      },
+      { status: 403 },
+    );
   } catch (error: any) {
     console.error("Summarize API Error:", error);
     return NextResponse.json(
