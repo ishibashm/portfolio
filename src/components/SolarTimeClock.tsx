@@ -613,6 +613,7 @@ export const SolarTimeClock = () => {
   >("none");
   const [heatmapData, setHeatmapData] = useState<any[]>([]);
   const [directionFilterMode, setDirectionFilterMode] = useState<string>("composite");
+  const [selectedTrendCell, setSelectedTrendCell] = useState<any | null>(null);
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
@@ -3191,6 +3192,8 @@ ${timingOptimization?.recommendationText || "特になし"}
         data.push({
           label: `${testDate.getMonth() + 1}/${testDate.getDate()}`,
           vectors: filteredV,
+          rawVectorData: vectorData,
+          tendoDir: vectorData.tendoDirection,
           isVoid: voidZodiacArray.some((z) =>
             [
               getCurrentZodiac(testDate, lon || 139.6917).yearZodiac,
@@ -3337,6 +3340,8 @@ ${timingOptimization?.recommendationText || "特になし"}
         data.push({
           label: `${testDate.getFullYear()}-${String(testDate.getMonth() + 1).padStart(2, "0")}`,
           vectors: filteredV,
+          rawVectorData: vectorData,
+          tendoDir: vectorData.tendoDirection,
           isVoid: voidZodiacArray.some((z) =>
             [
               getCurrentZodiac(testDate, lon || 139.6917).yearZodiac,
@@ -7209,6 +7214,19 @@ ${timingOptimization?.recommendationText || "特になし"}
                             磁北: {targetDirInfo.magneticDirection}
                           </span>
                           <span>{targetVectorStatus}</span>
+                          {(() => {
+                            const currentTendo = classicalLayers?.tendoDirection || physicalLayers?.tendoDirection;
+                            const isTargetTendo = currentTendo && (targetDirInfo.magneticDirection === currentTendo || targetDirInfo.trueDirection === currentTendo);
+                            if (!isTargetTendo) return null;
+                            return (
+                              <span
+                                className="text-[9px] text-amber-300 border border-amber-500/50 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
+                                title="【天道回座】目標方位に暦上の最高吉神・天道が巡っています。凶殺やノイズが相殺・大吉補正されます。"
+                              >
+                                ✨天道回座中
+                              </span>
+                            );
+                          })()}
                           {targetDirInfo.trueDirection !==
                             targetDirInfo.magneticDirection && (
                             <span
@@ -7423,9 +7441,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                     })()}
                   </div>
 
-                  <div className="flex justify-between items-center mt-4 border-t border-zinc-800/50 pt-3">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1">
+                  <div className="flex justify-between items-center mt-4 border-t border-zinc-800/50 pt-3 flex-wrap gap-2">
+                    <div className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5">
                       <span className="text-purple-500">◆</span> TREND ANALYTICS
+                      <span className="text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-sans">
+                        ✨ 天道補正可視化済
+                      </span>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -7434,7 +7455,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "30days" ? "none" : "30days",
                           )
                         }
-                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border ${heatmapMode === "30days" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
+                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border cursor-pointer ${heatmapMode === "30days" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
                       >
                         30 DAYS
                       </button>
@@ -7444,7 +7465,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "12months" ? "none" : "12months",
                           )
                         }
-                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border ${heatmapMode === "12months" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
+                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border cursor-pointer ${heatmapMode === "12months" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
                       >
                         12 MONTHS
                       </button>
@@ -7452,23 +7473,93 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </div>
 
                   {heatmapMode !== "none" && heatmapData.length > 0 && (
-                    <div className="mt-3 bg-black/50 p-2 border border-zinc-800/50 rounded-sm overflow-x-auto custom-scrollbar animate-fade-in-up">
+                    <div className="mt-3 bg-black/50 p-2 border border-zinc-800/50 rounded-sm overflow-x-auto custom-scrollbar animate-fade-in-up space-y-2">
+                      {/* Monthly Timeline Player Control Toolbar */}
+                      <div className="bg-zinc-950/90 border border-zinc-800 p-2 rounded-md flex flex-wrap items-center justify-between gap-2 text-[9px] font-mono">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => {
+                              if (isPlaying && playSpeedDays === 30) {
+                                setIsPlaying(false);
+                              } else {
+                                setPlaySpeedDays(30);
+                                setIsPlaying(true);
+                              }
+                            }}
+                            className={`px-2.5 py-1 rounded-sm font-bold transition-all border cursor-pointer ${
+                              isPlaying && playSpeedDays === 30
+                                ? "bg-amber-950/50 text-amber-300 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse"
+                                : "bg-cyan-950/40 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/60 shadow-[0_0_8px_rgba(34,211,238,0.2)]"
+                            }`}
+                          >
+                            {isPlaying && playSpeedDays === 30 ? "⏸ 月次コマ送り一時停止" : "▶ 月次自動プレイ再生"}
+                          </button>
+
+                          <button
+                            onClick={() => setTimeOffsetDays((prev) => prev - 30)}
+                            className="px-2 py-1 bg-zinc-900 text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-sm cursor-pointer"
+                            title="1ヶ月巻き戻し"
+                          >
+                            ◀ 前月
+                          </button>
+                          <button
+                            onClick={() => setTimeOffsetDays((prev) => prev + 30)}
+                            className="px-2 py-1 bg-zinc-900 text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-sm cursor-pointer"
+                            title="1ヶ月コマ送り"
+                          >
+                            次月 ▶
+                          </button>
+                          <button
+                            onClick={() => setTimeOffsetDays(0)}
+                            className="px-2 py-1 bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-indigo-500/40 hover:text-indigo-300 rounded-sm cursor-pointer"
+                            title="現在月へリセット"
+                          >
+                            RESET
+                          </button>
+                        </div>
+
+                        {/* Live Snapshot Header */}
+                        <div className="flex items-center gap-2 text-zinc-400 bg-black/60 px-2.5 py-1 rounded border border-zinc-850">
+                          <span>📅 表示中: <strong className="text-cyan-300">{evalDate.getFullYear()}年{evalDate.getMonth() + 1}月</strong></span>
+                          <span className="text-zinc-700">|</span>
+                          <span className="text-amber-300 font-bold">
+                            ✨ 月の天道: {
+                              (() => {
+                                const currentTendo = classicalLayers?.tendoDirection || physicalLayers?.tendoDirection;
+                                const mapDir: Record<string, string> = { N: "北", NE: "北東", E: "東", SE: "南東", S: "南", SW: "南西", W: "西", NW: "北西" };
+                                return currentTendo ? `${mapDir[currentTendo] || currentTendo} (${currentTendo})` : "未算出";
+                              })()
+                            }
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Heatmap Grid Table */}
                       <table className="w-full text-center border-collapse">
                         <thead>
                           <tr>
                             <th className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-500 w-8 bg-zinc-950 sticky left-0 z-10">
                               DIR
                             </th>
-                            {heatmapData.map((d, i) => (
-                              <th
-                                key={i}
-                                className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap cursor-pointer hover:bg-zinc-800 transition-colors ${d.isVoid ? "text-red-500 bg-red-950/20" : "text-zinc-500 bg-zinc-900/30"}`}
-                                onClick={() => setTimeOffsetDays(d.offsetDays)}
-                                title="クリックでこの日に移動"
-                              >
-                                {d.label}
-                              </th>
-                            ))}
+                            {heatmapData.map((d, i) => {
+                              const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+                              return (
+                                <th
+                                  key={i}
+                                  className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap cursor-pointer hover:bg-zinc-800 transition-colors ${
+                                    isActiveCol
+                                      ? "text-cyan-300 bg-cyan-950/60 ring-2 ring-cyan-400/90 z-10 shadow-[0_0_10px_rgba(34,211,238,0.4)] font-bold"
+                                      : d.isVoid
+                                      ? "text-red-500 bg-red-950/20"
+                                      : "text-zinc-500 bg-zinc-900/30"
+                                  }`}
+                                  onClick={() => setTimeOffsetDays(d.offsetDays)}
+                                  title="クリックでこの月に遷移"
+                                >
+                                  {d.label}
+                                </th>
+                              );
+                            })}
                           </tr>
                         </thead>
                         <tbody>
@@ -7490,10 +7581,14 @@ ${timingOptimization?.recommendationText || "特になし"}
                               </td>
                               {heatmapData.map((d, i) => {
                                 let st = d.vectors[dir];
+                                const isTendoActive = d.tendoDir && d.tendoDir === dir;
+                                const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+
                                 let bgClass = "bg-zinc-900/30";
                                 if (st === "OPTIMAL")
-                                  bgClass =
-                                    "bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative";
+                                  bgClass = isTendoActive
+                                    ? "bg-gradient-to-br from-emerald-500/90 to-amber-500/80 border border-amber-400/90 shadow-[0_0_8px_rgba(251,191,36,0.6)] z-0 relative"
+                                    : "bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative";
                                 else if (st === "OPTIMAL_REGULAR")
                                   bgClass =
                                     "bg-emerald-500/35 border border-emerald-500/50";
@@ -7520,16 +7615,39 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 else if (st === "WARNING")
                                   bgClass = "bg-orange-500/80";
 
+                                if (isActiveCol) {
+                                  bgClass += " ring-1 ring-cyan-400/70";
+                                }
+
+                                const tendoNote = isTendoActive
+                                  ? "✨【天道回座中】月の最高吉神・天道の作用により凶殺が補正・相殺されています"
+                                  : "";
+
                                 return (
                                   <td
                                     key={i}
-                                    className={`p-0 border border-zinc-800 cursor-pointer hover:opacity-80 transition-opacity ${bgClass}`}
-                                    title={`${d.label} ${dir}: ${st} (クリックで移動)`}
-                                    onClick={() =>
-                                      setTimeOffsetDays(d.offsetDays)
-                                    }
+                                    className={`p-0 border border-zinc-800 cursor-pointer hover:scale-105 transition-all ${bgClass}`}
+                                    title={`${d.label} 方位${dir}: ${st} ${tendoNote} (クリックで層詳細・根拠表示)`}
+                                    onClick={() => {
+                                      setTimeOffsetDays(d.offsetDays);
+                                      setSelectedTrendCell({
+                                        label: d.label,
+                                        dir,
+                                        status: st,
+                                        isTendo: isTendoActive,
+                                        raw: d.rawVectorData,
+                                        tendoDir: d.tendoDir,
+                                        offsetDays: d.offsetDays,
+                                      });
+                                    }}
                                   >
-                                    <div className="w-5 h-5 mx-auto"></div>
+                                    <div className="w-5 h-5 mx-auto flex items-center justify-center">
+                                      {isTendoActive && (
+                                        <span className="text-[9px] text-amber-300 font-bold drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]">
+                                          ✨
+                                        </span>
+                                      )}
+                                    </div>
                                   </td>
                                 );
                               })}
@@ -7537,31 +7655,108 @@ ${timingOptimization?.recommendationText || "特になし"}
                           ))}
                         </tbody>
                       </table>
-                      <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-500 justify-center flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-emerald-500/80"></div>{" "}
-                          OPTIMAL
+
+                      {/* Legend Bar */}
+                      <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-400 justify-center flex-wrap">
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <span className="text-amber-300 font-bold">✨</span> 天道 (Tendou) 回座
                         </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-blue-500/20 border border-zinc-700"></div>{" "}
-                          SAFE
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-emerald-500/80"></div> OPTIMAL (大吉)
                         </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-red-500/80"></div> TYPE I
-                          (Gou/Anken/Ha)
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-blue-500/20 border border-zinc-700"></div> SAFE (吉)
                         </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-purple-500/80"></div> TYPE
-                          II (Bio)
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-red-500/80"></div> TYPE I (Gou/Anken/Ha)
                         </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-yellow-500/80"></div>{" "}
-                          VOID/NODE
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)
                         </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-orange-500/80"></div>{" "}
-                          WARNING
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-yellow-500/80"></div> VOID/NODE
                         </span>
+                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                          <div className="w-2 h-2 bg-orange-500/80"></div> WARNING
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Trend Cell Detail Breakdown Modal */}
+                  {selectedTrendCell && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+                      <div className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-white shadow-2xl space-y-3.5">
+                        <button
+                          onClick={() => setSelectedTrendCell(null)}
+                          className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-white p-1 text-sm font-bold"
+                        >
+                          ✕
+                        </button>
+
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2.5 rounded-xl border ${selectedTrendCell.isTendo ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"}`}>
+                            <span className="text-xl">{selectedTrendCell.isTendo ? "✨" : "🎯"}</span>
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-sm text-zinc-100 flex items-center gap-2">
+                              {selectedTrendCell.label} 【方位: {selectedTrendCell.dir}】
+                            </h3>
+                            <p className="text-[11px] text-zinc-400 font-mono">
+                              総合判定: <strong className="text-emerald-400 font-bold">{selectedTrendCell.status}</strong>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2.5 text-xs font-mono text-zinc-300">
+                          {selectedTrendCell.isTendo && (
+                            <div className="bg-amber-950/50 border border-amber-500/60 p-3 rounded-xl text-amber-200 space-y-1">
+                              <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                                <span>✨</span> 天道 (Tendou) 補正が適用されています
+                              </div>
+                              <p className="text-[10px] leading-relaxed text-amber-200/90">
+                                この時期、<strong>{selectedTrendCell.dir} 方位</strong> には暦上の最高吉神「天道」が回座しています。天道の強力な吉パワーにより、本命殺や月命殺等の個人の凶作用が相殺・補正され、総合判定として<strong>大吉（OPTIMAL）</strong>へ昇格評価されています。
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-1.5">
+                            <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 text-[10px]">
+                              レイヤー（層）別判定ブレイクダウン
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-zinc-500">年盤 (Year):</span>
+                              <span className="font-semibold text-zinc-200">
+                                {selectedTrendCell.raw?.yearLayer?.[selectedTrendCell.dir] || "SAFE"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-zinc-500">月盤 (Month):</span>
+                              <span className="font-semibold text-zinc-200">
+                                {selectedTrendCell.raw?.monthLayer?.[selectedTrendCell.dir] || "SAFE"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-zinc-500">日盤 (Day):</span>
+                              <span className="font-semibold text-zinc-200">
+                                {selectedTrendCell.raw?.dayLayer?.[selectedTrendCell.dir] || "SAFE"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-[11px] pt-1 border-t border-zinc-800/60">
+                              <span className="text-zinc-500">天道作用:</span>
+                              <span className={selectedTrendCell.isTendo ? "text-amber-300 font-bold" : "text-zinc-500"}>
+                                {selectedTrendCell.isTendo ? "✨ 回座中 (Active)" : "対象外"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setSelectedTrendCell(null)}
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl transition-colors cursor-pointer"
+                        >
+                          了解
+                        </button>
                       </div>
                     </div>
                   )}
