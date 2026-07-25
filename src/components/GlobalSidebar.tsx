@@ -36,21 +36,15 @@ const PUBLIC_ITEMS = [
 ];
 
 const PROTECTED_ITEMS = [
+  { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub (Launcher)" },
+  { href: "/metaphysical", icon: Compass, label: "Fortune & Time (fortune.)" },
+  { href: "/trends", icon: Rss, label: "Tech & Trends (tech.)" },
+  { href: "/knowledge", icon: Database, label: "Katmer Brain (brain.)" },
+  { href: "/rentals", icon: Home, label: "Rentals & Real Estate" },
   { href: "/relocation/wealth", icon: Map, label: "Relocation Matrix" },
-  {
-    href: "/relocation/arbitrage",
-    icon: TrendingUp,
-    label: "Real Estate Arbitrage",
-  },
-  { href: "/rentals", icon: Home, label: "Rentals Dashboard" },
-  { href: "/relocation/history", icon: History, label: "Relocation History" },
+  { href: "/relocation/arbitrage", icon: TrendingUp, label: "Real Estate Arbitrage" },
   { href: "/relocation/simulator", icon: Route, label: "Relocation Simulator" },
-  { href: "/metaphysical", icon: Compass, label: "Metaphysical Engine" },
-  { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub" },
   { href: "https://katmer.cloud-palette.com", icon: BookOpen, label: "Katmer Cloud", external: true },
-  { href: "/knowledge", icon: Database, label: "Knowledge Base" },
-  { href: "/research", icon: Database, label: "Data Engine" },
-  { href: "/trends", icon: Rss, label: "Tech Trends" },
 ];
 
 export function GlobalSidebar() {

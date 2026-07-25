@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { TwitterFeed } from "@/components/twitter/TwitterFeed";
 import { RealEstateWidget } from "@/components/realestate/RealEstateWidget";
+import { SubdomainLauncherGrid } from "@/domains/launcher";
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient";
@@ -242,6 +243,10 @@ export default async function DashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* Subdomain Launcher Grid */}
+        <SubdomainLauncherGrid />
+
         {/* BENTO GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(180px,auto)] gap-6">
           {/* BENTO ITEM 2: NBA Engine Status */}
