@@ -237,54 +237,58 @@ export function AstroGridCalendar({
 
   return (
     <div className="flex flex-col gap-2 font-sans select-none">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="text-xs text-stone-700 font-bold tracking-tight flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap bg-white/70 backdrop-blur-md p-3 rounded-2xl border border-rose-100/80 shadow-xs">
+        <div className="text-xs text-stone-900 font-bold tracking-tight flex items-center gap-1.5 font-serif">
+          <span className="text-rose-500 font-bold">◆</span>
           <span>吉凶タイムライン・ヒートマップ</span>
           {luckyOnlyFilter && (
-            <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse">
+            <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse font-sans">
               大吉のみ表示中
             </span>
           )}
         </div>
 
         {enableExtendedViews && (
-          <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-xl border border-stone-200/80 text-[10px] font-semibold">
-            <button
-              onClick={() => setRangeMode("7days")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                rangeMode === "7days"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              7days
-            </button>
-            <button
-              onClick={() => setRangeMode("30days")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                rangeMode === "30days"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              30days
-            </button>
-            <button
-              onClick={() => setRangeMode("12months")}
-              className={`px-2 py-0.5 rounded-lg transition-all ${
-                rangeMode === "12months"
-                  ? "bg-white text-stone-900 shadow-xs font-bold"
-                  : "text-stone-500 hover:text-stone-800"
-              }`}
-            >
-              12months
-            </button>
+          <div className="flex items-center gap-1.5 flex-wrap text-xs font-semibold">
+            <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80">
+              <button
+                onClick={() => setRangeMode("7days")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  rangeMode === "7days"
+                    ? "bg-white text-stone-900 shadow-xs font-bold"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                7days
+              </button>
+              <button
+                onClick={() => setRangeMode("30days")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  rangeMode === "30days"
+                    ? "bg-white text-stone-900 shadow-xs font-bold"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                30days
+              </button>
+              <button
+                onClick={() => setRangeMode("12months")}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  rangeMode === "12months"
+                    ? "bg-white text-stone-900 shadow-xs font-bold"
+                    : "text-stone-500 hover:text-stone-800"
+                }`}
+              >
+                12months
+              </button>
+            </div>
+
             <button
               onClick={() => setLuckyOnlyFilter(!luckyOnlyFilter)}
-              className={`px-2 py-0.5 rounded-lg transition-all flex items-center gap-1 ${
+              className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                 luckyOnlyFilter
                   ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white font-bold shadow-xs"
-                  : "bg-white/80 text-amber-600 hover:bg-white"
+                  : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
               }`}
               title="大吉・吉方位日のみをハイライト表示"
             >

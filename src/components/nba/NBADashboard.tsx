@@ -540,20 +540,19 @@ export function NBADashboard({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 md:p-8 text-white relative font-sans space-y-6">
+    <div className="w-full max-w-7xl mx-auto p-4 md:p-8 text-stone-800 relative font-sans space-y-8">
       {/* Metaphysical Configuration Bar */}
       <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
 
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-3">
-            <BrainCircuit className="w-9 h-9 text-blue-400 animate-pulse" />
-            エージェンシー・メタフィジカル・システム (Agency Metaphysical
-            System)
+          <h1 className="text-2xl md:text-4xl font-bold font-serif text-stone-900 flex items-center gap-3">
+            <BrainCircuit className="w-9 h-9 text-rose-500 animate-pulse" />
+            Agency Metaphysical System
           </h1>
-          <p className="text-gray-400 mt-2 text-sm">
-            次善行動（NBA）意思決定エンジンと天体環境テレメトリ
+          <p className="text-stone-600 mt-2 text-xs md:text-sm font-normal">
+            生体テレメトリと時空マクロ環境を統合する次善行動（NBA）意思決定エンジン
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -563,13 +562,13 @@ export function NBADashboard({
               else fetchNBAData();
             }}
             disabled={loading || (externalData !== undefined && !onRefresh)}
-            className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-lg backdrop-blur-md"
+            className="p-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-md shadow-rose-200"
             title="データを更新"
           >
             <RefreshCcw
-              className={`w-4 h-4 ${loading ? "animate-spin text-blue-400" : ""}`}
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
             />
-            <span className="text-xs font-bold">データ更新</span>
+            <span className="text-xs">データ更新</span>
           </button>
         </div>
       </header>
@@ -580,14 +579,14 @@ export function NBADashboard({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.05)] backdrop-blur-md"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-400/30 text-amber-900 shadow-sm backdrop-blur-md"
           >
-            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 animate-bounce" />
+            <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 animate-bounce" />
             <div className="text-xs md:text-sm">
-              <span className="font-extrabold tracking-wide mr-2">
+              <span className="font-bold tracking-wide mr-2">
                 ⚠️ VOID TIME ACTIVE (天中殺/空亡期間)
               </span>
-              <span className="text-amber-400/80">
+              <span className="text-amber-800">
                 ユーザー空亡の十二支（戌亥）と現在の時盤が一致しています。能動的行動のQ値が補正されます。
               </span>
             </div>
@@ -598,14 +597,14 @@ export function NBADashboard({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.05)] backdrop-blur-md"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-rose-500/10 border border-rose-400/30 text-rose-900 shadow-sm backdrop-blur-md"
           >
-            <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 animate-pulse" />
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 animate-pulse" />
             <div className="text-xs md:text-sm">
-              <span className="font-extrabold tracking-wide mr-2">
+              <span className="font-bold tracking-wide mr-2">
                 ⚠️ CONFLICT DAY DETECTED (日支・年支相冲)
               </span>
-              <span className="text-red-400/80">
+              <span className="text-rose-800">
                 現在の地支が日主の地支と反発。守備的行動（ABORT_AND_SHIELD）の優先度が引き上げられています。
               </span>
             </div>
@@ -614,7 +613,7 @@ export function NBADashboard({
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex border-b border-white/10 mb-8 overflow-x-auto scrollbar-none gap-2">
+      <div className="flex border-b border-rose-200/80 mb-8 overflow-x-auto scrollbar-none gap-2 bg-white/70 backdrop-blur-xl p-2 rounded-2xl border shadow-sm">
         {(["telemetry", "matrix", "engine"] as const).map((tab) => {
           const labels = {
             telemetry: "総合環境テレメトリ",
@@ -626,18 +625,13 @@ export function NBADashboard({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-3.5 px-5 text-sm font-bold relative transition-colors cursor-pointer whitespace-nowrap ${
-                isActive ? "text-blue-400" : "text-gray-400 hover:text-white"
+              className={`py-2.5 px-5 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                isActive
+                  ? "bg-rose-500 text-white shadow-md shadow-rose-200"
+                  : "text-stone-600 hover:bg-rose-50 hover:text-stone-900"
               }`}
             >
               {labels[tab]}
-              {isActive && (
-                <motion.div
-                  layoutId="activeTabUnderline"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-400"
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
-              )}
             </button>
           );
         })}
@@ -665,13 +659,13 @@ export function NBADashboard({
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
               {/* Unified Risk Engine Gauge Card */}
-              <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center relative overflow-hidden shadow-xl">
+              <div className="p-6 rounded-3xl bg-white/80 border border-rose-100/80 backdrop-blur-xl flex flex-col items-center justify-center relative overflow-hidden shadow-xl shadow-rose-100/30">
                 <div className="absolute top-0 left-0 p-4 w-full flex justify-between items-center">
-                  <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                  <span className="text-[10px] uppercase font-bold text-stone-500 tracking-wider">
                     統合リスクエンジン (Unified Risk Engine)
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-[8px] font-bold ${getRiskBg(unifiedRisk)} ${getRiskColor(unifiedRisk)}`}
+                    className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${getRiskBg(unifiedRisk)} ${getRiskColor(unifiedRisk)}`}
                   >
                     {unifiedRisk < 30
                       ? "低 (LOW)"
@@ -692,7 +686,7 @@ export function NBADashboard({
                       cx="60"
                       cy="60"
                       r={radius}
-                      className="stroke-white/5 fill-none"
+                      className="stroke-stone-200 fill-none"
                       strokeWidth="10"
                     />
                     {/* Progress Circle */}
@@ -710,10 +704,10 @@ export function NBADashboard({
                     />
                   </svg>
                   <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-3xl font-black tracking-tight">
+                    <span className="text-3xl font-black font-mono tracking-tight text-stone-900">
                       {unifiedRisk.toFixed(1)}
                     </span>
-                    <span className="text-[9px] text-gray-400 uppercase tracking-widest font-bold">
+                    <span className="text-[9px] text-stone-500 uppercase tracking-widest font-bold">
                       リスク指数
                     </span>
                   </div>
@@ -721,36 +715,36 @@ export function NBADashboard({
 
                 {/* Score breakdown bar */}
                 <div className="w-full space-y-2.5 mt-2">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <CloudLightning className="w-3 h-3 text-orange-400" />{" "}
+                  <div className="flex justify-between items-center text-[10px] font-mono text-stone-600">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <CloudLightning className="w-3.5 h-3.5 text-amber-500" />{" "}
                       宇宙天気 (40%)
                     </span>
-                    <span className="text-white font-bold">
+                    <span className="text-stone-900 font-bold">
                       {data?.macro.streams?.spaceWeather?.riskScore
                         ? data.macro.streams.spaceWeather.riskScore.toFixed(0)
                         : "0"}
                       %
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3 text-blue-400" />{" "}
+                  <div className="flex justify-between items-center text-[10px] font-mono text-stone-600">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <TrendingUp className="w-3.5 h-3.5 text-blue-500" />{" "}
                       マクロ経済 (40%)
                     </span>
-                    <span className="text-white font-bold">
+                    <span className="text-stone-900 font-bold">
                       {data?.macro.streams?.macroEconomics?.riskScore
                         ? data.macro.streams.macroEconomics.riskScore.toFixed(0)
                         : "0"}
                       %
                     </span>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-mono text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Moon className="w-3 h-3 text-indigo-400" /> 月面重力干渉
+                  <div className="flex justify-between items-center text-[10px] font-mono text-stone-600">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <Moon className="w-3.5 h-3.5 text-purple-500" /> 月面重力干渉
                       (20%)
                     </span>
-                    <span className="text-white font-bold">
+                    <span className="text-stone-900 font-bold">
                       {data?.macro.streams?.lunarTide?.riskScore
                         ? data.macro.streams.lunarTide.riskScore.toFixed(0)
                         : "0"}

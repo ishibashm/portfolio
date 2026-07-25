@@ -7041,7 +7041,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         ▶
                       </button>
                       <div className="w-px h-3 bg-zinc-800 my-auto mx-0.5"></div>
-                      <button
+                                      <button
                         onClick={() => setTimeOffsetDays(0)}
                         className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
                       >
@@ -7440,22 +7440,36 @@ ${timingOptimization?.recommendationText || "特になし"}
                       })();
                     })()}
                   </div>
+                </div>
+              </div>
 
-                  <div className="flex justify-between items-center mt-4 border-t border-zinc-800/50 pt-3 flex-wrap gap-2">
-                    <div className="text-[10px] font-mono text-zinc-500 uppercase flex items-center gap-1.5">
-                      <span className="text-purple-500">◆</span> TREND ANALYTICS
-                      <span className="text-[8px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded font-sans">
-                        ✨ 天道補正可視化済
+              {/* INDEPENDENT FULL-WIDTH TREND ANALYTICS SECTION */}
+              <div className="w-full bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-purple-500 font-bold text-base">◆</span>
+                    <h3 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+                      TREND ANALYTICS
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2 py-0.5 rounded-full font-sans font-semibold">
+                        ✨ 天道・時空補正可視化済
                       </span>
-                    </div>
-                    <div className="flex gap-2">
+                    </h3>
+                  </div>
+
+                  {/* Range Mode & Multi-Filter Controls */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80 text-xs font-semibold">
                       <button
                         onClick={() =>
                           setHeatmapMode((prev) =>
                             prev === "30days" ? "none" : "30days",
                           )
                         }
-                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border cursor-pointer ${heatmapMode === "30days" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          heatmapMode === "30days"
+                            ? "bg-rose-500 text-white shadow-xs font-bold"
+                            : "text-stone-600 hover:text-stone-900"
+                        }`}
                       >
                         30 DAYS
                       </button>
@@ -7465,74 +7479,113 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "12months" ? "none" : "12months",
                           )
                         }
-                        className={`text-[9px] font-mono px-2 py-1 rounded-sm transition-colors border cursor-pointer ${heatmapMode === "12months" ? "bg-purple-950/40 text-purple-400 border-purple-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-purple-500/30 hover:text-purple-400"}`}
+                        className={`px-3 py-1 rounded-lg transition-all ${
+                          heatmapMode === "12months"
+                            ? "bg-rose-500 text-white shadow-xs font-bold"
+                            : "text-stone-600 hover:text-stone-900"
+                        }`}
                       >
                         12 MONTHS
                       </button>
                     </div>
+
+                    {/* Multi-combination filtering presets */}
+                    <div className="flex items-center gap-1.5 bg-rose-50/50 border border-rose-100 p-1 rounded-xl text-xs font-semibold">
+                      <button
+                        onClick={() => {
+                          setDirectionFilterMode((prev) =>
+                            prev === "optimal_only" ? "composite" : "optimal_only",
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                          directionFilterMode === "optimal_only"
+                            ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white font-bold shadow-xs"
+                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/60"
+                        }`}
+                        title="大吉・吉方位日のみに絞り込み"
+                      >
+                        <span>🌟 大吉絞込</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDirectionFilterMode((prev) =>
+                            prev === "exclude_noise" ? "composite" : "exclude_noise",
+                          );
+                        }}
+                        className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                          directionFilterMode === "exclude_noise"
+                            ? "bg-stone-800 text-white font-bold shadow-xs"
+                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/60"
+                        }`}
+                        title="五黄・暗剣・歳破などの大凶ノイズを除外"
+                      >
+                        <span>🛡️ 凶除外</span>
+                      </button>
+                    </div>
                   </div>
+                </div>
 
-                  {heatmapMode !== "none" && heatmapData.length > 0 && (
-                    <div className="mt-3 bg-black/50 p-2 border border-zinc-800/50 rounded-sm overflow-x-auto custom-scrollbar animate-fade-in-up space-y-2">
-                      {/* Monthly Timeline Player Control Toolbar */}
-                      <div className="bg-zinc-950/90 border border-zinc-800 p-2 rounded-md flex flex-wrap items-center justify-between gap-2 text-[9px] font-mono">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => {
-                              if (isPlaying && playSpeedDays === 30) {
-                                setIsPlaying(false);
-                              } else {
-                                setPlaySpeedDays(30);
-                                setIsPlaying(true);
-                              }
-                            }}
-                            className={`px-2.5 py-1 rounded-sm font-bold transition-all border cursor-pointer ${
-                              isPlaying && playSpeedDays === 30
-                                ? "bg-amber-950/50 text-amber-300 border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse"
-                                : "bg-cyan-950/40 text-cyan-300 border-cyan-500/50 hover:bg-cyan-900/60 shadow-[0_0_8px_rgba(34,211,238,0.2)]"
-                            }`}
-                          >
-                            {isPlaying && playSpeedDays === 30 ? "⏸ 月次コマ送り一時停止" : "▶ 月次自動プレイ再生"}
-                          </button>
-
-                          <button
-                            onClick={() => setTimeOffsetDays((prev) => prev - 30)}
-                            className="px-2 py-1 bg-zinc-900 text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-sm cursor-pointer"
-                            title="1ヶ月巻き戻し"
-                          >
-                            ◀ 前月
-                          </button>
-                          <button
-                            onClick={() => setTimeOffsetDays((prev) => prev + 30)}
-                            className="px-2 py-1 bg-zinc-900 text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-sm cursor-pointer"
-                            title="1ヶ月コマ送り"
-                          >
-                            次月 ▶
-                          </button>
-                          <button
-                            onClick={() => setTimeOffsetDays(0)}
-                            className="px-2 py-1 bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-indigo-500/40 hover:text-indigo-300 rounded-sm cursor-pointer"
-                            title="現在月へリセット"
-                          >
-                            RESET
-                          </button>
-                        </div>
-
-                        {/* Live Snapshot Header */}
-                        <div className="flex items-center gap-2 text-zinc-400 bg-black/60 px-2.5 py-1 rounded border border-zinc-850">
-                          <span>📅 表示中: <strong className="text-cyan-300">{evalDate.getFullYear()}年{evalDate.getMonth() + 1}月</strong></span>
-                          <span className="text-zinc-700">|</span>
-                          <span className="text-amber-300 font-bold">
-                            ✨ 月の天道: {
-                              (() => {
-                                const currentTendo = classicalLayers?.tendoDirection || physicalLayers?.tendoDirection;
-                                const mapDir: Record<string, string> = { N: "北", NE: "北東", E: "東", SE: "南東", S: "南", SW: "南西", W: "西", NW: "北西" };
-                                return currentTendo ? `${mapDir[currentTendo] || currentTendo} (${currentTendo})` : "未算出";
-                              })()
+                {heatmapMode !== "none" && heatmapData.length > 0 && (
+                  <div className="mt-3 bg-white/70 p-4 border border-rose-100/80 rounded-2xl overflow-x-auto shadow-inner space-y-3">
+                    {/* Monthly Timeline Player Control Toolbar */}
+                    <div className="bg-white/90 border border-stone-200 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            if (isPlaying && playSpeedDays === 30) {
+                              setIsPlaying(false);
+                            } else {
+                              setPlaySpeedDays(30);
+                              setIsPlaying(true);
                             }
-                          </span>
-                        </div>
+                          }}
+                          className={`px-3 py-1.5 rounded-lg font-bold transition-all border cursor-pointer ${
+                            isPlaying && playSpeedDays === 30
+                              ? "bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-200 animate-pulse"
+                              : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                          }`}
+                        >
+                          {isPlaying && playSpeedDays === 30 ? "⏸ 月次コマ送り一時停止" : "▶ 月次自動再生"}
+                        </button>
+
+                        <button
+                          onClick={() => setTimeOffsetDays((prev) => prev - 30)}
+                          className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-lg cursor-pointer"
+                          title="1ヶ月巻き戻し"
+                        >
+                          ◀ 前月
+                        </button>
+                        <button
+                          onClick={() => setTimeOffsetDays((prev) => prev + 30)}
+                          className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-lg cursor-pointer"
+                          title="1ヶ月コマ送り"
+                        >
+                          次月 ▶
+                        </button>
+                        <button
+                          onClick={() => setTimeOffsetDays(0)}
+                          className="px-2.5 py-1.5 bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 rounded-lg cursor-pointer font-bold"
+                          title="現在月へリセット"
+                        >
+                          RESET
+                        </button>
                       </div>
+
+                      {/* Live Snapshot Header */}
+                      <div className="flex items-center gap-2 text-stone-600 bg-white px-3 py-1.5 rounded-lg border border-stone-200 font-medium">
+                        <span>📅 表示中: <strong className="text-rose-600 font-bold">{evalDate.getFullYear()}年{evalDate.getMonth() + 1}月</strong></span>
+                        <span className="text-stone-300">|</span>
+                        <span className="text-amber-600 font-bold">
+                          ✨ 月の天道: {
+                            (() => {
+                              const currentTendo = classicalLayers?.tendoDirection || physicalLayers?.tendoDirection;
+                              const mapDir: Record<string, string> = { N: "北", NE: "北東", E: "東", SE: "南東", S: "南", SW: "南西", W: "西", NW: "北西" };
+                              return currentTendo ? `${mapDir[currentTendo] || currentTendo} (${currentTendo})` : "未算出";
+                            })()
+                          }
+                        </span>
+                      </div>
+                    </div>
 
                       {/* Heatmap Grid Table */}
                       <table className="w-full text-center border-collapse">
@@ -7762,9 +7815,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                   )}
                 </div>
               </div>
-            </div>
 
-            {/* Module 4: Tactical Magnetic Map */}
+              {/* Module 4: Tactical Magnetic Map */}
             <div className="w-full max-w-4xl mt-0">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
                 {/* Cyberpunk Filter Selector */}
