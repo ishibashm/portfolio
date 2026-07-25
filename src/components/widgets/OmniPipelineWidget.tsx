@@ -275,15 +275,14 @@ export default function OmniPipelineWidget() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0f172a] border border-indigo-900/50 rounded-xl overflow-hidden shadow-2xl relative">
-      {/* Header (No more step indicators) */}
-      <div className="px-5 py-4 bg-slate-900/90 border-b border-indigo-900/50 flex justify-between items-center z-10 relative">
-        <h2 className="text-base font-bold flex items-center gap-2 text-white tracking-wide">
-          <span className="text-indigo-400 text-xl">⚡</span> Omni-Research
-          Pipeline
+    <div className="flex flex-col h-full bg-white/80 backdrop-blur-xl border border-rose-100/80 rounded-3xl overflow-hidden shadow-xl shadow-rose-100/30 text-stone-800 relative">
+      {/* Header */}
+      <div className="px-6 py-4 bg-white/90 border-b border-rose-100 flex justify-between items-center z-10 relative">
+        <h2 className="text-base font-bold flex items-center gap-2 text-stone-900 tracking-tight font-serif">
+          <span className="text-rose-500 text-xl">⚡</span> Omni-Research Pipeline
         </h2>
         {isProcessing && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 animate-pulse">
+          <div className="flex items-center gap-2 text-xs font-semibold text-rose-500 animate-pulse">
             <span>⚙️ 処理実行中...</span>
           </div>
         )}
@@ -292,11 +291,11 @@ export default function OmniPipelineWidget() {
       <div className="flex-1 overflow-y-auto custom-scrollbar relative p-6 space-y-8">
         {/* Section 1: Data Source & Scraping Controls */}
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-end border-b border-slate-700/50 pb-2">
-            <h3 className="text-lg font-bold text-slate-200">
+          <div className="flex justify-between items-end border-b border-rose-100/60 pb-2">
+            <h3 className="text-base font-bold text-stone-900 font-serif">
               1. データ収集 (Data Collection)
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-stone-500">
               Xタイムラインの取得 または JSONLの手動アップロード
             </p>
           </div>

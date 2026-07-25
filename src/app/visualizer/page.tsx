@@ -125,8 +125,8 @@ const generateWaveformHtml = (configStr: string, styleId: string) => {
     body {
       margin: 0;
       padding: 0;
-      background-color: #09090b;
-      color: white;
+      background-color: #fdfbf7;
+      color: #1c1917;
       font-family: ui-sans-serif, system-ui, sans-serif;
       min-height: 100vh;
       display: flex;
@@ -142,47 +142,47 @@ const generateWaveformHtml = (configStr: string, styleId: string) => {
   </style>
 </head>
 <body>
-  <div class="w-full max-w-4xl p-6 rounded-2xl bg-zinc-900/80 border border-zinc-800 backdrop-blur-xl flex flex-col gap-6 shadow-2xl relative overflow-hidden neon-glow">
+  <div class="w-full max-w-4xl p-6 rounded-2xl bg-white/80 border border-stone-200 backdrop-blur-xl flex flex-col gap-6 shadow-2xl relative overflow-hidden neon-glow">
     <div class="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:20px_20px] opacity-30 pointer-events-none"></div>
     
     <div class="flex items-center justify-between z-10">
       <div>
-        <h2 class="text-lg font-bold text-white tracking-wide uppercase">${title}</h2>
-        <p class="text-xs text-zinc-400 mt-0.5">Resonance Alignment Simulator — Theme: ${colorTheme}</p>
+        <h2 class="text-lg font-bold text-stone-900 tracking-wide uppercase">${title}</h2>
+        <p class="text-xs text-stone-500 mt-0.5">Resonance Alignment Simulator — Theme: ${colorTheme}</p>
       </div>
       <div class="flex items-center gap-4 text-right font-mono text-xs">
         <div>
-          <span class="text-zinc-500">FREQ:</span> <span class="text-white">${frequency.toFixed(2)} Hz</span>
+          <span class="text-stone-400">FREQ:</span> <span class="text-stone-900">${frequency.toFixed(2)} Hz</span>
         </div>
         <div>
-          <span class="text-zinc-500">AMP:</span> <span class="text-white">${amplitude.toFixed(2)}m</span>
+          <span class="text-stone-400">AMP:</span> <span class="text-stone-900">${amplitude.toFixed(2)}m</span>
         </div>
         <div>
-          <span class="text-zinc-500">ALIGN:</span> <span class="text-emerald-400 font-semibold">STABLE</span>
+          <span class="text-stone-400">ALIGN:</span> <span class="text-emerald-400 font-semibold">STABLE</span>
         </div>
       </div>
     </div>
 
-    <div class="w-full h-80 rounded-xl bg-black/50 border border-zinc-800 overflow-hidden relative z-10 flex items-center justify-center">
+    <div class="w-full h-80 rounded-xl bg-white/80 border border-stone-200 overflow-hidden relative z-10 flex items-center justify-center">
       <canvas id="waveform-canvas" class="w-full h-full"></canvas>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 z-10 text-xs">
-      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
-        <p class="text-zinc-500 font-semibold">Wave Mode</p>
-        <p class="text-sm font-bold text-white capitalize mt-1">${waveType}</p>
+      <div class="p-3 rounded-xl bg-stone-50/60 border border-zinc-850/80">
+        <p class="text-stone-400 font-semibold">Wave Mode</p>
+        <p class="text-sm font-bold text-stone-900 capitalize mt-1">${waveType}</p>
       </div>
-      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
-        <p class="text-zinc-500 font-semibold">Stochastic Noise</p>
-        <p class="text-sm font-bold text-white mt-1">${(noiseLevel * 100).toFixed(0)}%</p>
+      <div class="p-3 rounded-xl bg-stone-50/60 border border-zinc-850/80">
+        <p class="text-stone-400 font-semibold">Stochastic Noise</p>
+        <p class="text-sm font-bold text-stone-900 mt-1">${(noiseLevel * 100).toFixed(0)}%</p>
       </div>
-      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
-        <p class="text-zinc-500 font-semibold">Flux Velocity</p>
-        <p class="text-sm font-bold text-white mt-1">${gridSpeed.toFixed(2)}c</p>
+      <div class="p-3 rounded-xl bg-stone-50/60 border border-zinc-850/80">
+        <p class="text-stone-400 font-semibold">Flux Velocity</p>
+        <p class="text-sm font-bold text-stone-900 mt-1">${gridSpeed.toFixed(2)}c</p>
       </div>
-      <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-850/80">
-        <p class="text-zinc-500 font-semibold">Shield Density</p>
-        <p class="text-sm font-bold text-white mt-1">${shieldDensity}%</p>
+      <div class="p-3 rounded-xl bg-stone-50/60 border border-zinc-850/80">
+        <p class="text-stone-400 font-semibold">Shield Density</p>
+        <p class="text-sm font-bold text-stone-900 mt-1">${shieldDensity}%</p>
       </div>
     </div>
   </div>
@@ -1151,17 +1151,17 @@ export default function VisualizerPage() {
 
   if (!isMounted) {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-400">
+      <div className="flex h-screen items-center justify-center bg-stone-50 text-stone-500">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-950 text-zinc-100 overflow-hidden font-sans relative">
+    <div className="flex flex-col h-screen bg-stone-50 text-stone-800 overflow-hidden font-sans relative">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl border border-indigo-500/20 bg-zinc-900/90 text-sm shadow-xl flex items-center gap-2 backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed top-6 right-6 z-50 px-4 py-3 rounded-xl border border-indigo-500/20 bg-white/90 text-sm shadow-xl flex items-center gap-2 backdrop-blur-md animate-in fade-in slide-in-from-top-4 duration-300">
           {toast.type === "success" && (
             <Check className="w-4 h-4 text-emerald-400" />
           )}
@@ -1171,18 +1171,18 @@ export default function VisualizerPage() {
           {toast.type === "info" && (
             <Sparkles className="w-4 h-4 text-indigo-400" />
           )}
-          <span className="text-zinc-200 font-medium">{toast.message}</span>
+          <span className="text-stone-700 font-medium">{toast.message}</span>
         </div>
       )}
 
       {/* Header Bar */}
-      <header className="h-14 border-b border-zinc-800/80 bg-zinc-900/40 backdrop-blur-md px-6 flex items-center justify-between z-10 shrink-0">
+      <header className="h-14 border-b border-stone-200/80 bg-white/40 backdrop-blur-md px-6 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-indigo-650 flex items-center justify-center shadow-lg shadow-indigo-600/20">
-            <Activity className="w-4 h-4 text-white animate-pulse" />
+            <Activity className="w-4 h-4 text-stone-900 animate-pulse" />
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight text-white flex items-center gap-2">
+            <h1 className="text-base font-bold tracking-tight text-stone-900 flex items-center gap-2">
               Resonance Sandbox
               <span className="text-[10px] bg-indigo-550/10 text-indigo-400 border border-indigo-500/20 px-1.5 py-0.5 rounded font-mono">
                 v2.0-Offline
@@ -1194,7 +1194,7 @@ export default function VisualizerPage() {
         <div className="flex items-center gap-4">
           <button
             onClick={resetAll}
-            className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/60 hover:bg-zinc-800/80 text-xs font-semibold text-zinc-400 hover:text-white transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg border border-stone-200 hover:border-stone-300 bg-white/80 hover:bg-stone-100/80 text-xs font-semibold text-stone-500 hover:text-stone-900 transition-all flex items-center gap-1.5"
           >
             <RotateCcw className="w-3.5 h-3.5" /> Reset Sandbox
           </button>
@@ -1204,14 +1204,14 @@ export default function VisualizerPage() {
       {/* Main Workspace Layout */}
       <div className="flex flex-1 h-[calc(100vh-56px)] overflow-hidden">
         {/* Left Side: Control Panel */}
-        <div className="w-[420px] shrink-0 border-r border-zinc-800/80 bg-zinc-900/20 flex flex-col h-full overflow-hidden">
-          <div className="flex border-b border-zinc-800/80 shrink-0 p-2 gap-1 bg-zinc-950/40">
+        <div className="w-[420px] shrink-0 border-r border-stone-200/80 bg-white/20 flex flex-col h-full overflow-hidden">
+          <div className="flex border-b border-stone-200/80 shrink-0 p-2 gap-1 bg-stone-50/40">
             <button
               onClick={() => setSidebarTab("input")}
               className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                 sidebarTab === "input"
-                  ? "bg-zinc-800 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+                  ? "bg-stone-100 text-stone-900 shadow-sm"
+                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-100/40"
               }`}
             >
               <Database className="w-3.5 h-3.5" /> 1. Input Telemetry
@@ -1220,8 +1220,8 @@ export default function VisualizerPage() {
               onClick={() => setSidebarTab("style")}
               className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
                 sidebarTab === "style"
-                  ? "bg-zinc-800 text-white shadow-sm"
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40"
+                  ? "bg-stone-100 text-stone-900 shadow-sm"
+                  : "text-stone-500 hover:text-stone-700 hover:bg-stone-100/40"
               }`}
             >
               <LayoutTemplate className="w-3.5 h-3.5" /> 2. Wave Layout
@@ -1233,7 +1233,7 @@ export default function VisualizerPage() {
               <div className="space-y-4">
                 {/* Audio upload box for custom tempo mapping */}
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">
                     Parse Custom Audio Tempo
                   </h3>
                   <div
@@ -1253,7 +1253,7 @@ export default function VisualizerPage() {
                     className={`border border-dashed p-3.5 rounded-xl text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
                       isDragAudio
                         ? "border-indigo-500 bg-indigo-600/10 text-indigo-400 shadow-md shadow-indigo-500/5"
-                        : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700 text-zinc-400 hover:text-zinc-300"
+                        : "border-stone-200 bg-white/40 hover:border-stone-300 text-stone-500 hover:text-stone-700"
                     }`}
                   >
                     <input
@@ -1270,7 +1270,7 @@ export default function VisualizerPage() {
                     {isAnalyzingAudio ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
-                        <span className="text-xs font-semibold text-zinc-300">
+                        <span className="text-xs font-semibold text-stone-600">
                           Extracting Tempo...
                         </span>
                       </>
@@ -1278,10 +1278,10 @@ export default function VisualizerPage() {
                       <>
                         <Headphones className="w-5 h-5 text-indigo-400" />
                         <div className="text-xs">
-                          <p className="font-semibold text-zinc-300">
+                          <p className="font-semibold text-stone-600">
                             Drop audio file or click to select
                           </p>
-                          <p className="text-[10px] text-zinc-500 mt-0.5">
+                          <p className="text-[10px] text-stone-400 mt-0.5">
                             Extracts frequency metadata from local audio tracks
                           </p>
                         </div>
@@ -1291,7 +1291,7 @@ export default function VisualizerPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">
                     Space Telemetry Presets
                   </h3>
                   <div className="grid grid-cols-2 gap-2">
@@ -1301,11 +1301,11 @@ export default function VisualizerPage() {
                         onClick={() =>
                           loadPreset(key as keyof typeof DATA_PRESETS)
                         }
-                        className="px-3 py-2.5 bg-zinc-900/60 border border-zinc-800 hover:border-indigo-500 hover:bg-zinc-800/40 rounded-xl text-left transition-all text-xs flex items-center gap-2 group"
+                        className="px-3 py-2.5 bg-white/80 border border-stone-200 hover:border-indigo-500 hover:bg-stone-100/40 rounded-xl text-left transition-all text-xs flex items-center gap-2 group"
                       >
                         <span className="text-base">{preset.icon}</span>
                         <div className="overflow-hidden">
-                          <p className="font-semibold text-zinc-300 group-hover:text-white truncate">
+                          <p className="font-semibold text-stone-600 group-hover:text-stone-900 truncate">
                             {preset.name}
                           </p>
                         </div>
@@ -1314,19 +1314,19 @@ export default function VisualizerPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-800/60 my-4" />
+                <div className="border-t border-stone-200/60 my-4" />
 
                 {/* Saved Presets Gallery */}
                 <div className="space-y-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center justify-between">
                     <span>Saved Wave Configurations</span>
                     {isLoadingGallery && (
-                      <Loader2 className="w-3 h-3 animate-spin text-zinc-500" />
+                      <Loader2 className="w-3 h-3 animate-spin text-stone-400" />
                     )}
                   </h3>
 
                   {savedComponents.length === 0 ? (
-                    <div className="border border-dashed border-zinc-800 p-4 rounded-xl text-center text-zinc-500 text-[11px]">
+                    <div className="border border-dashed border-stone-200 p-4 rounded-xl text-center text-stone-400 text-[11px]">
                       No custom configurations saved yet.
                     </div>
                   ) : (
@@ -1350,8 +1350,8 @@ export default function VisualizerPage() {
                             }}
                             className={`group w-full px-3 py-2 border rounded-xl text-left transition-all text-xs flex items-center justify-between cursor-pointer ${
                               isCurrent
-                                ? "bg-indigo-950/20 border-indigo-500 text-white shadow-sm"
-                                : "bg-zinc-900/40 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:bg-zinc-850/40 hover:text-zinc-200"
+                                ? "bg-indigo-950/20 border-indigo-500 text-stone-900 shadow-sm"
+                                : "bg-white/40 border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-zinc-850/40 hover:text-stone-700"
                             }`}
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -1360,18 +1360,18 @@ export default function VisualizerPage() {
                               </span>
                               <div className="truncate">
                                 <p
-                                  className={`font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-zinc-300"}`}
+                                  className={`font-semibold truncate ${isCurrent ? "text-indigo-400" : "text-stone-600"}`}
                                 >
                                   {comp.title}
                                 </p>
-                                <p className="text-[9px] text-zinc-500 font-medium">
+                                <p className="text-[9px] text-stone-400 font-medium">
                                   {styleLabels[comp.style] || comp.style}
                                 </p>
                               </div>
                             </div>
                             <button
                               onClick={(e) => handleDeleteComponent(comp.id, e)}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-zinc-800 text-zinc-500 hover:text-rose-400 rounded transition-all shrink-0 ml-1.5"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-100 text-stone-400 hover:text-rose-400 rounded transition-all shrink-0 ml-1.5"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -1384,7 +1384,7 @@ export default function VisualizerPage() {
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                    <label className="text-xs font-bold uppercase tracking-wider text-stone-400">
                       Wave parameters (JSON)
                     </label>
                     <button
@@ -1403,7 +1403,7 @@ export default function VisualizerPage() {
                       Format JSON
                     </button>
                   </div>
-                  <div className="border border-zinc-800 rounded-xl overflow-hidden bg-black/40 h-64 shadow-inner">
+                  <div className="border border-stone-200 rounded-xl overflow-hidden bg-white/70 h-64 shadow-inner">
                     <Editor
                       height="100%"
                       defaultLanguage="json"
@@ -1426,7 +1426,7 @@ export default function VisualizerPage() {
               /* TAB 2: Style Selector */
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 block">
+                  <label className="text-xs font-bold uppercase tracking-wider text-stone-400 block">
                     Telemetry Display Style
                   </label>
                   <div className="space-y-2">
@@ -1467,15 +1467,15 @@ export default function VisualizerPage() {
                         className={`w-full p-3.5 rounded-xl border text-left transition-all flex flex-col gap-1.5 ${
                           style === item.id
                             ? "bg-indigo-600/10 border-indigo-500 shadow-md shadow-indigo-500/5"
-                            : "bg-zinc-900/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/20"
+                            : "bg-white/40 border-stone-200 hover:border-stone-300 hover:bg-stone-100/20"
                         }`}
                       >
                         <p
-                          className={`text-xs font-bold ${style === item.id ? "text-indigo-400" : "text-zinc-200"}`}
+                          className={`text-xs font-bold ${style === item.id ? "text-indigo-400" : "text-stone-700"}`}
                         >
                           {item.title}
                         </p>
-                        <p className="text-[11px] text-zinc-400 leading-normal">
+                        <p className="text-[11px] text-stone-500 leading-normal">
                           {item.desc}
                         </p>
                       </button>
@@ -1484,11 +1484,11 @@ export default function VisualizerPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-500">
+                  <label className="text-xs font-bold uppercase tracking-wider text-stone-400">
                     Local Wave Tuner Instructions
                   </label>
                   <textarea
-                    className="w-full h-24 p-3 bg-zinc-950 border border-zinc-850 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 placeholder-zinc-650 transition-colors"
+                    className="w-full h-24 p-3 bg-stone-50 border border-zinc-850 rounded-xl text-xs text-stone-600 focus:outline-none focus:border-indigo-500 placeholder-zinc-650 transition-colors"
                     value={customStyleHint}
                     onChange={(e) => setCustomStyleHint(e.target.value)}
                     placeholder="Describe adjustments (e.g. set frequency to 5.0, increase noise level to 0.8)..."
@@ -1501,7 +1501,7 @@ export default function VisualizerPage() {
             <button
               onClick={handleGenerate}
               disabled={isGenerating || isRefining || !selectedData}
-              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-850 disabled:text-zinc-650 text-white font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 group shrink-0"
+              className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-zinc-850 disabled:text-zinc-650 text-stone-900 font-bold rounded-xl transition-all shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 group shrink-0"
             >
               {isGenerating ? (
                 <>
@@ -1518,15 +1518,15 @@ export default function VisualizerPage() {
 
             {/* Refinement local input */}
             {cleanHtml && (
-              <div className="pt-4 border-t border-zinc-800/80 space-y-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+              <div className="pt-4 border-t border-stone-200/80 space-y-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                   Tune Wave Parameters via Command
                 </h4>
                 <form onSubmit={handleRefine} className="flex gap-2">
                   <input
                     type="text"
-                    className="flex-1 px-3 py-2 bg-zinc-950 border border-zinc-850 rounded-lg text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 placeholder-zinc-600"
+                    className="flex-1 px-3 py-2 bg-stone-50 border border-zinc-850 rounded-lg text-xs text-stone-600 focus:outline-none focus:border-indigo-500 placeholder-zinc-600"
                     value={refinementPrompt}
                     onChange={(e) => setRefinementPrompt(e.target.value)}
                     placeholder="e.g. increase frequency, set noise to 0.4..."
@@ -1535,7 +1535,7 @@ export default function VisualizerPage() {
                   <button
                     type="submit"
                     disabled={isRefining || isGenerating || !refinementPrompt}
-                    className="px-3 bg-zinc-900 border border-zinc-800 hover:border-indigo-500 disabled:bg-zinc-850 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center"
+                    className="px-3 bg-white border border-stone-200 hover:border-indigo-500 disabled:bg-zinc-850 text-stone-900 font-bold rounded-lg text-xs transition-colors flex items-center justify-center"
                   >
                     {isRefining ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1550,16 +1550,16 @@ export default function VisualizerPage() {
         </div>
 
         {/* Right Side: Output Canvas / Preview Panel */}
-        <div className="flex-1 flex flex-col bg-zinc-950 relative overflow-hidden h-full">
+        <div className="flex-1 flex flex-col bg-stone-50 relative overflow-hidden h-full">
           {/* Action Toolbar */}
-          <div className="h-12 border-b border-zinc-800/80 bg-zinc-900/20 px-6 flex items-center justify-between shrink-0 text-zinc-350">
-            <div className="flex items-center gap-1.5 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+          <div className="h-12 border-b border-stone-200/80 bg-white/20 px-6 flex items-center justify-between shrink-0 text-zinc-350">
+            <div className="flex items-center gap-1.5 bg-white p-1 rounded-lg border border-stone-200">
               <button
                 onClick={() => setActiveTab("preview")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   activeTab === "preview"
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-stone-100 text-stone-900 shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" /> Preview Simulation
@@ -1568,8 +1568,8 @@ export default function VisualizerPage() {
                 onClick={() => setActiveTab("code")}
                 className={`px-3 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all ${
                   activeTab === "code"
-                    ? "bg-zinc-800 text-white shadow-sm"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-stone-100 text-stone-900 shadow-sm"
+                    : "text-stone-500 hover:text-stone-700"
                 }`}
               >
                 <Code className="w-3.5 h-3.5" /> Compiled HTML Code
@@ -1577,24 +1577,24 @@ export default function VisualizerPage() {
             </div>
 
             {activeTab === "preview" && cleanHtml && (
-              <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-stone-200">
                 <button
                   onClick={() => setViewportWidth("100%")}
-                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "100%" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
+                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "100%" ? "bg-stone-100 text-indigo-400" : "text-stone-500 hover:text-stone-700"}`}
                   title="Full Width"
                 >
                   <Monitor className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewportWidth("768px")}
-                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "768px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-200"}`}
+                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "768px" ? "bg-stone-100 text-indigo-400" : "text-stone-500 hover:text-stone-700"}`}
                   title="Tablet Width"
                 >
                   <Tablet className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewportWidth("375px")}
-                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "375px" ? "bg-zinc-800 text-indigo-400" : "text-zinc-400 hover:text-zinc-250"}`}
+                  className={`p-1.5 rounded-md transition-all ${viewportWidth === "375px" ? "bg-stone-100 text-indigo-400" : "text-stone-500 hover:text-zinc-250"}`}
                   title="Mobile Width"
                 >
                   <Smartphone className="w-3.5 h-3.5" />
@@ -1612,7 +1612,7 @@ export default function VisualizerPage() {
                       );
                       setSaveModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg border border-stone-200 hover:border-stone-300 bg-white text-xs font-semibold text-stone-600 hover:text-stone-900 transition-all flex items-center gap-1.5"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>
@@ -1637,7 +1637,7 @@ export default function VisualizerPage() {
                   <button
                     onClick={handleExportPng}
                     disabled={isExportingPng}
-                    className="px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900 text-xs font-semibold text-zinc-300 hover:text-white transition-all flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg border border-stone-200 hover:border-stone-300 bg-white text-xs font-semibold text-stone-600 hover:text-stone-900 transition-all flex items-center gap-1.5 disabled:opacity-50"
                   >
                     {isExportingPng ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1659,28 +1659,28 @@ export default function VisualizerPage() {
           </div>
 
           {/* Sandbox Canvas */}
-          <div className="flex-1 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:20px_20px] bg-zinc-950 overflow-hidden flex flex-col items-center justify-center p-6 relative pb-24">
+          <div className="flex-1 bg-[radial-gradient(#27272a_1px,transparent_1px)] [background-size:20px_20px] bg-stone-50 overflow-hidden flex flex-col items-center justify-center p-6 relative pb-24">
             {activeTab === "preview" ? (
               generatedHtml ? (
                 <div
-                  className="h-full bg-zinc-900 border border-zinc-800/80 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col relative w-full"
+                  className="h-full bg-white border border-stone-200/80 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 flex flex-col relative w-full"
                   style={{ width: viewportWidth }}
                 >
                   <iframe
                     ref={iframeRef}
                     srcDoc={generatedHtml}
-                    className="w-full flex-1 border-none bg-zinc-950"
+                    className="w-full flex-1 border-none bg-stone-50"
                     sandbox="allow-scripts"
                     title="Telemetry Sandbox Preview"
                   />
                 </div>
               ) : (
-                <div className="text-center text-zinc-500 flex flex-col items-center gap-4">
-                  <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg">
+                <div className="text-center text-stone-400 flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 rounded-3xl bg-white border border-stone-200 flex items-center justify-center shadow-lg">
                     <Activity className="w-8 h-8 text-zinc-650" />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-bold text-zinc-400">
+                    <p className="font-bold text-stone-500">
                       Alignment Visualizer Pane
                     </p>
                     <p className="text-xs text-zinc-650 max-w-sm">
@@ -1691,9 +1691,9 @@ export default function VisualizerPage() {
                 </div>
               )
             ) : cleanHtml ? (
-              <div className="w-full h-full border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl bg-black">
-                <div className="bg-zinc-950 border-b border-zinc-850 px-4 py-2 flex justify-between items-center shrink-0">
-                  <span className="text-[10px] text-zinc-500 font-mono flex items-center gap-1.5">
+              <div className="w-full h-full border border-stone-200 rounded-2xl overflow-hidden shadow-2xl bg-black">
+                <div className="bg-stone-50 border-b border-zinc-850 px-4 py-2 flex justify-between items-center shrink-0">
+                  <span className="text-[10px] text-stone-400 font-mono flex items-center gap-1.5">
                     <Code className="w-3.5 h-3.5 text-indigo-400" />{" "}
                     component.html (Local Editable Code)
                   </span>
@@ -1717,26 +1717,26 @@ export default function VisualizerPage() {
               </div>
             ) : (
               <div className="text-center text-zinc-550 flex flex-col items-center gap-4">
-                <div className="w-20 h-20 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shadow-lg">
+                <div className="w-20 h-20 rounded-3xl bg-white border border-stone-200 flex items-center justify-center shadow-lg">
                   <Code className="w-8 h-8 text-zinc-650" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-bold text-zinc-400">No compiled code</p>
+                  <p className="font-bold text-stone-500">No compiled code</p>
                 </div>
               </div>
             )}
 
             {/* Bottom Synthesizer Playback Bar */}
-            <div className="absolute bottom-4 left-4 right-4 bg-zinc-900/80 border border-zinc-800/80 px-4 py-3 rounded-2xl flex items-center justify-between backdrop-blur-md shadow-xl z-20 gap-4">
+            <div className="absolute bottom-4 left-4 right-4 bg-white/80 border border-stone-200/80 px-4 py-3 rounded-2xl flex items-center justify-between backdrop-blur-md shadow-xl z-20 gap-4">
               <div className="flex items-center gap-3 w-1/3 min-w-0">
                 <div className="w-9 h-9 rounded-lg bg-indigo-650/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
                   <Activity className="w-4.5 h-4.5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate">
+                  <p className="text-xs font-bold text-stone-900 truncate">
                     {audioFile ? audioFile.name : "Space Resonance Synth Drone"}
                   </p>
-                  <p className="text-[9px] text-zinc-400 font-medium">
+                  <p className="text-[9px] text-stone-500 font-medium">
                     {audioFile
                       ? "Uploaded File Output"
                       : "Geomagnetic Alignment Frequency"}
@@ -1759,7 +1759,7 @@ export default function VisualizerPage() {
                 </div>
 
                 <div className="w-full flex items-center gap-2.5">
-                  <span className="text-[9px] font-mono text-zinc-500 min-w-[28px] text-right">
+                  <span className="text-[9px] font-mono text-stone-400 min-w-[28px] text-right">
                     {formatTime(audioPlaybackTime)}
                   </span>
                   <input
@@ -1769,9 +1769,9 @@ export default function VisualizerPage() {
                     step={0.1}
                     value={audioPlaybackTime}
                     onChange={(e) => handleSeek(parseFloat(e.target.value))}
-                    className="flex-1 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 outline-none"
+                    className="flex-1 h-1 bg-stone-100 rounded-lg appearance-none cursor-pointer accent-indigo-500 outline-none"
                   />
-                  <span className="text-[9px] font-mono text-zinc-500 min-w-[28px]">
+                  <span className="text-[9px] font-mono text-stone-400 min-w-[28px]">
                     {formatTime(audioDuration || 180)}
                   </span>
                 </div>
@@ -1782,7 +1782,7 @@ export default function VisualizerPage() {
                   ref={canvasRef}
                   width={140}
                   height={28}
-                  className="bg-black/40 rounded-lg border border-zinc-850/60"
+                  className="bg-white/70 rounded-lg border border-zinc-850/60"
                 />
               </div>
             </div>
@@ -1793,12 +1793,12 @@ export default function VisualizerPage() {
       {/* Save to Gallery Modal */}
       {saveModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+          <div className="w-full max-w-md bg-white border border-stone-200 rounded-2xl p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+            <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">
               Save Configuration to Presets
             </h3>
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold text-zinc-500">
+              <label className="text-[10px] uppercase font-bold text-stone-400">
                 Preset Title
               </label>
               <input
@@ -1806,7 +1806,7 @@ export default function VisualizerPage() {
                 value={saveTitle}
                 onChange={(e) => setSaveTitle(e.target.value)}
                 placeholder="e.g. High Altitude Aurora Wave"
-                className="w-full px-3.5 py-2.5 bg-zinc-950 border border-zinc-800 focus:border-indigo-500 rounded-xl text-xs text-white focus:outline-none transition-colors"
+                className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 focus:border-indigo-500 rounded-xl text-xs text-stone-900 focus:outline-none transition-colors"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && saveTitle.trim()) {
                     handleSaveComponent(saveTitle);
@@ -1821,14 +1821,14 @@ export default function VisualizerPage() {
                   setSaveTitle("");
                   setShareAfterSave(false);
                 }}
-                className="px-4 py-2 text-xs font-semibold text-zinc-400 hover:text-white bg-transparent border border-zinc-800 hover:bg-zinc-800 rounded-xl transition-all"
+                className="px-4 py-2 text-xs font-semibold text-stone-500 hover:text-stone-900 bg-transparent border border-stone-200 hover:bg-stone-100 rounded-xl transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleSaveComponent(saveTitle)}
                 disabled={isSaving || !saveTitle.trim()}
-                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-zinc-800 rounded-xl shadow-md transition-all flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:bg-stone-100 rounded-xl shadow-md transition-all flex items-center gap-1.5"
               >
                 {isSaving ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

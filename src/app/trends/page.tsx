@@ -342,7 +342,7 @@ export default function TrendsPage() {
   const displayedArticles = getDisplayedArticles();
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-[color-mix(in_srgb,var(--color-accent,#10b981)_30%,transparent)] font-sans relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 selection:bg-[color-mix(in_srgb,var(--color-accent,#10b981)_30%,transparent)] font-sans relative overflow-hidden flex flex-col">
       {/* Background Liquid Glass Glows */}
       <div
         className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] -z-10 pointer-events-none transition-all duration-1000"
@@ -362,7 +362,7 @@ export default function TrendsPage() {
       <main className="flex-grow max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
         <header
-          className="relative mb-12 p-6 md:p-8 rounded-2xl border bg-white/[0.01] backdrop-blur-md overflow-hidden"
+          className="relative mb-12 p-6 md:p-8 rounded-2xl border bg-white/70 backdrop-blur-md overflow-hidden"
           style={{
             borderColor: "rgba(255, 255, 255, 0.05)",
           }}
@@ -415,7 +415,7 @@ export default function TrendsPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-zinc-100 to-[color-mix(in_srgb,var(--color-accent,#10b981)_60%,white)] bg-clip-text text-transparent">
                 Tech Trend Center
               </h1>
-              <p className="text-zinc-400 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
+              <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
                 Zenn、Qiita、はてな、Publickeyなどの複数ソースから最新トレンド技術記事を収集。
                 毎日の要約を日刊まとめメールとしてお届けします。
               </p>
@@ -423,8 +423,8 @@ export default function TrendsPage() {
 
             {/* Quick telemetry metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
-              <div className="p-3 bg-black/40 border border-white/5 rounded-xl flex flex-col justify-between min-w-[120px]">
-                <span className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl flex flex-col justify-between min-w-[120px]">
+                <span className="text-[10px] text-stone-400 font-mono tracking-wider uppercase">
                   Node Status
                 </span>
                 <span className="text-xs font-bold font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
@@ -432,16 +432,16 @@ export default function TrendsPage() {
                   ONLINE
                 </span>
               </div>
-              <div className="p-3 bg-black/40 border border-white/5 rounded-xl flex flex-col justify-between min-w-[120px]">
-                <span className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl flex flex-col justify-between min-w-[120px]">
+                <span className="text-[10px] text-stone-400 font-mono tracking-wider uppercase">
                   Active Sources
                 </span>
-                <span className="text-sm font-bold font-mono text-white mt-1">
+                <span className="text-sm font-bold font-mono text-stone-900 mt-1">
                   {sources.length || "6"} feeds
                 </span>
               </div>
-              <div className="p-3 bg-black/40 border border-white/5 rounded-xl flex flex-col justify-between min-w-[120px] col-span-2 sm:col-span-1">
-                <span className="text-[10px] text-zinc-500 font-mono tracking-wider uppercase">
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl flex flex-col justify-between min-w-[120px] col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-stone-400 font-mono tracking-wider uppercase">
                   Cycle Interval
                 </span>
                 <span
@@ -460,13 +460,13 @@ export default function TrendsPage() {
           {/* Main Feed Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Feed Tabs Selector */}
-            <div className="p-1.5 rounded-2xl bg-white/[0.01] border border-white/5 backdrop-blur-sm flex flex-wrap gap-1.5">
+            <div className="p-1.5 rounded-2xl bg-white/70 border border-stone-200/60 backdrop-blur-sm flex flex-wrap gap-1.5">
               <button
                 onClick={() => setActiveTab("All")}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wide border transition-all relative ${
                   activeTab === "All"
-                    ? "bg-white/5 border-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] font-bold"
-                    : "bg-transparent border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                    ? "bg-stone-100/80 border-stone-200/80 text-stone-900 shadow-sm font-bold"
+                    : "bg-transparent border-transparent text-stone-400 hover:text-stone-700 hover:bg-stone-100/60"
                 }`}
               >
                 {activeTab === "All" && (
@@ -497,8 +497,8 @@ export default function TrendsPage() {
                     onClick={() => setActiveTab(source)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono uppercase tracking-wide border transition-all relative ${
                       isActive
-                        ? "bg-white/5 border-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.05)] font-bold"
-                        : "bg-transparent border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.02]"
+                        ? "bg-stone-100/80 border-stone-200/80 text-stone-900 shadow-sm font-bold"
+                        : "bg-transparent border-transparent text-stone-400 hover:text-stone-700 hover:bg-stone-100/60"
                     }`}
                   >
                     {isActive && (
@@ -529,17 +529,17 @@ export default function TrendsPage() {
                 {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
-                    className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 animate-pulse flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden"
+                    className="p-5 rounded-2xl bg-white/70 border border-stone-200/60 animate-pulse flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden"
                   >
-                    <div className="absolute top-0 left-0 w-[3px] h-full bg-white/5" />
+                    <div className="absolute top-0 left-0 w-[3px] h-full bg-stone-100/80" />
                     <div className="space-y-3 flex-1 pl-2">
-                      <div className="h-5 bg-white/5 rounded-md w-11/12" />
+                      <div className="h-5 bg-stone-100/80 rounded-md w-11/12" />
                       <div className="flex items-center gap-3">
-                        <div className="h-4 bg-white/5 rounded-md w-16" />
-                        <div className="h-3 bg-white/5 rounded-md w-24" />
+                        <div className="h-4 bg-stone-100/80 rounded-md w-16" />
+                        <div className="h-3 bg-stone-100/80 rounded-md w-24" />
                       </div>
                     </div>
-                    <div className="shrink-0 w-11 h-11 rounded-xl bg-white/5 border border-white/5" />
+                    <div className="shrink-0 w-11 h-11 rounded-xl bg-stone-100/80 border border-stone-200/60" />
                   </div>
                 ))}
               </div>
@@ -551,11 +551,11 @@ export default function TrendsPage() {
                   <h3 className="text-base font-bold font-mono text-rose-200 uppercase tracking-widest">
                     ⚠️ Telemetry Connection Error
                   </h3>
-                  <p className="text-xs text-zinc-500 font-mono mt-1">
+                  <p className="text-xs text-stone-400 font-mono mt-1">
                     [ERR_FEED_INGESTION_FAILED]
                   </p>
                 </div>
-                <p className="text-sm text-zinc-400 max-w-md mx-auto leading-relaxed">
+                <p className="text-sm text-stone-500 max-w-md mx-auto leading-relaxed">
                   {fetchError}
                 </p>
                 <button
@@ -567,12 +567,12 @@ export default function TrendsPage() {
               </div>
             ) : displayedArticles.length === 0 ? (
               // Empty State
-              <div className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 space-y-5">
+              <div className="p-8 rounded-2xl bg-white/70 border border-stone-200/60 space-y-5">
                 <div className="text-center">
-                  <p className="text-sm text-zinc-500 font-mono uppercase tracking-wider">
+                  <p className="text-sm text-stone-400 font-mono uppercase tracking-wider">
                     {"// FEED_STANDBY_MODE"}
                   </p>
-                  <p className="text-sm text-zinc-400 mt-2">
+                  <p className="text-sm text-stone-500 mt-2">
                     現在のタブには記事がありません。市場確認用の代替導線を表示しています。
                   </p>
                 </div>
@@ -600,19 +600,19 @@ export default function TrendsPage() {
                         href={item.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-2xl border border-white/5 bg-black/20 p-4 hover:border-emerald-500/20 transition-colors"
+                        className="rounded-2xl border border-stone-200/60 bg-stone-50/70 p-4 hover:border-emerald-500/20 transition-colors"
                       >
-                        <h3 className="text-sm font-bold text-zinc-100">{item.title}</h3>
-                        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{item.desc}</p>
+                        <h3 className="text-sm font-bold text-stone-800">{item.title}</h3>
+                        <p className="text-xs text-stone-400 mt-2 leading-relaxed">{item.desc}</p>
                       </a>
                     ) : (
                       <button
                         key={item.title}
                         onClick={fetchTrends}
-                        className="rounded-2xl border border-white/5 bg-black/20 p-4 text-left hover:border-emerald-500/20 transition-colors"
+                        className="rounded-2xl border border-stone-200/60 bg-stone-50/70 p-4 text-left hover:border-emerald-500/20 transition-colors"
                       >
-                        <h3 className="text-sm font-bold text-zinc-100">{item.title}</h3>
-                        <p className="text-xs text-zinc-500 mt-2 leading-relaxed">{item.desc}</p>
+                        <h3 className="text-sm font-bold text-stone-800">{item.title}</h3>
+                        <p className="text-xs text-stone-400 mt-2 leading-relaxed">{item.desc}</p>
                       </button>
                     ),
                   )}
@@ -626,7 +626,7 @@ export default function TrendsPage() {
                   return (
                     <article
                       key={idx}
-                      className="p-5 rounded-2xl bg-white/[0.01] border border-white/5 transition-all duration-300 hover:-translate-y-[2px] group relative overflow-hidden flex flex-col justify-between min-h-[170px]"
+                      className="p-5 rounded-2xl bg-white/70 border border-stone-200/60 transition-all duration-300 hover:-translate-y-[2px] group relative overflow-hidden flex flex-col justify-between min-h-[170px]"
                       style={
                         {
                           "--hover-color": details.color,
@@ -654,15 +654,15 @@ export default function TrendsPage() {
                       />
 
                       {/* L-shaped glowing corner brackets */}
-                      <div className="absolute top-2.5 left-2.5 w-2 h-2 border-t border-l border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
-                      <div className="absolute top-2.5 right-2.5 w-2 h-2 border-t border-r border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
-                      <div className="absolute bottom-2.5 left-2.5 w-2 h-2 border-b border-l border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
-                      <div className="absolute bottom-2.5 right-2.5 w-2 h-2 border-b border-r border-white/5 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute top-2.5 left-2.5 w-2 h-2 border-t border-l border-stone-200/60 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute top-2.5 right-2.5 w-2 h-2 border-t border-r border-stone-200/60 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute bottom-2.5 left-2.5 w-2 h-2 border-b border-l border-stone-200/60 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
+                      <div className="absolute bottom-2.5 right-2.5 w-2 h-2 border-b border-r border-stone-200/60 group-hover:border-[var(--hover-color)] transition-colors duration-300 pointer-events-none" />
 
                       {/* Card Header (Telemetry spec) */}
                       <div className="flex items-center justify-between w-full mb-3 select-none relative z-10">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-mono text-zinc-600 tracking-wider">
+                          <span className="text-[9px] font-mono text-stone-400 tracking-wider">
                             SIG_STR:
                           </span>
                           <div className="flex gap-[1.5px] items-end h-2">
@@ -699,7 +699,7 @@ export default function TrendsPage() {
                           </div>
                         </div>
 
-                        <span className="text-[9px] font-mono text-zinc-500 tracking-widest">
+                        <span className="text-[9px] font-mono text-stone-400 tracking-widest">
                           INTEGRITY_OK
                         </span>
                       </div>
@@ -710,14 +710,14 @@ export default function TrendsPage() {
                           href={article.link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-bold text-zinc-100 group-hover:text-white transition-colors leading-snug line-clamp-2 hover:underline text-sm md:text-[14px] mb-3"
+                          className="font-bold text-stone-800 group-hover:text-stone-900 transition-colors leading-snug line-clamp-2 hover:underline text-sm md:text-[14px] mb-3"
                         >
                           {article.title}
                         </a>
                       </div>
 
                       {/* Card Footer (Node category details & Action) */}
-                      <div className="flex items-end justify-between w-full mt-2 pt-3 border-t border-white/5 relative z-10">
+                      <div className="flex items-end justify-between w-full mt-2 pt-3 border-t border-stone-200/60 relative z-10">
                         <div className="flex flex-col gap-1 items-start">
                           {/* Source Badge with Glow */}
                           <span
@@ -731,7 +731,7 @@ export default function TrendsPage() {
                             {details.name}
                           </span>
 
-                          <span className="text-[8px] text-zinc-600 font-mono scale-90 -translate-x-1 select-none">
+                          <span className="text-[8px] text-stone-400 font-mono scale-90 -translate-x-1 select-none">
                             LAT 35.689 N / LON 139.691 E
                           </span>
                         </div>
@@ -750,7 +750,7 @@ export default function TrendsPage() {
                                 `${article.title}-${article.source}`
                               ]
                             }
-                            className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 hover:text-amber-400 transition-all duration-300 relative cursor-pointer"
+                            className="shrink-0 w-8 h-8 rounded-lg bg-stone-100/80 border border-stone-200/60 flex items-center justify-center text-stone-500 hover:text-amber-400 transition-all duration-300 relative cursor-pointer"
                             style={{
                               borderColor: favorites.some(
                                 (fav) =>
@@ -804,7 +804,7 @@ export default function TrendsPage() {
                             href={article.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="shrink-0 w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center text-zinc-400 group-hover:text-white transition-all duration-300"
+                            className="shrink-0 w-8 h-8 rounded-lg bg-stone-100/80 border border-stone-200/60 flex items-center justify-center text-stone-500 group-hover:text-stone-900 transition-all duration-300"
                             style={{
                               borderColor:
                                 "color-mix(in srgb, var(--color-accent, #10b981) 10%, rgba(255,255,255,0.05))",
@@ -841,7 +841,7 @@ export default function TrendsPage() {
           <div className="space-y-6">
             {/* Newsletter Glassmorphic Box */}
             <div
-              className="p-6 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden transition-all duration-300"
+              className="p-6 rounded-2xl bg-white/70 border backdrop-blur-md relative overflow-hidden transition-all duration-300"
               style={{
                 borderColor:
                   "color-mix(in srgb, var(--color-accent, #10b981) 15%, rgba(255,255,255,0.05))",
@@ -872,16 +872,16 @@ export default function TrendsPage() {
                   />
                 </div>
                 <div>
-                  <h2 className="text-sm font-mono tracking-wider text-zinc-500 uppercase">
+                  <h2 className="text-sm font-mono tracking-wider text-stone-400 uppercase">
                     {"// Uplink Console"}
                   </h2>
-                  <h3 className="text-lg font-bold tracking-tight text-white">
+                  <h3 className="text-lg font-bold tracking-tight text-stone-900">
                     日刊メール購読
                   </h3>
                 </div>
               </div>
 
-              <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+              <p className="text-sm text-stone-500 leading-relaxed mb-6">
                 毎朝、ZennやQiitaなどの最新トレンド上位3記事をHTML形式の要約メールでお届けします。
               </p>
 
@@ -893,7 +893,7 @@ export default function TrendsPage() {
                       UPLINK_ESTABLISHED
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
+                  <p className="text-xs text-stone-600 leading-relaxed">
                     {submitMessage}
                   </p>
                   <button
@@ -908,7 +908,7 @@ export default function TrendsPage() {
                   <div className="space-y-2">
                     <label
                       htmlFor="email"
-                      className="text-[10px] text-zinc-500 uppercase tracking-widest block font-mono"
+                      className="text-[10px] text-stone-400 uppercase tracking-widest block font-mono"
                     >
                       Target Node Email Address
                     </label>
@@ -919,7 +919,7 @@ export default function TrendsPage() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl bg-black/60 border border-white/5 text-white placeholder-zinc-700 focus:outline-none text-sm font-mono transition-all"
+                      className="w-full px-4 py-3 rounded-xl bg-white/80 border border-stone-200/60 text-stone-900 placeholder-stone-300 focus:outline-none text-sm font-mono transition-all"
                       style={{
                         borderColor: "rgba(255, 255, 255, 0.05)",
                       }}
@@ -949,7 +949,7 @@ export default function TrendsPage() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-white font-mono text-xs uppercase tracking-widest font-bold transition-all cursor-pointer"
+                    className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-stone-900 font-mono text-xs uppercase tracking-widest font-bold transition-all cursor-pointer"
                     style={{
                       backgroundColor: "var(--color-accent, #10b981)",
                       boxShadow:
@@ -975,17 +975,17 @@ export default function TrendsPage() {
               )}
 
               {/* Console Details List */}
-              <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
+              <div className="mt-8 pt-6 border-t border-stone-200/60 space-y-4">
                 <div className="flex gap-3 items-start">
                   <div
                     className="w-1.5 h-1.5 rounded-full mt-2 shrink-0 animate-pulse"
                     style={{ backgroundColor: "var(--color-accent, #10b981)" }}
                   />
                   <div>
-                    <h4 className="text-xs font-bold font-mono text-zinc-300 uppercase tracking-wide">
+                    <h4 className="text-xs font-bold font-mono text-stone-600 uppercase tracking-wide">
                       FILTERED_SELECT_NODES
                     </h4>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-stone-400 mt-0.5 leading-relaxed">
                       重要かつ高品質なトレンド情報（各ソースから上位3本）のみに絞り込んで配信します。
                     </p>
                   </div>
@@ -996,10 +996,10 @@ export default function TrendsPage() {
                     style={{ backgroundColor: "var(--color-accent, #10b981)" }}
                   />
                   <div>
-                    <h4 className="text-xs font-bold font-mono text-zinc-300 uppercase tracking-wide">
+                    <h4 className="text-xs font-bold font-mono text-stone-600 uppercase tracking-wide">
                       ENCRYPTED_DELIVERY
                     </h4>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-stone-400 mt-0.5 leading-relaxed">
                       Bccで一元管理して一括送信されるため、他ノードからアドレス情報が漏洩することはありません。
                     </p>
                   </div>
@@ -1010,10 +1010,10 @@ export default function TrendsPage() {
                     style={{ backgroundColor: "var(--color-accent, #10b981)" }}
                   />
                   <div>
-                    <h4 className="text-xs font-bold font-mono text-zinc-300 uppercase tracking-wide">
+                    <h4 className="text-xs font-bold font-mono text-stone-600 uppercase tracking-wide">
                       TERMINATE_SESSION_ANYTIME
                     </h4>
-                    <p className="text-[11px] text-zinc-500 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-stone-400 mt-0.5 leading-relaxed">
                       受信したメールに返信するだけで、配信システムとの接続はいつでも即座に破棄できます。
                     </p>
                   </div>
@@ -1023,7 +1023,7 @@ export default function TrendsPage() {
 
             {/* Quick Analytics Console */}
             <div
-              className="p-6 rounded-2xl bg-white/[0.01] border flex flex-col gap-4"
+              className="p-6 rounded-2xl bg-white/70 border flex flex-col gap-4"
               style={{
                 borderColor: "rgba(255, 255, 255, 0.05)",
               }}
@@ -1034,7 +1034,7 @@ export default function TrendsPage() {
                     className="w-4 h-4"
                     style={{ color: "var(--color-accent, #10b981)" }}
                   />
-                  <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-mono font-bold">
+                  <span className="text-[10px] text-stone-500 uppercase tracking-widest font-mono font-bold">
                     Signal Ingestion Telemetry
                   </span>
                 </div>
@@ -1057,7 +1057,7 @@ export default function TrendsPage() {
               </div>
 
               {/* Simulated Waveform Visualizer */}
-              <div className="h-16 w-full bg-black/40 border border-white/5 rounded-xl relative overflow-hidden flex items-end justify-between px-4 py-2 gap-[2px]">
+              <div className="h-16 w-full bg-white/70 border border-stone-200/60 rounded-xl relative overflow-hidden flex items-end justify-between px-4 py-2 gap-[2px]">
                 {/* Grid Overlay */}
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:8px_8px] pointer-events-none" />
 
@@ -1081,19 +1081,19 @@ export default function TrendsPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 bg-black/40 rounded-xl border border-white/5 text-center">
-                  <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+                <div className="p-3 bg-white/70 rounded-xl border border-stone-200/60 text-center">
+                  <p className="text-[10px] text-stone-400 font-mono uppercase tracking-wider">
                     Uplink Interval
                   </p>
-                  <p className="text-base font-bold font-mono text-white mt-1">
+                  <p className="text-base font-bold font-mono text-stone-900 mt-1">
                     60 MINS
                   </p>
                 </div>
-                <div className="p-3 bg-black/40 rounded-xl border border-white/5 text-center">
-                  <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-wider">
+                <div className="p-3 bg-white/70 rounded-xl border border-stone-200/60 text-center">
+                  <p className="text-[10px] text-stone-400 font-mono uppercase tracking-wider">
                     Node Feeds
                   </p>
-                  <p className="text-base font-bold font-mono text-white mt-1">
+                  <p className="text-base font-bold font-mono text-stone-900 mt-1">
                     {sources.length || "6"}
                   </p>
                 </div>
@@ -1106,7 +1106,7 @@ export default function TrendsPage() {
       {/* HUD Notification Toast */}
       {hudNotification.visible && (
         <div
-          className="fixed bottom-6 right-6 z-50 max-w-sm p-4 rounded-xl border bg-[#0a0a0ad9] backdrop-blur-md shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300"
+          className="fixed bottom-6 right-6 z-50 max-w-sm p-4 rounded-xl border bg-white/90 backdrop-blur-md shadow-2xl flex items-start gap-3 animate-in fade-in slide-in-from-bottom-5 duration-300"
           style={{
             borderColor:
               hudNotification.type === "success"
@@ -1121,17 +1121,17 @@ export default function TrendsPage() {
           ) : hudNotification.type === "error" ? (
             <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
           ) : (
-            <Terminal className="w-5 h-5 text-zinc-400 shrink-0 mt-0.5" />
+            <Terminal className="w-5 h-5 text-stone-500 shrink-0 mt-0.5" />
           )}
           <div className="flex-grow">
-            <div className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase mb-0.5">
+            <div className="text-[10px] font-mono tracking-widest text-stone-400 uppercase mb-0.5">
               {hudNotification.type === "success"
                 ? "SYS_LOG_OK"
                 : hudNotification.type === "error"
                   ? "SYS_LOG_ERR"
                   : "SYS_LOG_INFO"}
             </div>
-            <p className="text-xs font-mono text-zinc-200">
+            <p className="text-xs font-mono text-stone-700">
               {hudNotification.message}
             </p>
           </div>
@@ -1139,7 +1139,7 @@ export default function TrendsPage() {
             onClick={() =>
               setHudNotification((prev) => ({ ...prev, visible: false }))
             }
-            className="text-zinc-500 hover:text-zinc-300 text-xs font-mono select-none cursor-pointer"
+            className="text-stone-400 hover:text-stone-700 text-xs font-mono select-none cursor-pointer"
           >
             {"[X]"}
           </button>

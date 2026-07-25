@@ -7443,14 +7443,14 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
 
-              {/* INDEPENDENT FULL-WIDTH TREND ANALYTICS SECTION */}
-              <div className="w-full bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+              {/* INDEPENDENT FULL-WIDTH TREND ANALYTICS SECTION (Moved outside 2-col grid) */}
+              <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-purple-500 font-bold text-base">◆</span>
+                    <span className="text-rose-500 font-bold text-base">◆</span>
                     <h3 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
                       TREND ANALYTICS
-                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2 py-0.5 rounded-full font-sans font-semibold">
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2.5 py-0.5 rounded-full font-sans font-semibold">
                         ✨ 天道・時空補正可視化済
                       </span>
                     </h3>
@@ -7465,7 +7465,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "30days" ? "none" : "30days",
                           )
                         }
-                        className={`px-3 py-1 rounded-lg transition-all ${
+                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "30days"
                             ? "bg-rose-500 text-white shadow-xs font-bold"
                             : "text-stone-600 hover:text-stone-900"
@@ -7479,7 +7479,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "12months" ? "none" : "12months",
                           )
                         }
-                        className={`px-3 py-1 rounded-lg transition-all ${
+                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "12months"
                             ? "bg-rose-500 text-white shadow-xs font-bold"
                             : "text-stone-600 hover:text-stone-900"
@@ -7490,19 +7490,19 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </div>
 
                     {/* Multi-combination filtering presets */}
-                    <div className="flex items-center gap-1.5 bg-rose-50/50 border border-rose-100 p-1 rounded-xl text-xs font-semibold">
+                    <div className="flex items-center gap-1.5 bg-rose-50/60 border border-rose-100 p-1 rounded-xl text-xs font-semibold">
                       <button
                         onClick={() => {
                           setDirectionFilterMode((prev) =>
                             prev === "optimal_only" ? "composite" : "optimal_only",
                           );
                         }}
-                        className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                        className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                           directionFilterMode === "optimal_only"
-                            ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white font-bold shadow-xs"
-                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/60"
+                            ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-white font-bold shadow-md shadow-amber-200 scale-105"
+                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
                         }`}
-                        title="大吉・吉方位日のみに絞り込み"
+                        title="大吉・吉方位日をゴールド強調表示（他の色も保持）"
                       >
                         <span>🌟 大吉絞込</span>
                       </button>
@@ -7512,10 +7512,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                             prev === "exclude_noise" ? "composite" : "exclude_noise",
                           );
                         }}
-                        className={`px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                        className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                           directionFilterMode === "exclude_noise"
                             ? "bg-stone-800 text-white font-bold shadow-xs"
-                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/60"
+                            : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
                         }`}
                         title="五黄・暗剣・歳破などの大凶ノイズを除外"
                       >
@@ -7526,7 +7526,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
 
                 {heatmapMode !== "none" && heatmapData.length > 0 && (
-                  <div className="mt-3 bg-white/70 p-4 border border-rose-100/80 rounded-2xl overflow-x-auto shadow-inner space-y-3">
+                  <div className="mt-3 bg-white/70 p-4 border border-rose-100/80 rounded-2xl overflow-x-auto shadow-inner space-y-4">
                     {/* Monthly Timeline Player Control Toolbar */}
                     <div className="bg-white/90 border border-stone-200 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
                       <div className="flex items-center gap-2">
@@ -7587,127 +7587,127 @@ ${timingOptimization?.recommendationText || "特になし"}
                       </div>
                     </div>
 
-                      {/* Heatmap Grid Table */}
-                      <table className="w-full text-center border-collapse">
-                        <thead>
-                          <tr>
-                            <th className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-500 w-8 bg-zinc-950 sticky left-0 z-10">
-                              DIR
-                            </th>
+                    {/* Heatmap Grid Table */}
+                    <table className="w-full text-center border-collapse">
+                      <thead>
+                        <tr className="bg-stone-100/80">
+                          <th className="p-2 border border-stone-200 text-[10px] font-mono text-stone-600 font-bold w-10 bg-stone-100 sticky left-0 z-10">
+                            DIR
+                          </th>
+                          {heatmapData.map((d, i) => {
+                            const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+                            return (
+                              <th
+                                key={i}
+                                className={`p-1.5 border border-stone-200 text-[9px] font-mono whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-colors ${
+                                  isActiveCol
+                                    ? "text-rose-600 bg-rose-50 font-bold border-rose-300"
+                                    : d.isVoid
+                                    ? "text-stone-500 bg-amber-500/10"
+                                    : "text-stone-600 bg-white"
+                                }`}
+                                onClick={() => setTimeOffsetDays(d.offsetDays)}
+                                title="クリックでこの月に遷移"
+                              >
+                                {d.label}
+                              </th>
+                            );
+                          })}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(
+                          [
+                            "N",
+                            "NE",
+                            "E",
+                            "SE",
+                            "S",
+                            "SW",
+                            "W",
+                            "NW",
+                          ] as const
+                        ).map((dir) => (
+                          <tr key={dir}>
+                            <td className="p-1.5 border border-stone-200 text-[10px] font-mono text-stone-800 font-bold bg-stone-50 sticky left-0 z-10 shadow-xs">
+                              {dir}
+                            </td>
                             {heatmapData.map((d, i) => {
+                              let st = d.vectors[dir];
+                              const isTendoActive = d.tendoDir && d.tendoDir === dir;
                               const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+                              const isLuckyFilter = directionFilterMode === "optimal_only";
+                              const isOptimal = st === "OPTIMAL" || st === "OPTIMAL_REGULAR";
+
+                              let bgClass = "bg-stone-50/50 text-stone-400";
+                              if (isOptimal) {
+                                bgClass = isTendoActive
+                                  ? "bg-gradient-to-br from-amber-400 via-emerald-400 to-amber-500 text-stone-950 font-bold border-2 border-amber-300 ring-2 ring-amber-400 shadow-md shadow-amber-200/50 scale-105 z-10"
+                                  : "bg-emerald-500 text-white font-bold shadow-xs border border-emerald-400";
+                              } else if (st === "SAFE") {
+                                bgClass = isLuckyFilter ? "bg-blue-100/70 text-blue-700" : "bg-blue-100 text-blue-800 font-medium";
+                              } else if (
+                                st?.startsWith("NOISE_GOU") ||
+                                st?.startsWith("NOISE_ANKEN") ||
+                                st === "NOISE_HA"
+                              ) {
+                                bgClass = isLuckyFilter ? "bg-rose-100/70 text-rose-700" : "bg-rose-500 text-white font-semibold";
+                              } else if (
+                                st?.startsWith("NOISE_HONMEI") ||
+                                st?.startsWith("NOISE_TEKI") ||
+                                st?.startsWith("NOISE_GETSUMEI") ||
+                                st?.startsWith("NOISE_GETSUTEKI")
+                              ) {
+                                bgClass = isLuckyFilter ? "bg-purple-100/70 text-purple-700" : "bg-purple-500 text-white font-medium";
+                              } else if (
+                                st?.startsWith("NOISE_VOID") ||
+                                st?.startsWith("NOISE_NODE")
+                              ) {
+                                bgClass = isLuckyFilter ? "bg-amber-100/70 text-amber-800" : "bg-amber-400 text-amber-950 font-medium";
+                              } else if (st === "WARNING") {
+                                bgClass = isLuckyFilter ? "bg-orange-100/70 text-orange-800" : "bg-orange-400 text-white font-medium";
+                              }
+
+                              if (isActiveCol && !isOptimal) {
+                                bgClass += " ring-1 ring-rose-400/60";
+                              }
+
+                              const tendoNote = isTendoActive
+                                ? "✨【天道回座中】月の最高吉神・天道の作用により凶殺が補正・相殺されています"
+                                : "";
+
                               return (
-                                <th
+                                <td
                                   key={i}
-                                  className={`p-1 border border-zinc-800 text-[7px] font-mono whitespace-nowrap cursor-pointer hover:bg-zinc-800 transition-colors ${
-                                    isActiveCol
-                                      ? "text-cyan-300 bg-cyan-950/60 ring-2 ring-cyan-400/90 z-10 shadow-[0_0_10px_rgba(34,211,238,0.4)] font-bold"
-                                      : d.isVoid
-                                      ? "text-red-500 bg-red-950/20"
-                                      : "text-zinc-500 bg-zinc-900/30"
-                                  }`}
-                                  onClick={() => setTimeOffsetDays(d.offsetDays)}
-                                  title="クリックでこの月に遷移"
+                                  className={`p-1 border border-stone-200 cursor-pointer hover:scale-110 transition-all ${bgClass}`}
+                                  title={`${d.label} 方位${dir}: ${st} ${tendoNote} (クリックで層詳細・根拠表示)`}
+                                  onClick={() => {
+                                    setTimeOffsetDays(d.offsetDays);
+                                    setSelectedTrendCell({
+                                      label: d.label,
+                                      dir,
+                                      status: st,
+                                      isTendo: isTendoActive,
+                                      raw: d.rawVectorData,
+                                      tendoDir: d.tendoDir,
+                                      offsetDays: d.offsetDays,
+                                    });
+                                  }}
                                 >
-                                  {d.label}
-                                </th>
+                                  <div className="w-6 h-6 mx-auto flex items-center justify-center text-[10px]">
+                                    {isTendoActive ? (
+                                      <span className="text-[11px] drop-shadow-xs">✨</span>
+                                    ) : isOptimal ? (
+                                      <span className="text-[10px]">★</span>
+                                    ) : null}
+                                  </div>
+                                </td>
                               );
                             })}
                           </tr>
-                        </thead>
-                        <tbody>
-                          {(
-                            [
-                              "N",
-                              "NE",
-                              "E",
-                              "SE",
-                              "S",
-                              "SW",
-                              "W",
-                              "NW",
-                            ] as const
-                          ).map((dir) => (
-                            <tr key={dir}>
-                              <td className="p-1 border border-zinc-800 text-[8px] font-mono text-zinc-400 font-bold bg-zinc-950 sticky left-0 z-10 shadow-[2px_0_5px_rgba(0,0,0,0.5)]">
-                                {dir}
-                              </td>
-                              {heatmapData.map((d, i) => {
-                                let st = d.vectors[dir];
-                                const isTendoActive = d.tendoDir && d.tendoDir === dir;
-                                const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
-
-                                let bgClass = "bg-zinc-900/30";
-                                if (st === "OPTIMAL")
-                                  bgClass = isTendoActive
-                                    ? "bg-gradient-to-br from-emerald-500/90 to-amber-500/80 border border-amber-400/90 shadow-[0_0_8px_rgba(251,191,36,0.6)] z-0 relative"
-                                    : "bg-emerald-500/80 shadow-[0_0_5px_rgba(16,185,129,0.5)] z-0 relative";
-                                else if (st === "OPTIMAL_REGULAR")
-                                  bgClass =
-                                    "bg-emerald-500/35 border border-emerald-500/50";
-                                else if (st === "SAFE")
-                                  bgClass = "bg-blue-500/20";
-                                else if (
-                                  st?.startsWith("NOISE_GOU") ||
-                                  st?.startsWith("NOISE_ANKEN") ||
-                                  st === "NOISE_HA"
-                                )
-                                  bgClass = "bg-red-500/80";
-                                else if (
-                                  st?.startsWith("NOISE_HONMEI") ||
-                                  st?.startsWith("NOISE_TEKI") ||
-                                  st?.startsWith("NOISE_GETSUMEI") ||
-                                  st?.startsWith("NOISE_GETSUTEKI")
-                                )
-                                  bgClass = "bg-purple-500/80";
-                                else if (
-                                  st?.startsWith("NOISE_VOID") ||
-                                  st?.startsWith("NOISE_NODE")
-                                )
-                                  bgClass = "bg-yellow-500/80";
-                                else if (st === "WARNING")
-                                  bgClass = "bg-orange-500/80";
-
-                                if (isActiveCol) {
-                                  bgClass += " ring-1 ring-cyan-400/70";
-                                }
-
-                                const tendoNote = isTendoActive
-                                  ? "✨【天道回座中】月の最高吉神・天道の作用により凶殺が補正・相殺されています"
-                                  : "";
-
-                                return (
-                                  <td
-                                    key={i}
-                                    className={`p-0 border border-zinc-800 cursor-pointer hover:scale-105 transition-all ${bgClass}`}
-                                    title={`${d.label} 方位${dir}: ${st} ${tendoNote} (クリックで層詳細・根拠表示)`}
-                                    onClick={() => {
-                                      setTimeOffsetDays(d.offsetDays);
-                                      setSelectedTrendCell({
-                                        label: d.label,
-                                        dir,
-                                        status: st,
-                                        isTendo: isTendoActive,
-                                        raw: d.rawVectorData,
-                                        tendoDir: d.tendoDir,
-                                        offsetDays: d.offsetDays,
-                                      });
-                                    }}
-                                  >
-                                    <div className="w-5 h-5 mx-auto flex items-center justify-center">
-                                      {isTendoActive && (
-                                        <span className="text-[9px] text-amber-300 font-bold drop-shadow-[0_0_2px_rgba(0,0,0,0.8)]">
-                                          ✨
-                                        </span>
-                                      )}
-                                    </div>
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                        ))}
+                      </tbody>
+                    </table>
 
                       {/* Legend Bar */}
                       <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-400 justify-center flex-wrap">

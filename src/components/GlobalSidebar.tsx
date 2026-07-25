@@ -88,14 +88,14 @@ export function GlobalSidebar() {
           title={isCollapsed ? item.label : undefined}
           className={`
             flex items-center justify-between px-3 py-3 rounded-xl transition-all group
-            text-amber-300/90 hover:bg-amber-500/10 hover:text-amber-200 border border-amber-500/20 bg-amber-500/5
+            text-amber-700 hover:bg-amber-100/80 hover:text-amber-800 border border-amber-200/80 bg-amber-50/80
             ${isCollapsed ? "justify-center" : ""}
           `}
         >
           <div className="flex items-center gap-3">
             <Icon
               size={18}
-              className="shrink-0 text-amber-400 group-hover:scale-110 transition-transform"
+              className="shrink-0 text-amber-500 group-hover:scale-110 transition-transform"
             />
             {!isCollapsed && (
               <span className="text-sm font-semibold whitespace-nowrap">
@@ -104,7 +104,7 @@ export function GlobalSidebar() {
             )}
           </div>
           {!isCollapsed && (
-            <ExternalLink size={14} className="text-amber-400/70 shrink-0" />
+            <ExternalLink size={14} className="text-amber-500/70 shrink-0" />
           )}
         </a>
       );
@@ -149,7 +149,7 @@ export function GlobalSidebar() {
       {/* Mobile Toggle Button */}
       <button
         onClick={toggleSidebar}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 shadow-md shadow-rose-100/40"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -157,7 +157,7 @@ export function GlobalSidebar() {
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-40"
           onClick={closeSidebar}
         />
       )}
@@ -192,16 +192,16 @@ export function GlobalSidebar() {
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
           {/* Public Space */}
           {!isCollapsed && (
-            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-stone-400 uppercase">
               Public Space
             </div>
           )}
           {PUBLIC_ITEMS.map(renderNavItem)}
 
           {/* Secure Engine Space */}
-          <div className="my-4 border-t border-white/5" />
+          <div className="my-4 border-t border-rose-100/60" />
           {!isCollapsed && (
-            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-stone-400 uppercase">
               Secure Engines
             </div>
           )}
@@ -209,14 +209,14 @@ export function GlobalSidebar() {
         </nav>
 
         {/* Footer Area */}
-        <div className="p-4 border-t border-white/5 bg-zinc-950 z-10 shrink-0 flex flex-col gap-2">
+        <div className="p-4 border-t border-rose-100/60 bg-white/60 z-10 shrink-0 flex flex-col gap-2">
           {/* PWA App Install Widget */}
           {!isCollapsed && <PWAInstallPrompt />}
 
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className={`flex items-center text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 p-2 rounded-lg transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+            className={`flex items-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
             title={isCollapsed ? "ログアウト" : "ログアウト"}
           >
             <LogOut size={18} />
@@ -230,7 +230,7 @@ export function GlobalSidebar() {
           {/* Collapse Toggle for Desktop */}
           <button
             onClick={toggleCollapse}
-            className={`hidden lg:flex items-center text-zinc-400 hover:text-zinc-200 p-2 rounded-lg hover:bg-white/5 transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+            className={`hidden lg:flex items-center text-stone-400 hover:text-stone-700 p-2 rounded-xl hover:bg-stone-100/80 transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
             title={isCollapsed ? "メニューを展開" : "メニューを閉じる"}
           >
             {isCollapsed ? (
@@ -247,12 +247,12 @@ export function GlobalSidebar() {
 
           {/* Status */}
           <div
-            className={`px-3 py-3 rounded-xl bg-white/5 border border-white/10 flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
+            className={`px-3 py-3 rounded-xl bg-emerald-50/80 border border-emerald-100 flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
             title="システム稼働中"
           >
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             {!isCollapsed && (
-              <span className="text-[10px] text-zinc-400 font-medium tracking-widest uppercase whitespace-nowrap">
+              <span className="text-[10px] text-emerald-700 font-medium tracking-widest uppercase whitespace-nowrap">
                 システム稼働中
               </span>
             )}
@@ -260,9 +260,9 @@ export function GlobalSidebar() {
 
           {/* Creator Signature */}
           {!isCollapsed && (
-            <div className="text-[9px] text-zinc-600 font-mono text-center tracking-wider mt-1 select-none">
+            <div className="text-[9px] text-stone-400 font-mono text-center tracking-wider mt-1 select-none">
               Engineered by{" "}
-              <span className="text-zinc-500 font-medium hover:text-indigo-400 transition-colors">
+              <span className="text-stone-500 font-medium hover:text-rose-500 transition-colors">
                 M. Ishibashi
               </span>
             </div>

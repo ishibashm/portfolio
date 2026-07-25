@@ -115,28 +115,28 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4 font-sans">
-      <div className="w-full max-w-md bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-8 flex flex-col items-center shadow-2xl backdrop-blur-md relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 px-4 font-sans">
+      <div className="w-full max-w-md bg-white/80 border border-rose-100/80 rounded-3xl p-8 flex flex-col items-center shadow-xl shadow-rose-100/40 backdrop-blur-xl relative overflow-hidden">
         {/* Top subtle ambient glow */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-200/40 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-200/40 rounded-full blur-3xl"></div>
 
-        <h1 className="text-2xl font-bold mb-1 tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400">
+        <h1 className="text-2xl font-bold mb-1 tracking-wider text-stone-900 font-serif">
           不動産アービトラージ・ポータル
         </h1>
-        <p className="text-zinc-500 text-xs text-center mb-8 font-mono">
+        <p className="text-stone-400 text-xs text-center mb-8 font-mono">
           REAL ESTATE ARBITRAGE & WEALTH PORTAL
         </p>
 
         {/* Logged in User Status */}
         {currentUser && (
-          <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 mb-6 text-xs text-zinc-400 space-y-2">
+          <div className="w-full bg-stone-50 border border-stone-200/80 rounded-xl p-4 mb-6 text-xs text-stone-500 space-y-2">
             <div>現在ログイン中のアカウント:</div>
-            <div className="font-semibold text-zinc-200 break-all">
+            <div className="font-semibold text-stone-800 break-all">
               {currentUser.email}
             </div>
             <div
-              className={`font-bold ${currentUser.email?.toLowerCase() === "ishibashm@gmail.com" ? "text-emerald-400" : "text-rose-400"}`}
+              className={`font-bold ${currentUser.email?.toLowerCase() === "ishibashm@gmail.com" ? "text-emerald-600" : "text-rose-500"}`}
             >
               {currentUser.email?.toLowerCase() === "ishibashm@gmail.com"
                 ? "管理者として認証されています"
@@ -152,7 +152,7 @@ export default function LoginPage() {
                 setSuccessMessage(null);
                 window.location.reload();
               }}
-              className="mt-2 text-indigo-400 hover:text-indigo-300 underline font-medium cursor-pointer"
+              className="mt-2 text-rose-500 hover:text-rose-600 underline font-medium cursor-pointer"
             >
               ログアウトして別のアカウントでログイン
             </button>
@@ -163,7 +163,7 @@ export default function LoginPage() {
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-black px-6 py-2.5 rounded-lg font-medium hover:bg-zinc-200 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
+          className="w-full flex items-center justify-center gap-3 bg-white text-stone-800 border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
         >
           <svg
             className="w-4 h-4"
@@ -192,9 +192,9 @@ export default function LoginPage() {
 
         {/* Divider */}
         <div className="w-full flex items-center gap-3 my-6">
-          <div className="h-[1px] flex-1 bg-zinc-800"></div>
-          <span className="text-[10px] text-zinc-500 font-mono">OR</span>
-          <div className="h-[1px] flex-1 bg-zinc-800"></div>
+          <div className="h-[1px] flex-1 bg-rose-100"></div>
+          <span className="text-[10px] text-stone-400 font-mono">OR</span>
+          <div className="h-[1px] flex-1 bg-rose-100"></div>
         </div>
 
         {/* Credentials Form */}
@@ -203,7 +203,7 @@ export default function LoginPage() {
           className="w-full space-y-4 font-mono text-xs"
         >
           <div>
-            <label className="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">
+            <label className="block text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">
               メールアドレス (Email)
             </label>
             <input
@@ -212,12 +212,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
               placeholder="email@example.com"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-rose-300 focus:border-rose-300 transition-all"
             />
           </div>
 
           <div>
-            <label className="block text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">
+            <label className="block text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">
               パスワード (Password)
             </label>
             <input
@@ -226,18 +226,18 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
               placeholder="••••••••"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-rose-300 focus:border-rose-300 transition-all"
             />
           </div>
 
           {authError && (
-            <div className="p-3 bg-red-950/20 border border-red-900/40 rounded-lg text-red-400 text-[11px] leading-relaxed">
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">
               ⚠️ {authError}
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-lg text-emerald-400 text-[11px] leading-relaxed">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-[11px] leading-relaxed">
               ✅ {successMessage}
             </div>
           )}
@@ -246,7 +246,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-[0_0_15px_rgba(79,70,229,0.2)]"
+              className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-md shadow-rose-200"
             >
               {loading ? "送信中..." : "ログイン"}
             </button>
@@ -254,7 +254,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleEmailSignUp}
               disabled={loading}
-              className="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-750 text-zinc-300 font-semibold py-2.5 rounded-lg active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
+              className="flex-1 bg-white hover:bg-stone-50 border border-stone-200 text-stone-600 font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
             >
               新規登録
             </button>
@@ -262,7 +262,7 @@ export default function LoginPage() {
         </form>
 
         {/* Dev Bypass Section */}
-        <div className="w-full mt-4 pt-4 border-t border-zinc-800/60 flex flex-col items-center">
+        <div className="w-full mt-4 pt-4 border-t border-rose-100/80 flex flex-col items-center">
           <button
             type="button"
             onClick={() => {
@@ -270,13 +270,13 @@ export default function LoginPage() {
                 "dev_bypass_user=ishibashm@gmail.com; path=/; max-age=31536000";
               window.location.href = nextUrl;
             }}
-            className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 text-emerald-400 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-lg active:scale-[0.98] transition-all"
+            className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all"
           >
             ⚡ 開発用バイパスでログイン (ishibashm@gmail.com)
           </button>
         </div>
 
-        <p className="text-[10px] text-zinc-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
+        <p className="text-[10px] text-stone-400 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
           ローカル開発環境で動作しています。管理者アドレス (
           {process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashm@gmail.com"})
           などで登録し利用してください。

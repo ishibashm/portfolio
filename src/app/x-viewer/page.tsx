@@ -191,21 +191,21 @@ export default function XViewerPage() {
   const solarAngle = activeData?.solar?.azimuth || 180;
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-zinc-100 overflow-hidden font-mono relative">
+    <div className="flex h-screen bg-stone-50 text-stone-800 overflow-hidden font-mono relative">
       {/* Retro CRT overlay effects */}
       <div className="pointer-events-none fixed inset-0 z-50 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.15)_50%),linear-gradient(90deg,rgba(168,85,247,0.02),rgba(16,185,129,0.01),rgba(59,130,246,0.02))] bg-[size:100%_4px,3px_100%] opacity-80" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_800px_at_50%_200px,rgba(168,85,247,0.03),transparent_80%)] pointer-events-none z-10"></div>
 
       {/* Sidebar: Global Cities */}
-      <div className="w-72 md:w-80 flex-shrink-0 border-r border-zinc-900 flex flex-col h-full bg-zinc-950/90 z-20 backdrop-blur-md">
-        <div className="p-5 border-b border-zinc-900">
+      <div className="w-72 md:w-80 flex-shrink-0 border-r border-stone-200 flex flex-col h-full bg-stone-50/90 z-20 backdrop-blur-md">
+        <div className="p-5 border-b border-stone-200">
           <div className="flex items-center gap-2 text-purple-400 mb-3">
             <Globe className="w-5 h-5 animate-spin-slow" />
             <h1 className="text-sm font-bold uppercase tracking-widest">
               MONITOR NODES
             </h1>
           </div>
-          <p className="text-[10px] text-zinc-500 leading-relaxed">
+          <p className="text-[10px] text-stone-400 leading-relaxed">
             地球上の主要磁気観測ポイント。都市を選択して天体・地磁気アライメントのリアルタイム偏差を取得します。
           </p>
         </div>
@@ -221,19 +221,19 @@ export default function XViewerPage() {
                 className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1.5 ${
                   isSelected
                     ? "bg-purple-950/20 border-purple-500/40 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.05)]"
-                    : "bg-zinc-950/40 border-zinc-900 hover:border-zinc-800 text-zinc-400"
+                    : "bg-stone-50/40 border-stone-200 hover:border-stone-200 text-stone-500"
                 }`}
               >
                 <div className="flex items-center justify-between w-full">
                   <span className="text-xs font-bold uppercase tracking-wider">
                     {city.name}
                   </span>
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 flex items-center gap-1">
-                    <MapPin className="w-2.5 h-2.5 text-zinc-500" />
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-white border border-stone-200 flex items-center gap-1">
+                    <MapPin className="w-2.5 h-2.5 text-stone-400" />
                     {city.lat.toFixed(1)}°, {city.lon.toFixed(1)}°
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-500 truncate">
+                <p className="text-[10px] text-stone-400 truncate">
                   {city.jpName}
                 </p>
                 {isSelected && (
@@ -247,34 +247,34 @@ export default function XViewerPage() {
         </div>
 
         {/* Custom Simulation Form */}
-        <div className="p-4 border-t border-zinc-900 bg-zinc-950">
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase mb-3">
+        <div className="p-4 border-t border-stone-200 bg-stone-50">
+          <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-500 uppercase mb-3">
             <Sliders className="w-3.5 h-3.5 text-purple-500" />
             <span>CUSTOM TARGET SIMULATOR</span>
           </div>
           <form onSubmit={handleRunCustomSimulation} className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-zinc-500 uppercase">
+                <label className="text-[8px] text-stone-400 uppercase">
                   Latitude (緯度)
                 </label>
                 <input
                   type="text"
                   value={customLat}
                   onChange={(e) => setCustomLat(e.target.value)}
-                  className="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] text-zinc-300 outline-none focus:border-purple-500"
+                  className="bg-white border border-stone-200 rounded px-2 py-1 text-[10px] text-stone-600 outline-none focus:border-purple-500"
                   placeholder="35.6895"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-zinc-500 uppercase">
+                <label className="text-[8px] text-stone-400 uppercase">
                   Longitude (経度)
                 </label>
                 <input
                   type="text"
                   value={customLon}
                   onChange={(e) => setCustomLon(e.target.value)}
-                  className="bg-black border border-zinc-800 rounded px-2 py-1 text-[10px] text-zinc-300 outline-none focus:border-purple-500"
+                  className="bg-white border border-stone-200 rounded px-2 py-1 text-[10px] text-stone-600 outline-none focus:border-purple-500"
                   placeholder="139.6917"
                 />
               </div>
@@ -295,9 +295,9 @@ export default function XViewerPage() {
       </div>
 
       {/* Main Panel: Live HUD telemetry */}
-      <div className="flex-1 flex flex-col h-full bg-zinc-950/40 z-10 relative overflow-y-auto">
+      <div className="flex-1 flex flex-col h-full bg-stone-50/40 z-10 relative overflow-y-auto">
         {loading && !activeData ? (
-          <div className="flex-grow flex flex-col items-center justify-center text-zinc-500">
+          <div className="flex-grow flex flex-col items-center justify-center text-stone-400">
             <Loader2 className="w-8 h-8 animate-spin text-purple-500 mb-2" />
             <span className="text-xs uppercase tracking-widest">
               CONNECTING TELEMETRY NODE...
@@ -306,7 +306,7 @@ export default function XViewerPage() {
         ) : activeData ? (
           <div className="p-6 space-y-6 max-w-5xl w-full mx-auto pb-16">
             {/* Header info bar */}
-            <div className="flex justify-between items-center border-b border-zinc-900 pb-4">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-4">
               <div className="flex flex-col text-left">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse"></span>
@@ -314,7 +314,7 @@ export default function XViewerPage() {
                     {isCustomSimulated ? "SIMULATED_TARGET" : activeData.city}
                   </h2>
                 </div>
-                <span className="text-[10px] text-zinc-500">
+                <span className="text-[10px] text-stone-400">
                   LAT: {activeData.lat.toFixed(4)}° / LON:{" "}
                   {activeData.lon.toFixed(4)}° / TS:{" "}
                   {activeData.timestamp.slice(11, 19)} UTC
@@ -323,20 +323,20 @@ export default function XViewerPage() {
 
               {/* Refresh Controls */}
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-[10px] text-zinc-500 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-[10px] text-stone-400 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={autoRefresh && !isCustomSimulated}
                     disabled={isCustomSimulated}
                     onChange={(e) => setAutoRefresh(e.target.checked)}
-                    className="rounded border-zinc-800 text-purple-600 bg-black w-3.5 h-3.5 cursor-pointer disabled:opacity-50"
+                    className="rounded border-stone-200 text-purple-600 bg-white w-3.5 h-3.5 cursor-pointer disabled:opacity-50"
                   />
                   <span>10s AUTO-SYNC</span>
                 </label>
                 <button
                   onClick={() => fetchTelemetry(selectedCity)}
                   disabled={isCustomSimulated}
-                  className="p-1.5 bg-zinc-900 border border-zinc-800 rounded-lg hover:border-purple-500/40 text-zinc-400 hover:text-purple-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1.5 bg-white border border-stone-200 rounded-lg hover:border-purple-500/40 text-stone-500 hover:text-purple-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
@@ -346,33 +346,33 @@ export default function XViewerPage() {
             {/* Grid 1: Compass HUD & Numerical Vectors */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Graphical Compass (Col span 7) */}
-              <div className="lg:col-span-7 bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 flex flex-col items-center justify-center relative min-h-[350px] shadow-lg overflow-hidden group">
-                <div className="absolute top-4 left-4 flex items-center gap-1 text-[10px] font-bold text-zinc-500 uppercase">
+              <div className="lg:col-span-7 bg-stone-50/60 border border-stone-200 rounded-2xl p-5 flex flex-col items-center justify-center relative min-h-[350px] shadow-lg overflow-hidden group">
+                <div className="absolute top-4 left-4 flex items-center gap-1 text-[10px] font-bold text-stone-400 uppercase">
                   <Compass className="w-4 h-4 text-purple-500" />
                   <span>Spatial Azimuth HUD</span>
                 </div>
 
                 {/* SVG Visual Compass Dial */}
-                <div className="w-72 h-72 rounded-full border border-zinc-800/60 relative flex items-center justify-center mt-4 bg-black/20">
+                <div className="w-72 h-72 rounded-full border border-stone-200/60 relative flex items-center justify-center mt-4 bg-stone-50/70">
                   {/* Cardinal markings */}
-                  <span className="absolute top-2 text-[9px] text-zinc-600 font-bold">
+                  <span className="absolute top-2 text-[9px] text-stone-400 font-bold">
                     N
                   </span>
-                  <span className="absolute right-3 text-[9px] text-zinc-600 font-bold">
+                  <span className="absolute right-3 text-[9px] text-stone-400 font-bold">
                     E
                   </span>
-                  <span className="absolute bottom-2 text-[9px] text-zinc-600 font-bold">
+                  <span className="absolute bottom-2 text-[9px] text-stone-400 font-bold">
                     S
                   </span>
-                  <span className="absolute left-3 text-[9px] text-zinc-600 font-bold">
+                  <span className="absolute left-3 text-[9px] text-stone-400 font-bold">
                     W
                   </span>
 
                   {/* Compass grid lines */}
-                  <div className="absolute w-full h-[1px] bg-zinc-900/40"></div>
-                  <div className="absolute w-[1px] h-full bg-zinc-900/40"></div>
-                  <div className="absolute w-56 h-56 rounded-full border border-zinc-900/30"></div>
-                  <div className="absolute w-40 h-40 rounded-full border border-zinc-900/10"></div>
+                  <div className="absolute w-full h-[1px] bg-white/40"></div>
+                  <div className="absolute w-[1px] h-full bg-white/40"></div>
+                  <div className="absolute w-56 h-56 rounded-full border border-stone-200/30"></div>
+                  <div className="absolute w-40 h-40 rounded-full border border-stone-200/10"></div>
 
                   {/* True North Indicator (0 deg) */}
                   <div
@@ -393,7 +393,7 @@ export default function XViewerPage() {
                     </div>
                     {/* Declination label */}
                     <span
-                      className="absolute top-8 text-[8px] font-bold text-purple-400 bg-black/90 px-1 border border-purple-500/20"
+                      className="absolute top-8 text-[8px] font-bold text-purple-600 bg-white/90 px-1 border border-purple-300/60"
                       style={{ transform: `rotate(${-decAngle}deg)` }}
                     >
                       MAG: {decAngle.toFixed(1)}°
@@ -414,7 +414,7 @@ export default function XViewerPage() {
                         <div className="h-28 w-[1px] bg-gradient-to-t from-transparent to-amber-500/40 border-dashed border-r border-amber-500/20"></div>
                       </div>
                       <span
-                        className="absolute top-16 text-[8px] font-bold text-amber-500 bg-black/90 px-1 border border-amber-500/20"
+                        className="absolute top-16 text-[8px] font-bold text-amber-600 bg-white/90 px-1 border border-amber-300/60"
                         style={{ transform: `rotate(${-solarAngle}deg)` }}
                       >
                         SUN: {solarAngle.toFixed(1)}°
@@ -423,7 +423,7 @@ export default function XViewerPage() {
                   )}
                 </div>
 
-                <div className="mt-3 flex gap-4 text-[9px] text-zinc-500 font-mono">
+                <div className="mt-3 flex gap-4 text-[9px] text-stone-400 font-mono">
                   <span className="flex items-center gap-1">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>{" "}
                     真北 (True North)
@@ -442,17 +442,17 @@ export default function XViewerPage() {
               {/* Telemetry Vectors Table (Col span 5) */}
               <div className="lg:col-span-5 flex flex-col gap-4">
                 {/* Score Widget */}
-                <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg relative overflow-hidden flex flex-col items-center justify-center py-6">
+                <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg relative overflow-hidden flex flex-col items-center justify-center py-6">
                   {/* Subtle background score rings */}
                   <div className="absolute w-24 h-24 rounded-full border border-purple-500/5 animate-pulse"></div>
 
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mb-1">
+                  <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider mb-1">
                     Alignment Match Rate
                   </span>
                   <span className="text-4xl font-extrabold text-glow text-purple-400 font-mono">
                     {alignmentScore}%
                   </span>
-                  <span className="text-[8px] text-zinc-600 mt-1 uppercase tracking-widest text-center">
+                  <span className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest text-center">
                     {alignmentScore > 80
                       ? "Phase Synchronization: Perfect"
                       : alignmentScore > 50
@@ -462,19 +462,19 @@ export default function XViewerPage() {
                 </div>
 
                 {/* Vector parameters */}
-                <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg flex-1 flex flex-col justify-between gap-4">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase border-b border-zinc-900 pb-2">
+                <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg flex-1 flex flex-col justify-between gap-4">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase border-b border-stone-200 pb-2">
                     <Gauge className="w-4 h-4 text-purple-500" />
                     <span>Magnetic Core Vectors</span>
                   </div>
 
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-900/60">
+                    <div className="flex justify-between items-center bg-white/70 p-2 rounded border border-stone-200/60">
                       <div className="flex flex-col">
-                        <span className="text-[9px] text-zinc-500 uppercase">
+                        <span className="text-[9px] text-stone-400 uppercase">
                           Declination (偏角)
                         </span>
-                        <span className="text-[7px] text-zinc-600">
+                        <span className="text-[7px] text-stone-400">
                           真北から磁北のズレ角
                         </span>
                       </div>
@@ -483,12 +483,12 @@ export default function XViewerPage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-900/60">
+                    <div className="flex justify-between items-center bg-white/70 p-2 rounded border border-stone-200/60">
                       <div className="flex flex-col">
-                        <span className="text-[9px] text-zinc-500 uppercase">
+                        <span className="text-[9px] text-stone-400 uppercase">
                           Inclination (伏角)
                         </span>
-                        <span className="text-[7px] text-zinc-600">
+                        <span className="text-[7px] text-stone-400">
                           地球内部に向かう磁場角度
                         </span>
                       </div>
@@ -497,12 +497,12 @@ export default function XViewerPage() {
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-zinc-900/60">
+                    <div className="flex justify-between items-center bg-white/70 p-2 rounded border border-stone-200/60">
                       <div className="flex flex-col">
-                        <span className="text-[9px] text-zinc-500 uppercase">
+                        <span className="text-[9px] text-stone-400 uppercase">
                           Intensity (全磁力)
                         </span>
-                        <span className="text-[7px] text-zinc-600">
+                        <span className="text-[7px] text-stone-400">
                           磁場のエネルギー絶対値
                         </span>
                       </div>
@@ -515,7 +515,7 @@ export default function XViewerPage() {
                     </div>
                   </div>
 
-                  <div className="text-[8.5px] text-zinc-500 leading-normal text-justify">
+                  <div className="text-[8.5px] text-stone-400 leading-normal text-justify">
                     ※これらの地磁気情報は、国際標準地球磁気モデル (WMM)
                     の2025年ベース公式係数に基づき計算された実シミュレーション値です。
                   </div>
@@ -526,8 +526,8 @@ export default function XViewerPage() {
             {/* Grid 2: Space Weather HUD & Aurora Monitoring */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Space Weather index */}
-              <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg flex flex-col gap-3 relative overflow-hidden group">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase">
+              <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg flex flex-col gap-3 relative overflow-hidden group">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400 uppercase">
                   <CloudLightning className="w-4 h-4 text-purple-500" />
                   <span>Magnetic Storm index</span>
                 </div>
@@ -551,14 +551,14 @@ export default function XViewerPage() {
                         : "Optimal (極平穏)"}
                   </span>
                 </div>
-                <p className="text-[9px] text-zinc-500 leading-relaxed text-justify">
+                <p className="text-[9px] text-stone-400 leading-relaxed text-justify">
                   Kp指数は地磁気撹乱度を示します。高緯度（レイキャビク等）ではKpの上昇に伴いオーロラの発生域が拡張されます。
                 </p>
               </div>
 
               {/* Solar Wind */}
-              <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase">
+              <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg flex flex-col gap-3">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400 uppercase">
                   <Zap className="w-4 h-4 text-purple-500" />
                   <span>Solar Wind Speed</span>
                 </div>
@@ -568,7 +568,7 @@ export default function XViewerPage() {
                   </span>
                 </div>
                 {/* Visual simulated progress bar */}
-                <div className="w-full bg-zinc-900 h-1.5 rounded-full overflow-hidden border border-zinc-800">
+                <div className="w-full bg-white h-1.5 rounded-full overflow-hidden border border-stone-200">
                   <div
                     className="bg-purple-500 h-full transition-all duration-700"
                     style={{
@@ -576,14 +576,14 @@ export default function XViewerPage() {
                     }}
                   ></div>
                 </div>
-                <p className="text-[9px] text-zinc-500 leading-relaxed text-justify">
+                <p className="text-[9px] text-stone-400 leading-relaxed text-justify">
                   太陽から放出されるプラズマの風速。平均風速は300km/s〜400km/sですが、フレア爆発時は700km/sを越えます。
                 </p>
               </div>
 
               {/* Aurora Chance */}
-              <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg flex flex-col gap-3 relative">
-                <div className="flex items-center gap-2 text-[10px] font-bold text-zinc-500 uppercase">
+              <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg flex flex-col gap-3 relative">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400 uppercase">
                   <Activity className="w-4 h-4 text-purple-500" />
                   <span>Aurora Visibility</span>
                 </div>
@@ -597,15 +597,15 @@ export default function XViewerPage() {
                     </span>
                   )}
                 </div>
-                <p className="text-[9px] text-zinc-500 leading-relaxed text-justify">
+                <p className="text-[9px] text-stone-400 leading-relaxed text-justify">
                   夜間かつ雲が無い状態でのオーロラ視認予測度。極域シールド層への宇宙プラズマ電荷の衝突確率を示しています。
                 </p>
               </div>
             </div>
 
             {/* Grid 3: Historical Alignment finder or Solar Noon Calculations */}
-            <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-5 shadow-lg space-y-4">
-              <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-500 uppercase border-b border-zinc-900 pb-2">
+            <div className="bg-stone-50/60 border border-stone-200 rounded-2xl p-5 shadow-lg space-y-4">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold text-stone-400 uppercase border-b border-stone-200 pb-2">
                 <Calendar className="w-4 h-4 text-purple-500" />
                 <span>Solar Coordinates Telemetry</span>
               </div>
@@ -613,23 +613,23 @@ export default function XViewerPage() {
                 {activeData.solar?.success ? (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-500">
+                      <span className="text-stone-400">
                         Sun Altitude Angle (太陽高度角)
                       </span>
-                      <span className="font-bold text-zinc-300">
+                      <span className="font-bold text-stone-600">
                         {activeData.solar.elevation.toFixed(3)}°
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-500">
+                      <span className="text-stone-400">
                         Sun Azimuth (太陽方位角)
                       </span>
-                      <span className="font-bold text-zinc-300">
+                      <span className="font-bold text-stone-600">
                         {activeData.solar.azimuth.toFixed(3)}°
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className="text-zinc-500">Solar Vector State</span>
+                      <span className="text-stone-400">Solar Vector State</span>
                       <span className="font-bold text-purple-400">
                         {activeData.solar.elevation > 0
                           ? "IN PHASE (昼・太陽光結合)"
@@ -638,13 +638,13 @@ export default function XViewerPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-zinc-500 text-xs py-4">
+                  <div className="text-stone-400 text-xs py-4">
                     太陽高度計算エラーが発生しました。
                   </div>
                 )}
 
-                <div className="text-[9px] text-zinc-500 leading-relaxed text-justify flex flex-col justify-center">
-                  <div className="flex items-start gap-1.5 text-zinc-400 font-bold mb-1">
+                <div className="text-[9px] text-stone-400 leading-relaxed text-justify flex flex-col justify-center">
+                  <div className="flex items-start gap-1.5 text-stone-500 font-bold mb-1">
                     <AlertTriangle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                     <span>真太陽時（Solar Time）との連動</span>
                   </div>
@@ -656,7 +656,7 @@ export default function XViewerPage() {
             </div>
           </div>
         ) : (
-          <div className="flex-grow flex flex-col items-center justify-center text-zinc-500">
+          <div className="flex-grow flex flex-col items-center justify-center text-stone-400">
             <span className="text-xs uppercase tracking-widest">
               NO TELEMETRY RECORDED IN CURRENT SESSION
             </span>

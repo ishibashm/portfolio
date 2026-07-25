@@ -191,32 +191,32 @@ export default function DataEnginePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-indigo-500/30 font-sans relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 selection:bg-rose-500/20 font-sans relative overflow-hidden flex flex-col">
       {/* Background Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-emerald-600/5 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-blue-600/5 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-emerald-200/30 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-sky-200/30 rounded-full blur-[150px] -z-10 pointer-events-none" />
 
       {/* Navigation */}
-      <nav className="w-full px-6 py-6 border-b border-white/5 relative z-10 flex items-center justify-between bg-black/20 backdrop-blur-md">
+      <nav className="w-full px-6 py-6 border-b border-rose-100/80 relative z-10 flex items-center justify-between bg-white/70 backdrop-blur-xl">
         <div className="flex items-center gap-6">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-medium"
+            className="flex items-center gap-2 text-stone-500 hover:text-stone-900 transition-colors text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             Oracle Hub
           </Link>
-          <div className="h-4 w-px bg-zinc-800"></div>
+          <div className="h-4 w-px bg-stone-200"></div>
           <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-emerald-400" />
-            <span className="font-mono text-sm tracking-widest uppercase text-emerald-50">
+            <Database className="w-4 h-4 text-emerald-600" />
+            <span className="font-mono text-sm tracking-widest uppercase text-stone-800">
               Data Engine
             </span>
           </div>
-          <div className="h-4 w-px bg-zinc-800"></div>
+          <div className="h-4 w-px bg-stone-200"></div>
           <Link
             href="/research/yfinance"
-            className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors text-sm font-medium font-mono"
+            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors text-sm font-medium font-mono"
           >
             <TrendingUp className="w-4 h-4" />
             GS-Quant Analyzer
@@ -224,11 +224,11 @@ export default function DataEnginePage() {
         </div>
 
         {/* Status Indicator */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200">
           <div
-            className={`w-2 h-2 rounded-full ${isExtracting ? "bg-amber-400 animate-pulse" : "bg-emerald-400"}`}
+            className={`w-2 h-2 rounded-full ${isExtracting ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`}
           ></div>
-          <span className="text-[10px] font-mono tracking-widest text-emerald-300 uppercase">
+          <span className="text-[10px] font-mono tracking-widest text-emerald-700 uppercase">
             {isExtracting ? "監査レポート生成中..." : "システム待機中"}
           </span>
         </div>
@@ -239,16 +239,16 @@ export default function DataEnginePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[400px] shrink-0">
           {/* Left Column: Control Panel */}
           <div className="lg:col-span-4 flex flex-col gap-6">
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col gap-5 h-full">
-              <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                  <Code2 className="w-5 h-5 text-blue-400" />
+            <div className="p-6 rounded-3xl bg-white/80 border border-rose-100/80 backdrop-blur-xl shadow-xl shadow-rose-100/30 flex flex-col gap-5 h-full">
+              <div className="flex items-center gap-3 border-b border-rose-100/60 pb-4">
+                <div className="w-10 h-10 rounded-xl bg-sky-500 text-white shadow-md shadow-sky-200 flex items-center justify-center">
+                  <Code2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight text-white/90">
+                  <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                     アライメント監査レポート生成エンジン
                   </h2>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-stone-400">
                     天体と地磁気の空間同期状態を検証
                   </p>
                 </div>
@@ -256,13 +256,13 @@ export default function DataEnginePage() {
 
               <div className="flex flex-col gap-4 flex-1">
                 <div>
-                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-mono text-stone-400 mb-1.5 uppercase tracking-wider">
                     観測ノード (都市)
                   </label>
                   <select
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
+                    className="w-full bg-white border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-700 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-300 transition-all font-mono"
                   >
                     <option value="Tokyo">Tokyo</option>
                     <option value="London">London</option>
@@ -275,7 +275,7 @@ export default function DataEnginePage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-zinc-400 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-mono text-stone-400 mb-1.5 uppercase tracking-wider">
                     シミュレーション期間 (日数)
                   </label>
                   <input
@@ -284,7 +284,7 @@ export default function DataEnginePage() {
                     onChange={(e) => setScrolls(Number(e.target.value))}
                     min="1"
                     max="30"
-                    className="w-full bg-black/50 border border-zinc-800 rounded-lg px-4 py-2.5 text-sm text-zinc-200 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition-all font-mono"
+                    className="w-full bg-white border border-stone-200 rounded-xl px-4 py-2.5 text-sm text-stone-700 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-300 transition-all font-mono"
                   />
                 </div>
 
@@ -292,7 +292,7 @@ export default function DataEnginePage() {
                   <button
                     onClick={handleExtract}
                     disabled={isExtracting || !url}
-                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-zinc-800 disabled:text-zinc-550 text-white font-medium py-3 rounded-lg transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:shadow-none"
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-stone-200 disabled:text-stone-400 text-white font-medium py-3 rounded-xl transition-all shadow-md shadow-emerald-200 disabled:shadow-none"
                   >
                     <Play className="w-4 h-4" />
                     {isExtracting
@@ -357,15 +357,15 @@ export default function DataEnginePage() {
         </div>
 
         {/* Bottom Row: Local Data Vault */}
-        <div className="rounded-2xl bg-white/[0.02] border border-white/10 backdrop-blur-xl shadow-2xl flex flex-col shrink-0 min-h-[500px]">
-          <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center">
+        <div className="rounded-3xl bg-white/80 border border-rose-100/80 backdrop-blur-xl shadow-xl shadow-rose-100/30 flex flex-col shrink-0 min-h-[500px]">
+          <div className="px-6 py-5 border-b border-rose-100/60 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <FolderOpen className="w-5 h-5 text-blue-400" />
               <div>
-                <h2 className="text-lg font-semibold tracking-tight text-white/90">
+                <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                   監査レポートアーカイブ金庫 (Audit Report Archive)
                 </h2>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-stone-400">
                   生成された空間アライメント監査報告書 Markdownファイル
                   (./audit_reports に保存)
                 </p>
@@ -374,7 +374,7 @@ export default function DataEnginePage() {
             <button
               onClick={fetchFiles}
               disabled={isLoadingFiles}
-              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors border border-white/5"
+              className="p-2 rounded-lg bg-stone-100/80 hover:bg-stone-200/80 text-stone-500 hover:text-stone-800 transition-colors border border-stone-200/60"
             >
               <RefreshCw
                 className={`w-4 h-4 ${isLoadingFiles ? "animate-spin" : ""}`}
@@ -384,7 +384,7 @@ export default function DataEnginePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-white/5 flex-1">
             {/* File List */}
-            <div className="lg:col-span-1 p-4 overflow-y-auto max-h-[500px] custom-scrollbar bg-black/20">
+            <div className="lg:col-span-1 p-4 overflow-y-auto max-h-[500px] custom-scrollbar bg-stone-50/60">
               {isLoadingFiles ? (
                 <div className="text-center py-8 text-zinc-500 text-sm font-mono">
                   データを読み込み中...
@@ -411,11 +411,11 @@ export default function DataEnginePage() {
                         />
                         <div className="truncate">
                           <p
-                            className={`text-sm font-medium truncate ${selectedFileName === file.filename ? "text-blue-100" : "text-zinc-300"}`}
+                            className={`text-sm font-medium truncate ${selectedFileName === file.filename ? "text-sky-700" : "text-stone-600"}`}
                           >
                             Observer Node: {file.city}
                           </p>
-                          <p className="text-xs text-zinc-500 mt-0.5 font-mono">
+                          <p className="text-xs text-stone-400 mt-0.5 font-mono">
                             Span: {file.days} Days •{" "}
                             {(file.sizeBytes / 1024).toFixed(1)} KB
                           </p>
@@ -461,7 +461,7 @@ export default function DataEnginePage() {
                   <textarea
                     readOnly
                     value={selectedFileContent}
-                    className="flex-1 w-full p-4 bg-black/50 border border-white/5 rounded-xl font-mono text-xs text-zinc-300 focus:outline-none custom-scrollbar"
+                    className="flex-1 w-full p-4 bg-stone-50 border border-stone-200/80 rounded-xl font-mono text-xs text-stone-600 focus:outline-none custom-scrollbar"
                   />
                 </>
               ) : (

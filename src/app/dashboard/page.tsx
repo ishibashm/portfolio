@@ -246,13 +246,13 @@ export default async function DashboardPage() {
         {/* BENTO GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 auto-rows-[minmax(180px,auto)] gap-6">
           {/* BENTO ITEM 2: NBA Engine Status */}
-          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/20 blur-2xl rounded-full"></div>
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-indigo-100 shadow-xl shadow-indigo-100/40 relative overflow-hidden hover:-translate-y-0.5 transition-all">
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-200/40 blur-2xl rounded-full"></div>
             <div className="flex items-center gap-3 mb-4 relative z-10">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                <BrainCircuit className="w-5 h-5 text-indigo-300" />
+              <div className="w-10 h-10 rounded-xl bg-indigo-500 text-white shadow-md shadow-indigo-200 flex items-center justify-center">
+                <BrainCircuit className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-indigo-50">
+              <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                 アクションエンジン
               </h2>
             </div>
@@ -262,31 +262,31 @@ export default async function DashboardPage() {
                 <>
                   <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-xs text-indigo-300/70 uppercase tracking-widest mb-1">
+                      <p className="text-xs text-indigo-400 uppercase tracking-widest mb-1">
                         推奨アクション (Recommended)
                       </p>
-                      <h3 className="text-2xl font-bold text-white tracking-tight">
+                      <h3 className="text-2xl font-bold text-stone-900 tracking-tight">
                         {nbaResult.suggestedAction}
                       </h3>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs text-indigo-300/70 uppercase tracking-widest mb-1">
+                      <p className="text-xs text-indigo-400 uppercase tracking-widest mb-1">
                         確信度 (Confidence)
                       </p>
-                      <p className="text-lg font-semibold text-indigo-300">
+                      <p className="text-lg font-semibold text-indigo-600">
                         {(nbaResult.confidence * 100).toFixed(0)}%
                       </p>
                     </div>
                   </div>
-                  <div className="mt-2 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div className="mt-2 w-full h-1.5 bg-indigo-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-400 rounded-full"
+                      className="h-full bg-indigo-500 rounded-full"
                       style={{ width: `${nbaResult.confidence * 100}%` }}
                     ></div>
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-stone-400">
                   RLエージェント オフライン
                 </p>
               )}
@@ -294,12 +294,12 @@ export default async function DashboardPage() {
           </section>
 
           {/* BENTO ITEM 3: Biometrics (Oura) */}
-          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all">
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-rose-100 shadow-xl shadow-rose-100/40 hover:-translate-y-0.5 transition-all">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
-                <HeartPulse className="w-5 h-5 text-rose-400" />
+              <div className="w-10 h-10 rounded-xl bg-rose-500 text-white shadow-md shadow-rose-200 flex items-center justify-center">
+                <HeartPulse className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-white/90">
+              <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                 生体情報 (Biometrics)
               </h2>
             </div>
@@ -307,28 +307,28 @@ export default async function DashboardPage() {
             {readinessData ? (
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-400">
+                  <div className="flex items-center gap-2 text-stone-500">
                     <BatteryCharging className="w-4 h-4" />
                     <span className="text-sm">コンディション (Readiness)</span>
                   </div>
-                  <span className="text-xl font-bold text-white">
+                  <span className="text-xl font-bold text-stone-900">
                     {readinessData.score}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-400">
+                  <div className="flex items-center gap-2 text-stone-500">
                     <Activity className="w-4 h-4" />
                     <span className="text-sm">回復指数 (Recovery)</span>
                   </div>
-                  <span className="text-lg font-medium text-rose-300">
+                  <span className="text-lg font-medium text-rose-500">
                     {readinessData.contributors?.recovery_index || "--"}
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center gap-2 opacity-50">
-                <Radio className="w-6 h-6 text-gray-500 mb-1" />
-                <p className="text-xs text-gray-500">
+              <div className="h-full flex flex-col items-center justify-center text-center gap-2 opacity-60">
+                <Radio className="w-6 h-6 text-stone-400 mb-1" />
+                <p className="text-xs text-stone-400">
                   Oura API未接続またはキーがありません
                 </p>
               </div>
@@ -336,12 +336,12 @@ export default async function DashboardPage() {
           </section>
 
           {/* BENTO ITEM 4: Environment Context (Tavily) */}
-          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-cyan-100 shadow-xl shadow-cyan-100/40 hover:-translate-y-0.5 transition-all flex flex-col">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-                <Globe className="w-5 h-5 text-cyan-400" />
+              <div className="w-10 h-10 rounded-xl bg-cyan-500 text-white shadow-md shadow-cyan-200 flex items-center justify-center">
+                <Globe className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-white/90">
+              <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                 マクロ環境インテリジェンス
               </h2>
             </div>
@@ -354,52 +354,52 @@ export default async function DashboardPage() {
                      href={result.url}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="group flex gap-3 items-start p-2.5 rounded-xl hover:bg-white/5 transition-colors"
+                     className="group flex gap-3 items-start p-2.5 rounded-xl hover:bg-cyan-50/80 transition-colors"
                   >
-                    <Zap className="w-4 h-4 text-cyan-500/50 mt-0.5 flex-shrink-0 group-hover:text-cyan-400 transition-colors" />
-                    <p className="text-sm text-gray-300 line-clamp-2 leading-relaxed group-hover:text-white transition-colors">
+                    <Zap className="w-4 h-4 text-cyan-400 mt-0.5 flex-shrink-0 group-hover:text-cyan-600 transition-colors" />
+                    <p className="text-sm text-stone-600 line-clamp-2 leading-relaxed group-hover:text-stone-900 transition-colors">
                       {result.title || result.content}
                     </p>
                   </a>
                 ))
               ) : (
-                <div className="text-center opacity-50">
-                  <Globe className="w-6 h-6 text-gray-500 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500">Tavily API未接続</p>
+                <div className="text-center opacity-60">
+                  <Globe className="w-6 h-6 text-stone-400 mx-auto mb-2" />
+                  <p className="text-xs text-stone-400">Tavily API未接続</p>
                 </div>
               )}
             </div>
           </section>
 
           {/* BENTO ITEM 5: Astrological Timing (Updated with Lunar Phase & Rokuyo) */}
-          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+          <section className="lg:col-span-1 lg:row-span-1 p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-purple-100 shadow-xl shadow-purple-100/40 hover:-translate-y-0.5 transition-all flex flex-col">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                <Compass className="w-5 h-5 text-purple-400" />
+              <div className="w-10 h-10 rounded-xl bg-purple-500 text-white shadow-md shadow-purple-200 flex items-center justify-center">
+                <Compass className="w-5 h-5" />
               </div>
-              <h2 className="text-lg font-semibold tracking-tight text-white/90">
+              <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                 アストロ・タイミング
               </h2>
             </div>
 
             {/* Lunar & Rokuyo Highlight */}
-            <div className="mb-4 bg-gradient-to-r from-purple-900/20 to-transparent p-3 rounded-xl border border-purple-500/20">
+            <div className="mb-4 bg-gradient-to-r from-purple-50 to-transparent p-3 rounded-xl border border-purple-200/60">
               <div className="flex justify-between items-center mb-1">
                 <div className="flex items-center gap-2">
-                  <Moon className="w-4 h-4 text-purple-300" />
-                  <span className="text-xs text-purple-300 font-medium">
+                  <Moon className="w-4 h-4 text-purple-500" />
+                  <span className="text-xs text-purple-600 font-medium">
                     月相・六曜 (Lunar & Rokuyo)
                   </span>
                 </div>
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-stone-400">
                   {lunarDateString}
                 </span>
               </div>
               <div className="flex justify-between items-end mt-2">
-                <span className="text-xl font-bold text-white tracking-widest">
+                <span className="text-xl font-bold text-stone-900 tracking-widest">
                   {rokuyoName?.split(" ")[0] ?? "大安"}
                 </span>
-                <span className="text-sm text-purple-200">
+                <span className="text-sm text-purple-600">
                   月相: {yueXiang}
                 </span>
               </div>
@@ -407,25 +407,25 @@ export default async function DashboardPage() {
 
             <div className="flex flex-col gap-3 flex-grow">
               {timings.length === 0 ? (
-                <p className="text-gray-500 text-xs text-center py-2 opacity-60">
+                <p className="text-stone-400 text-xs text-center py-2">
                   今後の吉日データはありません。
                 </p>
               ) : (
                 timings.slice(0, 2).map((timing: TimingAstrology) => (
                   <div
                     key={timing.id}
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/5"
+                    className="p-2.5 rounded-xl bg-purple-50/60 border border-purple-100/80"
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-[10px] uppercase text-purple-300 font-bold">
+                      <span className="text-[10px] uppercase text-purple-600 font-bold">
                         {timing.kuseiType}
                       </span>
-                      <span className="text-[9px] text-gray-500">
+                      <span className="text-[9px] text-stone-400">
                         {new Date(timing.date).toLocaleDateString()}
                       </span>
                     </div>
                     {timing.insight && (
-                      <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">
+                      <p className="text-[11px] text-stone-500 line-clamp-2 leading-relaxed">
                         {timing.insight}
                       </p>
                     )}
@@ -441,28 +441,28 @@ export default async function DashboardPage() {
           </div>
 
           {/* BENTO ITEM 7: Regional Wealth & Relocation */}
-          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/[0.03] transition-all flex flex-col">
+          <section className="lg:col-span-2 lg:row-span-1 p-6 rounded-3xl bg-white/80 backdrop-blur-xl border border-amber-100 shadow-xl shadow-amber-100/40 hover:-translate-y-0.5 transition-all flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-amber-500 text-white shadow-md shadow-amber-200 flex items-center justify-center">
+                  <MapPin className="w-5 h-5" />
                 </div>
-                <h2 className="text-lg font-semibold tracking-tight text-white/90">
+                <h2 className="text-lg font-bold tracking-tight text-stone-900 font-serif">
                   Wealth & Relocation Matrix
                 </h2>
               </div>
               <Link
                 href="/relocation/wealth"
-                className="p-2 rounded-full hover:bg-white/10 transition-colors group"
+                className="p-2 rounded-full hover:bg-amber-50 transition-colors group"
               >
-                <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-amber-400" />
+                <ArrowUpRight className="w-4 h-4 text-stone-400 group-hover:text-amber-500" />
               </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-grow">
               {wealthData.length === 0 ? (
-                <div className="col-span-3 p-4 rounded-xl bg-white/5 border border-white/5 text-center flex items-center justify-center">
-                  <p className="text-gray-500 text-xs">
+                <div className="col-span-3 p-4 rounded-xl bg-stone-50 border border-stone-100 text-center flex items-center justify-center">
+                  <p className="text-stone-400 text-xs">
                     所得統計データはありません。
                   </p>
                 </div>
@@ -470,20 +470,20 @@ export default async function DashboardPage() {
                 wealthData.map((w: any, idx: number) => (
                   <div
                     key={w.id}
-                    className="p-4 rounded-xl bg-gradient-to-b from-white/[0.06] to-white/[0.01] border border-white/5 flex flex-col justify-between"
+                    className="p-4 rounded-xl bg-gradient-to-b from-amber-50/80 to-white border border-amber-100/80 flex flex-col justify-between"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
                         #{idx + 1}
                       </span>
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-[10px] text-stone-400">
                         {w.dataYear}
                       </span>
                     </div>
-                    <h3 className="font-medium text-gray-200 text-sm truncate mb-1">
+                    <h3 className="font-medium text-stone-800 text-sm truncate mb-1">
                       {w.areaName}
                     </h3>
-                    <p className="text-amber-400 text-xs font-mono">
+                    <p className="text-amber-600 text-xs font-mono font-semibold">
                       ¥{(w.incomePerCapita / 10000).toFixed(0)}万/人
                     </p>
                   </div>

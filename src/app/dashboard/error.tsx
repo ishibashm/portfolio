@@ -30,7 +30,7 @@ export default function DashboardError({
               <h1 className="text-3xl font-bold tracking-tight mt-2">
                 ダッシュボードの一部データ取得を保護しました
               </h1>
-              <p className="text-zinc-400 leading-relaxed mt-3">
+              <p className="text-stone-500 leading-relaxed mt-3">
                 外部APIまたは保存済みデータの読み込みで例外が発生しました。画面全体を落とさず、下の主要機能へ移動できます。
               </p>
             </div>

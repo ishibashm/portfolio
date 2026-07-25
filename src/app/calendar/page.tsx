@@ -72,7 +72,7 @@ export default function CalendarPage() {
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-zinc-100 to-[color-mix(in_srgb,var(--color-accent,#10b981)_60%,white)] bg-clip-text text-transparent">
                 Cosmic Calendar
               </h1>
-              <p className="text-zinc-400 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
+              <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
                 天体の軌道運動（月相・太陽黄経・惑星逆行）と伝統的な暦吉凶（六曜・一粒万倍日・天赦日）をリアルタイムにシミュレートし、最適な次善行動（NBA）を導出するカレンダーインターフェース。
               </p>
             </div>

@@ -1,23 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ===== Warm Glass Theme Tokens =====
+     全サブドメイン共通のデザイントークン。
+     コンポーネント側では極力この変数か、下の @layer utilities の
+     .wg-* ユーティリティを使い、生の色指定の増殖を避けること。 */
+  --background: #faf7f3; /* warm paper */
+  --foreground: #292524; /* stone-800 */
+
+  --wg-ink: #1c1917; /* stone-900: 見出し */
+  --wg-ink-muted: #78716c; /* stone-500: 補足テキスト */
+  --wg-accent: #f43f5e; /* rose-500: プライマリアクセント */
+  --wg-accent-soft: #ffe4e6; /* rose-100 */
+  --wg-gold: #f59e0b; /* amber-500: サブアクセント */
+  --wg-surface: rgba(255, 255, 255, 0.8); /* グラスカード地 */
+  --wg-surface-border: rgba(255, 228, 230, 0.8); /* rose-100/80 */
+  --wg-shadow: rgba(255, 228, 230, 0.35); /* shadow-rose-100/30〜40 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-ink: var(--wg-ink);
+  --color-ink-muted: var(--wg-ink-muted);
+  --color-accent: var(--wg-accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-shippori-mincho), serif; /* Add serif font */
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -42,6 +51,91 @@ body {
 @layer utilities {
   .font-shippori {
     font-family: var(--font-serif);
+  }
+
+  /* ===== Warm Glass Utilities =====
+     刷新済みページ (page.tsx / SubdomainLauncherGrid) のパターンを共通化したもの。
+     新規・刷新対象のUIはこれらを基準にする。 */
+
+  /* ページ全体の背景 (min-h-screen と併用) */
+  .wg-page {
+    background-image: linear-gradient(
+      to bottom right,
+      rgba(255, 241, 242, 0.8),
+      #fafaf9,
+      rgba(255, 251, 235, 0.5)
+    );
+    color: var(--foreground);
+  }
+
+  /* 標準グラスカード */
+  .wg-card {
+    background: var(--wg-surface);
+    backdrop-filter: blur(24px);
+    border: 1px solid var(--wg-surface-border);
+    border-radius: 1.5rem; /* rounded-3xl */
+    box-shadow: 0 20px 25px -5px var(--wg-shadow);
+  }
+
+  /* カード内のセクション区切り付きヘッダー下線 */
+  .wg-divider {
+    border-color: rgba(255, 228, 230, 0.6); /* rose-100/60 */
+  }
+
+  /* ピル型バッジ/チップ */
+  .wg-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #fff1f2; /* rose-50 */
+    border: 1px solid rgba(254, 205, 211, 0.6); /* rose-200/60 */
+    color: #e11d48; /* rose-600 */
+  }
+
+  /* プライマリボタン (濃色ピル) */
+  .wg-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    background: var(--wg-ink);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    transition: all 0.2s;
+  }
+  .wg-btn-primary:hover {
+    background: #292524; /* stone-800 */
+  }
+  .wg-btn-primary:active {
+    transform: scale(0.95);
+  }
+
+  /* アクセントボタン (rose ピル) */
+  .wg-btn-accent {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    background: var(--wg-accent);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    box-shadow: 0 4px 6px -1px var(--wg-shadow);
+    transition: all 0.2s;
+  }
+  .wg-btn-accent:hover {
+    filter: brightness(1.05);
+  }
+  .wg-btn-accent:active {
+    transform: scale(0.95);
   }
 
   .text-glow {
@@ -84,19 +178,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.3);
+  background: rgba(244, 63, 94, 0.25);
   border-radius: 999px;
   transition: background 0.3s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.7);
+  background: rgba(244, 63, 94, 0.55);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(16, 185, 129, 0.3) transparent;
+  scrollbar-color: rgba(244, 63, 94, 0.25) transparent;
 }
 
 /* Scroll Down Indicator animation */

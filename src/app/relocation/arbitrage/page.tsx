@@ -291,28 +291,28 @@ export default function ArbitrageScannerPage() {
       badges.push({
         label: "土用期間",
         type: "calendar",
-        colorClass: "border border-zinc-600 text-zinc-400 bg-zinc-700/5",
+        colorClass: "border border-stone-300 text-stone-500 bg-stone-100/60",
         priority: 4,
       });
     if (item.astrologyStatus === "NOISE_GETSUMEI")
       badges.push({
         label: "月命殺",
         type: "individual",
-        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
         priority: 4,
       });
     if (item.astrologyStatus === "NOISE_GETSUTEKI")
       badges.push({
         label: "月命的殺",
         type: "individual",
-        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
         priority: 4,
       });
     if (item.astrologyStatus === "NOISE_NODE")
       badges.push({
         label: "月交点",
         type: "individual",
-        colorClass: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
         priority: 4,
       });
     if (item.astroFlags?.includes("DECLINATION_WARNING"))
@@ -347,7 +347,7 @@ export default function ArbitrageScannerPage() {
         ))}
         {hiddenCount > 0 && (
           <div className="group relative">
-            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-zinc-800 text-zinc-400 border border-zinc-700 hover:bg-zinc-700 hover:text-zinc-200 cursor-help leading-none">
+            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200 hover:text-stone-700 cursor-help leading-none">
               +{hiddenCount}
             </span>
             {/* ポップオーバー */}

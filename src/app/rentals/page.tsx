@@ -560,7 +560,7 @@ export default function RentalsDashboard() {
       const finalStatus = collision.finalVectors[direction] || "SAFE";
 
       let rating = "普通";
-      let color = "text-zinc-400 bg-zinc-950 border border-zinc-900";
+      let color = "text-stone-500 bg-stone-100 border border-stone-200";
       let score = 0;
 
       switch (finalStatus) {
@@ -578,7 +578,7 @@ export default function RentalsDashboard() {
           break;
         case "SAFE":
           rating = "普通";
-          color = "text-zinc-400 border border-white/10 bg-white/5";
+          color = "text-stone-500 border border-stone-200 bg-stone-50";
           score = 0;
           break;
         case "WARNING":
@@ -850,19 +850,19 @@ export default function RentalsDashboard() {
             <button
               onClick={handleGenerateSample}
               disabled={isGenerating || loading}
-              className="flex-1 md:flex-none px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="flex-1 md:flex-none px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white border border-stone-700 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {isGenerating ? (
                 <div className="animate-spin w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full" />
               ) : (
-                <Plus className="w-3.5 h-3.5 text-zinc-400" />
+                <Plus className="w-3.5 h-3.5" />
               )}
               {isGenerating ? "生成中..." : "サンプル作成"}
             </button>
             <button
               onClick={fetchProperties}
               disabled={loading}
-              className="px-4 py-2 bg-zinc-950 hover:bg-zinc-900 text-zinc-400 border border-zinc-900 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50"
+              className="px-4 py-2 bg-white hover:bg-stone-50 text-stone-500 border border-stone-200 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50"
             >
               更新
             </button>

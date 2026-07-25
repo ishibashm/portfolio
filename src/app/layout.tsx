@@ -29,10 +29,10 @@ export const metadata: Metadata = {
   description:
     "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
   manifest: "/manifest.json",
-  themeColor: "#0a0a0a",
+  themeColor: "#faf7f3",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "Cloud Palette",
   },
   openGraph: {
@@ -69,18 +69,18 @@ export default async function RootLayout({
     console.error("Failed to load active agent theme:", err);
   }
 
-  // Active theme parameters or fallback defaults
-  const bg = theme?.background || "#0a0a0a";
-  const fg = theme?.foreground || "#ededed";
-  const accent = theme?.accent || "#10b981";
-  const glowColor = theme?.glowColor || "#10b981";
+  // Active theme parameters or fallback defaults (Warm Glass theme)
+  const bg = theme?.background || "#faf7f3";
+  const fg = theme?.foreground || "#292524";
+  const accent = theme?.accent || "#f43f5e";
+  const glowColor = theme?.glowColor || "#f43f5e";
   const glowIntensity =
-    theme?.glowIntensity !== undefined ? theme.glowIntensity : 0.5;
+    theme?.glowIntensity !== undefined ? theme.glowIntensity : 0.35;
   const animationSpeed = theme?.animationSpeed || "4s";
   const fontTheme = theme?.fontTheme || "sans";
   const noiseOpacity =
-    theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.05;
-  const borderRadius = theme?.borderRadius || "8px";
+    theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.03;
+  const borderRadius = theme?.borderRadius || "12px";
 
   // Dynamic font-family binding
   const fontStyleClass =
@@ -93,7 +93,7 @@ export default async function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -163,7 +163,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased bg-black text-white`}
+        className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased`}
       >
         <div className="flex min-h-screen">
           <GlobalSidebar />

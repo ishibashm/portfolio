@@ -116,21 +116,26 @@ export default function KnowledgeEditorWidget() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-700/50 rounded-xl overflow-hidden text-slate-200 shadow-2xl">
-      <div className="flex items-center justify-between px-4 py-3 bg-slate-800/80 border-b border-slate-700">
+    <div className="flex flex-col h-full bg-white/80 backdrop-blur-xl border border-rose-100/80 rounded-3xl overflow-hidden text-stone-800 shadow-xl shadow-rose-100/30">
+      <div className="flex items-center justify-between px-5 py-4 bg-white/90 border-b border-rose-100">
         <div className="flex items-center gap-3">
-          <FileText size={20} className="text-blue-400" />
-          <h2 className="font-semibold text-white">Local Knowledge Builder</h2>
+          <div className="w-9 h-9 rounded-xl bg-indigo-500 text-white flex items-center justify-center shadow-md shadow-indigo-200">
+            <FileText size={18} />
+          </div>
+          <div>
+            <h2 className="font-bold text-stone-900 font-serif text-base">Local Knowledge Builder</h2>
+            <p className="text-[10px] text-stone-500 font-sans">ナレッジグラフ & アイデア抽出</p>
+          </div>
         </div>
 
         {/* タブ切り替え */}
-        <div className="flex p-1 bg-slate-950 rounded-lg border border-slate-800">
+        <div className="flex p-1 bg-stone-100 rounded-xl border border-stone-200/80 text-xs font-semibold">
           <button
             onClick={() => setActiveTab("graph")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               activeTab === "graph"
-                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-white text-indigo-700 shadow-xs font-bold border border-stone-200/50"
+                : "text-stone-500 hover:text-stone-900"
             }`}
           >
             <Network size={14} />
@@ -138,10 +143,10 @@ export default function KnowledgeEditorWidget() {
           </button>
           <button
             onClick={() => setActiveTab("editor")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               activeTab === "editor"
-                ? "bg-blue-600/20 text-blue-400 border border-blue-500/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-white text-indigo-700 shadow-xs font-bold border border-stone-200/50"
+                : "text-stone-500 hover:text-stone-900"
             }`}
           >
             <FileText size={14} />
@@ -153,13 +158,13 @@ export default function KnowledgeEditorWidget() {
       <div className="flex-1 overflow-hidden relative">
         {/* Graph Explorer Tab (Aha Moment Demo) */}
         {activeTab === "graph" && (
-          <div className="absolute inset-0 bg-slate-950 p-4 flex flex-col">
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-indigo-400 mb-1 flex items-center gap-2">
-                <Share2 size={16} />
+          <div className="absolute inset-0 bg-stone-50/50 p-4 flex flex-col">
+            <div className="mb-3">
+              <h3 className="text-xs font-bold text-indigo-700 mb-0.5 flex items-center gap-1.5 font-serif">
+                <Share2 size={15} />
                 Knowledge Triplet Network
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] text-stone-500">
                 抽出されたエンティティと関係性の可視化
               </p>
             </div>
