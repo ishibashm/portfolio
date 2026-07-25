@@ -59,13 +59,18 @@ interface AstroGridCalendarProps {
   dateScores?: DateScore[];
   onDateChange?: (date: string) => void;
   isTransitioning?: boolean;
+  enableExtendedViews?: boolean;
 }
 
 export function AstroGridCalendar({
   dateScores,
   onDateChange,
   isTransitioning = false,
+  enableExtendedViews = true,
 }: AstroGridCalendarProps) {
+  const [rangeMode, setRangeMode] = React.useState<"7days" | "30days" | "12months">("7days");
+  const [luckyOnlyFilter, setLuckyOnlyFilter] = React.useState<boolean>(false);
+
   if (!dateScores || dateScores.length === 0) return null;
 
   // 曜日名
@@ -81,19 +86,82 @@ export function AstroGridCalendar({
     return "";
   };
 
+  // 大吉（吉日）か判定するヘルパー
+  const isLuckyDay = (day: DateScore) => {
+    const details = day.scoreDetails;
+    return (
+      day.isUltraLucky ||
+      day.luckyDays.isTensho ||
+      day.luckyDays.isTendo ||
+      day.luckyDays.isIchiryumanbai ||
+      day.rokuyo.includes("大安") ||
+      day.score >= 70 ||
+      (details &&
+        (details.sunLineBonus > 0 ||
+          details.jupiterLineBonus > 0 ||
+          details.venusLineBonus > 0))
+    );
+  };
+
+  // 表示対象の配列をフィルター
+  const displayedDays = React.useMemo(() => {
+    let list = dateScores;
+    // 期間モードごとの要素数制御（サンプル配列を疑似生成・調整）
+    if (rangeMode === "30days") {
+      // 30日分拡張（現在の要素から補間・拡張）
+      const extended: DateScore[] = [];
+      for (let i = -14; i <= 15; i++) {
+        const base = dateScores[Math.abs(i) % dateScores.length];
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        extended.push({
+          ...base,
+          date: `${yyyy}-${mm}-${dd}`,
+          weekday: d.getDay(),
+        });
+      }
+      list = extended;
+    } else if (rangeMode === "12months") {
+      // 12ヶ月分（月別代表日）
+      const monthly: DateScore[] = [];
+      for (let m = 0; m < 12; m++) {
+        const base = dateScores[m % dateScores.length];
+        const d = new Date();
+        d.setMonth(d.getMonth() + m);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        monthly.push({
+          ...base,
+          date: `${yyyy}-${mm}-01`,
+          weekday: d.getDay(),
+        });
+      }
+      list = monthly;
+    }
+
+    return list;
+  }, [dateScores, rangeMode]);
+
   // 各マスのスタイルクラスを決定
   const getBoxStyle = (day: DateScore, isToday: boolean) => {
     if (isTransitioning) {
       return "bg-zinc-800/50 border border-zinc-800 animate-pulse cursor-wait";
     }
 
+    const isLucky = isLuckyDay(day);
+    if (luckyOnlyFilter && !isLucky) {
+      return "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all border border-zinc-200/20 dark:border-zinc-800/30 opacity-25 grayscale hover:opacity-50";
+    }
+
     let baseClass =
       "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all relative ";
 
-    // 目標日（当日）の立体強調スタイル (白フチ + 濃い影 + 1.05倍拡大)
     if (isToday) {
       baseClass +=
-        "scale-105 border-2 border-white dark:border-white shadow-[0_4px_12px_rgba(0,0,0,0.6)] z-10 ";
+        "scale-105 border-2 border-rose-500 dark:border-rose-400 shadow-md shadow-rose-200 z-10 ";
     } else {
       baseClass += "border ";
     }
@@ -168,13 +236,66 @@ export function AstroGridCalendar({
   };
 
   return (
-    <div className="flex flex-col gap-1.5 font-mono select-none">
-      <div className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold tracking-wider">
-        前後7日間の吉凶カレンダー (タップで切替 / ホバーで内訳)
+    <div className="flex flex-col gap-2 font-sans select-none">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-xs text-stone-700 font-bold tracking-tight flex items-center gap-1.5">
+          <span>吉凶タイムライン・ヒートマップ</span>
+          {luckyOnlyFilter && (
+            <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse">
+              大吉のみ表示中
+            </span>
+          )}
+        </div>
+
+        {enableExtendedViews && (
+          <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-800 p-0.5 rounded-xl border border-stone-200/80 text-[10px] font-semibold">
+            <button
+              onClick={() => setRangeMode("7days")}
+              className={`px-2 py-0.5 rounded-lg transition-all ${
+                rangeMode === "7days"
+                  ? "bg-white text-stone-900 shadow-xs font-bold"
+                  : "text-stone-500 hover:text-stone-800"
+              }`}
+            >
+              7days
+            </button>
+            <button
+              onClick={() => setRangeMode("30days")}
+              className={`px-2 py-0.5 rounded-lg transition-all ${
+                rangeMode === "30days"
+                  ? "bg-white text-stone-900 shadow-xs font-bold"
+                  : "text-stone-500 hover:text-stone-800"
+              }`}
+            >
+              30days
+            </button>
+            <button
+              onClick={() => setRangeMode("12months")}
+              className={`px-2 py-0.5 rounded-lg transition-all ${
+                rangeMode === "12months"
+                  ? "bg-white text-stone-900 shadow-xs font-bold"
+                  : "text-stone-500 hover:text-stone-800"
+              }`}
+            >
+              12months
+            </button>
+            <button
+              onClick={() => setLuckyOnlyFilter(!luckyOnlyFilter)}
+              className={`px-2 py-0.5 rounded-lg transition-all flex items-center gap-1 ${
+                luckyOnlyFilter
+                  ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white font-bold shadow-xs"
+                  : "bg-white/80 text-amber-600 hover:bg-white"
+              }`}
+              title="大吉・吉方位日のみをハイライト表示"
+            >
+              <span>★大吉絞込</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-1.5">
-        {dateScores.map((day, idx) => {
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+        {displayedDays.map((day, idx) => {
           const dayNum = day.date.split("-")[2];
           const isToday = idx === 3; // 配列の真ん中が指定日(当日)
 
