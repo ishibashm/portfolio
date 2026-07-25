@@ -117,11 +117,11 @@ export function GlobalSidebar() {
         onClick={closeSidebar}
         title={isCollapsed ? item.label : undefined}
         className={`
-          flex items-center justify-between px-3 py-3 rounded-xl transition-all group
+          flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all group font-medium text-xs
           ${
             isActive
-              ? "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
-              : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200 border border-transparent"
+              ? "bg-rose-500 text-white shadow-md shadow-rose-200"
+              : "text-stone-600 hover:bg-rose-50 hover:text-stone-900"
           }
           ${isCollapsed ? "justify-center" : ""}
         `}
@@ -129,16 +129,16 @@ export function GlobalSidebar() {
         <div className="flex items-center gap-3">
           <Icon
             size={18}
-            className={`shrink-0 ${isActive ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300"}`}
+            className={`shrink-0 ${isActive ? "text-white" : "text-stone-400 group-hover:text-rose-500 transition-colors"}`}
           />
           {!isCollapsed && (
-            <span className="text-sm font-medium whitespace-nowrap">
+            <span className="whitespace-nowrap">
               {item.label}
             </span>
           )}
         </div>
         {!isCollapsed && isActive && (
-          <ChevronRight size={16} className="text-indigo-400/50 shrink-0" />
+          <ChevronRight size={16} className="text-white/70 shrink-0" />
         )}
       </Link>
     );
@@ -166,7 +166,7 @@ export function GlobalSidebar() {
       <aside
         className={`
           fixed top-0 left-0 h-full z-40
-          bg-zinc-950 border-r border-white/5
+          bg-white/95 backdrop-blur-2xl border-r border-rose-100/80 shadow-2xl shadow-rose-100/40
           w-64 ${sidebarWidth} transition-all duration-300 ease-in-out
           flex flex-col
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
@@ -174,15 +174,15 @@ export function GlobalSidebar() {
       >
         {/* Logo Area */}
         <div
-          className={`h-20 flex items-center border-b border-white/5 transition-all duration-300 ${isCollapsed ? "justify-center px-0" : "px-6"}`}
+          className={`h-20 flex items-center border-b border-rose-100/60 transition-all duration-300 ${isCollapsed ? "justify-center px-0" : "px-6"}`}
         >
-          <div className="flex items-center gap-3 text-white">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/50 flex items-center justify-center shrink-0">
-              <Compass className="w-5 h-5 text-indigo-400" />
+          <div className="flex items-center gap-3 text-stone-900">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200">
+              <Compass className="w-5 h-5" />
             </div>
             {!isCollapsed && (
-              <span className="font-bold tracking-widest uppercase text-sm whitespace-nowrap overflow-hidden transition-all">
-                Meta-Hub
+              <span className="font-serif font-bold text-lg tracking-tight text-stone-900 whitespace-nowrap overflow-hidden transition-all">
+                Cloud Palette
               </span>
             )}
           </div>

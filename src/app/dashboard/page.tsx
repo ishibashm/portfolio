@@ -199,48 +199,44 @@ export default async function DashboardPage() {
     });
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-indigo-500/30 font-sans relative overflow-hidden">
-      {/* Background Glow Effects (Liquid Glass Aura) */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-600/10 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-600/10 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] bg-purple-600/5 rounded-full blur-[200px] -z-10 mix-blend-screen pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 selection:bg-rose-500/20 font-sans relative overflow-hidden">
+      {/* Background Soft Glow Effects */}
+      <div className="fixed top-[-10vw] left-[-10vw] w-[50vw] h-[50vw] bg-rose-200/30 rounded-full blur-[140px] pointer-events-none -z-10" />
+      <div className="fixed bottom-[-10vw] right-[-10vw] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[160px] pointer-events-none -z-10" />
 
       <main className="max-w-[1400px] mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6 border-b border-white/10 pb-8">
+        <header className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6 border-b border-rose-200/60 pb-8 bg-white/70 backdrop-blur-xl p-8 rounded-3xl border shadow-xl shadow-rose-100/30">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-5 h-5 text-indigo-400" />
-              <span className="text-sm font-medium tracking-widest text-indigo-400 uppercase">
+              <Sparkles className="w-5 h-5 text-rose-500 animate-pulse" />
+              <span className="text-xs font-semibold tracking-widest text-rose-600 uppercase">
                 The Oracle Engine
               </span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter bg-gradient-to-br from-white via-white to-white/40 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-5xl font-bold font-serif tracking-tight text-stone-900">
               Meta-Metaphysical Hub
             </h1>
-            <p className="text-gray-400 mt-3 max-w-2xl text-lg font-light leading-relaxed">
-              ゼロトラスト統合インテリジェンス。バイオメトリックリズム、環境マクロ、占星術的タイミングを決定論的な意思決定エンジンに融合します。
+            <p className="text-stone-600 mt-2 max-w-2xl text-base font-normal leading-relaxed">
+              知性と直感に寄り添う統合インテリジェンス。バイオメトリック、環境マクロ、アストロタイミングをシームレスに同期します。
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/knowledge"
-              className="px-5 py-2.5 rounded-full bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 transition-all font-medium text-sm text-purple-300 flex items-center gap-2 backdrop-blur-md"
+              className="px-5 py-2.5 rounded-full bg-rose-500 text-white hover:bg-rose-600 font-semibold text-xs flex items-center gap-2 transition-all shadow-md shadow-rose-200"
             >
               <BookOpen className="w-4 h-4" />
               Second Brain
             </Link>
             <Link
               href="/metaphysical"
-              className="px-5 py-2.5 rounded-full bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-all font-medium text-sm text-blue-300 flex items-center gap-2 backdrop-blur-md"
+              className="px-5 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 font-semibold text-xs text-stone-700 flex items-center gap-2 transition-all shadow-sm"
             >
-              <BrainCircuit className="w-4 h-4" />
-              NBA Decision Engine
+              <BrainCircuit className="w-4 h-4 text-purple-500" />
+              Decision Engine
             </Link>
-            <button className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/15 border border-white/10 transition-all font-medium text-sm text-white flex items-center gap-2 backdrop-blur-md">
-              Enter Cockpit
-            </button>
           </div>
         </header>
 
