@@ -878,20 +878,20 @@ export default function RegionalWealthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
-              className="p-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 shadow-sm transition-all"
+              className="p-2 bg-white hover:bg-stone-50 border border-stone-200 rounded-full shadow-sm transition-all"
             >
-              <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              <ArrowLeft className="w-5 h-5 text-stone-600" />
             </Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white flex items-center gap-2">
-                <Compass className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+              <h1 className="text-2xl md:text-3xl font-bold font-serif text-stone-900 flex items-center gap-2">
+                <Compass className="w-8 h-8 text-rose-500" />
                 Relocation & Wealth Matrix Dashboard
               </h1>
               <p className="text-gray-500 dark:text-gray-400 mt-1">

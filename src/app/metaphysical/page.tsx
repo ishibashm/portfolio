@@ -10,17 +10,17 @@ export const metadata = {
 
 export default function MetaphysicalPage() {
   return (
-    <div className="min-h-screen bg-black selection:bg-indigo-500/30 font-sans relative overflow-hidden flex flex-col">
-      {/* Background Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-blue-600/10 rounded-full blur-[120px] -z-10 mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-emerald-600/10 rounded-full blur-[150px] -z-10 mix-blend-screen pointer-events-none" />
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 font-sans relative overflow-hidden flex flex-col">
+      {/* Background Soft Aura Effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-[60vw] h-[60vw] bg-rose-200/30 rounded-full blur-[120px] -z-10 pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-amber-200/30 rounded-full blur-[150px] -z-10 pointer-events-none" />
 
       <nav className="w-full max-w-6xl mx-auto px-4 md:px-8 py-6 relative z-10 flex items-center">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-medium"
+          className="flex items-center gap-2 text-stone-600 hover:text-stone-900 transition-colors text-sm font-semibold bg-white/80 backdrop-blur-md px-4 py-2 rounded-full border border-rose-100/80 shadow-sm"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 text-rose-500" />
           ハブに戻る
         </Link>
       </nav>

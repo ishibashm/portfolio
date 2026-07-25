@@ -1081,26 +1081,16 @@ export default function ArbitrageScannerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#050505] p-3 sm:p-5 font-sans text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto space-y-5">
-        {/* Metaphysical Configuration Bar */}
-        <MetaphysicalConfigBar
-          onConfigChange={(newConfig) => {
-            setTargetDate(newConfig.targetDate);
-            setUseClassical(newConfig.useClassicalBoard);
-            setDirectionFilterMode(newConfig.directionFilterMode);
-            setActionIntent(newConfig.actionIntent);
-          }}
-        />
-
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-900 pb-4">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
+      <div className="max-w-[1600px] mx-auto space-y-6">
+        {/* Header Title Section */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-indigo-500 animate-pulse" />
-              不動産アービトラージ・スキャナー
+            <h1 className="text-xl font-bold font-serif text-stone-900 flex items-center gap-2">
+              <TrendingUp className="w-6 h-6 text-amber-500 animate-pulse" />
+              Real Estate Arbitrage Scanner
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1 text-xs max-w-2xl">
+            <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
               吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、運気とコスパが最強の割安物件をスキャンします。
             </p>
           </div>

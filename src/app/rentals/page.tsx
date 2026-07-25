@@ -821,17 +821,17 @@ export default function RentalsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-100 p-4 sm:p-8 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 sm:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-900 pb-5">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400 flex items-center gap-3">
-              <Home className="w-7 sm:w-8 h-7 sm:h-8 text-emerald-400 animate-pulse" />
-              Real Estate Dashboard
+            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 flex items-center gap-3">
+              <Home className="w-7 sm:w-8 h-7 sm:h-8 text-rose-500 animate-pulse" />
+              Rentals & Real Estate Intelligence
             </h1>
-            <p className="text-zinc-500 text-xs sm:text-sm">
-              Automated rental property tracking & market intelligence
+            <p className="text-stone-600 text-xs sm:text-sm font-normal">
+              自動化された賃貸物件トラッキングと吉方位・市場適合性分析
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5 z-10 w-full md:w-auto">
