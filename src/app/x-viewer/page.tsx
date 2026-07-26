@@ -199,7 +199,7 @@ export default function XViewerPage() {
       {/* Sidebar: Global Cities */}
       <div className="w-72 md:w-80 flex-shrink-0 border-r border-stone-200 flex flex-col h-full bg-stone-50/90 z-20 backdrop-blur-md">
         <div className="p-5 border-b border-stone-200">
-          <div className="flex items-center gap-2 text-purple-400 mb-3">
+          <div className="flex items-center gap-2 text-purple-600 mb-3">
             <Globe className="w-5 h-5 animate-spin-slow" />
             <h1 className="text-sm font-bold uppercase tracking-widest">
               MONITOR NODES
@@ -220,7 +220,7 @@ export default function XViewerPage() {
                 onClick={() => handleSelectPreset(city)}
                 className={`w-full text-left p-3 rounded-xl transition-all border flex flex-col gap-1.5 ${
                   isSelected
-                    ? "bg-purple-950/20 border-purple-500/40 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.05)]"
+                    ? "bg-purple-50 border-purple-300 text-purple-700 shadow-md shadow-purple-100"
                     : "bg-stone-50/40 border-stone-200 hover:border-stone-200 text-stone-500"
                 }`}
               >
@@ -237,7 +237,7 @@ export default function XViewerPage() {
                   {city.jpName}
                 </p>
                 {isSelected && (
-                  <p className="text-[8px] text-purple-400/80 leading-normal border-t border-purple-500/10 pt-1.5 mt-1">
+                  <p className="text-[8px] text-purple-600/90 leading-normal border-t border-purple-200/60 pt-1.5 mt-1">
                     {city.description}
                   </p>
                 )}
@@ -282,7 +282,7 @@ export default function XViewerPage() {
             <button
               type="submit"
               disabled={simulating}
-              className="w-full bg-purple-950/30 border border-purple-500/40 text-purple-300 rounded py-1.5 text-[10px] font-bold hover:bg-purple-900/40 transition-colors uppercase tracking-widest flex items-center justify-center gap-1.5"
+              className="w-full bg-purple-600 border border-purple-600 text-white rounded py-1.5 text-[10px] font-bold hover:bg-purple-700 transition-colors uppercase tracking-widest flex items-center justify-center gap-1.5"
             >
               {simulating ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -310,7 +310,7 @@ export default function XViewerPage() {
               <div className="flex flex-col text-left">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-purple-500 animate-pulse"></span>
-                  <h2 className="text-lg font-bold uppercase tracking-wider text-purple-400">
+                  <h2 className="text-lg font-bold uppercase tracking-wider text-purple-600">
                     {isCustomSimulated ? "SIMULATED_TARGET" : activeData.city}
                   </h2>
                 </div>
@@ -336,7 +336,7 @@ export default function XViewerPage() {
                 <button
                   onClick={() => fetchTelemetry(selectedCity)}
                   disabled={isCustomSimulated}
-                  className="p-1.5 bg-white border border-stone-200 rounded-lg hover:border-purple-500/40 text-stone-500 hover:text-purple-300 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="p-1.5 bg-white border border-stone-200 rounded-lg hover:border-purple-500/40 text-stone-500 hover:text-purple-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
@@ -449,7 +449,7 @@ export default function XViewerPage() {
                   <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider mb-1">
                     Alignment Match Rate
                   </span>
-                  <span className="text-4xl font-extrabold text-glow text-purple-400 font-mono">
+                  <span className="text-4xl font-extrabold text-glow text-purple-600 font-mono">
                     {alignmentScore}%
                   </span>
                   <span className="text-[8px] text-stone-400 mt-1 uppercase tracking-widest text-center">
@@ -478,7 +478,7 @@ export default function XViewerPage() {
                           真北から磁北のズレ角
                         </span>
                       </div>
-                      <span className="text-sm font-bold text-purple-400">
+                      <span className="text-sm font-bold text-purple-600">
                         {decAngle.toFixed(3)}°
                       </span>
                     </div>
@@ -492,7 +492,7 @@ export default function XViewerPage() {
                           地球内部に向かう磁場角度
                         </span>
                       </div>
-                      <span className="text-sm font-bold text-purple-400">
+                      <span className="text-sm font-bold text-purple-600">
                         {(activeData.magnetic?.inclination || 0).toFixed(3)}°
                       </span>
                     </div>
@@ -506,7 +506,7 @@ export default function XViewerPage() {
                           磁場のエネルギー絶対値
                         </span>
                       </div>
-                      <span className="text-sm font-bold text-purple-400">
+                      <span className="text-sm font-bold text-purple-600">
                         {Math.round(
                           activeData.magnetic?.totalIntensity || 0,
                         ).toLocaleString()}{" "}
@@ -532,7 +532,7 @@ export default function XViewerPage() {
                   <span>Magnetic Storm index</span>
                 </div>
                 <div className="flex items-end gap-2 my-2">
-                  <span className="text-3xl font-extrabold text-glow text-purple-400">
+                  <span className="text-3xl font-extrabold text-glow text-purple-600">
                     Kp {activeData.spaceWeather?.kpIndex}
                   </span>
                   <span
@@ -540,8 +540,8 @@ export default function XViewerPage() {
                       activeData.spaceWeather?.kpIndex >= 5.0
                         ? "bg-red-950/20 text-red-400 border-red-500/20"
                         : activeData.spaceWeather?.kpIndex >= 3.0
-                          ? "bg-amber-950/20 text-amber-400 border-amber-500/20"
-                          : "bg-emerald-950/20 text-emerald-400 border-emerald-500/20"
+                          ? "bg-amber-950/20 text-amber-600 border-amber-500/20"
+                          : "bg-emerald-950/20 text-emerald-600 border-emerald-500/20"
                     }`}
                   >
                     {activeData.spaceWeather?.kpIndex >= 5.0
@@ -563,7 +563,7 @@ export default function XViewerPage() {
                   <span>Solar Wind Speed</span>
                 </div>
                 <div className="my-2">
-                  <span className="text-3xl font-extrabold text-glow text-purple-400">
+                  <span className="text-3xl font-extrabold text-glow text-purple-600">
                     {activeData.spaceWeather?.solarWindSpeed} km/s
                   </span>
                 </div>
@@ -588,11 +588,11 @@ export default function XViewerPage() {
                   <span>Aurora Visibility</span>
                 </div>
                 <div className="my-2 flex justify-between items-center">
-                  <span className="text-3xl font-extrabold text-glow text-purple-400">
+                  <span className="text-3xl font-extrabold text-glow text-purple-600">
                     {activeData.spaceWeather?.auroraChance}%
                   </span>
                   {activeData.spaceWeather?.auroraChance > 40 && (
-                    <span className="text-[8px] bg-purple-950/30 text-purple-400 border border-purple-500/20 px-1 rounded animate-pulse">
+                    <span className="text-[8px] bg-purple-950/30 text-purple-600 border border-purple-500/20 px-1 rounded animate-pulse">
                       MAGNETIC CURTAIN ACTIVE
                     </span>
                   )}
@@ -630,7 +630,7 @@ export default function XViewerPage() {
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-stone-400">Solar Vector State</span>
-                      <span className="font-bold text-purple-400">
+                      <span className="font-bold text-purple-600">
                         {activeData.solar.elevation > 0
                           ? "IN PHASE (昼・太陽光結合)"
                           : "OUT OF PHASE (夜・地平線下偏向)"}
@@ -645,7 +645,7 @@ export default function XViewerPage() {
 
                 <div className="text-[9px] text-stone-400 leading-relaxed text-justify flex flex-col justify-center">
                   <div className="flex items-start gap-1.5 text-stone-500 font-bold mb-1">
-                    <AlertTriangle className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                     <span>真太陽時（Solar Time）との連動</span>
                   </div>
                   <span>
@@ -668,7 +668,7 @@ export default function XViewerPage() {
         dangerouslySetInnerHTML={{
           __html: `
         .text-glow {
-          text-shadow: 0 0 10px rgba(168,85,247,0.3), 0 0 20px rgba(168,85,247,0.15);
+          text-shadow: 0 0 12px rgba(168,85,247,0.25);
         }
         .animate-spin-slow {
           animation: spin 20s linear infinite;

@@ -363,7 +363,7 @@ export default function RelocationHistoryPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
       {/* Background Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -375,7 +375,7 @@ export default function RelocationHistoryPage() {
         {/* Header Block */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-stone-200/60 pb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold border border-indigo-500/20 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 mb-3">
               <History className="w-3.5 h-3.5" /> 物理・古典鑑定の歴史的統合
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-stone-900">
@@ -408,7 +408,7 @@ export default function RelocationHistoryPage() {
               <Compass className="w-4 h-4 text-indigo-400" />
               <span>方位偏角:</span>
               <span
-                className={`px-2 py-0.5 rounded font-bold ${useTrueNorth ? "bg-indigo-500/20 text-indigo-300" : "bg-amber-500/20 text-amber-300"}`}
+                className={`px-2 py-0.5 rounded font-bold ${useTrueNorth ? "bg-indigo-500/20 text-indigo-600" : "bg-amber-500/20 text-amber-300"}`}
               >
                 {useTrueNorth ? "真北基準 (物理)" : "磁北基準 (磁気偏角補正)"}
               </span>
@@ -416,7 +416,7 @@ export default function RelocationHistoryPage() {
             <div className="flex items-center gap-2">
               <span>方位盤基準:</span>
               <span
-                className={`px-2 py-0.5 rounded font-bold ${useClassical ? "bg-indigo-500/20 text-indigo-300" : "bg-amber-500/20 text-amber-300"}`}
+                className={`px-2 py-0.5 rounded font-bold ${useClassical ? "bg-indigo-500/20 text-indigo-600" : "bg-amber-500/20 text-amber-300"}`}
               >
                 {useClassical ? "古典暦基準 (立春)" : "物理天体基準 (木星黄経)"}
               </span>
@@ -457,7 +457,7 @@ export default function RelocationHistoryPage() {
                     onSubmit={handleCreate}
                     className="p-6 md:p-8 space-y-6"
                   >
-                    <h3 className="text-lg font-bold text-indigo-300 flex items-center gap-2">
+                    <h3 className="text-lg font-bold text-indigo-600 flex items-center gap-2">
                       <Plus className="w-5 h-5" /> 新しい移動履歴を記録
                     </h3>
 
@@ -479,7 +479,7 @@ export default function RelocationHistoryPage() {
                                 }}
                                 className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                                   datePrecision === p
-                                    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
+                                    ? "bg-indigo-500/20 text-indigo-600 border border-indigo-500/30"
                                     : "text-stone-400 hover:text-stone-700"
                                 }`}
                               >
@@ -592,7 +592,7 @@ export default function RelocationHistoryPage() {
                               onClick={() => setPurpose(p)}
                               className={`py-2.5 rounded-xl text-xs font-bold transition-all border ${
                                 purpose === p
-                                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
+                                  ? "bg-indigo-500/20 text-indigo-600 border-indigo-500/40 shadow-[0_0_10px_rgba(99,102,241,0.15)]"
                                   : "bg-white/70 text-stone-500 border-stone-200 hover:border-stone-300"
                               }`}
                             >
@@ -733,7 +733,7 @@ export default function RelocationHistoryPage() {
                           </div>
 
                           <h3 className="font-bold text-stone-900 text-base flex items-center gap-1.5 flex-wrap">
-                            <span className="text-indigo-300 font-medium text-sm">
+                            <span className="text-indigo-600 font-medium text-sm">
                               {item.fromName}
                             </span>
                             <ArrowRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
@@ -828,7 +828,7 @@ export default function RelocationHistoryPage() {
 
                     {/* Geodesic Vectors breakdown */}
                     <div className="space-y-4 mt-6">
-                      <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300">
+                      <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-600">
                         レイヤー別影響分析 (Layer Breakdown)
                       </h4>
 

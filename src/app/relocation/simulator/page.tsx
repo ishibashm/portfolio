@@ -1559,7 +1559,7 @@ export default function RelocationSimulatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 pb-20 relative selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 pb-20 relative selection:bg-indigo-500/30 selection:text-indigo-700">
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -1570,7 +1570,7 @@ export default function RelocationSimulatorPage() {
         {/* Header Block */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-stone-200/60 pb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold border border-indigo-500/20 mb-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 mb-3">
               <Compass className="w-3.5 h-3.5" />{" "}
               段階的移動＆仮吉方シミュレーター
             </div>
@@ -1649,7 +1649,7 @@ export default function RelocationSimulatorPage() {
               }}
               className={`px-3 py-1.5 rounded-xl font-bold border transition-all ${
                 useTrueNorth
-                  ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
+                  ? "bg-indigo-500/20 text-indigo-600 border-indigo-500/30"
                   : "bg-amber-500/20 text-amber-300 border-amber-500/30"
               }`}
             >
@@ -1718,7 +1718,7 @@ export default function RelocationSimulatorPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border shrink-0 ${
                 isSyncingPortal
                   ? "bg-stone-100 border-stone-300 text-zinc-550 cursor-not-allowed"
-                  : "bg-indigo-500/10 border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 active:scale-95"
+                  : "bg-indigo-500/10 border-indigo-500/20 text-indigo-600 hover:bg-indigo-500/20 active:scale-95"
               }`}
             >
               <Sparkles
@@ -1747,7 +1747,7 @@ export default function RelocationSimulatorPage() {
                 max="100"
                 value={simulatedAns}
                 onChange={(e) => setSimulatedAns(parseInt(e.target.value))}
-                className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                className="w-full h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
               />
             </div>
             <div className="flex flex-col gap-2">
@@ -1766,7 +1766,7 @@ export default function RelocationSimulatorPage() {
                 max="100"
                 value={simulatedShield}
                 onChange={(e) => setSimulatedShield(parseInt(e.target.value))}
-                className="w-full h-1 bg-zinc-850 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                className="w-full h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
               />
             </div>
           </div>
@@ -1899,7 +1899,7 @@ export default function RelocationSimulatorPage() {
                       newMembers,
                     );
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
                 >
                   <UserPlus className="w-3.5 h-3.5" /> 同伴者を追加
                 </button>
@@ -2042,7 +2042,7 @@ export default function RelocationSimulatorPage() {
                           className={`p-1.5 rounded-lg border transition-all ${
                             idx === 0
                               ? "border-stone-200/20 text-zinc-750 cursor-not-allowed opacity-30"
-                              : "bg-stone-100/40 border-stone-300/80 text-stone-500 hover:text-stone-900 hover:bg-zinc-700/80"
+                              : "bg-stone-100/40 border-stone-300/80 text-stone-500 hover:text-stone-900 hover:bg-stone-200"
                           }`}
                           title="上に移動"
                         >
@@ -2054,7 +2054,7 @@ export default function RelocationSimulatorPage() {
                           className={`p-1.5 rounded-lg border transition-all ${
                             idx === steps.length - 1
                               ? "border-stone-200/20 text-zinc-750 cursor-not-allowed opacity-30"
-                              : "bg-stone-100/40 border-stone-300/80 text-stone-500 hover:text-stone-900 hover:bg-zinc-700/80"
+                              : "bg-stone-100/40 border-stone-300/80 text-stone-500 hover:text-stone-900 hover:bg-stone-200"
                           }`}
                           title="下に移動"
                         >
@@ -2152,7 +2152,7 @@ export default function RelocationSimulatorPage() {
                                   key={member.id}
                                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[10px] font-mono cursor-pointer transition-all ${
                                     isSelected
-                                      ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-300 font-bold"
+                                      ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-600 font-bold"
                                       : "bg-white/70 border-stone-200 text-stone-400 hover:border-stone-300"
                                   }`}
                                 >
@@ -2311,7 +2311,7 @@ export default function RelocationSimulatorPage() {
             {/* Add Step button */}
             <button
               onClick={handleAddStep}
-              className="w-full py-4 border border-dashed border-stone-200 hover:border-indigo-500/50 hover:bg-indigo-500/5 rounded-[2rem] text-xs font-bold text-stone-500 hover:text-indigo-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-4 border border-dashed border-stone-200 hover:border-indigo-500/50 hover:bg-indigo-500/5 rounded-[2rem] text-xs font-bold text-stone-500 hover:text-indigo-600 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" /> 移動ステップを追加
             </button>
@@ -2351,7 +2351,7 @@ export default function RelocationSimulatorPage() {
             {/* Active Details Card */}
             {activeStepIndex !== null &&
               activeStepIndex < evaluatedSteps.length && (
-                <div className="p-6 rounded-[2rem] border border-stone-200/80 bg-gradient-to-br from-zinc-900/60 via-zinc-950/80 to-transparent backdrop-blur-md shadow-2xl space-y-6">
+                <div className="p-6 rounded-[2rem] border border-stone-200/80 bg-white/80 backdrop-blur-xl shadow-xl shadow-rose-100/30 space-y-6">
                   <div>
                     <div className="inline-flex items-center gap-1.5 text-[9px] font-bold text-stone-400 tracking-wider uppercase mb-1">
                       <Compass className="w-3.5 h-3.5 text-indigo-400" />{" "}
@@ -2388,7 +2388,7 @@ export default function RelocationSimulatorPage() {
                     if (!ev) return null;
 
                     return (
-                      <div className="p-4 rounded-2xl bg-white/80 border border-zinc-850 flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
+                      <div className="p-4 rounded-2xl bg-white/80 border border-stone-200 flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
                         <div className="flex flex-col gap-1">
                           <span className="text-[10px] text-stone-400 font-bold uppercase leading-none">
                             時間適合度 (Q値)
@@ -2457,7 +2457,7 @@ export default function RelocationSimulatorPage() {
                     return (
                       <div className="space-y-4 pt-4 border-t border-stone-200/60 text-xs">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300 flex items-center gap-1.5">
+                          <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-600 flex items-center gap-1.5">
                             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />{" "}
                             占術インサイト (Metaphysical Insights)
                           </h4>
@@ -2552,16 +2552,16 @@ export default function RelocationSimulatorPage() {
                                             {isYin ? (
                                               <>
                                                 <div
-                                                  className={`h-full w-[47%] ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-zinc-650"}`}
+                                                  className={`h-full w-[47%] ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-stone-300"}`}
                                                 />
                                                 <div className="h-full w-[6%] bg-transparent" />
                                                 <div
-                                                  className={`h-full w-[47%] ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-zinc-650"}`}
+                                                  className={`h-full w-[47%] ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-stone-300"}`}
                                                 />
                                               </>
                                             ) : (
                                               <div
-                                                className={`h-full w-full ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-zinc-400"}`}
+                                                className={`h-full w-full ${isChanging ? "bg-amber-400/85 animate-pulse" : "bg-stone-400"}`}
                                               />
                                             )}
                                           </div>
@@ -2647,7 +2647,7 @@ export default function RelocationSimulatorPage() {
 
                   {/* Phased relocation / Detour suggestions HUD */}
                   <div className="space-y-4 pt-4 border-t border-stone-200/60">
-                    <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-300">
+                    <h4 className="text-[10px] uppercase tracking-wider font-bold text-indigo-600">
                       最適化アクションアドバイス
                     </h4>
 
@@ -2717,7 +2717,7 @@ export default function RelocationSimulatorPage() {
                                   departureDate: rec.date,
                                 })
                               }
-                              className="w-full px-3 py-2 bg-stone-50/80 hover:bg-indigo-500/10 border border-stone-200 hover:border-indigo-500/30 rounded-xl text-left text-[10px] text-stone-600 hover:text-indigo-200 transition-all flex items-center justify-between cursor-pointer"
+                              className="w-full px-3 py-2 bg-stone-50/80 hover:bg-indigo-500/10 border border-stone-200 hover:border-indigo-500/30 rounded-xl text-left text-[10px] text-stone-600 hover:text-indigo-700 transition-all flex items-center justify-between cursor-pointer"
                             >
                               <span>
                                 📅 {rec.date}{" "}
@@ -2736,7 +2736,7 @@ export default function RelocationSimulatorPage() {
 
                     {/* Spatial Detour Candidates */}
                     {detourCandidates.length > 0 && (
-                      <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs flex flex-col gap-2 shadow-inner">
+                      <div className="p-3.5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-600 text-xs flex flex-col gap-2 shadow-inner">
                         <div className="flex gap-2">
                           <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
                           <div className="leading-relaxed">
@@ -2753,7 +2753,7 @@ export default function RelocationSimulatorPage() {
                             <button
                               key={cand.name}
                               onClick={() => handleApplyDetour(cand)}
-                              className="w-full px-3 py-2 bg-indigo-950/80 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-left text-[10px] text-indigo-200 hover:text-stone-900 transition-all flex items-center justify-between font-bold cursor-pointer"
+                              className="w-full px-3 py-2 bg-indigo-950/80 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-left text-[10px] text-indigo-700 hover:text-stone-900 transition-all flex items-center justify-between font-bold cursor-pointer"
                             >
                               <span>📍 {cand.name}経由で迂回ルートを作成</span>
                               <ChevronRight className="w-3.5 h-3.5" />

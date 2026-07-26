@@ -412,7 +412,7 @@ export default function TrendsPage() {
                   Aggregator
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-white via-zinc-100 to-[color-mix(in_srgb,var(--color-accent,#10b981)_60%,white)] bg-clip-text text-transparent">
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-stone-900 via-stone-700 to-[color-mix(in_srgb,var(--color-accent,#10b981)_70%,#1c1917)] bg-clip-text text-transparent font-serif">
                 Tech Trend Center
               </h1>
               <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
