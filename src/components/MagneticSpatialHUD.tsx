@@ -159,10 +159,10 @@ export function MagneticSpatialHUD({
 
       {/* HUD Overlays */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center pointer-events-none select-none">
-        <div className="text-[8px] font-mono text-blue-400/70 border-t border-blue-500/20 px-2 bg-black/40 md:backdrop-blur-sm">
+        <div className="text-[8px] font-mono text-blue-400/70 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
           SPATIAL INTERFERENCE HUD v1.0
         </div>
-        <div className="flex gap-4 text-[7px] font-mono text-zinc-500 mt-0.5">
+        <div className="flex gap-4 text-[7px] font-mono text-stone-400 mt-0.5">
           <span>D: {declination.toFixed(1)}°</span>
           <span>I: {inclination.toFixed(1)}°</span>
           <span className={kpIndex >= 4 ? "text-red-500" : "text-emerald-500"}>
@@ -172,23 +172,23 @@ export function MagneticSpatialHUD({
       </div>
 
       {/* Hover Info */}
-      <div className="absolute top-0 left-0 w-full h-full bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-zinc-300 md:backdrop-blur-sm border border-blue-500/30">
-        <div className="text-blue-400 mb-2 border-b border-blue-900 w-full text-center pb-1">
+      <div className="absolute top-0 left-0 w-full h-full bg-white/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center p-4 text-[9px] font-mono pointer-events-none text-stone-600 md:backdrop-blur-sm border border-blue-200">
+        <div className="text-blue-600 mb-2 border-b border-blue-200 w-full text-center pb-1">
           3D VECTOR DIAGNOSIS
         </div>
         <div className="w-full flex justify-between">
           <span>INCLINATION (伏角):</span>
-          <span className="text-white">{inclination.toFixed(2)}°</span>
+          <span className="text-stone-900">{inclination.toFixed(2)}°</span>
         </div>
         <div className="w-full flex justify-between">
           <span>DECLINATION (偏角):</span>
-          <span className="text-white">{declination.toFixed(2)}°</span>
+          <span className="text-stone-900">{declination.toFixed(2)}°</span>
         </div>
         <div className="w-full flex justify-between mt-1">
           <span>SHIELD CAP (護身):</span>
           <span className="text-emerald-500">{shieldCapacity}%</span>
         </div>
-        <div className="mt-2 text-[7px] text-zinc-500 leading-tight">
+        <div className="mt-2 text-[7px] text-stone-400 leading-tight">
           磁力線の立体的な向きを可視化。伏角が急なほど、垂直方向のノイズ（天気）の影響を受けやすくなります。
         </div>
       </div>

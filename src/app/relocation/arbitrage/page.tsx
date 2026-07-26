@@ -63,7 +63,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
+      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-400">
         マップを読み込み中...
       </div>
     ),
@@ -145,7 +145,7 @@ export default function ArbitrageScannerPage() {
 
     return (
       <div
-        className="flex gap-0.5 text-amber-400 text-xs"
+        className="flex gap-0.5 text-amber-600 text-xs"
         title={`おすすめ度: ${score.toFixed(1)}`}
       >
         {Array.from({ length: 5 }).map((_, i) => (
@@ -153,8 +153,8 @@ export default function ArbitrageScannerPage() {
             key={i}
             className={
               i < starCount
-                ? "opacity-100 text-amber-400"
-                : "opacity-20 text-zinc-600"
+                ? "opacity-100 text-amber-600"
+                : "opacity-20 text-stone-400"
             }
           >
             ★
@@ -177,35 +177,35 @@ export default function ArbitrageScannerPage() {
       badges.push({
         label: "五黄殺",
         type: "individual",
-        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
         priority: 1,
       });
     if (item.astrologyStatus === "NOISE_ANKEN")
       badges.push({
         label: "暗剣殺",
         type: "individual",
-        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
         priority: 1,
       });
     if (item.astrologyStatus === "NOISE_HA")
       badges.push({
         label: "歳破",
         type: "individual",
-        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
         priority: 1,
       });
     if (item.astrologyStatus === "NOISE_HONMEI")
       badges.push({
         label: "本命殺",
         type: "individual",
-        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
         priority: 1,
       });
     if (item.astrologyStatus === "NOISE_TEKI")
       badges.push({
         label: "本命的殺",
         type: "individual",
-        colorClass: "bg-red-500/25 text-red-300 border border-red-500/40",
+        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
         priority: 1,
       });
 
@@ -215,7 +215,7 @@ export default function ArbitrageScannerPage() {
         label: "天道方位",
         type: "individual",
         colorClass:
-          "bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-300 border border-amber-400/40 font-bold",
+          "bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-600 border border-amber-200 font-bold",
         priority: 2,
       });
     if (targetDay.luckyDays?.isTensho)
@@ -233,7 +233,7 @@ export default function ArbitrageScannerPage() {
         label: "大安",
         type: "calendar",
         colorClass:
-          "border border-indigo-400/50 text-indigo-300 bg-indigo-400/5",
+          "border border-indigo-200 text-indigo-600 bg-indigo-400/5",
         priority: 3,
       });
     if (targetDay.luckyDays?.isIchiryumanbai)
@@ -241,7 +241,7 @@ export default function ArbitrageScannerPage() {
         label: "一粒万倍",
         type: "calendar",
         colorClass:
-          "border border-emerald-400/50 text-emerald-300 bg-emerald-400/5",
+          "border border-emerald-200 text-emerald-600 bg-emerald-400/5",
         priority: 3,
       });
     if (item.astroFlags?.includes("JUPITER_LINE"))
@@ -249,14 +249,14 @@ export default function ArbitrageScannerPage() {
         label: "木星ライン",
         type: "individual",
         colorClass:
-          "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+          "bg-emerald-500/15 text-emerald-600 border border-emerald-200",
         priority: 3,
       });
     if (item.astroFlags?.includes("VENUS_LINE"))
       badges.push({
         label: "金星ライン",
         type: "individual",
-        colorClass: "bg-blue-500/15 text-blue-300 border border-blue-500/30",
+        colorClass: "bg-blue-500/15 text-blue-600 border border-blue-200",
         priority: 3,
       });
     if (item.astroFlags?.includes("SUN_LINE"))
@@ -264,7 +264,7 @@ export default function ArbitrageScannerPage() {
         label: "太陽ライン",
         type: "individual",
         colorClass:
-          "bg-purple-500/15 text-purple-300 border border-purple-500/30",
+          "bg-purple-500/15 text-purple-600 border border-purple-200",
         priority: 3,
       });
 
@@ -279,8 +279,8 @@ export default function ArbitrageScannerPage() {
         label: isBlocker ? "天中殺 (移転NG)" : "天中殺",
         type: "individual",
         colorClass: isBlocker
-          ? "bg-red-500/25 text-red-300 border border-red-500/40 font-bold"
-          : "bg-orange-500/10 text-orange-400 border border-orange-500/20",
+          ? "bg-red-500/25 text-red-600 border border-red-200 font-bold"
+          : "bg-orange-500/10 text-orange-600 border border-orange-200",
         priority: isBlocker ? 1 : 4,
       });
     }
@@ -351,8 +351,8 @@ export default function ArbitrageScannerPage() {
               +{hiddenCount}
             </span>
             {/* ポップオーバー */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-zinc-950/95 border border-zinc-800 rounded-lg p-2.5 shadow-xl text-[10px] text-zinc-300 hidden group-hover:block z-50 backdrop-blur-sm">
-              <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 mb-1.5">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-white/80 border border-stone-200 rounded-lg p-2.5 shadow-xl text-[10px] text-stone-600 hidden group-hover:block z-50 backdrop-blur-sm">
+              <div className="font-bold text-stone-500 border-b border-stone-200 pb-1 mb-1.5">
                 すべての吉凶要因:
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -377,28 +377,28 @@ export default function ArbitrageScannerPage() {
     return Array.from({ length: 4 }).map((_, idx) => (
       <tr
         key={idx}
-        className="border-b border-gray-100 dark:border-gray-900 animate-pulse"
+        className="border-b border-gray-100 dark:border-stone-200 animate-pulse"
       >
         <td className="px-6 py-4">
-          <div className="w-16 h-4 bg-zinc-800/40 rounded-md" />
+          <div className="w-16 h-4 bg-stone-100/80 rounded-md" />
         </td>
         <td className="px-6 py-4 space-y-2">
-          <div className="w-48 h-4 bg-zinc-800/40 rounded-md" />
-          <div className="w-32 h-3 bg-zinc-800/25 rounded-md" />
-          <div className="w-40 h-8 bg-zinc-800/20 rounded-md mt-2" />
+          <div className="w-48 h-4 bg-stone-100/80 rounded-md" />
+          <div className="w-32 h-3 bg-stone-100/80 rounded-md" />
+          <div className="w-40 h-8 bg-stone-100/80 rounded-md mt-2" />
         </td>
         <td className="px-6 py-4 space-y-1.5">
-          <div className="w-20 h-4 bg-zinc-800/40 rounded-md" />
-          <div className="w-24 h-3 bg-zinc-800/25 rounded-md" />
+          <div className="w-20 h-4 bg-stone-100/80 rounded-md" />
+          <div className="w-24 h-3 bg-stone-100/80 rounded-md" />
         </td>
         <td className="px-6 py-4 text-right">
-          <div className="w-16 h-4 bg-zinc-800/40 rounded-md ml-auto" />
+          <div className="w-16 h-4 bg-stone-100/80 rounded-md ml-auto" />
         </td>
         <td className="px-6 py-4 text-right">
-          <div className="w-12 h-4 bg-zinc-800/40 rounded-md ml-auto" />
+          <div className="w-12 h-4 bg-stone-100/80 rounded-md ml-auto" />
         </td>
         <td className="px-6 py-4 text-right">
-          <div className="w-24 h-3 bg-zinc-800/25 rounded-md ml-auto" />
+          <div className="w-24 h-3 bg-stone-100/80 rounded-md ml-auto" />
         </td>
       </tr>
     ));
@@ -1063,7 +1063,7 @@ export default function ArbitrageScannerPage() {
     const configIndex = sortConfigs.findIndex((c) => c.key === key);
     if (configIndex === -1)
       return (
-        <span className="inline-block w-4 text-transparent group-hover:text-gray-400">
+        <span className="inline-block w-4 text-transparent group-hover:text-stone-500">
           ↑
         </span>
       );
@@ -1097,7 +1097,7 @@ export default function ArbitrageScannerPage() {
           <button
             onClick={() => fetchData()}
             disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-xl text-xs font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-stone-900 rounded-xl text-xs font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
@@ -1114,17 +1114,17 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[30%]"
-            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
+            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
           >
             {/* Sticky Header */}
-            <div className="sticky top-0 bg-gray-50/95 dark:bg-[#09090b]/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 p-3 flex items-center justify-between z-30 shrink-0">
+            <div className="sticky top-0 bg-gray-50/95 dark:bg-[#09090b]/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
+                <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
                   条件 ({activeFiltersCount})
                 </span>
-                <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400">
+                <span className="text-[11px] font-semibold text-stone-400 dark:text-stone-500">
                   表示範囲内:{" "}
-                  <b className="text-gray-900 dark:text-white font-mono text-xs">
+                  <b className="text-gray-900 dark:text-stone-900 font-mono text-xs">
                     {propertiesInBounds.length}
                   </b>{" "}
                   件
@@ -1137,15 +1137,15 @@ export default function ArbitrageScannerPage() {
                   onClick={() => setShowListView(!showListView)}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
                     showListView
-                      ? "bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-300"
-                      : "bg-teal-500 hover:bg-teal-600 text-white shadow-sm"
+                      ? "bg-zinc-200 dark:bg-stone-100 hover:bg-zinc-300 dark:hover:bg-stone-200 text-gray-700 dark:text-stone-600"
+                      : "bg-teal-500 hover:bg-teal-600 text-stone-900 shadow-sm"
                   }`}
                 >
                   <Filter className="w-3.5 h-3.5" />
                   {showListView ? "絞込に戻る" : "一覧を表示"}
                 </button>
               ) : (
-                <span className="text-[10px] text-zinc-500 font-medium">
+                <span className="text-[10px] text-stone-400 font-medium">
                   ※100件以下で一覧表示可能
                 </span>
               )}
@@ -1157,20 +1157,20 @@ export default function ArbitrageScannerPage() {
                 // VIEW 1: Filter Screen & Settings
                 <>
                   {/* Geographic & Calculations Settings */}
-                  <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
+                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
                       スキャン地域と計算方式
                     </h3>
 
                     {/* Prefecture Selection */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                         対象都道府県 (DBフィルタ)
                       </label>
                       <select
                         value={prefecture}
                         onChange={(e) => handlePrefectureChange(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="all">全国 / すべて</option>
                         <option value="愛知県">愛知県 (42,641件)</option>
@@ -1181,9 +1181,9 @@ export default function ArbitrageScannerPage() {
 
                     {/* Birth Date */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block flex items-center justify-between">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block flex items-center justify-between">
                         <span>生年月日 (吉方位用)</span>
-                        <span className="text-[9px] text-zinc-500 font-normal">
+                        <span className="text-[9px] text-stone-400 font-normal">
                           時間指定可
                         </span>
                       </label>
@@ -1196,14 +1196,14 @@ export default function ArbitrageScannerPage() {
                           localStorage.setItem("arb_birthDate", e.target.value);
                           saveUnifiedConfig({ birth_date: e.target.value });
                         }}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                       />
                     </div>
 
                     {/* Birth Location coordinates */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
                           出生地座標 (天体ライン用)
                         </label>
                         <button
@@ -1211,7 +1211,7 @@ export default function ArbitrageScannerPage() {
                           onClick={() =>
                             setShowBirthMapPicker(!showBirthMapPicker)
                           }
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-zinc-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800"}`}
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBirthMapPicker ? "閉じる" : "地図で検索"}
                         </button>
@@ -1228,7 +1228,7 @@ export default function ArbitrageScannerPage() {
                               birth_lat: parseFloat(e.target.value),
                             });
                           }}
-                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                           placeholder="緯度"
                         />
                         <input
@@ -1242,14 +1242,14 @@ export default function ArbitrageScannerPage() {
                               birth_lon: parseFloat(e.target.value),
                             });
                           }}
-                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                           placeholder="経度"
                         />
                       </div>
                     </div>
 
                     {showBirthMapPicker && (
-                      <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-zinc-800 relative z-20">
+                      <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-stone-200 relative z-20">
                         <LocationPickerInner
                           initialLat={Number(birthLat) || 34.3952}
                           initialLon={Number(birthLon) || 132.4482}
@@ -1271,13 +1271,13 @@ export default function ArbitrageScannerPage() {
 
                     {/* Layer Mode */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                         方位盤の計算レイヤー
                       </label>
                       <select
                         value={layerMode}
                         onChange={(e) => handleLayerModeChange(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="year">年盤 (長期・引越し向き)</option>
                         <option value="month">月盤 (中期・旅行向き)</option>
@@ -1289,8 +1289,8 @@ export default function ArbitrageScannerPage() {
                     </div>
 
                     {/* Options Toggles */}
-                    <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-zinc-900">
-                      <label className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                    <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-stone-200">
+                      <label className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={useTrueNorth}
@@ -1301,7 +1301,7 @@ export default function ArbitrageScannerPage() {
                         />
                         真北を使用 (無効時は磁北補正)
                       </label>
-                      <label className="flex items-center gap-2 text-[10px] text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={lunarPhaseModifier}
@@ -1317,37 +1317,37 @@ export default function ArbitrageScannerPage() {
                   </div>
 
                   {/* Filter Criteria Panel */}
-                  <div className="space-y-4 bg-white dark:bg-zinc-950 p-4 rounded-2xl border border-gray-100 dark:border-zinc-900 shadow-xs">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider font-semibold">
+                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
+                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
                       絞り込みフィルター
                     </h3>
 
                     {/* Search query input */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                         物件名・住所検索
                       </label>
                       <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-500" />
                         <input
                           type="text"
                           placeholder="物件名・住所で検索..."
                           value={filterName}
                           onChange={handleFilterNameChange}
-                          className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                          className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                         />
                       </div>
                     </div>
 
                     {/* Status Select */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                         吉凶ステータス
                       </label>
                       <select
                         value={filterStatus}
                         onChange={handleFilterStatusChange}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="ALL">全ステータス</option>
                         <option value="OPTIMAL">OPTIMAL (大吉)</option>
@@ -1359,7 +1359,7 @@ export default function ArbitrageScannerPage() {
                     {/* Rent & Age & Yield filters */}
                     <div className="grid grid-cols-2 gap-3.5">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                           総家賃上限 (万円)
                         </label>
                         <input
@@ -1370,11 +1370,11 @@ export default function ArbitrageScannerPage() {
                             setFilterMaxRent(e.target.value);
                             setCurrentPage(1);
                           }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                           築年数上限 (年)
                         </label>
                         <input
@@ -1385,11 +1385,11 @@ export default function ArbitrageScannerPage() {
                             setFilterMaxAge(e.target.value);
                             setCurrentPage(1);
                           }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                       <div className="space-y-1 col-span-2">
-                        <label className="text-[10px] font-semibold text-gray-600 dark:text-gray-400 block">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                           最小利回り偏差値
                         </label>
                         <input
@@ -1400,7 +1400,7 @@ export default function ArbitrageScannerPage() {
                             setFilterMinYield(e.target.value);
                             setCurrentPage(1);
                           }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
@@ -1408,15 +1408,15 @@ export default function ArbitrageScannerPage() {
 
                   {/* TOP 5 お買い得アコーディオン (HTML5 details) */}
                   <details
-                    className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-100 dark:border-zinc-900 overflow-hidden shadow-xs group"
+                    className="bg-white dark:bg-stone-50 rounded-2xl border border-gray-100 dark:border-stone-200 overflow-hidden shadow-xs group"
                     open
                   >
-                    <summary className="p-4 font-bold text-xs text-gray-900 dark:text-white flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-zinc-900">
+                    <summary className="p-4 font-bold text-xs text-gray-900 dark:text-stone-900 flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-stone-200">
                       <span className="flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />
                         最強のアービトラージ物件 TOP 5
                       </span>
-                      <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90 text-gray-400" />
+                      <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90 text-stone-500" />
                     </summary>
                     <div className="p-3.5 space-y-3.5">
                       {loading ? (
@@ -1424,12 +1424,12 @@ export default function ArbitrageScannerPage() {
                           {[1, 2, 3].map((i) => (
                             <div
                               key={i}
-                              className="h-14 rounded-xl bg-gray-100 dark:bg-zinc-900 animate-pulse"
+                              className="h-14 rounded-xl bg-gray-100 dark:bg-white animate-pulse"
                             />
                           ))}
                         </div>
                       ) : filteredData.length === 0 ? (
-                        <div className="p-6 text-center text-gray-500 text-[10px]">
+                        <div className="p-6 text-center text-stone-400 text-[10px]">
                           合致する物件がありません。
                         </div>
                       ) : (
@@ -1439,7 +1439,7 @@ export default function ArbitrageScannerPage() {
                             onClick={() => {
                               setMapCenter([item.lat, item.lon]);
                             }}
-                            className="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 dark:bg-zinc-900 border border-gray-200/50 dark:border-zinc-800/40 hover:border-indigo-500/50 cursor-pointer transition-colors shadow-2xs"
+                            className="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
                           >
                             <div className="truncate pr-2 max-w-[70%]">
                               {item.url ? (
@@ -1447,16 +1447,16 @@ export default function ArbitrageScannerPage() {
                                   href={item.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block"
+                                  className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block"
                                 >
                                   {item.property_name}
                                 </a>
                               ) : (
-                                <div className="font-bold text-gray-900 dark:text-gray-100 text-[11px] truncate">
+                                <div className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate">
                                   {item.property_name}
                                 </div>
                               )}
-                              <div className="text-[10px] text-gray-500 mt-1 flex flex-col gap-0.5">
+                              <div className="text-[10px] text-stone-400 mt-1 flex flex-col gap-0.5">
                                 <span className="font-semibold">
                                   {item.direction
                                     ? `${item.direction} (${item.maxAstroFactor || "計算中"})`
@@ -1465,7 +1465,7 @@ export default function ArbitrageScannerPage() {
                               </div>
                             </div>
                             <div className="text-right shrink-0">
-                              <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold text-[11px]">
+                              <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold text-[11px]">
                                 {Math.round((item.totalRent || 0) / 10000)}万円
                               </div>
                               <div className="mt-1 flex justify-end">
@@ -1481,22 +1481,22 @@ export default function ArbitrageScannerPage() {
               ) : (
                 // VIEW 2: Property List Screen (Cards or Table)
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b border-gray-200 dark:border-zinc-800 pb-2">
-                    <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                  <div className="flex items-center justify-between border-b border-gray-200 dark:border-stone-200 pb-2">
+                    <h3 className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                       物件リスト ({sortedTableData.length}件中、表示範囲内)
                     </h3>
 
                     {/* Card vs Table toggle switches */}
-                    <div className="flex items-center gap-1 bg-zinc-200 dark:bg-zinc-900 p-0.5 rounded-lg shrink-0 select-none">
+                    <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg shrink-0 select-none">
                       <button
                         onClick={() => setShowTableView(false)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-400 hover:text-gray-700 dark:hover:text-stone-600"}`}
                       >
                         カード
                       </button>
                       <button
                         onClick={() => setShowTableView(true)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-400 hover:text-gray-700 dark:hover:text-stone-600"}`}
                       >
                         テーブル
                       </button>
@@ -1504,7 +1504,7 @@ export default function ArbitrageScannerPage() {
                   </div>
 
                   {propertiesInBounds.length === 0 ? (
-                    <div className="p-12 text-center text-gray-500 text-xs">
+                    <div className="p-12 text-center text-stone-400 text-xs">
                       現在の表示範囲内に条件合致する物件がありません。地図をドラッグするかズームアウトしてください。
                     </div>
                   ) : !showTableView ? (
@@ -1518,10 +1518,10 @@ export default function ArbitrageScannerPage() {
                             onClick={() => {
                               setMapCenter([item.lat, item.lon]);
                             }}
-                            className="p-3.5 rounded-2xl bg-white dark:bg-zinc-950 border border-gray-200/60 dark:border-zinc-900 hover:border-indigo-500/50 cursor-pointer transition-colors shadow-2xs relative group"
+                            className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
                           >
                             <div className="flex justify-between items-start gap-1 mb-1">
-                              <h4 className="font-bold text-gray-900 dark:text-gray-100 text-xs leading-snug line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                              <h4 className="font-bold text-gray-900 dark:text-stone-800 text-xs leading-snug line-clamp-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-600 transition-colors">
                                 {item.url ? (
                                   <a
                                     href={item.url}
@@ -1542,14 +1542,14 @@ export default function ArbitrageScannerPage() {
                               </span>
                             </div>
 
-                            <div className="text-[10px] text-gray-500 truncate max-w-xs">
+                            <div className="text-[10px] text-stone-400 truncate max-w-xs">
                               {item.address || "住所情報なし"}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-zinc-900 text-[10px] text-gray-600 dark:text-gray-400 font-mono">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 text-[10px] text-stone-400 dark:text-stone-500 font-mono">
                               <div className="flex justify-between">
                                 <span>総賃料:</span>
-                                <span className="font-bold text-gray-900 dark:text-white">
+                                <span className="font-bold text-gray-900 dark:text-stone-900">
                                   {item.totalRent
                                     ? `${(item.totalRent / 10000).toFixed(1)}万円`
                                     : "不明"}
@@ -1558,19 +1558,19 @@ export default function ArbitrageScannerPage() {
                               <div className="flex justify-between">
                                 <span>利回り偏差値:</span>
                                 <span
-                                  className={`font-bold ${item.yieldScore > 60 ? "text-emerald-500" : "text-gray-900 dark:text-white"}`}
+                                  className={`font-bold ${item.yieldScore > 60 ? "text-emerald-500" : "text-gray-900 dark:text-stone-900"}`}
                                 >
                                   {item.yieldScore.toFixed(1)}
                                 </span>
                               </div>
                               <div className="flex justify-between col-span-2">
                                 <span>広さ/築年/徒歩:</span>
-                                <span className="font-semibold text-gray-800 dark:text-gray-200">
+                                <span className="font-semibold text-gray-800 dark:text-stone-700">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分
                                 </span>
                               </div>
-                              <div className="flex justify-between col-span-2 pt-1 border-t border-zinc-100 dark:border-zinc-900/60">
+                              <div className="flex justify-between col-span-2 pt-1 border-t border-zinc-100 dark:border-stone-200">
                                 <span>方位・吉凶:</span>
                                 <span
                                   className={`font-bold ${pinColors.textClass}`}
@@ -1582,9 +1582,9 @@ export default function ArbitrageScannerPage() {
                               </div>
                             </div>
 
-                            <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-zinc-900/40 rounded-lg px-2 py-1.5">
+                            <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
                               {renderStars(item.arbitrageScore)}
-                              <span className="text-[8px] text-gray-400 font-semibold">
+                              <span className="text-[8px] text-stone-500 font-semibold">
                                 推奨スコア: {item.arbitrageScore.toFixed(1)}
                               </span>
                             </div>
@@ -1603,12 +1603,12 @@ export default function ArbitrageScannerPage() {
                     </div>
                   ) : (
                     // Table View Mode inside expanded sidebar (55% width)
-                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-zinc-900 bg-white dark:bg-zinc-950">
+                    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50">
                       <table className="w-full text-xs text-left min-w-[500px]">
-                        <thead className="text-[10px] text-gray-500 uppercase bg-gray-50 dark:bg-zinc-900/50 border-b border-gray-200 dark:border-zinc-800">
+                        <thead className="text-[10px] text-stone-400 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
                           <tr>
                             <th
-                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                               onClick={(e) => handleSortChange("arbitrage", e)}
                             >
                               おすすめ度 {renderSortIndicator("arbitrage")}
@@ -1617,19 +1617,19 @@ export default function ArbitrageScannerPage() {
                               物件名 / 住所
                             </th>
                             <th
-                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                               onClick={(e) => handleSortChange("astrology", e)}
                             >
                               方位・吉凶 {renderSortIndicator("astrology")}
                             </th>
                             <th
-                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                               onClick={(e) => handleSortChange("rent", e)}
                             >
                               総家賃 {renderSortIndicator("rent")}
                             </th>
                             <th
-                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors font-bold"
+                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                               onClick={(e) => handleSortChange("yield", e)}
                             >
                               利回り偏差 {renderSortIndicator("yield")}
@@ -1648,19 +1648,19 @@ export default function ArbitrageScannerPage() {
                                 onClick={() => {
                                   setMapCenter([item.lat, item.lon]);
                                 }}
-                                className="border-b border-gray-100 dark:border-zinc-900 hover:bg-gray-50 dark:hover:bg-zinc-900/30 transition-colors cursor-pointer"
+                                className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono">
                                   {renderStars(item.arbitrageScore)}
                                 </td>
                                 <td className="px-4 py-3">
-                                  <div className="font-bold text-gray-900 dark:text-gray-100 truncate max-w-[180px]">
+                                  <div className="font-bold text-gray-900 dark:text-stone-800 truncate max-w-[180px]">
                                     {item.url ? (
                                       <a
                                         href={item.url}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                                        className="text-blue-600 dark:text-blue-600 hover:underline"
                                       >
                                         {item.property_name}
                                       </a>
@@ -1668,7 +1668,7 @@ export default function ArbitrageScannerPage() {
                                       item.property_name
                                     )}
                                   </div>
-                                  <div className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[180px]">
+                                  <div className="text-[10px] text-stone-500 mt-0.5 truncate max-w-[180px]">
                                     {item.address}
                                   </div>
                                 </td>
@@ -1697,7 +1697,7 @@ export default function ArbitrageScannerPage() {
                                     {item.yieldScore.toFixed(1)}
                                   </span>
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-500 font-mono text-[10px]">
+                                <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px]">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分
                                 </td>
@@ -1719,7 +1719,7 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[70%]"
-            } h-[calc(100vh-220px)] min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-800 relative bg-gray-50 dark:bg-gray-900 shrink-0`}
+            } h-[calc(100vh-220px)] min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-stone-200 relative bg-gray-50 dark:bg-white shrink-0`}
           >
             <ArbitrageMap
               properties={filteredData}
@@ -1749,13 +1749,13 @@ export default function ArbitrageScannerPage() {
               }}
             />
             {loading && data.length === 0 ? (
-              <div className="absolute inset-0 bg-black/40 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-zinc-300">
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-stone-600">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                 データベースから割安物件を走査中...
               </div>
             ) : null}
             {loading && data.length > 0 && (
-              <div className="absolute top-4 right-4 bg-black/80 border border-indigo-500/30 text-indigo-400 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-[1001] shadow-lg">
+              <div className="absolute top-4 right-4 bg-white/70 border border-indigo-200 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-[1001] shadow-lg">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 SCANNING...
               </div>

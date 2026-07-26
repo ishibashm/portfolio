@@ -297,7 +297,7 @@ export default function ExpertCouncilPanel({
       conditions.push({
         label: "空間共鳴 (OPTIMAL)",
         value: "+10 (大吉)",
-        colorClass: "text-blue-400",
+        colorClass: "text-blue-600",
       });
     }
 
@@ -446,10 +446,10 @@ export default function ExpertCouncilPanel({
           value: `${Math.round(scoreData.score)}%`,
           colorClass:
             scoreData.score >= 80
-              ? "text-emerald-400"
+              ? "text-emerald-600"
               : scoreData.score >= 50
-                ? "text-amber-400"
-                : "text-red-400",
+                ? "text-amber-600"
+                : "text-red-600",
         },
         ...scoreData.conditions.map((c) => ({
           label: ` ├ ${c.label}`,
@@ -502,25 +502,25 @@ export default function ExpertCouncilPanel({
   ];
 
   return (
-    <div className="w-full bg-zinc-950/80 backdrop-blur-md border border-zinc-800/80 rounded-2xl p-5 flex flex-col shadow-2xl z-10 transition-all duration-300">
-      <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3">
+    <div className="w-full bg-white/80 backdrop-blur-md border border-stone-200 rounded-2xl p-5 flex flex-col shadow-2xl z-10 transition-all duration-300">
+      <div className="flex justify-between items-center mb-4 border-b border-stone-200 pb-3">
         <div className="flex items-center gap-3">
-          <span className="text-emerald-400 animate-pulse text-lg">●</span>
+          <span className="text-emerald-600 animate-pulse text-lg">●</span>
           <div>
-            <h3 className="text-sm text-zinc-100 font-bold uppercase tracking-widest leading-none">
+            <h3 className="text-sm text-stone-800 font-bold uppercase tracking-widest leading-none">
               External Telemetry
             </h3>
-            <span className="text-[10px] text-zinc-500 font-normal">
+            <span className="text-[10px] text-stone-400 font-normal">
               外部環境データ監視グリッド
             </span>
           </div>
         </div>
-        <div className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+        <div className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-emerald-500/10 text-emerald-600 border border-emerald-200 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.1)]">
           Live Feed Active
         </div>
       </div>
 
-      <p className="text-[11px] text-zinc-400 mb-5 font-sans leading-relaxed">
+      <p className="text-[11px] text-stone-500 mb-5 font-sans leading-relaxed">
         生体データを除外した外部環境データ（気学・天体・地磁気・GIS等）のリアルタイム監視パネルです。各パラメータの現在値を監視し、日々の移住・長期滞在インサイトとして蓄積します。
       </p>
 
@@ -528,31 +528,31 @@ export default function ExpertCouncilPanel({
         {agencyData.map((agency, idx) => (
           <div
             key={idx}
-            className="bg-black/40 border border-white/5 rounded-xl p-4 flex flex-col hover:bg-zinc-900/50 transition-colors"
+            className="bg-white/70 border border-stone-200/60 rounded-xl p-4 flex flex-col hover:bg-white/80 transition-colors"
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-center gap-2">
                 <span className="text-base">{agency.icon}</span>
-                <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">
+                <span className="text-xs font-bold text-stone-700 uppercase tracking-wider">
                   {agency.agency}
                 </span>
               </div>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-sm font-mono font-bold tracking-wider ${
                   agency.status === "OPTIMAL"
-                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                     : agency.status === "WARNING"
                       ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
                       : agency.status === "CRITICAL"
-                        ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                        : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                        ? "bg-red-500/10 text-red-600 border border-red-200"
+                        : "bg-blue-500/10 text-blue-600 border border-blue-200"
                 }`}
               >
                 {agency.status}
               </span>
             </div>
 
-            <div className="text-[10px] text-zinc-500 mb-3 border-b border-white/5 pb-2">
+            <div className="text-[10px] text-stone-400 mb-3 border-b border-stone-200/60 pb-2">
               {agency.description}
             </div>
 
@@ -560,10 +560,10 @@ export default function ExpertCouncilPanel({
               {agency.dataItems.map((item, i) => (
                 <div
                   key={i}
-                  className="flex justify-between items-center bg-white/[0.02] px-2 py-1.5 rounded-md"
+                  className="flex justify-between items-center bg-white/80 px-2 py-1.5 rounded-md"
                 >
                   <span
-                    className={`text-[10px] font-mono ${item.label.startsWith(" ├") ? "text-zinc-500" : "text-zinc-400"}`}
+                    className={`text-[10px] font-mono ${item.label.startsWith(" ├") ? "text-stone-400" : "text-stone-500"}`}
                   >
                     {item.label}
                   </span>
@@ -571,14 +571,14 @@ export default function ExpertCouncilPanel({
                     className={`text-[11px] font-mono font-bold ${
                       item.colorClass ||
                       (String(item.value).includes("NOISE")
-                        ? "text-red-400"
+                        ? "text-red-600"
                         : String(item.value).includes("SAFE") ||
                             String(item.value).includes("OPTIMAL") ||
                             String(item.value).includes("CLEAR")
-                          ? "text-emerald-400"
+                          ? "text-emerald-600"
                           : item.value === "YES"
                             ? "text-yellow-400"
-                            : "text-zinc-200")
+                            : "text-stone-700")
                     }`}
                   >
                     {item.value}
@@ -590,12 +590,12 @@ export default function ExpertCouncilPanel({
         ))}
       </div>
 
-      <div className="mt-4 bg-indigo-950/20 border border-indigo-500/30 p-4 rounded-xl">
-        <h4 className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+      <div className="mt-4 bg-indigo-50 border border-indigo-200 p-4 rounded-xl">
+        <h4 className="text-[10px] text-indigo-600 font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
           <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
           Timing Optimizer Recommendation / 推奨行動
         </h4>
-        <p className="text-xs text-zinc-300 leading-relaxed font-sans text-justify whitespace-pre-wrap">
+        <p className="text-xs text-stone-600 leading-relaxed font-sans text-justify whitespace-pre-wrap">
           {displayRecommendation}
         </p>
       </div>
@@ -605,14 +605,14 @@ export default function ExpertCouncilPanel({
         if (!upcoming) return null;
 
         return (
-          <div className="mt-3 bg-amber-950/10 border border-amber-900/30 p-4 rounded-xl flex flex-col gap-2 text-xs font-sans">
-            <div className="flex items-center gap-2 font-bold text-amber-400 text-[10px]">
+          <div className="mt-3 bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col gap-2 text-xs font-sans">
+            <div className="flex items-center gap-2 font-bold text-amber-600 text-[10px]">
               <span>🗓️</span>
               <span className="uppercase tracking-wider">
                 Doyou & Mabi Forecast / 土用・間日予報
               </span>
             </div>
-            <div className="text-zinc-300">
+            <div className="text-stone-600">
               直近の土用期間 (
               {upcoming.type === "SPRING"
                 ? "春土用"
@@ -627,14 +627,14 @@ export default function ExpertCouncilPanel({
               </strong>
             </div>
             {upcoming.mabiDays.length > 0 && (
-              <div className="text-zinc-400 flex flex-wrap gap-1.5 items-center mt-1">
-                <span className="text-[10px] text-zinc-500">
+              <div className="text-stone-500 flex flex-wrap gap-1.5 items-center mt-1">
+                <span className="text-[10px] text-stone-400">
                   🍀 期間内の間日 (安全な日):
                 </span>
                 {upcoming.mabiDays.map((day) => (
                   <span
                     key={day}
-                    className="bg-emerald-950/30 border border-emerald-900/40 text-emerald-400 px-2 py-0.5 rounded-md font-mono text-[10px]"
+                    className="bg-emerald-50 border border-emerald-200 text-emerald-600 px-2 py-0.5 rounded-md font-mono text-[10px]"
                   >
                     {day}
                   </span>
@@ -646,45 +646,45 @@ export default function ExpertCouncilPanel({
       })()}
 
       {/* AI Consultation & System Control Chat Area */}
-      <div className="mt-6 p-5 border border-purple-500/20 bg-purple-950/5 backdrop-blur-lg rounded-xl flex flex-col gap-4 relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.05)] transition-all duration-300">
+      <div className="mt-6 p-5 border border-purple-200 bg-purple-50 backdrop-blur-lg rounded-xl flex flex-col gap-4 relative overflow-hidden shadow-[0_0_30px_rgba(168,85,247,0.05)] transition-all duration-300">
         {/* Background glow decoration */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-        <div className="flex justify-between items-center border-b border-purple-500/20 pb-3">
-          <h4 className="text-xs font-bold text-purple-400 uppercase tracking-widest flex items-center gap-2 font-mono">
-            <span className="text-purple-400 animate-pulse">🔮</span>
+        <div className="flex justify-between items-center border-b border-purple-200 pb-3">
+          <h4 className="text-xs font-bold text-purple-600 uppercase tracking-widest flex items-center gap-2 font-mono">
+            <span className="text-purple-600 animate-pulse">🔮</span>
             Agent Console / AIコンシェルジュ
           </h4>
-          <span className="text-[7.5px] font-mono text-purple-400 bg-purple-500/10 px-2 py-0.5 border border-purple-500/30 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)]">
+          <span className="text-[7.5px] font-mono text-purple-600 bg-purple-500/10 px-2 py-0.5 border border-purple-200 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)]">
             SECURE LINK ACTIVE
           </span>
         </div>
 
-        <p className="text-zinc-400 leading-relaxed text-[11px] font-sans">
+        <p className="text-stone-500 leading-relaxed text-[11px] font-sans">
           常駐AIコンシェルジュとの直接対話コンソールです。現在の生体測定値や地磁気データをもとに相談したり、テーマ変更を指示できます（例:
           「青系の落ち着いた色にして」「心を落ち着かせるために明朝体に変更して」など）。
         </p>
 
         {/* Selected Coordinates Indicator */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-black/50 border border-zinc-800/80 p-2.5 rounded-lg font-mono text-[10px]">
-          <div className="flex justify-between items-center bg-white/[0.01] px-2.5 py-1.5 rounded border border-white/[0.02]">
-            <span className="text-zinc-500">目標方位 (Direction):</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-white/70 border border-stone-200 p-2.5 rounded-lg font-mono text-[10px]">
+          <div className="flex justify-between items-center bg-white/70 px-2.5 py-1.5 rounded border border-white/[0.02]">
+            <span className="text-stone-400">目標方位 (Direction):</span>
             <span
               className={
                 targetDirection
-                  ? "text-emerald-400 font-bold"
+                  ? "text-emerald-600 font-bold"
                   : "text-amber-500"
               }
             >
               {targetDirection || "未選択"}
             </span>
           </div>
-          <div className="flex justify-between items-center bg-white/[0.01] px-2.5 py-1.5 rounded border border-white/[0.02]">
-            <span className="text-zinc-500">目標座標 (Coordinates):</span>
+          <div className="flex justify-between items-center bg-white/70 px-2.5 py-1.5 rounded border border-white/[0.02]">
+            <span className="text-stone-400">目標座標 (Coordinates):</span>
             <span
               className={
                 targetLat && targetLon
-                  ? "text-emerald-400 font-bold"
+                  ? "text-emerald-600 font-bold"
                   : "text-amber-500"
               }
             >
@@ -696,7 +696,7 @@ export default function ExpertCouncilPanel({
         </div>
 
         {!targetLat || !targetLon ? (
-          <div className="p-3 bg-amber-950/20 border border-amber-500/20 text-amber-400 text-[10px] font-sans rounded-lg leading-relaxed flex items-start gap-2 animate-pulse">
+          <div className="p-3 bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-sans rounded-lg leading-relaxed flex items-start gap-2 animate-pulse">
             <span>⚠️</span>
             <div>
               <strong>【目的地未設定】</strong>{" "}
@@ -707,7 +707,7 @@ export default function ExpertCouncilPanel({
         ) : null}
 
         {/* Chat Log Window */}
-        <div className="h-56 overflow-y-auto bg-black/60 border border-zinc-800/80 rounded-lg p-4 flex flex-col gap-3 font-mono text-[10px] leading-relaxed custom-scrollbar shadow-inner">
+        <div className="h-56 overflow-y-auto bg-white/70 border border-stone-200 rounded-lg p-4 flex flex-col gap-3 font-mono text-[10px] leading-relaxed custom-scrollbar shadow-inner">
           {messages.map((msg, idx) => (
             <div
               key={idx}
@@ -718,7 +718,7 @@ export default function ExpertCouncilPanel({
                   {msg.role === "user" ? "🛡️" : "🔮"}
                 </span>
                 <span
-                  className={`text-[8px] uppercase tracking-wider font-bold ${msg.role === "user" ? "text-zinc-500" : "text-purple-400"}`}
+                  className={`text-[8px] uppercase tracking-wider font-bold ${msg.role === "user" ? "text-stone-400" : "text-purple-600"}`}
                 >
                   {msg.role === "user" ? "Admin / 管理者" : "Agent / AIコンシェルジュ"}
                 </span>
@@ -726,8 +726,8 @@ export default function ExpertCouncilPanel({
               <div
                 className={`max-w-[85%] px-3.5 py-2 rounded-xl text-[11px] border leading-normal ${
                   msg.role === "user"
-                    ? "bg-zinc-900 border-zinc-800 text-zinc-100 self-end rounded-tr-none shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
-                    : "bg-purple-950/10 border-purple-500/10 text-zinc-300 self-start rounded-tl-none whitespace-pre-wrap shadow-[0_2px_15px_rgba(168,85,247,0.02)]"
+                    ? "bg-white border-stone-200 text-stone-800 self-end rounded-tr-none shadow-[0_2px_10px_rgba(0,0,0,0.2)]"
+                    : "bg-purple-50 border-purple-200 text-stone-600 self-start rounded-tl-none whitespace-pre-wrap shadow-[0_2px_15px_rgba(168,85,247,0.02)]"
                 }`}
               >
                 {msg.text}
@@ -737,14 +737,14 @@ export default function ExpertCouncilPanel({
           {isLoading && (
             <div className="flex flex-col gap-1 items-start animate-pulse">
               <div className="flex items-center gap-1">
-                <span className="text-[9px] animate-spin text-purple-400">
+                <span className="text-[9px] animate-spin text-purple-600">
                   🔄
                 </span>
-                <span className="text-[8px] text-purple-400 uppercase tracking-wider font-bold">
+                <span className="text-[8px] text-purple-600 uppercase tracking-wider font-bold">
                   [Processing / 思考同期中]
                 </span>
               </div>
-              <div className="bg-purple-950/10 border border-purple-500/10 text-purple-300 px-3.5 py-2 rounded-xl rounded-tl-none font-mono text-[10px] flex items-center gap-2">
+              <div className="bg-purple-50 border border-purple-200 text-purple-600 px-3.5 py-2 rounded-xl rounded-tl-none font-mono text-[10px] flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping"></span>
                 {loadingStatus}
               </div>
@@ -764,12 +764,12 @@ export default function ExpertCouncilPanel({
                 ? "エージェントが思考を同期中..."
                 : "アドバイスを求める、またはテーマ変更を指示..."
             }
-            className="flex-1 bg-zinc-950 border border-zinc-800/80 focus:border-purple-500/40 rounded-lg px-4 py-2.5 text-zinc-200 outline-none text-xs font-mono disabled:opacity-50 transition-all duration-300 focus:shadow-[0_0_15px_rgba(168,85,247,0.1)]"
+            className="flex-1 bg-stone-50 border border-stone-200 focus:border-purple-200 rounded-lg px-4 py-2.5 text-stone-700 outline-none text-xs font-mono disabled:opacity-50 transition-all duration-300 focus:shadow-[0_0_15px_rgba(168,85,247,0.1)]"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 hover:text-white border border-purple-800/50 disabled:opacity-40 disabled:hover:bg-purple-900/40 text-xs px-5 py-2.5 rounded-lg font-mono font-bold transition-all active:scale-[0.98] shadow-[0_2px_10px_rgba(168,85,247,0.1)] hover:shadow-[0_4px_15px_rgba(168,85,247,0.2)]"
+            className="bg-purple-50 hover:bg-purple-800/60 text-purple-600 hover:text-stone-900 border border-purple-800/50 disabled:opacity-40 disabled:hover:bg-purple-50 text-xs px-5 py-2.5 rounded-lg font-mono font-bold transition-all active:scale-[0.98] shadow-[0_2px_10px_rgba(168,85,247,0.1)] hover:shadow-[0_4px_15px_rgba(168,85,247,0.2)]"
           >
             送信
           </button>

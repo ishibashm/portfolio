@@ -88,7 +88,7 @@ export default function TelemetryChart() {
 
   if (loading)
     return (
-      <div className="text-zinc-500 font-mono text-xs">
+      <div className="text-stone-400 font-mono text-xs">
         Loading chart data...
       </div>
     );
@@ -98,7 +98,7 @@ export default function TelemetryChart() {
       <div className="flex justify-end mb-2">
         <button
           onClick={exportData}
-          className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[10px] font-mono uppercase tracking-widest rounded-lg border border-zinc-700 transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-600 text-[10px] font-mono uppercase tracking-widest rounded-lg border border-stone-300 transition-colors flex items-center gap-2"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -119,9 +119,9 @@ export default function TelemetryChart() {
         </button>
       </div>
       {/* Chart 1: Raw Ephemeris Coordinates */}
-      <div className="w-full h-64 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80">
-        <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest mb-4 border-b border-zinc-800/50 pb-2">
-          <span className="text-emerald-400 mr-2">🪐</span>
+      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
+        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+          <span className="text-emerald-600 mr-2">🪐</span>
           Raw Ephemeris / 天体黄経 (度数)
         </h3>
         <ResponsiveContainer width="100%" height="80%">
@@ -178,9 +178,9 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 2: Space Weather */}
-      <div className="w-full h-64 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80">
-        <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest mb-4 border-b border-zinc-800/50 pb-2">
-          <span className="text-rose-400 mr-2">☀️</span>
+      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
+        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+          <span className="text-rose-600 mr-2">☀️</span>
           Space Weather / 宇宙天気
         </h3>
         <ResponsiveContainer width="100%" height="80%">
@@ -248,9 +248,9 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 3: Geomagnetics */}
-      <div className="w-full h-64 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80">
-        <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest mb-4 border-b border-zinc-800/50 pb-2">
-          <span className="text-blue-400 mr-2">🧲</span>
+      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200">
+        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2">
+          <span className="text-blue-600 mr-2">🧲</span>
           Geomagnetic Field / 局所地磁気ベクトル
         </h3>
         <ResponsiveContainer width="100%" height="80%">
@@ -326,10 +326,10 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 4: Bio-Metrics */}
-      <div className="w-full h-64 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 relative">
-        <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest mb-4 border-b border-zinc-800/50 pb-2 flex items-center justify-between">
+      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200 relative">
+        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2 flex items-center justify-between">
           <div>
-            <span className="text-purple-400 mr-2">🧬</span>
+            <span className="text-purple-600 mr-2">🧬</span>
             Bio-Sync Telemetry / 生体自律神経
           </div>
           <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[9px] font-mono tracking-wider">
@@ -418,8 +418,8 @@ export default function TelemetryChart() {
       </div>
 
       {/* Chart 5: Geomancy & Lunar */}
-      <div className="w-full h-64 bg-zinc-950/80 rounded-xl p-4 border border-zinc-800/80 relative">
-        <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest mb-4 border-b border-zinc-800/50 pb-2 flex items-center justify-between">
+      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200 relative">
+        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2 flex items-center justify-between">
           <div>
             <span className="text-emerald-500 mr-2">🧭</span>
             Geomancy & Lunar Phase / 気学星・月相

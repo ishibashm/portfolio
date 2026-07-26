@@ -124,13 +124,13 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
   const getColor = (type: string) => {
     switch (type) {
       case "SUCCESS":
-        return "text-emerald-400";
+        return "text-emerald-600";
       case "WARN":
-        return "text-amber-400";
+        return "text-amber-600";
       case "MATH":
-        return "text-purple-400";
+        return "text-purple-600";
       default:
-        return "text-zinc-400";
+        return "text-stone-500";
     }
   };
 
@@ -138,10 +138,10 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end pointer-events-none">
       {/* Expanding Terminal Window */}
       <div
-        className={`transition-all duration-500 ease-in-out border border-emerald-900/50 bg-black/90 backdrop-blur-md overflow-hidden mb-2 rounded-sm pointer-events-auto shadow-[0_0_20px_rgba(16,185,129,0.15)] ${isOpen ? "h-64 opacity-100 w-[320px] md:w-[400px]" : "h-0 opacity-0 w-[320px] md:w-[400px] border-none"}`}
+        className={`transition-all duration-500 ease-in-out border border-emerald-200 bg-white/70 backdrop-blur-md overflow-hidden mb-2 rounded-sm pointer-events-auto shadow-[0_0_20px_rgba(16,185,129,0.15)] ${isOpen ? "h-64 opacity-100 w-[320px] md:w-[400px]" : "h-0 opacity-0 w-[320px] md:w-[400px] border-none"}`}
       >
         <div className="h-full flex flex-col">
-          <div className="bg-emerald-900/30 border-b border-emerald-900/50 px-2 py-1 flex justify-between items-center">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-2 py-1 flex justify-between items-center">
             <span className="text-[9px] font-mono text-emerald-500 uppercase tracking-widest">
               Calculation Audit Log // DE440
             </span>
@@ -153,7 +153,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
                 key={log.id}
                 className="flex gap-2 animate-fade-in text-shadow-sm"
               >
-                <span className="text-zinc-600 select-none">
+                <span className="text-stone-400 select-none">
                   [{log.timestamp}]
                 </span>
                 <span className={`${getColor(log.type)}`}>{log.message}</span>
@@ -166,7 +166,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
 
       {/* Persistent Telemetry Indicator Bar (Toggle) */}
       <div
-        className="pointer-events-auto cursor-pointer bg-zinc-950 border border-zinc-800 flex items-center gap-3 px-3 py-2 rounded-sm hover:border-emerald-500/50 transition-colors shadow-lg"
+        className="pointer-events-auto cursor-pointer bg-stone-50 border border-stone-200 flex items-center gap-3 px-3 py-2 rounded-sm hover:border-emerald-200 transition-colors shadow-lg"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div
@@ -176,35 +176,35 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${declination ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-zinc-500 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
             WMM2020
           </span>
         </div>
 
-        <div className="w-px h-3 bg-zinc-800"></div>
+        <div className="w-px h-3 bg-stone-100"></div>
 
         <div className="flex items-center gap-1.5" title="JPL Ephemeris Engine">
           <div
             className={`w-1.5 h-1.5 rounded-full ${env ? "bg-blue-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-zinc-500 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
             JPL DE440
           </span>
         </div>
 
-        <div className="w-px h-3 bg-zinc-800"></div>
+        <div className="w-px h-3 bg-stone-100"></div>
 
         <div className="flex items-center gap-1.5" title="Hardware GPS Sync">
           <div
             className={`w-1.5 h-1.5 rounded-full ${lat ? "bg-purple-500 animate-pulse" : "bg-zinc-600"}`}
           ></div>
-          <span className="text-[8px] font-mono text-zinc-500 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
             GPS SYNC
           </span>
         </div>
 
         {/* Toggle Caret */}
-        <div className="ml-2 pl-2 border-l border-zinc-800 text-zinc-600">
+        <div className="ml-2 pl-2 border-l border-stone-200 text-stone-400">
           {isOpen ? "▼" : "▲"}
         </div>
       </div>

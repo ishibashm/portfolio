@@ -306,7 +306,7 @@ export default function ArbitrageMapInner({
   } | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info";
@@ -657,7 +657,7 @@ export default function ArbitrageMapInner({
             position={labelPos}
             icon={L.divIcon({
               className: "custom-div-icon",
-              html: `<div class="px-1.5 py-0.5 rounded bg-zinc-950/80 border border-zinc-800 text-[9px] font-bold text-center pointer-events-none" style="color: ${color}; text-shadow: 0 0 2px rgba(0,0,0,0.8); white-space: nowrap;">
+              html: `<div class="px-1.5 py-0.5 rounded bg-white/80 border border-stone-200 text-[9px] font-bold text-center pointer-events-none" style="color: ${color}; text-shadow: 0 0 2px rgba(0,0,0,0.8); white-space: nowrap;">
                 ${d.dir} (${getStatusText(d.status)})
               </div>`,
               iconSize: [60, 20],
@@ -680,14 +680,14 @@ export default function ArbitrageMapInner({
 
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-[#050505] flex items-center justify-center font-mono text-xs text-zinc-500">
+      <div className="w-full h-full bg-[#050505] flex items-center justify-center font-mono text-xs text-stone-400">
         [ 地図エンジンの初期化中... ]
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
+    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200">
       <MapContainer
         center={center}
         zoom={zoom}
@@ -727,7 +727,7 @@ export default function ArbitrageMapInner({
               localStorage.setItem("map_theme", nextTheme);
               window.dispatchEvent(new Event("mapThemeChanged"));
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-zinc-950/90 text-zinc-200 border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
@@ -742,7 +742,7 @@ export default function ArbitrageMapInner({
                   現在地・スキャン起点
                 </div>
                 <div
-                  className="text-[10px] text-gray-500 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
+                  className="text-[10px] text-stone-400 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
                   onClick={() => copyCoordinates(baseLat, baseLon, "起点")}
                   title="クリックで座標をコピー"
                 >
@@ -750,7 +750,7 @@ export default function ArbitrageMapInner({
                     経度: {baseLon.toFixed(5)} <br />
                     緯度: {baseLat.toFixed(5)}
                   </div>
-                  <Copy className="w-3 h-3 text-zinc-300 group-hover:text-zinc-500 ml-2" />
+                  <Copy className="w-3 h-3 text-stone-600 group-hover:text-stone-400 ml-2" />
                 </div>
               </div>
             </Popup>
@@ -795,7 +795,7 @@ export default function ArbitrageMapInner({
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
                   <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
                   <div>スキャン物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件</div>
-                  <div class="text-[9px] text-gray-400 mt-1.5">※ズームインするとより詳細な情報が表示されます</div>
+                  <div class="text-[9px] text-stone-500 mt-1.5">※ズームインするとより詳細な情報が表示されます</div>
                 </div>`,
               );
             }}
@@ -851,7 +851,7 @@ export default function ArbitrageMapInner({
                           <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
                             {muni.name}
                           </div>
-                          <div className="space-y-1 text-gray-600">
+                          <div className="space-y-1 text-stone-400">
                             <div className="flex justify-between">
                               <span>検出物件数:</span>
                               <span className="font-bold text-gray-900">
@@ -865,7 +865,7 @@ export default function ArbitrageMapInner({
                               </span>
                             </div>
                           </div>
-                          <div className="text-[9px] text-gray-400 mt-2 text-center">
+                          <div className="text-[9px] text-stone-500 mt-2 text-center">
                             ※ズームインすると詳細物件ピンが表示されます
                           </div>
                         </div>
@@ -965,7 +965,7 @@ export default function ArbitrageMapInner({
                               <span className="line-clamp-1">
                                 {prop.property_name}
                               </span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 font-bold shrink-0 ml-1">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-stone-200/70 font-bold shrink-0 ml-1">
                                 {pinColors.label}
                               </span>
                             </div>
@@ -981,7 +981,7 @@ export default function ArbitrageMapInner({
                               </span>
                             )}
 
-                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-gray-600 text-[11px]">
+                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-400 text-[11px]">
                               <div className="flex justify-between">
                                 <span>総賃料:</span>
                                 <span className="font-bold text-gray-900">
@@ -1028,7 +1028,7 @@ export default function ArbitrageMapInner({
                                 title="クリックで座標をコピー"
                               >
                                 <span>緯度経度:</span>
-                                <span className="font-mono text-[9px] text-gray-400 flex items-center gap-1 group-hover:text-gray-600">
+                                <span className="font-mono text-[9px] text-stone-500 flex items-center gap-1 group-hover:text-stone-400">
                                   {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
                                   <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
                                 </span>
@@ -1037,7 +1037,7 @@ export default function ArbitrageMapInner({
 
                             <div className="mt-2.5 bg-gray-50 rounded-lg p-2 flex justify-between items-center text-[10px] border border-gray-100">
                               <div>
-                                <div className="text-gray-400">
+                                <div className="text-stone-500">
                                   利回り偏差値
                                 </div>
                                 <div className="font-mono font-bold text-indigo-600 text-xs">
@@ -1045,10 +1045,10 @@ export default function ArbitrageMapInner({
                                 </div>
                               </div>
                               <div className="text-right border-l border-gray-200 pl-2">
-                                <div className="text-gray-500 font-medium">
+                                <div className="text-stone-400 font-medium">
                                   おすすめ度
                                 </div>
-                                <div className="flex gap-0.5 text-amber-400 mt-0.5">
+                                <div className="flex gap-0.5 text-amber-600 mt-0.5">
                                   {(() => {
                                     let starCount = 1;
                                     if (prop.arbitrageScore >= 80)
@@ -1065,8 +1065,8 @@ export default function ArbitrageMapInner({
                                           key={i}
                                           className={
                                             i < starCount
-                                              ? "opacity-100 text-amber-400"
-                                              : "opacity-20 text-zinc-600"
+                                              ? "opacity-100 text-amber-600"
+                                              : "opacity-20 text-stone-400"
                                           }
                                         >
                                           ★
@@ -1091,7 +1091,7 @@ export default function ArbitrageMapInner({
                                 href={prop.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
+                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-stone-900 rounded-lg transition-colors shadow-sm"
                               >
                                 詳細サイトを開く ↗
                               </a>
@@ -1105,13 +1105,13 @@ export default function ArbitrageMapInner({
       </MapContainer>
 
       {/* Thermometer Legend Overlay (Top Left) */}
-      <div className="absolute top-4 left-4 bg-zinc-950/90 text-white px-3 py-3.5 rounded-2xl shadow-xl border border-zinc-800/80 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
-        <div className="font-bold text-[9px] text-zinc-300 tracking-tight text-center pb-0.5 border-b border-zinc-800 w-full">
+      <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
+        <div className="font-bold text-[9px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
           件数
         </div>
         <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
-          <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-zinc-800/50" />
-          <div className="flex flex-col justify-between text-[7.5px] font-mono text-zinc-400 select-none">
+          <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-stone-200" />
+          <div className="flex flex-col justify-between text-[7.5px] font-mono text-stone-500 select-none">
             <span>{maxPrefOrBubbleCount.toLocaleString()}</span>
             <span>
               {Math.round(maxPrefOrBubbleCount * 0.75).toLocaleString()}
@@ -1128,14 +1128,14 @@ export default function ArbitrageMapInner({
       </div>
 
       {/* Map Legend Overlay */}
-      <div className="absolute bottom-4 right-4 bg-zinc-950/90 text-white px-3.5 py-3 rounded-xl shadow-lg border border-zinc-800 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
-        <div className="font-bold border-b border-zinc-800 pb-1 mb-0.5 text-zinc-300">
+      <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
+        <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
           アストロ吉凶（凡例）
         </div>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
           <div className="flex items-center gap-1.5 col-span-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
-            <span className="font-bold text-amber-300">
+            <span className="font-bold text-amber-600">
               超大吉 (木星ライン特選)
             </span>
           </div>
@@ -1175,11 +1175,11 @@ export default function ArbitrageMapInner({
             exit={{ opacity: 0, y: -20, x: "-50%" }}
             className="absolute top-20 left-1/2 z-[2000]"
           >
-            <div className="bg-zinc-900/95 text-zinc-100 px-4 py-2 rounded-full border border-zinc-700 shadow-2xl flex items-center gap-2 backdrop-blur-md">
+            <div className="bg-white/80 text-stone-800 px-4 py-2 rounded-full border border-stone-300 shadow-2xl flex items-center gap-2 backdrop-blur-md">
               {toast.type === "success" ? (
-                <Check className="w-4 h-4 text-emerald-400" />
+                <Check className="w-4 h-4 text-emerald-600" />
               ) : (
-                <Copy className="w-4 h-4 text-indigo-400" />
+                <Copy className="w-4 h-4 text-indigo-600" />
               )}
               <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
                 {toast.message}

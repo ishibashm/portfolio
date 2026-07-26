@@ -51,7 +51,7 @@ export default function Home() {
           <h2 className="text-xl font-bold text-stone-900 font-serif">Subdomain 1 Feature: Solar Time & Geomancy Engine</h2>
           <p className="text-xs text-stone-500 mt-1">時間軸・方位・八字・生体磁気ログのリアルタイム可視化エンジン</p>
         </div>
-        <div className="p-2 rounded-2xl bg-stone-950 text-white shadow-2xl">
+        <div className="p-2 rounded-2xl bg-white/60 border border-rose-100/60 shadow-inner">
           <SolarTimeClock />
         </div>
       </div>

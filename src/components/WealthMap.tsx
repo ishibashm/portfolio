@@ -55,7 +55,7 @@ export function WealthMap({
   }, [data]);
 
   return (
-    <div className="w-full h-full relative bg-gray-900 rounded-2xl overflow-hidden border border-gray-800">
+    <div className="w-full h-full relative bg-white rounded-2xl overflow-hidden border border-stone-200">
       <ComposableMap
         projection="geoMercator"
         projectionConfig={{
@@ -73,12 +73,12 @@ export function WealthMap({
                 <Geography
                   key={geo.rsmKey}
                   geography={geo}
-                  fill="#1f2937" // gray-800
-                  stroke="#374151" // gray-700
+                  fill="#e7e5e4" // stone-200
+                  stroke="#fafaf9" // stone-50
                   strokeWidth={0.5}
                   style={{
                     default: { outline: "none" },
-                    hover: { outline: "none", fill: "#374151" },
+                    hover: { outline: "none", fill: "#d6d3d1" },
                     pressed: { outline: "none" },
                   }}
                 />
@@ -162,13 +162,13 @@ export function WealthMap({
 
       {/* Legend / Tooltip Overlay */}
       {tooltipContent && (
-        <div className="absolute top-4 left-4 bg-black/80 text-white px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
+        <div className="absolute top-4 left-4 bg-white/70 text-stone-900 px-3 py-2 rounded shadow-lg backdrop-blur text-sm pointer-events-none z-10 max-w-sm whitespace-pre-wrap">
           {tooltipContent}
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 bg-black/80 text-white px-4 py-3 rounded-xl shadow-lg backdrop-blur text-xs pointer-events-none border border-gray-800 z-10 flex flex-col gap-2">
-        <div className="font-bold border-b border-gray-700 pb-1 mb-1">
+      <div className="absolute bottom-4 right-4 bg-white/70 text-stone-900 px-4 py-3 rounded-xl shadow-lg backdrop-blur text-xs pointer-events-none border border-stone-200 z-10 flex flex-col gap-2">
+        <div className="font-bold border-b border-stone-300 pb-1 mb-1">
           一人当たり所得
         </div>
         <div className="flex items-center gap-2">
@@ -177,7 +177,7 @@ export function WealthMap({
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-indigo-400"></span> 低い
         </div>
-        <div className="font-bold border-b border-gray-700 pb-1 mb-1 mt-2">
+        <div className="font-bold border-b border-stone-300 pb-1 mb-1 mt-2">
           吉凶ステータス
         </div>
         <div className="flex items-center gap-2">

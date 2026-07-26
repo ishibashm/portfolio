@@ -173,7 +173,7 @@ export default function MagneticMapInner({
     null,
   );
   const [zoom, setZoom] = React.useState(13);
-  const [mapTheme, setMapTheme] = React.useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = React.useState<"dark" | "light">("light");
 
   useEffect(() => {
     setMounted(true);
@@ -458,16 +458,16 @@ function mergeStatuses(list: (string | undefined)[]): string {
             }}
           >
             <Tooltip className="custom-map-tooltip">
-              <div className="bg-zinc-950 text-zinc-200 p-2 font-mono text-[10px] border border-zinc-800 shadow-xl max-w-[200px]">
-                <div className="text-blue-400 border-b border-zinc-800 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
+              <div className="bg-stone-50 text-stone-700 p-2 font-mono text-[10px] border border-stone-200 shadow-xl max-w-[200px]">
+                <div className="text-blue-600 border-b border-stone-200 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
                   <span>{d.dir} Sector</span>
-                  <span className="text-zinc-600 font-normal">
+                  <span className="text-stone-400 font-normal">
                     Analysis {dashArray ? "(破線)" : "(実線)"}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">環境:</span>
+                    <span className="text-stone-400">環境:</span>
                     <span
                       className={
                         y.includes("NOISE") ||
@@ -481,7 +481,7 @@ function mergeStatuses(list: (string | undefined)[]): string {
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-zinc-500">個人:</span>
+                    <span className="text-stone-400">個人:</span>
                     <span
                       className={
                         d.status.includes("HONMEI") || d.status.includes("TEKI")
@@ -492,9 +492,9 @@ function mergeStatuses(list: (string | undefined)[]): string {
                       {formatLayer(dLayer)}
                     </span>
                   </div>
-                  <div className="mt-1 pt-1 border-t border-zinc-800 text-[9px] flex flex-col gap-1">
+                  <div className="mt-1 pt-1 border-t border-stone-200 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
-                      <span className="text-zinc-400">STATUS: </span>
+                      <span className="text-stone-500">STATUS: </span>
                       <span
                         className={
                           color.includes("10b981") || color.includes("34d399")
@@ -514,7 +514,7 @@ function mergeStatuses(list: (string | undefined)[]): string {
                         {d.status}
                       </span>
                     </div>
-                    <div className="text-zinc-300 font-bold bg-zinc-900/50 p-1 border-l-2 border-zinc-600 mt-1">
+                    <div className="text-stone-600 font-bold bg-white/80 p-1 border-l-2 border-zinc-600 mt-1">
                       {getActionSuggest(d.status)}
                     </div>
                   </div>
@@ -608,20 +608,20 @@ function mergeStatuses(list: (string | undefined)[]): string {
 
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-zinc-950 flex shadow-inner border border-zinc-900 items-center justify-center font-mono text-[10px] text-zinc-800">
+      <div className="w-full h-full bg-stone-50 flex shadow-inner border border-stone-200 items-center justify-center font-mono text-[10px] text-zinc-800">
         [ SYNCING SPATIAL... ]
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full relative rounded-sm overflow-hidden border border-zinc-800/80">
+    <div className="w-full h-full relative rounded-sm overflow-hidden border border-stone-200">
       <MapContainer
         key="magnetic-map-container"
         center={center}
         zoom={13}
         maxZoom={20}
-        className="w-full h-full bg-zinc-950"
+        className="w-full h-full bg-stone-50"
         zoomControl={false}
         preferCanvas={true}
       >
@@ -659,7 +659,7 @@ function mergeStatuses(list: (string | undefined)[]): string {
               localStorage.setItem("map_theme", nextTheme);
               window.dispatchEvent(new Event("mapThemeChanged"));
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-zinc-950/90 text-zinc-200 border-zinc-800/80 hover:bg-zinc-900 transition-colors shadow-lg active:scale-95 cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
@@ -761,32 +761,32 @@ function mergeStatuses(list: (string | undefined)[]): string {
 
       {/* UI Overlay */}
       <div className="absolute top-16 right-4 z-[1000] pointer-events-none">
-        <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-blue-500/30 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
+        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-blue-200 rounded-sm shadow-lg flex flex-col gap-1 items-end text-right">
           <div className="flex items-center gap-2 mb-1 justify-end">
-            <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-400">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-emerald-600">
               真北 (Geographic North)
             </div>
             <div className="w-4 border-t-2 border-emerald-500 border-dashed"></div>
           </div>
           <div className="flex items-center gap-2 justify-end">
-            <div className="text-[10px] uppercase font-mono tracking-widest text-blue-400">
+            <div className="text-[10px] uppercase font-mono tracking-widest text-blue-600">
               磁北 (Magnetic North)
             </div>
             <div className="w-4 border-t-[3px] border-blue-500"></div>
           </div>
-          <div className="text-xs font-mono text-zinc-300 mt-1 pt-1 border-t border-zinc-800 w-full">
+          <div className="text-xs font-mono text-stone-600 mt-1 pt-1 border-t border-stone-200 w-full">
             現在地偏角 (WMM2020): {declination > 0 ? "東偏" : "西偏"}
             {Math.abs(declination).toFixed(2)}°
           </div>
-          <div className="text-[9px] text-zinc-500 mt-0.5 leading-tight max-w-[200px]">
+          <div className="text-[9px] text-stone-400 mt-0.5 leading-tight max-w-[200px]">
             ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。月交点（空間方位）と月相（時間補正）は別個に評価されています。
           </div>
         </div>
       </div>
 
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
-        <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-zinc-800 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
-          <div className="text-zinc-500 font-mono uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between gap-4">
+        <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
+          <div className="text-stone-400 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
             <span>Legend</span>
             <span className="text-emerald-500">
               [{activeLayerMode.toUpperCase()}]
@@ -796,36 +796,36 @@ function mergeStatuses(list: (string | undefined)[]): string {
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#10b981]"></span>
-              <span className="text-zinc-300">大吉 (Optimal)</span>
+              <span className="text-stone-600">大吉 (Optimal)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#ef4444]"></span>
-              <span className="text-zinc-300">危険 (Noise)</span>
+              <span className="text-stone-600">危険 (Noise)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#3b82f6]"></span>
-              <span className="text-zinc-300">通常 (Safe)</span>
+              <span className="text-stone-600">通常 (Safe)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#d946ef]"></span>
-              <span className="text-zinc-300">個人不調 (Bio)</span>
+              <span className="text-stone-600">個人不調 (Bio)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#eab308]"></span>
-              <span className="text-zinc-300">天中殺 (Void)</span>
+              <span className="text-stone-600">天中殺 (Void)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
-              <span className="text-zinc-300">月交点 (Node)</span>
+              <span className="text-stone-600">月交点 (Node)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 border-t border-dashed border-zinc-500"></div>
-              <span className="text-zinc-500">距離リング</span>
+              <span className="text-stone-400">距離リング</span>
             </div>
           </div>
 
           {honmeiStar && (
-            <div className="text-[8px] text-[#a855f7] border-t border-zinc-900 pt-1 mt-1 font-mono">
+            <div className="text-[8px] text-[#a855f7] border-t border-stone-200 pt-1 mt-1 font-mono">
               HARDWARE SYNC: {honmeiStar.physical}
             </div>
           )}
@@ -835,18 +835,18 @@ function mergeStatuses(list: (string | undefined)[]): string {
       {/* UI Overlay - Clicked Position */}
       {clickedPos && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-auto">
-          <div className="bg-zinc-950/90 md:backdrop-blur-md px-3 py-2 border border-emerald-500/50 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
-            <div className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest border-b border-zinc-800 pb-1 flex justify-between gap-4">
+          <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-emerald-200 rounded-sm shadow-xl flex flex-col gap-1.5 animate-fade-in-up">
+            <div className="text-[9px] font-mono text-emerald-600 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
               <span>Target Coordinates</span>
               <button
                 onClick={() => setClickedPos(null)}
-                className="text-zinc-500 hover:text-white"
+                className="text-stone-400 hover:text-stone-900"
               >
                 ✕
               </button>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex flex-col text-[10px] font-mono text-zinc-300">
+              <div className="flex flex-col text-[10px] font-mono text-stone-600">
                 <span>Lat: {clickedPos[0].toFixed(5)}</span>
                 <span>Lon: {clickedPos[1].toFixed(5)}</span>
               </div>
@@ -859,7 +859,7 @@ function mergeStatuses(list: (string | undefined)[]): string {
                     `座標をコピーしました: ${clickedPos[0].toFixed(5)},${clickedPos[1].toFixed(5)}`,
                   );
                 }}
-                className="bg-emerald-900/40 text-emerald-400 border border-emerald-500/50 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
+                className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-1.5 text-[9px] uppercase tracking-widest hover:bg-emerald-800/60 transition-colors"
               >
                 📋 COPY
               </button>

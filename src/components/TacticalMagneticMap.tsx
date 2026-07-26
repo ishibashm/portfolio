@@ -19,7 +19,7 @@ import { downloadKML } from "../utils/kmlExport";
 const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-96 bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600 md:animate-pulse">
+    <div className="w-full h-96 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400 md:animate-pulse">
       [ INITIALIZING SPATIAL VECTORS... ]
     </div>
   ),
@@ -112,7 +112,7 @@ export function TacticalMagneticMapComponent({
   }, [activeLayers, activeLayerMode]);
 
   const borderColor = isPhysical
-    ? "border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
+    ? "border-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.2)]"
     : "border-zinc-500/50 shadow-[0_0_15px_rgba(113,113,122,0.2)]";
 
   return (
@@ -129,20 +129,20 @@ export function TacticalMagneticMapComponent({
               className="text-blue-500 md:animate-pulse mt-1"
             />
             <div className="flex flex-col">
-              <h2 className="text-xs uppercase font-mono tracking-widest text-zinc-300 drop-shadow-md">
+              <h2 className="text-xs uppercase font-mono tracking-widest text-stone-600 drop-shadow-md">
                 [稼働環境] 地磁気・太陽風ベクター観測
               </h2>
 
               {/* Layer Mode Switcher with Combinations */}
-              <div className="pointer-events-auto flex items-center mt-1.5 bg-zinc-950/90 border border-zinc-800 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
-                <span className="px-1.5 py-1 text-[8px] text-zinc-500 bg-zinc-900 border-r border-zinc-800">
+              <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
+                <span className="px-1.5 py-1 text-[8px] text-stone-400 bg-white border-r border-stone-200">
                   時間軸:
                 </span>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("final")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-900/60 text-emerald-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   🪐 全統合(年+月+日)
                 </button>
@@ -150,7 +150,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-900/60 text-purple-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   📅 年+月
                 </button>
@@ -158,7 +158,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-900/60 text-blue-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   🌓 月+日
                 </button>
@@ -166,7 +166,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-900/60 text-amber-300 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   ☀️ 年+日
                 </button>
@@ -174,7 +174,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-900/50 text-indigo-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   年
                 </button>
@@ -182,7 +182,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-900/50 text-purple-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} border-r border-zinc-800 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
                 >
                   月
                 </button>
@@ -190,7 +190,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-900/50 text-cyan-400 font-bold" : "text-zinc-500 hover:text-zinc-300"} cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-600 font-bold" : "text-stone-400 hover:text-stone-600"} cursor-pointer`}
                 >
                   日
                 </button>
@@ -200,31 +200,31 @@ export function TacticalMagneticMapComponent({
           <div className="flex flex-col items-end gap-1">
             <div className="flex items-center gap-2">
               {/* Layer Toggles */}
-              <div className="pointer-events-auto flex items-center bg-zinc-950/80 border border-zinc-800 p-0.5 rounded-sm mr-2 hidden lg:flex">
+              <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
                 <button
                   onClick={() => toggleLayer?.("terrain")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.terrain ? "text-blue-400 bg-blue-500/10" : "text-zinc-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-400"}`}
                   title="TER (地形・磁場ベース)"
                 >
                   TER [基盤帯]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("weather")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-zinc-800 transition-colors ${hudLayers.weather ? "text-amber-400 bg-amber-500/10" : "text-zinc-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-400"}`}
                   title="WTH (宇宙天気・磁気嵐)"
                 >
                   WTH [変動波]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("bio")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-400 bg-purple-500/10" : "text-zinc-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-400"}`}
                   title="BIO (生体共鳴・固有波長)"
                 >
                   BIO [生体波]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("hazard")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-zinc-800 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-zinc-600"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-400"}`}
                   title="HZD (ハザードマップ・外部GIS連携)"
                 >
                   HZD [災害域]
@@ -232,14 +232,14 @@ export function TacticalMagneticMapComponent({
               </div>
               <button
                 onClick={() => setUseTrueNorth(!useTrueNorth)}
-                className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-400" : "border-blue-500 text-blue-400"}`}
+                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] font-bold font-mono tracking-wider border rounded-sm transition-colors ${useTrueNorth ? "border-emerald-500 text-emerald-600" : "border-blue-500 text-blue-600"}`}
                 title="Toggle True/Magnetic North Base"
               >
                 基準: {useTrueNorth ? "真北" : "磁北"}
               </button>
               <button
                 onClick={() => setShowHUD(!showHUD)}
-                className={`pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-400" : "border-zinc-700"}`}
+                className={`pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border rounded-sm transition-colors ${showHUD ? "border-blue-500 text-blue-600" : "border-stone-300"}`}
                 title="Toggle 3D HUD"
               >
                 <Box size={10} />
@@ -257,24 +257,24 @@ export function TacticalMagneticMapComponent({
                     hudLayers,
                   )
                 }
-                className="pointer-events-auto bg-zinc-950/80 hover:bg-zinc-800 text-zinc-300 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-zinc-700 rounded-sm transition-colors"
+                className="pointer-events-auto bg-white/80 hover:bg-stone-100 text-stone-600 px-2 py-1 flex items-center gap-1 text-[11px] uppercase font-mono tracking-wider border border-stone-300 rounded-sm transition-colors"
               >
                 <Download size={10} />
                 KML Export
               </button>
             </div>
-            <div className="text-[10px] font-mono text-zinc-400 text-right bg-black/50 px-1 py-0.5 border border-zinc-800/50">
+            <div className="text-[10px] font-mono text-stone-500 text-right bg-white/70 px-1 py-0.5 border border-stone-200">
               制作者座標: {lat.toFixed(4)}N, {lon.toFixed(4)}E<br />
               現在地磁気偏角: {declination ? declination.toFixed(2) : "--"}°
             </div>
           </div>
         </div>
 
-        <div className="w-full h-full relative z-0 flex grow min-h-0 overflow-hidden bg-black">
+        <div className="w-full h-full relative z-0 flex grow min-h-0 overflow-hidden bg-white">
           {/* Model Indicator Watermark */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 opacity-[0.03]">
             <div
-              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-zinc-500"}`}
+              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-stone-400"}`}
             >
               {isPhysical ? "[ PHYSICAL MODEL ]" : "[ CLASSICAL MODEL ]"}
             </div>
@@ -283,7 +283,7 @@ export function TacticalMagneticMapComponent({
           {/* HUD Label Top Left */}
           <div className="absolute top-16 left-2 pointer-events-none z-10">
             <div
-              className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/40 text-zinc-400 border-zinc-500/50"}`}
+              className={`px-2 py-1 text-[10px] font-mono font-bold tracking-widest uppercase border backdrop-blur-sm shadow-lg ${isPhysical ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-500 border-zinc-500/50"}`}
             >
               {isPhysical
                 ? "▶ PHYSICAL MODEL ACTIVE"
@@ -329,22 +329,22 @@ export function TacticalMagneticMapComponent({
         </div>
       </div>
       {/* Theoretical Info Panel -> Compact Algorithm Info */}
-      <details className="mt-4 bg-zinc-950/50 border border-zinc-800 text-[10px] font-mono text-zinc-400 w-full group">
-        <summary className="p-3 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest font-bold">
+      <details className="mt-4 bg-white/80 border border-stone-200 text-[10px] font-mono text-stone-500 w-full group">
+        <summary className="p-3 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest font-bold">
           <div className="flex items-center gap-2">
             <span className="text-red-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
             吉凶方位の分析ロジック（空間ベクトル）
           </div>
-          <span className="group-open:rotate-180 transition-transform text-zinc-500">
+          <span className="group-open:rotate-180 transition-transform text-stone-400">
             ▼
           </span>
         </summary>
-        <div className="p-3 sm:p-4 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-4 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
-          <div className="p-2 sm:p-3 border border-red-900/30 rounded-sm">
-            <strong className="text-red-400 block mb-1 font-mono text-[9px] uppercase">
+        <div className="p-3 sm:p-4 border-t border-stone-200 grid grid-cols-1 md:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
+          <div className="p-2 sm:p-3 border border-red-200 rounded-sm">
+            <strong className="text-red-600 block mb-1 font-mono text-[9px] uppercase">
               ◆ 1. 凶殺ベクトル (NOISE)
             </strong>
-            <p className="text-zinc-400 text-justify mt-1">
+            <p className="text-stone-500 text-justify mt-1">
               地図上の
               <strong className="text-red-500 font-bold">赤い破線</strong>や
               <strong className="text-fuchsia-500 font-bold">紫の複破線</strong>
@@ -355,27 +355,27 @@ export function TacticalMagneticMapComponent({
             <strong className="text-yellow-400 block mb-1 font-mono text-[9px] uppercase">
               ◆ 2. 天中殺 (VOID)
             </strong>
-            <p className="text-zinc-400 text-justify mt-1">
+            <p className="text-stone-500 text-justify mt-1">
               <strong className="text-yellow-500 font-bold">黄色の点線</strong>
               は、個人の運気の空白（ボイド）である「天中殺（空亡）」の方向です。この方位への移動は、主観的な見通しの狂いやトラブルを招きやすいため、重要な決断は保留を推奨します。
             </p>
           </div>
-          <div className="p-2 sm:p-3 border border-amber-900/30 rounded-sm">
+          <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
             <strong className="text-amber-500 block mb-1 font-mono text-[9px] uppercase">
               ◆ 3. 月交点 (NODE)
             </strong>
-            <p className="text-zinc-400 text-justify mt-1">
+            <p className="text-stone-500 text-justify mt-1">
               <strong className="text-amber-500 font-bold">
                 オレンジの破線
               </strong>
               は、軌道の交点である「羅睺・計都軸（月交点）」の方向です。日食・月食の起点であり、地磁気・太陽風の物理的特異方位であるため、精神面への影響（宿命的磁気ストレス）に注意してください（※全方位に適用される「月相」とは異なり、空間的な偏りを持つ要因です）。
             </p>
           </div>
-          <div className="p-2 sm:p-3 border border-emerald-900/30 rounded-sm">
-            <strong className="text-emerald-400 block mb-1 font-mono text-[9px] uppercase">
+          <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
+            <strong className="text-emerald-600 block mb-1 font-mono text-[9px] uppercase">
               ◆ 4. 最適化ゾーン (OPTIMAL)
             </strong>
-            <p className="text-zinc-400 text-justify mt-1">
+            <p className="text-stone-500 text-justify mt-1">
               <strong className="text-emerald-500 font-bold">緑の実線</strong>
               は、すべてのノイズレイヤーをクリアし、かつあなたの目的（引越し・療養など）と完全に共鳴する「大吉方位」です。この方位へ移動することで、環境ストレスが最小化され、生体リズムが整います。
             </p>

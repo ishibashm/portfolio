@@ -112,7 +112,7 @@ export default function SimulatorMap({
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
     setIsMounted(true);
@@ -182,7 +182,7 @@ export default function SimulatorMap({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-full min-h-[400px] bg-zinc-950/80 border border-zinc-800 rounded-3xl flex items-center justify-center font-mono text-xs text-zinc-500 backdrop-blur-md">
+      <div className="w-full h-full min-h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-400 backdrop-blur-md">
         [ LOADING SIMULATOR MAP ENGINE... ]
       </div>
     );
@@ -206,23 +206,23 @@ export default function SimulatorMap({
               e.key === "Enter" &&
               (e.preventDefault(), handleGeocodeSearch(searchQuery))
             }
-            className="w-full pl-9 pr-20 py-2.5 bg-black/90 border border-zinc-800 rounded-2xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/50 transition-all backdrop-blur-md"
+            className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-stone-200 rounded-2xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-200 transition-all backdrop-blur-md"
           />
-          <span className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5 flex items-center justify-center">
+          <span className="w-4 h-4 text-stone-400 absolute left-3 top-3.5 flex items-center justify-center">
             🔍
           </span>
           <button
             type="button"
             onClick={() => handleGeocodeSearch(searchQuery)}
             disabled={isSearching}
-            className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+            className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-200 active:scale-95 transition-all"
           >
             {isSearching ? "検索中..." : "検索"}
           </button>
         </div>
       </div>
 
-      <div className="w-full flex-1 min-h-[400px] border border-zinc-800 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+      <div className="w-full flex-1 min-h-[400px] border border-stone-200 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
         <MapContainer
           key="relocation-simulator-leaflet"
           center={startPos}
@@ -356,27 +356,27 @@ export default function SimulatorMap({
               localStorage.setItem("map_theme", nextTheme);
               window.dispatchEvent(new Event("mapThemeChanged"));
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/90 text-zinc-200 border border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/70 text-stone-700 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
         </div>
 
         {/* Legend Overlay HUD */}
-        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-black/90 border border-zinc-800 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-zinc-400">
-          <div className="flex items-center gap-2 font-bold text-amber-400">
+        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-white/70 border border-stone-200 rounded-2xl backdrop-blur-md flex flex-col gap-1.5 shadow-2xl pointer-events-none text-[9px] font-mono leading-none text-stone-500">
+          <div className="flex items-center gap-2 font-bold text-amber-600">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500/50"></span>{" "}
             出発起点 (ゴールド)
           </div>
-          <div className="flex items-center gap-2 font-bold text-indigo-400 mt-0.5">
+          <div className="flex items-center gap-2 font-bold text-indigo-600 mt-0.5">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50"></span>{" "}
             経由地 (青)
           </div>
-          <div className="flex items-center gap-2 font-bold text-rose-400 mt-0.5">
+          <div className="flex items-center gap-2 font-bold text-rose-600 mt-0.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></span>{" "}
             選択中の目的地 (赤)
           </div>
-          <div className="border-t border-zinc-800 my-1"></div>
+          <div className="border-t border-stone-200 my-1"></div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-0.5 bg-emerald-500 inline-block"></span> 吉 /
             大吉 方位ベクトル
@@ -390,8 +390,8 @@ export default function SimulatorMap({
             旅行（TRAVEL）ステップ
           </div>
           {detourPolygons.length > 0 && (
-            <div className="flex items-center gap-2 text-indigo-300 font-bold mt-0.5">
-              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-500/50 inline-block"></span>{" "}
+            <div className="flex items-center gap-2 text-indigo-600 font-bold mt-0.5">
+              <span className="w-3.5 h-2.5 bg-indigo-500/20 border border-dashed border-indigo-200 inline-block"></span>{" "}
               吉方位迂回ゾーン (仮吉方領域)
             </div>
           )}

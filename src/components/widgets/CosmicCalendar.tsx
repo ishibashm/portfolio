@@ -479,15 +479,15 @@ export function CosmicCalendar({
 
   const getScoreBorder = (day: DayData) => {
     if (day.luckyDays.isTensho)
-      return "border-amber-400/50 shadow-[inset_0_0_8px_rgba(251,191,36,0.15)]";
+      return "border-amber-200 shadow-[inset_0_0_8px_rgba(251,191,36,0.15)]";
     if (day.luckyDays.isIchiryumanbai)
-      return "border-emerald-400/30 shadow-[inset_0_0_8px_rgba(52,211,153,0.1)]";
-    return "border-white/5";
+      return "border-emerald-200 shadow-[inset_0_0_8px_rgba(52,211,153,0.1)]";
+    return "border-stone-200/60";
   };
 
   const renderCalendar = (wrapperClassName: string) => (
     <div
-      className={`${wrapperClassName} p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden flex flex-col`}
+      className={`${wrapperClassName} p-5 rounded-2xl bg-white/70 border backdrop-blur-md relative overflow-hidden flex flex-col`}
       style={{
         borderColor: "rgba(255, 255, 255, 0.05)",
       }}
@@ -508,7 +508,7 @@ export function CosmicCalendar({
             className="w-1.5 h-1.5 rounded-full animate-ping"
             style={{ backgroundColor: "var(--color-accent, #10b981)" }}
           />
-          <span className="text-xs font-mono text-zinc-500 tracking-widest">
+          <span className="text-xs font-mono text-stone-400 tracking-widest">
             {"// Cosmic Calendar Telemetry"}
           </span>
         </div>
@@ -516,17 +516,17 @@ export function CosmicCalendar({
         <div className="flex items-center gap-4">
           <button
             onClick={handlePrevMonth}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg bg-stone-100/80 border border-stone-200/60 text-stone-500 hover:text-stone-900 hover:bg-stone-200/70 transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
-          <h2 className="text-lg font-bold font-mono tracking-wider text-white select-none">
+          <h2 className="text-lg font-bold font-mono tracking-wider text-stone-900 select-none">
             {currentDate.getFullYear()}.
             {String(currentDate.getMonth() + 1).padStart(2, "0")}
           </h2>
           <button
             onClick={handleNextMonth}
-            className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg bg-stone-100/80 border border-stone-200/60 text-stone-500 hover:text-stone-900 hover:bg-stone-200/70 transition-colors"
           >
             <ChevronRight size={16} />
           </button>
@@ -543,7 +543,7 @@ export function CosmicCalendar({
                 ? "text-rose-500/80"
                 : i === 6
                   ? "text-sky-500/80"
-                  : "text-zinc-600"
+                  : "text-stone-400"
             }`}
           >
             {w}
@@ -565,7 +565,7 @@ export function CosmicCalendar({
               onClick={() => setSelectedDay(day)}
               className={`p-1.5 min-h-[80px] h-full rounded-xl border flex flex-col justify-between items-start transition-all duration-300 relative group cursor-pointer ${
                 day.isCurrentMonth
-                  ? "bg-white/[0.01] hover:bg-white/[0.03]"
+                  ? "bg-white/70 hover:bg-white/90"
                   : "bg-transparent opacity-20 pointer-events-none"
               } ${getScoreBorder(day)}`}
               style={{
@@ -583,17 +583,17 @@ export function CosmicCalendar({
                 <span
                   className={`text-xs font-mono font-bold ${
                     day.holiday.isHoliday || day.date.getDay() === 0
-                      ? "text-rose-400"
+                      ? "text-rose-600"
                       : day.date.getDay() === 6
-                        ? "text-sky-400"
-                        : "text-zinc-300"
+                        ? "text-sky-600"
+                        : "text-stone-600"
                   }`}
                 >
                   {day.dayOfMonth}
                 </span>
 
                 {/* Moon icon */}
-                <span className="text-[10px] select-none text-zinc-500 leading-none">
+                <span className="text-[10px] select-none text-stone-400 leading-none">
                   {day.lunarPhase.symbol}
                 </span>
               </div>
@@ -607,29 +607,29 @@ export function CosmicCalendar({
                 <div className="flex gap-0.5 items-center leading-none">
                   {/* Tiny label for major days */}
                   {day.luckyDays.isTensho && (
-                    <span className="text-[8px] font-bold text-amber-400 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
+                    <span className="text-[8px] font-bold text-amber-600 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
                       赦
                     </span>
                   )}
                   {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
-                    <span className="text-[8px] font-bold text-emerald-400 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
+                    <span className="text-[8px] font-bold text-emerald-600 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
                       万
                     </span>
                   )}
 
                   {/* Personal Astro Fortunes */}
                   {day.personalFortune?.isVoid && (
-                    <span className="text-[8px] font-bold text-purple-400 font-mono scale-90 select-none bg-purple-500/20 border border-purple-500/30 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
+                    <span className="text-[8px] font-bold text-purple-600 font-mono scale-90 select-none bg-purple-500/20 border border-purple-200 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
                       殺
                     </span>
                   )}
                   {day.personalFortune?.isClash && (
-                    <span className="text-[8px] font-bold text-rose-400 font-mono scale-90 select-none bg-rose-500/20 border border-rose-500/30 px-0.5 rounded" title="日破 (Clash)">
+                    <span className="text-[8px] font-bold text-rose-600 font-mono scale-90 select-none bg-rose-500/20 border border-rose-200 px-0.5 rounded" title="日破 (Clash)">
                       破
                     </span>
                   )}
                   {day.personalFortune?.isHarmony && (
-                    <span className="text-[8px] font-bold text-sky-400 font-mono scale-90 select-none bg-sky-500/20 border border-sky-500/30 px-0.5 rounded" title="支合 (Harmony)">
+                    <span className="text-[8px] font-bold text-sky-600 font-mono scale-90 select-none bg-sky-500/20 border border-sky-200 px-0.5 rounded" title="支合 (Harmony)">
                       合
                     </span>
                   )}
@@ -655,7 +655,7 @@ export function CosmicCalendar({
       <div className={wrapperClassName}>
         {selectedDay ? (
           <div
-            className="p-5 rounded-2xl bg-white/[0.01] border backdrop-blur-md relative overflow-hidden transition-all duration-300"
+            className="p-5 rounded-2xl bg-white/70 border backdrop-blur-md relative overflow-hidden transition-all duration-300"
             style={{
               borderColor: "rgba(255, 255, 255, 0.05)",
             }}
@@ -669,20 +669,20 @@ export function CosmicCalendar({
             />
 
             {/* Title & Date */}
-            <div className="border-b border-white/5 pb-4 mb-4">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-wider block">
+            <div className="border-b border-stone-200/60 pb-4 mb-4">
+              <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block">
                 {"// Selected Node Telemetry"}
               </span>
-              <h3 className="text-lg font-bold font-mono text-white mt-1">
+              <h3 className="text-lg font-bold font-mono text-stone-900 mt-1">
                 {selectedDay.date.getFullYear()}.
                 {String(selectedDay.date.getMonth() + 1).padStart(2, "0")}.
                 {String(selectedDay.date.getDate()).padStart(2, "0")}{" "}
-                <span className="text-xs text-zinc-400 font-normal">
+                <span className="text-xs text-stone-500 font-normal">
                   ({WEEKDAYS[selectedDay.date.getDay()]})
                 </span>
               </h3>
               {selectedDay.holiday.isHoliday && (
-                <span className="inline-block text-[10px] font-bold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-md mt-1 font-mono">
+                <span className="inline-block text-[10px] font-bold text-rose-600 bg-rose-500/10 border border-rose-200 px-2 py-0.5 rounded-md mt-1 font-mono">
                   {selectedDay.holiday.name}
                 </span>
               )}
@@ -691,7 +691,7 @@ export function CosmicCalendar({
             {/* Score & Gauge */}
             <div className="mb-6">
               <div className="flex justify-between items-baseline mb-1.5">
-                <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider">
+                <span className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">
                   Alignment Rating
                 </span>
                 <span
@@ -710,7 +710,7 @@ export function CosmicCalendar({
                   {selectedDay.score} INDEX
                 </span>
               </div>
-              <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <div className="w-full h-1.5 bg-white/70 rounded-full overflow-hidden border border-stone-200/60">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{
@@ -731,51 +731,51 @@ export function CosmicCalendar({
             {/* Telemetry Grid */}
             <div className="space-y-4 font-mono text-xs">
               {/* Moon phase info */}
-              <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2 mb-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">
-                  <Moon className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
+                <div className="flex items-center gap-2 mb-1.5 text-[10px] text-stone-400 uppercase tracking-wider">
+                  <Moon className="w-3.5 h-3.5 text-stone-500" />
                   Lunar Phase Telemetry
                 </div>
-                <div className="flex items-center gap-2 font-bold text-white mb-1">
+                <div className="flex items-center gap-2 font-bold text-stone-900 mb-1">
                   <span className="text-lg leading-none">
                     {selectedDay.lunarPhase.symbol}
                   </span>
                   <span>{selectedDay.lunarPhase.name}</span>
                 </div>
-                <p className="text-[10.5px] text-zinc-400 leading-relaxed">
+                <p className="text-[10.5px] text-stone-500 leading-relaxed">
                   {selectedDay.lunarPhase.desc}
                 </p>
               </div>
 
               {/* Solar seasonal node */}
-              <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2 mb-1.5 text-[10px] text-zinc-500 uppercase tracking-wider">
-                  <Sun className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
+                <div className="flex items-center gap-2 mb-1.5 text-[10px] text-stone-400 uppercase tracking-wider">
+                  <Sun className="w-3.5 h-3.5 text-stone-500" />
                   Solar seasonal Telemetry
                 </div>
-                <div className="text-white font-bold mb-1">
+                <div className="text-stone-900 font-bold mb-1">
                   Node: {selectedDay.sekki}
                 </div>
-                <div className="text-[10px] text-zinc-500">
+                <div className="text-[10px] text-stone-400">
                   Solar Longitude: {selectedDay.solarLongitude.toFixed(2)}°
                 </div>
               </div>
 
               {/* Rokuyo & Lucky calendar fortunes */}
-              <div className="p-3 bg-black/30 border border-white/5 rounded-xl space-y-2">
-                <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-wider">
-                  <Clock className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-[10px] text-stone-400 uppercase tracking-wider">
+                  <Clock className="w-3.5 h-3.5 text-stone-500" />
                   Calendar Fortunes
                 </div>
-                <div className="flex justify-between border-b border-white/5 pb-1.5">
-                  <span className="text-zinc-500">Rokuyo:</span>
-                  <span className="text-white font-bold">
+                <div className="flex justify-between border-b border-stone-200/60 pb-1.5">
+                  <span className="text-stone-400">Rokuyo:</span>
+                  <span className="text-stone-900 font-bold">
                     {selectedDay.rokuyo}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">吉兆 (Auspicious):</span>
-                  <span className="text-white font-bold text-right">
+                  <span className="text-stone-400">吉兆 (Auspicious):</span>
+                  <span className="text-stone-900 font-bold text-right">
                     {selectedDay.luckyDays.labels.join(" / ") || "特になし"}
                   </span>
                 </div>
@@ -783,51 +783,51 @@ export function CosmicCalendar({
 
               {/* Personal Fortune Telemetry */}
               {selectedDay.personalFortune && (
-                <div className="p-3 bg-black/30 border border-white/5 rounded-xl space-y-2">
-                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 uppercase tracking-wider">
-                    <Zap className="w-3.5 h-3.5 text-purple-400" />
+                <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] text-stone-400 uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5 text-purple-600" />
                     Personal Fortune Telemetry
                   </div>
-                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
-                    <span className="text-zinc-500">本日の地支 (Day Branch):</span>
-                    <span className="text-white font-bold">
+                  <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
+                    <span className="text-stone-400">本日の地支 (Day Branch):</span>
+                    <span className="text-stone-900 font-bold">
                       {selectedDay.personalFortune.dayZhi} ({ZHI_ELEMENTS[selectedDay.personalFortune.dayZhi]})
                     </span>
                   </div>
-                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
-                    <span className="text-zinc-500">宿命の日支 (Natal Day Branch):</span>
-                    <span className="text-white font-bold">
+                  <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
+                    <span className="text-stone-400">宿命の日支 (Natal Day Branch):</span>
+                    <span className="text-stone-900 font-bold">
                       {userDayZhi} ({ZHI_ELEMENTS[userDayZhi]})
                     </span>
                   </div>
-                  <div className="flex justify-between border-b border-white/5 pb-1.5 text-[11px] font-mono">
-                    <span className="text-zinc-500">宿命の空亡 (Personal Void):</span>
-                    <span className="text-purple-400 font-bold">
+                  <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
+                    <span className="text-stone-400">宿命の空亡 (Personal Void):</span>
+                    <span className="text-purple-600 font-bold">
                       {userVoidZodiacs.join("")}天中殺
                     </span>
                   </div>
                   <div className="flex justify-between text-[11px] font-mono">
-                    <span className="text-zinc-500">個人相性 (Astro Status):</span>
+                    <span className="text-stone-400">個人相性 (Astro Status):</span>
                     <span className="font-bold">
                       {selectedDay.personalFortune.isVoid && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 border border-purple-200">
                           天中殺 (Void Day)
                         </span>
                       )}
                       {selectedDay.personalFortune.isClash && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 border border-rose-200">
                           対沖 (Clash / 日破)
                         </span>
                       )}
                       {selectedDay.personalFortune.isHarmony && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-300 border border-sky-500/20">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-sky-500/10 text-sky-600 border border-sky-200">
                           支合 (Harmony / 合運)
                         </span>
                       )}
                       {!selectedDay.personalFortune.isVoid &&
                         !selectedDay.personalFortune.isClash &&
                         !selectedDay.personalFortune.isHarmony && (
-                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-zinc-500/10 text-stone-500 border border-zinc-500/20">
                             平常 (Neutral Day)
                           </span>
                         )}
@@ -837,55 +837,55 @@ export function CosmicCalendar({
               )}
 
               {/* Planet retrograde telemetry */}
-              <div className="p-3 bg-black/30 border border-white/5 rounded-xl">
-                <div className="flex items-center gap-2 mb-2 text-[10px] text-zinc-500 uppercase tracking-wider">
-                  <Radio className="w-3.5 h-3.5 text-zinc-400" />
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
+                <div className="flex items-center gap-2 mb-2 text-[10px] text-stone-400 uppercase tracking-wider">
+                  <Radio className="w-3.5 h-3.5 text-stone-500" />
                   Planetary Retrogrades
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[10.5px]">
-                  <div className="flex justify-between items-center bg-black/20 p-1.5 rounded-lg border border-white/[0.03]">
-                    <span className="text-zinc-500">水星 (Mercury)</span>
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                    <span className="text-stone-400">水星 (Mercury)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         selectedDay.retrogrades.mercury
-                          ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
-                          : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                          ? "bg-rose-500/10 text-rose-600 border border-rose-200"
+                          : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                       }`}
                     >
                       {selectedDay.retrogrades.mercury ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-black/20 p-1.5 rounded-lg border border-white/[0.03]">
-                    <span className="text-zinc-500">金星 (Venus)</span>
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                    <span className="text-stone-400">金星 (Venus)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         selectedDay.retrogrades.venus
-                          ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
-                          : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                          ? "bg-rose-500/10 text-rose-600 border border-rose-200"
+                          : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                       }`}
                     >
                       {selectedDay.retrogrades.venus ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-black/20 p-1.5 rounded-lg border border-white/[0.03]">
-                    <span className="text-zinc-500">火星 (Mars)</span>
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                    <span className="text-stone-400">火星 (Mars)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         selectedDay.retrogrades.mars
-                          ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
-                          : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                          ? "bg-rose-500/10 text-rose-600 border border-rose-200"
+                          : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                       }`}
                     >
                       {selectedDay.retrogrades.mars ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-black/20 p-1.5 rounded-lg border border-white/[0.03]">
-                    <span className="text-zinc-500">木星 (Jupiter)</span>
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                    <span className="text-stone-400">木星 (Jupiter)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
                         selectedDay.retrogrades.jupiter
-                          ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
-                          : "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+                          ? "bg-rose-500/10 text-rose-600 border border-rose-200"
+                          : "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                       }`}
                     >
                       {selectedDay.retrogrades.jupiter ? "逆行" : "順行"}
@@ -902,20 +902,20 @@ export function CosmicCalendar({
                   borderColor: "rgba(255, 255, 255, 0.05)",
                 }}
               >
-                <div className="flex items-center gap-2 mb-2 text-[10px] text-zinc-500 uppercase tracking-wider font-bold">
-                  <Activity className="w-3.5 h-3.5 text-zinc-400" />
+                <div className="flex items-center gap-2 mb-2 text-[10px] text-stone-400 uppercase tracking-wider font-bold">
+                  <Activity className="w-3.5 h-3.5 text-stone-500" />
                   Next Best Action Recommendation
                 </div>
-                <p className="text-[11px] text-zinc-300 leading-relaxed font-mono font-medium">
+                <p className="text-[11px] text-stone-600 leading-relaxed font-mono font-medium">
                   {getActionAdvice(selectedDay)}
                 </p>
               </div>
 
               {/* Personal Setup / Info Settings */}
-              <div className="mt-4 pt-4 border-t border-white/5 font-mono text-[11px]">
+              <div className="mt-4 pt-4 border-t border-stone-200/60 font-mono text-[11px]">
                 <button
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className="w-full flex justify-between items-center text-zinc-500 hover:text-zinc-300 py-1 transition-colors"
+                  className="w-full flex justify-between items-center text-stone-400 hover:text-stone-600 py-1 transition-colors"
                 >
                   <span className="flex items-center gap-1.5">
                     ⚙️ [Astro Telemetry Config]
@@ -924,9 +924,9 @@ export function CosmicCalendar({
                 </button>
 
                 {isSettingsOpen && (
-                  <div className="mt-3 p-3 bg-black/40 border border-white/5 rounded-xl space-y-3">
+                  <div className="mt-3 p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-3">
                     <div>
-                      <label className="block text-[9px] text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] text-stone-400 uppercase mb-1">
                         Birth Date & Time (JST)
                       </label>
                       <input
@@ -939,11 +939,11 @@ export function CosmicCalendar({
                             localStorage.setItem("wealth_birthDate", val);
                           }
                         }}
-                        className="w-full bg-black/60 border border-white/10 rounded px-2 py-1 text-white text-[11px] focus:outline-none focus:border-emerald-500/50"
+                        className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] text-zinc-500 uppercase mb-1">
+                      <label className="block text-[9px] text-stone-400 uppercase mb-1">
                         Birth Longitude
                       </label>
                       <input
@@ -957,11 +957,11 @@ export function CosmicCalendar({
                             localStorage.setItem("wealth_birthLon", val);
                           }
                         }}
-                        className="w-full bg-black/60 border border-white/10 rounded px-2 py-1 text-white text-[11px] focus:outline-none focus:border-emerald-500/50"
+                        className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
                         placeholder="139.6917"
                       />
                     </div>
-                    <p className="text-[9px] text-zinc-500 leading-normal">
+                    <p className="text-[9px] text-stone-400 leading-normal">
                       ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
                     </p>
                   </div>
@@ -970,7 +970,7 @@ export function CosmicCalendar({
             </div>
           </div>
         ) : (
-          <div className="p-8 rounded-2xl bg-white/[0.01] border border-white/5 text-center text-zinc-500 font-mono text-xs">
+          <div className="p-8 rounded-2xl bg-white/70 border border-stone-200/60 text-center text-stone-400 font-mono text-xs">
             {"// SELECT_NODE_TO_INSPECT"}
           </div>
         )}

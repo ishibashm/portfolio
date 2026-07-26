@@ -89,13 +89,13 @@ export function SolarTimeTableComponent({
 
   const getElementInfo = (starNum: number) => {
     if (starNum === 1)
-      return { id: "Water", name: "水", color: "text-blue-400" };
+      return { id: "Water", name: "水", color: "text-blue-600" };
     if ([2, 5, 8].includes(starNum))
       return { id: "Earth", name: "土", color: "text-amber-600" };
     if ([3, 4].includes(starNum))
-      return { id: "Wood", name: "木", color: "text-emerald-400" };
+      return { id: "Wood", name: "木", color: "text-emerald-600" };
     if ([6, 7].includes(starNum))
-      return { id: "Metal", name: "金", color: "text-zinc-300" };
+      return { id: "Metal", name: "金", color: "text-stone-600" };
     if (starNum === 9) return { id: "Fire", name: "火", color: "text-red-500" };
     return { id: "Earth", name: "土", color: "text-amber-600" }; // fallback
   };
@@ -412,23 +412,23 @@ export function SolarTimeTableComponent({
   return (
     <div className="w-full max-w-4xl mt-8 flex flex-col gap-4">
       {/* HUD Header */}
-      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-800/80 pb-2">
+      <div className="flex flex-wrap items-end justify-between gap-2 border-b border-stone-200 pb-2">
         <div className="flex items-center gap-2">
-          <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-zinc-400">
+          <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-stone-500">
             Temporal Filter Matrix
           </h2>
-          <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1 py-0.5 ml-2">
+          <span className="text-[8px] bg-stone-100 text-stone-500 px-1 py-0.5 ml-2">
             v2.4.2
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-[8px] font-mono text-zinc-600 tracking-widest hidden md:block">
+          <div className="text-[8px] font-mono text-stone-400 tracking-widest hidden md:block">
             {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
           </div>
           {isAuthorized && (
             <button
               onClick={openPreview}
-              className="px-3 py-1 bg-zinc-900 border border-zinc-700 text-zinc-300 text-[9px] uppercase tracking-widest hover:bg-zinc-800 transition-colors"
+              className="px-3 py-1 bg-white border border-stone-300 text-stone-600 text-[9px] uppercase tracking-widest hover:bg-stone-100 transition-colors"
             >
               Review & Export Telemetry
             </button>
@@ -439,94 +439,94 @@ export function SolarTimeTableComponent({
       {/* Global & Daily Phase Status */}
       <div className="grid grid-cols-3 gap-2 mt-1 mb-2 font-mono text-[9px] sm:text-[10px]">
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-500/50 bg-red-950/20 shadow-inner" : "border-zinc-800 bg-zinc-950/50"}`}
+          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+          <div className="flex justify-between items-center text-stone-400 tracking-widest">
             <span>YEAR PHASE</span>
-            <span className={isYearVoid ? "text-red-400" : "text-purple-400"}>
+            <span className={isYearVoid ? "text-red-600" : "text-purple-600"}>
               {envData?.yearStar}
             </span>
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span
-              className={`text-xl sm:text-2xl font-bold leading-none ${isYearVoid ? "text-red-400" : "text-zinc-300"}`}
+              className={`text-xl sm:text-2xl font-bold leading-none ${isYearVoid ? "text-red-600" : "text-stone-600"}`}
             >
               {currentZodiac.yearZodiac}
             </span>
             {isYearVoid ? (
-              <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">
+          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
             長期的なベースとなる年の波長と干支
           </div>
         </div>
 
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-500/50 bg-red-950/20 shadow-inner" : "border-zinc-800 bg-zinc-950/50"}`}
+          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+          <div className="flex justify-between items-center text-stone-400 tracking-widest">
             <span>MONTH PHASE</span>
-            <span className={isMonthVoid ? "text-red-400" : "text-amber-400"}>
+            <span className={isMonthVoid ? "text-red-600" : "text-amber-600"}>
               {envData?.monthStar}
             </span>
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span
-              className={`text-xl sm:text-2xl font-bold leading-none ${isMonthVoid ? "text-red-400" : "text-zinc-300"}`}
+              className={`text-xl sm:text-2xl font-bold leading-none ${isMonthVoid ? "text-red-600" : "text-stone-600"}`}
             >
               {currentZodiac.monthZodiac}
             </span>
             {isMonthVoid ? (
-              <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">
+          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
             潮汐力による中期の波長と月の干支
           </div>
         </div>
 
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? "border-red-500/50 bg-red-950/20 shadow-inner" : "border-zinc-800 bg-zinc-950/50"}`}
+          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-zinc-500 tracking-widest">
+          <div className="flex justify-between items-center text-stone-400 tracking-widest">
             <div className="flex items-center gap-1">
               <span>DAY PHASE</span>
               {envData?.isYinPhase !== undefined && (
                 <span
-                  className={`text-[8px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-500/30 text-blue-400 bg-blue-900/20" : "border-amber-500/30 text-amber-400 bg-amber-900/20"}`}
+                  className={`text-[8px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-600 bg-blue-50" : "border-amber-200 text-amber-600 bg-amber-50"}`}
                 >
                   {envData.isYinPhase ? "陰遁 (YIN)" : "陽遁 (YANG)"}
                 </span>
               )}
             </div>
-            <span className={isDayVoid ? "text-red-400" : "text-blue-400"}>
+            <span className={isDayVoid ? "text-red-600" : "text-blue-600"}>
               {envData?.dayStar}
             </span>
           </div>
           <div className="flex items-baseline gap-2 mt-1">
             <span
-              className={`text-xl sm:text-2xl font-bold leading-none ${isDayVoid ? "text-red-400" : "text-zinc-300"}`}
+              className={`text-xl sm:text-2xl font-bold leading-none ${isDayVoid ? "text-red-600" : "text-stone-600"}`}
             >
               {currentZodiac.dayZodiac}
             </span>
             {isDayVoid ? (
-              <span className="bg-red-900/60 text-red-100 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-500/50">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-zinc-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-zinc-500 mt-auto pt-1 border-t border-zinc-800/50 leading-tight">
+          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
             地球自転による短期の波長と日の干支。
             {envData?.isYinPhase !== undefined && (
               <span className="block mt-0.5">
@@ -544,64 +544,64 @@ export function SolarTimeTableComponent({
 
       {/* Actionable Directives Legend */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-        <div className="bg-emerald-950/20 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
+        <div className="bg-emerald-50 border-l-2 border-emerald-500 p-2 md:p-3 shadow-inner">
           <div className="text-emerald-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{" "}
             [ ACTION WINDOW ] 実行推奨帯
           </div>
-          <p className="text-zinc-400 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
+          <p className="text-stone-500 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
             生体磁気と空間位相が最適化されるゴールデンタイム。重要な決断、交渉の開始、新しいプロジェクトの着手、および長距離移動（出発）に最も適した時間帯です。
           </p>
         </div>
-        <div className="bg-red-950/20 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
+        <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
           <div className="text-red-500 font-bold text-[10px] md:text-xs mb-1 tracking-widest uppercase flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>{" "}
             [ VOID TIME ] 警告帯・行動凍結
           </div>
-          <p className="text-zinc-400 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
+          <p className="text-stone-500 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
             地球の磁気シールドが乱れ、ヒューマンエラーや通信障害が多発する魔の時間帯（天中殺）。大きな決断、新規の開始、および長距離の物理的移動を完全に停止し、ルーチンワークに徹してください。
           </p>
         </div>
       </div>
 
-      <details className="mb-4 bg-zinc-950/50 border border-zinc-800 text-[9px] font-mono text-zinc-500 group">
-        <summary className="p-2 cursor-pointer hover:bg-zinc-900/50 list-none flex items-center justify-between uppercase tracking-widest">
+      <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-400 group">
+        <summary className="p-2 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest">
           <div className="flex items-center gap-2">
             <span className="text-blue-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
             最適タイミングの分析ロジック
           </div>
           <span className="group-open:rotate-180 transition-transform">▼</span>
         </summary>
-        <div className="p-3 border-t border-zinc-800 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-black/50 text-[10px] leading-relaxed font-sans">
-          <div className="p-2 border border-purple-900/30 rounded-sm">
-            <strong className="text-purple-400 block mb-1 font-mono text-[9px]">
+        <div className="p-3 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
+          <div className="p-2 border border-purple-200 rounded-sm">
+            <strong className="text-purple-600 block mb-1 font-mono text-[9px]">
               ◆ 1. 陰陽五行・四柱推命
             </strong>
-            <p className="text-zinc-400 text-justify">
+            <p className="text-stone-500 text-justify">
               宇宙のエネルギーを「木・火・土・金・水」の5つの属性（周波数）に分類し、互いに生み出す「相生」、打ち消し合う「相剋」の物理的相互作用として計算します。これに干支暦（四柱推命）の天体位相を組み合わせています。
             </p>
           </div>
-          <div className="p-2 border border-blue-900/30 rounded-sm">
-            <strong className="text-blue-400 block mb-1 font-mono text-[9px]">
+          <div className="p-2 border border-blue-200 rounded-sm">
+            <strong className="text-blue-600 block mb-1 font-mono text-[9px]">
               ◆ 2. 九星気学・環境方位
             </strong>
-            <p className="text-zinc-400 text-justify">
+            <p className="text-stone-500 text-justify">
               均時差を補正した「真太陽時」に基づき、その場所・時間に流れる磁気エネルギー（九星・八門）をリアルタイム算出します。五行理論と組み合わせ、あなたの「本命星」の周波数と共鳴する空間ベクトルを特定します。
             </p>
           </div>
-          <div className="p-2 border border-red-900/30 rounded-sm">
-            <strong className="text-red-400 block mb-1 font-mono text-[9px]">
+          <div className="p-2 border border-red-200 rounded-sm">
+            <strong className="text-red-600 block mb-1 font-mono text-[9px]">
               ◆ 3. VOID TIME（天中殺）
             </strong>
-            <p className="text-zinc-400 text-justify">
+            <p className="text-stone-500 text-justify">
               天中殺（空亡）は地球の磁気シールドと生体リズムが同調外れを起こす時間帯です。四柱推命の干支の組み合わせにおける「空白の位相」であり、この時間帯での物理的移動や決断は自律神経エラーを招くため避けるべきです。
             </p>
           </div>
-          <div className="p-2 border border-emerald-900/30 rounded-sm">
-            <strong className="text-emerald-400 block mb-1 font-mono text-[9px]">
+          <div className="p-2 border border-emerald-200 rounded-sm">
+            <strong className="text-emerald-600 block mb-1 font-mono text-[9px]">
               ◆ 4. OPTIMAL TIME（吉門・相生）
             </strong>
-            <p className="text-zinc-400 text-justify">
+            <p className="text-stone-500 text-justify">
               緑色ハイライトは、空間の「八門（生/休/開）」が開き、かつ九星の属性とあなたの属性が「相生（または相比）」関係にある完全同期状態です。肉体と環境の周波数が同調し、パフォーマンスが最大化されます。
             </p>
           </div>
@@ -619,10 +619,10 @@ export function SolarTimeTableComponent({
           const isOptimal = evalPhase.isOptimal;
 
           const cardClass = isVoid
-            ? "border-red-900/50 bg-red-950/20"
+            ? "border-red-200 bg-red-50"
             : isOptimal
-              ? "border-emerald-900/50 bg-emerald-950/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
-              : "border-zinc-800 bg-zinc-950/80 hover:bg-zinc-900 transition-colors";
+              ? "border-emerald-200 bg-emerald-50 shadow-[0_0_15px_rgba(16,185,129,0.1)]"
+              : "border-stone-200 bg-white/80 hover:bg-white transition-colors";
 
           return (
             <div
@@ -637,17 +637,17 @@ export function SolarTimeTableComponent({
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative z-10 gap-2 md:gap-4">
                 {/* Time and Zodiac */}
                 <div className="flex items-center gap-3 min-w-[200px]">
-                  <span className="text-sm sm:text-base font-mono text-zinc-100 font-bold tracking-widest drop-shadow-md whitespace-nowrap">
+                  <span className="text-sm sm:text-base font-mono text-stone-800 font-bold tracking-widest drop-shadow-md whitespace-nowrap">
                     {formatTime(item.startStandard)} -{" "}
                     {formatTime(item.endStandard)}
                   </span>
                   <div className="flex items-center gap-1">
                     <span
-                      className={`text-sm font-bold ${isVoid ? "text-red-500" : "text-zinc-400"}`}
+                      className={`text-sm font-bold ${isVoid ? "text-red-500" : "text-stone-500"}`}
                     >
                       {item.etoKanji}の刻
                     </span>
-                    <span className="text-[9px] text-zinc-600 font-mono hidden sm:inline-block tracking-widest uppercase">
+                    <span className="text-[9px] text-stone-400 font-mono hidden sm:inline-block tracking-widest uppercase">
                       [{item.reading}]
                     </span>
                   </div>
@@ -657,27 +657,27 @@ export function SolarTimeTableComponent({
                 <div className="flex flex-row items-center gap-2 md:gap-4 flex-1 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
                   <div className="flex flex-col w-1/3 md:w-auto">
-                    <span className="text-zinc-600 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-400 text-[8px] uppercase tracking-widest leading-none mb-1">
                       Star(周波数)
                     </span>
                     <span
-                      className={`font-bold ${isVoid ? "text-red-800" : "text-zinc-300"}`}
+                      className={`font-bold ${isVoid ? "text-red-800" : "text-stone-600"}`}
                     >
                       {item.kyusei.japanese}
                     </span>
                   </div>
                   {/* 八門 */}
                   <div className="flex flex-col flex-1">
-                    <span className="text-zinc-600 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-400 text-[8px] uppercase tracking-widest leading-none mb-1">
                       Gate(ゲート)
                     </span>
                     <div className="flex items-center gap-1.5">
                       <span
-                        className={`font-bold ${isVoid ? "text-red-800" : item.hachimon.auspicious ? "text-amber-400" : "text-zinc-400"}`}
+                        className={`font-bold ${isVoid ? "text-red-800" : item.hachimon.auspicious ? "text-amber-600" : "text-stone-500"}`}
                       >
                         {item.hachimon.japanese}
                       </span>
-                      <span className="text-[9px] text-zinc-500 hidden sm:inline-block border-l border-zinc-700 pl-1.5">
+                      <span className="text-[9px] text-stone-400 hidden sm:inline-block border-l border-stone-300 pl-1.5">
                         {getGateDescription(item.hachimon.japanese)}
                       </span>
                     </div>
@@ -688,24 +688,24 @@ export function SolarTimeTableComponent({
                 <div className="flex items-center justify-between w-full md:w-auto gap-2 mt-2 md:mt-0">
                   <div className="flex-shrink-0">
                     {isVoid && (
-                      <span className="bg-red-900/60 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
+                      <span className="bg-red-50 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
                         [ NO-GO ] 凍結
                       </span>
                     )}
                     {!isVoid && isOptimal && (
-                      <span className="bg-emerald-900/60 text-emerald-400 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
+                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">
                         [ GO ] 推奨
                       </span>
                     )}
                     {!isVoid && !isOptimal && (
-                      <span className="text-zinc-500 text-[10px] font-mono tracking-widest border border-zinc-800 px-2 py-0.5 bg-black/40">
+                      <span className="text-stone-400 text-[10px] font-mono tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
                         ROUTINE
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => toggleRow(index)}
-                    className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-zinc-950/50 px-2 py-1 border border-zinc-800 whitespace-nowrap"
+                    className="text-[10px] text-stone-400 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-white/80 px-2 py-1 border border-stone-200 whitespace-nowrap"
                   >
                     <span
                       className={expandedIndex === index ? "text-blue-500" : ""}
@@ -719,11 +719,11 @@ export function SolarTimeTableComponent({
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="mt-3 pt-3 border-t border-zinc-800/80 relative z-10 flex flex-col md:flex-row gap-4 bg-black/40 p-2 rounded-sm animate-fade-in">
+                <div className="mt-3 pt-3 border-t border-stone-200 relative z-10 flex flex-col md:flex-row gap-4 bg-white/70 p-2 rounded-sm animate-fade-in">
                   {/* Explain Phase */}
-                  <div className="flex-1 flex flex-col gap-2 text-[10px] text-zinc-400 leading-relaxed">
+                  <div className="flex-1 flex flex-col gap-2 text-[10px] text-stone-500 leading-relaxed">
                     {isVoid ? (
-                      <div className="bg-red-950/40 p-2 border-l-2 border-red-500/50 text-justify">
+                      <div className="bg-red-50 p-2 border-l-2 border-red-200 text-justify">
                         <div className="font-mono text-red-500 uppercase tracking-widest mb-1 font-bold md:animate-pulse">
                           ⚠ SYSTEM SHIELD OFFLINE
                         </div>
@@ -733,10 +733,10 @@ export function SolarTimeTableComponent({
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-zinc-950/80 p-2 border border-zinc-800/80 flex flex-col gap-2">
+                      <div className="bg-white/80 p-2 border border-stone-200 flex flex-col gap-2">
                         <div>
                           <strong
-                            className={`block mb-1 ${isOptimal ? "text-emerald-400" : "text-zinc-300"}`}
+                            className={`block mb-1 ${isOptimal ? "text-emerald-600" : "text-stone-600"}`}
                           >
                             [ 空間評価 (Spatial Eval) ]
                           </strong>
@@ -746,12 +746,12 @@ export function SolarTimeTableComponent({
                         </div>
 
                         {evalPhase.myElement && evalPhase.timeElement && (
-                          <div className="border-t border-zinc-800/80 pt-2 mt-1">
-                            <strong className="block mb-1 text-purple-400">
+                          <div className="border-t border-stone-200 pt-2 mt-1">
+                            <strong className="block mb-1 text-purple-600">
                               [ 周波数共鳴解析 (Elemental Resonance) ]
                             </strong>
                             <div className="flex flex-wrap items-center gap-2 mb-1 font-mono">
-                              <span className="bg-black border border-zinc-800 px-1.5 py-0.5">
+                              <span className="bg-white border border-stone-200 px-1.5 py-0.5">
                                 My Base:{" "}
                                 <span
                                   className={`${evalPhase.myElement.color} font-bold`}
@@ -760,8 +760,8 @@ export function SolarTimeTableComponent({
                                   {evalPhase.myElement.id})
                                 </span>
                               </span>
-                              <span className="text-zinc-600">×</span>
-                              <span className="bg-black border border-zinc-800 px-1.5 py-0.5">
+                              <span className="text-stone-400">×</span>
+                              <span className="bg-white border border-stone-200 px-1.5 py-0.5">
                                 Time Qi:{" "}
                                 <span
                                   className={`${evalPhase.timeElement.color} font-bold`}
@@ -772,9 +772,9 @@ export function SolarTimeTableComponent({
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-zinc-500">Status:</span>
+                              <span className="text-stone-400">Status:</span>
                               <span
-                                className={`font-bold ${evalPhase.isFavorable ? "text-emerald-400" : "text-zinc-400"}`}
+                                className={`font-bold ${evalPhase.isFavorable ? "text-emerald-600" : "text-stone-500"}`}
                               >
                                 {evalPhase.relation || "関係性なし (中立)"}
                               </span>
@@ -786,8 +786,8 @@ export function SolarTimeTableComponent({
                         )}
                       </div>
                     )}
-                    <div className="bg-zinc-950/80 p-2 border border-zinc-800/80">
-                      <strong className="block mb-1 text-zinc-300">
+                    <div className="bg-white/80 p-2 border border-stone-200">
+                      <strong className="block mb-1 text-stone-600">
                         [ {item.hachimon.japanese}門の特性 (Gate Filter) ]
                       </strong>
                       <span className="text-amber-400/80">
@@ -800,8 +800,8 @@ export function SolarTimeTableComponent({
                   </div>
 
                   {/* Compass Matrix */}
-                  <div className="bg-black/80 p-2 border border-zinc-800 rounded-sm flex flex-col items-center justify-center min-w-[200px]">
-                    <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 font-bold">
+                  <div className="bg-white/70 p-2 border border-stone-200 rounded-sm flex flex-col items-center justify-center min-w-[200px]">
+                    <div className="text-[9px] text-stone-400 uppercase tracking-widest mb-2 font-bold">
                       Kigaku Compass Matrix
                     </div>
                     <div className="scale-75 origin-top opacity-90">
@@ -817,27 +817,27 @@ export function SolarTimeTableComponent({
 
       {/* SECURE DATA REVIEW MODAL */}
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-zinc-950 border border-zinc-800 p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in-up">
-            <div className="flex justify-between items-center border-b border-zinc-800 pb-4 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-sm">
+          <div className="bg-stone-50 border border-stone-200 p-6 w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-fade-in-up">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-4 mb-4">
               <h3 className="text-emerald-500 font-mono tracking-widest uppercase text-sm font-bold">
                 [ SECURE DATA REVIEW ]
               </h3>
               <button
                 onClick={() => setShowPreview(false)}
-                className="text-zinc-500 hover:text-white font-mono text-xl leading-none"
+                className="text-stone-400 hover:text-stone-900 font-mono text-xl leading-none"
               >
                 &times;
               </button>
             </div>
 
-            <p className="text-zinc-400 text-xs font-mono mb-4 text-justify leading-relaxed">
+            <p className="text-stone-500 text-xs font-mono mb-4 text-justify leading-relaxed">
               以下のデータは現在の生体・環境・メタフィジカル計算式をすべて統合したフル・テレメトリーデータです。
               本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければアーカイブ用としてエクスポートしてください。
             </p>
 
-            <div className="flex-grow overflow-auto border border-zinc-800 bg-black/50 p-4 mb-4">
-              <pre className="text-[10px] sm:text-xs text-zinc-400 font-mono whitespace-pre-wrap leading-tight">
+            <div className="flex-grow overflow-auto border border-stone-200 bg-white/70 p-4 mb-4">
+              <pre className="text-[10px] sm:text-xs text-stone-500 font-mono whitespace-pre-wrap leading-tight">
                 {previewContent.replace(
                   "data:text/csv;charset=utf-8,\uFEFF",
                   "",
@@ -845,16 +845,16 @@ export function SolarTimeTableComponent({
               </pre>
             </div>
 
-            <div className="flex justify-end gap-4 border-t border-zinc-800 pt-4">
+            <div className="flex justify-end gap-4 border-t border-stone-200 pt-4">
               <button
                 onClick={() => setShowPreview(false)}
-                className="px-4 py-2 text-zinc-400 text-xs font-mono uppercase tracking-widest hover:text-white"
+                className="px-4 py-2 text-stone-500 text-xs font-mono uppercase tracking-widest hover:text-stone-900"
               >
                 Cancel
               </button>
               <button
                 onClick={executeDownload}
-                className="px-6 py-2 bg-emerald-900/50 text-emerald-400 border border-emerald-500/50 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+                className="px-6 py-2 bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-mono uppercase tracking-widest hover:bg-emerald-900 transition-colors shadow-[0_0_10px_rgba(16,185,129,0.2)]"
               >
                 Confirm & Download
               </button>

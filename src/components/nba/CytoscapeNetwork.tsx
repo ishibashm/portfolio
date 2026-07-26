@@ -125,25 +125,25 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
           return (
             <div
               key={key}
-              className="flex flex-col gap-1 bg-black/40 p-2 rounded-lg border border-white/5 relative overflow-hidden group"
+              className="flex flex-col gap-1 bg-white/70 p-2 rounded-lg border border-stone-200/60 relative overflow-hidden group"
             >
-              <div className="flex items-center gap-1.5 text-[10px] text-gray-400">
+              <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
                 {factor.icon}
                 <span className="truncate">{factor.name}</span>
               </div>
               <div className="flex justify-between items-end mt-1">
-                <span className="text-[10px] font-mono text-gray-500">
+                <span className="text-[10px] font-mono text-stone-400">
                   Val: {factor.value?.toFixed(0)}
                 </span>
                 <span
-                  className={`text-xs font-bold font-mono ${isPositive ? "text-emerald-400" : "text-red-400"}`}
+                  className={`text-xs font-bold font-mono ${isPositive ? "text-emerald-600" : "text-red-600"}`}
                 >
                   {isPositive ? "+" : ""}
                   {(weight * 10).toFixed(1)}
                 </span>
               </div>
               {/* Progress Bar background */}
-              <div className="w-full h-1 bg-black/60 rounded-full mt-1.5 overflow-hidden">
+              <div className="w-full h-1 bg-white/70 rounded-full mt-1.5 overflow-hidden">
                 <div
                   className={`h-full rounded-full ${isPositive ? "bg-emerald-500/80" : "bg-red-500/80"}`}
                   style={{ width: `${Math.abs(weight) * 100}%` }}
@@ -159,16 +159,16 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
   return (
     <div className="w-full flex flex-col mt-4">
       <div className="mb-4">
-        <h3 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+        <h3 className="text-sm font-bold text-stone-900 uppercase tracking-widest flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           AIの思考プロセス (要因影響度マトリクス)
         </h3>
-        <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
+        <p className="text-xs text-stone-500 mt-2 leading-relaxed">
           AIがそれぞれの行動を検討する際に、
-          <strong className="text-emerald-400">
+          <strong className="text-emerald-600">
             どの入力データがプラス(後押し)
           </strong>
-          に働き、<strong className="text-red-400">どれがマイナス(抑制)</strong>
+          に働き、<strong className="text-red-600">どれがマイナス(抑制)</strong>
           に働いたのかを可視化しています。
           <br />
           この総合的なバランスによって、最終的な最適解（★）が決定されています。
@@ -196,8 +196,8 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
               animate={{ opacity: 1, y: 0 }}
               className={`p-4 rounded-xl border relative overflow-hidden transition-all ${
                 isBest
-                  ? "bg-emerald-950/20 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
-                  : "bg-zinc-900/30 border-zinc-800/50 opacity-70 hover:opacity-100"
+                  ? "bg-emerald-50 border-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+                  : "bg-white/80 border-stone-200 opacity-70 hover:opacity-100"
               }`}
             >
               {isBest && (
@@ -208,26 +208,26 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2 mb-1">
                     {isBest && (
-                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500 text-white tracking-wider animate-pulse">
+                      <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500 text-stone-900 tracking-wider animate-pulse">
                         ★ FINAL DECISION
                       </span>
                     )}
                     <h4
-                      className={`font-bold flex items-center gap-2 ${isBest ? "text-emerald-400 text-lg" : "text-zinc-300"}`}
+                      className={`font-bold flex items-center gap-2 ${isBest ? "text-emerald-600 text-lg" : "text-stone-600"}`}
                     >
                       {meta?.icon} {meta?.label}
                     </h4>
                   </div>
-                  <p className="text-[10px] text-zinc-500">{meta?.desc}</p>
+                  <p className="text-[10px] text-stone-400">{meta?.desc}</p>
                 </div>
 
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="flex flex-col items-end">
-                    <span className="text-[9px] text-zinc-500 uppercase tracking-widest">
+                    <span className="text-[9px] text-stone-400 uppercase tracking-widest">
                       Q-Value (期待値)
                     </span>
                     <span
-                      className={`text-xl font-mono font-bold ${isDeactivated ? "text-red-400 text-xs font-bold animate-pulse" : qVal > 0 ? "text-emerald-400" : qVal < 0 ? "text-red-400" : "text-zinc-400"}`}
+                      className={`text-xl font-mono font-bold ${isDeactivated ? "text-red-600 text-xs font-bold animate-pulse" : qVal > 0 ? "text-emerald-600" : qVal < 0 ? "text-red-600" : "text-stone-500"}`}
                     >
                       {isDeactivated
                         ? "DEACTIVATED (天中殺)"
@@ -237,8 +237,8 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
                 </div>
               </div>
 
-              <div className="mt-2 pt-2 border-t border-white/5 relative z-10">
-                <span className="text-[9px] text-zinc-500 uppercase tracking-widest">
+              <div className="mt-2 pt-2 border-t border-stone-200/60 relative z-10">
+                <span className="text-[9px] text-stone-400 uppercase tracking-widest">
                   評価要因 (Influence Factors)
                 </span>
                 {renderFactorBars(actionId)}

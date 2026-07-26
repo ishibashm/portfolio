@@ -567,13 +567,13 @@ export default function RentalsDashboard() {
         case "OPTIMAL":
           rating = "大吉";
           color =
-            "text-emerald-400 border border-emerald-500/30 bg-emerald-500/10";
+            "text-emerald-600 border border-emerald-200 bg-emerald-500/10";
           score = 100;
           break;
         case "OPTIMAL_REGULAR":
           rating = "吉";
           color =
-            "text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5";
+            "text-emerald-500/80 border border-emerald-200 bg-emerald-500/5";
           score = 50;
           break;
         case "SAFE":
@@ -583,7 +583,7 @@ export default function RentalsDashboard() {
           break;
         case "WARNING":
           rating = "注意";
-          color = "text-amber-400 border border-amber-500/20 bg-amber-500/5";
+          color = "text-amber-600 border border-amber-200 bg-amber-500/5";
           score = -10;
           break;
         case "NOISE_HONMEI":
@@ -592,7 +592,7 @@ export default function RentalsDashboard() {
         case "NOISE_GETSUTEKI":
         case "NOISE_NODE":
           rating = "凶";
-          color = "text-orange-400 border border-orange-500/20 bg-orange-500/5";
+          color = "text-orange-600 border border-orange-200 bg-orange-500/5";
           score = -30;
           break;
         case "NOISE_VOID":
@@ -600,7 +600,7 @@ export default function RentalsDashboard() {
         case "NOISE_ANKEN":
         case "NOISE_HA":
           rating = "大凶";
-          color = "text-red-400 border border-red-500/30 bg-red-500/10";
+          color = "text-red-600 border border-red-200 bg-red-500/10";
           score = -100;
           break;
       }
@@ -812,11 +812,11 @@ export default function RentalsDashboard() {
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field)
-      return <ArrowUpDown className="w-3.5 h-3.5 text-zinc-500 ml-1.5" />;
+      return <ArrowUpDown className="w-3.5 h-3.5 text-stone-400 ml-1.5" />;
     return sortOrder === "asc" ? (
-      <ArrowUp className="w-3.5 h-3.5 text-emerald-400 ml-1.5" />
+      <ArrowUp className="w-3.5 h-3.5 text-emerald-600 ml-1.5" />
     ) : (
-      <ArrowDown className="w-3.5 h-3.5 text-emerald-400 ml-1.5" />
+      <ArrowDown className="w-3.5 h-3.5 text-emerald-600 ml-1.5" />
     );
   };
 
@@ -838,7 +838,7 @@ export default function RentalsDashboard() {
             <button
               onClick={handleFetchReal}
               disabled={isFetchingReal || loading}
-              className="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(16,185,129,0.2)] active:scale-[0.98]"
+              className="flex-1 md:flex-none px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-stone-900 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-[0_4px_15px_rgba(16,185,129,0.2)] active:scale-[0.98]"
             >
               {isFetchingReal ? (
                 <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
@@ -850,7 +850,7 @@ export default function RentalsDashboard() {
             <button
               onClick={handleGenerateSample}
               disabled={isGenerating || loading}
-              className="flex-1 md:flex-none px-4 py-2 bg-stone-800 hover:bg-stone-700 text-white border border-stone-700 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="flex-1 md:flex-none px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-900 border border-stone-700 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {isGenerating ? (
                 <div className="animate-spin w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full" />
@@ -870,8 +870,8 @@ export default function RentalsDashboard() {
               onClick={() => setIsWebhookModalOpen(true)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
                 webhookConfig.enabled
-                  ? "bg-amber-950/20 text-amber-450 border-amber-900/30 hover:border-amber-850/50 shadow-[0_2px_10px_rgba(245,158,11,0.05)]"
-                  : "bg-zinc-950 hover:bg-zinc-900 text-zinc-450 border-zinc-900 hover:border-zinc-850"
+                  ? "bg-amber-50 text-amber-450 border-amber-200 hover:border-amber-850/50 shadow-[0_2px_10px_rgba(245,158,11,0.05)]"
+                  : "bg-stone-50 hover:bg-white text-zinc-450 border-stone-200 hover:border-stone-200"
               }`}
             >
               <Bell
@@ -883,8 +883,8 @@ export default function RentalsDashboard() {
               onClick={() => setIsMetaphysicalOpen(!isMetaphysicalOpen)}
               className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 active:scale-[0.98] ${
                 isMetaphysicalOpen
-                  ? "bg-purple-950/20 text-purple-400 border-purple-900/30 hover:border-purple-850/50 shadow-[0_2px_10px_rgba(168,85,247,0.05)]"
-                  : "bg-zinc-950 hover:bg-zinc-900 text-zinc-450 border-zinc-900 hover:border-zinc-850"
+                  ? "bg-purple-50 text-purple-600 border-purple-200 hover:border-purple-850/50 shadow-[0_2px_10px_rgba(168,85,247,0.05)]"
+                  : "bg-stone-50 hover:bg-white text-zinc-450 border-stone-200 hover:border-stone-200"
               }`}
             >
               <Compass
@@ -898,10 +898,10 @@ export default function RentalsDashboard() {
 
         {/* Metaphysical Profile Config Accordion */}
         {isMetaphysicalOpen && (
-          <div className="p-5 sm:p-6 bg-zinc-950 border border-zinc-900 rounded-2xl shadow-xl flex flex-col gap-5 animate-in slide-in-from-top-3 duration-200">
-            <div className="flex items-center gap-2.5 border-b border-zinc-900 pb-3">
-              <Compass className="w-5 h-5 text-purple-400" />
-              <h2 className="text-sm sm:text-base font-extrabold text-zinc-100">
+          <div className="p-5 sm:p-6 bg-stone-50 border border-stone-200 rounded-2xl shadow-xl flex flex-col gap-5 animate-in slide-in-from-top-3 duration-200">
+            <div className="flex items-center gap-2.5 border-b border-stone-200 pb-3">
+              <Compass className="w-5 h-5 text-purple-600" />
+              <h2 className="text-sm sm:text-base font-extrabold text-stone-800">
                 開運・方位適合プロファイル設定 (Metaphysical Profile)
               </h2>
             </div>
@@ -909,34 +909,34 @@ export default function RentalsDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Birth Date */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block font-mono">
                   生年月日・時間 (Birth Date & Time)
                 </label>
                 <input
                   type="datetime-local"
                   value={birthDate}
                   onChange={(e) => setBirthDate(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250 font-mono"
+                  className="w-full bg-white border border-stone-200 focus:border-stone-300 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250 font-mono"
                 />
               </div>
 
               {/* Current Residence Name */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block font-mono">
                   現住所・基準地点名 (Current Location Name)
                 </label>
                 <input
                   type="text"
                   value={baseName}
                   onChange={(e) => setBaseName(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250"
+                  className="w-full bg-white border border-stone-200 focus:border-stone-300 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-250"
                 />
               </div>
 
               {/* Coordinates (Lat / Lon) */}
               <div className="space-y-1.5 grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                  <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block font-mono">
                     緯度 (Lat)
                   </label>
                   <input
@@ -946,11 +946,11 @@ export default function RentalsDashboard() {
                     onChange={(e) =>
                       setBaseLat(parseFloat(e.target.value) || 0)
                     }
-                    className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
+                    className="w-full bg-white border border-stone-200 focus:border-stone-300 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block font-mono">
+                  <label className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block font-mono">
                     経度 (Lon)
                   </label>
                   <input
@@ -960,7 +960,7 @@ export default function RentalsDashboard() {
                     onChange={(e) =>
                       setBaseLon(parseFloat(e.target.value) || 0)
                     }
-                    className="w-full bg-zinc-900 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
+                    className="w-full bg-white border border-stone-200 focus:border-stone-300 focus:outline-none rounded-xl px-2.5 py-2 text-xs text-zinc-250 font-mono"
                   />
                 </div>
               </div>
@@ -968,36 +968,36 @@ export default function RentalsDashboard() {
               {/* Toggle North & Classical */}
               <div className="space-y-1.5 flex flex-col justify-center">
                 <div className="flex items-center justify-between text-xs py-1">
-                  <span className="text-zinc-400">
+                  <span className="text-stone-500">
                     真北を使用 (磁北ではなく)
                   </span>
                   <input
                     type="checkbox"
                     checked={useTrueNorth}
                     onChange={(e) => setUseTrueNorth(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-zinc-800 text-purple-500 focus:ring-purple-500 bg-zinc-900 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-stone-200 text-purple-500 focus:ring-purple-500 bg-white cursor-pointer"
                   />
                 </div>
                 <div className="flex items-center justify-between text-xs py-1">
-                  <span className="text-zinc-400">クラシカル盤を使用</span>
+                  <span className="text-stone-500">クラシカル盤を使用</span>
                   <input
                     type="checkbox"
                     checked={useClassical}
                     onChange={(e) => setUseClassical(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-zinc-800 text-purple-500 focus:ring-purple-500 bg-zinc-900 cursor-pointer"
+                    className="w-3.5 h-3.5 rounded border-stone-200 text-purple-500 focus:ring-purple-500 bg-white cursor-pointer"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2.5 pt-2 border-t border-zinc-900/60">
-              <span className="text-[10px] text-zinc-500 self-center font-mono mr-auto">
+            <div className="flex justify-end gap-2.5 pt-2 border-t border-stone-200">
+              <span className="text-[10px] text-stone-400 self-center font-mono mr-auto">
                 ※設定変更は、物件への方位・距離・適合度計算にリアルタイムで反映されます。
               </span>
               <button
                 onClick={handleSaveMetaphysicalConfig}
                 disabled={isSavingConfig}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-stone-900 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer"
               >
                 {isSavingConfig && (
                   <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
@@ -1010,19 +1010,19 @@ export default function RentalsDashboard() {
 
         {/* KPI Metrics Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-zinc-950 border border-zinc-850 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+          <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/[0.02] rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform"></div>
-            <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] sm:text-xs font-mono text-stone-400 uppercase tracking-widest">
               対象物件数
             </span>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-zinc-100 font-mono">
+              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 font-mono">
                 {stats.total}
               </span>
-              <span className="text-[10px] text-zinc-500">件</span>
+              <span className="text-[10px] text-stone-400">件</span>
             </div>
-            <span className="text-[9px] text-zinc-600 mt-2 block border-t border-zinc-900 pt-2 flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-zinc-600" /> 新築:{" "}
+            <span className="text-[9px] text-stone-400 mt-2 block border-t border-stone-200 pt-2 flex items-center gap-1">
+              <Building2 className="w-3 h-3 text-stone-400" /> 新築:{" "}
               {stats.newBuildCount} 件 (
               {stats.total > 0
                 ? Math.round((stats.newBuildCount / stats.total) * 100)
@@ -1031,50 +1031,50 @@ export default function RentalsDashboard() {
             </span>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-850 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+          <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/[0.02] rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform"></div>
-            <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] sm:text-xs font-mono text-stone-400 uppercase tracking-widest">
               平均総家賃
             </span>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-zinc-100 font-mono">
+              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 font-mono">
                 {stats.avgRent > 0 ? (stats.avgRent / 10000).toFixed(1) : "-"}
               </span>
-              <span className="text-[10px] text-zinc-500">万円 / 月</span>
+              <span className="text-[10px] text-stone-400">万円 / 月</span>
             </div>
-            <span className="text-[9px] text-zinc-600 mt-2 block border-t border-zinc-900 pt-2">
+            <span className="text-[9px] text-stone-400 mt-2 block border-t border-stone-200 pt-2">
               共益費・管理費込みの平均値
             </span>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-850 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+          <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/[0.02] rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform"></div>
-            <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] sm:text-xs font-mono text-stone-400 uppercase tracking-widest">
               平均専有面積
             </span>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-zinc-100 font-mono">
+              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 font-mono">
                 {stats.avgSize || "-"}
               </span>
-              <span className="text-[10px] text-zinc-500">m²</span>
+              <span className="text-[10px] text-stone-400">m²</span>
             </div>
-            <span className="text-[9px] text-zinc-600 mt-2 block border-t border-zinc-900 pt-2">
+            <span className="text-[9px] text-stone-400 mt-2 block border-t border-stone-200 pt-2">
               平米単価換算: 約 {stats.avgSqmCost.toLocaleString()} 円/m²
             </span>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-850 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
+          <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-lg relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/[0.02] rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform"></div>
-            <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-widest">
+            <span className="text-[10px] sm:text-xs font-mono text-stone-400 uppercase tracking-widest">
               平均築年数
             </span>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl sm:text-3xl font-extrabold text-zinc-100 font-mono">
+              <span className="text-2xl sm:text-3xl font-extrabold text-stone-800 font-mono">
                 {stats.avgAge || "-"}
               </span>
-              <span className="text-[10px] text-zinc-500">年</span>
+              <span className="text-[10px] text-stone-400">年</span>
             </div>
-            <span className="text-[9px] text-zinc-600 mt-2 block border-t border-zinc-900 pt-2">
+            <span className="text-[9px] text-stone-400 mt-2 block border-t border-stone-200 pt-2">
               ※新築は築0年としてカウント
             </span>
           </div>
@@ -1082,11 +1082,11 @@ export default function RentalsDashboard() {
 
         {/* Analytics Distribution Charts (Custom SVG/CSS Bars) */}
         {properties.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-zinc-950/60 border border-zinc-900 p-5 rounded-2xl shadow-xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-white/80 border border-stone-200 p-5 rounded-2xl shadow-xl">
             {/* Rent Brackets */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <BarChart2 className="w-4 h-4 text-emerald-400" />
+              <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <BarChart2 className="w-4 h-4 text-emerald-600" />
                 家賃価格帯分布 (Rent Brackets)
               </h3>
               <div className="space-y-2 text-[11px]">
@@ -1114,7 +1114,7 @@ export default function RentalsDashboard() {
                           {item.value} 件 ({pct}%)
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden">
                         <div
                           className="h-full bg-emerald-500/80 rounded-full"
                           style={{ width: `${pct}%` }}
@@ -1128,8 +1128,8 @@ export default function RentalsDashboard() {
 
             {/* Layout Distribution */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <BarChart2 className="w-4 h-4 text-blue-400" />
+              <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <BarChart2 className="w-4 h-4 text-blue-600" />
                 間取り分布 (Layouts)
               </h3>
               <div className="space-y-2 text-[11px]">
@@ -1146,7 +1146,7 @@ export default function RentalsDashboard() {
                           {value} 件 ({pct}%)
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden">
                         <div
                           className="h-full bg-blue-500/80 rounded-full"
                           style={{ width: `${pct}%` }}
@@ -1160,8 +1160,8 @@ export default function RentalsDashboard() {
 
             {/* DOM Freshness */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <BarChart2 className="w-4 h-4 text-amber-400" />
+              <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <BarChart2 className="w-4 h-4 text-amber-600" />
                 市場滞留日数 (Freshness / DOM)
               </h3>
               <div className="space-y-2 text-[11px]">
@@ -1199,7 +1199,7 @@ export default function RentalsDashboard() {
                           {item.value} 件 ({pct}%)
                         </span>
                       </div>
-                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-white rounded-full overflow-hidden">
                         <div
                           className={`h-full ${item.color} rounded-full`}
                           style={{ width: `${pct}%` }}
@@ -1215,13 +1215,13 @@ export default function RentalsDashboard() {
 
         {/* Historic Trends Section */}
         {properties.length > 0 && mounted && (
-          <div className="bg-zinc-950/60 border border-zinc-900 p-5 rounded-2xl shadow-xl space-y-4">
-            <div className="flex justify-between items-center border-b border-zinc-900/60 pb-3">
-              <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
+          <div className="bg-white/80 border border-stone-200 p-5 rounded-2xl shadow-xl space-y-4">
+            <div className="flex justify-between items-center border-b border-stone-200 pb-3">
+              <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
                 家賃・平米単価推移トレンド (Historic Price Trends)
               </h3>
-              <span className="text-[10px] text-zinc-500 font-mono">
+              <span className="text-[10px] text-stone-400 font-mono">
                 {trendData.length} 日間のデータを集計中
               </span>
             </div>
@@ -1267,11 +1267,11 @@ export default function RentalsDashboard() {
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[#0b0b0d] border border-zinc-850 p-3 rounded-xl shadow-xl text-xs font-mono space-y-1.5">
-                            <p className="text-zinc-400 font-bold border-b border-zinc-900 pb-1 mb-1">
+                          <div className="bg-[#0b0b0d] border border-stone-200 p-3 rounded-xl shadow-xl text-xs font-mono space-y-1.5">
+                            <p className="text-stone-500 font-bold border-b border-stone-200 pb-1 mb-1">
                               2026-{label}
                             </p>
-                            <p className="text-emerald-400 flex justify-between gap-4">
+                            <p className="text-emerald-600 flex justify-between gap-4">
                               <span>平均家賃:</span>
                               <span className="font-bold">
                                 {payload[0].value} 万円
@@ -1288,7 +1288,7 @@ export default function RentalsDashboard() {
                                 </span>
                               </p>
                             )}
-                            <p className="text-zinc-550 text-[10px] pt-1 border-t border-zinc-900/60 mt-1">
+                            <p className="text-zinc-550 text-[10px] pt-1 border-t border-stone-200 mt-1">
                               登録数: {payload[0].payload.count} 件
                             </p>
                           </div>
@@ -1331,7 +1331,7 @@ export default function RentalsDashboard() {
         )}
 
         {/* Filters Panel */}
-        <div className="bg-zinc-950 border border-zinc-900 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between shadow-lg relative">
+        <div className="bg-stone-50 border border-stone-200 p-4 rounded-2xl flex flex-wrap gap-4 items-center justify-between shadow-lg relative">
           <div className="flex flex-wrap gap-4 flex-1 items-center">
             {/* Search Input */}
             <div className="flex-1 min-w-[200px]">
@@ -1340,7 +1340,7 @@ export default function RentalsDashboard() {
                 placeholder="Search by name, area, or address..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-zinc-500"
+                className="w-full bg-white border border-stone-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
               />
             </div>
 
@@ -1351,7 +1351,7 @@ export default function RentalsDashboard() {
                 placeholder="Max Rent (万円)"
                 value={filterMaxRent}
                 onChange={(e) => setFilterMaxRent(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-zinc-500"
+                className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
               />
             </div>
 
@@ -1362,7 +1362,7 @@ export default function RentalsDashboard() {
                 placeholder="築年数上限 (年)"
                 value={filterMaxAge}
                 onChange={(e) => setFilterMaxAge(e.target.value)}
-                className="w-full bg-[#121214] border border-zinc-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-zinc-500"
+                className="w-full bg-[#121214] border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
               />
             </div>
 
@@ -1372,46 +1372,46 @@ export default function RentalsDashboard() {
                 type="checkbox"
                 checked={filterNewBuild}
                 onChange={(e) => setFilterNewBuild(e.target.checked)}
-                className="rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                className="rounded border-stone-300 bg-white text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
               />
-              <span className="text-xs font-semibold text-zinc-400">
+              <span className="text-xs font-semibold text-stone-500">
                 New Builds Only
               </span>
             </label>
 
             {/* Favorites Only Toggle */}
-            <label className="flex items-center gap-2 cursor-pointer select-none border-l border-zinc-900 pl-4">
+            <label className="flex items-center gap-2 cursor-pointer select-none border-l border-stone-200 pl-4">
               <input
                 type="checkbox"
                 checked={filterFavoritesOnly}
                 onChange={(e) => setFilterFavoritesOnly(e.target.checked)}
-                className="rounded border-zinc-700 bg-zinc-900 text-amber-500 focus:ring-amber-500 w-3.5 h-3.5 cursor-pointer"
+                className="rounded border-stone-300 bg-white text-amber-500 focus:ring-amber-500 w-3.5 h-3.5 cursor-pointer"
               />
-              <span className="text-xs font-semibold text-zinc-400 flex items-center gap-1">
-                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400/25" />
+              <span className="text-xs font-semibold text-stone-500 flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 text-amber-600 fill-amber-400/25" />
                 お気に入り
               </span>
             </label>
           </div>
 
           {/* View Mode Toggle & Export */}
-          <div className="flex items-center gap-3 self-end md:self-auto w-full md:w-auto pt-3 md:pt-0 border-t border-zinc-900 md:border-t-0 justify-between md:justify-end">
+          <div className="flex items-center gap-3 self-end md:self-auto w-full md:w-auto pt-3 md:pt-0 border-t border-stone-200 md:border-t-0 justify-between md:justify-end">
             <button
               onClick={handleExportCSV}
               disabled={filteredAndSortedProperties.length === 0}
-              className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-850 hover:border-zinc-750 disabled:opacity-40 disabled:hover:bg-zinc-900 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 active:scale-[0.98]"
+              className="px-3.5 py-2 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 hover:border-stone-300 disabled:opacity-40 disabled:hover:bg-white rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 active:scale-[0.98]"
             >
               <FileDown className="w-3.5 h-3.5" />
               EXPORT CSV
             </button>
 
-            <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-900 text-[10px] font-mono shrink-0">
+            <div className="flex bg-stone-50 p-1 rounded-xl border border-stone-200 text-[10px] font-mono shrink-0">
               <button
                 onClick={() => setViewMode("grid")}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
                   viewMode === "grid"
-                    ? "bg-emerald-600 text-white font-bold"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-emerald-600 text-stone-900 font-bold"
+                    : "text-stone-500 hover:text-stone-700"
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
@@ -1421,8 +1421,8 @@ export default function RentalsDashboard() {
                 onClick={() => setViewMode("table")}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
                   viewMode === "table"
-                    ? "bg-emerald-600 text-white font-bold"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-emerald-600 text-stone-900 font-bold"
+                    : "text-stone-500 hover:text-stone-700"
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
@@ -1432,8 +1432,8 @@ export default function RentalsDashboard() {
                 onClick={() => setViewMode("map")}
                 className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
                   viewMode === "map"
-                    ? "bg-emerald-600 text-white font-bold"
-                    : "text-zinc-400 hover:text-zinc-200"
+                    ? "bg-emerald-600 text-stone-900 font-bold"
+                    : "text-stone-500 hover:text-stone-700"
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
@@ -1453,27 +1453,27 @@ export default function RentalsDashboard() {
             className={`transition-opacity duration-300 ${loading ? "opacity-65 pointer-events-none" : ""}`}
           >
             {loading && properties.length === 0 ? (
-              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl py-24 text-center text-zinc-500 shadow-2xl flex flex-col items-center justify-center gap-3">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl py-24 text-center text-stone-400 shadow-2xl flex flex-col items-center justify-center gap-3">
                 <div className="animate-spin w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
-                <span className="text-xs font-mono text-zinc-500 tracking-[0.2em] uppercase">
+                <span className="text-xs font-mono text-stone-400 tracking-[0.2em] uppercase">
                   Loading properties database...
                 </span>
               </div>
             ) : filteredAndSortedProperties.length === 0 ? (
-              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl py-24 text-center text-zinc-500 shadow-2xl flex flex-col items-center justify-center">
-                <span className="text-zinc-400 font-bold mb-1">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl py-24 text-center text-stone-400 shadow-2xl flex flex-col items-center justify-center">
+                <span className="text-stone-500 font-bold mb-1">
                   一致する物件が見つかりませんでした
                 </span>
-                <span className="text-xs text-zinc-600">
+                <span className="text-xs text-stone-400">
                   検索クエリまたはフィルター条件を変更してください。
                 </span>
               </div>
             ) : viewMode === "table" ? (
               /* --- TABLE VIEW --- */
-              <div className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-stone-50 border border-stone-200 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs sm:text-sm">
-                    <thead className="bg-zinc-900/50 text-zinc-400 uppercase font-semibold text-[10px] tracking-wider border-b border-zinc-900">
+                    <thead className="bg-white/80 text-stone-500 uppercase font-semibold text-[10px] tracking-wider border-b border-stone-200">
                       <tr>
                         <th
                           className="px-4 py-4 w-10 text-center"
@@ -1484,7 +1484,7 @@ export default function RentalsDashboard() {
                         </th>
                         <th className="px-6 py-4">Property</th>
                         <th
-                          className="px-6 py-4 cursor-pointer hover:bg-zinc-900/40 transition-colors"
+                          className="px-6 py-4 cursor-pointer hover:bg-white/80 transition-colors"
                           onClick={() => handleSort("rent")}
                         >
                           <div className="flex items-center">
@@ -1492,7 +1492,7 @@ export default function RentalsDashboard() {
                           </div>
                         </th>
                         <th
-                          className="px-6 py-4 cursor-pointer hover:bg-zinc-900/40 transition-colors"
+                          className="px-6 py-4 cursor-pointer hover:bg-white/80 transition-colors"
                           onClick={() => handleSort("size_sqm")}
                         >
                           <div className="flex items-center">
@@ -1500,7 +1500,7 @@ export default function RentalsDashboard() {
                           </div>
                         </th>
                         <th
-                          className="px-6 py-4 cursor-pointer hover:bg-zinc-900/40 transition-colors"
+                          className="px-6 py-4 cursor-pointer hover:bg-white/80 transition-colors"
                           onClick={() => handleSort("first_seen_at")}
                         >
                           <div className="flex items-center">
@@ -1523,23 +1523,23 @@ export default function RentalsDashboard() {
                           : 0;
 
                         let domStyle =
-                          "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                          "text-emerald-600 bg-emerald-500/10 border-emerald-200";
                         if (daysOnMarket > 14)
                           domStyle =
-                            "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                            "text-amber-600 bg-amber-500/10 border-amber-200";
                         if (daysOnMarket > 30)
                           domStyle =
-                            "text-rose-400 bg-rose-500/10 border-rose-500/20";
+                            "text-rose-600 bg-rose-500/10 border-rose-200";
 
                         return (
                           <tr
                             key={prop.id}
-                            className="hover:bg-zinc-900/30 transition-colors group"
+                            className="hover:bg-white/80 transition-colors group"
                           >
                             <td className="px-4 py-4 whitespace-nowrap w-10 text-center">
                               <button
                                 onClick={() => handleToggleFavorite(prop.id)}
-                                className="text-zinc-650 hover:text-amber-400 transition-colors active:scale-95"
+                                className="text-zinc-650 hover:text-amber-600 transition-colors active:scale-95"
                                 title={
                                   favorites.includes(prop.id)
                                     ? "お気に入り解除"
@@ -1547,7 +1547,7 @@ export default function RentalsDashboard() {
                                 }
                               >
                                 <Star
-                                  className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? "text-amber-400 fill-amber-400/20" : ""}`}
+                                  className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? "text-amber-600 fill-amber-400/20" : ""}`}
                                 />
                               </button>
                             </td>
@@ -1556,7 +1556,7 @@ export default function RentalsDashboard() {
                                 type="checkbox"
                                 checked={compareList.includes(prop.id)}
                                 onChange={() => handleToggleCompare(prop.id)}
-                                className="rounded border-zinc-800 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                                className="rounded border-stone-200 bg-stone-50 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
                               />
                             </td>
                             <td className="px-6 py-4">
@@ -1566,38 +1566,38 @@ export default function RentalsDashboard() {
                                     href={prop.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="font-bold text-emerald-400 hover:text-emerald-300 text-sm sm:text-base flex items-center gap-1"
+                                    className="font-bold text-emerald-600 hover:text-emerald-600 text-sm sm:text-base flex items-center gap-1"
                                   >
                                     {prop.property_name}{" "}
-                                    <ExternalLink className="w-3.5 h-3.5 inline text-zinc-500" />
+                                    <ExternalLink className="w-3.5 h-3.5 inline text-stone-400" />
                                   </a>
                                 ) : (
-                                  <span className="font-bold text-zinc-200 text-sm sm:text-base">
+                                  <span className="font-bold text-stone-700 text-sm sm:text-base">
                                     {prop.property_name}
                                   </span>
                                 )}
-                                <div className="flex items-center gap-3 text-zinc-500 text-[10px] mt-1">
+                                <div className="flex items-center gap-3 text-stone-400 text-[10px] mt-1">
                                   {prop.area && (
                                     <span className="flex items-center gap-1">
-                                      <MapPin className="w-3 h-3 text-zinc-600" />{" "}
+                                      <MapPin className="w-3 h-3 text-stone-400" />{" "}
                                       {prop.area}
                                     </span>
                                   )}
                                   {prop.minutes_to_station !== null && (
                                     <span className="flex items-center gap-1">
-                                      <Clock className="w-3 h-3 text-zinc-600" />{" "}
+                                      <Clock className="w-3 h-3 text-stone-400" />{" "}
                                       {prop.minutes_to_station} min
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1.5">
                                   {prop.is_new_build && (
-                                    <span className="px-1.5 py-0.5 bg-blue-950/20 text-blue-400 border border-blue-900/30 rounded text-[9px] font-bold">
+                                    <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[9px] font-bold">
                                       新築
                                     </span>
                                   )}
                                   {prop.building_age !== null && (
-                                    <span className="px-1.5 py-0.5 bg-zinc-900 text-zinc-400 border border-zinc-800 rounded text-[9px] font-mono">
+                                    <span className="px-1.5 py-0.5 bg-white text-stone-500 border border-stone-200 rounded text-[9px] font-mono">
                                       築 {prop.building_age} 年
                                     </span>
                                   )}
@@ -1606,12 +1606,12 @@ export default function RentalsDashboard() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex flex-col">
-                                <span className="font-bold text-base text-zinc-100">
+                                <span className="font-bold text-base text-stone-800">
                                   {prop.rent
                                     ? `¥${prop.rent.toLocaleString()}`
                                     : "-"}
                                 </span>
-                                <span className="text-zinc-500 text-[10px]">
+                                <span className="text-stone-400 text-[10px]">
                                   +
                                   {prop.management_fee
                                     ? `¥${prop.management_fee.toLocaleString()} fee`
@@ -1621,10 +1621,10 @@ export default function RentalsDashboard() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex flex-col gap-1">
-                                <span className="text-zinc-300 font-bold bg-zinc-900 px-2 py-0.5 border border-zinc-850 rounded w-max text-[11px] font-mono">
+                                <span className="text-stone-600 font-bold bg-white px-2 py-0.5 border border-stone-200 rounded w-max text-[11px] font-mono">
                                   {prop.layout || "N/A"}
                                 </span>
-                                <span className="text-zinc-500 text-[10px] mt-1 font-mono">
+                                <span className="text-stone-400 text-[10px] mt-1 font-mono">
                                   {prop.size_sqm ? `${prop.size_sqm} m²` : "-"}
                                 </span>
                               </div>
@@ -1646,7 +1646,7 @@ export default function RentalsDashboard() {
                                         prop.last_seen_at || prop.first_seen_at,
                                       ).toLocaleString()}
                                     >
-                                      <Calendar className="w-3 h-3 text-zinc-600" />
+                                      <Calendar className="w-3 h-3 text-stone-400" />
                                       {formatDistanceToNow(
                                         new Date(
                                           prop.last_seen_at ||
@@ -1665,7 +1665,7 @@ export default function RentalsDashboard() {
                               const meta = metaphysicalProperties[prop.id];
                               if (!meta) {
                                 return (
-                                  <td className="px-6 py-4 text-zinc-600 font-mono text-[10px]">
+                                  <td className="px-6 py-4 text-stone-400 font-mono text-[10px]">
                                     位置情報なし
                                   </td>
                                 );
@@ -1673,8 +1673,8 @@ export default function RentalsDashboard() {
                               return (
                                 <td className="px-6 py-4">
                                   <div className="flex flex-col gap-1 items-start">
-                                    <span className="text-zinc-200 font-bold text-xs flex items-center gap-1 font-mono">
-                                      <Compass className="w-3.5 h-3.5 text-purple-400 shrink-0 animate-pulse" />
+                                    <span className="text-stone-700 font-bold text-xs flex items-center gap-1 font-mono">
+                                      <Compass className="w-3.5 h-3.5 text-purple-600 shrink-0 animate-pulse" />
                                       {meta.direction} ({meta.distance} km)
                                     </span>
                                     <div className="flex items-center gap-2 mt-1">
@@ -1685,7 +1685,7 @@ export default function RentalsDashboard() {
                                       </span>
                                       <a
                                         href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
-                                        className="text-[9px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                        className="text-[9px] text-purple-600 hover:text-purple-600 font-bold hover:underline flex items-center gap-0.5"
                                       >
                                         シミュレート
                                         <ExternalLink className="w-2.5 h-2.5" />
@@ -1717,13 +1717,13 @@ export default function RentalsDashboard() {
                     : 0;
 
                   let domStyle =
-                    "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+                    "text-emerald-600 bg-emerald-500/10 border-emerald-200";
                   if (daysOnMarket > 14)
                     domStyle =
-                      "text-amber-400 bg-amber-500/10 border-amber-500/20";
+                      "text-amber-600 bg-amber-500/10 border-amber-200";
                   if (daysOnMarket > 30)
                     domStyle =
-                      "text-rose-400 bg-rose-500/10 border-rose-500/20";
+                      "text-rose-600 bg-rose-500/10 border-rose-200";
 
                   const totalRent =
                     (prop.rent || 0) + (prop.management_fee || 0);
@@ -1731,7 +1731,7 @@ export default function RentalsDashboard() {
                   return (
                     <div
                       key={prop.id}
-                      className="bg-zinc-950 border border-zinc-900 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/30 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(16,185,129,0.03)] group relative overflow-hidden"
+                      className="bg-stone-50 border border-stone-200 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-200 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(16,185,129,0.03)] group relative overflow-hidden"
                     >
                       {/* Interactive top-right DOM badge & Star Favorite */}
                       <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5 z-10">
@@ -1742,7 +1742,7 @@ export default function RentalsDashboard() {
                               e.preventDefault();
                               handleToggleFavorite(prop.id);
                             }}
-                            className="p-1 rounded bg-zinc-900/80 border border-zinc-850 hover:border-zinc-750 hover:bg-zinc-800 text-zinc-500 hover:text-amber-400 transition-all active:scale-95 shadow-md"
+                            className="p-1 rounded bg-white/80 border border-stone-200 hover:border-stone-300 hover:bg-stone-100 text-stone-400 hover:text-amber-600 transition-all active:scale-95 shadow-md"
                             title={
                               favorites.includes(prop.id)
                                 ? "お気に入り解除"
@@ -1750,7 +1750,7 @@ export default function RentalsDashboard() {
                             }
                           >
                             <Star
-                              className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? "text-amber-400 fill-amber-400/20" : ""}`}
+                              className={`w-3.5 h-3.5 ${favorites.includes(prop.id) ? "text-amber-600 fill-amber-400/20" : ""}`}
                             />
                           </button>
                           <span
@@ -1762,7 +1762,7 @@ export default function RentalsDashboard() {
                           </span>
                         </div>
                         {prop.is_new_build && (
-                          <span className="px-1.5 py-0.5 bg-blue-950/20 text-blue-400 border border-blue-900/30 rounded text-[9px] font-bold">
+                          <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded text-[9px] font-bold">
                             新築
                           </span>
                         )}
@@ -1777,20 +1777,20 @@ export default function RentalsDashboard() {
                               href={prop.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="font-bold text-zinc-100 hover:text-emerald-400 text-base flex items-center gap-1 transition-colors hover:underline"
+                              className="font-bold text-stone-800 hover:text-emerald-600 text-base flex items-center gap-1 transition-colors hover:underline"
                             >
                               <span className="truncate">
                                 {prop.property_name}
                               </span>
-                              <ExternalLink className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                              <ExternalLink className="w-3.5 h-3.5 text-stone-400 shrink-0" />
                             </a>
                           ) : (
-                            <h3 className="font-bold text-zinc-100 text-base truncate">
+                            <h3 className="font-bold text-stone-800 text-base truncate">
                               {prop.property_name}
                             </h3>
                           )}
 
-                          <div className="flex items-center gap-2.5 text-zinc-500 text-[10px] font-mono pt-1">
+                          <div className="flex items-center gap-2.5 text-stone-400 text-[10px] font-mono pt-1">
                             {prop.area && (
                               <span className="flex items-center gap-1">
                                 <MapPin className="w-3.5 h-3.5 text-zinc-650" />{" "}
@@ -1807,16 +1807,16 @@ export default function RentalsDashboard() {
                         </div>
 
                         {/* Price Details */}
-                        <div className="bg-zinc-900/30 border border-zinc-900/50 p-3 rounded-xl flex items-center justify-between">
+                        <div className="bg-white/80 border border-stone-200 p-3 rounded-xl flex items-center justify-between">
                           <div className="space-y-0.5">
-                            <span className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block">
+                            <span className="text-[9px] text-stone-400 font-mono uppercase tracking-wider block">
                               月額総家賃
                             </span>
-                            <span className="text-xl font-extrabold text-zinc-100 font-mono">
+                            <span className="text-xl font-extrabold text-stone-800 font-mono">
                               ¥{totalRent.toLocaleString()}
                             </span>
                           </div>
-                          <div className="text-right text-[10px] text-zinc-500 space-y-0.5">
+                          <div className="text-right text-[10px] text-stone-400 space-y-0.5">
                             <span className="block">
                               家賃: ¥{(prop.rent || 0).toLocaleString()}
                             </span>
@@ -1829,19 +1829,19 @@ export default function RentalsDashboard() {
 
                         {/* Property Specs */}
                         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                          <div className="bg-[#0b0b0d] border border-zinc-900/55 p-2 rounded-lg text-center">
-                            <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">
+                          <div className="bg-[#0b0b0d] border border-stone-200 p-2 rounded-lg text-center">
+                            <span className="text-[8px] text-stone-400 block uppercase tracking-wider mb-1">
                               間取り
                             </span>
-                            <span className="font-bold text-zinc-300">
+                            <span className="font-bold text-stone-600">
                               {prop.layout || "N/A"}
                             </span>
                           </div>
-                          <div className="bg-[#0b0b0d] border border-zinc-900/55 p-2 rounded-lg text-center">
-                            <span className="text-[8px] text-zinc-500 block uppercase tracking-wider mb-1">
+                          <div className="bg-[#0b0b0d] border border-stone-200 p-2 rounded-lg text-center">
+                            <span className="text-[8px] text-stone-400 block uppercase tracking-wider mb-1">
                               専有面積
                             </span>
-                            <span className="font-bold text-zinc-300">
+                            <span className="font-bold text-stone-600">
                               {prop.size_sqm ? `${prop.size_sqm}m²` : "-"}
                             </span>
                           </div>
@@ -1852,13 +1852,13 @@ export default function RentalsDashboard() {
                           const meta = metaphysicalProperties[prop.id];
                           if (!meta) return null;
                           return (
-                            <div className="bg-purple-950/10 border border-purple-900/20 p-3 rounded-xl flex items-center justify-between">
+                            <div className="bg-purple-50 border border-purple-200 p-3 rounded-xl flex items-center justify-between">
                               <div className="space-y-0.5">
-                                <span className="text-[8px] text-purple-400 font-mono uppercase tracking-wider block">
+                                <span className="text-[8px] text-purple-600 font-mono uppercase tracking-wider block">
                                   方位適合度
                                 </span>
-                                <span className="text-xs font-bold text-zinc-200 flex items-center gap-1 font-mono">
-                                  <Compass className="w-3.5 h-3.5 text-purple-400 shrink-0 animate-pulse" />
+                                <span className="text-xs font-bold text-stone-700 flex items-center gap-1 font-mono">
+                                  <Compass className="w-3.5 h-3.5 text-purple-600 shrink-0 animate-pulse" />
                                   {meta.direction} ({meta.distance} km)
                                 </span>
                               </div>
@@ -1870,7 +1870,7 @@ export default function RentalsDashboard() {
                                 </span>
                                 <a
                                   href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
-                                  className="text-[9px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                  className="text-[9px] text-purple-600 hover:text-purple-600 font-bold hover:underline flex items-center gap-0.5"
                                 >
                                   シミュレート
                                   <ExternalLink className="w-2.5 h-2.5" />
@@ -1882,7 +1882,7 @@ export default function RentalsDashboard() {
                       </div>
 
                       {/* Footer Info */}
-                      <div className="mt-5 pt-3 border-t border-zinc-900 flex items-center justify-between text-[9px] text-zinc-655 font-mono">
+                      <div className="mt-5 pt-3 border-t border-stone-200 flex items-center justify-between text-[9px] text-zinc-655 font-mono">
                         <span>
                           {prop.building_age !== null
                             ? `築年数: ${prop.building_age}年`
@@ -1895,7 +1895,7 @@ export default function RentalsDashboard() {
                               type="checkbox"
                               checked={compareList.includes(prop.id)}
                               onChange={() => handleToggleCompare(prop.id)}
-                              className="rounded border-zinc-850 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+                              className="rounded border-stone-200 bg-stone-50 text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
                             />
                             <span>比較</span>
                           </label>
@@ -1919,11 +1919,11 @@ export default function RentalsDashboard() {
               </div>
             ) : (
               /* --- MAP VIEW (SPLIT-SCREEN) --- */
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[550px] border border-zinc-900 rounded-2xl overflow-hidden bg-zinc-950/60 shadow-2xl relative">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[550px] border border-stone-200 rounded-2xl overflow-hidden bg-white/80 shadow-2xl relative">
                 {/* Sidebar - compact cards (hidden on mobile, takes 1/3 on lg) */}
-                <div className="hidden lg:block lg:col-span-1 border-r border-zinc-900 overflow-y-auto p-4 space-y-3 max-h-[550px] scrollbar-thin scrollbar-thumb-zinc-800">
-                  <div className="flex justify-between items-center pb-2 border-b border-zinc-900 mb-2">
-                    <span className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+                <div className="hidden lg:block lg:col-span-1 border-r border-stone-200 overflow-y-auto p-4 space-y-3 max-h-[550px] scrollbar-thin scrollbar-thumb-zinc-800">
+                  <div className="flex justify-between items-center pb-2 border-b border-stone-200 mb-2">
+                    <span className="text-[10px] font-mono font-bold text-stone-500 uppercase tracking-widest">
                       物件リスト ({filteredAndSortedProperties.length} 件)
                     </span>
                   </div>
@@ -1941,8 +1941,8 @@ export default function RentalsDashboard() {
                           onClick={() => setSelectedPropertyId(prop.id)}
                           className={`p-3 rounded-xl border transition-all duration-300 cursor-pointer flex flex-col justify-between relative ${
                             isHovered
-                              ? "bg-zinc-900/40 border-emerald-500/30 shadow-[0_4px_15px_rgba(16,185,129,0.02)]"
-                              : "bg-zinc-950 border-zinc-900 hover:border-zinc-850"
+                              ? "bg-white/80 border-emerald-200 shadow-[0_4px_15px_rgba(16,185,129,0.02)]"
+                              : "bg-stone-50 border-stone-200 hover:border-stone-200"
                           }`}
                         >
                           {/* Star Button */}
@@ -1951,11 +1951,11 @@ export default function RentalsDashboard() {
                               e.stopPropagation();
                               handleToggleFavorite(prop.id);
                             }}
-                            className="absolute top-2.5 right-2.5 p-1 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 hover:border-zinc-750 text-zinc-500 hover:text-amber-400 transition-all active:scale-95 z-10"
+                            className="absolute top-2.5 right-2.5 p-1 rounded bg-white hover:bg-stone-100 border border-stone-200 hover:border-stone-300 text-stone-400 hover:text-amber-600 transition-all active:scale-95 z-10"
                             title={isFav ? "お気に入り解除" : "お気に入り登録"}
                           >
                             <Star
-                              className={`w-3 h-3 ${isFav ? "text-amber-400 fill-amber-400/20" : ""}`}
+                              className={`w-3 h-3 ${isFav ? "text-amber-600 fill-amber-400/20" : ""}`}
                             />
                           </button>
 
@@ -1966,38 +1966,38 @@ export default function RentalsDashboard() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="font-bold text-zinc-200 hover:text-emerald-400 text-xs truncate max-w-[150px] flex items-center gap-0.5 hover:underline"
+                                className="font-bold text-stone-700 hover:text-emerald-600 text-xs truncate max-w-[150px] flex items-center gap-0.5 hover:underline"
                                 title={prop.property_name}
                               >
                                 <span className="truncate">
                                   {prop.property_name}
                                 </span>
-                                <ExternalLink className="w-2.5 h-2.5 text-zinc-600 shrink-0" />
+                                <ExternalLink className="w-2.5 h-2.5 text-stone-400 shrink-0" />
                               </a>
                             ) : (
                               <h4
-                                className="font-bold text-zinc-200 text-xs truncate max-w-[150px]"
+                                className="font-bold text-stone-700 text-xs truncate max-w-[150px]"
                                 title={prop.property_name}
                               >
                                 {prop.property_name}
                               </h4>
                             )}
-                            <div className="flex items-center gap-2 text-zinc-500 text-[8px] font-mono">
+                            <div className="flex items-center gap-2 text-stone-400 text-[8px] font-mono">
                               {prop.area && (
                                 <span className="flex items-center gap-0.5">
-                                  <MapPin className="w-2.5 h-2.5 text-zinc-600" />{" "}
+                                  <MapPin className="w-2.5 h-2.5 text-stone-400" />{" "}
                                   {prop.area}
                                 </span>
                               )}
                               {prop.minutes_to_station !== null && (
                                 <span className="flex items-center gap-0.5">
-                                  <Clock className="w-2.5 h-2.5 text-zinc-600" />{" "}
+                                  <Clock className="w-2.5 h-2.5 text-stone-400" />{" "}
                                   {prop.minutes_to_station}分
                                 </span>
                               )}
                             </div>
                             <div className="flex items-baseline justify-between pt-0.5">
-                              <span className="text-xs font-mono font-extrabold text-zinc-200">
+                              <span className="text-xs font-mono font-extrabold text-stone-700">
                                 ¥{totalRent.toLocaleString()}
                               </span>
                             </div>
@@ -2006,9 +2006,9 @@ export default function RentalsDashboard() {
                               const meta = metaphysicalProperties[prop.id];
                               if (!meta) return null;
                               return (
-                                <div className="flex items-center justify-between border-t border-purple-950/20 pt-1.5 mt-1 text-[8px] font-mono">
-                                  <span className="text-purple-400 font-bold flex items-center gap-0.5">
-                                    <Compass className="w-3 h-3 text-purple-400 animate-pulse" />
+                                <div className="flex items-center justify-between border-t border-purple-200 pt-1.5 mt-1 text-[8px] font-mono">
+                                  <span className="text-purple-600 font-bold flex items-center gap-0.5">
+                                    <Compass className="w-3 h-3 text-purple-600 animate-pulse" />
                                     {meta.direction} ({meta.distance} km)
                                   </span>
                                   <div className="flex items-center gap-1.5">
@@ -2019,7 +2019,7 @@ export default function RentalsDashboard() {
                                     </span>
                                     <a
                                       href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
-                                      className="text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                      className="text-purple-600 hover:text-purple-600 font-bold hover:underline flex items-center gap-0.5"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       シミュレート
@@ -2030,16 +2030,16 @@ export default function RentalsDashboard() {
                               );
                             })()}
 
-                            <div className="flex items-center justify-between pt-1 border-t border-zinc-900/60 mt-1 text-[8px] text-zinc-500 font-mono">
+                            <div className="flex items-center justify-between pt-1 border-t border-stone-200 mt-1 text-[8px] text-stone-400 font-mono">
                               <label
-                                className="flex items-center gap-1 cursor-pointer select-none text-zinc-600 hover:text-zinc-400"
+                                className="flex items-center gap-1 cursor-pointer select-none text-stone-400 hover:text-stone-500"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <input
                                   type="checkbox"
                                   checked={compareList.includes(prop.id)}
                                   onChange={() => handleToggleCompare(prop.id)}
-                                  className="rounded border-zinc-850 bg-zinc-950 text-emerald-500 focus:ring-emerald-500 w-2.5 h-2.5 cursor-pointer"
+                                  className="rounded border-stone-200 bg-stone-50 text-emerald-500 focus:ring-emerald-500 w-2.5 h-2.5 cursor-pointer"
                                 />
                                 <span>比較</span>
                               </label>
@@ -2076,7 +2076,7 @@ export default function RentalsDashboard() {
                       const totalRent =
                         (prop.rent || 0) + (prop.management_fee || 0);
                       return (
-                        <div className="lg:hidden absolute bottom-4 left-4 right-4 z-[1000] p-4 bg-zinc-950/95 border border-zinc-900 rounded-2xl shadow-2xl flex flex-col gap-2 backdrop-blur-md">
+                        <div className="lg:hidden absolute bottom-4 left-4 right-4 z-[1000] p-4 bg-white/80 border border-stone-200 rounded-2xl shadow-2xl flex flex-col gap-2 backdrop-blur-md">
                           <div className="flex justify-between items-start">
                             <div className="space-y-0.5">
                               {prop.url ? (
@@ -2084,17 +2084,17 @@ export default function RentalsDashboard() {
                                   href={prop.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-bold text-zinc-100 hover:text-emerald-400 text-xs flex items-center gap-0.5 hover:underline"
+                                  className="font-bold text-stone-800 hover:text-emerald-600 text-xs flex items-center gap-0.5 hover:underline"
                                 >
                                   <span>{prop.property_name}</span>
                                   <ExternalLink className="w-2.5 h-2.5 text-zinc-650 shrink-0" />
                                 </a>
                               ) : (
-                                <h4 className="font-bold text-zinc-100 text-xs">
+                                <h4 className="font-bold text-stone-800 text-xs">
                                   {prop.property_name}
                                 </h4>
                               )}
-                              <p className="text-[9px] text-zinc-500 font-mono flex items-center gap-1">
+                              <p className="text-[9px] text-stone-400 font-mono flex items-center gap-1">
                                 <MapPin className="w-3 h-3 text-zinc-650" />{" "}
                                 {prop.area || "Unknown Area"}
                               </p>
@@ -2102,25 +2102,25 @@ export default function RentalsDashboard() {
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => handleToggleFavorite(prop.id)}
-                                className="p-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-amber-400"
+                                className="p-1.5 rounded-lg bg-white border border-stone-200 text-stone-500 hover:text-amber-600"
                               >
                                 <Star
-                                  className={`w-3.5 h-3.5 ${isFav ? "text-amber-400 fill-amber-400/20" : ""}`}
+                                  className={`w-3.5 h-3.5 ${isFav ? "text-amber-600 fill-amber-400/20" : ""}`}
                                 />
                               </button>
                               <button
                                 onClick={() => setSelectedPropertyId(null)}
-                                className="px-2 py-1 text-[9px] bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-850 rounded-lg font-bold font-mono"
+                                className="px-2 py-1 text-[9px] bg-white hover:bg-stone-100 text-stone-500 border border-stone-200 rounded-lg font-bold font-mono"
                               >
                                 CLOSE
                               </button>
                             </div>
                           </div>
-                          <div className="flex items-baseline justify-between border-t border-zinc-900 pt-2 mt-1">
-                            <span className="text-xs font-mono font-extrabold text-zinc-100">
+                          <div className="flex items-baseline justify-between border-t border-stone-200 pt-2 mt-1">
+                            <span className="text-xs font-mono font-extrabold text-stone-800">
                               ¥{totalRent.toLocaleString()}
                             </span>
-                            <span className="text-[9px] text-zinc-400 font-mono">
+                            <span className="text-[9px] text-stone-500 font-mono">
                               {prop.layout || "N/A"} •{" "}
                               {prop.size_sqm ? `${prop.size_sqm}m²` : "-"} •{" "}
                               {prop.minutes_to_station !== null
@@ -2133,9 +2133,9 @@ export default function RentalsDashboard() {
                             const meta = metaphysicalProperties[prop.id];
                             if (!meta) return null;
                             return (
-                              <div className="flex items-center justify-between border-t border-purple-950/20 pt-2 mt-1 text-[9px] font-mono">
-                                <span className="text-purple-400 font-bold flex items-center gap-0.5">
-                                  <Compass className="w-3 h-3 text-purple-400 animate-pulse" />
+                              <div className="flex items-center justify-between border-t border-purple-200 pt-2 mt-1 text-[9px] font-mono">
+                                <span className="text-purple-600 font-bold flex items-center gap-0.5">
+                                  <Compass className="w-3 h-3 text-purple-600 animate-pulse" />
                                   {meta.direction} ({meta.distance} km)
                                 </span>
                                 <div className="flex items-center gap-2">
@@ -2146,7 +2146,7 @@ export default function RentalsDashboard() {
                                   </span>
                                   <a
                                     href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
-                                    className="text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                                    className="text-purple-600 hover:text-purple-600 font-bold hover:underline flex items-center gap-0.5"
                                   >
                                     シミュレート
                                     <ExternalLink className="w-2.5 h-2.5" />
@@ -2166,12 +2166,12 @@ export default function RentalsDashboard() {
 
         {/* Floating Compare Bar */}
         {compareList.length > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-zinc-950/95 border border-zinc-850 px-5 py-3.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[2000] flex items-center gap-5 backdrop-blur-md animate-in slide-in-from-bottom-5 duration-350 w-[90%] max-w-lg justify-between">
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/80 border border-stone-200 px-5 py-3.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-[2000] flex items-center gap-5 backdrop-blur-md animate-in slide-in-from-bottom-5 duration-350 w-[90%] max-w-lg justify-between">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
               <span className="text-xs font-bold text-zinc-350 font-mono">
                 比較対象:{" "}
-                <span className="text-emerald-400 text-sm font-extrabold">
+                <span className="text-emerald-600 text-sm font-extrabold">
                   {compareList.length}
                 </span>{" "}
                 / 3 件
@@ -2181,13 +2181,13 @@ export default function RentalsDashboard() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsCompareOpen(true)}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-[0_2px_10px_rgba(16,185,129,0.2)]"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-stone-900 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-[0_2px_10px_rgba(16,185,129,0.2)]"
               >
                 比較する
               </button>
               <button
                 onClick={clearCompare}
-                className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-250 border border-zinc-800 rounded-xl text-xs font-bold transition-all active:scale-95"
+                className="px-3 py-2 bg-white hover:bg-stone-100 text-stone-500 hover:text-zinc-250 border border-stone-200 rounded-xl text-xs font-bold transition-all active:scale-95"
               >
                 クリア
               </button>
@@ -2197,22 +2197,22 @@ export default function RentalsDashboard() {
 
         {/* Compare Modal */}
         {isCompareOpen && (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-[#0b0b0d] border border-zinc-850 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+          <div className="fixed inset-0 bg-white/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-[#0b0b0d] border border-stone-200 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               {/* Header */}
-              <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900">
+              <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200">
                 <div className="space-y-0.5">
-                  <h3 className="text-base font-extrabold text-zinc-100 flex items-center gap-2">
-                    <ArrowUpDown className="w-5 h-5 text-emerald-400 animate-bounce" />
+                  <h3 className="text-base font-extrabold text-stone-800 flex items-center gap-2">
+                    <ArrowUpDown className="w-5 h-5 text-emerald-600 animate-bounce" />
                     物件スペック比較 (Compare Properties)
                   </h3>
-                  <p className="text-[10px] text-zinc-500 font-mono">
+                  <p className="text-[10px] text-stone-400 font-mono">
                     家賃・面積・築年数の好条件（最安・最大・最浅）項目は、自動的にエメラルドグリーンでハイライトされます。
                   </p>
                 </div>
                 <button
                   onClick={() => setIsCompareOpen(false)}
-                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-450 hover:text-zinc-200 border border-zinc-800 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
+                  className="px-3.5 py-2 bg-white hover:bg-stone-100 text-zinc-450 hover:text-stone-700 border border-stone-200 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
                 >
                   CLOSE
                 </button>
@@ -2227,7 +2227,7 @@ export default function RentalsDashboard() {
                   );
                   if (selectedProps.length === 0)
                     return (
-                      <div className="text-center text-zinc-500 py-12">
+                      <div className="text-center text-stone-400 py-12">
                         No properties selected.
                       </div>
                     );
@@ -2259,26 +2259,26 @@ export default function RentalsDashboard() {
                       }}
                     >
                       {/* Label Column */}
-                      <div className="space-y-4 text-[10px] font-mono font-bold text-zinc-500 flex flex-col justify-between pt-[76px] pb-3 shrink-0">
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                      <div className="space-y-4 text-[10px] font-mono font-bold text-stone-400 flex flex-col justify-between pt-[76px] pb-3 shrink-0">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           月額総家賃
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           内訳 (家賃/管理費)
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           間取り
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           専旧面積
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           平米単価
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           最寄り駅徒歩
                         </div>
-                        <div className="h-10 flex items-center border-b border-zinc-900/60">
+                        <div className="h-10 flex items-center border-b border-stone-200">
                           築年数
                         </div>
                         <div className="h-10 flex items-center">
@@ -2317,24 +2317,24 @@ export default function RentalsDashboard() {
                         return (
                           <div
                             key={prop.id}
-                            className="flex flex-col justify-between border border-zinc-900 rounded-2xl p-4 bg-zinc-950/40 relative"
+                            className="flex flex-col justify-between border border-stone-200 rounded-2xl p-4 bg-white/80 relative"
                           >
                             {/* Column Action Row */}
-                            <div className="flex justify-between items-center pb-3 border-b border-zinc-900 mb-3">
+                            <div className="flex justify-between items-center pb-3 border-b border-stone-200 mb-3">
                               <button
                                 onClick={() => handleToggleFavorite(prop.id)}
-                                className="p-1.5 rounded bg-zinc-900 border border-zinc-850 hover:border-zinc-750 text-zinc-500 hover:text-amber-400 active:scale-95"
+                                className="p-1.5 rounded bg-white border border-stone-200 hover:border-stone-300 text-stone-400 hover:text-amber-600 active:scale-95"
                                 title={
                                   isFav ? "お気に入り解除" : "お気に入り登録"
                                 }
                               >
                                 <Star
-                                  className={`w-3.5 h-3.5 ${isFav ? "text-amber-400 fill-amber-400/20" : ""}`}
+                                  className={`w-3.5 h-3.5 ${isFav ? "text-amber-600 fill-amber-400/20" : ""}`}
                                 />
                               </button>
                               <button
                                 onClick={() => handleToggleCompare(prop.id)}
-                                className="px-2 py-1 bg-zinc-900 hover:bg-rose-950/20 border border-zinc-850 hover:border-rose-900/30 text-zinc-500 hover:text-rose-400 rounded-lg text-[9px] font-bold font-mono transition-all active:scale-95"
+                                className="px-2 py-1 bg-white hover:bg-rose-50 border border-stone-200 hover:border-rose-200 text-stone-400 hover:text-rose-600 rounded-lg text-[9px] font-bold font-mono transition-all active:scale-95"
                               >
                                 比較から外す
                               </button>
@@ -2347,7 +2347,7 @@ export default function RentalsDashboard() {
                                   href={prop.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="font-bold text-zinc-200 text-xs truncate max-w-full hover:text-emerald-400 flex items-center gap-0.5 leading-snug"
+                                  className="font-bold text-stone-700 text-xs truncate max-w-full hover:text-emerald-600 flex items-center gap-0.5 leading-snug"
                                   title={prop.property_name}
                                 >
                                   <span className="truncate">
@@ -2357,34 +2357,34 @@ export default function RentalsDashboard() {
                                 </a>
                               ) : (
                                 <h4
-                                  className="font-bold text-zinc-200 text-xs truncate"
+                                  className="font-bold text-stone-700 text-xs truncate"
                                   title={prop.property_name}
                                 >
                                   {prop.property_name}
                                 </h4>
                               )}
-                              <p className="text-[9px] text-zinc-500 font-mono mt-0.5 truncate">
+                              <p className="text-[9px] text-stone-400 font-mono mt-0.5 truncate">
                                 {prop.area || "-"}
                               </p>
                             </div>
 
                             {/* Spec Rows */}
-                            <div className="space-y-4 text-[11px] font-mono text-zinc-300">
+                            <div className="space-y-4 text-[11px] font-mono text-stone-600">
                               {/* Rent */}
                               <div
-                                className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isCheapestRent ? "bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold" : ""}`}
+                                className={`h-10 flex items-center justify-between border-b border-stone-200 px-2 rounded-lg ${isCheapestRent ? "bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold" : ""}`}
                               >
                                 <span>¥{totalRent.toLocaleString()}</span>
                                 {isCheapestRent && (
-                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">
+                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-200 px-1 py-0.5 rounded font-sans uppercase">
                                     CHEAPEST
                                   </span>
                                 )}
                               </div>
 
                               {/* Breakdown */}
-                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
-                                <span className="text-[9px] text-zinc-500">
+                              <div className="h-10 flex items-center border-b border-stone-200 px-2">
+                                <span className="text-[9px] text-stone-400">
                                   ¥
                                   {prop.rent ? prop.rent.toLocaleString() : "0"}{" "}
                                   + 管理 ¥
@@ -2395,33 +2395,33 @@ export default function RentalsDashboard() {
                               </div>
 
                               {/* Layout */}
-                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
-                                <span className="bg-zinc-900 border border-zinc-850 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-350">
+                              <div className="h-10 flex items-center border-b border-stone-200 px-2">
+                                <span className="bg-white border border-stone-200 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-350">
                                   {prop.layout || "-"}
                                 </span>
                               </div>
 
                               {/* Size */}
                               <div
-                                className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isLargestSize ? "bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold" : ""}`}
+                                className={`h-10 flex items-center justify-between border-b border-stone-200 px-2 rounded-lg ${isLargestSize ? "bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold" : ""}`}
                               >
                                 <span>
                                   {prop.size_sqm ? `${prop.size_sqm} m²` : "-"}
                                 </span>
                                 {isLargestSize && (
-                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">
+                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-200 px-1 py-0.5 rounded font-sans uppercase">
                                     LARGEST
                                   </span>
                                 )}
                               </div>
 
                               {/* Sqm Cost */}
-                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                              <div className="h-10 flex items-center border-b border-stone-200 px-2">
                                 <span>¥{costPerSqm.toLocaleString()} / m²</span>
                               </div>
 
                               {/* Station walk */}
-                              <div className="h-10 flex items-center border-b border-zinc-900/60 px-2">
+                              <div className="h-10 flex items-center border-b border-stone-200 px-2">
                                 <span>
                                   {prop.minutes_to_station !== null
                                     ? `${prop.minutes_to_station} 分`
@@ -2431,7 +2431,7 @@ export default function RentalsDashboard() {
 
                               {/* Building age */}
                               <div
-                                className={`h-10 flex items-center justify-between border-b border-zinc-900/60 px-2 rounded-lg ${isNewestAge ? "bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 font-bold" : ""}`}
+                                className={`h-10 flex items-center justify-between border-b border-stone-200 px-2 rounded-lg ${isNewestAge ? "bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold" : ""}`}
                               >
                                 <span>
                                   {prop.building_age !== null
@@ -2439,7 +2439,7 @@ export default function RentalsDashboard() {
                                     : "不明"}
                                 </span>
                                 {isNewestAge && (
-                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-500/30 px-1 py-0.5 rounded font-sans uppercase">
+                                  <span className="text-[7px] bg-emerald-500/15 border border-emerald-200 px-1 py-0.5 rounded font-sans uppercase">
                                     NEWEST
                                   </span>
                                 )}
@@ -2467,12 +2467,12 @@ export default function RentalsDashboard() {
 
         {/* Webhook Settings Modal */}
         {isWebhookModalOpen && (
-          <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-[#0b0b0d] border border-zinc-850 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+          <div className="fixed inset-0 bg-white/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+            <div className="bg-[#0b0b0d] border border-stone-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
               {/* Header */}
-              <div className="flex justify-between items-center px-6 py-4 border-b border-zinc-900">
-                <h3 className="text-base font-extrabold text-zinc-100 flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-amber-400 animate-pulse" />
+              <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200">
+                <h3 className="text-base font-extrabold text-stone-800 flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-600 animate-pulse" />
                   通知設定 (Webhook Settings)
                 </h3>
                 <button
@@ -2480,7 +2480,7 @@ export default function RentalsDashboard() {
                     setIsWebhookModalOpen(false);
                     setTestStatus({ loading: false });
                   }}
-                  className="px-3.5 py-2 bg-zinc-900 hover:bg-zinc-850 text-zinc-450 hover:text-zinc-200 border border-zinc-800 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
+                  className="px-3.5 py-2 bg-white hover:bg-stone-100 text-zinc-450 hover:text-stone-700 border border-stone-200 rounded-xl text-xs font-bold font-mono transition-all active:scale-95"
                 >
                   CLOSE
                 </button>
@@ -2489,12 +2489,12 @@ export default function RentalsDashboard() {
               {/* Form Content */}
               <div className="p-6 space-y-5">
                 {/* Enabled Toggle */}
-                <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
+                <div className="flex items-center justify-between p-3 bg-white/80 border border-stone-200 rounded-2xl">
                   <div className="space-y-0.5">
-                    <label className="text-xs font-bold text-zinc-200 block">
+                    <label className="text-xs font-bold text-stone-700 block">
                       通知を有効にする
                     </label>
-                    <span className="text-[10px] text-zinc-500 font-mono">
+                    <span className="text-[10px] text-stone-400 font-mono">
                       新着物件検出時にWebhookを送信
                     </span>
                   </div>
@@ -2507,7 +2507,7 @@ export default function RentalsDashboard() {
                         enabled: e.target.checked,
                       }))
                     }
-                    className="w-4 h-4 rounded border-zinc-800 text-emerald-500 focus:ring-emerald-500 bg-zinc-900"
+                    className="w-4 h-4 rounded border-stone-200 text-emerald-500 focus:ring-emerald-500 bg-white"
                   />
                 </div>
 
@@ -2526,23 +2526,23 @@ export default function RentalsDashboard() {
                       }))
                     }
                     placeholder="https://discord.com/api/webhooks/... or https://hooks.slack.com/..."
-                    className="w-full bg-zinc-950 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-xl px-3 py-2 text-xs text-zinc-200 font-mono placeholder-zinc-700"
+                    className="w-full bg-stone-50 border border-stone-200 focus:border-stone-300 focus:outline-none rounded-xl px-3 py-2 text-xs text-stone-700 font-mono placeholder-stone-300"
                   />
                 </div>
 
                 {/* Filtering options */}
-                <div className="space-y-3 pt-2 border-t border-zinc-900/60">
-                  <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">
+                <div className="space-y-3 pt-2 border-t border-stone-200">
+                  <h4 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest font-mono">
                     通知フィルター (Filters)
                   </h4>
 
                   {/* Young Age Filter */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <label className="text-[11px] text-zinc-300">
+                      <label className="text-[11px] text-stone-600">
                         築浅物件のみ通知
                       </label>
-                      <span className="text-[9px] text-zinc-500 block">
+                      <span className="text-[9px] text-stone-400 block">
                         築5年以内の物件に限定
                       </span>
                     </div>
@@ -2555,17 +2555,17 @@ export default function RentalsDashboard() {
                           onlyYoungAge: e.target.checked,
                         }))
                       }
-                      className="w-3.5 h-3.5 rounded border-zinc-800 text-emerald-500 focus:ring-emerald-500 bg-zinc-900"
+                      className="w-3.5 h-3.5 rounded border-stone-200 text-emerald-500 focus:ring-emerald-500 bg-white"
                     />
                   </div>
 
                   {/* Max Rent Filter */}
                   <div className="flex items-center justify-between gap-4">
                     <div className="space-y-0.5">
-                      <label className="text-[11px] text-zinc-300">
+                      <label className="text-[11px] text-stone-600">
                         家賃上限で絞り込む
                       </label>
-                      <span className="text-[9px] text-zinc-500 block">
+                      <span className="text-[9px] text-stone-400 block">
                         管理費込みの総家賃額
                       </span>
                     </div>
@@ -2583,9 +2583,9 @@ export default function RentalsDashboard() {
                           }));
                         }}
                         placeholder="上限なし"
-                        className="w-20 bg-zinc-950 border border-zinc-850 focus:border-zinc-700 focus:outline-none rounded-lg px-2 py-1 text-xs text-right text-zinc-200 font-mono"
+                        className="w-20 bg-stone-50 border border-stone-200 focus:border-stone-300 focus:outline-none rounded-lg px-2 py-1 text-xs text-right text-stone-700 font-mono"
                       />
-                      <span className="text-[10px] text-zinc-500 font-mono">
+                      <span className="text-[10px] text-stone-400 font-mono">
                         円
                       </span>
                     </div>
@@ -2593,27 +2593,27 @@ export default function RentalsDashboard() {
                 </div>
 
                 {/* Test Webhook Actions */}
-                <div className="pt-4 border-t border-zinc-900/60 flex flex-col gap-2">
+                <div className="pt-4 border-t border-stone-200 flex flex-col gap-2">
                   <button
                     type="button"
                     disabled={testStatus.loading || !webhookConfig.url}
                     onClick={() => handleTestWebhook(webhookConfig.url)}
-                    className="w-full px-4 py-2 bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 rounded-xl text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2 active:scale-98"
+                    className="w-full px-4 py-2 bg-white border border-stone-200 hover:border-stone-300 text-stone-600 rounded-xl text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2 active:scale-98"
                   >
                     {testStatus.loading ? (
                       <div className="animate-spin w-3 h-3 border-2 border-zinc-300 border-t-transparent rounded-full" />
                     ) : (
-                      <Settings className="w-3.5 h-3.5 text-zinc-400" />
+                      <Settings className="w-3.5 h-3.5 text-stone-500" />
                     )}
                     テスト送信 (Send Test)
                   </button>
                   {testStatus.success && (
-                    <p className="text-[10px] text-emerald-400 font-mono text-center">
+                    <p className="text-[10px] text-emerald-600 font-mono text-center">
                       ✅ テストWebhookの送信に成功しました！
                     </p>
                   )}
                   {testStatus.error && (
-                    <p className="text-[10px] text-rose-400 font-mono text-center">
+                    <p className="text-[10px] text-rose-600 font-mono text-center">
                       ❌ 送信エラー: {testStatus.error}
                     </p>
                   )}
@@ -2621,19 +2621,19 @@ export default function RentalsDashboard() {
               </div>
 
               {/* Footer Actions */}
-              <div className="px-6 py-4 bg-zinc-950 border-t border-zinc-900 flex justify-end gap-2">
+              <div className="px-6 py-4 bg-stone-50 border-t border-stone-200 flex justify-end gap-2">
                 <button
                   onClick={() => {
                     setIsWebhookModalOpen(false);
                     setTestStatus({ loading: false });
                   }}
-                  className="px-4 py-2 text-zinc-500 hover:text-zinc-300 text-xs font-bold transition-all"
+                  className="px-4 py-2 text-stone-400 hover:text-stone-600 text-xs font-bold transition-all"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={() => handleSaveWebhookConfig(webhookConfig)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-[0_2px_8px_rgba(16,185,129,0.15)]"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-stone-900 rounded-xl text-xs font-bold transition-all shadow-[0_2px_8px_rgba(16,185,129,0.15)]"
                 >
                   保存する
                 </button>

@@ -41,7 +41,7 @@ export function VolumetricBioMap({
   }, []);
 
   return (
-    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden perspective-distant">
+    <div className="relative w-full h-full bg-white flex items-center justify-center overflow-hidden perspective-distant">
       {/* 3D Scene Container */}
       <div
         className="relative w-[1000px] h-[1000px] transition-transform duration-1000 ease-out"
@@ -53,10 +53,10 @@ export function VolumetricBioMap({
         {/* Layer 1: The Real Map Ground (Satellite/Dark Tiles) */}
         {hudLayers.terrain && (
           <div
-            className="absolute inset-0 rounded-full overflow-hidden border border-zinc-700/50 shadow-[0_0_50px_rgba(0,0,0,1)]"
+            className="absolute inset-0 rounded-full overflow-hidden border border-stone-300 shadow-[0_0_50px_rgba(0,0,0,1)]"
             style={{
               transform: "translateZ(0px)",
-              background: "radial-gradient(circle, #0a0a0a, #000)",
+              background: "radial-gradient(circle, #ffffff, #faf7f3)",
             }}
           >
             {/* Mock Tiled Map Background */}
@@ -65,7 +65,7 @@ export function VolumetricBioMap({
                 row.map((tile, j) => (
                   <div
                     key={`${i}-${j}`}
-                    className="border border-zinc-900/20 bg-center bg-cover"
+                    className="border border-stone-200 bg-center bg-cover"
                     style={{
                       backgroundImage: `url(https://stamen-tiles.a.ssl.fastly.net/toner-lite/12/3639/1615.png)`,
                       filter: "invert(1) hue-rotate(180deg) brightness(0.5)",
@@ -164,7 +164,7 @@ export function VolumetricBioMap({
             }}
           >
             <div
-              className={`absolute inset-0 opacity-40 transition-colors duration-1000 ${weatherIntensity > 0.5 ? "bg-red-950/30" : "bg-blue-950/20"}`}
+              className={`absolute inset-0 opacity-40 transition-colors duration-1000 ${weatherIntensity > 0.5 ? "bg-red-50" : "bg-blue-50"}`}
               style={{
                 filter: "blur(60px)",
                 backgroundImage:
@@ -191,7 +191,7 @@ export function VolumetricBioMap({
           />
           {/* North Indicator */}
           <div
-            className="absolute left-1/2 top-0 -translate-x-1/2 text-[12px] font-mono text-zinc-500 font-bold tracking-widest"
+            className="absolute left-1/2 top-0 -translate-x-1/2 text-[12px] font-mono text-stone-400 font-bold tracking-widest"
             style={{ transform: "rotateX(-60deg) translateZ(20px)" }}
           >
             [ MAGNETIC_NORTH ]
@@ -200,8 +200,8 @@ export function VolumetricBioMap({
       </div>
 
       {/* 3D Depth Legend */}
-      <div className="absolute bottom-6 right-6 font-mono text-[9px] text-zinc-500 flex flex-col gap-2 bg-black/80 p-3 border border-zinc-800 md:backdrop-blur-sm shadow-xl">
-        <div className="text-zinc-400 border-b border-zinc-800 pb-1 mb-1 font-bold">
+      <div className="absolute bottom-6 right-6 font-mono text-[9px] text-stone-400 flex flex-col gap-2 bg-white/70 p-3 border border-stone-200 md:backdrop-blur-sm shadow-xl">
+        <div className="text-stone-500 border-b border-stone-200 pb-1 mb-1 font-bold">
           VOLUMETRIC_DEPTH_KEY
         </div>
         <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export function VolumetricBioMap({
           <span>ELEVATED: OPTIMAL_SYNC</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-1 bg-zinc-800 border border-zinc-700" />
+          <div className="w-3 h-1 bg-stone-100 border border-stone-300" />
           <span>BASELINE: GEO_MAP</span>
         </div>
         <div className="flex items-center gap-2">

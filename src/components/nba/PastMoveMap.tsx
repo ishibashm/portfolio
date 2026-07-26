@@ -84,7 +84,7 @@ export default function PastMoveMap({
   const [searchToQuery, setSearchToQuery] = useState("");
   const [isSearchingFrom, setIsSearchingFrom] = useState(false);
   const [isSearchingTo, setIsSearchingTo] = useState(false);
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
     setIsMounted(true);
@@ -143,7 +143,7 @@ export default function PastMoveMap({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-[400px] bg-zinc-950/80 border border-zinc-800 rounded-3xl flex items-center justify-center font-mono text-xs text-zinc-500 backdrop-blur-md">
+      <div className="w-full h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-400 backdrop-blur-md">
         [ LOADING INTERACTIVE MAP ENGINE... ]
       </div>
     );
@@ -155,7 +155,7 @@ export default function PastMoveMap({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Departure Geocoding */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] uppercase font-bold text-indigo-300 tracking-wider">
+          <label className="text-[10px] uppercase font-bold text-indigo-600 tracking-wider">
             出発地を住所/地名で検索 (Geocode)
           </label>
           <div className="relative">
@@ -168,14 +168,14 @@ export default function PastMoveMap({
                 e.key === "Enter" &&
                 (e.preventDefault(), handleGeocode("from", searchFromQuery))
               }
-              className="w-full pl-9 pr-20 py-2.5 bg-black/60 border border-indigo-500/20 rounded-xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 transition-all shadow-inner"
+              className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-indigo-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-200 focus:ring-1 focus:ring-indigo-500/50 transition-all shadow-inner"
             />
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
             <button
               type="button"
               onClick={() => handleGeocode("from", searchFromQuery)}
               disabled={isSearchingFrom}
-              className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+              className="absolute right-2 top-2 px-3 py-1 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-200 active:scale-95 transition-all"
             >
               {isSearchingFrom ? "検索中..." : "検索"}
             </button>
@@ -184,7 +184,7 @@ export default function PastMoveMap({
 
         {/* Destination Geocoding */}
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] uppercase font-bold text-red-300 tracking-wider">
+          <label className="text-[10px] uppercase font-bold text-red-600 tracking-wider">
             目的地を住所/地名で検索 (Geocode)
           </label>
           <div className="relative">
@@ -197,14 +197,14 @@ export default function PastMoveMap({
                 e.key === "Enter" &&
                 (e.preventDefault(), handleGeocode("to", searchToQuery))
               }
-              className="w-full pl-9 pr-20 py-2.5 bg-black/60 border border-red-500/20 rounded-xl text-xs font-mono text-white placeholder-zinc-500 focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
+              className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-red-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-red-200 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
             />
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-3.5" />
+            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
             <button
               type="button"
               onClick={() => handleGeocode("to", searchToQuery)}
               disabled={isSearchingTo}
-              className="absolute right-2 top-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] font-bold rounded-lg border border-red-500/30 active:scale-95 transition-all"
+              className="absolute right-2 top-2 px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-600 text-[10px] font-bold rounded-lg border border-red-200 active:scale-95 transition-all"
             >
               {isSearchingTo ? "検索中..." : "検索"}
             </button>
@@ -213,7 +213,7 @@ export default function PastMoveMap({
       </div>
 
       {/* Map Container */}
-      <div className="w-full h-[320px] relative border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+      <div className="w-full h-[320px] relative border border-stone-200 rounded-3xl overflow-hidden shadow-2xl">
         <MapContainer
           key="past-moves-map-leaflet"
           center={fromPos}
@@ -286,18 +286,18 @@ export default function PastMoveMap({
               localStorage.setItem("map_theme", nextTheme);
               window.dispatchEvent(new Event("mapThemeChanged"));
             }}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/90 text-zinc-200 border border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white/70 text-stone-700 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
         </div>
 
-        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-black/85 border border-zinc-800 rounded-2xl backdrop-blur-md flex flex-col gap-1 shadow-2xl pointer-events-none text-[9px] font-mono leading-none">
-          <div className="flex items-center gap-2 text-indigo-400 font-bold">
+        <div className="absolute bottom-4 left-4 z-[1000] p-3 bg-white/70 border border-stone-200 rounded-2xl backdrop-blur-md flex flex-col gap-1 shadow-2xl pointer-events-none text-[9px] font-mono leading-none">
+          <div className="flex items-center gap-2 text-indigo-600 font-bold">
             <span className="w-2 h-2 rounded-full bg-blue-500"></span> 出発地
             (青): ドラッグして微調整
           </div>
-          <div className="flex items-center gap-2 text-red-400 font-bold mt-1">
+          <div className="flex items-center gap-2 text-red-600 font-bold mt-1">
             <span className="w-2 h-2 rounded-full bg-red-500"></span> 目的地
             (赤): ドラッグして微調整
           </div>

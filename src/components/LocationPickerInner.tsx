@@ -58,7 +58,7 @@ export default function LocationPickerInner({
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(
     initialLat !== 0 || initialLon !== 0 ? [initialLat, initialLon] : null,
   );
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
     setIsMounted(true);
@@ -81,7 +81,7 @@ export default function LocationPickerInner({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-full bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600">
+      <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
         [ LOADING MAP ENGINE... ]
       </div>
     );
@@ -91,7 +91,7 @@ export default function LocationPickerInner({
   const initialZoom = markerPos ? 6 : 4;
 
   return (
-    <div className="w-full h-full relative border border-zinc-700 rounded overflow-hidden">
+    <div className="w-full h-full relative border border-stone-300 rounded overflow-hidden">
       <MapContainer
         key="location-picker-map"
         center={initialCenter}
@@ -119,7 +119,7 @@ export default function LocationPickerInner({
         <MapEvents onSelect={handleSelect} />
         {markerPos && <Marker position={markerPos} />}
       </MapContainer>
-      <div className="absolute top-2 left-2 z-[1000] pointer-events-none p-1 bg-black/70 border border-zinc-800 text-[9px] font-mono text-emerald-400 backdrop-blur-sm">
+      <div className="absolute top-2 left-2 z-[1000] pointer-events-none p-1 bg-white/70 border border-stone-200 text-[9px] font-mono text-emerald-600 backdrop-blur-sm">
         [CLICK ON MAP TO SET TARGET]
       </div>
       <div className="absolute top-2 right-2 z-[1000] pointer-events-auto">
@@ -130,7 +130,7 @@ export default function LocationPickerInner({
             localStorage.setItem("map_theme", nextTheme);
             window.dispatchEvent(new Event("mapThemeChanged"));
           }}
-          className="flex items-center gap-1 px-1.5 py-1 rounded bg-black/85 text-zinc-300 border border-zinc-800 hover:bg-zinc-900 transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
+          className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/70 text-stone-600 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
         >
           {mapTheme === "dark" ? "☀️ ライト" : "🌙 ダーク"}
         </button>

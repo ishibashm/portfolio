@@ -95,7 +95,7 @@ import type { DayData } from "./widgets/CosmicCalendar";
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-xs text-zinc-600">
+    <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
       [ INITIALIZING MAP INTERFACE... ]
     </div>
   ),
@@ -2474,17 +2474,17 @@ export const SolarTimeClock = () => {
     isDivergence?: boolean,
   ) => {
     if (isConsensus)
-      return "bg-emerald-950/40 text-emerald-400 border border-emerald-500/30";
+      return "bg-emerald-50 text-emerald-600 border border-emerald-200";
     if (isDivergence)
-      return "bg-amber-950/20 text-amber-500 border border-amber-500/20";
+      return "bg-amber-50 text-amber-500 border border-amber-200";
 
     if (score >= 80)
-      return "bg-emerald-950/20 text-emerald-400 border border-emerald-500/10";
+      return "bg-emerald-50 text-emerald-600 border border-emerald-200";
     if (score >= 50)
-      return "bg-blue-950/10 text-blue-400 border border-blue-500/10";
+      return "bg-blue-50 text-blue-600 border border-blue-200";
     if (score >= 30)
-      return "bg-amber-950/10 text-amber-500 border border-amber-500/10";
-    return "bg-red-950/10 text-red-400 border border-red-500/10";
+      return "bg-amber-50 text-amber-500 border border-amber-200";
+    return "bg-red-50 text-red-600 border border-red-200";
   };
 
   const getDimensionCellBgColor = (
@@ -2502,19 +2502,19 @@ export const SolarTimeClock = () => {
     }
     if (dimension === "astro") {
       if (score >= 30)
-        return "bg-blue-950/30 text-blue-400 border border-blue-500/20";
+        return "bg-blue-50 text-blue-600 border border-blue-200";
       if (score > 0)
-        return "bg-blue-950/15 text-blue-400/80 border border-blue-500/10";
-      return "text-zinc-600 border border-zinc-900";
+        return "bg-blue-50 text-blue-400/80 border border-blue-200";
+      return "text-stone-400 border border-stone-200";
     }
     if (dimension === "timeGate") {
       if (score <= -100)
-        return "bg-red-950/35 text-red-400 border border-red-500/35 font-bold";
+        return "bg-red-50 text-red-600 border border-red-500/35 font-bold";
       if (score < 0)
-        return "bg-amber-950/20 text-amber-500 border border-amber-500/20";
+        return "bg-amber-50 text-amber-500 border border-amber-200";
       if (score > 0)
-        return "bg-emerald-950/25 text-emerald-400 border border-emerald-500/20";
-      return "text-zinc-600 border border-zinc-900";
+        return "bg-emerald-50 text-emerald-600 border border-emerald-200";
+      return "text-stone-400 border border-stone-200";
     }
     return "";
   };
@@ -3969,9 +3969,9 @@ ${timingOptimization?.recommendationText || "特になし"}
     isCenter: boolean = false,
   ) => {
     const getColorClass = (s: string) => {
-      if (!s) return "text-zinc-500";
+      if (!s) return "text-stone-400";
       if (s.startsWith("NOISE_GOU") || s.startsWith("NOISE_ANKEN"))
-        return "text-red-500 font-bold bg-red-950/30 border-red-900/50";
+        return "text-red-500 font-bold bg-red-50 border-red-200";
       if (
         s.startsWith("NOISE_HONMEI") ||
         s.startsWith("NOISE_TEKI") ||
@@ -3980,30 +3980,30 @@ ${timingOptimization?.recommendationText || "特になし"}
       )
         return "text-[#a855f7] font-bold bg-[#a855f7]/10 border-[#a855f7]/30";
       if (s.startsWith("NOISE_VOID"))
-        return "text-zinc-500 bg-zinc-900 border-zinc-700";
+        return "text-stone-400 bg-white border-stone-300";
       if (s.startsWith("NOISE_NODE"))
         return "text-yellow-400 font-bold bg-yellow-950/30 border-yellow-900/50";
       if (s === "OPTIMAL")
-        return "text-emerald-400 font-bold bg-emerald-950/30 border-emerald-900/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
+        return "text-emerald-600 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
       if (s === "OPTIMAL_REGULAR")
-        return "text-emerald-500 font-bold bg-emerald-950/15 border-emerald-900/30 shadow-[0_0_4px_rgba(16,185,129,0.1)]";
-      return "text-blue-400 bg-blue-950/10 border-blue-900/30";
+        return "text-emerald-500 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_4px_rgba(16,185,129,0.1)]";
+      return "text-blue-600 bg-blue-50 border-blue-200";
     };
 
     const baseClass = isCenter
-      ? "bg-zinc-900/50 border-zinc-800 text-zinc-500"
-      : "bg-black/40 border-zinc-800/80";
+      ? "bg-white/80 border-stone-200 text-stone-400"
+      : "bg-white/70 border-stone-200";
     const colorClass = isCenter ? "" : getColorClass(status);
 
     return (
       <div
         className={`p-1 flex flex-col items-center justify-center border rounded-sm transition-all ${baseClass} ${colorClass}`}
       >
-        <span className="text-[7px] text-zinc-500 uppercase tracking-widest">
+        <span className="text-[7px] text-stone-400 uppercase tracking-widest">
           {dir}
         </span>
         <span
-          className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? "text-zinc-600" : ""}`}
+          className={`text-lg sm:text-xl font-mono font-bold leading-none my-0.5 ${isCenter ? "text-stone-400" : ""}`}
         >
           {star || "-"}
         </span>
@@ -4042,15 +4042,15 @@ ${timingOptimization?.recommendationText || "特になし"}
       )
         return "text-[#a855f7] font-bold";
       if (s === "NOISE_VOID")
-        return "text-zinc-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-zinc-950 px-1 border border-zinc-800";
+        return "text-stone-400 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-stone-50 px-1 border border-stone-200";
       if (s === "NOISE_NODE") return "text-yellow-400 font-bold";
-      if (s === "NOISE_HA") return "text-rose-400 font-bold";
+      if (s === "NOISE_HA") return "text-rose-600 font-bold";
       if (s === "OPTIMAL")
-        return "text-emerald-400 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
+        return "text-emerald-600 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
       if (s === "OPTIMAL_REGULAR")
         return "text-emerald-500 font-medium drop-shadow-[0_0_2px_rgba(16,185,129,0.4)]";
-      if (s === "WARNING") return "text-orange-400 font-bold";
-      return "text-blue-400";
+      if (s === "WARNING") return "text-orange-600 font-bold";
+      return "text-blue-600";
     };
 
     const formatLabel = (s: string) => {
@@ -4127,19 +4127,19 @@ ${timingOptimization?.recommendationText || "特になし"}
     return (
       <div className="group relative cursor-help inline-block">
         <span
-          className={`${getColor(status)} border-b border-zinc-700/50 hover:border-current`}
+          className={`${getColor(status)} border-b border-stone-300 hover:border-current`}
         >
           {label}
         </span>
-        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-zinc-950 border border-zinc-700 text-zinc-300 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
+        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-stone-50 border border-stone-300 text-stone-600 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
           <div
-            className={`font-bold mb-1 border-b border-zinc-800 pb-1 ${getColor(status)}`}
+            className={`font-bold mb-1 border-b border-stone-200 pb-1 ${getColor(status)}`}
           >
             {title}
           </div>
-          <div className="text-zinc-400 mb-1 leading-tight">{desc}</div>
+          <div className="text-stone-500 mb-1 leading-tight">{desc}</div>
           {isTendoDir && (
-            <div className="text-[8px] text-emerald-400 font-bold mb-1 bg-emerald-950/50 p-1 border border-emerald-900/30 rounded-xs">
+            <div className="text-[8px] text-emerald-600 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
               ✨ 天道波動重畳中
               (吉殺効果により本命殺・的殺等の個人的凶殺を無害化)
             </div>
@@ -4160,14 +4160,14 @@ ${timingOptimization?.recommendationText || "特になし"}
               env?.raw?.lunarNode ?? null,
             );
             return (
-              <div className="text-[7.5px] text-zinc-500 font-mono mt-1.5 pt-1.5 border-t border-zinc-800 space-y-0.5">
+              <div className="text-[7.5px] text-stone-400 font-mono mt-1.5 pt-1.5 border-t border-stone-200 space-y-0.5">
                 <div className="flex justify-between">
                   <span>【環境要因】:</span>{" "}
                   <span
                     className={
                       br.environmental.includes("通常")
-                        ? "text-blue-400"
-                        : "text-rose-400 font-bold"
+                        ? "text-blue-600"
+                        : "text-rose-600 font-bold"
                     }
                   >
                     {br.environmental}
@@ -4178,10 +4178,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <span
                     className={
                       br.personal.includes("通常")
-                        ? "text-zinc-500"
+                        ? "text-stone-400"
                         : br.personal.includes("吉")
-                          ? "text-emerald-400 font-bold"
-                          : "text-purple-400 font-bold"
+                          ? "text-emerald-600 font-bold"
+                          : "text-purple-600 font-bold"
                     }
                   >
                     {br.personal}
@@ -4197,32 +4197,32 @@ ${timingOptimization?.recommendationText || "特になし"}
 
   if (!baseTime || !solarData)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50 text-emerald-500 font-mono text-xs tracking-[0.3em] uppercase md:animate-pulse">
         Initializing Tactical Systems...
       </div>
     );
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-[#0a0a0a] text-zinc-300 font-sans selection:bg-emerald-900 pt-2 md:pt-8 pb-8 md:pb-16 relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-[#fdfbf7] via-[#fff5f5] to-[#fef2f2] text-stone-800 font-sans selection:bg-rose-100 pt-2 md:pt-8 pb-8 md:pb-16 relative overflow-x-hidden">
       <div
-        className="fixed inset-0 pointer-events-none z-0 opacity-10"
+        className="fixed inset-0 pointer-events-none z-0 opacity-40"
         style={{
           backgroundImage:
-            "linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)",
+            "linear-gradient(rgba(244, 63, 94, 0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(244, 63, 94, 0.08) 1px, transparent 1px)",
           backgroundSize: "30px 30px",
         }}
       ></div>
 
       {isGlobalVoid && (
         <div className="w-full max-w-5xl px-3 md:px-4 mt-2 animate-fade-in z-50">
-          <div className="bg-black border-2 border-red-500/50 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
+          <div className="bg-white border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
               <h2 className="text-red-500 font-bold tracking-[0.2em] text-sm md:text-base uppercase">
                 Global Time Check Error
               </h2>
             </div>
-            <p className="text-zinc-300 text-xs md:text-sm font-mono leading-relaxed">
+            <p className="text-stone-600 text-xs md:text-sm font-mono leading-relaxed">
               現在は
               <strong>「{isYearVoid ? "年の天中殺" : "月の天中殺"}」</strong>
               期間です。
@@ -4238,18 +4238,18 @@ ${timingOptimization?.recommendationText || "特になし"}
           <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
           </h1>
-          <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
+          <p className="text-stone-500 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
             引越し・移住・長期滞在など、人生の大きな決断において
-            <strong className="text-zinc-200">「最適な移動地（方位）」</strong>
+            <strong className="text-stone-700">「最適な移動地（方位）」</strong>
             と
-            <strong className="text-zinc-200">
+            <strong className="text-stone-700">
               「最適なタイミング（時間）」
             </strong>
             を導き出すためのデータサイエンス・ダッシュボードです。
           </p>
           <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono uppercase tracking-widest border border-emerald-500/50 bg-emerald-950/20 px-4 py-1.5 transition-colors"
+            className="text-[10px] text-emerald-600 hover:text-emerald-600 font-mono uppercase tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
           >
             {showHowItWorks
               ? "[-] CLOSE ALGORITHM WORKFLOW"
@@ -4259,7 +4259,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
         <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-12 gap-6 px-4">
           {/* Cosmic Calendar Widget (Calendar Grid) */}
-          <div className="xl:col-span-7 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+          <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
             <CosmicCalendar
               view="calendar"
               selectedDayState={calendarSelectedDay}
@@ -4268,7 +4268,7 @@ ${timingOptimization?.recommendationText || "特になし"}
           </div>
 
           {/* Cosmic Calendar Widget (Telemetry Details) */}
-          <div className="xl:col-span-5 bg-zinc-950/80 border border-zinc-800 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+          <div className="xl:col-span-5 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
             <CosmicCalendar
               view="telemetry"
               selectedDayState={calendarSelectedDay}
@@ -4279,16 +4279,16 @@ ${timingOptimization?.recommendationText || "特になし"}
 
         {showHowItWorks && (
           <div className="w-full max-w-4xl animate-fade-in px-4">
-            <div className="bg-zinc-950 border border-zinc-800 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-zinc-300 text-xs sm:text-sm font-sans leading-relaxed">
+            <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
-              <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-zinc-800 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
+              <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                 引越し・移住の「空間」と「時間」を統合する4つのステップ
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     STEP 1: ゼロポイント（現在地）と波長の特定
                   </strong>
                   <p className="text-[10px] sm:text-xs">
@@ -4297,7 +4297,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     STEP 2: 干渉ノイズの排除（長・中・短期の合成）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
@@ -4307,7 +4307,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     STEP 3: 相生（共鳴）する目的地・方位の決定
                   </strong>
                   <p className="text-[10px] sm:text-xs">
@@ -4315,7 +4315,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <strong className="text-zinc-200 bg-zinc-900 px-2 py-1 border border-zinc-800 text-[10px] sm:text-[11px] font-mono">
+                  <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
                     STEP 4: 最終出発日時の確定（真太陽時と吉門）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
@@ -4324,8 +4324,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
 
-              <div className="bg-emerald-950/20 border border-emerald-900/50 p-3 mt-2 text-[10px] sm:text-[11px]">
-                <strong className="text-emerald-400 font-bold mb-1 block">
+              <div className="bg-emerald-50 border border-emerald-200 p-3 mt-2 text-[10px] sm:text-[11px]">
+                <strong className="text-emerald-600 font-bold mb-1 block">
                   なぜこの統合計算が必要なのか？
                 </strong>
                 引越しなどの長距離・長期間の空間移動は、新しい土地の地球磁場とあなたの生体磁気が順応（シンクロ）するまでに膨大な自律神経のエネルギー（ANS
@@ -4335,13 +4335,13 @@ ${timingOptimization?.recommendationText || "特になし"}
           </div>
         )}
 
-        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-zinc-900/30 border border-zinc-800/50 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
+        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
             onClick={() => setActiveTab("profile")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "profile"
-                ? "bg-purple-500/10 text-purple-400 border border-purple-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-purple-500/10 text-purple-600 border border-purple-200"
+                : "text-stone-400 hover:text-stone-600"
             }`}
           >
             1. プロフィール
@@ -4350,8 +4350,8 @@ ${timingOptimization?.recommendationText || "特になし"}
             onClick={() => setActiveTab("destination")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "destination"
-                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-200"
+                : "text-stone-400 hover:text-stone-600"
             }`}
           >
             2. 目的地/健康
@@ -4360,8 +4360,8 @@ ${timingOptimization?.recommendationText || "特になし"}
             onClick={() => setActiveTab("timing")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "timing"
-                ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-indigo-500/10 text-indigo-600 border border-indigo-200"
+                : "text-stone-400 hover:text-stone-600"
             }`}
           >
             3. タイミング
@@ -4370,8 +4370,8 @@ ${timingOptimization?.recommendationText || "特になし"}
             onClick={() => setActiveTab("consult")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "consult"
-                ? "bg-amber-500/10 text-amber-500 border border-amber-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-amber-500/10 text-amber-500 border border-amber-200"
+                : "text-stone-400 hover:text-stone-600"
             }`}
           >
             4. AI相談
@@ -4380,8 +4380,8 @@ ${timingOptimization?.recommendationText || "特になし"}
             onClick={() => setActiveTab("scorecard")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "scorecard"
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
-                : "text-zinc-500 hover:text-zinc-300"
+                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
+                : "text-stone-400 hover:text-stone-600"
             }`}
           >
             5. 総合スコア
@@ -4392,10 +4392,10 @@ ${timingOptimization?.recommendationText || "特になし"}
         {activeTab === "profile" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-4xl">
             {/* Action Intent Selector */}
-            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
-              <label className="text-[10px] text-zinc-500 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
+            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
+              <label className="text-[10px] text-stone-400 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
                 <span className="text-emerald-500">◆</span> Action Intent{" "}
-                <span className="text-[8px] text-zinc-600">
+                <span className="text-[8px] text-stone-400">
                   / 移住・移動の目的
                 </span>
               </label>
@@ -4404,7 +4404,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 onChange={(e) =>
                   setActionIntent(e.target.value as ActionIntent)
                 }
-                className="w-full bg-black/50 border border-zinc-700 text-sm text-zinc-300 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
+                className="w-full bg-white/70 border border-stone-300 text-sm text-stone-600 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               >
                 <option value="DEFAULT">
                   Normal Ops (日常の行動・短期旅行)
@@ -4419,7 +4419,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   Relocation (引越し・長期移住・拠点の変更)
                 </option>
               </select>
-              <p className="text-[9px] text-zinc-500 mt-3 leading-relaxed">
+              <p className="text-[9px] text-stone-400 mt-3 leading-relaxed">
                 「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
               </p>
             </div>
@@ -4569,56 +4569,56 @@ ${timingOptimization?.recommendationText || "特になし"}
               />
             </div>
 
-            <div className="mt-8 flex flex-col gap-4 border-b border-zinc-900 pb-4 w-full max-w-4xl">
+            <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-400">
+                <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-600">
                   Ephemeris Engine Diagnostics
                 </h2>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
                 {/* Birth Imprint Data (Hardware Init) */}
-                <div className="border border-zinc-800 bg-zinc-950/50 p-4 flex flex-col gap-4 relative overflow-hidden group">
+                <div className="border border-stone-200 bg-white/80 p-4 flex flex-col gap-4 relative overflow-hidden group">
                   {/* Decorative background element */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-                  <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
-                    <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center gap-2">
+                  <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
+                    <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center gap-2">
                       <span className="text-purple-500">▶</span> 初期設定{" "}
-                      <span className="text-zinc-500 font-normal">
+                      <span className="text-stone-400 font-normal">
                         (出生ベクトル / Birth Vector)
                       </span>
                     </div>
-                    <div className="text-[9px] text-zinc-500 font-sans leading-tight">
+                    <div className="text-[9px] text-stone-400 font-sans leading-tight">
                       生年月日から算出されたあなた固有のベース波長（初期設定）
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-3 z-10">
-                    <div className="bg-black/60 border border-purple-900/30 p-3 flex flex-col w-full rounded-sm">
+                    <div className="bg-white/70 border border-purple-200 p-3 flex flex-col w-full rounded-sm">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] text-zinc-400 uppercase tracking-widest font-bold">
+                        <span className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">
                           Honmei Star
                         </span>
-                        <span className="text-[8px] text-purple-400 bg-purple-500/10 px-1 border border-purple-500/20">
+                        <span className="text-[8px] text-purple-600 bg-purple-500/10 px-1 border border-purple-200">
                           BASE FREQUENCY
                         </span>
                       </div>
                       <div className="flex items-end gap-3 mt-1">
                         <div className="flex flex-col">
-                          <span className="text-2xl font-bold font-mono text-emerald-400 leading-none">
+                          <span className="text-2xl font-bold font-mono text-emerald-600 leading-none">
                             {honmeiStar?.physical}
                           </span>
-                          <span className="text-[9px] text-zinc-400 mt-1">
+                          <span className="text-[9px] text-stone-500 mt-1">
                             Physical (物理/天文学)
                           </span>
                         </div>
-                        <div className="w-px h-8 bg-zinc-800"></div>
+                        <div className="w-px h-8 bg-stone-100"></div>
                         <div className="flex flex-col">
-                          <span className="text-xl font-bold font-mono text-zinc-500 leading-none">
+                          <span className="text-xl font-bold font-mono text-stone-400 leading-none">
                             {honmeiStar?.classical}
                           </span>
-                          <span className="text-[9px] text-zinc-500 mt-1">
+                          <span className="text-[9px] text-stone-400 mt-1">
                             Class (古典暦)
                           </span>
                         </div>
@@ -4626,42 +4626,42 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Year
                         </span>
                         <div className="flex items-baseline gap-1 font-mono">
-                          <span className="text-lg text-purple-400 font-bold">
+                          <span className="text-lg text-purple-600 font-bold">
                             {birthEnv?.yearStar}
                           </span>
-                          <span className="text-[10px] text-zinc-600">/</span>
-                          <span className="text-sm text-zinc-500">
+                          <span className="text-[10px] text-stone-400">/</span>
+                          <span className="text-sm text-stone-400">
                             {birthEnv?.classicalYearStar}
                           </span>
                         </div>
-                        <span className="text-[8px] text-zinc-500 mt-1">
+                        <span className="text-[8px] text-stone-400 mt-1">
                           Phys / Class
                         </span>
                       </div>
-                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Month
                         </span>
-                        <span className="text-lg font-mono text-amber-400 font-bold">
+                        <span className="text-lg font-mono text-amber-600 font-bold">
                           {birthEnv?.monthStar || "--"}
                         </span>
-                        <span className="text-[8px] text-zinc-500 mt-1">
+                        <span className="text-[8px] text-stone-400 mt-1">
                           Physical
                         </span>
                       </div>
-                      <div className="bg-black/40 border border-zinc-800/80 p-2 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Day
                         </span>
-                        <span className="text-lg font-mono text-blue-400 font-bold">
+                        <span className="text-lg font-mono text-blue-600 font-bold">
                           {birthEnv?.dayStar || "--"}
                         </span>
-                        <span className="text-[8px] text-zinc-500 mt-1">
+                        <span className="text-[8px] text-stone-400 mt-1">
                           Physical
                         </span>
                       </div>
@@ -4670,42 +4670,42 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                   {/* Raw Birth Orbital Parameters */}
                   {birthEnv?.raw && (
-                    <div className="mt-auto pt-3 border-t border-zinc-900">
-                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="mt-auto pt-3 border-t border-stone-200">
+                      <div className="text-[9px] text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                         <span>Orbital Parameters</span>
-                        <div className="h-px bg-zinc-800 grow"></div>
+                        <div className="h-px bg-stone-100 grow"></div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             JUPITER{" "}
-                            <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5">
+                            <span className="text-[8px] text-purple-500 border border-purple-200 px-0.5">
                               Y
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-purple-300 mt-1">
+                          <span className="text-sm font-mono text-purple-600 mt-1">
                             {birthEnv.raw.jupiterLon.toFixed(2)}°
                           </span>
                         </div>
-                        <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             LUNAR{" "}
-                            <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5">
+                            <span className="text-[8px] text-amber-500 border border-amber-200 px-0.5">
                               M
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-amber-300 mt-1">
+                          <span className="text-sm font-mono text-amber-600 mt-1">
                             {birthEnv.raw.moonLon.toFixed(2)}°
                           </span>
                         </div>
-                        <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             SOLAR{" "}
-                            <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5">
+                            <span className="text-[8px] text-blue-500 border border-blue-200 px-0.5">
                               D
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-blue-300 mt-1">
+                          <span className="text-sm font-mono text-blue-600 mt-1">
                             {birthEnv.raw.sunLon.toFixed(2)}°
                           </span>
                         </div>
@@ -4715,66 +4715,66 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
 
                 {/* Current Environment Data */}
-                <div className="border border-zinc-800 bg-zinc-950/50 p-4 flex flex-col gap-4 relative overflow-hidden group">
+                <div className="border border-stone-200 bg-white/80 p-4 flex flex-col gap-4 relative overflow-hidden group">
                   {/* Decorative background element */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-                  <div className="flex flex-col gap-1 border-b border-zinc-800 pb-2">
-                    <div className="text-[11px] text-zinc-300 font-bold uppercase tracking-widest flex items-center justify-between">
+                  <div className="flex flex-col gap-1 border-b border-stone-200 pb-2">
+                    <div className="text-[11px] text-stone-600 font-bold uppercase tracking-widest flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-emerald-500">▶</span>{" "}
                         リアルタイム環境計測
                       </div>
-                      <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-sm px-2 py-0.5">
+                      <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-200 rounded-sm px-2 py-0.5">
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span className="text-[8px] text-emerald-400 font-mono tracking-widest">
+                        <span className="text-[8px] text-emerald-600 font-mono tracking-widest">
                           TRACKING
                         </span>
                       </div>
                     </div>
-                    <div className="text-[9px] text-zinc-500 font-sans leading-tight">
+                    <div className="text-[9px] text-stone-400 font-sans leading-tight">
                       現在この空間を飛び交っている環境波長・リアルタイム天体座標
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-3 z-10">
                     <div className="grid grid-cols-3 gap-2 mt-1">
-                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Current Year
                         </span>
                         <div className="flex items-baseline gap-1 font-mono">
-                          <span className="text-2xl text-purple-400 font-bold leading-none">
+                          <span className="text-2xl text-purple-600 font-bold leading-none">
                             {env?.yearStar}
                           </span>
-                          <span className="text-[10px] text-zinc-600">/</span>
-                          <span className="text-base text-zinc-500 leading-none">
+                          <span className="text-[10px] text-stone-400">/</span>
+                          <span className="text-base text-stone-400 leading-none">
                             {env?.classicalYearStar}
                           </span>
                         </div>
-                        <span className="text-[8px] text-zinc-500 mt-2">
+                        <span className="text-[8px] text-stone-400 mt-2">
                           Phys / Class
                         </span>
                       </div>
-                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Current Month
                         </span>
-                        <span className="text-2xl font-mono text-amber-400 font-bold leading-none">
+                        <span className="text-2xl font-mono text-amber-600 font-bold leading-none">
                           {env?.monthStar || "--"}
                         </span>
-                        <span className="text-[8px] text-zinc-500 mt-2">
+                        <span className="text-[8px] text-stone-400 mt-2">
                           Physical
                         </span>
                       </div>
-                      <div className="bg-black/60 border border-zinc-800/80 p-3 flex flex-col rounded-sm">
-                        <span className="text-[9px] text-zinc-400 uppercase tracking-widest mb-1">
+                      <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                        <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                           Current Day
                         </span>
-                        <span className="text-2xl font-mono text-blue-400 font-bold leading-none">
+                        <span className="text-2xl font-mono text-blue-600 font-bold leading-none">
                           {env?.dayStar || "--"}
                         </span>
-                        <span className="text-[8px] text-zinc-500 mt-2">
+                        <span className="text-[8px] text-stone-400 mt-2">
                           Physical
                         </span>
                       </div>
@@ -4783,42 +4783,42 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                   {/* Raw Current Orbital Parameters */}
                   {env?.raw && (
-                    <div className="mt-auto pt-3 border-t border-zinc-900">
-                      <div className="text-[9px] text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                    <div className="mt-auto pt-3 border-t border-stone-200">
+                      <div className="text-[9px] text-stone-400 uppercase tracking-widest mb-2 flex items-center gap-2">
                         <span>リアルタイム天体軌道マトリクス</span>
-                        <div className="h-px bg-zinc-800 grow"></div>
+                        <div className="h-px bg-stone-100 grow"></div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-zinc-950 border border-purple-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             JUPITER{" "}
-                            <span className="text-[8px] text-purple-500 border border-purple-500/30 px-0.5 animate-pulse">
+                            <span className="text-[8px] text-purple-500 border border-purple-200 px-0.5 animate-pulse">
                               Y
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-purple-300 mt-1">
+                          <span className="text-sm font-mono text-purple-600 mt-1">
                             {env.raw.jupiterLon.toFixed(2)}°
                           </span>
                         </div>
-                        <div className="bg-zinc-950 border border-amber-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             LUNAR{" "}
-                            <span className="text-[8px] text-amber-500 border border-amber-500/30 px-0.5 animate-pulse">
+                            <span className="text-[8px] text-amber-500 border border-amber-200 px-0.5 animate-pulse">
                               M
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-amber-300 mt-1">
+                          <span className="text-sm font-mono text-amber-600 mt-1">
                             {env.raw.moonLon.toFixed(2)}°
                           </span>
                         </div>
-                        <div className="bg-zinc-950 border border-blue-900/40 p-2 flex flex-col rounded-sm">
-                          <span className="text-[9px] text-zinc-400 uppercase tracking-widest flex items-center justify-between">
+                        <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
+                          <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                             SOLAR{" "}
-                            <span className="text-[8px] text-blue-500 border border-blue-500/30 px-0.5 animate-pulse">
+                            <span className="text-[8px] text-blue-500 border border-blue-200 px-0.5 animate-pulse">
                               D
                             </span>
                           </span>
-                          <span className="text-sm font-mono text-blue-300 mt-1">
+                          <span className="text-sm font-mono text-blue-600 mt-1">
                             {env.raw.sunLon.toFixed(2)}°
                           </span>
                         </div>
@@ -4828,8 +4828,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
 
-              <details className="mt-4 mb-4 border border-zinc-800 bg-zinc-950/50 group">
-                <summary className="p-3 text-[10px] text-zinc-500 font-mono uppercase tracking-widest cursor-pointer hover:bg-zinc-900/50 flex items-center justify-between list-none">
+              <details className="mt-4 mb-4 border border-stone-200 bg-white/80 group">
+                <summary className="p-3 text-[10px] text-stone-400 font-mono uppercase tracking-widest cursor-pointer hover:bg-white/80 flex items-center justify-between list-none">
                   <div className="flex items-center gap-2">
                     <span className="text-purple-500 animate-pulse">◆</span> [
                     DECRYPT MATRICES ] 生体空間マトリクスの展開
@@ -4839,13 +4839,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                   </span>
                 </summary>
 
-                <div className="p-3 border-t border-zinc-800 bg-black/50">
-                  <div className="mb-4 p-2 bg-zinc-950/80 border border-zinc-800 text-[9px] sm:text-[10px] text-zinc-400 font-mono leading-relaxed">
+                <div className="p-3 border-t border-stone-200 bg-white/70">
+                  <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-[9px] sm:text-[10px] text-stone-500 font-mono leading-relaxed">
                     <strong>[ 進入可能方位とノイズの解読法則 ]</strong>
                     <br />
                     気学の理論と引力モデルに基づき、盤面と本命星を重ね合わせます。
                     <br />
-                    <span className="text-red-400 font-bold">
+                    <span className="text-red-600 font-bold">
                       赤色(NOISE)
                     </span>{" "}
                     のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。
@@ -4855,11 +4855,11 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </span>{" "}
                     は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。
                     <br />
-                    <span className="text-emerald-400 font-bold">
+                    <span className="text-emerald-600 font-bold">
                       緑色(OPTIMAL)
                     </span>{" "}
                     は生体波長と完全にシンクロし能力が増幅されるゾーン、
-                    <span className="text-blue-400 font-bold">
+                    <span className="text-blue-600 font-bold">
                       青(SAFE)
                     </span>{" "}
                     は異常干渉のない安定ゾーンです。
@@ -4877,16 +4877,16 @@ ${timingOptimization?.recommendationText || "特になし"}
                       className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                     >
                       <div
-                        className={`text-emerald-400 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                        className={`text-emerald-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                       >
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                         PHYSICAL MODEL (天体位相・物理基準)
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300">
-                        <div className="bg-black/50 border border-purple-900/30 p-2">
-                          <div className="text-purple-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600">
+                        <div className="bg-white/70 border border-purple-200 p-2">
+                          <div className="text-purple-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>物理年盤</span>
-                            <span className="text-[7px] text-zinc-500">
+                            <span className="text-[7px] text-stone-400">
                               YEAR LAYER
                             </span>
                           </div>
@@ -4940,15 +4940,15 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             太陽黄経(立春起点)に基づく真の物理的位相。
                           </div>
                         </div>
 
-                        <div className="bg-black/50 border border-amber-900/30 p-2">
-                          <div className="text-amber-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <div className="bg-white/70 border border-amber-200 p-2">
+                          <div className="text-amber-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>物理月盤</span>
-                            <span className="text-[7px] text-zinc-500">
+                            <span className="text-[7px] text-stone-400">
                               MONTH LAYER
                             </span>
                           </div>
@@ -5002,15 +5002,15 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             太陽と月の相対位相（月相）モデル。
                           </div>
                         </div>
 
-                        <div className="bg-black/50 border border-blue-900/30 p-2">
-                          <div className="text-blue-500 font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <div className="bg-white/70 border border-blue-200 p-2">
+                          <div className="text-blue-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>物理日盤</span>
-                            <span className="text-[7px] text-zinc-500">
+                            <span className="text-[7px] text-stone-400">
                               DAY LAYER
                             </span>
                           </div>
@@ -5064,7 +5064,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             地球の自転(JD)と至点による物理反転モデル。
                           </div>
                         </div>
@@ -5076,14 +5076,14 @@ ${timingOptimization?.recommendationText || "特になし"}
                       className={`transition-all duration-300 mt-4 ${useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                     >
                       <div
-                        className={`text-zinc-300 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
+                        className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                       >
                         <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                         CLASSICAL MODEL (節切り・暦基準)
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-zinc-300 mt-2">
-                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-[11px] font-mono text-stone-600 mt-2">
+                        <div className="bg-white/80 border border-stone-200 p-2">
+                          <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>古典年盤</span>
                             <span className="text-[7px]">CLASSICAL YEAR</span>
                           </div>
@@ -5137,13 +5137,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             一般的な書籍・暦に基づく盤面。
                           </div>
                         </div>
 
-                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <div className="bg-white/80 border border-stone-200 p-2">
+                          <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>古典月盤</span>
                             <span className="text-[7px]">CLASSICAL MONTH</span>
                           </div>
@@ -5197,13 +5197,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             節気ごとのカレンダー切り替え。
                           </div>
                         </div>
 
-                        <div className="bg-zinc-900/20 border border-zinc-800 p-2">
-                          <div className="font-bold mb-1 border-b border-zinc-800 pb-1 flex justify-between">
+                        <div className="bg-white/80 border border-stone-200 p-2">
+                          <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                             <span>古典日盤</span>
                             <span className="text-[7px]">CLASSICAL DAY</span>
                           </div>
@@ -5257,7 +5257,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               )}
                             </div>
                           )}
-                          <div className="mt-2 text-[8px] text-zinc-600 leading-tight">
+                          <div className="mt-2 text-[8px] text-stone-400 leading-tight">
                             精密日家九星・隠遁陽遁サイクル。
                           </div>
                         </div>
@@ -5269,16 +5269,16 @@ ${timingOptimization?.recommendationText || "特になし"}
 
               {/* Final Vector Calculation Visualization */}
               {env && layers && (
-                <div className="mt-4 bg-black/50 border border-zinc-800 p-3 w-full">
-                  <div className="text-emerald-500 font-bold mb-1 border-b border-zinc-800 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
+                <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
+                  <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
                     <span>干渉波・位相干渉診断</span>
-                    <span className="text-zinc-500 text-[8px]">
+                    <span className="text-stone-400 text-[8px]">
                       ( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告
                       &gt; 🟩 波長共鳴 &gt; 🟦 無干渉(青) )
                     </span>
                   </div>
-                  <div className="text-[8px] text-zinc-500 mb-2 leading-relaxed text-justify pr-2 font-sans">
-                    <strong className="text-zinc-400">判定ロジック:</strong>{" "}
+                  <div className="text-[8px] text-stone-400 mb-2 leading-relaxed text-justify pr-2 font-sans">
+                    <strong className="text-stone-500">判定ロジック:</strong>{" "}
                     長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的な物理アーティファクト（赤）や生体コンフリクト（紫）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
                   </div>
                   <div className="overflow-visible w-full mt-4 flex flex-col gap-6">
@@ -5287,13 +5287,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                       className={`transition-all duration-300 ${!useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                     >
                       <div
-                        className={`text-emerald-400 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
+                        className={`text-emerald-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${!useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(16,185,129,0.5)]" : ""}`}
                       >
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                         PHYSICAL MODEL (天体位相・物理基準)
                       </div>
                       <table className="w-full text-left font-mono">
-                        <thead className="border-b border-zinc-800 text-zinc-500 text-[9px] uppercase tracking-wider">
+                        <thead className="border-b border-stone-200 text-stone-400 text-[9px] uppercase tracking-wider">
                           <tr>
                             <th className="pb-2 pr-2 font-normal align-bottom">
                               Dir
@@ -5301,25 +5301,25 @@ ${timingOptimization?.recommendationText || "特になし"}
                             <th className="pb-2 px-1 font-normal align-bottom">
                               Year Layer
                               <br />
-                              <span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">
+                              <span className="text-[7px] text-stone-400 font-sans normal-case leading-tight block mt-1">
                                 【長期的影響】
                               </span>
                             </th>
                             <th className="pb-2 px-1 font-normal align-bottom">
                               Month Layer
                               <br />
-                              <span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">
+                              <span className="text-[7px] text-stone-400 font-sans normal-case leading-tight block mt-1">
                                 【中期的影響】
                               </span>
                             </th>
                             <th className="pb-2 px-1 font-normal align-bottom">
                               Day Layer
                               <br />
-                              <span className="text-[7px] text-zinc-600 font-sans normal-case leading-tight block mt-1">
+                              <span className="text-[7px] text-stone-400 font-sans normal-case leading-tight block mt-1">
                                 【短期的影響】
                               </span>
                             </th>
-                            <th className="pb-2 pl-2 font-bold text-zinc-300 align-bottom">
+                            <th className="pb-2 pl-2 font-bold text-stone-600 align-bottom">
                               Final Vector
                             </th>
                           </tr>
@@ -5346,9 +5346,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                             return (
                               <tr
                                 key={dir}
-                                className="hover:bg-zinc-900/30 transition-colors"
+                                className="hover:bg-white/80 transition-colors"
                               >
-                                <td className="py-2.5 pr-2 text-zinc-400 font-bold align-middle">
+                                <td className="py-2.5 pr-2 text-stone-500 font-bold align-middle">
                                   {dir}
                                 </td>
                                 <td className="py-2.5 px-1 align-middle">
@@ -5378,7 +5378,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     isClassical={false}
                                   />
                                 </td>
-                                <td className="py-2.5 pl-2 align-middle bg-zinc-950/50">
+                                <td className="py-2.5 pl-2 align-middle bg-white/80">
                                   <TooltipCell
                                     status={final}
                                     board={null}
@@ -5400,13 +5400,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                       className={`transition-all duration-300 ${useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                     >
                       <div
-                        className={`text-zinc-300 font-bold text-[10px] tracking-widest uppercase border-b border-zinc-800 pb-1 mb-2 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
+                        className={`text-stone-600 font-bold text-[10px] tracking-widest uppercase border-b border-stone-200 pb-1 mb-2 flex items-center gap-2 ${useClassicalBoard ? "drop-shadow-[0_0_5px_rgba(255,255,255,0.3)]" : ""}`}
                       >
                         <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-pulse"></span>
                         CLASSICAL MODEL (節切り・暦基準)
                       </div>
                       <table className="w-full text-left font-mono">
-                        <thead className="border-b border-zinc-800 text-zinc-600 text-[9px] uppercase tracking-wider">
+                        <thead className="border-b border-stone-200 text-stone-400 text-[9px] uppercase tracking-wider">
                           <tr>
                             <th className="pb-2 pr-2 font-normal align-bottom">
                               Dir
@@ -5432,7 +5432,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 【短期的影響】
                               </span>
                             </th>
-                            <th className="pb-2 pl-2 font-bold text-zinc-500 align-bottom">
+                            <th className="pb-2 pl-2 font-bold text-stone-400 align-bottom">
                               Final Vector
                             </th>
                           </tr>
@@ -5460,9 +5460,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                             return (
                               <tr
                                 key={dir}
-                                className="hover:bg-zinc-900/30 transition-colors"
+                                className="hover:bg-white/80 transition-colors"
                               >
-                                <td className="py-2.5 pr-2 text-zinc-500 font-bold align-middle">
+                                <td className="py-2.5 pr-2 text-stone-400 font-bold align-middle">
                                   {dir}
                                 </td>
                                 <td className="py-2.5 px-1 align-middle">
@@ -5492,7 +5492,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     isClassical={true}
                                   />
                                 </td>
-                                <td className="py-2.5 pl-2 align-middle bg-zinc-900/20">
+                                <td className="py-2.5 pl-2 align-middle bg-white/80">
                                   <TooltipCell
                                     status={final}
                                     board={null}
@@ -5513,9 +5513,9 @@ ${timingOptimization?.recommendationText || "特になし"}
               )}
 
               {/* Theory & Model Explanation */}
-              <div className="mt-4 bg-zinc-900/30 border border-zinc-800 p-3 w-full">
-                <div className="flex items-center justify-between mb-2 border-b border-zinc-800 pb-2">
-                  <div className="text-blue-400 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
+              <div className="mt-4 bg-white/80 border border-stone-200 p-3 w-full">
+                <div className="flex items-center justify-between mb-2 border-b border-stone-200 pb-2">
+                  <div className="text-blue-600 font-bold text-[10px] tracking-widest uppercase flex items-center gap-2">
                     <span className="w-2 h-2 bg-blue-500 rounded-full md:animate-pulse"></span>
                     天体物理コアロジック (理論と数理モデル)
                   </div>
@@ -5523,7 +5523,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() =>
                       setShowAstrophysicalLogic(!showAstrophysicalLogic)
                     }
-                    className="text-[9px] font-mono text-zinc-400 hover:text-white bg-zinc-950 px-2 py-1 border border-zinc-700 hover:border-zinc-500 transition-colors uppercase tracking-widest"
+                    className="text-[9px] font-mono text-stone-500 hover:text-stone-900 bg-stone-50 px-2 py-1 border border-stone-300 hover:border-zinc-500 transition-colors uppercase tracking-widest"
                   >
                     {showAstrophysicalLogic
                       ? "[-] CLOSE TERMINAL"
@@ -5535,17 +5535,17 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <div className="animate-fade-in border-l-2 border-blue-500 pl-3 mt-3">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex flex-col gap-2">
-                        <span className="text-[9px] text-purple-400 font-bold border-l-2 border-purple-500 pl-2 bg-purple-950/20 py-0.5">
+                        <span className="text-[9px] text-purple-600 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
                           YEAR: JUPITER RESONANCE
                         </span>
-                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                        <p className="text-[8px] text-stone-400 leading-relaxed">
                           木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
                         </p>
-                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                        <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                           <InlineMath
                             math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`}
                           />
-                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                          <div className="mt-1 text-stone-400 border-t border-stone-200 pt-1">
                             <InlineMath
                               math={`L_j = ${env?.raw?.jupiterLon?.toFixed(2)}^\\circ`}
                             />{" "}
@@ -5554,17 +5554,17 @@ ${timingOptimization?.recommendationText || "特になし"}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <span className="text-[9px] text-amber-400 font-bold border-l-2 border-amber-500 pl-2 bg-amber-950/20 py-0.5">
+                        <span className="text-[9px] text-amber-600 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
                           MONTH: TIDAL INTERFERENCE
                         </span>
-                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                        <p className="text-[8px] text-stone-400 leading-relaxed">
                           太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
                         </p>
-                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                        <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                           <InlineMath
                             math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`}
                           />
-                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1">
+                          <div className="mt-1 text-stone-400 border-t border-stone-200 pt-1">
                             <InlineMath
                               math={`\\Delta L = ${(((env?.raw?.moonLon ?? 0) - (env?.raw?.sunLon ?? 0) + 360) % 360).toFixed(2)}^\\circ`}
                             />{" "}
@@ -5573,24 +5573,24 @@ ${timingOptimization?.recommendationText || "特になし"}
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <span className="text-[9px] text-blue-400 font-bold border-l-2 border-blue-500 pl-2 bg-blue-950/20 py-0.5">
+                        <span className="text-[9px] text-blue-600 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
                           DAY: ROTATIONAL FLUX
                         </span>
-                        <p className="text-[8px] text-zinc-500 leading-relaxed">
+                        <p className="text-[8px] text-stone-400 leading-relaxed">
                           地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
                         </p>
-                        <div className="bg-black/80 p-2 border border-zinc-800 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                        <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                           <InlineMath
                             math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`}
                           />
-                          <div className="mt-1 text-zinc-600 border-t border-zinc-800 pt-1 italic">
+                          <div className="mt-1 text-stone-400 border-t border-stone-200 pt-1 italic">
                             JD: Julian Day Baseline
                           </div>
                         </div>
                       </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-zinc-800/50 flex flex-col gap-1">
-                      <div className="text-[8px] text-zinc-600 italic">
+                    <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-1">
+                      <div className="text-[8px] text-stone-400 italic">
                         ※
                         本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
                         古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
@@ -5607,19 +5607,19 @@ ${timingOptimization?.recommendationText || "特になし"}
         {activeTab === "scorecard" && (
           <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-4xl">
             {/* Control Panel Header */}
-            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
               <div>
                 <h2 className="text-emerald-500 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   5. 総合スコア / 8方位統合評価マトリクス
                 </h2>
-                <p className="text-zinc-400 text-[10px] sm:text-xs leading-relaxed max-w-xl">
+                <p className="text-stone-500 text-[10px] sm:text-xs leading-relaxed max-w-xl">
                   直近30日の時空波動予測、各方位における富裕エリア所得、および不動産賃貸アービトラージの偏差値指標を統合した意思決定コックピットです。
                 </p>
-                <div className="mt-2 text-zinc-500 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+                <div className="mt-2 text-stone-400 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                   <span>
-                    <strong className="text-emerald-400">
+                    <strong className="text-emerald-600">
                       🌟 トリプル大吉:
                     </strong>{" "}
                     3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
@@ -5633,14 +5633,14 @@ ${timingOptimization?.recommendationText || "特になし"}
 
               <div className="flex flex-wrap items-center gap-3 shrink-0">
                 {/* Prefecture Filter */}
-                <div className="flex items-center gap-1.5 bg-zinc-950 px-2 py-1.5 rounded-md border border-zinc-800">
-                  <span className="text-zinc-400 font-mono text-[9px] uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1.5 rounded-md border border-stone-200">
+                  <span className="text-stone-500 font-mono text-[9px] uppercase tracking-wider">
                     対象県:
                   </span>
                   <select
                     value={scorecardPrefecture}
                     onChange={(e) => setScorecardPrefecture(e.target.value)}
-                    className="bg-zinc-900 text-zinc-200 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
+                    className="bg-white text-stone-700 border-0 text-[10px] font-mono focus:outline-none focus:ring-0 cursor-pointer"
                   >
                     <option value="all">全国 (すべて)</option>
                     <option value="愛知県">愛知県</option>
@@ -5660,8 +5660,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                   onClick={() => setShowNoiseDirections(!showNoiseDirections)}
                   className={`px-3 py-1.5 text-[9px] font-mono rounded-md border transition-all flex items-center gap-1.5 ${
                     showNoiseDirections
-                      ? "bg-zinc-800 text-zinc-300 border-zinc-700"
-                      : "bg-emerald-950/20 text-emerald-400 border-emerald-500/30"
+                      ? "bg-stone-100 text-stone-600 border-stone-300"
+                      : "bg-emerald-50 text-emerald-600 border-emerald-200"
                   }`}
                 >
                   {showNoiseDirections
@@ -5673,7 +5673,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <button
                   onClick={handleExportForGemini}
                   disabled={isExporting}
-                  className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-stone-900 font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isExporting ? (
                     <>
@@ -5691,7 +5691,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <button
                   onClick={handleDownloadUnifiedDataset}
                   disabled={isExporting}
-                  className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-stone-900 font-mono text-[9px] uppercase tracking-widest rounded-md transition-all shadow-[0_0_15px_rgba(124,58,237,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isExporting ? (
                     <>
@@ -5708,15 +5708,15 @@ ${timingOptimization?.recommendationText || "特になし"}
             </div>
 
             {scorecardLoading && wealthData.length === 0 ? (
-              <div className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
+              <div className="w-full bg-stone-50 border border-stone-200 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
                 <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-                <span className="text-[10px] font-mono text-zinc-500 tracking-[0.2em] uppercase">
+                <span className="text-[10px] font-mono text-stone-400 tracking-[0.2em] uppercase">
                   Loading Relocation Scenarios...
                 </span>
               </div>
             ) : (
               <div
-                className={`w-full overflow-hidden bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative transition-opacity duration-300 ${scorecardLoading ? "opacity-65 pointer-events-none" : ""}`}
+                className={`w-full overflow-hidden bg-stone-50 border border-stone-200 rounded-xl shadow-2xl relative transition-opacity duration-300 ${scorecardLoading ? "opacity-65 pointer-events-none" : ""}`}
               >
                 {scorecardLoading && (
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
@@ -5724,7 +5724,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-800 bg-zinc-900/50 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                      <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider">
                         <th className="p-3 w-24">方位 (Sector)</th>
                         <th className="p-3 w-20">古典 (Classical)</th>
                         <th className="p-3 w-20">物理独立 (Phys Indep)</th>
@@ -5732,13 +5732,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                         <th className="p-3 w-28 text-center">合意判定</th>
 
                         {/* 3つの個別判断軸カラム */}
-                        <th className="p-3 w-32 bg-emerald-950/10 border-x border-emerald-900/20">
+                        <th className="p-3 w-32 bg-emerald-50 border-x border-emerald-200">
                           ① 気学方位 (Kigaku)
                         </th>
-                        <th className="p-3 w-32 bg-blue-950/10 border-r border-blue-900/20">
+                        <th className="p-3 w-32 bg-blue-50 border-r border-blue-200">
                           ② アストロ (Astro)
                         </th>
-                        <th className="p-3 w-32 bg-amber-950/10 border-r border-amber-900/20">
+                        <th className="p-3 w-32 bg-amber-50 border-r border-amber-200">
                           ③ 時間ゲート (Time)
                         </th>
 
@@ -5753,27 +5753,27 @@ ${timingOptimization?.recommendationText || "特になし"}
                         .map((item, idx) => {
                           const statusColor = (s: string) => {
                             if (s === "OPTIMAL")
-                              return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
+                              return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
                             if (s === "OPTIMAL_REGULAR")
-                              return "text-emerald-500 bg-emerald-500/5 border-emerald-500/20";
+                              return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
                             if (s === "SAFE")
-                              return "text-blue-400 bg-blue-500/10 border-blue-500/30";
+                              return "text-blue-600 bg-blue-500/10 border-blue-200";
                             if (s === "WARNING")
-                              return "text-orange-400 bg-orange-500/10 border-orange-500/30";
+                              return "text-orange-600 bg-orange-500/10 border-orange-200";
                             if (s.startsWith("NOISE_VOID"))
-                              return "text-zinc-500 bg-zinc-800 border-zinc-700";
+                              return "text-stone-400 bg-stone-100 border-stone-300";
                             if (s.startsWith("NOISE_NODE"))
                               return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-                            return "text-red-400 bg-red-500/10 border-red-500/30";
+                            return "text-red-600 bg-red-500/10 border-red-200";
                           };
 
                           const bd = parseBreakdown(item.topArea);
                           const kigakuTextColor = (s: string) => {
                             if (s === "OPTIMAL" || s === "OPTIMAL_REGULAR")
-                              return "text-emerald-400";
-                            if (s === "SAFE") return "text-blue-400";
-                            if (s === "WARNING") return "text-orange-400";
-                            return "text-red-400";
+                              return "text-emerald-600";
+                            if (s === "SAFE") return "text-blue-600";
+                            if (s === "WARNING") return "text-orange-600";
+                            return "text-red-600";
                           };
 
                           return (
@@ -5782,11 +5782,11 @@ ${timingOptimization?.recommendationText || "特になし"}
                               onClick={() =>
                                 setSelectedDirection(item.direction)
                               }
-                              className="hover:bg-zinc-900/40 transition-colors cursor-pointer group"
+                              className="hover:bg-white/80 transition-colors cursor-pointer group"
                             >
                               {/* Direction */}
-                              <td className="p-3 font-mono font-bold text-zinc-200 flex items-center gap-1.5 whitespace-nowrap">
-                                <span className="text-[10px] text-zinc-500">
+                              <td className="p-3 font-mono font-bold text-stone-700 flex items-center gap-1.5 whitespace-nowrap">
+                                <span className="text-[10px] text-stone-400">
                                   ▶
                                 </span>
                                 {item.labelJa} ({item.direction})
@@ -5803,9 +5803,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
                                       item.classicalScore >= 80
-                                        ? "text-emerald-400"
+                                        ? "text-emerald-600"
                                         : item.classicalScore >= 50
-                                          ? "text-blue-400"
+                                          ? "text-blue-600"
                                           : item.classicalScore >= 30
                                             ? "text-yellow-500"
                                             : "text-red-500"
@@ -5830,9 +5830,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
                                       item.physicalIndepScore >= 80
-                                        ? "text-emerald-400"
+                                        ? "text-emerald-600"
                                         : item.physicalIndepScore >= 50
-                                          ? "text-blue-400"
+                                          ? "text-blue-600"
                                           : item.physicalIndepScore >= 30
                                             ? "text-yellow-500"
                                             : "text-red-500"
@@ -5857,9 +5857,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
                                       item.physicalCoupledScore >= 80
-                                        ? "text-emerald-400"
+                                        ? "text-emerald-600"
                                         : item.physicalCoupledScore >= 50
-                                          ? "text-blue-400"
+                                          ? "text-blue-600"
                                           : item.physicalCoupledScore >= 30
                                             ? "text-yellow-500"
                                             : "text-red-500"
@@ -5873,64 +5873,64 @@ ${timingOptimization?.recommendationText || "特になし"}
                               {/* Consensus / Highlights */}
                               <td className="p-3 whitespace-nowrap text-center">
                                 {item.isConsensusClear && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
                                     トリプル大吉 🌟
                                   </span>
                                 )}
                                 {item.isDivergenceAlert && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-amber-950/60 text-amber-500 border border-amber-500/30">
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
                                     位相差警告 ⚠️
                                   </span>
                                 )}
                                 {!item.isConsensusClear &&
                                   !item.isDivergenceAlert && (
-                                    <span className="text-zinc-600 text-[10px] font-mono">
+                                    <span className="text-stone-400 text-[10px] font-mono">
                                       -
                                     </span>
                                   )}
                               </td>
 
                               {/* ① 気学方位 */}
-                              <td className="p-3 bg-emerald-950/5 border-x border-zinc-900/50 font-mono">
+                              <td className="p-3 bg-emerald-50 border-x border-stone-200 font-mono">
                                 <div className="flex flex-col">
                                   <span
                                     className={`font-bold ${kigakuTextColor(bd.kigaku)}`}
                                   >
                                     {bd.kigaku.replace("NOISE_", "")}
                                   </span>
-                                  <span className="text-[9px] text-zinc-500">
+                                  <span className="text-[9px] text-stone-400">
                                     ベース: {bd.kigakuScore}点
                                   </span>
                                 </div>
                               </td>
 
                               {/* ② アストロ */}
-                              <td className="p-3 bg-blue-950/5 border-r border-zinc-900/50 font-mono">
+                              <td className="p-3 bg-blue-50 border-r border-stone-200 font-mono">
                                 <div className="flex flex-col">
                                   <span
-                                    className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-400 font-bold" : "text-zinc-600"}`}
+                                    className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-400"}`}
                                   >
                                     {bd.astro.length > 0
                                       ? bd.astro.join(", ")
                                       : "ラインなし"}
                                   </span>
-                                  <span className="text-[9px] text-zinc-500">
+                                  <span className="text-[9px] text-stone-400">
                                     加算: +{bd.astroScore}点
                                   </span>
                                 </div>
                               </td>
 
                               {/* ③ 時間ゲート */}
-                              <td className="p-3 bg-amber-950/5 border-r border-zinc-900/50 font-mono">
+                              <td className="p-3 bg-amber-50 border-r border-stone-200 font-mono">
                                 <div className="flex flex-col">
                                   <span
-                                    className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-400 font-bold" : bd.timeGateScore > 0 ? "text-emerald-400 font-bold" : "text-zinc-600"}`}
+                                    className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-400"}`}
                                   >
                                     {bd.timeGate.length > 0
                                       ? bd.timeGate.join(", ")
                                       : "通常時間"}
                                   </span>
-                                  <span className="text-[9px] text-zinc-500 border-t border-zinc-800/10 mt-0.5 pt-0.5">
+                                  <span className="text-[9px] text-stone-400 border-t border-stone-200 mt-0.5 pt-0.5">
                                     調整: {bd.timeGateScore > 0 ? "+" : ""}
                                     {bd.timeGateScore}点
                                   </span>
@@ -5938,7 +5938,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               </td>
 
                               {/* 30日吉日 */}
-                              <td className="p-3 text-center font-mono text-[10px] text-zinc-400">
+                              <td className="p-3 text-center font-mono text-[10px] text-stone-500">
                                 {item.luckyDays}日
                               </td>
 
@@ -5946,10 +5946,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                               <td className="p-3">
                                 {item.topArea ? (
                                   <div className="flex flex-col">
-                                    <span className="text-zinc-200 font-bold truncate max-w-[180px]">
+                                    <span className="text-stone-700 font-bold truncate max-w-[180px]">
                                       {item.topArea.municipality_name_ja}
                                     </span>
-                                    <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                    <span className="text-[10px] text-stone-400 font-mono mt-0.5">
                                       所得:{" "}
                                       {(
                                         item.topArea.averageIncome / 10000
@@ -5958,7 +5958,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     </span>
                                   </div>
                                 ) : (
-                                  <span className="text-zinc-600 text-[10px] italic">
+                                  <span className="text-stone-400 text-[10px] italic">
                                     データなし
                                   </span>
                                 )}
@@ -5975,12 +5975,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                                       className="flex flex-col group/item cursor-pointer"
                                     >
                                       <span
-                                        className="text-zinc-200 font-bold group-hover/item:text-indigo-400 group-hover/item:underline transition-all truncate max-w-[200px]"
+                                        className="text-stone-700 font-bold group-hover/item:text-indigo-600 group-hover/item:underline transition-all truncate max-w-[200px]"
                                         title={item.topRental.property_name}
                                       >
                                         {item.topRental.property_name}
                                       </span>
-                                      <span className="text-[10px] text-zinc-500 font-mono mt-0.5 group-hover/item:text-zinc-450">
+                                      <span className="text-[10px] text-stone-400 font-mono mt-0.5 group-hover/item:text-zinc-450">
                                         賃料:{" "}
                                         {(
                                           item.topRental.totalRent / 10000
@@ -5994,12 +5994,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   ) : (
                                     <div className="flex flex-col">
                                       <span
-                                        className="text-zinc-200 font-bold truncate max-w-[200px]"
+                                        className="text-stone-700 font-bold truncate max-w-[200px]"
                                         title={item.topRental.property_name}
                                       >
                                         {item.topRental.property_name}
                                       </span>
-                                      <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                                      <span className="text-[10px] text-stone-400 font-mono mt-0.5">
                                         賃料:{" "}
                                         {(
                                           item.topRental.totalRent / 10000
@@ -6012,7 +6012,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     </div>
                                   )
                                 ) : (
-                                  <span className="text-zinc-600 text-[10px] italic">
+                                  <span className="text-stone-400 text-[10px] italic">
                                     対象物件なし
                                   </span>
                                 )}
@@ -6027,29 +6027,29 @@ ${timingOptimization?.recommendationText || "特になし"}
             )}
 
             {/* --- MULTI-MODEL GRID SCORECARD (大量パターンスコア表) --- */}
-            <div className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 md:p-6 shadow-lg space-y-4 relative overflow-hidden">
+            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg space-y-4 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-zinc-200 font-mono text-sm tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
+                  <h3 className="text-stone-700 font-mono text-sm tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                     多次元吉凶パターンマトリクス (Grid Scorecard)
                   </h3>
-                  <p className="text-zinc-500 text-[10px] sm:text-xs">
+                  <p className="text-stone-400 text-[10px] sm:text-xs">
                     本命星別、または日付別の全方位吉凶パターンを網羅した詳細グリッド表です。
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Grid Selector Toggles */}
-                  <div className="flex bg-zinc-950 p-1 rounded-md border border-zinc-800 text-[10px] font-mono">
+                  <div className="flex bg-stone-50 p-1 rounded-md border border-stone-200 text-[10px] font-mono">
                     <button
                       onClick={() => setScorecardActiveGridTab("dates")}
                       className={`px-3 py-1 rounded transition-all ${
                         scorecardActiveGridTab === "dates"
-                          ? "bg-emerald-600 text-white font-bold"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          ? "bg-emerald-600 text-stone-900 font-bold"
+                          : "text-stone-500 hover:text-stone-700"
                       }`}
                     >
                       30日カレンダー
@@ -6058,8 +6058,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                       onClick={() => setScorecardActiveGridTab("stars")}
                       className={`px-3 py-1 rounded transition-all ${
                         scorecardActiveGridTab === "stars"
-                          ? "bg-emerald-600 text-white font-bold"
-                          : "text-zinc-400 hover:text-zinc-200"
+                          ? "bg-emerald-600 text-stone-900 font-bold"
+                          : "text-stone-500 hover:text-stone-700"
                       }`}
                     >
                       九星本命星別 (当日)
@@ -6070,7 +6070,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <select
                     value={gridModelView}
                     onChange={(e: any) => setGridModelView(e.target.value)}
-                    className="bg-zinc-950 text-zinc-300 border border-zinc-800 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                    className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                   >
                     <option value="consensus">合意判定 (Consensus)</option>
                     <option value="classical">古典暦モデル (Classical)</option>
@@ -6086,7 +6086,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <select
                     value={gridDimension}
                     onChange={(e: any) => setGridDimension(e.target.value)}
-                    className="bg-zinc-950 text-zinc-300 border border-zinc-800 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
+                    className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                   >
                     <option value="total">表示軸: 総合スコア</option>
                     <option value="kigaku">表示軸: ①気学方位</option>
@@ -6097,7 +6097,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   {/* CSV Export Button */}
                   <button
                     onClick={handleExportGridCsv}
-                    className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
+                    className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-600 border border-stone-300 font-mono text-[9px] uppercase tracking-wider rounded transition-all"
                   >
                     EXPORT PATTERN CSV
                   </button>
@@ -6105,37 +6105,37 @@ ${timingOptimization?.recommendationText || "特になし"}
               </div>
 
               {/* Legend for Grid */}
-              <div className="flex flex-wrap gap-3 text-[9px] font-mono text-zinc-500 bg-zinc-950/40 p-2.5 rounded border border-zinc-800/40">
+              <div className="flex flex-wrap gap-3 text-[9px] font-mono text-stone-400 bg-white/80 p-2.5 rounded border border-stone-200">
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-emerald-950/60 border border-emerald-500/30"></span>
+                  <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200"></span>
                   大吉/吉 ({"≥ 80"})
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-blue-950/20 border border-blue-500/20"></span>
+                  <span className="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></span>
                   吉 ({"≥ 50"})
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-amber-950/20 border border-amber-500/20"></span>
+                  <span className="w-2.5 h-2.5 rounded bg-amber-50 border border-amber-200"></span>
                   警告 ({"≥ 30"})
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="w-2.5 h-2.5 rounded bg-red-950/20 border border-red-500/20"></span>
+                  <span className="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>
                   大凶 (その他)
                 </span>
                 {gridModelView === "consensus" && (
                   <>
-                    <span className="text-emerald-400">🌟 = トリプル大吉</span>
+                    <span className="text-emerald-600">🌟 = トリプル大吉</span>
                     <span className="text-amber-500">⚠️ = 位相差警告</span>
                   </>
                 )}
               </div>
 
               {/* Grid Table */}
-              <div className="w-full overflow-hidden bg-zinc-950 border border-zinc-850 rounded-lg shadow-inner">
+              <div className="w-full overflow-hidden bg-stone-50 border border-zinc-850 rounded-lg shadow-inner">
                 <div className="overflow-x-auto">
                   <table className="w-full text-center border-collapse">
                     <thead>
-                      <tr className="border-b border-zinc-850 bg-zinc-900/40 text-[9px] font-mono text-zinc-400 uppercase tracking-wider">
+                      <tr className="border-b border-zinc-850 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider">
                         <th className="p-2.5 text-left w-28">
                           {scorecardActiveGridTab === "dates"
                             ? "日付"
@@ -6176,16 +6176,16 @@ ${timingOptimization?.recommendationText || "特になし"}
                             ][day.weekday];
                             const wdayColor =
                               day.weekday === 0
-                                ? "text-red-400"
+                                ? "text-red-600"
                                 : day.weekday === 6
-                                  ? "text-blue-400"
-                                  : "text-zinc-400";
+                                  ? "text-blue-600"
+                                  : "text-stone-500";
                             return (
                               <tr
                                 key={day.dateStr}
-                                className="hover:bg-zinc-900/20 transition-colors"
+                                className="hover:bg-white/80 transition-colors"
                               >
-                                <td className="p-2 text-left text-[9px] text-zinc-400 border-r border-zinc-900 whitespace-nowrap">
+                                <td className="p-2 text-left text-[9px] text-stone-500 border-r border-stone-200 whitespace-nowrap">
                                   {day.dateStr}{" "}
                                   <span className={wdayColor}>({wdayJa})</span>
                                 </td>
@@ -6374,9 +6374,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                             return (
                               <tr
                                 key={star.star}
-                                className={`hover:bg-zinc-900/20 transition-colors ${isUserStar ? "bg-emerald-950/10 border-y border-emerald-500/20" : ""}`}
+                                className={`hover:bg-white/80 transition-colors ${isUserStar ? "bg-emerald-50 border-y border-emerald-200" : ""}`}
                               >
-                                <td className="p-2 text-left text-[9px] text-zinc-300 font-bold border-r border-zinc-900 whitespace-nowrap flex items-center gap-1.5">
+                                <td className="p-2 text-left text-[9px] text-stone-600 font-bold border-r border-stone-200 whitespace-nowrap flex items-center gap-1.5">
                                   {isUserStar && (
                                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                                   )}
@@ -6575,44 +6575,44 @@ ${timingOptimization?.recommendationText || "特になし"}
 
             const statusColor = (s: string) => {
               if (s === "OPTIMAL")
-                return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
+                return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
               if (s === "OPTIMAL_REGULAR")
-                return "text-emerald-500 bg-emerald-500/5 border-emerald-500/20";
+                return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
               if (s === "SAFE")
-                return "text-blue-400 bg-blue-500/10 border-blue-500/30";
+                return "text-blue-600 bg-blue-500/10 border-blue-200";
               if (s === "WARNING")
-                return "text-orange-400 bg-orange-500/10 border-orange-500/30";
+                return "text-orange-600 bg-orange-500/10 border-orange-200";
               if (s.startsWith("NOISE_VOID"))
-                return "text-zinc-500 bg-zinc-800 border-zinc-700";
+                return "text-stone-400 bg-stone-100 border-stone-300";
               if (s.startsWith("NOISE_NODE"))
                 return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-              return "text-red-400 bg-red-500/10 border-red-500/30";
+              return "text-red-600 bg-red-500/10 border-red-200";
             };
 
             return (
               <div className="fixed inset-0 z-50 overflow-hidden font-sans">
                 {/* Backdrop */}
                 <div
-                  className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+                  className="absolute inset-0 bg-white/70 backdrop-blur-xs transition-opacity"
                   onClick={() => setSelectedDirection(null)}
                 ></div>
 
                 {/* Drawer Container */}
                 <div className="absolute inset-y-0 right-0 max-w-full flex">
-                  <div className="w-screen max-w-lg bg-zinc-950 border-l border-zinc-800 shadow-2xl relative flex flex-col">
+                  <div className="w-screen max-w-lg bg-stone-50 border-l border-stone-200 shadow-2xl relative flex flex-col">
                     {/* Close button */}
-                    <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
+                    <div className="flex items-center justify-between p-4 border-b border-stone-200 bg-white/80">
                       <div className="flex items-center gap-2">
                         <span className="text-emerald-500 font-bold font-mono">
                           ▶
                         </span>
-                        <h3 className="text-sm font-bold text-zinc-200">
+                        <h3 className="text-sm font-bold text-stone-700">
                           【方位詳細】 {detail.labelJa} ({detail.direction})
                         </h3>
                       </div>
                       <button
                         onClick={() => setSelectedDirection(null)}
-                        className="text-zinc-400 hover:text-white transition-colors p-1"
+                        className="text-stone-500 hover:text-stone-900 transition-colors p-1"
                       >
                         ✕ 閉じる
                       </button>
@@ -6703,9 +6703,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                       })()}
 
                       {/* Status & Score Block */}
-                      <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 flex items-center justify-between">
+                      <div className="bg-white/80 border border-stone-200 rounded-lg p-4 flex items-center justify-between">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
+                          <span className="text-[10px] text-stone-400 uppercase tracking-widest font-mono">
                             Astrological Wave
                           </span>
                           <span
@@ -6715,15 +6715,15 @@ ${timingOptimization?.recommendationText || "特になし"}
                           </span>
                         </div>
                         <div className="flex flex-col items-end gap-1">
-                          <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
+                          <span className="text-[10px] text-stone-400 uppercase tracking-widest font-mono">
                             Score
                           </span>
                           <span
                             className={`text-2xl font-mono font-bold ${
                               detail.score >= 80
-                                ? "text-emerald-400"
+                                ? "text-emerald-600"
                                 : detail.score >= 50
-                                  ? "text-blue-400"
+                                  ? "text-blue-600"
                                   : detail.score >= 30
                                     ? "text-yellow-500"
                                     : "text-red-500"
@@ -6737,33 +6737,33 @@ ${timingOptimization?.recommendationText || "特になし"}
                       {/* 30-Day Forecast Calendar */}
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
                             <span>📅 直近30日の時空吉凶シミュレーション</span>
                           </h4>
-                          <span className="text-[9px] text-zinc-500 font-mono">
+                          <span className="text-[9px] text-stone-400 font-mono">
                             吉日数: {detail.luckyDays}日
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-6 gap-1 bg-black/40 p-2 border border-zinc-900 rounded-md">
+                        <div className="grid grid-cols-6 gap-1 bg-white/70 p-2 border border-stone-200 rounded-md">
                           {detail.dates.map((d, i) => {
                             let bg =
-                              "bg-zinc-900/50 border-zinc-800 text-zinc-500";
+                              "bg-white/80 border-stone-200 text-stone-400";
                             if (d.status === "OPTIMAL")
                               bg =
-                                "bg-emerald-500/20 border-emerald-500/50 text-emerald-400";
+                                "bg-emerald-500/20 border-emerald-200 text-emerald-600";
                             else if (d.status === "OPTIMAL_REGULAR")
                               bg =
-                                "bg-emerald-500/10 border-emerald-500/30 text-emerald-400";
+                                "bg-emerald-500/10 border-emerald-200 text-emerald-600";
                             else if (d.status === "SAFE")
                               bg =
-                                "bg-blue-500/10 border-blue-500/30 text-blue-400";
+                                "bg-blue-500/10 border-blue-200 text-blue-600";
                             else if (d.status === "WARNING")
                               bg =
-                                "bg-orange-500/10 border-orange-500/30 text-orange-400";
+                                "bg-orange-500/10 border-orange-200 text-orange-600";
                             else if (d.status.startsWith("NOISE"))
                               bg =
-                                "bg-red-500/10 border-red-500/30 text-red-400";
+                                "bg-red-500/10 border-red-200 text-red-600";
 
                             const dateParts = d.dateStr.split("-");
                             const mDay = dateParts[2];
@@ -6789,7 +6789,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                       {/* Top 5 Wealth Municipalities */}
                       <div className="space-y-3">
-                        <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800 pb-1.5">
+                        <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
                           <span>🏢 富裕度市区町村 TOP 5</span>
                         </h4>
                         {detail.topAreas.length > 0 ? (
@@ -6797,28 +6797,28 @@ ${timingOptimization?.recommendationText || "特になし"}
                             {detail.topAreas.map((area, idx) => (
                               <div
                                 key={area.id}
-                                className="bg-black/30 border border-zinc-900 rounded p-2.5 flex items-center justify-between text-xs"
+                                className="bg-white/70 border border-stone-200 rounded p-2.5 flex items-center justify-between text-xs"
                               >
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[10px] font-mono text-zinc-600">
+                                  <span className="text-[10px] font-mono text-stone-400">
                                     #{idx + 1}
                                   </span>
                                   <div className="flex flex-col">
-                                    <span className="text-zinc-200 font-bold">
+                                    <span className="text-stone-700 font-bold">
                                       {area.areaName}
                                     </span>
-                                    <span className="text-[9px] text-zinc-500 font-mono mt-0.5">
+                                    <span className="text-[9px] text-stone-400 font-mono mt-0.5">
                                       コード: {area.areaCode}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end">
-                                  <span className="text-zinc-300 font-mono font-bold">
+                                  <span className="text-stone-600 font-mono font-bold">
                                     {area.incomePerCapita
                                       ? `${(area.incomePerCapita / 10000).toFixed(1)}万円`
                                       : `${(area.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
                                   </span>
-                                  <span className="text-[9px] text-zinc-500 font-sans mt-0.5">
+                                  <span className="text-[9px] text-stone-400 font-sans mt-0.5">
                                     一人当たり平均所得
                                   </span>
                                 </div>
@@ -6826,7 +6826,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             ))}
                           </div>
                         ) : (
-                          <p className="text-xs text-zinc-500 italic">
+                          <p className="text-xs text-stone-400 italic">
                             該当するエリアがありません。
                           </p>
                         )}
@@ -6834,7 +6834,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                       {/* Top 5 Rentals */}
                       <div className="space-y-3">
-                        <h4 className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-800 pb-1.5">
+                        <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
                           <span>🏠 推奨賃貸物件 (アービトラージ) TOP 5</span>
                         </h4>
                         {detail.topRentals.length > 0 ? (
@@ -6844,32 +6844,32 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 <>
                                   <div className="flex justify-between items-start gap-2">
                                     <div className="flex items-start gap-2">
-                                      <span className="text-[10px] font-mono text-zinc-600 mt-0.5">
+                                      <span className="text-[10px] font-mono text-stone-400 mt-0.5">
                                         #{idx + 1}
                                       </span>
                                       <div className="flex flex-col">
                                         <span
-                                          className="text-zinc-200 font-bold truncate max-w-[280px] group-hover:text-indigo-400 group-hover:underline transition-colors"
+                                          className="text-stone-700 font-bold truncate max-w-[280px] group-hover:text-indigo-600 group-hover:underline transition-colors"
                                           title={rental.property_name}
                                         >
                                           {rental.property_name}
                                         </span>
-                                        <span className="text-[9px] text-zinc-500 font-mono">
+                                        <span className="text-[9px] text-stone-400 font-mono">
                                           距離: {rental.distanceKm?.toFixed(1)}
                                           km | 広さ: {rental.size_sqm}㎡ |
                                           築年数: {rental.age_years}年
                                         </span>
                                       </div>
                                     </div>
-                                    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 shrink-0">
+                                    <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
                                       差益: {rental.arbitrageScore?.toFixed(1)}
                                     </span>
                                   </div>
 
-                                  <div className="flex justify-between items-center border-t border-zinc-900/50 pt-1.5 text-[10px] text-zinc-400">
+                                  <div className="flex justify-between items-center border-t border-stone-200 pt-1.5 text-[10px] text-stone-500">
                                     <span>
                                       賃料+管理費:{" "}
-                                      <strong className="text-zinc-300 font-bold font-mono">
+                                      <strong className="text-stone-600 font-bold font-mono">
                                         {(rental.totalRent / 10000).toFixed(1)}
                                         万円
                                       </strong>
@@ -6890,7 +6890,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     href={rental.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="bg-black/30 border border-zinc-900 hover:border-indigo-500/30 hover:bg-indigo-500/5 rounded p-2.5 flex flex-col gap-1.5 text-xs transition-all block group cursor-pointer"
+                                    className="bg-white/70 border border-stone-200 hover:border-indigo-200 hover:bg-indigo-500/5 rounded p-2.5 flex flex-col gap-1.5 text-xs transition-all block group cursor-pointer"
                                   >
                                     {innerContent}
                                   </a>
@@ -6900,7 +6900,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               return (
                                 <div
                                   key={rental.id}
-                                  className="bg-black/30 border border-zinc-900 rounded p-2.5 flex flex-col gap-1.5 text-xs"
+                                  className="bg-white/70 border border-stone-200 rounded p-2.5 flex flex-col gap-1.5 text-xs"
                                 >
                                   {innerContent}
                                 </div>
@@ -6908,7 +6908,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             })}
                           </div>
                         ) : (
-                          <p className="text-xs text-zinc-500 italic">
+                          <p className="text-xs text-stone-400 italic">
                             該当する物件情報がありません。
                           </p>
                         )}
@@ -6925,27 +6925,27 @@ ${timingOptimization?.recommendationText || "特になし"}
           <div className="w-full flex flex-col items-center space-y-8 mt-8">
             <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {/* Spatial Targeting */}
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
+              <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
+                <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
                   <span className="text-emerald-500 animate-pulse">▶</span>
-                  <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">
+                  <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
                     Spatial Targeting{" "}
-                    <span className="text-[9px] text-zinc-500 font-normal ml-1">
+                    <span className="text-[9px] text-stone-400 font-normal ml-1">
                       / 空間・目的の捕捉
                     </span>
                   </h3>
                 </div>
-                <p className="text-[10px] text-zinc-500 mb-4 h-8 mt-1">
+                <p className="text-[10px] text-stone-400 mb-4 h-8 mt-1">
                   目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
                 </p>
                 <div className="flex flex-col gap-3 mt-auto">
-                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm">
+                  <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-sm">
                     <div className="flex flex-col">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                      <label className="text-[10px] text-stone-400 uppercase tracking-widest">
                         Action Intent
                       </label>
-                      <span className="text-[8px] text-zinc-600">
+                      <span className="text-[8px] text-stone-400">
                         行動の性質により吉凶の計算結果が変わります
                       </span>
                     </div>
@@ -6954,7 +6954,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                       onChange={(e) =>
                         setActionIntent(e.target.value as ActionIntent)
                       }
-                      className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right"
+                      className="bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right"
                     >
                       <option value="DEFAULT">DEFAULT (通常行動)</option>
                       <option value="REST">REST (回復・静養)</option>
@@ -6965,12 +6965,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </select>
                   </div>
 
-                  <div className="flex justify-between items-center bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
+                  <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
                     <div className="flex flex-col">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest">
+                      <label className="text-[10px] text-stone-400 uppercase tracking-widest">
                         Target Date
                       </label>
-                      <span className="text-[8px] text-zinc-600">
+                      <span className="text-[8px] text-stone-400">
                         評価する目標日を指定します
                       </span>
                     </div>
@@ -6978,7 +6978,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                       <button
                         onClick={handleAutoSearch}
                         disabled={isAutoSearching}
-                        className="text-[9px] text-emerald-400 border border-emerald-500/50 bg-emerald-950/20 px-2 py-1 rounded-sm hover:bg-emerald-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                        className="text-[9px] text-emerald-600 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                       >
                         {isAutoSearching ? "検索中..." : "自動検索"}
                       </button>
@@ -6998,16 +6998,16 @@ ${timingOptimization?.recommendationText || "特になし"}
                           );
                           setTimeOffsetDays(diffDays);
                         }}
-                        className="bg-transparent text-emerald-400 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
+                        className="bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
                       />
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
-                    <div className="flex items-center gap-1 bg-black/40 p-0.5 border border-zinc-800/80 rounded-sm">
+                    <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-sm">
                       <button
                         onClick={() => setIsPlaying(!isPlaying)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? "bg-amber-950/40 text-amber-400 border-amber-500/50 hover:bg-amber-900/60 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-950/40 text-blue-400 border-blue-500/50 hover:bg-blue-900/60 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
                       >
                         {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
                       </button>
@@ -7017,7 +7017,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                           setPlaySpeedDays(Number(e.target.value))
                         }
                         disabled={isPlaying}
-                        className="bg-transparent text-zinc-400 text-[8px] font-mono outline-none cursor-pointer"
+                        className="bg-transparent text-stone-500 text-[8px] font-mono outline-none cursor-pointer"
                       >
                         <option value={1}>1D/tick</option>
                         <option value={7}>1W/tick</option>
@@ -7028,63 +7028,63 @@ ${timingOptimization?.recommendationText || "特になし"}
                     <div className="flex justify-end gap-1 flex-wrap items-center">
                       <button
                         onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                        className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"
+                        className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                         title="Previous Day"
                       >
                         ◀
                       </button>
                       <button
                         onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                        className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"
+                        className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                         title="Next Day"
                       >
                         ▶
                       </button>
-                      <div className="w-px h-3 bg-zinc-800 my-auto mx-0.5"></div>
+                      <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                                       <button
                         onClick={() => setTimeOffsetDays(0)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                       >
                         TODAY
                       </button>
                       <button
                         onClick={() => setTimeOffsetDays(30)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                       >
                         +30D
                       </button>
                       <button
                         onClick={() => setTimeOffsetDays(90)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                       >
                         +90D
                       </button>
                       <button
                         onClick={() => setTimeOffsetDays(180)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                       >
                         +180D
                       </button>
                       <button
                         onClick={() => setTimeOffsetDays(365)}
-                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50" : "bg-zinc-900/80 text-zinc-500 border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-400"}`}
+                        className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                       >
                         +1Y
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 bg-black/40 p-2 border border-zinc-800/80 rounded-sm mt-1">
+                  <div className="flex flex-col gap-1.5 bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                      <label className="text-[10px] text-stone-400 uppercase tracking-widest flex items-center gap-1">
                         目的地座標{" "}
-                        <span className="text-[9px] text-zinc-600">
+                        <span className="text-[9px] text-stone-400">
                           緯度/経度
                         </span>
                       </label>
                       <button
                         onClick={() => setShowMapPicker(!showMapPicker)}
-                        className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40" : "bg-zinc-800 text-zinc-400 border-zinc-700 hover:bg-zinc-700"}`}
+                        className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showMapPicker ? "bg-emerald-500/20 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200"}`}
                       >
                         [ 地図検索 ]
                       </button>
@@ -7105,7 +7105,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                       <input
                         type="text"
                         placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
-                        className="flex-1 bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
+                        className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
                         onChange={(e) => {
                           const val = e.target.value;
                           // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
@@ -7134,7 +7134,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             e.target.value ? Number(e.target.value) : null,
                           )
                         }
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                        className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
                       />
                       <input
                         type="number"
@@ -7145,7 +7145,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             e.target.value ? Number(e.target.value) : null,
                           )
                         }
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                        className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
                       />
                       <input
                         type="number"
@@ -7156,7 +7156,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             e.target.value ? Number(e.target.value) : null,
                           )
                         }
-                        className="bg-black border border-zinc-700 focus:border-emerald-500/50 text-zinc-300 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                        className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
                       />
                     </div>
                     {targetLat !== null && targetLon !== null && (
@@ -7171,7 +7171,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 `${targetLat},${targetLon}`,
                             );
                           }}
-                          className="flex-1 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors"
+                          className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors"
                         >
                           📋 座標をコピー
                         </button>
@@ -7179,7 +7179,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                           href={`https://www.google.com/maps/search/?api=1&query=${targetLat},${targetLon}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex-1 bg-blue-900/30 text-blue-400 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors text-center block"
+                          className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors text-center block"
                         >
                           🗺️ Googleマップで開く
                         </a>
@@ -7189,26 +7189,26 @@ ${timingOptimization?.recommendationText || "特になし"}
                       <div
                         className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
                           targetVectorStatus.startsWith("NOISE_VOID")
-                            ? "bg-zinc-950 border-zinc-800 text-zinc-600 repeating-linear-gradient-45"
+                            ? "bg-stone-50 border-stone-200 text-stone-400 repeating-linear-gradient-45"
                             : targetVectorStatus.startsWith("NOISE_NODE")
                               ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
                               : targetVectorStatus.startsWith("NOISE")
-                                ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                ? "bg-red-500/10 border-red-200 text-red-600"
                                 : targetVectorStatus === "OPTIMAL" ||
                                     targetVectorStatus === "OPTIMAL_REGULAR"
-                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                  : "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                                  ? "bg-emerald-500/10 border-emerald-200 text-emerald-600"
+                                  : "bg-blue-500/10 border-blue-200 text-blue-600"
                         }`}
                       >
                         <div className="flex items-center gap-2">
                           <span
-                            className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-400 border-emerald-500/50" : "text-zinc-500 border-zinc-700/50"}`}
+                            className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-400 border-stone-300"}`}
                             title="真北基準"
                           >
                             真北: {targetDirInfo.trueDirection}
                           </span>
                           <span
-                            className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-400 border-emerald-500/50" : "text-zinc-500 border-zinc-700/50"}`}
+                            className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-400 border-stone-300"}`}
                             title="磁北基準"
                           >
                             磁北: {targetDirInfo.magneticDirection}
@@ -7220,7 +7220,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             if (!isTargetTendo) return null;
                             return (
                               <span
-                                className="text-[9px] text-amber-300 border border-amber-500/50 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
+                                className="text-[9px] text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
                                 title="【天道回座】目標方位に暦上の最高吉神・天道が巡っています。凶殺やノイズが相殺・大吉補正されます。"
                               >
                                 ✨天道回座中
@@ -7230,7 +7230,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                           {targetDirInfo.trueDirection !==
                             targetDirInfo.magneticDirection && (
                             <span
-                              className="text-[9px] text-amber-500 border border-amber-500/30 px-1 py-0.5 rounded bg-amber-500/5 animate-pulse cursor-help font-bold font-mono"
+                              className="text-[9px] text-amber-500 border border-amber-200 px-1 py-0.5 rounded bg-amber-500/5 animate-pulse cursor-help font-bold font-mono"
                               title="【境界線偏角アラート】真北と磁北で判定する方位セクターが異なっています。基準北トグルの切り替えにより方位評価が変化します。"
                             >
                               ⚠️偏角ズレ
@@ -7248,29 +7248,29 @@ ${timingOptimization?.recommendationText || "特になし"}
 
               {/* COMMANDER'S BRIEFING HUD (Moved up to side-by-side with targeting) */}
               <div className="flex flex-col gap-4">
-                <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
+                <div className="bg-white border border-stone-200 p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
                   <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="flex items-center gap-2 mb-1 border-b border-zinc-800 pb-2">
-                    <span className="text-zinc-500 animate-pulse">◆</span>
-                    <h3 className="text-xs text-zinc-300 font-bold uppercase tracking-widest">
+                  <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
+                    <span className="text-stone-400 animate-pulse">◆</span>
+                    <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
                       ゾーン分類{" "}
-                      <span className="text-[9px] text-zinc-500 font-normal ml-1">
+                      <span className="text-[9px] text-stone-400 font-normal ml-1">
                         / 空間分類
                       </span>
                     </h3>
                   </div>
-                  <div className="flex flex-col gap-1.5 mb-2 bg-black/50 p-2.5 rounded-sm border border-zinc-800/50 shadow-inner">
-                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center border-b border-zinc-800/50 pb-1">
+                  <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-sm border border-stone-200 shadow-inner">
+                    <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                       <span>BASE GEO (基準地)</span>
-                      <span className="text-zinc-300 font-bold">
+                      <span className="text-stone-600 font-bold">
                         {lat?.toFixed(4)}N, {lon?.toFixed(4)}E
                       </span>
                     </div>
-                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center border-b border-zinc-800/50 pb-1">
+                    <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                       <span>TARGET DATE (目標日)</span>
-                      <span className="text-emerald-400 font-bold">
+                      <span className="text-emerald-600 font-bold">
                         {evalDate.toLocaleDateString()}{" "}
-                        <span className="text-zinc-600 font-normal ml-1">
+                        <span className="text-stone-400 font-normal ml-1">
                           (
                           {timeOffsetDays > 0
                             ? `+${timeOffsetDays}`
@@ -7279,13 +7279,13 @@ ${timingOptimization?.recommendationText || "特になし"}
                         </span>
                       </span>
                     </div>
-                    <div className="text-[9px] text-zinc-500 font-mono flex justify-between items-center">
+                    <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center">
                       <span>SUBJECT (対象波長)</span>
-                      <span className="text-purple-400 font-bold">
+                      <span className="text-purple-600 font-bold">
                         {honmeiStar
                           ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}`
                           : "Unset"}{" "}
-                        <span className="text-zinc-600 font-normal ml-1">
+                        <span className="text-stone-400 font-normal ml-1">
                           ({birthDate.split("T")[0]})
                         </span>
                       </span>
@@ -7336,24 +7336,24 @@ ${timingOptimization?.recommendationText || "特になし"}
                               {allDirs.map((dir) => {
                                 const val = fv[dir];
                                 let bgClass =
-                                  "bg-blue-950/20 border-blue-500/30 text-blue-400";
+                                  "bg-blue-50 border-blue-200 text-blue-600";
                                 let statusLabel = "SAFE";
 
                                 if (val === "OPTIMAL") {
                                   bgClass =
-                                    "bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.15)]";
+                                    "bg-emerald-50 border-emerald-500 text-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.15)]";
                                   statusLabel = "GO";
                                 } else if (val === "OPTIMAL_REGULAR") {
                                   bgClass =
-                                    "bg-emerald-900/10 border-emerald-600/30 text-emerald-400/80";
+                                    "bg-emerald-50 border-emerald-600/30 text-emerald-400/80";
                                   statusLabel = "OK";
                                 } else if (val === "WARNING") {
                                   bgClass =
-                                    "bg-orange-950/30 border-orange-500/40 text-orange-400";
+                                    "bg-orange-50 border-orange-200 text-orange-600";
                                   statusLabel = "WARN";
                                 } else if ((val || "").startsWith("NOISE")) {
                                   bgClass =
-                                    "bg-red-950/15 border-red-900/30 text-red-400/60";
+                                    "bg-red-50 border-red-200 text-red-400/60";
                                   statusLabel = "ALERT";
                                 }
 
@@ -7424,7 +7424,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 "text-emerald-500",
                               )}
                             </div>
-                            <div className="h-px bg-zinc-800/50 w-full my-1"></div>
+                            <div className="h-px bg-stone-100/80 w-full my-1"></div>
                             <div
                               className={`transition-all duration-300 ${useClassicalBoard ? "opacity-100" : "opacity-30 grayscale-[50%] blur-[0.5px] hover:opacity-100 hover:grayscale-0 hover:blur-none"}`}
                             >
@@ -7432,7 +7432,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 classVectors,
                                 `CLASSICAL - ${titleSuffix}`,
                                 "(節切り・暦基準)",
-                                "text-zinc-400",
+                                "text-stone-500",
                               )}
                             </div>
                           </div>
@@ -7467,7 +7467,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         }
                         className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "30days"
-                            ? "bg-rose-500 text-white shadow-xs font-bold"
+                            ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
                             : "text-stone-600 hover:text-stone-900"
                         }`}
                       >
@@ -7481,7 +7481,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         }
                         className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "12months"
-                            ? "bg-rose-500 text-white shadow-xs font-bold"
+                            ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
                             : "text-stone-600 hover:text-stone-900"
                         }`}
                       >
@@ -7499,7 +7499,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         }}
                         className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                           directionFilterMode === "optimal_only"
-                            ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-white font-bold shadow-md shadow-amber-200 scale-105"
+                            ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-stone-900 font-bold shadow-md shadow-amber-200 scale-105"
                             : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
                         }`}
                         title="大吉・吉方位日をゴールド強調表示（他の色も保持）"
@@ -7514,7 +7514,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                         }}
                         className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                           directionFilterMode === "exclude_noise"
-                            ? "bg-stone-800 text-white font-bold shadow-xs"
+                            ? "bg-stone-800 text-stone-900 font-bold shadow-xs"
                             : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
                         }`}
                         title="五黄・暗剣・歳破などの大凶ノイズを除外"
@@ -7541,7 +7541,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                           }}
                           className={`px-3 py-1.5 rounded-lg font-bold transition-all border cursor-pointer ${
                             isPlaying && playSpeedDays === 30
-                              ? "bg-rose-500 text-white border-rose-600 shadow-md shadow-rose-200 animate-pulse"
+                              ? "bg-rose-500 text-stone-900 border-rose-600 shadow-md shadow-rose-200 animate-pulse"
                               : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
                           }`}
                         >
@@ -7643,7 +7643,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                               if (isOptimal) {
                                 bgClass = isTendoActive
                                   ? "bg-gradient-to-br from-amber-400 via-emerald-400 to-amber-500 text-stone-950 font-bold border-2 border-amber-300 ring-2 ring-amber-400 shadow-md shadow-amber-200/50 scale-105 z-10"
-                                  : "bg-emerald-500 text-white font-bold shadow-xs border border-emerald-400";
+                                  : "bg-emerald-500 text-stone-900 font-bold shadow-xs border border-emerald-400";
                               } else if (st === "SAFE") {
                                 bgClass = isLuckyFilter ? "bg-blue-100/70 text-blue-700" : "bg-blue-100 text-blue-800 font-medium";
                               } else if (
@@ -7651,21 +7651,21 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 st?.startsWith("NOISE_ANKEN") ||
                                 st === "NOISE_HA"
                               ) {
-                                bgClass = isLuckyFilter ? "bg-rose-100/70 text-rose-700" : "bg-rose-500 text-white font-semibold";
+                                bgClass = isLuckyFilter ? "bg-rose-100/70 text-rose-700" : "bg-rose-500 text-stone-900 font-semibold";
                               } else if (
                                 st?.startsWith("NOISE_HONMEI") ||
                                 st?.startsWith("NOISE_TEKI") ||
                                 st?.startsWith("NOISE_GETSUMEI") ||
                                 st?.startsWith("NOISE_GETSUTEKI")
                               ) {
-                                bgClass = isLuckyFilter ? "bg-purple-100/70 text-purple-700" : "bg-purple-500 text-white font-medium";
+                                bgClass = isLuckyFilter ? "bg-purple-100/70 text-purple-700" : "bg-purple-500 text-stone-900 font-medium";
                               } else if (
                                 st?.startsWith("NOISE_VOID") ||
                                 st?.startsWith("NOISE_NODE")
                               ) {
                                 bgClass = isLuckyFilter ? "bg-amber-100/70 text-amber-800" : "bg-amber-400 text-amber-950 font-medium";
                               } else if (st === "WARNING") {
-                                bgClass = isLuckyFilter ? "bg-orange-100/70 text-orange-800" : "bg-orange-400 text-white font-medium";
+                                bgClass = isLuckyFilter ? "bg-orange-100/70 text-orange-800" : "bg-orange-400 text-stone-900 font-medium";
                               }
 
                               if (isActiveCol && !isOptimal) {
@@ -7710,26 +7710,26 @@ ${timingOptimization?.recommendationText || "特になし"}
                     </table>
 
                       {/* Legend Bar */}
-                      <div className="flex gap-3 mt-3 text-[7px] font-mono text-zinc-400 justify-center flex-wrap">
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
-                          <span className="text-amber-300 font-bold">✨</span> 天道 (Tendou) 回座
+                      <div className="flex gap-3 mt-3 text-[7px] font-mono text-stone-500 justify-center flex-wrap">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                          <span className="text-amber-600 font-bold">✨</span> 天道 (Tendou) 回座
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-emerald-500/80"></div> OPTIMAL (大吉)
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
-                          <div className="w-2 h-2 bg-blue-500/20 border border-zinc-700"></div> SAFE (吉)
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
+                          <div className="w-2 h-2 bg-blue-500/20 border border-stone-300"></div> SAFE (吉)
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-red-500/80"></div> TYPE I (Gou/Anken/Ha)
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-yellow-500/80"></div> VOID/NODE
                         </span>
-                        <span className="flex items-center gap-1 bg-zinc-900/80 px-1.5 py-0.5 rounded border border-zinc-800">
+                        <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-orange-500/80"></div> WARNING
                         </span>
                       </div>
@@ -7738,33 +7738,33 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                   {/* Trend Cell Detail Breakdown Modal */}
                   {selectedTrendCell && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-                      <div className="relative w-full max-w-sm bg-zinc-900 border border-zinc-700 rounded-2xl p-5 text-white shadow-2xl space-y-3.5">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md animate-in fade-in duration-150">
+                      <div className="relative w-full max-w-sm bg-white border border-stone-300 rounded-2xl p-5 text-stone-900 shadow-2xl space-y-3.5">
                         <button
                           onClick={() => setSelectedTrendCell(null)}
-                          className="absolute top-3.5 right-3.5 text-zinc-400 hover:text-white p-1 text-sm font-bold"
+                          className="absolute top-3.5 right-3.5 text-stone-500 hover:text-stone-900 p-1 text-sm font-bold"
                         >
                           ✕
                         </button>
 
                         <div className="flex items-center gap-3">
-                          <div className={`p-2.5 rounded-xl border ${selectedTrendCell.isTendo ? "bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-indigo-500/20 text-indigo-400 border-indigo-500/30"}`}>
+                          <div className={`p-2.5 rounded-xl border ${selectedTrendCell.isTendo ? "bg-amber-500/20 text-amber-600 border-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.3)]" : "bg-indigo-500/20 text-indigo-600 border-indigo-200"}`}>
                             <span className="text-xl">{selectedTrendCell.isTendo ? "✨" : "🎯"}</span>
                           </div>
                           <div>
-                            <h3 className="font-bold text-sm text-zinc-100 flex items-center gap-2">
+                            <h3 className="font-bold text-sm text-stone-800 flex items-center gap-2">
                               {selectedTrendCell.label} 【方位: {selectedTrendCell.dir}】
                             </h3>
-                            <p className="text-[11px] text-zinc-400 font-mono">
-                              総合判定: <strong className="text-emerald-400 font-bold">{selectedTrendCell.status}</strong>
+                            <p className="text-[11px] text-stone-500 font-mono">
+                              総合判定: <strong className="text-emerald-600 font-bold">{selectedTrendCell.status}</strong>
                             </p>
                           </div>
                         </div>
 
-                        <div className="space-y-2.5 text-xs font-mono text-zinc-300">
+                        <div className="space-y-2.5 text-xs font-mono text-stone-600">
                           {selectedTrendCell.isTendo && (
-                            <div className="bg-amber-950/50 border border-amber-500/60 p-3 rounded-xl text-amber-200 space-y-1">
-                              <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                            <div className="bg-amber-50 border border-amber-500/60 p-3 rounded-xl text-amber-700 space-y-1">
+                              <div className="font-bold text-amber-600 flex items-center gap-1.5">
                                 <span>✨</span> 天道 (Tendou) 補正が適用されています
                               </div>
                               <p className="text-[10px] leading-relaxed text-amber-200/90">
@@ -7773,31 +7773,31 @@ ${timingOptimization?.recommendationText || "特になし"}
                             </div>
                           )}
 
-                          <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 space-y-1.5">
-                            <div className="font-bold text-zinc-400 border-b border-zinc-800 pb-1 text-[10px]">
+                          <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-1.5">
+                            <div className="font-bold text-stone-500 border-b border-stone-200 pb-1 text-[10px]">
                               レイヤー（層）別判定ブレイクダウン
                             </div>
                             <div className="flex justify-between text-[11px]">
-                              <span className="text-zinc-500">年盤 (Year):</span>
-                              <span className="font-semibold text-zinc-200">
+                              <span className="text-stone-400">年盤 (Year):</span>
+                              <span className="font-semibold text-stone-700">
                                 {selectedTrendCell.raw?.yearLayer?.[selectedTrendCell.dir] || "SAFE"}
                               </span>
                             </div>
                             <div className="flex justify-between text-[11px]">
-                              <span className="text-zinc-500">月盤 (Month):</span>
-                              <span className="font-semibold text-zinc-200">
+                              <span className="text-stone-400">月盤 (Month):</span>
+                              <span className="font-semibold text-stone-700">
                                 {selectedTrendCell.raw?.monthLayer?.[selectedTrendCell.dir] || "SAFE"}
                               </span>
                             </div>
                             <div className="flex justify-between text-[11px]">
-                              <span className="text-zinc-500">日盤 (Day):</span>
-                              <span className="font-semibold text-zinc-200">
+                              <span className="text-stone-400">日盤 (Day):</span>
+                              <span className="font-semibold text-stone-700">
                                 {selectedTrendCell.raw?.dayLayer?.[selectedTrendCell.dir] || "SAFE"}
                               </span>
                             </div>
-                            <div className="flex justify-between text-[11px] pt-1 border-t border-zinc-800/60">
-                              <span className="text-zinc-500">天道作用:</span>
-                              <span className={selectedTrendCell.isTendo ? "text-amber-300 font-bold" : "text-zinc-500"}>
+                            <div className="flex justify-between text-[11px] pt-1 border-t border-stone-200">
+                              <span className="text-stone-400">天道作用:</span>
+                              <span className={selectedTrendCell.isTendo ? "text-amber-600 font-bold" : "text-stone-400"}>
                                 {selectedTrendCell.isTendo ? "✨ 回座中 (Active)" : "対象外"}
                               </span>
                             </div>
@@ -7806,7 +7806,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                         <button
                           onClick={() => setSelectedTrendCell(null)}
-                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl transition-colors cursor-pointer"
+                          className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-stone-900 font-medium text-xs rounded-xl transition-colors cursor-pointer"
                         >
                           了解
                         </button>
@@ -7820,16 +7820,16 @@ ${timingOptimization?.recommendationText || "特になし"}
             <div className="w-full max-w-4xl mt-0">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
                 {/* Cyberpunk Filter Selector */}
-                <div className="flex items-center gap-1.5 bg-zinc-950 p-1 border border-zinc-800 rounded-sm flex-wrap">
-                  <span className="text-[8px] font-mono text-zinc-500 uppercase tracking-wider px-1">
+                <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
+                  <span className="text-[8px] font-mono text-stone-400 uppercase tracking-wider px-1">
                     観点Filter:
                   </span>
                   <button
                     onClick={() => setDirectionFilterMode("composite")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "composite"
-                        ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/50 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-emerald-50 text-emerald-600 border-emerald-200 shadow-[0_0_5px_rgba(16,185,129,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     🪐 総合判定
@@ -7838,8 +7838,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() => setDirectionFilterMode("kigaku_env")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "kigaku_env"
-                        ? "bg-purple-950/40 text-purple-300 border-purple-500/50 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-purple-50 text-purple-600 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     👤+🌍 吉凶+環境
@@ -7848,8 +7848,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() => setDirectionFilterMode("kigaku_bazi")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "kigaku_bazi"
-                        ? "bg-indigo-950/40 text-indigo-300 border-indigo-500/50 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-indigo-50 text-indigo-600 border-indigo-200 shadow-[0_0_5px_rgba(99,102,241,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     👤+☯ 吉凶+天中殺
@@ -7858,8 +7858,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() => setDirectionFilterMode("bazi_env")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "bazi_env"
-                        ? "bg-amber-950/40 text-amber-300 border-amber-500/50 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-amber-50 text-amber-600 border-amber-200 shadow-[0_0_5px_rgba(245,158,11,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     ☯+🌍 天中殺+環境
@@ -7868,8 +7868,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() => setDirectionFilterMode("personal_kigaku")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "personal_kigaku"
-                        ? "bg-purple-950/40 text-purple-400 border-purple-500/50 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-purple-50 text-purple-600 border-purple-200 shadow-[0_0_5px_rgba(168,85,247,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     👤 個人吉凶
@@ -7879,7 +7879,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "personal_bazi"
                         ? "bg-yellow-950/40 text-yellow-400 border-yellow-500/50 shadow-[0_0_5px_rgba(234,179,8,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     ☯ 個人天中殺
@@ -7888,8 +7888,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                     onClick={() => setDirectionFilterMode("environmental")}
                     className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                       directionFilterMode === "environmental"
-                        ? "bg-rose-950/40 text-rose-400 border-rose-500/50 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
-                        : "bg-zinc-900/50 text-zinc-400 border-transparent hover:border-zinc-700/50"
+                        ? "bg-rose-50 text-rose-600 border-rose-200 shadow-[0_0_5px_rgba(244,63,94,0.2)]"
+                        : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
                     }`}
                   >
                     🌍 環境方位のみ
@@ -7899,7 +7899,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <div className="flex flex-wrap gap-2 self-stretch md:self-auto justify-end">
                   <button
                     onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
-                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30"}`}
+                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30"}`}
                   >
                     {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
                   </button>
@@ -7912,7 +7912,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             : "independent",
                         )
                       }
-                      className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-all bg-amber-950/40 text-amber-400 border-amber-500/30 hover:bg-amber-950/60"
+                      className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-all bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50"
                       title={
                         physicalMonthMode === "independent"
                           ? "物理独立型: 年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。"
@@ -7927,7 +7927,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                   )}
                   <button
                     onClick={() => setUseClassicalBoard(!useClassicalBoard)}
-                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-zinc-400 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-400 border-emerald-500/50 hover:bg-emerald-500/30"}`}
+                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${useClassicalBoard ? "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30" : "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30"}`}
                   >
                     Model:{" "}
                     {useClassicalBoard
@@ -7942,10 +7942,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <div
                   className={`mb-3 p-2 border text-[10px] font-mono leading-tight flex items-start gap-2 ${
                     directionFilterMode.includes("kigaku")
-                      ? "bg-purple-950/20 border-purple-500/30 text-purple-400"
+                      ? "bg-purple-50 border-purple-200 text-purple-600"
                       : directionFilterMode.includes("bazi")
                         ? "bg-yellow-950/20 border-yellow-500/30 text-yellow-400"
-                        : "bg-rose-950/20 border-rose-500/30 text-rose-400"
+                        : "bg-rose-50 border-rose-200 text-rose-600"
                   }`}
                 >
                   <span className="text-xs">⚠️</span>
@@ -8040,42 +8040,42 @@ ${timingOptimization?.recommendationText || "特になし"}
 
             {/* System Manual / Documentation */}
             <div className="w-full max-w-4xl mt-4">
-              <details className="bg-zinc-950/80 border border-zinc-800 rounded-md p-4 group cursor-pointer">
-                <summary className="text-[10px] sm:text-xs font-mono text-zinc-400 uppercase tracking-widest flex items-center gap-2 outline-none">
+              <details className="bg-white/80 border border-stone-200 rounded-md p-4 group cursor-pointer">
+                <summary className="text-[10px] sm:text-xs font-mono text-stone-500 uppercase tracking-widest flex items-center gap-2 outline-none">
                   <span className="text-emerald-500 group-open:rotate-90 transition-transform">
                     ▶
                   </span>
                   [ SYSTEM MANUAL ] 判定基準とモデル・ゾーンの仕様
                 </summary>
-                <div className="mt-4 text-xs sm:text-sm text-zinc-300 font-mono leading-relaxed space-y-6 cursor-text">
+                <div className="mt-4 text-xs sm:text-sm text-stone-600 font-mono leading-relaxed space-y-6 cursor-text">
                   {/* Model Differences */}
                   <div className="space-y-2">
-                    <h3 className="text-emerald-400 font-bold border-b border-zinc-800 pb-1">
+                    <h3 className="text-emerald-600 font-bold border-b border-stone-200 pb-1">
                       ■ 演算モデルの違い (PHYSICAL vs CLASSICAL)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                      <div className="bg-zinc-900/50 p-3 border-l-2 border-emerald-500">
+                      <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
                         <div className="text-emerald-500 font-bold mb-1">
                           PHYSICAL MODEL (天体位相・物理基準)
                         </div>
-                        <p className="text-zinc-400 text-[10px] sm:text-xs">
+                        <p className="text-stone-500 text-[10px] sm:text-xs">
                           宇宙のリアルタイムな物理データ（NASA/Swiss
                           Ephemeris）を使用。木星の正確な黄経や、太陽・月のリアルな重力・磁場位相からダイレクトに空間の周波数を割り出します。
                           <br />
                           <br />
-                          <span className="text-zinc-300">推奨用途:</span>{" "}
+                          <span className="text-stone-600">推奨用途:</span>{" "}
                           今日の体調管理、集中力の最大化、リアルな環境干渉（自律神経への影響）の回避など。
                         </p>
                       </div>
-                      <div className="bg-zinc-900/50 p-3 border-l-2 border-zinc-500">
-                        <div className="text-zinc-400 font-bold mb-1">
+                      <div className="bg-white/80 p-3 border-l-2 border-zinc-500">
+                        <div className="text-stone-500 font-bold mb-1">
                           CLASSICAL MODEL (節切り・暦基準)
                         </div>
-                        <p className="text-zinc-400 text-[10px] sm:text-xs">
+                        <p className="text-stone-500 text-[10px] sm:text-xs">
                           伝統的な九星気学や東洋占星術のカレンダーを使用。「立春」などの二十四節気を基準とし、過去数千年の統計データや解釈と完全に一致するルールベースのモデルです。
                           <br />
                           <br />
-                          <span className="text-zinc-300">推奨用途:</span>{" "}
+                          <span className="text-stone-600">推奨用途:</span>{" "}
                           対人交渉、引っ越し、大きな契約など、社会的なタイミングやバイオリズムの周期性を読む場合。
                         </p>
                       </div>
@@ -8084,33 +8084,33 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                   {/* Zone Differences */}
                   <div className="space-y-2">
-                    <h3 className="text-emerald-400 font-bold border-b border-zinc-800 pb-1">
+                    <h3 className="text-emerald-600 font-bold border-b border-stone-200 pb-1">
                       ■ ゾーン分類の定義 (SAFE vs OPTIMAL)
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                      <div className="bg-zinc-900/50 p-3 border-l-2 border-emerald-500">
+                      <div className="bg-white/80 p-3 border-l-2 border-emerald-500">
                         <div className="text-emerald-500 font-bold mb-1 flex items-center gap-2">
                           <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
                           [ GO ] 推奨方位 (OPTIMAL)
                         </div>
-                        <p className="text-zinc-400 text-[10px] sm:text-xs">
+                        <p className="text-stone-500 text-[10px] sm:text-xs">
                           有害なノイズ（凶殺）が一切存在しないことに加え、ユーザーの「本命星」とその方位の星が『相生（互いにエネルギーを与え合う関係）』になっています。
                           <br />
                           <br />
-                          <span className="text-zinc-300">意味:</span>{" "}
+                          <span className="text-stone-600">意味:</span>{" "}
                           リスクがないだけでなく、行くことで「エネルギー的なバフ（運気・活力の向上）」が得られる、システムが最も推奨するベストな方位です。
                         </p>
                       </div>
-                      <div className="bg-zinc-900/50 p-3 border-l-2 border-blue-500">
+                      <div className="bg-white/80 p-3 border-l-2 border-blue-500">
                         <div className="text-blue-500 font-bold mb-1 flex items-center gap-2">
                           <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                           [ SAFE ] 進入可能方位
                         </div>
-                        <p className="text-zinc-400 text-[10px] sm:text-xs">
+                        <p className="text-stone-500 text-[10px] sm:text-xs">
                           五黄殺、暗剣殺、天中殺といったあらゆる有害なノイズが一切存在しない方位です。
                           <br />
                           <br />
-                          <span className="text-zinc-300">意味:</span>{" "}
+                          <span className="text-stone-600">意味:</span>{" "}
                           行ってもマイナス（ペナルティ）を受けることはありませんが、特別なボーナスも得られない「無害なニュートラルゾーン（安全地帯）」です。
                         </p>
                       </div>
@@ -8142,7 +8142,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         <button
           onClick={handleSaveStateToDatabase}
           disabled={isSavingLog}
-          className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-400/50 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-200 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSavingLog ? (
             <span className="animate-pulse">保存中...</span>
@@ -8170,7 +8170,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
         <button
           onClick={exportMasterTelemetry}
-          className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-400/50 backdrop-blur-md"
+          className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-200 backdrop-blur-md"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -8191,7 +8191,7 @@ ${timingOptimization?.recommendationText || "特になし"}
         </button>
       </div>
       {sentinelNotification && (
-        <div className="fixed bottom-24 right-6 lg:right-12 z-50 bg-purple-950/90 border border-purple-500/50 text-purple-200 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-mono flex items-center gap-2 animate-fade-in backdrop-blur-sm">
+        <div className="fixed bottom-24 right-6 lg:right-12 z-50 bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-mono flex items-center gap-2 animate-fade-in backdrop-blur-sm">
           <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
           {sentinelNotification}
         </div>

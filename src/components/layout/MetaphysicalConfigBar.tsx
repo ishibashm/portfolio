@@ -244,32 +244,32 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   };
 
   return (
-    <div className="w-full bg-zinc-950/80 border border-zinc-800 rounded-2xl shadow-xl backdrop-blur-md overflow-hidden text-zinc-100 transition-all font-mono text-xs select-none">
+    <div className="w-full bg-white/80 border border-stone-200 rounded-2xl shadow-xl backdrop-blur-md overflow-hidden text-stone-800 transition-all font-mono text-xs select-none">
       {/* 1. Header (Compact Display Bar) */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex flex-wrap items-center justify-between gap-4 p-4 hover:bg-zinc-900/40 transition-colors cursor-pointer"
+        className="flex flex-wrap items-center justify-between gap-4 p-4 hover:bg-white/80 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-3.5">
-          <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 animate-pulse">
+          <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 border border-indigo-200 animate-pulse">
             <Compass className="w-4 h-4" />
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500 font-bold uppercase tracking-wider">
+              <span className="text-stone-400 font-bold uppercase tracking-wider">
                 目標日:
               </span>
-              <span className="text-white font-bold">{config.targetDate}</span>
+              <span className="text-stone-900 font-bold">{config.targetDate}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500 font-bold uppercase tracking-wider">
+              <span className="text-stone-400 font-bold uppercase tracking-wider">
                 基準:
               </span>
               <span
                 className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                   config.useClassicalBoard
-                    ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-                    : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                    ? "bg-indigo-500/20 text-indigo-600 border border-indigo-200"
+                    : "bg-amber-500/20 text-amber-600 border border-amber-200"
                 }`}
               >
                 {config.useClassicalBoard
@@ -278,18 +278,18 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500 font-bold uppercase tracking-wider">
+              <span className="text-stone-400 font-bold uppercase tracking-wider">
                 フィルタ:
               </span>
-              <span className="text-zinc-300 font-semibold">
+              <span className="text-stone-600 font-semibold">
                 {getFilterLabel(config.directionFilterMode).split(" ")[0]}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-zinc-500 font-bold uppercase tracking-wider">
+              <span className="text-stone-400 font-bold uppercase tracking-wider">
                 目的:
               </span>
-              <span className="text-zinc-300 font-semibold">
+              <span className="text-stone-600 font-semibold">
                 {getIntentLabel(config.actionIntent).split(" ")[0]}
               </span>
             </div>
@@ -298,42 +298,42 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
         <div className="flex items-center gap-3 ml-auto">
           {isSyncing && (
-            <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-              <RefreshCw className="w-3 h-3 animate-spin text-indigo-400" />
+            <span className="text-[10px] text-stone-400 flex items-center gap-1">
+              <RefreshCw className="w-3 h-3 animate-spin text-indigo-600" />
               Syncing...
             </span>
           )}
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-zinc-500" />
+            <ChevronUp className="w-4 h-4 text-stone-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-zinc-500" />
+            <ChevronDown className="w-4 h-4 text-stone-400" />
           )}
         </div>
       </div>
 
       {/* 2. Expanded Options (Accordion Settings Panel) */}
       {isExpanded && (
-        <div className="border-t border-zinc-900 bg-zinc-950/40 p-5 space-y-5 animate-slideDown">
+        <div className="border-t border-stone-200 bg-white/80 p-5 space-y-5 animate-slideDown">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {/* Target Date */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-indigo-400" /> 目標年月日
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" /> 目標年月日
               </label>
               <input
                 type="date"
                 value={config.targetDate}
                 onChange={handleDateChange}
-                className="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-zinc-200 focus:outline-none focus:border-indigo-500/40 transition-colors shadow-inner"
+                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:border-indigo-200 transition-colors shadow-inner"
               />
             </div>
 
             {/* Board Standard */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider flex items-center gap-1">
-                <Sliders className="w-3.5 h-3.5 text-indigo-400" /> 方位盤基準
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 方位盤基準
               </label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 bg-black rounded-xl border border-zinc-900">
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
                 <button
                   type="button"
                   onClick={() =>
@@ -341,8 +341,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.useClassicalBoard
-                      ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/30"
-                      : "text-zinc-500 hover:text-zinc-300"
+                      ? "bg-indigo-500/20 text-indigo-600 border border-indigo-200"
+                      : "text-stone-400 hover:text-stone-600"
                   }`}
                 >
                   暦基準 (古典)
@@ -354,8 +354,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   }
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     !config.useClassicalBoard
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                      : "text-zinc-500 hover:text-zinc-300"
+                      ? "bg-amber-500/20 text-amber-600 border border-amber-200"
+                      : "text-stone-400 hover:text-stone-600"
                   }`}
                 >
                   木星黄経 (物理)
@@ -365,10 +365,10 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               {/* Sub-option for Physical Month Star Calculation */}
               {!config.useClassicalBoard && (
                 <div className="pt-1 space-y-1">
-                  <span className="text-[9px] text-zinc-500 block">
+                  <span className="text-[9px] text-stone-400 block">
                     月盤の算出方法:
                   </span>
-                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-black rounded-lg border border-zinc-900">
+                  <div className="grid grid-cols-2 gap-1 p-0.5 bg-white rounded-lg border border-stone-200">
                     <button
                       type="button"
                       onClick={() =>
@@ -380,8 +380,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       className={`py-1 rounded text-[9px] font-bold transition-all ${
                         config.physicalMonthMode === "independent" ||
                         !config.physicalMonthMode
-                          ? "bg-zinc-800 text-white shadow-sm"
-                          : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                          ? "bg-stone-100 text-stone-900 shadow-sm"
+                          : "bg-transparent text-stone-400 hover:text-stone-600"
                       }`}
                       title="物理独立型: 年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。"
                     >
@@ -394,8 +394,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       }
                       className={`py-1 rounded text-[9px] font-bold transition-all ${
                         config.physicalMonthMode === "coupled"
-                          ? "bg-zinc-800 text-white shadow-sm"
-                          : "bg-transparent text-zinc-500 hover:text-zinc-300"
+                          ? "bg-stone-100 text-stone-900 shadow-sm"
+                          : "bg-transparent text-stone-400 hover:text-stone-600"
                       }`}
                       title="伝統連動型: 木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。"
                     >
@@ -408,11 +408,11 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
             {/* Direction Filter Mode */}
             <div className="space-y-2 col-span-1 sm:col-span-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider flex items-center gap-1">
-                <Compass className="w-3.5 h-3.5 text-indigo-400" />{" "}
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <Compass className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 吉凶方位フィルター
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-black rounded-xl border border-zinc-900">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
                 {(
                   [
                     "composite",
@@ -427,8 +427,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                     onClick={() => handleFilterChange(mode)}
                     className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
                       config.directionFilterMode === mode
-                        ? "bg-zinc-800 text-white border-zinc-700 shadow-sm"
-                        : "bg-transparent text-zinc-500 border-transparent hover:text-zinc-300"
+                        ? "bg-stone-100 text-stone-900 border-stone-300 shadow-sm"
+                        : "bg-transparent text-stone-400 border-transparent hover:text-stone-600"
                     }`}
                   >
                     {mode === "composite"
@@ -444,14 +444,14 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-zinc-900/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-stone-200">
             {/* Action Intent Weighting */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider flex items-center gap-1">
-                <PlayCircle className="w-3.5 h-3.5 text-indigo-400" />{" "}
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 アクション目的 (重みづけ)
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-black rounded-xl border border-zinc-900">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
                 {(["DEFAULT", "REST", "BUSINESS", "MIGRATION"] as const).map(
                   (intent) => (
                     <button
@@ -460,8 +460,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       onClick={() => handleIntentChange(intent)}
                       className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
                         config.actionIntent === intent
-                          ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30"
-                          : "bg-transparent text-zinc-500 border-transparent hover:text-zinc-300"
+                          ? "bg-indigo-500/20 text-indigo-600 border-indigo-200"
+                          : "bg-transparent text-stone-400 border-transparent hover:text-stone-600"
                       }`}
                     >
                       {intent === "DEFAULT"
@@ -478,10 +478,10 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
 
             {/* Explanation box */}
-            <div className="p-3 bg-black/60 rounded-xl border border-zinc-900/80 flex items-start gap-2.5 text-[10px] text-zinc-500 leading-normal">
-              <Info className="w-4 h-4 text-zinc-500 shrink-0 mt-0.5" />
+            <div className="p-3 bg-white/70 rounded-xl border border-stone-200 flex items-start gap-2.5 text-[10px] text-stone-400 leading-normal">
+              <Info className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-zinc-400 block mb-0.5">
+                <span className="font-bold text-stone-500 block mb-0.5">
                   フィルター/目的の効果説明
                 </span>
                 {config.directionFilterMode === "personal_kigaku" &&
@@ -493,7 +493,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 {config.directionFilterMode === "composite" &&
                   "「総合判定」が選択されています。環境の地磁気および天体干渉と、個人のバイオリズムを重ね合わせて統合評価します。"}
                 {!config.useClassicalBoard && (
-                  <span className="block mt-1 text-amber-400">
+                  <span className="block mt-1 text-amber-600">
                     {config.physicalMonthMode === "coupled"
                       ? "※物理月盤は「伝統連動型」で動作中：木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。"
                       : "※物理月盤は「物理独立型」で動作中：年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。"}

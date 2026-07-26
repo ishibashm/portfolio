@@ -148,12 +148,12 @@ export function AstroGridCalendar({
   // 各マスのスタイルクラスを決定
   const getBoxStyle = (day: DateScore, isToday: boolean) => {
     if (isTransitioning) {
-      return "bg-zinc-800/50 border border-zinc-800 animate-pulse cursor-wait";
+      return "bg-stone-100/80 border border-stone-200 animate-pulse cursor-wait";
     }
 
     const isLucky = isLuckyDay(day);
     if (luckyOnlyFilter && !isLucky) {
-      return "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all border border-zinc-200/20 dark:border-zinc-800/30 opacity-25 grayscale hover:opacity-50";
+      return "w-8 h-8 rounded-lg flex flex-col justify-between p-1 transition-all border border-zinc-200/20 dark:border-stone-200 opacity-25 grayscale hover:opacity-50";
     }
 
     let baseClass =
@@ -188,7 +188,7 @@ export function AstroGridCalendar({
     if (isHeavyBad) {
       return (
         baseClass +
-        "bg-red-500/20 text-red-300 border-red-500/40 hover:bg-red-500/30 hover:scale-110"
+        "bg-red-500/20 text-red-600 border-red-200 hover:bg-red-500/30 hover:scale-110"
       );
     }
 
@@ -216,7 +216,7 @@ export function AstroGridCalendar({
     if (hasLucky && !hasAnyBad) {
       return (
         baseClass +
-        "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30 hover:scale-110"
+        "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30 hover:scale-110"
       );
     }
 
@@ -224,15 +224,15 @@ export function AstroGridCalendar({
     // 通常 (グレー) の日
     return (
       baseClass +
-      "bg-zinc-900/60 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80 hover:scale-110"
+      "bg-white/80 text-stone-500 border-stone-200 hover:bg-stone-100/80 hover:scale-110"
     );
   };
 
   // 曜日表示カラー
   const getWeekdayColor = (day: DateScore) => {
-    if (day.holiday.isHoliday || day.weekday === 0) return "text-red-400"; // 日曜・祝日: 赤
-    if (day.weekday === 6) return "text-blue-400"; // 土曜: 青
-    return "text-zinc-500 dark:text-zinc-400";
+    if (day.holiday.isHoliday || day.weekday === 0) return "text-red-600"; // 日曜・祝日: 赤
+    if (day.weekday === 6) return "text-blue-600"; // 土曜: 青
+    return "text-stone-400 dark:text-stone-500";
   };
 
   return (
@@ -242,7 +242,7 @@ export function AstroGridCalendar({
           <span className="text-rose-500 font-bold">◆</span>
           <span>吉凶タイムライン・ヒートマップ</span>
           {luckyOnlyFilter && (
-            <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse font-sans">
+            <span className="text-[10px] bg-rose-500 text-stone-900 px-2 py-0.5 rounded-full font-semibold shadow-xs animate-pulse font-sans">
               大吉のみ表示中
             </span>
           )}
@@ -287,7 +287,7 @@ export function AstroGridCalendar({
               onClick={() => setLuckyOnlyFilter(!luckyOnlyFilter)}
               className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                 luckyOnlyFilter
-                  ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white font-bold shadow-xs"
+                  ? "bg-gradient-to-r from-amber-400 to-rose-400 text-stone-900 font-bold shadow-xs"
                   : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
               }`}
               title="大吉・吉方位日のみをハイライト表示"
@@ -382,27 +382,27 @@ export function AstroGridCalendar({
             if (day.status === "NOISE_NODE") badFactors.push("月交点ノイズ");
 
             return (
-              <div className="space-y-2 border-t border-zinc-900 pt-2 mt-2">
+              <div className="space-y-2 border-t border-stone-200 pt-2 mt-2">
                 {/* 算出内訳 */}
                 <div>
-                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                  <div className="text-stone-400 font-bold uppercase text-[9px] tracking-wider mb-0.5">
                     吉凶の内訳式:
                   </div>
-                  <div className="text-[9.5px] font-mono text-zinc-300 leading-normal">
+                  <div className="text-[9.5px] font-mono text-stone-600 leading-normal">
                     {parts.join(" ")} = {rawSum}点{clipInfo}
                   </div>
                 </div>
 
                 {/* 凶要素の解説 */}
                 {badFactors.length > 0 && (
-                  <div className="space-y-1 pt-1.5 border-t border-zinc-900/60">
-                    <div className="text-red-400 font-bold text-[9px] tracking-wider mb-0.5">
+                  <div className="space-y-1 pt-1.5 border-t border-stone-200">
+                    <div className="text-red-600 font-bold text-[9px] tracking-wider mb-0.5">
                       注意すべき凶兆:
                     </div>
                     {badFactors.map((factor) => (
                       <div
                         key={factor}
-                        className="text-zinc-400 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-500/30"
+                        className="text-stone-500 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-200"
                       >
                         {DISASTER_EXPLANATIONS[factor] ||
                           `${factor}の影響があります。`}
@@ -458,23 +458,23 @@ export function AstroGridCalendar({
               </div>
 
               {/* ツールチップ (ホバー表示, Leaflet等のポップアップに埋もれないよう超高zIndex) */}
-              <div className="absolute bottom-11 left-1/2 -translate-x-1/2 w-64 bg-zinc-950/95 border border-zinc-800 rounded-xl p-3.5 shadow-2xl text-[10px] text-zinc-300 leading-normal pointer-events-none hidden group-hover:block z-[9999] backdrop-blur-md">
+              <div className="absolute bottom-11 left-1/2 -translate-x-1/2 w-64 bg-white/80 border border-stone-200 rounded-xl p-3.5 shadow-2xl text-[10px] text-stone-600 leading-normal pointer-events-none hidden group-hover:block z-[9999] backdrop-blur-md">
                 {/* 日付ヘッダー */}
-                <div className="font-bold text-white border-b border-zinc-800 pb-1.5 mb-1.5 flex justify-between items-center text-xs">
+                <div className="font-bold text-stone-900 border-b border-stone-200 pb-1.5 mb-1.5 flex justify-between items-center text-xs">
                   <span>{tooltipTitle}</span>
                   {isToday && (
-                    <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/30">
+                    <span className="text-[9px] bg-indigo-500/20 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-200">
                       指定日
                     </span>
                   )}
                 </div>
 
                 {/* 暦情報 */}
-                <div className="mb-2 text-zinc-300">
-                  <div className="text-zinc-500 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                <div className="mb-2 text-stone-600">
+                  <div className="text-stone-400 font-bold uppercase text-[9px] tracking-wider mb-0.5">
                     当日の暦注:
                   </div>
-                  <div className="font-semibold text-white">
+                  <div className="font-semibold text-stone-900">
                     {lucksList || "特別な暦注なし"}
                   </div>
                 </div>
@@ -482,28 +482,28 @@ export function AstroGridCalendar({
                 {/* 吉日解説 */}
                 <div className="space-y-1.5 text-[9.5px]">
                   {day.rokuyo.includes("大安") && (
-                    <div className="flex gap-1 text-zinc-400">
+                    <div className="flex gap-1 text-stone-500">
                       <span className="font-bold text-amber-500">大安:</span>
                       <span>「大いに安し」万事進むに良い吉日</span>
                     </div>
                   )}
                   {day.luckyDays.isIchiryumanbai && (
-                    <div className="flex gap-1 text-zinc-400">
-                      <span className="font-bold text-emerald-400">
+                    <div className="flex gap-1 text-stone-500">
+                      <span className="font-bold text-emerald-600">
                         一粒万倍日:
                       </span>
                       <span>一粒の籾が万倍に実る、事始めに最適な日</span>
                     </div>
                   )}
                   {day.luckyDays.isTensho && (
-                    <div className="flex gap-1 text-zinc-400">
+                    <div className="flex gap-1 text-stone-500">
                       <span className="font-bold text-yellow-400">天赦日:</span>
                       <span>天が万物の罪を許す、暦上最上の大吉日</span>
                     </div>
                   )}
                   {day.luckyDays.isTendo && (
-                    <div className="flex gap-1 text-zinc-400">
-                      <span className="font-bold text-amber-400">★天道:</span>
+                    <div className="flex gap-1 text-stone-500">
+                      <span className="font-bold text-amber-600">★天道:</span>
                       <span>
                         その月の最大吉方位。すべての人に大吉をもたらす
                       </span>

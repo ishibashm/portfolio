@@ -141,7 +141,7 @@ export default function RentalsMapInner({
   hoveredPropertyId,
   metaphysicalProperties,
 }: RentalsMapInnerProps) {
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("dark");
+  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
 
   useEffect(() => {
     // Detect theme or sync with tailwind/site preferences
@@ -167,7 +167,7 @@ export default function RentalsMapInner({
   }, [mapProperties]);
 
   return (
-    <div className="w-full h-full min-h-[450px] relative rounded-2xl overflow-hidden border border-zinc-900 shadow-2xl">
+    <div className="w-full h-full min-h-[450px] relative rounded-2xl overflow-hidden border border-stone-200 shadow-2xl">
       <MapContainer
         center={defaultCenter}
         zoom={12}
@@ -201,7 +201,7 @@ export default function RentalsMapInner({
               setMapTheme(nextTheme);
               localStorage.setItem("map_theme", nextTheme);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-950/90 hover:bg-zinc-900 text-zinc-300 hover:text-zinc-100 font-mono text-[10px] font-bold shadow-xl active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 bg-white/80 hover:bg-white text-stone-600 hover:text-stone-800 font-mono text-[10px] font-bold shadow-xl active:scale-95 transition-all cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ LIGHT MAP" : "🌙 DARK MAP"}
           </button>
@@ -220,7 +220,7 @@ export default function RentalsMapInner({
               icon={customIcon}
             >
               <Popup className="custom-leaflet-popup">
-                <div className="font-sans text-xs text-zinc-100 p-2 space-y-3 min-w-[200px] bg-zinc-950 border border-zinc-850 rounded-xl">
+                <div className="font-sans text-xs text-stone-800 p-2 space-y-3 min-w-[200px] bg-stone-50 border border-zinc-850 rounded-xl">
                   {/* Property Title */}
                   <div className="space-y-1">
                     {prop.url ? (
@@ -228,36 +228,36 @@ export default function RentalsMapInner({
                         href={prop.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 leading-snug transition-colors text-sm hover:underline"
+                        className="font-bold text-emerald-600 hover:text-emerald-600 flex items-center gap-1 leading-snug transition-colors text-sm hover:underline"
                       >
                         {prop.property_name}
                         <ExternalLink className="w-3 h-3 shrink-0" />
                       </a>
                     ) : (
-                      <span className="font-bold text-zinc-100 text-sm leading-snug">
+                      <span className="font-bold text-stone-800 text-sm leading-snug">
                         {prop.property_name}
                       </span>
                     )}
 
                     {prop.area && (
-                      <div className="flex items-center gap-1 text-zinc-400 text-[10px] font-mono">
-                        <MapPin className="w-3 h-3 text-zinc-500" />
+                      <div className="flex items-center gap-1 text-stone-500 text-[10px] font-mono">
+                        <MapPin className="w-3 h-3 text-stone-400" />
                         <span>{prop.area}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Rent Summary */}
-                  <div className="bg-zinc-900/60 border border-zinc-900 p-2 rounded-lg flex items-center justify-between">
+                  <div className="bg-white/80 border border-stone-200 p-2 rounded-lg flex items-center justify-between">
                     <div>
-                      <span className="text-[8px] text-zinc-500 block uppercase tracking-wider">
+                      <span className="text-[8px] text-stone-400 block uppercase tracking-wider">
                         月額総家賃
                       </span>
-                      <span className="font-extrabold text-zinc-200 text-sm font-mono">
+                      <span className="font-extrabold text-stone-700 text-sm font-mono">
                         ¥{totalRent.toLocaleString()}
                       </span>
                     </div>
-                    <div className="text-right text-[8px] text-zinc-500 font-mono">
+                    <div className="text-right text-[8px] text-stone-400 font-mono">
                       <span>
                         家賃: ¥{prop.rent ? prop.rent.toLocaleString() : "0"}
                       </span>
@@ -272,27 +272,27 @@ export default function RentalsMapInner({
 
                   {/* Specs */}
                   <div className="grid grid-cols-3 gap-1.5 text-[10px] text-center font-mono">
-                    <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">
+                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                      <span className="text-[7px] text-stone-400 block">
                         間取り
                       </span>
-                      <span className="font-bold text-zinc-300">
+                      <span className="font-bold text-stone-600">
                         {prop.layout || "-"}
                       </span>
                     </div>
-                    <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">
+                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                      <span className="text-[7px] text-stone-400 block">
                         面積
                       </span>
-                      <span className="font-bold text-zinc-300">
+                      <span className="font-bold text-stone-600">
                         {prop.size_sqm ? `${prop.size_sqm}m²` : "-"}
                       </span>
                     </div>
-                    <div className="bg-[#0b0b0d] border border-zinc-900 p-1.5 rounded-md">
-                      <span className="text-[7px] text-zinc-500 block">
+                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                      <span className="text-[7px] text-stone-400 block">
                         駅徒歩
                       </span>
-                      <span className="font-bold text-zinc-300">
+                      <span className="font-bold text-stone-600">
                         {prop.minutes_to_station !== null
                           ? `${prop.minutes_to_station}分`
                           : "-"}
@@ -305,13 +305,13 @@ export default function RentalsMapInner({
                     const meta = metaphysicalProperties?.[prop.id];
                     if (!meta) return null;
                     return (
-                      <div className="bg-purple-950/10 border border-purple-900/20 p-2 rounded-lg flex items-center justify-between text-[10px]">
+                      <div className="bg-purple-50 border border-purple-200 p-2 rounded-lg flex items-center justify-between text-[10px]">
                         <div className="space-y-0.5">
-                          <span className="text-[7px] text-purple-400 font-mono uppercase tracking-wider block">
+                          <span className="text-[7px] text-purple-600 font-mono uppercase tracking-wider block">
                             方位適合度
                           </span>
-                          <span className="font-bold text-zinc-200 flex items-center gap-1 font-mono">
-                            <Compass className="w-3 h-3 text-purple-400 shrink-0 animate-pulse" />
+                          <span className="font-bold text-stone-700 flex items-center gap-1 font-mono">
+                            <Compass className="w-3 h-3 text-purple-600 shrink-0 animate-pulse" />
                             {meta.direction} ({meta.distance} km)
                           </span>
                         </div>
@@ -323,7 +323,7 @@ export default function RentalsMapInner({
                           </span>
                           <a
                             href={`/relocation/simulator?toLat=${prop.lat}&toLon=${prop.lon}&toName=${encodeURIComponent(prop.property_name)}`}
-                            className="text-[8px] text-purple-400 hover:text-purple-300 font-bold hover:underline flex items-center gap-0.5"
+                            className="text-[8px] text-purple-600 hover:text-purple-600 font-bold hover:underline flex items-center gap-0.5"
                           >
                             シミュレート
                             <ExternalLink className="w-2 h-2" />
@@ -334,7 +334,7 @@ export default function RentalsMapInner({
                   })()}
 
                   {/* Footer Info */}
-                  <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono border-t border-zinc-900 pt-2">
+                  <div className="flex items-center justify-between text-[9px] text-stone-400 font-mono border-t border-stone-200 pt-2">
                     <span>
                       築年数:{" "}
                       {prop.building_age !== null
@@ -349,18 +349,18 @@ export default function RentalsMapInner({
                     onClick={() => onToggleFavorite(prop.id)}
                     className={`w-full py-1.5 rounded-lg border text-[10px] font-bold flex items-center justify-center gap-1.5 transition-all ${
                       isFav
-                        ? "bg-amber-950/20 text-amber-400 border-amber-500/30 hover:bg-amber-950/40"
-                        : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200"
+                        ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50"
+                        : "bg-white text-stone-500 border-stone-200 hover:bg-stone-100 hover:text-stone-700"
                     }`}
                   >
                     {isFav ? (
                       <>
-                        <StarOff className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
+                        <StarOff className="w-3.5 h-3.5 text-amber-600 fill-amber-400/20" />
                         お気に入り解除
                       </>
                     ) : (
                       <>
-                        <Star className="w-3.5 h-3.5 text-zinc-400" />
+                        <Star className="w-3.5 h-3.5 text-stone-500" />
                         お気に入り登録
                       </>
                     )}

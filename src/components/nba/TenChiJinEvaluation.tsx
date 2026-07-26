@@ -379,49 +379,49 @@ export function TenChiJinEvaluation({
   const isJinLow = humanMetrics.score <= 40;
 
   return (
-    <div className="bg-zinc-950/70 border border-zinc-900 rounded-[2rem] p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
+    <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
       {/* Glow Effects */}
       <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-zinc-900/60">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-stone-200">
         <div>
-          <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase block mb-1">
+          <span className="text-[10px] font-mono tracking-widest text-stone-400 uppercase block mb-1">
             [ SYSTEM INTEGRATION EVALUATION ]
           </span>
-          <h3 className="text-sm font-semibold tracking-wider text-zinc-300 flex items-center gap-2">
-            <BrainCircuit size={16} className="text-indigo-400" />
+          <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
+            <BrainCircuit size={16} className="text-indigo-600" />
             天地人・統合適合性マトリクス
           </h3>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[9px] font-mono text-zinc-500 uppercase block">
+            <span className="text-[9px] font-mono text-stone-400 uppercase block">
               総合シンクロ指数
             </span>
             <div className="flex items-baseline gap-1">
               <span
                 className={`text-2xl font-black font-mono tracking-tighter ${
                   overallScore > 70
-                    ? "text-emerald-400"
+                    ? "text-emerald-600"
                     : overallScore > 40
-                      ? "text-amber-400"
-                      : "text-red-400 animate-pulse"
+                      ? "text-amber-600"
+                      : "text-red-600 animate-pulse"
                 }`}
               >
                 {overallScore}
               </span>
-              <span className="text-zinc-600 text-xs font-mono">/100</span>
+              <span className="text-stone-400 text-xs font-mono">/100</span>
             </div>
           </div>
           <div
             className={`px-2.5 py-1 text-[10px] font-bold font-mono tracking-widest uppercase border rounded-md ${
               overallScore > 70
-                ? "bg-emerald-950/20 text-emerald-400 border-emerald-500/30"
+                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
                 : overallScore > 40
-                  ? "bg-amber-950/20 text-amber-400 border-amber-500/30"
-                  : "bg-red-950/20 text-red-400 border-red-500/30 md:animate-pulse"
+                  ? "bg-amber-50 text-amber-600 border-amber-200"
+                  : "bg-red-50 text-red-600 border-red-200 md:animate-pulse"
             }`}
           >
             {overallScore > 70
@@ -436,10 +436,10 @@ export function TenChiJinEvaluation({
       {/* 3 Indicators (Ten-Chi-Jin) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* 天 - Time */}
-        <div className="bg-black/30 border border-zinc-900/50 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-              <Calendar size={13} className="text-fuchsia-400" />
+            <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+              <Calendar size={13} className="text-fuchsia-600" />
               天（時間タイミング）
             </span>
             <div className="flex items-center gap-1">
@@ -452,13 +452,13 @@ export function TenChiJinEvaluation({
                 </motion.div>
               )}
               <span
-                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-400" : "text-fuchsia-400"}`}
+                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-600" : "text-fuchsia-600"}`}
               >
                 {timeMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
             <div
               className={`h-full rounded-full transition-all duration-1000 ${
                 isTenLow
@@ -468,7 +468,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${timeMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-zinc-500 leading-normal font-sans">
+          <span className="text-[10px] text-stone-400 leading-normal font-sans">
             {timeMetrics.riskFactors.length > 0
               ? `注意: ${timeMetrics.riskFactors.slice(0, 2).join("・")}等による制限`
               : "宇宙天気、惑星アスペクトともに良好"}
@@ -476,10 +476,10 @@ export function TenChiJinEvaluation({
         </div>
 
         {/* 地 - Space */}
-        <div className="bg-black/30 border border-zinc-900/50 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-              <Compass size={13} className="text-emerald-400" />
+            <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+              <Compass size={13} className="text-emerald-600" />
               地（空間方位ベクトル）
             </span>
             <div className="flex items-center gap-1">
@@ -492,13 +492,13 @@ export function TenChiJinEvaluation({
                 </motion.div>
               )}
               <span
-                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-400" : "text-emerald-400"}`}
+                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-600" : "text-emerald-600"}`}
               >
                 {spaceMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
             <div
               className={`h-full rounded-full transition-all duration-1000 ${
                 isChiLow
@@ -508,7 +508,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${spaceMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-zinc-500 leading-normal font-sans">
+          <span className="text-[10px] text-stone-400 leading-normal font-sans">
             {spaceMetrics.hasSevereClash
               ? `警戒: 強力な方位凶殺（${spaceMetrics.worstClashType}）を検出`
               : "移動方向の地磁気エネルギーは安全領域"}
@@ -516,10 +516,10 @@ export function TenChiJinEvaluation({
         </div>
 
         {/* 人 - Human */}
-        <div className="bg-black/30 border border-zinc-900/50 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
-            <span className="text-xs font-bold text-zinc-400 flex items-center gap-1.5">
-              <Heart size={13} className="text-teal-400" />
+            <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
+              <Heart size={13} className="text-teal-600" />
               人（心身・相性シンクロ）
             </span>
             <div className="flex items-center gap-1">
@@ -532,13 +532,13 @@ export function TenChiJinEvaluation({
                 </motion.div>
               )}
               <span
-                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-400" : "text-teal-400"}`}
+                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-600" : "text-teal-600"}`}
               >
                 {humanMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-zinc-900 h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
             <div
               className={`h-full rounded-full transition-all duration-1000 ${
                 isJinLow
@@ -548,7 +548,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${humanMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-zinc-500 leading-normal font-sans">
+          <span className="text-[10px] text-stone-400 leading-normal font-sans">
             {members.length > 0
               ? `相性: ${humanMetrics.compatibilityScore}% (同伴者 ${members.length} 名)`
               : "個人コンディションが100%連動中"}
@@ -560,10 +560,10 @@ export function TenChiJinEvaluation({
       <div
         className={`border p-4 rounded-xl flex gap-3 text-xs leading-relaxed ${
           advice.severity === "high"
-            ? "bg-red-950/20 border-red-500/30 text-red-200"
+            ? "bg-red-50 border-red-200 text-red-700"
             : advice.severity === "medium"
-              ? "bg-amber-950/10 border-amber-500/20 text-amber-200"
-              : "bg-emerald-950/10 border-emerald-500/20 text-emerald-200"
+              ? "bg-amber-50 border-amber-200 text-amber-700"
+              : "bg-emerald-50 border-emerald-200 text-emerald-700"
         }`}
       >
         <div className="mt-0.5 shrink-0">
@@ -594,7 +594,7 @@ export function TenChiJinEvaluation({
           {/* Action Trigger Button */}
           {advice.actionLabel &&
             (onApplyAction || advice.actionType === "NAVIGATE") && (
-              <div className="mt-2 pt-2 border-t border-zinc-900/50">
+              <div className="mt-2 pt-2 border-t border-stone-200">
                 <button
                   onClick={() => {
                     if (advice.actionType === "NAVIGATE") {

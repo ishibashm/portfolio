@@ -41,7 +41,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center font-mono text-xs text-gray-500">
+      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-400">
         マップを読み込み中...
       </div>
     ),
@@ -859,7 +859,7 @@ export default function RegionalWealthPage() {
     const configIndex = sortConfigs.findIndex((c) => c.key === key);
     if (configIndex === -1) {
       return (
-        <span className="inline-block w-4 text-transparent group-hover:text-gray-400">
+        <span className="inline-block w-4 text-transparent group-hover:text-stone-500">
           ↑
         </span>
       );
@@ -894,17 +894,17 @@ export default function RegionalWealthPage() {
                 <Compass className="w-8 h-8 text-rose-500" />
                 Relocation & Wealth Matrix Dashboard
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-stone-400 dark:text-stone-500 mt-1">
                 Combining astrophysical models (with magnetic declination
                 correction) and per-capita income/land price data to find the
                 optimal relocation destination or business base.
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-600 border border-blue-200 dark:border-blue-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
                   データソース: 国交省 不動産情報ライブラリ (MLIT)
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 dark:bg-purple-50 text-purple-700 dark:text-purple-600 border border-purple-200 dark:border-purple-800">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
                   構造化データ: FUDOSAN DB
                 </span>
@@ -914,15 +914,15 @@ export default function RegionalWealthPage() {
         </div>
 
         {/* Controls Section */}
-        <div className="bg-white dark:bg-gray-900 p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-col gap-5">
+        <div className="bg-white dark:bg-white p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-stone-200 shadow-sm flex flex-col gap-5">
           {/* Presets Row */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-stone-200">
             <div className="flex flex-wrap items-center gap-2">
               <Bookmark className="w-4 h-4 text-indigo-500" />
               <select
                 value={selectedPresetId}
                 onChange={handleLoadPreset}
-                className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48 md:w-64"
+                className="bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48 md:w-64"
               >
                 <option value="">カスタム設定...</option>
                 {presets.map((p) => (
@@ -934,7 +934,7 @@ export default function RegionalWealthPage() {
               {selectedPresetId && (
                 <button
                   onClick={handleDeletePreset}
-                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-50 rounded-lg transition-colors"
                   title="このプリセットを削除"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -947,11 +947,11 @@ export default function RegionalWealthPage() {
                 placeholder="新しい設定の名前..."
                 value={newPresetName}
                 onChange={(e) => setNewPresetName(e.target.value)}
-                className="flex-1 md:w-48 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="flex-1 md:w-48 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
               <button
                 onClick={handleSavePreset}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium rounded-lg flex items-center gap-1 transition-colors shrink-0"
+                className="px-3 py-1.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 text-gray-700 dark:text-stone-600 text-sm font-medium rounded-lg flex items-center gap-1 transition-colors shrink-0"
               >
                 <Save className="w-4 h-4" />
                 保存
@@ -962,7 +962,7 @@ export default function RegionalWealthPage() {
           {/* Top Row: General Settings */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 目標日
               </label>
               <input
@@ -973,11 +973,11 @@ export default function RegionalWealthPage() {
                   setSelectedPresetId("");
                   saveUnifiedConfig({ target_date: e.target.value });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 生年月日 (出生チャート)
               </label>
               <input
@@ -988,12 +988,12 @@ export default function RegionalWealthPage() {
                   setSelectedPresetId("");
                   saveUnifiedConfig({ birth_date: e.target.value });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 title="出生時間が不明な場合は 12:00 等を入力してください"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 方位計算エンジン
               </label>
               <select
@@ -1005,14 +1005,14 @@ export default function RegionalWealthPage() {
                     use_classical_board: e.target.value === "classical",
                   });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="physical">天体軌道モデル (Physical)</option>
                 <option value="classical">節切り暦モデル (Classical)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 方位計算レイヤー
               </label>
               <select
@@ -1022,7 +1022,7 @@ export default function RegionalWealthPage() {
                   setSelectedPresetId("");
                   saveUnifiedConfig({ layer_mode: e.target.value });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="final">統合ベクター (Final)</option>
                 <option value="year">Year (年盤のみ)</option>
@@ -1031,7 +1031,7 @@ export default function RegionalWealthPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 北基準方位
               </label>
               <select
@@ -1042,14 +1042,14 @@ export default function RegionalWealthPage() {
                   setSelectedPresetId("");
                   saveUnifiedConfig({ use_true_north: val });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="false">磁北 (Magnetic)</option>
                 <option value="true">真北 (True)</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">
+              <label className="block text-xs font-semibold text-stone-400 mb-1">
                 月相タイミング補正
               </label>
               <select
@@ -1060,7 +1060,7 @@ export default function RegionalWealthPage() {
                   setSelectedPresetId("");
                   saveUnifiedConfig({ lunar_phase_modifier: val });
                 }}
-                className="w-full bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               >
                 <option value="true">有効 (+/- 10点補正)</option>
                 <option value="false">無効 (古典評価)</option>
@@ -1069,7 +1069,7 @@ export default function RegionalWealthPage() {
           </div>
 
           {/* Bottom Row: Coordinates & Action */}
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-end pt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-end pt-4 border-t border-gray-100 dark:border-stone-200">
             <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-end w-full md:w-auto">
               {/* Birth Coordinates */}
               <div className="flex flex-col gap-1 w-full md:w-auto">
@@ -1079,13 +1079,13 @@ export default function RegionalWealthPage() {
                   </label>
                   <button
                     onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800"}`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                   >
                     {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
                   </button>
                 </div>
                 {showBirthMapPicker && (
-                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
                     <LocationPickerInner
                       initialLat={Number(birthLat) || 35.6895}
                       initialLon={Number(birthLon) || 139.6917}
@@ -1113,7 +1113,7 @@ export default function RegionalWealthPage() {
                           : undefined,
                       });
                     }}
-                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     placeholder="緯度: 35.6"
                   />
                   <input
@@ -1128,7 +1128,7 @@ export default function RegionalWealthPage() {
                           : undefined,
                       });
                     }}
-                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                     placeholder="経度: 139.6"
                   />
                 </div>
@@ -1142,13 +1142,13 @@ export default function RegionalWealthPage() {
                   </label>
                   <button
                     onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800"}`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                   >
                     {showBaseMapPicker ? "地図を閉じる" : "地図検索"}
                   </button>
                 </div>
                 {showBaseMapPicker && (
-                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-gray-700">
+                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
                     <LocationPickerInner
                       initialLat={Number(baseLat) || 35.6895}
                       initialLon={Number(baseLon) || 139.6917}
@@ -1176,7 +1176,7 @@ export default function RegionalWealthPage() {
                           : undefined,
                       });
                     }}
-                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     placeholder="緯度"
                   />
                   <input
@@ -1191,7 +1191,7 @@ export default function RegionalWealthPage() {
                           : undefined,
                       });
                     }}
-                    className="w-24 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                     placeholder="経度"
                   />
                   <button
@@ -1200,7 +1200,7 @@ export default function RegionalWealthPage() {
                       setSelectedPresetId("");
                     }}
                     title="現在地をGPSで取得"
-                    className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 transition-colors shrink-0"
+                    className="p-2.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 rounded-lg text-stone-400 dark:text-stone-500 transition-colors shrink-0"
                   >
                     <LocateFixed className="w-4 h-4" />
                   </button>
@@ -1212,7 +1212,7 @@ export default function RegionalWealthPage() {
             <button
               onClick={() => fetchData()}
               disabled={loading}
-              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-8 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 h-10 shrink-0 shadow-md shadow-indigo-500/20"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-stone-900 font-medium px-8 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 h-10 shrink-0 shadow-md shadow-indigo-500/20"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -1225,27 +1225,27 @@ export default function RegionalWealthPage() {
         </div>
 
         {error && (
-          <div className="text-red-500 bg-red-100 dark:bg-red-900/30 p-4 rounded-lg shadow border border-red-200 dark:border-red-900">
+          <div className="text-red-500 bg-red-100 dark:bg-red-50 p-4 rounded-lg shadow border border-red-200 dark:border-red-200">
             {error}
           </div>
         )}
 
         <div className="flex flex-col lg:flex-row gap-6 lg:h-[600px]">
           {/* Map Section */}
-          <div className="w-full lg:w-2/3 h-[500px] lg:h-full bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 relative flex flex-col">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 rounded-t-2xl z-10 shrink-0">
+          <div className="w-full lg:w-2/3 h-[500px] lg:h-full bg-white dark:bg-white rounded-2xl shadow-sm border border-gray-200 dark:border-stone-200 relative flex flex-col">
+            <div className="p-4 border-b border-gray-200 dark:border-stone-200 flex justify-between items-center bg-white dark:bg-white rounded-t-2xl z-10 shrink-0">
               <h2 className="text-lg font-semibold flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-indigo-500" />
                 吉方位マップ
               </h2>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-stone-400">
                 中心座標:{" "}
                 {metadata ? `${metadata.baseLat}, ${metadata.baseLon}` : "..."}
               </div>
             </div>
             <div className="flex-1 relative rounded-b-2xl overflow-hidden p-2">
               {loading ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm z-20">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-20">
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 </div>
               ) : null}
@@ -1261,7 +1261,7 @@ export default function RegionalWealthPage() {
           {/* Sidebar Info Section */}
           <div className="w-full lg:w-1/3 flex flex-col gap-6 lg:h-full lg:overflow-y-auto">
             {/* Top Recommended */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-6 border border-gray-200 dark:border-gray-800">
+            <div className="bg-white dark:bg-white rounded-2xl shadow-sm p-6 border border-gray-200 dark:border-stone-200">
               <h2 className="text-lg font-semibold flex items-center gap-2 mb-4">
                 <ArrowRight className="w-5 h-5 text-emerald-500" />
                 最強の引越し先 候補
@@ -1278,13 +1278,13 @@ export default function RegionalWealthPage() {
                   .map((item, i) => (
                     <div
                       key={item.id}
-                      className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800"
+                      className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-stone-50 border border-gray-100 dark:border-stone-200"
                     >
                       <div>
-                        <div className="font-bold text-gray-900 dark:text-gray-100">
+                        <div className="font-bold text-gray-900 dark:text-stone-800">
                           {item.areaName}
                         </div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                        <div className="text-xs text-stone-400 flex items-center gap-1 mt-1">
                           <span
                             className={`w-2 h-2 rounded-full ${item.astrologyStatus === "OPTIMAL" ? "bg-emerald-500" : "bg-blue-400"}`}
                           ></span>
@@ -1292,14 +1292,14 @@ export default function RegionalWealthPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
+                        <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold">
                           {Math.round(item.incomePerCapita / 10000)}万円
                         </div>
                       </div>
                     </div>
                   ))}
                 {filteredData.length === 0 && !loading && (
-                  <div className="text-sm text-gray-500 text-center py-4">
+                  <div className="text-sm text-stone-400 text-center py-4">
                     条件に合う安全な方位が見つかりませんでした
                   </div>
                 )}
@@ -1307,8 +1307,8 @@ export default function RegionalWealthPage() {
             </div>
 
             {/* Scatter Chart Section */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-4 border border-gray-200 dark:border-gray-800 flex-1 min-h-[300px] flex flex-col">
-              <h2 className="text-sm font-semibold flex items-center gap-2 mb-4 text-gray-500 uppercase tracking-wider">
+            <div className="bg-white dark:bg-white rounded-2xl shadow-sm p-4 border border-gray-200 dark:border-stone-200 flex-1 min-h-[300px] flex flex-col">
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-4 text-stone-400 uppercase tracking-wider">
                 <Compass className="w-4 h-4 text-indigo-500" />
                 スコア分布
               </h2>
@@ -1360,8 +1360,8 @@ export default function RegionalWealthPage() {
             </div>
 
             {/* Data Source Information Card */}
-            <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm p-5 border border-gray-200 dark:border-gray-800 shrink-0">
-              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3 text-gray-900 dark:text-gray-100">
+            <div className="bg-white dark:bg-white rounded-2xl shadow-sm p-5 border border-gray-200 dark:border-stone-200 shrink-0">
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-3 text-gray-900 dark:text-stone-800">
                 <svg
                   className="w-4 h-4 text-blue-500"
                   xmlns="http://www.w3.org/2000/svg"
@@ -1380,7 +1380,7 @@ export default function RegionalWealthPage() {
                 </svg>
                 データインテリジェンス基盤
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 leading-relaxed">
+              <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 leading-relaxed">
                 本システムは、占術モデルによる方位スコア（アストロカートグラフィ・九星気学）に加え、日本の最も信頼性が高い公的不動産データを統合し、各地域の「投資対効果（コスパ）」と「富裕度」をシミュレーションしています。
               </p>
 
@@ -1391,13 +1391,13 @@ export default function RegionalWealthPage() {
                   rel="noopener noreferrer"
                   className="block group"
                 >
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-stone-50 border border-gray-100 dark:border-stone-200 hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                      <span className="text-xs font-bold text-gray-900 dark:text-stone-800">
                         国土交通省 不動産情報ライブラリ
                       </span>
                       <svg
-                        className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors"
+                        className="w-3 h-3 text-stone-500 group-hover:text-blue-500 transition-colors"
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
                         height="24"
@@ -1413,7 +1413,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-gray-500 leading-tight">
+                    <p className="text-[10px] text-stone-400 leading-tight">
                       620万件超の不動産取引データ、地価公示情報をベースにした公式統計値を用いています。
                     </p>
                   </div>
@@ -1425,13 +1425,13 @@ export default function RegionalWealthPage() {
                   rel="noopener noreferrer"
                   className="block group"
                 >
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-950 border border-gray-100 dark:border-gray-800 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-stone-50 border border-gray-100 dark:border-stone-200 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                      <span className="text-xs font-bold text-gray-900 dark:text-stone-800">
                         FUDOSAN DB
                       </span>
                       <svg
-                        className="w-3 h-3 text-gray-400 group-hover:text-purple-500 transition-colors"
+                        className="w-3 h-3 text-stone-500 group-hover:text-purple-500 transition-colors"
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
                         height="24"
@@ -1447,7 +1447,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-gray-500 leading-tight">
+                    <p className="text-[10px] text-stone-400 leading-tight">
                       AIによる構造化・賃料推定が可能な商用DBの概念を応用し、「コスパ指数（所得/地価）」を導出しています。
                     </p>
                   </div>
@@ -1458,8 +1458,8 @@ export default function RegionalWealthPage() {
         </div>
 
         {/* Table Section */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-gray-800 flex flex-col">
-          <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-800 flex flex-col gap-4">
+        <div className="bg-white dark:bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-200 dark:border-stone-200 flex flex-col">
+          <div className="p-4 md:p-6 border-b border-gray-200 dark:border-stone-200 flex flex-col gap-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-indigo-500" />
@@ -1468,7 +1468,7 @@ export default function RegionalWealthPage() {
               <div className="flex gap-2 flex-wrap items-center">
                 <button
                   onClick={handleExportCSV}
-                  className="px-3 py-1 text-xs rounded-full font-medium bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
+                  className="px-3 py-1 text-xs rounded-full font-medium bg-white text-stone-900 dark:bg-white dark:text-gray-900 hover:bg-stone-100 dark:hover:bg-gray-200 transition-colors flex items-center gap-1 shadow-sm"
                   title="現在の検索条件でCSVダウンロード"
                 >
                   <Download className="w-3 h-3" />
@@ -1481,22 +1481,22 @@ export default function RegionalWealthPage() {
             <div className="flex flex-wrap gap-3 items-center pt-2">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                  <Search className="h-4 w-4 text-stone-500" />
                 </div>
                 <input
                   type="text"
                   placeholder="エリア名で絞り込み..."
                   value={filterName}
                   onChange={handleFilterNameChange}
-                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48"
+                  className="pl-9 pr-3 py-1.5 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-48"
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-400" />
+                <Filter className="h-4 w-4 text-stone-500" />
                 <select
                   value={filterStatus}
                   onChange={handleFilterStatusChange}
-                  className="bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 >
                   <option value="ALL">全ステータス</option>
                   <option value="OPTIMAL">OPTIMAL (大吉)</option>
@@ -1507,7 +1507,7 @@ export default function RegionalWealthPage() {
                 </select>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
                   所得(万円)≧
                 </span>
                 <input
@@ -1518,11 +1518,11 @@ export default function RegionalWealthPage() {
                     setFilterMinIncome(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
                   距離(km)≦
                 </span>
                 <input
@@ -1533,11 +1533,11 @@ export default function RegionalWealthPage() {
                     setFilterMaxDistance(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
                   スコア≧
                 </span>
                 <input
@@ -1548,7 +1548,7 @@ export default function RegionalWealthPage() {
                     setFilterMinScore(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-gray-950 border border-gray-300 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  className="w-20 px-2 py-1.5 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 />
               </div>
             </div>
@@ -1556,11 +1556,11 @@ export default function RegionalWealthPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left whitespace-nowrap">
-              <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-900/50">
+              <thead className="text-xs text-stone-400 dark:text-stone-500 uppercase bg-gray-50 dark:bg-white/80">
                 <tr>
                   <th
                     scope="col"
-                    className="px-6 py-4 rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 rounded-tl-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("areaName", e)}
                   >
                     エリア名 {renderSortIndicator("areaName")}
@@ -1570,42 +1570,42 @@ export default function RegionalWealthPage() {
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 text-center cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("astrology", e)}
                   >
                     方位スコア {renderSortIndicator("astrology")}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("distance", e)}
                   >
                     距離 (km) {renderSortIndicator("distance")}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("income", e)}
                   >
                     1人あたり平均所得 {renderSortIndicator("income")}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("landPrice", e)}
                   >
                     平均地価 (㎡) {renderSortIndicator("landPrice")}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none"
+                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("cospa", e)}
                   >
                     コスパ指数 {renderSortIndicator("cospa")}
                   </th>
                   <th
                     scope="col"
-                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group select-none rounded-tr-lg"
+                    className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none rounded-tr-lg"
                     onClick={(e) => handleSortChange("population", e)}
                   >
                     納税義務者数 {renderSortIndicator("population")}
@@ -1616,15 +1616,15 @@ export default function RegionalWealthPage() {
                 {currentTableData.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="hover:bg-gray-50 dark:hover:bg-stone-100/80 transition-colors"
                   >
-                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-gray-100">
+                    <td className="px-6 py-4 font-semibold text-gray-900 dark:text-stone-800">
                       {item.areaName}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-gray-500">
+                          <span className="font-mono font-bold text-stone-400">
                             {item.direction !== item.magneticDirection ? (
                               <span
                                 title={`真北: ${item.direction} / 磁北: ${item.magneticDirection}`}
@@ -1648,7 +1648,7 @@ export default function RegionalWealthPage() {
                               ⚠️偏角ズレ警告
                             </span>
                           ) : (
-                            <span className="text-xs uppercase tracking-wider text-gray-400">
+                            <span className="text-xs uppercase tracking-wider text-stone-500">
                               {item.astrologyStatus}
                             </span>
                           )}
@@ -1659,38 +1659,38 @@ export default function RegionalWealthPage() {
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                           item.astrologyScore >= 80
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-600"
                             : item.astrologyScore >= 60
-                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                              : "bg-gray-500/10 text-gray-600 dark:text-gray-400"
+                              ? "bg-blue-500/10 text-blue-600 dark:text-blue-600"
+                              : "bg-gray-500/10 text-stone-400 dark:text-stone-500"
                         }`}
                       >
                         {item.astrologyScore}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right font-mono text-gray-500">
+                    <td className="px-6 py-4 text-right font-mono text-stone-400">
                       {item.distanceKm
                         ? `${item.distanceKm.toFixed(1)} km`
                         : "-"}
                     </td>
-                    <td className="px-6 py-4 text-right font-mono font-medium text-indigo-600 dark:text-indigo-400">
+                    <td className="px-6 py-4 text-right font-mono font-medium text-indigo-600 dark:text-indigo-600">
                       {formatCurrency(item.incomePerCapita)}
                     </td>
-                    <td className="px-6 py-4 text-right text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 text-right text-stone-400 dark:text-stone-500">
                       {item.landPricePerSqm
                         ? formatCurrency(item.landPricePerSqm)
                         : "-"}
                     </td>
                     <td className="px-6 py-4 text-right">
                       {item.cospaIndex ? (
-                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                        <span className="font-mono text-emerald-600 dark:text-emerald-600 font-bold">
                           {item.cospaIndex.toFixed(2)}
                         </span>
                       ) : (
                         "-"
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 text-right text-stone-400 dark:text-stone-500">
                       <div className="flex items-center justify-end gap-1">
                         <Users className="w-4 h-4 opacity-50" />
                         {new Intl.NumberFormat("ja-JP").format(
@@ -1705,7 +1705,7 @@ export default function RegionalWealthPage() {
                   <tr>
                     <td
                       colSpan={8}
-                      className="px-6 py-8 text-center text-gray-500"
+                      className="px-6 py-8 text-center text-stone-400"
                     >
                       条件に一致するデータが見つかりませんでした。
                     </td>
@@ -1717,18 +1717,18 @@ export default function RegionalWealthPage() {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="p-4 border-t border-gray-200 dark:border-stone-200 flex items-center justify-between">
+              <div className="text-sm text-stone-400 dark:text-stone-500">
                 全{" "}
-                <span className="font-medium text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-gray-900 dark:text-stone-800">
                   {sortedTableData.length}
                 </span>{" "}
                 件中
-                <span className="font-medium text-gray-900 dark:text-gray-100 ml-2">
+                <span className="font-medium text-gray-900 dark:text-stone-800 ml-2">
                   {(currentPage - 1) * itemsPerPage + 1}
                 </span>{" "}
                 -
-                <span className="font-medium text-gray-900 dark:text-gray-100 ml-1">
+                <span className="font-medium text-gray-900 dark:text-stone-800 ml-1">
                   {Math.min(currentPage * itemsPerPage, sortedTableData.length)}
                 </span>{" "}
                 件を表示
@@ -1737,12 +1737,12 @@ export default function RegionalWealthPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium rounded-lg border border-gray-300 dark:border-stone-300 bg-white dark:bg-white text-gray-700 dark:text-stone-600 hover:bg-gray-50 dark:hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   前へ
                 </button>
-                <div className="flex items-center px-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center px-2 text-sm text-stone-400 dark:text-stone-500">
                   {currentPage} / {totalPages}
                 </div>
                 <button
@@ -1750,7 +1750,7 @@ export default function RegionalWealthPage() {
                     setCurrentPage((p) => Math.min(totalPages, p + 1))
                   }
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-3 py-1.5 flex items-center gap-1 text-sm font-medium rounded-lg border border-gray-300 dark:border-stone-300 bg-white dark:bg-white text-gray-700 dark:text-stone-600 hover:bg-gray-50 dark:hover:bg-stone-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   次へ
                   <ChevronRight className="w-4 h-4" />
