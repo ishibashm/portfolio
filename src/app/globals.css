@@ -1,21 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  /* ===== Warm Glass Theme Tokens =====
+  /* ===== High-Contrast Warm Glass Theme Tokens =====
      全サブドメイン共通のデザイントークン。
-     コンポーネント側では極力この変数か、下の @layer utilities の
-     .wg-* ユーティリティを使い、生の色指定の増殖を避けること。 */
-  --background: #faf7f3; /* warm paper */
-  --foreground: #292524; /* stone-800 */
+     背景と文字のコントラスト・可読性を最高レベルに維持します。 */
+  --background: #f7f4f0; /* warm paper background */
+  --foreground: #0f172a; /* slate-900: くっきり深みのある本文文字 */
 
-  --wg-ink: #1c1917; /* stone-900: 見出し */
-  --wg-ink-muted: #78716c; /* stone-500: 補足テキスト */
-  --wg-accent: #f43f5e; /* rose-500: プライマリアクセント */
+  --wg-ink: #0f172a; /* slate-900: 大見出しタイトル */
+  --wg-ink-muted: #334155; /* slate-700: くっきり見やすい補足テキスト */
+  --wg-accent: #e11d48; /* rose-600: プライマリアクセント */
   --wg-accent-soft: #ffe4e6; /* rose-100 */
-  --wg-gold: #f59e0b; /* amber-500: サブアクセント */
-  --wg-surface: rgba(255, 255, 255, 0.8); /* グラスカード地 */
-  --wg-surface-border: rgba(255, 228, 230, 0.8); /* rose-100/80 */
-  --wg-shadow: rgba(255, 228, 230, 0.35); /* shadow-rose-100/30〜40 */
+  --wg-gold: #d97706; /* amber-600: サブアクセント */
+  --wg-surface: rgba(255, 255, 255, 0.92); /* 文字を浮き立たせる高不透明度カード地 */
+  --wg-surface-border: rgba(203, 213, 225, 0.9); /* slate-200/90 の引き締まった境界線 */
+  --wg-shadow: rgba(15, 23, 42, 0.08); /* 落ち着いた立体影 */
 }
 
 @theme inline {
