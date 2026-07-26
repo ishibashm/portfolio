@@ -1,9 +1,22 @@
+"use client";
+
+import { useEffect } from "react";
 import { SolarTimeClock } from "@/domains/metaphysical";
 import { SubdomainLauncherGrid } from "@/domains/launcher";
 import Link from "next/link";
 import { LayoutDashboard, Sparkles, Heart } from "lucide-react";
 
 export default function Home() {
+  // Prevent browser auto-scrolling to bottom on load
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative flex flex-col items-center justify-start overflow-y-auto py-8 px-4 md:px-8 gap-8 font-sans">
       
