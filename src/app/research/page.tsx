@@ -428,7 +428,7 @@ export default function DataEnginePage() {
             </div>
 
             {/* File Preview */}
-            <div className="lg:col-span-2 p-6 bg-[#0a0a0c] flex flex-col h-[500px]">
+            <div className="lg:col-span-2 p-6 bg-stone-50 flex flex-col h-[500px]">
               {selectedFileContent ? (
                 <>
                   <div className="flex items-center justify-between mb-4">

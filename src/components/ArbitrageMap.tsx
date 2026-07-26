@@ -7,7 +7,7 @@ import React from "react";
 const ArbitrageMapInner = dynamic(() => import("./ArbitrageMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-[#050505] border border-gray-200 dark:border-gray-800 rounded-2xl flex items-center justify-center font-mono text-xs text-zinc-500 animate-pulse">
+    <div className="w-full h-full bg-stone-100 border border-stone-200 rounded-2xl flex items-center justify-center font-mono text-xs text-stone-500 animate-pulse">
       [ 地図システムを読み込み中... ]
     </div>
   ),

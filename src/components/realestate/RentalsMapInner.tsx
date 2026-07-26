@@ -272,7 +272,7 @@ export default function RentalsMapInner({
 
                   {/* Specs */}
                   <div className="grid grid-cols-3 gap-1.5 text-[10px] text-center font-mono">
-                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                    <div className="bg-white/80 border border-rose-100/80 p-1.5 rounded-md shadow-sm">
                       <span className="text-[7px] text-stone-400 block">
                         間取り
                       </span>
@@ -280,7 +280,7 @@ export default function RentalsMapInner({
                         {prop.layout || "-"}
                       </span>
                     </div>
-                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                    <div className="bg-white/80 border border-rose-100/80 p-1.5 rounded-md shadow-sm">
                       <span className="text-[7px] text-stone-400 block">
                         面積
                       </span>
@@ -288,7 +288,7 @@ export default function RentalsMapInner({
                         {prop.size_sqm ? `${prop.size_sqm}m²` : "-"}
                       </span>
                     </div>
-                    <div className="bg-[#0b0b0d] border border-stone-200 p-1.5 rounded-md">
+                    <div className="bg-white/80 border border-rose-100/80 p-1.5 rounded-md shadow-sm">
                       <span className="text-[7px] text-stone-400 block">
                         駅徒歩
                       </span>

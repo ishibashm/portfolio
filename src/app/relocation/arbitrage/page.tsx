@@ -1114,10 +1114,10 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[30%]"
-            } bg-gray-50 dark:bg-[#09090b] rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
+            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
           >
             {/* Sticky Header */}
-            <div className="sticky top-0 bg-gray-50/95 dark:bg-[#09090b]/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0">
+            <div className="sticky top-0 bg-gray-50/95 dark:bg-stone-50/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
                   条件 ({activeFiltersCount})

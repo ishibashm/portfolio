@@ -8,7 +8,7 @@ import type { RentalProperty } from "@/app/rentals/page";
 const RentalsMapInner = dynamic(() => import("./RentalsMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-[#050505] border border-zinc-900 rounded-2xl flex flex-col items-center justify-center font-mono text-xs text-zinc-500 animate-pulse gap-3 min-h-[400px]">
+    <div className="w-full h-full bg-stone-100 border border-stone-200 rounded-2xl flex flex-col items-center justify-center font-mono text-xs text-stone-500 animate-pulse gap-3 min-h-[400px]">
       <div className="animate-spin w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full"></div>
       <span>[ 地図システムを読み込み中... ]</span>
     </div>

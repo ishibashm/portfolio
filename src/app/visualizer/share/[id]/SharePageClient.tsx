@@ -149,7 +149,7 @@ export default function SharePageClient({ component }: SharePageClientProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-[#030303] text-stone-800 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen w-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 overflow-hidden font-sans">
       {/* Top Navigation Bar */}
       <header className="flex items-center justify-between px-6 py-4 bg-stone-50/80 backdrop-blur-md border-b border-stone-200/60 shrink-0 z-20">
         <div className="flex items-center gap-4">
@@ -246,7 +246,7 @@ export default function SharePageClient({ component }: SharePageClientProps) {
       </header>
 
       {/* Main Canvas Display */}
-      <main className="flex-1 bg-[#060608] relative overflow-hidden flex items-center justify-center p-4">
+      <main className="flex-1 bg-stone-100/60 relative overflow-hidden flex items-center justify-center p-4">
         {/* Decorative Grid and Background Glows */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f2e_1px,transparent_1px),linear-gradient(to_bottom,#1f1f2e_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-10 pointer-events-none" />
         <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />

@@ -2684,7 +2684,7 @@ export function NBADashboard({
 
               {/* Token Generation Console */}
               {data.nba.actionResult.llmPredictionTrace && (
-                <div className="md:col-span-4 p-6 rounded-[2rem] bg-[#0c0c0e] border border-stone-200 backdrop-blur-md shadow-2xl mt-2 relative overflow-hidden group">
+                <div className="md:col-span-4 p-6 rounded-[2rem] bg-white/85 border border-stone-200 backdrop-blur-xl shadow-xl shadow-rose-100/30 mt-2 relative overflow-hidden group">
                   {/* Console Header */}
                   <div className="absolute top-0 left-0 right-0 h-8 bg-stone-50 border-b border-stone-200 px-4 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">

@@ -680,7 +680,7 @@ export default function ArbitrageMapInner({
 
   if (!mounted) {
     return (
-      <div className="w-full h-full bg-[#050505] flex items-center justify-center font-mono text-xs text-stone-400">
+      <div className="w-full h-full bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-500">
         [ 地図エンジンの初期化中... ]
       </div>
     );

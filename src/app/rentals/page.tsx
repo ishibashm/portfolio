@@ -850,7 +850,7 @@ export default function RentalsDashboard() {
             <button
               onClick={handleGenerateSample}
               disabled={isGenerating || loading}
-              className="flex-1 md:flex-none px-4 py-2 bg-stone-800 hover:bg-stone-700 text-stone-900 border border-stone-700 rounded-xl text-xs sm:text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
+              className="flex-1 md:flex-none px-4 py-2 bg-white/90 hover:bg-rose-50 text-stone-700 border border-rose-200 rounded-xl text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98]"
             >
               {isGenerating ? (
                 <div className="animate-spin w-3.5 h-3.5 border-2 border-zinc-500 border-t-transparent rounded-full" />
@@ -1267,7 +1267,7 @@ export default function RentalsDashboard() {
                     content={({ active, payload, label }) => {
                       if (active && payload && payload.length) {
                         return (
-                          <div className="bg-[#0b0b0d] border border-stone-200 p-3 rounded-xl shadow-xl text-xs font-mono space-y-1.5">
+                          <div className="bg-white border border-stone-200 p-3 rounded-xl shadow-xl text-xs font-mono space-y-1.5">
                             <p className="text-stone-500 font-bold border-b border-stone-200 pb-1 mb-1">
                               2026-{label}
                             </p>
@@ -1362,7 +1362,7 @@ export default function RentalsDashboard() {
                 placeholder="築年数上限 (年)"
                 value={filterMaxAge}
                 onChange={(e) => setFilterMaxAge(e.target.value)}
-                className="w-full bg-[#121214] border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
+                className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
               />
             </div>
 
@@ -1829,7 +1829,7 @@ export default function RentalsDashboard() {
 
                         {/* Property Specs */}
                         <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                          <div className="bg-[#0b0b0d] border border-stone-200 p-2 rounded-lg text-center">
+                          <div className="bg-white/80 border border-rose-100/80 p-2 rounded-lg text-center shadow-sm">
                             <span className="text-[8px] text-stone-400 block uppercase tracking-wider mb-1">
                               間取り
                             </span>
@@ -1837,7 +1837,7 @@ export default function RentalsDashboard() {
                               {prop.layout || "N/A"}
                             </span>
                           </div>
-                          <div className="bg-[#0b0b0d] border border-stone-200 p-2 rounded-lg text-center">
+                          <div className="bg-white/80 border border-rose-100/80 p-2 rounded-lg text-center shadow-sm">
                             <span className="text-[8px] text-stone-400 block uppercase tracking-wider mb-1">
                               専有面積
                             </span>
@@ -2198,7 +2198,7 @@ export default function RentalsDashboard() {
         {/* Compare Modal */}
         {isCompareOpen && (
           <div className="fixed inset-0 bg-white/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-[#0b0b0d] border border-stone-200 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="bg-white/95 backdrop-blur-xl border border-rose-100/80 rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
               {/* Header */}
               <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200">
                 <div className="space-y-0.5">
@@ -2468,7 +2468,7 @@ export default function RentalsDashboard() {
         {/* Webhook Settings Modal */}
         {isWebhookModalOpen && (
           <div className="fixed inset-0 bg-white/70 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
-            <div className="bg-[#0b0b0d] border border-stone-200 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+            <div className="bg-white/95 backdrop-blur-xl border border-rose-100/80 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
               {/* Header */}
               <div className="flex justify-between items-center px-6 py-4 border-b border-stone-200">
                 <h3 className="text-base font-extrabold text-stone-800 flex items-center gap-2">

@@ -169,7 +169,7 @@ export default function KnowledgeEditorWidget() {
               </p>
             </div>
 
-            <div className="flex-1 border border-slate-800 rounded-xl bg-[#0a0f1c] relative overflow-hidden flex items-center justify-center">
+            <div className="flex-1 border border-stone-200 rounded-xl bg-stone-50 relative overflow-hidden flex items-center justify-center">
               {/* 背景のグリッド */}
               <div
                 className="absolute inset-0 opacity-10"
