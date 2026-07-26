@@ -29,6 +29,45 @@ export interface MetaphysicalConfig {
   baseLon?: number;
 }
 
+const FILTER_LABELS = {
+  composite: "総合判定 (Composite)",
+  personal_kigaku: "個人吉凶のみ (Nine Star Ki)",
+  personal_bazi: "個人天中殺のみ (Void Zodiac)",
+  environmental: "環境方位のみ (Environmental)",
+} satisfies Record<MetaphysicalConfig["directionFilterMode"], string>;
+
+const INTENT_LABELS = {
+  DEFAULT: "標準 (Default)",
+  REST: "休息・健康 (Rest)",
+  BUSINESS: "ビジネス (Business)",
+  MIGRATION: "長期移住 (Migration)",
+} satisfies Record<MetaphysicalConfig["actionIntent"], string>;
+
+function normalizeDirectionFilterMode(
+  value: unknown,
+): MetaphysicalConfig["directionFilterMode"] {
+  return typeof value === "string" && Object.hasOwn(FILTER_LABELS, value)
+    ? (value as MetaphysicalConfig["directionFilterMode"])
+    : "composite";
+}
+
+function normalizeActionIntent(
+  value: unknown,
+): MetaphysicalConfig["actionIntent"] {
+  return typeof value === "string" && Object.hasOwn(INTENT_LABELS, value)
+    ? (value as MetaphysicalConfig["actionIntent"])
+    : "DEFAULT";
+}
+
+function normalizeConfig(config: MetaphysicalConfig): MetaphysicalConfig {
+  return {
+    ...config,
+    directionFilterMode: normalizeDirectionFilterMode(
+      config.directionFilterMode,
+    ),
+    actionIntent: normalizeActionIntent(config.actionIntent),
+  };
+}
 const DEFAULT_CONFIG: MetaphysicalConfig = {
   targetDate: new Date().toISOString().split("T")[0],
   useClassicalBoard: true,
@@ -63,9 +102,13 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           if (parsed.physical_month_mode !== undefined)
             loadedConfig.physicalMonthMode = parsed.physical_month_mode;
           if (parsed.direction_filter_mode !== undefined)
-            loadedConfig.directionFilterMode = parsed.direction_filter_mode;
+            loadedConfig.directionFilterMode = normalizeDirectionFilterMode(
+              parsed.direction_filter_mode,
+            );
           if (parsed.action_intent !== undefined)
-            loadedConfig.actionIntent = parsed.action_intent;
+            loadedConfig.actionIntent = normalizeActionIntent(
+              parsed.action_intent,
+            );
           if (parsed.target_date) loadedConfig.targetDate = parsed.target_date;
           if (parsed.birth_date) loadedConfig.birthDate = parsed.birth_date;
           if (parsed.birth_lat !== undefined)
@@ -91,9 +134,13 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           if (apiData.physical_month_mode !== undefined)
             loadedConfig.physicalMonthMode = apiData.physical_month_mode;
           if (apiData.direction_filter_mode !== undefined)
-            loadedConfig.directionFilterMode = apiData.direction_filter_mode;
+            loadedConfig.directionFilterMode = normalizeDirectionFilterMode(
+              apiData.direction_filter_mode,
+            );
           if (apiData.action_intent !== undefined)
-            loadedConfig.actionIntent = apiData.action_intent;
+            loadedConfig.actionIntent = normalizeActionIntent(
+              apiData.action_intent,
+            );
           if (apiData.target_date)
             loadedConfig.targetDate = apiData.target_date;
           if (apiData.birth_date) loadedConfig.birthDate = apiData.birth_date;
@@ -123,8 +170,9 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     const handleGlobalUpdate = (event: Event) => {
       const customEvent = event as CustomEvent<MetaphysicalConfig>;
       if (customEvent.detail) {
-        setConfig(customEvent.detail);
-        if (onConfigChange) onConfigChange(customEvent.detail);
+        const normalizedConfig = normalizeConfig(customEvent.detail);
+        setConfig(normalizedConfig);
+        if (onConfigChange) onConfigChange(normalizedConfig);
       }
     };
 
@@ -138,7 +186,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   }, []);
 
   const saveConfig = async (newConfig: MetaphysicalConfig) => {
-    const updatedConfig = { ...config, ...newConfig };
+    const updatedConfig = normalizeConfig({ ...config, ...newConfig });
     setConfig(updatedConfig);
     setIsSyncing(true);
 
@@ -224,23 +272,11 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   };
 
   const getFilterLabel = (mode: MetaphysicalConfig["directionFilterMode"]) => {
-    const labels = {
-      composite: "総合判定 (Composite)",
-      personal_kigaku: "個人吉凶のみ (Nine Star Ki)",
-      personal_bazi: "個人天中殺のみ (Void Zodiac)",
-      environmental: "環境方位のみ (Environmental)",
-    };
-    return labels[mode];
+    return FILTER_LABELS[normalizeDirectionFilterMode(mode)];
   };
 
   const getIntentLabel = (intent: MetaphysicalConfig["actionIntent"]) => {
-    const labels = {
-      DEFAULT: "標準 (Default)",
-      REST: "休息・健康 (Rest)",
-      BUSINESS: "ビジネス (Business)",
-      MIGRATION: "長期移住 (Migration)",
-    };
-    return labels[intent];
+    return INTENT_LABELS[normalizeActionIntent(intent)];
   };
 
   return (
@@ -259,7 +295,9 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               <span className="text-stone-400 font-bold uppercase tracking-wider">
                 目標日:
               </span>
-              <span className="text-stone-900 font-bold">{config.targetDate}</span>
+              <span className="text-stone-900 font-bold">
+                {config.targetDate}
+              </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-stone-400 font-bold uppercase tracking-wider">
