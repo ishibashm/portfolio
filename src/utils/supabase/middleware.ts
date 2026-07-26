@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isProtectedRoute } from "./routeAccess";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -53,24 +54,10 @@ export async function updateSession(request: NextRequest) {
     !adminEmail ||
     (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
 
-  const protectedRoutes = [
-    "/research",
-    "/knowledge",
-    "/x-viewer",
-    "/visualizer",
-    "/omni",
-    "/dashboard",
-    "/relocation",
-    "/rentals",
-    "/metaphysical",
-    "/trends",
-  ];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route),
-  );
+  const requiresAuthentication = isProtectedRoute(request.nextUrl.pathname);
 
   // If the user is unauthenticated and they are trying to access a protected route
-  if (!user && isProtectedRoute) {
+  if (!user && requiresAuthentication) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set(
@@ -81,7 +68,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If the user is logged in, but their email does NOT match the owner's ADMIN_EMAIL
-  if (user && !isAuthorized && isProtectedRoute) {
+  if (user && !isAuthorized && requiresAuthentication) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("error", "Unauthorized access.");
