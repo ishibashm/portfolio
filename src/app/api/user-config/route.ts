@@ -1,122 +1,210 @@
-import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
-const DEFAULT_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
 
-export async function GET() {
-  let config: Record<string, any> = {};
+const profilePresetSchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1).max(100),
+    birthDate: z.string(),
+    birthLat: z.number().finite(),
+    birthLon: z.number().finite(),
+    baseLat: z.number().finite(),
+    baseLon: z.number().finite(),
+    voidZodiacOverride: z.string().optional(),
+    baselineHrvMean: z.number().finite().optional(),
+    baselineHrvStd: z.number().finite().optional(),
+    baselineGsrMean: z.number().finite().optional(),
+    baselineGsrStd: z.number().finite().optional(),
+    usePsychologyScorer: z.boolean().optional(),
+    useKigakuScorer: z.boolean().optional(),
+    useAstrologyScorer: z.boolean().optional(),
+    createdAt: z.string(),
+  })
+  .strip();
 
-  // 1. Try reading from local JSON file
+const presetsSchema = z.array(profilePresetSchema).max(100);
+type ConfigRecord = Record<string, unknown>;
+
+async function getAuthenticatedEmail() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user?.email) return null;
+  return user.email.toLowerCase();
+}
+
+async function readLocalDefaults(): Promise<ConfigRecord> {
   try {
     const fileContents = await fs.readFile(CONFIG_FILE_PATH, "utf-8");
-    config = JSON.parse(fileContents);
-  } catch (e) {
-    // File not found or read error
+    const parsed: unknown = JSON.parse(fileContents);
+    return parsed && typeof parsed === "object"
+      ? (parsed as ConfigRecord)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function numberOrNull(value: unknown) {
+  return value == null || value === "" ? null : Number(value);
+}
+
+function dateOrNull(value: unknown) {
+  return typeof value === "string" && value ? new Date(value) : null;
+}
+
+function serializeDbConfig(
+  dbConfig: Awaited<ReturnType<typeof prisma.user_configs.findUnique>>,
+) {
+  if (!dbConfig) return {};
+
+  return {
+    birth_date: dbConfig.birth_date,
+    birth_lat: dbConfig.birth_lat,
+    birth_lon: dbConfig.birth_lon,
+    base_lat: dbConfig.base_lat,
+    base_lon: dbConfig.base_lon,
+    baseline_hrv_mean: dbConfig.baseline_hrv_mean,
+    baseline_hrv_std: dbConfig.baseline_hrv_std,
+    baseline_gsr_mean: dbConfig.baseline_gsr_mean,
+    baseline_gsr_std: dbConfig.baseline_gsr_std,
+    base_sync_timestamp: dbConfig.base_sync_timestamp?.toISOString() ?? null,
+    presets: Array.isArray(dbConfig.presets) ? dbConfig.presets : [],
+    presets_initialized: dbConfig.presets !== null,
+  };
+}
+
+export async function GET() {
+  const email = await getAuthenticatedEmail();
+  if (!email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2. Try fetching from Cloud Database (Supabase PostgreSQL via Prisma)
   try {
-    const dbConfig = await prisma.user_configs.findFirst({
-      where: { user_email: DEFAULT_EMAIL },
+    const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
+    const [localDefaults, dbConfig] = await Promise.all([
+      adminEmail === email ? readLocalDefaults() : Promise.resolve({}),
+      prisma.user_configs.findUnique({
+        where: { user_email: email },
+      }),
+    ]);
+
+    return NextResponse.json({
+      ...localDefaults,
+      ...serializeDbConfig(dbConfig),
     });
-
-    if (dbConfig) {
-      config = {
-        ...config,
-        birth_date: dbConfig.birth_date ?? config.birth_date,
-        birth_lat: dbConfig.birth_lat ?? config.birth_lat,
-        birth_lon: dbConfig.birth_lon ?? config.birth_lon,
-        base_lat: dbConfig.base_lat ?? config.base_lat,
-        base_lon: dbConfig.base_lon ?? config.base_lon,
-        baseline_hrv_mean: dbConfig.baseline_hrv_mean ?? config.baseline_hrv_mean,
-        baseline_hrv_std: dbConfig.baseline_hrv_std ?? config.baseline_hrv_std,
-        baseline_gsr_mean: dbConfig.baseline_gsr_mean ?? config.baseline_gsr_mean,
-        baseline_gsr_std: dbConfig.baseline_gsr_std ?? config.baseline_gsr_std,
-        base_sync_timestamp: dbConfig.base_sync_timestamp
-          ? dbConfig.base_sync_timestamp.toISOString()
-          : config.base_sync_timestamp,
-      };
-    }
-  } catch (dbError) {
-    console.warn("Database config fetch notice (falling back to local file):", dbError);
+  } catch (error) {
+    console.error("Cloud config fetch failed:", error);
+    return NextResponse.json(
+      { error: "Cloud config is temporarily unavailable" },
+      { status: 503 },
+    );
   }
-
-  return NextResponse.json(config);
 }
 
 export async function POST(req: Request) {
+  const email = await getAuthenticatedEmail();
+  if (!email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    let currentConfig: Record<string, any> = {};
-
-    try {
-      const fileContents = await fs.readFile(CONFIG_FILE_PATH, "utf-8");
-      currentConfig = JSON.parse(fileContents);
-    } catch (e) {
-      // Ignore if file doesn't exist
-    }
-
-    const body = await req.json();
-    const updatedConfig = { ...currentConfig, ...body };
-
-    // 1. Write to local JSON file
-    try {
-      await fs.writeFile(
-        CONFIG_FILE_PATH,
-        JSON.stringify(updatedConfig, null, 2),
-        "utf-8",
+    const body: unknown = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json(
+        { error: "Invalid config payload" },
+        { status: 400 },
       );
-    } catch (fileErr) {
-      console.warn("Local file save skipped (likely read-only/serverless environment)");
     }
 
-    // 2. Sync to Cloud Database (Supabase PostgreSQL via Prisma)
-    try {
-      await prisma.user_configs.upsert({
-        where: { user_email: DEFAULT_EMAIL },
-        update: {
-          birth_date: updatedConfig.birth_date ?? null,
-          birth_lat: updatedConfig.birth_lat != null ? Number(updatedConfig.birth_lat) : null,
-          birth_lon: updatedConfig.birth_lon != null ? Number(updatedConfig.birth_lon) : null,
-          base_lat: updatedConfig.base_lat != null ? Number(updatedConfig.base_lat) : null,
-          base_lon: updatedConfig.base_lon != null ? Number(updatedConfig.base_lon) : null,
-          baseline_hrv_mean: updatedConfig.baseline_hrv_mean != null ? Number(updatedConfig.baseline_hrv_mean) : null,
-          baseline_hrv_std: updatedConfig.baseline_hrv_std != null ? Number(updatedConfig.baseline_hrv_std) : null,
-          baseline_gsr_mean: updatedConfig.baseline_gsr_mean != null ? Number(updatedConfig.baseline_gsr_mean) : null,
-          baseline_gsr_std: updatedConfig.baseline_gsr_std != null ? Number(updatedConfig.baseline_gsr_std) : null,
-          base_sync_timestamp: updatedConfig.base_sync_timestamp
-            ? new Date(updatedConfig.base_sync_timestamp)
-            : null,
-          updated_at: new Date(),
-        },
-        create: {
-          user_email: DEFAULT_EMAIL,
-          birth_date: updatedConfig.birth_date ?? null,
-          birth_lat: updatedConfig.birth_lat != null ? Number(updatedConfig.birth_lat) : null,
-          birth_lon: updatedConfig.birth_lon != null ? Number(updatedConfig.birth_lon) : null,
-          base_lat: updatedConfig.base_lat != null ? Number(updatedConfig.base_lat) : null,
-          base_lon: updatedConfig.base_lon != null ? Number(updatedConfig.base_lon) : null,
-          baseline_hrv_mean: updatedConfig.baseline_hrv_mean != null ? Number(updatedConfig.baseline_hrv_mean) : null,
-          baseline_hrv_std: updatedConfig.baseline_hrv_std != null ? Number(updatedConfig.baseline_hrv_std) : null,
-          baseline_gsr_mean: updatedConfig.baseline_gsr_mean != null ? Number(updatedConfig.baseline_gsr_mean) : null,
-          baseline_gsr_std: updatedConfig.baseline_gsr_std != null ? Number(updatedConfig.baseline_gsr_std) : null,
-          base_sync_timestamp: updatedConfig.base_sync_timestamp
-            ? new Date(updatedConfig.base_sync_timestamp)
-            : null,
-        },
-      });
-    } catch (dbErr) {
-      console.warn("Database config sync notice:", dbErr);
+    const incomingConfig = body as ConfigRecord;
+    const currentConfig = await prisma.user_configs.findUnique({
+      where: { user_email: email },
+    });
+
+    let presets: Prisma.InputJsonValue | typeof Prisma.DbNull =
+      currentConfig?.presets ?? Prisma.DbNull;
+    if ("presets" in incomingConfig) {
+      const parsedPresets = presetsSchema.safeParse(incomingConfig.presets);
+      if (!parsedPresets.success) {
+        return NextResponse.json(
+          { error: "Invalid profile presets" },
+          { status: 400 },
+        );
+      }
+      presets = parsedPresets.data as Prisma.InputJsonValue;
     }
+
+    const updatedConfig = {
+      birth_date:
+        typeof incomingConfig.birth_date === "string"
+          ? incomingConfig.birth_date
+          : (currentConfig?.birth_date ?? null),
+      birth_lat:
+        "birth_lat" in incomingConfig
+          ? numberOrNull(incomingConfig.birth_lat)
+          : (currentConfig?.birth_lat ?? null),
+      birth_lon:
+        "birth_lon" in incomingConfig
+          ? numberOrNull(incomingConfig.birth_lon)
+          : (currentConfig?.birth_lon ?? null),
+      base_lat:
+        "base_lat" in incomingConfig
+          ? numberOrNull(incomingConfig.base_lat)
+          : (currentConfig?.base_lat ?? null),
+      base_lon:
+        "base_lon" in incomingConfig
+          ? numberOrNull(incomingConfig.base_lon)
+          : (currentConfig?.base_lon ?? null),
+      baseline_hrv_mean:
+        "baseline_hrv_mean" in incomingConfig
+          ? numberOrNull(incomingConfig.baseline_hrv_mean)
+          : (currentConfig?.baseline_hrv_mean ?? null),
+      baseline_hrv_std:
+        "baseline_hrv_std" in incomingConfig
+          ? numberOrNull(incomingConfig.baseline_hrv_std)
+          : (currentConfig?.baseline_hrv_std ?? null),
+      baseline_gsr_mean:
+        "baseline_gsr_mean" in incomingConfig
+          ? numberOrNull(incomingConfig.baseline_gsr_mean)
+          : (currentConfig?.baseline_gsr_mean ?? null),
+      baseline_gsr_std:
+        "baseline_gsr_std" in incomingConfig
+          ? numberOrNull(incomingConfig.baseline_gsr_std)
+          : (currentConfig?.baseline_gsr_std ?? null),
+      base_sync_timestamp:
+        "base_sync_timestamp" in incomingConfig
+          ? dateOrNull(incomingConfig.base_sync_timestamp)
+          : (currentConfig?.base_sync_timestamp ?? null),
+      presets,
+      updated_at: new Date(),
+    };
+
+    await prisma.user_configs.upsert({
+      where: { user_email: email },
+      update: updatedConfig,
+      create: {
+        user_email: email,
+        ...updatedConfig,
+      },
+    });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Config Save Error:", error);
+  } catch (error) {
+    console.error("Cloud config save failed:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to save config" },
-      { status: 500 },
+      { error: "Cloud config could not be saved" },
+      { status: 503 },
     );
   }
 }
