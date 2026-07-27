@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getUser, findUnique, upsert, readFile, writeFile } = vi.hoisted(() => ({
+const { getUser, findUnique, upsert } = vi.hoisted(() => ({
   getUser: vi.fn(),
   findUnique: vi.fn(),
   upsert: vi.fn(),
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
 }));
 
 vi.mock("@/utils/supabase/server", () => ({
@@ -23,25 +21,21 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
-vi.mock("fs/promises", () => ({
-  default: {
-    readFile,
-    writeFile,
-  },
+vi.mock("@/utils/encryption", () => ({
+  encrypt: (value: string) => `encrypted:${value}`,
+  decrypt: (value: string) => value.replace(/^encrypted:/, ""),
 }));
 
-import { GET, POST } from "@/app/api/user-config/route";
+import { GET, POST } from "@/app/api/profile-presets/route";
 
 const authenticatedUser = {
   id: "user-1",
   email: "owner@example.com",
 };
 
-describe("/api/user-config", () => {
+describe("/api/profile-presets", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    readFile.mockRejectedValue(new Error("no local config"));
-    writeFile.mockResolvedValue(undefined);
     getUser.mockResolvedValue({
       data: { user: authenticatedUser },
       error: null,
@@ -70,11 +64,11 @@ describe("/api/user-config", () => {
         birthLon: 135,
         baseLat: 35,
         baseLon: 135,
+        encryptedGeminiKey: "encrypted:server-secret",
         createdAt: "2026-07-27T00:00:00.000Z",
       },
     ];
     findUnique.mockResolvedValue({
-      user_email: authenticatedUser.email,
       presets,
     });
 
@@ -82,18 +76,24 @@ describe("/api/user-config", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({
-      presets,
+      presets: [
+        expect.objectContaining({
+          id: "preset_1",
+          geminiKey: "server-secret",
+        }),
+      ],
       presets_initialized: true,
     });
     expect(findUnique).toHaveBeenCalledWith({
       where: { user_email: authenticatedUser.email },
+      select: { presets: true },
     });
   });
 
-  it("persists sanitized presets for the signed-in user", async () => {
+  it("persists encrypted presets for the signed-in user", async () => {
     findUnique.mockResolvedValue(null);
     upsert.mockResolvedValue({});
-    const request = new Request("http://localhost/api/user-config", {
+    const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -121,8 +121,9 @@ describe("/api/user-config", () => {
         where: { user_email: authenticatedUser.email },
         update: expect.objectContaining({
           presets: [
-            expect.not.objectContaining({
-              geminiKey: expect.anything(),
+            expect.objectContaining({
+              encryptedGeminiKey:
+                "encrypted:must-not-be-stored-in-plaintext",
             }),
           ],
         }),
@@ -133,7 +134,7 @@ describe("/api/user-config", () => {
   it("reports a cloud persistence failure instead of claiming success", async () => {
     findUnique.mockResolvedValue(null);
     upsert.mockRejectedValue(new Error("database unavailable"));
-    const request = new Request("http://localhost/api/user-config", {
+    const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ presets: [] }),
@@ -145,5 +146,14 @@ describe("/api/user-config", () => {
     await expect(response.json()).resolves.toMatchObject({
       error: expect.stringContaining("Cloud"),
     });
+  });
+
+  it("returns a service error when authentication cannot be checked", async () => {
+    getUser.mockRejectedValue(new Error("auth unavailable"));
+
+    const response = await GET();
+
+    expect(response.status).toBe(503);
+    expect(findUnique).not.toHaveBeenCalled();
   });
 });

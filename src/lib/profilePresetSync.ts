@@ -66,7 +66,7 @@ function cachePresets(storage: Storage, presets: ProfilePreset[]) {
 }
 
 async function uploadPresets(fetcher: Fetcher, presets: ProfilePreset[]) {
-  const response = await fetcher("/api/user-config", {
+  const response = await fetcher("/api/profile-presets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ presets }),
@@ -82,7 +82,7 @@ export async function loadProfilePresets(
   const localPresets = readLocalPresets(storage);
 
   try {
-    const response = await fetcher("/api/user-config");
+    const response = await fetcher("/api/profile-presets");
     if (!response.ok) {
       return { presets: localPresets, cloudSynced: false };
     }

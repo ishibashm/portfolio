@@ -36,7 +36,7 @@ describe("profile preset cloud sync", () => {
     });
     expect(fetcher).toHaveBeenNthCalledWith(
       2,
-      "/api/user-config",
+      "/api/profile-presets",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({ presets: [localPreset] }),
