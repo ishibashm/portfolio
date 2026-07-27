@@ -65,6 +65,17 @@ function cachePresets(storage: Storage, presets: ProfilePreset[]) {
   }
 }
 
+function mergePresets(
+  cloudPresets: ProfilePreset[],
+  localPresets: ProfilePreset[],
+) {
+  const merged = new Map(localPresets.map((preset) => [preset.id, preset]));
+  for (const preset of cloudPresets) {
+    merged.set(preset.id, preset);
+  }
+  return [...merged.values()];
+}
+
 async function uploadPresets(fetcher: Fetcher, presets: ProfilePreset[]) {
   const response = await fetcher("/api/profile-presets", {
     method: "POST",
@@ -102,8 +113,13 @@ export async function loadProfilePresets(
         : [];
 
     if (cloudPresets.length > 0) {
-      cachePresets(storage, cloudPresets);
-      return { presets: cloudPresets, cloudSynced: true };
+      const mergedPresets = mergePresets(cloudPresets, localPresets);
+      const hasLocalOnlyPresets = mergedPresets.length > cloudPresets.length;
+      const cloudSynced = hasLocalOnlyPresets
+        ? await uploadPresets(fetcher, mergedPresets)
+        : true;
+      cachePresets(storage, mergedPresets);
+      return { presets: mergedPresets, cloudSynced };
     }
 
     if (presetsInitialized) {

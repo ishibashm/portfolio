@@ -44,22 +44,38 @@ describe("profile preset cloud sync", () => {
     );
   });
 
-  it("prefers cloud presets and refreshes the local cache", async () => {
+  it("merges unsynced local presets into the cloud without replacing cloud values", async () => {
     const cloudPreset = { ...localPreset, id: "preset_cloud", name: "私" };
     localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
-    const fetcher = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ presets: [cloudPreset] }), { status: 200 }),
-    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ presets: [cloudPreset] }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), { status: 200 }),
+      );
 
     const result = await loadProfilePresets(fetcher, localStorage);
 
     expect(result).toEqual({
-      presets: [cloudPreset],
+      presets: [localPreset, cloudPreset],
       cloudSynced: true,
     });
     expect(JSON.parse(localStorage.getItem("profile_presets_v1")!)).toEqual([
+      localPreset,
       cloudPreset,
     ]);
+    expect(fetcher).toHaveBeenNthCalledWith(
+      2,
+      "/api/profile-presets",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ presets: [localPreset, cloudPreset] }),
+      }),
+    );
   });
 
   it("keeps a local copy and reports when cloud saving fails", async () => {
