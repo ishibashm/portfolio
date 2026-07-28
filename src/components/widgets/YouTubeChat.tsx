@@ -16,7 +16,12 @@ export default function YouTubeChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // scrollIntoView はスクロール可能な祖先を辿ってページ全体まで動かしてしまう。
+    // メッセージ欄（messagesEndRef の親）だけを直接スクロールさせる。
+    const container = messagesEndRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = async () => {

@@ -31,9 +31,12 @@ export default function OmniPipelineWidget() {
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // ログが追加されたら一番下までスクロール
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: "smooth" });
+    // ログが追加されたら一番下までスクロール。
+    // scrollIntoView はスクロール可能な祖先を辿ってページ全体まで動かしてしまうため、
+    // ログ欄（logsEndRef の親）だけを直接スクロールさせる。
+    const container = logsEndRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }, [logs]);
 

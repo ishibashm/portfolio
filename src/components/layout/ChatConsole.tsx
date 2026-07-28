@@ -26,7 +26,12 @@ export const ChatConsole = ({
   const { isSidebarOpen, toggleSidebar } = useOmniStore();
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth" });
+    // scrollIntoView はスクロール可能な祖先を辿ってページ全体まで動かしてしまう。
+    // メッセージ欄（endOfMessagesRef の親）だけを直接スクロールさせる。
+    const container = endOfMessagesRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
