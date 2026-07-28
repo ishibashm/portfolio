@@ -136,18 +136,8 @@ export function PersonalProfileConfig({
   useEffect(() => {
     const loadPresets = async () => {
       let loaded: ProfilePreset[] | null = null;
-      // 1. Try server API first for cross-browser / cross-device availability
-      try {
-        const res = await fetch("/api/user-config");
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.presets) && data.presets.length > 0) {
-            loaded = data.presets;
-          }
-        }
-      } catch (e) {}
-
-      // 2. Fallback to local storage
+      // This renders inside the clock on the public top page, so presets live
+      // in localStorage only. /api/user-config is the owner's record.
       if (!loaded && typeof window !== "undefined") {
         const savedPresetsStr =
           localStorage.getItem("profile_presets_v1") ||
@@ -177,12 +167,6 @@ export function PersonalProfileConfig({
       localStorage.setItem("wealth_presets", JSON.stringify(newPresets));
       localStorage.setItem("profile_presets_v1", JSON.stringify(newPresets));
     }
-    // Sync to server config file for cross-browser / device availability
-    fetch("/api/user-config", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ presets: newPresets }),
-    }).catch((err) => console.warn("Server preset sync notice:", err));
   };
 
   const handleSaveNewPreset = () => {

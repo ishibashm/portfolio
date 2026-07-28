@@ -2,11 +2,31 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
 const DEFAULT_EMAIL = process.env.ADMIN_EMAIL || "admin@example.com";
 
+// Every read and write here targets the single DEFAULT_EMAIL row, which holds
+// the owner's birth date, birth and base coordinates and biometric baselines.
+// Returns a response to send back when the caller is not the owner.
+async function rejectIfNotOwner() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const email = user?.email?.toLowerCase();
+  if (!email || email !== DEFAULT_EMAIL.toLowerCase()) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return null;
+}
+
 export async function GET() {
+  const denied = await rejectIfNotOwner();
+  if (denied) return denied;
+
   let config: Record<string, any> = {};
 
   // 1. Try reading from local JSON file
@@ -48,6 +68,9 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await rejectIfNotOwner();
+  if (denied) return denied;
+
   try {
     let currentConfig: Record<string, any> = {};
 

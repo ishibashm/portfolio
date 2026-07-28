@@ -847,63 +847,9 @@ export const SolarTimeClock = () => {
 
   const loadFromLocal = async () => {
     let isLoaded = false;
-    try {
-      const res = await fetch("/api/user-config");
-      if (res.ok) {
-        const data = await res.json();
-        if (Object.keys(data).length > 0) {
-          if (data.birth_date) setBirthDate(data.birth_date);
-          if (data.birth_lat !== undefined) setBirthLat(data.birth_lat);
-          if (data.birth_lon !== undefined) setBirthLon(data.birth_lon);
-          if (data.base_lat !== undefined) setLat(data.base_lat);
-          if (data.base_lon !== undefined) setLon(data.base_lon);
-          if (data.void_zodiac_override !== undefined)
-            setVoidZodiacOverride(data.void_zodiac_override);
-          if (data.gemini_key_exists) setGeminiKey("********");
-          if (data.baseline_hrv_mean !== undefined)
-            setBaselineHrvMean(data.baseline_hrv_mean);
-          if (data.baseline_hrv_std !== undefined)
-            setBaselineHrvStd(data.baseline_hrv_std);
-          if (data.baseline_gsr_mean !== undefined)
-            setBaselineGsrMean(data.baseline_gsr_mean);
-          if (data.baseline_gsr_std !== undefined)
-            setBaselineGsrStd(data.baseline_gsr_std);
-          if (data.base_sync_timestamp !== undefined)
-            setBaseSyncTimestamp(data.base_sync_timestamp);
-          if (data.use_psychology_scorer !== undefined)
-            setUsePsychologyScorer(data.use_psychology_scorer);
-          if (data.use_kigaku_scorer !== undefined)
-            setUseKigakuScorer(data.use_kigaku_scorer);
-          if (data.use_astrology_scorer !== undefined)
-            setUseAstrologyScorer(data.use_astrology_scorer);
-          if (data.hrv !== undefined) setHrv(data.hrv);
-          if (data.gsr !== undefined) setGsr(data.gsr);
-          if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
-          if (data.shieldCapacity !== undefined)
-            setShieldCapacity(data.shieldCapacity);
-          // Load unified configurations
-          if (data.use_classical_board !== undefined)
-            setUseClassicalBoard(data.use_classical_board);
-          if (data.physical_month_mode !== undefined)
-            setPhysicalMonthMode(data.physical_month_mode);
-          if (data.use_true_north !== undefined)
-            setUseTrueNorth(data.use_true_north);
-          if (data.lunar_phase_modifier !== undefined)
-            setLunarPhaseModifier(data.lunar_phase_modifier);
-          if (data.layer_mode !== undefined)
-            setActiveLayerMode(data.layer_mode);
-          if (data.direction_filter_mode !== undefined)
-            setDirectionFilterMode(data.direction_filter_mode);
-          if (Array.isArray(data.presets) && data.presets.length > 0) {
-            localStorage.setItem("profile_presets_v1", JSON.stringify(data.presets));
-            localStorage.setItem("wealth_presets", JSON.stringify(data.presets));
-          }
-          isLoaded = true;
-        }
-      }
-    } catch (e) {
-      console.error("API config load error", e);
-    }
+    // The clock renders on the public top page, so it keeps its settings in
+    // localStorage only. /api/user-config is the owner's record and is not
+    // readable or writable from here.
 
     const localData = localStorage.getItem("tactical_config_v1");
     if (localData) {
@@ -1032,12 +978,6 @@ export const SolarTimeClock = () => {
           JSON.stringify({ ...currentLocal, ...partialConfig }),
         );
 
-        // POST to API
-        await fetch("/api/user-config", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(partialConfig),
-        });
       } catch (e) {
         console.error("Auto-save configuration failed:", e);
       }
@@ -1131,12 +1071,6 @@ export const SolarTimeClock = () => {
         presets: currentPresets,
       };
 
-      const res = await fetch("/api/user-config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(configToSave),
-      });
-
       localStorage.setItem("tactical_config_v1", JSON.stringify(configToSave));
 
       // Sync back to Relocation Matrix Dashboard
@@ -1148,16 +1082,7 @@ export const SolarTimeClock = () => {
         localStorage.setItem("wealth_baseLon", lon.toString());
       }
 
-      if (res && res.ok) {
-        alert(
-          "PC内のファイル (local_tactical_config.json) とブラウザに永久保存しました。",
-        );
-      } else {
-        console.warn(
-          "Server config save failed/skipped (read-only filesystem), but local storage is synced.",
-        );
-        alert("設定をブラウザのローカルストレージに永久保存しました。");
-      }
+      alert("設定をブラウザのローカルストレージに永久保存しました。");
       if (geminiKey && geminiKey !== "") {
         setGeminiKey("********");
       }
