@@ -54,17 +54,24 @@ jobs:
           docker build --secret id=env,src=.env -t $DOCKER_TAG .
           docker push $DOCKER_TAG
 
+      # google-github-actions/deploy-cloudrun echoes the gcloud command it runs,
+      # which expands env_vars_file into --update-env-vars KEY=VALUE pairs and
+      # prints every value into the Actions log. This repository is public, so
+      # gcloud is invoked directly instead. Actions logs the raw script, not the
+      # expanded shell variable, so $ENV_VARS_FLAG keeps the values out of it.
       - name: Deploy to Cloud Run (Free Tier Optimized)
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ env.SERVICE_NAME }}
-          region: ${{ env.REGION }}
-          image: ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          env_vars_file: env.json
-          flags: >-
-            --cpu=1
-            --memory=512Mi
-            --max-instances=2
-            --min-instances=0
-            --concurrency=80
-            --allow-unauthenticated
+        run: |-
+          ENV_VARS_FLAG="$(python3 scripts/env_to_gcloud_flag.py env.json)"
+          gcloud run deploy "${{ env.SERVICE_NAME }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --image="${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --update-env-vars="$ENV_VARS_FLAG" \
+            --update-labels=managed-by=github-actions,commit-sha=${{ github.sha }} \
+            --cpu=1 \
+            --memory=512Mi \
+            --max-instances=2 \
+            --min-instances=0 \
+            --concurrency=80 \
+            --allow-unauthenticated \
+            --quiet
