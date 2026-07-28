@@ -261,25 +261,32 @@ export default function LoginPage() {
           </div>
         </form>
 
-        {/* Dev Bypass Section */}
-        <div className="w-full mt-4 pt-4 border-t border-rose-100/80 flex flex-col items-center">
-          <button
-            type="button"
-            onClick={() => {
-              document.cookie =
-                "dev_bypass_user=ishibashm@gmail.com; path=/; max-age=31536000";
-              window.location.href = nextUrl;
-            }}
-            className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all"
-          >
-            ⚡ 開発用バイパスでログイン (ishibashm@gmail.com)
-          </button>
-        </div>
+        {/* Dev Bypass Section. The cookie is only honoured by the Supabase
+            helpers when NODE_ENV is development, so the button has to be gated
+            on the same condition or it just renders a dead control in
+            production that also discloses the admin address. */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="w-full mt-4 pt-4 border-t border-rose-100/80 flex flex-col items-center">
+            <button
+              type="button"
+              onClick={() => {
+                document.cookie = `dev_bypass_user=${encodeURIComponent(
+                  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashm@gmail.com",
+                )}; path=/; max-age=31536000`;
+                window.location.href = nextUrl;
+              }}
+              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all"
+            >
+              ⚡ 開発用バイパスでログイン
+            </button>
+          </div>
+        )}
 
         <p className="text-[10px] text-stone-400 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
-          ローカル開発環境で動作しています。管理者アドレス (
-          {process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashm@gmail.com"})
-          などで登録し利用してください。
+          {process.env.NODE_ENV === "development"
+            ? "ローカル開発環境で動作しています。"
+            : ""}
+          管理者アドレスで登録し利用してください。
         </p>
       </div>
     </div>
