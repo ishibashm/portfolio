@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -280,6 +280,39 @@ function getActionableAdvice(day: DayData): string {
   return "🌐 [NEUTRAL_COGNITION] エネルギーのバランスが取れた日常の日です。新しい動きを起こすよりは、これまでの進捗確認や整理整頓に向いています。";
 }
 
+// Marker badges rendered inside each day cell, mirrored in the calendar legend
+const LEGEND_MARKS = [
+  { mark: "赦", label: "天赦日", className: "text-amber-600 bg-amber-500/10" },
+  {
+    mark: "万",
+    label: "一粒万倍日",
+    className: "text-emerald-600 bg-emerald-500/10",
+  },
+  {
+    mark: "殺",
+    label: "天中殺",
+    className: "text-purple-600 bg-purple-500/20 border border-purple-200",
+  },
+  {
+    mark: "破",
+    label: "日破",
+    className: "text-rose-600 bg-rose-500/20 border border-rose-200",
+  },
+  {
+    mark: "合",
+    label: "支合",
+    className: "text-sky-600 bg-sky-500/20 border border-sky-200",
+  },
+];
+
+// Thresholds mirror getScoreColor()
+const LEGEND_SCORES = [
+  { label: "75+", className: "bg-emerald-400" },
+  { label: "60+", className: "bg-indigo-400" },
+  { label: "45+", className: "bg-zinc-400" },
+  { label: "<45", className: "bg-rose-400" },
+];
+
 export function CosmicCalendar({
   compact = false,
   view = "both",
@@ -468,6 +501,24 @@ export function CosmicCalendar({
     );
   };
 
+  // Month-level aggregate shown in the calendar footer
+  const monthSummary = useMemo(() => {
+    const current = days.filter((d) => d.isCurrentMonth);
+    if (current.length === 0) {
+      return { lucky: 0, voidDays: 0, avgScore: 0, best: null as DayData | null };
+    }
+    return {
+      lucky: current.filter(
+        (d) => d.luckyDays.isIchiryumanbai || d.luckyDays.isTensho,
+      ).length,
+      voidDays: current.filter((d) => d.personalFortune?.isVoid).length,
+      avgScore: Math.round(
+        current.reduce((sum, d) => sum + d.score, 0) / current.length,
+      ),
+      best: current.reduce((a, b) => (b.score > a.score ? b : a)),
+    };
+  }, [days]);
+
   const getScoreColor = (score: number) => {
     if (score >= 75)
       return "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]";
@@ -552,7 +603,7 @@ export function CosmicCalendar({
       </div>
 
       {/* Day Grid */}
-      <div className="grid grid-cols-7 auto-rows-fr gap-1.5 flex-grow">
+      <div className="grid grid-cols-7 auto-rows-fr gap-1.5">
         {days.map((day, idx) => {
           const isToday =
             new Date().toDateString() === day.date.toDateString();
@@ -646,6 +697,91 @@ export function CosmicCalendar({
             </button>
           );
         })}
+      </div>
+
+      {/* Legend & Monthly Summary */}
+      <div className="mt-5 pt-4 border-t border-stone-200/60 space-y-4">
+        <div>
+          <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block mb-2">
+            {"// Legend"}
+          </span>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {LEGEND_MARKS.map((item) => (
+              <div key={item.mark} className="flex items-center gap-1">
+                <span
+                  className={`text-[8px] font-bold font-mono px-0.5 rounded select-none ${item.className}`}
+                >
+                  {item.mark}
+                </span>
+                <span className="text-[9px] font-mono text-stone-500">
+                  {item.label}
+                </span>
+              </div>
+            ))}
+            <span className="w-[1px] h-3 bg-stone-200" />
+            {LEGEND_SCORES.map((item) => (
+              <div key={item.label} className="flex items-center gap-1">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${item.className}`}
+                />
+                <span className="text-[9px] font-mono text-stone-500">
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block mb-2">
+            {"// Month Aggregate"}
+          </span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {[
+              {
+                label: "吉日 (Lucky)",
+                value: `${monthSummary.lucky}`,
+                unit: "日",
+              },
+              {
+                label: "天中殺 (Void)",
+                value: `${monthSummary.voidDays}`,
+                unit: "日",
+              },
+              {
+                label: "平均 (Avg)",
+                value: `${monthSummary.avgScore}`,
+                unit: "index",
+              },
+              {
+                label: "最良 (Peak)",
+                value: monthSummary.best
+                  ? `${monthSummary.best.dayOfMonth}`
+                  : "--",
+                unit: monthSummary.best
+                  ? `/ ${monthSummary.best.score}`
+                  : "index",
+              },
+            ].map((tile) => (
+              <div
+                key={tile.label}
+                className="rounded-xl border border-stone-200/60 bg-white/70 px-3 py-2"
+              >
+                <div className="text-[9px] font-mono text-stone-400 truncate">
+                  {tile.label}
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-base font-bold font-mono text-stone-900">
+                    {tile.value}
+                  </span>
+                  <span className="text-[9px] font-mono text-stone-400">
+                    {tile.unit}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -987,7 +1123,7 @@ export function CosmicCalendar({
   }
 
   return (
-    <div className={`w-full grid gap-6 items-stretch ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
+    <div className={`w-full grid gap-6 items-start ${compact ? "grid-cols-1" : "grid-cols-1 xl:grid-cols-1 2xl:grid-cols-3"}`}>
       {renderCalendar(compact ? "" : "2xl:col-span-2")}
       {renderTelemetry("space-y-6")}
     </div>
