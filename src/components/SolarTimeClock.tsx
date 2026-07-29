@@ -4182,7 +4182,7 @@ ${timingOptimization?.recommendationText || "特になし"}
           </button>
         </div>
 
-        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-12 gap-6 px-4">
+        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
           {/* Cosmic Calendar Widget (Calendar Grid) */}
           <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
             <CosmicCalendar
