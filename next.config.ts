@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // www is mapped to this same Cloud Run service, so the canonical-host
+  // redirect is issued here rather than at the edge.
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.cloud-palette.com" }],
+        destination: "https://cloud-palette.com/:path*",
+        statusCode: 301,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

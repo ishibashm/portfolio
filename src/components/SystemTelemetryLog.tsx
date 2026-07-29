@@ -116,8 +116,12 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
   }, []);
 
   useEffect(() => {
-    if (logEndRef.current) {
-      logEndRef.current.scrollIntoView({ behavior: "smooth" });
+    // scrollIntoView はスクロール可能な祖先を辿ってページ全体まで動かしてしまい、
+    // ログが追加されるたびにトップページが最下部までスクロールされてしまう。
+    // ログ欄（logEndRef の親）だけを直接スクロールさせる。
+    const container = logEndRef.current?.parentElement;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }, [logs, isOpen]);
 
