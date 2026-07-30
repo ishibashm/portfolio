@@ -1,0 +1,2 @@
+ALTER TABLE "user_configs"
+ADD COLUMN IF NOT EXISTS "presets" JSONB;

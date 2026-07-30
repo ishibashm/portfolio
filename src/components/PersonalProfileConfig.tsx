@@ -14,26 +14,11 @@ import {
   UserCheck,
 } from "lucide-react";
 import dynamic from "next/dynamic";
-
-export interface ProfilePreset {
-  id: string;
-  name: string;
-  birthDate: string;
-  birthLat: number;
-  birthLon: number;
-  baseLat: number;
-  baseLon: number;
-  voidZodiacOverride?: string;
-  geminiKey?: string;
-  baselineHrvMean?: number;
-  baselineHrvStd?: number;
-  baselineGsrMean?: number;
-  baselineGsrStd?: number;
-  usePsychologyScorer?: boolean;
-  useKigakuScorer?: boolean;
-  useAstrologyScorer?: boolean;
-  createdAt: string;
-}
+import {
+  loadProfilePresets,
+  saveProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -132,44 +117,35 @@ export function PersonalProfileConfig({
   const [presets, setPresets] = useState<ProfilePreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [newPresetName, setNewPresetName] = useState<string>("");
+  const [presetCloudSynced, setPresetCloudSynced] = useState<boolean | null>(
+    null,
+  );
 
   useEffect(() => {
     const loadPresets = async () => {
-      let loaded: ProfilePreset[] | null = null;
-      // This renders inside the clock on the public top page, so presets live
-      // in localStorage only. /api/user-config is the owner's record.
-      if (!loaded && typeof window !== "undefined") {
-        const savedPresetsStr =
-          localStorage.getItem("profile_presets_v1") ||
-          localStorage.getItem("wealth_presets");
-        if (savedPresetsStr) {
-          try {
-            loaded = JSON.parse(savedPresetsStr);
-          } catch (e) {}
-        }
-      }
-
-      if (loaded) {
-        setPresets(loaded);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("wealth_presets", JSON.stringify(loaded));
-          localStorage.setItem("profile_presets_v1", JSON.stringify(loaded));
-        }
-      }
+      if (typeof window === "undefined") return;
+      const result = await loadProfilePresets(fetch, window.localStorage);
+      setPresets(result.presets);
+      setPresetCloudSynced(result.cloudSynced);
     };
 
-    loadPresets();
+    void loadPresets();
   }, []);
 
-  const savePresetsToStorage = (newPresets: ProfilePreset[]) => {
+  const savePresetsToStorage = async (newPresets: ProfilePreset[]) => {
     setPresets(newPresets);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("wealth_presets", JSON.stringify(newPresets));
-      localStorage.setItem("profile_presets_v1", JSON.stringify(newPresets));
-    }
+    if (typeof window === "undefined") return false;
+
+    const result = await saveProfilePresets(
+      newPresets,
+      fetch,
+      window.localStorage,
+    );
+    setPresetCloudSynced(result.cloudSynced);
+    return result.cloudSynced;
   };
 
-  const handleSaveNewPreset = () => {
+  const handleSaveNewPreset = async () => {
     const name = newPresetName.trim() || `プロファイル ${presets.length + 1}`;
     const newPreset: ProfilePreset = {
       id: `preset_${Date.now()}`,
@@ -191,14 +167,18 @@ export function PersonalProfileConfig({
       createdAt: new Date().toISOString(),
     };
     const updated = [...presets, newPreset];
-    savePresetsToStorage(updated);
+    const cloudSynced = await savePresetsToStorage(updated);
     setSelectedPresetId(newPreset.id);
     setNewPresetName("");
     if (onSave) onSave();
-    alert(`プリセット「${name}」を保存しました。`);
+    alert(
+      cloudSynced
+        ? `プリセット「${name}」をクラウドへ保存しました。`
+        : `プリセット「${name}」をこの端末に保存しました。クラウド同期にはログインが必要です。`,
+    );
   };
 
-  const handleUpdateSelectedPreset = () => {
+  const handleUpdateSelectedPreset = async () => {
     if (!selectedPresetId) return;
     const target = presets.find((p) => p.id === selectedPresetId);
     const updatedName = newPresetName.trim() || target?.name || "プロファイル";
@@ -225,12 +205,16 @@ export function PersonalProfileConfig({
       }
       return p;
     });
-    savePresetsToStorage(updated);
+    const cloudSynced = await savePresetsToStorage(updated);
     if (onSave) onSave();
-    alert(`プリセット「${updatedName}」を更新しました。`);
+    alert(
+      cloudSynced
+        ? `プリセット「${updatedName}」をクラウドで更新しました。`
+        : `プリセット「${updatedName}」をこの端末で更新しました。クラウド同期にはログインが必要です。`,
+    );
   };
 
-  const handleDeletePreset = () => {
+  const handleDeletePreset = async () => {
     if (!selectedPresetId) return;
     const target = presets.find((p) => p.id === selectedPresetId);
     if (
@@ -238,7 +222,7 @@ export function PersonalProfileConfig({
     )
       return;
     const updated = presets.filter((p) => p.id !== selectedPresetId);
-    savePresetsToStorage(updated);
+    await savePresetsToStorage(updated);
     setSelectedPresetId("");
     setNewPresetName("");
   };
@@ -311,11 +295,28 @@ export function PersonalProfileConfig({
               保存済みプロフィールの呼び出し・マルチ管理
             </span>
           </div>
-          {selectedPresetId && (
-            <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-xs">
-              選択中: {presets.find((p) => p.id === selectedPresetId)?.name}
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[9px] border px-2 py-0.5 rounded-xs ${
+                presetCloudSynced === true
+                  ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+                  : presetCloudSynced === false
+                    ? "text-amber-700 bg-amber-50 border-amber-200"
+                    : "text-stone-500 bg-stone-50 border-stone-200"
+              }`}
+            >
+              {presetCloudSynced === true
+                ? "クラウド同期済み"
+                : presetCloudSynced === false
+                  ? "この端末のみ"
+                  : "同期確認中"}
             </span>
-          )}
+            {selectedPresetId && (
+              <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-xs">
+                選択中: {presets.find((p) => p.id === selectedPresetId)?.name}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-2 items-center">
