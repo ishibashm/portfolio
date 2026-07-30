@@ -280,6 +280,21 @@ function getActionableAdvice(day: DayData): string {
   return "🌐 [NEUTRAL_COGNITION] エネルギーのバランスが取れた日常の日です。新しい動きを起こすよりは、これまでの進捗確認や整理整頓に向いています。";
 }
 
+// The birth config is edited in the calendar card but consumed by every
+// CosmicCalendar on the page (the top page mounts calendar/telemetry as two
+// separate instances), so edits are broadcast instead of only living in state.
+const BIRTH_CONFIG_EVENT = "cosmic-birth-config";
+
+type BirthConfigKey = "wealth_birthDate" | "wealth_birthLon";
+
+function persistBirthConfig(key: BirthConfigKey, value: string) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, value);
+  window.dispatchEvent(
+    new CustomEvent(BIRTH_CONFIG_EVENT, { detail: { key, value } }),
+  );
+}
+
 // Marker badges rendered inside each day cell, mirrored in the calendar legend
 const LEGEND_MARKS = [
   { mark: "赦", label: "天赦日", className: "text-amber-600 bg-amber-500/10" },
@@ -349,6 +364,19 @@ export function CosmicCalendar({
       }
       if (storedLon) setBirthLon(storedLon);
     }
+  }, []);
+
+  // Keep sibling instances in sync when the config is edited in one of them
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const { key, value } = (
+        event as CustomEvent<{ key: BirthConfigKey; value: string }>
+      ).detail;
+      if (key === "wealth_birthDate") setBirthDate(value);
+      if (key === "wealth_birthLon") setBirthLon(value);
+    };
+    window.addEventListener(BIRTH_CONFIG_EVENT, handler);
+    return () => window.removeEventListener(BIRTH_CONFIG_EVENT, handler);
   }, []);
 
   // Compute user's natal day branch and void zodiacs
@@ -782,6 +810,61 @@ export function CosmicCalendar({
             ))}
           </div>
         </div>
+
+        {/* Personal Setup / Info Settings */}
+        <div className="pt-1 font-mono text-[11px]">
+          <button
+            onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+            className="w-full flex justify-between items-center text-stone-400 hover:text-stone-600 py-1 transition-colors"
+          >
+            <span className="flex items-center gap-1.5">
+              ⚙️ [Astro Telemetry Config]
+            </span>
+            <span>{isSettingsOpen ? "▲" : "▼"}</span>
+          </button>
+
+          {isSettingsOpen && (
+            <div className="mt-2 p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] text-stone-400 uppercase mb-1">
+                    Birth Date & Time (JST)
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={birthDate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBirthDate(val);
+                      persistBirthConfig("wealth_birthDate", val);
+                    }}
+                    className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] text-stone-400 uppercase mb-1">
+                    Birth Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    value={birthLon}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBirthLon(val);
+                      persistBirthConfig("wealth_birthLon", val);
+                    }}
+                    className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
+                    placeholder="139.6917"
+                  />
+                </div>
+              </div>
+              <p className="text-[9px] text-stone-400 leading-normal">
+                ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1031,14 +1114,8 @@ export function CosmicCalendar({
               </div>
 
               {/* Monospaced actionable advice (NBA) */}
-              <div
-                className="p-3.5 border rounded-xl"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.01)",
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
-              >
-                <div className="flex items-center gap-2 mb-2 text-[10px] text-stone-400 uppercase tracking-wider font-bold">
+              <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
+                <div className="flex items-center gap-2 mb-1.5 text-[10px] text-stone-400 uppercase tracking-wider font-bold">
                   <Activity className="w-3.5 h-3.5 text-stone-500" />
                   Next Best Action Recommendation
                 </div>
@@ -1047,62 +1124,6 @@ export function CosmicCalendar({
                 </p>
               </div>
 
-              {/* Personal Setup / Info Settings */}
-              <div className="mt-4 pt-4 border-t border-stone-200/60 font-mono text-[11px]">
-                <button
-                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className="w-full flex justify-between items-center text-stone-400 hover:text-stone-600 py-1 transition-colors"
-                >
-                  <span className="flex items-center gap-1.5">
-                    ⚙️ [Astro Telemetry Config]
-                  </span>
-                  <span>{isSettingsOpen ? "▲" : "▼"}</span>
-                </button>
-
-                {isSettingsOpen && (
-                  <div className="mt-3 p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-3">
-                    <div>
-                      <label className="block text-[9px] text-stone-400 uppercase mb-1">
-                        Birth Date & Time (JST)
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={birthDate}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBirthDate(val);
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem("wealth_birthDate", val);
-                          }
-                        }}
-                        className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] text-stone-400 uppercase mb-1">
-                        Birth Longitude
-                      </label>
-                      <input
-                        type="number"
-                        step="0.0001"
-                        value={birthLon}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setBirthLon(val);
-                          if (typeof window !== "undefined") {
-                            localStorage.setItem("wealth_birthLon", val);
-                          }
-                        }}
-                        className="w-full bg-white/70 border border-stone-200/80 rounded px-2 py-1 text-stone-900 text-[11px] focus:outline-none focus:border-emerald-200"
-                        placeholder="139.6917"
-                      />
-                    </div>
-                    <p className="text-[9px] text-stone-400 leading-normal">
-                      ※生年月日と経度を設定すると、あなたの宿命干支（日柱地支）と空亡（天中殺）を自動算出し、吉凶日と補正指数をカレンダーへ動的に投影します。
-                    </p>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         ) : (
