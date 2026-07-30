@@ -7368,8 +7368,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
 
-              {/* INDEPENDENT FULL-WIDTH TREND ANALYTICS SECTION (Moved outside 2-col grid) */}
-              <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+              {/* FULL-WIDTH TREND ANALYTICS SECTION (spans both columns of the grid) */}
+              <div className="w-full max-w-4xl md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-rose-500 font-bold text-base">◆</span>
