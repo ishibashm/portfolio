@@ -1,11 +1,20 @@
 "use server";
 
-import prisma from "@/lib/prisma";
 import { JSDOM } from "jsdom";
 import { Defuddle } from "defuddle/node";
+import {
+  katmerDeleteByTitleAndDomain,
+  katmerFindByTitleAndDomain,
+  katmerInsertDocument,
+  katmerListRefs,
+} from "@/lib/katmer";
+
+// ナレッジベースの実体は Katmer Cloud (katmer.cloud-palette.com) に一本化された
+// ため、保存先はこちらの Prisma ではなく Katmer Cloud の Postgres。
+const FAVORITE_CATEGORIES = ["Tech Trends", "Web Extract"];
 
 /**
- * Save an article to the Knowledge Base (Second Brain).
+ * Save an article to the Knowledge Base (Katmer Cloud).
  * First attempts to scrape and save full markdown; falls back to standard link note.
  */
 export async function saveFavoriteArticle(
@@ -17,15 +26,7 @@ export async function saveFavoriteArticle(
     // Validate URL
     new URL(url);
 
-    // Check if already exists in KnowledgeDocument
-    const existing = await prisma.knowledgeDocument.findFirst({
-      where: {
-        title: title,
-        domain: source,
-      },
-    });
-
-    if (existing) {
+    if (await katmerFindByTitleAndDomain(title, source)) {
       return {
         success: true,
         message: "すでにナレッジベースに保存されています。",
@@ -60,17 +61,14 @@ export async function saveFavoriteArticle(
       ? scrapedContent
       : `## ${title}\n\n- **ソース**: ${source}\n- **リンク**: [記事を読む](${url})\n\n*(Tech Trend Center からお気に入り登録されました)*`;
 
-    // Save to the ServiceNow-like KnowledgeDocument table
-    await prisma.knowledgeDocument.create({
-      data: {
-        title: title,
-        content: content,
-        domain: source,
-        category: "Tech Trends",
-        type: "Note",
-        status: "Draft",
-        priority: "Medium",
-      },
+    await katmerInsertDocument({
+      title,
+      content,
+      domain: source,
+      category: "Tech Trends",
+      type: "Note",
+      status: "Draft",
+      priority: "Medium",
     });
 
     return {
@@ -93,17 +91,7 @@ export async function saveFavoriteArticle(
  */
 export async function getFavoriteArticles() {
   try {
-    const favorites = await prisma.knowledgeDocument.findMany({
-      where: {
-        category: {
-          in: ["Tech Trends", "Web Extract"],
-        },
-      },
-      select: {
-        title: true,
-        domain: true,
-      },
-    });
+    const favorites = await katmerListRefs(FAVORITE_CATEGORIES);
     return { success: true, data: favorites };
   } catch (err: any) {
     console.error("Failed to fetch favorites:", err);
@@ -116,12 +104,7 @@ export async function getFavoriteArticles() {
  */
 export async function removeFavoriteArticle(title: string, source: string) {
   try {
-    await prisma.knowledgeDocument.deleteMany({
-      where: {
-        title: title,
-        domain: source,
-      },
-    });
+    await katmerDeleteByTitleAndDomain(title, source);
     return { success: true, message: "お気に入りを解除しました。" };
   } catch (err: any) {
     console.error("Failed to delete favorite:", err);

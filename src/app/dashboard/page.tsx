@@ -224,7 +224,7 @@ export default async function DashboardPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/knowledge"
+              href="https://katmer.cloud-palette.com/brain"
               className="px-5 py-2.5 rounded-full bg-rose-500 text-white hover:bg-rose-600 font-semibold text-xs flex items-center gap-2 transition-all shadow-md shadow-rose-200"
             >
               <BookOpen className="w-4 h-4" />
