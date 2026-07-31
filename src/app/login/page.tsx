@@ -122,10 +122,10 @@ export default function LoginPage() {
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-200/40 rounded-full blur-3xl"></div>
 
         <h1 className="text-2xl font-bold mb-1 tracking-wider text-stone-900 font-serif">
-          不動産アービトラージ・ポータル
+          Cloud Palette
         </h1>
         <p className="text-stone-400 text-xs text-center mb-8 font-mono">
-          REAL ESTATE ARBITRAGE & WEALTH PORTAL
+          META-HUB LOGIN
         </p>
 
         {/* Logged in User Status */}

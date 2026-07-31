@@ -2,7 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isProtectedRoute } from "./routeAccess";
 
-export async function updateSession(request: NextRequest) {
+/**
+ * @param effectivePathname the path that will actually be rendered. On the
+ * sub-app subdomains this differs from `request.nextUrl.pathname` (which is "/"
+ * for the subdomain root), and gating on the raw value bypassed auth entirely.
+ */
+export async function updateSession(
+  request: NextRequest,
+  effectivePathname?: string,
+) {
+  const pathname = effectivePathname ?? request.nextUrl.pathname;
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -54,7 +64,7 @@ export async function updateSession(request: NextRequest) {
     !adminEmail ||
     (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
 
-  const requiresAuthentication = isProtectedRoute(request.nextUrl.pathname);
+  const requiresAuthentication = isProtectedRoute(pathname);
 
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && requiresAuthentication) {
@@ -80,7 +90,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // If authorized user is logged in, and tries to visit login page, redirect to dashboard
-  if (user && isAuthorized && request.nextUrl.pathname === "/login") {
+  if (user && isAuthorized && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
