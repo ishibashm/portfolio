@@ -290,6 +290,16 @@ const filterLayerData = (
   mBoard: any,
   dBoard: any,
 ) => {
+  // "optimal_only" / "exclude_noise" は算出レイヤーを削るのではなく、
+  // ヒートマップ側の塗り分けだけを変える表示専用フィルタ。
+  // ここで層を落とすと全セルが SAFE に潰れて情報が消えるため素通しする。
+  if (
+    directionFilterMode === "optimal_only" ||
+    directionFilterMode === "exclude_noise"
+  ) {
+    return layer;
+  }
+
   const showKigaku =
     directionFilterMode === "composite" ||
     directionFilterMode === "personal_kigaku" ||
@@ -7442,7 +7452,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                             ? "bg-stone-800 text-stone-900 font-bold shadow-xs"
                             : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
                         }`}
-                        title="五黄・暗剣・歳破などの大凶ノイズを除外"
+                        title="五黄・暗剣・歳破などの大凶をグレー（✕）で除外表示。他の判定色はそのまま"
                       >
                         <span>🛡️ 凶除外</span>
                       </button>
@@ -7562,20 +7572,26 @@ ${timingOptimization?.recommendationText || "特になし"}
                               const isTendoActive = d.tendoDir && d.tendoDir === dir;
                               const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
                               const isLuckyFilter = directionFilterMode === "optimal_only";
+                              const isExcludeFilter = directionFilterMode === "exclude_noise";
                               const isOptimal = st === "OPTIMAL" || st === "OPTIMAL_REGULAR";
+                              const isMajorNoise =
+                                st?.startsWith("NOISE_GOU") ||
+                                st?.startsWith("NOISE_ANKEN") ||
+                                st === "NOISE_HA";
+                              // 凶除外モードでは大凶セルを消さずグレーで「除外済み」と明示する
+                              const isExcluded = isExcludeFilter && isMajorNoise;
 
                               let bgClass = "bg-stone-50/50 text-stone-400";
-                              if (isOptimal) {
+                              if (isExcluded) {
+                                bgClass =
+                                  "bg-stone-300/70 text-stone-500 line-through opacity-70";
+                              } else if (isOptimal) {
                                 bgClass = isTendoActive
                                   ? "bg-gradient-to-br from-amber-400 via-emerald-400 to-amber-500 text-stone-950 font-bold border-2 border-amber-300 ring-2 ring-amber-400 shadow-md shadow-amber-200/50 scale-105 z-10"
                                   : "bg-emerald-500 text-stone-900 font-bold shadow-xs border border-emerald-400";
                               } else if (st === "SAFE") {
                                 bgClass = isLuckyFilter ? "bg-blue-100/70 text-blue-700" : "bg-blue-100 text-blue-800 font-medium";
-                              } else if (
-                                st?.startsWith("NOISE_GOU") ||
-                                st?.startsWith("NOISE_ANKEN") ||
-                                st === "NOISE_HA"
-                              ) {
+                              } else if (isMajorNoise) {
                                 bgClass = isLuckyFilter ? "bg-rose-100/70 text-rose-700" : "bg-rose-500 text-stone-900 font-semibold";
                               } else if (
                                 st?.startsWith("NOISE_HONMEI") ||
@@ -7605,7 +7621,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 <td
                                   key={i}
                                   className={`p-1 border border-stone-200 cursor-pointer hover:scale-110 transition-all ${bgClass}`}
-                                  title={`${d.label} 方位${dir}: ${st} ${tendoNote} (クリックで層詳細・根拠表示)`}
+                                  title={`${d.label} 方位${dir}: ${st}${isExcluded ? " ／ 大凶のため除外対象" : ""} ${tendoNote} (クリックで層詳細・根拠表示)`}
                                   onClick={() => {
                                     setTimeOffsetDays(d.offsetDays);
                                     setSelectedTrendCell({
@@ -7620,7 +7636,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   }}
                                 >
                                   <div className="w-6 h-6 mx-auto flex items-center justify-center text-[10px]">
-                                    {isTendoActive ? (
+                                    {isExcluded ? (
+                                      <span className="text-[10px]">✕</span>
+                                    ) : isTendoActive ? (
                                       <span className="text-[11px] drop-shadow-xs">✨</span>
                                     ) : isOptimal ? (
                                       <span className="text-[10px]">★</span>
@@ -7657,6 +7675,16 @@ ${timingOptimization?.recommendationText || "特になし"}
                         <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                           <div className="w-2 h-2 bg-orange-500/80"></div> WARNING
                         </span>
+                        {directionFilterMode === "exclude_noise" && (
+                          <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-300">
+                            <div className="w-2 h-2 bg-stone-300"></div> ✕ 除外 (五黄・暗剣・歳破)
+                          </span>
+                        )}
+                        {directionFilterMode === "optimal_only" && (
+                          <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-amber-300">
+                            🌟 大吉絞込中: OPTIMAL 以外は淡色化
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
