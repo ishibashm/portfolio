@@ -52,7 +52,7 @@ export default function DashboardError({
               Research Hub
             </Link>
             <Link
-              href="/knowledge"
+              href="https://katmer.cloud-palette.com/brain"
               className="px-4 py-3 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
             >
               <BookOpen className="w-4 h-4" />

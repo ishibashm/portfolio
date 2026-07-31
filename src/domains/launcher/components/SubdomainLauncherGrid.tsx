@@ -41,7 +41,7 @@ export const SubdomainLauncherGrid: React.FC = () => {
       subtitle: 'ナレッジベース・空間不動産分析',
       description: 'Second Brain ドキュメントノート、港区賃貸物件アービトラージ、地価所得マトリクス',
       icon: Database,
-      href: '/knowledge',
+      href: 'https://katmer.cloud-palette.com/brain',
       color: 'bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-yellow-50/40',
       borderColor: 'border-amber-300/80 hover:border-amber-400',
       shadowColor: 'shadow-md shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/60',

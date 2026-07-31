@@ -1,6 +1,5 @@
 export const PROTECTED_ROUTE_PREFIXES = [
   "/research",
-  "/knowledge",
   "/x-viewer",
   "/visualizer",
   "/omni",

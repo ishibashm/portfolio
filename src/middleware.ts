@@ -5,20 +5,19 @@ import { updateSession } from "@/utils/supabase/middleware";
  * Sub-app subdomains are served by rewriting onto an internal path.
  *
  * The auth check MUST run against the rewritten path, not the raw one. Checking
- * the raw pathname meant `brain.cloud-palette.com/` arrived as "/", which is not
+ * the raw pathname meant `tech.cloud-palette.com/` arrived as "/", which is not
  * in PROTECTED_ROUTE_PREFIXES, so updateSession let it through and the rewrite
- * then served the whole knowledge base to anonymous visitors. Equally, a rewrite
- * must never be applied on top of a redirect updateSession issued, or the login
- * redirect is silently discarded.
+ * then served the sub-app to anonymous visitors. Equally, a rewrite must never
+ * be applied on top of a redirect updateSession issued, or the login redirect is
+ * silently discarded.
  */
 const SUBDOMAIN_APPS = [
   { prefix: "fortune.", base: "/metaphysical", passthrough: ["/metaphysical", "/fortune"] },
   { prefix: "tech.", base: "/trends", passthrough: ["/trends", "/research", "/tech"] },
-  { prefix: "brain.", base: "/knowledge", passthrough: ["/knowledge", "/brain"] },
 ] as const;
 
 // Auth surfaces are shared by every host, so they must never be rewritten into a
-// sub-app namespace — otherwise the redirect to /login lands on /knowledge/login.
+// sub-app namespace — otherwise the redirect to /login lands on /trends/login.
 const HOST_NEUTRAL_PREFIXES = ["/login", "/auth"];
 
 function resolveSubdomainPath(host: string, pathname: string): string | null {
