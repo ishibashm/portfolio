@@ -26,10 +26,19 @@ jobs:
       - name: Create .env from Secret required for Build
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          # Next.js derives Server Action IDs from this key. Generating a fresh
+          # random key per deploy invalidated every action ID held by an already
+          # loaded browser tab, which surfaced as "Server Action ... was not found
+          # on the server". It has to stay stable across builds and instances.
+          SERVER_ACTIONS_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
         run: |
+          if [ -z "$SERVER_ACTIONS_KEY" ]; then
+            echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
+            exit 1
+          fi
           echo "$ENV_FILE_CONTENT" > .env
           echo "" >> .env
-          echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$(openssl rand -base64 32)" >> .env
+          echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
 
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
