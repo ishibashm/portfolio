@@ -148,5 +148,14 @@ jobs:
           GEOCODE_TIME_BUDGET_MIN: "90"
         run: npx -y tsx scripts/geocode_properties.ts
 
+      # スクレイパーは upsert しかしないので、掲載終了した物件も行として残り続ける。
+      # Supabase Free は 500MB でリードオンリーに落ちるため、
+      # 対象外の県と長期間確認できていない行をここで落として増加を頭打ちにする。
+      - name: Purge out-of-scope and dead listings
+        env:
+          PURGE_APPLY: "true"
+          PURGE_STALE_DAYS: "90"
+        run: npx -y tsx scripts/purge_rental_properties.ts
+
       - name: Report freshness
         run: npx -y tsx scripts/report_rental_freshness.ts
