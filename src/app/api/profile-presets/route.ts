@@ -23,6 +23,10 @@ const profilePresetSchema = z
     usePsychologyScorer: z.boolean().optional(),
     useKigakuScorer: z.boolean().optional(),
     useAstrologyScorer: z.boolean().optional(),
+    // Relocation Matrix 固有。.strip() があるため、ここに書かないと往復で落ちる。
+    targetDate: z.string().optional(),
+    engineType: z.string().optional(),
+    layerMode: z.string().optional(),
     createdAt: z.string(),
   })
   .strip();

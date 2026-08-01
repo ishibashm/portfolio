@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import {
+  loadProfilePresets,
+  saveProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
+import {
   BarChart,
   Bar,
   XAxis,
@@ -70,19 +75,6 @@ interface MunicipalityWealth {
   distanceKm?: number;
 }
 
-interface SavedPreset {
-  id: string;
-  name: string;
-  targetDate: string;
-  birthDate: string;
-  baseLat: string;
-  baseLon: string;
-  birthLat: string;
-  birthLon: string;
-  engineType: string;
-  layerMode: string;
-}
-
 const normalizeDateTimeLocal = (dateStr: string): string => {
   if (!dateStr) return "";
   try {
@@ -146,9 +138,13 @@ export default function RegionalWealthPage() {
   const itemsPerPage = 50;
 
   // Preset state
-  const [presets, setPresets] = useState<SavedPreset[]>([]);
+  const [presets, setPresets] = useState<ProfilePreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
   const [newPresetName, setNewPresetName] = useState<string>("");
+  const [presetCloudSynced, setPresetCloudSynced] = useState<boolean | null>(
+    null,
+  );
+  const [presetNeedsLogin, setPresetNeedsLogin] = useState(false);
 
   // Map Picker State
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
@@ -407,12 +403,14 @@ export default function RegionalWealthPage() {
   // Load Presets & Last Config
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedPresetsStr = localStorage.getItem("wealth_presets");
-      if (savedPresetsStr) {
-        try {
-          setPresets(JSON.parse(savedPresetsStr));
-        } catch (e) {}
-      }
+      // プリセットは他画面と同じ profilePresetSync 経由で読む。
+      // ここだけ localStorage を直接触っていたため、保存内容がクラウドに
+      // 上がらず、他画面がキャッシュを書き直したときに消えていた。
+      void loadProfilePresets(fetch, window.localStorage).then((result) => {
+        setPresets(result.presets);
+        setPresetCloudSynced(result.cloudSynced);
+        setPresetNeedsLogin(result.reason === "unauthenticated");
+      });
 
       let bDate = "";
       let bLat = "";
@@ -552,30 +550,44 @@ export default function RegionalWealthPage() {
     };
   }, []);
 
+  const persistPresets = async (updated: ProfilePreset[]) => {
+    setPresets(updated);
+    if (typeof window === "undefined") return;
+    const result = await saveProfilePresets(updated, fetch, window.localStorage);
+    setPresetCloudSynced(result.cloudSynced);
+    setPresetNeedsLogin(result.reason === "unauthenticated");
+  };
+
   const handleSavePreset = () => {
     if (!newPresetName.trim()) {
       alert("プリセット名を入力してください。");
       return;
     }
-    const newPreset: SavedPreset = {
-      id: Date.now().toString(),
+    // 共有スキーマは緯度経度を数値で持つ。画面側の文字列のまま入れると
+    // 型検証を通らず、クラウドへ上がらないまま端末内に取り残される。
+    const coords = [baseLat, baseLon, birthLat, birthLon].map(parseFloat);
+    if (!coords.every(Number.isFinite)) {
+      alert("出生地と現在地の緯度経度を入力してください。");
+      return;
+    }
+    const [bsLat, bsLon, bLat, bLon] = coords;
+
+    const newPreset: ProfilePreset = {
+      id: `preset_${Date.now()}`,
       name: newPresetName.trim(),
-      targetDate,
       birthDate,
-      baseLat,
-      baseLon,
-      birthLat,
-      birthLon,
+      birthLat: bLat,
+      birthLon: bLon,
+      baseLat: bsLat,
+      baseLon: bsLon,
+      targetDate,
       engineType,
       layerMode,
+      createdAt: new Date().toISOString(),
     };
-    const updatedPresets = [...presets, newPreset];
-    setPresets(updatedPresets);
     setSelectedPresetId(newPreset.id);
     setNewPresetName("");
-    if (typeof window !== "undefined") {
-      localStorage.setItem("wealth_presets", JSON.stringify(updatedPresets));
-    }
+    void persistPresets([...presets, newPreset]);
   };
 
   const handleLoadPreset = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -585,25 +597,35 @@ export default function RegionalWealthPage() {
 
     const preset = presets.find((p) => p.id === pId);
     if (preset) {
-      setTargetDate(preset.targetDate);
+      // 他画面で作られたプリセットには wealth 固有の項目が無い。
+      // その場合は現在の設定を維持する。
+      const nextTargetDate = preset.targetDate ?? targetDate;
+      const nextEngineType = preset.engineType ?? engineType;
+      const nextLayerMode = preset.layerMode ?? layerMode;
+      const nextBaseLat = String(preset.baseLat);
+      const nextBaseLon = String(preset.baseLon);
+      const nextBirthLat = String(preset.birthLat);
+      const nextBirthLon = String(preset.birthLon);
+
+      setTargetDate(nextTargetDate);
       setBirthDate(preset.birthDate);
-      setBaseLat(preset.baseLat);
-      setBaseLon(preset.baseLon);
-      setBirthLat(preset.birthLat);
-      setBirthLon(preset.birthLon);
-      setEngineType(preset.engineType);
-      setLayerMode(preset.layerMode);
+      setBaseLat(nextBaseLat);
+      setBaseLon(nextBaseLon);
+      setBirthLat(nextBirthLat);
+      setBirthLon(nextBirthLon);
+      setEngineType(nextEngineType);
+      setLayerMode(nextLayerMode);
 
       // Auto fetch with new preset params
       fetchData({
-        targetDate: preset.targetDate,
+        targetDate: nextTargetDate,
         birthDate: preset.birthDate,
-        baseLat: preset.baseLat,
-        baseLon: preset.baseLon,
-        birthLat: preset.birthLat,
-        birthLon: preset.birthLon,
-        engineType: preset.engineType,
-        layerMode: preset.layerMode,
+        baseLat: nextBaseLat,
+        baseLon: nextBaseLon,
+        birthLat: nextBirthLat,
+        birthLon: nextBirthLon,
+        engineType: nextEngineType,
+        layerMode: nextLayerMode,
         lunarPhaseModifier: lunarPhaseModifier,
       });
     }
@@ -611,12 +633,8 @@ export default function RegionalWealthPage() {
 
   const handleDeletePreset = () => {
     if (!selectedPresetId) return;
-    const updatedPresets = presets.filter((p) => p.id !== selectedPresetId);
-    setPresets(updatedPresets);
     setSelectedPresetId("");
-    if (typeof window !== "undefined") {
-      localStorage.setItem("wealth_presets", JSON.stringify(updatedPresets));
-    }
+    void persistPresets(presets.filter((p) => p.id !== selectedPresetId));
   };
 
   const formatCurrency = (value: number) => {
@@ -915,6 +933,25 @@ export default function RegionalWealthPage() {
 
         {/* Controls Section */}
         <div className="bg-white dark:bg-white p-4 md:p-6 rounded-2xl border border-gray-200 dark:border-stone-200 shadow-sm flex flex-col gap-5">
+          {/* 保存先が端末だけになっている状態を黙って進めない */}
+          {presetCloudSynced === false && (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              <span>
+                {presetNeedsLogin
+                  ? "未ログインのため、プリセットはこの端末にのみ保存されます。"
+                  : "クラウドと同期できていません。プリセットはこの端末にのみ保存されています。"}
+              </span>
+              {presetNeedsLogin && (
+                <a
+                  href="/login"
+                  className="shrink-0 rounded border border-amber-300 bg-white px-2 py-0.5 font-medium hover:bg-amber-100"
+                >
+                  ログイン
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Presets Row */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-stone-200">
             <div className="flex flex-wrap items-center gap-2">
