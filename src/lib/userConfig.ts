@@ -36,6 +36,20 @@ const UUID_RE =
  * uuid 列にそのまま渡すと問い合わせ自体が落ちるうえ、書き込めば本物の
  * user_id を偽の値で潰してしまう。UUID でない id は照合にも書き込みにも使わない。
  */
+/**
+ * 保護対象を触ってよい利用者か。
+ *
+ * middleware は ADMIN_EMAIL 以外を保護ページから弾くが、API ルートは
+ * その判定を通らない。認証さえ通れば誰でも呼べる状態だと、Google で
+ * サインインした第三者が user_configs に行を作れてしまう。
+ * ADMIN_EMAIL 未設定なら誰でも可（middleware と同じ扱い）。
+ */
+export function isAuthorizedUser(user: AuthUser): boolean {
+  const admin = process.env.ADMIN_EMAIL;
+  if (!admin) return true;
+  return user.email === admin.toLowerCase();
+}
+
 /** 新規行に入れてよい user_id。開発バイパスの偽 id なら null。 */
 export function toUserId(user: AuthUser): string | null {
   return UUID_RE.test(user.id) ? user.id : null;
