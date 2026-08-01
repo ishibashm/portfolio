@@ -292,6 +292,9 @@ model rental_properties {
   building_age       Int?
   floor              String?
   source_scraper     String?   @default("email")
+  // Nifty が返す掲載期限。掲載が終わった物件のリンクは 404 になるため、
+  // ここを過ぎたものはスキャナーから外し、purge で削除する。
+  expire_date        DateTime? @db.Timestamptz(6)
 }
 
 model RealEstateTarget {

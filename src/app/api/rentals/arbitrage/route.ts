@@ -250,6 +250,9 @@ export async function GET(request: Request) {
       lon: { not: null },
       rent: { not: null },
       size_sqm: { not: null },
+      // 掲載期限を過ぎた物件は詳細ページが 404 になる。リンク切れを掴ませない。
+      // expire_date が未取得（古い行）のものは判定できないので除外しない。
+      OR: [{ expire_date: null }, { expire_date: { gte: new Date() } }],
     };
 
     if (maxBuildingAge !== null && !isNaN(maxBuildingAge)) {
