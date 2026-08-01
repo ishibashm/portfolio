@@ -348,7 +348,11 @@ const PREFECTURES = [
   "okinawa",
 ];
 
-const STATE_FILE = path.join(process.cwd(), "scripts", "scraper_state.json");
+// CI では都道府県ごとに並列でジョブを回すため、再開位置のファイルも分ける必要がある。
+// 1 本のファイルを共有すると、並列ジョブが互いの再開位置を上書きしてしまう。
+const STATE_FILE =
+  process.env.SCRAPER_STATE_FILE ||
+  path.join(process.cwd(), "scripts", "scraper_state.json");
 
 function loadState(): {
   pref: string | null;
@@ -402,8 +406,30 @@ async function main() {
   const browser = await chromium.launch(BROWSER_OPTIONS);
 
   try {
-    // ターゲット都道府県（愛知、岐阜、三重）
-    const targetPrefectures = ["aichi", "gifu", "mie"];
+    // ターゲット都道府県。CI からは SCRAPER_PREFECTURES で 1 県ずつ渡して並列実行する。
+    // 既定値は移住候補として指定された 12 県（中部・関西・中国地方）。
+    const DEFAULT_TARGET_PREFECTURES = [
+      "aichi",
+      "shizuoka",
+      "mie",
+      "fukui",
+      "shiga",
+      "kyoto",
+      "osaka",
+      "nara",
+      "hyogo",
+      "tottori",
+      "shimane",
+      "hiroshima",
+    ];
+    const targetPrefectures = (process.env.SCRAPER_PREFECTURES || "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (targetPrefectures.length === 0) {
+      targetPrefectures.push(...DEFAULT_TARGET_PREFECTURES);
+    }
+    console.log(`Target prefectures: ${targetPrefectures.join(", ")}`);
 
     // 刈谷市への通勤圏となる市区町村（Nifty不動産のURLキー）
     const kariyaCommutingCities = new Set([
@@ -436,7 +462,10 @@ async function main() {
       "tajimishi",
     ]);
 
-    const useCommutingFilter = true; // 刈谷通勤圏に絞り込んでスキャンを大幅に高速化するフラグ
+    // 刈谷通勤圏だけに絞るフラグ。対象が 12 県に広がったため既定では無効で、
+    // SCRAPER_COMMUTING_FILTER=true を渡したときだけ上の市区町村リストで絞り込む。
+    const useCommutingFilter = process.env.SCRAPER_COMMUTING_FILTER === "true";
+    console.log(`Commuting-area filter: ${useCommutingFilter ? "on" : "off"}`);
 
     // 進行状況の読み込み
     const state = loadState();

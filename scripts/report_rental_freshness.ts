@@ -50,6 +50,37 @@ async function main() {
       `| Newest last_seen_at | ${r.newest ? r.newest.toISOString() : "n/a"} |`,
     ];
 
+    // 12 県を matrix で並列に回しているので、どの県まで行き渡っているかを県別にも出す。
+    const byPref = await pool.query<{
+      pref: string;
+      cnt: string;
+      geo: string;
+      newest: Date | null;
+    }>(`
+      SELECT
+        substring(address from 1 for 3) AS pref,
+        count(*)                        AS cnt,
+        count(lat)                      AS geo,
+        max(last_seen_at)               AS newest
+      FROM rental_properties
+      WHERE address IS NOT NULL AND address <> ''
+      GROUP BY 1
+      ORDER BY max(last_seen_at) DESC NULLS LAST
+      LIMIT 20
+    `);
+
+    lines.push(
+      "",
+      "#### By prefecture",
+      "",
+      "| Prefecture | Rows | With coords | Last seen |",
+      "| --- | --- | --- | --- |",
+      ...byPref.rows.map(
+        (p) =>
+          `| ${p.pref} | ${p.cnt} | ${p.geo} | ${p.newest ? p.newest.toISOString().slice(0, 16).replace("T", " ") : "n/a"} |`,
+      ),
+    );
+
     console.log(lines.join("\n"));
 
     if (process.env.GITHUB_STEP_SUMMARY) {
