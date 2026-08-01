@@ -4,9 +4,10 @@
  * スクレイパーは upsert しかしないため、掲載終了した物件も行として残り続ける。
  * 在庫は入れ替わるのに行数は増える一方なので、放置すると必ず上限に当たる。
  *
- * 2 つのルールで削る:
+ * 3 つのルールで削る:
  *   1. 対象都道府県から外れた行 — もう更新されないので保持する意味がない
  *   2. 一定期間 last_seen_at が更新されていない行 — 掲載終了とみなす
+ *   3. 掲載期限(expire_date)を過ぎた行 — 詳細ページが 404 になる。2 より確実
  *
  * 既定はドライラン。実際に削除するには PURGE_APPLY=true が必要。
  */
@@ -79,6 +80,13 @@ async function main() {
         [STALE_DAYS],
       )
     )[0].rows;
+    // 掲載期限を過ぎた物件は詳細ページが 404 になる。last_seen_at より確実な廃止判定。
+    const expiredCount = (
+      await q(
+        `SELECT count(*) AS rows FROM rental_properties
+          WHERE expire_date IS NOT NULL AND expire_date < now()`,
+      )
+    )[0].rows;
 
     const outOfScopeTotal = outOfScope.reduce(
       (a: number, r: any) => a + Number(r.rows),
@@ -93,6 +101,7 @@ async function main() {
       console.log(`    total: ${outOfScopeTotal}`);
     }
     console.log(`\n[2] Not seen for ${STALE_DAYS}+ days: ${staleCount}`);
+    console.log(`[3] Past their listing expiry: ${expiredCount}`);
 
     if (!APPLY) {
       console.log("\nDry run. Set PURGE_APPLY=true to delete.");
@@ -104,7 +113,8 @@ async function main() {
     const del = await pool.query(
       `DELETE FROM rental_properties
         WHERE substring(address from 1 for 3) <> ALL($1::text[])
-           OR last_seen_at < now() - ($2::int * interval '1 day')`,
+           OR last_seen_at < now() - ($2::int * interval '1 day')
+           OR (expire_date IS NOT NULL AND expire_date < now())`,
       [TARGET_PREFECTURES, STALE_DAYS],
     );
     const deleted = del.rowCount ?? 0;

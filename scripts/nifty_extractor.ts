@@ -97,6 +97,19 @@ function parseManagementFee(costStr: string): number {
   return isNaN(n) ? 0 : n;
 }
 
+// Nifty の掲載期限は "20260810000000" (YYYYMMDDHHMMSS) 形式。
+// 掲載が終わった物件の詳細ページは 404 になるため、これを保存して
+// 期限切れをスキャナーから外す。実測では 7 日以上再確認できていない行の
+// 半数が既に 404 だった。
+function parseExpireDate(raw: string): Date | null {
+  if (!raw) return null;
+  const m = raw.match(/^(\d{4})(\d{2})(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const date = new Date(`${y}-${mo}-${d}T23:59:59+09:00`);
+  return isNaN(date.getTime()) ? null : date;
+}
+
 // "ＪＲ東海道本線/東刈谷駅 徒歩6分" や "バス15分 徒歩5分" から徒歩の分数を取る。
 // minutes_to_station カラムは以前から存在するのに一度も埋めていなかったため、
 // 画面の駅徒歩が常に「不明」になっていた。
@@ -136,6 +149,7 @@ async function saveToDatabase(prisma: PrismaClient, properties: any[]) {
           minutes_to_station: parseWalkMinutes(prop.access),
           floor: prop.floor || "",
           is_new_build: prop.buildAge === "新築",
+          expire_date: parseExpireDate(prop.expireDate),
         };
 
         await prisma.rental_properties.upsert({
