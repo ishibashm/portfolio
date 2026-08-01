@@ -134,3 +134,4 @@ env.json
 katmer-defuddle/llm-wiki/raw/
 katmer-defuddle/graphify-out/
 katmer-defuddle/knowledge-base/public/analytics_data.json
+eheya_state*.json
