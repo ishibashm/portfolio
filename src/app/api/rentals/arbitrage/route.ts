@@ -16,6 +16,10 @@ import {
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
+import {
+  buildDailyAstroStates,
+  scoreDateForProperty,
+} from "@/utils/arbitrageAstro";
 
 // 物件名から不要な階数や築年数表現を除去するクレンジング関数
 function cleanPropertyName(name: string): string {
@@ -29,15 +33,6 @@ function cleanPropertyName(name: string): string {
     .trim();
 }
 
-function isNoiseStatus(status: string): boolean {
-  if (!status) return false;
-  return (
-    status.startsWith("NOISE") &&
-    status !== "NOISE_VOID" &&
-    status !== "NOISE_NODE"
-  );
-}
-
 function parseSafeDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
   if (
@@ -48,66 +43,6 @@ function parseSafeDate(dateStr: string | null | undefined): Date {
     return new Date(dateStr + "+09:00");
   }
   return new Date(dateStr);
-}
-
-function calculateBaziCompatibility(bDate: Date, targetDate: Date): number {
-  try {
-    const birthSolar = Solar.fromDate(bDate);
-    const birthEightChar = birthSolar.getLunar().getEightChar();
-    const userDayGan = birthEightChar.getDayGan();
-
-    const targetSolar = Solar.fromDate(targetDate);
-    const targetEightChar = targetSolar.getLunar().getEightChar();
-    const targetDayGan = targetEightChar.getDayGan();
-
-    const GAN_WUXING: Record<string, string> = {
-      甲: "木",
-      乙: "木",
-      丙: "火",
-      丁: "火",
-      戊: "土",
-      己: "土",
-      庚: "金",
-      辛: "金",
-      壬: "水",
-      癸: "水",
-    };
-
-    const userWuxing = GAN_WUXING[userDayGan];
-    const targetWuxing = GAN_WUXING[targetDayGan];
-
-    if (!userWuxing || !targetWuxing) return 50;
-
-    const shengCycle: Record<string, string> = {
-      木: "火",
-      火: "土",
-      土: "金",
-      金: "水",
-      水: "木",
-    };
-    const keCycle: Record<string, string> = {
-      木: "土",
-      土: "水",
-      水: "火",
-      火: "金",
-      金: "木",
-    };
-
-    if (userWuxing === targetWuxing) {
-      return 60;
-    } else if (shengCycle[userWuxing] === targetWuxing) {
-      return 70;
-    } else if (shengCycle[targetWuxing] === userWuxing) {
-      return 90;
-    } else if (keCycle[userWuxing] === targetWuxing) {
-      return 65;
-    } else if (keCycle[targetWuxing] === userWuxing) {
-      return 30;
-    }
-    return 50;
-  } catch (e) {
-    return 50;
-  }
 }
 
 // 偏差値計算用のヘルパー
@@ -402,133 +337,21 @@ export async function GET(request: Request) {
       dateList.push(d);
     }
 
-    const dailyAstroStates = dateList.map((d) => {
-      const env_d = getSystemEnvironment(d, baseLon, physicalMonthMode);
-
-      let activeVectors_d: Partial<Record<Direction, string>>;
-      let tendoDir_d: Direction | undefined;
-      let isDoyouHazard_d = false;
-
-      if (useClassical) {
-        // Compute Classical Board
-        const yB_class = generateBoard(env_d.classicalYearStar);
-        const mB_class = generateBoard(env_d.classicalMonthStar);
-        const dB_class = generateBoard(env_d.classicalDayStar);
-
-        const baseCollision_class = calculateVectorCollision(
-          honmeiStar.classical,
-          yB_class,
-          mB_class,
-          dB_class,
-          voidZodiacs,
-          env_d.raw.lunarNode,
-          actionIntent,
-          d,
-          baseLon,
-          undefined,
-          nodeMapping,
-        );
-
-        const vectorData_class = filterCollisionByMode(
-          baseCollision_class,
-          honmeiStar.classical,
-          null,
-          voidZodiacs,
-          directionFilterMode,
-          yB_class,
-          mB_class,
-          dB_class,
-        );
-
-        let activeClass: Partial<Record<Direction, string>>;
-        if (layerMode === "year") activeClass = vectorData_class.yearLayer;
-        else if (layerMode === "month")
-          activeClass = vectorData_class.monthLayer;
-        else if (layerMode === "day") activeClass = vectorData_class.dayLayer;
-        else activeClass = vectorData_class.finalVectors;
-
-        tendoDir_d = vectorData_class.tendoDirection;
-        isDoyouHazard_d = vectorData_class.doyouState?.isDoyouHazard || false;
-
-        activeVectors_d = activeClass;
-      } else {
-        // Pure Physical Board
-        const yB_phys = generateBoard(env_d.yearStar);
-        const mB_phys = generateBoard(env_d.monthStar);
-        const dB_phys = generateBoard(env_d.dayStar);
-
-        const baseCollision_phys = calculateVectorCollision(
-          honmeiStar.physical,
-          yB_phys,
-          mB_phys,
-          dB_phys,
-          voidZodiacs,
-          env_d.raw.lunarNode,
-          actionIntent,
-          d,
-          baseLon,
-          undefined,
-          nodeMapping,
-        );
-
-        const vectorData_phys = filterCollisionByMode(
-          baseCollision_phys,
-          honmeiStar.physical,
-          null,
-          voidZodiacs,
-          directionFilterMode,
-          yB_phys,
-          mB_phys,
-          dB_phys,
-        );
-
-        if (layerMode === "year") activeVectors_d = vectorData_phys.yearLayer;
-        else if (layerMode === "month")
-          activeVectors_d = vectorData_phys.monthLayer;
-        else if (layerMode === "day")
-          activeVectors_d = vectorData_phys.dayLayer;
-        else activeVectors_d = vectorData_phys.finalVectors;
-
-        tendoDir_d = vectorData_phys.tendoDirection;
-        isDoyouHazard_d = vectorData_phys.doyouState?.isDoyouHazard || false;
-      }
-
-      let lunarPhaseScore_d = 0;
-      if (lunarPhaseModifier) {
-        const lpCond_d = calculateLunarPhaseCondition(d, "MIGRATION");
-        lunarPhaseScore_d = lpCond_d.scoreModifier;
-      }
-
-      const rokuyo_d = getRokuyo(d);
-      const luckyDays_d = getLuckyDays(d);
-      const holiday_d = isJapaneseHoliday(d);
-
-      const dateStr = d.toISOString().split("T")[0];
-      const zodiacs_d = getCurrentZodiac(new Date(dateStr), baseLon);
-      const isVoidTime_d =
-        voidZodiacs.includes(zodiacs_d.yearZodiac) ||
-        voidZodiacs.includes(zodiacs_d.monthZodiac) ||
-        voidZodiacs.includes(zodiacs_d.dayZodiac);
-      const baziScore_d =
-        !isNaN(birthLat) && !isNaN(birthLon)
-          ? calculateBaziCompatibility(bDate, new Date(dateStr))
-          : 50;
-
-      return {
-        date: d,
-        dateStr,
-        activeVectors: activeVectors_d,
-        isDoyouHazard: isDoyouHazard_d,
-        lunarPhaseScore: lunarPhaseScore_d,
-        tendoDir: tendoDir_d,
-        rokuyo: rokuyo_d,
-        luckyDays: luckyDays_d,
-        holiday: holiday_d,
-        weekday: d.getDay(),
-        isVoidTime: isVoidTime_d,
-        baziScore: baziScore_d,
-      };
-    });
+    const astroParams = {
+      baseLon,
+      physicalMonthMode,
+      useClassical,
+      honmeiStar,
+      voidZodiacs,
+      actionIntent,
+      nodeMapping,
+      directionFilterMode,
+      layerMode,
+      lunarPhaseModifier,
+      hasBirthLocation: !isNaN(birthLat) && !isNaN(birthLon),
+      bDate,
+    };
+    const dailyAstroStates = buildDailyAstroStates(dateList, astroParams);
 
     // 3. 物件ごとにスコアリング
     const scoredProperties = properties.map((p) => {
@@ -572,168 +395,19 @@ export async function GET(request: Request) {
         );
       }
 
-      const dateScores = dailyAstroStates.map((state, stateIdx) => {
-        let baseAstrologyScore = 50;
-        let dailyStatus = "UNKNOWN";
-        let dailyIsTendo = false;
-
-        let tendoBonus = 0;
-        let sunLineBonus = 0;
-        let venusLineBonus = 0;
-        let jupiterLineBonus = 0;
-        let lunarPhaseScore = state.lunarPhaseScore;
-        let doyouPenalty = 0;
-        let voidPenalty = 0;
-
-        if (p.lat && p.lon) {
-          const targetDirection = useTrueNorth ? direction : magneticDirection;
-
-          if (state.activeVectors && targetDirection) {
-            dailyStatus = state.activeVectors[targetDirection] || "UNKNOWN";
-
-            // 1. Tendo (天道) override/shift rules
-            const isTendo =
-              state.tendoDir && targetDirection === state.tendoDir;
-            if (isTendo) {
-              dailyIsTendo = true;
-              tendoBonus = 20;
-
-              if (isNoiseStatus(dailyStatus)) {
-                // Shift NOISE to WARNING
-                dailyStatus = "WARNING";
-              } else if (dailyStatus === "WARNING") {
-                // Shift WARNING to SAFE
-                dailyStatus = "SAFE";
-              }
-            }
-
-            // 2. Jupiter Line (木星ライン) boost
-            const isOptimal =
-              dailyStatus === "OPTIMAL" || dailyStatus === "OPTIMAL_REGULAR";
-            if (isOptimal && hasJupiterLine) {
-              dailyStatus = "OPTIMAL_BOOST";
-            }
-
-            switch (dailyStatus) {
-              case "OPTIMAL_BOOST":
-                baseAstrologyScore = 110;
-                break;
-              case "OPTIMAL":
-                baseAstrologyScore = 100;
-                break;
-              case "SAFE":
-                baseAstrologyScore = 80;
-                break;
-              case "WARNING":
-                baseAstrologyScore = 60;
-                break;
-              case "NOISE_VOID":
-                baseAstrologyScore = 40;
-                voidPenalty = -40;
-                break;
-              case "NOISE_NODE":
-                baseAstrologyScore = 40;
-                break;
-              case "NOISE_HONMEI":
-              case "NOISE_TEKI":
-              case "NOISE_GETSUMEI":
-              case "NOISE_GETSUTEKI":
-                baseAstrologyScore = 20;
-                break;
-              case "NOISE_GOU":
-              case "NOISE_ANKEN":
-              case "NOISE_HA":
-                baseAstrologyScore = 10;
-                break;
-              default:
-                baseAstrologyScore = 50;
-                break;
-            }
-          }
-
-          if (!isNaN(birthLat) && !isNaN(birthLon)) {
-            if (hasSunLine) sunLineBonus = 15;
-            if (hasVenusLine && baseAstrologyScore >= 50) venusLineBonus = 15;
-            if (hasJupiterLine && baseAstrologyScore >= 50)
-              jupiterLineBonus = 20;
-          }
-
-          if (state.isDoyouHazard) {
-            doyouPenalty = -30;
-          }
-
-          // 3. Time-Gate (天中殺) check
-          if (state.isVoidTime && actionIntent === "MIGRATION") {
-            voidPenalty = -100; // Time-Gate blocker!
-          }
-        }
-
-        // 4. Bazi vs Kigaku Intent-based dynamic weighting
-        let blendedAstroScore = baseAstrologyScore;
-        if (!isNaN(birthLat) && !isNaN(birthLon)) {
-          const baziScore = state.baziScore;
-          if (actionIntent === "MIGRATION" || actionIntent === "BUSINESS") {
-            blendedAstroScore = baseAstrologyScore * 0.7 + baziScore * 0.3;
-          } else {
-            blendedAstroScore = baseAstrologyScore * 0.2 + baziScore * 0.8;
-          }
-        }
-
-        // クリップ前の生合計値
-        const rawTotalScore =
-          blendedAstroScore +
-          tendoBonus +
-          sunLineBonus +
-          venusLineBonus +
-          jupiterLineBonus +
-          lunarPhaseScore +
-          doyouPenalty +
-          voidPenalty;
-        const dailyScore = Math.max(0, Math.min(100, rawTotalScore));
-
-        const isTaian = state.rokuyo.includes("大安");
-        const isTensho = state.luckyDays.isTensho;
-        const isIchiryumanbai = state.luckyDays.isIchiryumanbai;
-
-        let luckyCount = 0;
-        if (dailyIsTendo) luckyCount++;
-        if (isTaian) luckyCount++;
-        if (isTensho) luckyCount++;
-        if (isIchiryumanbai) luckyCount++;
-
-        const isUltraLucky = (isTensho && dailyIsTendo) || luckyCount >= 3;
-
-        return {
-          date: state.dateStr,
-          score: dailyScore,
-          status: dailyStatus,
-          rokuyo: state.rokuyo,
-          luckyDays: {
-            isIchiryumanbai,
-            isTensho,
-            isTendo: dailyIsTendo,
-            labels: [
-              ...(isIchiryumanbai ? ["一粒万倍日"] : []),
-              ...(isTensho ? ["天赦日"] : []),
-              ...(dailyIsTendo ? ["天道"] : []),
-            ],
-          },
-          isUltraLucky,
-          weekday: state.weekday,
-          holiday: state.holiday,
-          scoreDetails: {
-            baseAstrologyScore,
-            tendoBonus,
-            sunLineBonus,
-            venusLineBonus,
-            jupiterLineBonus,
-            lunarPhaseScore,
-            doyouPenalty,
-            voidPenalty,
-            rawTotalScore,
-          },
-        };
-      });
+      const dateScores = dailyAstroStates.map((state) =>
+        scoreDateForProperty(state, {
+          hasCoordinates: !!(p.lat && p.lon),
+          direction,
+          magneticDirection,
+          useTrueNorth,
+          hasSunLine,
+          hasVenusLine,
+          hasJupiterLine,
+          hasBirthLocation: !isNaN(birthLat) && !isNaN(birthLon),
+          actionIntent,
+        }),
+      );
 
       // 目標日当日(配列のインデックス3)のデータに基づいて物件全体の吉凶ステータスを設定
       const targetDay = dateScores[3];

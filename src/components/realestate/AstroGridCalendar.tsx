@@ -60,6 +60,9 @@ interface AstroGridCalendarProps {
   onDateChange?: (date: string) => void;
   isTransitioning?: boolean;
   enableExtendedViews?: boolean;
+  /** 30days / 12months を実データで取り直すための取得関数。
+   *  未指定なら 7days だけが使える（偽データは出さない）。 */
+  fetchTimeline?: (range: "30days" | "12months") => Promise<DateScore[]>;
 }
 
 export function AstroGridCalendar({
@@ -67,11 +70,10 @@ export function AstroGridCalendar({
   onDateChange,
   isTransitioning = false,
   enableExtendedViews = true,
+  fetchTimeline,
 }: AstroGridCalendarProps) {
   const [rangeMode, setRangeMode] = React.useState<"7days" | "30days" | "12months">("7days");
   const [luckyOnlyFilter, setLuckyOnlyFilter] = React.useState<boolean>(false);
-
-  if (!dateScores || dateScores.length === 0) return null;
 
   // 曜日名
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
@@ -103,47 +105,46 @@ export function AstroGridCalendar({
     );
   };
 
-  // 表示対象の配列をフィルター
-  const displayedDays = React.useMemo(() => {
-    let list = dateScores;
-    // 期間モードごとの要素数制御（サンプル配列を疑似生成・調整）
-    if (rangeMode === "30days") {
-      // 30日分拡張（現在の要素から補間・拡張）
-      const extended: DateScore[] = [];
-      for (let i = -14; i <= 15; i++) {
-        const base = dateScores[Math.abs(i) % dateScores.length];
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        extended.push({
-          ...base,
-          date: `${yyyy}-${mm}-${dd}`,
-          weekday: d.getDay(),
-        });
-      }
-      list = extended;
-    } else if (rangeMode === "12months") {
-      // 12ヶ月分（月別代表日）
-      const monthly: DateScore[] = [];
-      for (let m = 0; m < 12; m++) {
-        const base = dateScores[m % dateScores.length];
-        const d = new Date();
-        d.setMonth(d.getMonth() + m);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        monthly.push({
-          ...base,
-          date: `${yyyy}-${mm}-01`,
-          weekday: d.getDay(),
-        });
-      }
-      list = monthly;
-    }
+  // 30days / 12months はかつて 7 日分の dateScores を循環参照して日付ラベルだけを
+  // 貼り替えていた。つまり半年先として表示していた吉凶は、実際には今日±3日の
+  // どれかの日のものだった（12ヶ月表示のセルが全部「01」だったのはその名残で、
+  // date を毎月1日固定で作っていたため）。
+  // 実際にその日付で計算した値をサーバから取り直す。
+  const [extendedDays, setExtendedDays] = React.useState<DateScore[] | null>(
+    null,
+  );
+  const [extendedLoading, setExtendedLoading] = React.useState(false);
 
-    return list;
-  }, [dateScores, rangeMode]);
+  React.useEffect(() => {
+    if (rangeMode === "7days" || !fetchTimeline) {
+      setExtendedDays(null);
+      return;
+    }
+    let cancelled = false;
+    setExtendedLoading(true);
+    setExtendedDays(null);
+    fetchTimeline(rangeMode)
+      .then((rows) => {
+        if (!cancelled) setExtendedDays(rows);
+      })
+      .catch(() => {
+        // 取得できなかったときは偽の値を描くより何も出さないほうがよい
+        if (!cancelled) setExtendedDays(null);
+      })
+      .finally(() => {
+        if (!cancelled) setExtendedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [rangeMode, fetchTimeline]);
+
+  // 早期 return はすべてのフックを呼んだ後で行う。
+  // フックより前に return すると呼び出し順が変わってレンダリングが壊れる。
+  if (!dateScores || dateScores.length === 0) return null;
+
+  const displayedDays =
+    rangeMode === "7days" ? dateScores : (extendedDays ?? []);
 
   // 各マスのスタイルクラスを決定
   const getBoxStyle = (day: DateScore, isToday: boolean) => {
@@ -298,10 +299,24 @@ export function AstroGridCalendar({
         )}
       </div>
 
+      {rangeMode !== "7days" && extendedLoading && (
+        <div className="text-[11px] text-stone-400 px-1 py-2">
+          {rangeMode === "12months" ? "12ヶ月分" : "30日分"}の吉凶を計算中…
+        </div>
+      )}
+      {rangeMode !== "7days" && !extendedLoading && displayedDays.length === 0 && (
+        <div className="text-[11px] text-stone-400 px-1 py-2">
+          この期間の吉凶を取得できませんでした。
+        </div>
+      )}
+
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {displayedDays.map((day, idx) => {
-          const dayNum = day.date.split("-")[2];
-          const isToday = idx === 3; // 配列の真ん中が指定日(当日)
+          const [, monthPart, dayPart] = day.date.split("-");
+          // 12ヶ月表示で日部分を出すと全セルが同じ数字になる。月を出す。
+          const dayNum = rangeMode === "12months" ? `${Number(monthPart)}月` : dayPart;
+          // 7days / 30days は先頭から4番目が対象日。12months に対象日の概念は無い。
+          const isToday = rangeMode !== "12months" && idx === 3;
 
           const tooltipTitle = `${day.date} (${WEEKDAYS[day.weekday]}${day.holiday.isHoliday ? `・${day.holiday.name}` : ""})`;
           const lucksList = [
