@@ -62,6 +62,9 @@ model VerificationToken {
 model user_configs {
   id                   String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   user_email           String    @unique
+  // Supabase の user.id。メールアドレスは変更できるため、こちらが安定キー。
+  // 既存行のために NULL 許容にしてあり、user_email はフォールバックとして残す。
+  user_id              String?   @unique @db.Uuid
   birth_date           String?
   birth_lat            Float?
   birth_lon            Float?
