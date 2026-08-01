@@ -31,6 +31,17 @@ const TIME_BUDGET_MS =
 const STARTED_AT = Date.now();
 let budgetExhausted = false;
 
+// 新着スイープモード。
+// 全件を舐めると 12 県で数十時間かかるが、実測では刈谷市 1,278 件のうち新着は 64 件（約5%）。
+// 「新着のみ(ex13=1) + 新着物件順(sort=regDate-desc)」に絞れば桁違いに軽く、
+// 数時間おきに回して新着だけをほぼ即時に取り込める。
+// 全件スイープ（夜間）は価格改定と掲載終了の追随用に別途残す。
+const NEW_ONLY = process.env.SCRAPER_NEW_ONLY === "true";
+const NEW_ARRIVAL_QUERY = "?ex13=1&sort=regDate-desc";
+// 新着は 1 市区町村あたり数十件しかないので、取りこぼしを防ぎつつ暴走も防ぐ上限。
+const MAX_PAGES =
+  parseInt(process.env.SCRAPER_MAX_PAGES || "", 10) || (NEW_ONLY ? 3 : 0);
+
 function checkTimeBudget(): boolean {
   if (TIME_BUDGET_MS <= 0) return false;
   if (Date.now() - STARTED_AT >= TIME_BUDGET_MS) {
@@ -196,14 +207,24 @@ async function scrapeArea(
         });
       }
 
-      const url =
+      if (MAX_PAGES > 0 && currentPage > MAX_PAGES) {
+        console.log(`Reached the page cap (${MAX_PAGES}). Moving on.`);
+        break;
+      }
+
+      const basePath =
         currentPage === 1
           ? `https://myhome.nifty.com/rent/${prefAlpha}/${cityAlpha}_ct/`
           : `https://myhome.nifty.com/rent/${prefAlpha}/${cityAlpha}_ct/${currentPage}/`;
+      const url = NEW_ONLY ? `${basePath}${NEW_ARRIVAL_QUERY}` : basePath;
       console.log(`Navigating to ${url}`);
 
-      // ここでステートを保存（途中で落ちてもこのページから再開できるようにする）
-      saveState(prefAlpha, cityAlpha, currentPage);
+      // ここでステートを保存（途中で落ちてもこのページから再開できるようにする）。
+      // 新着スイープは 1 回で全市区町村を回り切る前提なので、再開位置は持たない。
+      // ここで保存すると全件スイープ側の再開位置を壊してしまう。
+      if (!NEW_ONLY) {
+        saveState(prefAlpha, cityAlpha, currentPage);
+      }
 
       await page.goto(url, { waitUntil: "domcontentloaded" });
 
@@ -467,8 +488,11 @@ async function main() {
     const useCommutingFilter = process.env.SCRAPER_COMMUTING_FILTER === "true";
     console.log(`Commuting-area filter: ${useCommutingFilter ? "on" : "off"}`);
 
-    // 進行状況の読み込み
-    const state = loadState();
+    // 進行状況の読み込み。新着スイープは毎回すべての市区町村を頭から回るので再開しない。
+    console.log(`Mode: ${NEW_ONLY ? "new arrivals only" : "full sweep"}`);
+    const state = NEW_ONLY
+      ? { pref: null, city: null, page: 1 }
+      : loadState();
     let skipPref = !!state.pref;
     let skipCity = !!state.city;
 
@@ -544,9 +568,10 @@ async function main() {
         "⏸️ Stopped on the time budget. The remaining areas will be picked up by the next run.",
       );
     } else {
-      console.log("✅ Nationwide scraping completed successfully!");
-      // 完了したらステートファイルを削除して次回は最初から走る（＝全件リフレッシュ）
-      if (fs.existsSync(STATE_FILE)) {
+      console.log("✅ Scraping completed successfully!");
+      // 完了したらステートファイルを削除して次回は最初から走る（＝全件リフレッシュ）。
+      // 新着スイープは全件スイープの再開位置を持っていないので触らない。
+      if (!NEW_ONLY && fs.existsSync(STATE_FILE)) {
         fs.unlinkSync(STATE_FILE);
       }
     }
