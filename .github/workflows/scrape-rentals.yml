@@ -145,7 +145,17 @@ jobs:
 
       - name: Geocode newly imported properties
         env:
-          GEOCODE_TIME_BUDGET_MIN: "90"
+          GEOCODE_TIME_BUDGET_MIN: "60"
+        run: npx -y tsx scripts/geocode_properties.ts
+
+      # level を見ずに座標を採用していた時期に、市の代表点を割り当てられた物件が
+      # 大量に残っている（同一座標に数千件が固まっている）。方位計算がその市の
+      # 全物件で同じになってしまうため、国土地理院の住所検索で引き直す。
+      # 対象が無くなれば即座に終わるので、解消後は無害な no-op になる。
+      - name: Re-geocode properties stuck on a city centroid
+        env:
+          GEOCODE_REFRESH_CLUSTERED: "true"
+          GEOCODE_TIME_BUDGET_MIN: "60"
         run: npx -y tsx scripts/geocode_properties.ts
 
       # スクレイパーは upsert しかしないので、掲載終了した物件も行として残り続ける。
