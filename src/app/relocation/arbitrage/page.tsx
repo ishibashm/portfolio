@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import {
   Loader2,
   MapPin,
@@ -605,6 +605,52 @@ export default function ArbitrageScannerPage() {
       );
     };
   }, []);
+
+  // 30days / 12months の吉凶を、その物件の方位で実際に計算して取り直す。
+  // 一覧APIが返す dateScores は対象日±3日の7日ぶんしかないため、
+  // 以前はそれを使い回した値が長期表示に出ていた。
+  const fetchTimeline = useCallback(
+    async (lat: number | null, lon: number | null, range: string) => {
+      if (lat == null || lon == null) return [];
+      const params = new URLSearchParams();
+      params.append("range", range);
+      params.append("propLat", String(lat));
+      params.append("propLon", String(lon));
+      params.append("baseLat", baseLat);
+      params.append("baseLon", baseLon);
+      params.append("birthLat", birthLat);
+      params.append("birthLon", birthLon);
+      if (birthDate) params.append("birthDate", birthDate);
+      if (targetDate) params.append("targetDate", targetDate);
+      params.append("useClassical", useClassical.toString());
+      params.append("layerMode", layerMode);
+      params.append("useTrueNorth", useTrueNorth.toString());
+      params.append("lunarPhaseModifier", lunarPhaseModifier.toString());
+      params.append("directionFilterMode", directionFilterMode);
+      params.append("actionIntent", actionIntent);
+
+      const res = await fetch(
+        `/api/rentals/arbitrage/timeline?${params.toString()}`,
+      );
+      if (!res.ok) throw new Error(`timeline ${res.status}`);
+      const json = await res.json();
+      return json.dateScores || [];
+    },
+    [
+      baseLat,
+      baseLon,
+      birthLat,
+      birthLon,
+      birthDate,
+      targetDate,
+      useClassical,
+      layerMode,
+      useTrueNorth,
+      lunarPhaseModifier,
+      directionFilterMode,
+      actionIntent,
+    ],
+  );
 
   const fetchData = async (isDateChange = false) => {
     if (!initialLoaded) return;
@@ -1611,6 +1657,9 @@ export default function ArbitrageScannerPage() {
                                 dateScores={item.dateScores}
                                 onDateChange={handleDateChange}
                                 isTransitioning={isTransitioningDate}
+                                fetchTimeline={(range) =>
+                                  fetchTimeline(item.lat, item.lon, range)
+                                }
                               />
                             </div>
                           </div>
