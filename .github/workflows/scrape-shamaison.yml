@@ -1,0 +1,142 @@
+name: Refresh Rental Listings (Shamaison / Sekisui House)
+
+# シャーメゾン公式サイトを直接取り込む。
+#
+# ポータル経由でも入ってくるが、掲載時は建物固有名で載ることが多く
+# 「シャーメゾン」で数えると実態より少なく見える。公式から拾えば取りこぼしがない。
+#
+# Nifty / いい部屋ネット とは別ワークフロー・別 concurrency にしてある。
+# 相手サーバーが違うので同時に走っても各サイトへの負荷は増えない。
+
+on:
+  schedule:
+    # 17:00 UTC = 翌 02:00 JST。いい部屋ネット(16:00 UTC)の後、全件スイープ(19:00 UTC)の前。
+    - cron: "0 17 * * *"
+  workflow_dispatch:
+    inputs:
+      prefectures:
+        description: "対象都道府県（カンマ区切り、空なら既定の12県すべて）"
+        required: false
+        default: ""
+      budget_min:
+        description: "1県あたりに割く分数"
+        required: false
+        default: "90"
+      reset_state:
+        description: "再開位置を破棄して最初からやり直す"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: rental-scraper-shamaison
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        prefecture:
+          - aichi
+          - shizuoka
+          - mie
+          - fukui
+          - shiga
+          - kyoto
+          - osaka
+          - nara
+          - hyogo
+          - tottori
+          - shimane
+          - hiroshima
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # 県ごとに再開位置を分ける。1 本を共有すると並列ジョブが互いに上書きする。
+      - name: Restore resume state for ${{ matrix.prefecture }}
+        uses: actions/cache@v4
+        with:
+          path: scripts/shamaison_state_${{ matrix.prefecture }}.json
+          key: shamaison-state-${{ matrix.prefecture }}-${{ github.run_id }}
+          restore-keys: |
+            shamaison-state-${{ matrix.prefecture }}-
+
+      - name: Reset resume state
+        if: ${{ inputs.reset_state == true }}
+        run: rm -f scripts/shamaison_state_${{ matrix.prefecture }}.json
+
+      - name: Scrape ${{ matrix.prefecture }}
+        if: ${{ inputs.prefectures == '' || contains(format(',{0},', inputs.prefectures), format(',{0},', matrix.prefecture)) }}
+        env:
+          SHAMAISON_PREFECTURES: ${{ matrix.prefecture }}
+          SHAMAISON_STATE_FILE: scripts/shamaison_state_${{ matrix.prefecture }}.json
+          SHAMAISON_TIME_BUDGET_MIN: ${{ inputs.budget_min || '90' }}
+        run: npx -y tsx scripts/shamaison_extractor.ts
+
+  geocode:
+    # 取り込んだ行は lat/lon が NULL で、座標が付くまでスキャナーに出ない。
+    needs: scrape
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Geocode newly imported properties
+        env:
+          GEOCODE_TIME_BUDGET_MIN: "60"
+        run: npx -y tsx scripts/geocode_properties.ts
+
+      - name: Report freshness
+        run: npx -y tsx scripts/report_rental_freshness.ts
