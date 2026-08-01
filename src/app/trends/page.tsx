@@ -412,7 +412,12 @@ export default function TrendsPage() {
                   Aggregator
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-stone-900 via-stone-700 to-[color-mix(in_srgb,var(--color-accent,#10b981)_70%,#1c1917)] bg-clip-text text-transparent font-serif">
+              {/* グラデーションを bg-clip-text + text-transparent で流し込むと、
+                  Chromium が backdrop-filter 配下・端数ピクセル位置でラスタライズした際に
+                  タイトルを横切る継ぎ目（1本の横線）を描いてしまう。
+                  元のグラデーションは stone-900〜stone-700 とほぼ単色で見た目の差が無いため、
+                  単色に戻して継ぎ目の発生源そのものを取り除く。 */}
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-stone-900 font-serif">
                 Tech Trend Center
               </h1>
               <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">

@@ -17,6 +17,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// スクレイパーと同様、CI のジョブ上限に収めるための自発停止。
+// 未処理分は次回の実行で拾われる（lat/lon が NULL の行を毎回探すため）。
+const TIME_BUDGET_MS =
+  (parseInt(process.env.GEOCODE_TIME_BUDGET_MIN || "0", 10) || 0) * 60_000;
+const STARTED_AT = Date.now();
+
+function timeBudgetReached(): boolean {
+  return TIME_BUDGET_MS > 0 && Date.now() - STARTED_AT >= TIME_BUDGET_MS;
+}
+
 async function geocodeAddress(
   address: string,
 ): Promise<{ lat: number; lon: number } | null> {
@@ -51,6 +61,13 @@ async function main() {
     let batchNumber = 1;
 
     while (true) {
+      if (timeBudgetReached()) {
+        console.log(
+          "\n⏱️ Time budget reached. Remaining addresses will be geocoded on the next run.",
+        );
+        break;
+      }
+
       // 緯度経度がまだ設定されていない物件を取得
       const unmappedProperties = await prisma.rental_properties.findMany({
         where: {
@@ -77,6 +94,7 @@ async function main() {
       let batchFailCount = 0;
 
       for (const prop of unmappedProperties) {
+        if (timeBudgetReached()) break;
         if (!prop.address) continue;
 
         const coords = await geocodeAddress(prop.address);

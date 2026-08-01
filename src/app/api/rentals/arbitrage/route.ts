@@ -357,7 +357,7 @@ export async function GET(request: Request) {
       };
     }
 
-    const [properties, totalCount] = await Promise.all([
+    const [properties, totalCount, freshness] = await Promise.all([
       prisma.rental_properties.findMany({
         where: whereClause,
         take: limit,
@@ -366,13 +366,20 @@ export async function GET(request: Request) {
       prisma.rental_properties.count({
         where: whereClause,
       }),
+      // 定期スクレイピング（.github/workflows/scrape-rentals.yml）がいつ回ったかを
+      // 画面から確認できるようにする。絞り込み条件に依存しない全体の鮮度。
+      prisma.rental_properties.aggregate({
+        _max: { last_seen_at: true },
+      }),
     ]);
+
+    const dataUpdatedAt = freshness._max.last_seen_at?.toISOString() ?? null;
 
     if (properties.length === 0) {
       return NextResponse.json({
         properties: [],
         stats: {},
-        metadata: { totalCount: 0, limit },
+        metadata: { totalCount: 0, limit, dataUpdatedAt },
       });
     }
 
@@ -840,6 +847,7 @@ export async function GET(request: Request) {
         totalAnalyzed: properties.length,
         totalCount,
         limit,
+        dataUpdatedAt,
         upcomingDoyou,
         lunarPhase: {
           label: lunarPhaseLabel,
