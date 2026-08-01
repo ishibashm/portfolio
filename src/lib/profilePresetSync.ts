@@ -15,6 +15,10 @@ export interface ProfilePreset {
   usePsychologyScorer?: boolean;
   useKigakuScorer?: boolean;
   useAstrologyScorer?: boolean;
+  // Relocation Matrix (/relocation/wealth) 固有。他の画面では使わないので任意。
+  targetDate?: string;
+  engineType?: string;
+  layerMode?: string;
   createdAt: string;
 }
 
@@ -40,22 +44,68 @@ function isProfilePreset(value: unknown): value is ProfilePreset {
   );
 }
 
+/**
+ * /relocation/wealth が独自に localStorage へ書いていた旧形式。
+ * 緯度経度が文字列で createdAt を持たないため isProfilePreset を通らず、
+ * 変換しないとクラウドへ上がらないまま端末内に取り残される。
+ */
+function migrateLegacyWealthPreset(value: unknown): ProfilePreset | null {
+  if (!value || typeof value !== "object") return null;
+  const p = value as Record<string, unknown>;
+  if (typeof p.id !== "string" || typeof p.name !== "string") return null;
+
+  const num = (v: unknown) =>
+    typeof v === "number" ? v : parseFloat(String(v ?? ""));
+  const birthLat = num(p.birthLat);
+  const birthLon = num(p.birthLon);
+  const baseLat = num(p.baseLat);
+  const baseLon = num(p.baseLon);
+
+  // 座標が読めないものは捨てる。0,0 で埋めると別の地点として計算されてしまう。
+  if (![birthLat, birthLon, baseLat, baseLon].every(Number.isFinite)) {
+    return null;
+  }
+
+  return {
+    id: p.id,
+    name: p.name,
+    birthDate: typeof p.birthDate === "string" ? p.birthDate : "",
+    birthLat,
+    birthLon,
+    baseLat,
+    baseLon,
+    ...(typeof p.targetDate === "string" ? { targetDate: p.targetDate } : {}),
+    ...(typeof p.engineType === "string" ? { engineType: p.engineType } : {}),
+    ...(typeof p.layerMode === "string" ? { layerMode: p.layerMode } : {}),
+    createdAt: new Date().toISOString(),
+  };
+}
+
 function readLocalPresets(storage: Storage): ProfilePreset[] {
+  // 先に見つかったキーで打ち切ると、もう一方のキーにしかないプリセットを
+  // 取りこぼす（wealth 側は別スキーマで別キーに書いていた）。両方を統合する。
+  const merged = new Map<string, ProfilePreset>();
+
   for (const key of STORAGE_KEYS) {
     const value = storage.getItem(key);
     if (!value) continue;
 
     try {
       const parsed: unknown = JSON.parse(value);
-      if (Array.isArray(parsed) && parsed.every(isProfilePreset)) {
-        return parsed;
+      if (!Array.isArray(parsed)) continue;
+
+      for (const candidate of parsed) {
+        const preset = isProfilePreset(candidate)
+          ? candidate
+          : migrateLegacyWealthPreset(candidate);
+        if (preset && !merged.has(preset.id)) merged.set(preset.id, preset);
       }
     } catch {
-      // Try the legacy key before treating the local cache as empty.
+      // 壊れたキーは飛ばして、もう一方のキーを見る。
     }
   }
 
-  return [];
+  return [...merged.values()];
 }
 
 function cachePresets(storage: Storage, presets: ProfilePreset[]) {

@@ -65,7 +65,10 @@ export function GlobalSidebar() {
       if (active) setEmail(data.user?.email ?? null);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      // INITIAL_SESSION は購読直後に必ず発火する初期通知で、上の getUser() と
+      // 内容が重複する。こちらを採用すると getUser() の結果を打ち消してしまう。
+      if (event === "INITIAL_SESSION") return;
       setEmail(session?.user?.email ?? null);
     });
 
