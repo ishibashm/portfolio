@@ -1,0 +1,122 @@
+name: Refresh Rental Listings (New Arrivals)
+
+# 全件スイープ（scrape-rentals.yml）は 12 県を一巡するのに数十時間かかるため、
+# 新着物件がスキャナーに出るまで数日ラグが出る。
+#
+# Nifty は「新着のみ (ex13=1)」と「新着物件順 (sort=regDate-desc)」を
+# クエリで受け付ける。実測では刈谷市 1,278 件のうち新着は 64 件（約5%）で、
+# 新着だけなら一巡が 30 分程度に収まる。これを数時間おきに回すことで、
+# 新着物件はほぼ即時に取り込まれる。
+#
+# 実行時刻は全件スイープ（19:00 UTC 開始・7時間程度）とぶつからない時間帯に置いている。
+
+on:
+  schedule:
+    # 03/06/09/12/15 UTC = 12/15/18/21/24 JST
+    - cron: "0 3,6,9,12,15 * * *"
+  workflow_dispatch:
+
+# 全件スイープとは別グループ。同じにすると全件スイープの裏で新着が待たされ続ける。
+# 万一重なっても、各ジョブがページ間で 2〜4 秒待つので合計でおよそ毎秒 1 リクエストに収まる。
+concurrency:
+  group: rental-scraper-new
+  cancel-in-progress: false
+
+jobs:
+  scrape-new:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        prefecture:
+          - aichi
+          - shizuoka
+          - mie
+          - fukui
+          - shiga
+          - kyoto
+          - osaka
+          - nara
+          - hyogo
+          - tottori
+          - shimane
+          - hiroshima
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # 新着スイープは毎回すべての市区町村を頭から回るため再開位置を持たない。
+      # キャッシュを共有すると全件スイープ側の再開位置を壊す。
+      - name: Scrape new arrivals in ${{ matrix.prefecture }}
+        env:
+          SCRAPER_NEW_ONLY: "true"
+          SCRAPER_PREFECTURES: ${{ matrix.prefecture }}
+          SCRAPER_TIME_BUDGET_MIN: "40"
+        run: npx -y tsx scripts/nifty_extractor.ts
+
+  geocode:
+    # 取り込んだばかりの行は lat/lon が NULL で、
+    # /api/rentals/arbitrage は座標のある物件しか返さない。
+    # ここまでやらないと「新着が即時に入る」意味がない。
+    needs: scrape-new
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Geocode newly imported properties
+        env:
+          GEOCODE_TIME_BUDGET_MIN: "25"
+        run: npx -y tsx scripts/geocode_properties.ts
+
+      - name: Report freshness
+        run: npx -y tsx scripts/report_rental_freshness.ts
