@@ -135,6 +135,10 @@ export async function GET(request: Request) {
     | "environmental";
   const actionIntent = (searchParams.get("actionIntent") || "MIGRATION") as any;
   const useTrueNorth = useTrueNorthStr === "true";
+  // 掲載終了した物件は一覧から消えるだけなので、DB には残り続ける。
+  // 実測では最終確認から 7 日以上経った行の半数が既に 404 だった。
+  // 期限(expire_date)を持たない古い行はこれでしか判定できない。0 で無効化。
+  const maxSeenDays = parseInt(searchParams.get("maxSeenDays") || "30", 10);
   const physicalMonthMode = (searchParams.get("physicalMonthMode") ||
     "independent") as "coupled" | "independent";
   const radiusKmStr = searchParams.get("radiusKm") || "10";
@@ -255,6 +259,12 @@ export async function GET(request: Request) {
       OR: [{ expire_date: null }, { expire_date: { gte: new Date() } }],
     };
 
+    if (maxSeenDays > 0) {
+      whereClause.last_seen_at = {
+        gte: new Date(Date.now() - maxSeenDays * 24 * 60 * 60 * 1000),
+      };
+    }
+
     if (maxBuildingAge !== null && !isNaN(maxBuildingAge)) {
       whereClause.building_age = {
         lte: maxBuildingAge,
@@ -295,7 +305,8 @@ export async function GET(request: Request) {
       };
     }
 
-    const [properties, totalCount, freshness] = await Promise.all([
+    const [properties, totalCount, freshness, beforeFreshnessCount] =
+      await Promise.all([
       prisma.rental_properties.findMany({
         where: whereClause,
         take: limit,
@@ -309,7 +320,16 @@ export async function GET(request: Request) {
       prisma.rental_properties.aggregate({
         _max: { last_seen_at: true },
       }),
+      // 鮮度で落とした件数。急に件数が減った理由が画面から分かるようにする。
+      maxSeenDays > 0
+        ? prisma.rental_properties.count({
+            where: { ...whereClause, last_seen_at: undefined },
+          })
+        : Promise.resolve(0),
     ]);
+
+    const staleHidden =
+      maxSeenDays > 0 ? Math.max(0, beforeFreshnessCount - totalCount) : 0;
 
     const dataUpdatedAt = freshness._max.last_seen_at?.toISOString() ?? null;
 
@@ -317,7 +337,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         properties: [],
         stats: {},
-        metadata: { totalCount: 0, limit, dataUpdatedAt },
+        metadata: { totalCount: 0, limit, dataUpdatedAt, staleHidden, maxSeenDays },
       });
     }
 
@@ -525,6 +545,8 @@ export async function GET(request: Request) {
         totalCount,
         limit,
         dataUpdatedAt,
+        staleHidden,
+        maxSeenDays,
         upcomingDoyou,
         lunarPhase: {
           label: lunarPhaseLabel,
