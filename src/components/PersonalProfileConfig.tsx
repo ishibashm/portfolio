@@ -120,6 +120,10 @@ export function PersonalProfileConfig({
   const [presetCloudSynced, setPresetCloudSynced] = useState<boolean | null>(
     null,
   );
+  // トップページは保護対象外なので未ログインでも開ける。その状態では
+  // クラウドのプリセットが 401 で読めず「登録が無い」ように見えるため、
+  // 通信エラーと区別してログインを促す。
+  const [needsLogin, setNeedsLogin] = useState(false);
 
   useEffect(() => {
     const loadPresets = async () => {
@@ -127,6 +131,7 @@ export function PersonalProfileConfig({
       const result = await loadProfilePresets(fetch, window.localStorage);
       setPresets(result.presets);
       setPresetCloudSynced(result.cloudSynced);
+      setNeedsLogin(result.reason === "unauthenticated");
     };
 
     void loadPresets();
@@ -142,6 +147,7 @@ export function PersonalProfileConfig({
       window.localStorage,
     );
     setPresetCloudSynced(result.cloudSynced);
+    setNeedsLogin(result.reason === "unauthenticated");
     return result.cloudSynced;
   };
 
@@ -308,7 +314,9 @@ export function PersonalProfileConfig({
               {presetCloudSynced === true
                 ? "クラウド同期済み"
                 : presetCloudSynced === false
-                  ? "この端末のみ"
+                  ? needsLogin
+                    ? "未ログイン"
+                    : "この端末のみ"
                   : "同期確認中"}
             </span>
             {selectedPresetId && (
@@ -318,6 +326,22 @@ export function PersonalProfileConfig({
             )}
           </div>
         </div>
+
+        {/* 9px のバッジだけでは気付けない。空リストの理由をその場に書く。 */}
+        {needsLogin && (
+          <div className="mb-2 flex items-center gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+            <span>
+              未ログインのため、保存済みプロフィールを読み込めていません。
+              ここでの保存はこの端末だけに残ります。
+            </span>
+            <a
+              href="/login"
+              className="shrink-0 rounded-xs border border-amber-300 bg-white px-2 py-0.5 font-medium hover:bg-amber-100"
+            >
+              ログイン
+            </a>
+          </div>
+        )}
 
         <div className="flex flex-col md:flex-row gap-2 items-center">
           {/* Preset Dropdown */}

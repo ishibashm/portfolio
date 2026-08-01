@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -21,6 +21,7 @@ import {
   PanelLeftOpen,
   TrendingUp,
   LogOut,
+  LogIn,
   History,
   Route,
   Rss,
@@ -50,6 +51,29 @@ export function GlobalSidebar() {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false); // For desktop
+
+  // ログイン状態は表示しないと分からない。トップページ("/")は保護対象外なので、
+  // 未ログインでもサイドバーは全項目を出せてしまい、ログイン済みに見えてしまう。
+  // undefined = 確認中（この間はログイン/ログアウトのどちらも出さない）
+  const [email, setEmail] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (active) setEmail(data.user?.email ?? null);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setEmail(session?.user?.email ?? null);
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const closeSidebar = () => setIsOpen(false);
@@ -211,19 +235,44 @@ export function GlobalSidebar() {
           {/* PWA App Install Widget */}
           {!isCollapsed && <PWAInstallPrompt />}
 
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className={`flex items-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
-            title={isCollapsed ? "ログアウト" : "ログアウト"}
-          >
-            <LogOut size={18} />
-            {!isCollapsed && (
-              <span className="text-sm font-medium whitespace-nowrap">
-                ログアウト
-              </span>
-            )}
-          </button>
+          {/* 誰でログインしているのか（していないのか）を必ず出す */}
+          {email && !isCollapsed && (
+            <div
+              className="px-2 text-[10px] font-mono text-stone-500 truncate"
+              title={email}
+            >
+              {email}
+            </div>
+          )}
+
+          {email === undefined ? null : email ? (
+            <button
+              onClick={handleLogout}
+              className={`flex items-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+              title={email}
+            >
+              <LogOut size={18} />
+              {!isCollapsed && (
+                <span className="text-sm font-medium whitespace-nowrap">
+                  ログアウト
+                </span>
+              )}
+            </button>
+          ) : (
+            <Link
+              href={`/login?next=${encodeURIComponent(pathname || "/")}`}
+              onClick={closeSidebar}
+              className={`flex items-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+              title="ログイン"
+            >
+              <LogIn size={18} />
+              {!isCollapsed && (
+                <span className="text-sm font-medium whitespace-nowrap">
+                  ログイン
+                </span>
+              )}
+            </Link>
+          )}
 
           {/* Collapse Toggle for Desktop */}
           <button

@@ -83,19 +83,42 @@ async function uploadPresets(fetcher: Fetcher, presets: ProfilePreset[]) {
     body: JSON.stringify({ presets }),
   });
 
-  return response.ok;
+  const reason: SyncFailureReason | undefined = response.ok
+    ? undefined
+    : response.status === 401
+      ? "unauthenticated"
+      : "offline";
+
+  return { ok: response.ok, reason };
+}
+
+/**
+ * 未同期の理由は 2 つあり、利用者への案内が変わる:
+ *   "unauthenticated" — ログインすれば直る（プリセットが空に見える主因）
+ *   "offline"         — 通信の問題。待てば直る
+ */
+export type SyncFailureReason = "unauthenticated" | "offline";
+
+export interface LoadResult {
+  presets: ProfilePreset[];
+  cloudSynced: boolean;
+  reason?: SyncFailureReason;
 }
 
 export async function loadProfilePresets(
   fetcher: Fetcher,
   storage: Storage,
-): Promise<{ presets: ProfilePreset[]; cloudSynced: boolean }> {
+): Promise<LoadResult> {
   const localPresets = readLocalPresets(storage);
 
   try {
     const response = await fetcher("/api/profile-presets");
     if (!response.ok) {
-      return { presets: localPresets, cloudSynced: false };
+      return {
+        presets: localPresets,
+        cloudSynced: false,
+        reason: response.status === 401 ? "unauthenticated" : "offline",
+      };
     }
 
     const data: unknown = await response.json();
@@ -115,11 +138,15 @@ export async function loadProfilePresets(
     if (cloudPresets.length > 0) {
       const mergedPresets = mergePresets(cloudPresets, localPresets);
       const hasLocalOnlyPresets = mergedPresets.length > cloudPresets.length;
-      const cloudSynced = hasLocalOnlyPresets
+      const upload = hasLocalOnlyPresets
         ? await uploadPresets(fetcher, mergedPresets)
-        : true;
+        : { ok: true, reason: undefined };
       cachePresets(storage, mergedPresets);
-      return { presets: mergedPresets, cloudSynced };
+      return {
+        presets: mergedPresets,
+        cloudSynced: upload.ok,
+        reason: upload.reason,
+      };
     }
 
     if (presetsInitialized) {
@@ -128,14 +155,18 @@ export async function loadProfilePresets(
     }
 
     if (localPresets.length > 0) {
-      const cloudSynced = await uploadPresets(fetcher, localPresets);
-      return { presets: localPresets, cloudSynced };
+      const upload = await uploadPresets(fetcher, localPresets);
+      return {
+        presets: localPresets,
+        cloudSynced: upload.ok,
+        reason: upload.reason,
+      };
     }
 
     cachePresets(storage, []);
     return { presets: [], cloudSynced: true };
   } catch {
-    return { presets: localPresets, cloudSynced: false };
+    return { presets: localPresets, cloudSynced: false, reason: "offline" };
   }
 }
 
@@ -143,12 +174,13 @@ export async function saveProfilePresets(
   presets: ProfilePreset[],
   fetcher: Fetcher,
   storage: Storage,
-): Promise<{ cloudSynced: boolean }> {
+): Promise<{ cloudSynced: boolean; reason?: SyncFailureReason }> {
   cachePresets(storage, presets);
 
   try {
-    return { cloudSynced: await uploadPresets(fetcher, presets) };
+    const upload = await uploadPresets(fetcher, presets);
+    return { cloudSynced: upload.ok, reason: upload.reason };
   } catch {
-    return { cloudSynced: false };
+    return { cloudSynced: false, reason: "offline" };
   }
 }
