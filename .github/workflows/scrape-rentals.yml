@@ -161,10 +161,16 @@ jobs:
       # スクレイパーは upsert しかしないので、掲載終了した物件も行として残り続ける。
       # Supabase Free は 500MB でリードオンリーに落ちるため、
       # 対象外の県と長期間確認できていない行をここで落として増加を頭打ちにする。
+      #
+      # 保持期間は実測で決めている。last_seen_at の分布は
+      #   24時間以内 222,852 行 / 45〜90日 141,996 行 / その間 0 行
+      # と二極化しており、スイープが触る行は必ず 1 日以内に触られる。
+      # 45 日を超えて残っているものは再訪されていない＝掲載終了とみなせる。
+      # スキャナー側も maxSeenDays=30 で切っているので、表示には影響しない。
       - name: Purge out-of-scope and dead listings
         env:
           PURGE_APPLY: "true"
-          PURGE_STALE_DAYS: "90"
+          PURGE_STALE_DAYS: "45"
         run: npx -y tsx scripts/purge_rental_properties.ts
 
       - name: Report freshness

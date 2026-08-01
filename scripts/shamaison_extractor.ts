@@ -168,6 +168,7 @@ function listUrl(pref: string, cty: string, page: number): string {
 interface RoomRow {
   href: string;
   buildingName: string;
+  roomNo: string;
   address: string;
   transport: string;
   built: string;
@@ -216,6 +217,12 @@ async function extractPage(
             .querySelector(`.${B}__room__actions__link`)
             ?.getAttribute("href") || "";
         if (!href) continue;
+        const roomNo = (
+          room.querySelector(`.${B}__room__floorplan__heading`)?.textContent ||
+          ""
+        )
+          .replace(/\s+/g, " ")
+          .trim();
         const rentMan =
           room
             .querySelector(`.${B}__room__info__price__maintext span`)
@@ -235,6 +242,7 @@ async function extractPage(
         rows.push({
           href,
           buildingName,
+          roomNo,
           address,
           transport,
           built,
@@ -262,7 +270,10 @@ async function saveToDatabase(prisma: PrismaClient, rows: RoomRow[]) {
     const feeMatch = r.feeText.match(/([\d.]+)\s*万円/);
     const url = `https://www.shamaison.com${r.href}`;
     const attributes = {
-      property_name: r.buildingName || "Unknown",
+      // 建物名だけだと同一建物の別部屋が一覧で完全に同じ表示になり見分けられない。
+      // URL は部屋単位なので行としては別物。号室まで入れる。
+      property_name:
+        [r.buildingName, r.roomNo].filter(Boolean).join(" ") || "Unknown",
       address: r.address,
       rent,
       management_fee: feeMatch ? manToYen(feeMatch[1]) ?? 0 : 0,
