@@ -21,6 +21,25 @@ const BROWSER_OPTIONS = {
   headless: true,
 };
 
+// CI（GitHub Actions）では 1 ジョブの上限時間があるため、全件走り切るまで回すと
+// 途中で強制終了され、再開用のステートも保存されないまま終わってしまう。
+// SCRAPER_TIME_BUDGET_MIN を与えると、その時間を超えた時点でページ境界で
+// 自発的に停止し、scraper_state.json を残したまま正常終了する。
+// 未設定（または 0）ならこれまで通り最後まで走る。
+const TIME_BUDGET_MS =
+  (parseInt(process.env.SCRAPER_TIME_BUDGET_MIN || "0", 10) || 0) * 60_000;
+const STARTED_AT = Date.now();
+let budgetExhausted = false;
+
+function checkTimeBudget(): boolean {
+  if (TIME_BUDGET_MS <= 0) return false;
+  if (Date.now() - STARTED_AT >= TIME_BUDGET_MS) {
+    budgetExhausted = true;
+    return true;
+  }
+  return false;
+}
+
 const CONTEXT_OPTIONS = {
   userAgent:
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -155,6 +174,14 @@ async function scrapeArea(
 
   try {
     while (true) {
+      if (checkTimeBudget()) {
+        console.log(
+          `⏱️ Time budget reached. Stopping at ${prefAlpha}/${cityAlpha} page ${currentPage}; state is saved for the next run.`,
+        );
+        saveState(prefAlpha, cityAlpha, currentPage);
+        break;
+      }
+
       // メモリ対策: 10ページ進むごとにタブを作り直してメモリを解放（Page crashed対策）
       if (currentPage > startPage && currentPage % 10 === 0) {
         console.log("🔄 Recreating browser page to prevent memory leak...");
@@ -425,6 +452,7 @@ async function main() {
     }
 
     for (const pref of targetPrefectures) {
+      if (budgetExhausted) break;
       if (skipPref && pref !== state.pref) {
         console.log(`Skipping prefecture: ${pref}`);
         continue;
@@ -448,6 +476,7 @@ async function main() {
       await new Promise((res) => setTimeout(res, 1500 + Math.random() * 1500));
 
       for (const city of cities) {
+        if (budgetExhausted) break;
         if (skipCity) {
           if (city === state.city) {
             skipCity = false;
@@ -480,10 +509,17 @@ async function main() {
       }
     }
 
-    console.log("✅ Nationwide scraping completed successfully!");
-    // 完了したらステートファイルを削除して次回は最初から走るようにする
-    if (fs.existsSync(STATE_FILE)) {
-      fs.unlinkSync(STATE_FILE);
+    if (budgetExhausted) {
+      // 未完了。ステートを残して次回の実行に続きを引き継ぐ。
+      console.log(
+        "⏸️ Stopped on the time budget. The remaining areas will be picked up by the next run.",
+      );
+    } else {
+      console.log("✅ Nationwide scraping completed successfully!");
+      // 完了したらステートファイルを削除して次回は最初から走る（＝全件リフレッシュ）
+      if (fs.existsSync(STATE_FILE)) {
+        fs.unlinkSync(STATE_FILE);
+      }
     }
   } catch (e) {
     console.error(e);

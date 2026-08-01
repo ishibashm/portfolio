@@ -1094,16 +1094,32 @@ export default function ArbitrageScannerPage() {
               吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、運気とコスパが最強の割安物件をスキャンします。
             </p>
           </div>
-          <button
-            onClick={() => fetchData()}
-            disabled={loading}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-stone-900 rounded-xl text-xs font-semibold transition-all shadow-sm shrink-0 self-start md:self-center"
-          >
-            <RefreshCw
-              className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
-            />
-            再スキャン
-          </button>
+          <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
+            {/* 物件データそのものの鮮度。「再スキャン」は算出のやり直しであって
+                DB は更新されないため、取り込みがいつ回ったのかを別に示す。 */}
+            {metadata?.dataUpdatedAt && (
+              <span className="text-[10px] text-stone-500 font-mono leading-tight text-right">
+                <span className="block text-stone-400">物件データ最終取込</span>
+                {new Date(metadata.dataUpdatedAt).toLocaleString("ja-JP", {
+                  year: "numeric",
+                  month: "2-digit",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+            <button
+              onClick={() => fetchData()}
+              disabled={loading}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-stone-900 rounded-xl text-xs font-semibold transition-all shadow-sm"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+              />
+              再スキャン
+            </button>
+          </div>
         </div>
 
         {/* 2-Column Split Dashboard Layout */}
