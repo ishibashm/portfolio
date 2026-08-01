@@ -50,6 +50,23 @@ async function main() {
       `| Newest last_seen_at | ${r.newest ? r.newest.toISOString() : "n/a"} |`,
     ];
 
+    // Supabase Free は 500MB でリードオンリーに落ちる。
+    // 気付けるのはここだけなので、毎回サイズと残容量を出しておく。
+    const FREE_PLAN_LIMIT_MB = 500;
+    const { rows: sizeRows } = await pool.query<{ mb: string }>(
+      `SELECT round(pg_database_size(current_database()) / 1024.0 / 1024.0) AS mb`,
+    );
+    const usedMb = Number(sizeRows[0].mb);
+    const usedPct = Math.round((usedMb / FREE_PLAN_LIMIT_MB) * 100);
+    lines.push(
+      `| Database size | ${usedMb} MB / ${FREE_PLAN_LIMIT_MB} MB (${usedPct}%) |`,
+    );
+    if (usedPct >= 80) {
+      console.log(
+        `::warning::Database is at ${usedPct}% of the Supabase free plan limit. It goes read-only at ${FREE_PLAN_LIMIT_MB} MB.`,
+      );
+    }
+
     // 12 県を matrix で並列に回しているので、どの県まで行き渡っているかを県別にも出す。
     const byPref = await pool.query<{
       pref: string;
