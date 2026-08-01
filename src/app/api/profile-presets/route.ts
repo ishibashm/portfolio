@@ -3,7 +3,12 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { decrypt, encrypt } from "@/utils/encryption";
-import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
+import {
+  findUserConfig,
+  getAuthUser,
+  isAuthorizedUser,
+  toUserId,
+} from "@/lib/userConfig";
 
 const profilePresetSchema = z
   .object({
@@ -74,7 +79,7 @@ function decodePresets(value: Prisma.JsonValue | null) {
 export async function GET() {
   try {
     const user = await getAuthUser();
-    if (!user) {
+    if (!user || !isAuthorizedUser(user)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -96,7 +101,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await getAuthUser();
-    if (!user) {
+    if (!user || !isAuthorizedUser(user)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

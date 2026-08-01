@@ -4,11 +4,8 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState("/dashboard");
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -43,74 +40,6 @@ export default function LoginPage() {
     if (error) {
       console.error("Error logging in:", error);
       setAuthError(error.message);
-    }
-  };
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setAuthError("メールアドレスとパスワードを入力してください。");
-      return;
-    }
-
-    setLoading(true);
-    setAuthError(null);
-    setSuccessMessage(null);
-    const supabase = createClient();
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setAuthError(error.message);
-      } else {
-        // Success redirect
-        window.location.href = nextUrl;
-      }
-    } catch (err: any) {
-      setAuthError(err.message || "ログイン中にエラーが発生しました。");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEmailSignUp = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setAuthError("メールアドレスとパスワードを入力してください。");
-      return;
-    }
-
-    setLoading(true);
-    setAuthError(null);
-    setSuccessMessage(null);
-    const supabase = createClient();
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        setAuthError(error.message);
-      } else if (data.user && data.session === null) {
-        setSuccessMessage(
-          "ユーザー登録を受け付けました。メール認証を完了させるか、そのままログインを試してください。",
-        );
-      } else {
-        setSuccessMessage("登録が完了しました！自動ログインします...");
-        setTimeout(() => {
-          window.location.href = nextUrl;
-        }, 1500);
-      }
-    } catch (err: any) {
-      setAuthError(err.message || "登録中にエラーが発生しました。");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -149,7 +78,6 @@ export default function LoginPage() {
                 await supabase.auth.signOut();
                 setCurrentUser(null);
                 setAuthError(null);
-                setSuccessMessage(null);
                 window.location.reload();
               }}
               className="mt-2 text-rose-500 hover:text-rose-600 underline font-medium cursor-pointer"
@@ -190,76 +118,11 @@ export default function LoginPage() {
           Googleでログイン
         </button>
 
-        {/* Divider */}
-        <div className="w-full flex items-center gap-3 my-6">
-          <div className="h-[1px] flex-1 bg-rose-100"></div>
-          <span className="text-[10px] text-stone-400 font-mono">OR</span>
-          <div className="h-[1px] flex-1 bg-rose-100"></div>
-        </div>
-
-        {/* Credentials Form */}
-        <form
-          onSubmit={handleEmailLogin}
-          className="w-full space-y-4 font-mono text-xs"
-        >
-          <div>
-            <label className="block text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">
-              メールアドレス (Email)
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              placeholder="email@example.com"
-              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-rose-300 focus:border-rose-300 transition-all"
-            />
+        {authError && (
+          <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">
+            ⚠️ {authError}
           </div>
-
-          <div>
-            <label className="block text-[10px] text-stone-400 uppercase tracking-widest mb-1.5">
-              パスワード (Password)
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              placeholder="••••••••"
-              className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-1 focus:ring-rose-300 focus:border-rose-300 transition-all"
-            />
-          </div>
-
-          {authError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">
-              ⚠️ {authError}
-            </div>
-          )}
-
-          {successMessage && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-[11px] leading-relaxed">
-              ✅ {successMessage}
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-rose-500 hover:bg-rose-600 text-white font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none shadow-md shadow-rose-200"
-            >
-              {loading ? "送信中..." : "ログイン"}
-            </button>
-            <button
-              type="button"
-              onClick={handleEmailSignUp}
-              disabled={loading}
-              className="flex-1 bg-white hover:bg-stone-50 border border-stone-200 text-stone-600 font-semibold py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:pointer-events-none"
-            >
-              新規登録
-            </button>
-          </div>
-        </form>
+        )}
 
         {/* Dev Bypass Section. The cookie is only honoured by the Supabase
             helpers when NODE_ENV is development, so the button has to be gated
