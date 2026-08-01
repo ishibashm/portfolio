@@ -4,6 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:db:up": "docker compose up -d --wait",
+    "dev:db:down": "docker compose down",
+    "dev:db:reset": "docker compose down -v && npm run dev:db:up && npm run dev:db:push",
+    "dev:db:push": "node scripts/dev-db-push.mjs",
     "build": "next build --webpack && next-sitemap",
     "start": "next start",
     "lint": "eslint",
