@@ -72,12 +72,38 @@ function parseSize(sizeStr: string): number {
   return isNaN(num) ? 0 : num;
 }
 
-// Map Nifty age string (e.g. "新築", "築10年", "1年4ヶ月") to integer
-function parseAge(ageStr: string): number {
-  if (!ageStr || ageStr === "-" || ageStr === "新築") return 0;
+// Map Nifty age string (e.g. "新築", "築10年", "18年11ヶ月") to integer years.
+// 取得できなかった場合に 0 を返すと「新築」と区別が付かず、築0年の物件が
+// 水増しされてしまうため null を返す。
+function parseAge(ageStr: string): number | null {
+  if (!ageStr || ageStr === "-") return null;
+  if (ageStr === "新築") return 0;
+  // 「11ヶ月」のように 1 年未満は年の表記が無い
+  if (/^\s*\d+\s*ヶ月/.test(ageStr)) return 0;
   // 「築」があってもなくても、数字の後に「年」が続くパターンにマッチさせます
   const match = ageStr.match(/(?:築)?(\d+)年/);
-  return match ? parseInt(match[1], 10) : 0;
+  return match ? parseInt(match[1], 10) : null;
+}
+
+// Nifty の管理費は "9,800円" のように円単位・カンマ区切りで来る（賃料だけが万円単位）。
+// これまで保存していなかったため management_fee が全件 NULL になっており、
+// 利回り偏差値の元になる総賃料が管理費のぶん過小に出ていた。
+function parseManagementFee(costStr: string): number {
+  if (!costStr) return 0;
+  if (/無料|なし|不要/.test(costStr)) return 0;
+  const digits = costStr.replace(/[^\d]/g, "");
+  if (!digits) return 0;
+  const n = parseInt(digits, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+// "ＪＲ東海道本線/東刈谷駅 徒歩6分" や "バス15分 徒歩5分" から徒歩の分数を取る。
+// minutes_to_station カラムは以前から存在するのに一度も埋めていなかったため、
+// 画面の駅徒歩が常に「不明」になっていた。
+function parseWalkMinutes(accessStr: string): number | null {
+  if (!accessStr) return null;
+  const match = accessStr.match(/徒歩\s*(\d+)\s*分/);
+  return match ? parseInt(match[1], 10) : null;
 }
 
 async function saveToDatabase(prisma: PrismaClient, properties: any[]) {
@@ -96,22 +122,31 @@ async function saveToDatabase(prisma: PrismaClient, properties: any[]) {
 
     while (!success && retries > 0) {
       try {
+        // update は last_seen_at と rent しか触っていなかったため、初回取得時の
+        // 築年数・面積・間取りが未来永劫そのまま残っていた（年が変わっても築年数が増えない）。
+        // 再取得したなら全項目を今の値に合わせる。
+        const attributes = {
+          property_name: prop.title || "Unknown",
+          address: prop.address || "",
+          rent: parseRent(prop.rent),
+          management_fee: parseManagementFee(prop.manageCost),
+          layout: prop.layout || "",
+          size_sqm: parseSize(prop.floorArea),
+          building_age: parseAge(prop.buildAge),
+          minutes_to_station: parseWalkMinutes(prop.access),
+          floor: prop.floor || "",
+          is_new_build: prop.buildAge === "新築",
+        };
+
         await prisma.rental_properties.upsert({
           where: { url: absoluteUrl },
           update: {
+            ...attributes,
             last_seen_at: new Date(),
-            rent: parseRent(prop.rent),
           },
           create: {
-            property_name: prop.title || "Unknown",
+            ...attributes,
             url: absoluteUrl,
-            address: prop.address || "",
-            rent: parseRent(prop.rent),
-            layout: prop.layout || "",
-            size_sqm: parseSize(prop.floorArea),
-            building_age: parseAge(prop.buildAge),
-            floor: prop.floor || "",
-            is_new_build: prop.buildAge === "新築",
             source_scraper: "nifty_playwright",
             first_seen_at: new Date(),
             last_seen_at: new Date(),
