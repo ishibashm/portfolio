@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { decrypt, encrypt } from "@/utils/encryption";
-import { createClient } from "@/utils/supabase/server";
+import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
 
 const profilePresetSchema = z
   .object({
@@ -40,17 +40,6 @@ const requestSchema = z.object({
   presets: z.array(profilePresetSchema).max(100),
 });
 
-async function getAuthenticatedEmail() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user?.email) return null;
-  return user.email.toLowerCase();
-}
-
 function encodePreset(
   preset: z.infer<typeof profilePresetSchema>,
 ): Prisma.InputJsonObject {
@@ -84,15 +73,12 @@ function decodePresets(value: Prisma.JsonValue | null) {
 
 export async function GET() {
   try {
-    const email = await getAuthenticatedEmail();
-    if (!email) {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const config = await prisma.user_configs.findUnique({
-      where: { user_email: email },
-      select: { presets: true },
-    });
+    const config = await findUserConfig(user);
 
     return NextResponse.json({
       presets: decodePresets(config?.presets ?? null),
@@ -109,8 +95,8 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const email = await getAuthenticatedEmail();
-    if (!email) {
+    const user = await getAuthUser();
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -123,17 +109,19 @@ export async function POST(req: Request) {
     }
 
     const presets = parsed.data.presets.map(encodePreset);
-    await prisma.user_configs.upsert({
-      where: { user_email: email },
-      update: {
-        presets,
-        updated_at: new Date(),
-      },
-      create: {
-        user_email: email,
-        presets,
-      },
-    });
+    // upsert は一意キー1本しか見られないが、移行前の行は user_id が NULL で
+    // user_id 指定の upsert が新しい行を作ってしまう。既存行を先に解決する。
+    const existing = await findUserConfig(user);
+    if (existing) {
+      await prisma.user_configs.update({
+        where: { id: existing.id },
+        data: { presets, updated_at: new Date() },
+      });
+    } else {
+      await prisma.user_configs.create({
+        data: { user_id: toUserId(user), user_email: user.email, presets },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
