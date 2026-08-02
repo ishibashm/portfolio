@@ -4219,9 +4219,11 @@ ${timingOptimization?.recommendationText || "特になし"}
 
       <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
         <div className="w-full max-w-4xl text-center mb-2 px-4">
-          <h1 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
+          {/* このコンポーネントはトップページの中に埋め込まれており、
+              ページの h1 は別にある。h1 を 2 つ置くと文書構造が壊れるので h2 にする。 */}
+          <h2 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
-          </h1>
+          </h2>
           <p className="text-stone-500 text-xs sm:text-sm leading-relaxed max-w-2xl mx-auto mb-4">
             引越し・移住・長期滞在など、人生の大きな決断において
             <strong className="text-stone-700">「最適な移動地（方位）」</strong>
