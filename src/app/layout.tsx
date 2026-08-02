@@ -3,6 +3,12 @@ import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import prisma from "@/lib/prisma";
+import {
+  CORE_ROUTES,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_DESCRIPTION,
+} from "@/lib/siteStructure";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,34 +27,36 @@ const shipporiMincho = Shippori_Mincho({
   display: "swap",
 });
 
+// サイトの説明は src/lib/siteStructure.ts に集約している。
+// 以前は「メタハブ／真太陽時クロック＋Katmerナレッジエンジン」と名乗っており、
+// 実際の中身（引越しの方位と物件選び）と一致していなかった。
+const TITLE = `${SITE_NAME} | ${SITE_TAGLINE}`;
+
 export const metadata: Metadata = {
   title: {
-    default: "Cloud Palette Meta-Hub | 真太陽時クロック",
-    template: "%s | Cloud Palette",
+    default: TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+  description: SITE_DESCRIPTION,
   manifest: "/manifest.json",
   themeColor: "#faf7f3",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Cloud Palette",
+    title: SITE_NAME,
   },
   openGraph: {
-    title: "Cloud Palette Meta-Hub",
-    description:
-      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+    title: TITLE,
+    description: SITE_DESCRIPTION,
     url: "https://cloud-palette.com",
-    siteName: "Cloud Palette",
+    siteName: SITE_NAME,
     locale: "ja_JP",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cloud Palette Meta-Hub",
-    description:
-      "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+    title: TITLE,
+    description: SITE_DESCRIPTION,
   },
 };
 
@@ -78,8 +86,8 @@ const jsonLdSchema = {
       "@type": "WebSite",
       "@id": "https://cloud-palette.com/#website",
       "url": "https://cloud-palette.com",
-      "name": "Cloud Palette Meta-Hub",
-      "description": "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+      "name": `${SITE_NAME} | ${SITE_TAGLINE}`,
+      "description": SITE_DESCRIPTION,
       "publisher": {
         "@id": "https://cloud-palette.com/#organization",
       },
@@ -93,13 +101,16 @@ const jsonLdSchema = {
       "logo": "https://cloud-palette.com/icon-512.png",
     },
     {
-      "@type": "SoftwareApplication",
-      "name": "Cloud Palette Meta-Hub Engine",
+      "@type": "WebApplication",
+      "name": `${SITE_NAME} ${SITE_TAGLINE}`,
       "operatingSystem": "All",
-      "applicationCategory": "BusinessApplication",
+      // 引越し・住まい探しの道具として申告する。以前は BusinessApplication で、
+      // 中身（住居選び）とカテゴリが一致していなかった。
+      "applicationCategory": "LifestyleApplication",
       "url": "https://cloud-palette.com",
-      "description":
-        "真太陽時クロック・九星気学・不動産所得マトリクス・市場トレンド分析を統合したメタインテリジェンスハブ。",
+      "description": SITE_DESCRIPTION,
+      "inLanguage": "ja",
+      "featureList": CORE_ROUTES.map((r) => r.label),
     },
   ],
 };
