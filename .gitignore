@@ -87,6 +87,10 @@ public/robots.txt
 *.md
 !README.md
 !**/README.md
+!src/app/ads.txt/
+!src/app/llms.txt/
+!src/app/llms-full.txt/
+
 
 # Data and Logs
 data/

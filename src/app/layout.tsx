@@ -54,6 +54,7 @@ export const metadata: Metadata = {
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
 import { unstable_cache } from "next/cache";
+import Script from "next/script";
 
 const getActiveTheme = unstable_cache(
   async () => {
@@ -70,6 +71,39 @@ const getActiveTheme = unstable_cache(
   { revalidate: 60, tags: ["agent-theme"] }
 );
 
+const jsonLdSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://cloud-palette.com/#website",
+      "url": "https://cloud-palette.com",
+      "name": "Cloud Palette Meta-Hub",
+      "description": "正確な吉凶行動をサポートする、極限までシンプルな真太陽時クロックとKatmer Defuddleナレッジエンジン。",
+      "publisher": {
+        "@id": "https://cloud-palette.com/#organization",
+      },
+      "inLanguage": "ja",
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://cloud-palette.com/#organization",
+      "name": "Cloud Palette Core Labs",
+      "url": "https://cloud-palette.com",
+      "logo": "https://cloud-palette.com/icon-512.png",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "Cloud Palette Meta-Hub Engine",
+      "operatingSystem": "All",
+      "applicationCategory": "BusinessApplication",
+      "url": "https://cloud-palette.com",
+      "description":
+        "真太陽時クロック・九星気学・不動産所得マトリクス・市場トレンド分析を統合したメタインテリジェンスハブ。",
+    },
+  ],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -78,6 +112,7 @@ export default async function RootLayout({
   // Load active agent theme from Supabase via Prisma (cached for 60s)
   const theme = await getActiveTheme();
 
+  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
 
   // Active theme parameters or fallback defaults (Warm Glass theme)
   const bg = theme?.background || "#faf7f3";
@@ -104,6 +139,29 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        
+        {/* LLMO / AI Search Agent Citation Links */}
+        <link rel="author" href="https://cloud-palette.com" />
+        <link rel="help" href="https://cloud-palette.com/llms.txt" />
+        <meta name="citation_title" content="Cloud Palette Meta-Hub" />
+        <meta name="citation_publisher" content="Cloud Palette Core Labs" />
+
+        {/* Structured Schema.org JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
+        />
+
+        {/* Google AdSense Integration (when NEXT_PUBLIC_ADSENSE_ID is defined) */}
+        {adsenseId && (
+          <Script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
+            crossOrigin="anonymous"
+            strategy="afterInteractive"
+          />
+        )}
+
         <script
           dangerouslySetInnerHTML={{
             __html: `

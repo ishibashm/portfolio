@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { SubdomainLauncherGrid } from "@/domains/launcher";
 import Link from "next/link";
 import { LayoutDashboard, Sparkles, Heart } from "lucide-react";
+import { AdBanner } from "@/components/ads/AdBanner";
 
 const SolarTimeClock = dynamic(
   () => import("@/domains/metaphysical").then((mod) => mod.SolarTimeClock),
@@ -85,9 +86,27 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="w-full max-w-[1400px] text-center py-6 text-xs font-semibold text-slate-600 border-t border-slate-300/80">
-        © 2026 Cloud Palette. Engineered with care for personal intelligence.
+      {/* Monetization Native Ad Banner Unit */}
+      <div className="w-full max-w-[1400px]">
+        <AdBanner />
+      </div>
+
+      {/* Footer with Compliance & LLMO Links */}
+      <footer className="w-full max-w-[1400px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
+        <div>© 2026 Cloud Palette. Engineered with care for personal intelligence.</div>
+        <div className="flex flex-wrap items-center gap-4 text-slate-500">
+          <Link href="/privacy" className="hover:text-rose-600 transition-colors">
+            プライバシーポリシー
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-rose-600 transition-colors">
+            利用規約
+          </Link>
+          <span>•</span>
+          <Link href="/llms.txt" target="_blank" className="hover:text-rose-600 transition-colors font-mono text-[11px]">
+            AI Agent Spec (/llms.txt)
+          </Link>
+        </div>
       </footer>
     </div>
   );
