@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { loadSettings } from "@/lib/userSettings";
 import {
   MetaphysicalConfigBar,
   MetaphysicalConfig,
@@ -758,9 +759,7 @@ export default function ArbitrageScannerPage() {
     if (bsLat === "" || bsLon === "") {
       (async () => {
         try {
-          const res = await fetch("/api/user-config");
-          if (!res.ok) return; // 未ログインなら 401 などで返る
-          const cfg = await res.json();
+          const { settings: cfg } = await loadSettings();
           const lat = parseFloat(cfg?.base_lat);
           const lon = parseFloat(cfg?.base_lon);
           if (isNaN(lat) || isNaN(lon)) return;

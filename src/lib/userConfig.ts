@@ -37,18 +37,15 @@ const UUID_RE =
  * user_id を偽の値で潰してしまう。UUID でない id は照合にも書き込みにも使わない。
  */
 /**
- * 保護対象を触ってよい利用者か。
+ * 以前ここに ADMIN_EMAIL による許可判定（isAuthorizedUser）を置き、
+ * user_configs / profile-presets を管理者 1 人に限っていた。
+ * 中核ページを匿名に開放して利用者を増やす方針にした以上、
+ * 設定を持てるのが 1 人だけでは「別の端末で開くと消える」から抜けられない。
  *
- * middleware は ADMIN_EMAIL 以外を保護ページから弾くが、API ルートは
- * その判定を通らない。認証さえ通れば誰でも呼べる状態だと、Google で
- * サインインした第三者が user_configs に行を作れてしまう。
- * ADMIN_EMAIL 未設定なら誰でも可（middleware と同じ扱い）。
+ * 行は user_id（無ければ user_email）で分かれ、findUserConfig は
+ * 常にログイン中の本人の行しか返さないので、他人の設定には触れない。
+ * 管理者専用ページは middleware 側で従来どおり ADMIN_EMAIL で守っている。
  */
-export function isAuthorizedUser(user: AuthUser): boolean {
-  const admin = process.env.ADMIN_EMAIL;
-  if (!admin) return true;
-  return user.email === admin.toLowerCase();
-}
 
 /** 新規行に入れてよい user_id。開発バイパスの偽 id なら null。 */
 export function toUserId(user: AuthUser): string | null {

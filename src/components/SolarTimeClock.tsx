@@ -35,6 +35,7 @@ import "katex/dist/katex.min.css";
 import type { NBAData } from "./nba/NBADashboard";
 import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { loadSettings, saveSettings } from "@/lib/userSettings";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -636,6 +637,9 @@ export const SolarTimeClock = () => {
     useState(0);
   const [circadianMultiplier, setCircadianMultiplier] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
+  // 設定がこの端末だけのものか、クラウドにも同期されているか。
+  // 「永久保存」と称して端末にしか残していなかったので、状態を明示する。
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [isSavingLog, setIsSavingLog] = useState(false);
 
   // Future Simulation & Intent State
@@ -889,14 +893,13 @@ export const SolarTimeClock = () => {
 
   const loadFromLocal = async () => {
     let isLoaded = false;
-    // The clock renders on the public top page, so it keeps its settings in
-    // localStorage only. /api/user-config is the owner's record and is not
-    // readable or writable from here.
+    // 匿名でも動くように端末の値を土台にし、ログイン中ならクラウドの値と
+    // 新しいほうを採る。未ログインなら loadSettings が端末の値をそのまま返す。
+    const { settings: data, synced } = await loadSettings();
+    setIsCloudSynced(synced);
 
-    const localData = localStorage.getItem("tactical_config_v1");
-    if (localData) {
+    if (Object.keys(data).length > 0) {
       try {
-        const data = JSON.parse(localData);
         if (data.birth_date) setBirthDate(data.birth_date);
         if (data.birth_lat !== undefined) setBirthLat(data.birth_lat);
         if (data.birth_lon !== undefined) setBirthLon(data.birth_lon);
@@ -940,7 +943,7 @@ export const SolarTimeClock = () => {
           setDirectionFilterMode(data.direction_filter_mode);
         isLoaded = true;
       } catch (e) {
-        console.error("LocalStorage parse error", e);
+        console.error("Settings apply error", e);
       }
     }
 
@@ -1113,7 +1116,11 @@ export const SolarTimeClock = () => {
         presets: currentPresets,
       };
 
-      localStorage.setItem("tactical_config_v1", JSON.stringify(configToSave));
+      // 端末に保存し、ログイン中ならクラウドにも同期する。
+      // 以前はここが localStorage だけで、他の画面は /api/user-config だけを
+      // 見ていたため、ホームで設定した出発地が物件検索に伝わらなかった。
+      const { synced } = await saveSettings(configToSave);
+      setIsCloudSynced(synced);
 
       // Sync back to Relocation Matrix Dashboard
       if (typeof window !== "undefined") {
@@ -1124,13 +1131,17 @@ export const SolarTimeClock = () => {
         localStorage.setItem("wealth_baseLon", lon.toString());
       }
 
-      alert("設定をブラウザのローカルストレージに永久保存しました。");
+      alert(
+        synced
+          ? "設定を保存しました。ログイン中のため、他の端末でも同じ設定が使えます。"
+          : "設定をこの端末に保存しました。別の端末やブラウザには引き継がれません。",
+      );
       if (geminiKey && geminiKey !== "") {
         setGeminiKey("********");
       }
     } catch (err: any) {
       console.error("Save Error:", err);
-      alert("設定をブラウザのローカルストレージに永久保存しました。");
+      alert("設定をこの端末に保存しました。");
     } finally {
       setIsSaving(false);
     }

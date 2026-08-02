@@ -6,7 +6,6 @@ import { decrypt, encrypt } from "@/utils/encryption";
 import {
   findUserConfig,
   getAuthUser,
-  isAuthorizedUser,
   toUserId,
 } from "@/lib/userConfig";
 
@@ -79,7 +78,7 @@ function decodePresets(value: Prisma.JsonValue | null) {
 export async function GET() {
   try {
     const user = await getAuthUser();
-    if (!user || !isAuthorizedUser(user)) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -101,7 +100,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await getAuthUser();
-    if (!user || !isAuthorizedUser(user)) {
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

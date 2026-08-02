@@ -771,18 +771,32 @@ export function PersonalProfileConfig({
               </select>
             )}
           </div>
-          <button
-            onClick={onSave}
-            disabled={isSaving}
-            className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group cursor-pointer ${
-              isSaving
-                ? "bg-stone-100 text-stone-400 cursor-wait"
-                : "bg-blue-600 hover:bg-blue-500 text-stone-900 shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
-            }`}
-          >
-            {isSaving ? "[ 同期中... ]" : "[ アクティブ設定を永久保存 ]"}
-            <div className="absolute inset-0 bg-stone-200/70 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
-          </button>
+          {/* 保存先を名前で示す。「永久保存」と書いてあったが実体は端末の
+              localStorage だけで、別の端末で開くと空になる。何が起きるのか
+              分からないまま押させない。 */}
+          <div className="flex flex-col items-end gap-1">
+            <button
+              onClick={onSave}
+              disabled={isSaving}
+              className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group cursor-pointer ${
+                isSaving
+                  ? "bg-stone-100 text-stone-400 cursor-wait"
+                  : "bg-blue-600 hover:bg-blue-500 text-stone-900 shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
+              }`}
+            >
+              {isSaving
+                ? "[ 保存中... ]"
+                : needsLogin
+                  ? "[ この端末に保存 ]"
+                  : "[ 設定を保存（クラウド同期） ]"}
+              <div className="absolute inset-0 bg-stone-200/70 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
+            </button>
+            <span className="text-[9px] text-stone-400">
+              {needsLogin
+                ? "この端末にのみ保存されます"
+                : "他の端末でも同じ設定が使えます"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
