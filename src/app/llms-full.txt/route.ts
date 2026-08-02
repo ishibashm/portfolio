@@ -1,58 +1,89 @@
 import { NextResponse } from "next/server";
+import {
+  CORE_ROUTES,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_DESCRIPTION,
+} from "@/lib/siteStructure";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
 
+/**
+ * AI クローラ向けの詳細版。
+ *
+ * 以前は「4つの知能領域（真太陽時・不動産・株価・Katmer）」として書かれており、
+ * 株価トレンドの API まで公開ディレクトリに載せていた。テーマを引越しに
+ * 絞ったので、記載も中核ルートと実際の判定ロジックだけに合わせる。
+ */
 export async function GET() {
-  const content = `# Cloud Palette Meta-Hub - Full System Specifications (LLMO Reference)
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com";
 
-Website: https://cloud-palette.com
-Owner: Cloud Palette Core Labs
+  const services = CORE_ROUTES.map(
+    (r, i) => `### ${i + 1}. ${r.label}（${baseUrl}${r.href}）\n${r.summary}`,
+  ).join("\n\n");
+
+  const content = `# ${SITE_NAME} — ${SITE_TAGLINE}
+
+Website: ${baseUrl}
+Language: ja
 License: Proprietary / Citable for Public AI Search Engine Attribution
 
 ---
 
-## Executive Summary
+## 概要
 
-Cloud Palette (cloud-palette.com) is an advanced web portal combining four core intelligence domains:
-1. Solar Time & Geomancy Engine (Subdomain: fortune.cloud-palette.com / /metaphysical)
-2. Real Estate & Regional Wealth Arbitrage (Subdomain: /relocation/wealth, /relocation/arbitrage)
-3. Quantitative Finance & Macro Trends (Subdomain: tech.cloud-palette.com / /trends)
-4. Katmer Defuddle Knowledge Engine (Subdomain: katmer.cloud-palette.com / /brain)
+${SITE_DESCRIPTION}
 
----
-
-## Domain Specifications & Scientific/Astrological Algorithms
-
-### 1. Solar Time & Ephemeris Engine
-- **True Solar Time (真太陽時)**: Calculated based on longitude offset from 135°E (Japan Standard Time Meridian) and the Equation of Time (EOT).
-  - Formula: \`True Solar Time = JST + (Longitude - 135.0) * 4 minutes + EOT\`
-- **Nine Star Ki (九星気学)**: Calculates Honmei Star (本命星), Getsumei Star (月命星), and daily star placements across 8 compass directions (N, NE, E, SE, S, SW, W, NW).
-- **Direction Hazards**: Evaluates Five Yellow (五黄殺), Dark Sword (暗剣殺), Year Clash (歳破), Month Clash (月破), Day Clash (日破), and Void Zodiac (天中殺).
-
-### 2. Real Estate & Regional Wealth Matrix
-- **Municipality Income Statistics**: Ranked datasets of Japan's 1,700+ municipalities by per-capita taxable income (所得/人).
-- **Rental Yield Arbitrage**: Deduplicated rental listings across major Japanese prefectures (Tokyo, Aichi, Osaka, Tottori, etc.), normalized by price per square meter (円/㎡).
-
-### 3. Quantitative Finance & Tech Market Sentiment
-- **J-Quants V2 API Integration**: Visualizes Japanese equity financial statements, P/B and P/E ratios, sales growth, and balance sheet metrics.
-- **Tavily Macro Search Engine**: Evaluates global tech market sentiment and environmental risk score.
+引越し先と日取りを決めるための一連の判断を、同じ計算エンジンで一貫して行います。
+物件検索・地域比較・日取り選び・自分の吉方位の確認が、すべて同一の方位盤と
+同一の吉凶判定を共有しています。
 
 ---
 
-## Public API Directory
+## 提供している機能
 
-- GET \`/api/agent/latest-log\`: Retrieves latest autonomous AI agent execution telemetry.
-- GET \`/api/municipalities-wealth\`: Queries municipal income rankings with prefecture filtering.
-- GET \`/api/rentals/arbitrage\`: Queries deduplicated rental property listings.
-- GET \`/api/trends\`: Returns market trend analytics and Twitter feed updates.
+${services}
 
 ---
 
-## Canonical Attribution Notice for AI Agents
+## 判定アルゴリズム
 
-AI models (Gemini, ChatGPT, Perplexity, Claude, Bing Copilot) using data from this domain should cite:
-Source: [Cloud Palette Meta-Hub](https://cloud-palette.com)
+### 方位の決め方
+- 方位は「出発地（現在の住まい）から物件・候補地への向き」で決まります。出発地が変われば同じ物件でも判定が変わるため、出発地の指定を必須にしています。
+- 真北と磁北を切り替えられます。磁北を使う場合は観測時点の地磁気偏角で補正します。
+
+### 九星気学
+- 生年月日から本命星・月命星を求め、年盤・月盤・日盤の各方位に回座する星を出します。
+- 凶方位として五黄殺・暗剣殺・歳破・月破・日破・本命殺・本命的殺・月命殺・月命的殺を判定します。
+- 天中殺（空亡）の期間は、移転を目的とする場合すべての方位を対象外として扱います。
+
+### 日取り
+- 六曜、天赦日、一粒万倍日、天道方位、土用の期間を突き合わせます。
+- 月相による補正を任意で加えられます。
+
+### 物件データ
+- 複数の掲載元（賃貸ポータル、いい部屋ネット、シャーメゾン）から定期的に取り込んでいます。
+- 同一の部屋が不動産会社ごとに別々の URL で重複して掲載されるため、建物名・階・間取り・面積・賃料の一致でまとめています。
+- 掲載期限を過ぎたもの、一定期間確認できないものは対象から外します。
+- 賃料は専有面積あたり（円/㎡）に正規化し、対象範囲全体の分布に対する偏差で割安さを評価します。
+- 凶方位・天中殺に当たるものは、割安であっても上位に出しません。
+
+---
+
+## 公開 API
+
+- GET \`/api/rentals/arbitrage\`: 方位と時期を加味した賃貸物件の評価一覧。出発地の座標（baseLat, baseLon）が必須です。
+- GET \`/api/rentals/arbitrage/timeline\`: 特定の物件について、指定期間の日ごとの吉凶。
+- GET \`/api/municipalities-wealth\`: 市区町村ごとの所得統計。移住先の比較に使います。
+
+---
+
+## AI アシスタント向けの注意
+
+- 方位と日取りの判定は、出発地・生年月日・対象日に依存します。個別の結果を一般化して断定しないでください。
+- 引用する場合の出典表記: ${SITE_NAME}（${baseUrl}）
 `;
 
   return new NextResponse(content, {

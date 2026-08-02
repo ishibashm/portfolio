@@ -2,10 +2,15 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import { SubdomainLauncherGrid } from "@/domains/launcher";
 import Link from "next/link";
-import { LayoutDashboard, Sparkles, Heart } from "lucide-react";
+import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
+import {
+  CORE_ROUTES,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_DESCRIPTION,
+} from "@/lib/siteStructure";
 
 const SolarTimeClock = dynamic(
   () => import("@/domains/metaphysical").then((mod) => mod.SolarTimeClock),
@@ -41,45 +46,62 @@ export default function Home() {
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-      {/* Launcher Hub Header Navigation */}
-      <header className="w-full max-w-[1400px] flex flex-col sm:flex-row items-center justify-between bg-white/95 backdrop-blur-xl border border-slate-300 p-5 rounded-3xl shadow-lg shadow-slate-200/50 gap-4">
-        <div className="flex items-center gap-3">
+      {/* サイトが何をするところかを最初に言い切る。
+          以前は「知性と感性をかさねるポータル」で、3つのサブドメイン
+          （占い・株トレンド・ナレッジベース）へのランチャーになっていた。 */}
+      <header className="w-full max-w-[1000px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
+        <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
-            <Sparkles className="w-5 h-5 animate-pulse" />
+            <Compass className="w-5 h-5" />
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 font-serif">
-              Cloud Palette Launcher
-            </h1>
-            <p className="text-xs font-semibold text-slate-700">自分らしく、心地よく。知性と感性をかさねるポータル</p>
-          </div>
+          <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">
+            {SITE_NAME}
+          </span>
         </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-rose-100/80 border border-rose-300 text-xs font-bold text-rose-700">
-            <Heart className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
-            <span>パーソナルスペース</span>
-          </div>
-          <Link
-            href="/dashboard"
-            className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-2 transition-all shadow-md active:scale-95"
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            ダッシュボードを開く
-          </Link>
-        </div>
+        <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-slate-900 font-serif leading-snug">
+          {SITE_TAGLINE}
+        </h1>
+        <p className="text-sm text-slate-700 mt-4 leading-relaxed max-w-[70ch]">
+          {SITE_DESCRIPTION}
+        </p>
+        <Link
+          href={CORE_ROUTES[0].href}
+          className="mt-6 inline-flex px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm items-center gap-2 transition-all shadow-md active:scale-95"
+        >
+          {CORE_ROUTES[0].label}
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </header>
 
-      {/* Subdomain Category Launcher Grid */}
-      <div className="w-full max-w-[1400px]">
-        <SubdomainLauncherGrid />
+      {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、
+          ナビ・メタデータ・llms.txt と説明がずれない。 */}
+      <div className="w-full max-w-[1000px] grid gap-4 sm:grid-cols-2">
+        {CORE_ROUTES.map((r) => (
+          <Link
+            key={r.href}
+            href={r.href}
+            className="group bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-rose-300 transition-all"
+          >
+            <h2 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
+              {r.label}
+              <ArrowRight className="w-4 h-4 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </h2>
+            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+              {r.summary}
+            </p>
+          </Link>
+        ))}
       </div>
 
-      {/* Featured Core Engine: Solar Time Clock */}
-      <div className="w-full max-w-[1400px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 md:p-8 shadow-lg shadow-slate-200/50">
+      {/* 方位と時刻の基礎。引越しの日取りを見るための道具として置く */}
+      <div className="w-full max-w-[1000px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 md:p-8 shadow-lg shadow-slate-200/50">
         <div className="mb-6 border-b border-slate-200 pb-4">
-          <h2 className="text-xl font-bold text-slate-900 font-serif">Subdomain 1 Feature: Solar Time & Geomancy Engine</h2>
-          <p className="text-xs font-semibold text-slate-700 mt-1">時間軸・方位・八字・生体磁気ログのリアルタイム可視化エンジン</p>
+          <h2 className="text-xl font-bold text-slate-900 font-serif">
+            いまの方位と時刻
+          </h2>
+          <p className="text-xs font-semibold text-slate-700 mt-1">
+            日盤の吉凶は真太陽時で切り替わります。引越し当日の動き出す時刻を決めるときに使います。
+          </p>
         </div>
         <div className="p-2 rounded-2xl bg-stone-50/80 border border-slate-200 shadow-inner">
           <SolarTimeClock />
@@ -87,13 +109,15 @@ export default function Home() {
       </div>
 
       {/* Monetization Native Ad Banner Unit */}
-      <div className="w-full max-w-[1400px]">
+      <div className="w-full max-w-[1000px]">
         <AdBanner />
       </div>
 
       {/* Footer with Compliance & LLMO Links */}
-      <footer className="w-full max-w-[1400px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
-        <div>© 2026 Cloud Palette. Engineered with care for personal intelligence.</div>
+      <footer className="w-full max-w-[1000px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
+        <div>
+          © 2026 {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
+        </div>
         <div className="flex flex-wrap items-center gap-4 text-slate-500">
           <Link href="/privacy" className="hover:text-rose-600 transition-colors">
             プライバシーポリシー

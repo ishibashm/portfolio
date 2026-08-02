@@ -30,20 +30,42 @@ import {
   Globe,
   ExternalLink,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { CORE_ROUTES } from "@/lib/siteStructure";
 
-const PUBLIC_ITEMS = [
-  { href: "/", icon: Clock, label: "Portal" },
-];
+const PUBLIC_ITEMS = [{ href: "/", icon: Clock, label: "ホーム" }];
 
-const PROTECTED_ITEMS = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Oracle Hub (Launcher)" },
-  { href: "/metaphysical", icon: Compass, label: "Fortune & Time (fortune.)" },
-  { href: "/trends", icon: Rss, label: "Tech & Trends (tech.)" },
-  { href: "/rentals", icon: Home, label: "Rentals & Real Estate" },
-  { href: "/relocation/wealth", icon: Map, label: "Relocation Matrix" },
-  { href: "/relocation/arbitrage", icon: TrendingUp, label: "Real Estate Arbitrage" },
-  { href: "/relocation/simulator", icon: Route, label: "Relocation Simulator" },
-  { href: "https://katmer.cloud-palette.com", icon: BookOpen, label: "Katmer Cloud", external: true },
+// ナビは src/lib/siteStructure.ts の中核ルートに合わせる。
+// 以前は英語の機能名（Oracle Hub / Tech & Trends など）が並び、
+// 引越しと関係ないものが同列に混ざっていて、何のサイトか読み取れなかった。
+// 表示順・表示名は「引越しを決めるまでの順序」にしてある。
+const CORE_ICONS: Record<string, LucideIcon> = {
+  "/relocation/arbitrage": TrendingUp,
+  "/relocation/simulator": Route,
+  "/relocation/wealth": Map,
+  "/calendar": Calendar,
+  "/metaphysical": Compass,
+};
+
+interface NavItem {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+  external?: boolean;
+}
+
+const PROTECTED_ITEMS: NavItem[] = [
+  ...CORE_ROUTES.map((r) => ({
+    href: r.href,
+    icon: CORE_ICONS[r.href] ?? Compass,
+    label: r.label,
+  })),
+  {
+    href: "https://katmer.cloud-palette.com",
+    icon: BookOpen,
+    label: "Katmer Cloud",
+    external: true,
+  },
 ];
 
 export function GlobalSidebar() {
