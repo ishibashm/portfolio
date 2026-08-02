@@ -33,6 +33,142 @@ function cleanPropertyName(name: string): string {
     .trim();
 }
 
+/**
+ * cleanPropertyName の SQL 版。JS 側と同じ後置きを落として建物名だけにする。
+ * 名寄せキーに使うため、両者がずれると重複が残る。
+ */
+const NAME_KEY_SQL = `regexp_replace(property_name, '[\\s　]*((?:地下)?[0-9]+階)?[\\s　]*(新築|築[0-9]+年([0-9]+ヶ月)?)?の?賃貸物件[\\s　]*$', '')`;
+
+const SQM_RENT_SQL = `((rent + COALESCE(management_fee, 0))::float8 / size_sqm::float8)`;
+
+/**
+ * 同じ部屋の重複掲載をまとめるキー。
+ *
+ * Nifty は HOME'S / SUUMO / at home / いい部屋ネット など複数社の掲載を
+ * そのまま並べるため、同一の部屋が別 URL で最大18件重なる。住所の書き方が
+ * 会社ごとに違う（「四番町」と「七本松通下長者町上る東入四番町」）ので
+ * 住所も座標もキーに使えない。建物名・階・間取り・面積・賃料の一致で
+ * 同じ部屋とみなす。
+ */
+const DEDUPE_KEY_SQL = `${NAME_KEY_SQL}, floor, layout, size_sqm, rent`;
+
+/**
+ * 残す1件を選ぶ順序。同じ部屋でも会社によって駅徒歩や管理費が欠けるため、
+ * 埋まっているものを優先し、同点なら新しく確認できたほうを取る。
+ */
+const PICK_ORDER_SQL = `
+  ((minutes_to_station IS NOT NULL)::int + (building_age IS NOT NULL)::int
+   + (management_fee IS NOT NULL)::int + (expire_date IS NOT NULL)::int) DESC,
+  last_seen_at DESC NULLS LAST`;
+
+interface GeoFilters {
+  maxSeenDays: number;
+  maxBuildingAge: number | null;
+  radiusKm: number;
+  baseLat: number;
+  baseLon: number;
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+  prefecture: string | null;
+}
+
+/**
+ * findMany に渡している whereClause と同じ条件を SQL 化する。
+ * 値は必ずプレースホルダで渡す（prefecture はクエリ文字列由来のため）。
+ */
+function buildWhereSql(f: GeoFilters): { sql: string; params: any[] } {
+  const parts = [
+    "lat IS NOT NULL",
+    "lon IS NOT NULL",
+    "rent IS NOT NULL",
+    "size_sqm IS NOT NULL",
+    "size_sqm > 0",
+    // 掲載期限を過ぎた物件は詳細ページが 404 になる。
+    // expire_date が未取得（古い行）のものは判定できないので除外しない。
+    "(expire_date IS NULL OR expire_date >= now())",
+  ];
+  const params: any[] = [];
+  const ph = () => `$${params.length}`;
+
+  if (f.maxSeenDays > 0) {
+    params.push(new Date(Date.now() - f.maxSeenDays * 24 * 60 * 60 * 1000));
+    parts.push(`last_seen_at >= ${ph()}`);
+  }
+  if (f.maxBuildingAge !== null && !isNaN(f.maxBuildingAge)) {
+    params.push(f.maxBuildingAge);
+    parts.push(`building_age <= ${ph()}`);
+  }
+
+  if (f.radiusKm > 0 && !isNaN(f.baseLat) && !isNaN(f.baseLon)) {
+    const deltaLat = f.radiusKm / 111.0;
+    const deltaLon =
+      f.radiusKm / (111.0 * Math.cos((f.baseLat * Math.PI) / 180.0));
+    params.push(f.baseLat - deltaLat);
+    parts.push(`lat >= ${ph()}`);
+    params.push(f.baseLat + deltaLat);
+    parts.push(`lat <= ${ph()}`);
+    params.push(f.baseLon - deltaLon);
+    parts.push(`lon >= ${ph()}`);
+    params.push(f.baseLon + deltaLon);
+    parts.push(`lon <= ${ph()}`);
+  } else if (
+    !isNaN(f.minLat) &&
+    !isNaN(f.maxLat) &&
+    !isNaN(f.minLon) &&
+    !isNaN(f.maxLon)
+  ) {
+    params.push(f.minLat);
+    parts.push(`lat >= ${ph()}`);
+    params.push(f.maxLat);
+    parts.push(`lat <= ${ph()}`);
+    params.push(f.minLon);
+    parts.push(`lon >= ${ph()}`);
+    params.push(f.maxLon);
+    parts.push(`lon <= ${ph()}`);
+  }
+
+  if (f.prefecture && f.prefecture !== "all") {
+    params.push(f.prefecture);
+    parts.push(`address LIKE ${ph()} || '%'`);
+  }
+
+  return { sql: parts.join(" AND "), params };
+}
+
+/** 名寄せ後、㎡単価の安い順に limit 件。裁定機会は㎡単価の低さに現れる。 */
+function selectSql(
+  whereSql: string,
+  dedupe: boolean,
+  limitPlaceholder: number,
+): string {
+  const inner = dedupe
+    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) *, ${SQM_RENT_SQL} AS sqm_rent
+         FROM rental_properties
+        WHERE ${whereSql}
+        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
+    : `SELECT *, ${SQM_RENT_SQL} AS sqm_rent
+         FROM rental_properties
+        WHERE ${whereSql}`;
+  return `SELECT * FROM (${inner}) t ORDER BY sqm_rent ASC LIMIT $${limitPlaceholder}`;
+}
+
+/** 相場の基準値。取得した件数ではなく条件に合う全件から出す。 */
+function statsSql(whereSql: string, dedupe: boolean): string {
+  const inner = dedupe
+    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) ${SQM_RENT_SQL} AS sqm_rent
+         FROM rental_properties
+        WHERE ${whereSql}
+        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
+    : `SELECT ${SQM_RENT_SQL} AS sqm_rent
+         FROM rental_properties
+        WHERE ${whereSql}`;
+  return `SELECT avg(sqm_rent) AS mean, coalesce(stddev_pop(sqm_rent), 0) AS stddev,
+                 count(*) AS n
+            FROM (${inner}) t`;
+}
+
 function parseSafeDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
   if (
@@ -126,6 +262,8 @@ export async function GET(request: Request) {
   const nodeMapping = (searchParams.get("nodeMapping") ||
     (useClassical ? "traditional" : "physical")) as "traditional" | "physical";
   const limit = parseInt(searchParams.get("limit") || "500");
+  // 同一部屋の重複掲載をまとめるか。生データを見たい場合だけ false にする。
+  const dedupe = searchParams.get("dedupe") !== "false";
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
   const directionFilterMode = (searchParams.get("directionFilterMode") ||
     "composite") as
@@ -305,13 +443,33 @@ export async function GET(request: Request) {
       };
     }
 
-    const [properties, totalCount, freshness, beforeFreshnessCount] =
+    // 候補の絞り込みは SQL 側で行う。
+    //
+    // 以前は findMany({ orderBy: { id: "desc" }, take: limit }) だったが、
+    // id は uuid なのでこれは事実上のランダム抽出で、愛知 11,611 件のうち
+    // ランキングに乗るのは 500 件（4%）だけだった。割安な物件はほとんど
+    // 検討対象に入っていない。裁定機会は㎡単価の低さに現れるので、
+    // 全件を名寄せしたうえで安い順に取る。
+    const { sql: whereSql, params } = buildWhereSql({
+      maxSeenDays,
+      maxBuildingAge,
+      radiusKm,
+      baseLat,
+      baseLon,
+      minLat,
+      maxLat,
+      minLon,
+      maxLon,
+      prefecture,
+    });
+
+    const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
-      prisma.rental_properties.findMany({
-        where: whereClause,
-        take: limit,
-        orderBy: { id: "desc" },
-      }),
+      prisma.$queryRawUnsafe<any[]>(
+        selectSql(whereSql, dedupe, params.length + 1),
+        ...params,
+        limit,
+      ),
       prisma.rental_properties.count({
         where: whereClause,
       }),
@@ -333,6 +491,8 @@ export async function GET(request: Request) {
 
     const dataUpdatedAt = freshness._max.last_seen_at?.toISOString() ?? null;
 
+    const properties = rawProperties;
+
     if (properties.length === 0) {
       return NextResponse.json({
         properties: [],
@@ -341,16 +501,16 @@ export async function GET(request: Request) {
       });
     }
 
-    const sqmRents = properties.map((p) => {
-      const totalRent = (p.rent || 0) + (p.management_fee || 0);
-      return totalRent / Number(p.size_sqm);
-    });
-
-    const meanSqmRent = sqmRents.reduce((a, b) => a + b, 0) / sqmRents.length;
-    const stdDevSqmRent = Math.sqrt(
-      sqmRents.reduce((a, b) => a + Math.pow(b - meanSqmRent, 2), 0) /
-        sqmRents.length,
-    );
+    // 相場の基準値は「取得した 500 件」ではなく絞り込み条件に合う全件から出す。
+    // 安い順に切り出した集合で平均を取ると基準そのものが下がり、
+    // どれも平均並みという評価になって裁定シグナルが消える。
+    const statsRow = await prisma.$queryRawUnsafe<
+      Array<{ mean: number | null; stddev: number | null; n: bigint }>
+    >(statsSql(whereSql, dedupe), ...params);
+    const meanSqmRent = Number(statsRow[0]?.mean ?? 0);
+    const stdDevSqmRent = Number(statsRow[0]?.stddev ?? 0);
+    const uniqueCount = Number(statsRow[0]?.n ?? 0);
+    const duplicatesHidden = dedupe ? Math.max(0, totalCount - uniqueCount) : 0;
 
     // 前後7日間の日付リストを作成し、それぞれのアストロ状態を事前計算
     const dateList: Date[] = [];
@@ -547,6 +707,9 @@ export async function GET(request: Request) {
         dataUpdatedAt,
         staleHidden,
         maxSeenDays,
+        // 取得した窓の中でまとめた重複件数。totalCount は生の行数のまま。
+        duplicatesHidden,
+        dedupe,
         upcomingDoyou,
         lunarPhase: {
           label: lunarPhaseLabel,

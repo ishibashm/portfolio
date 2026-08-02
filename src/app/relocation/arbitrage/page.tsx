@@ -58,6 +58,29 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 
 import dynamic from "next/dynamic";
 
+/**
+ * スクレイパーが取り込んでいる都道府県と、選択時に地図を寄せる代表座標。
+ *
+ * 以前は愛知・岐阜・滋賀の3件がハードコードされていた。岐阜は取り込み対象外で
+ * パージ済みのため0件、逆に最大在庫の大阪が選べない状態だった。
+ * scripts/purge_rental_properties.ts の TARGET_PREFECTURES と揃えること。
+ * 件数はデータが日々動くので出さない（古い数字が残ると誤解のもとになる）。
+ */
+const TARGET_PREFECTURES = [
+  { name: "愛知県", lat: 35.1815, lon: 136.9064 },
+  { name: "静岡県", lat: 34.9769, lon: 138.3831 },
+  { name: "三重県", lat: 34.7303, lon: 136.5086 },
+  { name: "福井県", lat: 36.0652, lon: 136.2216 },
+  { name: "滋賀県", lat: 35.0045, lon: 135.8686 },
+  { name: "京都府", lat: 35.0212, lon: 135.7556 },
+  { name: "大阪府", lat: 34.6863, lon: 135.52 },
+  { name: "奈良県", lat: 34.6851, lon: 135.8329 },
+  { name: "兵庫県", lat: 34.6913, lon: 135.183 },
+  { name: "鳥取県", lat: 35.5039, lon: 134.2377 },
+  { name: "島根県", lat: 35.4723, lon: 133.0505 },
+  { name: "広島県", lat: 34.3966, lon: 132.4596 },
+];
+
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
   {
@@ -887,14 +910,9 @@ export default function ArbitrageScannerPage() {
     let nextRadius = radiusKm;
     let nextCenter: [number, number] = mapCenter;
 
-    if (newPref === "愛知県") {
-      nextCenter = [35.1815, 136.9064];
-      nextRadius = "all";
-    } else if (newPref === "岐阜県") {
-      nextCenter = [35.4233, 136.7607];
-      nextRadius = "all";
-    } else if (newPref === "滋賀県") {
-      nextCenter = [35.0178, 135.8547];
+    const target = TARGET_PREFECTURES.find((p) => p.name === newPref);
+    if (target) {
+      nextCenter = [target.lat, target.lon];
       nextRadius = "all";
     } else if (newPref === "all") {
       // 全国が選ばれた場合は、日本中心に移動して半径制限を解除する
@@ -1235,9 +1253,11 @@ export default function ArbitrageScannerPage() {
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
                         <option value="all">全国 / すべて</option>
-                        <option value="愛知県">愛知県 (42,641件)</option>
-                        <option value="岐阜県">岐阜県 (26,623件)</option>
-                        <option value="滋賀県">滋賀県 (29,284件)</option>
+                        {TARGET_PREFECTURES.map((p) => (
+                          <option key={p.name} value={p.name}>
+                            {p.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
