@@ -66,10 +66,18 @@ export default async function Page({
   if (!parsed) notFound();
   const { year, star } = parsed;
   const name = STAR_NAMES[star];
-  const { centerStar, verdicts } = getYearDirections(year, star);
+  const { centerStar, verdicts } = getYearDirections(year, star, "classical");
+  // このサイトのスキャナーは独自モデルにも切り替えられる。片方だけ載せると
+  // 記事を読んでツールを触った人が別の答えを見ることになるので併記する。
+  const physical = getYearDirections(year, star, "physical");
 
   const good = verdicts.filter((v) => v.kind === "good");
   const bad = verdicts.filter((v) => v.kind === "bad");
+  const physGood = physical.verdicts.filter((v) => v.kind === "good");
+  const physBad = physical.verdicts.filter((v) => v.kind === "bad");
+  const systemsAgree =
+    verdicts.map((v) => v.status).join() ===
+    physical.verdicts.map((v) => v.status).join();
 
   const tone = {
     good: "bg-emerald-50 border-emerald-200 text-emerald-900",
@@ -133,6 +141,79 @@ export default async function Page({
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            算出方法による違い
+          </h2>
+          <p className="mt-4 text-sm leading-relaxed text-slate-700">
+            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}中宮）による判定です。
+            このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、
+            設定で切り替えられます。同じ{year}年でも中宮が
+            {STAR_NAMES[physical.centerStar]}になるため、判定が変わります。
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-stone-100">
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    算出方法
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    中宮
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    吉方位
+                  </th>
+                  <th className="border border-slate-300 p-2 text-left font-bold">
+                    避けるべき方位
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-slate-300 p-2 font-semibold">
+                    一般的な九星気学
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {STAR_NAMES[centerStar]}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {good.length ? good.map((v) => v.jp).join("・") : "なし"}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {bad.map((v) => `${v.jp}（${v.label}）`).join("、")}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="border border-slate-300 p-2 font-semibold">
+                    本サイト独自モデル
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {STAR_NAMES[physical.centerStar]}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {physGood.length
+                      ? physGood.map((v) => v.jp).join("・")
+                      : "なし"}
+                  </td>
+                  <td className="border border-slate-300 p-2">
+                    {physBad.map((v) => `${v.jp}（${v.label}）`).join("、")}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">
+            {systemsAgree
+              ? "この年・この本命星では、どちらの算出方法でも同じ判定になります。"
+              : "この年・この本命星では判定が一致しません。"}
+            独自モデルは木星の公転周期（約11.86年）にもとづくため、
+            9年周期の一般的な九星気学とは星の巡り方が異なります。
+            一般的な資料と照らし合わせる場合は上段を、
+            スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
+          </p>
         </section>
 
         <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">

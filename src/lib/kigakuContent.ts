@@ -9,19 +9,32 @@ import {
   getClassicalYearStar,
   getClassicalMonthStar,
   getClassicalDayStar,
+  getYearStar,
+  getMonthStar,
+  getDayStar,
   calculateVectorCollision,
   type Direction,
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
 
 /**
- * ここでは必ず「古典」の九星（getClassicalYearStar 系）を使う。
+ * エンジンには九星の求め方が 2 系統ある。
  *
- * エンジンには木星の黄経から求める独自モデル（getYearStar）もあるが、
- * それで表を作ると 9 年周期にならず、世間の九星気学の資料と数字が合わない。
- * 例: 1980年生まれは古典で二黒土星、独自モデルでは六白金星になる。
- * 検索から来る人が照合するのは古典のほうなので、記事は古典に揃える。
+ * - classical: 一般的な九星気学。9 年周期で、世間の資料と一致する。
+ * - physical:  本サイト独自。木星の黄経から求めるため 9 年周期にならない。
+ *              例: 1980年生まれは古典で二黒土星、独自モデルでは六白金星。
+ *
+ * スキャナー側は「古典盤を使用」で切り替えられるので、記事でも両方を出す。
+ * 片方だけ載せると、記事を読んでツールを触った人が別の答えを見ることになる。
+ * 本命星の番号そのものが系統で変わるため、記事の見出しは一般的な古典を
+ * 基準にし、独自モデルは同じ本命星番号での比較として併記する。
  */
+export type KigakuSystem = "classical" | "physical";
+
+export const SYSTEM_LABELS: Record<KigakuSystem, string> = {
+  classical: "一般的な九星気学",
+  physical: "本サイト独自モデル",
+};
 
 // Direction 型には CENTER（中宮）も含まれるが、方位としては扱わない。
 // as const で 8 方位だけに絞った型を作り、対応表の網羅漏れを型で防ぐ。
@@ -167,12 +180,18 @@ export interface DirectionVerdict {
 export function getYearDirections(
   year: number,
   star: number,
+  system: KigakuSystem = "classical",
 ): { centerStar: StarFrequency; verdicts: DirectionVerdict[] } {
   const d = new Date(Date.UTC(year, 5, 1));
-  const centerStar = getClassicalYearStar(d);
+  const classical = system === "classical";
+  const centerStar = classical ? getClassicalYearStar(d) : getYearStar(d);
   const yearBoard = generateBoard(centerStar);
-  const monthBoard = generateBoard(getClassicalMonthStar(d));
-  const dayBoard = generateBoard(getClassicalDayStar(d));
+  const monthBoard = generateBoard(
+    classical ? getClassicalMonthStar(d) : getMonthStar(d),
+  );
+  const dayBoard = generateBoard(
+    classical ? getClassicalDayStar(d) : getDayStar(d),
+  );
 
   const collision = calculateVectorCollision(
     star as StarFrequency,
@@ -206,8 +225,12 @@ export function getYearDirections(
  * 生まれ年から本命星を引く。
  * 立春前の生まれは前年扱いになるため、表示側で必ず注記すること。
  */
-export function starForBirthYear(year: number): number {
-  return getClassicalYearStar(new Date(Date.UTC(year, 5, 1)));
+export function starForBirthYear(
+  year: number,
+  system: KigakuSystem = "classical",
+): number {
+  const d = new Date(Date.UTC(year, 5, 1));
+  return system === "classical" ? getClassicalYearStar(d) : getYearStar(d);
 }
 
 /** 記事を用意する年。ビルド時に静的生成する対象になる。 */
