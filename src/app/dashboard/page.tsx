@@ -35,12 +35,43 @@ import { TavilyClient } from "@/lib/tavilyClient";
 import { NBAEngine } from "@/utils/nbaEngine";
 import { AstroEngine } from "@/utils/ephemerisEngine";
 import { Lunar } from "lunar-javascript";
+import { unstable_cache } from "next/cache";
+
+const getCachedOuraReadiness = unstable_cache(
+  async (yesterdayStr: string, todayStr: string) => {
+    try {
+      const oura = new OuraClient();
+      return await Promise.race([
+        oura.getDailyReadiness(yesterdayStr, todayStr),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+      ]);
+    } catch {
+      return null;
+    }
+  },
+  ["dashboard-oura-readiness"],
+  { revalidate: 300 }
+);
+
+const getCachedTavilySearch = unstable_cache(
+  async (query: string) => {
+    try {
+      const tavily = new TavilyClient();
+      return await Promise.race([
+        tavily.search(query, { search_depth: "basic" }),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+      ]);
+    } catch {
+      return null;
+    }
+  },
+  ["dashboard-tavily-search"],
+  { revalidate: 300 }
+);
 
 export const revalidate = 60; // Revalidate cache every minute
 
 export default async function DashboardPage() {
-  const oura = new OuraClient();
-  const tavily = new TavilyClient();
   const nbaEngine = new NBAEngine();
 
   const todayStr = new Date().toISOString().split("T")[0];
@@ -75,12 +106,9 @@ export default async function DashboardPage() {
         console.warn("Failed to fetch timingAstrology:", e.message);
         return [];
       }),
-    oura.getDailyReadiness(yesterdayStr, todayStr).catch(() => null),
-    tavily
-      .search("global tech market sentiment macro events today", {
-        search_depth: "basic",
-      })
-      .catch(() => null),
+    getCachedOuraReadiness(yesterdayStr, todayStr),
+    getCachedTavilySearch("global tech market sentiment macro events today"),
+
     prisma.municipalityWealth
       .findMany({
         orderBy: { incomePerCapita: "desc" },

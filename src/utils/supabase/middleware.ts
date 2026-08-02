@@ -40,6 +40,17 @@ export async function updateSession(
     },
   );
 
+  const requiresAuthentication = isProtectedRoute(pathname);
+  const isLoginPage = pathname === "/login";
+  const hasAuthCookie = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") || c.name === "dev_bypass_user");
+
+  // On public routes without auth cookies, skip remote auth network call
+  if (!requiresAuthentication && !isLoginPage && !hasAuthCookie) {
+    return supabaseResponse;
+  }
+
   // IMPORTANT: Avoid writing any logic between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
@@ -64,7 +75,6 @@ export async function updateSession(
     !adminEmail ||
     (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
 
-  const requiresAuthentication = isProtectedRoute(pathname);
 
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && requiresAuthentication) {

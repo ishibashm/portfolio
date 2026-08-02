@@ -1,10 +1,26 @@
 "use client";
 
 import { useEffect } from "react";
-import { SolarTimeClock } from "@/domains/metaphysical";
+import dynamic from "next/dynamic";
 import { SubdomainLauncherGrid } from "@/domains/launcher";
 import Link from "next/link";
 import { LayoutDashboard, Sparkles, Heart } from "lucide-react";
+
+const SolarTimeClock = dynamic(
+  () => import("@/domains/metaphysical").then((mod) => mod.SolarTimeClock),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
+        <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
+          <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+          <span>Solar Time & Geomancy Engine ロード中...</span>
+        </div>
+      </div>
+    ),
+  }
+);
+
 
 export default function Home() {
   // Prevent browser auto-scrolling to bottom on load

@@ -24,7 +24,11 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json(latestLog);
+    return NextResponse.json(latestLog, {
+      headers: {
+        "Cache-Control": "public, s-maxage=10, stale-while-revalidate=29",
+      },
+    });
   } catch (error: any) {
     console.error("Latest Log API Error:", error);
     return NextResponse.json(

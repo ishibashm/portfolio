@@ -53,21 +53,31 @@ export const metadata: Metadata = {
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
+import { unstable_cache } from "next/cache";
+
+const getActiveTheme = unstable_cache(
+  async () => {
+    try {
+      return await prisma.agentTheme.findFirst({
+        orderBy: { createdAt: "desc" },
+      });
+    } catch (err) {
+      console.error("Failed to load active agent theme:", err);
+      return null;
+    }
+  },
+  ["active-agent-theme"],
+  { revalidate: 60, tags: ["agent-theme"] }
+);
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Load active agent theme from Supabase via Prisma
-  let theme = null;
-  try {
-    theme = await prisma.agentTheme.findFirst({
-      orderBy: { createdAt: "desc" },
-    });
-  } catch (err) {
-    console.error("Failed to load active agent theme:", err);
-  }
+  // Load active agent theme from Supabase via Prisma (cached for 60s)
+  const theme = await getActiveTheme();
+
 
   // Active theme parameters or fallback defaults (Warm Glass theme)
   const bg = theme?.background || "#faf7f3";
