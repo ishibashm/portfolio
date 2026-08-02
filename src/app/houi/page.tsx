@@ -106,6 +106,23 @@ export default function Page() {
           <AdBanner />
         </div>
 
+        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+          <h2 className="text-base font-bold font-serif">
+            吉方位が分かったら、その方位に何があるか
+          </h2>
+          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
+            方位の吉凶だけでは引越し先は決まりません。
+            いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれの
+            エリアと家賃相場を確認できます。
+          </p>
+          <Link
+            href="/houi/area"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+          >
+            エリア別の方位と相場を見る
+          </Link>
+        </section>
+
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             年ごとの方位一覧
