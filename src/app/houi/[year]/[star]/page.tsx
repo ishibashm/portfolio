@@ -6,6 +6,8 @@ import {
   STARS,
   contentYears,
   getYearDirections,
+  monthContentYears,
+  MONTHS,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
 
@@ -142,6 +144,29 @@ export default async function Page({
             ))}
           </div>
         </section>
+
+        {monthContentYears().includes(year) && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+              月ごとの吉方位
+            </h2>
+            <p className="mt-4 text-sm leading-relaxed text-slate-700">
+              引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。
+              月ごとの判定は次から確認できます。
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {MONTHS.map((m) => (
+                <Link
+                  key={m}
+                  href={`/houi/${year}/${star}/${m}`}
+                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                >
+                  {m}月
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
