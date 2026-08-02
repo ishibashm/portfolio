@@ -42,6 +42,7 @@ import {
   destinationForDirection,
   distanceKmBetween,
 } from "@/utils/directionGeo";
+import { directionBoardInstant } from "@/utils/boardInstant";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -1377,6 +1378,33 @@ export const SolarTimeClock = () => {
     );
   }, [ephemerisTime, solarData, lon, physicalMonthMode]);
 
+  /**
+   * 方位盤の評価時刻。選択中の日の正午（太陽時）に固定する。
+   *
+   * 地図の扇形は時計の現在時刻で、ヒートマップは正午で計算していたため、
+   * 太陽時に直したときに日をまたぎ、同じ日・同じ方位でも別の判定になっていた。
+   * ヒートマップと同じ関数から出すことで、両者が食い違わないようにする。
+   * 時盤・八門など時刻そのものが要る表示は従来どおり env（現在時刻）を使う。
+   */
+  const boardInstantMs = React.useMemo(() => {
+    if (!baseTime) return null;
+    return directionBoardInstant(
+      baseTime,
+      timeOffsetDays,
+      lon || 139.6917,
+    ).getTime();
+    // baseTime は毎分更新されるが、正午に丸めるので同じ日なら結果は変わらない。
+  }, [baseTime, timeOffsetDays, lon]);
+
+  const boardEnv = React.useMemo(() => {
+    if (boardInstantMs === null) return env;
+    return getCurrentEnvironmentalFrequencies(
+      new Date(boardInstantMs),
+      lon || 139.6917,
+      physicalMonthMode,
+    );
+  }, [boardInstantMs, lon, physicalMonthMode, env]);
+
   const birthEnv = React.useMemo(() => {
     if (!birthSolarData || isNaN(birthSolarData.solarTime.getTime()))
       return null;
@@ -1434,7 +1462,7 @@ export const SolarTimeClock = () => {
     classicalMonthBoard,
     classicalDayBoard,
   } = React.useMemo(() => {
-    if (!env || !honmeiStar)
+    if (!env || !boardEnv || !honmeiStar)
       return {
         board: null,
         layers: null,
@@ -1473,29 +1501,33 @@ export const SolarTimeClock = () => {
 
     // Boards for internal calculation based on user preference toggle
     const yB = generateBoard(
-      useClassicalBoard ? env.classicalYearStar : env.yearStar,
+      useClassicalBoard ? boardEnv.classicalYearStar : boardEnv.yearStar,
     );
     const mB = generateBoard(
-      useClassicalBoard ? env.classicalMonthStar : env.monthStar,
+      useClassicalBoard ? boardEnv.classicalMonthStar : boardEnv.monthStar,
     );
     const dB = generateBoard(
-      useClassicalBoard ? env.classicalDayStar : env.dayStar,
+      useClassicalBoard ? boardEnv.classicalDayStar : boardEnv.dayStar,
     );
 
     // Strict Physical boards for UI display
-    const pyB = generateBoard(env.yearStar);
-    const pmB = generateBoard(env.monthStar);
-    const pdB = generateBoard(env.dayStar);
+    const pyB = generateBoard(boardEnv.yearStar);
+    const pmB = generateBoard(boardEnv.monthStar);
+    const pdB = generateBoard(boardEnv.dayStar);
 
     // Strict Classical boards for UI display
-    const cyB = generateBoard(env.classicalYearStar);
-    const cmB = generateBoard(env.classicalMonthStar);
-    const cdB = generateBoard(env.classicalDayStar);
+    const cyB = generateBoard(boardEnv.classicalYearStar);
+    const cmB = generateBoard(boardEnv.classicalMonthStar);
+    const cdB = generateBoard(boardEnv.classicalDayStar);
 
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(bDate);
-    const tDate = solarData?.solarTime || ephemerisTime || new Date();
+    // 盤の評価時刻。ヒートマップと同じ「その日の正午（太陽時）」を使う。
+    const tDate =
+      boardInstantMs !== null
+        ? new Date(boardInstantMs)
+        : solarData?.solarTime || ephemerisTime || new Date();
 
     // Strict Physical boards for Independent and Coupled modes
     const pmStar_indep = getPhysicalMonthStar(tDate, "independent");
@@ -1510,7 +1542,7 @@ export const SolarTimeClock = () => {
       mB,
       dB,
       voidZodiacArray,
-      env.raw.lunarNode,
+      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
@@ -1524,7 +1556,7 @@ export const SolarTimeClock = () => {
       pmB,
       pdB,
       voidZodiacArray,
-      env.raw.lunarNode,
+      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
@@ -1538,7 +1570,7 @@ export const SolarTimeClock = () => {
       cmB,
       cdB,
       voidZodiacArray,
-      env.raw.lunarNode,
+      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
@@ -1552,7 +1584,7 @@ export const SolarTimeClock = () => {
       pmB_indep,
       pdB,
       voidZodiacArray,
-      env.raw.lunarNode,
+      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
@@ -1566,7 +1598,7 @@ export const SolarTimeClock = () => {
       pmB_coupled,
       pdB,
       voidZodiacArray,
-      env.raw.lunarNode,
+      boardEnv.raw.lunarNode,
       actionIntent,
       tDate,
       lon || 139.6917,
@@ -1593,7 +1625,8 @@ export const SolarTimeClock = () => {
   }, [
     honmeiStar,
     getsuMeiStar,
-    env,
+    boardEnv,
+    boardInstantMs,
     birthDate,
     actionIntent,
     voidZodiacOverride,
@@ -3202,14 +3235,15 @@ ${timingOptimization?.recommendationText || "特になし"}
 
     if (heatmapMode === "30days") {
       for (let i = 0; i < 30; i++) {
-        const testDateLocal = new Date(
-          baseTime.getTime() + (timeOffsetDays + i) * 86400000,
-        );
-        const testDateSolar = calculateSolarTime(
-          testDateLocal,
+        // 地図側とまったく同じ関数で評価時刻を出す。
+        // 別々に組み立てていたせいで、同じ日でも地図とヒートマップで
+        // 判定が食い違っていた。
+        const testDate = directionBoardInstant(
+          baseTime,
+          timeOffsetDays,
           lon || 139.6917,
+          i,
         );
-        const testDate = testDateSolar.solarTime;
         const testEnv = getCurrentEnvironmentalFrequencies(
           testDate,
           lon || 139.6917,
