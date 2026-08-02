@@ -36,6 +36,12 @@ import type { NBAData } from "./nba/NBADashboard";
 import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
+import {
+  COMPASS_DIRECTIONS,
+  CompassDirection,
+  destinationForDirection,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -1197,6 +1203,69 @@ export const SolarTimeClock = () => {
     return null;
   };
 
+  /**
+   * 目的地の方位。地図で選んだ地点から決まる。
+   *
+   * ヒートマップは 8 方位を等しく並べているだけで、地図で選んだ目的地が
+   * どの行なのかを示していなかった。「北東がいつ吉になるか」は読めても
+   * 「自分が行きたい場所がいつ吉になるか」が読めない状態だったので、
+   * 目的地に対応する行へ印を付けるために使う。
+   */
+  const targetDirection = useMemo(() => {
+    const info = getTargetDirectionInfo();
+    if (!info) return null;
+    return useTrueNorth ? info.trueDirection : info.magneticDirection;
+    // getTargetDirectionInfo は毎レンダー作り直される素の関数なので、
+    // 依存には実際に結果を変える値だけを並べる。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    targetLat,
+    targetLon,
+    lat,
+    lon,
+    useTrueNorth,
+    useClassicalBoard,
+    geoData?.declination,
+  ]);
+
+  /**
+   * ヒートマップで選んでいる方位。地図の強調表示に渡す。
+   * 未選択なら目的地の方位へ戻し、地図とヒートマップの焦点を一致させる。
+   */
+  const [focusedDirection, setFocusedDirection] = useState<string | null>(null);
+  const highlightDirection = focusedDirection ?? targetDirection;
+
+  /**
+   * ヒートマップで選んだ方位へ目的地を動かす（ヒートマップ→地図）。
+   *
+   * 現在の目的地までの距離は保ったまま向きだけを変える。距離が未設定なら
+   * 50km に置く。座標と方位の変換は directionGeo に置いてある
+   * （偏角の符号を片方だけ間違えると 1 区画ずれるので往復をテストしている）。
+   */
+  const moveTargetToDirection = (dir: string) => {
+    if (!lat || !lon) return;
+    if (!COMPASS_DIRECTIONS.includes(dir as CompassDirection)) return;
+
+    let distanceKm = 50;
+    if (targetLat !== null && targetLon !== null) {
+      const measured = distanceKmBetween(lat, lon, targetLat, targetLon);
+      // 出発地とほぼ同じ地点だと向きが定まらないので最低限の距離を確保する。
+      if (Number.isFinite(measured) && measured > 1) distanceKm = measured;
+    }
+
+    const dest = destinationForDirection(
+      lat,
+      lon,
+      dir as CompassDirection,
+      distanceKm,
+      geoData?.declination ?? -8.2,
+      useTrueNorth,
+    );
+
+    setTargetLat(Number(dest.lat.toFixed(5)));
+    setTargetLon(Number(dest.lon.toFixed(5)));
+    setFocusedDirection(dir);
+  };
   const handleAutoSearch = () => {
     if (!baseTime || !honmeiStar) return;
     setIsAutoSearching(true);
@@ -7584,6 +7653,38 @@ ${timingOptimization?.recommendationText || "特になし"}
                       </div>
                     </div>
 
+                    {/* 地図との連動状態。
+                        ヒートマップは 8 方位を等しく並べているだけなので、
+                        地図で選んだ目的地がどの行なのかをここで結び付ける。 */}
+                    <div className="bg-white/90 border border-indigo-100 px-3 py-2 rounded-xl flex flex-wrap items-center justify-between gap-2 text-[10px]">
+                      {targetDirection ? (
+                        <span className="flex items-center gap-1.5 text-stone-600">
+                          <span>📍</span>
+                          <span>
+                            地図の目的地は{" "}
+                            <strong className="text-indigo-700 font-mono">
+                              {targetDirection}
+                            </strong>{" "}
+                            方位（{useTrueNorth ? "真北" : "磁北"}基準）。
+                            同じ行に印を付けています。
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-amber-700">
+                          目的地が未設定です。下の「目的地座標」か地図で地点を選ぶと、対応する方位の行に印が付きます。
+                        </span>
+                      )}
+                      {focusedDirection && (
+                        <button
+                          onClick={() => setFocusedDirection(null)}
+                          className="px-2 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors"
+                          title="地図の強調表示を目的地の方位に戻す"
+                        >
+                          {focusedDirection} を強調中 — 解除
+                        </button>
+                      )}
+                    </div>
+
                     {/* Heatmap Grid Table */}
                     <table className="w-full text-center border-collapse">
                       <thead>
@@ -7625,9 +7726,42 @@ ${timingOptimization?.recommendationText || "特になし"}
                             "NW",
                           ] as const
                         ).map((dir) => (
-                          <tr key={dir}>
-                            <td className="p-1.5 border border-stone-200 text-[10px] font-mono text-stone-800 font-bold bg-stone-50 sticky left-0 z-10 shadow-xs">
-                              {dir}
+                          <tr
+                            key={dir}
+                            className={
+                              highlightDirection === dir
+                                ? "ring-2 ring-indigo-400/70"
+                                : ""
+                            }
+                          >
+                            <td
+                              className={`p-1.5 border border-stone-200 text-[10px] font-mono font-bold sticky left-0 z-10 shadow-xs cursor-pointer transition-colors ${
+                                highlightDirection === dir
+                                  ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                                  : "bg-stone-50 text-stone-800 hover:bg-indigo-50"
+                              }`}
+                              title={
+                                targetDirection === dir
+                                  ? "地図で選んだ目的地の方位です。クリックで地図の強調表示を切り替えます"
+                                  : "クリックするとこの方位を地図上で強調します"
+                              }
+                              onClick={() =>
+                                setFocusedDirection((prev) =>
+                                  prev === dir ? null : dir,
+                                )
+                              }
+                            >
+                              <span className="flex items-center justify-center gap-0.5">
+                                {targetDirection === dir && (
+                                  <span
+                                    className="text-[9px]"
+                                    title="地図で選んだ目的地の方位"
+                                  >
+                                    📍
+                                  </span>
+                                )}
+                                {dir}
+                              </span>
                             </td>
                             {heatmapData.map((d, i) => {
                               let st = d.vectors[dir];
@@ -7686,6 +7820,11 @@ ${timingOptimization?.recommendationText || "特になし"}
                                   title={`${d.label} 方位${dir}: ${st}${isExcluded ? " ／ 大凶のため除外対象" : ""} ${tendoNote} (クリックで層詳細・根拠表示)`}
                                   onClick={() => {
                                     setTimeOffsetDays(d.offsetDays);
+                                    // 押した方位を地図でも強調する。
+                                    // 日付は既に地図のベクトルへ反映されていたが、
+                                    // 方位は連動しておらず、どのセルを見ているのか
+                                    // 地図側から分からなかった。
+                                    setFocusedDirection(dir);
                                     setSelectedTrendCell({
                                       label: d.label,
                                       dir,
@@ -7774,6 +7913,37 @@ ${timingOptimization?.recommendationText || "特になし"}
                               総合判定: <strong className="text-emerald-600 font-bold">{selectedTrendCell.status}</strong>
                             </p>
                           </div>
+                        </div>
+
+                        {/* 選んだセルから地図側を動かす導線。
+                            ヒートマップで良い方位・良い時期を見つけても、
+                            そこから目的地を設定する手段が無く、座標を手で
+                            入れ直す必要があった。 */}
+                        <div className="flex flex-wrap items-center gap-2 bg-indigo-50/70 border border-indigo-100 rounded-xl px-3 py-2">
+                          {targetDirection === selectedTrendCell.dir ? (
+                            <span className="text-[10px] text-indigo-700 font-semibold flex items-center gap-1">
+                              📍 現在の目的地はこの方位です
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() =>
+                                moveTargetToDirection(selectedTrendCell.dir)
+                              }
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                              title={
+                                targetLat !== null && targetLon !== null
+                                  ? "現在の目的地までの距離を保ったまま、この方位へ向きだけ変えます"
+                                  : "出発地から 50km の地点をこの方位に置きます"
+                              }
+                            >
+                              この方位へ目的地を移す
+                            </button>
+                          )}
+                          <span className="text-[9px] text-stone-500">
+                            {targetLat !== null && targetLon !== null
+                              ? "距離は保ったまま向きだけ変わります"
+                              : "目的地が未設定のため、出発地から 50km の地点に置きます"}
+                          </span>
                         </div>
 
                         <div className="space-y-2.5 text-xs font-mono text-stone-600">
@@ -8049,7 +8219,12 @@ ${timingOptimization?.recommendationText || "特になし"}
                 onSelectTarget={(newLat, newLon) => {
                   setTargetLat(Number(newLat.toFixed(5)));
                   setTargetLon(Number(newLon.toFixed(5)));
+                  // 地図で選び直したらヒートマップ側の焦点も目的地に戻す。
+                  // 前に押したセルの方位が残っていると、地図とヒートマップで
+                  // 別々の方位が強調されたままになる。
+                  setFocusedDirection(null);
                 }}
+                highlightDirection={highlightDirection}
               />
             </div>
 
