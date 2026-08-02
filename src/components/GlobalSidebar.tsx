@@ -3,7 +3,13 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
+// Supabase クライアントは静的に import しない。サイドバーは全ページに出るため、
+// ここで import すると認証ライブラリが共有バンドルに入り、ログインと無関係な
+// 記事ページ（/houi 配下の 470 ページ以上）でも gzip で 60KB 前後を配ることになる。
+// 実測でも共有チャンクの 5536 と 44530001 が丸ごとこれだった。
+// 用途はログイン状態の表示とログアウトだけなので、必要になった時点で読み込む。
+const loadSupabase = () =>
+  import("@/utils/supabase/client").then((m) => m.createClient());
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   Clock,
@@ -80,23 +86,29 @@ export function GlobalSidebar() {
   const [email, setEmail] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
-    const supabase = createClient();
     let active = true;
+    let unsubscribe: (() => void) | undefined;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (active) setEmail(data.user?.email ?? null);
-    });
+    loadSupabase().then((supabase) => {
+      // 読み込みが終わる前にアンマウントされていたら購読しない。
+      if (!active) return;
 
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      // INITIAL_SESSION は購読直後に必ず発火する初期通知で、上の getUser() と
-      // 内容が重複する。こちらを採用すると getUser() の結果を打ち消してしまう。
-      if (event === "INITIAL_SESSION") return;
-      setEmail(session?.user?.email ?? null);
+      supabase.auth.getUser().then(({ data }) => {
+        if (active) setEmail(data.user?.email ?? null);
+      });
+
+      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+        // INITIAL_SESSION は購読直後に必ず発火する初期通知で、上の getUser() と
+        // 内容が重複する。こちらを採用すると getUser() の結果を打ち消してしまう。
+        if (event === "INITIAL_SESSION") return;
+        setEmail(session?.user?.email ?? null);
+      });
+      unsubscribe = () => sub.subscription.unsubscribe();
     });
 
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
@@ -105,7 +117,7 @@ export function GlobalSidebar() {
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   const handleLogout = async () => {
-    const supabase = createClient();
+    const supabase = await loadSupabase();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();

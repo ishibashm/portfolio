@@ -1574,11 +1574,10 @@ export default function RelocationSimulatorPage() {
               <Compass className="w-3.5 h-3.5" />{" "}
               段階的移動＆仮吉方シミュレーター
             </div>
+            {/* ナビ・サイトマップと同じ呼び名にする。英語の副題を足すと、
+                検索から来た人には別のページに見える。 */}
             <h1 className="text-4xl font-black tracking-tight">
-              移動シミュレーター{" "}
-              <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent font-light">
-                Phased Planner
-              </span>
+              引越し先を試算する
             </h1>
             <p className="text-sm text-stone-500 mt-2">
               75日ルールに基づく「本拠地（太極）」の自動追跡と、大凶を回避する「仮吉方（迂回）」ルートを検証・保存できます。
