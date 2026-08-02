@@ -118,6 +118,9 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    # 最後にエリア相場の JSON をコミットして押し戻すため
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
@@ -175,3 +178,24 @@ jobs:
 
       - name: Report freshness
         run: npx -y tsx scripts/report_rental_freshness.ts
+
+      # /houi/area/* は src/data/areaDirections.json を静的生成の入力にしている。
+      # 手で作り直す運用だと相場が古いまま残り、記事の数字が実態とずれる。
+      # パージまで終わった後の状態で集計し、変化があればコミットして
+      # デプロイまで流す（deploy.yml が master への push で動く）。
+      - name: Rebuild area dataset
+        run: npx -y tsx scripts/build_area_dataset.ts
+
+      - name: Commit area dataset if changed
+        run: |
+          if git diff --quiet -- src/data/areaDirections.json; then
+            echo "エリア相場に変化なし。コミットしない。"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/areaDirections.json
+          git commit -m "chore(data): エリア別の家賃相場を更新する [skip ci]"
+          # 実行中に master が進んでいることがあるので、取り込んでから押す
+          git pull --rebase origin master
+          git push origin HEAD:master

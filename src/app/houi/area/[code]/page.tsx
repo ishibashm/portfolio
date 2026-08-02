@@ -16,6 +16,7 @@ import {
   getYearDirections,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -67,8 +68,23 @@ export default async function Page({
 
   const populated = DIRECTIONS.filter((d) => groups[d].length > 0);
 
+  const path = `/houi/area/${area.code}`;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+      <DatasetJsonLd
+        name={`${area.full}から見た方位別のエリアと家賃相場`}
+        description={`${area.full}を出発地としたときの八方位ごとの市区町村と、専有面積あたりの家賃相場。`}
+        path={path}
+        dateModified={AREA_GENERATED_AT}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "方位の早見表", path: "/houi" },
+          { name: "エリア別", path: "/houi/area" },
+          { name: area.full, path },
+        ]}
+      />
       <article className="max-w-[860px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">

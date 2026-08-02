@@ -154,8 +154,23 @@ export default async function RootLayout({
         {/* LLMO / AI Search Agent Citation Links */}
         <link rel="author" href="https://cloud-palette.com" />
         <link rel="help" href="https://cloud-palette.com/llms.txt" />
-        <meta name="citation_title" content="Cloud Palette Meta-Hub" />
-        <meta name="citation_publisher" content="Cloud Palette Core Labs" />
+        <meta name="citation_title" content={`${SITE_NAME} | ${SITE_TAGLINE}`} />
+        <meta name="citation_publisher" content={SITE_NAME} />
+
+        {/* Search Console / AdSense の所有権確認。値は環境変数から入れる。
+            コードに直書きすると、確認のたびにデプロイが必要になる。 */}
+        {process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && (
+          <meta
+            name="google-site-verification"
+            content={process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION}
+          />
+        )}
+        {process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && (
+          <meta
+            name="msvalidate.01"
+            content={process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION}
+          />
+        )}
 
         {/* Structured Schema.org JSON-LD */}
         <script

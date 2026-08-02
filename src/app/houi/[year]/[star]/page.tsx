@@ -10,6 +10,7 @@ import {
   MONTHS,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 /**
  * 「2026年 一白水星 吉方位」のような検索に直接応える静的ページ。
@@ -87,8 +88,22 @@ export default async function Page({
     bad: "bg-rose-50 border-rose-200 text-rose-900",
   } as const;
 
+  const path = `/houi/${year}/${star}`;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+      <ArticleJsonLd
+        headline={`${year}年 ${name}の吉方位と凶方位`}
+        description={`${year}年の年盤における${name}の吉方位、五黄殺・暗剣殺・歳破・本命殺の位置。`}
+        path={path}
+        keywords={[`${year}年`, name, "吉方位", "凶方位", "九星気学", "引越し"]}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "方位の早見表", path: "/houi" },
+          { name: `${year}年 ${name}`, path },
+        ]}
+      />
       <article className="max-w-[820px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
