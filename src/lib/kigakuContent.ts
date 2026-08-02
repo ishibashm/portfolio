@@ -238,3 +238,102 @@ export function contentYears(): number[] {
   const current = new Date().getFullYear();
   return [current, current + 1, current + 2];
 }
+
+/** 月盤の記事を用意する年。月別は 12 倍になるので直近 2 年に絞る。 */
+export function monthContentYears(): number[] {
+  const current = new Date().getFullYear();
+  return [current, current + 1];
+}
+
+export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+/**
+ * 九星気学の月は暦月ではなく節入りで切り替わる（毎月5〜8日ごろ）。
+ * 実際に星が変わる日を走査して求める。おおよその日付を書くより、
+ * 「いつからいつまでの話か」を正確に出したほうが記事として使える。
+ */
+export function kigakuMonthRange(
+  year: number,
+  month: number,
+  system: KigakuSystem = "classical",
+): { start: Date; end: Date; centerStar: StarFrequency } {
+  const starOn = (d: Date) =>
+    system === "classical" ? getClassicalMonthStar(d) : getMonthStar(d);
+
+  // その暦月の 20 日はほぼ確実に節入り後なので、これを代表点にする
+  const anchor = new Date(Date.UTC(year, month - 1, 20));
+  const centerStar = starOn(anchor);
+
+  const start = new Date(anchor);
+  while (starOn(new Date(start.getTime() - 86400000)) === centerStar) {
+    start.setUTCDate(start.getUTCDate() - 1);
+  }
+
+  const end = new Date(anchor);
+  while (starOn(new Date(end.getTime() + 86400000)) === centerStar) {
+    end.setUTCDate(end.getUTCDate() + 1);
+  }
+
+  return { start, end, centerStar };
+}
+
+/** その月（節入り〜）の方位一覧 */
+export function getMonthDirections(
+  year: number,
+  month: number,
+  star: number,
+  system: KigakuSystem = "classical",
+): {
+  centerStar: StarFrequency;
+  start: Date;
+  end: Date;
+  verdicts: DirectionVerdict[];
+} {
+  const classical = system === "classical";
+  const { start, end, centerStar } = kigakuMonthRange(year, month, system);
+  const d = new Date(Date.UTC(year, month - 1, 20));
+
+  const yearBoard = generateBoard(
+    classical ? getClassicalYearStar(d) : getYearStar(d),
+  );
+  const monthBoard = generateBoard(centerStar);
+  const dayBoard = generateBoard(
+    classical ? getClassicalDayStar(d) : getDayStar(d),
+  );
+
+  const collision = calculateVectorCollision(
+    star as StarFrequency,
+    yearBoard,
+    monthBoard,
+    dayBoard,
+    [],
+    null,
+    "MIGRATION",
+    d,
+  );
+
+  const verdicts = DIRECTIONS.map((direction) => {
+    const status = collision.monthLayer[direction] ?? "SAFE";
+    const info = statusInfo(status);
+    // NOISE_HA は年の層では歳破、月の層では月破を指す。同じコードなので
+    // 月のページでそのまま「歳破」と出すと誤った説明になる。
+    const isHa = status === "NOISE_HA";
+    return {
+      direction,
+      jp: DIRECTION_LABELS[direction],
+      status,
+      label: isHa ? "月破" : info.label,
+      kind: info.kind,
+      note: isHa
+        ? "その月の十二支の正反対にあたる方位。歳破の月版にあたります。"
+        : info.note,
+      star: (monthBoard as Record<string, number>)[direction] ?? null,
+    };
+  });
+
+  return { centerStar, start, end, verdicts };
+}
+
+export function formatDate(d: Date): string {
+  return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
+}
