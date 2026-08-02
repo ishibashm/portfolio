@@ -39,6 +39,30 @@ import {
   slidersToWeights,
   weightsToSliders,
 } from "@/utils/arbitrageScoring";
+import {
+  DEFAULT_PARTY_POLICY,
+  PARTY_POLICIES,
+} from "@/utils/arbitrageParty";
+import type { ProfilePreset } from "@/lib/profilePresetSync";
+
+/**
+ * 吉凶ステータスの日本語表記。
+ *
+ * 「全員が動ける日が 0 日」の理由を出すときに使う。NOISE_TENCHU のような
+ * 内部表記のまま画面に出しても、何を直せばよいのかが伝わらない。
+ */
+const ASTRO_STATUS_LABELS: Record<string, string> = {
+  NOISE_TENCHU: "天中殺（この期間は移転不可）",
+  NOISE_VOID: "空亡",
+  NOISE_GOU: "五黄殺",
+  NOISE_ANKEN: "暗剣殺",
+  NOISE_HA: "歳破",
+  NOISE_HONMEI: "本命殺",
+  NOISE_TEKI: "本命的殺",
+  NOISE_GETSUMEI: "月命殺",
+  NOISE_GETSUTEKI: "月命的殺",
+  NOISE_NODE: "月交点ノイズ",
+};
 
 // 吉凶バッジ定義のインターフェース
 interface BadgeItem {
@@ -173,6 +197,10 @@ export default function ArbitrageScannerPage() {
     // 候補の集め方は SQL の並び順を変えるので、変わったら取り直しが要る。
     // この ref は candidateStrategy の state 宣言より前にあるため既定値で埋める。
     candidateStrategy: DEFAULT_CANDIDATE_STRATEGY as string,
+    // 同行者・まとめ方・走査期間はサーバ側の判定を変えるので取り直しが要る。
+    partyParam: "",
+    partyPolicy: DEFAULT_PARTY_POLICY as string,
+    horizonDays: 30,
     mapBounds,
   });
 
@@ -257,6 +285,104 @@ export default function ArbitrageScannerPage() {
     );
   };
 
+  /**
+   * 同行者がいるときの内訳。
+   *
+   * 合成した 1 つの点だけでは「誰にとって良いのか」「誰が引っかかって
+   * いるのか」が消える。合流の判断はそこが要なので、人ごとの方位と
+   * 判定、そして全員で動ける直近の日をそのまま出す。
+   */
+  const renderPartyBreakdown = (item: any) => {
+    if (!hasParty || !item.party?.members?.length) return null;
+    const members = item.party.members as any[];
+
+    return (
+      <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 space-y-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-bold text-stone-500">全員の方位</span>
+          {item.party.harmony !== null && (
+            <span
+              className="text-[9px] font-mono text-stone-400"
+              title="移動する人どうしで評価がどれだけ揃っているか。低いと片方だけに良い場所。"
+            >
+              一致度 {Math.round(item.party.harmony)}
+            </span>
+          )}
+        </div>
+
+        {members.map((m) => (
+          <div
+            key={m.memberId}
+            className="flex items-center justify-between text-[10px]"
+          >
+            <span className="text-stone-500 truncate max-w-[45%]">
+              {m.name}
+              {m.direction === null && (
+                <span className="ml-1 text-stone-400">(移動なし)</span>
+              )}
+            </span>
+            {m.direction !== null && (
+              <span className="flex items-center gap-1.5 font-mono">
+                <span className="text-stone-600">{m.direction}</span>
+                <span
+                  className={
+                    m.isAvoid
+                      ? "text-rose-500 font-bold"
+                      : m.score >= 70
+                        ? "text-emerald-600 font-bold"
+                        : "text-stone-500"
+                  }
+                >
+                  {Math.round(m.score)}
+                </span>
+              </span>
+            )}
+          </div>
+        ))}
+
+        {item.party.blockedBy?.length > 0 && (
+          <div className="text-[10px] text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-2 py-1 mt-1">
+            この日は {item.party.blockedBy.join("・")} が移転不可
+          </div>
+        )}
+
+        {item.timing && (
+          <div className="text-[10px] text-stone-500 mt-1">
+            {item.timing.nextAllClearDate ? (
+              <>
+                全員で動ける直近日:{" "}
+                <span className="font-bold text-emerald-600">
+                  {item.timing.nextAllClearDate}
+                </span>
+                <span className="text-stone-400">
+                  {" "}
+                  （{item.timing.scannedDays}日中 {item.timing.allClearDays}日）
+                </span>
+              </>
+            ) : item.timing.alwaysBlockedBy?.length > 0 ? (
+              // 天中殺のように年単位で塞がっている場合、期間を延ばしても
+              // 物件を変えても開かない。「0日」とだけ出すと、どれを
+              // 動かせばよいのか分からないので理由まで書く。
+              <span className="text-rose-600">
+                走査した{item.timing.scannedDays}日はすべて不可（
+                {item.timing.alwaysBlockedBy
+                  .map(
+                    (b: any) =>
+                      `${b.name}: ${ASTRO_STATUS_LABELS[b.status] ?? b.status}`,
+                  )
+                  .join("、")}
+                ）。移転先を変えても開かないため、時期そのものを見直す必要があります。
+              </span>
+            ) : (
+              <span className="text-amber-600">
+                今後{item.timing.scannedDays}日で全員が動ける日はありません
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
   const renderStarRow = (starCount: number, hint: string) => {
     return (
       <div className="flex gap-0.5 text-amber-600 text-xs" title={hint}>
@@ -547,6 +673,89 @@ export default function ArbitrageScannerPage() {
   // 既定は沈める。外すと「凶だが条件は最高」の物件も比較対象にできる。
   const [sinkAvoidStatus, setSinkAvoidStatus] = useState(true);
 
+  /**
+   * 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人。
+   *
+   * 出発地が違えば同じ物件でも方位が違うので、片方に吉でももう片方に凶、
+   * ということが起きる。1 人分の判定だけではその衝突が見えない。
+   * 座標や日付は入力途中の文字列で持ち、送信時に数値へ直す。
+   */
+  interface PartyMemberInput {
+    id: string;
+    name: string;
+    birthDate: string;
+    birthLat: string;
+    birthLon: string;
+    baseLat: string;
+    baseLon: string;
+    weight: number;
+    stationary: boolean;
+  }
+  const [partyMembers, setPartyMembers] = useState<PartyMemberInput[]>([]);
+  const [partyPolicy, setPartyPolicy] = useState<string>(DEFAULT_PARTY_POLICY);
+  // 「いつなら全員で動けるか」を何日先まで見るか。
+  const [horizonDays, setHorizonDays] = useState<number>(30);
+  const [showPartyPanel, setShowPartyPanel] = useState(false);
+  /** 他画面で保存済みのプロフィール。同行者の入力元にする。 */
+  const [savedProfiles, setSavedProfiles] = useState<ProfilePreset[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw =
+        localStorage.getItem("profile_presets_v1") ||
+        localStorage.getItem("wealth_presets");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) setSavedProfiles(parsed);
+    } catch {
+      // 壊れていれば手入力してもらう
+    }
+  }, []);
+
+  /** API に渡す形。座標が数値にならない人は送らない（方位が決まらないため）。 */
+  const partyParam = useMemo(() => {
+    const payload = partyMembers
+      .filter((m) => m.birthDate && (m.stationary || (m.baseLat && m.baseLon)))
+      .map((m) => ({
+        id: m.id,
+        name: m.name,
+        birthDate: m.birthDate,
+        birthLat: m.birthLat === "" ? null : Number(m.birthLat),
+        birthLon: m.birthLon === "" ? null : Number(m.birthLon),
+        baseLat: m.baseLat === "" ? null : Number(m.baseLat),
+        baseLon: m.baseLon === "" ? null : Number(m.baseLon),
+        weight: m.weight,
+        stationary: m.stationary,
+      }));
+    return payload.length > 0 ? JSON.stringify(payload) : "";
+  }, [partyMembers]);
+
+  const hasParty = partyParam !== "";
+
+  const addPartyMember = (preset?: ProfilePreset) => {
+    setPartyMembers((prev) => [
+      ...prev,
+      {
+        id: preset?.id || `member-${Date.now()}`,
+        name: preset?.name || `同行者${prev.length + 1}`,
+        birthDate: preset?.birthDate || "",
+        birthLat: preset?.birthLat != null ? String(preset.birthLat) : "",
+        birthLon: preset?.birthLon != null ? String(preset.birthLon) : "",
+        baseLat: preset?.baseLat != null ? String(preset.baseLat) : "",
+        baseLon: preset?.baseLon != null ? String(preset.baseLon) : "",
+        weight: 1,
+        stationary: false,
+      },
+    ]);
+    setShowPartyPanel(true);
+  };
+
+  const updatePartyMember = (id: string, patch: Partial<PartyMemberInput>) => {
+    setPartyMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    );
+  };
+
   const activeWeights = useMemo(
     () =>
       weightPresetId === "custom"
@@ -603,6 +812,11 @@ export default function ArbitrageScannerPage() {
         setCandidateStrategy(saved.candidateStrategy);
       if (typeof saved.sinkAvoidStatus === "boolean")
         setSinkAvoidStatus(saved.sinkAvoidStatus);
+      if (Array.isArray(saved.partyMembers)) setPartyMembers(saved.partyMembers);
+      if (typeof saved.partyPolicy === "string")
+        setPartyPolicy(saved.partyPolicy);
+      if (Number.isFinite(Number(saved.horizonDays)))
+        setHorizonDays(Math.max(0, Math.min(90, Number(saved.horizonDays))));
     } catch {
       // 壊れた保存値は無視して既定で動かす。
     }
@@ -618,6 +832,9 @@ export default function ArbitrageScannerPage() {
           budgetManYen,
           candidateStrategy,
           sinkAvoidStatus,
+          partyMembers,
+          partyPolicy,
+          horizonDays,
         }),
       );
     } catch {
@@ -629,6 +846,9 @@ export default function ArbitrageScannerPage() {
     budgetManYen,
     candidateStrategy,
     sinkAvoidStatus,
+    partyMembers,
+    partyPolicy,
+    horizonDays,
   ]);
 
   // Load from localStorage on mount
@@ -889,6 +1109,10 @@ export default function ArbitrageScannerPage() {
       params.append("lunarPhaseModifier", lunarPhaseModifier.toString());
       params.append("directionFilterMode", directionFilterMode);
       params.append("actionIntent", actionIntent);
+      // 一覧と同じ同行者構成で見ないと、カレンダーだけ 1 人分の判定になり、
+      // 一覧では避けるべきとされた日が「動ける日」として出てしまう。
+      if (partyParam) params.append("party", partyParam);
+      params.append("partyPolicy", partyPolicy);
 
       const res = await fetch(
         `/api/rentals/arbitrage/timeline?${params.toString()}`,
@@ -910,6 +1134,8 @@ export default function ArbitrageScannerPage() {
       lunarPhaseModifier,
       directionFilterMode,
       actionIntent,
+      partyParam,
+      partyPolicy,
     ],
   );
 
@@ -967,6 +1193,10 @@ export default function ArbitrageScannerPage() {
       // 計算でき、入力するたびに DB を叩き直す必要がない。
       // 候補の切り出し方。重みを変えても母集合が同じでは角度が変わらない。
       params.append("candidateStrategy", candidateStrategy);
+      // 同行者。方位は出発地ごとに違うので、人ぶんまとめてサーバへ渡す。
+      if (partyParam) params.append("party", partyParam);
+      params.append("partyPolicy", partyPolicy);
+      params.append("horizonDays", String(horizonDays));
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -1025,6 +1255,9 @@ export default function ArbitrageScannerPage() {
       prev.directionFilterMode !== directionFilterMode ||
       prev.actionIntent !== actionIntent ||
       prev.candidateStrategy !== candidateStrategy ||
+      prev.partyParam !== partyParam ||
+      prev.partyPolicy !== partyPolicy ||
+      prev.horizonDays !== horizonDays ||
       JSON.stringify(prev.mapBounds) !== JSON.stringify(mapBounds);
 
     prevParamsRef.current = {
@@ -1042,6 +1275,9 @@ export default function ArbitrageScannerPage() {
       directionFilterMode,
       actionIntent,
       candidateStrategy,
+      partyParam,
+      partyPolicy,
+      horizonDays,
       mapBounds,
     };
 
@@ -1062,6 +1298,9 @@ export default function ArbitrageScannerPage() {
     directionFilterMode,
     actionIntent,
     candidateStrategy,
+    partyParam,
+    partyPolicy,
+    horizonDays,
     mapBounds,
     initialLoaded,
   ]);
@@ -1850,6 +2089,243 @@ export default function ArbitrageScannerPage() {
                     </div>
                   </div>
 
+                  {/* 同行者パネル。
+                      合流する親族のように、別の出発地から同じ移転先へ動く人を
+                      足すと、全員ぶんの方位をまとめて判定する。 */}
+                  <div className="space-y-3.5 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                        同行者・合流する人
+                        {partyMembers.length > 0 && (
+                          <span className="ml-1.5 text-indigo-600">
+                            ({partyMembers.length + 1}人)
+                          </span>
+                        )}
+                      </h3>
+                      <button
+                        onClick={() => setShowPartyPanel((v) => !v)}
+                        className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                      >
+                        {showPartyPanel ? "閉じる" : "設定"}
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-stone-500 leading-relaxed">
+                      出発地が違えば同じ物件でも方位が変わります。登録すると、全員にとっての方位と「いつなら全員で動けるか」を合わせて判定します。
+                    </p>
+
+                    {showPartyPanel && (
+                      <div className="space-y-3">
+                        {savedProfiles.length > 0 && (
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-stone-400 block">
+                              保存済みプロフィールから追加
+                            </label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {savedProfiles
+                                .filter(
+                                  (preset) =>
+                                    !partyMembers.some((m) => m.id === preset.id),
+                                )
+                                .map((preset) => (
+                                  <button
+                                    key={preset.id}
+                                    onClick={() => addPartyMember(preset)}
+                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-gray-50 dark:bg-white text-stone-600 border border-gray-200 dark:border-stone-200 hover:border-indigo-300"
+                                  >
+                                    ＋ {preset.name}
+                                  </button>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          onClick={() => addPartyMember()}
+                          className="w-full px-3 py-2 rounded-xl text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+                        >
+                          ＋ 手入力で同行者を追加
+                        </button>
+
+                        {partyMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className="space-y-2 p-3 rounded-xl bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200"
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={member.name}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    name: e.target.value,
+                                  })
+                                }
+                                placeholder="名前（母、父など）"
+                                className="flex-1 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
+                              />
+                              <button
+                                onClick={() =>
+                                  setPartyMembers((prev) =>
+                                    prev.filter((m) => m.id !== member.id),
+                                  )
+                                }
+                                className="px-2 py-1 text-[10px] font-semibold text-rose-500 hover:underline shrink-0"
+                              >
+                                削除
+                              </button>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-semibold text-stone-400 block">
+                                生年月日時
+                              </label>
+                              <input
+                                type="datetime-local"
+                                value={normalizeDateTimeLocal(member.birthDate)}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    birthDate: e.target.value,
+                                  })
+                                }
+                                className="w-full px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label
+                                className="text-[10px] font-semibold text-stone-400 block cursor-help"
+                                title="この人が今住んでいる場所。ここからの向きでこの人の方位が決まる。"
+                              >
+                                出発地（現住地）の緯度・経度
+                              </label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  step="0.00001"
+                                  value={member.baseLat}
+                                  onChange={(e) =>
+                                    updatePartyMember(member.id, {
+                                      baseLat: e.target.value,
+                                    })
+                                  }
+                                  placeholder="緯度"
+                                  disabled={member.stationary}
+                                  className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
+                                />
+                                <input
+                                  type="number"
+                                  step="0.00001"
+                                  value={member.baseLon}
+                                  onChange={(e) =>
+                                    updatePartyMember(member.id, {
+                                      baseLon: e.target.value,
+                                    })
+                                  }
+                                  placeholder="経度"
+                                  disabled={member.stationary}
+                                  className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2">
+                              <label
+                                className="flex items-center gap-1.5 text-[10px] text-stone-500 cursor-pointer"
+                                title="既に移転先の側に住んでいて動かない人。方位が発生しないので判定から外し、同居する相手として一覧にだけ残す。"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={member.stationary}
+                                  onChange={(e) =>
+                                    updatePartyMember(member.id, {
+                                      stationary: e.target.checked,
+                                    })
+                                  }
+                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                                />
+                                移動しない（現地在住）
+                              </label>
+                              <label
+                                className="flex items-center gap-1.5 text-[10px] text-stone-500"
+                                title="「重み付き」でまとめるときの比重。"
+                              >
+                                比重
+                                <input
+                                  type="number"
+                                  min={0.5}
+                                  max={10}
+                                  step={0.5}
+                                  value={member.weight}
+                                  onChange={(e) =>
+                                    updatePartyMember(member.id, {
+                                      weight: Number(e.target.value) || 1,
+                                    })
+                                  }
+                                  className="w-14 px-1.5 py-1 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none font-mono"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+
+                        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-gray-100 dark:border-stone-200">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-stone-400 block">
+                              まとめ方
+                            </label>
+                            <select
+                              value={partyPolicy}
+                              onChange={(e) => {
+                                setPartyPolicy(e.target.value);
+                                setCurrentPage(1);
+                              }}
+                              className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                            >
+                              {PARTY_POLICIES.map((policy) => (
+                                <option
+                                  key={policy.id}
+                                  value={policy.id}
+                                  title={policy.description}
+                                >
+                                  {policy.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label
+                              className="text-[10px] font-semibold text-stone-400 block cursor-help"
+                              title="対象日から何日先まで「全員が動ける日」を探すか。0 にすると時期の判定をしない。"
+                            >
+                              時期の走査 (日先)
+                            </label>
+                            <select
+                              value={horizonDays}
+                              onChange={(e) => {
+                                setHorizonDays(Number(e.target.value));
+                                setCurrentPage(1);
+                              }}
+                              className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                            >
+                              <option value={0}>見ない</option>
+                              <option value={14}>14日先まで</option>
+                              <option value={30}>30日先まで</option>
+                              <option value={60}>60日先まで</option>
+                              <option value={90}>90日先まで</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] text-stone-400 leading-relaxed">
+                          {
+                            PARTY_POLICIES.find((p) => p.id === partyPolicy)
+                              ?.description
+                          }
+                        </p>
+                      </div>
+                    )}
+                  </div>
                   {/* 評価軸パネル。
                       同じ候補集合を別の角度から見直すための操作をここに集める。
                       重みの変更は画面内で完結するので再スキャンは起きない。 */}
@@ -2370,6 +2846,9 @@ export default function ArbitrageScannerPage() {
                             <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200">
                               {renderAxisBars(item)}
                             </div>
+
+                            {/* 誰にとってどうか、いつなら全員で動けるか。 */}
+                            {renderPartyBreakdown(item)}
 
                             <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
                               {renderStars(item.totalScore, item.astrologyStatus)}

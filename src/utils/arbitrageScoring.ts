@@ -19,6 +19,8 @@ export type AxisKey =
   | "value"
   | "localValue"
   | "astrology"
+  | "harmony"
+  | "timing"
   | "access"
   | "proximity"
   | "space"
@@ -30,6 +32,8 @@ export const AXIS_ORDER: AxisKey[] = [
   "value",
   "localValue",
   "astrology",
+  "harmony",
+  "timing",
   "access",
   "proximity",
   "space",
@@ -61,7 +65,17 @@ export const AXIS_META: Record<AxisKey, AxisMeta> = {
   astrology: {
     label: "方位・吉凶",
     short: "方位",
-    hint: "出発地から見た方位と暦（九星気学・天中殺・月相・天体ライン）による判定。",
+    hint: "出発地から見た方位と暦（九星気学・天中殺・月相・天体ライン）による判定。同行者を登録している場合は、全員ぶんをまとめ方に従って合成した点。",
+  },
+  harmony: {
+    label: "同行者との一致",
+    short: "一致",
+    hint: "移動する人どうしで評価がどれだけ揃っているか。片方に大吉・片方に大凶だと低くなる。平均だけを見ていると「全員そこそこ」と「割れている」が同じ点になるため分けている。同行者が 1 人以下なら算出しない。",
+  },
+  timing: {
+    label: "時期の開き",
+    short: "時期",
+    hint: "先の期間を走査して、移動する全員が動ける日がどれだけあるか。対象日 1 日だけが凶でも、近い将来に開くなら候補として残す。",
   },
   access: {
     label: "駅アクセス",
@@ -123,13 +137,15 @@ export const WEIGHT_PRESETS: WeightPreset[] = [
     label: "バランス",
     description: "割安さ・方位・住みやすさを均等に見る既定の配分。",
     weights: w({
-      value: 0.18,
-      localValue: 0.14,
-      astrology: 0.2,
-      access: 0.14,
-      proximity: 0.04,
-      space: 0.12,
-      building: 0.12,
+      value: 0.16,
+      localValue: 0.12,
+      astrology: 0.18,
+      harmony: 0.05,
+      timing: 0.05,
+      access: 0.13,
+      proximity: 0.03,
+      space: 0.11,
+      building: 0.11,
       market: 0.06,
       cost: 0.0,
     }),
@@ -153,13 +169,30 @@ export const WEIGHT_PRESETS: WeightPreset[] = [
     label: "開運重視",
     description: "方位と暦を最優先し、条件面は補助的に見る。",
     weights: w({
-      astrology: 0.55,
-      value: 0.13,
-      localValue: 0.08,
-      access: 0.08,
+      astrology: 0.42,
+      harmony: 0.08,
+      timing: 0.08,
+      value: 0.12,
+      localValue: 0.07,
+      access: 0.07,
       space: 0.06,
       building: 0.06,
       market: 0.04,
+    }),
+  },
+  {
+    id: "party",
+    label: "合流重視",
+    description:
+      "同行者・合流する親族と一緒に動く前提。全員にとって方位が揃っていること、そして全員が動ける日が近いことを最優先する。",
+    weights: w({
+      harmony: 0.32,
+      astrology: 0.28,
+      timing: 0.18,
+      value: 0.08,
+      localValue: 0.06,
+      access: 0.05,
+      proximity: 0.03,
     }),
   },
   {

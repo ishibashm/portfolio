@@ -9,7 +9,18 @@ import { getGeomagneticData } from "@/utils/geomagnetism";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
+  isAvoidStatus,
 } from "@/utils/arbitrageAstro";
+import {
+  DEFAULT_PARTY_POLICY,
+  PartyMember,
+  PartyPolicy,
+  combineOutcomes,
+  isPartyPolicy,
+  parsePartyParam,
+  partyWeights,
+  summarizeTiming,
+} from "@/utils/arbitrageParty";
 
 /**
  * 1 物件ぶんの吉凶タイムラインを、指定範囲ぶん実際に計算して返す。
@@ -72,18 +83,22 @@ function getDirectionFromBearing(
 /**
  * 30days: 対象日の-3日から+26日。先頭から4番目が対象日になるので、
  *         7days と同じく index 3 を「当日」として扱える。
- * 12months: 対象日と同じ日を 12 ヶ月ぶん。月末日は月の長さに丸める。
+ * 90days: 同じ考え方で 3 ヶ月ぶん。合流のように全員の都合が合う日を
+ *         探す場合、30 日では 1 日も開かないことがある。
+ * 12months / 24months:
+ *           対象日と同じ日を月ぶん。月末日は月の長さに丸める。
  *           「月の代表日」を実在する日付として計算するため、返す date は
  *           必ず実際に計算した日を指す（以前は毎月1日固定のラベルだけだった）。
  */
 function buildDateList(targetDate: Date, range: string): Date[] {
   const list: Date[] = [];
-  if (range === "12months") {
+  if (range === "12months" || range === "24months") {
+    const months = range === "24months" ? 24 : 12;
     // ローカル時刻の年月日から Date を組むとサーバのタイムゾーン次第で
     // dateStr（toISOString 基準）が 1 日ずれる。targetDate を複製して
     // UTC で動かすことで、どのタイムゾーンで動かしても同じ日付になる。
     const day = targetDate.getUTCDate();
-    for (let m = 0; m < 12; m++) {
+    for (let m = 0; m < months; m++) {
       const d = new Date(targetDate);
       d.setUTCDate(1);
       d.setUTCMonth(targetDate.getUTCMonth() + m);
@@ -96,7 +111,7 @@ function buildDateList(targetDate: Date, range: string): Date[] {
     return list;
   }
 
-  const span = range === "30days" ? 26 : 3;
+  const span = range === "90days" ? 86 : range === "30days" ? 26 : 3;
   for (let i = -3; i <= span; i++) {
     const d = new Date(targetDate);
     d.setDate(targetDate.getDate() + i);
@@ -110,7 +125,9 @@ export async function GET(request: Request) {
 
   try {
     const range = searchParams.get("range") || "30days";
-    if (!["7days", "30days", "12months"].includes(range)) {
+    if (
+      !["7days", "30days", "90days", "12months", "24months"].includes(range)
+    ) {
       return NextResponse.json({ error: "invalid range" }, { status: 400 });
     }
 
@@ -147,93 +164,222 @@ export async function GET(request: Request) {
       "independent") as "coupled" | "independent";
     const targetDate = parseSafeDate(searchParams.get("targetDate") || "");
 
-    const honmeiStar = getHonmeiStar(bDate);
-    const voidZodiacs = getPersonalVoidZodiac(bDate);
+    const partyPolicyRaw =
+      searchParams.get("partyPolicy") || DEFAULT_PARTY_POLICY;
+    const partyPolicy: PartyPolicy = isPartyPolicy(partyPolicyRaw)
+      ? partyPolicyRaw
+      : DEFAULT_PARTY_POLICY;
 
-    // 一覧APIと同じ偏角を使わないと、同じ物件で方位がずれてしまう。
-    let declination = -8.2;
-    try {
-      const geoData = await getGeomagneticData(
+    /**
+     * 判定に関わる人。先頭は必ず本人。
+     * 一覧API と同じ構成にしないと、カレンダーだけ 1 人分の判定になり、
+     * 一覧では避けるべきとされた日が「動ける日」として出てしまう。
+     */
+    const party: PartyMember[] = [
+      {
+        id: "primary",
+        name: (searchParams.get("selfName") || "あなた").slice(0, 40),
+        birthDate: searchParams.get("birthDate") || "",
+        birthLat: hasBirthLocation ? birthLat : null,
+        birthLon: hasBirthLocation ? birthLon : null,
         baseLat,
         baseLon,
-        targetDate.getTime(),
-      );
-      if (geoData && typeof geoData.declination === "number") {
-        declination = geoData.declination;
-      }
-    } catch {
-      // 取得できなければ既定値のまま
-    }
-
-    const trueBearing = getBearing(baseLat, baseLon, propLat, propLon);
-    const direction = getDirectionFromBearing(trueBearing, nodeMapping);
-    const magneticDirection = getDirectionFromBearing(
-      (trueBearing - declination + 360) % 360,
-      nodeMapping,
-    );
-
-    // 天体ラインは出生日時・出生地と物件位置で決まり、日付には依存しない
-    let hasSunLine = false;
-    let hasVenusLine = false;
-    let hasJupiterLine = false;
-    if (hasBirthLocation) {
-      const birthGst = AstroEngine.getGreenwichSiderealTime(bDate);
-      const sunLon = AstroEngine.getSolarLongitude(bDate);
-      const venusLon = AstroEngine.getVenusLongitude(bDate);
-      const jupiterLon = AstroEngine.getJupiterLongitude(bDate);
-      const relocatedASC = AstroEngine.getAscendant(
-        bDate,
-        propLat,
-        propLon,
-        birthGst,
-      );
-      const relocatedMC = AstroEngine.getMidheaven(bDate, propLon, birthGst);
-      hasSunLine =
-        Math.abs(relocatedMC - sunLon) < 5 ||
-        Math.abs(relocatedASC - sunLon) < 5;
-      hasVenusLine =
-        Math.abs(relocatedMC - venusLon) < 5 ||
-        Math.abs(relocatedASC - venusLon) < 5;
-      hasJupiterLine =
-        Math.abs(relocatedMC - jupiterLon) < 5 ||
-        Math.abs(relocatedASC - jupiterLon) < 5;
-    }
-
+        weight: 1,
+        stationary: false,
+      },
+      ...parsePartyParam(searchParams.get("party")).filter(
+        (m) => m.id !== "primary",
+      ),
+    ];
+    const memberWeights = partyWeights(party);
     const dateList = buildDateList(targetDate, range);
-    const states = buildDailyAstroStates(dateList, {
-      baseLon,
-      physicalMonthMode,
-      useClassical,
-      honmeiStar,
-      voidZodiacs,
-      actionIntent,
-      nodeMapping,
-      directionFilterMode,
-      layerMode,
-      lunarPhaseModifier,
-      hasBirthLocation,
-      bDate,
-    });
 
-    const dateScores = states.map((state) =>
-      scoreDateForProperty(state, {
-        hasCoordinates: true,
-        direction,
-        magneticDirection,
-        useTrueNorth,
-        hasSunLine,
-        hasVenusLine,
-        hasJupiterLine,
-        hasBirthLocation,
-        actionIntent,
+    // 一覧APIと同じ偏角を使わないと、同じ物件で方位がずれてしまう。
+    // 偏角は出発地ごとに違うので人ごとに引く。
+    const declinations = await Promise.all(
+      party.map(async (m) => {
+        try {
+          const geoData = await getGeomagneticData(
+            m.baseLat,
+            m.baseLon,
+            targetDate.getTime(),
+          );
+          if (geoData && typeof geoData.declination === "number") {
+            return geoData.declination;
+          }
+        } catch {
+          // 取得できなければ既定値のまま
+        }
+        return -8.2;
       }),
     );
 
+    /** 人ごとの日別スコア列。出発地が違えば方位が違うので別々に出す。 */
+    const perMember = party.map((member, index) => {
+      const memberBDate = parseSafeDate(member.birthDate);
+      const memberHasBirth =
+        member.birthLat !== null && member.birthLon !== null;
+
+      if (member.stationary) {
+        return {
+          member,
+          direction: null as Direction | null,
+          magneticDirection: null as Direction | null,
+          days: [] as ReturnType<typeof scoreDateForProperty>[],
+        };
+      }
+
+      const bearing = getBearing(
+        member.baseLat,
+        member.baseLon,
+        propLat,
+        propLon,
+      );
+      const memberDirection = getDirectionFromBearing(bearing, nodeMapping);
+      const memberMagnetic = getDirectionFromBearing(
+        (bearing - declinations[index] + 360) % 360,
+        nodeMapping,
+      );
+
+      // 天体ラインは出生日時・出生地と物件位置で決まり、日付には依存しない
+      let hasSunLine = false;
+      let hasVenusLine = false;
+      let hasJupiterLine = false;
+      if (memberHasBirth) {
+        const birthGst = AstroEngine.getGreenwichSiderealTime(memberBDate);
+        const sunLon = AstroEngine.getSolarLongitude(memberBDate);
+        const venusLon = AstroEngine.getVenusLongitude(memberBDate);
+        const jupiterLon = AstroEngine.getJupiterLongitude(memberBDate);
+        const relocatedASC = AstroEngine.getAscendant(
+          memberBDate,
+          propLat,
+          propLon,
+          birthGst,
+        );
+        const relocatedMC = AstroEngine.getMidheaven(
+          memberBDate,
+          propLon,
+          birthGst,
+        );
+        hasSunLine =
+          Math.abs(relocatedMC - sunLon) < 5 ||
+          Math.abs(relocatedASC - sunLon) < 5;
+        hasVenusLine =
+          Math.abs(relocatedMC - venusLon) < 5 ||
+          Math.abs(relocatedASC - venusLon) < 5;
+        hasJupiterLine =
+          Math.abs(relocatedMC - jupiterLon) < 5 ||
+          Math.abs(relocatedASC - jupiterLon) < 5;
+      }
+
+      const states = buildDailyAstroStates(dateList, {
+        baseLon: member.baseLon,
+        physicalMonthMode,
+        useClassical,
+        honmeiStar: getHonmeiStar(memberBDate),
+        voidZodiacs: getPersonalVoidZodiac(memberBDate),
+        actionIntent,
+        nodeMapping,
+        directionFilterMode,
+        layerMode,
+        lunarPhaseModifier,
+        hasBirthLocation: memberHasBirth,
+        bDate: memberBDate,
+      });
+
+      return {
+        member,
+        direction: memberDirection,
+        magneticDirection: memberMagnetic,
+        days: states.map((state) =>
+          scoreDateForProperty(state, {
+            hasCoordinates: true,
+            direction: memberDirection,
+            magneticDirection: memberMagnetic,
+            useTrueNorth,
+            hasSunLine,
+            hasVenusLine,
+            hasJupiterLine,
+            hasBirthLocation: memberHasBirth,
+            actionIntent,
+          }),
+        ),
+      };
+    });
+
+    const primary = perMember[0];
+
+    const jointByDay = dateList.map((_, i) =>
+      combineOutcomes(
+        perMember.map((m) => {
+          const day = m.days[i];
+          return {
+            memberId: m.member.id,
+            name: m.member.name,
+            direction: m.direction,
+            magneticDirection: m.magneticDirection,
+            distanceKm: null,
+            score: day?.score ?? 0,
+            status: day?.status ?? "UNKNOWN",
+            isAvoid: day ? isAvoidStatus(day.status) : false,
+            maxFactor: day?.status ?? "UNKNOWN",
+          };
+        }),
+        partyPolicy,
+        memberWeights,
+      ),
+    );
+
+    /**
+     * カレンダーに渡す系列。1 人なら従来どおり本人の判定そのまま。
+     * 同行者がいる場合は、通れない人がいる日を「行ける日」として見せない
+     * ため、一番厳しい人の判定を採って点だけ合成値に差し替える。
+     */
+    const dateScores = primary.days.map((day, i) => {
+      const joint = jointByDay[i];
+      if (party.length === 1 || !joint.bindingMember) return day;
+      const binding = perMember.find(
+        (m) => m.member.id === joint.bindingMember!.memberId,
+      );
+      const bindingDay = binding?.days[i] ?? day;
+      return {
+        ...bindingDay,
+        date: day.date,
+        rokuyo: day.rokuyo,
+        luckyDays: day.luckyDays,
+        score: joint.score,
+      };
+    });
+
     return NextResponse.json({
       range,
-      direction,
-      magneticDirection,
+      direction: primary.direction,
+      magneticDirection: primary.magneticDirection,
       dateScores,
+      /** 人ごとの方位と日別スコア。誰がどの日に引っかかるかを画面で出す。 */
+      members: perMember.map((m, index) => ({
+        id: m.member.id,
+        name: m.member.name,
+        direction: m.direction,
+        magneticDirection: m.magneticDirection,
+        stationary: m.member.stationary,
+        scores: m.days.map((d, i) => ({
+          date: dateScores[i]?.date ?? d.date,
+          score: d.score,
+          status: d.status,
+          isAvoid: isAvoidStatus(d.status),
+        })),
+      })),
+      /** 全員が動ける日の一覧と、直近の 1 日。 */
+      timing: summarizeTiming(
+        jointByDay.map((joint, i) => ({
+          date: dateScores[i]?.date ?? "",
+          joint,
+        })),
+      ),
+      allClearDates: jointByDay
+        .map((joint, i) => (joint.everyoneSafe ? dateScores[i]?.date : null))
+        .filter((d): d is string => !!d),
     });
   } catch (error: any) {
     console.error("Failed to build arbitrage timeline:", error);
