@@ -1,0 +1,166 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import {
+  STAR_NAMES,
+  STARS,
+  contentYears,
+  starForBirthYear,
+} from "@/lib/kigakuContent";
+import { AdBanner } from "@/components/ads/AdBanner";
+
+/**
+ * 方位コンテンツの入口。
+ *
+ * 「自分の本命星が分からない」で止まる人が多いので、
+ * 生まれ年から引ける表を最初に置く。値は ephemerisEngine の計算結果。
+ */
+
+const BIRTH_YEARS = Array.from({ length: 76 }, (_, i) => 1950 + i);
+
+export const metadata: Metadata = {
+  title: "九星気学の本命星と吉方位の早見表",
+  description:
+    "生まれ年から本命星を調べ、その年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。",
+};
+
+export default function Page() {
+  const years = contentYears();
+
+  // 生まれ年の表は本命星ごとにまとめたほうが引きやすい
+  const byStar = new Map<number, number[]>();
+  for (const y of BIRTH_YEARS) {
+    const s = starForBirthYear(y);
+    if (!byStar.has(s)) byStar.set(s, []);
+    byStar.get(s)!.push(y);
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+      <article className="max-w-[820px] mx-auto px-5 py-12">
+        <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
+          九星気学の本命星と吉方位の早見表
+        </h1>
+        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+          引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>で決まります。
+          まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
+        </p>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            生まれ年から本命星を調べる
+          </h2>
+          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+            九星気学の一年は<b>立春（2月4日ごろ）</b>で切り替わります。
+            1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。
+          </p>
+          <div className="mt-5 space-y-3">
+            {STARS.map((s) => (
+              <div
+                key={s}
+                className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+              >
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <span className="text-base font-bold font-serif">
+                    {STAR_NAMES[s]}
+                  </span>
+                  <Link
+                    href={`/houi/${years[0]}/${s}`}
+                    className="text-xs font-bold text-rose-600 hover:underline"
+                  >
+                    {years[0]}年の吉方位を見る →
+                  </Link>
+                </div>
+                <p className="mt-2 text-xs text-slate-600 font-mono leading-relaxed">
+                  {(byStar.get(s) ?? []).join(" / ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <div className="mt-10">
+          <AdBanner />
+        </div>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            年ごとの方位一覧
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            {years.map((y) => (
+              <div
+                key={y}
+                className="rounded-2xl border border-slate-300 bg-white/90 p-4"
+              >
+                <h3 className="font-bold font-serif text-sm mb-2">{y}年</h3>
+                <ul className="space-y-1">
+                  {STARS.map((s) => (
+                    <li key={s}>
+                      <Link
+                        href={`/houi/${y}/${s}`}
+                        className="text-xs text-slate-700 hover:text-rose-600"
+                      >
+                        {STAR_NAMES[s]}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+          <h2 className="text-sm font-bold">用語について</h2>
+          <dl className="mt-3 text-xs text-slate-700 leading-relaxed space-y-2">
+            <div>
+              <dt className="font-bold inline">五黄殺　</dt>
+              <dd className="inline">
+                五黄土星が回座する方位。最も避けるべき方位とされます。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold inline">暗剣殺　</dt>
+              <dd className="inline">五黄殺の正反対にあたる方位です。</dd>
+            </div>
+            <div>
+              <dt className="font-bold inline">歳破　</dt>
+              <dd className="inline">
+                その年の十二支の正反対にあたる方位です。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold inline">本命殺　</dt>
+              <dd className="inline">
+                自分の本命星そのものが回座する方位です。
+              </dd>
+            </div>
+            <div>
+              <dt className="font-bold inline">本命的殺　</dt>
+              <dd className="inline">本命殺の正反対にあたる方位です。</dd>
+            </div>
+            <div>
+              <dt className="font-bold inline">天中殺　</dt>
+              <dd className="inline">
+                生年月日ごとに決まる期間。本命星では決まらないため、この早見表には含まれません。
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <p className="text-xs text-amber-900 leading-relaxed">
+            方位は<b>今住んでいる場所から見た向き</b>で決まります。
+            実際の物件で確認する場合は、出発地と生年月日を入れてスキャンしてください。
+          </p>
+          <Link
+            href="/relocation/arbitrage"
+            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+          >
+            物件を方位で探す
+          </Link>
+        </div>
+      </article>
+    </div>
+  );
+}

@@ -43,6 +43,7 @@ const CORE_ICONS: Record<string, LucideIcon> = {
   "/relocation/arbitrage": TrendingUp,
   "/relocation/simulator": Route,
   "/relocation/wealth": Map,
+  "/houi": Compass,
   "/calendar": Calendar,
 };
 
