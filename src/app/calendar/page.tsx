@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 import { Calendar } from "lucide-react";
 
@@ -49,8 +50,7 @@ export default function CalendarPage() {
                   className="text-xs font-mono tracking-widest uppercase font-semibold flex items-center gap-1.5"
                   style={{ color: "var(--color-accent, #10b981)" }}
                 >
-                  <Calendar className="w-3.5 h-3.5" /> Planetary Orbit & Luck
-                  Telemetry
+                  <Calendar className="w-3.5 h-3.5" /> 六曜・天赦日・一粒万倍日・月相
                 </span>
               </div>
               {/* グラデーションを bg-clip-text + text-transparent で流し込むと、
@@ -58,14 +58,66 @@ export default function CalendarPage() {
                   タイトルを横切る継ぎ目を描くことがある（/trends で実際に起きた）。
                   同じ書き方なので、ここも単色にしておく。 */}
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-stone-900 font-serif">
-                Cosmic Calendar
+                引越しの日取りを選ぶ
               </h1>
-              <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
-                天体の軌道運動（月相・太陽黄経・惑星逆行）と伝統的な暦吉凶（六曜・一粒万倍日・天赦日）をリアルタイムにシミュレートし、最適な次善行動（NBA）を導出するカレンダーインターフェース。
+              <p className="text-stone-600 mt-3 max-w-2xl text-sm md:text-base leading-relaxed">
+                契約・搬出入・入居の日を決めるためのカレンダーです。
+                六曜、天赦日、一粒万倍日、月相を日ごとに突き合わせて表示します。
               </p>
             </div>
           </div>
         </header>
+
+        <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
+          <h2 className="text-lg font-bold font-serif">引越しの日取りの決め方</h2>
+          <p className="mt-3 text-sm text-slate-700 leading-relaxed">
+            日取りは、暦の吉凶だけでは決まりません。方位と組み合わせて絞り込みます。
+            一般的には次の順で見ていきます。
+          </p>
+          <ol className="mt-4 text-sm text-slate-700 leading-relaxed list-decimal pl-5 space-y-2">
+            <li>
+              <b>自分の本命星</b>を確認する。生まれ年から引けます（
+              <Link href="/houi" className="underline hover:text-rose-600">
+                早見表
+              </Link>
+              ）。
+            </li>
+            <li>
+              <b>年盤</b>でその年の吉方位を確認する。五黄殺・暗剣殺・歳破・本命殺に
+              当たる方位は避けます。
+            </li>
+            <li>
+              <b>月盤</b>で、動く月の吉方位を確認する。年盤で吉でも月盤で凶になることがあります。
+            </li>
+            <li>
+              <b>天中殺</b>の期間に当たっていないか確認する。生年月日ごとに決まり、
+              本命星では分かりません。この期間は方位に関係なく移転を避けるという
+              考え方があります。
+            </li>
+            <li>
+              そのうえで、このカレンダーで<b>日の吉凶</b>を見て候補日を絞ります。
+            </li>
+          </ol>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              href="/houi"
+              className="px-5 py-2.5 rounded-full border border-slate-300 bg-white text-xs font-bold hover:border-rose-400 transition-colors"
+            >
+              本命星と吉方位を調べる
+            </Link>
+            <Link
+              href="/relocation/arbitrage"
+              className="px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors"
+            >
+              物件を方位で探す
+            </Link>
+          </div>
+          <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
+            六曜や天赦日は暦の考え方であり、科学的に効果が確認されたものではありません。
+            引越し業者の料金は大安や土日に上がる傾向があるため、
+            費用を優先するか暦を優先するかは分けて考えてください。
+          </p>
+        </section>
 
         {/* Calendar Widget */}
         <CosmicCalendar />

@@ -21,7 +21,12 @@ const geistMono = Geist_Mono({
 });
 
 const shipporiMincho = Shippori_Mincho({
-  weight: ["400", "500", "600", "700", "800"], // Added weights
+  // 日本語フォントは 1 ウェイトあたりの実体が大きく、5 種類読むと
+  // CSS だけで 464KB になっていた（全ページで転送 156KB）。
+  // 実際に font-serif と併用されているのは font-bold(700) と
+  // font-extrabold(800) だけで、800 は 2 箇所のみ。
+  // 本文にセリフ体を選べるテーマがあるので 400 は残す。
+  weight: ["400", "700"],
   variable: "--font-shippori-mincho",
   subsets: ["latin"], // latin is usually enough for basic loading, but google fonts handles the rest
   display: "swap",
@@ -57,6 +62,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: SITE_DESCRIPTION,
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
 };
 
