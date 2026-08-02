@@ -105,8 +105,13 @@ export default function ArbitrageScannerPage() {
   const [showTableView, setShowTableView] = useState(false);
 
   // Relocation & Fortune Settings States
-  const [baseLat, setBaseLat] = useState("38.0"); // Default Japan Center
-  const [baseLon, setBaseLon] = useState("137.0");
+  // 出発地は既定値を持たない。以前は日本の中心（38.0/137.0＝日本海上）を
+  // 既定にしていたため、設定しないまま使うと県内の物件がすべて同じ方位に潰れ、
+  // 方位の点数が全件同じ＝順位が㎡単価だけで決まる状態になっていた。
+  const [baseLat, setBaseLat] = useState("");
+  const [baseLon, setBaseLon] = useState("");
+  const hasBaseLocation =
+    baseLat !== "" && baseLon !== "" && !isNaN(parseFloat(baseLat)) && !isNaN(parseFloat(baseLon));
   const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
   const [birthLon, setBirthLon] = useState("132.4482");
   const [birthDate, setBirthDate] = useState("1988-11-25T04:26"); // Default Birth Date with time
@@ -150,8 +155,9 @@ export default function ArbitrageScannerPage() {
   });
 
   // Temporary local inputs to avoid API hammering during typing
-  const [localLat, setLocalLat] = useState("38.0");
-  const [localLon, setLocalLon] = useState("137.0");
+  const [localLat, setLocalLat] = useState("");
+  const [localLon, setLocalLon] = useState("");
+  const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
   const [localBirthDate, setLocalBirthDate] = useState("1988-11-25T04:26");
   const [localBirthLat, setLocalBirthLat] = useState("34.3952");
   const [localBirthLon, setLocalBirthLon] = useState("132.4482");
@@ -159,18 +165,21 @@ export default function ArbitrageScannerPage() {
   const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
 
   // おすすめ度（星マーク）の描画
-  const renderStars = (score: number) => {
-    let starCount = 1;
-    if (score >= 80) starCount = 5;
-    else if (score >= 70) starCount = 4;
-    else if (score >= 60) starCount = 3;
-    else if (score >= 50) starCount = 2;
+  // 星は総合スコアの見た目表現。arbitrageScore は割安さが 6 割を占めるため、
+  // 凶方位や天中殺でも安ければ 5 つ星が付き、「移転NG ★★★★★」という
+  // 矛盾した表示になっていた。避けるべきものは 1 つ星に倒す。
+  const renderStars = (score: number, status?: string) => {
+    if (status && status.startsWith("NOISE")) {
+      return renderStarRow(1, "避けるべき方位・期間のため評価を下げています");
+    }
+    const count =
+      score >= 80 ? 5 : score >= 70 ? 4 : score >= 60 ? 3 : score >= 50 ? 2 : 1;
+    return renderStarRow(count, `おすすめ度: ${score.toFixed(1)}`);
+  };
 
+  const renderStarRow = (starCount: number, hint: string) => {
     return (
-      <div
-        className="flex gap-0.5 text-amber-600 text-xs"
-        title={`おすすめ度: ${score.toFixed(1)}`}
-      >
+      <div className="flex gap-0.5 text-amber-600 text-xs" title={hint}>
         {Array.from({ length: 5 }).map((_, i) => (
           <span
             key={i}
@@ -448,8 +457,10 @@ export default function ArbitrageScannerPage() {
 
   // Load from localStorage on mount
   useEffect(() => {
-    let bsLat = "38.0";
-    let bsLon = "137.0";
+    // 未設定は空のままにする。ここに座標を置くと、設定していないユーザーが
+    // その地点を出発地として判定された結果を「自分の吉方位」だと思ってしまう。
+    let bsLat = "";
+    let bsLon = "";
     let bLat = "34.3952";
     let bLon = "132.4482";
     let bDate = "1988-11-25T04:26";
@@ -510,8 +521,11 @@ export default function ArbitrageScannerPage() {
       if (storedPrefecture) pref = storedPrefecture;
       if (storedRadius) rKm = storedRadius;
 
-      if (storedLat && pref !== "all") bsLat = storedLat;
-      if (storedLon && pref !== "all") bsLon = storedLon;
+      // 出発地は「どの県を見るか」とは独立した設定。以前は pref === "all" のとき
+      // 保存済みの出発地を捨てていたため、全国表示にした瞬間に方位の基準が
+      // 既定値へ戻り、判定が変わっていた。
+      if (storedLat) bsLat = storedLat;
+      if (storedLon) bsLon = storedLon;
 
       if (storedBirth) bDate = storedBirth;
       if (storedTarget) tDate = storedTarget;
@@ -524,7 +538,10 @@ export default function ArbitrageScannerPage() {
     setLocalLat(bsLat);
     setBaseLon(bsLon);
     setLocalLon(bsLon);
-    setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
+    // 出発地が未設定でも地図は開けるように、表示中心だけは日本全体にしておく
+    if (bsLat !== "" && bsLon !== "") {
+      setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
+    }
     setBirthLat(bLat);
     setLocalBirthLat(bLat);
     setBirthLon(bLon);
@@ -607,12 +624,17 @@ export default function ArbitrageScannerPage() {
           setBirthLon(newBirthLon);
           setLocalBirthLon(newBirthLon);
         }
-        if (newBaseLat && newBaseLon) {
-          setBaseLat(newBaseLat);
-          setLocalLat(newBaseLat);
-          setBaseLon(newBaseLon);
-          setLocalLon(newBaseLon);
-          setMapCenter([parseFloat(newBaseLat), parseFloat(newBaseLon)]);
+        // 片方だけ入力した途中の状態では、この通知に "NaN" という文字列が乗る。
+        // 文字列は truthy なのでそのまま state に書き戻され、出発地が
+        // 永久に未設定扱いのままになっていた。数値として妥当なときだけ反映する。
+        const lat = parseFloat(newBaseLat ?? "");
+        const lon = parseFloat(newBaseLon ?? "");
+        if (!isNaN(lat) && !isNaN(lon)) {
+          setBaseLat(String(lat));
+          setLocalLat(String(lat));
+          setBaseLon(String(lon));
+          setLocalLon(String(lon));
+          setMapCenter([lat, lon]);
         }
       }
     };
@@ -677,6 +699,13 @@ export default function ArbitrageScannerPage() {
 
   const fetchData = async (isDateChange = false) => {
     if (!initialLoaded) return;
+    // 出発地が無いまま走らせると、方位が決まらないので順位が㎡単価だけになる。
+    // 黙って結果を出すより、設定を促して止めるほうが正しい。
+    if (!hasBaseLocation) {
+      setLoading(false);
+      setIsTransitioningDate(false);
+      return;
+    }
     if (isDateChange) {
       setIsTransitioningDate(true);
     } else {
@@ -879,7 +908,10 @@ export default function ArbitrageScannerPage() {
     setBaseLat(localLat);
     setBaseLon(localLon);
     setBirthDate(localBirthDate);
-    setMapCenter([parseFloat(localLat), parseFloat(localLon)]);
+    const submitLat = parseFloat(localLat);
+    const submitLon = parseFloat(localLon);
+    if (!isNaN(submitLat) && !isNaN(submitLon))
+      setMapCenter([submitLat, submitLon]);
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
@@ -1187,6 +1219,21 @@ export default function ArbitrageScannerPage() {
         </div>
 
         {/* 2-Column Split Dashboard Layout */}
+        {/* 出発地が未設定のときは結果を出さずに設定を促す。
+            方位は出発地からの向きで決まるため、ここが無いと判定が成立しない。 */}
+        {!hasBaseLocation && (
+          <div className="mb-5 rounded-3xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="text-sm font-bold text-amber-900 mb-1">
+              出発地を設定してください
+            </h2>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              吉方位は「今お住まいの場所から見てどの向きか」で決まります。
+              出発地が未設定のままでは方位が定まらず、割安さだけの並びになってしまうため、
+              スキャンを停止しています。左の「出発地座標」から現在のお住まいを指定してください。
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[600px] relative">
           {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode) */}
           <div
@@ -1281,6 +1328,84 @@ export default function ArbitrageScannerPage() {
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
                       />
                     </div>
+
+                    {/* 出発地。方位はここからの向きで決まるので最重要の設定。
+                        以前は入力欄自体が無く、既定の座標が黙って使われていた。 */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
+                          出発地座標 (現在のお住まい・方位の基準)
+                          {!hasBaseLocation && (
+                            <span className="ml-1 text-amber-600 font-bold">
+                              未設定
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                        >
+                          {showBaseMapPicker ? "閉じる" : "地図で検索"}
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={localLat}
+                          onChange={(e) => {
+                            setLocalLat(e.target.value);
+                            setBaseLat(e.target.value);
+                            localStorage.setItem("arb_baseLat", e.target.value);
+                            saveUnifiedConfig({
+                              base_lat: parseFloat(e.target.value),
+                            });
+                          }}
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          placeholder="緯度"
+                        />
+                        <input
+                          type="number"
+                          step="0.00001"
+                          value={localLon}
+                          onChange={(e) => {
+                            setLocalLon(e.target.value);
+                            setBaseLon(e.target.value);
+                            localStorage.setItem("arb_baseLon", e.target.value);
+                            saveUnifiedConfig({
+                              base_lon: parseFloat(e.target.value),
+                            });
+                          }}
+                          className="w-1/2 px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:border-indigo-500 font-mono"
+                          placeholder="経度"
+                        />
+                      </div>
+                    </div>
+
+                    {showBaseMapPicker && (
+                      <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-stone-200 relative z-20">
+                        <LocationPickerInner
+                          initialLat={Number(baseLat) || 35.1815}
+                          initialLon={Number(baseLon) || 136.9066}
+                          onSelect={(newLat: number, newLon: number) => {
+                            const latStr = newLat.toFixed(5);
+                            const lonStr = newLon.toFixed(5);
+                            setLocalLat(latStr);
+                            setBaseLat(latStr);
+                            setLocalLon(lonStr);
+                            setBaseLon(lonStr);
+                            setMapCenter([newLat, newLon]);
+                            localStorage.setItem("arb_baseLat", latStr);
+                            localStorage.setItem("arb_baseLon", lonStr);
+                            saveUnifiedConfig({
+                              base_lat: newLat,
+                              base_lon: newLon,
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
 
                     {/* Birth Location coordinates */}
                     <div className="space-y-1">
@@ -1551,7 +1676,7 @@ export default function ArbitrageScannerPage() {
                                 {Math.round((item.totalRent || 0) / 10000)}万円
                               </div>
                               <div className="mt-1 flex justify-end">
-                                {renderStars(item.arbitrageScore)}
+                                {renderStars(item.arbitrageScore, item.astrologyStatus)}
                               </div>
                             </div>
                           </div>
@@ -1665,7 +1790,7 @@ export default function ArbitrageScannerPage() {
                             </div>
 
                             <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
-                              {renderStars(item.arbitrageScore)}
+                              {renderStars(item.arbitrageScore, item.astrologyStatus)}
                               <span className="text-[8px] text-stone-500 font-semibold">
                                 推奨スコア: {item.arbitrageScore.toFixed(1)}
                               </span>
@@ -1736,7 +1861,7 @@ export default function ArbitrageScannerPage() {
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono">
-                                  {renderStars(item.arbitrageScore)}
+                                  {renderStars(item.arbitrageScore, item.astrologyStatus)}
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-bold text-gray-900 dark:text-stone-800 truncate max-w-[180px]">
@@ -1808,8 +1933,8 @@ export default function ArbitrageScannerPage() {
           >
             <ArbitrageMap
               properties={filteredData}
-              baseLat={Number(baseLat)}
-              baseLon={Number(baseLon)}
+              baseLat={hasBaseLocation ? Number(baseLat) : mapCenter[0]}
+              baseLon={hasBaseLocation ? Number(baseLon) : mapCenter[1]}
               mapCenter={mapCenter}
               useTrueNorth={useTrueNorth}
               layerMode={layerMode}

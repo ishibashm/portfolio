@@ -19,6 +19,7 @@ import { Solar } from "lunar-javascript";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
+  isAvoidStatus,
 } from "@/utils/arbitrageAstro";
 
 // 物件名から不要な階数や築年数表現を除去するクレンジング関数
@@ -249,8 +250,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
   // クエリパラメータのパース
-  const baseLat = parseFloat(searchParams.get("baseLat") || "35.6895"); // デフォルトは東京
-  const baseLon = parseFloat(searchParams.get("baseLon") || "139.6917");
+  // 出発地は必須。既定値（東京）を黙って使うと、たとえば愛知県内を探しても
+  // 全物件が東京から見て西〜南西の 1〜2 方位に潰れ、方位の点数が全件同じになる。
+  // その結果 arbitrageScore は㎡単価だけで決まり、方位評価が事実上無効になる。
+  const baseLat = parseFloat(searchParams.get("baseLat") || "");
+  const baseLon = parseFloat(searchParams.get("baseLon") || "");
   const birthLat = parseFloat(searchParams.get("birthLat") || "NaN");
   const birthLon = parseFloat(searchParams.get("birthLon") || "NaN");
   const birthDateStr = searchParams.get("birthDate") || "";
@@ -291,6 +295,17 @@ export async function GET(request: Request) {
   const maxLat = parseFloat(searchParams.get("maxLat") || "NaN");
   const minLon = parseFloat(searchParams.get("minLon") || "NaN");
   const maxLon = parseFloat(searchParams.get("maxLon") || "NaN");
+
+  if (isNaN(baseLat) || isNaN(baseLon)) {
+    return NextResponse.json(
+      {
+        error: "BASE_LOCATION_REQUIRED",
+        message:
+          "出発地（現在のお住まい）の座標が必要です。方位はここからの向きで決まるため、既定値では判定できません。",
+      },
+      { status: 400 },
+    );
+  }
 
   const targetDateStr = searchParams.get("targetDate") || "";
   let targetDate = parseSafeDate(targetDateStr);
@@ -625,6 +640,8 @@ export async function GET(request: Request) {
       else if (astrologyStatus === "OPTIMAL_BOOST")
         maxAstroFactor = "超大吉 (木星ライン)";
       else if (astrologyStatus === "WARNING") maxAstroFactor = "警告・調整方位";
+      else if (astrologyStatus === "NOISE_TENCHU")
+        maxAstroFactor = "天中殺期間 (移転NG)";
       else if (astrologyStatus === "NOISE_GOU") maxAstroFactor = "五黄殺";
       else if (astrologyStatus === "NOISE_ANKEN") maxAstroFactor = "暗剣殺";
       else if (astrologyStatus === "NOISE_HA") maxAstroFactor = "歳破";
@@ -681,8 +698,18 @@ export async function GET(request: Request) {
       };
     });
 
-    // スコア順にソート
-    scoredProperties.sort((a, b) => b.arbitrageScore - a.arbitrageScore);
+    // 避けるべき方位・期間のものは、どれだけ安くても上には出さない。
+    //
+    // arbitrageScore は方位 0.4 : 割安 0.6 の加重なので、五黄殺でも十分安ければ
+    // 上位に来ていた。方位とタイミングで意思決定するための道具なので、
+    // 安さで凶を挽回できる合成は目的と逆になる。
+    // 完全に隠すのではなく順位で下に置き、フィルタで見られる状態は残す。
+    scoredProperties.sort((a, b) => {
+      const aAvoid = isAvoidStatus(a.astrologyStatus) ? 1 : 0;
+      const bAvoid = isAvoidStatus(b.astrologyStatus) ? 1 : 0;
+      if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+      return b.arbitrageScore - a.arbitrageScore;
+    });
 
     const upcomingDoyou = getUpcomingDoyouPeriod(targetDate);
 

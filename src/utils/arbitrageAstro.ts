@@ -27,6 +27,18 @@ export function isNoiseStatus(status: string): boolean {
   );
 }
 
+/**
+ * 移転の可否として「避けるべき」に倒すべき判定か。
+ *
+ * isNoiseStatus は方位そのものの凶（五黄殺など）を見るもので、
+ * 空亡・月交点は除外している。順位付けで下げる判断はそれより広く、
+ * 天中殺（期間の禁止）と空亡も含める。
+ */
+export function isAvoidStatus(status: string): boolean {
+  if (!status) return false;
+  return isNoiseStatus(status) || status === "NOISE_TENCHU" || status === "NOISE_VOID";
+}
+
 export function calculateBaziCompatibility(
   bDate: Date,
   targetDate: Date,
@@ -299,8 +311,15 @@ export function scoreDateForProperty(
     if (state.isDoyouHazard) doyouPenalty = -30;
 
     // 3. Time-Gate (天中殺) check
+    //
+    // ここでスコアを 0 まで落としながら status は方位判定のまま残していたため、
+    // 「OPTIMAL（大吉）」と「天中殺期間 (移転NG)」が同時に表示されていた。
+    // 移転できない期間なのだから判定そのものを凶に倒す。
     if (state.isVoidTime && ctx.actionIntent === "MIGRATION") {
       voidPenalty = -100; // Time-Gate blocker!
+      dailyStatus = "NOISE_TENCHU";
+      dailyIsTendo = false;
+      tendoBonus = 0;
     }
   }
 
