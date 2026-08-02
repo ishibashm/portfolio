@@ -29,10 +29,16 @@ export default function Page() {
   // 生まれ年の表は本命星ごとにまとめたほうが引きやすい
   const byStar = new Map<number, number[]>();
   for (const y of BIRTH_YEARS) {
-    const s = starForBirthYear(y);
+    const s = starForBirthYear(y, "classical");
     if (!byStar.has(s)) byStar.set(s, []);
     byStar.get(s)!.push(y);
   }
+
+  // 独自モデルでは本命星そのものが変わる年がある。ツールで切り替えたときに
+  // 表と食い違って見えるので、違いが出る年をここで示しておく。
+  const differing = BIRTH_YEARS.filter(
+    (y) => starForBirthYear(y, "classical") !== starForBirthYear(y, "physical"),
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
@@ -76,6 +82,24 @@ export default function Page() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
+          <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
+          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
+            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。
+            このサイトのスキャナーには、木星の黄経から星を求める
+            <b>独自モデル</b>も用意しており、設定で切り替えられます。
+            独自モデルでは木星の公転周期（約11.86年）にもとづくため
+            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。
+            一般的な資料と照らし合わせる場合は上の表を使ってください。
+          </p>
+          <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+            例: 1980年生まれは一般的な九星気学で
+            {STAR_NAMES[starForBirthYear(1980, "classical")]}、
+            独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
+            になります。
+          </p>
         </section>
 
         <div className="mt-10">
