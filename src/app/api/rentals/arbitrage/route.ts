@@ -33,6 +33,71 @@ function cleanPropertyName(name: string): string {
     .trim();
 }
 
+/**
+ * 同じ部屋の重複掲載をまとめる。
+ *
+ * Nifty は HOME'S / SUUMO / at home / いい部屋ネット など複数社の掲載を
+ * そのまま並べるため、同一の部屋が別 URL で最大18件重なる。住所の書き方が
+ * 会社ごとに違う（「四番町」と「七本松通下長者町上る東入四番町」）ので
+ * 住所も座標もキーに使えない。建物名・階・間取り・面積・賃料が
+ * すべて一致するものを同じ部屋とみなす。
+ *
+ * 残す1件は情報が埋まっているものを優先する。同じ部屋でも会社によって
+ * 駅徒歩や管理費が欠けていることがあるため。
+ */
+function dedupeProperties<
+  T extends {
+    property_name: string | null;
+    floor: string | null;
+    layout: string | null;
+    size_sqm: unknown;
+    rent: number | null;
+    minutes_to_station: number | null;
+    building_age: number | null;
+    management_fee: number | null;
+    expire_date: Date | null;
+    last_seen_at: Date | null;
+  },
+>(rows: T[], limit: number): { properties: T[]; duplicatesHidden: number } {
+  const completeness = (p: T) =>
+    (p.minutes_to_station != null ? 1 : 0) +
+    (p.building_age != null ? 1 : 0) +
+    (p.management_fee != null ? 1 : 0) +
+    (p.expire_date != null ? 1 : 0);
+
+  const best = new Map<string, T>();
+  for (const row of rows) {
+    const key = [
+      cleanPropertyName(row.property_name || ""),
+      row.floor || "",
+      row.layout || "",
+      String(row.size_sqm ?? ""),
+      String(row.rent ?? ""),
+    ].join("|");
+
+    const current = best.get(key);
+    if (!current) {
+      best.set(key, row);
+      continue;
+    }
+    const diff = completeness(row) - completeness(current);
+    if (
+      diff > 0 ||
+      (diff === 0 &&
+        (row.last_seen_at?.getTime() ?? 0) >
+          (current.last_seen_at?.getTime() ?? 0))
+    ) {
+      best.set(key, row);
+    }
+  }
+
+  const unique = Array.from(best.values());
+  return {
+    properties: unique.slice(0, limit),
+    duplicatesHidden: rows.length - unique.length,
+  };
+}
+
 function parseSafeDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
   if (
@@ -126,6 +191,8 @@ export async function GET(request: Request) {
   const nodeMapping = (searchParams.get("nodeMapping") ||
     (useClassical ? "traditional" : "physical")) as "traditional" | "physical";
   const limit = parseInt(searchParams.get("limit") || "500");
+  // 同一部屋の重複掲載をまとめるか。生データを見たい場合だけ false にする。
+  const dedupe = searchParams.get("dedupe") !== "false";
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
   const directionFilterMode = (searchParams.get("directionFilterMode") ||
     "composite") as
@@ -305,11 +372,15 @@ export async function GET(request: Request) {
       };
     }
 
-    const [properties, totalCount, freshness, beforeFreshnessCount] =
+    // 名寄せで落ちるぶんを見込んで多めに取る。実測で対象範囲の約45%が
+    // 同一部屋の重複だったため、2倍あれば limit を満たせる。
+    const fetchCount = dedupe ? Math.min(limit * 2, 4000) : limit;
+
+    const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
       prisma.rental_properties.findMany({
         where: whereClause,
-        take: limit,
+        take: fetchCount,
         orderBy: { id: "desc" },
       }),
       prisma.rental_properties.count({
@@ -332,6 +403,14 @@ export async function GET(request: Request) {
       maxSeenDays > 0 ? Math.max(0, beforeFreshnessCount - totalCount) : 0;
 
     const dataUpdatedAt = freshness._max.last_seen_at?.toISOString() ?? null;
+
+    // Nifty は複数の不動産会社の掲載をそのまま並べるため、同じ部屋が
+    // 別々の URL で最大18件まで重なる。実測では対象範囲の45%が重複で、
+    // ランキングを埋めるだけでなく meanSqmRent / stdDev も歪める。
+    // 物理削除しても次のスイープで復活するので、取得時にまとめる。
+    const { properties, duplicatesHidden } = dedupe
+      ? dedupeProperties(rawProperties, limit)
+      : { properties: rawProperties, duplicatesHidden: 0 };
 
     if (properties.length === 0) {
       return NextResponse.json({
@@ -547,6 +626,9 @@ export async function GET(request: Request) {
         dataUpdatedAt,
         staleHidden,
         maxSeenDays,
+        // 取得した窓の中でまとめた重複件数。totalCount は生の行数のまま。
+        duplicatesHidden,
+        dedupe,
         upcomingDoyou,
         lunarPhase: {
           label: lunarPhaseLabel,
