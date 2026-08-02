@@ -5,6 +5,7 @@
  */
 const NON_CORE = [
   "/dashboard",
+  "/metaphysical",
   "/trends",
   "/rentals",
   "/relocation/history",

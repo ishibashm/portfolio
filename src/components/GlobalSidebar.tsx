@@ -44,7 +44,6 @@ const CORE_ICONS: Record<string, LucideIcon> = {
   "/relocation/simulator": Route,
   "/relocation/wealth": Map,
   "/calendar": Calendar,
-  "/metaphysical": Compass,
 };
 
 interface NavItem {
