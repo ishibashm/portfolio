@@ -94,6 +94,10 @@ public/robots.txt
 
 # Data and Logs
 data/
+# ただし src/data はアプリのソースの一部。ビルド時に import しているので
+# 除外すると CI のビルドだけが Module not found で落ちる（実際に起きた）。
+!src/data/
+!src/data/**
 .gemini/
 .npm-cache/
 
