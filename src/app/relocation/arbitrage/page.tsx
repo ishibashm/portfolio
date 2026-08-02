@@ -483,18 +483,13 @@ export default function ArbitrageScannerPage() {
         }
         if (config.birth_lat !== undefined) bLat = config.birth_lat.toString();
         if (config.birth_lon !== undefined) bLon = config.birth_lon.toString();
-        // Skip loading base_lat/lon to preserve the Japan-wide view unless specifically zooming in
-        if (
-          config.base_lat !== undefined &&
-          config.prefecture &&
-          config.prefecture !== "all"
-        )
+        // 出発地は「どの県を見るか」とは独立した設定。
+        // 以前は prefecture が "all" のときに保存済みの出発地を捨てていた。
+        // 既定が "all" なので常に捨てられ、プロフィールで設定していても
+        // 「出発地を設定してください」から先に進めなかった。
+        if (config.base_lat !== undefined && config.base_lat !== null)
           bsLat = config.base_lat.toString();
-        if (
-          config.base_lon !== undefined &&
-          config.prefecture &&
-          config.prefecture !== "all"
-        )
+        if (config.base_lon !== undefined && config.base_lon !== null)
           bsLon = config.base_lon.toString();
         if (config.use_classical_board !== undefined)
           classical = config.use_classical_board;
@@ -581,6 +576,31 @@ export default function ArbitrageScannerPage() {
     setActionIntent(intent);
 
     setInitialLoaded(true);
+
+    // localStorage が空の端末（別のブラウザ、履歴を消した後など）では、
+    // プロフィールに出発地を保存していても「設定してください」から進めない。
+    // ここまでで出発地が決まらなかったときだけ、保存済みの設定を取りに行く。
+    if (bsLat === "" || bsLon === "") {
+      (async () => {
+        try {
+          const res = await fetch("/api/user-config");
+          if (!res.ok) return; // 未ログインなら 401 などで返る
+          const cfg = await res.json();
+          const lat = parseFloat(cfg?.base_lat);
+          const lon = parseFloat(cfg?.base_lon);
+          if (isNaN(lat) || isNaN(lon)) return;
+          setBaseLat(String(lat));
+          setLocalLat(String(lat));
+          setBaseLon(String(lon));
+          setLocalLon(String(lon));
+          setMapCenter([lat, lon]);
+          localStorage.setItem("arb_baseLat", String(lat));
+          localStorage.setItem("arb_baseLon", String(lon));
+        } catch {
+          /* 取得できなくても入力欄から設定できる */
+        }
+      })();
+    }
 
     const handleGlobalConfigUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<any>;
