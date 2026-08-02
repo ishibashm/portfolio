@@ -21,154 +21,33 @@ import {
   scoreDateForProperty,
   isAvoidStatus,
 } from "@/utils/arbitrageAstro";
+import {
+  AXIS_ORDER,
+  AxisScores,
+  CandidateStrategy,
+  DEFAULT_CANDIDATE_STRATEGY,
+  DEFAULT_PRESET_ID,
+  composeScore,
+  getPreset,
+  isCandidateStrategy,
+  scoreBuilding,
+  scoreCost,
+  scoreLocalValue,
+  scoreMarket,
+  scoreProximity,
+  scoreSpace,
+  scoreStationAccess,
+  tScore,
+} from "@/utils/arbitrageScoring";
 
-// 物件名から不要な階数や築年数表現を除去するクレンジング関数
-function cleanPropertyName(name: string): string {
-  if (!name) return "";
-  return name
-    .replace(
-      /[\s　]*(?:地下)?\d+階[\s　]+(?:築\d+年(?:[0-9]+ヶ月)?|新築)の賃貸物件$/,
-      "",
-    )
-    .replace(/[\s　]*(?:築\d+年(?:[0-9]+ヶ月)?|新築)の賃貸物件$/, "")
-    .trim();
-}
+import {
+  buildWhereSql,
+  cleanPropertyName,
+  municipalityStatsSql,
+  selectSql,
+  statsSql,
+} from "@/utils/arbitrageQuery";
 
-/**
- * cleanPropertyName の SQL 版。JS 側と同じ後置きを落として建物名だけにする。
- * 名寄せキーに使うため、両者がずれると重複が残る。
- */
-const NAME_KEY_SQL = `regexp_replace(property_name, '[\\s　]*((?:地下)?[0-9]+階)?[\\s　]*(新築|築[0-9]+年([0-9]+ヶ月)?)?の?賃貸物件[\\s　]*$', '')`;
-
-const SQM_RENT_SQL = `((rent + COALESCE(management_fee, 0))::float8 / size_sqm::float8)`;
-
-/**
- * 同じ部屋の重複掲載をまとめるキー。
- *
- * Nifty は HOME'S / SUUMO / at home / いい部屋ネット など複数社の掲載を
- * そのまま並べるため、同一の部屋が別 URL で最大18件重なる。住所の書き方が
- * 会社ごとに違う（「四番町」と「七本松通下長者町上る東入四番町」）ので
- * 住所も座標もキーに使えない。建物名・階・間取り・面積・賃料の一致で
- * 同じ部屋とみなす。
- */
-const DEDUPE_KEY_SQL = `${NAME_KEY_SQL}, floor, layout, size_sqm, rent`;
-
-/**
- * 残す1件を選ぶ順序。同じ部屋でも会社によって駅徒歩や管理費が欠けるため、
- * 埋まっているものを優先し、同点なら新しく確認できたほうを取る。
- */
-const PICK_ORDER_SQL = `
-  ((minutes_to_station IS NOT NULL)::int + (building_age IS NOT NULL)::int
-   + (management_fee IS NOT NULL)::int + (expire_date IS NOT NULL)::int) DESC,
-  last_seen_at DESC NULLS LAST`;
-
-interface GeoFilters {
-  maxSeenDays: number;
-  maxBuildingAge: number | null;
-  radiusKm: number;
-  baseLat: number;
-  baseLon: number;
-  minLat: number;
-  maxLat: number;
-  minLon: number;
-  maxLon: number;
-  prefecture: string | null;
-}
-
-/**
- * findMany に渡している whereClause と同じ条件を SQL 化する。
- * 値は必ずプレースホルダで渡す（prefecture はクエリ文字列由来のため）。
- */
-function buildWhereSql(f: GeoFilters): { sql: string; params: any[] } {
-  const parts = [
-    "lat IS NOT NULL",
-    "lon IS NOT NULL",
-    "rent IS NOT NULL",
-    "size_sqm IS NOT NULL",
-    "size_sqm > 0",
-    // 掲載期限を過ぎた物件は詳細ページが 404 になる。
-    // expire_date が未取得（古い行）のものは判定できないので除外しない。
-    "(expire_date IS NULL OR expire_date >= now())",
-  ];
-  const params: any[] = [];
-  const ph = () => `$${params.length}`;
-
-  if (f.maxSeenDays > 0) {
-    params.push(new Date(Date.now() - f.maxSeenDays * 24 * 60 * 60 * 1000));
-    parts.push(`last_seen_at >= ${ph()}`);
-  }
-  if (f.maxBuildingAge !== null && !isNaN(f.maxBuildingAge)) {
-    params.push(f.maxBuildingAge);
-    parts.push(`building_age <= ${ph()}`);
-  }
-
-  if (f.radiusKm > 0 && !isNaN(f.baseLat) && !isNaN(f.baseLon)) {
-    const deltaLat = f.radiusKm / 111.0;
-    const deltaLon =
-      f.radiusKm / (111.0 * Math.cos((f.baseLat * Math.PI) / 180.0));
-    params.push(f.baseLat - deltaLat);
-    parts.push(`lat >= ${ph()}`);
-    params.push(f.baseLat + deltaLat);
-    parts.push(`lat <= ${ph()}`);
-    params.push(f.baseLon - deltaLon);
-    parts.push(`lon >= ${ph()}`);
-    params.push(f.baseLon + deltaLon);
-    parts.push(`lon <= ${ph()}`);
-  } else if (
-    !isNaN(f.minLat) &&
-    !isNaN(f.maxLat) &&
-    !isNaN(f.minLon) &&
-    !isNaN(f.maxLon)
-  ) {
-    params.push(f.minLat);
-    parts.push(`lat >= ${ph()}`);
-    params.push(f.maxLat);
-    parts.push(`lat <= ${ph()}`);
-    params.push(f.minLon);
-    parts.push(`lon >= ${ph()}`);
-    params.push(f.maxLon);
-    parts.push(`lon <= ${ph()}`);
-  }
-
-  if (f.prefecture && f.prefecture !== "all") {
-    params.push(f.prefecture);
-    parts.push(`address LIKE ${ph()} || '%'`);
-  }
-
-  return { sql: parts.join(" AND "), params };
-}
-
-/** 名寄せ後、㎡単価の安い順に limit 件。裁定機会は㎡単価の低さに現れる。 */
-function selectSql(
-  whereSql: string,
-  dedupe: boolean,
-  limitPlaceholder: number,
-): string {
-  const inner = dedupe
-    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) *, ${SQM_RENT_SQL} AS sqm_rent
-         FROM rental_properties
-        WHERE ${whereSql}
-        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
-    : `SELECT *, ${SQM_RENT_SQL} AS sqm_rent
-         FROM rental_properties
-        WHERE ${whereSql}`;
-  return `SELECT * FROM (${inner}) t ORDER BY sqm_rent ASC LIMIT $${limitPlaceholder}`;
-}
-
-/** 相場の基準値。取得した件数ではなく条件に合う全件から出す。 */
-function statsSql(whereSql: string, dedupe: boolean): string {
-  const inner = dedupe
-    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) ${SQM_RENT_SQL} AS sqm_rent
-         FROM rental_properties
-        WHERE ${whereSql}
-        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
-    : `SELECT ${SQM_RENT_SQL} AS sqm_rent
-         FROM rental_properties
-        WHERE ${whereSql}`;
-  return `SELECT avg(sqm_rent) AS mean, coalesce(stddev_pop(sqm_rent), 0) AS stddev,
-                 count(*) AS n
-            FROM (${inner}) t`;
-}
 
 function parseSafeDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
@@ -180,13 +59,6 @@ function parseSafeDate(dateStr: string | null | undefined): Date {
     return new Date(dateStr + "+09:00");
   }
   return new Date(dateStr);
-}
-
-// 偏差値計算用のヘルパー
-
-function calculateZScore(value: number, mean: number, stdDev: number) {
-  if (stdDev === 0) return 50;
-  return ((value - mean) / stdDev) * 10 + 50;
 }
 
 function getBearing(
@@ -290,6 +162,24 @@ export async function GET(request: Request) {
   const maxBuildingAge = maxBuildingAgeStr
     ? parseInt(maxBuildingAgeStr, 10)
     : null;
+
+  // 候補の切り出し方。既定は従来通り㎡単価の安い順。
+  const candidateStrategyRaw =
+    searchParams.get("candidateStrategy") || DEFAULT_CANDIDATE_STRATEGY;
+  const candidateStrategy: CandidateStrategy = isCandidateStrategy(
+    candidateStrategyRaw,
+  )
+    ? candidateStrategyRaw
+    : DEFAULT_CANDIDATE_STRATEGY;
+
+  // 月額予算（円）。cost 軸の基準。未指定なら cost 軸は算出しない。
+  const budgetRaw = parseInt(searchParams.get("budget") || "", 10);
+  const budgetYen = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : null;
+
+  // 総合スコアの重み。画面側でも重み替えができるので、ここは
+  // 「サーバが返す既定順」を決めるためだけに使う。
+  const weightPresetId = searchParams.get("weightPreset") || DEFAULT_PRESET_ID;
+  const weights = getPreset(weightPresetId).weights;
 
   const minLat = parseFloat(searchParams.get("minLat") || "NaN");
   const maxLat = parseFloat(searchParams.get("maxLat") || "NaN");
@@ -481,7 +371,7 @@ export async function GET(request: Request) {
     const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
       prisma.$queryRawUnsafe<any[]>(
-        selectSql(whereSql, dedupe, params.length + 1),
+        selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
         ...params,
         limit,
       ),
@@ -519,13 +409,49 @@ export async function GET(request: Request) {
     // 相場の基準値は「取得した 500 件」ではなく絞り込み条件に合う全件から出す。
     // 安い順に切り出した集合で平均を取ると基準そのものが下がり、
     // どれも平均並みという評価になって裁定シグナルが消える。
-    const statsRow = await prisma.$queryRawUnsafe<
-      Array<{ mean: number | null; stddev: number | null; n: bigint }>
-    >(statsSql(whereSql, dedupe), ...params);
+    const [statsRow, municipalityRows] = await Promise.all([
+      prisma.$queryRawUnsafe<
+        Array<{
+          mean: number | null;
+          stddev: number | null;
+          n: bigint;
+          size_mean: number | null;
+          size_stddev: number | null;
+          age_mean: number | null;
+          age_stddev: number | null;
+          station_mean: number | null;
+          station_stddev: number | null;
+        }>
+      >(statsSql(whereSql, dedupe), ...params),
+      prisma.$queryRawUnsafe<
+        Array<{ municipality: string; n: number; median: number | null }>
+      >(municipalityStatsSql(whereSql, dedupe), ...params),
+    ]);
     const meanSqmRent = Number(statsRow[0]?.mean ?? 0);
     const stdDevSqmRent = Number(statsRow[0]?.stddev ?? 0);
     const uniqueCount = Number(statsRow[0]?.n ?? 0);
     const duplicatesHidden = dedupe ? Math.max(0, totalCount - uniqueCount) : 0;
+
+    const meanSizeSqm = Number(statsRow[0]?.size_mean ?? 0);
+    const stdDevSizeSqm = Number(statsRow[0]?.size_stddev ?? 0);
+    const meanBuildingAge = Number(statsRow[0]?.age_mean ?? 0);
+    const meanMinutesToStation = Number(statsRow[0]?.station_mean ?? 0);
+
+    // 市区町村 → { 中央値, サンプル数 }。localValue 軸の参照表。
+    const municipalityStats = new Map<
+      string,
+      { median: number; count: number }
+    >();
+    for (const row of municipalityRows) {
+      const median = Number(row.median);
+      if (!row.municipality || !Number.isFinite(median)) continue;
+      municipalityStats.set(row.municipality, {
+        median,
+        count: Number(row.n),
+      });
+    }
+
+    const scoredAt = new Date();
 
     // 前後7日間の日付リストを作成し、それぞれのアストロ状態を事前計算
     const dateList: Date[] = [];
@@ -668,16 +594,50 @@ export async function GET(request: Request) {
       else if (astrologyStatus === "SAFE") maxAstroFactor = "吉方位";
 
       const totalRent = (p.rent || 0) + (p.management_fee || 0);
-      const propSqmRent = totalRent / Number(p.size_sqm);
+      const sizeSqm = Number(p.size_sqm);
+      const propSqmRent = totalRent / sizeSqm;
 
-      const rentZScore = calculateZScore(
-        propSqmRent,
-        meanSqmRent,
-        stdDevSqmRent,
-      );
-      const yieldScore = 100 - rentZScore + 50;
+      // 割安度は「㎡単価が安いほど高得点」なので偏差値を反転させる。
+      //
+      // 以前は `100 - tScore + 50` としており、相場ちょうどの物件が 100 点に
+      // なっていた。総合スコアの 6 割がこの値だったため、ほぼ全件が
+      // おすすめ度 5 つ星（80 点以上）で表示され、順位が読めなくなっていた。
+      const yieldScore = tScore(propSqmRent, meanSqmRent, stdDevSqmRent, true);
 
-      const arbitrageScore = astrologyScore * 0.4 + yieldScore * 0.6;
+      const municipality: string | null = p.municipality ?? null;
+      const localStats = municipality
+        ? municipalityStats.get(municipality)
+        : undefined;
+      const listingCount = Number(p.listing_count ?? 1);
+
+      const axes: AxisScores = {
+        value: yieldScore,
+        localValue: scoreLocalValue(
+          propSqmRent,
+          localStats?.median ?? null,
+          localStats?.count ?? null,
+        ),
+        astrology: astrologyScore,
+        access: scoreStationAccess(p.minutes_to_station),
+        proximity: scoreProximity(distanceKm),
+        space: scoreSpace(sizeSqm, p.layout, meanSizeSqm, stdDevSizeSqm),
+        building: scoreBuilding(p.building_age, p.floor, p.is_new_build),
+        market: scoreMarket(p.first_seen_at, listingCount, scoredAt),
+        cost: scoreCost(totalRent, budgetYen),
+      };
+
+      const composed = composeScore(axes, weights);
+
+      // 掲載開始からの経過日数。market 軸の内訳として画面に出す。
+      const listedDays = p.first_seen_at
+        ? Math.max(
+            0,
+            Math.round(
+              (scoredAt.getTime() - new Date(p.first_seen_at).getTime()) /
+                (24 * 60 * 60 * 1000),
+            ),
+          )
+        : null;
 
       return {
         ...p,
@@ -691,7 +651,18 @@ export async function GET(request: Request) {
         astrologyScore,
         astroFlags,
         yieldScore,
-        arbitrageScore,
+        // 既定の重みでの総合点。画面側で重みを変えたときは再計算される。
+        arbitrageScore: composed.score,
+        axes,
+        // どれだけの重みが実データで埋まったか。低いほど根拠が薄い。
+        axisCoverage: composed.coverage,
+        axisInputs: {
+          municipality,
+          localMedianSqmRent: localStats?.median ?? null,
+          localSampleCount: localStats?.count ?? null,
+          listingCount,
+          listedDays,
+        },
         isTendo,
         maxAstroFactor,
         dateScores,
@@ -728,6 +699,20 @@ export async function GET(request: Request) {
         targetDate: targetDate.toISOString().split("T")[0],
         meanSqmRent,
         stdDevSqmRent,
+        // 各軸が「相対評価」であることを画面で説明するための母集団の姿。
+        population: {
+          meanSqmRent,
+          stdDevSqmRent,
+          meanSizeSqm,
+          stdDevSizeSqm,
+          meanBuildingAge,
+          meanMinutesToStation,
+          municipalityCount: municipalityStats.size,
+        },
+        candidateStrategy,
+        weightPreset: weightPresetId,
+        budget: budgetYen,
+        axisKeys: AXIS_ORDER,
         totalAnalyzed: properties.length,
         totalCount,
         limit,

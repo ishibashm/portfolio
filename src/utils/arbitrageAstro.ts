@@ -17,27 +17,12 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
+import { isNoiseStatus } from "@/utils/arbitrageHelpers";
 
-export function isNoiseStatus(status: string): boolean {
-  if (!status) return false;
-  return (
-    status.startsWith("NOISE") &&
-    status !== "NOISE_VOID" &&
-    status !== "NOISE_NODE"
-  );
-}
-
-/**
- * 移転の可否として「避けるべき」に倒すべき判定か。
- *
- * isNoiseStatus は方位そのものの凶（五黄殺など）を見るもので、
- * 空亡・月交点は除外している。順位付けで下げる判断はそれより広く、
- * 天中殺（期間の禁止）と空亡も含める。
- */
-export function isAvoidStatus(status: string): boolean {
-  if (!status) return false;
-  return isNoiseStatus(status) || status === "NOISE_TENCHU" || status === "NOISE_VOID";
-}
+// 吉凶ステータスの判定は文字列を見るだけの純粋な処理で、天体暦エンジンも
+// lunar-javascript も要らない。画面側（クライアント）からも使えるように
+// arbitrageHelpers.ts へ移した。既存の import 元を変えずに済むよう再輸出する。
+export { isNoiseStatus, isAvoidStatus } from "@/utils/arbitrageHelpers";
 
 export function calculateBaziCompatibility(
   bDate: Date,

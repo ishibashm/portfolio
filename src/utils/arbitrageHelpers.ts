@@ -1,5 +1,37 @@
 // Real Estate Arbitrage astrology and pin color helper functions
 
+/**
+ * 方位そのものの凶。空亡・月交点は「方位の凶」ではないので含めない。
+ *
+ * 判定は arbitrageAstro.ts にあったが、あちらは天体暦エンジンと
+ * lunar-javascript を読み込むため、画面（クライアント）から使うには重すぎる。
+ * 文字列を見るだけの純粋な判定なのでここに置き、あちらから再輸出している。
+ */
+export function isNoiseStatus(status: string): boolean {
+  if (!status) return false;
+  return (
+    status.startsWith("NOISE") &&
+    status !== "NOISE_VOID" &&
+    status !== "NOISE_NODE"
+  );
+}
+
+/**
+ * 移転の可否として「避けるべき」に倒すべき判定か。
+ *
+ * isNoiseStatus は方位そのものの凶（五黄殺など）を見るもので、
+ * 空亡・月交点は除外している。順位付けで下げる判断はそれより広く、
+ * 天中殺（期間の禁止）と空亡も含める。
+ */
+export function isAvoidStatus(status: string): boolean {
+  if (!status) return false;
+  return (
+    isNoiseStatus(status) ||
+    status === "NOISE_TENCHU" ||
+    status === "NOISE_VOID"
+  );
+}
+
 export const getPropertyPinColors = (prop: any) => {
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
