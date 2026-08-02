@@ -534,6 +534,28 @@ export default function ArbitrageScannerPage() {
       if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
     }
 
+    // URL に出発地が乗っていればそれを最優先する。
+    // /houi/area/* から「この街を出発地にして探す」で来た人が、
+    // 保存済みの設定に上書きされて別の場所の結果を見ることがないようにする。
+    // useSearchParams だと Suspense 境界が要るので location から直接読む。
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      const qLat = parseFloat(qs.get("baseLat") || "");
+      const qLon = parseFloat(qs.get("baseLon") || "");
+      if (!isNaN(qLat) && !isNaN(qLon)) {
+        bsLat = String(qLat);
+        bsLon = String(qLon);
+        localStorage.setItem("arb_baseLat", bsLat);
+        localStorage.setItem("arb_baseLon", bsLon);
+      }
+      const qPref = qs.get("prefecture");
+      if (qPref) pref = qPref;
+      const qRadius = qs.get("radiusKm");
+      if (qRadius) rKm = qRadius;
+    } catch {
+      /* URL の解釈に失敗しても保存済みの設定で動かす */
+    }
+
     setBaseLat(bsLat);
     setLocalLat(bsLat);
     setBaseLon(bsLon);

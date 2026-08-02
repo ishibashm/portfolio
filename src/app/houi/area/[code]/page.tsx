@@ -275,7 +275,7 @@ export default async function Page({
             </li>
           </ul>
           <Link
-            href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all`}
+            href={`/relocation/arbitrage?baseLat=${area.lat}&baseLon=${area.lon}&radiusKm=all&prefecture=${encodeURIComponent(area.pref)}`}
             className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
           >
             {area.full}を出発地にして物件を探す
