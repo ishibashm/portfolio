@@ -568,7 +568,7 @@ export function CosmicCalendar({
     <div
       className={`${wrapperClassName} p-5 rounded-2xl bg-white/70 border backdrop-blur-md relative overflow-hidden flex flex-col`}
       style={{
-        borderColor: "rgba(255, 255, 255, 0.05)",
+        borderColor: "rgb(214, 211, 209)", // stone-300。白背景では白5%の枠が見えない
       }}
     >
       {/* Decorative Grid Lightbar */}
@@ -876,7 +876,7 @@ export function CosmicCalendar({
           <div
             className="p-5 rounded-2xl bg-white/70 border backdrop-blur-md relative overflow-hidden transition-all duration-300"
             style={{
-              borderColor: "rgba(255, 255, 255, 0.05)",
+              borderColor: "rgb(214, 211, 209)", // stone-300。白背景では白5%の枠が見えない
             }}
           >
             {/* Top Light Accent bar */}
