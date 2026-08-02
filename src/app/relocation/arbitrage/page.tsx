@@ -1505,12 +1505,16 @@ export default function ArbitrageScannerPage() {
         {/* Header Title Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div>
+            {/* ナビ・サイトマップ・メタデータは「物件を方位で探す」で統一している。
+                ここだけ英語の機能名が出ていると、検索から来た人には別のページに
+                見える。h1 は各所の呼び名と一致させる。 */}
             <h1 className="text-xl font-bold font-serif text-stone-900 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-amber-500 animate-pulse" />
-              Real Estate Arbitrage Scanner
+              <TrendingUp className="w-6 h-6 text-amber-500" />
+              物件を方位で探す
             </h1>
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
-              吉方位（風水・九星気学）と市場の歪み（利回り偏差値）を算出し、運気とコスパが最強の割安物件をスキャンします。
+              今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度を
+              あわせて並べます。凶方位の物件は下に送ります。
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
