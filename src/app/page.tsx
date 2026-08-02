@@ -119,6 +119,14 @@ export default function Home() {
           © 2026 {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
         </div>
         <div className="flex flex-wrap items-center gap-4 text-slate-500">
+          <Link href="/about" className="hover:text-rose-600 transition-colors">
+            このサイトについて
+          </Link>
+          <span>•</span>
+          <Link href="/contact" className="hover:text-rose-600 transition-colors">
+            お問い合わせ
+          </Link>
+          <span>•</span>
           <Link href="/privacy" className="hover:text-rose-600 transition-colors">
             プライバシーポリシー
           </Link>

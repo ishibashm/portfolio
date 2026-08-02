@@ -121,24 +121,24 @@ model KnowledgeDocument {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
-  chunks     KnowledgeChunk[]
+  chunks KnowledgeChunk[]
 
   @@index([user_id])
 }
 
 model KnowledgeChunk {
-  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  document_id    String   @db.Uuid
-  document       KnowledgeDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
-  
-  chunk_index    Int
-  content        String
-  token_count    Int?
-  
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  document_id String            @db.Uuid
+  document    KnowledgeDocument @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  chunk_index Int
+  content     String
+  token_count Int?
+
   // Storing embedding as JSON to maintain compatibility with the root schema's approach
-  embedding      Json?
-  
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  embedding Json?
+
+  created_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([document_id])
 }
@@ -180,7 +180,6 @@ model AgentActivityLog {
   status         String
   errorMessage   String?
 }
-
 
 // ==========================================
 // 2. SUBDOMAIN 1: METAPHYSICAL & TIME DOMAIN
@@ -260,7 +259,7 @@ model RelocationSimulation {
   id        String   @id @default(cuid())
   userId    String?
   name      String
-  steps     Json     // Array of step objects
+  steps     Json // Array of step objects
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -268,7 +267,6 @@ model RelocationSimulation {
 
   @@index([userId])
 }
-
 
 // ==========================================
 // 3. SUBDOMAIN 2: REAL ESTATE & SPATIAL DOMAIN
@@ -340,7 +338,6 @@ model MunicipalityWealth {
   updatedAt                DateTime @updatedAt
 }
 
-
 // ==========================================
 // 4. SUBDOMAIN 3: QUANT FINANCE & TRENDS DOMAIN
 // ==========================================
@@ -360,4 +357,18 @@ model XPost {
 
   @@index([authorHandle])
   @@index([datetime])
+}
+
+/// お問い合わせフォームの受信箱。
+/// 運営者の個人メールアドレスをサイトに書かずに連絡手段を用意するために置く。
+/// AdSense の審査では連絡手段の有無が見られる。
+model contact_messages {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String
+  body       String
+  /// 受信時の User-Agent。いたずら投稿の切り分け用。
+  user_agent String?
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  handled    Boolean  @default(false)
 }
