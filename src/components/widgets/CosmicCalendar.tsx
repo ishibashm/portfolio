@@ -1062,7 +1062,7 @@ export function CosmicCalendar({
                   Planetary Retrogrades
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-[10.5px]">
-                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-400">水星 (Mercury)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
@@ -1074,7 +1074,7 @@ export function CosmicCalendar({
                       {selectedDay.retrogrades.mercury ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-400">金星 (Venus)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
@@ -1086,7 +1086,7 @@ export function CosmicCalendar({
                       {selectedDay.retrogrades.venus ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-400">火星 (Mars)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
@@ -1098,7 +1098,7 @@ export function CosmicCalendar({
                       {selectedDay.retrogrades.mars ? "逆行" : "順行"}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-white/[0.03]">
+                  <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-400">木星 (Jupiter)</span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${

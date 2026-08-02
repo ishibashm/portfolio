@@ -6,31 +6,15 @@ import { Calendar } from "lucide-react";
 
 export default function CalendarPage() {
   return (
-    <div className="min-h-screen bg-[#050505] text-white selection:bg-[color-mix(in_srgb,var(--color-accent,#10b981)_30%,transparent)] font-sans relative overflow-hidden flex flex-col">
-      {/* Background Liquid Glass Glows */}
-      <div
-        className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] -z-10 pointer-events-none transition-all duration-1000"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--glow-color, #10b981) 8%, transparent)",
-        }}
-      />
-      <div
-        className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] rounded-full blur-[150px] -z-10 pointer-events-none transition-all duration-1000"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-accent, #10b981) 6%, transparent)",
-        }}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans relative overflow-hidden flex flex-col">
+      {/* 他ページと同じ淡いオーラ。暗い背景を前提にした発光をそのまま
+          明るい背景に載せると色が濁るため、同じ配色に合わせている。 */}
+      <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
+      <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
 
       <main className="max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
-        <header
-          className="relative mb-12 p-6 md:p-8 rounded-2xl border bg-white/[0.01] backdrop-blur-md overflow-hidden"
-          style={{
-            borderColor: "rgba(255, 255, 255, 0.05)",
-          }}
-        >
+        <header className="relative mb-12 p-6 md:p-8 rounded-3xl border border-slate-300 bg-white/95 backdrop-blur-xl shadow-lg shadow-slate-200/50 overflow-hidden">
           {/* Cyber Decorative Lines */}
           <div
             className="absolute top-0 left-0 w-full h-[1px] opacity-70"
@@ -39,7 +23,7 @@ export default function CalendarPage() {
                 "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-accent, #10b981) 30%, transparent), transparent)",
             }}
           />
-          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
           <div
             className="absolute top-0 left-8 w-[1px] h-4"
             style={{
@@ -69,7 +53,11 @@ export default function CalendarPage() {
                   Telemetry
                 </span>
               </div>
-              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-gradient-to-r from-stone-900 via-stone-700 to-[color-mix(in_srgb,var(--color-accent,#10b981)_70%,#1c1917)] bg-clip-text text-transparent font-serif">
+              {/* グラデーションを bg-clip-text + text-transparent で流し込むと、
+                  Chromium が backdrop-filter 配下でラスタライズした際に
+                  タイトルを横切る継ぎ目を描くことがある（/trends で実際に起きた）。
+                  同じ書き方なので、ここも単色にしておく。 */}
+              <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter text-stone-900 font-serif">
                 Cosmic Calendar
               </h1>
               <p className="text-stone-500 mt-3 max-w-2xl text-sm md:text-base font-light leading-relaxed">
