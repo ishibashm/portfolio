@@ -47,12 +47,6 @@ export const CORE_ROUTES: CoreRoute[] = [
     summary:
       "移転や契約に適した日を導出するカレンダー。九星気学の方位盤、六曜、天赦日・一粒万倍日、天中殺の期間を突き合わせる。",
   },
-  {
-    href: "/metaphysical",
-    label: "自分の吉方位を知る",
-    summary:
-      "生年月日から本命星と天中殺の期間を出し、その時点で使える方位を確認する。他のページの判定はすべてこの計算を共有している。",
-  },
 ];
 
 /**
@@ -61,6 +55,9 @@ export const CORE_ROUTES: CoreRoute[] = [
  */
 export const NON_CORE_ROUTES: string[] = [
   "/dashboard", // 全機能のランチャー。統一後は入口を / に一本化する
+  // 名前に反して吉方位のページではなく、生体データとマクロ環境から
+  // 次善行動を出す NBA ダッシュボード。引越しとは別のテーマなので外す。
+  "/metaphysical",
   "/trends", // 日経平均・技術トレンド
   "/rentals", // arbitrage と役割が重複する旧・物件一覧
   "/relocation/history", // 過去の判定ログ。導線から外す
