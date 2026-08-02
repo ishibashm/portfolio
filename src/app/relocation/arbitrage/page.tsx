@@ -19,7 +19,25 @@ import {
   MetaphysicalConfig,
 } from "@/components/layout/MetaphysicalConfigBar";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
-import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
+import {
+  getPropertyPinColors,
+  isAvoidStatus as isAvoidAstrologyStatus,
+} from "@/utils/arbitrageHelpers";
+import {
+  AXIS_META,
+  AXIS_ORDER,
+  AxisKey,
+  AxisScores,
+  CANDIDATE_STRATEGIES,
+  DEFAULT_CANDIDATE_STRATEGY,
+  DEFAULT_PRESET_ID,
+  WEIGHT_PRESETS,
+  composeScore,
+  getPreset,
+  scoreCost,
+  slidersToWeights,
+  weightsToSliders,
+} from "@/utils/arbitrageScoring";
 
 // 吉凶バッジ定義のインターフェース
 interface BadgeItem {
@@ -151,6 +169,9 @@ export default function ArbitrageScannerPage() {
     lunarPhaseModifier,
     directionFilterMode,
     actionIntent,
+    // 候補の集め方は SQL の並び順を変えるので、変わったら取り直しが要る。
+    // この ref は candidateStrategy の state 宣言より前にあるため既定値で埋める。
+    candidateStrategy: DEFAULT_CANDIDATE_STRATEGY as string,
     mapBounds,
   });
 
@@ -175,6 +196,64 @@ export default function ArbitrageScannerPage() {
     const count =
       score >= 80 ? 5 : score >= 70 ? 4 : score >= 60 ? 3 : score >= 50 ? 2 : 1;
     return renderStarRow(count, `おすすめ度: ${score.toFixed(1)}`);
+  };
+
+  /** 軸スコアの色。50 を境に暖色／寒色へ振り、一目で強弱が分かるようにする。 */
+  const axisBarColor = (score: number) => {
+    if (score >= 75) return "bg-emerald-500";
+    if (score >= 60) return "bg-lime-500";
+    if (score >= 45) return "bg-amber-400";
+    if (score >= 30) return "bg-orange-400";
+    return "bg-rose-400";
+  };
+
+  /**
+   * 物件 1 件の軸別プロファイル。
+   *
+   * 総合スコアだけでは「なぜ上位なのか」が分からず、重みを変えても
+   * 順位が入れ替わる理由が読めない。重みが乗っている軸だけを、
+   * 重みの大きい順に並べて出す。
+   */
+  const renderAxisBars = (item: any, max = 5) => {
+    const axes: AxisScores = item.axes ?? {};
+    const shown = AXIS_ORDER.filter((key) => (activeWeights[key] ?? 0) > 0)
+      .sort((a, b) => (activeWeights[b] ?? 0) - (activeWeights[a] ?? 0))
+      .slice(0, max);
+
+    if (shown.length === 0) return null;
+
+    return (
+      <div className="space-y-1">
+        {shown.map((key) => {
+          const value = axes[key];
+          const meta = AXIS_META[key];
+          const weightPct = Math.round((activeWeights[key] ?? 0) * 100);
+          const missing = value === null || value === undefined;
+          return (
+            <div
+              key={key}
+              className="flex items-center gap-1.5"
+              title={`${meta.label}（重み ${weightPct}%）: ${meta.hint}`}
+            >
+              <span className="w-14 shrink-0 text-[9px] text-stone-500 truncate">
+                {meta.label}
+              </span>
+              <div className="flex-1 h-1.5 rounded-full bg-stone-200/80 overflow-hidden">
+                {!missing && (
+                  <div
+                    className={`h-full rounded-full ${axisBarColor(value as number)}`}
+                    style={{ width: `${Math.max(2, value as number)}%` }}
+                  />
+                )}
+              </div>
+              <span className="w-7 shrink-0 text-right text-[9px] font-mono text-stone-500">
+                {missing ? "—" : Math.round(value as number)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   const renderStarRow = (starCount: number, hint: string) => {
@@ -443,16 +522,112 @@ export default function ArbitrageScannerPage() {
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMinYield, setFilterMinYield] = useState<string>("");
   const [filterMaxAge, setFilterMaxAge] = useState<string>("5");
+  const [filterMaxStation, setFilterMaxStation] = useState<string>("");
+  const [filterMinSize, setFilterMinSize] = useState<string>("");
+  const [filterMinTotal, setFilterMinTotal] = useState<string>("");
   const itemsPerPage = 50;
 
+  // 評価軸の重み。
+  //
+  // 同じ候補集合でも、通勤で選ぶ人と開運で選ぶ人では見るべき順位が違う。
+  // 重み付けは画面側で行うので、切り替えても再スキャン（DBアクセス）は起きない。
+  const [weightPresetId, setWeightPresetId] = useState<string>(DEFAULT_PRESET_ID);
+  const [customSliders, setCustomSliders] = useState<Record<AxisKey, number>>(
+    () => weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights),
+  );
+  const [showWeightPanel, setShowWeightPanel] = useState(false);
+  // 予算（万円/月）。cost 軸の基準になる。空なら cost 軸は使わない。
+  const [budgetManYen, setBudgetManYen] = useState<string>("");
+  // 候補を DB から切り出すときの角度。重みだけ変えても母集合が変わらないため。
+  const [candidateStrategy, setCandidateStrategy] = useState<string>(
+    DEFAULT_CANDIDATE_STRATEGY,
+  );
+  // 避けるべき方位・期間の物件を最下位に沈めるか。
+  // 既定は沈める。外すと「凶だが条件は最高」の物件も比較対象にできる。
+  const [sinkAvoidStatus, setSinkAvoidStatus] = useState(true);
+
+  const activeWeights = useMemo(
+    () =>
+      weightPresetId === "custom"
+        ? slidersToWeights(customSliders)
+        : getPreset(weightPresetId).weights,
+    [weightPresetId, customSliders],
+  );
+
+  /** テーブルに列として出す軸。重みの大きい順に 4 つまで。 */
+  const tableAxisColumns = useMemo(
+    () =>
+      AXIS_ORDER.filter((key) => (activeWeights[key] ?? 0) > 0)
+        .sort((a, b) => (activeWeights[b] ?? 0) - (activeWeights[a] ?? 0))
+        .slice(0, 4),
+    [activeWeights],
+  );
+
   // Sorting state
-  type SortColumn = "arbitrage" | "yield" | "astrology" | "rent" | "distance";
+  type SortColumn =
+    | "arbitrage"
+    | "yield"
+    | "astrology"
+    | "rent"
+    | "distance"
+    | AxisKey;
   interface SortConfig {
     key: SortColumn;
     direction: "desc" | "asc";
   }
   const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([
     { key: "arbitrage", direction: "desc" },
+  ]);
+
+  // 重み・予算・抽出戦略は端末に残す。毎回選び直すのは実用的でない。
+  const AXIS_PREFS_KEY = "arb_axis_prefs_v1";
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(AXIS_PREFS_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (typeof saved.weightPresetId === "string")
+        setWeightPresetId(saved.weightPresetId);
+      if (saved.customSliders && typeof saved.customSliders === "object") {
+        const sliders = weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights);
+        for (const key of AXIS_ORDER) {
+          const value = Number(saved.customSliders[key]);
+          if (Number.isFinite(value)) sliders[key] = Math.max(0, Math.min(100, value));
+        }
+        setCustomSliders(sliders);
+      }
+      if (typeof saved.budgetManYen === "string")
+        setBudgetManYen(saved.budgetManYen);
+      if (typeof saved.candidateStrategy === "string")
+        setCandidateStrategy(saved.candidateStrategy);
+      if (typeof saved.sinkAvoidStatus === "boolean")
+        setSinkAvoidStatus(saved.sinkAvoidStatus);
+    } catch {
+      // 壊れた保存値は無視して既定で動かす。
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        AXIS_PREFS_KEY,
+        JSON.stringify({
+          weightPresetId,
+          customSliders,
+          budgetManYen,
+          candidateStrategy,
+          sinkAvoidStatus,
+        }),
+      );
+    } catch {
+      // 保存できなくても動作には影響しない。
+    }
+  }, [
+    weightPresetId,
+    customSliders,
+    budgetManYen,
+    candidateStrategy,
+    sinkAvoidStatus,
   ]);
 
   // Load from localStorage on mount
@@ -789,6 +964,10 @@ export default function ArbitrageScannerPage() {
       if (filterMaxAge) {
         params.append("maxBuildingAge", filterMaxAge);
       }
+      // 予算はここでは渡さない。cost 軸は総家賃と予算だけで決まるので画面側で
+      // 計算でき、入力するたびに DB を叩き直す必要がない。
+      // 候補の切り出し方。重みを変えても母集合が同じでは角度が変わらない。
+      params.append("candidateStrategy", candidateStrategy);
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -846,6 +1025,7 @@ export default function ArbitrageScannerPage() {
       prev.lunarPhaseModifier !== lunarPhaseModifier ||
       prev.directionFilterMode !== directionFilterMode ||
       prev.actionIntent !== actionIntent ||
+      prev.candidateStrategy !== candidateStrategy ||
       JSON.stringify(prev.mapBounds) !== JSON.stringify(mapBounds);
 
     prevParamsRef.current = {
@@ -862,6 +1042,7 @@ export default function ArbitrageScannerPage() {
       lunarPhaseModifier,
       directionFilterMode,
       actionIntent,
+      candidateStrategy,
       mapBounds,
     };
 
@@ -881,6 +1062,7 @@ export default function ArbitrageScannerPage() {
     lunarPhaseModifier,
     directionFilterMode,
     actionIntent,
+    candidateStrategy,
     mapBounds,
     initialLoaded,
   ]);
@@ -1096,7 +1278,37 @@ export default function ArbitrageScannerPage() {
     setCurrentPage(1);
   };
 
-  const safeData = data.filter((d) => d.astrologyScore >= 0);
+  const budgetYen = useMemo(() => {
+    const value = Number(budgetManYen) * 10000;
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }, [budgetManYen]);
+
+  /**
+   * 重みを当てて総合スコアを出し直す。
+   *
+   * サーバは既定の重みで付けた点を返すが、重みを変えるたびに DB を叩き直すのは
+   * 無駄なうえ体感も悪い。軸ごとの点はサーバが返しているので、合成だけ
+   * ここでやる。予算（cost 軸）も総家賃だけで決まるのでここで計算する。
+   */
+  const scoredData = useMemo(() => {
+    return data.map((d) => {
+      const axes: AxisScores = {
+        ...(d.axes ?? {}),
+        cost: scoreCost(d.totalRent, budgetYen),
+      };
+      const composed = composeScore(axes, activeWeights);
+      return {
+        ...d,
+        axes,
+        totalScore: composed.score,
+        axisCoverage: composed.coverage,
+        axisContributions: composed.contributions,
+        axisMissing: composed.missing,
+      };
+    });
+  }, [data, activeWeights, budgetYen]);
+
+  const safeData = scoredData.filter((d) => d.astrologyScore >= 0);
 
   const filteredData = safeData.filter((d) => {
     if (
@@ -1125,6 +1337,26 @@ export default function ArbitrageScannerPage() {
         return false;
     }
 
+    if (filterMaxStation) {
+      const maxStation = Number(filterMaxStation);
+      // 徒歩分数が未取得の物件は「条件を満たす保証が無い」ので外す。
+      if (
+        d.minutes_to_station === null ||
+        d.minutes_to_station === undefined ||
+        d.minutes_to_station > maxStation
+      )
+        return false;
+    }
+
+    if (filterMinSize) {
+      const minSize = Number(filterMinSize);
+      if (!d.size_sqm || Number(d.size_sqm) < minSize) return false;
+    }
+
+    if (filterMinTotal) {
+      if (d.totalScore < Number(filterMinTotal)) return false;
+    }
+
     if (filterName) {
       const term = filterName.toLowerCase();
       const addr = (d.address || "").toLowerCase();
@@ -1135,16 +1367,35 @@ export default function ArbitrageScannerPage() {
   });
 
   const sortedTableData = [...filteredData].sort((a, b) => {
+    // 避けるべき方位・期間のものは、どれだけ条件が良くても上には出さない。
+    // 総合スコアは重み次第で方位の比重が下がるため、順位のほうで担保する。
+    if (sinkAvoidStatus) {
+      const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
+      const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
+      if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+    }
+
     for (const config of sortConfigs) {
       let result = 0;
       const key = config.key;
-      if (key === "arbitrage") result = b.arbitrageScore - a.arbitrageScore;
+      if (key === "arbitrage") result = b.totalScore - a.totalScore;
       else if (key === "yield") result = b.yieldScore - a.yieldScore;
       else if (key === "astrology")
         result = b.astrologyScore - a.astrologyScore;
       else if (key === "rent") result = b.totalRent - a.totalRent;
       else if (key === "distance")
         result = (a.distanceKm || 0) - (b.distanceKm || 0);
+      else {
+        // 軸そのものでの並べ替え。未算出（null）は常に後ろに置く。
+        const av = a.axes?.[key as AxisKey];
+        const bv = b.axes?.[key as AxisKey];
+        const aMissing = av === null || av === undefined;
+        const bMissing = bv === null || bv === undefined;
+        if (aMissing && bMissing) result = 0;
+        else if (aMissing) return 1;
+        else if (bMissing) return -1;
+        else result = (bv as number) - (av as number);
+      }
 
       if (result !== 0) {
         return config.direction === "desc" ? result : -result;
@@ -1173,8 +1424,20 @@ export default function ArbitrageScannerPage() {
     if (filterMaxRent !== "") count++;
     if (filterMinYield !== "") count++;
     if (filterMaxAge !== "") count++;
+    if (filterMaxStation !== "") count++;
+    if (filterMinSize !== "") count++;
+    if (filterMinTotal !== "") count++;
     return count;
-  }, [filterName, filterStatus, filterMaxRent, filterMinYield, filterMaxAge]);
+  }, [
+    filterName,
+    filterStatus,
+    filterMaxRent,
+    filterMinYield,
+    filterMaxAge,
+    filterMaxStation,
+    filterMinSize,
+    filterMinTotal,
+  ]);
 
   const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
   const currentTableData = sortedTableData.slice(
@@ -1182,17 +1445,36 @@ export default function ArbitrageScannerPage() {
     currentPage * itemsPerPage,
   );
 
+  /**
+   * 見出しクリックでの並べ替え。Shift 併用で第 2 キー以降を足す。
+   *
+   * 以前はここで並び順を組み立てずに元の配列をそのまま返していたため、
+   * どの見出しを押しても順序が変わらなかった。軸ごとの列を足す以上、
+   * 「この軸で並べ直す」が効かないと軸を増やす意味が無い。
+   */
   const handleSortChange = (newSort: SortColumn, e: React.MouseEvent) => {
     setSortConfigs((prev) => {
       const isMultiSort = e.shiftKey;
-      const existingSortIndex = prev.findIndex(
-        (config) => config.key === newSort,
-      );
-      let newConfigs = [...prev];
+      const existing = prev.find((config) => config.key === newSort);
 
-      if (newConfigs.length === 0)
-        newConfigs = [{ key: "arbitrage", direction: "desc" }];
-      return newConfigs;
+      if (!isMultiSort) {
+        // 同じ列を押し直したときだけ昇順・降順を入れ替える。
+        const direction =
+          existing && existing.direction === "desc" ? "asc" : "desc";
+        return [{ key: newSort, direction }];
+      }
+
+      if (existing) {
+        return prev.map((config) =>
+          config.key === newSort
+            ? {
+                ...config,
+                direction: config.direction === "desc" ? "asc" : "desc",
+              }
+            : config,
+        );
+      }
+      return [...prev, { key: newSort, direction: "desc" }];
     });
     setCurrentPage(1);
   };
@@ -1565,6 +1847,186 @@ export default function ArbitrageScannerPage() {
                     </div>
                   </div>
 
+                  {/* 評価軸パネル。
+                      同じ候補集合を別の角度から見直すための操作をここに集める。
+                      重みの変更は画面内で完結するので再スキャンは起きない。 */}
+                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
+                        評価軸の重み
+                      </h3>
+                      <button
+                        onClick={() => setShowWeightPanel((v) => !v)}
+                        className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                      >
+                        {showWeightPanel ? "閉じる" : "細かく調整"}
+                      </button>
+                    </div>
+
+                    <p className="text-[10px] text-stone-500 leading-relaxed">
+                      何を重視して順位を付けるかを選びます。切り替えても再スキャンは走りません。
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {WEIGHT_PRESETS.map((preset) => (
+                        <button
+                          key={preset.id}
+                          title={preset.description}
+                          onClick={() => {
+                            setWeightPresetId(preset.id);
+                            setCurrentPage(1);
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                            weightPresetId === preset.id
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                              : "bg-gray-50 dark:bg-white text-stone-600 border-gray-200 dark:border-stone-200 hover:border-indigo-300"
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                      <button
+                        title="スライダーで軸ごとの重みを自由に決める"
+                        onClick={() => {
+                          // 直前に見ていた配分を初期値にすると、
+                          // 「今の順位を少しだけ動かす」調整がしやすい。
+                          setCustomSliders(weightsToSliders(activeWeights));
+                          setWeightPresetId("custom");
+                          setShowWeightPanel(true);
+                          setCurrentPage(1);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
+                          weightPresetId === "custom"
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                            : "bg-gray-50 dark:bg-white text-stone-600 border-gray-200 dark:border-stone-200 hover:border-indigo-300"
+                        }`}
+                      >
+                        カスタム
+                      </button>
+                    </div>
+
+                    {weightPresetId !== "custom" && (
+                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                        {getPreset(weightPresetId).description}
+                      </p>
+                    )}
+
+                    {showWeightPanel && (
+                      <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-stone-200">
+                        {AXIS_ORDER.map((key) => {
+                          const meta = AXIS_META[key];
+                          const pct = Math.round((activeWeights[key] ?? 0) * 100);
+                          return (
+                            <div key={key} className="space-y-0.5">
+                              <div className="flex items-center justify-between">
+                                <label
+                                  className="text-[10px] font-semibold text-stone-500 cursor-help"
+                                  title={meta.hint}
+                                >
+                                  {meta.label}
+                                </label>
+                                <span className="text-[10px] font-mono text-stone-400">
+                                  {pct}%
+                                </span>
+                              </div>
+                              <input
+                                type="range"
+                                min={0}
+                                max={100}
+                                value={
+                                  weightPresetId === "custom"
+                                    ? (customSliders[key] ?? 0)
+                                    : Math.round(
+                                        weightsToSliders(activeWeights)[key],
+                                      )
+                                }
+                                onChange={(e) => {
+                                  const next = Number(e.target.value);
+                                  // プリセットを触った瞬間にカスタムへ移す。
+                                  // 元のプリセット名のまま値だけ変わると、
+                                  // 何を見ているのか分からなくなる。
+                                  setCustomSliders((prev) => {
+                                    const base =
+                                      weightPresetId === "custom"
+                                        ? prev
+                                        : weightsToSliders(activeWeights);
+                                    return { ...base, [key]: next };
+                                  });
+                                  setWeightPresetId("custom");
+                                  setCurrentPage(1);
+                                }}
+                                className="w-full h-1 accent-indigo-600 cursor-pointer"
+                              />
+                            </div>
+                          );
+                        })}
+                        <p className="text-[10px] text-stone-400 pt-1">
+                          データが無い軸は 0 点ではなく評価対象外として扱い、残りの軸で正規化します（カードの「軸カバー」表示）。
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3.5 pt-1 border-t border-gray-100 dark:border-stone-200">
+                      <div className="space-y-1">
+                        <label
+                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                          title={AXIS_META.cost.hint}
+                        >
+                          月額予算 (万円)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 12"
+                          value={budgetManYen}
+                          onChange={(e) => {
+                            setBudgetManYen(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label
+                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                          title="DB から候補を切り出すときの順序。重みだけを変えても、母集合に入っていない物件は評価されない。"
+                        >
+                          候補の集め方
+                        </label>
+                        <select
+                          value={candidateStrategy}
+                          onChange={(e) => {
+                            setCandidateStrategy(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                        >
+                          {CANDIDATE_STRATEGIES.map((strategy) => (
+                            <option
+                              key={strategy.id}
+                              value={strategy.id}
+                              title={strategy.description}
+                            >
+                              {strategy.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-[10px] text-stone-500 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sinkAvoidStatus}
+                        onChange={(e) => {
+                          setSinkAvoidStatus(e.target.checked);
+                          setCurrentPage(1);
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      避けるべき方位・期間の物件を最下位に沈める
+                    </label>
+                  </div>
+
                   {/* Filter Criteria Panel */}
                   <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
                     <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
@@ -1637,7 +2099,37 @@ export default function ArbitrageScannerPage() {
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
-                      <div className="space-y-1 col-span-2">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          駅徒歩上限 (分)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 10"
+                          value={filterMaxStation}
+                          onChange={(e) => {
+                            setFilterMaxStation(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          専有面積下限 (㎡)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 40"
+                          value={filterMinSize}
+                          onChange={(e) => {
+                            setFilterMinSize(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
                         <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                           最小利回り偏差値
                         </label>
@@ -1647,6 +2139,24 @@ export default function ArbitrageScannerPage() {
                           value={filterMinYield}
                           onChange={(e) => {
                             setFilterMinYield(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label
+                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                          title="現在の重み配分で計算した総合スコアの下限。重みを変えると同じ値でも通る物件が変わる。"
+                        >
+                          総合スコア下限
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 60"
+                          value={filterMinTotal}
+                          onChange={(e) => {
+                            setFilterMinTotal(e.target.value);
                             setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
@@ -1718,7 +2228,7 @@ export default function ArbitrageScannerPage() {
                                 {Math.round((item.totalRent || 0) / 10000)}万円
                               </div>
                               <div className="mt-1 flex justify-end">
-                                {renderStars(item.arbitrageScore, item.astrologyStatus)}
+                                {renderStars(item.totalScore, item.astrologyStatus)}
                               </div>
                             </div>
                           </div>
@@ -1819,6 +2329,28 @@ export default function ArbitrageScannerPage() {
                                   年 / {item.minutes_to_station || "不明"}分
                                 </span>
                               </div>
+                              <div className="flex justify-between">
+                                <span>近隣相場比:</span>
+                                <span className="font-semibold text-gray-800 dark:text-stone-700">
+                                  {item.axisInputs?.localMedianSqmRent
+                                    ? `${Math.round(
+                                        (item.propSqmRent /
+                                          item.axisInputs.localMedianSqmRent -
+                                          1) *
+                                          100,
+                                      )}%`
+                                    : "—"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>掲載:</span>
+                                <span className="font-semibold text-gray-800 dark:text-stone-700">
+                                  {item.axisInputs?.listedDays !== null &&
+                                  item.axisInputs?.listedDays !== undefined
+                                    ? `${item.axisInputs.listedDays}日 / ${item.axisInputs.listingCount ?? 1}社`
+                                    : "—"}
+                                </span>
+                              </div>
                               <div className="flex justify-between col-span-2 pt-1 border-t border-zinc-100 dark:border-stone-200">
                                 <span>方位・吉凶:</span>
                                 <span
@@ -1831,10 +2363,29 @@ export default function ArbitrageScannerPage() {
                               </div>
                             </div>
 
+                            {/* 総合スコアの内訳。なぜこの順位なのかを軸ごとに示す。 */}
+                            <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200">
+                              {renderAxisBars(item)}
+                            </div>
+
                             <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
-                              {renderStars(item.arbitrageScore, item.astrologyStatus)}
-                              <span className="text-[8px] text-stone-500 font-semibold">
-                                推奨スコア: {item.arbitrageScore.toFixed(1)}
+                              {renderStars(item.totalScore, item.astrologyStatus)}
+                              <span
+                                className="text-[8px] text-stone-500 font-semibold"
+                                title={
+                                  item.axisMissing?.length
+                                    ? `未算出の軸: ${item.axisMissing
+                                        .map((k: AxisKey) => AXIS_META[k].label)
+                                        .join("、")}`
+                                    : "全ての軸にデータあり"
+                                }
+                              >
+                                総合 {item.totalScore.toFixed(1)}
+                                {item.axisCoverage < 0.999 && (
+                                  <span className="ml-1 text-amber-600">
+                                    （軸カバー {Math.round(item.axisCoverage * 100)}%）
+                                  </span>
+                                )}
                               </span>
                             </div>
 
@@ -1886,6 +2437,18 @@ export default function ArbitrageScannerPage() {
                             >
                               利回り偏差 {renderSortIndicator("yield")}
                             </th>
+                            {/* 重みが乗っている軸だけを列にする。全 9 軸を常時出すと
+                                横に伸びて読めないうえ、見ていない軸まで判断材料に見える。 */}
+                            {tableAxisColumns.map((key) => (
+                              <th
+                                key={key}
+                                title={AXIS_META[key].hint}
+                                className="px-3 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
+                                onClick={(e) => handleSortChange(key, e)}
+                              >
+                                {AXIS_META[key].short} {renderSortIndicator(key)}
+                              </th>
+                            ))}
                             <th className="px-4 py-2.5 text-right font-bold">
                               平米 / 築年 / 徒歩
                             </th>
@@ -1903,7 +2466,7 @@ export default function ArbitrageScannerPage() {
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono">
-                                  {renderStars(item.arbitrageScore, item.astrologyStatus)}
+                                  {renderStars(item.totalScore, item.astrologyStatus)}
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-bold text-gray-900 dark:text-stone-800 truncate max-w-[180px]">
@@ -1949,6 +2512,38 @@ export default function ArbitrageScannerPage() {
                                     {item.yieldScore.toFixed(1)}
                                   </span>
                                 </td>
+                                {tableAxisColumns.map((key) => {
+                                  const value = item.axes?.[key];
+                                  const missing =
+                                    value === null || value === undefined;
+                                  return (
+                                    <td
+                                      key={key}
+                                      className="px-3 py-3 text-right font-mono"
+                                    >
+                                      {missing ? (
+                                        <span
+                                          className="text-stone-300"
+                                          title="この物件はこの軸のデータが未取得のため、総合スコアの計算から外しています"
+                                        >
+                                          —
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={
+                                            value >= 70
+                                              ? "text-emerald-600 font-bold"
+                                              : value < 35
+                                                ? "text-rose-500"
+                                                : ""
+                                          }
+                                        >
+                                          {Math.round(value)}
+                                        </span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
                                 <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px]">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分
