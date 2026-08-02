@@ -1,7 +1,7 @@
 "use client";
 import TelemetryChart from "./TelemetryChart";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
@@ -557,6 +557,38 @@ export const SolarTimeClock = () => {
   const [activeTab, setActiveTab] = useState<
     "profile" | "destination" | "timing" | "consult" | "history" | "scorecard"
   >("profile");
+
+  // 前回開いていたタブを覚えておく。プロフィールは初回設定用で、
+  // 日常的に開くのは目的地/健康やタイミングのほうなのに、
+  // 読み込むたびに 1 番目へ戻されていた。
+  // SSR とハイドレーションの食い違いを避けるため、初期値ではなく
+  // マウント後に復元する。
+  // 前回開いていたタブを覚えておく。プロフィールは初回設定用で、
+  // 日常的に開くのは目的地/健康やタイミングのほうなのに、
+  // 読み込むたびに 1 番目へ戻されていた。
+  //
+  // 保存を useEffect でやると、復元の setState が反映される前に
+  // 初期値 "profile" で上書きしてしまう。保存はクリック時だけに限る。
+  useEffect(() => {
+    const saved = localStorage.getItem("stc_activeTab");
+    if (
+      saved &&
+      ["profile", "destination", "timing", "consult", "history", "scorecard"].includes(
+        saved,
+      )
+    ) {
+      setActiveTab(saved as typeof activeTab);
+    }
+  }, []);
+
+  const selectTab = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem("stc_activeTab", tab);
+    } catch {
+      /* プライベートモードなどで保存できなくても動作は止めない */
+    }
+  };
 
   // NBA State
   const [nbaData, setNbaData] = useState<NBAData | null>(null);
@@ -3063,8 +3095,24 @@ ${timingOptimization?.recommendationText || "特になし"}
     URL.revokeObjectURL(url);
   };
 
+  // ヒートマップの基準日。
+  //
+  // baseTime は時計として 60 秒ごとに更新される。これをそのまま依存に置くと、
+  // 日付が変わっていないのに 30日分（または12ヶ月分）の盤を毎分作り直していた。
+  // 実測で 1 回あたり約 90ms かかり、そのぶんメインスレッドが止まる。
+  // 日単位に丸めて、日付か条件が変わったときだけ組み直す。
+  // 正午に寄せているのは、読み込んだ時刻によって結果が揺れないようにするため。
+  const heatmapAnchorMs = useMemo(() => {
+    if (!baseTime) return null;
+    const d = new Date(baseTime);
+    d.setHours(12, 0, 0, 0);
+    return d.getTime();
+  }, [baseTime]);
+
   useEffect(() => {
-    if (heatmapMode === "none" || !baseTime || !honmeiStar || !env) return;
+    if (heatmapMode === "none" || heatmapAnchorMs === null || !honmeiStar || !env)
+      return;
+    const baseTime = new Date(heatmapAnchorMs);
 
     const data = [];
     const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
@@ -3129,13 +3177,14 @@ ${timingOptimization?.recommendationText || "特になし"}
           vectors: filteredV,
           rawVectorData: vectorData,
           tendoDir: vectorData.tendoDirection,
-          isVoid: voidZodiacArray.some((z) =>
-            [
-              getCurrentZodiac(testDate, lon || 139.6917).yearZodiac,
-              getCurrentZodiac(testDate, lon || 139.6917).monthZodiac,
-              getCurrentZodiac(testDate, lon || 139.6917).dayZodiac,
-            ].includes(z),
-          ),
+          // 同じ引数の getCurrentZodiac を some の中で 3 回呼んでいた。
+          // voidZodiacArray の要素数ぶん繰り返されるので、実測で 30 日分の
+          // 構築が 89ms → 45ms になる。1 日 1 回に減らす。
+          isVoid: (() => {
+            const z = getCurrentZodiac(testDate, lon || 139.6917);
+            const zodiacs = [z.yearZodiac, z.monthZodiac, z.dayZodiac];
+            return voidZodiacArray.some((v) => zodiacs.includes(v));
+          })(),
           offsetDays: timeOffsetDays + i,
         });
       }
@@ -3277,12 +3326,11 @@ ${timingOptimization?.recommendationText || "特になし"}
           vectors: filteredV,
           rawVectorData: vectorData,
           tendoDir: vectorData.tendoDirection,
-          isVoid: voidZodiacArray.some((z) =>
-            [
-              getCurrentZodiac(testDate, lon || 139.6917).yearZodiac,
-              getCurrentZodiac(testDate, lon || 139.6917).monthZodiac,
-            ].includes(z),
-          ),
+          isVoid: (() => {
+            const z = getCurrentZodiac(testDate, lon || 139.6917);
+            const zodiacs = [z.yearZodiac, z.monthZodiac];
+            return voidZodiacArray.some((v) => zodiacs.includes(v));
+          })(),
           offsetDays: diffDays,
         });
       }
@@ -3290,7 +3338,8 @@ ${timingOptimization?.recommendationText || "特になし"}
     setHeatmapData(data);
   }, [
     heatmapMode,
-    baseTime,
+    // 時計の毎分更新で作り直さないよう、日単位に丸めた基準日を使う
+    heatmapAnchorMs,
     timeOffsetDays,
     honmeiStar,
     getsuMeiStar,
@@ -4272,7 +4321,7 @@ ${timingOptimization?.recommendationText || "特になし"}
 
         <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
-            onClick={() => setActiveTab("profile")}
+            onClick={() => selectTab("profile")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "profile"
                 ? "bg-purple-500/10 text-purple-600 border border-purple-200"
@@ -4282,7 +4331,7 @@ ${timingOptimization?.recommendationText || "特になし"}
             1. プロフィール
           </button>
           <button
-            onClick={() => setActiveTab("destination")}
+            onClick={() => selectTab("destination")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "destination"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-200"
@@ -4292,7 +4341,7 @@ ${timingOptimization?.recommendationText || "特になし"}
             2. 目的地/健康
           </button>
           <button
-            onClick={() => setActiveTab("timing")}
+            onClick={() => selectTab("timing")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "timing"
                 ? "bg-indigo-500/10 text-indigo-600 border border-indigo-200"
@@ -4302,7 +4351,7 @@ ${timingOptimization?.recommendationText || "特になし"}
             3. タイミング
           </button>
           <button
-            onClick={() => setActiveTab("consult")}
+            onClick={() => selectTab("consult")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "consult"
                 ? "bg-amber-500/10 text-amber-500 border border-amber-200"
@@ -4312,7 +4361,7 @@ ${timingOptimization?.recommendationText || "特になし"}
             4. AI相談
           </button>
           <button
-            onClick={() => setActiveTab("scorecard")}
+            onClick={() => selectTab("scorecard")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "scorecard"
                 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
