@@ -1,9 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getUser, findUnique, upsert } = vi.hoisted(() => ({
+// 行の特定は user_email の findUnique から user_id 優先の findFirst に、
+// 保存は upsert から update / create に変わっている。モックが古いままだと
+// 実装が呼ぶメソッドが未定義になり、常に 503 に落ちて通らない。
+const { getUser, findFirst, update, create } = vi.hoisted(() => ({
   getUser: vi.fn(),
-  findUnique: vi.fn(),
-  upsert: vi.fn(),
+  findFirst: vi.fn(),
+  update: vi.fn(),
+  create: vi.fn(),
 }));
 
 vi.mock("@/utils/supabase/server", () => ({
@@ -15,8 +19,9 @@ vi.mock("@/utils/supabase/server", () => ({
 vi.mock("@/lib/prisma", () => ({
   default: {
     user_configs: {
-      findUnique,
-      upsert,
+      findFirst,
+      update,
+      create,
     },
   },
 }));
@@ -28,8 +33,9 @@ vi.mock("@/utils/encryption", () => ({
 
 import { GET, POST } from "@/app/api/profile-presets/route";
 
+// user_id は uuid 形式でないと toUserId が null を返し、行の照合に使われない。
 const authenticatedUser = {
-  id: "user-1",
+  id: "11111111-2222-4333-8444-555555555555",
   email: "owner@example.com",
 };
 
@@ -51,7 +57,7 @@ describe("/api/profile-presets", () => {
     const response = await GET();
 
     expect(response.status).toBe(401);
-    expect(findUnique).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 
   it("returns cloud presets for the signed-in user", async () => {
@@ -68,7 +74,9 @@ describe("/api/profile-presets", () => {
         createdAt: "2026-07-27T00:00:00.000Z",
       },
     ];
-    findUnique.mockResolvedValue({
+    findFirst.mockResolvedValue({
+      id: "row-1",
+      user_id: authenticatedUser.id,
       presets,
     });
 
@@ -84,15 +92,12 @@ describe("/api/profile-presets", () => {
       ],
       presets_initialized: true,
     });
-    expect(findUnique).toHaveBeenCalledWith({
-      where: { user_email: authenticatedUser.email },
-      select: { presets: true },
-    });
+    expect(findFirst).toHaveBeenCalled();
   });
 
   it("persists encrypted presets for the signed-in user", async () => {
-    findUnique.mockResolvedValue(null);
-    upsert.mockResolvedValue({});
+    findFirst.mockResolvedValue(null);
+    create.mockResolvedValue({});
     const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -116,10 +121,11 @@ describe("/api/profile-presets", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(200);
-    expect(upsert).toHaveBeenCalledWith(
+    expect(create).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { user_email: authenticatedUser.email },
-        update: expect.objectContaining({
+        data: expect.objectContaining({
+          user_id: authenticatedUser.id,
+          user_email: authenticatedUser.email,
           presets: [
             expect.objectContaining({
               encryptedGeminiKey:
@@ -132,8 +138,8 @@ describe("/api/profile-presets", () => {
   });
 
   it("reports a cloud persistence failure instead of claiming success", async () => {
-    findUnique.mockResolvedValue(null);
-    upsert.mockRejectedValue(new Error("database unavailable"));
+    findFirst.mockResolvedValue(null);
+    create.mockRejectedValue(new Error("database unavailable"));
     const request = new Request("http://localhost/api/profile-presets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -154,6 +160,6 @@ describe("/api/profile-presets", () => {
     const response = await GET();
 
     expect(response.status).toBe(503);
-    expect(findUnique).not.toHaveBeenCalled();
+    expect(findFirst).not.toHaveBeenCalled();
   });
 });

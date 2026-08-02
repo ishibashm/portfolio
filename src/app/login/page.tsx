@@ -53,8 +53,16 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-1 tracking-wider text-stone-900 font-serif">
           Cloud Palette
         </h1>
-        <p className="text-stone-400 text-xs text-center mb-8 font-mono">
-          META-HUB LOGIN
+        {/* ログインは任意。中核ページは未ログインでも全て使えるので、
+            ここで案内するのは「何が増えるか」だけにする。 */}
+        <p className="text-stone-500 text-xs text-center mb-6 leading-relaxed">
+          ログインすると、生年月日や出発地の設定を
+          <br />
+          他の端末でも引き継げます。
+        </p>
+        <p className="text-stone-400 text-[10px] text-center mb-6 leading-relaxed">
+          ログインしなくても、方位の判定・物件検索・カレンダーは
+          そのままご利用いただけます。
         </p>
 
         {/* Logged in User Status */}
@@ -64,12 +72,11 @@ export default function LoginPage() {
             <div className="font-semibold text-stone-800 break-all">
               {currentUser.email}
             </div>
-            <div
-              className={`font-bold ${currentUser.email?.toLowerCase() === "ishibashm@gmail.com" ? "text-emerald-600" : "text-rose-500"}`}
-            >
-              {currentUser.email?.toLowerCase() === "ishibashm@gmail.com"
-                ? "管理者として認証されています"
-                : "このアカウントはアクセス権限（管理権限）がありません"}
+            {/* 「権限がありません」と出していたが、一般の利用者にとっては
+                ログインは成功しており、設定の同期も使える。管理画面に
+                入れないだけなので、失敗のように見せない。 */}
+            <div className="font-bold text-emerald-600">
+              ログイン済みです。設定は端末をまたいで同期されます。
             </div>
             <button
               type="button"
@@ -149,7 +156,6 @@ export default function LoginPage() {
           {process.env.NODE_ENV === "development"
             ? "ローカル開発環境で動作しています。"
             : ""}
-          管理者アドレスで登録し利用してください。
         </p>
       </div>
     </div>

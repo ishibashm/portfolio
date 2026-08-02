@@ -12,8 +12,22 @@ describe("portfolio route access", () => {
     }
   });
 
-  it("allows the metaphysical screen without login", () => {
-    expect(isProtectedRoute("/metaphysical")).toBe(false);
-    expect(isProtectedRoute("/metaphysical/")).toBe(false);
+  // 中核ページは匿名で開けないと、クローラーに 307 を返して索引も
+  // 広告審査も通らない。ここが閉じていないことを固定する。
+  it("keeps the core pages open to anonymous visitors", () => {
+    for (const route of [
+      "/",
+      "/houi",
+      "/houi/2026/1",
+      "/houi/area/23100",
+      "/calendar",
+      "/relocation/arbitrage",
+      "/relocation/simulator",
+      "/relocation/wealth",
+      "/about",
+      "/contact",
+    ]) {
+      expect(isProtectedRoute(route)).toBe(false);
+    }
   });
 });
