@@ -13,27 +13,18 @@ const loadSupabase = () =>
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   Clock,
-  LayoutDashboard,
   Map,
   Compass,
-  BookOpen,
   Menu,
   X,
   ChevronRight,
-  Twitter,
-  Activity,
-  Terminal,
   PanelLeftClose,
   PanelLeftOpen,
   TrendingUp,
   LogOut,
   LogIn,
-  History,
   Route,
-  Rss,
-  Home,
   Calendar,
-  Globe,
   ExternalLink,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -57,22 +48,21 @@ interface NavItem {
   href: string;
   icon: LucideIcon;
   label: string;
-  external?: boolean;
 }
 
-const PROTECTED_ITEMS: NavItem[] = [
-  ...CORE_ROUTES.map((r) => ({
-    href: r.href,
-    icon: CORE_ICONS[r.href] ?? Compass,
-    label: r.label,
-  })),
-  {
-    href: "https://katmer.cloud-palette.com",
-    icon: BookOpen,
-    label: "Katmer Cloud",
-    external: true,
-  },
-];
+const PROTECTED_ITEMS: NavItem[] = CORE_ROUTES.map((r) => ({
+  href: r.href,
+  icon: CORE_ICONS[r.href] ?? Compass,
+  label: r.label,
+}));
+
+// Katmer Cloud は別サブドメインで運用している別のサービスで、引越しとは関係がない。
+// 中核ナビに同列で並べると、何をするサイトなのかが読み取りにくくなる。
+// リンク自体は残したいので、下部の控えめな位置に移した。
+const EXTERNAL_ITEM = {
+  href: "https://katmer.cloud-palette.com",
+  label: "Katmer Cloud",
+};
 
 export function GlobalSidebar() {
   const pathname = usePathname();
@@ -129,45 +119,13 @@ export function GlobalSidebar() {
     return null;
   }
 
-  const renderNavItem = (item: (typeof PROTECTED_ITEMS)[0]) => {
+  // ここが扱うのはサイト内のリンクだけ。外部リンクは中核ナビから外し、
+  // 下部で個別に描いている。
+  const renderNavItem = (item: NavItem) => {
     const isActive =
-      !item.external &&
-      (pathname === item.href ||
-        (item.href !== "/" && pathname?.startsWith(item.href)));
+      pathname === item.href ||
+      (item.href !== "/" && !!pathname?.startsWith(item.href));
     const Icon = item.icon;
-
-    if (item.external) {
-      return (
-        <a
-          key={item.href}
-          href={item.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={closeSidebar}
-          title={isCollapsed ? item.label : undefined}
-          className={`
-            flex items-center justify-between px-3 py-3 rounded-xl transition-all group
-            text-amber-700 hover:bg-amber-100/80 hover:text-amber-800 border border-amber-200/80 bg-amber-50/80
-            ${isCollapsed ? "justify-center" : ""}
-          `}
-        >
-          <div className="flex items-center gap-3">
-            <Icon
-              size={18}
-              className="shrink-0 text-amber-500 group-hover:scale-110 transition-transform"
-            />
-            {!isCollapsed && (
-              <span className="text-sm font-semibold whitespace-nowrap">
-                {item.label}
-              </span>
-            )}
-          </div>
-          {!isCollapsed && (
-            <ExternalLink size={14} className="text-amber-500/70 shrink-0" />
-          )}
-        </a>
-      );
-    }
 
     return (
       <Link
@@ -249,19 +207,15 @@ export function GlobalSidebar() {
 
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
-          {/* Public Space */}
-          {!isCollapsed && (
-            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-stone-400 uppercase">
-              Public Space
-            </div>
-          )}
           {PUBLIC_ITEMS.map(renderNavItem)}
 
-          {/* Secure Engine Space */}
+          {/* 見出しは "Public Space" / "Secure Engines" だった。中核ページは
+              匿名で開けるようにしたので "Secure" は事実と違い、ログインが
+              要るように見えてしまう。日本語の見出しに合わせる。 */}
           <div className="my-4 border-t border-rose-100/60" />
           {!isCollapsed && (
-            <div className="px-3 mb-2 text-[9px] font-mono tracking-widest text-stone-400 uppercase">
-              Secure Engines
+            <div className="px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-400">
+              引越しを決める
             </div>
           )}
           {PROTECTED_ITEMS.map(renderNavItem)}
@@ -341,6 +295,20 @@ export function GlobalSidebar() {
               </span>
             )}
           </div>
+
+          {/* 引越しとは別サービスへの導線。中核ナビから外してここに置いている。 */}
+          {!isCollapsed && (
+            <a
+              href={EXTERNAL_ITEM.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={closeSidebar}
+              className="flex items-center justify-center gap-1.5 text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
+            >
+              {EXTERNAL_ITEM.label}
+              <ExternalLink size={10} className="shrink-0" />
+            </a>
+          )}
 
           {/* Creator Signature */}
           {!isCollapsed && (
