@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AREAS } from "@/lib/areaContent";
+import { areasByPref } from "@/lib/areaContent";
 import { AdBanner } from "@/components/ads/AdBanner";
 
 export const metadata: Metadata = {
@@ -11,12 +11,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   // 県ごとにまとめる。掲載数の多い順だと県が入り混じって探しにくい。
-  const byPref = new Map<string, typeof AREAS>();
-  for (const a of AREAS) {
-    if (!byPref.has(a.pref)) byPref.set(a.pref, []);
-    byPref.get(a.pref)!.push(a);
-  }
-  for (const list of byPref.values()) list.sort((x, y) => y.count - x.count);
+  const byPref = areasByPref();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">

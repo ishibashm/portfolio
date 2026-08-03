@@ -88,3 +88,40 @@ export function directionLabel(d: CompassDirection): string {
 export function topAreas(limit = 60): Area[] {
   return [...AREAS].sort((a, b) => b.count - a.count).slice(0, limit);
 }
+
+/** 県ごとにまとめる。県内は掲載数が多い順。 */
+export function areasByPref(): Map<string, Area[]> {
+  const out = new Map<string, Area[]>();
+  for (const a of AREAS) {
+    if (!out.has(a.pref)) out.set(a.pref, []);
+    out.get(a.pref)!.push(a);
+  }
+  for (const list of out.values()) list.sort((x, y) => y.count - x.count);
+  return out;
+}
+
+/**
+ * 記事ページに置く出発地の候補。
+ *
+ * 全 220 件を毎ページに並べるとリンクが薄まるうえ本文が読めなくなるので、
+ * 県ごとに掲載数の多い数件だけを出し、残りは一覧ページへ送る。
+ * 県を落とさないのは、掲載数順に上から取ると大阪・愛知だけで埋まってしまい、
+ * 鳥取や福井から来た人に入口が無くなるため。
+ */
+export function topAreasByPref(perPref = 3): [string, Area[]][] {
+  return [...areasByPref().entries()]
+    .sort((a, b) => b[1].length - a[1].length)
+    .map(([pref, list]) => [pref, list.slice(0, perPref)] as [string, Area[]]);
+}
+
+/**
+ * 同じ県内のほかのエリア。
+ *
+ * 方位別の一覧は 5〜150km の範囲で切っているため、県内でも遠い相手や
+ * 近すぎる同一市内の区は載らない。県で辿れる道を別に用意する。
+ */
+export function siblingAreas(origin: Area, limit = 24): Area[] {
+  return AREAS.filter((a) => a.pref === origin.pref && a.code !== origin.code)
+    .sort((x, y) => y.count - x.count)
+    .slice(0, limit);
+}
