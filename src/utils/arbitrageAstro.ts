@@ -247,7 +247,9 @@ export function scoreDateForProperty(
   const lunarPhaseScore = state.lunarPhaseScore;
   let doyouPenalty = 0;
   let voidPenalty = 0;
-  let tenchusatsu = evaluateTenchusatsu(
+  // 移転（MIGRATION）以外の用途でも「弱める」設定は効かせたいので、
+  // 意図に関係なくここで一度だけ求める。
+  const tenchusatsu = evaluateTenchusatsu(
     state.voidScopes,
     ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE,
     ctx.involuntaryMove ?? false,
@@ -328,19 +330,11 @@ export function scoreDateForProperty(
     //
     // ただし「移転不可」とするかどうかは流派と移動の性質によって変わるので、
     // 効かせ方は tenchusatsuPolicy に外出ししてある（既定は従来どおり）。
-    if (ctx.actionIntent === "MIGRATION") {
-      tenchusatsu = evaluateTenchusatsu(
-        state.voidScopes,
-        ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE,
-        ctx.involuntaryMove ?? false,
-      );
-
-      if (tenchusatsu.blocks) {
-        voidPenalty = -100; // Time-Gate blocker!
-        dailyStatus = "NOISE_TENCHU";
-        dailyIsTendo = false;
-        tendoBonus = 0;
-      }
+    if (ctx.actionIntent === "MIGRATION" && tenchusatsu.blocks) {
+      voidPenalty = -100; // Time-Gate blocker!
+      dailyStatus = "NOISE_TENCHU";
+      dailyIsTendo = false;
+      tendoBonus = 0;
     }
   }
 
