@@ -47,6 +47,16 @@ import {
   selectSql,
   statsSql,
 } from "@/utils/arbitrageQuery";
+import {
+  DEFAULT_PARTY_POLICY,
+  PartyMember,
+  PartyPolicy,
+  combineOutcomes,
+  isPartyPolicy,
+  parsePartyParam,
+  partyWeights,
+  summarizeTiming,
+} from "@/utils/arbitrageParty";
 
 
 function parseSafeDate(dateStr: string | null | undefined): Date {
@@ -181,6 +191,19 @@ export async function GET(request: Request) {
   const weightPresetId = searchParams.get("weightPreset") || DEFAULT_PRESET_ID;
   const weights = getPreset(weightPresetId).weights;
 
+  // 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人を足せる。
+  // 方位は起点によって変わるので、人ごとに別々に判定してから合成する。
+  const partyPolicyRaw = searchParams.get("partyPolicy") || DEFAULT_PARTY_POLICY;
+  const partyPolicy: PartyPolicy = isPartyPolicy(partyPolicyRaw)
+    ? partyPolicyRaw
+    : DEFAULT_PARTY_POLICY;
+  // 「いつなら全員で動けるか」を何日先まで見るか。
+  // 対象日 1 日だけを見ていると、2 週間後なら開くという情報が出てこない。
+  const horizonRaw = parseInt(searchParams.get("horizonDays") || "30", 10);
+  const horizonDays = Number.isFinite(horizonRaw)
+    ? Math.max(0, Math.min(90, horizonRaw))
+    : 30;
+
   const minLat = parseFloat(searchParams.get("minLat") || "NaN");
   const maxLat = parseFloat(searchParams.get("maxLat") || "NaN");
   const minLon = parseFloat(searchParams.get("minLon") || "NaN");
@@ -214,22 +237,33 @@ export async function GET(request: Request) {
   // 1. 環境・運気エンジンの初期化
   const env = getSystemEnvironment(targetDate, baseLon, physicalMonthMode);
 
-  let bDate = parseSafeDate(birthDateStr);
+  const bDate = parseSafeDate(birthDateStr);
 
-  // アストロデータの計算準備
-  let birthGst = 0;
-  let sunLon = 0;
-  let venusLon = 0;
-  let jupiterLon = 0;
+  /**
+   * 判定に関わる人の一覧。先頭は必ず本人。
+   *
+   * 同行者は本人と同じ id を名乗れないようにしてある。上書きされると
+   * 「あなたの方位」が別人のもので表示され、しかもそれと気付けない。
+   */
+  const party: PartyMember[] = [
+    {
+      id: "primary",
+      name: (searchParams.get("selfName") || "あなた").slice(0, 40),
+      birthDate: birthDateStr,
+      birthLat: isNaN(birthLat) ? null : birthLat,
+      birthLon: isNaN(birthLon) ? null : birthLon,
+      baseLat,
+      baseLon,
+      weight: 1,
+      stationary: false,
+    },
+    ...parsePartyParam(searchParams.get("party")).filter(
+      (m) => m.id !== "primary",
+    ),
+  ];
+  const memberWeights = partyWeights(party);
 
-  if (!isNaN(birthLat) && !isNaN(birthLon)) {
-    birthGst = AstroEngine.getGreenwichSiderealTime(bDate);
-    sunLon = AstroEngine.getSolarLongitude(bDate);
-    venusLon = AstroEngine.getVenusLongitude(bDate);
-    jupiterLon = AstroEngine.getJupiterLongitude(bDate);
-  }
-
-  // 九星気学のベクトル計算
+  // 九星気学のベクトル計算（本人ぶん。盤の表示など既存の応答項目に使う）
   const honmeiStar = getHonmeiStar(bDate);
   const voidZodiacs = getPersonalVoidZodiac(bDate);
 
@@ -272,23 +306,28 @@ export async function GET(request: Request) {
 
   const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
 
-  // 動的偏角の取得
-  let declination = -8.2;
-  try {
-    const geoData = await getGeomagneticData(
-      baseLat,
-      baseLon,
-      targetDate.getTime(),
-    );
-    if (geoData && typeof geoData.declination === "number") {
-      declination = geoData.declination;
-    }
-  } catch (err) {
-    console.error(
-      "Error fetching dynamic declination in rentals arbitrage API:",
-      err,
-    );
-  }
+  // 動的偏角の取得。出発地ごとに違うので人ごとに引く。
+  const declinations = await Promise.all(
+    party.map(async (m) => {
+      try {
+        const geoData = await getGeomagneticData(
+          m.baseLat,
+          m.baseLon,
+          targetDate.getTime(),
+        );
+        if (geoData && typeof geoData.declination === "number") {
+          return geoData.declination;
+        }
+      } catch (err) {
+        console.error(
+          "Error fetching dynamic declination in rentals arbitrage API:",
+          err,
+        );
+      }
+      return -8.2;
+    }),
+  );
+  const declination = declinations[0];
 
   try {
     // 2. DBから物件データを取得 (緯度経度があるもの)
@@ -453,92 +492,312 @@ export async function GET(request: Request) {
 
     const scoredAt = new Date();
 
-    // 前後7日間の日付リストを作成し、それぞれのアストロ状態を事前計算
+    // 日付リスト。先頭 7 日（対象日±3）は既存の dateScores 用で、
+    // index 3 が対象日。そこから先は「いつなら全員で動けるか」を見るための
+    // 走査期間。まとめて 1 回で作るのは、日付ごとの盤の計算が重く、
+    // 7 日ぶんと走査期間ぶんを別々に回すと同じ日を二度計算するため。
     const dateList: Date[] = [];
-    for (let i = -3; i <= 3; i++) {
+    for (let i = -3; i <= Math.max(3, horizonDays); i++) {
       const d = new Date(targetDate);
       d.setDate(targetDate.getDate() + i);
       dateList.push(d);
     }
+    const WINDOW_SIZE = 7;
+    const TARGET_INDEX = 3;
 
-    const astroParams = {
-      baseLon,
-      physicalMonthMode,
-      useClassical,
-      honmeiStar,
-      voidZodiacs,
-      actionIntent,
-      nodeMapping,
-      directionFilterMode,
-      layerMode,
-      lunarPhaseModifier,
-      hasBirthLocation: !isNaN(birthLat) && !isNaN(birthLon),
-      bDate,
-    };
-    const dailyAstroStates = buildDailyAstroStates(dateList, astroParams);
+    /**
+     * 人ごとの前計算。盤・天中殺・八字は生年月日で決まるため、
+     * 同行者ぶんはそれぞれ別に組み立てないと本人の運気で他人を判定してしまう。
+     */
+    const memberContexts = party.map((member, index) => {
+      const memberBDate = parseSafeDate(member.birthDate);
+      const hasBirthLocation =
+        member.birthLat !== null && member.birthLon !== null;
+      return {
+        member,
+        bDate: memberBDate,
+        declination: declinations[index],
+        hasBirthLocation,
+        birthGst: hasBirthLocation
+          ? AstroEngine.getGreenwichSiderealTime(memberBDate)
+          : 0,
+        sunLon: hasBirthLocation
+          ? AstroEngine.getSolarLongitude(memberBDate)
+          : 0,
+        venusLon: hasBirthLocation
+          ? AstroEngine.getVenusLongitude(memberBDate)
+          : 0,
+        jupiterLon: hasBirthLocation
+          ? AstroEngine.getJupiterLongitude(memberBDate)
+          : 0,
+        states: member.stationary
+          ? []
+          : buildDailyAstroStates(dateList, {
+              baseLon: member.baseLon,
+              physicalMonthMode,
+              useClassical,
+              honmeiStar: getHonmeiStar(memberBDate),
+              voidZodiacs: getPersonalVoidZodiac(memberBDate),
+              actionIntent,
+              nodeMapping,
+              directionFilterMode,
+              layerMode,
+              lunarPhaseModifier,
+              hasBirthLocation,
+              bDate: memberBDate,
+            }),
+      };
+    });
 
-    // 3. 物件ごとにスコアリング
-    const scoredProperties = properties.map((p) => {
-      let direction: Direction | null = null;
-      let magneticDirection: Direction | null = null;
-      let trueBearing: number | null = null;
-      let distanceKm: number | null = null;
+    /**
+     * 「その人が、その方位へ、いつ動けるか」の表。
+     *
+     * 方位は 8 種類しかないので、物件ごとに走査期間ぶんを回すのは無駄になる
+     * （500 物件 × 30 日 × 人数）。人 × 方位で一度だけ計算して使い回す。
+     *
+     * ここでは天体ライン（出生地と物件座標で決まる加点）を含めない。
+     * ラインは日付によらず一律に加点されるので「どの日が開くか」は変えず、
+     * 含めると方位ごとの共有ができなくなる。点はその分だけ控えめに出る。
+     */
+    const horizonDates = dateList.slice(TARGET_INDEX);
+    const timingCache = new Map<
+      string,
+      { date: string; score: number; status: string; isAvoid: boolean }[]
+    >();
+    const timingSeriesFor = (
+      memberIndex: number,
+      direction: Direction | null,
+      magneticDirection: Direction | null,
+    ) => {
+      const key = `${memberIndex}|${direction ?? "-"}|${magneticDirection ?? "-"}`;
+      const cached = timingCache.get(key);
+      if (cached) return cached;
 
-      let relocatedASC = 0;
-      let relocatedMC = 0;
-      if (p.lat && p.lon && !isNaN(birthLat) && !isNaN(birthLon)) {
-        relocatedASC = AstroEngine.getAscendant(bDate, p.lat, p.lon, birthGst);
-        relocatedMC = AstroEngine.getMidheaven(bDate, p.lon, birthGst);
-      }
-
-      // 天体ラインの判定 (誕生日・出生地依存のため日付共通)
-      let hasSunLine = false;
-      let hasVenusLine = false;
-      let hasJupiterLine = false;
-      if (p.lat && p.lon && !isNaN(birthLat) && !isNaN(birthLon)) {
-        hasSunLine =
-          Math.abs(relocatedMC - sunLon) < 5 ||
-          Math.abs(relocatedASC - sunLon) < 5;
-        hasVenusLine =
-          Math.abs(relocatedMC - venusLon) < 5 ||
-          Math.abs(relocatedASC - venusLon) < 5;
-        hasJupiterLine =
-          Math.abs(relocatedMC - jupiterLon) < 5 ||
-          Math.abs(relocatedASC - jupiterLon) < 5;
-      }
-
-      if (p.lat && p.lon) {
-        distanceKm = getDistance(baseLat, baseLon, p.lat, p.lon);
-        trueBearing = getBearing(baseLat, baseLon, p.lat, p.lon);
-        direction = getDirectionFromBearing(trueBearing, nodeMapping);
-
-        const magneticBearing = (trueBearing - declination + 360) % 360;
-        magneticDirection = getDirectionFromBearing(
-          magneticBearing,
-          nodeMapping,
-        );
-      }
-
-      const dateScores = dailyAstroStates.map((state) =>
-        scoreDateForProperty(state, {
-          hasCoordinates: !!(p.lat && p.lon),
+      const ctx = memberContexts[memberIndex];
+      const series = ctx.states.slice(TARGET_INDEX).map((state, i) => {
+        const day = scoreDateForProperty(state, {
+          hasCoordinates: direction !== null,
           direction,
           magneticDirection,
           useTrueNorth,
+          hasSunLine: false,
+          hasVenusLine: false,
+          hasJupiterLine: false,
+          hasBirthLocation: ctx.hasBirthLocation,
+          actionIntent,
+        });
+        return {
+          date: horizonDates[i]?.toISOString().split("T")[0] ?? day.date,
+          score: day.score,
+          status: day.status,
+          isAvoid: isAvoidStatus(day.status),
+        };
+      });
+      timingCache.set(key, series);
+      return series;
+    };
+
+    // 3. 物件ごとにスコアリング
+    const scoredProperties = properties.map((p) => {
+      const hasCoordinates = !!(p.lat && p.lon);
+
+      /**
+       * 人ごとの判定。出発地が違えば同じ物件でも方位が違うため、
+       * 距離・方位・天体ラインをそれぞれの起点と出生データで計算する。
+       */
+      const perMember = memberContexts.map((ctx) => {
+        if (ctx.member.stationary || !hasCoordinates) {
+          return {
+            ctx,
+            direction: null as Direction | null,
+            magneticDirection: null as Direction | null,
+            distanceKm: null as number | null,
+            hasSunLine: false,
+            hasVenusLine: false,
+            hasJupiterLine: false,
+            days: [] as ReturnType<typeof scoreDateForProperty>[],
+          };
+        }
+
+        const distanceKm = getDistance(
+          ctx.member.baseLat,
+          ctx.member.baseLon,
+          p.lat,
+          p.lon,
+        );
+        const trueBearing = getBearing(
+          ctx.member.baseLat,
+          ctx.member.baseLon,
+          p.lat,
+          p.lon,
+        );
+        const direction = getDirectionFromBearing(trueBearing, nodeMapping);
+        const magneticDirection = getDirectionFromBearing(
+          (trueBearing - ctx.declination + 360) % 360,
+          nodeMapping,
+        );
+
+        // 天体ラインは出生日時・出生地と物件位置で決まり、日付には依存しない
+        let hasSunLine = false;
+        let hasVenusLine = false;
+        let hasJupiterLine = false;
+        if (ctx.hasBirthLocation) {
+          const relocatedASC = AstroEngine.getAscendant(
+            ctx.bDate,
+            p.lat,
+            p.lon,
+            ctx.birthGst,
+          );
+          const relocatedMC = AstroEngine.getMidheaven(
+            ctx.bDate,
+            p.lon,
+            ctx.birthGst,
+          );
+          hasSunLine =
+            Math.abs(relocatedMC - ctx.sunLon) < 5 ||
+            Math.abs(relocatedASC - ctx.sunLon) < 5;
+          hasVenusLine =
+            Math.abs(relocatedMC - ctx.venusLon) < 5 ||
+            Math.abs(relocatedASC - ctx.venusLon) < 5;
+          hasJupiterLine =
+            Math.abs(relocatedMC - ctx.jupiterLon) < 5 ||
+            Math.abs(relocatedASC - ctx.jupiterLon) < 5;
+        }
+
+        const days = ctx.states
+          .slice(0, WINDOW_SIZE)
+          .map((state) =>
+            scoreDateForProperty(state, {
+              hasCoordinates,
+              direction,
+              magneticDirection,
+              useTrueNorth,
+              hasSunLine,
+              hasVenusLine,
+              hasJupiterLine,
+              hasBirthLocation: ctx.hasBirthLocation,
+              actionIntent,
+            }),
+          );
+
+        return {
+          ctx,
+          direction,
+          magneticDirection,
+          distanceKm,
           hasSunLine,
           hasVenusLine,
           hasJupiterLine,
-          hasBirthLocation: !isNaN(birthLat) && !isNaN(birthLon),
-          actionIntent,
-        }),
-      );
+          days,
+        };
+      });
+
+      const primary = perMember[0];
+      const direction = primary.direction;
+      const magneticDirection = primary.magneticDirection;
+      const distanceKm = primary.distanceKm;
+      const hasSunLine = primary.hasSunLine;
+      const hasVenusLine = primary.hasVenusLine;
+      const hasJupiterLine = primary.hasJupiterLine;
+
+      /** 日付インデックスごとに全員ぶんをまとめる。 */
+      const jointAt = (dayIndex: number) =>
+        combineOutcomes(
+          perMember.map((m) => {
+            const day = m.days[dayIndex];
+            return {
+              memberId: m.ctx.member.id,
+              name: m.ctx.member.name,
+              direction: m.direction,
+              magneticDirection: m.magneticDirection,
+              distanceKm: m.distanceKm,
+              score: day?.score ?? 0,
+              status: day?.status ?? "UNKNOWN",
+              isAvoid: day ? isAvoidStatus(day.status) : false,
+              maxFactor: day?.status ?? "UNKNOWN",
+            };
+          }),
+          partyPolicy,
+          memberWeights,
+        );
+
+      /**
+       * 画面に返す 7 日ぶんの系列。
+       *
+       * 中身（六曜・吉日・内訳）は日付で決まるので誰のものでも同じだが、
+       * 方位で変わる status とスコアは「一番厳しい人」のものを採り、
+       * 点だけ合成値に差し替える。全員で動く前提なので、通れない人が
+       * いる日を「行ける日」として見せないため。
+       */
+      const jointByDay = primary.days.map((_, i) => jointAt(i));
+      const dateScores = primary.days.map((day, i) => {
+        const joint = jointByDay[i];
+        if (party.length === 1 || !joint.bindingMember) return day;
+        const binding = perMember.find(
+          (m) => m.ctx.member.id === joint.bindingMember!.memberId,
+        );
+        const bindingDay = binding?.days[i] ?? day;
+        return {
+          ...bindingDay,
+          // 日付そのものに紐づく情報は本人の系列のものを使う（同一のはず）。
+          date: day.date,
+          rokuyo: day.rokuyo,
+          luckyDays: day.luckyDays,
+          score: joint.score,
+        };
+      });
 
       // 目標日当日(配列のインデックス3)のデータに基づいて物件全体の吉凶ステータスを設定
-      const targetDay = dateScores[3];
+      const targetJoint = jointByDay[TARGET_INDEX];
+      const targetDay = dateScores[TARGET_INDEX];
       const targetDetails = targetDay.scoreDetails;
       const astrologyScore = targetDay.score;
       const astrologyStatus = targetDay.status;
       const isTendo = targetDay.luckyDays.isTendo;
+
+      /**
+       * いつなら全員で動けるか。
+       *
+       * 対象日が凶でも、走査期間の中に全員が動ける日があるなら候補として
+       * 残す価値がある。逆に 30 日先まで 1 日も開かないなら、物件条件が
+       * どれだけ良くてもその移転計画は成立しない。
+       */
+      let timing = null as ReturnType<typeof summarizeTiming> | null;
+      if (horizonDays > 0 && hasCoordinates) {
+        const series = perMember.map((m) =>
+          m.ctx.member.stationary || m.direction === null
+            ? null
+            : timingSeriesFor(
+                memberContexts.indexOf(m.ctx),
+                m.direction,
+                m.magneticDirection,
+              ),
+        );
+        const dayCount = series.find((s) => s !== null)?.length ?? 0;
+        const daily: { date: string; joint: ReturnType<typeof combineOutcomes> }[] =
+          [];
+        for (let i = 0; i < dayCount; i++) {
+          const outcomes = perMember.map((m, mi) => {
+            const entry = series[mi]?.[i];
+            return {
+              memberId: m.ctx.member.id,
+              name: m.ctx.member.name,
+              direction: m.direction,
+              magneticDirection: m.magneticDirection,
+              distanceKm: m.distanceKm,
+              score: entry?.score ?? 0,
+              status: entry?.status ?? "UNKNOWN",
+              isAvoid: entry?.isAvoid ?? false,
+              maxFactor: entry?.status ?? "UNKNOWN",
+            };
+          });
+          daily.push({
+            date: series.find((s) => s !== null)?.[i]?.date ?? "",
+            joint: combineOutcomes(outcomes, partyPolicy, memberWeights),
+          });
+        }
+        timing = summarizeTiming(daily);
+      }
 
       const astroFlags: string[] = [];
       if (
@@ -618,6 +877,16 @@ export async function GET(request: Request) {
           localStats?.count ?? null,
         ),
         astrology: astrologyScore,
+        // 移動する人が 2 人以上いるときだけ意味を持つ軸。
+        // 平均だけ見ていると「片方に大吉・片方に大凶」と「全員そこそこ」が
+        // 同じ点になるため、割れているかどうかを別に持つ。
+        harmony: targetJoint.harmony,
+        // 走査期間のうち全員が動ける日の割合。対象日 1 日が凶でも、
+        // 近い将来に開くなら候補として残すための軸。
+        timing:
+          timing && timing.scannedDays > 0
+            ? (timing.allClearDays / timing.scannedDays) * 100
+            : null,
         access: scoreStationAccess(p.minutes_to_station),
         proximity: scoreProximity(distanceKm),
         space: scoreSpace(sizeSqm, p.layout, meanSizeSqm, stdDevSizeSqm),
@@ -654,6 +923,23 @@ export async function GET(request: Request) {
         // 既定の重みでの総合点。画面側で重みを変えたときは再計算される。
         arbitrageScore: composed.score,
         axes,
+        /**
+         * 同行者ぶんの内訳。誰の方位がどうで、誰が引っかかっているか。
+         * 「全員にとってどうか」は 1 つの点に潰れてしまうので、
+         * 判断の材料として人ごとの結果をそのまま返す。
+         */
+        party: {
+          policy: partyPolicy,
+          score: targetJoint.score,
+          everyoneSafe: targetJoint.everyoneSafe,
+          blockedBy: targetJoint.blockedBy,
+          spread: targetJoint.spread,
+          harmony: targetJoint.harmony,
+          bindingMember: targetJoint.bindingMember,
+          members: targetJoint.members,
+        },
+        /** いつなら全員で動けるか。horizonDays=0 なら null。 */
+        timing,
         // どれだけの重みが実データで埋まったか。低いほど根拠が薄い。
         axisCoverage: composed.coverage,
         axisInputs: {
@@ -713,6 +999,19 @@ export async function GET(request: Request) {
         weightPreset: weightPresetId,
         budget: budgetYen,
         axisKeys: AXIS_ORDER,
+        // 誰を、どうまとめて、何日先まで見たか。画面に前提を出すため。
+        party: {
+          policy: partyPolicy,
+          horizonDays,
+          members: party.map((m) => ({
+            id: m.id,
+            name: m.name,
+            baseLat: m.baseLat,
+            baseLon: m.baseLon,
+            weight: m.weight,
+            stationary: m.stationary,
+          })),
+        },
         totalAnalyzed: properties.length,
         totalCount,
         limit,

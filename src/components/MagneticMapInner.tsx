@@ -55,6 +55,14 @@ interface MapInnerProps {
   targetLat?: number | null;
   targetLon?: number | null;
   nodeMapping?: "traditional" | "physical";
+  /**
+   * 強調表示する方位。ヒートマップで選んだ方位や、目的地の方位を指す。
+   *
+   * 8 つの扇形が同じ濃さで並んでいると、「今どの方位の話をしているのか」が
+   * 地図側に出てこない。ヒートマップのセルを押したときに、対応する扇形が
+   * 地図上でも分かるようにする。
+   */
+  highlightDirection?: string | null;
 }
 
 // Function to calculate a point at a certain distance and bearing from origin
@@ -167,6 +175,7 @@ export default function MagneticMapInner({
   targetLat,
   targetLon,
   nodeMapping = "traditional",
+  highlightDirection = null,
 }: MapInnerProps) {
   const [mounted, setMounted] = React.useState(false);
   const [clickedPos, setClickedPos] = React.useState<[number, number] | null>(
@@ -440,19 +449,36 @@ function mergeStatuses(list: (string | undefined)[]): string {
         return "【中立】干渉のない平穏な環境です";
       };
 
+      const isHighlighted = highlightDirection === d.dir;
+      const fillOpacity = isHighlighted ? Math.min(1, opacity + 0.18) : opacity;
+
       return (
         <React.Fragment key={`sector-group-${d.dir}-${activeLayerMode}`}>
+          {/* 選択中の方位の輪郭。扇形の色は吉凶を表しているので塗りは触らず、
+              枠線を重ねて「今どの方位の話をしているか」を地図側にも出す。 */}
+          {isHighlighted && (
+            <Polygon
+              positions={points}
+              interactive={false}
+              pathOptions={{
+                color: "#4f46e5",
+                weight: 4,
+                opacity: 0.95,
+                fill: false,
+              }}
+            />
+          )}
           <Polygon
             positions={points}
             color={color}
             fillColor={color}
-            fillOpacity={opacity}
+            fillOpacity={fillOpacity}
             weight={weight}
             dashArray={dashArray}
             pathOptions={{
               color,
               fillColor: color,
-              fillOpacity: opacity,
+              fillOpacity,
               weight,
               dashArray,
             }}
@@ -549,6 +575,9 @@ function mergeStatuses(list: (string | undefined)[]): string {
     activeLayerMode,
     zoom,
     nodeMapping,
+    // これが無いとヒートマップで方位を選び直しても扇形が再描画されず、
+    // 強調表示が前のままになる（連動しているように見えない）。
+    highlightDirection,
   ]);
 
   const dangerLayer = React.useMemo(() => {

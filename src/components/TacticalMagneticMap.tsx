@@ -63,6 +63,8 @@ interface MapProps {
   targetLat?: number | null;
   targetLon?: number | null;
   onSelectTarget?: (lat: number, lon: number) => void;
+  /** 強調表示する方位。ヒートマップで選んだ方位や目的地の方位を渡す。 */
+  highlightDirection?: string | null;
 }
 
 export function TacticalMagneticMapComponent({
@@ -88,6 +90,7 @@ export function TacticalMagneticMapComponent({
   targetLat,
   targetLon,
   onSelectTarget,
+  highlightDirection = null,
 }: MapProps) {
   const [showHUD, setShowHUD] = useState(true);
   const [localUseTrueNorth, localSetUseTrueNorth] = useState(false);
@@ -312,6 +315,7 @@ export function TacticalMagneticMapComponent({
             targetLat={targetLat}
             targetLon={targetLon}
             nodeMapping={isPhysical ? "physical" : "traditional"}
+            highlightDirection={highlightDirection}
           />
         </div>
 
