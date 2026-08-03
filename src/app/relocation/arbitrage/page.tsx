@@ -43,6 +43,10 @@ import {
   DEFAULT_PARTY_POLICY,
   PARTY_POLICIES,
 } from "@/utils/arbitrageParty";
+import {
+  DEFAULT_TENCHUSATSU_MODE,
+  TENCHUSATSU_MODES,
+} from "@/utils/tenchusatsuPolicy";
 import type { ProfilePreset } from "@/lib/profilePresetSync";
 
 /**
@@ -201,6 +205,8 @@ export default function ArbitrageScannerPage() {
     partyParam: "",
     partyPolicy: DEFAULT_PARTY_POLICY as string,
     horizonDays: 30,
+    tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as string,
+    involuntaryMove: false,
     mapBounds,
   });
 
@@ -674,6 +680,19 @@ export default function ArbitrageScannerPage() {
   const [sinkAvoidStatus, setSinkAvoidStatus] = useState(true);
 
   /**
+   * 天中殺（空亡）の効かせ方。
+   *
+   * 年天中殺は 2 年続くため、既定の厳格な扱いだとその間はどの方位・どの日も
+   * 移転不可になり、物件を探す意味がなくなる。禁止則として扱うかどうかは
+   * 流派によって違い、転勤などやむを得ない移動は影響を受けないとする
+   * 考え方もあるので、選べるようにする。
+   */
+  const [tenchusatsuMode, setTenchusatsuMode] = useState<string>(
+    DEFAULT_TENCHUSATSU_MODE,
+  );
+  const [involuntaryMove, setInvoluntaryMove] = useState(false);
+
+  /**
    * 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人。
    *
    * 出発地が違えば同じ物件でも方位が違うので、片方に吉でももう片方に凶、
@@ -817,6 +836,10 @@ export default function ArbitrageScannerPage() {
         setPartyPolicy(saved.partyPolicy);
       if (Number.isFinite(Number(saved.horizonDays)))
         setHorizonDays(Math.max(0, Math.min(90, Number(saved.horizonDays))));
+      if (typeof saved.tenchusatsuMode === "string")
+        setTenchusatsuMode(saved.tenchusatsuMode);
+      if (typeof saved.involuntaryMove === "boolean")
+        setInvoluntaryMove(saved.involuntaryMove);
     } catch {
       // 壊れた保存値は無視して既定で動かす。
     }
@@ -835,6 +858,8 @@ export default function ArbitrageScannerPage() {
           partyMembers,
           partyPolicy,
           horizonDays,
+          tenchusatsuMode,
+          involuntaryMove,
         }),
       );
     } catch {
@@ -849,6 +874,8 @@ export default function ArbitrageScannerPage() {
     partyMembers,
     partyPolicy,
     horizonDays,
+    tenchusatsuMode,
+    involuntaryMove,
   ]);
 
   // Load from localStorage on mount
@@ -1113,6 +1140,8 @@ export default function ArbitrageScannerPage() {
       // 一覧では避けるべきとされた日が「動ける日」として出てしまう。
       if (partyParam) params.append("party", partyParam);
       params.append("partyPolicy", partyPolicy);
+      params.append("tenchusatsuMode", tenchusatsuMode);
+      params.append("involuntaryMove", String(involuntaryMove));
 
       const res = await fetch(
         `/api/rentals/arbitrage/timeline?${params.toString()}`,
@@ -1136,6 +1165,8 @@ export default function ArbitrageScannerPage() {
       actionIntent,
       partyParam,
       partyPolicy,
+      tenchusatsuMode,
+      involuntaryMove,
     ],
   );
 
@@ -1197,6 +1228,8 @@ export default function ArbitrageScannerPage() {
       if (partyParam) params.append("party", partyParam);
       params.append("partyPolicy", partyPolicy);
       params.append("horizonDays", String(horizonDays));
+      params.append("tenchusatsuMode", tenchusatsuMode);
+      params.append("involuntaryMove", String(involuntaryMove));
 
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
@@ -1258,6 +1291,8 @@ export default function ArbitrageScannerPage() {
       prev.partyParam !== partyParam ||
       prev.partyPolicy !== partyPolicy ||
       prev.horizonDays !== horizonDays ||
+      prev.tenchusatsuMode !== tenchusatsuMode ||
+      prev.involuntaryMove !== involuntaryMove ||
       JSON.stringify(prev.mapBounds) !== JSON.stringify(mapBounds);
 
     prevParamsRef.current = {
@@ -1278,6 +1313,8 @@ export default function ArbitrageScannerPage() {
       partyParam,
       partyPolicy,
       horizonDays,
+      tenchusatsuMode,
+      involuntaryMove,
       mapBounds,
     };
 
@@ -1301,6 +1338,8 @@ export default function ArbitrageScannerPage() {
     partyParam,
     partyPolicy,
     horizonDays,
+    tenchusatsuMode,
+    involuntaryMove,
     mapBounds,
     initialLoaded,
   ]);
@@ -2491,6 +2530,66 @@ export default function ArbitrageScannerPage() {
                         </select>
                       </div>
                     </div>
+
+                    {/* 天中殺の扱い。
+                        年天中殺は 2 年続くため、既定の厳格な扱いでは
+                        その間どの方位・どの日も不可になる。禁止則として
+                        扱うかは流派によって違うので選べるようにする。 */}
+                    <div className="space-y-1 pt-1 border-t border-gray-100 dark:border-stone-200">
+                      <label
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                        title="天中殺（算命学）＝空亡（四柱推命）。九星気学には本来無い概念で、どこまで禁止則として扱うかは流派によって異なる。"
+                      >
+                        天中殺の扱い
+                      </label>
+                      <select
+                        value={tenchusatsuMode}
+                        onChange={(e) => {
+                          setTenchusatsuMode(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        {TENCHUSATSU_MODES.map((mode) => (
+                          <option
+                            key={mode.id}
+                            value={mode.id}
+                            title={mode.description}
+                          >
+                            {mode.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                        {
+                          TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
+                            ?.description
+                        }
+                      </p>
+                      <p className="text-[9px] text-stone-400 leading-relaxed">
+                        根拠:{" "}
+                        {
+                          TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
+                            ?.rationale
+                        }
+                      </p>
+                    </div>
+
+                    <label
+                      className="flex items-center gap-2 text-[10px] text-stone-500 cursor-pointer"
+                      title="転勤・家庭の事情など、自分の意思では選べない移動。多くの流派が他動的な移動は天中殺の影響を受けないとする。"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={involuntaryMove}
+                        onChange={(e) => {
+                          setInvoluntaryMove(e.target.checked);
+                          setCurrentPage(1);
+                        }}
+                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      やむを得ない移動（転勤など）として扱う
+                    </label>
 
                     <label className="flex items-center gap-2 text-[10px] text-stone-500 cursor-pointer">
                       <input

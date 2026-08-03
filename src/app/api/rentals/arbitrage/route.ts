@@ -48,6 +48,11 @@ import {
   statsSql,
 } from "@/utils/arbitrageQuery";
 import {
+  DEFAULT_TENCHUSATSU_MODE,
+  TenchusatsuMode,
+  isTenchusatsuMode,
+} from "@/utils/tenchusatsuPolicy";
+import {
   DEFAULT_PARTY_POLICY,
   PartyMember,
   PartyPolicy,
@@ -197,6 +202,15 @@ export async function GET(request: Request) {
   const partyPolicy: PartyPolicy = isPartyPolicy(partyPolicyRaw)
     ? partyPolicyRaw
     : DEFAULT_PARTY_POLICY;
+  // 天中殺（空亡）の効かせ方。流派と移動の性質で変わるので選べるようにする。
+  const tenchusatsuRaw =
+    searchParams.get("tenchusatsuMode") || DEFAULT_TENCHUSATSU_MODE;
+  const tenchusatsuMode: TenchusatsuMode = isTenchusatsuMode(tenchusatsuRaw)
+    ? tenchusatsuRaw
+    : DEFAULT_TENCHUSATSU_MODE;
+  // 転勤などやむを得ない移動か。他動的な移動は天中殺の影響を受けないとする流派に沿う。
+  const involuntaryMove = searchParams.get("involuntaryMove") === "true";
+
   // 「いつなら全員で動けるか」を何日先まで見るか。
   // 対象日 1 日だけを見ていると、2 週間後なら開くという情報が出てこない。
   const horizonRaw = parseInt(searchParams.get("horizonDays") || "30", 10);
@@ -585,6 +599,8 @@ export async function GET(request: Request) {
           hasJupiterLine: false,
           hasBirthLocation: ctx.hasBirthLocation,
           actionIntent,
+          tenchusatsuMode,
+          involuntaryMove,
         });
         return {
           date: horizonDates[i]?.toISOString().split("T")[0] ?? day.date,
@@ -677,6 +693,8 @@ export async function GET(request: Request) {
               hasJupiterLine,
               hasBirthLocation: ctx.hasBirthLocation,
               actionIntent,
+              tenchusatsuMode,
+              involuntaryMove,
             }),
           );
 
@@ -996,6 +1014,8 @@ export async function GET(request: Request) {
           municipalityCount: municipalityStats.size,
         },
         candidateStrategy,
+        tenchusatsuMode,
+        involuntaryMove,
         weightPreset: weightPresetId,
         budget: budgetYen,
         axisKeys: AXIS_ORDER,
