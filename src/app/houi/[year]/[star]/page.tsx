@@ -10,6 +10,7 @@ import {
   MONTHS,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 /**
@@ -281,6 +282,8 @@ export default async function Page({
             出発地と生年月日を入れて実際の物件で確認する
           </Link>
         </section>
+
+        <AreaEntryLinks heading="吉方位に何があるかを見る" />
 
         <div className="mt-10">
           <AdBanner />

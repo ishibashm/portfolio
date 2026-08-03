@@ -6,6 +6,7 @@ import {
   AREA_GENERATED_AT,
   findArea,
   neighboursByDirection,
+  siblingAreas,
 } from "@/lib/areaContent";
 import {
   DIRECTIONS,
@@ -67,6 +68,7 @@ export default async function Page({
   }));
 
   const populated = DIRECTIONS.filter((d) => groups[d].length > 0);
+  const siblings = siblingAreas(area);
 
   const path = `/houi/area/${area.code}`;
 
@@ -281,6 +283,36 @@ export default async function Page({
             {area.full}を出発地にして物件を探す
           </Link>
         </section>
+
+        {/* 方位別の一覧は 5〜150km で切ってあるので、同一市内の区や県内の遠い市は
+            そこに出てこない。出発地を選び直したい人のために県で辿れるようにする。 */}
+        {siblings.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+              {area.pref}のほかのエリアを出発地にする
+            </h2>
+            <p className="mt-3 text-xs text-slate-600">
+              出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {siblings.map((s) => (
+                <Link
+                  key={s.code}
+                  href={`/houi/area/${s.code}`}
+                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                >
+                  {s.city}
+                </Link>
+              ))}
+            </div>
+            <Link
+              href="/houi/area"
+              className="mt-4 inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+            >
+              すべての市区町村から選ぶ（{AREAS.length}エリア）
+            </Link>
+          </section>
+        )}
       </article>
     </div>
   );

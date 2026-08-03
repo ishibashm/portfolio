@@ -10,6 +10,7 @@ import {
   monthContentYears,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 /**
@@ -199,6 +200,8 @@ export default async function Page({
             </Link>
           </div>
         </section>
+
+        <AreaEntryLinks heading={`${month}月の吉方位に何があるかを見る`} />
 
         <div className="mt-10">
           <AdBanner />
