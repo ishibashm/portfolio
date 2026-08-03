@@ -57,8 +57,17 @@ function getApproximateLunarDateOriginal(date: Date): { month: number, day: numb
  */
 export function getRokuyo(date: Date): string {
   const { month, day } = getLunarDate(date);
-  const sum = month + day;
-  const rem = sum % 6;
+  // lunar-javascript は閏月を負の月番号で返す（例: 閏6月 → -6）。
+  // そのまま足すと月初の数日で合計が負になり、剰余も負になって
+  // ROKUYO[-3] のような未定義参照になる。六曜は閏月でも元の月と
+  // 同じ番号で数えるため、絶対値を取る。
+  //
+  // 実害は小さくない。undefined が返ると呼び出し側の
+  // `rokuyo.includes("大安")` が例外になり、その日を含む期間を
+  // 評価しようとした API が 500 で落ちる。2024〜2030 年だけでも
+  // 2025-07-25〜29 と 2028-06-23〜26 の 9 日が該当した。
+  const sum = Math.abs(month) + day;
+  const rem = ((sum % 6) + 6) % 6;
   return ROKUYO[rem];
 }
 

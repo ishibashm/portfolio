@@ -18,6 +18,12 @@ import {
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
 import { isNoiseStatus } from "@/utils/arbitrageHelpers";
+import {
+  DEFAULT_TENCHUSATSU_MODE,
+  TenchusatsuMode,
+  VoidScopes,
+  evaluateTenchusatsu,
+} from "@/utils/tenchusatsuPolicy";
 
 // 吉凶ステータスの判定は文字列を見るだけの純粋な処理で、天体暦エンジンも
 // lunar-javascript も要らない。画面側（クライアント）からも使えるように
@@ -104,6 +110,12 @@ export interface DailyAstroState {
   holiday: any;
   weekday: number;
   isVoidTime: boolean;
+  /**
+   * 年・月・日それぞれが空亡に当たっているか。
+   * 「空亡かどうか」の 1 ビットだけでは、年天中殺で 2 年塞がっているのか
+   * その日だけなのかが区別できず、扱いを選べない。
+   */
+  voidScopes: VoidScopes;
   baziScore: number;
 }
 
@@ -175,10 +187,13 @@ export function buildDailyAstroStates(
 
     const dateStr = d.toISOString().split("T")[0];
     const zodiacs_d = getCurrentZodiac(new Date(dateStr), p.baseLon);
+    const voidScopes_d: VoidScopes = {
+      year: p.voidZodiacs.includes(zodiacs_d.yearZodiac),
+      month: p.voidZodiacs.includes(zodiacs_d.monthZodiac),
+      day: p.voidZodiacs.includes(zodiacs_d.dayZodiac),
+    };
     const isVoidTime_d =
-      p.voidZodiacs.includes(zodiacs_d.yearZodiac) ||
-      p.voidZodiacs.includes(zodiacs_d.monthZodiac) ||
-      p.voidZodiacs.includes(zodiacs_d.dayZodiac);
+      voidScopes_d.year || voidScopes_d.month || voidScopes_d.day;
 
     return {
       date: d,
@@ -192,6 +207,7 @@ export function buildDailyAstroStates(
       holiday: isJapaneseHoliday(d),
       weekday: d.getDay(),
       isVoidTime: isVoidTime_d,
+      voidScopes: voidScopes_d,
       baziScore: p.hasBirthLocation
         ? calculateBaziCompatibility(p.bDate, new Date(dateStr))
         : 50,
@@ -209,6 +225,10 @@ export interface PropertyAstroContext {
   hasJupiterLine: boolean;
   hasBirthLocation: boolean;
   actionIntent: any;
+  /** 天中殺（空亡）の効かせ方。既定は従来どおり年・月・日すべてで禁止。 */
+  tenchusatsuMode?: TenchusatsuMode;
+  /** 転勤などやむを得ない移動か。立てると天中殺で禁止しない。 */
+  involuntaryMove?: boolean;
 }
 
 /** ある物件の方位で、1 日ぶんの吉凶とスコア内訳を出す（軽い部分） */
@@ -227,6 +247,11 @@ export function scoreDateForProperty(
   const lunarPhaseScore = state.lunarPhaseScore;
   let doyouPenalty = 0;
   let voidPenalty = 0;
+  let tenchusatsu = evaluateTenchusatsu(
+    state.voidScopes,
+    ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE,
+    ctx.involuntaryMove ?? false,
+  );
 
   if (ctx.hasCoordinates) {
     const targetDirection = ctx.useTrueNorth
@@ -300,11 +325,22 @@ export function scoreDateForProperty(
     // ここでスコアを 0 まで落としながら status は方位判定のまま残していたため、
     // 「OPTIMAL（大吉）」と「天中殺期間 (移転NG)」が同時に表示されていた。
     // 移転できない期間なのだから判定そのものを凶に倒す。
-    if (state.isVoidTime && ctx.actionIntent === "MIGRATION") {
-      voidPenalty = -100; // Time-Gate blocker!
-      dailyStatus = "NOISE_TENCHU";
-      dailyIsTendo = false;
-      tendoBonus = 0;
+    //
+    // ただし「移転不可」とするかどうかは流派と移動の性質によって変わるので、
+    // 効かせ方は tenchusatsuPolicy に外出ししてある（既定は従来どおり）。
+    if (ctx.actionIntent === "MIGRATION") {
+      tenchusatsu = evaluateTenchusatsu(
+        state.voidScopes,
+        ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE,
+        ctx.involuntaryMove ?? false,
+      );
+
+      if (tenchusatsu.blocks) {
+        voidPenalty = -100; // Time-Gate blocker!
+        dailyStatus = "NOISE_TENCHU";
+        dailyIsTendo = false;
+        tendoBonus = 0;
+      }
     }
   }
 
@@ -328,7 +364,14 @@ export function scoreDateForProperty(
     lunarPhaseScore +
     doyouPenalty +
     voidPenalty;
-  const dailyScore = Math.max(0, Math.min(100, rawTotalScore));
+  let dailyScore = Math.max(0, Math.min(100, rawTotalScore));
+
+  // 「弱める」扱いのときは、吉も凶も中央（50）へ寄せる。
+  // 空亡は本来「その時期は吉も凶も力が弱い」であって、
+  // 凶だけを強める概念ではないため、両方向に効かせる。
+  if (!tenchusatsu.blocks && tenchusatsu.attenuation < 1) {
+    dailyScore = 50 + (dailyScore - 50) * tenchusatsu.attenuation;
+  }
 
   const isTaian = state.rokuyo.includes("大安");
   const isTensho = state.luckyDays.isTensho;
@@ -346,6 +389,8 @@ export function scoreDateForProperty(
     date: state.dateStr,
     score: dailyScore,
     status: dailyStatus,
+    /** 天中殺をどう効かせたか。画面で理由を出すために返す。 */
+    tenchusatsu,
     rokuyo: state.rokuyo,
     luckyDays: {
       isIchiryumanbai,

@@ -12,6 +12,11 @@ import {
   isAvoidStatus,
 } from "@/utils/arbitrageAstro";
 import {
+  DEFAULT_TENCHUSATSU_MODE,
+  TenchusatsuMode,
+  isTenchusatsuMode,
+} from "@/utils/tenchusatsuPolicy";
+import {
   DEFAULT_PARTY_POLICY,
   PartyMember,
   PartyPolicy,
@@ -164,6 +169,13 @@ export async function GET(request: Request) {
       "independent") as "coupled" | "independent";
     const targetDate = parseSafeDate(searchParams.get("targetDate") || "");
 
+    const tenchusatsuRaw =
+      searchParams.get("tenchusatsuMode") || DEFAULT_TENCHUSATSU_MODE;
+    const tenchusatsuMode: TenchusatsuMode = isTenchusatsuMode(tenchusatsuRaw)
+      ? tenchusatsuRaw
+      : DEFAULT_TENCHUSATSU_MODE;
+    const involuntaryMove = searchParams.get("involuntaryMove") === "true";
+
     const partyPolicyRaw =
       searchParams.get("partyPolicy") || DEFAULT_PARTY_POLICY;
     const partyPolicy: PartyPolicy = isPartyPolicy(partyPolicyRaw)
@@ -302,6 +314,8 @@ export async function GET(request: Request) {
             hasJupiterLine,
             hasBirthLocation: memberHasBirth,
             actionIntent,
+            tenchusatsuMode,
+            involuntaryMove,
           }),
         ),
       };
