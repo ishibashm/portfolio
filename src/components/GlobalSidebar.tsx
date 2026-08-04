@@ -26,11 +26,17 @@ import {
   Route,
   Calendar,
   ExternalLink,
+  BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORE_ROUTES } from "@/lib/siteStructure";
 
-const PUBLIC_ITEMS = [{ href: "/", icon: Clock, label: "ホーム" }];
+// 使い方ガイドは引越しを決める道具そのものではないので、
+// 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
+const PUBLIC_ITEMS = [
+  { href: "/", icon: Clock, label: "ホーム" },
+  { href: "/guide", icon: BookOpen, label: "使い方ガイド" },
+];
 
 // ナビは src/lib/siteStructure.ts の中核ルートに合わせる。
 // 以前は英語の機能名（Oracle Hub / Tech & Trends など）が並び、
