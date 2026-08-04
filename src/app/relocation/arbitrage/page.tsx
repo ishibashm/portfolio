@@ -48,6 +48,7 @@ import {
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
 import type { ProfilePreset } from "@/lib/profilePresetSync";
+import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
 
 /**
  * 吉凶ステータスの日本語表記。
@@ -652,6 +653,11 @@ export default function ArbitrageScannerPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterName, setFilterName] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  /**
+   * 方位で絞る。吉日カレンダーから「この日にこの方位へ」と渡ってくる導線で使う。
+   * 方位が決まってから物件を見るとき、他の方位が混ざっていると選べない。
+   */
+  const [filterDirection, setFilterDirection] = useState("ALL");
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMinYield, setFilterMinYield] = useState<string>("");
   const [filterMaxAge, setFilterMaxAge] = useState<string>("5");
@@ -970,6 +976,37 @@ export default function ArbitrageScannerPage() {
       if (qPref) pref = qPref;
       const qRadius = qs.get("radiusKm");
       if (qRadius) rKm = qRadius;
+
+      // 吉日カレンダー（/calendar）からの受け渡し。
+      // 「この日に、この方位で」を選んで来ているので、対象日・方位・
+      // 天中殺の扱いをそのまま引き継ぐ。ここで引き継がないと、
+      // 遷移した先で別の前提の一覧を見ることになる。
+      const qDate = qs.get("targetDate");
+      if (qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate)) {
+        tDate = qDate;
+        // 保存側にも書く。MetaphysicalConfigBar がマウント時に
+        // 保存済みの設定で metaphysical-config-updated を投げるため、
+        // ここで state に入れるだけだと直後に上書きされて元の日付に戻る。
+        // baseLat/baseLon を同じ理由で保存しているのと同じ扱いにする。
+        localStorage.setItem("arb_targetDate", qDate);
+        try {
+          const raw = localStorage.getItem("tactical_config_v1");
+          const cfg = raw ? JSON.parse(raw) : {};
+          cfg.target_date = qDate;
+          localStorage.setItem("tactical_config_v1", JSON.stringify(cfg));
+        } catch {
+          /* 保存済み設定が壊れていても URL の日付は使う */
+        }
+      }
+      const qDir = qs.get("direction");
+      if (qDir && ALL_DIRECTIONS.includes(qDir as any)) {
+        setFilterDirection(qDir);
+      }
+      const qTenchu = qs.get("tenchusatsuMode");
+      if (qTenchu && TENCHUSATSU_MODES.some((m) => m.id === qTenchu)) {
+        setTenchusatsuMode(qTenchu);
+      }
+      if (qs.get("involuntaryMove") === "true") setInvoluntaryMove(true);
     } catch {
       /* URL の解釈に失敗しても保存済みの設定で動かす */
     }
@@ -1614,6 +1651,8 @@ export default function ArbitrageScannerPage() {
         return false;
     }
 
+    if (filterDirection !== "ALL" && d.direction !== filterDirection) return false;
+
     if (filterMaxStation) {
       const maxStation = Number(filterMaxStation);
       // 徒歩分数が未取得の物件は「条件を満たす保証が無い」ので外す。
@@ -1701,6 +1740,7 @@ export default function ArbitrageScannerPage() {
     if (filterMaxRent !== "") count++;
     if (filterMinYield !== "") count++;
     if (filterMaxAge !== "") count++;
+    if (filterDirection !== "ALL") count++;
     if (filterMaxStation !== "") count++;
     if (filterMinSize !== "") count++;
     if (filterMinTotal !== "") count++;
@@ -1711,6 +1751,7 @@ export default function ArbitrageScannerPage() {
     filterMaxRent,
     filterMinYield,
     filterMaxAge,
+    filterDirection,
     filterMaxStation,
     filterMinSize,
     filterMinTotal,
@@ -2642,6 +2683,31 @@ export default function ArbitrageScannerPage() {
                         <option value="OPTIMAL">OPTIMAL (大吉)</option>
                         <option value="SAFE">SAFE (吉)</option>
                         <option value="NOISE">NOISE (凶)</option>
+                      </select>
+                    </div>
+
+                    {/* 方位で絞る。吉日カレンダーからの導線でここが埋まる。 */}
+                    <div className="space-y-1">
+                      <label
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                        title="現住地から見た方位で物件を絞ります。方位を決めてから物件を選ぶときに使います。"
+                      >
+                        方位で絞る
+                      </label>
+                      <select
+                        value={filterDirection}
+                        onChange={(e) => {
+                          setFilterDirection(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="ALL">全方位</option>
+                        {ALL_DIRECTIONS.map((d) => (
+                          <option key={d} value={d}>
+                            {DIRECTION_LABELS[d]}（{d}）
+                          </option>
+                        ))}
                       </select>
                     </div>
 

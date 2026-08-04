@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Loader2, CalendarCheck } from "lucide-react";
+import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import {
   ALL_DIRECTIONS,
   DIRECTION_LABELS,
@@ -78,6 +79,9 @@ interface Summary {
 export function AuspiciousDayFinder() {
   const [birthDate, setBirthDate] = useState("");
   const [lon, setLon] = useState("");
+  // スキャナーへ引き継ぐために緯度も持つ。方位の判定は経度だけで足りるが、
+  // 物件を出すには出発地の座標が要る。
+  const [lat, setLat] = useState("");
   const [direction, setDirection] = useState("all");
   const [tenchusatsuMode, setTenchusatsuMode] = useState<string>(
     DEFAULT_TENCHUSATSU_MODE,
@@ -100,6 +104,8 @@ export function AuspiciousDayFinder() {
       if (typeof c.birth_date === "string") setBirthDate(c.birth_date);
       if (c.base_lon !== undefined && c.base_lon !== null)
         setLon(String(c.base_lon));
+      if (c.base_lat !== undefined && c.base_lat !== null)
+        setLat(String(c.base_lat));
     } catch {
       // 壊れていれば手入力してもらう
     }
@@ -141,6 +147,17 @@ export function AuspiciousDayFinder() {
     }
   }, [birthDate, lon, from, months, direction, tenchusatsuMode]);
 
+  /**
+   * 物件スキャナーへの受け渡し。対象日・方位・天中殺の扱いを引き継ぐ。
+   * 出発地が分からないとスキャナーは方位を出せないので座標も渡す。
+   */
+  const scannerHref = (date: string, direction: string) => {
+    const q = new URLSearchParams({ targetDate: date, direction, tenchusatsuMode });
+    if (lat) q.set("baseLat", lat);
+    if (lon) q.set("baseLon", lon);
+    return `/relocation/arbitrage?${q.toString()}`;
+  };
+
   return (
     <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
       <h2 className="text-lg font-bold font-serif flex items-center gap-2">
@@ -177,6 +194,22 @@ export function AuspiciousDayFinder() {
             placeholder="例: 136.9008（名古屋）"
             value={lon}
             onChange={(e) => setLon(e.target.value)}
+            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
+          />
+        </div>
+        <div className="space-y-1">
+          <label
+            className="text-xs font-semibold text-slate-500 block cursor-help"
+            title="物件一覧へ渡すときに使います。方位の判定だけなら経度だけで足ります。"
+          >
+            現住地の緯度（任意）
+          </label>
+          <input
+            type="number"
+            step="0.0001"
+            placeholder="例: 35.1430"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
           />
         </div>
@@ -325,6 +358,7 @@ export function AuspiciousDayFinder() {
                         <th className="px-3 py-2 text-left font-semibold">日盤</th>
                         <th className="px-3 py-2 text-left font-semibold">暦</th>
                         <th className="px-3 py-2 text-left font-semibold">天中殺</th>
+                        <th className="px-3 py-2 text-left font-semibold">物件</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -372,6 +406,19 @@ export function AuspiciousDayFinder() {
                             ) : (
                               <span className="text-slate-400">—</span>
                             )}
+                          </td>
+                          <td className="px-3 py-2 text-xs whitespace-nowrap">
+                            {/* この日・この方位のまま物件一覧へ渡す。
+                                日と方位が決まってから物件を選ぶのが実際の順序で、
+                                条件を入れ直させると前提がずれる。 */}
+                            <Link
+                              href={scannerHref(d.date, s.direction)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100 transition-colors"
+                              title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
+                            >
+                              この条件で探す
+                              <ArrowRight className="w-3 h-3" />
+                            </Link>
                           </td>
                         </tr>
                       ))}
