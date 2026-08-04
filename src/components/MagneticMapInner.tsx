@@ -15,6 +15,7 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import { statusForLayerMode } from "@/utils/directionStatus";
 
 // Fix for default marker icons in Leaflet with Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -216,22 +217,6 @@ export default function MagneticMapInner({
     [declination, useTrueNorth],
   );
 
-function mergeStatuses(list: (string | undefined)[]): string {
-  const valid = list.filter(Boolean) as string[];
-  if (valid.length === 0) return "SAFE";
-  if (valid.includes("NOISE_GOU")) return "NOISE_GOU";
-  if (valid.includes("NOISE_ANKEN")) return "NOISE_ANKEN";
-  if (valid.includes("NOISE_HONMEI")) return "NOISE_HONMEI";
-  if (valid.includes("NOISE_TEKI")) return "NOISE_TEKI";
-  if (valid.includes("NOISE_VOID")) return "NOISE_VOID";
-  if (valid.includes("NOISE_HA")) return "NOISE_HA";
-  if (valid.includes("NOISE_NODE")) return "NOISE_NODE";
-  if (valid.some((s) => s.startsWith("NOISE"))) return "NOISE";
-  if (valid.includes("OPTIMAL")) return "OPTIMAL";
-  if (valid.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
-  return "SAFE";
-}
-
   // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
     const dirMap = [
@@ -248,24 +233,8 @@ function mergeStatuses(list: (string | undefined)[]): string {
     return dirMap.map((d) => {
       let status = "SAFE";
       if (layers) {
-        const mode = activeLayerMode || "final";
-        if (mode === "final" && layers.finalVectors) {
-          status = layers.finalVectors[d.dir] || "SAFE";
-        } else if (mode === "year" && layers.yearLayer) {
-          status = layers.yearLayer[d.dir] || "SAFE";
-        } else if (mode === "month" && layers.monthLayer) {
-          status = layers.monthLayer[d.dir] || "SAFE";
-        } else if (mode === "day" && layers.dayLayer) {
-          status = layers.dayLayer[d.dir] || "SAFE";
-        } else if (mode === "year_month") {
-          status = mergeStatuses([layers.yearLayer[d.dir], layers.monthLayer[d.dir]]);
-        } else if (mode === "month_day") {
-          status = mergeStatuses([layers.monthLayer[d.dir], layers.dayLayer[d.dir]]);
-        } else if (mode === "year_day") {
-          status = mergeStatuses([layers.yearLayer[d.dir], layers.dayLayer[d.dir]]);
-        } else {
-          status = layers.finalVectors[d.dir] || "SAFE";
-        }
+        // 時間軸の畳み方はヒートマップと共有する。ここに個別実装を戻さないこと。
+        status = statusForLayerMode(layers, d.dir, activeLayerMode || "final");
       } else if (vectors && vectors[d.dir]) {
         status = vectors[d.dir];
       }
@@ -320,6 +289,17 @@ function mergeStatuses(list: (string | undefined)[]): string {
         case "NOISE_TEKI":
           style = { color: "#c026d3", opacity: 0.6 };
           dashArray = "15,15";
+          break;
+        // 月命殺・月命的殺。ヒートマップは本命殺と同じ紫で塗っていたのに、
+        // 地図には case が無く default（灰色・ほぼ透明）に落ちていた。
+        // 同じ方位が地図では平穏に見え、ヒートマップでは凶に見える原因。
+        case "NOISE_GETSUMEI":
+          style = { color: "#d946ef", opacity: 0.5 };
+          dashArray = "12,8,4,8";
+          break;
+        case "NOISE_GETSUTEKI":
+          style = { color: "#c026d3", opacity: 0.5 };
+          dashArray = "12,12";
           break;
         case "NOISE_VOID":
           style = { color: "#eab308", opacity: 0.4 };
@@ -397,6 +377,8 @@ function mergeStatuses(list: (string | undefined)[]): string {
         if (status === "NOISE_HA") return "破";
         if (status === "NOISE_HONMEI") return "本命";
         if (status === "NOISE_TEKI") return "的殺";
+        if (status === "NOISE_GETSUMEI") return "月命";
+        if (status === "NOISE_GETSUTEKI") return "月命的";
         if (status === "NOISE_VOID") return "ボイド";
         if (status === "NOISE_NODE") return "交点";
         if (status === "OPTIMAL") return "大吉";
