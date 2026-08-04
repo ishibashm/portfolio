@@ -43,6 +43,7 @@ import {
   distanceKmBetween,
 } from "@/utils/directionGeo";
 import { directionBoardInstant } from "@/utils/boardInstant";
+import { statusForLayerMode } from "@/utils/directionStatus";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -517,13 +518,15 @@ const filterVectors = (
     dB,
   );
 
-  if (activeLayerMode === "year")
-    return filtered.yearLayer as Record<Direction, string>;
-  if (activeLayerMode === "month")
-    return filtered.monthLayer as Record<Direction, string>;
-  if (activeLayerMode === "day")
-    return filtered.dayLayer as Record<Direction, string>;
-  return filtered.finalVectors as Record<Direction, string>;
+  // 年+月 / 月+日 / 年+日 は地図側だけが合成しており、ここでは素通しして
+  // 全統合（finalVectors）を返していた。同じボタンで選んでいるのに地図と
+  // ヒートマップで違う判定が出るため、畳み方を共通の関数に寄せる。
+  const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const out = {} as Record<Direction, string>;
+  for (const d of dirs) {
+    out[d] = statusForLayerMode(filtered, d, activeLayerMode);
+  }
+  return out;
 };
 
 export const SolarTimeClock = () => {
@@ -7727,7 +7730,11 @@ ${timingOptimization?.recommendationText || "特になし"}
                             DIR
                           </th>
                           {heatmapData.map((d, i) => {
-                            const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+                            // 地図が描いているのは先頭列の 1 日だけ。
+                            // ここは以前 ±15 日を色付けしていたため、30 列のうち
+                            // 前半 16 列が同じ色になり、「地図と同じ日はどれか」が
+                            // 分からなかった（地図と連動していないように見える原因）。
+                            const isActiveCol = i === 0;
                             return (
                               <th
                                 key={i}
@@ -7739,8 +7746,17 @@ ${timingOptimization?.recommendationText || "特になし"}
                                     : "text-stone-600 bg-white"
                                 }`}
                                 onClick={() => setTimeOffsetDays(d.offsetDays)}
-                                title="クリックでこの月に遷移"
+                                title={
+                                  isActiveCol
+                                    ? "地図はこの日を表示しています"
+                                    : "クリックでこの日に移動（地図もこの日に切り替わります）"
+                                }
                               >
+                                {isActiveCol && (
+                                  <span className="block text-[8px] leading-none text-rose-500">
+                                    地図
+                                  </span>
+                                )}
                                 {d.label}
                               </th>
                             );
@@ -7800,7 +7816,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                             {heatmapData.map((d, i) => {
                               let st = d.vectors[dir];
                               const isTendoActive = d.tendoDir && d.tendoDir === dir;
-                              const isActiveCol = Math.abs(d.offsetDays - timeOffsetDays) <= 15;
+                              // 見出しと同じく、地図が描いている 1 日だけを指す。
+                              const isActiveCol = i === 0;
                               const isLuckyFilter = directionFilterMode === "optimal_only";
                               const isExcludeFilter = directionFilterMode === "exclude_noise";
                               const isOptimal = st === "OPTIMAL" || st === "OPTIMAL_REGULAR";
