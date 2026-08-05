@@ -87,6 +87,9 @@ public/robots.txt
 *.md
 !README.md
 !**/README.md
+# QA 向けの画面仕様書は成果物としてリポジトリに残す。
+# *.md を一括除外しているため、明示的に戻さないと追跡されない。
+!docs/qa/*.md
 !src/app/ads.txt/
 !src/app/llms.txt/
 !src/app/llms-full.txt/

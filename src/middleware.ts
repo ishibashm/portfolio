@@ -18,7 +18,9 @@ const SUBDOMAIN_APPS = [
 
 // Auth surfaces are shared by every host, so they must never be rewritten into a
 // sub-app namespace — otherwise the redirect to /login lands on /trends/login.
-const HOST_NEUTRAL_PREFIXES = ["/login", "/auth"];
+// The usage guide is the same document on every host for the same reason: under
+// `fortune.` it would otherwise resolve to /metaphysical/guide and 404.
+const HOST_NEUTRAL_PREFIXES = ["/login", "/auth", "/guide"];
 
 function resolveSubdomainPath(host: string, pathname: string): string | null {
   const app = SUBDOMAIN_APPS.find(
