@@ -9,6 +9,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { getAgentLogFeedState } from "@/lib/agentLogState";
 
 export const revalidate = 0; // Disable cache to get real-time logs
 
@@ -16,6 +17,7 @@ export default async function AgentLogPage() {
   let logs: any[] = [];
   let successCount = 0;
   let errorCount = 0;
+  let hasDatabaseError = false;
 
   try {
     logs = await prisma.agentActivityLog.findMany({
@@ -31,8 +33,11 @@ export default async function AgentLogPage() {
       where: { status: "FAILURE_ROLLEDBACK" },
     });
   } catch (err) {
+    hasDatabaseError = true;
     console.error("Failed to fetch agent logs:", err);
   }
+
+  const feedState = getAgentLogFeedState(hasDatabaseError, logs.length);
 
   return (
     <div className="min-h-screen bg-black text-emerald-400 font-mono relative overflow-hidden p-6 custom-scrollbar select-none">
@@ -68,7 +73,11 @@ export default async function AgentLogPage() {
                 Agent Core Status
               </span>
             </div>
-            <span className="text-xl font-bold text-emerald-300">ONLINE</span>
+            <span
+              className={`text-xl font-bold ${hasDatabaseError ? "text-red-400" : "text-emerald-300"}`}
+            >
+              {hasDatabaseError ? "DEGRADED" : "ONLINE"}
+            </span>
             <span className="text-[9px] text-emerald-600">
               Runtime: Python 3.11 + SDK
             </span>
@@ -134,7 +143,11 @@ export default async function AgentLogPage() {
 
           {/* Logs Feed */}
           <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-            {logs.length === 0 ? (
+            {feedState === "unavailable" ? (
+              <div className="text-center py-12 text-red-400 text-xs">
+                [SYSTEM] DATABASE CONNECTION FAILED. ログを取得できませんでした。
+              </div>
+            ) : feedState === "empty" ? (
               <div className="text-center py-12 text-emerald-700 text-xs">
                 [SYSTEM] NO COGNITIVE LOGS RECORDED IN DATABASE yet.
               </div>

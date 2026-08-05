@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import {
   STAR_NAMES,
   STARS,
+  birthYearsThrough,
   contentYears,
+  currentYearInJapan,
   starForBirthYear,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -15,20 +17,22 @@ import { AdBanner } from "@/components/ads/AdBanner";
  * 生まれ年から引ける表を最初に置く。値は ephemerisEngine の計算結果。
  */
 
-const BIRTH_YEARS = Array.from({ length: 76 }, (_, i) => 1950 + i);
-
 export const metadata: Metadata = {
   title: "九星気学の本命星と吉方位の早見表",
   description:
     "生まれ年から本命星を調べ、その年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。",
 };
 
+export const revalidate = 60;
+
 export default function Page() {
   const years = contentYears();
+  // このページはISRで再生成されるため、年越し後のリクエストで自動更新される。
+  const birthYears = birthYearsThrough(currentYearInJapan());
 
   // 生まれ年の表は本命星ごとにまとめたほうが引きやすい
   const byStar = new Map<number, number[]>();
-  for (const y of BIRTH_YEARS) {
+  for (const y of birthYears) {
     const s = starForBirthYear(y, "classical");
     if (!byStar.has(s)) byStar.set(s, []);
     byStar.get(s)!.push(y);
@@ -36,7 +40,7 @@ export default function Page() {
 
   // 独自モデルでは本命星そのものが変わる年がある。ツールで切り替えたときに
   // 表と食い違って見えるので、違いが出る年をここで示しておく。
-  const differing = BIRTH_YEARS.filter(
+  const differing = birthYears.filter(
     (y) => starForBirthYear(y, "classical") !== starForBirthYear(y, "physical"),
   );
 

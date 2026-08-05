@@ -25,7 +25,10 @@ import { Copy, Check } from "lucide-react";
 import { scaleLinear } from "d3-scale";
 import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
-import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
+import {
+  getPropertyPinColors,
+  getRecommendationStarCount,
+} from "@/utils/arbitrageHelpers";
 
 // Fix Leaflet default icon problem in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -85,6 +88,7 @@ export interface ScoredProperty {
   astrologyScore: number;
   yieldScore: number;
   arbitrageScore: number;
+  totalScore: number;
   isTendo?: boolean;
   maxAstroFactor?: string;
   astroFlags?: string[];
@@ -1050,15 +1054,11 @@ export default function ArbitrageMapInner({
                                 </div>
                                 <div className="flex gap-0.5 text-amber-600 mt-0.5">
                                   {(() => {
-                                    let starCount = 1;
-                                    if (prop.arbitrageScore >= 80)
-                                      starCount = 5;
-                                    else if (prop.arbitrageScore >= 70)
-                                      starCount = 4;
-                                    else if (prop.arbitrageScore >= 60)
-                                      starCount = 3;
-                                    else if (prop.arbitrageScore >= 50)
-                                      starCount = 2;
+                                    const starCount =
+                                      getRecommendationStarCount(
+                                        prop.totalScore,
+                                        prop.astrologyStatus,
+                                      );
                                     return Array.from({ length: 5 }).map(
                                       (_, i) => (
                                         <span

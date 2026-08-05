@@ -77,6 +77,20 @@ export const STAR_NAMES: Record<number, string> = {
 
 export const STARS: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+export function birthYearsThrough(currentYear: number): number[] {
+  if (currentYear < 1950) return [];
+  return Array.from({ length: currentYear - 1949 }, (_, index) => 1950 + index);
+}
+
+export function currentYearInJapan(now = new Date()): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Tokyo",
+      year: "numeric",
+    }).format(now),
+  );
+}
+
 /** 判定コードを日本語の名称と説明に対応させる */
 export const STATUS_INFO: Record<
   string,

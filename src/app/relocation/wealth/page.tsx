@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   loadProfilePresets,
   saveProfilePresets,
@@ -40,6 +40,10 @@ import {
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
 import dynamic from "next/dynamic";
+import {
+  getBaseAstrologyStatus,
+  isRecommendedRelocationStatus,
+} from "@/lib/relocationPresentation";
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
@@ -95,6 +99,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 };
 
 export default function RegionalWealthPage() {
+  const fetchRequestIdRef = useRef(0);
   const [data, setData] = useState<MunicipalityWealth[]>([]);
   const [metadata, setMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +226,9 @@ export default function RegionalWealthPage() {
     overrideParams?: any,
     shouldDispatchEvent = true,
   ) => {
+    const requestId = ++fetchRequestIdRef.current;
     setLoading(true);
+    setError(null);
     setCurrentPage(1); // Reset page on new fetch
 
     const currentTargetDate =
@@ -350,6 +357,7 @@ export default function RegionalWealthPage() {
         throw new Error(errMsg);
       }
       const json = await res.json();
+      if (requestId !== fetchRequestIdRef.current) return;
       setData(json.data);
       if (json.metadata) {
         setMetadata(json.metadata);
@@ -369,9 +377,9 @@ export default function RegionalWealthPage() {
         }
       }
     } catch (err: any) {
-      setError(err.message);
+      if (requestId === fetchRequestIdRef.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (requestId === fetchRequestIdRef.current) setLoading(false);
     }
   };
 
@@ -1306,10 +1314,8 @@ export default function RegionalWealthPage() {
               </h2>
               <div className="space-y-4">
                 {filteredData
-                  .filter(
-                    (d) =>
-                      d.astrologyStatus === "OPTIMAL" ||
-                      d.astrologyStatus === "SAFE",
+                  .filter((d) =>
+                    isRecommendedRelocationStatus(d.astrologyStatus),
                   )
                   .sort((a, b) => b.incomePerCapita - a.incomePerCapita)
                   .slice(0, 5)
@@ -1324,7 +1330,7 @@ export default function RegionalWealthPage() {
                         </div>
                         <div className="text-xs text-stone-400 flex items-center gap-1 mt-1">
                           <span
-                            className={`w-2 h-2 rounded-full ${item.astrologyStatus === "OPTIMAL" ? "bg-emerald-500" : "bg-blue-400"}`}
+                            className={`w-2 h-2 rounded-full ${getBaseAstrologyStatus(item.astrologyStatus) === "OPTIMAL" ? "bg-emerald-500" : "bg-blue-400"}`}
                           ></span>
                           {item.direction}方位 ({item.astrologyStatus})
                         </div>
@@ -1336,11 +1342,14 @@ export default function RegionalWealthPage() {
                       </div>
                     </div>
                   ))}
-                {filteredData.length === 0 && !loading && (
+                {filteredData.filter((item) =>
+                  isRecommendedRelocationStatus(item.astrologyStatus),
+                ).length === 0 &&
+                  !loading && (
                   <div className="text-sm text-stone-400 text-center py-4">
                     条件に合う安全な方位が見つかりませんでした
                   </div>
-                )}
+                  )}
               </div>
             </div>
 

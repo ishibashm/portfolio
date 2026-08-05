@@ -11,6 +11,7 @@ import {
   DEFAULT_TENCHUSATSU_MODE,
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
+import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
 
 /**
  * 「年盤・月盤・日盤がすべて吉になる日」を列挙するパネル。
@@ -134,14 +135,14 @@ export function AuspiciousDayFinder() {
       );
       const json = await res.json();
       if (!res.ok) {
-        setError(json.message || json.error || "計算に失敗しました。");
+        setError(getAuspiciousDayErrorMessage(json.error));
         setSummaries(null);
         return;
       }
       setSummaries(json.summaries);
       setMeta({ honmeiStar: json.honmeiStar, voidZodiacs: json.voidZodiacs });
-    } catch (e: any) {
-      setError(String(e?.message ?? e));
+    } catch {
+      setError(getAuspiciousDayErrorMessage());
     } finally {
       setLoading(false);
     }

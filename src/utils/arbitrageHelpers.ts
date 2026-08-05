@@ -32,6 +32,15 @@ export function isAvoidStatus(status: string): boolean {
   );
 }
 
+/** カードと地図で共通して使う、おすすめ度の星数。 */
+export function getRecommendationStarCount(
+  score: number,
+  status?: string,
+): number {
+  if (status && isAvoidStatus(status)) return 1;
+  return score >= 80 ? 5 : score >= 70 ? 4 : score >= 60 ? 3 : score >= 50 ? 2 : 1;
+}
+
 export const getPropertyPinColors = (prop: any) => {
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;

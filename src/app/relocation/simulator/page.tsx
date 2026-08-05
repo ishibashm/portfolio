@@ -39,6 +39,8 @@ import {
   MetaphysicalConfigBar,
   MetaphysicalConfig,
 } from "@/components/layout/MetaphysicalConfigBar";
+import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
+import { isValidIsoDate } from "@/utils/dateValidation";
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import("@/components/nba/SimulatorMap"), {
@@ -244,6 +246,10 @@ export default function RelocationSimulatorPage() {
 
   // Accompanying Members
   const [members, setMembers] = useState<AccompanyingMember[]>([]);
+  const validMembers = useMemo(
+    () => members.filter((member) => isValidIsoDate(member.birthDate)),
+    [members],
+  );
 
   // Telemetry simulation state sliders
   const [simulatedAns, setSimulatedAns] = useState(20); // ANS load (0-100)
@@ -665,7 +671,7 @@ export default function RelocationSimulatorPage() {
 
       // Precompute companion metrics (Only evaluated if companion is selected for this step)
       const stepCompanionIds = step.companionIds || [];
-      const activeMembers = members.filter((m) =>
+      const activeMembers = validMembers.filter((m) =>
         stepCompanionIds.includes(m.id),
       );
 
@@ -766,7 +772,7 @@ export default function RelocationSimulatorPage() {
     physicalMonthMode,
     directionFilterMode,
     actionIntent,
-    members,
+    validMembers,
   ]);
 
   // Keep a ref of nbaEvaluations to avoid stale closure in useEffect without infinite loops
@@ -1887,7 +1893,7 @@ export default function RelocationSimulatorPage() {
           <TenChiJinEvaluation
             mode="plan"
             steps={steps}
-            members={members}
+            members={validMembers}
             nbaEvaluations={nbaEvaluations}
             simulatedAns={simulatedAns}
             simulatedShield={simulatedShield}
@@ -1965,6 +1971,12 @@ export default function RelocationSimulatorPage() {
                       "1990-01-01",
                     );
                     if (!bdate) return;
+                    if (!isValidIsoDate(bdate)) {
+                      alert(
+                        "生年月日は実在する日付を YYYY-MM-DD 形式で入力してください。",
+                      );
+                      return;
+                    }
                     const newMembers = [
                       ...members,
                       { id: Date.now().toString(), name, birthDate: bdate },
@@ -2003,13 +2015,9 @@ export default function RelocationSimulatorPage() {
                         </span>
                         <span className="text-[9px] font-mono text-stone-400">
                           生年月日: {member.birthDate} (
-                          {getClassicalYearStar(
-                            parseSafeDate(member.birthDate),
-                          )}
-                          ・空亡:{" "}
-                          {getPersonalVoidZodiac(
-                            parseSafeDate(member.birthDate),
-                          ).join("")}
+                          {isValidIsoDate(member.birthDate)
+                            ? `${getClassicalYearStar(parseSafeDate(member.birthDate))}・空亡: ${getPersonalVoidZodiac(parseSafeDate(member.birthDate)).join("")}`
+                            : "入力値が不正です"}
                           )
                         </span>
                       </div>
@@ -2366,7 +2374,7 @@ export default function RelocationSimulatorPage() {
                         <Clock className="w-3.5 h-3.5 text-stone-400" />
                         <span>
                           {isStayShort
-                            ? "※滞在が75日未満のため、この移動後の拠点（太極）は京都のまま動きません。"
+                            ? formatShortStayBaseMessage(step.fromName)
                             : `※滞在が75日以上のため、この移動後に拠点は「${step.toName}」に移転します。`}
                         </span>
                       </div>
@@ -2382,7 +2390,7 @@ export default function RelocationSimulatorPage() {
                           mode="step"
                           steps={steps}
                           singleStepIndex={idx}
-                          members={members}
+                          members={validMembers}
                           nbaEvaluations={nbaEvaluations}
                           simulatedAns={simulatedAns}
                           simulatedShield={simulatedShield}

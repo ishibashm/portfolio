@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 import { getLocalAgentDecision } from "@/utils/localAgentEngine";
+import { canUseAgentAdminTools } from "@/lib/agentAuthorization";
 
 export const runtime = "nodejs";
 
@@ -21,14 +22,9 @@ export async function POST(req: Request) {
       );
     }
 
-    // [SECURITY] Require Admin Email
+    // 相談自体はログイン利用者に開放するが、全利用者へ影響する変更ツールは管理者だけ。
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ishibashm@gmail.com";
-    if (user.email !== ADMIN_EMAIL) {
-      return NextResponse.json(
-        { error: "Forbidden. Admin access required." },
-        { status: 403 },
-      );
-    }
+    const canUseAdminTools = canUseAgentAdminTools(user.email, ADMIN_EMAIL);
 
     // 2. Parse request payload
     const body = await req.json();
@@ -43,21 +39,23 @@ export async function POST(req: Request) {
 
     // [NEW] Fetch recent logs to provide context to the agent
     let systemLogs: any[] = [];
-    try {
-      systemLogs = await prisma.agentActivityLog.findMany({
-        take: 10,
-        orderBy: { timestamp: "desc" },
-        select: {
-          timestamp: true,
-          triggerType: true,
-          status: true,
-          actions: true,
-          errorMessage: true,
-          details: true,
-        },
-      });
-    } catch (e: any) {
-      console.warn("Failed to fetch recent agent activity logs:", e.message);
+    if (canUseAdminTools) {
+      try {
+        systemLogs = await prisma.agentActivityLog.findMany({
+          take: 10,
+          orderBy: { timestamp: "desc" },
+          select: {
+            timestamp: true,
+            triggerType: true,
+            status: true,
+            actions: true,
+            errorMessage: true,
+            details: true,
+          },
+        });
+      } catch (e: any) {
+        console.warn("Failed to fetch recent agent activity logs:", e.message);
+      }
     }
 
     const combinedTelemetry = {
@@ -76,7 +74,11 @@ export async function POST(req: Request) {
     let appliedThemeData: any = null;
 
     // 5. Tool call handling & Validation (Level 1 Validation)
-    if (agentResponse.toolCalls && agentResponse.toolCalls.length > 0) {
+    if (
+      canUseAdminTools &&
+      agentResponse.toolCalls &&
+      agentResponse.toolCalls.length > 0
+    ) {
       for (const call of agentResponse.toolCalls) {
         if (call.name === "set_color_theme") {
           try {
@@ -188,21 +190,23 @@ export async function POST(req: Request) {
       }
     }
 
-    // 6. Write Activity Log using Prisma
-    await prisma.agentActivityLog.create({
-      data: {
-        triggerType: "USER_CHAT",
-        details: message,
-        thoughtProcess: agentResponse.thoughtProcess,
-        actions: agentResponse.actions,
-        textResponse: agentResponse.textResponse || null,
-        codeChange: agentResponse.toolCalls
-          ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
-          : null,
-        status: errorMessage ? "FAILURE_ROLLEDBACK" : "SUCCESS",
-        errorMessage: errorMessage,
-      },
-    });
+    // 6. 管理ログには管理者の操作だけを保存する。一般利用者の相談文を共有しない。
+    if (canUseAdminTools) {
+      await prisma.agentActivityLog.create({
+        data: {
+          triggerType: "USER_CHAT",
+          details: message,
+          thoughtProcess: agentResponse.thoughtProcess,
+          actions: agentResponse.actions,
+          textResponse: agentResponse.textResponse || null,
+          codeChange: agentResponse.toolCalls
+            ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
+            : null,
+          status: errorMessage ? "FAILURE_ROLLEDBACK" : "SUCCESS",
+          errorMessage: errorMessage,
+        },
+      });
+    }
 
     return NextResponse.json({
       textResponse: agentResponse.textResponse,

@@ -214,13 +214,10 @@ export default function DataEnginePage() {
             </span>
           </div>
           <div className="h-4 w-px bg-stone-200"></div>
-          <Link
-            href="/research/yfinance"
-            className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors text-sm font-medium font-mono"
-          >
+          <span className="flex items-center gap-2 text-stone-500 text-sm font-medium font-mono">
             <TrendingUp className="w-4 h-4" />
-            GS-Quant Analyzer
-          </Link>
+            GS-Quant Analyzer（準備中）
+          </span>
         </div>
 
         {/* Status Indicator */}

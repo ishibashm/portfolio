@@ -1,8 +1,26 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { getUpcomingDoyouPeriod } from "../utils/ephemerisEngine";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+const loadSupabase = () =>
+  import("@/utils/supabase/client").then((module) => module.createClient());
+
+export function AiConsultationLoginNotice() {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-xs text-stone-600">
+      <span>AI相談を利用するにはログインが必要です。</span>
+      <Link
+        href="/login?next=/"
+        className="shrink-0 rounded-md bg-purple-600 px-3 py-1.5 font-bold text-white hover:bg-purple-700"
+      >
+        ログイン
+      </Link>
+    </div>
+  );
+}
 
 interface ExpertCouncilPanelProps {
   actionIntent: string;
@@ -87,6 +105,36 @@ export default function ExpertCouncilPanel({
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | undefined>(
+    undefined,
+  );
+
+  useEffect(() => {
+    let active = true;
+    let unsubscribe: (() => void) | undefined;
+    loadSupabase()
+      .then((supabase) => {
+        if (!active) return;
+        const { data: authListener } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            if (event !== "INITIAL_SESSION" && active) {
+              setIsAuthenticated(Boolean(session?.user));
+            }
+          },
+        );
+        unsubscribe = () => authListener.subscription.unsubscribe();
+        supabase.auth.getUser().then(({ data }) => {
+          if (active) setIsAuthenticated(Boolean(data.user));
+        });
+      })
+      .catch(() => {
+        if (active) setIsAuthenticated(false);
+      });
+    return () => {
+      active = false;
+      unsubscribe?.();
+    };
+  }, []);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +182,7 @@ export default function ExpertCouncilPanel({
 
       clearInterval(interval);
 
+      if (response.status === 401) setIsAuthenticated(false);
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error || "通信エラーが発生しました。");
@@ -753,22 +802,29 @@ export default function ExpertCouncilPanel({
         </div>
 
         {/* Input Form */}
+        {isAuthenticated === false && <AiConsultationLoginNotice />}
         <form onSubmit={handleSendMessage} className="flex gap-2 relative">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
+            disabled={isLoading || isAuthenticated !== true}
             placeholder={
-              isLoading
-                ? "エージェントが思考を同期中..."
-                : "アドバイスを求める、またはテーマ変更を指示..."
+              isAuthenticated === undefined
+                ? "ログイン状態を確認中..."
+                : isAuthenticated === false
+                  ? "ログインするとAI相談を利用できます"
+                  : isLoading
+                    ? "エージェントが思考を同期中..."
+                    : "アドバイスを求める、またはテーマ変更を指示..."
             }
             className="flex-1 bg-stone-50 border border-stone-200 focus:border-purple-200 rounded-lg px-4 py-2.5 text-stone-700 outline-none text-xs font-mono disabled:opacity-50 transition-all duration-300 focus:shadow-[0_0_15px_rgba(168,85,247,0.1)]"
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={
+              isAuthenticated !== true || isLoading || !input.trim()
+            }
             className="bg-purple-50 hover:bg-purple-800/60 text-purple-600 hover:text-stone-900 border border-purple-800/50 disabled:opacity-40 disabled:hover:bg-purple-50 text-xs px-5 py-2.5 rounded-lg font-mono font-bold transition-all active:scale-[0.98] shadow-[0_2px_10px_rgba(168,85,247,0.1)] hover:shadow-[0_4px_15px_rgba(168,85,247,0.2)]"
           >
             送信

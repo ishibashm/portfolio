@@ -21,6 +21,7 @@ import {
 } from "@/components/layout/MetaphysicalConfigBar";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
+  getRecommendationStarCount,
   getPropertyPinColors,
   isAvoidStatus as isAvoidAstrologyStatus,
 } from "@/utils/arbitrageHelpers";
@@ -227,11 +228,10 @@ export default function ArbitrageScannerPage() {
   // 凶方位や天中殺でも安ければ 5 つ星が付き、「移転NG ★★★★★」という
   // 矛盾した表示になっていた。避けるべきものは 1 つ星に倒す。
   const renderStars = (score: number, status?: string) => {
-    if (status && status.startsWith("NOISE")) {
+    const count = getRecommendationStarCount(score, status);
+    if (count === 1 && status && isAvoidAstrologyStatus(status)) {
       return renderStarRow(1, "避けるべき方位・期間のため評価を下げています");
     }
-    const count =
-      score >= 80 ? 5 : score >= 70 ? 4 : score >= 60 ? 3 : score >= 50 ? 2 : 1;
     return renderStarRow(count, `おすすめ度: ${score.toFixed(1)}`);
   };
 
