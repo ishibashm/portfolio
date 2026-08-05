@@ -107,7 +107,10 @@ const candidates = [
   { name: "和歌山県田辺周辺", lat: 33.729, lon: 135.378 },
 ];
 
-function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+function parseSafeDate(
+  dateStr: string | null | undefined,
+  fallback: Date = new Date(),
+): Date {
   if (!dateStr) return fallback;
   const d = new Date(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
@@ -123,9 +126,18 @@ function getBearing(
   lon2: number,
 ): number {
   if (
-    isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2) ||
-    lat1 === null || lon1 === null || lat2 === null || lon2 === null ||
-    lat1 === undefined || lon1 === undefined || lat2 === undefined || lon2 === undefined
+    isNaN(lat1) ||
+    isNaN(lon1) ||
+    isNaN(lat2) ||
+    isNaN(lon2) ||
+    lat1 === null ||
+    lon1 === null ||
+    lat2 === null ||
+    lon2 === null ||
+    lat1 === undefined ||
+    lon1 === undefined ||
+    lat2 === undefined ||
+    lon2 === undefined
   ) {
     return 0;
   }
@@ -259,6 +271,7 @@ export default function RelocationSimulatorPage() {
   const [planName, setPlanName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
+  const [plansRequireLogin, setPlansRequireLogin] = useState(false);
 
   // Metaphysical Engine Global Configuration States
   const [useClassical, setUseClassical] = useState(true);
@@ -412,9 +425,17 @@ export default function RelocationSimulatorPage() {
     setIsLoadingPlans(true);
     try {
       const res = await fetch("/api/relocation/simulation");
+      if (res.status === 401) {
+        setPlans([]);
+        setPlansRequireLogin(true);
+        return;
+      }
       if (res.ok) {
         const result = await res.json();
-        if (result.success) setPlans(result.data);
+        if (result.success) {
+          setPlans(result.data);
+          setPlansRequireLogin(false);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch simulation plans:", e);
@@ -474,7 +495,14 @@ export default function RelocationSimulatorPage() {
 
   // Declination calculation approximation (Clamped to 2017)
   const getApproximateDeclination = (lat: number, lon: number): number => {
-    if (isNaN(lat) || isNaN(lon) || lat === null || lon === null || lat === undefined || lon === undefined) {
+    if (
+      isNaN(lat) ||
+      isNaN(lon) ||
+      lat === null ||
+      lon === null ||
+      lat === undefined ||
+      lon === undefined
+    ) {
       return -7.5;
     }
     const baseDecl = -7.5;
@@ -484,16 +512,28 @@ export default function RelocationSimulatorPage() {
 
   // Evaluation pipeline with Base Shifting State Machine
   const evaluatedSteps = useMemo(() => {
-    let currentBaseLat = isNaN(startLat) || startLat === null || startLat === undefined ? 34.9911 : startLat;
-    let currentBaseLon = isNaN(startLon) || startLon === null || startLon === undefined ? 135.7248 : startLon;
+    let currentBaseLat =
+      isNaN(startLat) || startLat === null || startLat === undefined
+        ? 34.9911
+        : startLat;
+    let currentBaseLon =
+      isNaN(startLon) || startLon === null || startLon === undefined
+        ? 135.7248
+        : startLon;
     let currentBaseName = startName || "起点";
 
     const list: SimulatorStep[] = [];
 
     steps.forEach((step, idx) => {
       const depDate = parseSafeDate(step.departureDate);
-      const targetLat = isNaN(step.toLat) || step.toLat === null || step.toLat === undefined ? 34.9911 : step.toLat;
-      const targetLon = isNaN(step.toLon) || step.toLon === null || step.toLon === undefined ? 135.7248 : step.toLon;
+      const targetLat =
+        isNaN(step.toLat) || step.toLat === null || step.toLat === undefined
+          ? 34.9911
+          : step.toLat;
+      const targetLon =
+        isNaN(step.toLon) || step.toLon === null || step.toLon === undefined
+          ? 135.7248
+          : step.toLon;
 
       const rawBearing = getBearing(
         currentBaseLat,
@@ -574,7 +614,8 @@ export default function RelocationSimulatorPage() {
           case "SAFE":
             return {
               rating: "普通",
-              color: "text-stone-500 border border-stone-200/80 bg-stone-100/80",
+              color:
+                "text-stone-500 border border-stone-200/80 bg-stone-100/80",
               score: 0,
             };
           case "WARNING":
@@ -606,7 +647,8 @@ export default function RelocationSimulatorPage() {
           default:
             return {
               rating: "普通",
-              color: "text-stone-500 border border-stone-200/80 bg-stone-100/80",
+              color:
+                "text-stone-500 border border-stone-200/80 bg-stone-100/80",
               score: 0,
             };
         }
@@ -623,7 +665,9 @@ export default function RelocationSimulatorPage() {
 
       // Precompute companion metrics (Only evaluated if companion is selected for this step)
       const stepCompanionIds = step.companionIds || [];
-      const activeMembers = members.filter(m => stepCompanionIds.includes(m.id));
+      const activeMembers = members.filter((m) =>
+        stepCompanionIds.includes(m.id),
+      );
 
       const mEvals = activeMembers.map((m) => {
         const mBirthDate = parseSafeDate(m.birthDate);
@@ -1244,14 +1288,16 @@ export default function RelocationSimulatorPage() {
   // Handle step updates & inserts
   const handleAddStep = () => {
     const lastStep = steps[steps.length - 1];
-    const baseDate = lastStep ? parseSafeDate(lastStep.departureDate) : new Date();
+    const baseDate = lastStep
+      ? parseSafeDate(lastStep.departureDate)
+      : new Date();
     const nextDate = new Date(baseDate.getTime() + 90 * 24 * 60 * 60 * 1000);
     const dateStr = nextDate.toISOString().slice(0, 10);
 
     const fromLat = lastStep ? lastStep.toLat : startLat;
     const fromLon = lastStep ? lastStep.toLon : startLon;
     const fromName = lastStep ? lastStep.toName : startName;
-    const companionIds = lastStep ? (lastStep.companionIds || []) : [];
+    const companionIds = lastStep ? lastStep.companionIds || [] : [];
 
     const newSteps = [
       ...steps,
@@ -1357,6 +1403,11 @@ export default function RelocationSimulatorPage() {
 
   // Database Save/Load operations
   const handleSavePlan = async () => {
+    if (plansRequireLogin) {
+      window.location.href = `/login?next=${encodeURIComponent("/relocation/simulator")}`;
+      return;
+    }
+
     if (!planName) {
       const name = prompt(
         "プランの名前を入力してください：",
@@ -1394,6 +1445,9 @@ export default function RelocationSimulatorPage() {
           fetchSavedPlans();
           alert("プランをデータベースに保存しました。");
         }
+      } else if (res.status === 401) {
+        setPlansRequireLogin(true);
+        alert("プランの保存にはログインが必要です。");
       } else {
         alert("保存に失敗しました。");
       }
@@ -1455,6 +1509,9 @@ export default function RelocationSimulatorPage() {
           setPlanName("");
         }
         fetchSavedPlans();
+      } else if (res.status === 401) {
+        setPlansRequireLogin(true);
+        alert("保存済みプランの削除にはログインが必要です。");
       }
     } catch (e) {
       console.error(e);
@@ -1595,7 +1652,9 @@ export default function RelocationSimulatorPage() {
                   className={`text-3xl font-black tracking-tight font-mono ${overallPlanScore <= 40 ? "text-red-400" : overallPlanScore >= 75 ? "text-emerald-400" : "text-stone-600"}`}
                 >
                   {overallPlanScore}{" "}
-                  <span className="text-xs font-normal text-stone-400">pts</span>
+                  <span className="text-xs font-normal text-stone-400">
+                    pts
+                  </span>
                 </span>
               </div>
             </div>
@@ -1630,7 +1689,11 @@ export default function RelocationSimulatorPage() {
                 className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-xs font-bold transition-all shadow-lg"
               >
                 <Save className="w-3.5 h-3.5" />
-                {isSaving ? "保存中..." : "プランを保存"}
+                {isSaving
+                  ? "保存中..."
+                  : plansRequireLogin
+                    ? "ログインして保存"
+                    : "プランを保存"}
               </button>
             </div>
           </div>
@@ -1675,6 +1738,13 @@ export default function RelocationSimulatorPage() {
               <span className="text-stone-400 font-mono animate-pulse">
                 LOADING...
               </span>
+            ) : plansRequireLogin ? (
+              <a
+                href={`/login?next=${encodeURIComponent("/relocation/simulator")}`}
+                className="text-indigo-600 hover:text-indigo-700 font-medium text-[10px] underline"
+              >
+                ログインすると保存できます
+              </a>
             ) : plans.length === 0 ? (
               <span className="text-stone-400 font-mono text-[10px]">
                 保存プランなし
@@ -1779,16 +1849,18 @@ export default function RelocationSimulatorPage() {
                   <strong className="text-stone-500">{lastSyncTime}</strong>
                 </span>
               )}
-              {portalSpaceWeather && typeof portalSpaceWeather.kpIndex === "number" && !isNaN(portalSpaceWeather.kpIndex) && (
-                <span className="flex items-center gap-1">
-                  宇宙天気 Kp:{" "}
-                  <strong
-                    className={`font-bold ${portalSpaceWeather.kpIndex >= 4 ? "text-amber-400" : "text-emerald-400"}`}
-                  >
-                    {portalSpaceWeather.kpIndex.toFixed(2)}
-                  </strong>
-                </span>
-              )}
+              {portalSpaceWeather &&
+                typeof portalSpaceWeather.kpIndex === "number" &&
+                !isNaN(portalSpaceWeather.kpIndex) && (
+                  <span className="flex items-center gap-1">
+                    宇宙天気 Kp:{" "}
+                    <strong
+                      className={`font-bold ${portalSpaceWeather.kpIndex >= 4 ? "text-amber-400" : "text-emerald-400"}`}
+                    >
+                      {portalSpaceWeather.kpIndex.toFixed(2)}
+                    </strong>
+                  </span>
+                )}
               {portalSpaceWeather &&
                 portalSpaceWeather.solarWindSpeed !== null && (
                   <span>
@@ -1858,8 +1930,18 @@ export default function RelocationSimulatorPage() {
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-[10px] font-mono text-stone-400 self-end py-2.5">
-                  <div>緯度: {typeof startLat === "number" && !isNaN(startLat) ? startLat.toFixed(4) : "---"}</div>
-                  <div>経度: {typeof startLon === "number" && !isNaN(startLon) ? startLon.toFixed(4) : "---"}</div>
+                  <div>
+                    緯度:{" "}
+                    {typeof startLat === "number" && !isNaN(startLat)
+                      ? startLat.toFixed(4)
+                      : "---"}
+                  </div>
+                  <div>
+                    経度:{" "}
+                    {typeof startLon === "number" && !isNaN(startLon)
+                      ? startLon.toFixed(4)
+                      : "---"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1921,7 +2003,9 @@ export default function RelocationSimulatorPage() {
                         </span>
                         <span className="text-[9px] font-mono text-stone-400">
                           生年月日: {member.birthDate} (
-                          {getClassicalYearStar(parseSafeDate(member.birthDate))}
+                          {getClassicalYearStar(
+                            parseSafeDate(member.birthDate),
+                          )}
                           ・空亡:{" "}
                           {getPersonalVoidZodiac(
                             parseSafeDate(member.birthDate),
@@ -1966,7 +2050,10 @@ export default function RelocationSimulatorPage() {
                 let stayDays = 999;
                 if (idx < steps.length - 1) {
                   const currentDep = parseSafeDate(step.departureDate);
-                  const nextDep = parseSafeDate(steps[idx + 1].departureDate, currentDep);
+                  const nextDep = parseSafeDate(
+                    steps[idx + 1].departureDate,
+                    currentDep,
+                  );
                   stayDays = Math.round(
                     (nextDep.getTime() - currentDep.getTime()) /
                       (1000 * 60 * 60 * 24),
@@ -2145,7 +2232,9 @@ export default function RelocationSimulatorPage() {
                         ) : (
                           <div className="flex flex-wrap gap-2.5 mt-1">
                             {members.map((member) => {
-                              const isSelected = (step.companionIds || []).includes(member.id);
+                              const isSelected = (
+                                step.companionIds || []
+                              ).includes(member.id);
                               return (
                                 <label
                                   key={member.id}
@@ -2159,11 +2248,18 @@ export default function RelocationSimulatorPage() {
                                     type="checkbox"
                                     checked={isSelected}
                                     onChange={() => {
-                                      const currentIds = step.companionIds || [];
-                                      const nextIds = currentIds.includes(member.id)
-                                        ? currentIds.filter((id: string) => id !== member.id)
+                                      const currentIds =
+                                        step.companionIds || [];
+                                      const nextIds = currentIds.includes(
+                                        member.id,
+                                      )
+                                        ? currentIds.filter(
+                                            (id: string) => id !== member.id,
+                                          )
                                         : [...currentIds, member.id];
-                                      handleUpdateStep(idx, { companionIds: nextIds });
+                                      handleUpdateStep(idx, {
+                                        companionIds: nextIds,
+                                      });
                                     }}
                                     className="sr-only"
                                   />
@@ -2241,16 +2337,18 @@ export default function RelocationSimulatorPage() {
                             °)
                           </span>
                         </div>
-                        {timingEval && typeof timingEval.qValue === "number" && !isNaN(timingEval.qValue) && (
-                          <div className="flex items-center gap-1.5 border-l border-stone-200 pl-4">
-                            <span>Q値:</span>
-                            <span
-                              className={`font-black ${timingEval.qValue < 0 ? "text-red-400" : "text-emerald-400"}`}
-                            >
-                              {timingEval.qValue.toFixed(1)}
-                            </span>
-                          </div>
-                        )}
+                        {timingEval &&
+                          typeof timingEval.qValue === "number" &&
+                          !isNaN(timingEval.qValue) && (
+                            <div className="flex items-center gap-1.5 border-l border-stone-200 pl-4">
+                              <span>Q値:</span>
+                              <span
+                                className={`font-black ${timingEval.qValue < 0 ? "text-red-400" : "text-emerald-400"}`}
+                              >
+                                {timingEval.qValue.toFixed(1)}
+                              </span>
+                            </div>
+                          )}
                       </div>
                       <div>
                         滞在期間:{" "}
@@ -2657,7 +2755,7 @@ export default function RelocationSimulatorPage() {
                       const currentDep = parseSafeDate(step.departureDate);
                       const nextDep = parseSafeDate(
                         steps[activeStepIndex + 1].departureDate,
-                        currentDep
+                        currentDep,
                       );
                       const stayDays = Math.round(
                         (nextDep.getTime() - currentDep.getTime()) /
@@ -2725,7 +2823,11 @@ export default function RelocationSimulatorPage() {
                                 </span>
                               </span>
                               <span className="font-bold text-emerald-400 font-mono">
-                                Q: {typeof rec.qValue === "number" && !isNaN(rec.qValue) ? rec.qValue.toFixed(1) : "---"}
+                                Q:{" "}
+                                {typeof rec.qValue === "number" &&
+                                !isNaN(rec.qValue)
+                                  ? rec.qValue.toFixed(1)
+                                  : "---"}
                               </span>
                             </button>
                           ))}

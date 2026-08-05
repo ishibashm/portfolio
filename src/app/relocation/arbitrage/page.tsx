@@ -39,10 +39,7 @@ import {
   slidersToWeights,
   weightsToSliders,
 } from "@/utils/arbitrageScoring";
-import {
-  DEFAULT_PARTY_POLICY,
-  PARTY_POLICIES,
-} from "@/utils/arbitrageParty";
+import { DEFAULT_PARTY_POLICY, PARTY_POLICIES } from "@/utils/arbitrageParty";
 import {
   DEFAULT_TENCHUSATSU_MODE,
   TENCHUSATSU_MODES,
@@ -144,6 +141,7 @@ const LocationPickerInner = dynamic(
 export default function ArbitrageScannerPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [isTransitioningDate, setIsTransitioningDate] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
@@ -159,7 +157,10 @@ export default function ArbitrageScannerPage() {
   const [baseLat, setBaseLat] = useState("");
   const [baseLon, setBaseLon] = useState("");
   const hasBaseLocation =
-    baseLat !== "" && baseLon !== "" && !isNaN(parseFloat(baseLat)) && !isNaN(parseFloat(baseLon));
+    baseLat !== "" &&
+    baseLon !== "" &&
+    !isNaN(parseFloat(baseLat)) &&
+    !isNaN(parseFloat(baseLon));
   const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
   const [birthLon, setBirthLon] = useState("132.4482");
   const [birthDate, setBirthDate] = useState("1988-11-25T04:26"); // Default Birth Date with time
@@ -306,7 +307,9 @@ export default function ArbitrageScannerPage() {
     return (
       <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 space-y-1">
         <div className="flex items-center justify-between">
-          <span className="text-[9px] font-bold text-stone-500">全員の方位</span>
+          <span className="text-[9px] font-bold text-stone-500">
+            全員の方位
+          </span>
           {item.party.harmony !== null && (
             <span
               className="text-[9px] font-mono text-stone-400"
@@ -477,8 +480,7 @@ export default function ArbitrageScannerPage() {
       badges.push({
         label: "大安",
         type: "calendar",
-        colorClass:
-          "border border-indigo-200 text-indigo-600 bg-indigo-400/5",
+        colorClass: "border border-indigo-200 text-indigo-600 bg-indigo-400/5",
         priority: 3,
       });
     if (targetDay.luckyDays?.isIchiryumanbai)
@@ -508,8 +510,7 @@ export default function ArbitrageScannerPage() {
       badges.push({
         label: "太陽ライン",
         type: "individual",
-        colorClass:
-          "bg-purple-500/15 text-purple-600 border border-purple-200",
+        colorClass: "bg-purple-500/15 text-purple-600 border border-purple-200",
         priority: 3,
       });
 
@@ -670,7 +671,8 @@ export default function ArbitrageScannerPage() {
   //
   // 同じ候補集合でも、通勤で選ぶ人と開運で選ぶ人では見るべき順位が違う。
   // 重み付けは画面側で行うので、切り替えても再スキャン（DBアクセス）は起きない。
-  const [weightPresetId, setWeightPresetId] = useState<string>(DEFAULT_PRESET_ID);
+  const [weightPresetId, setWeightPresetId] =
+    useState<string>(DEFAULT_PRESET_ID);
   const [customSliders, setCustomSliders] = useState<Record<AxisKey, number>>(
     () => weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights),
   );
@@ -827,7 +829,8 @@ export default function ArbitrageScannerPage() {
         const sliders = weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights);
         for (const key of AXIS_ORDER) {
           const value = Number(saved.customSliders[key]);
-          if (Number.isFinite(value)) sliders[key] = Math.max(0, Math.min(100, value));
+          if (Number.isFinite(value))
+            sliders[key] = Math.max(0, Math.min(100, value));
         }
         setCustomSliders(sliders);
       }
@@ -837,7 +840,8 @@ export default function ArbitrageScannerPage() {
         setCandidateStrategy(saved.candidateStrategy);
       if (typeof saved.sinkAvoidStatus === "boolean")
         setSinkAvoidStatus(saved.sinkAvoidStatus);
-      if (Array.isArray(saved.partyMembers)) setPartyMembers(saved.partyMembers);
+      if (Array.isArray(saved.partyMembers))
+        setPartyMembers(saved.partyMembers);
       if (typeof saved.partyPolicy === "string")
         setPartyPolicy(saved.partyPolicy);
       if (Number.isFinite(Number(saved.horizonDays)))
@@ -1268,14 +1272,26 @@ export default function ArbitrageScannerPage() {
       params.append("tenchusatsuMode", tenchusatsuMode);
       params.append("involuntaryMove", String(involuntaryMove));
 
+      setSearchError(null);
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         setData(json.properties || []);
         setMetadata(json.metadata || null);
+      } else {
+        setData([]);
+        setMetadata(null);
+        setSearchError(
+          "物件を取得できませんでした。条件を確認して、もう一度スキャンしてください。",
+        );
       }
     } catch (err) {
       console.error(err);
+      setData([]);
+      setMetadata(null);
+      setSearchError(
+        "通信エラーで物件を取得できませんでした。接続を確認して、もう一度スキャンしてください。",
+      );
     } finally {
       setLoading(false);
       setIsTransitioningDate(false);
@@ -1651,7 +1667,8 @@ export default function ArbitrageScannerPage() {
         return false;
     }
 
-    if (filterDirection !== "ALL" && d.direction !== filterDirection) return false;
+    if (filterDirection !== "ALL" && d.direction !== filterDirection)
+      return false;
 
     if (filterMaxStation) {
       const maxStation = Number(filterMaxStation);
@@ -1864,6 +1881,23 @@ export default function ArbitrageScannerPage() {
           </div>
         </div>
 
+        {searchError && (
+          <div
+            role="alert"
+            className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-800 sm:flex-row sm:items-center sm:justify-between"
+          >
+            <p className="text-sm font-medium">{searchError}</p>
+            <button
+              type="button"
+              onClick={() => fetchData()}
+              disabled={loading}
+              className="shrink-0 rounded-xl bg-red-700 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-800 disabled:opacity-50"
+            >
+              もう一度スキャン
+            </button>
+          </div>
+        )}
+
         {/* 2-Column Split Dashboard Layout */}
         {/* 出発地が未設定のときは結果を出さずに設定を促す。
             方位は出発地からの向きで決まるため、ここが無いと判定が成立しない。 */}
@@ -1989,7 +2023,9 @@ export default function ArbitrageScannerPage() {
                         </label>
                         <button
                           type="button"
-                          onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
+                          onClick={() =>
+                            setShowBaseMapPicker(!showBaseMapPicker)
+                          }
                           className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBaseMapPicker ? "閉じる" : "地図で検索"}
@@ -2205,7 +2241,9 @@ export default function ArbitrageScannerPage() {
                               {savedProfiles
                                 .filter(
                                   (preset) =>
-                                    !partyMembers.some((m) => m.id === preset.id),
+                                    !partyMembers.some(
+                                      (m) => m.id === preset.id,
+                                    ),
                                 )
                                 .map((preset) => (
                                   <button
@@ -2474,7 +2512,9 @@ export default function ArbitrageScannerPage() {
                       <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-stone-200">
                         {AXIS_ORDER.map((key) => {
                           const meta = AXIS_META[key];
-                          const pct = Math.round((activeWeights[key] ?? 0) * 100);
+                          const pct = Math.round(
+                            (activeWeights[key] ?? 0) * 100,
+                          );
                           return (
                             <div key={key} className="space-y-0.5">
                               <div className="flex items-center justify-between">
@@ -2520,7 +2560,8 @@ export default function ArbitrageScannerPage() {
                           );
                         })}
                         <p className="text-[10px] text-stone-400 pt-1">
-                          データが無い軸は 0 点ではなく評価対象外として扱い、残りの軸で正規化します（カードの「軸カバー」表示）。
+                          データが無い軸は 0
+                          点ではなく評価対象外として扱い、残りの軸で正規化します（カードの「軸カバー」表示）。
                         </p>
                       </div>
                     )}
@@ -2603,15 +2644,17 @@ export default function ArbitrageScannerPage() {
                       </select>
                       <p className="text-[10px] text-stone-400 leading-relaxed">
                         {
-                          TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
-                            ?.description
+                          TENCHUSATSU_MODES.find(
+                            (m) => m.id === tenchusatsuMode,
+                          )?.description
                         }
                       </p>
                       <p className="text-[9px] text-stone-400 leading-relaxed">
                         根拠:{" "}
                         {
-                          TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
-                            ?.rationale
+                          TENCHUSATSU_MODES.find(
+                            (m) => m.id === tenchusatsuMode,
+                          )?.rationale
                         }
                       </p>
                     </div>
@@ -2872,7 +2915,10 @@ export default function ArbitrageScannerPage() {
                                 {Math.round((item.totalRent || 0) / 10000)}万円
                               </div>
                               <div className="mt-1 flex justify-end">
-                                {renderStars(item.totalScore, item.astrologyStatus)}
+                                {renderStars(
+                                  item.totalScore,
+                                  item.astrologyStatus,
+                                )}
                               </div>
                             </div>
                           </div>
@@ -3016,7 +3062,10 @@ export default function ArbitrageScannerPage() {
                             {renderPartyBreakdown(item)}
 
                             <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
-                              {renderStars(item.totalScore, item.astrologyStatus)}
+                              {renderStars(
+                                item.totalScore,
+                                item.astrologyStatus,
+                              )}
                               <span
                                 className="text-[8px] text-stone-500 font-semibold"
                                 title={
@@ -3030,7 +3079,8 @@ export default function ArbitrageScannerPage() {
                                 総合 {item.totalScore.toFixed(1)}
                                 {item.axisCoverage < 0.999 && (
                                   <span className="ml-1 text-amber-600">
-                                    （軸カバー {Math.round(item.axisCoverage * 100)}%）
+                                    （軸カバー{" "}
+                                    {Math.round(item.axisCoverage * 100)}%）
                                   </span>
                                 )}
                               </span>
@@ -3093,7 +3143,8 @@ export default function ArbitrageScannerPage() {
                                 className="px-3 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                                 onClick={(e) => handleSortChange(key, e)}
                               >
-                                {AXIS_META[key].short} {renderSortIndicator(key)}
+                                {AXIS_META[key].short}{" "}
+                                {renderSortIndicator(key)}
                               </th>
                             ))}
                             <th className="px-4 py-2.5 text-right font-bold">
@@ -3113,7 +3164,10 @@ export default function ArbitrageScannerPage() {
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
                                 <td className="px-4 py-3 font-mono">
-                                  {renderStars(item.totalScore, item.astrologyStatus)}
+                                  {renderStars(
+                                    item.totalScore,
+                                    item.astrologyStatus,
+                                  )}
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-bold text-gray-900 dark:text-stone-800 truncate max-w-[180px]">

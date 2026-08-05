@@ -30,4 +30,10 @@ describe("portfolio route access", () => {
       expect(isProtectedRoute(route)).toBe(false);
     }
   });
+
+  it("opens a visualizer share link without opening the visualizer editor", () => {
+    expect(isProtectedRoute("/visualizer/share/component-1")).toBe(false);
+    expect(isProtectedRoute("/visualizer")).toBe(true);
+    expect(isProtectedRoute("/visualizer/new")).toBe(true);
+  });
 });
