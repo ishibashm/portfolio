@@ -38,10 +38,10 @@ async function resolveOwnerId(user: AuthUser) {
 }
 
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
-
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const ownerId = await resolveOwnerId(user);
     const simulations = await prisma.relocationSimulation.findMany({
       where: { userId: ownerId },
@@ -55,10 +55,10 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
-
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const body = await req.json();
     const { id, name, steps } = body;
 
@@ -105,10 +105,10 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = await getAuthUser();
-  if (!user) return unauthorized();
-
   try {
+    const user = await getAuthUser();
+    if (!user) return unauthorized();
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 

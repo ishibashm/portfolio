@@ -63,6 +63,19 @@ describe("/api/relocation/simulation", () => {
     expect(findMany).not.toHaveBeenCalled();
   });
 
+  it("returns a service error when authentication cannot be checked", async () => {
+    getAuthUser.mockRejectedValue(new Error("auth unavailable"));
+
+    const response = await GET();
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toMatchObject({
+      success: false,
+      error: expect.stringContaining("現在利用できません"),
+    });
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
   it("lists only plans owned by the signed-in user", async () => {
     findMany.mockResolvedValue([{ id: "plan-1", userId: user.id }]);
 
