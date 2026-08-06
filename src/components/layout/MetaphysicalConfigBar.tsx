@@ -11,6 +11,7 @@ import {
   Info,
   RefreshCw,
 } from "lucide-react";
+import { todayInJapan } from "@/utils/japanDate";
 
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
@@ -69,7 +70,7 @@ function normalizeConfig(config: MetaphysicalConfig): MetaphysicalConfig {
   };
 }
 const DEFAULT_CONFIG: MetaphysicalConfig = {
-  targetDate: new Date().toISOString().split("T")[0],
+  targetDate: todayInJapan(),
   useClassicalBoard: true,
   physicalMonthMode: "independent",
   directionFilterMode: "composite",

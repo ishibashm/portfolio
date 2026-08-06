@@ -28,6 +28,7 @@ import Link from "next/link";
 import { TwitterFeed } from "@/components/twitter/TwitterFeed";
 import { RealEstateWidget } from "@/components/realestate/RealEstateWidget";
 import { SubdomainLauncherGrid } from "@/domains/launcher";
+import { todayInJapan } from "@/utils/japanDate";
 
 // Integrate Meta-Metaphysical System Clients
 import { OuraClient } from "@/lib/ouraClient";
@@ -74,7 +75,7 @@ export const revalidate = 60; // Revalidate cache every minute
 export default async function DashboardPage() {
   const nbaEngine = new NBAEngine();
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayInJapan();
   const yesterdayStr = new Date(Date.now() - 86400000)
     .toISOString()
     .split("T")[0];

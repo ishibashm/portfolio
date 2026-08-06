@@ -17,6 +17,7 @@ import {
   Sliders,
   AlertTriangle,
 } from "lucide-react";
+import { todayInJapan } from "@/utils/japanDate";
 
 interface CityPreset {
   name: string;
@@ -92,7 +93,7 @@ export default function XViewerPage() {
   const [customLat, setCustomLat] = useState("35.6895");
   const [customLon, setCustomLon] = useState("139.6917");
   const [customDate, setCustomDate] = useState(
-    new Date().toISOString().split("T")[0],
+    todayInJapan(),
   );
   const [isCustomSimulated, setIsCustomSimulated] = useState(false);
   const [customResult, setCustomResult] = useState<any>(null);

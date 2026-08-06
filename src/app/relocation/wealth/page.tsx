@@ -44,6 +44,7 @@ import {
   getBaseAstrologyStatus,
   isRecommendedRelocationStatus,
 } from "@/lib/relocationPresentation";
+import { todayInJapan } from "@/utils/japanDate";
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
@@ -106,7 +107,7 @@ export default function RegionalWealthPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [targetDate, setTargetDate] = useState(
-    new Date().toISOString().split("T")[0],
+    todayInJapan(),
   );
   const [birthDate, setBirthDate] = useState("");
   const [baseLat, setBaseLat] = useState("");
@@ -514,7 +515,7 @@ export default function RegionalWealthPage() {
               ? config.lunar_phase_modifier
               : true;
           const tDate =
-            config.target_date || new Date().toISOString().split("T")[0];
+            config.target_date || todayInJapan();
 
           setBirthDate(normalizeDateTimeLocal(bDate));
           setBirthLat(bLat);

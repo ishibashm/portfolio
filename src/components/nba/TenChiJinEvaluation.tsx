@@ -20,6 +20,7 @@ import {
   getClassicalYearStar,
   getPersonalVoidZodiac,
 } from "@/utils/ephemerisEngine";
+import { todayInJapan } from "@/utils/japanDate";
 
 function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
   if (!dateStr) return fallback;
@@ -602,7 +603,7 @@ export function TenChiJinEvaluation({
                       const step = steps[singleStepIndex];
                       const dateStr = step
                         ? step.departureDate
-                        : new Date().toISOString().slice(0, 10);
+                        : todayInJapan();
                       const queryParams = new URLSearchParams({
                         date: dateStr,
                         lon: String(step ? step.fromLon : 139.6917),
