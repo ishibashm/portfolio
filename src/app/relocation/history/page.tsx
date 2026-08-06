@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Award,
 } from "lucide-react";
+import { directionLabelDetailed } from "@/lib/directionLabels";
 import {
   MetaphysicalConfigBar,
   MetaphysicalConfig,
@@ -337,30 +338,9 @@ export default function RelocationHistoryPage() {
     return labels[precision as keyof typeof labels] || "不明";
   };
 
-  const formatDirectionInfo = (status: string) => {
-    if (
-      status === "SAFE" ||
-      status === "OPTIMAL" ||
-      status === "OPTIMAL_REGULAR"
-    )
-      return "吉方位 / 平穏";
-    if (status === "WARNING")
-      return "一部干渉・引越当日注意 (長期方位は吉ですが、移動当日に注意が必要です)";
-
-    const noiseLabels: Record<string, string> = {
-      NOISE_GOU: "五黄殺 (大凶 - 自己破壊のエネルギー)",
-      NOISE_ANKEN: "暗剣殺 (大凶 - 他動的トラブルの兆候)",
-      NOISE_HA: "歳破/月破/日破 (大凶 - 破れのエネルギー)",
-      NOISE_VOID: "天中殺方位 (大凶 - 基盤の崩壊)",
-      NOISE_HONMEI: "本命殺 (凶 - 健康運の低下)",
-      NOISE_TEKI: "本命的殺 (凶 - 目的阻害のエネルギー)",
-      NOISE_GETSUMEI: "月命殺 (凶 - 精神的ストレスの元)",
-      NOISE_GETSUTEKI: "月命的殺 (凶 - 仕事や対人関係の停滞)",
-      NOISE_NODE: "羅睺・計都軸 (凶 - 宿命的磁気ストレス)",
-    };
-
-    return noiseLabels[status] || status;
-  };
+  // 以前はここに独自の表があり、未知の値だと "NOISE_NODE" のような内部コードが
+  // そのまま画面に出ていた。表記は @/lib/directionLabels に集約。
+  const formatDirectionInfo = directionLabelDetailed;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">

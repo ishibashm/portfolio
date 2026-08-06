@@ -40,6 +40,7 @@ import {
   MetaphysicalConfig,
 } from "@/components/layout/MetaphysicalConfigBar";
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
+import { directionLabelDetailed } from "@/lib/directionLabels";
 import { isValidIsoDate } from "@/utils/dateValidation";
 
 // Dynamically import Leaflet map to disable SSR
@@ -1524,21 +1525,6 @@ export default function RelocationSimulatorPage() {
     }
   };
 
-  const formatDirectionInfo = (status: string) => {
-    const noiseLabels: Record<string, string> = {
-      NOISE_GOU: "五黄殺 (大凶 - 自己破壊)",
-      NOISE_ANKEN: "暗剣殺 (大凶 - 他動的トラブル)",
-      NOISE_HA: "歳破/月破/日破 (大凶 - 破れ)",
-      NOISE_VOID: "天中殺方位 (大凶 - 土台の崩壊)",
-      NOISE_HONMEI: "本命殺 (凶 - 健康運の低下)",
-      NOISE_TEKI: "本命的殺 (凶 - 目的阻害)",
-      NOISE_GETSUMEI: "月命殺 (凶 - 精神の疲弊)",
-      NOISE_GETSUTEKI: "月命的殺 (凶 - 人間関係の障害)",
-      NOISE_NODE: "羅睺・計都軸 (凶 - 宿命的ストレス)",
-    };
-    return noiseLabels[status] || "SAFE (吉方位/中立平穏)";
-  };
-
   const saveUnifiedConfig = async (updatedFields: any) => {
     try {
       const localData = localStorage.getItem("tactical_config_v1");
@@ -2479,7 +2465,7 @@ export default function RelocationSimulatorPage() {
                       {evaluatedSteps[activeStepIndex].evaluation?.rating}
                     </span>
                     <p className="text-[10px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
-                      {formatDirectionInfo(
+                      {directionLabelDetailed(
                         evaluatedSteps[activeStepIndex].evaluation?.status ||
                           "",
                       )}

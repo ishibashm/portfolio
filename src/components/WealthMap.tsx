@@ -9,6 +9,11 @@ import {
   ZoomableGroup,
 } from "react-simple-maps";
 import { scaleLinear } from "d3-scale";
+import {
+  resolveWealthMarker,
+  WEALTH_LEGEND_NOTES,
+  WEALTH_LEGEND_SAMPLES,
+} from "@/lib/wealthMapPresentation";
 
 const geoUrl =
   "https://raw.githubusercontent.com/dataofjapan/land/master/japan.topojson";
@@ -113,20 +118,10 @@ export function WealthMap({
           {data.map((m) => {
             if (!m.lon || !m.lat) return null;
 
-            // Highlight optimal directions
-            const isOptimal = m.astrologyStatus.includes("OPTIMAL");
-            const isSafe = m.astrologyStatus.includes("SAFE");
-            const isNoise =
-              m.astrologyStatus?.includes("NOISE") &&
-              !m.astrologyStatus?.includes("WARNING");
-            const hasWarning = m.astrologyStatus.includes(
-              "DECLINATION_WARNING",
-            );
-
-            if (isNoise) return null; // Hide bad directions to reduce clutter
-
-            const radius = isOptimal ? 6 : isSafe ? 4 : hasWarning ? 3 : 2;
-            const opacity = isOptimal ? 0.9 : 0.6;
+            // 見た目は凡例と同じ表から引く（@/lib/wealthMapPresentation）。
+            // null は凶方位＝地図に出さない。
+            const marker = resolveWealthMarker(m.astrologyStatus);
+            if (!marker) return null;
 
             return (
               <Marker
@@ -147,11 +142,15 @@ export function WealthMap({
                 }}
               >
                 <circle
-                  r={radius}
-                  fill={hasWarning ? "#fbbf24" : colorScale(m.incomePerCapita)}
-                  fillOpacity={opacity}
-                  stroke={isOptimal ? "#fff" : hasWarning ? "#f59e0b" : "none"}
-                  strokeWidth={isOptimal || hasWarning ? 1 : 0}
+                  r={marker.radius}
+                  fill={
+                    marker.fill === "income"
+                      ? colorScale(m.incomePerCapita)
+                      : marker.fill
+                  }
+                  fillOpacity={marker.opacity}
+                  stroke={marker.stroke ?? "none"}
+                  strokeWidth={marker.strokeWidth}
                   className="transition-all duration-300 hover:r-8 cursor-pointer"
                 />
               </Marker>
@@ -180,17 +179,32 @@ export function WealthMap({
         <div className="font-bold border-b border-stone-300 pb-1 mb-1 mt-2">
           吉凶ステータス
         </div>
-        <div className="flex items-center gap-2">
-          <span className="w-3 h-3 rounded-full border border-white bg-rose-500"></span>{" "}
-          大吉 (OPTIMAL)
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-rose-500"></span> 吉 (SAFE)
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full border border-amber-500 bg-amber-400"></span>{" "}
-          偏角警告 (磁北ズレ)
-        </div>
+        {WEALTH_LEGEND_SAMPLES.map((item) => {
+          // 見本の丸は、地図の点とまったく同じ関数から作る。
+          const marker = resolveWealthMarker(item.sample);
+          if (!marker) return null;
+          return (
+            <div key={item.sample} className="flex items-center gap-2">
+              <svg width={14} height={14} className="shrink-0">
+                <circle
+                  cx={7}
+                  cy={7}
+                  r={marker.radius}
+                  fill={marker.fill === "income" ? "#f43f5e" : marker.fill}
+                  fillOpacity={marker.opacity}
+                  stroke={marker.stroke ?? "none"}
+                  strokeWidth={marker.strokeWidth}
+                />
+              </svg>
+              {item.label}
+            </div>
+          );
+        })}
+        {WEALTH_LEGEND_NOTES.map((note) => (
+          <div key={note} className="text-[10px] text-stone-500 max-w-[13rem]">
+            ※{note}
+          </div>
+        ))}
       </div>
     </div>
   );

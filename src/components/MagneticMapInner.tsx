@@ -16,6 +16,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
+import { directionLabelShort } from "@/lib/directionLabels";
 
 // Fix for default marker icons in Leaflet with Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -393,20 +394,8 @@ export default function MagneticMapInner({
       const m = layers?.monthLayer[d.dir] || "SAFE";
       const dLayer = layers?.dayLayer[d.dir] || "SAFE";
 
-      const formatLayer = (s: string) => {
-        if (s.startsWith("NOISE_GOU")) return "五黄殺 (大凶)";
-        if (s.startsWith("NOISE_ANKEN")) return "暗剣殺 (大凶)";
-        if (s.startsWith("NOISE_HA")) return "歳破/月破 (大凶)";
-        if (s.startsWith("NOISE_HONMEI")) return "本命殺 (凶)";
-        if (s.startsWith("NOISE_TEKI")) return "本命的殺 (凶)";
-        if (s.startsWith("NOISE_GETSUMEI")) return "月命殺 (凶)";
-        if (s.startsWith("NOISE_GETSUTEKI")) return "月命的殺 (凶)";
-        if (s.startsWith("NOISE_VOID")) return "天中殺 (大凶)";
-        if (s.startsWith("NOISE_NODE")) return "羅睺/計都 (凶)";
-        if (s === "OPTIMAL") return "大吉方位";
-        if (s === "OPTIMAL_REGULAR") return "吉方位";
-        return "平穏 (SAFE)";
-      };
+      // 日本語表記は @/lib/directionLabels に集約。ここに表を戻さないこと。
+      const formatLayer = directionLabelShort;
 
       const getActionSuggest = (status: string) => {
         if (status.startsWith("NOISE_GOU"))

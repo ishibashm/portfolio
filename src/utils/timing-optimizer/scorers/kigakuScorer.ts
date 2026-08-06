@@ -1,4 +1,5 @@
 import { EvaluationContext, TimingScorer } from "../types";
+import { directionLabelShort } from "@/lib/directionLabels";
 import {
   getDayStar,
   getYearStar,
@@ -201,15 +202,8 @@ export class KigakuScorer implements TimingScorer {
       : "";
 
     if (targetClashStatus) {
-      const translateStatus = (s: string) => {
-        if (s === "NOISE_GOU") return "五黄殺 (大凶)";
-        if (s === "NOISE_ANKEN") return "暗剣殺 (大凶)";
-        if (s === "NOISE_HA") return "破 (大凶・不整合波)";
-        if (s === "NOISE_HONMEI") return "本命殺 (自滅・健康害)";
-        if (s === "NOISE_TEKI") return "的殺 (目的喪失・精神負荷)";
-        return s;
-      };
-      const clashName = translateStatus(targetClashStatus);
+      // 以前は表に無い凶（月命殺など）が来ると内部コードのまま文中に出ていた。
+      const clashName = directionLabelShort(targetClashStatus);
       doyouDetail += `【警告・方位凶殺衝突】目的地（${ctx.targetDirection}方位）に凶殺「${clashName}」が検出されています。年月日の時間的波長が「相生」や「比和」であっても、この方位への移動は物理的・精神的なノイズとなるため推奨されません。 `;
     } else if (isDayWarning) {
       doyouDetail += `【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。当日の荷物の紛失、配送遅延、または軽微なケガや体調管理に普段より注意を払い、時間に余裕を持って行動してください。移住後の長期的な生活への悪影響はありません。 `;
