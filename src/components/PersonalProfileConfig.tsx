@@ -19,6 +19,7 @@ import {
   saveProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
+import { getProfileStorageMode } from "@/lib/profilePresentation";
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
@@ -271,6 +272,9 @@ export function PersonalProfileConfig({
     }
   };
 
+  // 右上の表示とプリセット欄のバッジは同じ状態を指す。文言が割れないよう 1 か所から。
+  const storageMode = getProfileStorageMode(presetCloudSynced, needsLogin);
+
   return (
     <div className="w-full max-w-4xl mt-4 bg-white/80 border border-stone-200 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -285,9 +289,25 @@ export function PersonalProfileConfig({
           </h2>
         </div>
         <div className="flex items-center">
-          <span className="text-[9px] font-mono text-emerald-500 tracking-widest flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 md:animate-pulse"></span>
-            LOCAL MODE ONLY
+          <span
+            className={`text-[9px] font-mono tracking-widest flex items-center gap-1 ${
+              storageMode.tone === "synced"
+                ? "text-emerald-500"
+                : storageMode.tone === "local"
+                  ? "text-amber-600"
+                  : "text-stone-500"
+            }`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                storageMode.tone === "synced"
+                  ? "bg-emerald-500 md:animate-pulse"
+                  : storageMode.tone === "local"
+                    ? "bg-amber-500"
+                    : "bg-stone-400"
+              }`}
+            ></span>
+            {storageMode.label}
           </span>
         </div>
       </div>
@@ -304,20 +324,14 @@ export function PersonalProfileConfig({
           <div className="flex items-center gap-2">
             <span
               className={`text-[9px] border px-2 py-0.5 rounded-xs ${
-                presetCloudSynced === true
+                storageMode.tone === "synced"
                   ? "text-emerald-600 bg-emerald-50 border-emerald-200"
-                  : presetCloudSynced === false
+                  : storageMode.tone === "local"
                     ? "text-amber-700 bg-amber-50 border-amber-200"
                     : "text-stone-500 bg-stone-50 border-stone-200"
               }`}
             >
-              {presetCloudSynced === true
-                ? "クラウド同期済み"
-                : presetCloudSynced === false
-                  ? needsLogin
-                    ? "未ログイン"
-                    : "この端末のみ"
-                  : "同期確認中"}
+              {storageMode.label}
             </span>
             {selectedPresetId && (
               <span className="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-xs">
@@ -638,32 +652,56 @@ export function PersonalProfileConfig({
             <div className="grid grid-cols-2 gap-2 mt-2">
               <div className="flex flex-col gap-1">
                 <label className="text-[8px] text-stone-400 uppercase">
-                  HRV Mean (ms)
+                  HRV 平均 (ms)
                 </label>
                 <input
                   type="number"
                   step="0.1"
-                  value={baselineHrvMean || ""}
+                  value={baselineHrvMean ?? ""}
                   onChange={(e) => setBaselineHrvMean?.(Number(e.target.value))}
                   className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
                 />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[8px] text-stone-400 uppercase">
-                  HRV StdDev
+                  HRV 標準偏差
                 </label>
                 <input
                   type="number"
                   step="0.1"
-                  value={baselineHrvStd || ""}
+                  value={baselineHrvStd ?? ""}
                   onChange={(e) => setBaselineHrvStd?.(Number(e.target.value))}
+                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[8px] text-stone-400 uppercase">
+                  GSR 平均 (μS)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={baselineGsrMean ?? ""}
+                  onChange={(e) => setBaselineGsrMean?.(Number(e.target.value))}
+                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[8px] text-stone-400 uppercase">
+                  GSR 標準偏差
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={baselineGsrStd ?? ""}
+                  onChange={(e) => setBaselineGsrStd?.(Number(e.target.value))}
                   className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
                 />
               </div>
             </div>
             <p className="text-[7px] text-stone-400 mt-1 text-justify">
-              あなたの直近1ヶ月のHRV（心拍変動）の平均値と標準偏差。Oura等のデータを入力することで、ANS
-              LoadのZ-Score異常検知があなた専用にパーソナライズされます。
+              直近1ヶ月のHRV（心拍変動）とGSR（皮膚電気反応）の平均値・標準偏差を入力すると、ANS
+              LoadのZ-Score異常検知がパーソナライズされます。
             </p>
           </div>
 

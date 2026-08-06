@@ -4489,6 +4489,16 @@ ${timingOptimization?.recommendationText || "特になし"}
           >
             5. 総合スコア
           </button>
+          <button
+            onClick={() => selectTab("history")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "history"
+                ? "bg-sky-500/10 text-sky-600 border border-sky-200"
+                : "text-stone-400 hover:text-stone-600"
+            }`}
+          >
+            6. 履歴
+          </button>
         </div>
 
         {/* --- TAB CONTENT: 1. PROFILE --- */}

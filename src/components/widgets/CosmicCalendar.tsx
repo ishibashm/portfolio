@@ -397,7 +397,7 @@ export function CosmicCalendar({
   }
 
   // JST weekday titles
-  const WEEKDAYS = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
   // Compute days in grid when month or birthdate config changes
   useEffect(() => {
@@ -588,7 +588,7 @@ export function CosmicCalendar({
             style={{ backgroundColor: "var(--color-accent, #10b981)" }}
           />
           <span className="text-xs font-mono text-stone-400 tracking-widest">
-            {"// Cosmic Calendar Telemetry"}
+            {"// 暦カレンダー"}
           </span>
         </div>
 
@@ -731,7 +731,7 @@ export function CosmicCalendar({
       <div className="mt-5 pt-4 border-t border-stone-200/60 space-y-4">
         <div>
           <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block mb-2">
-            {"// Legend"}
+            {"// 凡例"}
           </span>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {LEGEND_MARKS.map((item) => (
@@ -762,33 +762,33 @@ export function CosmicCalendar({
 
         <div>
           <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block mb-2">
-            {"// Month Aggregate"}
+            {"// 月間集計"}
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[
               {
-                label: "吉日 (Lucky)",
+                label: "吉日",
                 value: `${monthSummary.lucky}`,
                 unit: "日",
               },
               {
-                label: "天中殺 (Void)",
+                label: "天中殺",
                 value: `${monthSummary.voidDays}`,
                 unit: "日",
               },
               {
-                label: "平均 (Avg)",
+                label: "平均",
                 value: `${monthSummary.avgScore}`,
-                unit: "index",
+                unit: "指数",
               },
               {
-                label: "最良 (Peak)",
+                label: "最良",
                 value: monthSummary.best
                   ? `${monthSummary.best.dayOfMonth}`
                   : "--",
                 unit: monthSummary.best
                   ? `/ ${monthSummary.best.score}`
-                  : "index",
+                  : "指数",
               },
             ].map((tile) => (
               <div
@@ -818,7 +818,7 @@ export function CosmicCalendar({
             className="w-full flex justify-between items-center text-stone-400 hover:text-stone-600 py-1 transition-colors"
           >
             <span className="flex items-center gap-1.5">
-              ⚙️ [Astro Telemetry Config]
+              ⚙️ 暦・占術設定
             </span>
             <span>{isSettingsOpen ? "▲" : "▼"}</span>
           </button>
@@ -828,7 +828,7 @@ export function CosmicCalendar({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[9px] text-stone-400 uppercase mb-1">
-                    Birth Date & Time (JST)
+                    生年月日・時刻 (JST)
                   </label>
                   <input
                     type="datetime-local"
@@ -843,7 +843,7 @@ export function CosmicCalendar({
                 </div>
                 <div>
                   <label className="block text-[9px] text-stone-400 uppercase mb-1">
-                    Birth Longitude
+                    出生地の経度
                   </label>
                   <input
                     type="number"
@@ -890,7 +890,7 @@ export function CosmicCalendar({
             {/* Title & Date */}
             <div className="border-b border-stone-200/60 pb-4 mb-4">
               <span className="text-[9px] font-mono text-stone-400 uppercase tracking-wider block">
-                {"// Selected Node Telemetry"}
+                {"// 選択日の詳細"}
               </span>
               <h3 className="text-lg font-bold font-mono text-stone-900 mt-1">
                 {selectedDay.date.getFullYear()}.
@@ -911,7 +911,7 @@ export function CosmicCalendar({
             <div className="mb-6">
               <div className="flex justify-between items-baseline mb-1.5">
                 <span className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">
-                  Alignment Rating
+                  適合度
                 </span>
                 <span
                   className="text-lg font-mono font-bold"
@@ -926,7 +926,7 @@ export function CosmicCalendar({
                             : "rgb(248,113,113)",
                   }}
                 >
-                  {selectedDay.score} INDEX
+                  {selectedDay.score} 指数
                 </span>
               </div>
               <div className="w-full h-1.5 bg-white/70 rounded-full overflow-hidden border border-stone-200/60">
@@ -953,7 +953,7 @@ export function CosmicCalendar({
               <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
                 <div className="flex items-center gap-2 mb-1.5 text-[10px] text-stone-400 uppercase tracking-wider">
                   <Moon className="w-3.5 h-3.5 text-stone-500" />
-                  Lunar Phase Telemetry
+                  月相
                 </div>
                 <div className="flex items-center gap-2 font-bold text-stone-900 mb-1">
                   <span className="text-lg leading-none">
@@ -970,13 +970,13 @@ export function CosmicCalendar({
               <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
                 <div className="flex items-center gap-2 mb-1.5 text-[10px] text-stone-400 uppercase tracking-wider">
                   <Sun className="w-3.5 h-3.5 text-stone-500" />
-                  Solar seasonal Telemetry
+                  二十四節気
                 </div>
                 <div className="text-stone-900 font-bold mb-1">
-                  Node: {selectedDay.sekki}
+                  節気: {selectedDay.sekki}
                 </div>
                 <div className="text-[10px] text-stone-400">
-                  Solar Longitude: {selectedDay.solarLongitude.toFixed(2)}°
+                  太陽黄経: {selectedDay.solarLongitude.toFixed(2)}°
                 </div>
               </div>
 
@@ -984,16 +984,16 @@ export function CosmicCalendar({
               <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-[10px] text-stone-400 uppercase tracking-wider">
                   <Clock className="w-3.5 h-3.5 text-stone-500" />
-                  Calendar Fortunes
+                  暦の吉凶
                 </div>
                 <div className="flex justify-between border-b border-stone-200/60 pb-1.5">
-                  <span className="text-stone-400">Rokuyo:</span>
+                  <span className="text-stone-400">六曜:</span>
                   <span className="text-stone-900 font-bold">
                     {selectedDay.rokuyo}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-stone-400">吉兆 (Auspicious):</span>
+                  <span className="text-stone-400">吉兆:</span>
                   <span className="text-stone-900 font-bold text-right">
                     {selectedDay.luckyDays.labels.join(" / ") || "特になし"}
                   </span>
@@ -1005,28 +1005,28 @@ export function CosmicCalendar({
                 <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
                   <div className="flex items-center gap-2 text-[10px] text-stone-400 uppercase tracking-wider">
                     <Zap className="w-3.5 h-3.5 text-purple-600" />
-                    Personal Fortune Telemetry
+                    個人運
                   </div>
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
-                    <span className="text-stone-400">本日の地支 (Day Branch):</span>
+                    <span className="text-stone-400">本日の地支:</span>
                     <span className="text-stone-900 font-bold">
                       {selectedDay.personalFortune.dayZhi} ({ZHI_ELEMENTS[selectedDay.personalFortune.dayZhi]})
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
-                    <span className="text-stone-400">宿命の日支 (Natal Day Branch):</span>
+                    <span className="text-stone-400">宿命の日支:</span>
                     <span className="text-stone-900 font-bold">
                       {userDayZhi} ({ZHI_ELEMENTS[userDayZhi]})
                     </span>
                   </div>
                   <div className="flex justify-between border-b border-stone-200/60 pb-1.5 text-[11px] font-mono">
-                    <span className="text-stone-400">宿命の空亡 (Personal Void):</span>
+                    <span className="text-stone-400">宿命の空亡:</span>
                     <span className="text-purple-600 font-bold">
                       {userVoidZodiacs.join("")}天中殺
                     </span>
                   </div>
                   <div className="flex justify-between text-[11px] font-mono">
-                    <span className="text-stone-400">個人相性 (Astro Status):</span>
+                    <span className="text-stone-400">個人相性:</span>
                     <span className="font-bold">
                       {selectedDay.personalFortune.isVoid && (
                         <span className="px-1.5 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-600 border border-purple-200">

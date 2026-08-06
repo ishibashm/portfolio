@@ -828,7 +828,7 @@ export default function RentalsDashboard() {
           <div className="space-y-1">
             <h1 className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 flex items-center gap-3">
               <Home className="w-7 sm:w-8 h-7 sm:h-8 text-rose-500 animate-pulse" />
-              Rentals & Real Estate Intelligence
+              賃貸物件・市場分析
             </h1>
             <p className="text-stone-600 text-xs sm:text-sm font-normal">
               自動化された賃貸物件トラッキングと吉方位・市場適合性分析
@@ -1337,7 +1337,7 @@ export default function RentalsDashboard() {
             <div className="flex-1 min-w-[200px]">
               <input
                 type="text"
-                placeholder="Search by name, area, or address..."
+                placeholder="物件名・地域・住所で検索..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-white border border-stone-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
@@ -1348,7 +1348,7 @@ export default function RentalsDashboard() {
             <div className="w-36">
               <input
                 type="number"
-                placeholder="Max Rent (万円)"
+                placeholder="家賃上限 (万円)"
                 value={filterMaxRent}
                 onChange={(e) => setFilterMaxRent(e.target.value)}
                 className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-stone-400"
@@ -1375,7 +1375,7 @@ export default function RentalsDashboard() {
                 className="rounded border-stone-300 bg-white text-emerald-500 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
               />
               <span className="text-xs font-semibold text-stone-500">
-                New Builds Only
+                新築のみ
               </span>
             </label>
 
@@ -1402,7 +1402,7 @@ export default function RentalsDashboard() {
               className="px-3.5 py-2 bg-white hover:bg-stone-100 text-stone-600 border border-stone-200 hover:border-stone-300 disabled:opacity-40 disabled:hover:bg-white rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-1.5 active:scale-[0.98]"
             >
               <FileDown className="w-3.5 h-3.5" />
-              EXPORT CSV
+              CSV出力
             </button>
 
             <div className="flex bg-stone-50 p-1 rounded-xl border border-stone-200 text-[10px] font-mono shrink-0">
@@ -1415,7 +1415,7 @@ export default function RentalsDashboard() {
                 }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                CARD GRID
+                カード
               </button>
               <button
                 onClick={() => setViewMode("table")}
@@ -1426,7 +1426,7 @@ export default function RentalsDashboard() {
                 }`}
               >
                 <List className="w-3.5 h-3.5" />
-                TABLE
+                表
               </button>
               <button
                 onClick={() => setViewMode("map")}
@@ -1437,7 +1437,7 @@ export default function RentalsDashboard() {
                 }`}
               >
                 <MapPin className="w-3.5 h-3.5" />
-                MAP VIEW
+                地図
               </button>
             </div>
           </div>
@@ -1482,13 +1482,13 @@ export default function RentalsDashboard() {
                         <th className="px-4 py-4 w-12 text-center" title="比較">
                           比較
                         </th>
-                        <th className="px-6 py-4">Property</th>
+                        <th className="px-6 py-4">物件</th>
                         <th
                           className="px-6 py-4 cursor-pointer hover:bg-white/80 transition-colors"
                           onClick={() => handleSort("rent")}
                         >
                           <div className="flex items-center">
-                            Rent & Fee <SortIcon field="rent" />
+                            家賃・管理費 <SortIcon field="rent" />
                           </div>
                         </th>
                         <th
@@ -1496,7 +1496,7 @@ export default function RentalsDashboard() {
                           onClick={() => handleSort("size_sqm")}
                         >
                           <div className="flex items-center">
-                            Specs <SortIcon field="size_sqm" />
+                            物件仕様 <SortIcon field="size_sqm" />
                           </div>
                         </th>
                         <th
@@ -1504,7 +1504,7 @@ export default function RentalsDashboard() {
                           onClick={() => handleSort("first_seen_at")}
                         >
                           <div className="flex items-center">
-                            Market Time <SortIcon field="first_seen_at" />
+                            掲載期間 <SortIcon field="first_seen_at" />
                           </div>
                         </th>
                         <th className="px-6 py-4">開運吉凶方位</th>
@@ -2270,7 +2270,7 @@ export default function RentalsDashboard() {
                           間取り
                         </div>
                         <div className="h-10 flex items-center border-b border-stone-200">
-                          専旧面積
+                          専有面積
                         </div>
                         <div className="h-10 flex items-center border-b border-stone-200">
                           平米単価
