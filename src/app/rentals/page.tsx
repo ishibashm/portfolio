@@ -58,6 +58,7 @@ import {
   type Direction,
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
+import { todayInJapan } from "@/utils/japanDate";
 
 export type RentalProperty =
   Database["public"]["Tables"]["rental_properties"]["Row"];
@@ -803,7 +804,7 @@ export default function RentalsDashboard() {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      `rental_properties_export_${new Date().toISOString().split("T")[0]}.csv`,
+      `rental_properties_export_${todayInJapan()}.csv`,
     );
     document.body.appendChild(link);
     link.click();

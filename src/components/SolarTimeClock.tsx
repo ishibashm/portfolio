@@ -35,6 +35,7 @@ import "katex/dist/katex.min.css";
 import type { NBAData } from "./nba/NBADashboard";
 import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
 import {
   COMPASS_DIRECTIONS,
@@ -753,10 +754,10 @@ export const SolarTimeClock = () => {
         setScorecardLoading(true);
         try {
           const dateStr = baseTime
-            ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
-                .toISOString()
-                .split("T")[0]
-            : new Date().toISOString().split("T")[0];
+            ? toJapanDateString(
+                new Date(baseTime.getTime() + timeOffsetDays * 86400000),
+              )
+            : todayInJapan();
 
           // Fetch Wealth Matrix data
           const wParams = new URLSearchParams();
@@ -6736,8 +6737,8 @@ ${timingOptimization?.recommendationText || "特になし"}
                       {/* Unified Ten-Chi-Jin Evaluation Block */}
                       {(() => {
                         const dateStr = baseTime
-                          ? baseTime.toISOString().slice(0, 10)
-                          : new Date().toISOString().slice(0, 10);
+                          ? toJapanDateString(baseTime)
+                          : todayInJapan();
                         const dirAngles: Record<string, number> = {
                           N: 0,
                           NE: 45,
