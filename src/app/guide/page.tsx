@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   description: GUIDE_INDEX.description,
   alternates: { canonical: "/guide" },
   openGraph: {
+      images: ["/ogp.png"],
     title: `${GUIDE_INDEX.title} | ${SITE_NAME}`,
     description: GUIDE_INDEX.description,
     url: "https://cloud-palette.com/guide",

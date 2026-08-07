@@ -50,7 +50,8 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/houi/area/${area.code}` },
-    openGraph: { title, description, type: "article" },
+    openGraph: {
+      images: ["/ogp.png"], title, description, type: "article" },
   };
 }
 
