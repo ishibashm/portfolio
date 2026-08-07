@@ -49,7 +49,11 @@ describe("portfolio route access", () => {
   });
 
   it("残した非中核ページは引き続きログイン必須", () => {
-    expect(isProtectedRoute("/dashboard")).toBe(true);
     expect(isProtectedRoute("/relocation/history")).toBe(true);
+  });
+
+  it("削除した /dashboard は保護対象に残さない", () => {
+    // 全機能ランチャーは削除した。ログイン後の行き先もトップに移した。
+    expect(isProtectedRoute("/dashboard")).toBe(false);
   });
 });

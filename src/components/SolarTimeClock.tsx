@@ -89,9 +89,6 @@ const SystemTelemetryLog = dynamic(
   () => import("./SystemTelemetryLog").then((mod) => mod.SystemTelemetryLog),
   { ssr: false },
 );
-const ExpertCouncilPanel = dynamic(() => import("./ExpertCouncilPanel"), {
-  ssr: false,
-});
 const TenchusatsuVisualizer = dynamic(
   () =>
     import("./TenchusatsuVisualizer").then((mod) => mod.TenchusatsuVisualizer),
@@ -4581,47 +4578,14 @@ ${timingOptimization?.recommendationText || "特になし"}
         {/* --- TAB CONTENT: 4. CONSULT (AI & Telemetry) --- */}
         {activeTab === "consult" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in">
-            <div className="w-full max-w-4xl">
-              <ExpertCouncilPanel
-                actionIntent={actionIntent}
-                targetDate={
-                  baseTime
-                    ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
-                    : null
-                }
-                honmeiStar={
-                  (useClassicalBoard
-                    ? honmeiStar?.classical
-                    : honmeiStar?.physical) || null
-                }
-                environmentalFrequencies={env}
-                birthFrequencies={birthEnv}
-                finalVectors={layers?.finalVectors || {}}
-                doyouState={layers?.doyouState}
-                isPersonalVoid={isPersonalVoid}
-                isYearVoid={isYearVoid}
-                isMonthVoid={isMonthVoid}
-                isDayVoid={isDayVoid}
-                kpIndex={spaceWeather?.kpIndex || null}
-                xrayFlux={spaceWeather?.xrayFlux || null}
-                magneticF={geoData?.intensity || null}
-                magneticD={geoData?.declination || null}
-                magneticI={geoData?.inclination || null}
-                hrv={hrv}
-                gsr={gsr}
-                ansLoad={ansLoad}
-                shieldCapacity={shieldCapacity}
-                timingDetails={timingOptimization?.details}
-                timingRecommendation={timingOptimization?.recommendationText}
-                targetLat={targetLat}
-                targetLon={targetLon}
-                targetDirection={getTargetDirectionInfo()?.magneticDirection}
-                aiPromptText={getAiAssistantTextSummary()}
-                onCopyPrompt={handleCopyAiPrompt}
-                copiedPrompt={copiedPrompt}
-                onDownloadJson={handleDownloadDestinationJson}
-              />
-            </div>
+            {/*
+              AI コンシェルジュ（ExpertCouncilPanel）はここにあったが削除した。
+              引越しの方位とタイミングというサイトの目的から外れており、
+              かつ利用者の指示でサイト全体の配色を書き換えられる唯一の経路
+              だった（agentTheme への書き込み）。広告を載せるページに、
+              訪問者の操作で見た目が変わる仕組みは残さない。
+              このタブには下の Ephemeris Engine Diagnostics が残る。
+            */}
 
             <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-4xl">
               <div className="flex items-center gap-2 mb-2">
