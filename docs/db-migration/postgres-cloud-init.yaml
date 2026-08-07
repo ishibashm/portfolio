@@ -1,0 +1,115 @@
+#cloud-config
+# Oracle Cloud Always Free（VM.Standard.A1.Flex / 4 OCPU / 24GB RAM）に
+# PostgreSQL 16 を構築する起動スクリプト。
+#
+# インスタンス作成画面の「詳細オプション → 初期化スクリプト（cloud-init）」に
+# この内容を貼る。SSH でログインしなくても、起動時に全部終わる。
+#
+# 貼る前に 2 か所だけ書き換えること:
+#   __DB_PASSWORD__  … アプリが使う接続パスワード
+#   __ADMIN_PASSWORD__ … 管理用。別の値にする
+#
+# パスワードの作り方（手元の端末で）:
+#   openssl rand -base64 32 | tr -d '/+=' | cut -c1-32
+#
+# 注意: cloud-init の内容は OCI コンソールから閲覧できる。ここに書いた
+# パスワードは「コンソールを見られる人には見える」前提で扱うこと。
+# 構築後に変更したい場合は手順書の「パスワードの変更」を参照。
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - postgresql-16
+  - postgresql-client-16
+  - iptables-persistent
+
+write_files:
+  # ---- チューニング（24GB RAM 前提） ----
+  # 既定値は 128MB 程度のマシンを想定した保守的な値なので、そのままだと
+  # 24GB あっても使い切れない。物件検索は percentile_cont と
+  # ウィンドウ関数で数十万行を集計するため、work_mem を厚めに取る。
+  - path: /etc/postgresql/16/main/conf.d/tuning.conf
+    permissions: "0644"
+    content: |
+      listen_addresses = '*'
+      max_connections = 100
+
+      # 全体の 1/4 を共有バッファに。DB 全体（〜2GB）が余裕で載る
+      shared_buffers = 6GB
+      # OS のページキャッシュぶんも含めた「実質使えるキャッシュ量」の見積り
+      effective_cache_size = 18GB
+      maintenance_work_mem = 2GB
+
+      # 1 ソート/ハッシュあたり。中央値の算出がディスクに溢れないように取る
+      work_mem = 64MB
+
+      # ブロックストレージは SSD。既定の 4.0 だと索引が使われにくい
+      random_page_cost = 1.1
+      effective_io_concurrency = 200
+
+      max_worker_processes = 4
+      max_parallel_workers = 4
+      max_parallel_workers_per_gather = 2
+
+      wal_compression = on
+      checkpoint_timeout = 15min
+      max_wal_size = 4GB
+
+      # SSL は必須にする。インターネットに開けるため
+      ssl = on
+
+      # 遅いクエリを記録して、後から詰められるようにする
+      log_min_duration_statement = 3000
+      log_line_prefix = '%m [%p] %q%u@%d '
+
+  # ---- 接続元の制御 ----
+  # 外からの接続は SSL かつ scram-sha-256 のみ許可する。
+  - path: /etc/postgresql/16/main/conf.d/hba.conf.append
+    permissions: "0644"
+    content: |
+      hostssl all all 0.0.0.0/0 scram-sha-256
+      hostssl all all ::/0      scram-sha-256
+
+  # ---- 毎日のバックアップ ----
+  # マネージドではないので自分で取る。7 世代を残す。
+  - path: /usr/local/bin/pg-backup.sh
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      DIR=/var/backups/postgres
+      mkdir -p "$DIR"
+      STAMP=$(date -u +%Y%m%dT%H%M%SZ)
+      sudo -u postgres pg_dump --format=custom portfolio \
+        > "$DIR/portfolio_$STAMP.dump"
+      # 7 世代より古いものを消す
+      ls -1t "$DIR"/portfolio_*.dump | tail -n +8 | xargs -r rm --
+      echo "backup done: $STAMP"
+
+runcmd:
+  # 認証方式を scram-sha-256 に上げてから初期化する
+  - sed -i "s/^#password_encryption.*/password_encryption = scram-sha-256/" /etc/postgresql/16/main/postgresql.conf
+  - cat /etc/postgresql/16/main/conf.d/hba.conf.append >> /etc/postgresql/16/main/pg_hba.conf
+  - systemctl restart postgresql
+
+  # アプリ用のロールとデータベース
+  - sudo -u postgres psql -c "ALTER USER postgres PASSWORD '__ADMIN_PASSWORD__';"
+  - sudo -u postgres psql -c "CREATE ROLE portfolio LOGIN PASSWORD '__DB_PASSWORD__';"
+  - sudo -u postgres psql -c "CREATE DATABASE portfolio OWNER portfolio;"
+
+  # schema.prisma が既定値に使う。先に入れておかないと restore で失敗する
+  - sudo -u postgres psql -d portfolio -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+  - sudo -u postgres psql -d portfolio -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+
+  # OCI の Ubuntu イメージは既定で 22 番以外を塞いでいる。5432 を開ける。
+  # VCN 側のセキュリティリストでも別途開ける必要がある（手順書を参照）。
+  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 5432 -j ACCEPT
+  - netfilter-persistent save
+
+  # 毎日 18:00 UTC（翌 03:00 JST）にバックアップ
+  - (crontab -l 2>/dev/null; echo "0 18 * * * /usr/local/bin/pg-backup.sh >> /var/log/pg-backup.log 2>&1") | crontab -
+
+  # 構築が終わったことを分かるようにしておく（シリアルコンソールで確認できる）
+  - echo "=== PostgreSQL setup finished at $(date -u) ===" | tee /var/log/pg-setup-done
+  - sudo -u postgres psql -d portfolio -c "SELECT version();" | tee -a /var/log/pg-setup-done

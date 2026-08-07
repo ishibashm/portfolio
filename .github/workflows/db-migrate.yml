@@ -1,0 +1,159 @@
+name: Migrate database to a new host
+
+# Supabase Free の 500MB を超えたため、別の PostgreSQL へ移す。
+#
+# 手元から DB に繋げない環境（5432 が塞がれている等）でも移行できるように、
+# ランナー上で pg_dump / pg_restore を回す。接続情報は Secret に置くので、
+# 実行者の手元にも、ログにも出ない。
+#
+# 実行前に次の Secret を用意すること:
+#   MIGRATION_SOURCE_URL … 移行元。Supabase の DIRECT_URL（プーラ経由でない方）
+#   MIGRATION_TARGET_URL … 移行先。新しい PostgreSQL
+#
+# 移行元は読むだけ。書き換えない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: '移行先のデータを上書きします。実行するなら MIGRATE と入力'
+        required: true
+        default: ""
+      mode:
+        description: "dry-run: 中身を調べるだけ / migrate: 実際に移す"
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - migrate
+        default: dry-run
+
+concurrency:
+  group: db-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Guard
+        if: ${{ inputs.mode == 'migrate' && inputs.confirm != 'MIGRATE' }}
+        run: |
+          echo "::error::mode=migrate のときは confirm に MIGRATE と入力すること。"
+          exit 1
+
+      # ランナー既定の client はサーバより古いことがある。pg_dump は
+      # サーバ以上のバージョンでないと落ちるので、PGDG から 17 を入れる。
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Inspect both ends
+        env:
+          SRC: ${{ secrets.MIGRATION_SOURCE_URL }}
+          DST: ${{ secrets.MIGRATION_TARGET_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SRC" ] || [ -z "$DST" ]; then
+            echo "::error::MIGRATION_SOURCE_URL / MIGRATION_TARGET_URL が未設定。"
+            exit 1
+          fi
+
+          echo "## 移行元" >> $GITHUB_STEP_SUMMARY
+          psql "$SRC" -At -c "SELECT 'version: ' || version();" >> $GITHUB_STEP_SUMMARY
+          psql "$SRC" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
+          psql "$SRC" -At -c "SELECT 'rental_properties: ' || count(*) FROM rental_properties;" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 移行先" >> $GITHUB_STEP_SUMMARY
+          psql "$DST" -At -c "SELECT 'version: ' || version();" >> $GITHUB_STEP_SUMMARY
+          psql "$DST" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
+          # 空であることを確認する。既存データがあると restore が衝突する
+          TABLES=$(psql "$DST" -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
+          echo "移行先の public スキーマのテーブル数: $TABLES" >> $GITHUB_STEP_SUMMARY
+          if [ "$TABLES" != "0" ] && [ "${{ inputs.mode }}" = "migrate" ]; then
+            echo "::warning::移行先にテーブルが $TABLES 個ある。--clean で上書きされる。"
+          fi
+
+          # 拡張が入っているか。無いと restore が必ず失敗する
+          psql "$DST" -At -c "SELECT 'extensions: ' || string_agg(extname, ', ') FROM pg_extension;" >> $GITHUB_STEP_SUMMARY
+
+      - name: Dump
+        if: ${{ inputs.mode == 'migrate' }}
+        env:
+          SRC: ${{ secrets.MIGRATION_SOURCE_URL }}
+        run: |
+          set -euo pipefail
+          # --no-owner --no-acl: Supabase 固有のロール（supabase_admin 等）は
+          # 移行先に存在しない。付けないと restore がエラーだらけになる。
+          pg_dump "$SRC" --format=custom --no-owner --no-acl --verbose \
+            --file=portfolio.dump 2> dump.log || { tail -50 dump.log; exit 1; }
+          ls -lh portfolio.dump
+
+      - name: Restore
+        if: ${{ inputs.mode == 'migrate' }}
+        env:
+          DST: ${{ secrets.MIGRATION_TARGET_URL }}
+        run: |
+          set -euo pipefail
+          # --clean --if-exists: 再実行できるようにする。途中で失敗しても
+          # 作り直しから始められる。
+          # エラーで即座に止めない（拡張やコメントの権限まわりで警告が出る）が、
+          # 件数の突き合わせで結果を判定する。
+          pg_restore --dbname="$DST" --no-owner --no-acl \
+            --clean --if-exists --jobs=4 --verbose \
+            portfolio.dump 2> restore.log || true
+          echo "--- restore の警告・エラー（末尾50行）---"
+          tail -50 restore.log
+
+      - name: Verify
+        if: ${{ inputs.mode == 'migrate' }}
+        env:
+          SRC: ${{ secrets.MIGRATION_SOURCE_URL }}
+          DST: ${{ secrets.MIGRATION_TARGET_URL }}
+        run: |
+          set -euo pipefail
+          # 統計情報を作る。無いと初回のクエリが極端に遅い
+          psql "$DST" -c "ANALYZE;" > /dev/null
+
+          echo "## 突き合わせ" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| テーブル | 移行元 | 移行先 | 判定 |" >> $GITHUB_STEP_SUMMARY
+          echo "| --- | ---: | ---: | --- |" >> $GITHUB_STEP_SUMMARY
+
+          FAILED=0
+          for T in rental_properties user_configs "MunicipalityWealth" "AgentTheme" "RelocationSimulation"; do
+            A=$(psql "$SRC" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
+            B=$(psql "$DST" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
+            if [ "$A" = "$B" ]; then MARK="✅"; else MARK="❌"; FAILED=1; fi
+            echo "| $T | $A | $B | $MARK |" >> $GITHUB_STEP_SUMMARY
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          psql "$DST" -At -c "SELECT '移行先のサイズ: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
+
+          # 索引が無いと物件検索が実用にならない。数だけでも比べる
+          IA=$(psql "$SRC" -At -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public';")
+          IB=$(psql "$DST" -At -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public';")
+          echo "索引の数: 移行元 $IA / 移行先 $IB" >> $GITHUB_STEP_SUMMARY
+          [ "$IA" = "$IB" ] || { echo "::warning::索引の数が一致しない。"; FAILED=1; }
+
+          if [ "$FAILED" != "0" ]; then
+            echo "::error::突き合わせに失敗。ENV_FILE はまだ切り替えないこと。"
+            exit 1
+          fi
+          echo "::notice::移行完了。ENV_FILE を切り替えて再デプロイしてよい。"
+
+      - name: Clean up
+        if: always()
+        run: rm -f portfolio.dump

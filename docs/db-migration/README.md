@@ -118,7 +118,177 @@ DIRECT_URL=postgresql://...     # マイグレーションと一部スクリプ�
 
 ---
 
-## 6. 手順
+## 6. 移行先の構築（Oracle Cloud Always Free）
+
+選定理由は 3 章のとおり。無料で 24GB RAM を確保できるのはここだけ。
+
+### 6-A-1. アカウントを作る
+
+https://www.oracle.com/cloud/free/ から登録する。本人確認のためクレジット
+カードの登録を求められるが、Always Free の範囲では課金されない。
+
+> **ホームリージョンは後から変更できない。** Always Free のリソースは
+> ホームリージョンにしか作れないので、ここで間違えると作り直しになる。
+
+| 使い方 | 選ぶリージョン | 理由 |
+|---|---|---|
+| **推奨** | **Japan Central (Osaka) / Japan East (Tokyo)** | 日本の利用者に近い。ただし Cloud Run も東京へ移すこと（6-A-5） |
+| Cloud Run を動かさない場合 | US Midwest (Chicago) | 現在の Cloud Run（`us-central1` = アイオワ）に最も近い |
+
+### 6-A-2. インスタンスを作る
+
+コンピュート → インスタンス → 「インスタンスの作成」
+
+| 項目 | 値 |
+|---|---|
+| イメージ | **Canonical Ubuntu 24.04** |
+| シェイプ | **VM.Standard.A1.Flex**（Ampere ARM） |
+| OCPU | **4** |
+| メモリ | **24 GB** |
+| ブート・ボリューム | 100 GB（Always Free は合計 200GB まで） |
+| SSH キー | 生成して保存しておく（緊急時用。通常は使わない） |
+
+> **「Out of capacity」で失敗することがある。** ARM は人気で在庫が枯れやすい。
+> 時間をおいて再試行するか、別の可用性ドメインを選ぶ。
+
+### 6-A-3. 起動スクリプトを貼る
+
+「詳細オプションの表示」→「管理」→「初期化スクリプト」→「cloud-init スクリプトの貼り付け」
+
+**`docs/db-migration/postgres-cloud-init.yaml` の内容をそのまま貼る。**
+貼る前に 2 か所を書き換えること。
+
+| 置換前 | 置換後 |
+|---|---|
+| `__DB_PASSWORD__` | アプリが使うパスワード |
+| `__ADMIN_PASSWORD__` | 管理用。別の値にする |
+
+パスワードの作り方（手元の端末で）
+
+```bash
+openssl rand -base64 32 | tr -d '/+=' | cut -c1-32
+```
+
+これで PostgreSQL 16 の導入・チューニング（24GB 向け）・SSL・拡張の作成・
+ファイアウォール・日次バックアップまで、起動時に自動で終わる。**SSH でログイン
+する必要はない。**
+
+> cloud-init の内容は OCI コンソールから閲覧できる。ここに書いたパスワードは
+> 「コンソールを見られる人には見える」前提で扱うこと。
+
+### 6-A-4. ネットワークを開ける
+
+インスタンスの VCN → セキュリティ・リスト → 「イングレス・ルールの追加」
+
+| 項目 | 値 |
+|---|---|
+| ソース CIDR | `0.0.0.0/0` |
+| IP プロトコル | TCP |
+| 宛先ポート範囲 | `5432` |
+
+> **インターネットに PostgreSQL を開けることになる。** 起動スクリプトで
+> SSL 必須・`scram-sha-256` にしてあるが、**パスワードの強度が唯一の砦**に
+> なる。上記の方法で 32 文字を生成すること。
+>
+> 接続元を絞れるならそのほうが良いが、Cloud Run の送信元 IP は固定されず、
+> GitHub Actions の IP 範囲も広い。現実的には全開放＋強固なパスワードになる。
+
+構築が終わったかは、インスタンスの「コンソール接続」→ シリアルコンソールで
+`/var/log/pg-setup-done` を見れば分かる（5〜10 分ほどかかる）。
+
+### 6-A-5.（推奨）Cloud Run を東京へ移す
+
+ホームリージョンを日本にした場合、Cloud Run が `us-central1` のままだと
+毎回太平洋を往復して**かえって遅くなる**。次を変える。
+
+1. リポジトリの Variables で `GCP_REGION` を `asia-northeast1` に変更
+2. Artifact Registry のリポジトリを `asia-northeast1` に作成
+3. `master` に push して再デプロイ
+
+Cloud Run の無料枠はリージョンに依存しないので、**費用は変わらない**。
+日本の利用者からの応答も速くなる。
+
+### 6-A-6. 接続文字列
+
+```
+postgresql://portfolio:__DB_PASSWORD__@<インスタンスのパブリックIP>:5432/portfolio?sslmode=require
+```
+
+`DATABASE_URL` と `DIRECT_URL` の両方に同じ値を使ってよい（プーラを挟んで
+いないため）。
+
+---
+
+## 6-B. データの移行
+
+**この環境からは DB に直接繋げない（5432 が塞がれている）ため、GitHub Actions
+のランナー上で実行する。** スクレイパーが毎日 DB に繋いでいるので経路は実証済み。
+
+### 6-B-1. Secret を登録する
+
+リポジトリの Settings → Secrets and variables → Actions
+
+| Secret 名 | 値 |
+|---|---|
+| `MIGRATION_SOURCE_URL` | 移行元。Supabase の **`DIRECT_URL`**（プーラ経由でない方） |
+| `MIGRATION_TARGET_URL` | 移行先。6-A-6 の接続文字列 |
+
+### 6-B-2. まず dry-run
+
+Actions → **Migrate database to a new host** → Run workflow
+
+| 入力 | 値 |
+|---|---|
+| confirm | （空のまま） |
+| mode | **dry-run** |
+
+両端のバージョン・サイズ・行数・拡張の有無がサマリーに出る。
+**移行先の拡張に `uuid-ossp` と `pgcrypto` が出ていることを確認する。**
+無ければ restore が必ず失敗する。
+
+### 6-B-3. 書き込みを止める
+
+移行中の書き込みは失われる。次の 4 本を **Disable workflow** にする。
+
+- `scrape-rentals.yml` / `scrape-rentals-new.yml` / `scrape-eheya.yml` / `scrape-shamaison.yml`
+
+### 6-B-4. 本番実行
+
+同じワークフローを `mode = migrate` / `confirm = MIGRATE` で実行する。
+dump → restore → `ANALYZE` → 主要テーブルの件数と索引数の突き合わせまで自動で走る。
+
+**突き合わせに失敗するとワークフローが赤で終わる。その場合は次に進まないこと。**
+
+---
+
+## 6-C. 切り替え
+
+### 6-C-1. 接続先を変える
+
+1. Secret **`ENV_FILE`** の `DATABASE_URL` と `DIRECT_URL` を新しい接続文字列に更新
+2. `master` に push するか `deploy.yml` を手動実行して**再デプロイ**
+
+### 6-C-2. 動作確認
+
+- `/relocation/arbitrage` … 出発地を入れて物件が出るか
+- `/relocation/wealth` … 市区町村の一覧が出るか
+- `/houi/area/23100` … エリア別ページが出るか
+- ログイン → 設定を保存 → 別ブラウザで復元されるか
+
+### 6-C-3. スクレイパーを戻す
+
+4 本を Enable に戻し、`scrape-rentals-new.yml` を手動実行して
+「Report freshness」に新しい接続先の数字が出ることを確認する。
+
+### 6-C-4. 切り戻し
+
+**Supabase 側のデータはそのまま残っている。** `ENV_FILE` を元に戻して
+再デプロイすれば戻る。**移行後 1 週間は Supabase のプロジェクトを削除しない。**
+ただし旧 DB への書き込みは止まっているので、その間の新着物件は旧 DB に入らない。
+
+---
+
+## 6-D. 旧・汎用手順（参考）
 
 ### 6-1. 事前確認
 
