@@ -6,7 +6,8 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   // if "next" is in param, use it as the redirect URL
-  const next = requestUrl.searchParams.get("next") ?? "/dashboard";
+  // 全機能ランチャー(/dashboard)は削除した。戻り先の指定が無ければトップへ。
+  const next = requestUrl.searchParams.get("next") ?? "/";
 
   if (code) {
     const cookieStore = await cookies();

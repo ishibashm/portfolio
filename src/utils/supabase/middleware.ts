@@ -99,10 +99,11 @@ export async function updateSession(
     return NextResponse.redirect(url);
   }
 
-  // If authorized user is logged in, and tries to visit login page, redirect to dashboard
+  // ログイン済みで /login に来たらトップへ。
+  // 以前の行き先だった /dashboard は削除した。
   if (user && isAuthorized && pathname === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 

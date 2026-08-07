@@ -914,7 +914,7 @@ export default function RegionalWealthPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div className="flex items-center gap-4">
             <Link
-              href="/dashboard"
+              href="/"
               className="p-2 bg-white hover:bg-stone-50 border border-stone-200 rounded-full shadow-sm transition-all"
             >
               <ArrowLeft className="w-5 h-5 text-stone-600" />

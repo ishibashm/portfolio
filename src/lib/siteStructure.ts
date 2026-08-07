@@ -15,8 +15,12 @@
  * （trends / visualizer / x-viewer / research / extract / agent-log /
  * ceremonial-sample / metaphysical / rentals）と、それ専用の API 6本。
  *
+ * その後 /dashboard（全機能ランチャー）と AI コンシェルジュも削除した。
+ * 前者はログイン後の行き先だったが、ログインした人しか見られない画面を
+ * 抱える理由が無い。後者は引越しと無関係なうえ、利用者の指示でサイト全体の
+ * 配色を書き換えられる唯一の経路だった。
+ *
  * 残したものには理由がある。
- *   /dashboard          … ログイン後の既定の行き先。消すと導線が切れる
  *   /relocation/history … 過去の移動から太極を出すため、引越しの判断に効く
  *   src/components/nba  … ホーム(SolarTimeClock)とシミュレータが使っている
  */
@@ -68,13 +72,12 @@ export const CORE_ROUTES: CoreRoute[] = [
  * 残っているのはこの2つだけ（他は削除済み）。
  */
 export const NON_CORE_ROUTES: string[] = [
-  "/dashboard", // ログイン後の既定の行き先。ナビには載せない
   "/relocation/history", // 過去の移動から太極を出す。導線からは外す
 ];
 
 /**
  * robots.ts の Disallow 値。末尾にスラッシュを付けないこと。
- * "/dashboard/" と書くと配下しか塞がず "/dashboard" 本体が素通りする。
+ * "/foo/" と書くと配下しか塞がず "/foo" 本体が素通りする。
  * スラッシュ無しなら前方一致で本体と配下の両方が対象になる。
  */
 export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES];

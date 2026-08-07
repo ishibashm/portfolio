@@ -6,7 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [nextUrl, setNextUrl] = useState("/dashboard");
+  const [nextUrl, setNextUrl] = useState("/");
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {

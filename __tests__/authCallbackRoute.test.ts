@@ -21,14 +21,14 @@ describe("the OAuth callback", () => {
     cookies.mockResolvedValue({ getAll: vi.fn(() => []), set: vi.fn() });
   });
 
-  it("sends a successful login to the dashboard by default", async () => {
+  it("戻り先の指定が無ければトップへ送る", async () => {
     const response = await GET(
       new Request("https://cloud-palette.com/auth/callback?code=ok"),
     );
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://cloud-palette.com/dashboard",
+      "https://cloud-palette.com/",
     );
   });
 
