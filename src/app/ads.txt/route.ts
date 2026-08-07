@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isValidAdsensePublisherId } from "@/lib/adsense";
+import { getAdsenseIds } from "@/lib/adsense";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -18,9 +18,10 @@ export const revalidate = 86400; // 24 hours cache
  */
 export async function GET() {
   const customAdsContent = process.env.ADS_TXT_CONTENT;
-  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  // ads.txt は "pub-" の形（"ca-pub-" ではない）。
+  const adsenseId = getAdsenseIds()?.adsTxt;
 
-  if (!customAdsContent && !isValidAdsensePublisherId(adsenseId)) {
+  if (!customAdsContent && !adsenseId) {
     return new NextResponse("Not Found", {
       status: 404,
       headers: { "Content-Type": "text/plain; charset=utf-8" },

@@ -1,57 +1,63 @@
 "use client";
-import { getAdsensePublisherId } from "@/lib/adsense";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
+import { getAdsenseIds, getAdsenseSlot } from "@/lib/adsense";
 
 interface AdBannerProps {
+  /** 広告ユニット。未指定なら記事用。 */
+  unit?: "article" | "list";
+  /** スロットIDを直に渡す場合（通常は環境変数から引く）。 */
   slot?: string;
   format?: "auto" | "fluid" | "rectangle" | "horizontal";
   responsive?: boolean;
   className?: string;
 }
 
+/**
+ * 広告枠。
+ *
+ * 以前は AdSense が未設定のとき「[ 広告スペース ]」という破線の空箱を描いており、
+ * 公開中の全ページ（トップ・記事465ページ・使い方）に出ていた。審査担当者からは
+ * 「作りかけのサイト」に見えるうえ、利用者にとっても意味がない。何も描かない。
+ *
+ * スロットIDが無いときも描かない。data-ad-slot="0000000000" のような
+ * 見本値を入れると AdSense 側でエラーになる。スロット無しで運用したい場合は
+ * 管理画面で「自動広告」を有効にする（このコンポーネントは使わない）。
+ */
 export const AdBanner: React.FC<AdBannerProps> = ({
+  unit = "article",
   slot,
   format = "auto",
   responsive = true,
   className = "",
 }) => {
-  const adsenseId = getAdsensePublisherId();
+  const ids = getAdsenseIds();
+  const resolvedSlot = slot ?? getAdsenseSlot(unit);
+  const pushed = useRef(false);
 
   useEffect(() => {
-    if (adsenseId && typeof window !== "undefined") {
-      try {
-        // @ts-ignore
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      } catch (err) {
-        console.warn("AdSense push error:", err);
-      }
+    if (!ids || !resolvedSlot || pushed.current) return;
+    pushed.current = true;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((window as any).adsbygoogle = (window as any).adsbygoogle || []).push({});
+    } catch (err) {
+      console.warn("AdSense push error:", err);
     }
-  }, [adsenseId]);
+  }, [ids, resolvedSlot]);
 
-  if (!adsenseId) {
-    return (
-      <div
-        className={`w-full p-4 rounded-2xl bg-white/70 backdrop-blur-md border border-slate-200/80 text-center font-sans ${className}`}
-        aria-label="スポンサー広告"
-      >
-        <span className="text-[10px] font-semibold text-slate-400 tracking-wider uppercase block mb-1">
-          スポンサーリンク / Sponsored
-        </span>
-        <div className="w-full h-16 rounded-xl bg-stone-100/70 border border-dashed border-slate-300 flex items-center justify-center text-xs text-slate-500 font-medium">
-          [ 広告スペース - Cloud Palette Intelligence ]
-        </div>
-      </div>
-    );
-  }
+  if (!ids || !resolvedSlot) return null;
 
   return (
-    <div className={`w-full overflow-hidden my-4 ${className}`} aria-label="スポンサー広告">
+    <div
+      className={`w-full overflow-hidden my-4 ${className}`}
+      aria-label="スポンサー広告"
+    >
       <ins
         className="adsbygoogle"
         style={{ display: "block" }}
-        data-ad-client={adsenseId}
-        data-ad-slot={slot || "0000000000"}
+        data-ad-client={ids.client}
+        data-ad-slot={resolvedSlot}
         data-ad-format={format}
         data-full-width-responsive={responsive ? "true" : "false"}
       />
