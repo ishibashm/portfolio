@@ -5721,7 +5721,14 @@ ${timingOptimization?.recommendationText || "特になし"}
         {activeTab === "scorecard" && (
           <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-4xl">
             {/* Control Panel Header */}
-            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/*
+              説明文とコントロールを横並びにすると、コンテナ(max-w-4xl=896px)に
+              対してコントロール群が 606px を占め、説明文が 212px まで潰れる。
+              日本語は文字ごとに改行できるため min-content が実質 1 文字になり、
+              flex の min-width:auto では守られない（実測で 768px 以上の全幅で
+              1〜2文字ずつの縦書きのようになっていた）。縦に積む。
+            */}
+            <div className="w-full bg-white border border-stone-200 rounded-xl p-4 md:p-6 shadow-lg relative overflow-hidden flex flex-col gap-4">
               <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
               <div>
                 <h2 className="text-emerald-500 font-mono text-base tracking-[0.1em] font-bold mb-1 uppercase flex items-center gap-2">
@@ -5745,7 +5752,7 @@ ${timingOptimization?.recommendationText || "特になし"}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <div className="flex flex-wrap items-center gap-3">
                 {/* Prefecture Filter */}
                 <div className="flex items-center gap-1.5 bg-stone-50 px-2 py-1.5 rounded-md border border-stone-200">
                   <span className="text-stone-500 font-mono text-[9px] uppercase tracking-wider">
