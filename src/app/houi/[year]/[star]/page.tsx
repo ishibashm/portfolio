@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DirectionEffects } from "@/components/houi/DirectionEffects";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -133,6 +134,8 @@ export default async function Page({
           避けるべき方位は<b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>
           です。
         </p>
+        <DirectionEffects verdicts={verdicts} periodLabel={`${year}年`} />
+
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
