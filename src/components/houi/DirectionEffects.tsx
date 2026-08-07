@@ -1,5 +1,6 @@
 import {
   directionEffectSentence,
+  elementRelationSentence,
   STAR_MEANINGS,
 } from "@/lib/kigakuMeanings";
 import type { DirectionVerdict } from "@/lib/kigakuContent";
@@ -17,9 +18,12 @@ import type { DirectionVerdict } from "@/lib/kigakuContent";
 export function DirectionEffects({
   verdicts,
   periodLabel,
+  personalStar,
 }: {
   verdicts: DirectionVerdict[];
   periodLabel: string;
+  /** 本命星。回座する星との五行の相性を出すのに使う。 */
+  personalStar: number;
 }) {
   const good = verdicts.filter((v) => v.kind === "good" && v.star !== null);
   // 重い凶（五黄殺・暗剣殺・破）を優先して、多すぎない数だけ挙げる
@@ -52,6 +56,11 @@ export function DirectionEffects({
               <p className="text-xs leading-relaxed text-emerald-950">
                 {directionEffectSentence(v.direction, v.star, "good")}
               </p>
+              {v.star !== null && (
+                <p className="mt-2 text-[11px] leading-relaxed text-emerald-800">
+                  {elementRelationSentence(personalStar, v.star)}
+                </p>
+              )}
             </div>
           ))}
         </div>
