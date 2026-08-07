@@ -31,6 +31,14 @@ jobs:
           # loaded browser tab, which surfaced as "Server Action ... was not found
           # on the server". It has to stay stable across builds and instances.
           SERVER_ACTIONS_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
+          # AdSense のパブリッシャー ID。ads.txt とページのソースに出る公開情報
+          # なので secret ではなく variable に置く。ENV_FILE は書き込み専用で
+          # 中身を読めないため、追記せず別に渡す。未設定なら広告関連の出力は
+          # 一切行われない（src/lib/adsense.ts）。
+          ADSENSE_ID: ${{ vars.NEXT_PUBLIC_ADSENSE_ID }}
+          # 広告ユニット（スロット）。自動広告だけで運用するなら不要。
+          ADSENSE_SLOT_ARTICLE: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE }}
+          ADSENSE_SLOT_LIST: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_LIST }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
@@ -39,6 +47,15 @@ jobs:
           echo "$ENV_FILE_CONTENT" > .env
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
+          if [ -n "$ADSENSE_ID" ]; then
+            echo "NEXT_PUBLIC_ADSENSE_ID=$ADSENSE_ID" >> .env
+          fi
+          if [ -n "$ADSENSE_SLOT_ARTICLE" ]; then
+            echo "NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE=$ADSENSE_SLOT_ARTICLE" >> .env
+          fi
+          if [ -n "$ADSENSE_SLOT_LIST" ]; then
+            echo "NEXT_PUBLIC_ADSENSE_SLOT_LIST=$ADSENSE_SLOT_LIST" >> .env
+          fi
 
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
