@@ -833,10 +833,14 @@ export function CosmicCalendar({
             <div className="mt-2 p-3 bg-white/70 border border-stone-200/60 rounded-xl space-y-2">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[9px] text-stone-400 uppercase mb-1">
+                  <label
+                    htmlFor="cosmic-birth"
+                    className="block text-[9px] text-stone-400 uppercase mb-1"
+                  >
                     生年月日・時刻 (JST)
                   </label>
                   <input
+                    id="cosmic-birth"
                     type="datetime-local"
                     value={birthDate}
                     onChange={(e) => {
