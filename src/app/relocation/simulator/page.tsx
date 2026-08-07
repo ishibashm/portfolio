@@ -42,6 +42,7 @@ import {
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
 import { isValidIsoDate } from "@/utils/dateValidation";
+import { toJapanDateString } from "@/utils/japanDate";
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import("@/components/nba/SimulatorMap"), {
@@ -801,7 +802,7 @@ export default function RelocationSimulatorPage() {
       for (let i = 1; i <= 7; i++) {
         const d = new Date(baseDate);
         d.setDate(baseDate.getDate() + i * 7);
-        candidateDates.push(d.toISOString().slice(0, 10));
+        candidateDates.push(toJapanDateString(d));
       }
     }
 
@@ -898,7 +899,7 @@ export default function RelocationSimulatorPage() {
     for (let i = 1; i <= 7; i++) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i * 7);
-      const dateStr = d.toISOString().slice(0, 10);
+      const dateStr = toJapanDateString(d);
       const ev = nbaEvaluations[dateStr];
 
       if (ev && ev.qValue > currentEval.qValue) {
@@ -1299,7 +1300,7 @@ export default function RelocationSimulatorPage() {
       ? parseSafeDate(lastStep.departureDate)
       : new Date();
     const nextDate = new Date(baseDate.getTime() + 90 * 24 * 60 * 60 * 1000);
-    const dateStr = nextDate.toISOString().slice(0, 10);
+    const dateStr = toJapanDateString(nextDate);
 
     const fromLat = lastStep ? lastStep.toLat : startLat;
     const fromLon = lastStep ? lastStep.toLon : startLon;
@@ -1376,7 +1377,7 @@ export default function RelocationSimulatorPage() {
     const depDate = parseSafeDate(currentStep.departureDate);
     const nextDepDate = new Date(depDate);
     nextDepDate.setDate(nextDepDate.getDate() + 75);
-    const nextDepStr = nextDepDate.toISOString().slice(0, 10);
+    const nextDepStr = toJapanDateString(nextDepDate);
 
     const stepN: SimulatorStep = {
       ...currentStep,

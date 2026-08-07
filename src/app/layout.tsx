@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getAdsensePublisherId } from "@/lib/adsense";
 import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -131,7 +132,8 @@ export default async function RootLayout({
   // Load active agent theme from Supabase via Prisma (cached for 60s)
   const theme = await getActiveTheme();
 
-  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  // 見本値のまま広告スクリプトを読み込まない。
+  const adsenseId = getAdsensePublisherId();
 
   // Active theme parameters or fallback defaults (Warm Glass theme)
   const bg = theme?.background || "#faf7f3";
