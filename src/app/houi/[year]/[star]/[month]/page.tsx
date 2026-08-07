@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DirectionEffects } from "@/components/houi/DirectionEffects";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -175,6 +176,11 @@ export default async function Page({
             ))}
           </div>
         </section>
+
+        <DirectionEffects
+          verdicts={verdicts}
+          periodLabel={`${year}年${month}月`}
+        />
 
         <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <h2 className="text-sm font-bold text-amber-900">
