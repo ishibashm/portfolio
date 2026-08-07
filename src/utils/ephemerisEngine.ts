@@ -590,6 +590,15 @@ export function calculateVectorCollision(
   lon: number = 139.6917,
   getsuMeiStar?: StarFrequency,
   nodeMapping: "traditional" | "physical" = "traditional",
+  /**
+   * 日盤を判定から外す。12 ヶ月表示のように「その月の傾向」を見るときに使う。
+   *
+   * 呼び出し側で finalVectors を組み直すと、天道の上書きや移転時の
+   * 日盤ノイズの扱い（WARNING への格下げ）が失われる。実測では、
+   * 地図が「大吉」の方位を 12 ヶ月ヒートマップが「個人不調」と出していた。
+   * 判定の実装をここ 1 か所に保つため、除外もここで受ける。
+   */
+  ignoreDayLayer: boolean = false,
 ): {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
@@ -881,6 +890,12 @@ export function calculateVectorCollision(
         return -100;
       default:
         return 0;
+    }
+  }
+
+  if (ignoreDayLayer) {
+    for (const dir of directions) {
+      dayLayer[dir] = "SAFE";
     }
   }
 

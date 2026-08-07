@@ -3345,83 +3345,12 @@ ${timingOptimization?.recommendationText || "特になし"}
           lon || 139.6917,
           useClassicalBoard && getsuMeiStar ? getsuMeiStar : undefined,
           useClassicalBoard ? "traditional" : "physical",
+          // 12 ヶ月表示は「その月の傾向」なので日盤を外す。判定そのものは
+          // エンジンに任せる（以前はここで finalVectors を組み直しており、
+          // 天道の上書きが失われて、地図が「大吉」の方位を「個人不調」と
+          // 出していた）。
+          true,
         );
-
-        const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-        const tendoDir = vectorData.tendoDirection;
-
-        const getLayerScore = (status: string): number => {
-          switch (status) {
-            case "OPTIMAL":
-              return 100;
-            case "OPTIMAL_REGULAR":
-              return 50;
-            case "SAFE":
-              return 0;
-            case "NOISE_HONMEI":
-              return -30;
-            case "NOISE_TEKI":
-              return -30;
-            case "NOISE_GETSUMEI":
-              return -30;
-            case "NOISE_GETSUTEKI":
-              return -30;
-            case "NOISE_NODE":
-              return -40;
-            case "NOISE_VOID":
-              return -80;
-            case "NOISE_GOU":
-              return -100;
-            case "NOISE_ANKEN":
-              return -100;
-            case "NOISE_HA":
-              return -100;
-            default:
-              return 0;
-          }
-        };
-
-        dirs.forEach((dir) => {
-          vectorData.dayLayer[dir] = "SAFE"; // 12ヶ月モードでは日盤のノイズを除外
-          const y = vectorData.yearLayer[dir] || "SAFE";
-          const m = vectorData.monthLayer[dir] || "SAFE";
-          const d = "SAFE";
-
-          const layersList = [y, m, d];
-          const hasGou = layersList.includes("NOISE_GOU");
-          const hasAnken = layersList.includes("NOISE_ANKEN");
-          const hasHa = layersList.includes("NOISE_HA");
-
-          if (hasGou) {
-            vectorData.finalVectors[dir] = "NOISE_GOU" as any;
-          } else if (hasAnken) {
-            vectorData.finalVectors[dir] = "NOISE_ANKEN" as any;
-          } else if (hasHa) {
-            vectorData.finalVectors[dir] = "NOISE_HA" as any;
-          } else if (layersList.includes("NOISE_VOID")) {
-            vectorData.finalVectors[dir] = "NOISE_VOID" as any;
-          } else if (layersList.includes("NOISE_HONMEI")) {
-            vectorData.finalVectors[dir] = "NOISE_HONMEI" as any;
-          } else if (layersList.includes("NOISE_TEKI")) {
-            vectorData.finalVectors[dir] = "NOISE_TEKI" as any;
-          } else if (layersList.includes("NOISE_GETSUMEI")) {
-            vectorData.finalVectors[dir] = "NOISE_GETSUMEI" as any;
-          } else if (layersList.includes("NOISE_GETSUTEKI")) {
-            vectorData.finalVectors[dir] = "NOISE_GETSUTEKI" as any;
-          } else if (layersList.includes("NOISE_NODE")) {
-            vectorData.finalVectors[dir] = "NOISE_NODE" as any;
-          } else {
-            const hasOpt = layersList.includes("OPTIMAL");
-            const hasOptReg = layersList.includes("OPTIMAL_REGULAR");
-            if (hasOpt) {
-              vectorData.finalVectors[dir] = "OPTIMAL" as any;
-            } else if (hasOptReg) {
-              vectorData.finalVectors[dir] = "OPTIMAL_REGULAR" as any;
-            } else {
-              vectorData.finalVectors[dir] = "SAFE";
-            }
-          }
-        });
 
         const filteredV = filterVectors(
           vectorData,
@@ -7752,7 +7681,11 @@ ${timingOptimization?.recommendationText || "特になし"}
                             // ここは以前 ±15 日を色付けしていたため、30 列のうち
                             // 前半 16 列が同じ色になり、「地図と同じ日はどれか」が
                             // 分からなかった（地図と連動していないように見える原因）。
-                            const isActiveCol = i === 0;
+                            // 30 日表示の先頭列は、地図が描いている当日そのもの。
+                            // 12 ヶ月表示の先頭列は「今月の年盤+月盤」で、
+                            // 日盤を含む地図とは前提が違う。「地図」と名乗らせない。
+                            const isActiveCol =
+                              i === 0 && heatmapMode === "30days";
                             return (
                               <th
                                 key={i}
@@ -7767,7 +7700,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                                 title={
                                   isActiveCol
                                     ? "地図はこの日を表示しています"
-                                    : "クリックでこの日に移動（地図もこの日に切り替わります）"
+                                    : heatmapMode === "12months"
+                                      ? "クリックでこの月へ移動（日盤は含みません）"
+                                      : "クリックでこの日に移動（地図もこの日に切り替わります）"
                                 }
                               >
                                 {isActiveCol && (
@@ -7921,6 +7856,14 @@ ${timingOptimization?.recommendationText || "特になし"}
                         ))}
                       </tbody>
                     </table>
+
+                      {heatmapMode === "12months" && (
+                        <p className="mt-3 text-center text-[9px] text-stone-500 leading-relaxed">
+                          12ヶ月表示は「その月の傾向」を見るため、
+                          <b>日盤を含めずに年盤＋月盤で判定</b>しています。
+                          地図（全統合）は日盤も含むため、同じ方位でも判定が違うことがあります。
+                        </p>
+                      )}
 
                       {/* Legend Bar */}
                       <div className="flex gap-3 mt-3 text-[7px] font-mono text-stone-500 justify-center flex-wrap">
