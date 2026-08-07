@@ -11,10 +11,13 @@ import { updateSession } from "@/utils/supabase/middleware";
  * be applied on top of a redirect updateSession issued, or the login redirect is
  * silently discarded.
  */
-const SUBDOMAIN_APPS = [
-  { prefix: "fortune.", base: "/metaphysical", passthrough: ["/metaphysical", "/fortune"] },
-  { prefix: "tech.", base: "/trends", passthrough: ["/trends", "/research", "/tech"] },
-] as const;
+// 振り先だった /metaphysical と /trends を削除したため、割り当ては空。
+// fortune. / tech. のホストで来ても、書き換えずに通常のサイトを出す。
+const SUBDOMAIN_APPS: {
+  prefix: string;
+  base: string;
+  passthrough: readonly string[];
+}[] = [];
 
 // Auth surfaces are shared by every host, so they must never be rewritten into a
 // sub-app namespace — otherwise the redirect to /login lands on /trends/login.

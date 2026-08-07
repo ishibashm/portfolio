@@ -7,7 +7,7 @@
 |---|---|
 | サービス名 | Cloud Palette |
 | ひとことで言うと | **引越しの方位とタイミングを決めるサービス** |
-| 画面の数 | メニューから行ける画面 **6** ／ 案内ページ **5** ／ 記事ページ **465** ／ メニューに出ない画面 **12** |
+| 画面の数 | メニューから行ける画面 **6** ／ 案内ページ **5** ／ 記事ページ **465** ／ メニューに出ない画面 **2** |
 | 作成日 | 2026年8月4日 |
 
 ---
@@ -24,7 +24,7 @@
 | 04 | [移住先の地域を比べる](./04-wealth.md) | `/relocation/wealth` |
 | 05 | [本命星と吉方位を調べる（465ページ）](./05-houi.md) | `/houi` 配下すべて |
 | 06 | [引越しの日取りを選ぶ](./06-calendar.md) | `/calendar` |
-| 07 | [メニューに出ない画面（9画面）](./07-other.md) | `/metaphysical` `/trends` `/visualizer` ほか |
+| 07 | [削除済みの画面（9画面）](./07-other.md) | すべて404。削除前の仕様のみ |
 
 > **最初に読むもの**：[00. 全画面に共通する仕様](./00-common.md) を先に読んでください。
 > どの画面にも共通して効く決まりごと（ログイン、サイドバー、用語）がまとまっています。
@@ -162,22 +162,24 @@ flowchart TD
 | `/terms` | 利用規約 | 不要 | 同上 |
 | `/login` | ログイン | 不要 | [01](./01-home.md#3-login-ログイン) |
 
-### 3-4. メニューに出ない画面（URL直打ちのみ・全12画面／すべてログイン必要）
+### 3-4. メニューに出ない画面（URL直打ちのみ・全2画面／すべてログイン必要）
 
 | URL | 画面名 | 仕様書 |
 |---|---|---|
 | `/dashboard` | 全機能ランチャー | [01](./01-home.md#2-dashboard-全機能ランチャー) |
-| `/rentals` | 旧・物件一覧 | [02](./02-arbitrage.md#第2部rentals-旧物件一覧) |
 | `/relocation/history` | 過去の移動履歴 | [03](./03-simulator.md#第2部relocationhistory-過去の移動履歴) |
-| `/metaphysical` | 次の行動を提案するダッシュボード | [07](./07-other.md#1-metaphysical-次の行動を提案するダッシュボード) |
-| `/trends` | 技術トレンド・市場インテリジェンス | [07](./07-other.md#2-trends-技術トレンド市場インテリジェンス) |
-| `/visualizer` | 波形ビジュアライザ | [07](./07-other.md#3-visualizer-波形ビジュアライザ) |
-| `/visualizer/share/{ID}` | 波形ビジュアライザ 共有ページ | [07](./07-other.md#4-visualizershareid-共有ページ) |
-| `/x-viewer` | 地磁気・太陽アライメント監視モニタ | [07](./07-other.md#5-x-viewer-地磁気太陽アライメント監視モニタ) |
-| `/research` | 監査レポート生成 | [07](./07-other.md#6-research-監査レポート生成) |
-| `/extract` | Web記事のMarkdown抽出ツール | [07](./07-other.md#7-extract-web記事のmarkdown抽出ツール) |
-| `/agent-log` | エージェント実行ログ | [07](./07-other.md#8-agent-log-エージェント実行ログ) |
-| `/ceremonial-sample` | 冠婚葬祭システム ロジックデモ | [07](./07-other.md#9-ceremonial-sample-冠婚葬祭システム-ロジックデモ) |
+
+### 3-5. 削除された画面（2026-08-07）
+
+引越しの方位とタイミングという目的から外れるため、次の9画面を削除しました。
+**すべて 404 です。テスト対象ではありません。**
+
+`/rentals` `/metaphysical` `/trends` `/visualizer` `/visualizer/share/{ID}`
+`/x-viewer` `/research` `/extract` `/agent-log` `/ceremonial-sample`
+
+削除前の仕様は [07](./07-other.md) と [02 第2部](./02-arbitrage.md#第2部rentals-旧物件一覧) に残していますが、
+冒頭に削除の注記を付けています。物件データの取り込みと `/api/rentals/*` は
+従来どおり動いており、`/relocation/arbitrage` がそれを使います。
 
 ---
 

@@ -20,11 +20,6 @@ export const PROTECTED_ROUTE_PREFIXES = [
   "/omni", // ページは無いが API 側の名前空間として残っている
 ] as const;
 
-const ANONYMOUS_ROUTE_PREFIXES = ["/visualizer/share/"] as const;
-
 export function isProtectedRoute(pathname: string) {
-  if (ANONYMOUS_ROUTE_PREFIXES.some((route) => pathname.startsWith(route))) {
-    return false;
-  }
   return PROTECTED_ROUTE_PREFIXES.some((route) => pathname.startsWith(route));
 }
