@@ -67,6 +67,51 @@ async function main() {
       );
     }
 
+    // 500MB を超えたときに「何を削れば効くのか」がこの数字だけでは決められない。
+    // 掲載終了で消せる分・座標が付かず検索に出ない分・同一部屋の重複で
+    // 増えている分を切り分ける。行数の内訳と、実体・索引の別を出す。
+    const breakdown = await pool.query<{
+      expired: string;
+      no_coords: string;
+      stale_45d: string;
+      rooms: string;
+      table_mb: string;
+      index_mb: string;
+    }>(`
+      SELECT
+        (SELECT count(*) FROM rental_properties
+          WHERE expire_date IS NOT NULL AND expire_date < now())        AS expired,
+        (SELECT count(*) FROM rental_properties WHERE lat IS NULL)      AS no_coords,
+        (SELECT count(*) FROM rental_properties
+          WHERE last_seen_at < now() - interval '45 days')              AS stale_45d,
+        -- 名寄せ後の実部屋数。物件名・階・間取り・面積・賃料が同じものは
+        -- 同じ部屋を複数の仲介が出しているとみなす（スキャナー側と同じ考え方）。
+        (SELECT count(*) FROM (
+           SELECT 1 FROM rental_properties
+            GROUP BY property_name, floor, layout, size_sqm, rent
+         ) AS d)                                                        AS rooms,
+        round(pg_relation_size('rental_properties') / 1024.0 / 1024.0)  AS table_mb,
+        round(pg_indexes_size('rental_properties') / 1024.0 / 1024.0)   AS index_mb
+    `);
+    const b = breakdown.rows[0];
+    const total = Number(r.total);
+    const pct = (n: string) =>
+      total > 0 ? `${Math.round((Number(n) / total) * 100)}%` : "-";
+
+    lines.push(
+      "",
+      "#### What is taking the space",
+      "",
+      "| Item | Rows | Share |",
+      "| --- | --- | --- |",
+      `| Past listing expiry (deletable) | ${b.expired} | ${pct(b.expired)} |`,
+      `| Not seen for 45+ days (deletable) | ${b.stale_45d} | ${pct(b.stale_45d)} |`,
+      `| No coordinates (invisible in search) | ${b.no_coords} | ${pct(b.no_coords)} |`,
+      `| Distinct rooms after dedupe | ${b.rooms} | ${pct(b.rooms)} |`,
+      "",
+      `Table ${b.table_mb} MB / indexes ${b.index_mb} MB`,
+    );
+
     // 12 県を matrix で並列に回しているので、どの県まで行き渡っているかを県別にも出す。
     const byPref = await pool.query<{
       pref: string;
