@@ -15,6 +15,7 @@ import {
   getClassicalMonthStar,
   getCurrentEnvironmentalFrequencies,
   generateBoard,
+  solarTermMonthAnchor,
   calculateVectorCollision,
   getPersonalVoidZodiac,
   getCurrentZodiac,
@@ -3307,17 +3308,23 @@ ${timingOptimization?.recommendationText || "特になし"}
         });
       }
     } else if (heatmapMode === "12months") {
+      // 九星気学の月は暦の 1 日ではなく節入りで替わる。以前は「その暦月の
+      // 15 日」を代表点にしていたため、節入り前の日に見ると、地図は前の節月
+      // なのにヒートマップの先頭列は次の節月、という別々の盤を並べていた。
+      // 実測（2026-08-07・立秋当日）で 8 方位中 5 方位が食い違っていた。
+      // 節月そのもので刻む。
+      const anchorBase = calculateSolarTime(
+        new Date(baseTime.getTime() + timeOffsetDays * 86400000),
+        lon || 139.6917,
+      ).solarTime;
       for (let i = 0; i < 12; i++) {
-        const testDateLocal = new Date(
-          baseTime.getTime() + timeOffsetDays * 86400000,
+        // 節月の平均は約 30.44 日。中ほどから進めて、その都度その節月の
+        // 中ほどへ寄せ直すので、月の長短でずれない。
+        const testDate = solarTermMonthAnchor(
+          new Date(
+            solarTermMonthAnchor(anchorBase).getTime() + i * 30.44 * 86400000,
+          ),
         );
-        testDateLocal.setDate(15); // 月末の月またぎバグを防ぐため、常にその月の中旬を基準にする
-        testDateLocal.setMonth(testDateLocal.getMonth() + i);
-        const testDateSolar = calculateSolarTime(
-          testDateLocal,
-          lon || 139.6917,
-        );
-        const testDate = testDateSolar.solarTime;
         const testEnv = getCurrentEnvironmentalFrequencies(
           testDate,
           lon || 139.6917,
@@ -5772,9 +5779,15 @@ ${timingOptimization?.recommendationText || "特になし"}
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
                 )}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
+                  {/*
+                    12 列のうち 9 列に固定幅を振っているため、w-full だけだと
+                    幅指定の無い末尾 2 列にしわ寄せが行く。日本語は文字ごとに
+                    改行できるので、1440px 幅でも見出しが幅 39px・9 行に
+                    潰れていた。外枠は横スクロールするので内容ぶんの幅を取らせる。
+                  */}
+                  <table className="w-full min-w-[1120px] text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider">
+                      <tr className="border-b border-stone-200 bg-white/80 text-[9px] font-mono text-stone-500 uppercase tracking-wider whitespace-nowrap">
                         <th className="p-3 w-24">方位 (Sector)</th>
                         <th className="p-3 w-20">古典 (Classical)</th>
                         <th className="p-3 w-20">物理独立 (Phys Indep)</th>
@@ -6990,8 +7003,10 @@ ${timingOptimization?.recommendationText || "特になし"}
                   目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
                 </p>
                 <div className="flex flex-col gap-3 mt-auto">
-                  <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-sm">
-                    <div className="flex flex-col">
+                  {/* 狭い画面では select が幅を取り、左の説明文が 1 文字ずつに
+                      折り返される（375px の実測で幅 42px）。縦に積む。 */}
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-sm">
+                    <div className="flex flex-col min-w-0">
                       <label className="text-[10px] text-stone-400 uppercase tracking-widest">
                         Action Intent
                       </label>
@@ -7498,9 +7513,9 @@ ${timingOptimization?.recommendationText || "特になし"}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-rose-500 font-bold text-base">◆</span>
-                    <h3 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+                    <h3 className="text-base font-bold font-serif text-stone-900 flex flex-wrap items-center gap-2">
                       TREND ANALYTICS
-                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2.5 py-0.5 rounded-full font-sans font-semibold">
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2.5 py-0.5 rounded-full font-sans font-semibold whitespace-nowrap">
                         ✨ 天道・時空補正可視化済
                       </span>
                     </h3>
@@ -7859,8 +7874,9 @@ ${timingOptimization?.recommendationText || "特になし"}
 
                       {heatmapMode === "12months" && (
                         <p className="mt-3 text-center text-[9px] text-stone-500 leading-relaxed">
-                          12ヶ月表示は「その月の傾向」を見るため、
-                          <b>日盤を含めずに年盤＋月盤で判定</b>しています。
+                          12ヶ月表示は<b>節入り基準の月</b>（暦の1日ではなく
+                          立春・啓蟄などで替わる月）で刻み、「その月の傾向」を
+                          見るため<b>日盤を含めずに年盤＋月盤で判定</b>しています。
                           地図（全統合）は日盤も含むため、同じ方位でも判定が違うことがあります。
                         </p>
                       )}

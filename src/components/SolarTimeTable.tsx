@@ -454,7 +454,7 @@ export function SolarTimeTableComponent({
               {currentZodiac.yearZodiac}
             </span>
             {isYearVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (
@@ -482,7 +482,7 @@ export function SolarTimeTableComponent({
               {currentZodiac.monthZodiac}
             </span>
             {isMonthVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (
@@ -519,7 +519,7 @@ export function SolarTimeTableComponent({
               {currentZodiac.dayZodiac}
             </span>
             {isDayVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (

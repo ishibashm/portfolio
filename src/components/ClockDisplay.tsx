@@ -81,7 +81,7 @@ export function ClockDisplay({
       <div className="text-center md:text-left space-y-1 w-1/3">
         <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-stone-400 uppercase font-mono mb-1">
           Matrix Phase
-          <span className="block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans">
+          <span className="hidden sm:block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans whitespace-nowrap">
             (地磁気と太陽角による空間位相)
           </span>
         </div>
@@ -99,7 +99,7 @@ export function ClockDisplay({
       <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
         <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-purple-400/80 uppercase font-mono mb-1">
           Lunar Cycle
-          <span className="block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans">
+          <span className="hidden sm:block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans whitespace-nowrap">
             (太陰暦 / 東洋カレンダー基準)
           </span>
         </div>
