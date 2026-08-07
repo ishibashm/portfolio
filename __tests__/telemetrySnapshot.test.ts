@@ -83,6 +83,16 @@ describe("X線フラックスの等級", () => {
 
   it("数値で来たらそのまま", () => {
     expect(parseXrayFlux("1.5e-6")).toBeCloseTo(1.5e-6, 12);
+    expect(parseXrayFlux(2.5e-7)).toBeCloseTo(2.5e-7, 12);
+  });
+
+  it("NOAA 由来の等級文字列も読む", () => {
+    // fetchSpaceWeather は数値を "B-CLASS" に丸めてから捨てていた。
+    // 過去の記録がこの形なので読めるようにしておく。
+    expect(parseXrayFlux("B-CLASS")).toBeCloseTo(1e-7, 12);
+    expect(parseXrayFlux("C-CLASS")).toBeCloseTo(1e-6, 12);
+    expect(parseXrayFlux("X-CLASS")).toBeCloseTo(1e-4, 12);
+    expect(parseXrayFlux("m-class")).toBeCloseTo(1e-5, 12);
   });
 
   it("欠測は null。グラフを NaN で壊さない", () => {

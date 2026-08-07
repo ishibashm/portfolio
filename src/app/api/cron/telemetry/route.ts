@@ -61,7 +61,9 @@ export async function GET(request: Request) {
         metadata: JSON.stringify({
           source: "cron_batch",
           version: "2.0",
-          xrayFlux: weather?.xrayFlux ?? null,
+          // 数値（W/m^2）を保存する。等級文字列だけだと 5 段階に丸まる。
+          xrayFlux: weather?.xrayFluxValue ?? null,
+          xrayClass: weather?.xrayFlux ?? null,
           solarWindSpeed: weather?.solarWindSpeed ?? null,
           magneticD: geo?.declination ?? null,
           magneticI: geo?.inclination ?? null,
@@ -73,7 +75,8 @@ export async function GET(request: Request) {
       success: true,
       logId: log.id,
       kpIndex: log.kpIndex,
-      xrayFlux: weather?.xrayFlux ?? null,
+      xrayFlux: weather?.xrayFluxValue ?? null,
+      xrayClass: weather?.xrayFlux ?? null,
       magneticF: log.magneticF,
     });
   } catch (error) {

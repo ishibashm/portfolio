@@ -1,6 +1,13 @@
 export interface SpaceWeatherData {
   kpIndex: number | null;
+  /** "C-CLASS" のような等級。表示用。 */
   xrayFlux: string | null;
+  /**
+   * X線フラックスの実測値 (W/m^2)。
+   * NOAA は数値で返すが、以前は等級文字列に丸めた時点で捨てていた。
+   * 履歴グラフには数値が要るので残す。
+   */
+  xrayFluxValue: number | null;
   solarWindSpeed: number | null;
   timestamp: string | null;
 }
@@ -46,6 +53,7 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
       { next: { revalidate: 300 } },
     );
     let xrayFlux: string | null = null;
+    let xrayFluxValue: number | null = null;
 
     if (xrayResponse.ok) {
       const xrayData = await xrayResponse.json();
@@ -54,6 +62,7 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
         // flux is usually a number e.g., 1.5e-6 in Watts/m^2.
         // 10^-8 to 10^-7 is A/B, 10^-6 is C, 10^-5 is M, 10^-4 is X
         const fluxVal = latestFlux.flux;
+        xrayFluxValue = Number.isFinite(Number(fluxVal)) ? Number(fluxVal) : null;
         if (fluxVal >= 1e-4) xrayFlux = "X-CLASS";
         else if (fluxVal >= 1e-5) xrayFlux = "M-CLASS";
         else if (fluxVal >= 1e-6) xrayFlux = "C-CLASS";
@@ -83,6 +92,7 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
     return {
       kpIndex,
       xrayFlux,
+      xrayFluxValue,
       solarWindSpeed,
       timestamp,
     };
@@ -91,6 +101,7 @@ export async function fetchSpaceWeather(): Promise<SpaceWeatherData> {
     return {
       kpIndex: null,
       xrayFlux: null,
+      xrayFluxValue: null,
       solarWindSpeed: null,
       timestamp: null,
     };

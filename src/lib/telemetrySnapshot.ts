@@ -73,12 +73,19 @@ export function lunarIlluminationPercent(
 }
 
 /**
- * NOAA の X 線フラックスは "C1.2" のような等級文字列で来る。
- * グラフに載せるため W/m² の数値にする。
+ * X 線フラックスを W/m² の数値にする。
+ *
+ * 現在は数値をそのまま記録している（fetchSpaceWeather の xrayFluxValue）。
+ * ただし以前は "B-CLASS" のような 5 段階の等級文字列しか残しておらず、
+ * NOAA が返した数値をその場で捨てていた。過去の記録も読めるよう、
+ * 数値・"C1.2"・"B-CLASS" のいずれも受ける。
  *   A=1e-8 B=1e-7 C=1e-6 M=1e-5 X=1e-4 を係数倍する。
  */
-export function parseXrayFlux(value: string | null | undefined): number | null {
+export function parseXrayFlux(
+  value: string | number | null | undefined,
+): number | null {
   if (value === null || value === undefined) return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
   const raw = String(value).trim();
   if (raw === "") return null;
 
@@ -86,7 +93,9 @@ export function parseXrayFlux(value: string | null | undefined): number | null {
   const asNumber = Number(raw);
   if (Number.isFinite(asNumber) && !/^[A-Za-z]/.test(raw)) return asNumber;
 
-  const m = /^([ABCMX])\s*([\d.]+)?$/i.exec(raw);
+  // NOAA 由来の "B-CLASS" 形式（等級だけで係数が無い）も受ける。
+  // 数値が取れなかった過去の記録がこの形。
+  const m = /^([ABCMX])(?:[\s-]*CLASS)?\s*([\d.]+)?$/i.exec(raw);
   if (!m) return null;
   const base: Record<string, number> = {
     A: 1e-8,
