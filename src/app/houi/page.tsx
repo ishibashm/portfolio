@@ -76,6 +76,7 @@ export default function Page() {
                     {STAR_NAMES[s]}
                   </span>
                   <Link
+                    prefetch={false}
                     href={`/houi/${years[0]}/${s}`}
                     className="text-xs font-bold text-rose-600 hover:underline"
                   >
@@ -143,7 +144,7 @@ export default function Page() {
                 <ul className="space-y-1">
                   {STARS.map((s) => (
                     <li key={s}>
-                      <Link
+                      <Link prefetch={false}
                         href={`/houi/${y}/${s}`}
                         className="text-xs text-slate-700 hover:text-rose-600"
                       >

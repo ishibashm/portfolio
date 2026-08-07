@@ -172,7 +172,7 @@ export default async function Page({
                       {groups[d].slice(0, 12).map((n) => (
                         <tr key={n.code}>
                           <td className="border border-slate-300 p-2">
-                            <Link
+                            <Link prefetch={false}
                               href={`/houi/area/${n.code}`}
                               className="hover:text-rose-600 font-semibold"
                             >
@@ -238,7 +238,7 @@ export default async function Page({
                 {goodByStar.map((g) => (
                   <tr key={g.star}>
                     <td className="border border-slate-300 p-2">
-                      <Link
+                      <Link prefetch={false}
                         href={`/houi/${year}/${g.star}`}
                         className="font-semibold hover:text-rose-600"
                       >
@@ -302,7 +302,7 @@ export default async function Page({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {siblings.map((s) => (
-                <Link
+                <Link prefetch={false}
                   key={s.code}
                   href={`/houi/area/${s.code}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
