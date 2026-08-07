@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getAdsensePublisherId } from "@/lib/adsense";
+import { getAdsenseIds } from "@/lib/adsense";
 import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -71,7 +71,6 @@ export const metadata: Metadata = {
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
 import { unstable_cache } from "next/cache";
-import Script from "next/script";
 
 const getActiveTheme = unstable_cache(
   async () => {
@@ -133,7 +132,7 @@ export default async function RootLayout({
   const theme = await getActiveTheme();
 
   // 見本値のまま広告スクリプトを読み込まない。
-  const adsenseId = getAdsensePublisherId();
+  const adsense = getAdsenseIds();
 
   // Active theme parameters or fallback defaults (Warm Glass theme)
   const bg = theme?.background || "#faf7f3";
@@ -188,14 +187,20 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdSchema) }}
         />
 
-        {/* Google AdSense Integration (when NEXT_PUBLIC_ADSENSE_ID is defined) */}
-        {adsenseId && (
-          <Script
-            async
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
-            crossOrigin="anonymous"
-            strategy="afterInteractive"
-          />
+        {/*
+          AdSense。next/script の afterInteractive は body の末尾へ移されるが、
+          サイト確認も自動広告も <head> の素のタグを見るため、ここでは素の
+          script を head に置く。管理画面が出す確認用スニペットと同じ形。
+        */}
+        {adsense && (
+          <>
+            <meta name="google-adsense-account" content={adsense.client} />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsense.client}`}
+              crossOrigin="anonymous"
+            />
+          </>
         )}
 
         <script
