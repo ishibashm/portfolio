@@ -31,9 +31,25 @@ describe("portfolio route access", () => {
     }
   });
 
-  it("opens a visualizer share link without opening the visualizer editor", () => {
-    expect(isProtectedRoute("/visualizer/share/component-1")).toBe(false);
-    expect(isProtectedRoute("/visualizer")).toBe(true);
-    expect(isProtectedRoute("/visualizer/new")).toBe(true);
+  it("削除したページは保護対象にも残らない", () => {
+    // ページごと削除したので、ここに残っていると 404 を保護しにいく無駄になる。
+    for (const route of [
+      "/visualizer",
+      "/trends",
+      "/rentals",
+      "/metaphysical",
+      "/x-viewer",
+      "/research",
+      "/extract",
+      "/agent-log",
+      "/ceremonial-sample",
+    ]) {
+      expect(isProtectedRoute(route), route).toBe(false);
+    }
+  });
+
+  it("残した非中核ページは引き続きログイン必須", () => {
+    expect(isProtectedRoute("/dashboard")).toBe(true);
+    expect(isProtectedRoute("/relocation/history")).toBe(true);
   });
 });

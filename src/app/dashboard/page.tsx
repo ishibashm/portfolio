@@ -259,13 +259,6 @@ export default async function DashboardPage() {
               <BookOpen className="w-4 h-4" />
               Second Brain
             </Link>
-            <Link
-              href="/metaphysical"
-              className="px-5 py-2.5 rounded-full bg-white hover:bg-stone-50 border border-stone-200 font-semibold text-xs text-stone-700 flex items-center gap-2 transition-all shadow-sm"
-            >
-              <BrainCircuit className="w-4 h-4 text-purple-500" />
-              Decision Engine
-            </Link>
           </div>
         </header>
 

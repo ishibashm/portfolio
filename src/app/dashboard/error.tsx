@@ -45,13 +45,6 @@ export default function DashboardError({
               再読み込み
             </button>
             <Link
-              href="/research"
-              className="px-4 py-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-            >
-              <BrainCircuit className="w-4 h-4" />
-              Research Hub
-            </Link>
-            <Link
               href="https://katmer.cloud-palette.com/brain"
               className="px-4 py-3 rounded-2xl bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-100 text-sm font-medium flex items-center justify-center gap-2 transition-colors"
             >

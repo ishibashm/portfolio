@@ -121,10 +121,6 @@ export function GlobalSidebar() {
 
   const sidebarWidth = isCollapsed ? "lg:w-20" : "lg:w-64";
 
-  if (pathname?.startsWith("/visualizer/share/")) {
-    return null;
-  }
-
   // ここが扱うのはサイト内のリンクだけ。外部リンクは中核ナビから外し、
   // 下部で個別に描いている。
   const renderNavItem = (item: NavItem) => {

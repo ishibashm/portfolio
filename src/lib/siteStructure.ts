@@ -9,8 +9,16 @@
  * ここで中核と非中核を1か所に決め、ナビ（GlobalSidebar）・robots.ts・
  * サイトマップがすべてこの定義を参照する。3か所に散らすと必ずずれる。
  *
- * 非中核は削除しない。動かなくなると困るものがあるため、
- * 導線と検索露出だけを閉じて、URL を知っていれば従来どおり使える状態に保つ。
+ * 当初は「非中核は削除せず、導線と検索露出だけ閉じる」方針だったが、
+ * 引越しと無関係なページを抱えたままでは保守が重いため、実際に削除した。
+ * 削除したのは、他から参照されておらず引き継ぎにも関わらない9ページ
+ * （trends / visualizer / x-viewer / research / extract / agent-log /
+ * ceremonial-sample / metaphysical / rentals）と、それ専用の API 6本。
+ *
+ * 残したものには理由がある。
+ *   /dashboard          … ログイン後の既定の行き先。消すと導線が切れる
+ *   /relocation/history … 過去の移動から太極を出すため、引越しの判断に効く
+ *   src/components/nba  … ホーム(SolarTimeClock)とシミュレータが使っている
  */
 
 export interface CoreRoute {
@@ -56,23 +64,12 @@ export const CORE_ROUTES: CoreRoute[] = [
 ];
 
 /**
- * 非中核。ナビから外し、検索エンジンとAIクローラから閉じる。
- * 削除はしない（URL 直打ちでは従来どおり動く）。
+ * 非中核。ナビから外し、検索エンジンとAIクローラから閉じ、ログイン必須にする。
+ * 残っているのはこの2つだけ（他は削除済み）。
  */
 export const NON_CORE_ROUTES: string[] = [
-  "/dashboard", // 全機能のランチャー。統一後は入口を / に一本化する
-  // 名前に反して吉方位のページではなく、生体データとマクロ環境から
-  // 次善行動を出す NBA ダッシュボード。引越しとは別のテーマなので外す。
-  "/metaphysical",
-  "/trends", // 日経平均・技術トレンド
-  "/rentals", // arbitrage と役割が重複する旧・物件一覧
-  "/relocation/history", // 過去の判定ログ。導線から外す
-  "/visualizer", // 太陽風などの可視化
-  "/x-viewer", // X(Twitter) 閲覧
-  "/research", // 監査レポート生成
-  "/extract", // 抽出ツール
-  "/agent-log", // エージェントの実行ログ
-  "/ceremonial-sample", // 冠婚葬祭・ブライダルの試作
+  "/dashboard", // ログイン後の既定の行き先。ナビには載せない
+  "/relocation/history", // 過去の移動から太極を出す。導線からは外す
 ];
 
 /**

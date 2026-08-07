@@ -1,3 +1,12 @@
+> ## ⚠ このページの画面はすべて削除されました（2026-08-07）
+>
+> `/metaphysical` `/trends` `/visualizer` `/visualizer/share/{ID}` `/x-viewer`
+> `/research` `/extract` `/agent-log` `/ceremonial-sample` は、引越しの方位と
+> タイミングという本サービスの目的から外れるため削除しました。**現在はすべて
+> 404 です。テスト対象ではありません。**
+>
+> 以下の記述は削除前の仕様として残しています。
+
 # 07. メニューに出ない画面（URL直打ちのみ・全9画面）
 
 [← 目次に戻る](./README.md) ｜ [共通仕様](./00-common.md)
