@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
+import prisma from "@/lib/prisma";
 
+export const runtime = "nodejs";
 export const maxDuration = 60; // Allow more time for AI processing
 
 const PropertySchema = z.object({
@@ -80,21 +80,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey =
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.warn("Supabase credentials are not set.");
-      return NextResponse.json(
-        { error: "Database credentials not configured" },
-        { status: 500 },
-      );
-    }
-
-    const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey);
-
     // 1. Extract property details using Gemini
     const { object } = await generateObject({
       model: google("gemini-2.5-flash"),
@@ -110,66 +95,63 @@ ${body}`,
 
     const results = [];
 
-    // 2. Save or Update in Supabase
+    // 2. Save or update the listings.
+    //
+    // 書き込みは Prisma（DATABASE_URL）に統一している。Supabase クライアント
+    // 経由だと、DB の引っ越し先を変えるたびにここだけ取り残される。
+    // Supabase は認証のためだけに使う。
     for (const property of object.properties) {
-      const emailDate = date
-        ? new Date(date).toISOString()
-        : new Date().toISOString();
+      const emailDate = date ? new Date(date) : new Date();
 
       // Check if this specific property (by name and area/layout) already exists
-      const { data: existing } = await supabase
-        .from("rental_properties")
-        .select("*")
-        .eq("property_name", property.property_name)
-        .limit(1)
-        .single();
+      const existing = await prisma.rental_properties.findFirst({
+        where: { property_name: property.property_name },
+      });
 
-      if (existing) {
-        // Update the last_seen_at time and append the email id to source_emails
-        const updatedSourceEmails = existing.source_emails
-          ? [...existing.source_emails]
-          : [];
-        if (email_id && !updatedSourceEmails.includes(email_id)) {
-          updatedSourceEmails.push(email_id);
+      try {
+        if (existing) {
+          // Update the last_seen_at time and append the email id to source_emails
+          const updatedSourceEmails = [...(existing.source_emails ?? [])];
+          if (email_id && !updatedSourceEmails.includes(email_id)) {
+            updatedSourceEmails.push(email_id);
+          }
+
+          const data = await prisma.rental_properties.update({
+            where: { id: existing.id },
+            data: {
+              last_seen_at: emailDate,
+              source_emails: updatedSourceEmails,
+              // Optionally update other details if they changed, though rent/fees might fluctuate
+              rent: property.rent ?? existing.rent,
+            },
+          });
+          results.push({ action: "updated", property: data });
+        } else {
+          // Insert new property
+          const data = await prisma.rental_properties.create({
+            data: {
+              property_name: property.property_name,
+              area: property.area,
+              rent: property.rent,
+              management_fee: property.management_fee,
+              layout: property.layout,
+              size_sqm: property.size_sqm,
+              is_new_build: property.is_new_build,
+              minutes_to_station: property.minutes_to_station,
+              first_seen_at: emailDate,
+              last_seen_at: emailDate,
+              source_emails: email_id ? [email_id] : [],
+              url: property.url,
+            },
+          });
+          results.push({ action: "inserted", property: data });
         }
-
-        const { data, error } = await supabase
-          .from("rental_properties")
-          .update({
-            last_seen_at: emailDate,
-            source_emails: updatedSourceEmails,
-            // Optionally update other details if they changed, though rent/fees might fluctuate
-            rent: property.rent || existing.rent,
-          })
-          .eq("id", existing.id)
-          .select()
-          .single();
-
-        if (error) console.error("Error updating property", error);
-        if (data) results.push({ action: "updated", property: data });
-      } else {
-        // Insert new property
-        const { data, error } = await supabase
-          .from("rental_properties")
-          .insert({
-            property_name: property.property_name,
-            area: property.area,
-            rent: property.rent,
-            management_fee: property.management_fee,
-            layout: property.layout,
-            size_sqm: property.size_sqm,
-            is_new_build: property.is_new_build,
-            minutes_to_station: property.minutes_to_station,
-            first_seen_at: emailDate,
-            last_seen_at: emailDate,
-            source_emails: email_id ? [email_id] : [],
-            url: property.url,
-          })
-          .select()
-          .single();
-
-        if (error) console.error("Error inserting property", error);
-        if (data) results.push({ action: "inserted", property: data });
+      } catch (e) {
+        // 1 件が落ちても残りは取り込む。元の実装も同じ扱いだった。
+        console.error(
+          `Error saving property ${property.property_name}`,
+          e,
+        );
       }
     }
 
