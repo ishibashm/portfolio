@@ -639,13 +639,11 @@ export default function MagneticMapInner({
           url={
             mapTheme === "dark"
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           }
-          attribution={
-            mapTheme === "dark"
-              ? '&copy; <a href="https://carto.com/">CARTO</a>'
-              : '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
-          }
+          // CARTO のタイルは OpenStreetMap のデータから作られているため、
+          // 明暗どちらでも両方の帰属表示が要る。
+          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
           maxZoom={20}
           maxNativeZoom={19}
         />
