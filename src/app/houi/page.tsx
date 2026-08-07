@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import type { Metadata } from "next";
 import {
   STAR_NAMES,
@@ -206,6 +207,8 @@ export default function Page() {
             物件を方位で探す
           </Link>
         </div>
+
+        <ContentDisclaimer />
       </article>
     </div>
   );
