@@ -10,8 +10,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  AreaChart,
-  Area,
 } from "recharts";
 
 export default function TelemetryChart() {
@@ -325,98 +323,12 @@ export default function TelemetryChart() {
         </ResponsiveContainer>
       </div>
 
-      {/* Chart 4: Bio-Metrics */}
-      <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200 relative">
-        <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2 flex items-center justify-between">
-          <div>
-            <span className="text-purple-600 mr-2">🧬</span>
-            Bio-Sync Telemetry / 生体自律神経
-          </div>
-          <span className="bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded text-[9px] font-mono tracking-wider">
-            [MOCK DATA]
-          </span>
-        </h3>
-        <ResponsiveContainer width="100%" height="80%">
-          <AreaChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis
-              dataKey="date"
-              stroke="#666"
-              tick={{ fill: "#888", fontSize: 10 }}
-            />
-            <YAxis
-              yAxisId="left"
-              stroke="#a855f7"
-              tick={{ fontSize: 10 }}
-              domain={[0, 100]}
-              label={{
-                value: "Percentage / ms",
-                angle: -90,
-                position: "insideLeft",
-                style: { fill: "#a855f7", fontSize: "10px" },
-              }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              stroke="#ec4899"
-              tick={{ fontSize: 10 }}
-              domain={[0, "auto"]}
-              label={{
-                value: "GSR (μS)",
-                angle: 90,
-                position: "insideRight",
-                style: { fill: "#ec4899", fontSize: "10px" },
-              }}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#18181b",
-                border: "1px solid #3f3f46",
-                fontSize: "10px",
-              }}
-            />
-            <Legend wrapperStyle={{ fontSize: "10px" }} />
-            <Area
-              yAxisId="left"
-              type="monotone"
-              dataKey="shieldCapacity"
-              stroke="#10b981"
-              fill="#10b981"
-              fillOpacity={0.2}
-              name="防御容量 (Shield %)"
-            />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="ansLoad"
-              stroke="#a855f7"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              name="自律神経負荷 (ANS %)"
-            />
-            <Line
-              yAxisId="left"
-              type="monotone"
-              dataKey="hrv"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              name="心拍変動 (HRV ms)"
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="gsr"
-              stroke="#ec4899"
-              strokeWidth={2}
-              dot={{ r: 3 }}
-              name="皮膚電気反応 (GSR)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
+      {/*
+        生体自律神経（HRV/GSR/自律神経負荷/防御容量）のグラフはここにあったが、
+        これらは利用者ごとの値で、サイト全体の日次ログには記録されない。
+        保存先が無いまま [MOCK DATA] の空グラフを公開ページに出していたので外した。
+        個人の生体データはホームのプロフィール設定から入力し、その場の判定に使う。
+      */}
       {/* Chart 5: Geomancy & Lunar */}
       <div className="w-full h-64 bg-white/80 rounded-xl p-4 border border-stone-200 relative">
         <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest mb-4 border-b border-stone-200 pb-2 flex items-center justify-between">
@@ -493,13 +405,17 @@ export default function TelemetryChart() {
               dot={{ r: 3 }}
               name="日盤星"
             />
-            <Area
+            {/*
+              以前は <Area> を <LineChart> の中に置いていた。Recharts では
+              描画されない組み合わせなので、データがあっても月相は出なかった。
+            */}
+            <Line
               yAxisId="right"
               type="monotone"
               dataKey="lunarIllumination"
-              stroke="#e2e8f0"
-              fill="#e2e8f0"
-              fillOpacity={0.1}
+              stroke="#94a3b8"
+              strokeWidth={2}
+              dot={false}
               name="月相 (輝面率 %)"
             />
           </LineChart>
