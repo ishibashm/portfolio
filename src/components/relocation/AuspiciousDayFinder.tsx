@@ -77,12 +77,25 @@ interface Summary {
   days: DayVerdict[];
 }
 
+/**
+ * 保存済みの設定が無いときの初期値。
+ *
+ * 以前は空で始めていたため、初めて来た人が「吉日を出す」を押すと
+ * 「生年月日と現住地の経度を入力してください。」とだけ出て、中核ページの
+ * 主要な操作が最初の一回で必ず失敗していた。ホームなど他の画面は同じ値を
+ * 既定にしているので、ここも揃える。入力欄には値が見えているので、
+ * 自分の生年月日と現住地に直せば結果もそのぶん正確になる。
+ */
+const DEFAULT_BIRTH_DATE = "2000-01-01";
+const DEFAULT_LAT = "35.6895";
+const DEFAULT_LON = "139.6917";
+
 export function AuspiciousDayFinder() {
-  const [birthDate, setBirthDate] = useState("");
-  const [lon, setLon] = useState("");
+  const [birthDate, setBirthDate] = useState(DEFAULT_BIRTH_DATE);
+  const [lon, setLon] = useState(DEFAULT_LON);
   // スキャナーへ引き継ぐために緯度も持つ。方位の判定は経度だけで足りるが、
   // 物件を出すには出発地の座標が要る。
-  const [lat, setLat] = useState("");
+  const [lat, setLat] = useState(DEFAULT_LAT);
   const [direction, setDirection] = useState("all");
   const [tenchusatsuMode, setTenchusatsuMode] = useState<string>(
     DEFAULT_TENCHUSATSU_MODE,
