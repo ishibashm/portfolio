@@ -580,11 +580,17 @@ export function CosmicCalendar({
         }}
       />
 
-      {/* Calendar Navigation */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
+      {/*
+        Calendar Navigation
+        日本語は文字ごとに改行できるため min-content が実質 1 文字になり、
+        justify-between で右のボタン群と並べると左のラベルが潰される
+        （375px 幅の実測で幅 22px、1 文字ずつの縦並びになっていた）。
+        ラベルは折り返さず、狭いときは右側を次の行へ回す。
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <span
-            className="w-1.5 h-1.5 rounded-full animate-ping"
+            className="w-1.5 h-1.5 rounded-full animate-ping shrink-0"
             style={{ backgroundColor: "var(--color-accent, #10b981)" }}
           />
           <span className="text-xs font-mono text-stone-400 tracking-widest">
