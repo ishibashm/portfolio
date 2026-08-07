@@ -31,23 +31,14 @@ jobs:
           # loaded browser tab, which surfaced as "Server Action ... was not found
           # on the server". It has to stay stable across builds and instances.
           SERVER_ACTIONS_KEY: ${{ secrets.NEXT_SERVER_ACTIONS_ENCRYPTION_KEY }}
-          # Katmer Cloud の Postgres。ナレッジベースは向こうに一本化したので、
-          # tech & trends の保存はこの接続先に書く。ENV_FILE とは別 secret に
-          # しているのは、ENV_FILE の中身を読み書きせずに追加できるため。
-          KATMER_DATABASE_URL: ${{ secrets.KATMER_DATABASE_URL }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
             exit 1
           fi
-          if [ -z "$KATMER_DATABASE_URL" ]; then
-            echo "::error::KATMER_DATABASE_URL secret is not set. Saving from tech & trends writes to the Katmer Cloud database."
-            exit 1
-          fi
           echo "$ENV_FILE_CONTENT" > .env
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
-          echo "KATMER_DATABASE_URL=$KATMER_DATABASE_URL" >> .env
 
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
