@@ -47,7 +47,7 @@ export default function Page() {
               </h2>
               <div className="mt-3 flex flex-wrap gap-2">
                 {list.map((a) => (
-                  <Link
+                  <Link prefetch={false}
                     key={a.code}
                     href={`/houi/area/${a.code}`}
                     className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"

@@ -181,7 +181,7 @@ export default async function Page({
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {MONTHS.map((m) => (
-                <Link
+                <Link prefetch={false}
                   key={m}
                   href={`/houi/${year}/${star}/${m}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -304,7 +304,7 @@ export default async function Page({
           </h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {STARS.filter((s) => s !== star).map((s) => (
-              <Link
+              <Link prefetch={false}
                 key={s}
                 href={`/houi/${year}/${s}`}
                 className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
@@ -321,7 +321,7 @@ export default async function Page({
             {contentYears()
               .filter((y) => y !== year)
               .map((y) => (
-                <Link
+                <Link prefetch={false}
                   key={y}
                   href={`/houi/${y}/${star}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
