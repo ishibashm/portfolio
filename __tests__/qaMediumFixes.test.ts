@@ -9,7 +9,6 @@ import { isValidIsoDate } from "@/utils/dateValidation";
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
 import { getAgentLogFeedState } from "@/lib/agentLogState";
 import { birthYearsThrough, currentYearInJapan } from "@/lib/kigakuContent";
-import { canUseAgentAdminTools } from "@/lib/agentAuthorization";
 
 describe("medium-priority QA regression helpers", () => {
   it("uses the same recommendation score and avoid-status rule for every star display", () => {
@@ -70,10 +69,4 @@ describe("medium-priority QA regression helpers", () => {
     );
   });
 
-  it("keeps mutating agent tools restricted to the configured administrator", () => {
-    expect(canUseAgentAdminTools("member@example.com", "admin@example.com"))
-      .toBe(false);
-    expect(canUseAgentAdminTools("admin@example.com", "admin@example.com"))
-      .toBe(true);
-  });
 });

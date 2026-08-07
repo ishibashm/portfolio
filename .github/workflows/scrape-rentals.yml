@@ -117,7 +117,12 @@ jobs:
     needs: scrape
     if: always()
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    # ジオコーディングに 60+60 分を積んだ状態で 120 分にしていたため、
+    # 2 本目の途中で必ずジョブごと打ち切られ、後続のパージ・レポート・
+    # エリア相場の再生成が毎日スキップされていた。実測で 8/6 の実行が
+    # まさにこれで、容量の安全弁が一度も動いていない。
+    # 公開リポジトリで Actions の従量課金は無いので、詰めずに枠を広げる。
+    timeout-minutes: 180
     # 最後にエリア相場の JSON をコミットして押し戻すため
     permissions:
       contents: write
@@ -146,21 +151,10 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Geocode newly imported properties
-        env:
-          GEOCODE_TIME_BUDGET_MIN: "60"
-        run: npx -y tsx scripts/geocode_properties.ts
-
-      # level を見ずに座標を採用していた時期に、市の代表点を割り当てられた物件が
-      # 大量に残っている（同一座標に数千件が固まっている）。方位計算がその市の
-      # 全物件で同じになってしまうため、国土地理院の住所検索で引き直す。
-      # 対象が無くなれば即座に終わるので、解消後は無害な no-op になる。
-      - name: Re-geocode properties stuck on a city centroid
-        env:
-          GEOCODE_REFRESH_CLUSTERED: "true"
-          GEOCODE_TIME_BUDGET_MIN: "60"
-        run: npx -y tsx scripts/geocode_properties.ts
-
+      # 容量の安全弁は最初に置く。ジオコーディングは時間予算で打ち切られる
+      # 前提の best-effort な処理なので、その後ろに置くと巻き込まれて動かない。
+      # 先に消しておけば、ジオコーディングが引く母数もその分減る。
+      #
       # スクレイパーは upsert しかしないので、掲載終了した物件も行として残り続ける。
       # Supabase Free は 500MB でリードオンリーに落ちるため、
       # 対象外の県と長期間確認できていない行をここで落として増加を頭打ちにする。
@@ -176,7 +170,25 @@ jobs:
           PURGE_STALE_DAYS: "45"
         run: npx -y tsx scripts/purge_rental_properties.ts
 
+      - name: Geocode newly imported properties
+        env:
+          GEOCODE_TIME_BUDGET_MIN: "60"
+        run: npx -y tsx scripts/geocode_properties.ts
+
+      # level を見ずに座標を採用していた時期に、市の代表点を割り当てられた物件が
+      # 大量に残っている（同一座標に数千件が固まっている）。方位計算がその市の
+      # 全物件で同じになってしまうため、国土地理院の住所検索で引き直す。
+      # 対象が無くなれば即座に終わるので、解消後は無害な no-op になる。
+      - name: Re-geocode properties stuck on a city centroid
+        env:
+          GEOCODE_REFRESH_CLUSTERED: "true"
+          GEOCODE_TIME_BUDGET_MIN: "60"
+        run: npx -y tsx scripts/geocode_properties.ts
+
+      # 容量の逼迫はこのレポートでしか見えない。ジオコーディングが時間切れに
+      # なった日ほど状況を知りたいので、前段が転んでも必ず出す。
       - name: Report freshness
+        if: always()
         run: npx -y tsx scripts/report_rental_freshness.ts
 
       # /houi/area/* は src/data/areaDirections.json を静的生成の入力にしている。
