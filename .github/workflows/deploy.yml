@@ -39,6 +39,9 @@ jobs:
           # 広告ユニット（スロット）。自動広告だけで運用するなら不要。
           ADSENSE_SLOT_ARTICLE: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_ARTICLE }}
           ADSENSE_SLOT_LIST: ${{ vars.NEXT_PUBLIC_ADSENSE_SLOT_LIST }}
+          # 履歴グラフの日次記録エンドポイント（/api/cron/telemetry）の合言葉。
+          # Record Daily Telemetry ワークフローが同じ値で呼ぶ。
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
@@ -55,6 +58,9 @@ jobs:
           fi
           if [ -n "$ADSENSE_SLOT_LIST" ]; then
             echo "NEXT_PUBLIC_ADSENSE_SLOT_LIST=$ADSENSE_SLOT_LIST" >> .env
+          fi
+          if [ -n "$CRON_SECRET" ]; then
+            echo "CRON_SECRET=$CRON_SECRET" >> .env
           fi
 
       - name: Convert .env to env.json for Cloud Run
