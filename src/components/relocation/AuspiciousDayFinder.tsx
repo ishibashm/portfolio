@@ -191,10 +191,14 @@ export function AuspiciousDayFinder() {
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-500 block">
+          <label
+            htmlFor="ad-birth"
+            className="text-xs font-semibold text-slate-500 block"
+          >
             生年月日（時刻まで分かれば入れる）
           </label>
           <input
+            id="ad-birth"
             type="datetime-local"
             value={birthDate.length === 10 ? `${birthDate}T12:00` : birthDate}
             onChange={(e) => setBirthDate(e.target.value)}
@@ -204,11 +208,13 @@ export function AuspiciousDayFinder() {
         <div className="space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
+            htmlFor="ad-lon"
             title="今住んでいる場所の経度。方位も太陽時もここを起点に決まります。"
           >
             現住地の経度
           </label>
           <input
+            id="ad-lon"
             type="number"
             step="0.0001"
             placeholder="例: 136.9008（名古屋）"
@@ -220,11 +226,13 @@ export function AuspiciousDayFinder() {
         <div className="space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
+            htmlFor="ad-lat"
             title="物件一覧へ渡すときに使います。方位の判定だけなら経度だけで足ります。"
           >
             現住地の緯度（任意）
           </label>
           <input
+            id="ad-lat"
             type="number"
             step="0.0001"
             placeholder="例: 35.1430"
@@ -234,10 +242,14 @@ export function AuspiciousDayFinder() {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-500 block">
+          <label
+            htmlFor="ad-direction"
+            className="text-xs font-semibold text-slate-500 block"
+          >
             方位
           </label>
           <select
+            id="ad-direction"
             value={direction}
             onChange={(e) => setDirection(e.target.value)}
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
@@ -251,10 +263,14 @@ export function AuspiciousDayFinder() {
           </select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-500 block">
+          <label
+            htmlFor="ad-from"
+            className="text-xs font-semibold text-slate-500 block"
+          >
             開始日
           </label>
           <input
+            id="ad-from"
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
@@ -262,10 +278,14 @@ export function AuspiciousDayFinder() {
           />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-slate-500 block">
+          <label
+            htmlFor="ad-months"
+            className="text-xs font-semibold text-slate-500 block"
+          >
             走査期間
           </label>
           <select
+            id="ad-months"
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
@@ -279,11 +299,13 @@ export function AuspiciousDayFinder() {
         <div className="space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
+            htmlFor="ad-tenchusatsu"
             title="天中殺（算命学）＝空亡（四柱推命）。九星気学には本来無い概念で、どこまで禁止則として扱うかは流派によって異なります。"
           >
             天中殺の扱い
           </label>
           <select
+            id="ad-tenchusatsu"
             value={tenchusatsuMode}
             onChange={(e) => setTenchusatsuMode(e.target.value)}
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none cursor-pointer focus:border-rose-400"
