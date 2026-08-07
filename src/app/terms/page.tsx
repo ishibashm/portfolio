@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FileText, ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/terms" },
   title: "利用規約 | Cloud Palette",
   description: "Cloud Paletteのサービス利用規約および免責事項、知的財産権に関する規定。",
 };

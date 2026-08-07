@@ -18,6 +18,7 @@ import { AdBanner } from "@/components/ads/AdBanner";
  */
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/houi" },
   title: "九星気学の本命星と吉方位の早見表",
   description:
     "生まれ年から本命星を調べ、その年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。",

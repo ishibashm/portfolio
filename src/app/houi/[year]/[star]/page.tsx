@@ -58,6 +58,7 @@ export async function generateMetadata({
   return {
     title,
     description,
+    alternates: { canonical: `/houi/${year}/${star}` },
     openGraph: { title, description, type: "article" },
   };
 }
