@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toUserMessage } from "@/lib/errorMessage";
 import {
   loadProfilePresets,
   saveProfilePresets,
@@ -378,7 +379,9 @@ export default function RegionalWealthPage() {
         }
       }
     } catch (err: any) {
-      if (requestId === fetchRequestIdRef.current) setError(err.message);
+      // 生の "Failed to fetch" をそのまま出さない。
+      if (requestId === fetchRequestIdRef.current)
+        setError(toUserMessage(err));
     } finally {
       if (requestId === fetchRequestIdRef.current) setLoading(false);
     }

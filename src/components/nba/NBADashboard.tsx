@@ -9,6 +9,7 @@
 */
 
 import { useEffect, useState } from "react";
+import { toUserMessage } from "@/lib/errorMessage";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Activity,
@@ -360,7 +361,7 @@ export function NBADashboard({
         throw new Error(json.error || "Unknown error");
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(toUserMessage(err));
     } finally {
       setLoading(false);
     }
