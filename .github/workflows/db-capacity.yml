@@ -1,0 +1,98 @@
+name: Check and reduce database size
+
+# rental_properties の容量まわりだけを、単体で回すためのワークフロー。
+#
+# 同じ処理は scrape-rentals の geocode ジョブにも入っているが、あちらは
+# ジオコーディングに 2 時間積んでいるため、容量を見たいだけ・減らしたいだけの
+# ときに 2.5 時間待つことになる。実行中はログも取り出せない。
+# 容量は 500MB の上限に張り付いていて即応が要るので、切り出しておく。
+#
+# 既定はドライラン。何行減るかを出すだけで、消さない。
+#
+# 注意: apply で実行すると VACUUM FULL がテーブル全体に排他ロックを取る。
+# scrape-rentals が走っている最中に重ねないこと（ジオコーディングの書き込みが
+# 待たされる、あるいは落ちる）。ワークフローが別なので CI 側では止められない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run: 数えるだけ / apply: 実際に削除する"
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+      confirm:
+        description: "apply のときだけ必要。実行するなら DELETE と入力"
+        required: false
+        default: ""
+      dedupe_key:
+        description: "重複とみなす鍵（a=建物名のみ / b=+エリア / c=+住所）"
+        required: false
+        default: "b"
+      purge:
+        description: "期限切れ・対象外の行も先に削除する"
+        type: boolean
+        required: false
+        default: true
+
+concurrency:
+  group: db-capacity
+  cancel-in-progress: false
+
+jobs:
+  capacity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Guard
+        if: ${{ inputs.mode == 'apply' && inputs.confirm != 'DELETE' }}
+        run: |
+          echo "::error::mode=apply のときは confirm に DELETE と入力すること。"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # 期限切れを先に落としてから重複を数える。順番が逆だと、これから消える行を
+      # 重複の母数に入れてしまう。
+      - name: Purge out-of-scope and dead listings
+        if: ${{ inputs.purge }}
+        env:
+          PURGE_APPLY: ${{ inputs.mode == 'apply' }}
+          PURGE_STALE_DAYS: "45"
+        run: npx -y tsx scripts/purge_rental_properties.ts
+
+      - name: Collapse duplicate listings of the same room
+        env:
+          DEDUPE_APPLY: ${{ inputs.mode == 'apply' }}
+          DEDUPE_KEY: ${{ inputs.dedupe_key }}
+        run: npx -y tsx scripts/dedupe_rental_properties.ts
+
+      # 削除の前後で比べられるように、最後にもう一度状態を出す。
+      - name: Report freshness
+        if: always()
+        run: npx -y tsx scripts/report_rental_freshness.ts
