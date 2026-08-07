@@ -29,8 +29,15 @@ const shipporiMincho = Shippori_Mincho({
   // 本文にセリフ体を選べるテーマがあるので 400 は残す。
   weight: ["400", "700"],
   variable: "--font-shippori-mincho",
-  subsets: ["latin"], // latin is usually enough for basic loading, but google fonts handles the rest
+  subsets: ["latin"],
   display: "swap",
+  // 日本語フォントは Google 側で 100 以上の部分集合に分割されている。
+  // next/font は既定でその全てに <link rel="preload"> を出すため、
+  // 実測では 1 ページあたり 124 個のフォントを先読みしていた
+  // （リクエスト 200 件超のうち大半がこれ）。
+  // preload を切ると、@font-face の unicode-range により、その
+  // ページに実際に出る文字の部分集合だけが読まれる。
+  preload: false,
 });
 
 // サイトの説明は src/lib/siteStructure.ts に集約している。
