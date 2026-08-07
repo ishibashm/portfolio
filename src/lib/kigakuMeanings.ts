@@ -122,3 +122,63 @@ export function directionEffectSentence(
 
   return `${dirJp}に${starJp}（${meaning.keywords}）が回座しています。${body}${doubled || ""}`;
 }
+
+/** 九星の五行。方位の吉凶ではなく、本命星との相性を見るのに使う。 */
+export const STAR_ELEMENTS: Record<number, "水" | "土" | "木" | "金" | "火"> = {
+  1: "水",
+  2: "土",
+  3: "木",
+  4: "木",
+  5: "土",
+  6: "金",
+  7: "金",
+  8: "土",
+  9: "火",
+};
+
+/** 相生（生じる）の順: 木 → 火 → 土 → 金 → 水 → 木 */
+const GENERATES: Record<string, string> = {
+  木: "火",
+  火: "土",
+  土: "金",
+  金: "水",
+  水: "木",
+};
+
+export type ElementRelation = "比和" | "相生（受ける）" | "相生（与える）" | "相剋";
+
+/** 本命星から見た、その星との五行の関係。 */
+export function elementRelation(
+  personalStar: number,
+  otherStar: number,
+): ElementRelation | null {
+  const me = STAR_ELEMENTS[personalStar];
+  const you = STAR_ELEMENTS[otherStar];
+  if (!me || !you) return null;
+  if (me === you) return "比和";
+  if (GENERATES[you] === me) return "相生（受ける）";
+  if (GENERATES[me] === you) return "相生（与える）";
+  return "相剋";
+}
+
+const RELATION_NOTE: Record<ElementRelation, string> = {
+  比和: "同じ五行どうしで力が揃い、素直に働きます。",
+  "相生（受ける）": "相手の五行があなたを生じる関係で、後押しを受けられます。",
+  "相生（与える）": "あなたが相手を生じる関係で、出ていく力のほうが大きくなります。",
+  相剋: "五行が打ち消し合う関係のため、働きは限定的です。",
+};
+
+/**
+ * 本命星と、その方位に回座する星の相性を一文にする。
+ * 本命星 × 回座星で 81 通りあり、ページごとに変わる。
+ */
+export function elementRelationSentence(
+  personalStar: number,
+  otherStar: number,
+): string | null {
+  const rel = elementRelation(personalStar, otherStar);
+  if (!rel) return null;
+  const me = STAR_ELEMENTS[personalStar];
+  const you = STAR_ELEMENTS[otherStar];
+  return `あなたの${me}に対してこの星は${you}。${rel}で、${RELATION_NOTE[rel]}`;
+}

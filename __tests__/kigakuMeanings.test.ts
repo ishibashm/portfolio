@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   directionEffectSentence,
+  elementRelation,
+  elementRelationSentence,
   isHomeDirection,
   STAR_MEANINGS,
 } from "@/lib/kigakuMeanings";
@@ -68,5 +70,43 @@ describe("九星と方位の象意", () => {
 
   it("星が分からない方位では文章を作らない", () => {
     expect(directionEffectSentence("N", null, "good")).toBeNull();
+  });
+});
+
+describe("五行の相性", () => {
+  it("同じ星なら比和", () => {
+    for (const s of STARS) {
+      expect(elementRelation(s, s), `星 ${s}`).toBe("比和");
+    }
+  });
+
+  it("相生の向きを取り違えない", () => {
+    // 木 → 火 → 土 → 金 → 水 → 木
+    // 三碧(木) から見て 九紫(火) は「与える」、一白(水) は「受ける」。
+    expect(elementRelation(3, 9)).toBe("相生（与える）");
+    expect(elementRelation(3, 1)).toBe("相生（受ける）");
+    expect(elementRelation(9, 3)).toBe("相生（受ける）");
+    expect(elementRelation(1, 3)).toBe("相生（与える）");
+  });
+
+  it("打ち消し合う組み合わせは相剋", () => {
+    // 木(三碧) と 土(二黒)、水(一白) と 火(九紫)
+    expect(elementRelation(3, 2)).toBe("相剋");
+    expect(elementRelation(1, 9)).toBe("相剋");
+  });
+
+  it("81通りすべてで関係が決まる", () => {
+    for (const a of STARS) {
+      for (const b of STARS) {
+        expect(elementRelation(a, b), `${a}-${b}`).toBeTruthy();
+        expect(elementRelationSentence(a, b), `${a}-${b}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("本命星が変われば同じ回座星でも文章が変わる", () => {
+    // ページ間の重複を減らすのが目的なので、ここが効く。
+    const sentences = STARS.map((s) => elementRelationSentence(s, 7));
+    expect(new Set(sentences).size).toBeGreaterThan(3);
   });
 });

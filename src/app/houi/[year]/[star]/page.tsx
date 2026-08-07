@@ -134,7 +134,11 @@ export default async function Page({
           避けるべき方位は<b>{bad.map((v) => `${v.jp}（${v.label}）`).join("、")}</b>
           です。
         </p>
-        <DirectionEffects verdicts={verdicts} periodLabel={`${year}年`} />
+        <DirectionEffects
+          verdicts={verdicts}
+          periodLabel={`${year}年`}
+          personalStar={star}
+        />
 
 
         <section className="mt-10">

@@ -180,6 +180,7 @@ export default async function Page({
         <DirectionEffects
           verdicts={verdicts}
           periodLabel={`${year}年${month}月`}
+          personalStar={star}
         />
 
         <section className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
