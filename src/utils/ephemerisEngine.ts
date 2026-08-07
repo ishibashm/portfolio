@@ -273,8 +273,47 @@ export function getYearStar(date: Date): StarFrequency {
 /**
  * 古典月盤の算出（暦・節気基準）
  */
+/**
+ * その時刻が属する節月の「まん中あたり」の日時を返す。
+ *
+ * 節入りは太陽黄経 30 度ごと（立春=315度で寅月が始まる）。月支はこの
+ * 太陽黄経から直接出しているが、lunar-javascript の月九星は節入りの
+ * 「日」で切り替わる。そのため節入り当日だけ、盤の星と月支が 1 日ずれる。
+ *
+ * 実測: 2026 年の立秋は 8/7 20:43 JST。判定に使う正午時点の太陽黄経は
+ * 134.65 度でまだ立秋前なので月支は「未」だが、月盤の星は既に申月の
+ * 二黒になっていた。天道と月破は月支から出すため、未月の天道（東）が
+ * 申月の盤に当たり、地図だけ東が大吉と出ていた。
+ *
+ * 星の値そのものは lunar-javascript が正しいので、境界の判定だけを
+ * 太陽黄経に合わせる。節月の中ほどの日を渡せば取り違えようがない。
+ */
+function solarTermMonthAnchor(date: Date): Date {
+  const lon = AstroEngine.getSolarLongitude(date);
+  // 立春(315度)を起点に 30 度ごとの区切り。この区切りの開始黄経を求める。
+  const segment = Math.floor(((lon + 45) % 360) / 30);
+  const segmentStartLon = (segment * 30 - 45 + 360) % 360;
+
+  // 開始黄経を跨いだ時刻を二分探索する（最大 40 日前まで遡る）。
+  const crossed = (t: number) => {
+    const l = AstroEngine.getSolarLongitude(new Date(t));
+    // 起点からの進み具合（0〜360）で比較すると 360 度の折り返しを跨げる
+    return (l - segmentStartLon + 360) % 360 < 180;
+  };
+  let lo = date.getTime() - 40 * 86400000;
+  let hi = date.getTime();
+  if (!crossed(hi)) return new Date(date.getTime() + 15 * 86400000);
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if (crossed(mid)) hi = mid;
+    else lo = mid;
+  }
+  // 節入りの 15 日後。次の節入りまで約 30 日あるので、必ず同じ節月の中。
+  return new Date(hi + 15 * 86400000);
+}
+
 export function getClassicalMonthStar(date: Date): StarFrequency {
-  const solar = Solar.fromDate(date);
+  const solar = Solar.fromDate(solarTermMonthAnchor(date));
   const lunar = solar.getLunar();
   return (lunar.getMonthNineStar().getIndex() + 1) as StarFrequency;
 }
