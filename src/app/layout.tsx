@@ -69,11 +69,23 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     locale: "ja_JP",
     type: "website",
+    // 共有されたときのプレビュー画像。これが無いと SNS やチャットで
+    // 画像の無いカードになり、開かれる割合が落ちる。
+    images: [
+      {
+        url: "/ogp.png",
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} - ${SITE_TAGLINE}`,
+      },
+    ],
   },
   twitter: {
+    // summary_large_image を名乗る以上、画像が要る。
     card: "summary_large_image",
     title: TITLE,
     description: SITE_DESCRIPTION,
+    images: ["/ogp.png"],
   },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,

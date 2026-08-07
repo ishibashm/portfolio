@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description:
     "引越し先の候補地について、出発地からの方位・距離・時期の吉凶を試算します。物件が決まる前の地域選びに使えます。",
   openGraph: {
+      images: ["/ogp.png"],
     title: "引越し先を試算する",
     description:
       "引越し先の候補地について、出発地からの方位・距離・時期の吉凶を試算します。物件が決まる前の地域選びに使えます。",

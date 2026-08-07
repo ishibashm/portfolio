@@ -36,6 +36,7 @@ export async function generateMetadata({
     description: page.description,
     alternates: { canonical: path },
     openGraph: {
+      images: ["/ogp.png"],
       title: `${page.title} | ${SITE_NAME}`,
       description: page.description,
       url: `https://cloud-palette.com${path}`,

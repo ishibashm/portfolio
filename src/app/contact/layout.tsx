@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description:
     "判定内容の誤り、物件データの不備、掲載の停止依頼などのご連絡はこちらから。運営者のみが確認します。",
   openGraph: {
+      images: ["/ogp.png"],
     title: "お問い合わせ",
     description:
       "判定内容の誤り、物件データの不備、掲載の停止依頼などのご連絡はこちらから。運営者のみが確認します。",
