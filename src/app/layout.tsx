@@ -141,9 +141,17 @@ export default async function RootLayout({
   // 見本値のまま広告スクリプトを読み込まない。
   const adsense = getAdsenseIds();
 
-  // Active theme parameters or fallback defaults (Warm Glass theme)
-  const bg = theme?.background || "#faf7f3";
-  const fg = theme?.foreground || "#292524";
+  // サイトの地色と文字色は固定する。
+  //
+  // ホームの「AI相談」から配色を書き換えられる仕組みがあり、書き込まれた値は
+  // 全訪問者の全ページに !important で適用される。実際に本番の body 背景が
+  // #020617（ほぼ黒）になっており、明色前提で作られたカードの外側に暗い余白が
+  // 出ていた。広告を載せるサイトで、訪問者の操作によって全体の見た目が変わるのは
+  // 事故のもとなので、地色と文字色だけは受け付けない。
+  //
+  // アクセント・光量・角丸・書体は引き続き反映する（壊れようがない範囲）。
+  const bg = "#faf7f3";
+  const fg = "#292524";
   const accent = theme?.accent || "#f43f5e";
   const glowColor = theme?.glowColor || "#f43f5e";
   const glowIntensity =
