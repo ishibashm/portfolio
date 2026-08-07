@@ -45,7 +45,12 @@ export async function generateMetadata({
   if (!area) return {};
   const title = `${area.full}から見た方位別のエリアと家賃相場`;
   const description = `${area.full}を出発地としたとき、北・北東・東・南東・南・南西・西・北西それぞれにどの市区町村があり、家賃相場がいくらかをまとめています。引越しの方位を決めるときの比較に。`;
-  return { title, description, openGraph: { title, description, type: "article" } };
+  return {
+    title,
+    description,
+    alternates: { canonical: `/houi/area/${area.code}` },
+    openGraph: { title, description, type: "article" },
+  };
 }
 
 export default async function Page({

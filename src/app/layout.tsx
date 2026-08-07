@@ -46,6 +46,10 @@ const shipporiMincho = Shippori_Mincho({
 const TITLE = `${SITE_NAME} | ${SITE_TAGLINE}`;
 
 export const metadata: Metadata = {
+  // canonical を相対パスで書けるようにする基準。
+  // これが無いと各ページの alternates.canonical が解決されない。
+  metadataBase: new URL("https://cloud-palette.com"),
+  alternates: { canonical: "/" },
   title: {
     default: TITLE,
     template: `%s | ${SITE_NAME}`,

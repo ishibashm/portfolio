@@ -10,6 +10,7 @@ import { SITE_NAME, SITE_TAGLINE, CORE_ROUTES } from "@/lib/siteStructure";
  * 何を保証していないかを書いておかないと誤解を招く。
  */
 export const metadata: Metadata = {
+  alternates: { canonical: "/about" },
   title: "このサイトについて",
   description: `${SITE_NAME}の運営者情報、データの出典、判定の考え方、免責事項について説明しています。`,
 };

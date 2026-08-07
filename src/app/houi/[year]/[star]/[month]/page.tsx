@@ -63,7 +63,12 @@ export async function generateMetadata({
       ? `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤での吉方位は${good.join("・")}です。五黄殺・暗剣殺・月破の位置も確認できます。`
       : `${year}年${month}月（${formatDate(start)}〜${formatDate(end)}）、${name}の月盤には吉方位がありません。五黄殺・暗剣殺・月破の位置を確認できます。`;
 
-  return { title, description, openGraph: { title, description, type: "article" } };
+  return {
+    title,
+    description,
+    alternates: { canonical: `/houi/${year}/${star}/${month}` },
+    openGraph: { title, description, type: "article" },
+  };
 }
 
 export default async function Page({
