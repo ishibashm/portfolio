@@ -699,12 +699,12 @@ export default function ExpertCouncilPanel({
         {/* Background glow decoration */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-        <div className="flex justify-between items-center border-b border-purple-200 pb-3">
+        <div className="flex flex-wrap gap-2 justify-between items-center border-b border-purple-200 pb-3">
           <h4 className="text-xs font-bold text-purple-600 uppercase tracking-widest flex items-center gap-2 font-mono">
             <span className="text-purple-600 animate-pulse">🔮</span>
             Agent Console / AIコンシェルジュ
           </h4>
-          <span className="text-[7.5px] font-mono text-purple-600 bg-purple-500/10 px-2 py-0.5 border border-purple-200 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)]">
+          <span className="text-[7.5px] font-mono text-purple-600 bg-purple-500/10 px-2 py-0.5 border border-purple-200 rounded shadow-[0_0_8px_rgba(168,85,247,0.1)] whitespace-nowrap">
             SECURE LINK ACTIVE
           </span>
         </div>
@@ -728,8 +728,10 @@ export default function ExpertCouncilPanel({
               {targetDirection || "未選択"}
             </span>
           </div>
-          <div className="flex justify-between items-center bg-white/70 px-2.5 py-1.5 rounded border border-white/[0.02]">
-            <span className="text-stone-400">目標座標 (Coordinates):</span>
+          {/* 狭い画面ではラベルと値が同じ行に収まらず、値が 1 文字ずつに
+              折り返される（375px の実測で幅 39px）。折り返して逃がす。 */}
+          <div className="flex flex-wrap gap-x-2 justify-between items-center bg-white/70 px-2.5 py-1.5 rounded border border-white/[0.02]">
+            <span className="text-stone-400 whitespace-nowrap">目標座標 (Coordinates):</span>
             <span
               className={
                 targetLat && targetLon

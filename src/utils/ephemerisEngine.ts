@@ -288,7 +288,7 @@ export function getYearStar(date: Date): StarFrequency {
  * 星の値そのものは lunar-javascript が正しいので、境界の判定だけを
  * 太陽黄経に合わせる。節月の中ほどの日を渡せば取り違えようがない。
  */
-function solarTermMonthAnchor(date: Date): Date {
+export function solarTermMonthAnchor(date: Date): Date {
   const lon = AstroEngine.getSolarLongitude(date);
   // 立春(315度)を起点に 30 度ごとの区切り。この区切りの開始黄経を求める。
   const segment = Math.floor(((lon + 45) % 360) / 30);

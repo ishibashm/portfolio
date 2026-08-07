@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getClassicalMonthStar,
   getCurrentZodiac,
+  solarTermMonthAnchor,
 } from "@/utils/ephemerisEngine";
 import { calculateSolarTime } from "@/utils/solarTime";
 
@@ -67,5 +68,37 @@ describe("月盤の星と月支の境界", () => {
       expect(star, new Date(t).toISOString()).toBeGreaterThanOrEqual(1);
       expect(star, new Date(t).toISOString()).toBeLessThanOrEqual(9);
     }
+  });
+});
+
+describe("節月の刻み（12ヶ月ヒートマップ用）", () => {
+  it("節月の中ほどを返し、同じ節月なら同じ値になる", () => {
+    // 未月（2026-07-07〜08-07）の中の複数日から、同じ節月の代表点が返る。
+    const a = solarTermMonthAnchor(noon("2026-07-10"));
+    const b = solarTermMonthAnchor(noon("2026-07-25"));
+    const c = solarTermMonthAnchor(noon("2026-08-07")); // 立秋当日の正午（まだ未月）
+    expect(getClassicalMonthStar(a)).toBe(getClassicalMonthStar(b));
+    expect(getClassicalMonthStar(a)).toBe(getClassicalMonthStar(c));
+  });
+
+  it("節入り後は次の節月になる", () => {
+    const before = solarTermMonthAnchor(noon("2026-08-07"));
+    const after = solarTermMonthAnchor(noon("2026-08-08"));
+    expect(getClassicalMonthStar(before)).toBe(3); // 未月 = 三碧
+    expect(getClassicalMonthStar(after)).toBe(2); // 申月 = 二黒
+  });
+
+  it("30.44日ずつ進めると12ヶ月ぶんの節月が重複なく並ぶ", () => {
+    // ヒートマップの 12 列の作り方。暦月で刻むと、節入り前の日に
+    // 先頭列が地図と別の節月になる（実測で 8 方位中 5 方位が食い違った）。
+    const base = solarTermMonthAnchor(noon("2026-08-07"));
+    const zhis = new Set<string>();
+    for (let i = 0; i < 12; i++) {
+      const anchor = solarTermMonthAnchor(
+        new Date(base.getTime() + i * 30.44 * 86400000),
+      );
+      zhis.add(getCurrentZodiac(anchor, LON).monthZodiac);
+    }
+    expect(zhis.size).toBe(12);
   });
 });
