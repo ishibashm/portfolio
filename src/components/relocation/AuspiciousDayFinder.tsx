@@ -103,6 +103,12 @@ export function AuspiciousDayFinder() {
   const [from, setFrom] = useState(todayString());
   const [months, setMonths] = useState(12);
 
+  // 既定値のまま結果を出したかどうか。方位も吉日も生年月日と現住地で
+  // 変わるので、既定のまま見た結果を「自分の結果」だと思われないように
+  // 前提を明示する。物件スキャナー側も同じ理由で出発地を要求している。
+  const usingDefaults =
+    birthDate === DEFAULT_BIRTH_DATE && lon === DEFAULT_LON;
+
   const [summaries, setSummaries] = useState<Summary[] | null>(null);
   const [meta, setMeta] = useState<{ honmeiStar?: number; voidZodiacs?: string[] }>({});
   const [loading, setLoading] = useState(false);
@@ -311,6 +317,20 @@ export function AuspiciousDayFinder() {
           本命星: <b className="text-slate-700">{meta.honmeiStar}</b> ／ 天中殺の支:{" "}
           <b className="text-slate-700">{meta.voidZodiacs?.join("・")}</b>
         </p>
+      )}
+
+      {summaries && usingDefaults && (
+        <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <h3 className="text-sm font-bold text-amber-900">
+            いまの結果は仮の設定によるものです
+          </h3>
+          <p className="mt-1 text-xs leading-relaxed text-amber-800">
+            生年月日「{DEFAULT_BIRTH_DATE}」・現住地「東京」を仮に置いて計算しています。
+            本命星は生年で変わり、方位は現住地から見た向きで決まるため、
+            <b>このままではあなたの吉日ではありません</b>。
+            上の入力欄をご自身の生年月日と現住地に変えて、もう一度お試しください。
+          </p>
+        </div>
       )}
 
       {summaries && (
