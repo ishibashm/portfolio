@@ -1869,7 +1869,7 @@ export const SolarTimeClock = () => {
           result[dir].luckyDays += 1;
         }
         result[dir].dates.push({
-          dateStr: testDateLocal.toISOString().split("T")[0],
+          dateStr: toJapanDateString(testDateLocal),
           status,
           score,
         });
@@ -2078,7 +2078,7 @@ export const SolarTimeClock = () => {
         (lunarPhaseModifier ? lunarPhaseScore : 0);
 
       const dayModelData: any = {
-        dateStr: testDateLocal.toISOString().split("T")[0],
+        dateStr: toJapanDateString(testDateLocal),
         weekday: testDateLocal.getDay(),
         models: {
           classical: {},
@@ -2876,7 +2876,7 @@ export const SolarTimeClock = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      const dateStr = evalDate.toISOString().split("T")[0];
+      const dateStr = toJapanDateString(evalDate);
       link.download = `metaphysical_unified_master_${dateStr}.json`;
       document.body.appendChild(link);
       link.click();
@@ -2931,7 +2931,7 @@ export const SolarTimeClock = () => {
     const payload = {
       exportedAt: new Date().toISOString(),
       activeContext: {
-        evaluationDate: targetDate.toISOString().split("T")[0],
+        evaluationDate: toJapanDateString(targetDate),
         actionIntent,
         calculationModel: useClassicalBoard
           ? "classical (暦基準)"
@@ -3603,7 +3603,7 @@ ${timingOptimization?.recommendationText || "特になし"}
       gsr,
       ansLoad,
       shieldCapacity,
-      evalDate.toISOString().split("T")[0], // Timing_Target_Date (YYYY-MM-DD)
+      toJapanDateString(evalDate), // Timing_Target_Date (YYYY-MM-DD)
       timingOptimization?.details.find((d) => d.name.includes("Psychology"))
         ?.phenomenon || "",
       timingOptimization?.details.find((d) => d.name.includes("Kigaku"))

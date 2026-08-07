@@ -1,4 +1,5 @@
 "use client";
+import { getAdsensePublisherId } from "@/lib/adsense";
 
 import React, { useEffect } from "react";
 
@@ -15,7 +16,7 @@ export const AdBanner: React.FC<AdBannerProps> = ({
   responsive = true,
   className = "",
 }) => {
-  const adsenseId = process.env.NEXT_PUBLIC_ADSENSE_ID;
+  const adsenseId = getAdsensePublisherId();
 
   useEffect(() => {
     if (adsenseId && typeof window !== "undefined") {
