@@ -1971,10 +1971,14 @@ export default function ArbitrageScannerPage() {
 
                     {/* Prefecture Selection */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label
+                        htmlFor="arb-prefecture"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                      >
                         対象都道府県 (DBフィルタ)
                       </label>
                       <select
+                        id="arb-prefecture"
                         value={prefecture}
                         onChange={(e) => handlePrefectureChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
@@ -1990,13 +1994,17 @@ export default function ArbitrageScannerPage() {
 
                     {/* Birth Date */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block flex items-center justify-between">
+                      <label
+                        htmlFor="arb-birth"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block flex items-center justify-between"
+                      >
                         <span>生年月日 (吉方位用)</span>
                         <span className="text-[9px] text-stone-400 font-normal">
                           時間指定可
                         </span>
                       </label>
                       <input
+                        id="arb-birth"
                         type="datetime-local"
                         value={localBirthDate}
                         onChange={(e) => {
@@ -2160,10 +2168,14 @@ export default function ArbitrageScannerPage() {
 
                     {/* Layer Mode */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label
+                        htmlFor="arb-layer"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                      >
                         方位盤の計算レイヤー
                       </label>
                       <select
+                        id="arb-layer"
                         value={layerMode}
                         onChange={(e) => handleLayerModeChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
@@ -2587,12 +2599,14 @@ export default function ArbitrageScannerPage() {
                       </div>
                       <div className="space-y-1">
                         <label
+                          htmlFor="arb-strategy"
                           className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
                           title="DB から候補を切り出すときの順序。重みだけを変えても、母集合に入っていない物件は評価されない。"
                         >
                           候補の集め方
                         </label>
                         <select
+                          id="arb-strategy"
                           value={candidateStrategy}
                           onChange={(e) => {
                             setCandidateStrategy(e.target.value);
@@ -2714,10 +2728,14 @@ export default function ArbitrageScannerPage() {
 
                     {/* Status Select */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label
+                        htmlFor="arb-status"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                      >
                         吉凶ステータス
                       </label>
                       <select
+                        id="arb-status"
                         value={filterStatus}
                         onChange={handleFilterStatusChange}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
@@ -2732,12 +2750,14 @@ export default function ArbitrageScannerPage() {
                     {/* 方位で絞る。吉日カレンダーからの導線でここが埋まる。 */}
                     <div className="space-y-1">
                       <label
+                        htmlFor="arb-direction"
                         className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
                         title="現住地から見た方位で物件を絞ります。方位を決めてから物件を選ぶときに使います。"
                       >
                         方位で絞る
                       </label>
                       <select
+                        id="arb-direction"
                         value={filterDirection}
                         onChange={(e) => {
                           setFilterDirection(e.target.value);
