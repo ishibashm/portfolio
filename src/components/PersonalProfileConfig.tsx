@@ -361,6 +361,7 @@ export function PersonalProfileConfig({
           {/* Preset Dropdown */}
           <div className="flex-1 w-full">
             <select
+              aria-label="保存済みプロフィールの選択"
               value={selectedPresetId}
               onChange={(e) => handleLoadPreset(e.target.value)}
               className="w-full bg-stone-50 border border-purple-200 text-purple-600 px-3 py-1.5 rounded-sm outline-none focus:border-purple-400 text-xs font-mono"
@@ -430,10 +431,14 @@ export function PersonalProfileConfig({
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[8px] text-stone-400 uppercase">
+            <label
+              htmlFor="profile-birth"
+              className="text-[8px] text-stone-400 uppercase"
+            >
               生年月日・出生時間 (Birth Timestamp)
             </label>
             <input
+              id="profile-birth"
               type="datetime-local"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
@@ -481,10 +486,14 @@ export function PersonalProfileConfig({
           </div>
 
           <div className="flex flex-col gap-1 mt-2">
-            <label className="text-[8px] text-stone-400 uppercase">
+            <label
+              htmlFor="profile-void"
+              className="text-[8px] text-stone-400 uppercase"
+            >
               Void Zodiac (天中殺) Override
             </label>
             <select
+              id="profile-void"
               value={voidZodiacOverride || ""}
               onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
               className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
@@ -651,10 +660,14 @@ export function PersonalProfileConfig({
 
             <div className="grid grid-cols-2 gap-2 mt-2">
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-stone-400 uppercase">
+                <label
+                  htmlFor="bio-hrv-mean"
+                  className="text-[8px] text-stone-400 uppercase"
+                >
                   HRV 平均 (ms)
                 </label>
                 <input
+                  id="bio-hrv-mean"
                   type="number"
                   step="0.1"
                   value={baselineHrvMean ?? ""}
@@ -663,10 +676,14 @@ export function PersonalProfileConfig({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-stone-400 uppercase">
+                <label
+                  htmlFor="bio-hrv-std"
+                  className="text-[8px] text-stone-400 uppercase"
+                >
                   HRV 標準偏差
                 </label>
                 <input
+                  id="bio-hrv-std"
                   type="number"
                   step="0.1"
                   value={baselineHrvStd ?? ""}
@@ -675,10 +692,14 @@ export function PersonalProfileConfig({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-stone-400 uppercase">
+                <label
+                  htmlFor="bio-gsr-mean"
+                  className="text-[8px] text-stone-400 uppercase"
+                >
                   GSR 平均 (μS)
                 </label>
                 <input
+                  id="bio-gsr-mean"
                   type="number"
                   step="0.1"
                   value={baselineGsrMean ?? ""}
@@ -687,10 +708,14 @@ export function PersonalProfileConfig({
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-[8px] text-stone-400 uppercase">
+                <label
+                  htmlFor="bio-gsr-std"
+                  className="text-[8px] text-stone-400 uppercase"
+                >
                   GSR 標準偏差
                 </label>
                 <input
+                  id="bio-gsr-std"
                   type="number"
                   step="0.1"
                   value={baselineGsrStd ?? ""}

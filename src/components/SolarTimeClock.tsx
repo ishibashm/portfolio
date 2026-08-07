@@ -4443,13 +4443,17 @@ ${timingOptimization?.recommendationText || "特になし"}
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-4xl">
             {/* Action Intent Selector */}
             <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
-              <label className="text-[10px] text-stone-400 uppercase font-mono tracking-widest mb-2 flex items-center gap-1">
+              <label
+                htmlFor="home-action-intent"
+                className="text-[10px] text-stone-400 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
+              >
                 <span className="text-emerald-500">◆</span> Action Intent{" "}
                 <span className="text-[8px] text-stone-400">
                   / 移住・移動の目的
                 </span>
               </label>
               <select
+                id="home-action-intent"
                 value={actionIntent}
                 onChange={(e) =>
                   setActionIntent(e.target.value as ActionIntent)
