@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import type { Metadata } from "next";
 import { areasByPref } from "@/lib/areaContent";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -62,6 +63,8 @@ export default function Page() {
         <div className="mt-10">
           <AdBanner />
         </div>
+
+        <ContentDisclaimer />
       </article>
     </div>
   );

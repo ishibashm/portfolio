@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
@@ -318,6 +319,8 @@ export default async function Page({
             </Link>
           </section>
         )}
+
+        <ContentDisclaimer />
       </article>
     </div>
   );
