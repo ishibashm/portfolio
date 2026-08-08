@@ -116,6 +116,17 @@ jobs:
             exit 1
           fi
 
+          # 突き合わせの基準を dump の直前に取る。移行先と「現在の移行元」を
+          # 比べると、スクレイパーが動いている間は必ず食い違う。実際に
+          # rental_properties が 1,153 行ずれ、データ欠損と区別できなかった。
+          # 測りたいのは restore の忠実さであって、経過時間ではない。
+          for T in rental_properties user_configs MunicipalityWealth AgentTheme RelocationSimulation; do
+            N=$(psql "$SRC" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
+            echo "$T $N" >> src_counts.txt
+          done
+          echo "--- dump 直前の移行元の件数 ---"
+          cat src_counts.txt
+
           # --no-owner --no-acl: Supabase 固有のロール（supabase_admin 等）は
           # 移行先に存在しない。付けないと restore がエラーだらけになる。
           pg_dump "$SRC" --format=custom --no-owner --no-acl --verbose \
@@ -128,15 +139,57 @@ jobs:
           DST: ${{ secrets.MIGRATION_TARGET_URL }}
         run: |
           set -euo pipefail
+
+          # Supabase は拡張を extensions スキーマに入れるため、dump の中では
+          # DEFAULT extensions.uuid_generate_v4() のように schema 修飾される。
+          # 移行先で uuid-ossp を public に入れていると、この既定値を持つ表
+          # （user_configs）の CREATE TABLE が「スキーマ extensions が無い」で
+          # 失敗し、表ごと欠ける。実際にそれで user_configs だけが作られなかった。
+          # 同じ名前でスキーマを用意し、そこに拡張を置く。
+          # CREATE EXTENSION IF NOT EXISTS ... WITH SCHEMA は、既にある場合
+          # WITH SCHEMA が黙って無視される。cloud-init が public に入れている
+          # ので、作るのではなく移す必要がある。
+          psql "$DST" -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE SCHEMA IF NOT EXISTS extensions;
+          DO $$
+          DECLARE ns text; ext text;
+          BEGIN
+            FOREACH ext IN ARRAY ARRAY['uuid-ossp','pgcrypto'] LOOP
+              SELECT n.nspname INTO ns
+                FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+               WHERE e.extname = ext;
+              IF ns IS NULL THEN
+                EXECUTE format('CREATE EXTENSION %I WITH SCHEMA extensions', ext);
+              ELSIF ns <> 'extensions' THEN
+                EXECUTE format('ALTER EXTENSION %I SET SCHEMA extensions', ext);
+              END IF;
+            END LOOP;
+          END $$;
+          -- 拡張を extensions へ移したので、修飾なしの uuid_generate_v4() も
+          -- 引けるようにしておく。prisma db push が既定値を書くときに要る。
+          DO $$ BEGIN
+            EXECUTE format('ALTER DATABASE %I SET search_path TO "$user", public, extensions',
+                           current_database());
+          END $$;
+          SQL
+
           # --clean --if-exists: 再実行できるようにする。途中で失敗しても
           # 作り直しから始められる。
-          # エラーで即座に止めない（拡張やコメントの権限まわりで警告が出る）が、
-          # 件数の突き合わせで結果を判定する。
+          # エラーで即座に止めない（Supabase 固有のイベントトリガなど、
+          # 移行先では不要なものが必ず失敗する）が、件数の突き合わせで判定する。
           pg_restore --dbname="$DST" --no-owner --no-acl \
             --clean --if-exists --jobs=4 --verbose \
             portfolio.dump 2> restore.log || true
-          echo "--- restore の警告・エラー（末尾50行）---"
-          tail -50 restore.log
+
+          # 移行先で不要な Supabase の配管（superuser 必須のイベントトリガ、
+          # PG17 の transaction_timeout）は除いて、実害のあるエラーだけ出す。
+          # 全体の末尾だけ見ていたため、user_configs の失敗を取り逃していた。
+          echo "--- 実害のあるエラー ---"
+          grep -E '^pg_restore: error' restore.log \
+            | grep -viE 'event trigger|transaction_timeout|must be superuser' \
+            | head -40 || echo "（なし）"
+          echo "--- エラー総数 ---"
+          grep -c '^pg_restore: error' restore.log || true
 
       - name: Verify
         if: ${{ inputs.mode == 'migrate' }}
@@ -158,12 +211,21 @@ jobs:
           say "| --- | ---: | ---: | --- |"
 
           FAILED=0
-          for T in rental_properties user_configs "MunicipalityWealth" "AgentTheme" "RelocationSimulation"; do
-            A=$(psql "$SRC" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
+          while read -r T A; do
             B=$(psql "$DST" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
             if [ "$A" = "$B" ]; then MARK="✅"; else MARK="❌"; FAILED=1; fi
             say "| $T | $A | $B | $MARK |"
-          done
+          done < src_counts.txt
+
+          # 現在の移行元も出す。dump 中に書き込みが続いていれば基準からずれる。
+          # ずれていたら、切り替え前にスクレイパーを止めて取り直すこと。
+          NOW=$(psql "$SRC" -At -c "SELECT count(*) FROM rental_properties;")
+          BASE=$(awk '/^rental_properties /{print $2}' src_counts.txt)
+          if [ "$NOW" != "$BASE" ]; then
+            say ""
+            say "> dump 後に移行元が $BASE → $NOW 行に増えている（スクレイパー稼働中）。"
+            say "> 切り替え前にスクレイパーを止めて取り直すこと。"
+          fi
 
           say ""
           say "$(psql "$DST" -At -c "SELECT '移行先のサイズ: ' || pg_size_pretty(pg_database_size(current_database()));")"
