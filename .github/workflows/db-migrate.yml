@@ -56,7 +56,14 @@ jobs:
             | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17
-          pg_dump --version
+
+          # 17 を入れるだけでは足りない。/usr/bin/pg_dump は Ubuntu の
+          # pg_wrapper で、既定クラスタの版を選ぶ。ランナーには PostgreSQL 16
+          # サーバが preinstall されているため 16 が選ばれ、17.6 のサーバに対して
+          # 「server version mismatch」で落ちる。実体を PATH の先頭に置いて外す。
+          # psql は版差に寛容なので、この取り違えは pg_dump でしか表面化しない。
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+          /usr/lib/postgresql/17/bin/pg_dump --version
 
       - name: Inspect both ends
         env:
@@ -98,6 +105,17 @@ jobs:
           SRC: ${{ secrets.MIGRATION_SOURCE_URL }}
         run: |
           set -euo pipefail
+          # 使う pg_dump がサーバ以上の版であることを先に確かめる。満たさないと
+          # 「server version mismatch」で必ず落ちるので、dump を試みる前に止める。
+          echo "pg_dump: $(pg_dump --version)"
+          SRV=$(psql "$SRC" -At -c "SHOW server_version;" | cut -d. -f1)
+          CLI=$(pg_dump --version | sed -E 's/.* ([0-9]+).*/\1/')
+          echo "server major: $SRV / pg_dump major: $CLI"
+          if [ "$CLI" -lt "$SRV" ]; then
+            echo "::error::pg_dump が $CLI でサーバ $SRV より古い。PATH を確認すること。"
+            exit 1
+          fi
+
           # --no-owner --no-acl: Supabase 固有のロール（supabase_admin 等）は
           # 移行先に存在しない。付けないと restore がエラーだらけになる。
           pg_dump "$SRC" --format=custom --no-owner --no-acl --verbose \
