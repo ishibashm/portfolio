@@ -3,6 +3,10 @@ name: Deploy to GCP Cloud Run (Free Tier)
 on:
   push:
     branches: [master]
+  # 手で起動できるようにしておく。切り戻しは Secret DATABASE_URL_OVERRIDE を
+  # 消して再デプロイするだけで済むが、push でしか動かないと、そのために
+  # 何かをコミットしなければならない。急いで戻したい場面で余計な手間になる。
+  workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
