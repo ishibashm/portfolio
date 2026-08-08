@@ -127,9 +127,21 @@ runcmd:
   - sudo -u postgres psql -c "CREATE ROLE portfolio LOGIN PASSWORD '__DB_PASSWORD__';"
   - sudo -u postgres psql -c "CREATE DATABASE portfolio OWNER portfolio;"
 
-  # schema.prisma が既定値に使う。先に入れておかないと restore で失敗する
-  - sudo -u postgres psql -d portfolio -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
-  - sudo -u postgres psql -d portfolio -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
+  # schema.prisma が既定値に使う。先に入れておかないと restore で失敗する。
+  #
+  # 置き場所は extensions スキーマにする。Supabase が同じ場所に置いており、
+  # dump の中では DEFAULT extensions.uuid_generate_v4() と schema 修飾で
+  # 書かれるため、public に入れると user_configs の CREATE TABLE が
+  # 「スキーマ extensions が無い」で落ちて表ごと欠ける。
+  #
+  # 後から移そうとしても、拡張の所有者は postgres なので portfolio では
+  # ALTER EXTENSION できない（must be owner of extension）。ここで postgres が
+  # 正しい場所に作っておく必要がある。
+  - sudo -u postgres psql -d portfolio -c "CREATE SCHEMA IF NOT EXISTS extensions AUTHORIZATION portfolio;"
+  - sudo -u postgres psql -d portfolio -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;'
+  - sudo -u postgres psql -d portfolio -c "CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;"
+  # 修飾なしの uuid_generate_v4() も引けるようにする。prisma db push が要る
+  - sudo -u postgres psql -d portfolio -c 'ALTER DATABASE portfolio SET search_path TO "$user", public, extensions;'
 
   # OCI の Ubuntu イメージは既定で 22 番以外を REJECT で塞いでいる。5432 を開ける。
   # VCN 側のセキュリティリストでも別途開ける必要がある（手順書を参照）。

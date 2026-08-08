@@ -147,9 +147,14 @@ jobs:
           # 失敗し、表ごと欠ける。実際にそれで user_configs だけが作られなかった。
           # 同じ名前でスキーマを用意し、そこに拡張を置く。
           # CREATE EXTENSION IF NOT EXISTS ... WITH SCHEMA は、既にある場合
-          # WITH SCHEMA が黙って無視される。cloud-init が public に入れている
-          # ので、作るのではなく移す必要がある。
-          psql "$DST" -v ON_ERROR_STOP=1 <<'SQL'
+          # WITH SCHEMA が黙って無視される。作るのではなく移す必要がある。
+          #
+          # ここは best-effort にする。拡張の所有者は postgres なので、接続に
+          # 使うアプリのロールでは ALTER EXTENSION できないことがある
+          # （must be owner of extension）。正しい配置は cloud-init が
+          # postgres として作る時点で保証する。ここは、その保証が無い移行先
+          # （手で作った DB 等）に対する保険。
+          psql "$DST" <<'SQL' || echo "::warning::拡張の配置を変更できなかった。extensions スキーマに uuid-ossp があるか確認すること。"
           CREATE SCHEMA IF NOT EXISTS extensions;
           DO $$
           DECLARE ns text; ext text;
@@ -172,6 +177,19 @@ jobs:
                            current_database());
           END $$;
           SQL
+
+          # 配置を確かめてから進む。ここが public のままだと user_configs が
+          # 表ごと欠けるが、restore は「エラーを無視する」設計なので気付けず、
+          # 突き合わせまで進んで初めて分かる。手戻りが大きいので先に止める。
+          NS=$(psql "$DST" -At -c "SELECT n.nspname FROM pg_extension e JOIN pg_namespace n ON n.oid=e.extnamespace WHERE e.extname='uuid-ossp';")
+          echo "uuid-ossp の置き場所: ${NS:-（未インストール）}"
+          if [ "$NS" != "extensions" ]; then
+            echo "::error::uuid-ossp が extensions スキーマに無い（現在: ${NS:-なし}）。"
+            echo "::error::移行先で postgres として次を実行すること:"
+            echo "::error::  CREATE SCHEMA IF NOT EXISTS extensions;"
+            echo "::error::  ALTER EXTENSION \"uuid-ossp\" SET SCHEMA extensions;"
+            exit 1
+          fi
 
           # --clean --if-exists: 再実行できるようにする。途中で失敗しても
           # 作り直しから始められる。
