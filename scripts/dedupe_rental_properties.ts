@@ -81,8 +81,20 @@ async function main() {
     (await pool.query(sql, params)).rows;
 
   try {
+    // Supabase の既定は 120 秒。県ごとに分けても VACUUM FULL は 1 文で
+    // テーブル全体を書き直すので、既定のままだと打ち切られうる。
+    // 権限が無くて弾かれても処理は続けられるので、失敗は握りつぶす。
+    try {
+      await pool.query("SET statement_timeout = 0");
+      console.log("statement_timeout を解除した。");
+    } catch {
+      console.log("statement_timeout は変更できなかった（既定のまま続行）。");
+    }
+
     const sizeBefore = (
-      await q(`SELECT pg_size_pretty(pg_database_size(current_database())) AS s`)
+      await q(
+        `SELECT pg_size_pretty(pg_database_size(current_database())) AS s`,
+      )
     )[0].s;
     const totalBefore = Number(
       (await q(`SELECT count(*) AS n FROM rental_properties`))[0].n,
@@ -94,13 +106,20 @@ async function main() {
     // 家賃が無い行はまとめる対象から外すので、どの候補でもそのまま残る。
     // 候補ごとに数え直すと 100 万行を無駄に舐めるため、先に 1 回だけ取る。
     const noRent = Number(
-      (await q(`SELECT count(*) AS n FROM rental_properties WHERE rent IS NULL`))[0]
-        .n,
+      (
+        await q(
+          `SELECT count(*) AS n FROM rental_properties WHERE rent IS NULL`,
+        )
+      )[0].n,
     );
 
     console.log("\n[まとめ方の候補]");
-    const measured: { name: string; label: string; keep: number; drop: number }[] =
-      [];
+    const measured: {
+      name: string;
+      label: string;
+      keep: number;
+      drop: number;
+    }[] = [];
     for (const [name, def] of Object.entries(KEYS)) {
       const keep = Number(
         (
@@ -167,28 +186,75 @@ async function main() {
       return;
     }
 
-    // 刻んで消す。ctid ではなく id を使うのは VACUUM で ctid が動くため。
-    let deleted = 0;
-    for (;;) {
-      const del = await pool.query(
-        `WITH ranked AS (
-           SELECT id, row_number() OVER (
-                    PARTITION BY ${chosen.cols} ORDER BY ${KEEP_ORDER}
-                  ) AS rn
-             FROM rental_properties
-            WHERE rent IS NOT NULL
-         ),
-         victims AS (
-           SELECT id FROM ranked WHERE rn > 1 LIMIT ${BATCH}
-         )
-         DELETE FROM rental_properties p
-          USING victims v
-          WHERE p.id = v.id`,
+    // 鍵に住所かエリアが入っていれば、同じ部屋が都道府県をまたぐことはない。
+    // その場合は県ごとに処理する。1 回のウィンドウ関数が 1/12 の行数で済み、
+    // Supabase の statement_timeout（実測 120 秒）に収まる。
+    //
+    // 全件を対象にしたまま刻むと、バッチごとに 110 万行を並べ替え直すことに
+    // なり、削除が進んでも軽くならない。実際にそれで打ち切られた。
+    const canPartition = /address|area/.test(chosen.cols);
+    const scopes: (string | null)[] = canPartition
+      ? (
+          await q(
+            `SELECT DISTINCT substring(address from 1 for 3) AS p
+               FROM rental_properties
+              WHERE address IS NOT NULL
+              ORDER BY 1`,
+          )
+        ).map((r) => r.p as string)
+      : [null];
+
+    if (!canPartition) {
+      console.log(
+        "\n鍵に住所もエリアも含まれないため、全件を一度に処理する。" +
+          "行数が多いと statement_timeout で打ち切られることがある。",
       );
-      const n = del.rowCount ?? 0;
-      deleted += n;
-      console.log(`  deleted ${deleted} rows...`);
-      if (n === 0) break;
+    }
+
+    // 刻んで消す。ctid ではなく id を使うのは VACUUM で ctid が動くため。
+    //
+    // 途中で落ちても VACUUM FULL まで到達させる。DELETE しただけでは
+    // 領域が OS に返らず pg_database_size も縮まないため、ここで投げ返すと
+    // 「行は消えたのに容量は減らない」状態で終わってしまう。上限を超えている
+    // ときにそれをやると、次の実行の余地まで失う。
+    let deleted = 0;
+    let failure: unknown = null;
+    try {
+      for (const scope of scopes) {
+        const where = scope
+          ? `WHERE rent IS NOT NULL AND substring(address from 1 for 3) = $1`
+          : `WHERE rent IS NOT NULL`;
+        const params = scope ? [scope] : [];
+        let inScope = 0;
+
+        for (;;) {
+          const del = await pool.query(
+            `WITH ranked AS (
+             SELECT id, row_number() OVER (
+                      PARTITION BY ${chosen.cols} ORDER BY ${KEEP_ORDER}
+                    ) AS rn
+               FROM rental_properties
+              ${where}
+           ),
+           victims AS (
+             SELECT id FROM ranked WHERE rn > 1 LIMIT ${BATCH}
+           )
+           DELETE FROM rental_properties p
+            USING victims v
+            WHERE p.id = v.id`,
+            params,
+          );
+          const n = del.rowCount ?? 0;
+          if (n === 0) break;
+          inScope += n;
+          deleted += n;
+          console.log(`  ${scope ?? "all"}: ${inScope} (合計 ${deleted})`);
+        }
+      }
+    } catch (e) {
+      failure = e;
+      console.error("\n削除の途中で失敗した。ここまでのぶんで領域を返す。");
+      console.error(e);
     }
     console.log(`\nDeleted ${deleted} rows.`);
 
@@ -198,7 +264,9 @@ async function main() {
     await pool.query("VACUUM (FULL, ANALYZE) rental_properties");
 
     const sizeAfter = (
-      await q(`SELECT pg_size_pretty(pg_database_size(current_database())) AS s`)
+      await q(
+        `SELECT pg_size_pretty(pg_database_size(current_database())) AS s`,
+      )
     )[0].s;
     const remaining = Number(
       (await q(`SELECT count(*) AS n FROM rental_properties`))[0].n,
@@ -212,9 +280,14 @@ async function main() {
           `- 採用した鍵: ${KEY_NAME} (${chosen.label})\n` +
           `- 削除: ${deleted} 行\n` +
           `- サイズ: ${sizeBefore} → ${sizeAfter}\n` +
-          `- 残り: ${remaining} 行\n`,
+          `- 残り: ${remaining} 行\n` +
+          (failure ? `- **削除は完走していない。再実行が要る。**\n` : ""),
       );
     }
+
+    // 領域を返し終えてから改めて失敗を伝える。赤くならないと、削除が
+    // 途中で終わったことに気付けない。
+    if (failure) throw failure;
   } finally {
     await pool.end();
   }
