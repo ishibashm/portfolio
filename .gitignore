@@ -90,6 +90,9 @@ public/robots.txt
 # QA 向けの画面仕様書は成果物としてリポジトリに残す。
 # *.md を一括除外しているため、明示的に戻さないと追跡されない。
 !docs/qa/*.md
+# 移行・運用の手順書も同じ。README.md 以外が黙って無視されるため、
+# 手順書を足したつもりが追跡されていない、という事故が起きる。
+!docs/db-migration/*.md
 !src/app/ads.txt/
 !src/app/llms.txt/
 !src/app/llms-full.txt/

@@ -143,4 +143,6 @@ jobs:
         run: npx -y tsx scripts/geocode_properties.ts
 
       - name: Report freshness
+        env:
+          DB_SIZE_LIMIT_MB: "5120"
         run: npx -y tsx scripts/report_rental_freshness.ts

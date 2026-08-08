@@ -283,11 +283,28 @@ Cloud Run の無料枠はリージョンに依存しないので、**費用は�
 ### 6-A-6. 接続文字列
 
 ```
-postgresql://portfolio:__DB_PASSWORD__@<インスタンスのパブリックIP>:5432/portfolio?sslmode=require
+postgresql://portfolio:__DB_PASSWORD__@<インスタンスのパブリックIP>:5432/portfolio?sslmode=no-verify
 ```
 
 `DATABASE_URL` と `DIRECT_URL` の両方に同じ値を使ってよい（プーラを挟んで
 いないため）。
+
+> **`sslmode=require` にしてはいけない。** libpq（`psql`）では「暗号化するが
+> 検証はしない」だが、**node-postgres では `verify-full` の別名**として扱われる。
+> cloud-init が作る証明書は自己署名なので、アプリからの接続だけが
+> `self-signed certificate` で失敗する。
+>
+> `psql` での疎通確認は通るため気付きにくい。実際にこれで切り替えに失敗した。
+> 確認に使うクライアントと、アプリが使うクライアントが違う点に注意。
+>
+> ```
+> sslmode=require    → ssl: {}                          検証する → 失敗
+> sslmode=no-verify  → ssl: {rejectUnauthorized:false}  検証しない → 成功
+> ```
+>
+> `no-verify` でも**通信は暗号化される**。検証しないだけで、平文ではない。
+> ただし経路上の攻撃者がサーバになりすます余地は残る。正しく直すなら
+> 「SSL」の節を参照。
 
 ---
 
@@ -465,8 +482,26 @@ Cloud Run は `max-instances=2` / `concurrency=80`。Prisma は
 
 ### SSL
 
-自前構築の場合、接続文字列に `?sslmode=require` を付ける。Let's Encrypt で
-証明書を用意するなら `sslmode=verify-full` が望ましい。
+自前構築の場合、接続文字列に **`?sslmode=no-verify`** を付ける。`require` は
+node-postgres では `verify-full` の別名で、自己署名証明書では必ず失敗する
+（6-A-6 を参照）。
+
+`no-verify` は暫定である。通信は暗号化されるが、サーバの正当性を確かめない
+ため、経路上の攻撃者がなりすませる。**DB をインターネットに開けている以上、
+いずれ正式な証明書に移すべき。**
+
+正式な証明書に移す手順の概略。
+
+1. ドメインを用意してインスタンスの IP に向ける（例: `db.cloud-palette.com`）。
+   **IP アドレスのままでは Let's Encrypt の証明書を取得できない**
+2. インスタンスで `certbot certonly --standalone -d db.cloud-palette.com`
+   （80 番を一時的に開ける必要がある）
+3. `postgresql.conf` の `ssl_cert_file` / `ssl_key_file` を発行された
+   `fullchain.pem` / `privkey.pem` に向けて再起動
+4. 接続文字列を `?sslmode=verify-full` に変え、ホスト名も IP から
+   ドメインに変える（証明書の CN と一致させる必要がある）
+5. 証明書は 90 日で切れる。`certbot renew` の cron と、更新後の
+   PostgreSQL リロードを仕込んでおく
 
 ### 移行後に消せるもの
 

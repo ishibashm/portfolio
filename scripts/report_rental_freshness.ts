@@ -50,20 +50,40 @@ async function main() {
       `| Newest last_seen_at | ${r.newest ? r.newest.toISOString() : "n/a"} |`,
     ];
 
-    // Supabase Free は 500MB でリードオンリーに落ちる。
-    // 気付けるのはここだけなので、毎回サイズと残容量を出しておく。
-    const FREE_PLAN_LIMIT_MB = 500;
+    // 容量の逼迫に気付けるのはここだけなので、毎回サイズを出しておく。
+    //
+    // 上限は接続先で変わる。Supabase Free は 500MB を超えると強制的に
+    // リードオンリーへ落ちるが、自前の Postgres ではディスクが尽きるまでが上限で、
+    // 桁がまるで違う。500 を決め打ちしたままだと「47%」のような無意味な警告を
+    // 出し続けることになるので、ホストで判定し、DB_SIZE_LIMIT_MB で上書きできる
+    // ようにする。分からないときは割合を出さない（嘘の分母を置かない）。
+    const dbHost = (() => {
+      try {
+        return new URL(connectionString!).hostname;
+      } catch {
+        return "";
+      }
+    })();
+    const supabaseLimitMb = /(^|\.)supabase\.(co|com)$/.test(dbHost) ? 500 : 0;
+    const limitMb = Number(process.env.DB_SIZE_LIMIT_MB) || supabaseLimitMb;
+
     const { rows: sizeRows } = await pool.query<{ mb: string }>(
       `SELECT round(pg_database_size(current_database()) / 1024.0 / 1024.0) AS mb`,
     );
     const usedMb = Number(sizeRows[0].mb);
-    const usedPct = Math.round((usedMb / FREE_PLAN_LIMIT_MB) * 100);
-    lines.push(
-      `| Database size | ${usedMb} MB / ${FREE_PLAN_LIMIT_MB} MB (${usedPct}%) |`,
-    );
-    if (usedPct >= 80) {
-      console.log(
-        `::warning::Database is at ${usedPct}% of the Supabase free plan limit. It goes read-only at ${FREE_PLAN_LIMIT_MB} MB.`,
+
+    if (limitMb > 0) {
+      const usedPct = Math.round((usedMb / limitMb) * 100);
+      lines.push(`| Database size | ${usedMb} MB / ${limitMb} MB (${usedPct}%) |`);
+      if (usedPct >= 80) {
+        console.log(
+          `::warning::Database is at ${usedPct}% of the ${limitMb} MB limit.`,
+        );
+      }
+    } else {
+      lines.push(`| Database size | ${usedMb} MB |`);
+      lines.push(
+        "| Size limit | 未設定（DB_SIZE_LIMIT_MB で指定すると割合と警告が出る） |",
       );
     }
 

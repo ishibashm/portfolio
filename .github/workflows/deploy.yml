@@ -82,6 +82,29 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      # リージョンは vars.GCP_REGION で切り替えられる作りになっているが、
+      # 変えただけでは動かない。Artifact Registry のリポジトリはリージョン単位で、
+      # 移設先には存在しないため docker push が "repository not found" で落ちる。
+      # 変数を変えるだけで移設が完結するよう、無ければここで作る。
+      - name: Ensure Artifact Registry repository exists
+        run: |-
+          if gcloud artifacts repositories describe "${{ env.REPOSITORY }}" \
+               --project="${{ env.PROJECT_ID }}" \
+               --location="${{ env.REGION }}" >/dev/null 2>&1; then
+            echo "Artifact Registry ${{ env.REPOSITORY }} は ${{ env.REGION }} に既にある。"
+          else
+            echo "Artifact Registry ${{ env.REPOSITORY }} を ${{ env.REGION }} に作る。"
+            if ! gcloud artifacts repositories create "${{ env.REPOSITORY }}" \
+                   --project="${{ env.PROJECT_ID }}" \
+                   --location="${{ env.REGION }}" \
+                   --repository-format=docker \
+                   --description="portfolio-app container images" \
+                   --quiet; then
+              echo "::error::Artifact Registry の作成に失敗した。サービスアカウントに roles/artifactregistry.admin が要る。先にコンソールで作っても構わない。"
+              exit 1
+            fi
+          fi
+
       - name: Docker Auth for Artifact Registry
         run: |-
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
@@ -113,3 +136,12 @@ jobs:
             --concurrency=80 \
             --allow-unauthenticated \
             --quiet
+
+          # リージョンを移すと URL が変わる。ドメインを付け替える前に新旧を
+          # 見比べる必要があるので、どこへ出たのかをサマリーに残す。
+          URL="$(gcloud run services describe "${{ env.SERVICE_NAME }}" \
+                   --project="${{ env.PROJECT_ID }}" \
+                   --region="${{ env.REGION }}" \
+                   --format='value(status.url)')"
+          echo "デプロイ先: ${{ env.REGION }}" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "サービス URL: $URL" | tee -a "$GITHUB_STEP_SUMMARY"
