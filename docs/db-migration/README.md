@@ -148,8 +148,80 @@ https://www.oracle.com/cloud/free/ から登録する。本人確認のためク
 | ブート・ボリューム | 100 GB（Always Free は合計 200GB まで） |
 | SSH キー | 生成して保存しておく（緊急時用。通常は使わない） |
 
-> **「Out of capacity」で失敗することがある。** ARM は人気で在庫が枯れやすい。
-> 時間をおいて再試行するか、別の可用性ドメインを選ぶ。
+> **「Out of capacity」で失敗する。** ARM は人気で在庫が枯れやすく、
+> 東京では実際にこれで止まった。**東京は可用性ドメインが 1 つしかない**ので、
+> 別のドメインに逃がす手は使えない。打てる手は次の 3 つ。
+>
+> 1. **シェイプを小さくする。** 4 OCPU / 24GB を 1 台で丸ごと取ろうとするのが
+>    見つからない最大の理由。2 OCPU / 12GB や 1 OCPU / 6GB は格段に通りやすい。
+>    重複排除後の DB は 213MB なので、6GB でも十分足りる。起動スクリプトは
+>    実メモリからチューニングするので、どの大きさでもそのまま動く
+> 2. **間隔を空けて再試行する。** ただし短周期で叩くと OCI が 429 を返し、
+>    かえって試行できなくなる。5 分以上空けること
+> 3. **Pay As You Go にアップグレードする。** Always Free 枠内なら請求は ¥0 の
+>    まま、在庫確保が通りやすくなる。確実に効くのはこれ
+
+### 6-A-2-1. 在庫が空くまで再試行する
+
+コンソールを何度も操作するより、Cloud Shell（OCI CLI が認証済み）から
+回すほうが楽。`prefectures` などの ID は自動で引く。
+
+```bash
+cat > ~/launch-db.sh <<'EOF'
+#!/bin/bash
+# 大きいシェイプから順に試し、在庫が無ければ小さいものへ落とす。
+# 間隔は詰めない。短周期で叩くと 429 が返って試行できなくなる。
+set -u
+C="$OCI_TENANCY"
+AD=$(oci iam availability-domain list --query 'data[0].name' --raw-output)
+IMG=$(oci compute image list --compartment-id "$C" \
+  --operating-system "Canonical Ubuntu" --operating-system-version "24.04" \
+  --shape VM.Standard.A1.Flex --sort-by TIMECREATED --query 'data[0].id' --raw-output)
+SUBNET=$(oci network subnet list --compartment-id "$C" \
+  --display-name portfolio-db-subnet --query 'data[0].id' --raw-output)
+[ -n "$SUBNET" ] && [ "$SUBNET" != "null" ] || { echo "サブネットが無い"; exit 1; }
+
+EXIST=$(oci compute instance list --compartment-id "$C" --display-name portfolio-db \
+  --lifecycle-state RUNNING --query 'data[0].id' --raw-output 2>/dev/null)
+if [ -n "$EXIST" ] && [ "$EXIST" != "null" ]; then echo "既に起動済み: $EXIST"; exit 0; fi
+
+try() {
+  oci compute instance launch --compartment-id "$C" --availability-domain "$AD" \
+    --shape VM.Standard.A1.Flex --shape-config "{\"ocpus\":$1,\"memoryInGBs\":$2}" \
+    --image-id "$IMG" --subnet-id "$SUBNET" --display-name portfolio-db \
+    --boot-volume-size-in-gbs 100 --assign-public-ip true \
+    --ssh-authorized-keys-file ~/.ssh/oci_db.pub --user-data-file ~/cloud-init.yaml \
+    --wait-for-state RUNNING 2>&1
+}
+
+DELAY=300
+MAX=1800
+for i in $(seq 1 1000); do
+  THROTTLED=0
+  for SHAPE in "4 24" "2 12" "1 6"; do
+    set -- $SHAPE
+    echo "[$i] $1 OCPU / $2 GB $(date +%H:%M:%S)"
+    OUT=$(try "$1" "$2") && { echo "$OUT"; echo "=== $1 OCPU / $2 GB で起動 ==="; exit 0; }
+    case "$OUT" in
+      *OutOfHostCapacity*|*"Out of host capacity"*) echo "    在庫切れ" ;;
+      *TooManyRequests*|*'"status": 429'*) echo "    429 レート制限"; THROTTLED=1 ;;
+      *) echo "$OUT" | tail -5; echo "=== 想定外のエラー。中断 ==="; exit 1 ;;
+    esac
+    sleep 20
+  done
+  [ "$THROTTLED" = 1 ] && { DELAY=$((DELAY * 2)); [ "$DELAY" -gt "$MAX" ] && DELAY=$MAX; }
+  sleep $((DELAY + RANDOM % 60))
+done
+EOF
+chmod +x ~/launch-db.sh
+~/launch-db.sh 2>&1 | tee -a ~/launch-db.log
+```
+
+冒頭で既存インスタンスを確認するので、**何度実行しても安全**。Cloud Shell が
+切れたら開き直して再実行すればよい。
+
+> SSH キーは Cloud Shell が FIPS モードのため ed25519 を作れない。
+> `ssh-keygen -t rsa -b 4096 -f ~/.ssh/oci_db -N "" -q` を使う。
 
 ### 6-A-3. 起動スクリプトを貼る
 

@@ -32,7 +32,7 @@ on:
         required: false
         default: false
       dedupe:
-        description: "同じ部屋の重複行をまとめる。apply は実際に削除する"
+        description: "同じ部屋の重複行をまとめる。apply は実際に削除する（定期実行は常に apply）"
         type: choice
         required: false
         options:
@@ -43,7 +43,7 @@ on:
       dedupe_key:
         description: "重複とみなす鍵（a=建物名のみ / b=+エリア / c=+住所）"
         required: false
-        default: "b"
+        default: "c"
 
 # スクレイプ中に次の実行が始まると同じ URL を二重 upsert しに行くので直列化する。
 concurrency:
@@ -186,11 +186,16 @@ jobs:
       # ジオコーディングより前に置く。同じ部屋の重複を先に落としておかないと、
       # 消す予定の行に対して住所検索を投げることになる。
       # 既定はドライラン。定期実行では件数を報告するだけで、消さない。
+      # 定期実行では実際に削除する。スクレイパーが毎日 upsert する以上、
+      # 重複は放っておけば必ず積み上がる。一度きりの掃除では戻ってしまう。
+      # 手で起動したときは既定をドライランのままにして、様子を見られるようにする。
       - name: Collapse duplicate listings of the same room
         if: ${{ inputs.dedupe != 'off' }}
         env:
-          DEDUPE_APPLY: ${{ inputs.dedupe == 'apply' }}
-          DEDUPE_KEY: ${{ inputs.dedupe_key || 'b' }}
+          DEDUPE_APPLY: ${{ inputs.dedupe == 'apply' || github.event_name == 'schedule' }}
+          # 既定は c。建物名だけを鍵にすると市が違えば別物の建物まで同一視する。
+          # 実測では c と b の削減率の差は 1% しかなく、安全側に倒す代償が無い。
+          DEDUPE_KEY: ${{ inputs.dedupe_key || 'c' }}
         run: npx -y tsx scripts/dedupe_rental_properties.ts
 
       - name: Geocode newly imported properties
