@@ -298,6 +298,20 @@ model rental_properties {
   expire_date        DateTime? @db.Timestamptz(6)
 }
 
+// 町丁目 → 座標の永続キャッシュ。geocode_properties.ts が作成・管理する
+// （スクリプト側に CREATE TABLE IF NOT EXISTS があるためマイグレーション不要）。
+// プロセス内キャッシュだけだと実行のたびに同じ町を国土地理院へ引き直し、
+// 仕事の総量が「行数」に比例してしまう。表に持てば総量は「町丁目の数」
+// （全国でも約19万）で頭打ちになる。ここに載せるのは db push が
+// この表を「スキーマに無いもの」として落とさないようにするため。
+model geocode_towns {
+  town       String   @id
+  lat        Float?
+  lon        Float?
+  not_found  Boolean  @default(false)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
 model RealEstateTarget {
   id             String   @id @default(cuid())
   title          String
