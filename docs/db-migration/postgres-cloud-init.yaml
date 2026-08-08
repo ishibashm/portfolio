@@ -131,9 +131,13 @@ runcmd:
   - sudo -u postgres psql -d portfolio -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
   - sudo -u postgres psql -d portfolio -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
-  # OCI の Ubuntu イメージは既定で 22 番以外を塞いでいる。5432 を開ける。
+  # OCI の Ubuntu イメージは既定で 22 番以外を REJECT で塞いでいる。5432 を開ける。
   # VCN 側のセキュリティリストでも別途開ける必要がある（手順書を参照）。
-  - iptables -I INPUT 6 -m state --state NEW -p tcp --dport 5432 -j ACCEPT
+  #
+  # 位置は固定で指定しない。「6 番目」と決め打ちしたら REJECT（5 番目）の
+  # 後ろに入ってしまい、一度も効かなかった。ルールの並びはイメージの版で
+  # 変わるので、REJECT の行番号を調べてその直前に挿す。
+  - R=$(iptables -L INPUT -n --line-numbers | awk '/REJECT/{print $1; exit}'); iptables -I INPUT "${R:-1}" -m state --state NEW -p tcp --dport 5432 -j ACCEPT
   - netfilter-persistent save
 
   # 毎日 18:00 UTC（翌 03:00 JST）にバックアップ
