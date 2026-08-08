@@ -77,23 +77,38 @@ HTTPS が通るまで数分〜30 分程度かかることがある。
 
 利用の少ない時間帯に行うこと。
 
-```bash
-# いまのマッピングを確認する
+#### まずアカウントを確かめる
+
+プロジェクトを作ったアカウントと、gcloud が認証しているアカウントが
+違っていると `Permission 'run.domainmappings.list' denied` で止まる。
+
+```
+gcloud auth list
+```
+
+`*` の付いた行が現在のアカウント。違っていたら切り替える。
+
+```
+gcloud config set account <プロジェクトの所有者のアカウント>
+```
+
+読み取りだけのコマンドで通ったことを確認してから先へ進む。
+
+```
+gcloud run services list --project=blog-471319 --region=asia-northeast1
+```
+
+#### 付け替える
+
+**コマンドはすべて 1 行で書いてある。** 行を折らないこと。継続文字は
+bash が `\`、PowerShell が `` ` `` で互換性がなく、折った瞬間に環境依存になる。
+
+```
 gcloud beta run domain-mappings list --project=blog-471319 --region=us-central1
-
-# 旧リージョンから外す（ドメインの数だけ繰り返す）
-gcloud beta run domain-mappings delete \
-  --domain=cloud-palette.com --project=blog-471319 --region=us-central1 --quiet
-gcloud beta run domain-mappings delete \
-  --domain=www.cloud-palette.com --project=blog-471319 --region=us-central1 --quiet
-
-# 新リージョンに付け直す
-gcloud beta run domain-mappings create \
-  --service=portfolio-app --domain=cloud-palette.com \
-  --project=blog-471319 --region=asia-northeast1
-gcloud beta run domain-mappings create \
-  --service=portfolio-app --domain=www.cloud-palette.com \
-  --project=blog-471319 --region=asia-northeast1
+gcloud beta run domain-mappings delete --domain=cloud-palette.com --project=blog-471319 --region=us-central1 --quiet
+gcloud beta run domain-mappings delete --domain=www.cloud-palette.com --project=blog-471319 --region=us-central1 --quiet
+gcloud beta run domain-mappings create --service=portfolio-app --domain=cloud-palette.com --project=blog-471319 --region=asia-northeast1
+gcloud beta run domain-mappings create --service=portfolio-app --domain=www.cloud-palette.com --project=blog-471319 --region=asia-northeast1
 ```
 
 DNS は変えない。`create` が表示するレコードが現在の設定と同じであることだけ
@@ -101,9 +116,8 @@ DNS は変えない。`create` が表示するレコードが現在の設定と�
 
 証明書が出るまでの状態は次で見られる。
 
-```bash
-gcloud beta run domain-mappings describe \
-  --domain=cloud-palette.com --project=blog-471319 --region=asia-northeast1
+```
+gcloud beta run domain-mappings describe --domain=cloud-palette.com --project=blog-471319 --region=asia-northeast1
 ```
 
 ### ⑤ 旧サービスを片付ける
@@ -112,11 +126,9 @@ gcloud beta run domain-mappings describe \
 切り戻しは `GCP_REGION` を `us-central1` に戻して再デプロイし、
 ドメインマッピングを戻すだけで済む。
 
-```bash
-# 落ち着いてから
+```
 gcloud run services delete portfolio-app --project=blog-471319 --region=us-central1 --quiet
-gcloud artifacts repositories delete portfolio-repo \
-  --project=blog-471319 --location=us-central1 --quiet
+gcloud artifacts repositories delete portfolio-repo --project=blog-471319 --location=us-central1 --quiet
 ```
 
 ## 変えなくてよいもの
