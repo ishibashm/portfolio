@@ -5,7 +5,9 @@ name: Check and reduce database size
 # 同じ処理は scrape-rentals の geocode ジョブにも入っているが、あちらは
 # ジオコーディングに 2 時間積んでいるため、容量を見たいだけ・減らしたいだけの
 # ときに 2.5 時間待つことになる。実行中はログも取り出せない。
-# 容量は 500MB の上限に張り付いていて即応が要るので、切り出しておく。
+# Supabase Free の 500MB に張り付いていた頃に、即応のため切り出した。
+# 自前の Postgres へ移した今は逼迫していないが、重複は毎日積み上がるので
+# 「今どうなっているか」を待たずに見られる窓口として残している。
 #
 # 既定はドライラン。何行減るかを出すだけで、消さない。
 #
@@ -97,4 +99,6 @@ jobs:
       # 削除の前後で比べられるように、最後にもう一度状態を出す。
       - name: Report freshness
         if: always()
+        env:
+          DB_SIZE_LIMIT_MB: "5120"
         run: npx -y tsx scripts/report_rental_freshness.ts
