@@ -18,25 +18,12 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+import { PREF_JP } from "../src/lib/scrapeTargets";
+
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
   : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
-
-const PREF_JP: Record<string, string> = {
-  aichi: "愛知県",
-  shizuoka: "静岡県",
-  mie: "三重県",
-  fukui: "福井県",
-  shiga: "滋賀県",
-  kyoto: "京都府",
-  osaka: "大阪府",
-  nara: "奈良県",
-  hyogo: "兵庫県",
-  tottori: "鳥取県",
-  shimane: "島根県",
-  hiroshima: "広島県",
-};
 
 // 掲載が少ない市区町村は相場の平均が当てにならないので落とす
 const MIN_ROWS = 30;
@@ -133,7 +120,28 @@ async function main() {
     ),
   );
 
+  // スキャナーの県プリセット用。areaDirections.json は 78KB あり、
+  // client コンポーネントに読ませるとそのままバンドルに乗る。県名だけの
+  // 小さな配列を別に吐いて、UI はこちらを読む。
+  //
+  // 対象県に足したばかりでまだ物件を取り切れていない県を、プリセットに
+  // 出しても 0 件になるだけなので、実際にデータが載った県だけを並べる。
+  //
+  // generatedAt は入れない。入れると毎晩必ず差分が出て、県の集合が変わって
+  // いないのにコミットが積まれる。県が増減したときだけ動く形にしておく。
+  const prefsWithData = [...new Set(filtered.map((a) => a.pref))].sort();
+  const prefsPath = path.join(outDir, "prefecturesWithData.json");
+  fs.writeFileSync(
+    prefsPath,
+    JSON.stringify(
+      { prefs: prefsWithData, areaCount: filtered.length },
+      null,
+      2,
+    ) + "\n",
+  );
+
   console.log(`書き出し: ${outPath}`);
+  console.log(`書き出し: ${prefsPath}（${prefsWithData.length} 県）`);
   console.log(`市区町村: ${filtered.length} 件`);
   console.table(filtered.slice(0, 10));
   await pool.end();

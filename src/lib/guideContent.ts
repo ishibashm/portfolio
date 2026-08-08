@@ -9,6 +9,32 @@
  * 本文をここに集約してページ側は描画だけにする。ページごとにベタ書きすると、
  * 選択肢が増えたときに更新漏れが出て、実画面と食い違う。
  */
+import prefecturesWithData from "@/data/prefecturesWithData.json";
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+
+/**
+ * エリア別ページの対応範囲。文章に直書きすると必ず腐る。実際に
+ * 「12の府県 / 220市区町村」と書いてあったが、実データは 313 市区町村だった。
+ * scripts/build_area_dataset.ts が毎晩吐く値から組み立てる。
+ */
+const COVERED_PREFS: string[] = (() => {
+  const order = new Map(SCRAPE_TARGETS.map((t, i) => [t.name, i]));
+  // レジストリ順（おおむね在庫の多い順）に並べる。載っていない県は後ろへ。
+  return [...prefecturesWithData.prefs].sort(
+    (a, b) =>
+      (order.get(a) ?? Number.MAX_SAFE_INTEGER) -
+      (order.get(b) ?? Number.MAX_SAFE_INTEGER),
+  );
+})();
+
+const AREA_COVERAGE_TITLE = `対応しているのは${COVERED_PREFS.length}の都道府県です`;
+
+const AREA_COVERAGE_BODY =
+  `エリア別ページがあるのは、` +
+  COVERED_PREFS.map((p) => p.replace(/[都道府県]$/, "")).join("・") +
+  `の**${prefecturesWithData.areaCount}市区町村**です。` +
+  `掲載物件が少ない地域は相場の平均が当てにならないため対象外で、` +
+  `取り込みが進んでいない都道府県のページもまだありません。`;
 
 export interface GuideTable {
   k: "table";
@@ -210,8 +236,8 @@ export const GUIDE_PAGES: GuidePage[] = [
       },
       {
         k: "note",
-        t: "対応しているのは12の府県です",
-        body: "エリア別ページがあるのは、大阪・愛知・兵庫・静岡・京都・広島・三重・滋賀・奈良・福井・島根・鳥取の**220市区町村**です。掲載物件が少ない地域は対象外のため、東京や福岡のページはありません。",
+        t: AREA_COVERAGE_TITLE,
+        body: AREA_COVERAGE_BODY,
       },
       { k: "cta", href: "/houi", label: "本命星と吉方位を調べる" },
     ],

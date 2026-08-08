@@ -104,28 +104,30 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 
 import dynamic from "next/dynamic";
 
+import prefecturesWithData from "@/data/prefecturesWithData.json";
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+
 /**
- * スクレイパーが取り込んでいる都道府県と、選択時に地図を寄せる代表座標。
+ * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
  *
- * 以前は愛知・岐阜・滋賀の3件がハードコードされていた。岐阜は取り込み対象外で
- * パージ済みのため0件、逆に最大在庫の大阪が選べない状態だった。
- * scripts/purge_rental_properties.ts の TARGET_PREFECTURES と揃えること。
+ * 以前はここに県名を直書きし、scripts/purge_rental_properties.ts と手で
+ * 揃える運用だった。揃わずに、対象外でパージ済みの岐阜が選択肢に残って0件を
+ * 返し、逆に最大在庫の大阪が選べない状態になっていた。対象県は
+ * src/lib/scrapeTargets.ts を唯一の情報源にして、ここはそれを引くだけにする。
+ *
+ * さらに、対象に足したばかりでまだ物件を取り切れていない県を出しても0件に
+ * なるだけなので、実際にデータが載った県だけに絞る。この一覧は
+ * scripts/build_area_dataset.ts が毎晩吐き直すので、取り込みが進めば自動で
+ * 増える。areaDirections.json は78KBあり client バンドルに乗せられないため、
+ * 県名だけの小さな JSON を別に持っている。
+ *
  * 件数はデータが日々動くので出さない（古い数字が残ると誤解のもとになる）。
  */
-const TARGET_PREFECTURES = [
-  { name: "愛知県", lat: 35.1815, lon: 136.9064 },
-  { name: "静岡県", lat: 34.9769, lon: 138.3831 },
-  { name: "三重県", lat: 34.7303, lon: 136.5086 },
-  { name: "福井県", lat: 36.0652, lon: 136.2216 },
-  { name: "滋賀県", lat: 35.0045, lon: 135.8686 },
-  { name: "京都府", lat: 35.0212, lon: 135.7556 },
-  { name: "大阪府", lat: 34.6863, lon: 135.52 },
-  { name: "奈良県", lat: 34.6851, lon: 135.8329 },
-  { name: "兵庫県", lat: 34.6913, lon: 135.183 },
-  { name: "鳥取県", lat: 35.5039, lon: 134.2377 },
-  { name: "島根県", lat: 35.4723, lon: 133.0505 },
-  { name: "広島県", lat: 34.3966, lon: 132.4596 },
-];
+const PREFS_WITH_DATA = new Set<string>(prefecturesWithData.prefs);
+const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
+  // 生成が一度も走っていない場合に選択肢が空になるのは避ける
+  (t) => PREFS_WITH_DATA.size === 0 || PREFS_WITH_DATA.has(t.name),
+).map((t) => ({ name: t.name, lat: t.lat, lon: t.lon }));
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
