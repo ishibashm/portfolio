@@ -32,6 +32,12 @@ if (!connectionString) {
 const APPLY = process.env.DEDUPE_APPLY === "true";
 // 1 文で 60 万行消すと WAL が膨らむ。刻んで消して、最後にまとめて VACUUM する。
 const BATCH = parseInt(process.env.DEDUPE_BATCH || "20000", 10);
+// これ以上消したときだけ VACUUM FULL を打つ。日々の実行で数千行のために
+// テーブル全体を止めるのは割に合わない。
+const VACUUM_FULL_MIN = parseInt(
+  process.env.DEDUPE_VACUUM_FULL_MIN || "50000",
+  10,
+);
 
 /**
  * まとめ方の候補。
@@ -260,8 +266,20 @@ async function main() {
 
     // DELETE だけでは領域が OS に返らず pg_database_size も縮まない。
     // Supabase の 500MB クォータはこのサイズで判定されるため VACUUM FULL が要る。
-    console.log("Running VACUUM FULL to reclaim the space...");
-    await pool.query("VACUUM (FULL, ANALYZE) rental_properties");
+    //
+    // ただし VACUUM FULL はテーブル全体を書き直し、その間 ACCESS EXCLUSIVE を
+    // 握る。毎日動かす前提だと、数千行のために全体を止めることになる。
+    // 削除がわずかなら通常の VACUUM で済ませる。領域は OS には返らないが
+    // テーブル内で再利用されるので、日々の増減が釣り合っていればサイズは動かない。
+    if (deleted === 0) {
+      console.log("削除なし。VACUUM は省略する。");
+    } else if (deleted < VACUUM_FULL_MIN) {
+      console.log(`Running VACUUM (${deleted} 行なので FULL にしない)...`);
+      await pool.query("VACUUM (ANALYZE) rental_properties");
+    } else {
+      console.log("Running VACUUM FULL to reclaim the space...");
+      await pool.query("VACUUM (FULL, ANALYZE) rental_properties");
+    }
 
     const sizeAfter = (
       await q(
