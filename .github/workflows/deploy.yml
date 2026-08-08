@@ -26,6 +26,7 @@ jobs:
       - name: Create .env from Secret required for Build
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
           # Next.js derives Server Action IDs from this key. Generating a fresh
           # random key per deploy invalidated every action ID held by an already
           # loaded browser tab, which surfaced as "Server Action ... was not found
@@ -48,6 +49,7 @@ jobs:
             exit 1
           fi
           echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
           echo "" >> .env
           echo "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY=$SERVER_ACTIONS_KEY" >> .env
           if [ -n "$ADSENSE_ID" ]; then

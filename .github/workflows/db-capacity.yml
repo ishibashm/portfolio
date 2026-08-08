@@ -67,12 +67,14 @@ jobs:
       - name: Create .env from Secret
         env:
           ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
         run: |
           if [ -z "$ENV_FILE_CONTENT" ]; then
             echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
             exit 1
           fi
           echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
 
       - name: Generate Prisma Client
         run: npx prisma generate
