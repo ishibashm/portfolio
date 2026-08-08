@@ -229,9 +229,22 @@ jobs:
           say "| --- | ---: | ---: | --- |"
 
           FAILED=0
+          # 判定は「一致」ではなく「欠けていない」で行う。
+          # pg_dump のスナップショットは基準の件数を数えた直後に取られるので、
+          # その間に入った行は dump に含まれ、移行先が基準より多くなる。
+          # これは正常な状態で、完全一致を求めると書き込みが 1 行でもある限り
+          # 永久に緑にならない。守りたいのは restore で行が落ちていないこと。
           while read -r T A; do
             B=$(psql "$DST" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
-            if [ "$A" = "$B" ]; then MARK="✅"; else MARK="❌"; FAILED=1; fi
+            if [ "$B" = "-" ] || [ "$A" = "-" ]; then
+              MARK="❌ 表が無い"; FAILED=1
+            elif [ "$B" -lt "$A" ]; then
+              MARK="❌ $((A - B)) 行欠けている"; FAILED=1
+            elif [ "$B" -gt "$A" ]; then
+              MARK="✅ (+$((B - A)) 行、dump 中の追加)"
+            else
+              MARK="✅"
+            fi
             say "| $T | $A | $B | $MARK |"
           done < src_counts.txt
 
