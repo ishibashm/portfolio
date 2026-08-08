@@ -25,32 +25,56 @@ packages:
   - iptables-persistent
 
 write_files:
-  # ---- チューニング（24GB RAM 前提） ----
-  # 既定値は 128MB 程度のマシンを想定した保守的な値なので、そのままだと
-  # 24GB あっても使い切れない。物件検索は percentile_cont と
+  # ---- チューニング ----
+  # 既定値は 128MB 程度のマシンを想定した保守的な値なので、そのままでは
+  # 割り当てたメモリを使い切れない。物件検索は percentile_cont と
   # ウィンドウ関数で数十万行を集計するため、work_mem を厚めに取る。
-  - path: /etc/postgresql/16/main/conf.d/tuning.conf
-    permissions: "0644"
+  #
+  # 値を固定で書かず、実メモリから決める。ARM の在庫が枯れていて
+  # 4 OCPU / 24GB が取れず小さいシェイプになった場合でも、
+  # そのまま起動できるようにするため（固定値だと shared_buffers が
+  # 実メモリを超えて PostgreSQL が起動しない）。
+  - path: /usr/local/bin/pg-tune.sh
+    permissions: "0755"
     content: |
+      #!/bin/bash
+      set -euo pipefail
+      TOTAL_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo)
+      CPUS=$(nproc)
+
+      # 共有バッファは全体の 1/4 が定石
+      SHARED=$((TOTAL_MB / 4))
+      # OS のページキャッシュぶんも含めた「実質使えるキャッシュ量」の見積り
+      CACHE=$((TOTAL_MB * 70 / 100))
+
+      MAINT=$((TOTAL_MB / 16))
+      [ "$MAINT" -gt 2048 ] && MAINT=2048
+
+      # 1 ソート/ハッシュあたり。接続数ぶん同時に確保されうるので抑えめに取る。
+      # 中央値の算出がディスクに溢れない程度は欲しいので下限を置く。
+      WORK=$((TOTAL_MB / 64))
+      [ "$WORK" -lt 4 ] && WORK=4
+      [ "$WORK" -gt 64 ] && WORK=64
+
+      GATHER=$((CPUS / 2))
+      [ "$GATHER" -lt 1 ] && GATHER=1
+
+      cat > /etc/postgresql/16/main/conf.d/tuning.conf <<EOF
       listen_addresses = '*'
       max_connections = 100
 
-      # 全体の 1/4 を共有バッファに。DB 全体（〜2GB）が余裕で載る
-      shared_buffers = 6GB
-      # OS のページキャッシュぶんも含めた「実質使えるキャッシュ量」の見積り
-      effective_cache_size = 18GB
-      maintenance_work_mem = 2GB
-
-      # 1 ソート/ハッシュあたり。中央値の算出がディスクに溢れないように取る
-      work_mem = 64MB
+      shared_buffers = ${SHARED}MB
+      effective_cache_size = ${CACHE}MB
+      maintenance_work_mem = ${MAINT}MB
+      work_mem = ${WORK}MB
 
       # ブロックストレージは SSD。既定の 4.0 だと索引が使われにくい
       random_page_cost = 1.1
       effective_io_concurrency = 200
 
-      max_worker_processes = 4
-      max_parallel_workers = 4
-      max_parallel_workers_per_gather = 2
+      max_worker_processes = ${CPUS}
+      max_parallel_workers = ${CPUS}
+      max_parallel_workers_per_gather = ${GATHER}
 
       wal_compression = on
       checkpoint_timeout = 15min
@@ -62,6 +86,8 @@ write_files:
       # 遅いクエリを記録して、後から詰められるようにする
       log_min_duration_statement = 3000
       log_line_prefix = '%m [%p] %q%u@%d '
+      EOF
+      echo "tuned for ${TOTAL_MB}MB RAM / ${CPUS} cpu"
 
   # ---- 接続元の制御 ----
   # 外からの接続は SSL かつ scram-sha-256 のみ許可する。
@@ -88,6 +114,9 @@ write_files:
       echo "backup done: $STAMP"
 
 runcmd:
+  # 実メモリに合わせた設定を書き出す。シェイプが変わってもこのまま動く
+  - /usr/local/bin/pg-tune.sh | tee /var/log/pg-tune.log
+
   # 認証方式を scram-sha-256 に上げてから初期化する
   - sed -i "s/^#password_encryption.*/password_encryption = scram-sha-256/" /etc/postgresql/16/main/postgresql.conf
   - cat /etc/postgresql/16/main/conf.d/hba.conf.append >> /etc/postgresql/16/main/pg_hba.conf
