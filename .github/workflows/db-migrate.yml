@@ -69,24 +69,28 @@ jobs:
             exit 1
           fi
 
-          echo "## 移行元" >> $GITHUB_STEP_SUMMARY
-          psql "$SRC" -At -c "SELECT 'version: ' || version();" >> $GITHUB_STEP_SUMMARY
-          psql "$SRC" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
-          psql "$SRC" -At -c "SELECT 'rental_properties: ' || count(*) FROM rental_properties;" >> $GITHUB_STEP_SUMMARY
+          # サマリーとログの両方に出す。サマリーは画面では読めるが API からは
+          # 取れないため、それだけだと実行結果を後から機械的に確認できない。
+          say() { echo "$*" | tee -a "$GITHUB_STEP_SUMMARY"; }
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 移行先" >> $GITHUB_STEP_SUMMARY
-          psql "$DST" -At -c "SELECT 'version: ' || version();" >> $GITHUB_STEP_SUMMARY
-          psql "$DST" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
+          say "## 移行元"
+          say "$(psql "$SRC" -At -c "SELECT 'version: ' || version();")"
+          say "$(psql "$SRC" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));")"
+          say "$(psql "$SRC" -At -c "SELECT 'rental_properties: ' || count(*) FROM rental_properties;")"
+
+          say ""
+          say "## 移行先"
+          say "$(psql "$DST" -At -c "SELECT 'version: ' || version();")"
+          say "$(psql "$DST" -At -c "SELECT 'size: ' || pg_size_pretty(pg_database_size(current_database()));")"
           # 空であることを確認する。既存データがあると restore が衝突する
           TABLES=$(psql "$DST" -At -c "SELECT count(*) FROM information_schema.tables WHERE table_schema='public';")
-          echo "移行先の public スキーマのテーブル数: $TABLES" >> $GITHUB_STEP_SUMMARY
+          say "移行先の public スキーマのテーブル数: $TABLES"
           if [ "$TABLES" != "0" ] && [ "${{ inputs.mode }}" = "migrate" ]; then
             echo "::warning::移行先にテーブルが $TABLES 個ある。--clean で上書きされる。"
           fi
 
           # 拡張が入っているか。無いと restore が必ず失敗する
-          psql "$DST" -At -c "SELECT 'extensions: ' || string_agg(extname, ', ') FROM pg_extension;" >> $GITHUB_STEP_SUMMARY
+          say "$(psql "$DST" -At -c "SELECT 'extensions: ' || string_agg(extname, ', ') FROM pg_extension;")"
 
       - name: Dump
         if: ${{ inputs.mode == 'migrate' }}
@@ -126,26 +130,30 @@ jobs:
           # 統計情報を作る。無いと初回のクエリが極端に遅い
           psql "$DST" -c "ANALYZE;" > /dev/null
 
-          echo "## 突き合わせ" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| テーブル | 移行元 | 移行先 | 判定 |" >> $GITHUB_STEP_SUMMARY
-          echo "| --- | ---: | ---: | --- |" >> $GITHUB_STEP_SUMMARY
+          # 突き合わせの結果はログにも出す。サマリーは API から取れないため、
+          # ここだけに書くと移行が成功したかを後から機械的に確認できない。
+          say() { echo "$*" | tee -a "$GITHUB_STEP_SUMMARY"; }
+
+          say "## 突き合わせ"
+          say ""
+          say "| テーブル | 移行元 | 移行先 | 判定 |"
+          say "| --- | ---: | ---: | --- |"
 
           FAILED=0
           for T in rental_properties user_configs "MunicipalityWealth" "AgentTheme" "RelocationSimulation"; do
             A=$(psql "$SRC" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
             B=$(psql "$DST" -At -c "SELECT count(*) FROM \"$T\";" 2>/dev/null || echo "-")
             if [ "$A" = "$B" ]; then MARK="✅"; else MARK="❌"; FAILED=1; fi
-            echo "| $T | $A | $B | $MARK |" >> $GITHUB_STEP_SUMMARY
+            say "| $T | $A | $B | $MARK |"
           done
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          psql "$DST" -At -c "SELECT '移行先のサイズ: ' || pg_size_pretty(pg_database_size(current_database()));" >> $GITHUB_STEP_SUMMARY
+          say ""
+          say "$(psql "$DST" -At -c "SELECT '移行先のサイズ: ' || pg_size_pretty(pg_database_size(current_database()));")"
 
           # 索引が無いと物件検索が実用にならない。数だけでも比べる
           IA=$(psql "$SRC" -At -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public';")
           IB=$(psql "$DST" -At -c "SELECT count(*) FROM pg_indexes WHERE schemaname='public';")
-          echo "索引の数: 移行元 $IA / 移行先 $IB" >> $GITHUB_STEP_SUMMARY
+          say "索引の数: 移行元 $IA / 移行先 $IB"
           [ "$IA" = "$IB" ] || { echo "::warning::索引の数が一致しない。"; FAILED=1; }
 
           if [ "$FAILED" != "0" ]; then
