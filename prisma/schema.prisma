@@ -296,6 +296,22 @@ model rental_properties {
   // Nifty が返す掲載期限。掲載が終わった物件のリンクは 404 になるため、
   // ここを過ぎたものはスキャナーから外し、purge で削除する。
   expire_date        DateTime? @db.Timestamptz(6)
+
+  // スキャナー（/api/rentals/arbitrage）の絞り込みに使う列。
+  //
+  // このテーブルだけインデックスが 1 つも無く、112 万行に対して毎回
+  // シーケンシャルスキャンが走っていた。とくに鮮度表示のための
+  // max(last_seen_at) は絞り込み条件を持たないので、リクエストごとに
+  // 全行を読んでいた。
+  //
+  // prisma db push はスキーマに無いインデックスを削除する。手で作らず
+  // 必ずここに書くこと（run-seed.yml が db push を実行する）。
+  @@index([last_seen_at])
+  @@index([lat, lon])
+  // 都道府県での絞り込みは address LIKE '兵庫県%' の前方一致。
+  // 既定の照合順序では通常の btree が前方一致に使われないため、
+  // 演算子クラスを指定する。
+  @@index([address(ops: raw("text_pattern_ops"))])
 }
 
 // 町丁目 → 座標の永続キャッシュ。geocode_properties.ts が作成・管理する
