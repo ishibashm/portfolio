@@ -2217,6 +2217,175 @@ export default function ArbitrageScannerPage() {
                     </div>
                   </div>
 
+                  {/* Filter Criteria Panel */}
+                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
+                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
+                      絞り込みフィルター
+                    </h3>
+
+                    {/* Search query input */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        物件名・住所検索
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-500" />
+                        <input
+                          type="text"
+                          placeholder="物件名・住所で検索..."
+                          value={filterName}
+                          onChange={handleFilterNameChange}
+                          className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Status Select */}
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="arb-status"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                      >
+                        吉凶ステータス
+                      </label>
+                      <select
+                        id="arb-status"
+                        value={filterStatus}
+                        onChange={handleFilterStatusChange}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="ALL">全ステータス</option>
+                        <option value="OPTIMAL">OPTIMAL (大吉)</option>
+                        <option value="SAFE">SAFE (吉)</option>
+                        <option value="NOISE">NOISE (凶)</option>
+                      </select>
+                    </div>
+
+                    {/* 方位で絞る。吉日カレンダーからの導線でここが埋まる。 */}
+                    <div className="space-y-1">
+                      <label
+                        htmlFor="arb-direction"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                        title="現住地から見た方位で物件を絞ります。方位を決めてから物件を選ぶときに使います。"
+                      >
+                        方位で絞る
+                      </label>
+                      <select
+                        id="arb-direction"
+                        value={filterDirection}
+                        onChange={(e) => {
+                          setFilterDirection(e.target.value);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                      >
+                        <option value="ALL">全方位</option>
+                        {ALL_DIRECTIONS.map((d) => (
+                          <option key={d} value={d}>
+                            {DIRECTION_LABELS[d]}（{d}）
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Rent & Age & Yield filters */}
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          総家賃上限 (万円)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 15"
+                          value={filterMaxRent}
+                          onChange={(e) => {
+                            setFilterMaxRent(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          築年数上限 (年)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 15"
+                          value={filterMaxAge}
+                          onChange={(e) => {
+                            setFilterMaxAge(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          駅徒歩上限 (分)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 10"
+                          value={filterMaxStation}
+                          onChange={(e) => {
+                            setFilterMaxStation(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          専有面積下限 (㎡)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 40"
+                          value={filterMinSize}
+                          onChange={(e) => {
+                            setFilterMinSize(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                          最小利回り偏差値
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 60"
+                          value={filterMinYield}
+                          onChange={(e) => {
+                            setFilterMinYield(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label
+                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                          title="現在の重み配分で計算した総合スコアの下限。重みを変えると同じ値でも通る物件が変わる。"
+                        >
+                          総合スコア下限
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="例: 60"
+                          value={filterMinTotal}
+                          onChange={(e) => {
+                            setFilterMinTotal(e.target.value);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* 同行者パネル。
                       合流する親族のように、別の出発地から同じ移転先へ動く人を
                       足すと、全員ぶんの方位をまとめて判定する。 */}
@@ -2701,175 +2870,6 @@ export default function ArbitrageScannerPage() {
                       />
                       避けるべき方位・期間の物件を最下位に沈める
                     </label>
-                  </div>
-
-                  {/* Filter Criteria Panel */}
-                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
-                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
-                      絞り込みフィルター
-                    </h3>
-
-                    {/* Search query input */}
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                        物件名・住所検索
-                      </label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-500" />
-                        <input
-                          type="text"
-                          placeholder="物件名・住所で検索..."
-                          value={filterName}
-                          onChange={handleFilterNameChange}
-                          className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Status Select */}
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="arb-status"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
-                      >
-                        吉凶ステータス
-                      </label>
-                      <select
-                        id="arb-status"
-                        value={filterStatus}
-                        onChange={handleFilterStatusChange}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
-                      >
-                        <option value="ALL">全ステータス</option>
-                        <option value="OPTIMAL">OPTIMAL (大吉)</option>
-                        <option value="SAFE">SAFE (吉)</option>
-                        <option value="NOISE">NOISE (凶)</option>
-                      </select>
-                    </div>
-
-                    {/* 方位で絞る。吉日カレンダーからの導線でここが埋まる。 */}
-                    <div className="space-y-1">
-                      <label
-                        htmlFor="arb-direction"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
-                        title="現住地から見た方位で物件を絞ります。方位を決めてから物件を選ぶときに使います。"
-                      >
-                        方位で絞る
-                      </label>
-                      <select
-                        id="arb-direction"
-                        value={filterDirection}
-                        onChange={(e) => {
-                          setFilterDirection(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
-                      >
-                        <option value="ALL">全方位</option>
-                        {ALL_DIRECTIONS.map((d) => (
-                          <option key={d} value={d}>
-                            {DIRECTION_LABELS[d]}（{d}）
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Rent & Age & Yield filters */}
-                    <div className="grid grid-cols-2 gap-3.5">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          総家賃上限 (万円)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 15"
-                          value={filterMaxRent}
-                          onChange={(e) => {
-                            setFilterMaxRent(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          築年数上限 (年)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 15"
-                          value={filterMaxAge}
-                          onChange={(e) => {
-                            setFilterMaxAge(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          駅徒歩上限 (分)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 10"
-                          value={filterMaxStation}
-                          onChange={(e) => {
-                            setFilterMaxStation(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          専有面積下限 (㎡)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 40"
-                          value={filterMinSize}
-                          onChange={(e) => {
-                            setFilterMinSize(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          最小利回り偏差値
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 60"
-                          value={filterMinYield}
-                          onChange={(e) => {
-                            setFilterMinYield(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label
-                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
-                          title="現在の重み配分で計算した総合スコアの下限。重みを変えると同じ値でも通る物件が変わる。"
-                        >
-                          総合スコア下限
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 60"
-                          value={filterMinTotal}
-                          onChange={(e) => {
-                            setFilterMinTotal(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   {/* TOP 5 お買い得アコーディオン (HTML5 details) */}
