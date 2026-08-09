@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { SmartFilters } from "@/utils/smartSearch";
+import {
+  DailyCounter,
+  TokenBucket,
+  TtlCache,
+  clientKey,
+  isSameOrigin,
+} from "@/lib/apiGuard";
+import {
+  SmartFilters,
+  hasStructuredFilters,
+  parseSmartQuery,
+} from "@/utils/smartSearch";
 
 /**
  * 純粋な自然文の検索語を、絞り込み条件へ解釈する。
@@ -10,6 +21,20 @@ import { SmartFilters } from "@/utils/smartSearch";
  * 2LDK・徒歩10分…）はクライアント側の正規表現で即時・無料で解釈できる
  * ので、LLM に投げない。トークン代と往復の待ちを、曖昧な入力にだけ払う。
  *
+ * ここは従量課金の外部 API を叩く唯一のルートで、middleware の認証の外に
+ * ある（/api は isInternal 扱い）。つまり誰でも叩ける。クライアント側の
+ * 「定型表現なら LLM を使わない」という判断は、直接 POST すれば素通りする
+ * ので、費用の歯止めとしては数えない。歯止めはこのファイルの中に置く。
+ *
+ *   0. 同一オリジンでない POST を弾く
+ *   1. 決定的パーサをサーバー側でもう一度かける（構造が取れたら課金しない）
+ *   2. 同じ問い合わせはキャッシュから返す
+ *   3. 相手ごとに連打を止める
+ *   4. 1 日の総数に天井を作る。超えたら LLM を使わず素通りさせる
+ *
+ * 1〜4 のどれで止めても、機能が落ちるだけで検索は成立する。上限に当たった
+ * 利用者にはキーワード検索として扱われた結果が返る。
+ *
  * ANTHROPIC_API_KEY が無い環境では 501 を返し、クライアントは
  * キーワード検索へ静かに落ちる。この機能が無くても検索は成立する。
  */
@@ -17,6 +42,23 @@ import { SmartFilters } from "@/utils/smartSearch";
 export const runtime = "nodejs";
 
 const MODEL = "claude-haiku-4-5";
+
+/**
+ * 1 日の呼び出し上限（1 インスタンスあたり）。Cloud Run は max-instances=2
+ * なので実効は最大その 2 倍。Haiku 4.5 で 1 回あたり入力 ~600 / 出力 ~100
+ * トークン、$1.00 / $5.00 per 1M として概ね $0.0011。既定の 500 回なら
+ * 最悪でも 1000 回 ≒ $1.1/日 で頭打ちになる。
+ */
+const DAILY_LIMIT = Number(process.env.PARSE_QUERY_DAILY_LIMIT ?? 500);
+
+/** 同じ相手からは 5 連射まで、その後は 20 秒に 1 回だけ回復する */
+const bucket = new TokenBucket(5, 1 / 20_000);
+const daily = new DailyCounter(DAILY_LIMIT);
+/** 同じ文面は 1 時間使い回す。流行りの言い回しで何度も払わない */
+const cache = new TtlCache<SmartFilters>(60 * 60 * 1000, 500);
+
+/** LLM に回す価値のない短文は決定的パーサで十分。クライアント側と同じ閾値 */
+const MIN_LLM_QUERY_LEN = 8;
 
 const TOOL = {
   name: "set_search_filters",
@@ -59,11 +101,21 @@ const TOOL = {
   },
 } as const;
 
+/** キャッシュの鍵。表記ゆれで取りこぼさない程度に均す */
+function cacheKey(query: string): string {
+  return query.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     // 501 Not Implemented: この環境では自然文の解釈を提供していない。
     return NextResponse.json({ available: false }, { status: 501 });
+  }
+
+  // 0. 自分のページからの呼び出しに限る。
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   let query: string;
@@ -73,8 +125,58 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "bad request" }, { status: 400 });
   }
-  if (!query.trim()) {
+  query = query.trim();
+  if (!query) {
     return NextResponse.json({ error: "empty query" }, { status: 400 });
+  }
+
+  // 1. 無料で解ける入力に金を払わない。クライアントを信用せずここで判定する。
+  const local = parseSmartQuery(query);
+  if (hasStructuredFilters(local) || query.length < MIN_LLM_QUERY_LEN) {
+    return NextResponse.json({
+      available: true,
+      source: "local",
+      filters: local,
+    });
+  }
+
+  // 2. 同じ文面は前の答えを返す。
+  const key = cacheKey(query);
+  const now = Date.now();
+  const cached = cache.get(key, now);
+  if (cached) {
+    return NextResponse.json({
+      available: true,
+      source: "cache",
+      filters: cached,
+    });
+  }
+
+  // 3. 連打を止める。ここで返すのも「解釈できなかった」扱いにして、
+  //    画面はキーワード検索へ落ちる（エラー表示にはしない）。
+  if (!bucket.take(clientKey(req.headers), now)) {
+    return NextResponse.json(
+      { available: false, reason: "rate_limited", filters: local },
+      {
+        status: 429,
+        headers: {
+          "retry-after": String(
+            Math.max(1, bucket.retryAfterSec(clientKey(req.headers), now)),
+          ),
+        },
+      },
+    );
+  }
+
+  // 4. 1 日の天井。届いたら LLM を使わずキーワード検索として返す。
+  //    落ちる側に倒す（fail closed）。上限を超えて課金され続けるより、
+  //    自然文の解釈だけが今日は効かない、という状態のほうが望ましい。
+  if (!daily.tryConsume(now)) {
+    return NextResponse.json({
+      available: false,
+      reason: "daily_limit",
+      filters: local,
+    });
   }
 
   try {
@@ -87,7 +189,8 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 500,
+        // 返るのは検索条件の JSON だけ。出力は $5/1M と入力の 5 倍なので絞る。
+        max_tokens: 300,
         // 曖昧な希望を検索条件に落とすだけ。会話はさせない。
         system:
           "あなたは賃貸検索の条件解釈だけを行う。ユーザーの希望文から" +
@@ -103,14 +206,22 @@ export async function POST(req: NextRequest) {
     });
 
     if (!res.ok) {
-      return NextResponse.json({ available: false }, { status: 502 });
+      // 課金が起きていない見込みのぶんは日次カウントに戻す。
+      if (res.status >= 500 || res.status === 429) daily.refund(now);
+      return NextResponse.json(
+        { available: false, filters: local },
+        { status: 502 },
+      );
     }
     const data = await res.json();
     const toolUse = (data?.content ?? []).find(
       (b: { type: string }) => b.type === "tool_use",
     );
     if (!toolUse?.input) {
-      return NextResponse.json({ available: false }, { status: 502 });
+      return NextResponse.json(
+        { available: false, filters: local },
+        { status: 502 },
+      );
     }
 
     const input = toolUse.input as Partial<SmartFilters>;
@@ -131,9 +242,15 @@ export async function POST(req: NextRequest) {
         ? input.keywords.map(String).slice(0, 5)
         : [],
     };
-    return NextResponse.json({ available: true, filters });
+    cache.set(key, filters, now);
+    return NextResponse.json({ available: true, source: "llm", filters });
   } catch {
-    return NextResponse.json({ available: false }, { status: 502 });
+    // タイムアウト・接続断。応答を受け取れていないので戻す。
+    daily.refund(now);
+    return NextResponse.json(
+      { available: false, filters: local },
+      { status: 502 },
+    );
   }
 }
 
