@@ -3,8 +3,9 @@ name: Apply DB indexes
 # rental_properties にスキャナー用のインデックスを張る。
 #
 # このテーブルだけインデックスが 1 つも無く（主キーの uuid と url の unique のみ）、
-# 112 万行に対して毎回シーケンシャルスキャンが走っていた。とくに鮮度表示の
-# max(last_seen_at) は絞り込み条件を持たないため、リクエストごとに全行を読む。
+# 絞り込みに使う列が無索引で、シーケンシャルスキャンになっていた。とくに
+# 鮮度表示の max(last_seen_at) は絞り込み条件を持たないため、リクエストごとに
+# 全行を読む（2026-08-09 の実測で 45 万行・225MB、130 ms）。
 #
 # 手元から DB に繋げなくても当てられるように、ランナー上で psql を回す。
 # 接続情報は Secret の ENV_FILE から取るので、実行者の手元にもログにも出ない。
@@ -43,6 +44,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # 実クエリの計測に scripts/explain_arbitrage_query.ts を使う。
+      # pg と dotenv が要るので依存を入れる。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
 
       - name: Install PostgreSQL client 17
         run: |
@@ -121,15 +132,21 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # 索引の有無で最も差が出るクエリ。スキャン 1 回ごとに必ず走り、
-      # 絞り込み条件を持たないので全行を読む。ここの実行時間が改善の指標。
-      - name: Measure max(last_seen_at)
+      # スキャナーが実際に投げる 4 本を、API と同じ SQL 生成関数から組み立てて
+      # 測る。どれが重いのかを推測せずに決めるため。
+      #
+      # prefecture=all は絞り込みが最も緩い最悪ケース。ここが許容範囲なら
+      # 個別の県はそれより速い。
+      - name: Measure the real scanner queries (before)
+        env:
+          EXPLAIN_PREFECTURE: all
+          EXPLAIN_TIMEOUT_MS: "120000"
         run: |
           set -euo pipefail
           {
-            echo "## max(last_seen_at) の実行計画"
+            echo "## 実行前：スキャナーの実クエリ"
             echo '```'
-            psql "$PGURL" -c "EXPLAIN (ANALYZE, BUFFERS, TIMING) SELECT max(last_seen_at) FROM rental_properties;"
+            npx -y tsx scripts/explain_arbitrage_query.ts
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
@@ -153,9 +170,20 @@ jobs:
                      || '  ' || pg_size_pretty(pg_relation_size(indexrelid))
                 FROM pg_index WHERE indrelid = 'rental_properties'::regclass;"
             echo '```'
-            echo "### 張り直した後の max(last_seen_at)"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 前と同じ 4 本を測り直す。どれがどれだけ縮んだかが並ぶ。
+      - name: Measure the real scanner queries (after)
+        if: ${{ inputs.mode == 'apply' }}
+        env:
+          EXPLAIN_PREFECTURE: all
+          EXPLAIN_TIMEOUT_MS: "120000"
+        run: |
+          set -euo pipefail
+          {
+            echo "## 実行後：スキャナーの実クエリ"
             echo '```'
-            psql "$PGURL" -c "EXPLAIN (ANALYZE, BUFFERS, TIMING) SELECT max(last_seen_at) FROM rental_properties;"
+            npx -y tsx scripts/explain_arbitrage_query.ts
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
