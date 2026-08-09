@@ -104,28 +104,30 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 
 import dynamic from "next/dynamic";
 
+import prefecturesWithData from "@/data/prefecturesWithData.json";
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+
 /**
- * スクレイパーが取り込んでいる都道府県と、選択時に地図を寄せる代表座標。
+ * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
  *
- * 以前は愛知・岐阜・滋賀の3件がハードコードされていた。岐阜は取り込み対象外で
- * パージ済みのため0件、逆に最大在庫の大阪が選べない状態だった。
- * scripts/purge_rental_properties.ts の TARGET_PREFECTURES と揃えること。
+ * 以前はここに県名を直書きし、scripts/purge_rental_properties.ts と手で
+ * 揃える運用だった。揃わずに、対象外でパージ済みの岐阜が選択肢に残って0件を
+ * 返し、逆に最大在庫の大阪が選べない状態になっていた。対象県は
+ * src/lib/scrapeTargets.ts を唯一の情報源にして、ここはそれを引くだけにする。
+ *
+ * さらに、対象に足したばかりでまだ物件を取り切れていない県を出しても0件に
+ * なるだけなので、実際にデータが載った県だけに絞る。この一覧は
+ * scripts/build_area_dataset.ts が毎晩吐き直すので、取り込みが進めば自動で
+ * 増える。areaDirections.json は78KBあり client バンドルに乗せられないため、
+ * 県名だけの小さな JSON を別に持っている。
+ *
  * 件数はデータが日々動くので出さない（古い数字が残ると誤解のもとになる）。
  */
-const TARGET_PREFECTURES = [
-  { name: "愛知県", lat: 35.1815, lon: 136.9064 },
-  { name: "静岡県", lat: 34.9769, lon: 138.3831 },
-  { name: "三重県", lat: 34.7303, lon: 136.5086 },
-  { name: "福井県", lat: 36.0652, lon: 136.2216 },
-  { name: "滋賀県", lat: 35.0045, lon: 135.8686 },
-  { name: "京都府", lat: 35.0212, lon: 135.7556 },
-  { name: "大阪府", lat: 34.6863, lon: 135.52 },
-  { name: "奈良県", lat: 34.6851, lon: 135.8329 },
-  { name: "兵庫県", lat: 34.6913, lon: 135.183 },
-  { name: "鳥取県", lat: 35.5039, lon: 134.2377 },
-  { name: "島根県", lat: 35.4723, lon: 133.0505 },
-  { name: "広島県", lat: 34.3966, lon: 132.4596 },
-];
+const PREFS_WITH_DATA = new Set<string>(prefecturesWithData.prefs);
+const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
+  // 生成が一度も走っていない場合に選択肢が空になるのは避ける
+  (t) => PREFS_WITH_DATA.size === 0 || PREFS_WITH_DATA.has(t.name),
+).map((t) => ({ name: t.name, lat: t.lat, lon: t.lon }));
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
@@ -1737,6 +1739,29 @@ export default function ArbitrageScannerPage() {
     return 0;
   });
 
+  /**
+   * 「アービトラージ物件 TOP 5」の中身。
+   *
+   * 以前は filteredData の先頭 5 件を出していた。filteredData は絞り込んだだけで
+   * 並べ替えていないので、実際に出ていたのは API が返した順――SQL が㎡単価の
+   * 安い順に切り出した候補の先頭――で、総合スコアとは無関係だった。
+   * 「最強」と名乗る以上、総合スコアで選ぶ。
+   *
+   * 表の並べ替えには追従させない。家賃順に並べ替えたときにここまで家賃順に
+   * なると、パネルの見出しと中身が食い違う。
+   */
+  const topArbitrage = [...filteredData]
+    .sort((a, b) => {
+      // 表と同じく、避けるべき方位・期間のものは上に出さない。
+      if (sinkAvoidStatus) {
+        const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
+        const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
+        if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+      }
+      return b.totalScore - a.totalScore;
+    })
+    .slice(0, 5);
+
   const propertiesInBounds = useMemo(() => {
     if (!mapBounds) return sortedTableData;
     return sortedTableData.filter((d) => {
@@ -2880,11 +2905,50 @@ export default function ArbitrageScannerPage() {
                     <summary className="p-4 font-bold text-xs text-gray-900 dark:text-stone-900 flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-stone-200">
                       <span className="flex items-center gap-1.5">
                         <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />
-                        最強のアービトラージ物件 TOP 5
+                        アービトラージ物件 TOP 5
+                        <span className="font-normal text-[10px] text-stone-500">
+                          総合スコア順
+                        </span>
                       </span>
                       <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90 text-stone-500" />
                     </summary>
                     <div className="p-3.5 space-y-3.5">
+                      {/* 何を根拠に「TOP」なのかが分からない、という指摘への対応。
+                          順位の出どころを、開いた時点で読める場所に書く。 */}
+                      <div className="rounded-xl bg-amber-50/70 dark:bg-amber-50 border border-amber-200/70 p-2.5 text-[10px] leading-relaxed text-stone-600">
+                        <p>
+                          <span className="font-bold text-stone-700">
+                            アービトラージ
+                          </span>
+                          とは、ここでは
+                          <span className="font-bold">
+                            周辺の相場と比べた家賃の歪み
+                          </span>
+                          のことです。同じ条件なら安く借りられる物件を、方位・暦・住みやすさと合わせて1つの点数にしています。
+                        </p>
+                        <p className="mt-1.5">
+                          並び順は
+                          <span className="font-bold">総合スコアの高い順</span>
+                          。総合スコアは
+                          <span className="font-bold">
+                            {AXIS_ORDER.length}つの評価軸の加重平均
+                          </span>
+                          で、重みは「評価軸の重み」で選んだ配分（現在
+                          <span className="font-bold">
+                            「
+                            {weightPresetId === "custom"
+                              ? "手動調整"
+                              : getPreset(weightPresetId).label}
+                            」
+                          </span>
+                          ）を使います。各物件の下のバーが、重みの大きい順に上位3軸の得点です。
+                        </p>
+                        <p className="mt-1.5 text-stone-500">
+                          物件リストの並べ替えを変えても、ここは総合スコア順のままです。
+                          {sinkAvoidStatus &&
+                            "避けるべき方位・期間の物件は最下位に沈めています。"}
+                        </p>
+                      </div>
                       {loading ? (
                         <div className="space-y-3">
                           {[1, 2, 3].map((i) => (
@@ -2894,52 +2958,86 @@ export default function ArbitrageScannerPage() {
                             />
                           ))}
                         </div>
-                      ) : filteredData.length === 0 ? (
+                      ) : topArbitrage.length === 0 ? (
                         <div className="p-6 text-center text-stone-400 text-[10px]">
                           合致する物件がありません。
                         </div>
                       ) : (
-                        filteredData.slice(0, 5).map((item) => (
+                        topArbitrage.map((item, rank) => (
                           <div
                             key={item.id}
                             onClick={() => {
                               setMapCenter([item.lat, item.lon]);
                             }}
-                            className="flex justify-between items-center p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
+                            className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
                           >
-                            <div className="truncate pr-2 max-w-[70%]">
-                              {item.url ? (
-                                <a
-                                  href={item.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block"
-                                >
-                                  {item.property_name}
-                                </a>
-                              ) : (
-                                <div className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate">
-                                  {item.property_name}
+                            <div className="flex justify-between items-center">
+                              <div className="truncate pr-2 max-w-[70%] flex-1">
+                                {item.url ? (
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate hover:text-indigo-500 transition-colors hover:underline block"
+                                  >
+                                    {item.property_name}
+                                  </a>
+                                ) : (
+                                  <div className="font-bold text-gray-900 dark:text-stone-800 text-[11px] truncate">
+                                    {item.property_name}
+                                  </div>
+                                )}
+                                <div className="text-[10px] text-stone-400 mt-1 flex flex-col gap-0.5">
+                                  <span className="font-semibold">
+                                    {item.direction
+                                      ? `${item.direction} (${item.maxAstroFactor || "計算中"})`
+                                      : "方位不明"}
+                                  </span>
                                 </div>
-                              )}
-                              <div className="text-[10px] text-stone-400 mt-1 flex flex-col gap-0.5">
-                                <span className="font-semibold">
-                                  {item.direction
-                                    ? `${item.direction} (${item.maxAstroFactor || "計算中"})`
-                                    : "方位不明"}
-                                </span>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold text-[11px]">
+                                  {Math.round((item.totalRent || 0) / 10000)}
+                                  万円
+                                </div>
+                                <div className="mt-1 flex justify-end">
+                                  {renderStars(
+                                    item.totalScore,
+                                    item.astrologyStatus,
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold text-[11px]">
-                                {Math.round((item.totalRent || 0) / 10000)}万円
+
+                            {/* なぜこの順位なのか。重みの大きい上位3軸の得点を
+                                そのまま出す。カード表示と同じ描画を使う。 */}
+                            <div className="mt-2 pt-2 border-t border-gray-200/70 dark:border-stone-200">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[9px] font-bold text-stone-500">
+                                  第{rank + 1}位の根拠
+                                </span>
+                                <span
+                                  className="text-[9px] font-mono text-stone-500"
+                                  title={
+                                    item.axisMissing?.length
+                                      ? `未算出の軸: ${item.axisMissing
+                                          .map(
+                                            (k: AxisKey) => AXIS_META[k].label,
+                                          )
+                                          .join("、")}`
+                                      : "全ての軸にデータあり"
+                                  }
+                                >
+                                  総合 {item.totalScore.toFixed(1)}
+                                  {item.axisCoverage < 0.999 && (
+                                    <span className="ml-1 text-amber-600">
+                                      （軸カバー{" "}
+                                      {Math.round(item.axisCoverage * 100)}%）
+                                    </span>
+                                  )}
+                                </span>
                               </div>
-                              <div className="mt-1 flex justify-end">
-                                {renderStars(
-                                  item.totalScore,
-                                  item.astrologyStatus,
-                                )}
-                              </div>
+                              {renderAxisBars(item, 3)}
                             </div>
                           </div>
                         ))

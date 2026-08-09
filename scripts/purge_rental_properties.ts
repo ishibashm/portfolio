@@ -16,6 +16,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
+
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
   : path.resolve(process.cwd(), "../.env");
@@ -26,22 +28,12 @@ if (!connectionString) {
   throw new Error("DATABASE_URL / DIRECT_URL is not set.");
 }
 
-// nifty_extractor.ts の対象都道府県に対応する日本語表記。
-// DB 側は住所文字列しか持たないため、ローマ字キーとは別にここで持つ必要がある。
-const TARGET_PREFECTURES = [
-  "愛知県",
-  "静岡県",
-  "三重県",
-  "福井県",
-  "滋賀県",
-  "京都府",
-  "大阪府",
-  "奈良県",
-  "兵庫県",
-  "鳥取県",
-  "島根県",
-  "広島県",
-];
+// 対象都道府県の日本語表記。DB 側は住所文字列しか持たないため、
+// ローマ字スラッグとは別に日本語名で突き合わせる。
+//
+// ここがスクレイパーの対象より狭いと、取り込んだ行を同じ晩に「範囲外」として
+// 削除してしまう。両方を src/lib/scrapeTargets.ts から引いてずれを防ぐ。
+const TARGET_PREFECTURES = [...TARGET_PREFECTURE_NAMES];
 
 const APPLY = process.env.PURGE_APPLY === "true";
 // 全件スイープは 1 県を回るのに数日かかる。短すぎると生きている物件を消すので、

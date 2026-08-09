@@ -1,0 +1,153 @@
+name: Apply DB indexes
+
+# rental_properties にスキャナー用のインデックスを張る。
+#
+# このテーブルだけインデックスが 1 つも無く（主キーの uuid と url の unique のみ）、
+# 112 万行に対して毎回シーケンシャルスキャンが走っていた。とくに鮮度表示の
+# max(last_seen_at) は絞り込み条件を持たないため、リクエストごとに全行を読む。
+#
+# 手元から DB に繋げなくても当てられるように、ランナー上で psql を回す。
+# 接続情報は Secret の ENV_FILE から取るので、実行者の手元にもログにも出ない。
+#
+# prisma db push でも作れるが、その場合 CREATE INDEX が排他ロックを取り、
+# 張り終わるまで書き込みが止まる。夜間のスクレイパーと重なると取り込みが
+# 詰まるので、ここでは CONCURRENTLY で当てる。
+#
+# 実際の DDL は scripts/sql/rental_properties_indexes.sql にある。
+# インデックスの定義そのものは prisma/schema.prisma にも書いてあること。
+# db push はスキーマに無いインデックスを削除するため、ここで作っただけだと
+# 次の run-seed で消える。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "verify: 現状を見るだけ / apply: 実際に張る"
+        required: true
+        type: choice
+        options:
+          - verify
+          - apply
+        default: verify
+
+# スクレイパーと重なっても CONCURRENTLY なら書き込みは止まらないが、
+# 同じ DDL を二重に走らせる意味はない。
+concurrency:
+  group: db-index
+  cancel-in-progress: false
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DIRECT_URL が要る。"
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      # DIRECT_URL はプーラを経由しない直結。CONCURRENTLY はセッションを
+      # またぐと成立しないので、プーラ側の DATABASE_URL は使わない。
+      - name: Resolve connection
+        run: |
+          set -euo pipefail
+          URL="$(sed -n 's/^DIRECT_URL=//p' .env | tail -1)"
+          if [ -z "$URL" ]; then
+            echo "::error::.env に DIRECT_URL が無い。"
+            exit 1
+          fi
+          # 資格情報はログに出さない。マスクしたうえで後続ステップへ渡す。
+          echo "::add-mask::$URL"
+          echo "PGURL=$URL" >> "$GITHUB_ENV"
+
+      - name: Before
+        run: |
+          set -euo pipefail
+          {
+            echo "## 実行前"
+            echo '```'
+            psql "$PGURL" -At -c "SELECT 'rows: ' || count(*) FROM rental_properties;"
+            psql "$PGURL" -At -c "SELECT 'table size: ' || pg_size_pretty(pg_total_relation_size('rental_properties'));"
+            echo "-- indexes --"
+            psql "$PGURL" -At -c "
+              SELECT indexrelid::regclass || '  valid=' || indisvalid
+                FROM pg_index WHERE indrelid = 'rental_properties'::regclass;"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 索引の有無で最も差が出るクエリ。スキャン 1 回ごとに必ず走り、
+      # 絞り込み条件を持たないので全行を読む。ここの実行時間が改善の指標。
+      - name: Measure max(last_seen_at)
+        run: |
+          set -euo pipefail
+          {
+            echo "## max(last_seen_at) の実行計画"
+            echo '```'
+            psql "$PGURL" -c "EXPLAIN (ANALYZE, BUFFERS, TIMING) SELECT max(last_seen_at) FROM rental_properties;"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Apply indexes
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          # CONCURRENTLY はトランザクション内で実行できないため
+          # --single-transaction を付けない。ON_ERROR_STOP は付ける。
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f scripts/sql/rental_properties_indexes.sql
+
+      - name: After
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## 実行後"
+            echo '```'
+            psql "$PGURL" -At -c "
+              SELECT indexrelid::regclass || '  valid=' || indisvalid
+                     || '  ' || pg_size_pretty(pg_relation_size(indexrelid))
+                FROM pg_index WHERE indrelid = 'rental_properties'::regclass;"
+            echo '```'
+            echo "### 張り直した後の max(last_seen_at)"
+            echo '```'
+            psql "$PGURL" -c "EXPLAIN (ANALYZE, BUFFERS, TIMING) SELECT max(last_seen_at) FROM rental_properties;"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # CONCURRENTLY は途中で失敗すると INVALID なインデックスを残す。
+      # 残ったまま放置するとプランナーは使わないのに更新コストだけ payしてしまう。
+      - name: Fail if any index is invalid
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          BAD="$(psql "$PGURL" -At -c "
+            SELECT string_agg(indexrelid::regclass::text, ', ')
+              FROM pg_index
+             WHERE indrelid = 'rental_properties'::regclass AND NOT indisvalid;")"
+          if [ -n "$BAD" ]; then
+            echo "::error::INVALID なインデックスが残っている: $BAD"
+            echo "DROP INDEX してから当て直すこと。"
+            exit 1
+          fi
+          echo "全てのインデックスが valid。"

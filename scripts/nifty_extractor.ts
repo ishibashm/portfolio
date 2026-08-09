@@ -6,6 +6,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+import { TARGET_PREFECTURE_SLUGS } from "../src/lib/scrapeTargets";
+
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
   : path.resolve(process.cwd(), "../.env");
@@ -368,56 +370,6 @@ async function fetchCitiesForPrefecture(
   return Array.from(new Set(cities));
 }
 
-const PREFECTURES = [
-  "hokkaido",
-  "aomori",
-  "iwate",
-  "miyagi",
-  "akita",
-  "yamagata",
-  "fukushima",
-  "ibaraki",
-  "tochigi",
-  "gunma",
-  "saitama",
-  "chiba",
-  "tokyo",
-  "kanagawa",
-  "niigata",
-  "toyama",
-  "ishikawa",
-  "fukui",
-  "yamanashi",
-  "nagano",
-  "gifu",
-  "shizuoka",
-  "aichi",
-  "mie",
-  "shiga",
-  "kyoto",
-  "osaka",
-  "hyogo",
-  "nara",
-  "wakayama",
-  "tottori",
-  "shimane",
-  "okayama",
-  "hiroshima",
-  "yamaguchi",
-  "tokushima",
-  "kagawa",
-  "ehime",
-  "kochi",
-  "fukuoka",
-  "saga",
-  "nagasaki",
-  "kumamoto",
-  "oita",
-  "miyazaki",
-  "kagoshima",
-  "okinawa",
-];
-
 // CI では都道府県ごとに並列でジョブを回すため、再開位置のファイルも分ける必要がある。
 // 1 本のファイルを共有すると、並列ジョブが互いの再開位置を上書きしてしまう。
 const STATE_FILE =
@@ -477,21 +429,9 @@ async function main() {
 
   try {
     // ターゲット都道府県。CI からは SCRAPER_PREFECTURES で 1 県ずつ渡して並列実行する。
-    // 既定値は移住候補として指定された 12 県（中部・関西・中国地方）。
-    const DEFAULT_TARGET_PREFECTURES = [
-      "aichi",
-      "shizuoka",
-      "mie",
-      "fukui",
-      "shiga",
-      "kyoto",
-      "osaka",
-      "nara",
-      "hyogo",
-      "tottori",
-      "shimane",
-      "hiroshima",
-    ];
+    // 既定値は src/lib/scrapeTargets.ts の全県。パージの許可リストと
+    // 同じ情報源から引いているので、取った端から消される事故は起きない。
+    const DEFAULT_TARGET_PREFECTURES = [...TARGET_PREFECTURE_SLUGS];
     const targetPrefectures = (process.env.SCRAPER_PREFECTURES || "")
       .split(",")
       .map((p) => p.trim())
