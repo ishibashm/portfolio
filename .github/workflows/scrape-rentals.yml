@@ -176,7 +176,16 @@ jobs:
       contents: write
 
     steps:
+      # DATA_PUSH_TOKEN で checkout する。既定の GITHUB_TOKEN が押した
+      # コミットはワークフローを起動しない仕様なので、そのままだと
+      # 下のデータコミットが deploy.yml を動かせず、県別の色分けや
+      # エリア相場が本番に出ないまま残る（静的 JSON をビルドに焼くため）。
+      # 実際 ded71b7 / 6df3e83 のデータコミットではデプロイが走っていない。
+      # 未設定なら GITHUB_TOKEN に落ちる。押せはするのでパイプラインは
+      # 壊れず、デプロイだけが次の push 待ちになる。
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DATA_PUSH_TOKEN || github.token }}
 
       - uses: actions/setup-node@v4
         with:
@@ -236,9 +245,14 @@ jobs:
           DEDUPE_KEY: ${{ inputs.dedupe_key || 'c' }}
         run: npx -y tsx scripts/dedupe_rental_properties.ts
 
+      # 座標が付くまで、その物件は検索にもスキャナーにも出ない。47 県へ
+      # 広げたぶん、初回は町丁目の名寄せが大量に発生する（8/8 の実行では
+      # キャッシュ済み 15,669 町で GSI 問い合わせは 13 件しか要らなかったが、
+      # 新しい県ぶんはそのキャッシュがまるごと無い）。ここが律速なので、
+      # ジョブの timeout 300 分に対して余っていた枠を回す。
       - name: Geocode newly imported properties
         env:
-          GEOCODE_TIME_BUDGET_MIN: "60"
+          GEOCODE_TIME_BUDGET_MIN: "150"
         run: npx -y tsx scripts/geocode_properties.ts
 
       # level を見ずに座標を採用していた時期に、市の代表点を割り当てられた物件が
@@ -282,10 +296,23 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/data/areaDirections.json src/data/prefecturesWithData.json
-          git commit -m "chore(data): エリア別の家賃相場を更新する [skip ci]"
+          # [skip ci] を付けない。この push で動かしたいのが deploy.yml
+          # そのものだからで、付けると唯一の対象を自分で消すことになる。
+          # push で動くワークフローは deploy.yml だけなので、余計な実行は
+          # 増えない（deploy.yml は push しないので再帰もしない）。
+          git commit -m "chore(data): エリア別の家賃相場を更新する"
           # 実行中に master が進んでいることがあるので、取り込んでから押す。
           # --autostash が要る: npm ci や prisma generate が追跡下のファイルを
           # 書き換えることがあり、そのままだと rebase が
           # 「You have unstaged changes」で止まって push まで届かない。
           git pull --rebase --autostash origin master
           git push origin HEAD:master
+
+          # デプロイまで届いたかは、この push がどのトークンで行われたかで
+          # 決まる。判断材料をサマリーに残す。
+          if [ -n "${{ secrets.DATA_PUSH_TOKEN }}" ]; then
+            echo "データを master へ push した。deploy.yml が続けて動く。" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::DATA_PUSH_TOKEN が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番のデータは古いまま。"
+            echo "データを master へ push した。ただし DATA_PUSH_TOKEN が無いためデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
+          fi
