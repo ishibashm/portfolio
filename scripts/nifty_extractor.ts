@@ -340,34 +340,76 @@ async function scrapeArea(
   return allProperties;
 }
 
+/**
+ * 県の市区町村一覧を取る。
+ *
+ * ここが 0 件で返ると、呼び出し側の for ループが 1 度も回らないまま
+ * 「完了」に到達する。実際 2026-08-08 の大阪がそれで、8 秒で
+ * 「✅ Scraping completed successfully!」を出して緑になり、再開位置まで
+ * 消していた。取り込み 0 件と正常終了が区別できないのは、新しい県を
+ * 足した初回ほど困る（色が付かない理由が分からない）。
+ *
+ * 空は「その県に物件が無い」ではなく「取得に失敗した」とみなす。
+ * 一度の読み込み失敗で県ごと落とすのは惜しいので数回試し、それでも
+ * 空なら投げる。投げれば再開位置は消えず、次の実行が続きから走る。
+ */
+const CITY_LIST_ATTEMPTS = 3;
+
 async function fetchCitiesForPrefecture(
   page: Page,
   prefAlpha: string,
 ): Promise<string[]> {
   const url = `https://myhome.nifty.com/rent/${prefAlpha}/`;
-  console.log(`Fetching city list for prefecture: ${prefAlpha}...`);
-  await page.goto(url, { waitUntil: "domcontentloaded" });
 
-  // Wait a moment for dynamic elements or additional links to be populated
-  await page.waitForTimeout(2000);
+  for (let attempt = 1; attempt <= CITY_LIST_ATTEMPTS; attempt++) {
+    console.log(
+      `Fetching city list for prefecture: ${prefAlpha}... (attempt ${attempt}/${CITY_LIST_ATTEMPTS})`,
+    );
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
 
-  // Extract all links that end with _ct/
-  const links = await page.$$eval("a", (anchors) =>
-    anchors
-      .map((a) => a.href)
-      .filter((h) => h.includes("_ct/") && !h.includes("detail_")),
+      // Wait a moment for dynamic elements or additional links to be populated
+      await page.waitForTimeout(2000);
+
+      // Extract all links that end with _ct/
+      const links = await page.$$eval("a", (anchors) =>
+        anchors
+          .map((a) => a.href)
+          .filter((h) => h.includes("_ct/") && !h.includes("detail_")),
+      );
+
+      const uniqueUrls = Array.from(new Set(links));
+      const cities = Array.from(
+        new Set(
+          uniqueUrls
+            .map((u) => {
+              const match = u.match(/\/rent\/[^\/]+\/([a-z0-9]+)_ct\//);
+              return match ? match[1] : null;
+            })
+            .filter(Boolean) as string[],
+        ),
+      );
+
+      console.log(`Found ${cities.length} cities in ${prefAlpha}.`);
+      if (cities.length > 0) return cities;
+    } catch (error: any) {
+      console.error(
+        `City list fetch failed for ${prefAlpha}: ${error?.message ?? error}`,
+      );
+    }
+
+    if (attempt < CITY_LIST_ATTEMPTS) {
+      const waitMs = 5000 * attempt;
+      console.log(`Retrying the city list in ${waitMs / 1000}s...`);
+      await new Promise((res) => setTimeout(res, waitMs));
+    }
+  }
+
+  throw new Error(
+    `${prefAlpha} の市区町村一覧が ${CITY_LIST_ATTEMPTS} 回とも 0 件だった。` +
+      `取り込み 0 件を正常終了として扱わないため、ここで失敗させる。` +
+      `一覧ページ (${url}) の構造変更かアクセス遮断を疑うこと。`,
   );
-
-  const uniqueUrls = Array.from(new Set(links));
-  const cities = uniqueUrls
-    .map((u) => {
-      const match = u.match(/\/rent\/[^\/]+\/([a-z0-9]+)_ct\//);
-      return match ? match[1] : null;
-    })
-    .filter(Boolean) as string[];
-
-  console.log(`Found ${cities.length} cities in ${prefAlpha}.`);
-  return Array.from(new Set(cities));
 }
 
 // CI では都道府県ごとに並列でジョブを回すため、再開位置のファイルも分ける必要がある。
@@ -565,7 +607,11 @@ async function main() {
       }
     }
   } catch (e) {
+    // 握り潰して 0 で終わると、CI は緑のまま取り込み 0 件になる。
+    // 何が起きたか気付けないので、後片付けだけしてから失敗として抜ける。
+    // 県ごとに別ジョブ（fail-fast: false）なので、1 県落ちても他県は続く。
     console.error(e);
+    process.exitCode = 1;
   } finally {
     await browser.close();
     await prisma.$disconnect();
