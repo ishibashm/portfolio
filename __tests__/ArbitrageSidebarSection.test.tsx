@@ -10,30 +10,35 @@ describe("ArbitrageSidebarSection", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
 
-    await act(async () => {
-      root.render(
-        <ArbitrageSidebarSection title="絞り込みフィルター" summary="2条件">
-          <label htmlFor="max-age">築年数上限</label>
-          <input id="max-age" />
-        </ArbitrageSidebarSection>,
+    try {
+      await act(async () => {
+        root.render(
+          <ArbitrageSidebarSection title="絞り込みフィルター" summary="2条件">
+            <label htmlFor="max-age">築年数上限</label>
+            <input id="max-age" />
+          </ArbitrageSidebarSection>,
+        );
+      });
+
+      const details = container.querySelector("details");
+      const toggle = container.querySelector("summary");
+
+      expect(details).not.toHaveAttribute("open");
+      expect(toggle?.querySelector("h3")).toHaveTextContent(
+        "絞り込みフィルター",
       );
-    });
+      expect(toggle?.textContent).toContain("2条件");
 
-    const details = container.querySelector("details");
-    const toggle = container.querySelector("summary");
+      await act(async () => toggle?.click());
 
-    expect(details).not.toHaveAttribute("open");
-    expect(toggle?.textContent).toContain("2条件");
-
-    await act(async () => toggle?.click());
-
-    expect(details).toHaveAttribute("open");
-    expect(container.querySelector('label[for="max-age"]')).toHaveTextContent(
-      "築年数上限",
-    );
-
-    await act(async () => root.unmount());
-    container.remove();
-    vi.unstubAllGlobals();
+      expect(details).toHaveAttribute("open");
+      expect(container.querySelector('label[for="max-age"]')).toHaveTextContent(
+        "築年数上限",
+      );
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+      vi.unstubAllGlobals();
+    }
   });
 });

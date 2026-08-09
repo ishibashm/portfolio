@@ -26,10 +26,10 @@ export function ArbitrageSidebarSection({
       className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xs dark:border-stone-200 dark:bg-stone-50"
     >
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 select-none [&::-webkit-details-marker]:hidden group-open:border-b group-open:border-gray-100 dark:group-open:border-stone-200">
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500">
+        <h3 className="flex min-w-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500">
           {icon}
           <span className="truncate">{title}</span>
-        </span>
+        </h3>
         <span className="flex min-w-0 shrink-0 items-center gap-1.5">
           <span className="max-w-32 truncate text-[10px] font-semibold normal-case tracking-normal text-stone-400">
             {summary}

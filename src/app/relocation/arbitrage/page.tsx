@@ -793,7 +793,7 @@ export default function ArbitrageScannerPage() {
   const [partyPolicy, setPartyPolicy] = useState<string>(DEFAULT_PARTY_POLICY);
   // 「いつなら全員で動けるか」を何日先まで見るか。
   const [horizonDays, setHorizonDays] = useState<number>(30);
-  const [showPartyPanel, setShowPartyPanel] = useState(false);
+  const [showPartyPanel, setShowPartyPanel] = useState(true);
   /** 他画面で保存済みのプロフィール。同行者の入力元にする。 */
   const [savedProfiles, setSavedProfiles] = useState<ProfilePreset[]>([]);
 
