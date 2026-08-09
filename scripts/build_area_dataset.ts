@@ -53,14 +53,23 @@ async function main() {
   ) as Record<string, Array<{ code: string; name: string }>>;
 
   // 政令市の親エントリ（末尾00）は区が別にあるので除く
-  const candidates: Array<{ code: string; pref: string; city: string; full: string }> =
-    [];
+  const candidates: Array<{
+    code: string;
+    pref: string;
+    city: string;
+    full: string;
+  }> = [];
   for (const [slug, cities] of Object.entries(jis)) {
     const pref = PREF_JP[slug];
     if (!pref) continue;
     for (const c of cities) {
       if (c.code.endsWith("00")) continue;
-      candidates.push({ code: c.code, pref, city: c.name, full: pref + c.name });
+      candidates.push({
+        code: c.code,
+        pref,
+        city: c.name,
+        full: pref + c.name,
+      });
     }
   }
   // 長い名前を先に判定する（名古屋市中区 が 名古屋市 に食われないように）
@@ -120,6 +129,31 @@ async function main() {
     ),
   );
 
+  // 県ごとの掲載数。地図の俯瞰（県別の色分けと件数ラベル）が使う。
+  //
+  // 以前の俯瞰は「API が返した安い順 500 件」を県名で数えて塗っていた。
+  // 母数が 500 件では安い県だけが濃く出るし、その 500 件を出すために
+  // 全国 45 万行の名寄せ（実測 18.4 秒）を走らせていた。俯瞰に必要なのは
+  // 県ごとの数字だけなので、ここで毎晩数えて静的に配る。
+  //
+  // 市区町村の集計から合算しないのは、掲載 30 件未満の市区町村が
+  // MIN_ROWS で落ちていて合計が実態より減るため。県単位で数え直す。
+  const prefTotals: Record<string, number> = {};
+  for (const prefName of Object.values(PREF_JP)) {
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n
+         FROM rental_properties
+        WHERE address LIKE $1 || '%'
+          AND lat IS NOT NULL AND lon IS NOT NULL
+          AND rent IS NOT NULL AND size_sqm > 0
+          AND last_seen_at > now() - interval '30 days'
+          AND (expire_date IS NULL OR expire_date >= now())`,
+      [prefName],
+    );
+    const n = rows[0]?.n ?? 0;
+    if (n > 0) prefTotals[prefName] = n;
+  }
+
   // スキャナーの県プリセット用。areaDirections.json は 78KB あり、
   // client コンポーネントに読ませるとそのままバンドルに乗る。県名だけの
   // 小さな配列を別に吐いて、UI はこちらを読む。
@@ -134,7 +168,12 @@ async function main() {
   fs.writeFileSync(
     prefsPath,
     JSON.stringify(
-      { prefs: prefsWithData, areaCount: filtered.length },
+      {
+        prefs: prefsWithData,
+        areaCount: filtered.length,
+        // 県名 → 掲載数。地図の俯瞰の色分けと件数ラベルの元。
+        listingCounts: prefTotals,
+      },
       null,
       2,
     ) + "\n",

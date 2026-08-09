@@ -1300,6 +1300,23 @@ export default function ArbitrageScannerPage() {
       setIsTransitioningDate(false);
       return;
     }
+    // 俯瞰（県も半径も無しでズーム10未満）では検索しない。
+    //
+    // この組み合わせだけが全国 45 万行の名寄せ（実測 18.4 秒）に入る。
+    // 俯瞰の地図は県別の色分けと掲載数ラベルを静的データから描くので、
+    // 物件 500 件を取っても使い道が無い。物件はズームインしたときに、
+    // そのとき見えている範囲だけを検索して出す。
+    // 県が選ばれていれば母数が県に収まるので、ズームに関係なく検索する。
+    if (
+      prefecture === "all" &&
+      radiusKm === "all" &&
+      mapBounds !== null &&
+      mapBounds.zoom < 10
+    ) {
+      setLoading(false);
+      setIsTransitioningDate(false);
+      return;
+    }
     if (isDateChange) {
       setIsTransitioningDate(true);
     } else {

@@ -12,8 +12,18 @@
   --wg-accent: #e11d48; /* rose-600: プライマリアクセント */
   --wg-accent-soft: #ffe4e6; /* rose-100 */
   --wg-gold: #d97706; /* amber-600: サブアクセント */
-  --wg-surface: rgba(255, 255, 255, 0.92); /* 文字を浮き立たせる高不透明度カード地 */
-  --wg-surface-border: rgba(203, 213, 225, 0.9); /* slate-200/90 の引き締まった境界線 */
+  --wg-surface: rgba(
+    255,
+    255,
+    255,
+    0.92
+  ); /* 文字を浮き立たせる高不透明度カード地 */
+  --wg-surface-border: rgba(
+    203,
+    213,
+    225,
+    0.9
+  ); /* slate-200/90 の引き締まった境界線 */
   --wg-shadow: rgba(15, 23, 42, 0.08); /* 落ち着いた立体影 */
 }
 
@@ -223,4 +233,21 @@ body {
 
 .animate-fade-in-up {
   animation: fade-in-up 0.8s ease-out both;
+}
+
+/* 地図の俯瞰に出す県ごとの掲載数ラベル。
+   Leaflet の既定 tooltip は白背景・枠・影付きの吹き出しで、47 都道府県ぶん
+   並ぶと地図が読めなくなる。数字だけを直接ポリゴンの上に置く。 */
+.pref-count-label {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: #0f172a;
+  text-shadow:
+    0 0 3px rgba(255, 255, 255, 0.9),
+    0 0 6px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+.pref-count-label::before {
+  display: none;
 }
