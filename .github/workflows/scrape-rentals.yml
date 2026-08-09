@@ -55,8 +55,12 @@ on:
         default: "c"
 
 # スクレイプ中に次の実行が始まると同じ URL を二重 upsert しに行くので直列化する。
+#
+# グループ名は db-capacity.yml / db-index.yml と共有する。この中の purge と
+# dedupe が VACUUM FULL を打ち、テーブル全体に ACCESS EXCLUSIVE を取るため、
+# 他の DB 作業と重ねられない。
 concurrency:
-  group: rental-scraper
+  group: rental-properties-write
   cancel-in-progress: false
 
 jobs:

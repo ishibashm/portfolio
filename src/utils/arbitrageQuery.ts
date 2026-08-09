@@ -218,8 +218,7 @@ export function selectSql(
  * 「この検索条件の中で相対的にどうか」で見ないと、地方と都心で同じ 60 ㎡が
  * 同じ評価になってしまう。
  */
-export function statsSql(whereSql: string, dedupe: boolean): string {
-  return `SELECT avg(sqm_rent) AS mean,
+const STATS_PROJECTION = `avg(sqm_rent) AS mean,
                  coalesce(stddev_pop(sqm_rent), 0) AS stddev,
                  count(*) AS n,
                  avg(size_sqm::float8) AS size_mean,
@@ -227,7 +226,10 @@ export function statsSql(whereSql: string, dedupe: boolean): string {
                  avg(building_age::float8) AS age_mean,
                  coalesce(stddev_pop(building_age::float8), 0) AS age_stddev,
                  avg(minutes_to_station::float8) AS station_mean,
-                 coalesce(stddev_pop(minutes_to_station::float8), 0) AS station_stddev
+                 coalesce(stddev_pop(minutes_to_station::float8), 0) AS station_stddev`;
+
+export function statsSql(whereSql: string, dedupe: boolean): string {
+  return `SELECT ${STATS_PROJECTION}
             FROM (${innerSql(whereSql, dedupe)}) t`;
 }
 
@@ -237,11 +239,86 @@ export function statsSql(whereSql: string, dedupe: boolean): string {
  * 平均ではなく中央値を使う。賃貸の㎡単価は上に長い裾を持つので、
  * 数件の高額物件で平均が持ち上がり、街全体が割安に見えてしまう。
  */
-export function municipalityStatsSql(whereSql: string, dedupe: boolean): string {
-  return `SELECT municipality,
+/**
+ * 統計に必要な列だけに絞った名寄せ済み集合。
+ *
+ * innerSql は候補行そのものを返すので `*` を並べるが、統計側が読むのは
+ * 5 列だけ。CTE に載せて実体化すると、幅がそのまま一時ファイルの量になる。
+ *
+ * 2026-08-09 の実測（prefecture=all）
+ *   innerSql をそのまま CTE に  width=407, temp read/written 38,214 blocks
+ *   単独で投げていたとき        width=366 / 40, 同 18,989 blocks
+ *
+ * 実体化した 39 万行を 2 箇所から読むので、幅を落とさないと統合の利得が
+ * 一時ファイルの往復で相殺される。listing_count（count(*) OVER）も
+ * 統計側は使わないので外す。窓関数の評価が 1 回まるごと減る。
+ *
+ * DISTINCT ON は ORDER BY の先頭と一致していればよく、選択リストに
+ * キーを含める必要は無い。名寄せの結果は innerSql と同じ。
+ */
+function statsInnerSql(whereSql: string, dedupe: boolean): string {
+  const cols = `${SQM_RENT_SQL} AS sqm_rent,
+                size_sqm, building_age, minutes_to_station,
+                ${MUNICIPALITY_SQL} AS municipality`;
+  return dedupe
+    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) ${cols}
+         FROM rental_properties
+        WHERE ${whereSql}
+        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
+    : `SELECT ${cols}
+         FROM rental_properties
+        WHERE ${whereSql}`;
+}
+
+const MUNICIPALITY_PROJECTION = `municipality,
                  count(*)::int AS n,
-                 percentile_cont(0.5) WITHIN GROUP (ORDER BY sqm_rent) AS median
+                 percentile_cont(0.5) WITHIN GROUP (ORDER BY sqm_rent) AS median`;
+
+export function municipalityStatsSql(
+  whereSql: string,
+  dedupe: boolean,
+): string {
+  return `SELECT ${MUNICIPALITY_PROJECTION}
             FROM (${innerSql(whereSql, dedupe)}) t
            WHERE municipality IS NOT NULL
         GROUP BY municipality`;
+}
+
+/**
+ * 相場の基準値と市区町村の中央値を 1 回の評価でまとめて出す。
+ *
+ * この 2 つは同じ innerSql を見る。別々のクエリとして投げると、
+ * DISTINCT ON のための 45 万行のソートが 2 回走る。ソートキーには
+ * 建物名から名寄せキーを作る regexp_replace が入っているので、
+ * 行ごとの正規表現評価まで丸ごと 2 回になる。
+ *
+ * 2026-08-09 の実測（prefecture=all、索引適用後）
+ *   statsSql              5,373 ms
+ *   municipalityStatsSql  8,700 ms
+ *
+ * MATERIALIZED を明示するのは、付けないと Postgres が CTE を
+ * インライン展開して結局 2 回評価しうるため。ここは 1 回で確定させたい。
+ *
+ * 結果は 1 行 2 列の JSON で返す。行の形が違うものを 1 文で返すには
+ * これが要る。中身は数値と文字列だけで日付を含まないので、JSON を
+ * 経由しても型が壊れない。
+ *
+ * 意味は分けて投げていたときと同じ。射影は statsSql /
+ * municipalityStatsSql と同じ定数を使っており、片方だけ直る余地は無い。
+ */
+export function statsAndMunicipalitySql(
+  whereSql: string,
+  dedupe: boolean,
+): string {
+  return `WITH d AS MATERIALIZED (${statsInnerSql(whereSql, dedupe)})
+          SELECT
+            (SELECT row_to_json(s) FROM (
+               SELECT ${STATS_PROJECTION} FROM d
+             ) s) AS stats,
+            (SELECT coalesce(json_agg(m), '[]'::json) FROM (
+               SELECT ${MUNICIPALITY_PROJECTION}
+                 FROM d
+                WHERE municipality IS NOT NULL
+             GROUP BY municipality
+             ) m) AS municipalities`;
 }

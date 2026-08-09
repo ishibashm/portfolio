@@ -43,9 +43,8 @@ import {
 import {
   buildWhereSql,
   cleanPropertyName,
-  municipalityStatsSql,
   selectSql,
-  statsSql,
+  statsAndMunicipalitySql,
 } from "@/utils/arbitrageQuery";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -462,24 +461,32 @@ export async function GET(request: Request) {
     // 相場の基準値は「取得した 500 件」ではなく絞り込み条件に合う全件から出す。
     // 安い順に切り出した集合で平均を取ると基準そのものが下がり、
     // どれも平均並みという評価になって裁定シグナルが消える。
-    const [statsRow, municipalityRows] = await Promise.all([
-      prisma.$queryRawUnsafe<
-        Array<{
+    // 2 本に分けて投げると、DISTINCT ON のための 45 万行のソートが 2 回走る。
+    // ソートキーに名寄せ用の regexp_replace が入っているので、行ごとの
+    // 正規表現評価まで丸ごと 2 回になる。1 回の評価にまとめる。
+    const combined = await prisma.$queryRawUnsafe<
+      Array<{
+        stats: {
           mean: number | null;
           stddev: number | null;
-          n: bigint;
+          n: number;
           size_mean: number | null;
           size_stddev: number | null;
           age_mean: number | null;
           age_stddev: number | null;
           station_mean: number | null;
           station_stddev: number | null;
-        }>
-      >(statsSql(whereSql, dedupe), ...params),
-      prisma.$queryRawUnsafe<
-        Array<{ municipality: string; n: number; median: number | null }>
-      >(municipalityStatsSql(whereSql, dedupe), ...params),
-    ]);
+        } | null;
+        municipalities: Array<{
+          municipality: string;
+          n: number;
+          median: number | null;
+        }>;
+      }>
+    >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+
+    const statsRow = combined[0]?.stats ? [combined[0].stats] : [];
+    const municipalityRows = combined[0]?.municipalities ?? [];
     const meanSqmRent = Number(statsRow[0]?.mean ?? 0);
     const stdDevSqmRent = Number(statsRow[0]?.stddev ?? 0);
     const uniqueCount = Number(statsRow[0]?.n ?? 0);
