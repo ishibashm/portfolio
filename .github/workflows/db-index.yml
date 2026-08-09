@@ -78,9 +78,33 @@ jobs:
             echo "::error::.env に DIRECT_URL が無い。"
             exit 1
           fi
+
+          # 接続文字列は sslmode=verify-full で、証明書の検証を要求する。
+          # libpq は既定で ~/.postgresql/root.crt を見にいくが、ランナーには
+          # 無いので「root certificate file does not exist」で落ちる。
+          # db.cloud-palette.com の証明書は公的な CA が出しているので、
+          # OS の証明書ストアを使えば検証が通る。
+          #
+          # sslmode を緩めるほうは採らない。ここは資格情報を載せる接続で、
+          # 検証を切ると中間者に対して無防備になる。
+          case "$URL" in
+            *sslrootcert=*) ;;
+            *\?*) URL="${URL}&sslrootcert=system" ;;
+            *)    URL="${URL}?sslrootcert=system" ;;
+          esac
+
           # 資格情報はログに出さない。マスクしたうえで後続ステップへ渡す。
           echo "::add-mask::$URL"
           echo "PGURL=$URL" >> "$GITHUB_ENV"
+
+      # 資格情報を伏せたまま、どこへ繋がったかだけ残す。
+      - name: Connection check
+        run: |
+          set -euo pipefail
+          psql "$PGURL" -At -c "
+            SELECT 'connected: ' || current_database()
+                   || ' @ ' || inet_server_addr()
+                   || '  ' || split_part(version(), ' on ', 1);"
 
       - name: Before
         run: |

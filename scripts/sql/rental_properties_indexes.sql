@@ -11,7 +11,12 @@
 -- ずらすと db push が「無い」と判断して非 CONCURRENTLY で作り直す。
 --
 --   実行方法（DIRECT_URL の接続先に対して）
---     psql "$DIRECT_URL" -f scripts/sql/rental_properties_indexes.sql
+--     psql "$DIRECT_URL?sslrootcert=system" -f scripts/sql/rental_properties_indexes.sql
+--
+-- DIRECT_URL は sslmode=verify-full なので、証明書の検証先を渡さないと
+-- libpq が ~/.postgresql/root.crt を探しに行って落ちる。サーバー証明書は
+-- 公的な CA が出しているので、OS の証明書ストアを指せばよい。
+-- .github/workflows/db-index.yml から実行する場合はワークフロー側で付ける。
 --
 -- CONCURRENTLY はトランザクション内で実行できない。psql に -1 / --single-transaction
 -- を付けないこと。途中で失敗すると INVALID なインデックスが残るので、
