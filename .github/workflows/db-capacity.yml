@@ -40,8 +40,11 @@ on:
         required: false
         default: true
 
+# グループ名は scrape-rentals.yml / db-index.yml と共有する。ここで走る
+# purge と dedupe が VACUUM FULL を打ち、テーブル全体に ACCESS EXCLUSIVE を
+# 取るため、スクレイパーや索引作成と重ねられない。
 concurrency:
-  group: db-capacity
+  group: rental-properties-write
   cancel-in-progress: false
 
 jobs:

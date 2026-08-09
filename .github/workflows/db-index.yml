@@ -31,10 +31,19 @@ on:
           - apply
         default: verify
 
-# スクレイパーと重なっても CONCURRENTLY なら書き込みは止まらないが、
-# 同じ DDL を二重に走らせる意味はない。
+# rental_properties に ACCESS EXCLUSIVE を取る処理と直列化する。
+#
+# purge_rental_properties.ts は毎回無条件に VACUUM (FULL, ANALYZE) を打ち、
+# dedupe_rental_properties.ts も削除が 50,000 行を超えると打つ。どちらも
+# scrape-rentals.yml の geocode ジョブと db-capacity.yml の中で走る。
+#
+# VACUUM FULL の ACCESS EXCLUSIVE は、CREATE INDEX CONCURRENTLY が取る
+# SHARE UPDATE EXCLUSIVE と競合する。重なると片方が長時間待たされ、
+# CIC 側が落ちれば INVALID な索引が残る。
+#
+# 3 つのワークフローで同じグループ名を使い、順番に流す。
 concurrency:
-  group: db-index
+  group: rental-properties-write
   cancel-in-progress: false
 
 jobs:
@@ -130,6 +139,47 @@ jobs:
               SELECT indexrelid::regclass || '  valid=' || indisvalid
                 FROM pg_index WHERE indrelid = 'rental_properties'::regclass;"
             echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 索引は読み取りを速くする代わりに、書き込みのたびに更新コストを払う。
+      # rental_properties は毎晩 upsert される書き込み中心のテーブルで、
+      # ジオコーダは lat/lon をまとめて UPDATE する。索引を増やした分だけ
+      # 取り込みが遅くなり、県あたりの時間予算で回るスクレイパーは
+      # カバー範囲が減る。読み取りが速くなっても差し引きで損になりうる。
+      #
+      # HOT 更新率が最も直接の指標。更新した列に索引が無ければ Postgres は
+      # 同じページ内で完結させられる（HOT）が、索引があると索引側も直す
+      # 必要があり HOT にできない。last_seen_at は再訪のたびに更新されるので
+      # ここが効く。
+      #
+      # 索引を減らすときは読み取りの価値が低い順に落とす。
+      #   1. last_seen_at  max() が 130ms→0.05ms。ただし全体 23.7 秒の 0.5%
+      #   2. lat, lon      半径・表示範囲の絞り込み。全国表示では使われない
+      #   3. address       県の絞り込み。address は挿入時に書かれて以降ほぼ
+      #                    更新されないため、維持コストがいちばん低い
+      - name: Write cost
+        run: |
+          set -euo pipefail
+          {
+            echo "## 書き込みコストの指標"
+            echo '```'
+            psql "$PGURL" -c "
+              SELECT n_tup_ins AS ins, n_tup_upd AS upd, n_tup_hot_upd AS hot_upd,
+                     CASE WHEN n_tup_upd > 0
+                          THEN round(100.0 * n_tup_hot_upd / n_tup_upd, 1)
+                     END AS hot_pct,
+                     n_dead_tup AS dead,
+                     last_autovacuum, last_analyze
+                FROM pg_stat_user_tables WHERE relname = 'rental_properties';"
+            echo "-- 索引ごとの使われ方とサイズ --"
+            psql "$PGURL" -c "
+              SELECT indexrelname AS name, idx_scan AS scans,
+                     pg_size_pretty(pg_relation_size(indexrelid)) AS size
+                FROM pg_stat_user_indexes WHERE relname = 'rental_properties'
+               ORDER BY idx_scan DESC;"
+            echo '```'
+            echo "> hot_pct が下がっていたら索引が書き込みの足を引っ張っている。"
+            echo "> scans が 0 のままの索引は読み取りに寄与しておらず、維持コストだけ払っている。"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # スキャナーが実際に投げる 4 本を、API と同じ SQL 生成関数から組み立てて

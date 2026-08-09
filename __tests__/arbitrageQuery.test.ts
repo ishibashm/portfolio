@@ -6,6 +6,7 @@ import {
   innerSql,
   municipalityStatsSql,
   selectSql,
+  statsAndMunicipalitySql,
   statsSql,
   GeoFilters,
 } from "@/utils/arbitrageQuery";
@@ -32,9 +33,9 @@ describe("cleanPropertyName", () => {
     expect(cleanPropertyName("サンプルマンション 新築の賃貸物件")).toBe(
       "サンプルマンション",
     );
-    expect(cleanPropertyName("サンプルマンション 地下1階 築5年3ヶ月の賃貸物件")).toBe(
-      "サンプルマンション",
-    );
+    expect(
+      cleanPropertyName("サンプルマンション 地下1階 築5年3ヶ月の賃貸物件"),
+    ).toBe("サンプルマンション");
   });
 
   it("後置きが無ければそのまま", () => {
@@ -182,5 +183,57 @@ describe("statsSql / municipalityStatsSql", () => {
     expect(sql).toContain("percentile_cont(0.5)");
     expect(sql).toContain("GROUP BY municipality");
     expect(sql).toContain("municipality IS NOT NULL");
+  });
+});
+
+describe("statsAndMunicipalitySql", () => {
+  const { sql: whereSql } = buildWhereSql(baseFilters);
+
+  it("innerSql を 1 回しか評価しない", () => {
+    // 分けて投げていたときは同じ DISTINCT ON のソートが 2 回走っていた。
+    // ソートキーに名寄せ用の regexp_replace が入っているので、行ごとの
+    // 正規表現評価まで丸ごと 2 回になっていた。ここが戻ると遅さも戻る。
+    const sql = statsAndMunicipalitySql(whereSql, true);
+    const occurrences = sql.split("FROM rental_properties").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("CTE を MATERIALIZED で固定する", () => {
+    // 付けないと Postgres が CTE をインライン展開し、参照している 2 箇所で
+    // それぞれ評価しうる。1 回で確定させたい。
+    expect(statsAndMunicipalitySql(whereSql, true)).toContain(
+      "AS MATERIALIZED",
+    );
+  });
+
+  it("分けて投げていたときと同じ射影を返す", () => {
+    const combined = statsAndMunicipalitySql(whereSql, true);
+    for (const col of [
+      "AS mean",
+      "AS stddev",
+      "AS size_mean",
+      "AS size_stddev",
+      "AS age_mean",
+      "AS age_stddev",
+      "AS station_mean",
+      "AS station_stddev",
+    ]) {
+      expect(statsSql(whereSql, true)).toContain(col);
+      expect(combined).toContain(col);
+    }
+    expect(municipalityStatsSql(whereSql, true)).toContain("AS median");
+    expect(combined).toContain("AS median");
+  });
+
+  it("市区町村が無い行を集計に混ぜない", () => {
+    expect(statsAndMunicipalitySql(whereSql, true)).toContain(
+      "WHERE municipality IS NOT NULL",
+    );
+  });
+
+  it("dedupe を切っても組み立てられる", () => {
+    const sql = statsAndMunicipalitySql(whereSql, false);
+    expect(sql.split("FROM rental_properties").length - 1).toBe(1);
+    expect(sql).not.toContain("DISTINCT ON");
   });
 });

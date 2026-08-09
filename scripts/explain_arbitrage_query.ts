@@ -30,6 +30,7 @@ import {
   buildWhereSql,
   municipalityStatsSql,
   selectSql,
+  statsAndMunicipalitySql,
   statsSql,
 } from "../src/utils/arbitrageQuery";
 
@@ -107,16 +108,25 @@ async function main() {
     "SELECT max(last_seen_at) FROM rental_properties",
     [],
   );
+  // 4 と 5 は分けて投げると innerSql を 2 回評価する。API は統合版に
+  // 切り替えたが、比較のため 3 本とも測る。統合版が「4 単独」と
+  // 「5 単独」の合計より明確に短ければ、狙いどおり 1 回になっている。
   await explain(
     pool,
-    "4. 相場の基準値 statsSql",
+    "4. 相場の基準値 statsSql（旧・単独）",
     statsSql(whereSql, DEDUPE),
     params,
   );
   await explain(
     pool,
-    "5. 市区町村ごとの中央値 municipalityStatsSql",
+    "5. 市区町村ごとの中央値 municipalityStatsSql（旧・単独）",
     municipalityStatsSql(whereSql, DEDUPE),
+    params,
+  );
+  await explain(
+    pool,
+    "4+5. 統合 statsAndMunicipalitySql（現行）",
+    statsAndMunicipalitySql(whereSql, DEDUPE),
     params,
   );
 
