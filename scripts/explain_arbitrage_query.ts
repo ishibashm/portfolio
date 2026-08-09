@@ -98,6 +98,25 @@ const SCENARIOS: Array<{ label: string; filters: Partial<GeoFilters> }> = [
     },
   },
   {
+    // エリア別ページが対象にしている範囲（5〜150km）。既定値をここに置けるか。
+    label: "E. 神戸から半径 150km・全国（エリアページと同じ範囲）",
+    filters: {
+      prefecture: "all",
+      radiusKm: 150,
+      baseLat: 34.6913,
+      baseLon: 135.183,
+    },
+  },
+  {
+    label: "F. 東京から半径 150km・全国（在庫が最も多い側）",
+    filters: {
+      prefecture: "all",
+      radiusKm: 150,
+      baseLat: 35.6895,
+      baseLon: 139.6917,
+    },
+  },
+  {
     label: "D. 名古屋から半径 50km・愛知県（県と出発地の両方）",
     filters: {
       prefecture: "愛知県",
