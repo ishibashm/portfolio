@@ -1,7 +1,8 @@
 -- rental_properties にスキャナー用のインデックスを作る。
 --
 -- このテーブルだけインデックスが 1 つも無く（主キーの uuid と url の unique のみ）、
--- 112 万行に対して毎回シーケンシャルスキャンが走っていた。
+-- 絞り込みに使う列が無索引で、シーケンシャルスキャンになっていた。
+-- 2026-08-09 の実測で 45 万行・225MB、max(last_seen_at) が 130 ms。
 --
 -- prisma db push でも作れるが、その場合 CREATE INDEX が排他ロックを取り、
 -- 張り終わるまで書き込みが止まる。夜間のスクレイパーと重なると取り込みが
@@ -11,7 +12,12 @@
 -- ずらすと db push が「無い」と判断して非 CONCURRENTLY で作り直す。
 --
 --   実行方法（DIRECT_URL の接続先に対して）
---     psql "$DIRECT_URL" -f scripts/sql/rental_properties_indexes.sql
+--     psql "$DIRECT_URL?sslrootcert=system" -f scripts/sql/rental_properties_indexes.sql
+--
+-- DIRECT_URL は sslmode=verify-full なので、証明書の検証先を渡さないと
+-- libpq が ~/.postgresql/root.crt を探しに行って落ちる。サーバー証明書は
+-- 公的な CA が出しているので、OS の証明書ストアを指せばよい。
+-- .github/workflows/db-index.yml から実行する場合はワークフロー側で付ける。
 --
 -- CONCURRENTLY はトランザクション内で実行できない。psql に -1 / --single-transaction
 -- を付けないこと。途中で失敗すると INVALID なインデックスが残るので、
