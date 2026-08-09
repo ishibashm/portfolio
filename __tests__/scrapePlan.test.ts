@@ -149,3 +149,22 @@ describe("スキャナーの県プリセット", () => {
     expect(prefecturesWithData.areaCount).toBeGreaterThan(0);
   });
 });
+
+describe("県別の掲載数（地図の俯瞰の元データ）", () => {
+  it("掲載数が載っている県はすべてスクレイピング対象", () => {
+    const names = new Set(SCRAPE_TARGETS.map((t) => t.name));
+    for (const [pref, count] of Object.entries(
+      prefecturesWithData.listingCounts ?? {},
+    )) {
+      expect(names.has(pref), `${pref} がレジストリに無い`).toBe(true);
+      expect(count).toBeGreaterThan(0);
+    }
+  });
+
+  it("データがある県には掲載数もある。無いと俯瞰でその県が0件表示になる", () => {
+    const counts = prefecturesWithData.listingCounts ?? {};
+    for (const pref of prefecturesWithData.prefs) {
+      expect(counts[pref], `${pref} の掲載数が無い`).toBeGreaterThan(0);
+    }
+  });
+});

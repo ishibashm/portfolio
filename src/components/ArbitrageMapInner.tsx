@@ -29,6 +29,8 @@ import {
   getPropertyPinColors,
   getRecommendationStarCount,
 } from "@/utils/arbitrageHelpers";
+import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
+import prefecturesWithData from "@/data/prefecturesWithData.json";
 
 // Fix Leaflet default icon problem in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -104,6 +106,8 @@ interface ArbitrageMapInnerProps {
   layerMode: string;
   radiusKm?: string;
   prefecture?: string;
+  /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
+  keepWideView?: boolean;
   isTransitioningDate?: boolean;
   showListView?: boolean;
   useClassical?: boolean;
@@ -171,15 +175,26 @@ function AutoFitBounds({
   properties,
   center,
   prefecture,
+  keepWideView = false,
 }: {
   properties: ScoredProperty[];
   center: [number, number];
   prefecture?: string;
+  /**
+   * 全国を俯瞰しているか。
+   *
+   * これが無いと「全国」を選んでも物件群へズームインしてしまい、
+   * 県別の色分け（ズーム10未満でしか描かない）が出ない。返ってくるのは
+   * 安い順の500件なので、全国を選ぶほど最も安い一角へ寄っていく、という
+   * 逆の動きになっていた。
+   */
+  keepWideView?: boolean;
 }) {
   const map = useMap();
   const prevPrefectureRef = useRef<string | undefined>(undefined);
   const prevCenterRef = useRef<[number, number] | null>(null);
   const prevPropsLengthRef = useRef<number>(0);
+  const prevWideRef = useRef<boolean>(false);
 
   useEffect(() => {
     // If no properties, zoom out to show Japan if not already zoomed out
@@ -192,6 +207,20 @@ function AutoFitBounds({
       prevPropsLengthRef.current = 0;
       return;
     }
+
+    // 全国に切り替わった瞬間だけ俯瞰へ戻す。俯瞰中も毎回引き戻すと、
+    // 全国を選んだまま気になる場所を拡大して見ることができなくなる。
+    if (keepWideView) {
+      if (!prevWideRef.current) {
+        map.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM);
+        prevCenterRef.current = center;
+        prevPrefectureRef.current = prefecture;
+      }
+      prevWideRef.current = true;
+      prevPropsLengthRef.current = properties.length;
+      return;
+    }
+    prevWideRef.current = false;
 
     const prefectureChanged = prevPrefectureRef.current !== prefecture;
     const centerChanged =
@@ -221,7 +250,7 @@ function AutoFitBounds({
     }
 
     prevPropsLengthRef.current = properties.length;
-  }, [properties, center, prefecture, map]);
+  }, [properties, center, prefecture, keepWideView, map]);
 
   return null;
 }
@@ -294,6 +323,7 @@ export default function ArbitrageMapInner({
   layerMode,
   radiusKm,
   prefecture,
+  keepWideView = false,
   isTransitioningDate = false,
   showListView = false,
   useClassical = false,
@@ -357,18 +387,19 @@ export default function ArbitrageMapInner({
       window.removeEventListener("mapThemeChanged", handleThemeChange);
   }, []);
 
-  const prefCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    properties.forEach((p) => {
-      if (!p.address) return;
-      const match = p.address.match(/^(東京都|北海道|京都府|大阪府|.{2,3}県)/);
-      if (match) {
-        const pref = match[1];
-        counts[pref] = (counts[pref] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [properties]);
+  // 県別の色分けと件数ラベルの元。
+  //
+  // 以前は API が返した properties（安い順・最大 500 件）を県名で数えて
+  // いた。母数が 500 件では安い県だけが濃く出るうえ、俯瞰のためだけに
+  // 全国 45 万行の名寄せを走らせることになる。俯瞰に要るのは県ごとの
+  // 数字だけなので、build_area_dataset.ts が毎晩数えて静的に配る値を使う。
+  // 取り込みが進んで新しい県にデータが載れば、翌朝ここも自動で増える。
+  const prefCounts: Record<string, number> = useMemo(
+    () =>
+      (prefecturesWithData as { listingCounts?: Record<string, number> })
+        .listingCounts ?? {},
+    [],
+  );
 
   const handleBoundsChange = useCallback(
     (b: {
@@ -707,6 +738,7 @@ export default function ArbitrageMapInner({
           properties={properties}
           center={center}
           prefecture={prefecture}
+          keepWideView={keepWideView}
         />
 
         {/* OpenStreetMap / CartoDB Tiles (Theme Switchable) */}
@@ -795,11 +827,25 @@ export default function ArbitrageMapInner({
             onEachFeature={(feature, layer) => {
               const prefName = feature?.properties?.name || "";
               const count = prefCounts[prefName] || 0;
+              // 俯瞰は数字だけを見せる。物件そのものはズームインした
+              // ときに、そのとき見えている範囲だけを検索して出す。
+              if (count > 0) {
+                layer.bindTooltip(
+                  `<div class="text-center leading-tight">
+                     <div class="font-bold text-[11px]">${count.toLocaleString()}</div>
+                   </div>`,
+                  {
+                    permanent: true,
+                    direction: "center",
+                    className: "pref-count-label",
+                  },
+                );
+              }
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
                   <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
-                  <div>スキャン物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件</div>
-                  <div class="text-[9px] text-stone-500 mt-1.5">※ズームインするとより詳細な情報が表示されます</div>
+                  <div>掲載物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件<span class="text-[9px] text-stone-500">（毎晩更新）</span></div>
+                  <div class="text-[9px] text-stone-500 mt-1.5">※ズームインすると物件が表示されます</div>
                 </div>`,
               );
             }}
