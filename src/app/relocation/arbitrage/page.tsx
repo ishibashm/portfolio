@@ -793,7 +793,6 @@ export default function ArbitrageScannerPage() {
   const [partyPolicy, setPartyPolicy] = useState<string>(DEFAULT_PARTY_POLICY);
   // 「いつなら全員で動けるか」を何日先まで見るか。
   const [horizonDays, setHorizonDays] = useState<number>(30);
-  const [showPartyPanel, setShowPartyPanel] = useState(true);
   /** 他画面で保存済みのプロフィール。同行者の入力元にする。 */
   const [savedProfiles, setSavedProfiles] = useState<ProfilePreset[]>([]);
 
@@ -2913,16 +2912,7 @@ export default function ArbitrageScannerPage() {
                       出発地が違えば同じ物件でも方位が変わります。登録すると、全員にとっての方位と「いつなら全員で動けるか」を合わせて判定します。
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowPartyPanel((v) => !v)}
-                      className="text-[10px] font-semibold text-indigo-600 hover:underline"
-                    >
-                      {showPartyPanel ? "同行者設定を隠す" : "同行者設定を表示"}
-                    </button>
-
-                    {showPartyPanel && (
-                      <div className="space-y-3">
+                    <div className="space-y-3">
                         {savedProfiles.length > 0 && (
                           <div className="space-y-1">
                             <label className="text-[10px] font-semibold text-stone-400 block">
@@ -3132,8 +3122,7 @@ export default function ArbitrageScannerPage() {
                               ?.description
                           }
                         </p>
-                      </div>
-                    )}
+                    </div>
                   </ArbitrageSidebarSection>
                   {/* 評価軸パネル。
                       同じ候補集合を別の角度から見直すための操作をここに集める。

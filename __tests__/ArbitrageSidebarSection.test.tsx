@@ -20,18 +20,20 @@ describe("ArbitrageSidebarSection", () => {
         );
       });
 
-      const details = container.querySelector("details");
-      const toggle = container.querySelector("summary");
-
-      expect(details).not.toHaveAttribute("open");
-      expect(toggle?.querySelector("h3")).toHaveTextContent(
-        "絞り込みフィルター",
+      const section = container.querySelector(
+        '[data-testid="arbitrage-sidebar-section"]',
       );
+      const heading = section?.querySelector("h3");
+      const toggle = heading?.querySelector("button");
+
+      expect(heading).toHaveTextContent("絞り込みフィルター");
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
       expect(toggle?.textContent).toContain("2条件");
+      expect(container.querySelector('label[for="max-age"]')).toBeNull();
 
       await act(async () => toggle?.click());
 
-      expect(details).toHaveAttribute("open");
+      expect(toggle).toHaveAttribute("aria-expanded", "true");
       expect(container.querySelector('label[for="max-age"]')).toHaveTextContent(
         "築年数上限",
       );
