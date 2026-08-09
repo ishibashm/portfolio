@@ -126,7 +126,9 @@ describe("手動実行の上書き", () => {
   });
 
   it("知らない県を指定したら黙って落とさずエラーにする", () => {
-    expect(() => buildPlan(day, { only: ["gifu"] })).toThrow(/gifu/);
+    // 以前はここに gifu を置いていたが、47 県へ広げて実在の対象になった。
+    // 誤りとして残りやすいのは綴り間違いなので、それで検査する。
+    expect(() => buildPlan(day, { only: ["tokyoto"] })).toThrow(/tokyoto/);
   });
 
   it("分数の上書きが全県に効く", () => {
