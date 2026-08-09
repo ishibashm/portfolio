@@ -13,8 +13,8 @@ interface ArbitrageSidebarSectionProps {
 /**
  * 物件スキャナー左欄の省スペースな開閉セクション。
  *
- * ネイティブの details/summary を使い、JavaScript が動く前から見出し操作と
- * キーボード操作ができるようにする。現在値の要約は閉じても残す。
+ * 見出し内の disclosure ボタンで、キーボード操作と見出しナビゲーションを
+ * 両立する。現在値の要約は閉じても残し、内容は DOM に保持して入力を失わない。
  */
 export function ArbitrageSidebarSection({
   title,
@@ -57,11 +57,9 @@ export function ArbitrageSidebarSection({
           </span>
         </button>
       </h3>
-      {isOpen ? (
-        <div id={contentId} className="space-y-4 p-4">
-          {children}
-        </div>
-      ) : null}
+      <div id={contentId} hidden={!isOpen} className="space-y-4 p-4">
+        {children}
+      </div>
     </section>
   );
 }

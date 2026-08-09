@@ -25,15 +25,21 @@ describe("ArbitrageSidebarSection", () => {
       );
       const heading = section?.querySelector("h3");
       const toggle = heading?.querySelector("button");
+      const contentId = toggle?.getAttribute("aria-controls");
+      const content = contentId ? document.getElementById(contentId) : null;
 
       expect(heading).toHaveTextContent("絞り込みフィルター");
       expect(toggle).toHaveAttribute("aria-expanded", "false");
       expect(toggle?.textContent).toContain("2条件");
-      expect(container.querySelector('label[for="max-age"]')).toBeNull();
+      expect(content).toHaveAttribute("hidden");
+      expect(content).toContainElement(
+        container.querySelector('label[for="max-age"]'),
+      );
 
       await act(async () => toggle?.click());
 
       expect(toggle).toHaveAttribute("aria-expanded", "true");
+      expect(content).not.toHaveAttribute("hidden");
       expect(container.querySelector('label[for="max-age"]')).toHaveTextContent(
         "築年数上限",
       );
