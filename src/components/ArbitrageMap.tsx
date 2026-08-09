@@ -25,6 +25,8 @@ interface ArbitrageMapProps {
   radiusKm?: string;
   /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
   keepWideView?: boolean;
+  /** 詳細パネルで開いている物件。地図でリング強調する */
+  selectedPropertyId?: string | null;
   prefecture?: string;
   isTransitioningDate?: boolean;
   showListView?: boolean;

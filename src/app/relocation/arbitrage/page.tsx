@@ -105,6 +105,11 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 import dynamic from "next/dynamic";
 
 import prefecturesWithData from "@/data/prefecturesWithData.json";
+import {
+  SmartFilters,
+  hasStructuredFilters,
+  parseSmartQuery,
+} from "@/utils/smartSearch";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import {
   DEFAULT_SEARCH_AREA,
@@ -159,6 +164,29 @@ const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
  * API ではどちらも prefecture=all なので、radiusKm まで一緒に保存しないと
  * 表示と実際の検索範囲が食い違う。
  */
+/** 適用中の絞り込み 1 件ぶんのチップ。× で外す */
+function FilterChip({
+  label,
+  onRemove,
+}: {
+  label: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-50 border border-indigo-200 text-[10px] font-semibold text-indigo-700">
+      {label}
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`${label} を外す`}
+        className="w-3.5 h-3.5 rounded-full hover:bg-indigo-200 text-indigo-500 leading-none"
+      >
+        ×
+      </button>
+    </span>
+  );
+}
+
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
   {
@@ -699,6 +727,15 @@ export default function ArbitrageScannerPage() {
   const [filterMaxStation, setFilterMaxStation] = useState<string>("");
   const [filterMinSize, setFilterMinSize] = useState<string>("");
   const [filterMinTotal, setFilterMinTotal] = useState<string>("");
+  // 間取り。スマート検索から入る。手で選ぶ UI は無い（チップで外せる）
+  const [filterLayouts, setFilterLayouts] = useState<string[]>([]);
+  // 凶（NOISE 系）を除外。「吉方位のみ」の解釈先
+  const [filterLuckyOnly, setFilterLuckyOnly] = useState(false);
+  // スマート検索の入力と、LLM 解釈の実行中表示
+  const [smartQuery, setSmartQuery] = useState("");
+  const [smartBusy, setSmartBusy] = useState(false);
+  // 詳細パネルに出している物件。カード・表・TOP5 のクリックで入る
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const itemsPerPage = 50;
 
   // 評価軸の重み。
@@ -1581,6 +1618,60 @@ export default function ArbitrageScannerPage() {
     mapCenter[0] === OVERVIEW_CENTER[0] &&
     mapCenter[1] === OVERVIEW_CENTER[1];
 
+  /** スマート検索の解釈結果を、既存のフィルタ state へ流し込む */
+  const applySmartFilters = (f: SmartFilters) => {
+    if (f.maxRentMan !== undefined) setFilterMaxRent(String(f.maxRentMan));
+    if (f.maxBuildingAge !== undefined)
+      setFilterMaxAge(String(f.maxBuildingAge));
+    if (f.maxStationMin !== undefined)
+      setFilterMaxStation(String(f.maxStationMin));
+    if (f.minSizeSqm !== undefined) setFilterMinSize(String(f.minSizeSqm));
+    if (f.direction !== undefined) setFilterDirection(f.direction);
+    if (f.status !== undefined) setFilterStatus(f.status);
+    if (f.luckyOnly) setFilterLuckyOnly(true);
+    if (f.layouts.length > 0) setFilterLayouts(f.layouts);
+    setFilterName(f.keywords.join(" "));
+    setCurrentPage(1);
+  };
+
+  /**
+   * スマート検索の実行。
+   *
+   * まず決定的パーサ（正規表現）で解釈する。定型表現はこれで即時・無料で
+   * 決まる。構造が 1 つも取れない純粋な自然文（「静かで広めの部屋」など）
+   * のときだけ /api/rentals/parse-query の LLM に投げ、それも使えない
+   * 環境ではキーワード検索として扱う。検索自体はどの経路でも成立する。
+   */
+  const handleSmartSearch = async () => {
+    const q = smartQuery.trim();
+    if (!q) return;
+    const local = parseSmartQuery(q);
+    if (hasStructuredFilters(local) || q.length < 8) {
+      applySmartFilters(local);
+      return;
+    }
+    setSmartBusy(true);
+    try {
+      const res = await fetch("/api/rentals/parse-query", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ query: q }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.available && data?.filters) {
+          applySmartFilters(data.filters as SmartFilters);
+          return;
+        }
+      }
+    } catch {
+      /* 解釈できないだけ。検索は下のフォールバックで続ける */
+    } finally {
+      setSmartBusy(false);
+    }
+    applySmartFilters(local);
+  };
+
   // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
   const applySearchAreaState = (newSearchArea: string) => {
     const nextFilters = filtersForSearchArea(newSearchArea);
@@ -1793,11 +1884,27 @@ export default function ArbitrageScannerPage() {
       if (d.totalScore < Number(filterMinTotal)) return false;
     }
 
+    if (filterLayouts.length > 0) {
+      const layout = (d.layout || "").toUpperCase();
+      if (!filterLayouts.some((l) => layout.includes(l))) return false;
+    }
+
+    // 凶の除外。ステータス未算出は「凶と断定できない」ので残す。
+    if (
+      filterLuckyOnly &&
+      d.astrologyStatus &&
+      d.astrologyStatus.includes("NOISE")
+    )
+      return false;
+
     if (filterName) {
-      const term = filterName.toLowerCase();
+      // 空白区切りは AND。スマート検索が複数の地名を残せるようにする。
+      const terms = filterName.toLowerCase().split(/\s+/).filter(Boolean);
       const addr = (d.address || "").toLowerCase();
       const name = (d.property_name || "").toLowerCase();
-      if (!addr.includes(term) && !name.includes(term)) return false;
+      for (const term of terms) {
+        if (!addr.includes(term) && !name.includes(term)) return false;
+      }
     }
     return true;
   });
@@ -1863,6 +1970,13 @@ export default function ArbitrageScannerPage() {
     })
     .slice(0, 5);
 
+  // 詳細パネルに出す物件。絞り込みで消えても、選択中は出し続ける
+  // （フィルタを触った瞬間に読んでいた詳細が消えるのは不親切）。
+  const selectedProperty = useMemo(
+    () => (selectedId ? safeData.find((d) => d.id === selectedId) : undefined),
+    [selectedId, safeData],
+  );
+
   const propertiesInBounds = useMemo(() => {
     if (!mapBounds) return sortedTableData;
     return sortedTableData.filter((d) => {
@@ -1887,8 +2001,12 @@ export default function ArbitrageScannerPage() {
     if (filterMaxStation !== "") count++;
     if (filterMinSize !== "") count++;
     if (filterMinTotal !== "") count++;
+    if (filterLayouts.length > 0) count++;
+    if (filterLuckyOnly) count++;
     return count;
   }, [
+    filterLayouts,
+    filterLuckyOnly,
     filterName,
     filterStatus,
     filterMaxRent,
@@ -2086,6 +2204,141 @@ export default function ArbitrageScannerPage() {
 
             {/* Sidebar Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* 物件の詳細。カード・表・TOP5 のクリックで開く。
+                  絞込画面と一覧画面のどちらでも最上部に出す。地図はクリック
+                  時点でこの物件へ寄っている。 */}
+              {selectedProperty && (
+                <div className="bg-white dark:bg-stone-50 rounded-2xl border-2 border-indigo-200 shadow-md overflow-hidden">
+                  <div className="flex items-start justify-between gap-2 p-3.5 pb-2">
+                    <div className="min-w-0">
+                      <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">
+                        物件の詳細
+                      </div>
+                      {selectedProperty.url ? (
+                        <a
+                          href={selectedProperty.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug hover:text-indigo-600 hover:underline break-words"
+                        >
+                          {selectedProperty.property_name}
+                        </a>
+                      ) : (
+                        <div className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug break-words">
+                          {selectedProperty.property_name}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-stone-500 mt-0.5 break-words">
+                        {selectedProperty.address}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(null)}
+                      aria-label="詳細を閉じる"
+                      className="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-white hover:bg-gray-200 text-stone-500 text-sm leading-none"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="px-3.5 pb-2 flex items-baseline gap-2">
+                    <span className="font-mono text-xl font-bold text-indigo-600">
+                      {((selectedProperty.totalRent || 0) / 10000).toFixed(1)}
+                      <span className="text-xs">万円</span>
+                    </span>
+                    <span className="text-[9px] text-stone-400">
+                      管理費込み
+                      {selectedProperty.size_sqm
+                        ? ` / ㎡単価 ${Math.round(
+                            (selectedProperty.totalRent || 0) /
+                              Number(selectedProperty.size_sqm),
+                          ).toLocaleString()}円`
+                        : ""}
+                    </span>
+                    <span className="ml-auto">
+                      {renderStars(
+                        selectedProperty.totalScore,
+                        selectedProperty.astrologyStatus,
+                      )}
+                    </span>
+                  </div>
+
+                  {/* 基本スペック。不動産アプリの物件概要と同じ並び */}
+                  <div className="mx-3.5 mb-2 grid grid-cols-3 gap-px bg-gray-100 dark:bg-stone-200 rounded-xl overflow-hidden text-center">
+                    {[
+                      ["間取り", selectedProperty.layout || "—"],
+                      [
+                        "広さ",
+                        selectedProperty.size_sqm
+                          ? `${Number(selectedProperty.size_sqm)}㎡`
+                          : "—",
+                      ],
+                      [
+                        "築年数",
+                        selectedProperty.building_age !== null &&
+                        selectedProperty.building_age !== undefined
+                          ? `築${selectedProperty.building_age}年`
+                          : "—",
+                      ],
+                      ["階", selectedProperty.floor || "—"],
+                      [
+                        "駅徒歩",
+                        selectedProperty.minutes_to_station !== null &&
+                        selectedProperty.minutes_to_station !== undefined
+                          ? `${selectedProperty.minutes_to_station}分`
+                          : "—",
+                      ],
+                      [
+                        "掲載",
+                        `${selectedProperty.axisInputs?.listingCount ?? 1}社`,
+                      ],
+                    ].map(([k, v]) => (
+                      <div
+                        key={k as string}
+                        className="bg-white dark:bg-stone-50 py-1.5"
+                      >
+                        <div className="text-[8px] text-stone-400">{k}</div>
+                        <div className="text-[11px] font-bold text-stone-800">
+                          {v}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 方位。このサイトの本体 */}
+                  <div className="mx-3.5 mb-2 rounded-xl bg-indigo-50/60 dark:bg-indigo-50 border border-indigo-100 px-3 py-2 text-[10px] text-stone-700">
+                    出発地から見て
+                    <span className="font-bold text-indigo-700 mx-1">
+                      {selectedProperty.direction ?? "方位不明"}
+                    </span>
+                    {selectedProperty.maxAstroFactor && (
+                      <span className="font-semibold">
+                        （{selectedProperty.maxAstroFactor}）
+                      </span>
+                    )}
+                    {typeof selectedProperty.distanceKm === "number" && (
+                      <span className="text-stone-500 ml-1">
+                        ・約{Math.round(selectedProperty.distanceKm)}km
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 総合スコアの内訳。全軸出す */}
+                  <div className="mx-3.5 mb-3 pt-2 border-t border-gray-100 dark:border-stone-200">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-bold text-stone-500">
+                        評価の内訳
+                      </span>
+                      <span className="text-[9px] font-mono text-stone-500">
+                        総合 {selectedProperty.totalScore.toFixed(1)}
+                      </span>
+                    </div>
+                    {renderAxisBars(selectedProperty, AXIS_ORDER.length)}
+                    {renderPartyBreakdown(selectedProperty)}
+                  </div>
+                </div>
+              )}
               {!showListView ? (
                 // VIEW 1: Filter Screen & Settings
                 <>
@@ -2356,6 +2609,120 @@ export default function ArbitrageScannerPage() {
                     <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
                       絞り込みフィルター
                     </h3>
+
+                    {/* スマート検索。1 行で複数条件をまとめて指定する入口。
+                        定型表現は端末内の正規表現で即時に解釈し、純粋な
+                        自然文だけ LLM（無ければキーワード検索）に回す。 */}
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="arb-smart-search"
+                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                      >
+                        スマート検索（条件をまとめて入力）
+                      </label>
+                      <div className="relative">
+                        <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-amber-500" />
+                        <input
+                          id="arb-smart-search"
+                          type="text"
+                          placeholder="例: 姫路 2LDK 8万円以下 徒歩10分 築15年以内 北東"
+                          value={smartQuery}
+                          onChange={(e) => setSmartQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleSmartSearch();
+                            }
+                          }}
+                          className="w-full pl-9 pr-16 py-2 bg-amber-50/50 dark:bg-white border border-amber-200/70 dark:border-stone-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-400 outline-none transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSmartSearch}
+                          disabled={smartBusy}
+                          className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-stone-800 text-white text-[10px] font-bold hover:bg-stone-700 disabled:opacity-50"
+                        >
+                          {smartBusy ? "解釈中…" : "検索"}
+                        </button>
+                      </div>
+                      <p className="text-[9px] text-stone-400 leading-relaxed">
+                        家賃・間取り・徒歩分・築年数・広さ・方位・「吉方位のみ」を1行で。残りは物件名・住所の検索語になります。
+                      </p>
+                    </div>
+
+                    {/* 適用中の条件チップ。何で絞れているかを常に見せ、
+                        個別に外せるようにする。スマート検索で入った条件も
+                        手で入れた条件も、区別せずここに出る。 */}
+                    {activeFiltersCount > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {filterName && (
+                          <FilterChip
+                            label={`「${filterName}」`}
+                            onRemove={() => setFilterName("")}
+                          />
+                        )}
+                        {filterMaxRent && (
+                          <FilterChip
+                            label={`〜${filterMaxRent}万円`}
+                            onRemove={() => setFilterMaxRent("")}
+                          />
+                        )}
+                        {filterLayouts.length > 0 && (
+                          <FilterChip
+                            label={filterLayouts.join("・")}
+                            onRemove={() => setFilterLayouts([])}
+                          />
+                        )}
+                        {filterMaxAge && (
+                          <FilterChip
+                            label={`築${filterMaxAge}年以内`}
+                            onRemove={() => setFilterMaxAge("")}
+                          />
+                        )}
+                        {filterMaxStation && (
+                          <FilterChip
+                            label={`徒歩${filterMaxStation}分以内`}
+                            onRemove={() => setFilterMaxStation("")}
+                          />
+                        )}
+                        {filterMinSize && (
+                          <FilterChip
+                            label={`${filterMinSize}㎡以上`}
+                            onRemove={() => setFilterMinSize("")}
+                          />
+                        )}
+                        {filterDirection !== "ALL" && (
+                          <FilterChip
+                            label={`方位: ${filterDirection}`}
+                            onRemove={() => setFilterDirection("ALL")}
+                          />
+                        )}
+                        {filterStatus !== "ALL" && (
+                          <FilterChip
+                            label={`吉凶: ${filterStatus}`}
+                            onRemove={() => setFilterStatus("ALL")}
+                          />
+                        )}
+                        {filterLuckyOnly && (
+                          <FilterChip
+                            label="凶方位を除外"
+                            onRemove={() => setFilterLuckyOnly(false)}
+                          />
+                        )}
+                        {filterMinYield && (
+                          <FilterChip
+                            label={`利回り${filterMinYield}以上`}
+                            onRemove={() => setFilterMinYield("")}
+                          />
+                        )}
+                        {filterMinTotal && (
+                          <FilterChip
+                            label={`総合${filterMinTotal}点以上`}
+                            onRemove={() => setFilterMinTotal("")}
+                          />
+                        )}
+                      </div>
+                    )}
 
                     {/* Search query input */}
                     <div className="space-y-1">
@@ -3076,6 +3443,7 @@ export default function ArbitrageScannerPage() {
                           <div
                             key={item.id}
                             onClick={() => {
+                              setSelectedId(item.id);
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
@@ -3192,6 +3560,7 @@ export default function ArbitrageScannerPage() {
                           <div
                             key={item.id}
                             onClick={() => {
+                              setSelectedId(item.id);
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
@@ -3386,6 +3755,7 @@ export default function ArbitrageScannerPage() {
                               <tr
                                 key={item.id}
                                 onClick={() => {
+                                  setSelectedId(item.id);
                                   setMapCenter([item.lat, item.lon]);
                                 }}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
@@ -3506,6 +3876,7 @@ export default function ArbitrageScannerPage() {
               radiusKm={radiusKm}
               prefecture={prefecture}
               keepWideView={isNationwideOverview}
+              selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}
               useClassical={useClassical}

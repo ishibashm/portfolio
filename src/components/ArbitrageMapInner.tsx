@@ -108,6 +108,8 @@ interface ArbitrageMapInnerProps {
   prefecture?: string;
   /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
   keepWideView?: boolean;
+  /** 詳細パネルで開いている物件。リングで強調する */
+  selectedPropertyId?: string | null;
   isTransitioningDate?: boolean;
   showListView?: boolean;
   useClassical?: boolean;
@@ -324,6 +326,7 @@ export default function ArbitrageMapInner({
   radiusKm,
   prefecture,
   keepWideView = false,
+  selectedPropertyId = null,
   isTransitioningDate = false,
   showListView = false,
   useClassical = false,
@@ -792,6 +795,27 @@ export default function ArbitrageMapInner({
             </Popup>
           </Marker>
         )}
+
+        {/* 詳細パネルで開いている物件の強調リング。ピンの色分けの中で
+            「いまどれを見ているか」を見失わないようにする */}
+        {(() => {
+          if (!selectedPropertyId) return null;
+          const sel = properties.find((p) => p.id === selectedPropertyId);
+          if (!sel || sel.lat === null || sel.lon === null) return null;
+          return (
+            <CircleMarker
+              center={[sel.lat, sel.lon]}
+              radius={16}
+              pathOptions={{
+                color: "#4f46e5",
+                weight: 3,
+                fillColor: "#4f46e5",
+                fillOpacity: 0.08,
+                dashArray: "2,4",
+              }}
+            />
+          );
+        })()}
 
         {/* Pulsing ring around center (matching scan radius) */}
         {zoom >= 10 && radiusKm && radiusKm !== "all" && (
