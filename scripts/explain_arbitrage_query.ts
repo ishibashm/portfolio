@@ -28,10 +28,9 @@ import * as dotenv from "dotenv";
 
 import {
   buildWhereSql,
-  municipalityStatsSql,
   selectSql,
   statsAndMunicipalitySql,
-  statsSql,
+  type GeoFilters,
 } from "../src/utils/arbitrageQuery";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -44,7 +43,6 @@ if (!connectionString) {
   throw new Error("DATABASE_URL / DIRECT_URL is not set.");
 }
 
-const PREFECTURE = process.env.EXPLAIN_PREFECTURE || "all";
 const TIMEOUT_MS = parseInt(process.env.EXPLAIN_TIMEOUT_MS || "120000", 10);
 
 // API の既定値に合わせる。route.ts の maxSeenDays=30 / dedupe=true /
@@ -73,62 +71,125 @@ async function explain(pool: Pool, label: string, sql: string, params: any[]) {
   }
 }
 
+/**
+ * 測る条件。
+ *
+ * これまで prefecture=all / 半径なしだけを測っていたが、これは絞り込みが
+ * 一切効かない最悪ケースで、実際の使い方とは違う。画面は出発地の入力が
+ * 必須で、県か半径で絞って使う。そこでどれだけかかるのかを知らずに
+ * 設計を変えると、要らない作り替えをすることになる。
+ */
+const SCENARIOS: Array<{ label: string; filters: Partial<GeoFilters> }> = [
+  {
+    label: "A. 全国・半径なし（絞り込みが効かない最悪ケース）",
+    filters: { prefecture: "all", radiusKm: 0 },
+  },
+  {
+    label: "B. 兵庫県・半径なし（県で絞る）",
+    filters: { prefecture: "兵庫県", radiusKm: 0 },
+  },
+  {
+    label: "C. 神戸から半径 30km・全国（出発地で絞る）",
+    filters: {
+      prefecture: "all",
+      radiusKm: 30,
+      baseLat: 34.6913,
+      baseLon: 135.183,
+    },
+  },
+  {
+    // エリア別ページが対象にしている範囲（5〜150km）。既定値をここに置けるか。
+    label: "E. 神戸から半径 150km・全国（エリアページと同じ範囲）",
+    filters: {
+      prefecture: "all",
+      radiusKm: 150,
+      baseLat: 34.6913,
+      baseLon: 135.183,
+    },
+  },
+  {
+    label: "F. 東京から半径 150km・全国（在庫が最も多い側）",
+    filters: {
+      prefecture: "all",
+      radiusKm: 150,
+      baseLat: 35.6895,
+      baseLon: 139.6917,
+    },
+  },
+  {
+    label: "D. 名古屋から半径 50km・愛知県（県と出発地の両方）",
+    filters: {
+      prefecture: "愛知県",
+      radiusKm: 50,
+      baseLat: 35.1815,
+      baseLon: 136.9064,
+    },
+  },
+];
+
+const BASE_FILTERS: GeoFilters = {
+  maxSeenDays: MAX_SEEN_DAYS,
+  maxBuildingAge: null,
+  radiusKm: 0,
+  baseLat: NaN,
+  baseLon: NaN,
+  minLat: NaN,
+  maxLat: NaN,
+  minLon: NaN,
+  maxLon: NaN,
+  prefecture: "all",
+};
+
 async function main() {
   // 他のスクリプト（purge / build_area_dataset）と同じ作り方。
   // SSL は接続文字列の sslmode に任せる。
   const pool = new Pool({ connectionString, max: 1 });
 
-  const { sql: whereSql, params } = buildWhereSql({
-    maxSeenDays: MAX_SEEN_DAYS,
-    maxBuildingAge: null,
-    radiusKm: 0,
-    baseLat: NaN,
-    baseLon: NaN,
-    minLat: NaN,
-    maxLat: NaN,
-    minLon: NaN,
-    maxLon: NaN,
-    prefecture: PREFECTURE,
-  });
-
-  console.log(`対象: prefecture=${PREFECTURE} / maxSeenDays=${MAX_SEEN_DAYS}`);
-  console.log(`1 本あたりの上限: ${TIMEOUT_MS} ms`);
-
+  console.log(
+    `maxSeenDays=${MAX_SEEN_DAYS} / 1 本あたりの上限 ${TIMEOUT_MS} ms`,
+  );
   await pool.query(`SET statement_timeout = ${TIMEOUT_MS}`);
 
+  // 鮮度の集計だけは絞り込み条件を持たないので、条件ごとに測る意味が無い。
   await explain(
     pool,
-    "1. 候補の取り出し selectSql",
-    selectSql(whereSql, DEDUPE, params.length + 1, "value"),
-    [...params, LIMIT],
-  );
-  await explain(
-    pool,
-    "3. 鮮度 max(last_seen_at)（条件なし）",
+    "鮮度 max(last_seen_at)（条件なし・全条件で共通）",
     "SELECT max(last_seen_at) FROM rental_properties",
     [],
   );
-  // 4 と 5 は分けて投げると innerSql を 2 回評価する。API は統合版に
-  // 切り替えたが、比較のため 3 本とも測る。統合版が「4 単独」と
-  // 「5 単独」の合計より明確に短ければ、狙いどおり 1 回になっている。
-  await explain(
-    pool,
-    "4. 相場の基準値 statsSql（旧・単独）",
-    statsSql(whereSql, DEDUPE),
-    params,
-  );
-  await explain(
-    pool,
-    "5. 市区町村ごとの中央値 municipalityStatsSql（旧・単独）",
-    municipalityStatsSql(whereSql, DEDUPE),
-    params,
-  );
-  await explain(
-    pool,
-    "4+5. 統合 statsAndMunicipalitySql（現行）",
-    statsAndMunicipalitySql(whereSql, DEDUPE),
-    params,
-  );
+
+  for (const scenario of SCENARIOS) {
+    const { sql: whereSql, params } = buildWhereSql({
+      ...BASE_FILTERS,
+      ...scenario.filters,
+    });
+
+    console.log(`\n\n##### ${scenario.label} #####`);
+
+    // 母数が分からないと時間の意味が読めない。先に件数を出す。
+    try {
+      const r = await pool.query(
+        `SELECT count(*)::int AS n FROM rental_properties WHERE ${whereSql}`,
+        params,
+      );
+      console.log(`名寄せ前の対象行: ${r.rows[0].n.toLocaleString()} 行`);
+    } catch (e: any) {
+      console.log(`件数の取得に失敗: ${e.message}`);
+    }
+
+    await explain(
+      pool,
+      "候補の取り出し selectSql",
+      selectSql(whereSql, DEDUPE, params.length + 1, "value"),
+      [...params, LIMIT],
+    );
+    await explain(
+      pool,
+      "統計＋市区町村 statsAndMunicipalitySql（現行）",
+      statsAndMunicipalitySql(whereSql, DEDUPE),
+      params,
+    );
+  }
 
   await pool.end();
 }

@@ -182,14 +182,14 @@ jobs:
             echo "> scans が 0 のままの索引は読み取りに寄与しておらず、維持コストだけ払っている。"
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # スキャナーが実際に投げる 4 本を、API と同じ SQL 生成関数から組み立てて
-      # 測る。どれが重いのかを推測せずに決めるため。
+      # スキャナーが実際に投げるクエリを、API と同じ SQL 生成関数から
+      # 組み立てて測る。どれが重いのかを推測せずに決めるため。
       #
-      # prefecture=all は絞り込みが最も緩い最悪ケース。ここが許容範囲なら
-      # 個別の県はそれより速い。
+      # 条件は 4 通り。全国・半径なしは絞り込みが一切効かない最悪ケースで、
+      # 実際の使い方とは違う。画面は出発地の入力が必須なので、県や半径で
+      # 絞ったときに何秒なのかを見ないと、要らない作り替えをすることになる。
       - name: Measure the real scanner queries (before)
         env:
-          EXPLAIN_PREFECTURE: all
           EXPLAIN_TIMEOUT_MS: "120000"
         run: |
           set -euo pipefail
@@ -226,7 +226,6 @@ jobs:
       - name: Measure the real scanner queries (after)
         if: ${{ inputs.mode == 'apply' }}
         env:
-          EXPLAIN_PREFECTURE: all
           EXPLAIN_TIMEOUT_MS: "120000"
         run: |
           set -euo pipefail
