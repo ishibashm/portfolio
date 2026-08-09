@@ -106,6 +106,17 @@ import dynamic from "next/dynamic";
 
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+import {
+  DEFAULT_RADIUS_KM,
+  NEARBY_SEARCH_AREA,
+  NATIONWIDE_SEARCH_AREA,
+  SEARCH_AREA_STORAGE_KEY,
+  filtersForSearchArea,
+  geographyParamsForSearch,
+  normalizeStoredSearchArea,
+  searchAreaForFilters,
+  searchAreaFromUrl,
+} from "@/utils/arbitrageSearchArea";
 
 /**
  * スキャナーで選べる都道府県と、選択時に地図を寄せる代表座標。
@@ -141,12 +152,10 @@ const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
  * 在庫の 6 割（26.5 万行）を拾って 10.9 秒になるため既定にできない。
  * 50km なら最悪ケースでも数秒に収まる。
  *
- * 全国を見たい人は都道府県の「全国 / すべて」を明示的に選べば従来どおり動く。
- * 半径を選ぶ UI は存在しないので、"all" が保存されていても、それが利用者の
- * 意思であるのは県とセットで保存された場合だけ。
+ * 画面では「都道府県指定なし（出発地から50km）」と「全国検索」を別項目にする。
+ * API ではどちらも prefecture=all なので、radiusKm まで一緒に保存しないと
+ * 表示と実際の検索範囲が食い違う。
  */
-const DEFAULT_RADIUS_KM = "50";
-
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
   {
@@ -953,6 +962,17 @@ export default function ArbitrageScannerPage() {
         if (config.direction_filter_mode !== undefined)
           filter = config.direction_filter_mode;
         if (config.action_intent !== undefined) intent = config.action_intent;
+        // 旧設定の都道府県指定は維持する。all/all は旧既定値と利用者の
+        // 明示選択を区別できないので、下の新しい保存キーが無ければ50kmにする。
+        if (
+          typeof config.prefecture === "string" &&
+          config.prefecture !== "all"
+        ) {
+          pref = config.prefecture;
+          rKm = "all";
+        } else if (config.radius_km && config.radius_km !== "all") {
+          rKm = String(config.radius_km);
+        }
       } catch (e) {}
     } else {
       // Fallback to legacy isolated keys
@@ -988,6 +1008,20 @@ export default function ArbitrageScannerPage() {
       if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
     }
 
+    // 新しい検索範囲の選択値があれば、都道府県と半径を必ずそこから一緒に
+    // 復元する。旧形式の all/all には「利用者が全国を選んだ」という情報が
+    // 無いため、キーが無い場合は従来どおり安全な50kmへ移行する。
+    const storedSearchArea = localStorage.getItem(SEARCH_AREA_STORAGE_KEY);
+    const validPrefectureNames = TARGET_PREFECTURES.map((p) => p.name);
+    const restoredSearchArea = normalizeStoredSearchArea(
+      storedSearchArea,
+      pref,
+      validPrefectureNames,
+    );
+    const storedFilters = filtersForSearchArea(restoredSearchArea);
+    pref = storedFilters.prefecture;
+    rKm = storedFilters.radiusKm;
+
     // URL に出発地が乗っていればそれを最優先する。
     // /houi/area/* から「この街を出発地にして探す」で来た人が、
     // 保存済みの設定に上書きされて別の場所の結果を見ることがないようにする。
@@ -1003,9 +1037,17 @@ export default function ArbitrageScannerPage() {
         localStorage.setItem("arb_baseLon", bsLon);
       }
       const qPref = qs.get("prefecture");
-      if (qPref) pref = qPref;
       const qRadius = qs.get("radiusKm");
-      if (qRadius) rKm = qRadius;
+      const urlSearchArea = searchAreaFromUrl(
+        qPref,
+        qRadius,
+        validPrefectureNames,
+      );
+      if (urlSearchArea) {
+        const urlFilters = filtersForSearchArea(urlSearchArea);
+        pref = urlFilters.prefecture;
+        rKm = urlFilters.radiusKm;
+      }
 
       // 吉日カレンダー（/calendar）からの受け渡し。
       // 「この日に、この方位で」を選んで来ているので、対象日・方位・
@@ -1261,33 +1303,15 @@ export default function ArbitrageScannerPage() {
       if (birthDate) params.append("birthDate", birthDate);
       if (targetDate) params.append("targetDate", targetDate);
 
-      // Send either radius or map bounding box depending on mapBounds
-      if (mapBounds) {
-        if (mapBounds.zoom >= 10) {
-          params.append("minLat", mapBounds.minLat.toString());
-          params.append("maxLat", mapBounds.maxLat.toString());
-          params.append("minLon", mapBounds.minLon.toString());
-          params.append("maxLon", mapBounds.maxLon.toString());
-          params.append("radiusKm", "all"); // Disable radius when using bounds
-        } else if (prefecture !== "all") {
-          // ズームアウト時（< 10）は県の密度ポリゴンを見せる。県が選ばれて
-          // いれば母数はその県に収まるので、無制限でも数秒で返る。
-          params.append("radiusKm", "all");
-        } else {
-          // 県が選ばれていない状態で無制限を送ると、全国 45 万行の名寄せに
-          // 入る（実測 18.4 秒）。地図はズーム 5 で始まるので、初回の検索は
-          // 必ずここを通る。ここが「スキャンが終わらない」の入口だった。
-          //
-          // 固定の "all" をやめて state を送る。既定では DEFAULT_RADIUS_KM で
-          // 出発地の周辺に絞られ、都道府県で「全国 / すべて」を明示的に
-          // 選んだときだけ state が "all" になって従来どおり全国を引く。
-          params.append("radiusKm", radiusKm);
-        }
-      } else {
-        params.append("radiusKm", radiusKm);
-      }
-
-      params.append("prefecture", prefecture);
+      // 地図境界は選択中の検索範囲へ追加する絞り込みとして送る。
+      // 近隣50kmを選んでいるとき、ズーム操作で半径を解除しない。
+      const geographyParams = geographyParamsForSearch(
+        { prefecture, radiusKm },
+        mapBounds,
+      );
+      Object.entries(geographyParams).forEach(([key, value]) => {
+        params.append(key, value);
+      });
       params.append("useClassical", useClassical.toString());
       params.append("layerMode", layerMode);
       params.append("useTrueNorth", useTrueNorth.toString());
@@ -1514,42 +1538,43 @@ export default function ArbitrageScannerPage() {
     });
   };
 
-  // Sync radius changes instantly
-  const handleRadiusChange = (newRadius: string) => {
-    setRadiusKm(newRadius);
-    localStorage.setItem("arb_radiusKm", newRadius);
+  // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
+  const applySearchAreaState = (newSearchArea: string) => {
+    const nextFilters = filtersForSearchArea(newSearchArea);
+    const normalizedSearchArea = searchAreaForFilters(
+      nextFilters.prefecture,
+      nextFilters.radiusKm,
+    );
+    setPrefecture(nextFilters.prefecture);
+    setRadiusKm(nextFilters.radiusKm);
+    localStorage.setItem(SEARCH_AREA_STORAGE_KEY, normalizedSearchArea);
+    localStorage.setItem("arb_prefecture", nextFilters.prefecture);
+    localStorage.setItem("arb_radiusKm", nextFilters.radiusKm);
     setCurrentPage(1);
-    saveUnifiedConfig({ radius_km: newRadius });
+    return nextFilters;
   };
 
-  // Sync prefecture changes instantly
-  const handlePrefectureChange = (newPref: string) => {
-    setPrefecture(newPref);
-    localStorage.setItem("arb_prefecture", newPref);
-    setCurrentPage(1);
+  const handleSearchAreaChange = (newSearchArea: string) => {
+    const nextFilters = applySearchAreaState(newSearchArea);
 
-    // 都道府県が指定された場合はスキャン半径制限を「制限なし」にし、地図の表示中心を代表座標に移動する
-    let nextRadius = radiusKm;
     let nextCenter: [number, number] = mapCenter;
-
-    const target = TARGET_PREFECTURES.find((p) => p.name === newPref);
+    const target = TARGET_PREFECTURES.find(
+      (p) => p.name === nextFilters.prefecture,
+    );
     if (target) {
       nextCenter = [target.lat, target.lon];
-      nextRadius = "all";
-    } else if (newPref === "all") {
-      // 全国が選ばれた場合は、日本中心に移動して半径制限を解除する
+    } else if (newSearchArea === NATIONWIDE_SEARCH_AREA) {
       nextCenter = [36.2048, 138.2529];
-      nextRadius = "all";
+    } else {
+      const lat = parseFloat(baseLat);
+      const lon = parseFloat(baseLon);
+      if (!isNaN(lat) && !isNaN(lon)) nextCenter = [lat, lon];
     }
 
-    setRadiusKm(nextRadius);
     setMapCenter(nextCenter);
-
-    localStorage.setItem("arb_radiusKm", nextRadius);
-
     saveUnifiedConfig({
-      prefecture: newPref,
-      radius_km: nextRadius,
+      prefecture: nextFilters.prefecture,
+      radius_km: nextFilters.radiusKm,
     });
   };
 
@@ -1559,19 +1584,18 @@ export default function ArbitrageScannerPage() {
     lon: string,
     pref: string,
   ) => {
+    const nextFilters = applySearchAreaState(pref);
     setLocalLat(lat);
     setLocalLon(lon);
     setBaseLat(lat);
     setBaseLon(lon);
-    setPrefecture(pref);
     localStorage.setItem("arb_baseLat", lat);
     localStorage.setItem("arb_baseLon", lon);
-    localStorage.setItem("arb_prefecture", pref);
-    setCurrentPage(1);
     saveUnifiedConfig({
       base_lat: parseFloat(lat),
       base_lon: parseFloat(lon),
-      prefecture: pref,
+      prefecture: nextFilters.prefecture,
+      radius_km: nextFilters.radiusKm,
     });
   };
 
@@ -2028,21 +2052,26 @@ export default function ArbitrageScannerPage() {
                       スキャン地域と計算方式
                     </h3>
 
-                    {/* Prefecture Selection */}
+                    {/* Search Area Selection */}
                     <div className="space-y-1">
                       <label
-                        htmlFor="arb-prefecture"
+                        htmlFor="arb-search-area"
                         className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
                       >
-                        対象都道府県 (DBフィルタ)
+                        検索範囲
                       </label>
                       <select
-                        id="arb-prefecture"
-                        value={prefecture}
-                        onChange={(e) => handlePrefectureChange(e.target.value)}
+                        id="arb-search-area"
+                        value={searchAreaForFilters(prefecture, radiusKm)}
+                        onChange={(e) => handleSearchAreaChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
-                        <option value="all">全国 / すべて</option>
+                        <option value={NEARBY_SEARCH_AREA}>
+                          都道府県指定なし（出発地から50km）
+                        </option>
+                        <option value={NATIONWIDE_SEARCH_AREA}>
+                          全国検索（時間がかかります）
+                        </option>
                         {TARGET_PREFECTURES.map((p) => (
                           <option key={p.name} value={p.name}>
                             {p.name}
