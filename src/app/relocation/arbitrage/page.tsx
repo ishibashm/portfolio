@@ -7,13 +7,13 @@ import {
   TrendingUp,
   Sparkles,
   Filter,
-  ChevronRight,
   Download,
   Search,
   Settings,
   RefreshCw,
 } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { loadSettings } from "@/lib/userSettings";
 import {
   MetaphysicalConfigBar,
@@ -845,7 +845,6 @@ export default function ArbitrageScannerPage() {
         stationary: false,
       },
     ]);
-    setShowPartyPanel(true);
   };
 
   const updatePartyMember = (id: string, patch: Partial<PartyMemberInput>) => {
@@ -2343,11 +2342,20 @@ export default function ArbitrageScannerPage() {
                 // VIEW 1: Filter Screen & Settings
                 <>
                   {/* Geographic & Calculations Settings */}
-                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
-                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-                      スキャン地域と計算方式
-                    </h3>
-
+                  <ArbitrageSidebarSection
+                    title="スキャン地域と計算方式"
+                    summary={
+                      !hasBaseLocation
+                        ? "出発地未設定"
+                        : searchAreaForFilters(prefecture, radiusKm) ===
+                            NATIONWIDE_SEARCH_AREA
+                          ? "地図の表示範囲"
+                          : searchAreaForFilters(prefecture, radiusKm) ===
+                              NEARBY_SEARCH_AREA
+                            ? "出発地から50km"
+                            : searchAreaForFilters(prefecture, radiusKm)
+                    }
+                  >
                     {/* Search Area Selection */}
                     <div className="space-y-1">
                       <label
@@ -2602,14 +2610,17 @@ export default function ArbitrageScannerPage() {
                         月相タイミング補正 (日単位 +/-10点)
                       </label>
                     </div>
-                  </div>
+                  </ArbitrageSidebarSection>
 
                   {/* Filter Criteria Panel */}
-                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
-                    <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider font-semibold">
-                      絞り込みフィルター
-                    </h3>
-
+                  <ArbitrageSidebarSection
+                    title="絞り込みフィルター"
+                    summary={
+                      activeFiltersCount > 0
+                        ? `${activeFiltersCount}条件`
+                        : "条件なし"
+                    }
+                  >
                     {/* スマート検索。1 行で複数条件をまとめて指定する入口。
                         定型表現は端末内の正規表現で即時に解釈し、純粋な
                         自然文だけ LLM（無ければキーワード検索）に回す。 */}
@@ -2885,32 +2896,30 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                     </div>
-                  </div>
+                  </ArbitrageSidebarSection>
 
                   {/* 同行者パネル。
                       合流する親族のように、別の出発地から同じ移転先へ動く人を
                       足すと、全員ぶんの方位をまとめて判定する。 */}
-                  <div className="space-y-3.5 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-                        同行者・合流する人
-                        {partyMembers.length > 0 && (
-                          <span className="ml-1.5 text-indigo-600">
-                            ({partyMembers.length + 1}人)
-                          </span>
-                        )}
-                      </h3>
-                      <button
-                        onClick={() => setShowPartyPanel((v) => !v)}
-                        className="text-[10px] font-semibold text-indigo-600 hover:underline"
-                      >
-                        {showPartyPanel ? "閉じる" : "設定"}
-                      </button>
-                    </div>
-
+                  <ArbitrageSidebarSection
+                    title="同行者・合流する人"
+                    summary={
+                      partyMembers.length > 0
+                        ? `${partyMembers.length + 1}人`
+                        : "本人のみ"
+                    }
+                  >
                     <p className="text-[10px] text-stone-500 leading-relaxed">
                       出発地が違えば同じ物件でも方位が変わります。登録すると、全員にとっての方位と「いつなら全員で動けるか」を合わせて判定します。
                     </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowPartyPanel((v) => !v)}
+                      className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                    >
+                      {showPartyPanel ? "同行者設定を隠す" : "同行者設定を表示"}
+                    </button>
 
                     {showPartyPanel && (
                       <div className="space-y-3">
@@ -3125,23 +3134,18 @@ export default function ArbitrageScannerPage() {
                         </p>
                       </div>
                     )}
-                  </div>
+                  </ArbitrageSidebarSection>
                   {/* 評価軸パネル。
                       同じ候補集合を別の角度から見直すための操作をここに集める。
                       重みの変更は画面内で完結するので再スキャンは起きない。 */}
-                  <div className="space-y-4 bg-white dark:bg-stone-50 p-4 rounded-2xl border border-gray-100 dark:border-stone-200 shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider">
-                        評価軸の重み
-                      </h3>
-                      <button
-                        onClick={() => setShowWeightPanel((v) => !v)}
-                        className="text-[10px] font-semibold text-indigo-600 hover:underline"
-                      >
-                        {showWeightPanel ? "閉じる" : "細かく調整"}
-                      </button>
-                    </div>
-
+                  <ArbitrageSidebarSection
+                    title="評価軸の重み"
+                    summary={
+                      weightPresetId === "custom"
+                        ? "手動調整"
+                        : getPreset(weightPresetId).label
+                    }
+                  >
                     <p className="text-[10px] text-stone-500 leading-relaxed">
                       何を重視して順位を付けるかを選びます。切り替えても再スキャンは走りません。
                     </p>
@@ -3189,6 +3193,16 @@ export default function ArbitrageScannerPage() {
                         {getPreset(weightPresetId).description}
                       </p>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => setShowWeightPanel((v) => !v)}
+                      className="text-[10px] font-semibold text-indigo-600 hover:underline"
+                    >
+                      {showWeightPanel
+                        ? "軸ごとのスライダーを隠す"
+                        : "軸ごとのスライダーを表示"}
+                    </button>
 
                     {showWeightPanel && (
                       <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-stone-200">
@@ -3371,24 +3385,21 @@ export default function ArbitrageScannerPage() {
                       />
                       避けるべき方位・期間の物件を最下位に沈める
                     </label>
-                  </div>
+                  </ArbitrageSidebarSection>
 
-                  {/* TOP 5 お買い得アコーディオン (HTML5 details) */}
-                  <details
-                    className="bg-white dark:bg-stone-50 rounded-2xl border border-gray-100 dark:border-stone-200 overflow-hidden shadow-xs group"
-                    open
+                  {/* TOP 5 お買い得アコーディオン */}
+                  <ArbitrageSidebarSection
+                    title="アービトラージ物件 TOP 5"
+                    summary={
+                      loading
+                        ? "検索中"
+                        : `${topArbitrage.length}件・総合スコア順`
+                    }
+                    icon={
+                      <Sparkles className="h-4 w-4 text-amber-500 animate-bounce" />
+                    }
                   >
-                    <summary className="p-4 font-bold text-xs text-gray-900 dark:text-stone-900 flex items-center justify-between cursor-pointer select-none group-open:border-b group-open:border-gray-100 dark:group-open:border-stone-200">
-                      <span className="flex items-center gap-1.5">
-                        <Sparkles className="w-4 h-4 text-amber-500 animate-bounce" />
-                        アービトラージ物件 TOP 5
-                        <span className="font-normal text-[10px] text-stone-500">
-                          総合スコア順
-                        </span>
-                      </span>
-                      <ChevronRight className="w-4 h-4 transition-transform duration-200 group-open:rotate-90 text-stone-500" />
-                    </summary>
-                    <div className="p-3.5 space-y-3.5">
+                    <div className="space-y-3.5">
                       {/* 何を根拠に「TOP」なのかが分からない、という指摘への対応。
                           順位の出どころを、開いた時点で読める場所に書く。 */}
                       <div className="rounded-xl bg-amber-50/70 dark:bg-amber-50 border border-amber-200/70 p-2.5 text-[10px] leading-relaxed text-stone-600">
@@ -3520,7 +3531,7 @@ export default function ArbitrageScannerPage() {
                         ))
                       )}
                     </div>
-                  </details>
+                  </ArbitrageSidebarSection>
                 </>
               ) : (
                 // VIEW 2: Property List Screen (Cards or Table)
