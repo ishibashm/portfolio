@@ -29,6 +29,7 @@ import {
   getPropertyPinColors,
   getRecommendationStarCount,
 } from "@/utils/arbitrageHelpers";
+import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
 
 // Fix Leaflet default icon problem in Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -104,6 +105,8 @@ interface ArbitrageMapInnerProps {
   layerMode: string;
   radiusKm?: string;
   prefecture?: string;
+  /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
+  keepWideView?: boolean;
   isTransitioningDate?: boolean;
   showListView?: boolean;
   useClassical?: boolean;
@@ -171,15 +174,26 @@ function AutoFitBounds({
   properties,
   center,
   prefecture,
+  keepWideView = false,
 }: {
   properties: ScoredProperty[];
   center: [number, number];
   prefecture?: string;
+  /**
+   * 全国を俯瞰しているか。
+   *
+   * これが無いと「全国」を選んでも物件群へズームインしてしまい、
+   * 県別の色分け（ズーム10未満でしか描かない）が出ない。返ってくるのは
+   * 安い順の500件なので、全国を選ぶほど最も安い一角へ寄っていく、という
+   * 逆の動きになっていた。
+   */
+  keepWideView?: boolean;
 }) {
   const map = useMap();
   const prevPrefectureRef = useRef<string | undefined>(undefined);
   const prevCenterRef = useRef<[number, number] | null>(null);
   const prevPropsLengthRef = useRef<number>(0);
+  const prevWideRef = useRef<boolean>(false);
 
   useEffect(() => {
     // If no properties, zoom out to show Japan if not already zoomed out
@@ -192,6 +206,20 @@ function AutoFitBounds({
       prevPropsLengthRef.current = 0;
       return;
     }
+
+    // 全国に切り替わった瞬間だけ俯瞰へ戻す。俯瞰中も毎回引き戻すと、
+    // 全国を選んだまま気になる場所を拡大して見ることができなくなる。
+    if (keepWideView) {
+      if (!prevWideRef.current) {
+        map.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM);
+        prevCenterRef.current = center;
+        prevPrefectureRef.current = prefecture;
+      }
+      prevWideRef.current = true;
+      prevPropsLengthRef.current = properties.length;
+      return;
+    }
+    prevWideRef.current = false;
 
     const prefectureChanged = prevPrefectureRef.current !== prefecture;
     const centerChanged =
@@ -221,7 +249,7 @@ function AutoFitBounds({
     }
 
     prevPropsLengthRef.current = properties.length;
-  }, [properties, center, prefecture, map]);
+  }, [properties, center, prefecture, keepWideView, map]);
 
   return null;
 }
@@ -294,6 +322,7 @@ export default function ArbitrageMapInner({
   layerMode,
   radiusKm,
   prefecture,
+  keepWideView = false,
   isTransitioningDate = false,
   showListView = false,
   useClassical = false,
@@ -707,6 +736,7 @@ export default function ArbitrageMapInner({
           properties={properties}
           center={center}
           prefecture={prefecture}
+          keepWideView={keepWideView}
         />
 
         {/* OpenStreetMap / CartoDB Tiles (Theme Switchable) */}

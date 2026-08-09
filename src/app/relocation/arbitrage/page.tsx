@@ -107,6 +107,9 @@ import dynamic from "next/dynamic";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import {
+  DEFAULT_SEARCH_AREA,
+  OVERVIEW_CENTER,
+  initialViewBounds,
   DEFAULT_RADIUS_KM,
   NEARBY_SEARCH_AREA,
   NATIONWIDE_SEARCH_AREA,
@@ -197,7 +200,9 @@ export default function ArbitrageScannerPage() {
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
-  const [radiusKm, setRadiusKm] = useState(DEFAULT_RADIUS_KM); // Scan Radius (km)
+  const [radiusKm, setRadiusKm] = useState(
+    filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm,
+  ); // Scan Radius (km)
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
@@ -927,7 +932,7 @@ export default function ArbitrageScannerPage() {
     let bLon = "132.4482";
     let bDate = "1988-11-25T04:26";
     let tDate = getTodayString();
-    let rKm = DEFAULT_RADIUS_KM;
+    let rKm = filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm;
     let pref = "all";
     let classical = false;
     let layer = "year";
@@ -1089,7 +1094,14 @@ export default function ArbitrageScannerPage() {
     setLocalLon(bsLon);
     // 出発地が未設定でも地図は開けるように、表示中心だけは日本全体にしておく
     if (bsLat !== "" && bsLon !== "") {
-      setMapCenter([parseFloat(bsLat), parseFloat(bsLon)]);
+      const lat0 = parseFloat(bsLat);
+      const lon0 = parseFloat(bsLon);
+      setMapCenter([lat0, lon0]);
+      // 地図は moveend / zoomend でしか表示範囲を報告しないので、最初の検索は
+      // 範囲が未確定のまま走る。既定が上限なしになったぶん、そこだけ全国
+      // 45万行のスキャン（実測18.4秒）に落ちる。出発地の周りの矩形を先に
+      // 置いて、初回から見えている範囲だけを検索する。
+      setMapBounds(initialViewBounds(lat0, lon0));
     }
     setBirthLat(bLat);
     setLocalBirthLat(bLat);
@@ -1538,6 +1550,20 @@ export default function ArbitrageScannerPage() {
     });
   };
 
+  /**
+   * 全国を俯瞰している状態か。
+   *
+   * 「上限なし」は既定でもあるので、県も半径も all というだけでは足りない。
+   * 利用者が検索範囲で「全国」を選んだときだけ表示中心を OVERVIEW_CENTER へ
+   * 動かしているので、そこを見て区別する。既定のまま出発地を中心にしている
+   * 場合は俯瞰ではなく、物件へズームしたままでよい。
+   */
+  const isNationwideOverview =
+    prefecture === "all" &&
+    radiusKm === "all" &&
+    mapCenter[0] === OVERVIEW_CENTER[0] &&
+    mapCenter[1] === OVERVIEW_CENTER[1];
+
   // 検索範囲の表示値とAPI条件は、変更経路にかかわらず一緒に保存する。
   const applySearchAreaState = (newSearchArea: string) => {
     const nextFilters = filtersForSearchArea(newSearchArea);
@@ -1564,7 +1590,7 @@ export default function ArbitrageScannerPage() {
     if (target) {
       nextCenter = [target.lat, target.lon];
     } else if (newSearchArea === NATIONWIDE_SEARCH_AREA) {
-      nextCenter = [36.2048, 138.2529];
+      nextCenter = OVERVIEW_CENTER;
     } else {
       const lat = parseFloat(baseLat);
       const lon = parseFloat(baseLon);
@@ -2066,11 +2092,14 @@ export default function ArbitrageScannerPage() {
                         onChange={(e) => handleSearchAreaChange(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
-                        <option value={NEARBY_SEARCH_AREA}>
-                          都道府県指定なし（出発地から50km）
-                        </option>
+                        {/* 既定はこちら。上限を置かず、地図に見えている範囲を
+                            検索する。ズームを引いて日本全体を映すと全国検索に
+                            なり、そのときだけ十数秒かかる。 */}
                         <option value={NATIONWIDE_SEARCH_AREA}>
-                          全国検索（時間がかかります）
+                          範囲を限定しない（地図に見えている範囲）
+                        </option>
+                        <option value={NEARBY_SEARCH_AREA}>
+                          出発地から50km以内に絞る
                         </option>
                         {TARGET_PREFECTURES.map((p) => (
                           <option key={p.name} value={p.name}>
@@ -3459,6 +3488,7 @@ export default function ArbitrageScannerPage() {
               layerMode={layerMode}
               radiusKm={radiusKm}
               prefecture={prefecture}
+              keepWideView={isNationwideOverview}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}
               useClassical={useClassical}
