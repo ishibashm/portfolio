@@ -237,3 +237,41 @@ describe("statsAndMunicipalitySql", () => {
     expect(sql).not.toContain("DISTINCT ON");
   });
 });
+
+describe("statsAndMunicipalitySql の CTE の幅", () => {
+  const { sql: whereSql } = buildWhereSql(baseFilters);
+
+  it("統計に要らない列を CTE に載せない", () => {
+    // 実体化した 39 万行を 2 箇所から読むので、幅がそのまま一時ファイルの量に
+    // なる。innerSql をそのまま載せると width=407 まで膨らみ、統合の利得が
+    // 往復で相殺される（実測 temp 38,214 blocks）。
+    const sql = statsAndMunicipalitySql(whereSql, true);
+    const cte = sql.slice(0, sql.indexOf(") \n") + 1);
+    expect(cte).not.toContain("listing_count");
+    expect(cte).not.toContain("SELECT DISTINCT ON (regexp_replace");
+  });
+
+  it("統計が読む 5 列は CTE に載っている", () => {
+    const sql = statsAndMunicipalitySql(whereSql, true);
+    for (const col of [
+      "AS sqm_rent",
+      "size_sqm",
+      "building_age",
+      "minutes_to_station",
+      "AS municipality",
+    ]) {
+      expect(sql).toContain(col);
+    }
+  });
+
+  it("名寄せのキーと採用順は innerSql と変わらない", () => {
+    // 選択リストを絞っても DISTINCT ON / ORDER BY が同じなら、残る 1 件は同じ。
+    const narrow = statsAndMunicipalitySql(whereSql, true);
+    const wide = innerSql(whereSql, true);
+    for (const fragment of ["DISTINCT ON", "floor, layout, size_sqm, rent"]) {
+      expect(narrow).toContain(fragment);
+      expect(wide).toContain(fragment);
+    }
+    expect(narrow).toContain("last_seen_at DESC NULLS LAST");
+  });
+});

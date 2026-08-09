@@ -239,6 +239,37 @@ export function statsSql(whereSql: string, dedupe: boolean): string {
  * 平均ではなく中央値を使う。賃貸の㎡単価は上に長い裾を持つので、
  * 数件の高額物件で平均が持ち上がり、街全体が割安に見えてしまう。
  */
+/**
+ * 統計に必要な列だけに絞った名寄せ済み集合。
+ *
+ * innerSql は候補行そのものを返すので `*` を並べるが、統計側が読むのは
+ * 5 列だけ。CTE に載せて実体化すると、幅がそのまま一時ファイルの量になる。
+ *
+ * 2026-08-09 の実測（prefecture=all）
+ *   innerSql をそのまま CTE に  width=407, temp read/written 38,214 blocks
+ *   単独で投げていたとき        width=366 / 40, 同 18,989 blocks
+ *
+ * 実体化した 39 万行を 2 箇所から読むので、幅を落とさないと統合の利得が
+ * 一時ファイルの往復で相殺される。listing_count（count(*) OVER）も
+ * 統計側は使わないので外す。窓関数の評価が 1 回まるごと減る。
+ *
+ * DISTINCT ON は ORDER BY の先頭と一致していればよく、選択リストに
+ * キーを含める必要は無い。名寄せの結果は innerSql と同じ。
+ */
+function statsInnerSql(whereSql: string, dedupe: boolean): string {
+  const cols = `${SQM_RENT_SQL} AS sqm_rent,
+                size_sqm, building_age, minutes_to_station,
+                ${MUNICIPALITY_SQL} AS municipality`;
+  return dedupe
+    ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) ${cols}
+         FROM rental_properties
+        WHERE ${whereSql}
+        ORDER BY ${DEDUPE_KEY_SQL}, ${PICK_ORDER_SQL}`
+    : `SELECT ${cols}
+         FROM rental_properties
+        WHERE ${whereSql}`;
+}
+
 const MUNICIPALITY_PROJECTION = `municipality,
                  count(*)::int AS n,
                  percentile_cont(0.5) WITHIN GROUP (ORDER BY sqm_rent) AS median`;
@@ -279,7 +310,7 @@ export function statsAndMunicipalitySql(
   whereSql: string,
   dedupe: boolean,
 ): string {
-  return `WITH d AS MATERIALIZED (${innerSql(whereSql, dedupe)})
+  return `WITH d AS MATERIALIZED (${statsInnerSql(whereSql, dedupe)})
           SELECT
             (SELECT row_to_json(s) FROM (
                SELECT ${STATS_PROJECTION} FROM d
