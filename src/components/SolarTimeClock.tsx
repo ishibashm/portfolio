@@ -45,7 +45,7 @@ import {
   distanceKmBetween,
 } from "@/utils/directionGeo";
 import { directionBoardInstant } from "@/utils/boardInstant";
-import { statusForLayerMode } from "@/utils/directionStatus";
+import { statusForLayerMode, type LayerMode } from "@/utils/directionStatus";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -605,9 +605,7 @@ export const SolarTimeClock = () => {
 
   // Map Picker State
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const [activeLayerMode, setActiveLayerMode] = useState<
-    "final" | "year" | "month" | "day"
-  >("final");
+  const [activeLayerMode, setActiveLayerMode] = useState<LayerMode>("final");
   const [showOnlyNewBuild, setShowOnlyNewBuild] = useState(false);
   const [mapProperties, setMapProperties] = useState<any[]>([]);
 
@@ -693,6 +691,22 @@ export const SolarTimeClock = () => {
   });
 
   const [showAstrophysicalLogic, setShowAstrophysicalLogic] = useState(false);
+
+  /**
+   * ヒートマップの期間と地図の時間軸を同時に切り替える。
+   * 12か月は年盤+月盤、30日は年盤+月盤+日盤で作るため、片方だけを
+   * 切り替えると同じ日・同じ方位でも判定が食い違う。
+   */
+  const toggleHeatmapMode = (mode: "30days" | "12months") => {
+    const nextMode = heatmapMode === mode ? "none" : mode;
+    setHeatmapMode(nextMode);
+
+    if (nextMode === "12months") {
+      setActiveLayerMode("year_month");
+    } else if (nextMode === "30days") {
+      setActiveLayerMode("final");
+    }
+  };
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -7170,11 +7184,7 @@ export const SolarTimeClock = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80 text-xs font-semibold">
                       <button
-                        onClick={() =>
-                          setHeatmapMode((prev) =>
-                            prev === "30days" ? "none" : "30days",
-                          )
-                        }
+                        onClick={() => toggleHeatmapMode("30days")}
                         className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "30days"
                             ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
@@ -7184,11 +7194,7 @@ export const SolarTimeClock = () => {
                         30 DAYS
                       </button>
                       <button
-                        onClick={() =>
-                          setHeatmapMode((prev) =>
-                            prev === "12months" ? "none" : "12months",
-                          )
-                        }
+                        onClick={() => toggleHeatmapMode("12months")}
                         className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
                           heatmapMode === "12months"
                             ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
@@ -7337,15 +7343,14 @@ export const SolarTimeClock = () => {
                             DIR
                           </th>
                           {heatmapData.map((d, i) => {
-                            // 地図が描いているのは先頭列の 1 日だけ。
+                            // 地図が描いているのは先頭列だけ。
                             // ここは以前 ±15 日を色付けしていたため、30 列のうち
                             // 前半 16 列が同じ色になり、「地図と同じ日はどれか」が
                             // 分からなかった（地図と連動していないように見える原因）。
                             // 30 日表示の先頭列は、地図が描いている当日そのもの。
-                            // 12 ヶ月表示の先頭列は「今月の年盤+月盤」で、
-                            // 日盤を含む地図とは前提が違う。「地図」と名乗らせない。
-                            const isActiveCol =
-                              i === 0 && heatmapMode === "30days";
+                            // 12 ヶ月表示では地図も年盤+月盤へ自動で切り替えるため、
+                            // 先頭列の節月と同じ判定を描く。
+                            const isActiveCol = i === 0;
                             return (
                               <th
                                 key={i}
@@ -7359,9 +7364,11 @@ export const SolarTimeClock = () => {
                                 onClick={() => setTimeOffsetDays(d.offsetDays)}
                                 title={
                                   isActiveCol
-                                    ? "地図はこの日を表示しています"
+                                    ? heatmapMode === "12months"
+                                      ? "地図はこの節月（年盤+月盤）を表示しています"
+                                      : "地図はこの日（年盤+月盤+日盤）を表示しています"
                                     : heatmapMode === "12months"
-                                      ? "クリックでこの月へ移動（日盤は含みません）"
+                                      ? "クリックでこの節月へ移動（地図も年盤+月盤で切り替わります）"
                                       : "クリックでこの日に移動（地図もこの日に切り替わります）"
                                 }
                               >
@@ -7522,7 +7529,7 @@ export const SolarTimeClock = () => {
                           12ヶ月表示は<b>節入り基準の月</b>（暦の1日ではなく
                           立春・啓蟄などで替わる月）で刻み、「その月の傾向」を
                           見るため<b>日盤を含めずに年盤＋月盤で判定</b>しています。
-                          地図（全統合）は日盤も含むため、同じ方位でも判定が違うことがあります。
+                          地図も自動的に年盤＋月盤へ切り替わり、先頭列と同じ判定を表示します。
                         </p>
                       )}
 
