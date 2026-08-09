@@ -162,7 +162,8 @@ describe("県別の掲載数（地図の俯瞰の元データ）", () => {
   });
 
   it("データがある県には掲載数もある。無いと俯瞰でその県が0件表示になる", () => {
-    const counts = prefecturesWithData.listingCounts ?? {};
+    const counts: Record<string, number> =
+      prefecturesWithData.listingCounts ?? {};
     for (const pref of prefecturesWithData.prefs) {
       expect(counts[pref], `${pref} の掲載数が無い`).toBeGreaterThan(0);
     }
