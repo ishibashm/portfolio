@@ -176,16 +176,31 @@ jobs:
       contents: write
 
     steps:
-      # DATA_PUSH_TOKEN で checkout する。既定の GITHUB_TOKEN が押した
-      # コミットはワークフローを起動しない仕様なので、そのままだと
-      # 下のデータコミットが deploy.yml を動かせず、県別の色分けや
-      # エリア相場が本番に出ないまま残る（静的 JSON をビルドに焼くため）。
-      # 実際 ded71b7 / 6df3e83 のデータコミットではデプロイが走っていない。
-      # 未設定なら GITHUB_TOKEN に落ちる。押せはするのでパイプラインは
+      # デプロイキー（SSH）で checkout する。
+      #
+      # 既定の GITHUB_TOKEN が押したコミットはワークフローを起動しない。
+      # そのままだと下のデータコミットが deploy.yml を動かせず、県別の
+      # 色分けもエリア相場も本番に出ないまま残る（静的 JSON をビルドに
+      # 焼き込む方式のため）。実際 ded71b7 / 6df3e83 のデータコミットでは
+      # デプロイが走っていない。
+      #
+      # PAT ではなくデプロイキーにしてあるのは有効期限のため。PAT は最長
+      # 366 日で切れ、切れるとこの checkout がその場で失敗して、パージも
+      # 重複排除もジオコーディングもエリア相場の再生成も丸ごと飛ぶ。
+      # デプロイキーは無期限で、このリポジトリ 1 つにしか効かない。
+      #
+      # 鍵の作り方（秘密鍵は手元で作ってリポジトリへは絶対に置かない）:
+      #   ssh-keygen -t ed25519 -N "" -C "portfolio data push" -f data_push_key
+      #   公開鍵 data_push_key.pub → Settings > Deploy keys
+      #                              「Allow write access」にチェックして登録
+      #   秘密鍵 data_push_key     → Settings > Secrets > Actions
+      #                              DATA_PUSH_KEY として登録
+      #
+      # 未設定なら GITHUB_TOKEN に落ちる。push 自体は通るのでパイプラインは
       # 壊れず、デプロイだけが次の push 待ちになる。
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.DATA_PUSH_TOKEN || github.token }}
+          ssh-key: ${{ secrets.DATA_PUSH_KEY }}
 
       - uses: actions/setup-node@v4
         with:
@@ -308,11 +323,11 @@ jobs:
           git pull --rebase --autostash origin master
           git push origin HEAD:master
 
-          # デプロイまで届いたかは、この push がどのトークンで行われたかで
+          # デプロイまで届いたかは、この push が何の資格情報で行われたかで
           # 決まる。判断材料をサマリーに残す。
-          if [ -n "${{ secrets.DATA_PUSH_TOKEN }}" ]; then
+          if [ -n "${{ secrets.DATA_PUSH_KEY }}" ]; then
             echo "データを master へ push した。deploy.yml が続けて動く。" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "::warning::DATA_PUSH_TOKEN が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番のデータは古いまま。"
-            echo "データを master へ push した。ただし DATA_PUSH_TOKEN が無いためデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::DATA_PUSH_KEY が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番のデータは古いまま。"
+            echo "データを master へ push した。ただし DATA_PUSH_KEY が無いためデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
           fi
