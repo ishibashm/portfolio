@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CosmicCalendar } from "@/components/widgets/CosmicCalendar";
 import { Calendar } from "lucide-react";
 import { AuspiciousDayFinder } from "@/components/relocation/AuspiciousDayFinder";
+import { calendarMonths, calendarMonthSlug } from "@/lib/calendarMonths";
 
 export default function CalendarPage() {
   return (
@@ -122,6 +123,31 @@ export default function CalendarPage() {
             引越し業者の料金は大安や土日に上がる傾向があるため、
             費用を優先するか暦を優先するかは分けて考えてください。
           </p>
+        </section>
+
+        {/* 月ごとのまとめ。
+            上のツールは生年月日を入れないと自分の結果が出ないが、
+            「9月に引越すなら何日か」を先に知りたい人もいる。
+            暦だけで決まる情報を月別ページに置いてあるので、そこへ渡す。 */}
+        <section className="w-full max-w-4xl mx-auto mt-10 rounded-3xl border border-slate-200 bg-white/80 p-6">
+          <h2 className="text-lg font-bold font-serif">月ごとの引越しに向く日</h2>
+          <p className="mt-2 text-xs leading-relaxed text-slate-600">
+            生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・
+            一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの
+            吉方位を載せています。
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {calendarMonths().map((c) => (
+              <Link
+                prefetch={false}
+                key={calendarMonthSlug(c)}
+                href={`/calendar/${calendarMonthSlug(c)}`}
+                className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:border-rose-400 transition-colors"
+              >
+                {c.year}年{c.month}月
+              </Link>
+            ))}
+          </div>
         </section>
 
         {/* Calendar Widget */}
