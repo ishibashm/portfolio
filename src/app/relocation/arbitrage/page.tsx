@@ -129,6 +129,24 @@ const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
   (t) => PREFS_WITH_DATA.size === 0 || PREFS_WITH_DATA.has(t.name),
 ).map((t) => ({ name: t.name, lat: t.lat, lon: t.lon }));
 
+/**
+ * スキャン半径の既定値（km）。
+ *
+ * 以前は "all"（無制限）が既定で、出発地を設定した初回検索が必ず全国 45 万行の
+ * 名寄せに入っていた。実測 18.4 秒（2026-08-09、prefecture=all・半径なし）。
+ * これが「スキャンが終わらない」の正体で、絞り込みが効けば行数に比例して速い
+ * （兵庫県 3.1 秒 / 神戸 30km 4.0 秒 / 名古屋 50km＋愛知 2.6 秒）。
+ *
+ * 150km はエリア別ページの対象範囲に合わせられるかを測ったが、関西起点で
+ * 在庫の 6 割（26.5 万行）を拾って 10.9 秒になるため既定にできない。
+ * 50km なら最悪ケースでも数秒に収まる。
+ *
+ * 全国を見たい人は都道府県の「全国 / すべて」を明示的に選べば従来どおり動く。
+ * 半径を選ぶ UI は存在しないので、"all" が保存されていても、それが利用者の
+ * 意思であるのは県とセットで保存された場合だけ。
+ */
+const DEFAULT_RADIUS_KM = "50";
+
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
   {
@@ -170,7 +188,7 @@ export default function ArbitrageScannerPage() {
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
-  const [radiusKm, setRadiusKm] = useState("all"); // Scan Radius (km)
+  const [radiusKm, setRadiusKm] = useState(DEFAULT_RADIUS_KM); // Scan Radius (km)
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   const [useClassical, setUseClassical] = useState(false);
   const [layerMode, setLayerMode] = useState("year");
@@ -900,7 +918,7 @@ export default function ArbitrageScannerPage() {
     let bLon = "132.4482";
     let bDate = "1988-11-25T04:26";
     let tDate = getTodayString();
-    let rKm = "all";
+    let rKm = DEFAULT_RADIUS_KM;
     let pref = "all";
     let classical = false;
     let layer = "year";
@@ -949,7 +967,13 @@ export default function ArbitrageScannerPage() {
       const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
 
       if (storedPrefecture) pref = storedPrefecture;
-      if (storedRadius) rKm = storedRadius;
+      // 半径を選ぶ UI は無いので、保存値の "all" は旧既定値の残骸か、
+      // 県を選んだときに連動で入った値のどちらか。県が無いのに "all" が
+      // 残っている組み合わせは誰も選んでおらず、これを復元すると全国
+      // 45 万行のスキャン（実測 18.4 秒）に戻るので、既定値に置き換える。
+      if (storedRadius && !(storedRadius === "all" && pref === "all")) {
+        rKm = storedRadius;
+      }
 
       // 出発地は「どの県を見るか」とは独立した設定。以前は pref === "all" のとき
       // 保存済みの出発地を捨てていたため、全国表示にした瞬間に方位の基準が
@@ -1245,9 +1269,19 @@ export default function ArbitrageScannerPage() {
           params.append("minLon", mapBounds.minLon.toString());
           params.append("maxLon", mapBounds.maxLon.toString());
           params.append("radiusKm", "all"); // Disable radius when using bounds
-        } else {
-          // Zoome out (< 10): Fetch all data to show prefectures density colored polygons
+        } else if (prefecture !== "all") {
+          // ズームアウト時（< 10）は県の密度ポリゴンを見せる。県が選ばれて
+          // いれば母数はその県に収まるので、無制限でも数秒で返る。
           params.append("radiusKm", "all");
+        } else {
+          // 県が選ばれていない状態で無制限を送ると、全国 45 万行の名寄せに
+          // 入る（実測 18.4 秒）。地図はズーム 5 で始まるので、初回の検索は
+          // 必ずここを通る。ここが「スキャンが終わらない」の入口だった。
+          //
+          // 固定の "all" をやめて state を送る。既定では DEFAULT_RADIUS_KM で
+          // 出発地の周辺に絞られ、都道府県で「全国 / すべて」を明示的に
+          // 選んだときだけ state が "all" になって従来どおり全国を引く。
+          params.append("radiusKm", radiusKm);
         }
       } else {
         params.append("radiusKm", radiusKm);
