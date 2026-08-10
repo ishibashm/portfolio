@@ -227,9 +227,86 @@ async function main() {
     }
     volatility.sort((a, b) => b.cv - a.cv);
 
+    // ---- 家賃指数の蓄積（MarketDailySummary へ 1 県 1 行 upsert） ----
+    //
+    // marketStats.json は毎晩上書きなので、水準の推移はテーブルに積まない
+    // 限り失われる。テーブルがまだ無い環境（run-seed 前）でも夜間バッチを
+    // 止めないよう、この節だけは失敗しても続行する。
+    let rentIndexSeries: {
+      date: string;
+      n: number;
+      medianRent: number;
+      medianSqmRent: number;
+    }[] = [];
+    try {
+      const natRentSummary = summarizeDistribution(nationalRents);
+      const natSqmSummary = summarizeDistribution(nationalSqm);
+      const upsert = async (
+        prefecture: string,
+        n: number,
+        rent: { median: number; p25: number; p75: number },
+        sqmMedian: number,
+      ) => {
+        await pool.query(
+          `INSERT INTO "MarketDailySummary"
+             (date, prefecture, n, "medianRent", "medianSqmRent", "p25Rent", "p75Rent")
+           VALUES (CURRENT_DATE, $1, $2, $3, $4, $5, $6)
+           ON CONFLICT (date, prefecture) DO UPDATE SET
+             n = EXCLUDED.n,
+             "medianRent" = EXCLUDED."medianRent",
+             "medianSqmRent" = EXCLUDED."medianSqmRent",
+             "p25Rent" = EXCLUDED."p25Rent",
+             "p75Rent" = EXCLUDED."p75Rent"`,
+          [
+            prefecture,
+            n,
+            Math.round(rent.median),
+            Math.round(sqmMedian),
+            Math.round(rent.p25),
+            Math.round(rent.p75),
+          ],
+        );
+      };
+      if (natRentSummary && natSqmSummary) {
+        await upsert(
+          "全国",
+          totalListings,
+          natRentSummary,
+          natSqmSummary.median,
+        );
+      }
+      for (const p of prefStats) {
+        await upsert(p.prefecture, p.n, p.rent, p.sqmRent.median);
+      }
+      const series = await pool.query<{
+        date: string;
+        n: string;
+        mr: string;
+        msr: string;
+      }>(
+        `SELECT date::text AS date, n, "medianRent" AS mr, "medianSqmRent" AS msr
+           FROM "MarketDailySummary"
+          WHERE prefecture = '全国' AND date > CURRENT_DATE - 180
+          ORDER BY date`,
+      );
+      rentIndexSeries = series.rows.map((r) => ({
+        date: r.date,
+        n: Number(r.n),
+        medianRent: Number(r.mr),
+        medianSqmRent: Number(r.msr),
+      }));
+      console.log(`家賃指数: ${rentIndexSeries.length} 日ぶん蓄積済み`);
+    } catch (e: any) {
+      console.warn(
+        "MarketDailySummary への蓄積をスキップ（テーブル未作成？ run-seed を実行すること）:",
+        e?.message,
+      );
+    }
+
     const out: MarketStats = {
       generatedAt: new Date().toISOString(),
       totalListings,
+      rentIndexSeries,
       national: {
         rentHist: histogram(nationalRents, 0, 300_000, 30),
         rent: summarizeDistribution(nationalRents),

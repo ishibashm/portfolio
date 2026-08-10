@@ -305,9 +305,23 @@ export interface MunicipalityVolatility {
   iqrPct: number;
 }
 
+/** 家賃指数の 1 点。MarketDailySummary から日次で積む */
+export interface RentIndexPoint {
+  date: string;
+  n: number;
+  medianRent: number;
+  medianSqmRent: number;
+}
+
 export interface MarketStats {
   generatedAt: string | null;
   totalListings: number;
+  /**
+   * 全国の家賃指数の推移（㎡単価中央値・直近180日）。
+   * 蓄積は MarketDailySummary テーブル。導入日から積み始めるので、
+   * 最初は点が少ない。
+   */
+  rentIndexSeries: RentIndexPoint[];
   national: {
     rentHist: HistogramBucket[];
     rent: DistributionSummary | null;

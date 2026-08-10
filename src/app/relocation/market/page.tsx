@@ -169,6 +169,51 @@ export default function MarketAnalyticsPage() {
           />
         </div>
 
+        {/* 家賃指数の推移。株価チャートに相当する時系列 */}
+        <Section
+          title="家賃指数の推移（全国・㎡単価中央値）"
+          subtitle="毎晩の集計で積み上げる時系列。㎡単価の中央値なので、安い物件が増減しても面積構成の変化に引きずられにくい。過去に遡って再構成はできないため、導入日からの蓄積になる。"
+        >
+          {stats.rentIndexSeries.length >= 5 ? (
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={stats.rentIndexSeries.map((p) => ({
+                    date: p.date.slice(5),
+                    sqm: p.medianSqmRent,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10 }}
+                    minTickGap={24}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10 }}
+                    width={52}
+                    domain={["auto", "auto"]}
+                    unit="円"
+                  />
+                  <Tooltip formatter={(v) => [`${v}円/㎡`, "㎡単価中央値"]} />
+                  <Line
+                    dataKey="sqm"
+                    name="㎡単価中央値"
+                    stroke="#0f766e"
+                    dot={false}
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-[11px] leading-relaxed text-stone-500">
+              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。
+              毎晩の集計が 5 日ぶん貯まるとチャートが表示されます。
+            </p>
+          )}
+        </Section>
+
         {/* 出来高: 新規掲載 */}
         <Section
           title="新規掲載の推移（出来高）"
