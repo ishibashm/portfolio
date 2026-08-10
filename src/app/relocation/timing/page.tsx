@@ -67,6 +67,54 @@ const TIERS: DayTier[] = ["S", "A", "B", "C", "D", "X"];
 
 const WEEKDAY_JP = "日月火水木金土";
 
+/**
+ * 方位の絞り込みモード。
+ *
+ * 重要なのは「吉を出すモードかどうか」。environmental と personal_bazi は
+ * 設計上、凶しか判定しない（filterCollisionByMode が OPTIMAL を返さない）
+ * ため、三盤吉は原理的に 0 件になる。実測でも本命三碧・空亡午未の 2 年で
+ * composite なら南東 116 日・北西 155 日の三盤吉があるのに、
+ * environmental では全方位 0 日だった。
+ *
+ * この事実を画面に出さないと「三盤吉はめったに無いのか」という
+ * 誤解になる。モードごとに「吉を出すか」を持たせて明示する。
+ */
+const FILTER_MODES: {
+  id: string;
+  label: string;
+  canBeAuspicious: boolean;
+  hint: string;
+}[] = [
+  {
+    id: "composite",
+    label: "総合（既定）",
+    canBeAuspicious: true,
+    hint: "九星の吉方位と、五黄殺・暗剣殺・破・天中殺方位などの凶をすべて見る。三盤吉が出るのはこのモード。",
+  },
+  {
+    id: "personal_kigaku",
+    label: "本命星のみ",
+    canBeAuspicious: true,
+    hint: "本命星との相生・本命殺・的殺だけを見る。環境要因（五黄殺など）を外すので候補は増える。",
+  },
+  {
+    id: "personal_bazi",
+    label: "天中殺のみ",
+    canBeAuspicious: false,
+    hint: "空亡の方位だけを凶とする。吉の判定を行わないため三盤吉は出ない。",
+  },
+  {
+    id: "environmental",
+    label: "環境要因のみ",
+    canBeAuspicious: false,
+    hint: "五黄殺・暗剣殺・破など、誰にとっても凶となる要因だけを見る。個人の吉方位を判定しないため三盤吉は出ない。",
+  },
+];
+
+function modeInfo(id: string) {
+  return FILTER_MODES.find((m) => m.id === id) ?? FILTER_MODES[0];
+}
+
 function iso(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -396,6 +444,29 @@ export default function TimingAnalyticsPage() {
                 ))}
               </select>
             </label>
+            <label className="text-[10px] font-semibold text-stone-500">
+              方位の判定
+              <select
+                value={settings?.directionFilterMode ?? "composite"}
+                onChange={(e) => {
+                  // 表示中の結果は前のモードのもの。ラベルと中身が
+                  // 食い違わないよう、切り替えたら結果を捨てて
+                  // 自動再走査に任せる。
+                  const next = e.target.value;
+                  setSettings((prev) =>
+                    prev ? { ...prev, directionFilterMode: next } : prev,
+                  );
+                  setDays(null);
+                }}
+                className="ml-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs"
+              >
+                {FILTER_MODES.map((m) => (
+                  <option key={m.id} value={m.id} title={m.hint}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button
               onClick={runScan}
               disabled={busy}
@@ -411,6 +482,35 @@ export default function TimingAnalyticsPage() {
               </span>
             )}
           </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-stone-400">
+            {modeInfo(settings?.directionFilterMode ?? "composite").hint}
+          </p>
+          {!modeInfo(settings?.directionFilterMode ?? "composite")
+            .canBeAuspicious && (
+            <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900">
+              <b>
+                このモードでは三盤吉（S）が 0 件になります。めったに無いから
+                ではありません。
+              </b>
+              <span className="ml-1">
+                「{modeInfo(settings?.directionFilterMode ?? "composite").label}
+                」は凶の判定だけを行い、吉方位の判定をしないためです。
+                三盤吉を見るには「総合（既定）」か「本命星のみ」に切り替えて
+                走査し直してください。
+              </span>
+              <button
+                onClick={() => {
+                  setSettings((prev) =>
+                    prev ? { ...prev, directionFilterMode: "composite" } : prev,
+                  );
+                  setDays(null);
+                }}
+                className="ml-1 font-bold text-indigo-700 underline"
+              >
+                総合に切り替える
+              </button>
+            </div>
+          )}
           {error && <p className="mt-2 text-[11px] text-rose-600">{error}</p>}
         </section>
 
@@ -419,7 +519,7 @@ export default function TimingAnalyticsPage() {
             {/* 方位別サマリー */}
             <Section
               title="方位別サマリー（未来の候補）"
-              subtitle="今日以降で到達できる最良の段階と、その日数・最速日・窓の統計。行をクリックすると下のカレンダーと帯グラフがその方位に切り替わります。"
+              subtitle={`今日以降で到達できる最良の段階と、その日数・最速日・窓の統計。行をクリックすると下のカレンダーと帯グラフがその方位に切り替わります。判定モードは「${modeInfo(settings?.directionFilterMode ?? "composite").label}」です。`}
             >
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
@@ -638,7 +738,7 @@ export default function TimingAnalyticsPage() {
                   })}
                 </div>
                 <Link
-                  href={`/relocation/arbitrage?targetDate=${selected.date}`}
+                  href={`/relocation/arbitrage?targetDate=${selected.date}&view=overview`}
                   className="mt-3 inline-block text-[11px] font-semibold text-indigo-600 underline"
                 >
                   この日で物件スキャナーを開く（物件も一緒に見る）
@@ -669,11 +769,17 @@ export default function TimingAnalyticsPage() {
               </Section>
             )}
 
-            {/* 平年比 */}
+            {/* 平年比。平年値は composite で計算してあるので、他モードの
+                結果と並べると比較にならない。素直にその旨を出す。 */}
             {climatology && (
               <Section
                 title="平年比（9年平均との比較）"
-                subtitle="九星の年盤は9年で一巡します。走査期間の年あたり換算を、あなたの命式の9年平均と比べたもの。100%より大きければ当たり期間、小さければ少ない期間。"
+                subtitle={
+                  modeInfo(settings?.directionFilterMode ?? "composite")
+                    .canBeAuspicious
+                    ? "九星の年盤は9年で一巡します。走査期間の年あたり換算を、あなたの命式の9年平均と比べたもの。100%より大きければ当たり期間、小さければ少ない期間。"
+                    : "平年値は「総合」で計算した基準値です。いま選んでいる判定モードは吉方位を出さないため、比較になりません（すべて0%と表示されます）。総合に切り替えて走査し直すと意味のある比較になります。"
+                }
               >
                 <div className="overflow-x-auto">
                   <table className="w-full text-[11px]">
