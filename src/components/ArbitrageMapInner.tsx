@@ -108,6 +108,20 @@ interface ArbitrageMapInnerProps {
   prefecture?: string;
   /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
   keepWideView?: boolean;
+  /**
+   * 県名 → 出発地から見た方位とその日の吉凶段階。俯瞰の塗り分けを
+   * 「件数」から「方位の吉凶」に切り替えるために使う。日付・出発地・
+   * 命式から決定的に決まる値で、ページ側が計算して渡す。
+   */
+  prefKigaku?: Record<
+    string,
+    {
+      direction: string;
+      directionLabel: string;
+      tier: string;
+      blocked: boolean;
+    }
+  >;
   /** 詳細パネルで開いている物件。リングで強調する */
   selectedPropertyId?: string | null;
   isTransitioningDate?: boolean;
@@ -326,6 +340,7 @@ export default function ArbitrageMapInner({
   radiusKm,
   prefecture,
   keepWideView = false,
+  prefKigaku,
   selectedPropertyId = null,
   isTransitioningDate = false,
   showListView = false,
@@ -344,6 +359,10 @@ export default function ArbitrageMapInner({
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
+  // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
+  const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
+    "kigaku",
+  );
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info";
@@ -624,6 +643,27 @@ export default function ArbitrageMapInner({
     });
   }, [properties]);
 
+  /**
+   * 段階→塗り色。時期スクリーニングのバッジと同じ意味の色。
+   * 天中殺で塞がっている方位は段階に関係なく灰色に落とす。
+   */
+  const TIER_FILL: Record<string, string> = {
+    S: "#10b981",
+    A: "#14b8a6",
+    B: "#38bdf8",
+    C: "#a8a29e",
+    D: "#f59e0b",
+    X: "#ef4444",
+  };
+  const TIER_JP: Record<string, string> = {
+    S: "三盤吉",
+    A: "吉2盤",
+    B: "吉1盤",
+    C: "平",
+    D: "軽い凶",
+    X: "五大凶殺",
+  };
+
   // Color mapping based on score
   const getPropertyColor = useCallback((score: number) => {
     if (score >= 75) return "#10b981"; // Excellent (Emerald)
@@ -772,6 +812,65 @@ export default function ArbitrageMapInner({
           </button>
         </div>
 
+        {/* 俯瞰の塗り分け切り替え + 凡例。方位モードは
+            「どの県へなら動けるか」の意思決定面 */}
+        {zoom < 10 && prefKigaku && (
+          <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[9px] text-stone-700 space-y-1.5">
+            <div className="flex items-center gap-1 select-none">
+              {(
+                [
+                  ["kigaku", "方位の吉凶"],
+                  ["count", "掲載件数"],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  onClick={() => setOverviewTint(mode)}
+                  className={`px-2 py-1 rounded-md font-bold transition-colors ${
+                    overviewTint === mode
+                      ? "bg-indigo-600 text-white"
+                      : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {overviewTint === "kigaku" && (
+              <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
+                {(
+                  [
+                    ["S", "三盤吉"],
+                    ["A", "吉2盤"],
+                    ["B", "吉1盤"],
+                    ["C", "平"],
+                    ["D", "軽い凶"],
+                    ["X", "五大凶殺"],
+                  ] as const
+                ).map(([t, label]) => (
+                  <span key={t} className="flex items-center gap-1">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm"
+                      style={{ background: TIER_FILL[t] }}
+                    />
+                    {label}
+                  </span>
+                ))}
+                <span className="flex items-center gap-1">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-sm"
+                    style={{ background: "#64748b" }}
+                  />
+                  天中殺
+                </span>
+                <span className="block w-full text-[8px] text-stone-400">
+                  出発地から見た各県の方位の、選択日の判定
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Base Location Marker (Glowing Center) */}
         {zoom >= 10 && (
           <Marker position={[baseLat, baseLon]}>
@@ -832,13 +931,38 @@ export default function ArbitrageMapInner({
           />
         )}
 
-        {/* 都道府県ポリゴン (zoom < 10) */}
+        {/* 都道府県ポリゴン (zoom < 10)。
+            塗りは 2 モード。方位モードでは「その県はあなたから見て
+            どの方位で、選択日にその方位は動けるのか」を色にする。
+            地図がそのまま意思決定面になる。件数ラベルは両モード共通。 */}
         {zoom < 10 && geoData && (
           <GeoJSON
+            key={`pref-geo-${overviewTint}-${
+              prefKigaku
+                ? Object.values(prefKigaku)
+                    .map((i) => i.tier + (i.blocked ? "b" : ""))
+                    .join("")
+                : "none"
+            }`}
             data={geoData}
             style={(feature) => {
               const prefName = feature?.properties?.name || "";
               const count = prefCounts[prefName] || 0;
+              const info = prefKigaku?.[prefName];
+              if (overviewTint === "kigaku" && info) {
+                const fill = info.blocked
+                  ? "#64748b"
+                  : (TIER_FILL[info.tier] ?? "#a8a29e");
+                return {
+                  fillColor: fill,
+                  // データの無い県も方位の吉凶は薄く見せる。方位は
+                  // 物件の有無と独立に決まる情報なので消さない。
+                  fillOpacity: count > 0 ? 0.6 : 0.22,
+                  color: "#1e293b",
+                  weight: 1.2,
+                  opacity: 0.6,
+                };
+              }
               const color = getDensityColor(count);
               return {
                 fillColor: color,
@@ -851,6 +975,7 @@ export default function ArbitrageMapInner({
             onEachFeature={(feature, layer) => {
               const prefName = feature?.properties?.name || "";
               const count = prefCounts[prefName] || 0;
+              const info = prefKigaku?.[prefName];
               // 俯瞰は数字だけを見せる。物件そのものはズームインした
               // ときに、そのとき見えている範囲だけを検索して出す。
               if (count > 0) {
@@ -865,10 +990,18 @@ export default function ArbitrageMapInner({
                   },
                 );
               }
+              const kigakuLine = info
+                ? `<div class="mt-1">方位: <b>${info.directionLabel}</b> — ${
+                    info.blocked
+                      ? '<b class="text-slate-500">天中殺で移転不可</b>'
+                      : `<b>${TIER_JP[info.tier] ?? info.tier}</b>`
+                  }<span class="text-[9px] text-stone-500">（選択日の判定）</span></div>`
+                : "";
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">
                   <div class="font-bold text-sm border-b border-gray-100 pb-1 mb-1.5">${prefName}</div>
                   <div>掲載物件数: <b class="text-indigo-600 text-sm">${count.toLocaleString()}</b> 件<span class="text-[9px] text-stone-500">（毎晩更新）</span></div>
+                  ${kigakuLine}
                   <div class="text-[9px] text-stone-500 mt-1.5">※ズームインすると物件が表示されます</div>
                 </div>`,
               );

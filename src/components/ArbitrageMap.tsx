@@ -25,6 +25,16 @@ interface ArbitrageMapProps {
   radiusKm?: string;
   /** 全国を俯瞰しているか。県別の色分けを出すために広域表示を保つ */
   keepWideView?: boolean;
+  /** 県名 → 出発地から見た方位とその日の吉凶段階（俯瞰の塗り分け用） */
+  prefKigaku?: Record<
+    string,
+    {
+      direction: string;
+      directionLabel: string;
+      tier: string;
+      blocked: boolean;
+    }
+  >;
   /** 詳細パネルで開いている物件。地図でリング強調する */
   selectedPropertyId?: string | null;
   prefecture?: string;
