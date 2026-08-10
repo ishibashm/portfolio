@@ -44,6 +44,36 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
+/**
+ * 段階→塗り色。時期スクリーニングのバッジと同じ意味の色。
+ * 天中殺で塞がっている方位は段階に関係なく灰色に落とす。
+ */
+const TIER_FILL: Record<string, string> = {
+  S: "#10b981",
+  A: "#14b8a6",
+  B: "#38bdf8",
+  C: "#a8a29e",
+  D: "#f59e0b",
+  X: "#ef4444",
+};
+const TIER_JP: Record<string, string> = {
+  S: "三盤吉",
+  A: "吉2盤",
+  B: "吉1盤",
+  C: "平",
+  D: "軽い凶",
+  X: "五大凶殺",
+};
+/** 扇形の塗りの濃さ。良い段階ほど目立たせ、平は薄く敷く。 */
+const TIER_SECTOR_OPACITY: Record<string, number> = {
+  S: 0.18,
+  A: 0.14,
+  B: 0.1,
+  C: 0.04,
+  D: 0.08,
+  X: 0.1,
+};
+
 // Map Click Handler to copy coordinates
 function MapClickHandler({
   onCopy,
@@ -123,6 +153,24 @@ interface ArbitrageMapInnerProps {
       blocked: boolean;
     }
   >;
+  /**
+   * 8方位 → 選択日の吉凶段階。扇形の塗り分けはこれを読む。
+   *
+   * prefKigaku と同じ 1 回の盤計算から切り出したもので、時期パネルの
+   * 「選択日」列とも同じ値になる。undefined（生年月日や出発地が未入力）
+   * のときだけ、物件の status からの推定に落ちる。
+   */
+  dirKigaku?: Record<
+    string,
+    {
+      direction: string;
+      directionLabel: string;
+      tier: string;
+      blocked: boolean;
+    }
+  >;
+  /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
+  targetDate?: string;
   /** 詳細パネルで開いている物件。リングで強調する */
   selectedPropertyId?: string | null;
   isTransitioningDate?: boolean;
@@ -330,6 +378,8 @@ export default function ArbitrageMapInner({
   prefecture,
   keepWideView = false,
   prefKigaku,
+  dirKigaku,
+  targetDate,
   selectedPropertyId = null,
   isTransitioningDate = false,
   showListView = false,
@@ -599,7 +649,18 @@ export default function ArbitrageMapInner({
     }));
   }, [properties, currentBounds, zoom, visibleCount, showListView]);
 
-  // Directions mapping
+  /**
+   * 扇形（方位）の判定。
+   *
+   * dirKigaku があればそれを使う。三盤（年・月・日）を合成した段階で、
+   * 時期パネルの「選択日」列・俯瞰の県塗りと同じ値。物件が 0 件の方位
+   * でも正しく凶と出る。
+   *
+   * 無いとき（生年月日・出発地が未入力）だけ、従来どおり物件の
+   * astrologyStatus からの推定に落ちる。こちらはサーバが layerMode
+   * （既定は年盤）で出した単盤の判定なので、三盤の段階とは一致しない。
+   * その旨は凡例に出す。
+   */
   const sectors = useMemo(() => {
     const dirMap = [
       { dir: "N", deg: 0 },
@@ -612,13 +673,20 @@ export default function ArbitrageMapInner({
       { dir: "NW", deg: 315 },
     ];
 
-    // Determine status of each direction from properties in that direction
     return dirMap.map((d) => {
-      // Find properties in this direction to extract their status (optimal, safe, noise)
+      const k = dirKigaku?.[d.dir];
+      if (k) {
+        return {
+          ...d,
+          tier: k.tier,
+          blocked: k.blocked,
+          status: null as string | null,
+        };
+      }
+      // フォールバック: 物件の status の多数決（単盤・参考値）
       const propsInDir = properties.filter((p) => p.direction === d.dir);
       let status = "SAFE";
       if (propsInDir.length > 0) {
-        // Find the most common status or use first one
         const optimalCount = propsInDir.filter((p) =>
           p.astrologyStatus.includes("OPTIMAL"),
         ).length;
@@ -628,30 +696,9 @@ export default function ArbitrageMapInner({
         if (optimalCount > 0) status = "OPTIMAL";
         else if (noiseCount > propsInDir.length / 2) status = "NOISE";
       }
-      return { ...d, status };
+      return { ...d, tier: null as string | null, blocked: false, status };
     });
-  }, [properties]);
-
-  /**
-   * 段階→塗り色。時期スクリーニングのバッジと同じ意味の色。
-   * 天中殺で塞がっている方位は段階に関係なく灰色に落とす。
-   */
-  const TIER_FILL: Record<string, string> = {
-    S: "#10b981",
-    A: "#14b8a6",
-    B: "#38bdf8",
-    C: "#a8a29e",
-    D: "#f59e0b",
-    X: "#ef4444",
-  };
-  const TIER_JP: Record<string, string> = {
-    S: "三盤吉",
-    A: "吉2盤",
-    B: "吉1盤",
-    C: "平",
-    D: "軽い凶",
-    X: "五大凶殺",
-  };
+  }, [properties, dirKigaku]);
 
   // Color mapping based on score
   const getPropertyColor = useCallback((score: number) => {
@@ -686,7 +733,17 @@ export default function ArbitrageMapInner({
   // Render direction sectors
   const sectorLayers = useMemo(() => {
     return sectors.map((d) => {
-      const { color, opacity, dashArray } = getStyleForVector(d.status);
+      const { color, opacity, dashArray } = d.tier
+        ? {
+            // 天中殺で塞がっている方位は段階に関わらず灰色。俯瞰の県塗りと同じ扱い。
+            color: d.blocked ? "#a8a29e" : (TIER_FILL[d.tier] ?? "#a8a29e"),
+            opacity: d.blocked ? 0.06 : (TIER_SECTOR_OPACITY[d.tier] ?? 0.06),
+            dashArray:
+              d.blocked || d.tier === "X" || d.tier === "D"
+                ? "5,5"
+                : (undefined as string | undefined),
+          }
+        : getStyleForVector(d.status ?? "SAFE");
       const baseBearing = rotationAngle + d.deg;
 
       // Draw wedge shape polygon extending 30km
@@ -706,6 +763,13 @@ export default function ArbitrageMapInner({
         if (status === "NOISE") return "凶方位";
         return "通常吉";
       };
+      // 段階つきなら「S 三盤吉」の形。時期パネルのセルと同じ記号にして
+      // 突き合わせられるようにする。
+      const label = d.tier
+        ? d.blocked
+          ? `${d.dir} 天中殺`
+          : `${d.dir} ${d.tier} ${TIER_JP[d.tier] ?? ""}`
+        : `${d.dir} (${getStatusText(d.status ?? "SAFE")})`;
 
       return (
         <React.Fragment key={`sector-wedge-${d.dir}`}>
@@ -715,7 +779,7 @@ export default function ArbitrageMapInner({
               color: color,
               fillColor: color,
               fillOpacity: opacity,
-              weight: d.status === "SAFE" ? 0.5 : 1,
+              weight: (d.tier ? d.tier === "C" : d.status === "SAFE") ? 0.5 : 1,
               dashArray: dashArray,
             }}
             interactive={false}
@@ -725,10 +789,10 @@ export default function ArbitrageMapInner({
             icon={L.divIcon({
               className: "custom-div-icon",
               html: `<div class="px-1.5 py-0.5 rounded bg-white/80 border border-stone-200 text-[9px] font-bold text-center pointer-events-none" style="color: ${color}; text-shadow: 0 0 2px rgba(0,0,0,0.8); white-space: nowrap;">
-                ${d.dir} (${getStatusText(d.status)})
+                ${label}
               </div>`,
-              iconSize: [60, 20],
-              iconAnchor: [30, 10],
+              iconSize: [72, 20],
+              iconAnchor: [36, 10],
             })}
             interactive={false}
           />
@@ -857,6 +921,50 @@ export default function ArbitrageMapInner({
                 </span>
               </div>
             )}
+          </div>
+        )}
+
+        {/* 扇形（8方位）の凡例。俯瞰の県塗りと同じ段階なので同じ色・
+            同じ語で出す。どの日の判定かを明示しないと、時期パネルの
+            「その月の最良段階」と読み違える。 */}
+        {zoom >= 10 && dirKigaku && (
+          <div className="absolute bottom-4 left-4 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[9px] text-stone-700 space-y-1">
+            <div className="font-bold text-stone-600">
+              方位の判定
+              {targetDate ? `（${targetDate.slice(5).replace("-", "/")}）` : ""}
+            </div>
+            <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
+              {(
+                [
+                  ["S", "三盤吉"],
+                  ["A", "吉2盤"],
+                  ["B", "吉1盤"],
+                  ["C", "平"],
+                  ["D", "軽い凶"],
+                  ["X", "五大凶殺"],
+                ] as const
+              ).map(([t, label]) => (
+                <span key={t} className="flex items-center gap-1">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-sm"
+                    style={{ background: TIER_FILL[t] }}
+                  />
+                  {label}
+                </span>
+              ))}
+            </div>
+            <span className="block text-[8px] text-stone-400 max-w-44 leading-relaxed">
+              年・月・日の三盤を合成した、この日だけの判定。物件のピンは
+              盤の切り替え（
+              {layerMode === "year"
+                ? "年盤"
+                : layerMode === "month"
+                  ? "月盤"
+                  : layerMode === "day"
+                    ? "日盤"
+                    : "合成"}
+              ）に従うため、色が一致しないことがあります。
+            </span>
           </div>
         )}
 
@@ -1137,7 +1245,16 @@ export default function ArbitrageMapInner({
                   return sortedProperties.map((prop) => {
                     if (!prop.lat || !prop.lon) return null;
 
-                    const pinColors = getPropertyPinColors(prop);
+                    // 扇形と同じ段階を渡す。盤の切り替えで単盤が吉でも、
+                    // 三盤で凶ならピンも凶側に寄せる。
+                    const k = prop.direction
+                      ? dirKigaku?.[prop.direction]
+                      : undefined;
+                    const pinColors = getPropertyPinColors(
+                      prop,
+                      k?.tier,
+                      k?.blocked,
+                    );
                     const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
 
                     return (
@@ -1212,6 +1329,26 @@ export default function ArbitrageMapInner({
                                     : "不明"}
                                 </span>
                               </div>
+                              {/* 三盤の段階。扇形・時期パネルと同じ値。
+                                  上の行は選択中の盤（単盤）の内訳なので
+                                  一致しないことがある */}
+                              {k && (
+                                <div className="flex justify-between items-center">
+                                  <span>三盤の判定:</span>
+                                  <span
+                                    className="font-semibold"
+                                    style={{
+                                      color: k.blocked
+                                        ? "#64748b"
+                                        : (TIER_FILL[k.tier] ?? "#64748b"),
+                                    }}
+                                  >
+                                    {k.blocked
+                                      ? "天中殺"
+                                      : `${k.tier} ${TIER_JP[k.tier] ?? ""}`}
+                                  </span>
+                                </div>
+                              )}
                               <div
                                 className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-100 p-0.5 rounded transition-colors group"
                                 onClick={() =>

@@ -2008,13 +2008,23 @@ export default function ArbitrageScannerPage() {
   }, [safeData]);
 
   /**
-   * 俯瞰地図の「方位の吉凶」塗り分け。各県が出発地から見てどの方位に
-   * あり、選択日にその方位が動けるのかを県ごとに引く。暦の判定は
-   * 決定的な計算（実測 4ms/日）なのでクライアントで直接行い、
+   * 選択日の盤を 1 回だけ組み、方位別と県別の両方を切り出す。
+   *
+   * ここが「その日・その方位が動けるか」の唯一の情報源。地図の扇形、
+   * 俯瞰の県塗り、時期パネルの「選択日」列がすべてこの結果を読む。
+   *
+   * 以前は地図の扇形だけが別経路だった。扇形は物件の astrologyStatus の
+   * 多数決で塗っていて、その status はサーバが layerMode（既定は年盤）
+   * だけで出した単盤の判定だった。三盤で見ると凶の方位が、年盤だけ吉
+   * なら緑に塗られる——実際「今日は南が緑なのにセルは北西が S」という
+   * 食い違いになって出た。物件が 1 件も無い方位が既定の SAFE=通常吉と
+   * して緑寄りに出る問題も同じ経路。判定は盤から引き、物件からは引かない。
+   *
+   * 暦の判定は決定的な計算（実測 4ms/日）なのでクライアントで直接行い、
    * 日付チップを選んだ瞬間に地図が塗り替わる。
    * 本命星は時期スクリーニングと同じく classical を使う。
    */
-  const prefKigaku = useMemo(() => {
+  const dayKigaku = useMemo(() => {
     if (!hasBaseLocation || !birthDate || !targetDate) return undefined;
     try {
       const bd = new Date(
@@ -2033,30 +2043,34 @@ export default function ArbitrageScannerPage() {
           directionFilterMode,
         },
       );
-      const out: Record<
-        string,
-        {
-          direction: string;
-          directionLabel: string;
-          tier: string;
-          blocked: boolean;
-        }
-      > = {};
-      for (const t of SCRAPE_TARGETS) {
-        const dir = directionFromBearing(
-          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
-          useClassical ? "traditional" : "physical",
-        );
+      type Cell = {
+        direction: string;
+        directionLabel: string;
+        tier: string;
+        blocked: boolean;
+      };
+      const byDirection: Record<string, Cell> = {};
+      for (const dir of ALL_DIRECTIONS) {
         const v = all[dir];
         if (!v) continue;
-        out[t.name] = {
+        byDirection[dir] = {
           direction: dir,
           directionLabel: DIRECTION_LABELS[dir] ?? dir,
           tier: gradeVerdict(v),
           blocked: v.blockedByTenchusatsu,
         };
       }
-      return out;
+      const byPrefecture: Record<string, Cell> = {};
+      for (const t of SCRAPE_TARGETS) {
+        const dir = directionFromBearing(
+          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
+          useClassical ? "traditional" : "physical",
+        );
+        const cell = byDirection[dir];
+        if (!cell) continue;
+        byPrefecture[t.name] = cell;
+      }
+      return { byDirection, byPrefecture };
     } catch {
       return undefined;
     }
@@ -3864,15 +3878,28 @@ export default function ArbitrageScannerPage() {
                                 俯瞰。セルはその月の最良段階 */}
                             {usable.length > 0 && (
                               <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50 p-2">
-                                <p className="text-[9px] text-stone-400 mb-1.5">
-                                  方位×月の見取り図（セルはその月の最良段階。
-                                  クリックでその月の最初の候補日へ）
+                                <p className="text-[9px] text-stone-400 mb-1.5 leading-relaxed">
+                                  方位×月の見取り図。
+                                  <b className="text-stone-500">月のセル</b>
+                                  はその月の
+                                  <b className="text-stone-500">最良</b>
+                                  段階で、選択日の判定ではありません
+                                  （クリックでその月の最初の候補日へ）。 左端の
+                                  <b className="text-stone-500">選択日</b>
+                                  列が地図の扇形と同じ判定です。
                                 </p>
                                 <table className="text-[8px]">
                                   <thead>
                                     <tr>
                                       <th className="pr-1.5 text-left font-semibold text-stone-400">
                                         方位
+                                      </th>
+                                      <th className="px-0.5 font-mono font-normal text-indigo-400 border-r border-stone-200">
+                                        {targetDate
+                                          ? targetDate
+                                              .slice(5)
+                                              .replace("-", "/")
+                                          : "選択日"}
                                       </th>
                                       {usable[0].months.map((m) => (
                                         <th
@@ -3889,6 +3916,40 @@ export default function ArbitrageScannerPage() {
                                       <tr key={u.direction}>
                                         <td className="pr-1.5 font-bold text-stone-600 whitespace-nowrap">
                                           {u.directionLabel}
+                                        </td>
+                                        {/* 選択日の判定。地図の扇形と同じ値。
+                                            月セルの「その月の最良」と混同
+                                            しないよう罫線で区切る */}
+                                        <td className="px-0.5 py-0.5 border-r border-stone-200">
+                                          {(() => {
+                                            const t =
+                                              dayKigaku?.byDirection[
+                                                u.direction
+                                              ];
+                                            if (!t)
+                                              return (
+                                                <span className="block h-5 w-5 rounded border border-stone-100 bg-stone-50 text-center leading-5 text-stone-300">
+                                                  –
+                                                </span>
+                                              );
+                                            if (t.blocked)
+                                              return (
+                                                <span
+                                                  title={`${u.directionLabel}: 天中殺で塞がっています`}
+                                                  className="block h-5 w-5 rounded border border-stone-300 bg-stone-200 text-center leading-5 text-stone-500"
+                                                >
+                                                  殺
+                                                </span>
+                                              );
+                                            return (
+                                              <span
+                                                title={`${targetDate} ${u.directionLabel}: ${TIER_LABELS[t.tier as DayTier]}`}
+                                                className={`block h-5 w-5 rounded border text-center leading-5 font-bold ${TIER_BADGE_CLASS[t.tier as DayTier]}`}
+                                              >
+                                                {t.tier}
+                                              </span>
+                                            );
+                                          })()}
                                         </td>
                                         {u.months.map((m) =>
                                           m.bestTier && m.firstDate ? (
@@ -4368,7 +4429,14 @@ export default function ArbitrageScannerPage() {
                     // Card View List inside sidebar
                     <div className="space-y-3.5">
                       {propertiesInBounds.map((item) => {
-                        const pinColors = getPropertyPinColors(item);
+                        const k = item.direction
+                          ? dayKigaku?.byDirection[item.direction]
+                          : undefined;
+                        const pinColors = getPropertyPinColors(
+                          item,
+                          k?.tier,
+                          k?.blocked,
+                        );
                         return (
                           <div
                             key={item.id}
@@ -4563,7 +4631,14 @@ export default function ArbitrageScannerPage() {
                         </thead>
                         <tbody>
                           {propertiesInBounds.map((item) => {
-                            const pinColors = getPropertyPinColors(item);
+                            const k = item.direction
+                              ? dayKigaku?.byDirection[item.direction]
+                              : undefined;
+                            const pinColors = getPropertyPinColors(
+                              item,
+                              k?.tier,
+                              k?.blocked,
+                            );
                             return (
                               <tr
                                 key={item.id}
@@ -4689,7 +4764,9 @@ export default function ArbitrageScannerPage() {
               radiusKm={radiusKm}
               prefecture={prefecture}
               keepWideView={isNationwideOverview}
-              prefKigaku={prefKigaku}
+              prefKigaku={dayKigaku?.byPrefecture}
+              dirKigaku={dayKigaku?.byDirection}
+              targetDate={targetDate}
               selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}

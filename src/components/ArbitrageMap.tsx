@@ -35,6 +35,18 @@ interface ArbitrageMapProps {
       blocked: boolean;
     }
   >;
+  /** 8方位 → 選択日の吉凶段階（扇形の塗り分け用）。prefKigaku と同じ盤から切り出す */
+  dirKigaku?: Record<
+    string,
+    {
+      direction: string;
+      directionLabel: string;
+      tier: string;
+      blocked: boolean;
+    }
+  >;
+  /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
+  targetDate?: string;
   /** 詳細パネルで開いている物件。地図でリング強調する */
   selectedPropertyId?: string | null;
   prefecture?: string;

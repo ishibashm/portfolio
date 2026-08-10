@@ -51,9 +51,59 @@ export function getRecommendationStarCount(
           : 1;
 }
 
-export const getPropertyPinColors = (prop: any) => {
+/**
+ * 物件ピンの色。
+ *
+ * @param tier その物件の方位の、選択日の三盤段階（S〜X）。渡されたときは
+ *   「行けるか行けないか」の一段目をこれで決める。
+ *
+ *   ピンの色は元々 astrologyStatus（サーバが layerMode ＝既定は年盤で
+ *   出した単盤の判定）だけで決めていた。地図の扇形と時期パネルは三盤を
+ *   合成した段階で判定するので、年盤だけ吉の方位が「赤い扇形の中に緑の
+ *   ピン」として出てしまう。段階が凶（X・天中殺）ならピンもそちらに
+ *   合わせ、盤ごとの差は詳細に置く。
+ * @param blocked 天中殺で塞がっている方位か。
+ */
+export const getPropertyPinColors = (
+  prop: any,
+  tier?: string,
+  blocked?: boolean,
+) => {
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
+
+  if (blocked) {
+    // ⬛ グレー（天中殺で塞がっている）
+    return {
+      fillColor: "#64748b",
+      borderColor: "#1e293b",
+      textClass: "text-slate-500 dark:text-slate-400",
+      bgClass: "bg-slate-500/10 border-slate-500/30",
+      label: "天中殺",
+    };
+  }
+
+  if (tier === "X") {
+    // 🟥 赤（五大凶殺）。扇形と同じ判断。
+    return {
+      fillColor: "#ef4444",
+      borderColor: "#7f1d1d",
+      textClass: "text-red-500 dark:text-red-400",
+      bgClass: "bg-red-500/10 border-red-500/30",
+      label: "大凶",
+    };
+  }
+
+  if (tier === "D") {
+    // 🟨 黄（軽い凶のみ）
+    return {
+      fillColor: "#f59e0b",
+      borderColor: "#78350f",
+      textClass: "text-amber-600 dark:text-amber-500",
+      bgClass: "bg-amber-500/5 border-amber-500/20",
+      label: "注意",
+    };
+  }
 
   if (prop.astrologyStatus === "OPTIMAL_BOOST") {
     // 🌟 ゴールド（超大吉）
