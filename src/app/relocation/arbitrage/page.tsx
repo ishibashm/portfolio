@@ -50,8 +50,12 @@ import {
   ALL_DIRECTIONS,
   DIRECTION_LABELS,
   TIER_LABELS,
+  gradeVerdict,
+  judgeDayAllDirections,
   type DayTier,
 } from "@/utils/auspiciousDays";
+import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
+import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 
 /**
  * 暦の平年値。本命星×天中殺グループごとの、段階別の年平均日数（9年窓）。
@@ -1975,6 +1979,71 @@ export default function ArbitrageScannerPage() {
     }
     return counts;
   }, [safeData]);
+
+  /**
+   * 俯瞰地図の「方位の吉凶」塗り分け。各県が出発地から見てどの方位に
+   * あり、選択日にその方位が動けるのかを県ごとに引く。暦の判定は
+   * 決定的な計算（実測 4ms/日）なのでクライアントで直接行い、
+   * 日付チップを選んだ瞬間に地図が塗り替わる。
+   * 本命星は時期スクリーニングと同じく classical を使う。
+   */
+  const prefKigaku = useMemo(() => {
+    if (!hasBaseLocation || !birthDate || !targetDate) return undefined;
+    try {
+      const bd = new Date(
+        birthDate.includes("T") ? birthDate : `${birthDate}T12:00:00+09:00`,
+      );
+      if (isNaN(bd.getTime())) return undefined;
+      const honmei = getHonmeiStar(bd);
+      const all = judgeDayAllDirections(
+        new Date(`${targetDate}T12:00:00+09:00`),
+        {
+          honmeiStar: honmei.classical as number,
+          voidZodiacs: getPersonalVoidZodiac(bd),
+          lon: Number(baseLon),
+          tenchusatsuMode: tenchusatsuMode as never,
+          involuntaryMove,
+          directionFilterMode,
+        },
+      );
+      const out: Record<
+        string,
+        {
+          direction: string;
+          directionLabel: string;
+          tier: string;
+          blocked: boolean;
+        }
+      > = {};
+      for (const t of SCRAPE_TARGETS) {
+        const dir = directionFromBearing(
+          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
+          useClassical ? "traditional" : "physical",
+        );
+        const v = all[dir];
+        if (!v) continue;
+        out[t.name] = {
+          direction: dir,
+          directionLabel: DIRECTION_LABELS[dir] ?? dir,
+          tier: gradeVerdict(v),
+          blocked: v.blockedByTenchusatsu,
+        };
+      }
+      return out;
+    } catch {
+      return undefined;
+    }
+  }, [
+    hasBaseLocation,
+    birthDate,
+    targetDate,
+    baseLat,
+    baseLon,
+    tenchusatsuMode,
+    involuntaryMove,
+    directionFilterMode,
+    useClassical,
+  ]);
 
   /** 方位別の総家賃の中央値。時期パネルで「その方位の相場感」を添える */
   const directionRentMedians = useMemo(() => {
@@ -4547,6 +4616,7 @@ export default function ArbitrageScannerPage() {
               radiusKm={radiusKm}
               prefecture={prefecture}
               keepWideView={isNationwideOverview}
+              prefKigaku={prefKigaku}
               selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}
