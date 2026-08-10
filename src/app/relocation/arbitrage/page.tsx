@@ -797,7 +797,7 @@ export default function ArbitrageScannerPage() {
    * 三盤吉（S）だけを合格にすると年天中殺・八方塞がりの年に 0 件で
    * 行き止まるため、mode=ranked で全日を 6 段階（S〜X）に格付けし、
    * 完璧な日が無くても「その期間で統計的に最もマシな日」を出す。
-   * 重い凶（五黄殺・暗剣殺・本命殺・的殺）の X だけは決して勧めない。
+   * 五大凶殺（五黄殺・暗剣殺・破・本命殺・的殺）の X だけは決して勧めない。
    * 走査は /api/relocation/auspicious-days（純計算・外部課金なし）。
    */
   const [timingBusy, setTimingBusy] = useState(false);
@@ -3544,8 +3544,8 @@ export default function ArbitrageScannerPage() {
                       で格付けします（三盤吉 → 吉2盤 → 吉1盤 → 凶なし →
                       軽い凶のみ）。三盤吉の日が無い期間でも、
                       <span className="font-bold">その中で最もマシな日</span>
-                      を候補に出します。重い凶（五黄殺・暗剣殺・本命殺・的殺）
-                      の日だけは決して候補に出しません。日付を選ぶと、
+                      を候補に出します。五大凶殺（五黄殺・暗剣殺・破・本命殺・
+                      的殺）の日だけは決して候補に出しません。日付を選ぶと、
                       スキャンの日付と方位フィルターがその日に切り替わります。
                     </p>
                     <div className="flex items-center gap-2">
@@ -3614,8 +3614,8 @@ export default function ArbitrageScannerPage() {
                                 </p>
                               ) : (
                                 <p>
-                                  全日が重い凶（五黄殺・暗剣殺・本命殺・的殺）
-                                  に当たっています。期間を2年に広げて
+                                  全日が五大凶殺（五黄殺・暗剣殺・破・本命殺・
+                                  的殺）に当たっています。期間を2年に広げて
                                   再走査してください。
                                 </p>
                               )}

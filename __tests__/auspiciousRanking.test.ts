@@ -50,20 +50,28 @@ describe("gradeVerdict の段階", () => {
     expect(gradeVerdict(verdict("SAFE", "SAFE", "SAFE", "SAFE"))).toBe("C");
   });
 
-  it("軽い凶（歳破など）は D。吉が混ざっていても D のまま", () => {
-    expect(gradeVerdict(verdict("NOISE_HA", "SAFE", "SAFE", "SAFE"))).toBe("D");
+  it("軽い凶（天中殺方位・月命殺・ノードなど）は D。吉が混ざっても D のまま", () => {
+    expect(gradeVerdict(verdict("NOISE_VOID", "SAFE", "SAFE", "SAFE"))).toBe(
+      "D",
+    );
     expect(
-      gradeVerdict(verdict("OPTIMAL", "NOISE_HA", "OPTIMAL", "SAFE")),
+      gradeVerdict(verdict("SAFE", "NOISE_GETSUMEI", "SAFE", "SAFE")),
+    ).toBe("D");
+    expect(
+      gradeVerdict(verdict("OPTIMAL", "NOISE_NODE", "OPTIMAL", "SAFE")),
     ).toBe("D");
   });
 
-  it("重い凶（五黄殺・暗剣殺・本命殺・的殺）はどこにあっても X", () => {
+  it("五大凶殺（五黄殺・暗剣殺・破・本命殺・的殺）はどこにあっても X", () => {
     expect(gradeVerdict(verdict("NOISE_GOU", "SAFE", "SAFE", "SAFE"))).toBe(
       "X",
     );
     expect(gradeVerdict(verdict("SAFE", "NOISE_ANKEN", "SAFE", "SAFE"))).toBe(
       "X",
     );
+    // 破も五大凶殺。エンジンは五黄殺と同格の絶対格として扱っており、
+    // 以前ここを D（次善候補）に落としていたのは食い違いだった。
+    expect(gradeVerdict(verdict("NOISE_HA", "SAFE", "SAFE", "SAFE"))).toBe("X");
     expect(gradeVerdict(verdict("SAFE", "SAFE", "NOISE_HONMEI", "SAFE"))).toBe(
       "X",
     );
@@ -73,10 +81,10 @@ describe("gradeVerdict の段階", () => {
     );
   });
 
-  it("重い凶と軽い凶が同居したら重いほう（X）を採る", () => {
-    expect(gradeVerdict(verdict("NOISE_GOU", "NOISE_HA", "SAFE", "SAFE"))).toBe(
-      "X",
-    );
+  it("五大凶殺と軽い凶が同居したら X を採る", () => {
+    expect(
+      gradeVerdict(verdict("NOISE_GOU", "NOISE_VOID", "SAFE", "SAFE")),
+    ).toBe("X");
   });
 
   it("全段階にラベルがある", () => {

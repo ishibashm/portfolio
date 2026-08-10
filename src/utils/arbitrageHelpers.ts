@@ -1,5 +1,7 @@
 // Real Estate Arbitrage astrology and pin color helper functions
 
+import { isFatalNoise } from "@/utils/noiseSeverity";
+
 /**
  * 方位そのものの凶。空亡・月交点は「方位の凶」ではないので含めない。
  *
@@ -38,7 +40,15 @@ export function getRecommendationStarCount(
   status?: string,
 ): number {
   if (status && isAvoidStatus(status)) return 1;
-  return score >= 80 ? 5 : score >= 70 ? 4 : score >= 60 ? 3 : score >= 50 ? 2 : 1;
+  return score >= 80
+    ? 5
+    : score >= 70
+      ? 4
+      : score >= 60
+        ? 3
+        : score >= 50
+          ? 2
+          : 1;
 }
 
 export const getPropertyPinColors = (prop: any) => {
@@ -69,13 +79,8 @@ export const getPropertyPinColors = (prop: any) => {
     };
   }
 
-  const isHeavyBad = [
-    "NOISE_GOU",
-    "NOISE_ANKEN",
-    "NOISE_HA",
-    "NOISE_HONMEI",
-    "NOISE_TEKI",
-  ].includes(prop.astrologyStatus);
+  // 五大凶殺。定義は noiseSeverity.ts（時期スクリーニングの X と同じ集合）
+  const isHeavyBad = isFatalNoise(prop.astrologyStatus);
 
   if (isHeavyBad) {
     // 🟥 赤（警告）

@@ -21,6 +21,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { directionBoardInstant } from "@/utils/boardInstant";
+import { isFatalNoise } from "@/utils/noiseSeverity";
 import {
   TenchusatsuMode,
   VoidScopes,
@@ -435,11 +436,12 @@ export function findAuspiciousDaysAllDirections(
  *   A 凶なし・吉が2盤
  *   B 凶なし・吉が1盤
  *   C 凶なし（すべて平）
- *   D 軽い凶のみ（歳破・月破・日破、節入り前後など）
- *   X 重い凶あり（五黄殺・暗剣殺・本命殺・的殺）
+ *   D 軽い凶のみ（天中殺方位・月命殺・月的殺・ノードなど）
+ *   X 五大凶殺あり（五黄殺・暗剣殺・破・本命殺・的殺）
  *
- * X は「マシな日」としても決して勧めない。方位学でこの4つは
- * 妥協の対象にならない扱いなので、候補から常に除外する。
+ * X は「マシな日」としても決して勧めない。五大凶殺は移転で妥協の
+ * 対象にならない扱いなので、候補から常に除外する。集合の定義は
+ * noiseSeverity.ts が唯一の情報源で、地図の「大凶」の色分けと同じ。
  */
 export type DayTier = "S" | "A" | "B" | "C" | "D" | "X";
 
@@ -451,24 +453,13 @@ export const TIER_LABELS: Record<DayTier, string> = {
   B: "吉1盤・凶なし",
   C: "凶なし（平）",
   D: "軽い凶のみ",
-  X: "重い凶あり",
+  X: "五大凶殺あり",
 };
-
-/** 妥協できない凶。これが載る日は候補に出さない。 */
-const HEAVY_NOISE = new Set([
-  "NOISE_GOU",
-  "NOISE_ANKEN",
-  "NOISE_HONMEI",
-  "NOISE_TEKI",
-]);
 
 export function gradeVerdict(v: DayVerdict): DayTier {
   const layers = [v.yearLayer, v.monthLayer, v.dayLayer];
   const noises = layers.filter(isInauspicious);
-  if (
-    noises.some((n) => HEAVY_NOISE.has(n)) ||
-    HEAVY_NOISE.has(v.finalStatus)
-  ) {
+  if (noises.some(isFatalNoise) || isFatalNoise(v.finalStatus)) {
     return "X";
   }
   if (noises.length > 0 || isInauspicious(v.finalStatus)) return "D";

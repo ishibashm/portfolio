@@ -901,37 +901,6 @@ export function calculateVectorCollision(
 
   const finalVectors: any = {};
 
-  function getLayerScore(status: string): number {
-    switch (status) {
-      case "OPTIMAL":
-        return 100;
-      case "OPTIMAL_REGULAR":
-        return 50;
-      case "SAFE":
-        return 0;
-      case "NOISE_HONMEI":
-        return -30;
-      case "NOISE_TEKI":
-        return -30;
-      case "NOISE_GETSUMEI":
-        return -30;
-      case "NOISE_GETSUTEKI":
-        return -30;
-      case "NOISE_NODE":
-        return -40;
-      case "NOISE_VOID":
-        return -80;
-      case "NOISE_GOU":
-        return -100;
-      case "NOISE_ANKEN":
-        return -100;
-      case "NOISE_HA":
-        return -100;
-      default:
-        return 0;
-    }
-  }
-
   if (ignoreDayLayer) {
     for (const dir of directions) {
       dayLayer[dir] = "SAFE";
@@ -992,15 +961,17 @@ export function calculateVectorCollision(
         // If Year/Month are safe, but only Day has red noise, downgrade to WARNING
         finalVectors[dir] = "WARNING";
       } else {
-        // Evaluate other noises on critical layers (Year and Month)
-        // Order of severity: VOID > HONMEI > TEKI > GETSUMEI > GETSUTEKI > NODE
+        // 年盤・月盤に残る二次凶の順序。noiseSeverity の NOISE_PRIORITY に
+        // 従い、五大凶殺（本命殺・的殺）を天中殺方位より先に出す。以前は
+        // VOID を先に採っていたため、本命殺が天中殺方位のラベルに隠れ、
+        // 地図の大凶（赤）にならないことがあった。
         const criticalLayers = [yStatus, mStatus];
-        if (criticalLayers.includes("NOISE_VOID")) {
-          finalVectors[dir] = "NOISE_VOID";
-        } else if (criticalLayers.includes("NOISE_HONMEI")) {
+        if (criticalLayers.includes("NOISE_HONMEI")) {
           finalVectors[dir] = "NOISE_HONMEI";
         } else if (criticalLayers.includes("NOISE_TEKI")) {
           finalVectors[dir] = "NOISE_TEKI";
+        } else if (criticalLayers.includes("NOISE_VOID")) {
+          finalVectors[dir] = "NOISE_VOID";
         } else if (criticalLayers.includes("NOISE_GETSUMEI")) {
           finalVectors[dir] = "NOISE_GETSUMEI";
         } else if (criticalLayers.includes("NOISE_GETSUTEKI")) {
@@ -1034,12 +1005,12 @@ export function calculateVectorCollision(
         finalVectors[dir] = "NOISE_ANKEN";
       } else if (hasHa) {
         finalVectors[dir] = "NOISE_HA";
-      } else if (layers.includes("NOISE_VOID")) {
-        finalVectors[dir] = "NOISE_VOID";
       } else if (layers.includes("NOISE_HONMEI")) {
         finalVectors[dir] = "NOISE_HONMEI";
       } else if (layers.includes("NOISE_TEKI")) {
         finalVectors[dir] = "NOISE_TEKI";
+      } else if (layers.includes("NOISE_VOID")) {
+        finalVectors[dir] = "NOISE_VOID";
       } else if (layers.includes("NOISE_GETSUMEI")) {
         finalVectors[dir] = "NOISE_GETSUMEI";
       } else if (layers.includes("NOISE_GETSUTEKI")) {
