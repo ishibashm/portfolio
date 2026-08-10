@@ -8,6 +8,7 @@ import {
   ALL_DIRECTIONS,
   findAuspiciousDays,
   findAuspiciousDaysAllDirections,
+  rankRelocationDays,
 } from "@/utils/auspiciousDays";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -71,8 +72,15 @@ export async function GET(request: Request) {
     const today = new Date();
     const from = parseSafeDate(searchParams.get("from"), today);
     // 既定は 1 年先まで。年盤の窓（立春まで）を必ず含む長さにする。
+    // days で 730（2 年）まで広げられる。年盤が二度替わる先は精度より
+    // 不確かさが勝つので、それ以上は受け付けない。
+    const daysRaw = parseInt(searchParams.get("days") || "365", 10);
+    const rangeDays = Math.min(
+      730,
+      Math.max(30, Number.isFinite(daysRaw) ? daysRaw : 365),
+    );
     const defaultTo = new Date(from);
-    defaultTo.setDate(defaultTo.getDate() + 365);
+    defaultTo.setDate(defaultTo.getDate() + rangeDays);
     const to = parseSafeDate(searchParams.get("to"), defaultTo);
 
     if (to < from) {
@@ -97,6 +105,19 @@ export async function GET(request: Request) {
       directionFilterMode:
         searchParams.get("directionFilterMode") || "composite",
     };
+
+    // mode=ranked: 三盤吉だけでなく全日を 6 段階に格付けして返す。
+    // 完璧な日が無い期間（年天中殺・八方塞がり）でも「次善の日」と
+    // 月ごとの見取り図が出るので、利用者が行き止まりに落ちない。
+    if (searchParams.get("mode") === "ranked") {
+      return NextResponse.json({
+        honmeiStar: honmeiStar.classical,
+        voidZodiacs,
+        tenchusatsuMode,
+        rangeDays,
+        ranked: rankRelocationDays(from, to, base),
+      });
+    }
 
     const directionParam = searchParams.get("direction");
     if (directionParam && directionParam !== "all") {

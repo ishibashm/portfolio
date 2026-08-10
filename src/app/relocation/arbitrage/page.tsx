@@ -46,7 +46,22 @@ import {
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
 import type { ProfilePreset } from "@/lib/profilePresetSync";
-import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
+import {
+  ALL_DIRECTIONS,
+  DIRECTION_LABELS,
+  TIER_LABELS,
+  type DayTier,
+} from "@/utils/auspiciousDays";
+
+/** 段階バッジの配色。良い順に緑→青→灰→琥珀。X は候補に出さないので無い */
+const TIER_BADGE_CLASS: Record<DayTier, string> = {
+  S: "bg-emerald-100 border-emerald-300 text-emerald-800",
+  A: "bg-teal-50 border-teal-300 text-teal-700",
+  B: "bg-sky-50 border-sky-300 text-sky-700",
+  C: "bg-stone-100 border-stone-300 text-stone-600",
+  D: "bg-amber-50 border-amber-300 text-amber-700",
+  X: "bg-rose-50 border-rose-300 text-rose-700",
+};
 
 /**
  * 吉凶ステータスの日本語表記。
@@ -776,26 +791,39 @@ export default function ArbitrageScannerPage() {
    *
    * 日付を先に固定して物件を探すと、天中殺や八方塞がりの期間は
    * 何もヒットせず、そこで行き止まりになる。順序を逆にして
-   * 「今後 1 年でいつ・どの方位なら動けるか」を先に走査し、
-   * 吉日を選ぶとスキャン日付と方位フィルターがそこへ飛ぶようにする。
+   * 「いつ・どの方位なら動けるか」を先に走査し、日付を選ぶと
+   * スキャン日付と方位フィルターがそこへ飛ぶようにする。
+   *
+   * 三盤吉（S）だけを合格にすると年天中殺・八方塞がりの年に 0 件で
+   * 行き止まるため、mode=ranked で全日を 6 段階（S〜X）に格付けし、
+   * 完璧な日が無くても「その期間で統計的に最もマシな日」を出す。
+   * 重い凶（五黄殺・暗剣殺・本命殺・的殺）の X だけは決して勧めない。
    * 走査は /api/relocation/auspicious-days（純計算・外部課金なし）。
    */
   const [timingBusy, setTimingBusy] = useState(false);
   const [timingError, setTimingError] = useState<string | null>(null);
-  const [timingSummaries, setTimingSummaries] = useState<
+  const [timingRangeDays, setTimingRangeDays] = useState<365 | 730>(365);
+  const [timingRanked, setTimingRanked] = useState<
     | null
     | {
         direction: string;
         directionLabel: string;
-        availableDays: number;
-        tripleAuspiciousDays: number;
-        blockedByTenchusatsuDays: number;
-        days: {
+        tierCounts: Record<string, number>;
+        bestAvailableTier: string | null;
+        topDays: {
           date: string;
           weekday: number;
+          tier: string;
           rokuyo: string;
-          blockedByTenchusatsu: boolean;
+          tags: string[];
         }[];
+        months: {
+          month: string;
+          bestTier: string | null;
+          bestTierDays: number;
+          firstDate: string | null;
+        }[];
+        blockedByTenchusatsuDays: number;
       }[]
   >(null);
   const [timingOpenDir, setTimingOpenDir] = useState<string | null>(null);
@@ -1474,8 +1502,8 @@ export default function ArbitrageScannerPage() {
     window.dispatchEvent(event);
   };
 
-  /** 今後 1 年の三盤吉日を全方位ぶん走査する。ボタンから明示的に呼ぶ */
-  const runTimingScan = async () => {
+  /** 選んだ期間の全日を段階評価で走査する。ボタンから明示的に呼ぶ */
+  const runTimingScan = async (rangeDays: 365 | 730 = timingRangeDays) => {
     if (!hasBaseLocation || !birthDate) return;
     setTimingBusy(true);
     setTimingError(null);
@@ -1486,12 +1514,14 @@ export default function ArbitrageScannerPage() {
         tenchusatsuMode,
         involuntaryMove: String(involuntaryMove),
         directionFilterMode,
+        mode: "ranked",
+        days: String(rangeDays),
       });
       const res = await fetch(`/api/relocation/auspicious-days?${params}`);
       if (!res.ok) throw new Error(`walk failed (${res.status})`);
       const json = await res.json();
-      if (!Array.isArray(json?.summaries)) throw new Error("empty result");
-      setTimingSummaries(json.summaries);
+      if (!Array.isArray(json?.ranked)) throw new Error("empty result");
+      setTimingRanked(json.ranked);
       setTimingOpenDir(null);
     } catch {
       setTimingError(
@@ -3027,215 +3057,213 @@ export default function ArbitrageScannerPage() {
                     </p>
 
                     <div className="space-y-3">
-                        {savedProfiles.length > 0 && (
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-semibold text-stone-400 block">
-                              保存済みプロフィールから追加
-                            </label>
-                            <div className="flex flex-wrap gap-1.5">
-                              {savedProfiles
-                                .filter(
-                                  (preset) =>
-                                    !partyMembers.some(
-                                      (m) => m.id === preset.id,
-                                    ),
-                                )
-                                .map((preset) => (
-                                  <button
-                                    key={preset.id}
-                                    onClick={() => addPartyMember(preset)}
-                                    className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-gray-50 dark:bg-white text-stone-600 border border-gray-200 dark:border-stone-200 hover:border-indigo-300"
-                                  >
-                                    ＋ {preset.name}
-                                  </button>
-                                ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          onClick={() => addPartyMember()}
-                          className="w-full px-3 py-2 rounded-xl text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
-                        >
-                          ＋ 手入力で同行者を追加
-                        </button>
-
-                        {partyMembers.map((member) => (
-                          <div
-                            key={member.id}
-                            className="space-y-2 p-3 rounded-xl bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200"
-                          >
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="text"
-                                value={member.name}
-                                onChange={(e) =>
-                                  updatePartyMember(member.id, {
-                                    name: e.target.value,
-                                  })
-                                }
-                                placeholder="名前（母、父など）"
-                                className="flex-1 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
-                              />
-                              <button
-                                onClick={() =>
-                                  setPartyMembers((prev) =>
-                                    prev.filter((m) => m.id !== member.id),
-                                  )
-                                }
-                                className="px-2 py-1 text-[10px] font-semibold text-rose-500 hover:underline shrink-0"
-                              >
-                                削除
-                              </button>
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-semibold text-stone-400 block">
-                                生年月日時
-                              </label>
-                              <input
-                                type="datetime-local"
-                                value={normalizeDateTimeLocal(member.birthDate)}
-                                onChange={(e) =>
-                                  updatePartyMember(member.id, {
-                                    birthDate: e.target.value,
-                                  })
-                                }
-                                className="w-full px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label
-                                className="text-[10px] font-semibold text-stone-400 block cursor-help"
-                                title="この人が今住んでいる場所。ここからの向きでこの人の方位が決まる。"
-                              >
-                                出発地（現住地）の緯度・経度
-                              </label>
-                              <div className="flex gap-2">
-                                <input
-                                  type="number"
-                                  step="0.00001"
-                                  value={member.baseLat}
-                                  onChange={(e) =>
-                                    updatePartyMember(member.id, {
-                                      baseLat: e.target.value,
-                                    })
-                                  }
-                                  placeholder="緯度"
-                                  disabled={member.stationary}
-                                  className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
-                                />
-                                <input
-                                  type="number"
-                                  step="0.00001"
-                                  value={member.baseLon}
-                                  onChange={(e) =>
-                                    updatePartyMember(member.id, {
-                                      baseLon: e.target.value,
-                                    })
-                                  }
-                                  placeholder="経度"
-                                  disabled={member.stationary}
-                                  className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between gap-2">
-                              <label
-                                className="flex items-center gap-1.5 text-[10px] text-stone-500 cursor-pointer"
-                                title="既に移転先の側に住んでいて動かない人。方位が発生しないので判定から外し、同居する相手として一覧にだけ残す。"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={member.stationary}
-                                  onChange={(e) =>
-                                    updatePartyMember(member.id, {
-                                      stationary: e.target.checked,
-                                    })
-                                  }
-                                  className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
-                                />
-                                移動しない（現地在住）
-                              </label>
-                              <label
-                                className="flex items-center gap-1.5 text-[10px] text-stone-500"
-                                title="「重み付き」でまとめるときの比重。"
-                              >
-                                比重
-                                <input
-                                  type="number"
-                                  min={0.5}
-                                  max={10}
-                                  step={0.5}
-                                  value={member.weight}
-                                  onChange={(e) =>
-                                    updatePartyMember(member.id, {
-                                      weight: Number(e.target.value) || 1,
-                                    })
-                                  }
-                                  className="w-14 px-1.5 py-1 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none font-mono"
-                                />
-                              </label>
-                            </div>
-                          </div>
-                        ))}
-
-                        <div className="grid grid-cols-2 gap-3 pt-1 border-t border-gray-100 dark:border-stone-200">
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-semibold text-stone-400 block">
-                              まとめ方
-                            </label>
-                            <select
-                              value={partyPolicy}
-                              onChange={(e) => {
-                                setPartyPolicy(e.target.value);
-                                setCurrentPage(1);
-                              }}
-                              className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
-                            >
-                              {PARTY_POLICIES.map((policy) => (
-                                <option
-                                  key={policy.id}
-                                  value={policy.id}
-                                  title={policy.description}
+                      {savedProfiles.length > 0 && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-stone-400 block">
+                            保存済みプロフィールから追加
+                          </label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {savedProfiles
+                              .filter(
+                                (preset) =>
+                                  !partyMembers.some((m) => m.id === preset.id),
+                              )
+                              .map((preset) => (
+                                <button
+                                  key={preset.id}
+                                  onClick={() => addPartyMember(preset)}
+                                  className="px-2 py-1 rounded-lg text-[10px] font-semibold bg-gray-50 dark:bg-white text-stone-600 border border-gray-200 dark:border-stone-200 hover:border-indigo-300"
                                 >
-                                  {policy.label}
-                                </option>
+                                  ＋ {preset.name}
+                                </button>
                               ))}
-                            </select>
                           </div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => addPartyMember()}
+                        className="w-full px-3 py-2 rounded-xl text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+                      >
+                        ＋ 手入力で同行者を追加
+                      </button>
+
+                      {partyMembers.map((member) => (
+                        <div
+                          key={member.id}
+                          className="space-y-2 p-3 rounded-xl bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200"
+                        >
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={member.name}
+                              onChange={(e) =>
+                                updatePartyMember(member.id, {
+                                  name: e.target.value,
+                                })
+                              }
+                              placeholder="名前（母、父など）"
+                              className="flex-1 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
+                            />
+                            <button
+                              onClick={() =>
+                                setPartyMembers((prev) =>
+                                  prev.filter((m) => m.id !== member.id),
+                                )
+                              }
+                              className="px-2 py-1 text-[10px] font-semibold text-rose-500 hover:underline shrink-0"
+                            >
+                              削除
+                            </button>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-semibold text-stone-400 block">
+                              生年月日時
+                            </label>
+                            <input
+                              type="datetime-local"
+                              value={normalizeDateTimeLocal(member.birthDate)}
+                              onChange={(e) =>
+                                updatePartyMember(member.id, {
+                                  birthDate: e.target.value,
+                                })
+                              }
+                              className="w-full px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500"
+                            />
+                          </div>
+
                           <div className="space-y-1">
                             <label
                               className="text-[10px] font-semibold text-stone-400 block cursor-help"
-                              title="対象日から何日先まで「全員が動ける日」を探すか。0 にすると時期の判定をしない。"
+                              title="この人が今住んでいる場所。ここからの向きでこの人の方位が決まる。"
                             >
-                              時期の走査 (日先)
+                              出発地（現住地）の緯度・経度
                             </label>
-                            <select
-                              value={horizonDays}
-                              onChange={(e) => {
-                                setHorizonDays(Number(e.target.value));
-                                setCurrentPage(1);
-                              }}
-                              className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                step="0.00001"
+                                value={member.baseLat}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    baseLat: e.target.value,
+                                  })
+                                }
+                                placeholder="緯度"
+                                disabled={member.stationary}
+                                className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
+                              />
+                              <input
+                                type="number"
+                                step="0.00001"
+                                value={member.baseLon}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    baseLon: e.target.value,
+                                  })
+                                }
+                                placeholder="経度"
+                                disabled={member.stationary}
+                                className="w-1/2 px-2 py-1.5 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none focus:border-indigo-500 font-mono disabled:opacity-40"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <label
+                              className="flex items-center gap-1.5 text-[10px] text-stone-500 cursor-pointer"
+                              title="既に移転先の側に住んでいて動かない人。方位が発生しないので判定から外し、同居する相手として一覧にだけ残す。"
                             >
-                              <option value={0}>見ない</option>
-                              <option value={14}>14日先まで</option>
-                              <option value={30}>30日先まで</option>
-                              <option value={60}>60日先まで</option>
-                              <option value={90}>90日先まで</option>
-                            </select>
+                              <input
+                                type="checkbox"
+                                checked={member.stationary}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    stationary: e.target.checked,
+                                  })
+                                }
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+                              />
+                              移動しない（現地在住）
+                            </label>
+                            <label
+                              className="flex items-center gap-1.5 text-[10px] text-stone-500"
+                              title="「重み付き」でまとめるときの比重。"
+                            >
+                              比重
+                              <input
+                                type="number"
+                                min={0.5}
+                                max={10}
+                                step={0.5}
+                                value={member.weight}
+                                onChange={(e) =>
+                                  updatePartyMember(member.id, {
+                                    weight: Number(e.target.value) || 1,
+                                  })
+                                }
+                                className="w-14 px-1.5 py-1 bg-white dark:bg-stone-50 border border-gray-200 dark:border-stone-200 rounded-lg text-xs outline-none font-mono"
+                              />
+                            </label>
                           </div>
                         </div>
+                      ))}
 
-                        <p className="text-[10px] text-stone-400 leading-relaxed">
-                          {
-                            PARTY_POLICIES.find((p) => p.id === partyPolicy)
-                              ?.description
-                          }
-                        </p>
+                      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-gray-100 dark:border-stone-200">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-stone-400 block">
+                            まとめ方
+                          </label>
+                          <select
+                            value={partyPolicy}
+                            onChange={(e) => {
+                              setPartyPolicy(e.target.value);
+                              setCurrentPage(1);
+                            }}
+                            className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                          >
+                            {PARTY_POLICIES.map((policy) => (
+                              <option
+                                key={policy.id}
+                                value={policy.id}
+                                title={policy.description}
+                              >
+                                {policy.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label
+                            className="text-[10px] font-semibold text-stone-400 block cursor-help"
+                            title="対象日から何日先まで「全員が動ける日」を探すか。0 にすると時期の判定をしない。"
+                          >
+                            時期の走査 (日先)
+                          </label>
+                          <select
+                            value={horizonDays}
+                            onChange={(e) => {
+                              setHorizonDays(Number(e.target.value));
+                              setCurrentPage(1);
+                            }}
+                            className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
+                          >
+                            <option value={0}>見ない</option>
+                            <option value={14}>14日先まで</option>
+                            <option value={30}>30日先まで</option>
+                            <option value={60}>60日先まで</option>
+                            <option value={90}>90日先まで</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                        {
+                          PARTY_POLICIES.find((p) => p.id === partyPolicy)
+                            ?.description
+                        }
+                      </p>
                     </div>
                   </ArbitrageSidebarSection>
                   {/* 評価軸パネル。
@@ -3492,45 +3520,63 @@ export default function ArbitrageScannerPage() {
 
                   {/* 引っ越し時期のスクリーニング。日付を固定して物件を探すの
                       ではなく、「いつ・どの方位なら動けるか」を先に走査する。
-                      天中殺や八方塞がりで今日がゼロ件でも、次に開く日へ
-                      ワンクリックで飛べるようにする。 */}
+                      三盤吉が無い期間でも 6 段階の格付けで「統計的に最も
+                      マシな日」を出し、行き止まりを作らない。月ごとの
+                      見取り図で、どの月に窓が開くかも見える。 */}
                   <ArbitrageSidebarSection
                     title="引っ越し時期を探す"
                     summary={
-                      timingSummaries === null
+                      timingRanked === null
                         ? "未走査"
                         : (() => {
-                            const total = timingSummaries.reduce(
-                              (a, s) => a + s.availableDays,
-                              0,
+                            const best = timingRanked.find(
+                              (s) => s.bestAvailableTier !== null,
                             );
-                            return total === 0
-                              ? "動ける日なし"
-                              : `1年内に吉日${total}日`;
+                            return best
+                              ? `最良: ${TIER_LABELS[best.bestAvailableTier as DayTier]}`
+                              : "候補なし";
                           })()
                     }
                   >
                     <p className="text-[10px] leading-relaxed text-stone-500">
-                      今後1年を走査して、
-                      <span className="font-bold">
-                        年盤・月盤・日盤がすべて吉になる日
-                      </span>
-                      を方位ごとに数えます。日付を選ぶと、スキャンの日付と
-                      方位フィルターがその日に切り替わり、地図にその日
-                      動ける物件が表示されます。天中殺の扱いは「天中殺の扱い」
-                      の設定に従います。
+                      選んだ期間の全日を、方位ごとに
+                      <span className="font-bold">6段階</span>
+                      で格付けします（三盤吉 → 吉2盤 → 吉1盤 → 凶なし →
+                      軽い凶のみ）。三盤吉の日が無い期間でも、
+                      <span className="font-bold">その中で最もマシな日</span>
+                      を候補に出します。重い凶（五黄殺・暗剣殺・本命殺・的殺）
+                      の日だけは決して候補に出しません。日付を選ぶと、
+                      スキャンの日付と方位フィルターがその日に切り替わります。
                     </p>
-                    <button
-                      onClick={runTimingScan}
-                      disabled={timingBusy || !hasBaseLocation || !birthDate}
-                      className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white transition-colors"
-                    >
-                      {timingBusy
-                        ? "走査中…（数秒かかります）"
-                        : timingSummaries === null
-                          ? "今後1年ぶんを走査する"
-                          : "設定を変えて走査し直す"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
+                        {([365, 730] as const).map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setTimingRangeDays(d)}
+                            className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
+                              timingRangeDays === d
+                                ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
+                                : "text-stone-400 hover:text-gray-700"
+                            }`}
+                          >
+                            {d === 365 ? "1年" : "2年"}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => runTimingScan()}
+                        disabled={timingBusy || !hasBaseLocation || !birthDate}
+                        className="flex-1 px-3 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white transition-colors"
+                      >
+                        {timingBusy
+                          ? "走査中…"
+                          : timingRanked === null
+                            ? "走査する"
+                            : "走査し直す"}
+                      </button>
+                    </div>
                     {!hasBaseLocation && (
                       <p className="text-[10px] text-amber-700">
                         出発地が未設定です。方位は出発地から決まるため、先に
@@ -3540,54 +3586,60 @@ export default function ArbitrageScannerPage() {
                     {timingError && (
                       <p className="text-[10px] text-rose-600">{timingError}</p>
                     )}
-                    {timingSummaries !== null &&
+                    {timingRanked !== null &&
                       (() => {
-                        const totalAvailable = timingSummaries.reduce(
-                          (a, s) => a + s.availableDays,
-                          0,
+                        const usable = timingRanked.filter(
+                          (s) => s.bestAvailableTier !== null,
                         );
-                        const totalBlocked = timingSummaries.reduce(
+                        const totalBlocked = timingRanked.reduce(
                           (a, s) => a + s.blockedByTenchusatsuDays,
                           0,
                         );
-                        if (totalAvailable === 0) {
-                          // 八方塞がり・年天中殺など。行き止まりにせず、
-                          // 何が塞いでいて何を変えれば開くのかを示す。
+                        if (usable.length === 0) {
+                          // 全方位・全日が X か天中殺。段階評価でもここまで
+                          // 塞がるのは稀で、原因はほぼ天中殺の設定側にある。
                           return (
                             <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 text-[10px] leading-relaxed text-stone-600 space-y-1.5">
                               <p className="font-bold text-rose-700">
-                                今後1年、どの方位にも動ける日がありません。
+                                この期間、候補に出せる日がありません。
                               </p>
                               {totalBlocked > 0 ? (
                                 <p>
-                                  三盤吉の日そのものは{totalBlocked}
+                                  重い凶ではない日が{totalBlocked}
                                   日ありますが、すべて天中殺で移転不可と
                                   判定されています。「天中殺の扱い」を
                                   「弱める（禁止しない）」にするか、転勤などの
                                   事情があれば「やむを得ない移動」にチェックを
-                                  入れると、候補日が現れます。
+                                  入れると候補が現れます。
                                 </p>
                               ) : (
                                 <p>
-                                  三盤がすべて吉になる日自体がありません。
-                                  年盤の切り替わり（立春）を境に窓が開くことが
-                                  あるため、時期をおいて再走査してください。
+                                  全日が重い凶（五黄殺・暗剣殺・本命殺・的殺）
+                                  に当たっています。期間を2年に広げて
+                                  再走査してください。
                                 </p>
                               )}
                             </div>
                           );
                         }
-                        const ranked = [...timingSummaries].sort(
-                          (a, b) => b.availableDays - a.availableDays,
+                        const hasS = usable.some(
+                          (s) => s.bestAvailableTier === "S",
                         );
                         return (
                           <div className="space-y-1.5">
-                            {ranked.map((s) => {
+                            {!hasS && (
+                              <p className="rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
+                                この期間に三盤吉の日はありません。以下は
+                                <b>次善の候補</b>
+                                です（凶の無い日・吉が重なる日を優先）。
+                                急ぎでなければ、期間を広げて三盤吉を待つ
+                                選択もあります。
+                              </p>
+                            )}
+                            {usable.map((s) => {
+                              const tier = s.bestAvailableTier as DayTier;
                               const propCount =
                                 directionPropertyCounts[s.direction] ?? 0;
-                              const openDays = s.days.filter(
-                                (d) => !d.blockedByTenchusatsu,
-                              );
                               const isOpen = timingOpenDir === s.direction;
                               return (
                                 <div
@@ -3600,19 +3652,21 @@ export default function ArbitrageScannerPage() {
                                         isOpen ? null : s.direction,
                                       )
                                     }
-                                    disabled={s.availableDays === 0}
-                                    className="w-full flex items-center justify-between px-2.5 py-2 text-left disabled:opacity-40"
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-left"
                                   >
-                                    <span className="text-xs font-bold text-stone-700">
-                                      {s.directionLabel}
-                                      <span className="ml-1 text-[9px] font-semibold text-stone-400">
-                                        （{s.direction}）
+                                    <span className="flex items-center gap-1.5 min-w-0">
+                                      <span className="text-xs font-bold text-stone-700">
+                                        {s.directionLabel}
+                                      </span>
+                                      <span
+                                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${TIER_BADGE_CLASS[tier]}`}
+                                      >
+                                        {TIER_LABELS[tier]}
                                       </span>
                                     </span>
-                                    <span className="text-[10px] text-stone-500">
-                                      吉日{" "}
+                                    <span className="text-[10px] text-stone-500 shrink-0">
                                       <b className="text-indigo-600">
-                                        {s.availableDays}
+                                        {s.tierCounts[tier] ?? 0}
                                       </b>
                                       日・物件{" "}
                                       <b
@@ -3627,39 +3681,92 @@ export default function ArbitrageScannerPage() {
                                       件
                                     </span>
                                   </button>
-                                  {isOpen && openDays.length > 0 && (
-                                    <div className="px-2.5 pb-2.5 border-t border-gray-100 dark:border-stone-200 pt-2">
-                                      <p className="text-[9px] text-stone-400 mb-1.5">
-                                        日付を選ぶとスキャンがその日に
-                                        切り替わります（直近12日まで表示）
-                                      </p>
-                                      <div className="flex flex-wrap gap-1">
-                                        {openDays.slice(0, 12).map((d) => (
-                                          <button
-                                            key={d.date}
-                                            onClick={() =>
-                                              applyTimingChoice(
-                                                d.date,
-                                                s.direction,
-                                              )
-                                            }
-                                            className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
-                                              targetDate === d.date &&
-                                              filterDirection === s.direction
-                                                ? "bg-indigo-600 border-indigo-600 text-white"
-                                                : "bg-gray-50 dark:bg-white border-gray-200 dark:border-stone-200 text-stone-600 hover:border-indigo-400"
-                                            }`}
-                                            title={`${d.date}（${"日月火水木金土"[d.weekday]}）${d.rokuyo}`}
-                                          >
-                                            {d.date.slice(5).replace("-", "/")}
-                                            <span className="ml-0.5 text-[8px] opacity-70">
-                                              {"日月火水木金土"[d.weekday]}
-                                            </span>
-                                          </button>
-                                        ))}
+                                  {isOpen && (
+                                    <div className="px-2.5 pb-2.5 border-t border-gray-100 dark:border-stone-200 pt-2 space-y-2">
+                                      {s.topDays.length > 0 && (
+                                        <div>
+                                          <p className="text-[9px] text-stone-400 mb-1">
+                                            おすすめ日（天赦日・一粒万倍日を
+                                            優先。選ぶとスキャンが切り替わる）
+                                          </p>
+                                          <div className="flex flex-wrap gap-1">
+                                            {s.topDays.map((d) => (
+                                              <button
+                                                key={d.date}
+                                                onClick={() =>
+                                                  applyTimingChoice(
+                                                    d.date,
+                                                    s.direction,
+                                                  )
+                                                }
+                                                className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
+                                                  targetDate === d.date &&
+                                                  filterDirection ===
+                                                    s.direction
+                                                    ? "bg-indigo-600 border-indigo-600 text-white"
+                                                    : "bg-gray-50 dark:bg-white border-gray-200 dark:border-stone-200 text-stone-600 hover:border-indigo-400"
+                                                }`}
+                                                title={`${d.date}（${"日月火水木金土"[d.weekday]}）${d.rokuyo}${d.tags.length ? " / " + d.tags.join("・") : ""}`}
+                                              >
+                                                {d.date
+                                                  .slice(2)
+                                                  .replace(/-/g, "/")}
+                                                <span className="ml-0.5 text-[8px] opacity-70">
+                                                  {"日月火水木金土"[d.weekday]}
+                                                </span>
+                                                {d.tags.includes("天赦日") && (
+                                                  <span className="ml-0.5 text-[8px]">
+                                                    ✨
+                                                  </span>
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {/* 月ごとの見取り図。どの月に窓が開くか */}
+                                      <div>
+                                        <p className="text-[9px] text-stone-400 mb-1">
+                                          月ごとの最良（クリックでその月の
+                                          最初の候補日へ）
+                                        </p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {s.months.map((m) =>
+                                            m.bestTier && m.firstDate ? (
+                                              <button
+                                                key={m.month}
+                                                onClick={() =>
+                                                  applyTimingChoice(
+                                                    m.firstDate as string,
+                                                    s.direction,
+                                                  )
+                                                }
+                                                className={`px-1.5 py-0.5 rounded text-[9px] font-semibold border ${TIER_BADGE_CLASS[m.bestTier as DayTier]}`}
+                                                title={`${m.month}: ${TIER_LABELS[m.bestTier as DayTier]} ${m.bestTierDays}日`}
+                                              >
+                                                {m.month
+                                                  .slice(2)
+                                                  .replace("-", "/")}
+                                                <span className="ml-0.5 opacity-80">
+                                                  {m.bestTier}×{m.bestTierDays}
+                                                </span>
+                                              </button>
+                                            ) : (
+                                              <span
+                                                key={m.month}
+                                                className="px-1.5 py-0.5 rounded text-[9px] font-semibold border border-stone-200 text-stone-300"
+                                                title={`${m.month}: 候補なし`}
+                                              >
+                                                {m.month
+                                                  .slice(2)
+                                                  .replace("-", "/")}
+                                              </span>
+                                            ),
+                                          )}
+                                        </div>
                                       </div>
                                       {propCount === 0 && (
-                                        <p className="mt-1.5 text-[9px] text-amber-700">
+                                        <p className="text-[9px] text-amber-700">
                                           この方位には現在の検索範囲に物件が
                                           ありません。地図を動かすか検索範囲を
                                           広げてください。
@@ -3672,8 +3779,8 @@ export default function ArbitrageScannerPage() {
                             })}
                             {totalBlocked > 0 && (
                               <p className="text-[9px] text-stone-400">
-                                ほかに{totalBlocked}
-                                日の三盤吉日が天中殺で除外されています
+                                ほかに延べ{totalBlocked}
+                                日が天中殺で候補から外れています
                                 （「天中殺の扱い」で変わります）。
                               </p>
                             )}
