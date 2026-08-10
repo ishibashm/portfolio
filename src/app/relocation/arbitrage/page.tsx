@@ -3840,6 +3840,15 @@ export default function ArbitrageScannerPage() {
                           物件リストの並べ替えを変えても、ここは総合スコア順のままです。
                           {sinkAvoidStatus &&
                             "避けるべき方位・期間の物件は最下位に沈めています。"}
+                          割安の根拠になっている市場全体の統計（回帰・分布・
+                          流動性）は
+                          <a
+                            href="/relocation/market"
+                            className="mx-0.5 font-semibold text-indigo-600 underline"
+                          >
+                            市場分析
+                          </a>
+                          で毎晩公開しています。
                         </p>
                       </div>
                       {loading ? (

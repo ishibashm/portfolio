@@ -299,18 +299,27 @@ jobs:
       - name: Rebuild area dataset
         run: npx -y tsx scripts/build_area_dataset.ts
 
+      # /relocation/market の計量分析（ヘドニック回帰・分布・生存分析）。
+      # エリア相場と同じく静的 JSON に焼き、訪問時には DB を叩かない。
+      # ここが転んでもエリア相場のコミットを道連れにしないよう続行する。
+      # 失敗したら marketStats.json が更新されないだけで、ページは
+      # 前回ぶん（初回なら準備中表示）のまま。
+      - name: Rebuild market stats
+        continue-on-error: true
+        run: npx -y tsx scripts/build_market_stats.ts
+
       - name: Commit area dataset if changed
         run: |
           # prefecturesWithData.json はスキャナーの県プリセットの元になる。
           # 取り込みが進んで新しい県のページが立つと、ここが増えて初めて
           # UI にその県が出る。押し戻し忘れると永久に出ないので一緒に見る。
-          if git diff --quiet -- src/data/areaDirections.json src/data/prefecturesWithData.json; then
+          if git diff --quiet -- src/data/areaDirections.json src/data/prefecturesWithData.json src/data/marketStats.json; then
             echo "エリア相場に変化なし。コミットしない。"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/areaDirections.json src/data/prefecturesWithData.json
+          git add src/data/areaDirections.json src/data/prefecturesWithData.json src/data/marketStats.json
           # [skip ci] を付けない。この push で動かしたいのが deploy.yml
           # そのものだからで、付けると唯一の対象を自分で消すことになる。
           # push で動くワークフローは deploy.yml だけなので、余計な実行は
