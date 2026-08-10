@@ -9,7 +9,7 @@ export const SubdomainLauncherGrid: React.FC = () => {
       name: 'brain.cloud-palette.com',
       title: 'Katmer Brain & Real Estate',
       subtitle: 'ナレッジベース・空間不動産分析',
-      description: 'Second Brain ドキュメントノート、港区賃貸物件アービトラージ、地価所得マトリクス',
+      description: 'Second Brain ドキュメントノート、港区の割安賃貸スクリーニング、地価所得マトリクス',
       icon: Database,
       href: 'https://katmer.cloud-palette.com/brain',
       color: 'bg-gradient-to-br from-amber-50/90 via-orange-50/50 to-yellow-50/40',

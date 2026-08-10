@@ -772,6 +772,35 @@ export default function ArbitrageScannerPage() {
   const [involuntaryMove, setInvoluntaryMove] = useState(false);
 
   /**
+   * 引っ越し時期のスクリーニング。
+   *
+   * 日付を先に固定して物件を探すと、天中殺や八方塞がりの期間は
+   * 何もヒットせず、そこで行き止まりになる。順序を逆にして
+   * 「今後 1 年でいつ・どの方位なら動けるか」を先に走査し、
+   * 吉日を選ぶとスキャン日付と方位フィルターがそこへ飛ぶようにする。
+   * 走査は /api/relocation/auspicious-days（純計算・外部課金なし）。
+   */
+  const [timingBusy, setTimingBusy] = useState(false);
+  const [timingError, setTimingError] = useState<string | null>(null);
+  const [timingSummaries, setTimingSummaries] = useState<
+    | null
+    | {
+        direction: string;
+        directionLabel: string;
+        availableDays: number;
+        tripleAuspiciousDays: number;
+        blockedByTenchusatsuDays: number;
+        days: {
+          date: string;
+          weekday: number;
+          rokuyo: string;
+          blockedByTenchusatsu: boolean;
+        }[];
+      }[]
+  >(null);
+  const [timingOpenDir, setTimingOpenDir] = useState<string | null>(null);
+
+  /**
    * 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人。
    *
    * 出発地が違えば同じ物件でも方位が違うので、片方に吉でももう片方に凶、
@@ -1445,6 +1474,45 @@ export default function ArbitrageScannerPage() {
     window.dispatchEvent(event);
   };
 
+  /** 今後 1 年の三盤吉日を全方位ぶん走査する。ボタンから明示的に呼ぶ */
+  const runTimingScan = async () => {
+    if (!hasBaseLocation || !birthDate) return;
+    setTimingBusy(true);
+    setTimingError(null);
+    try {
+      const params = new URLSearchParams({
+        birthDate,
+        lon: String(baseLon),
+        tenchusatsuMode,
+        involuntaryMove: String(involuntaryMove),
+        directionFilterMode,
+      });
+      const res = await fetch(`/api/relocation/auspicious-days?${params}`);
+      if (!res.ok) throw new Error(`walk failed (${res.status})`);
+      const json = await res.json();
+      if (!Array.isArray(json?.summaries)) throw new Error("empty result");
+      setTimingSummaries(json.summaries);
+      setTimingOpenDir(null);
+    } catch {
+      setTimingError(
+        "走査に失敗しました。出発地と生年月日を確認して、もう一度お試しください。",
+      );
+    } finally {
+      setTimingBusy(false);
+    }
+  };
+
+  /**
+   * 吉日を 1 つ選んだら、スキャン日付と方位フィルターをそこへ飛ばす。
+   * 地図・リスト・TOP5 はすべて targetDate に追従しているので、
+   * これだけで「その日に動ける物件」の表示に切り替わる。
+   */
+  const applyTimingChoice = (dateStr: string, dir: string) => {
+    setLocalDateChange(dateStr);
+    setFilterDirection(dir);
+    setCurrentPage(1);
+  };
+
   // Re-fetch data whenever params change
   useEffect(() => {
     if (!initialLoaded) return;
@@ -1832,6 +1900,20 @@ export default function ArbitrageScannerPage() {
 
   const safeData = scoredData.filter((d) => d.astrologyScore >= 0);
 
+  /**
+   * 現在読み込んでいる物件の方位別件数。時期スクリーニングで
+   * 「その方位に動くと、いま何件の候補があるか」を添えるために使う。
+   * 方位フィルター適用前の集合で数える（適用後だと選んだ方位以外が
+   * 常に 0 件に見えてしまう）。
+   */
+  const directionPropertyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const d of safeData) {
+      if (d.direction) counts[d.direction] = (counts[d.direction] ?? 0) + 1;
+    }
+    return counts;
+  }, [safeData]);
+
   const filteredData = safeData.filter((d) => {
     if (
       filterStatus !== "ALL" &&
@@ -1946,7 +2028,7 @@ export default function ArbitrageScannerPage() {
   });
 
   /**
-   * 「アービトラージ物件 TOP 5」の中身。
+   * 「掘り出し物件 TOP 5」の中身。
    *
    * 以前は filteredData の先頭 5 件を出していた。filteredData は絞り込んだだけで
    * 並べ替えていないので、実際に出ていたのは API が返した順――SQL が㎡単価の
@@ -2360,6 +2442,33 @@ export default function ArbitrageScannerPage() {
                             : searchAreaForFilters(prefecture, radiusKm)
                     }
                   >
+                    {/* 物件種別。現状のデータ源は賃貸のみで、売買
+                        （中古マンション・土地）は未収集。選べない選択肢を
+                        隠すと構想自体が伝わらないので、無効ボタンとして
+                        見せて準備中であることを明示する。スクレイパーと
+                        スキーマ（listing_type 相当）が揃った時点で有効化する。 */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        物件種別
+                      </label>
+                      <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
+                        <button
+                          type="button"
+                          className="flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
+                        >
+                          賃貸
+                        </button>
+                        <button
+                          type="button"
+                          disabled
+                          title="売買（中古マンション・土地）のデータ収集は準備中です。収集が始まりしだい選べるようになります。"
+                          className="flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-stone-400 cursor-not-allowed"
+                        >
+                          購入（準備中）
+                        </button>
+                      </div>
+                    </div>
+
                     {/* Search Area Selection */}
                     <div className="space-y-1">
                       <label
@@ -3381,9 +3490,205 @@ export default function ArbitrageScannerPage() {
                     </label>
                   </ArbitrageSidebarSection>
 
-                  {/* TOP 5 お買い得アコーディオン */}
+                  {/* 引っ越し時期のスクリーニング。日付を固定して物件を探すの
+                      ではなく、「いつ・どの方位なら動けるか」を先に走査する。
+                      天中殺や八方塞がりで今日がゼロ件でも、次に開く日へ
+                      ワンクリックで飛べるようにする。 */}
                   <ArbitrageSidebarSection
-                    title="アービトラージ物件 TOP 5"
+                    title="引っ越し時期を探す"
+                    summary={
+                      timingSummaries === null
+                        ? "未走査"
+                        : (() => {
+                            const total = timingSummaries.reduce(
+                              (a, s) => a + s.availableDays,
+                              0,
+                            );
+                            return total === 0
+                              ? "動ける日なし"
+                              : `1年内に吉日${total}日`;
+                          })()
+                    }
+                  >
+                    <p className="text-[10px] leading-relaxed text-stone-500">
+                      今後1年を走査して、
+                      <span className="font-bold">
+                        年盤・月盤・日盤がすべて吉になる日
+                      </span>
+                      を方位ごとに数えます。日付を選ぶと、スキャンの日付と
+                      方位フィルターがその日に切り替わり、地図にその日
+                      動ける物件が表示されます。天中殺の扱いは「天中殺の扱い」
+                      の設定に従います。
+                    </p>
+                    <button
+                      onClick={runTimingScan}
+                      disabled={timingBusy || !hasBaseLocation || !birthDate}
+                      className="w-full px-3 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white transition-colors"
+                    >
+                      {timingBusy
+                        ? "走査中…（数秒かかります）"
+                        : timingSummaries === null
+                          ? "今後1年ぶんを走査する"
+                          : "設定を変えて走査し直す"}
+                    </button>
+                    {!hasBaseLocation && (
+                      <p className="text-[10px] text-amber-700">
+                        出発地が未設定です。方位は出発地から決まるため、先に
+                        「出発地座標」を設定してください。
+                      </p>
+                    )}
+                    {timingError && (
+                      <p className="text-[10px] text-rose-600">{timingError}</p>
+                    )}
+                    {timingSummaries !== null &&
+                      (() => {
+                        const totalAvailable = timingSummaries.reduce(
+                          (a, s) => a + s.availableDays,
+                          0,
+                        );
+                        const totalBlocked = timingSummaries.reduce(
+                          (a, s) => a + s.blockedByTenchusatsuDays,
+                          0,
+                        );
+                        if (totalAvailable === 0) {
+                          // 八方塞がり・年天中殺など。行き止まりにせず、
+                          // 何が塞いでいて何を変えれば開くのかを示す。
+                          return (
+                            <div className="rounded-xl bg-rose-50 border border-rose-200 p-2.5 text-[10px] leading-relaxed text-stone-600 space-y-1.5">
+                              <p className="font-bold text-rose-700">
+                                今後1年、どの方位にも動ける日がありません。
+                              </p>
+                              {totalBlocked > 0 ? (
+                                <p>
+                                  三盤吉の日そのものは{totalBlocked}
+                                  日ありますが、すべて天中殺で移転不可と
+                                  判定されています。「天中殺の扱い」を
+                                  「弱める（禁止しない）」にするか、転勤などの
+                                  事情があれば「やむを得ない移動」にチェックを
+                                  入れると、候補日が現れます。
+                                </p>
+                              ) : (
+                                <p>
+                                  三盤がすべて吉になる日自体がありません。
+                                  年盤の切り替わり（立春）を境に窓が開くことが
+                                  あるため、時期をおいて再走査してください。
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        const ranked = [...timingSummaries].sort(
+                          (a, b) => b.availableDays - a.availableDays,
+                        );
+                        return (
+                          <div className="space-y-1.5">
+                            {ranked.map((s) => {
+                              const propCount =
+                                directionPropertyCounts[s.direction] ?? 0;
+                              const openDays = s.days.filter(
+                                (d) => !d.blockedByTenchusatsu,
+                              );
+                              const isOpen = timingOpenDir === s.direction;
+                              return (
+                                <div
+                                  key={s.direction}
+                                  className="rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50 overflow-hidden"
+                                >
+                                  <button
+                                    onClick={() =>
+                                      setTimingOpenDir(
+                                        isOpen ? null : s.direction,
+                                      )
+                                    }
+                                    disabled={s.availableDays === 0}
+                                    className="w-full flex items-center justify-between px-2.5 py-2 text-left disabled:opacity-40"
+                                  >
+                                    <span className="text-xs font-bold text-stone-700">
+                                      {s.directionLabel}
+                                      <span className="ml-1 text-[9px] font-semibold text-stone-400">
+                                        （{s.direction}）
+                                      </span>
+                                    </span>
+                                    <span className="text-[10px] text-stone-500">
+                                      吉日{" "}
+                                      <b className="text-indigo-600">
+                                        {s.availableDays}
+                                      </b>
+                                      日・物件{" "}
+                                      <b
+                                        className={
+                                          propCount > 0
+                                            ? "text-teal-600"
+                                            : "text-stone-400"
+                                        }
+                                      >
+                                        {propCount}
+                                      </b>
+                                      件
+                                    </span>
+                                  </button>
+                                  {isOpen && openDays.length > 0 && (
+                                    <div className="px-2.5 pb-2.5 border-t border-gray-100 dark:border-stone-200 pt-2">
+                                      <p className="text-[9px] text-stone-400 mb-1.5">
+                                        日付を選ぶとスキャンがその日に
+                                        切り替わります（直近12日まで表示）
+                                      </p>
+                                      <div className="flex flex-wrap gap-1">
+                                        {openDays.slice(0, 12).map((d) => (
+                                          <button
+                                            key={d.date}
+                                            onClick={() =>
+                                              applyTimingChoice(
+                                                d.date,
+                                                s.direction,
+                                              )
+                                            }
+                                            className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
+                                              targetDate === d.date &&
+                                              filterDirection === s.direction
+                                                ? "bg-indigo-600 border-indigo-600 text-white"
+                                                : "bg-gray-50 dark:bg-white border-gray-200 dark:border-stone-200 text-stone-600 hover:border-indigo-400"
+                                            }`}
+                                            title={`${d.date}（${"日月火水木金土"[d.weekday]}）${d.rokuyo}`}
+                                          >
+                                            {d.date.slice(5).replace("-", "/")}
+                                            <span className="ml-0.5 text-[8px] opacity-70">
+                                              {"日月火水木金土"[d.weekday]}
+                                            </span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                      {propCount === 0 && (
+                                        <p className="mt-1.5 text-[9px] text-amber-700">
+                                          この方位には現在の検索範囲に物件が
+                                          ありません。地図を動かすか検索範囲を
+                                          広げてください。
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                            {totalBlocked > 0 && (
+                              <p className="text-[9px] text-stone-400">
+                                ほかに{totalBlocked}
+                                日の三盤吉日が天中殺で除外されています
+                                （「天中殺の扱い」で変わります）。
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                  </ArbitrageSidebarSection>
+
+                  {/* TOP 5 お買い得アコーディオン。
+                      「アービトラージ」という呼び名は売買の裁定取引を連想させ、
+                      賃貸検索のこのサイトにはふさわしくないという指摘で
+                      「掘り出し物件」に改めた。URL とコード内の識別子は
+                      互換のため据え置く。 */}
+                  <ArbitrageSidebarSection
+                    title="掘り出し物件 TOP 5"
                     summary={
                       loading
                         ? "検索中"
@@ -3399,13 +3704,13 @@ export default function ArbitrageScannerPage() {
                       <div className="rounded-xl bg-amber-50/70 dark:bg-amber-50 border border-amber-200/70 p-2.5 text-[10px] leading-relaxed text-stone-600">
                         <p>
                           <span className="font-bold text-stone-700">
-                            アービトラージ
+                            掘り出し物件
                           </span>
                           とは、ここでは
                           <span className="font-bold">
-                            周辺の相場と比べた家賃の歪み
+                            周辺の相場より割安に借りられる物件
                           </span>
-                          のことです。同じ条件なら安く借りられる物件を、方位・暦・住みやすさと合わせて1つの点数にしています。
+                          のことです。割安さを、方位・暦・住みやすさと合わせて1つの点数にしています。
                         </p>
                         <p className="mt-1.5">
                           並び順は

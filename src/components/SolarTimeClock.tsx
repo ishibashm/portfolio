@@ -5331,7 +5331,7 @@ export const SolarTimeClock = () => {
                   5. 総合スコア / 8方位統合評価マトリクス
                 </h2>
                 <p className="text-stone-500 text-[10px] sm:text-xs leading-relaxed max-w-xl">
-                  直近30日の時空波動予測、各方位における富裕エリア所得、および不動産賃貸アービトラージの偏差値指標を統合した意思決定コックピットです。
+                  直近30日の時空波動予測、各方位における富裕エリア所得、および賃貸相場に対する割安度の偏差値指標を統合した意思決定コックピットです。
                 </p>
                 <div className="mt-2 text-stone-400 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                   <span>
@@ -6557,7 +6557,7 @@ export const SolarTimeClock = () => {
                       {/* Top 5 Rentals */}
                       <div className="space-y-3">
                         <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5 border-b border-stone-200 pb-1.5">
-                          <span>🏠 推奨賃貸物件 (アービトラージ) TOP 5</span>
+                          <span>🏠 推奨賃貸物件（掘り出し） TOP 5</span>
                         </h4>
                         {detail.topRentals.length > 0 ? (
                           <div className="space-y-2">
