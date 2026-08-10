@@ -14,20 +14,44 @@ const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
  */
 const OBSERVED: DirectionLayers = {
   yearLayer: {
-    N: "NOISE_ANKEN", NE: "NOISE_HA", E: "SAFE", SE: "SAFE",
-    S: "NOISE_GOU", SW: "NOISE_GETSUMEI", W: "OPTIMAL_REGULAR", NW: "SAFE",
+    N: "NOISE_ANKEN",
+    NE: "NOISE_HA",
+    E: "SAFE",
+    SE: "SAFE",
+    S: "NOISE_GOU",
+    SW: "NOISE_GETSUMEI",
+    W: "OPTIMAL_REGULAR",
+    NW: "SAFE",
   },
   monthLayer: {
-    N: "NOISE_GETSUTEKI", NE: "NOISE_HA", E: "NOISE_ANKEN", SE: "SAFE",
-    S: "NOISE_GETSUMEI", SW: "NOISE_NODE", W: "NOISE_GOU", NW: "OPTIMAL_REGULAR",
+    N: "NOISE_GETSUTEKI",
+    NE: "NOISE_HA",
+    E: "NOISE_ANKEN",
+    SE: "SAFE",
+    S: "NOISE_GETSUMEI",
+    SW: "NOISE_NODE",
+    W: "NOISE_GOU",
+    NW: "OPTIMAL_REGULAR",
   },
   dayLayer: {
-    N: "NOISE_VOID", NE: "NOISE_ANKEN", E: "NOISE_TEKI", SE: "NOISE_HA",
-    S: "OPTIMAL_REGULAR", SW: "NOISE_GOU", W: "NOISE_HONMEI", NW: "NOISE_GETSUTEKI",
+    N: "NOISE_VOID",
+    NE: "NOISE_ANKEN",
+    E: "NOISE_TEKI",
+    SE: "NOISE_HA",
+    S: "OPTIMAL_REGULAR",
+    SW: "NOISE_GOU",
+    W: "NOISE_HONMEI",
+    NW: "NOISE_GETSUTEKI",
   },
   finalVectors: {
-    N: "NOISE_ANKEN", NE: "NOISE_ANKEN", E: "NOISE_ANKEN", SE: "NOISE_HA",
-    S: "NOISE_GOU", SW: "NOISE_GOU", W: "NOISE_GOU", NW: "NOISE_GETSUTEKI",
+    N: "NOISE_ANKEN",
+    NE: "NOISE_ANKEN",
+    E: "NOISE_ANKEN",
+    SE: "NOISE_HA",
+    S: "NOISE_GOU",
+    SW: "NOISE_GOU",
+    W: "NOISE_GOU",
+    NW: "NOISE_GETSUTEKI",
   },
 };
 
@@ -35,7 +59,12 @@ describe("mergeStatuses", () => {
   it("重い凶を優先する", () => {
     expect(mergeStatuses(["OPTIMAL", "NOISE_GOU"])).toBe("NOISE_GOU");
     expect(mergeStatuses(["NOISE_ANKEN", "NOISE_GOU"])).toBe("NOISE_GOU");
-    expect(mergeStatuses(["NOISE_HA", "NOISE_HONMEI"])).toBe("NOISE_HONMEI");
+    // 破と本命殺は両方とも五大凶殺だが、エンジンの合成は破を
+    // 五黄殺と同格の絶対格として先に採る。以前ここは本命殺を
+    // 期待していて、エンジンと逆の順序を固定してしまっていた。
+    expect(mergeStatuses(["NOISE_HA", "NOISE_HONMEI"])).toBe("NOISE_HA");
+    // 五大凶殺（本命殺）は二次凶（天中殺方位）より必ず先に出る
+    expect(mergeStatuses(["NOISE_VOID", "NOISE_HONMEI"])).toBe("NOISE_HONMEI");
   });
 
   it("凶が無ければ吉を残す", () => {
@@ -78,13 +107,21 @@ describe("statusForLayerMode", () => {
     // 南は日盤だけが吉。年盤の五黄が入る組み合わせでは吉にならない。
     expect(statusForLayerMode(OBSERVED, "S", "day")).toBe("OPTIMAL_REGULAR");
     expect(statusForLayerMode(OBSERVED, "S", "year_day")).toBe("NOISE_GOU");
-    expect(statusForLayerMode(OBSERVED, "S", "month_day")).toBe("NOISE_GETSUMEI");
+    expect(statusForLayerMode(OBSERVED, "S", "month_day")).toBe(
+      "NOISE_GETSUMEI",
+    );
   });
 
   it("凶の名前を組み合わせでも失わない", () => {
-    // 月命殺のように優先順表に無い凶は "NOISE" に潰されていた。
-    expect(statusForLayerMode(OBSERVED, "SW", "year_month")).toBe("NOISE_NODE");
-    expect(statusForLayerMode(OBSERVED, "NW", "year_day")).toBe("NOISE_GETSUTEKI");
+    // SW は年盤=月命殺・月盤=ノード。優先表（noiseSeverity）では
+    // 月命殺のほうが重い。以前の表は月命殺を載せておらずノードが
+    // 勝っていた。
+    expect(statusForLayerMode(OBSERVED, "SW", "year_month")).toBe(
+      "NOISE_GETSUMEI",
+    );
+    expect(statusForLayerMode(OBSERVED, "NW", "year_day")).toBe(
+      "NOISE_GETSUTEKI",
+    );
   });
 
   it("知らないモードは全統合に落とす", () => {
@@ -96,7 +133,10 @@ describe("statusForLayerMode", () => {
 
   it("盤に無い方位は SAFE", () => {
     const empty: DirectionLayers = {
-      yearLayer: {}, monthLayer: {}, dayLayer: {}, finalVectors: {},
+      yearLayer: {},
+      monthLayer: {},
+      dayLayer: {},
+      finalVectors: {},
     };
     for (const mode of ALL_LAYER_MODES) {
       expect(statusForLayerMode(empty, "N", mode)).toBe("SAFE");

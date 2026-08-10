@@ -21,6 +21,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { directionBoardInstant } from "@/utils/boardInstant";
+import { isFatalNoise } from "@/utils/noiseSeverity";
 import {
   TenchusatsuMode,
   VoidScopes,
@@ -264,7 +265,8 @@ export function findYearBoardWindow(
   maxDays = 400,
 ): AuspiciousWindow {
   const boundary = findYearBoardBoundary(from, p.lon, maxDays);
-  if (!boundary) return { yearBoardValidUntil: null, afterYearBoardStatus: null };
+  if (!boundary)
+    return { yearBoardValidUntil: null, afterYearBoardStatus: null };
   return {
     yearBoardValidUntil: formatDate(boundary.lastDay),
     afterYearBoardStatus: judgeDay(boundary.nextDay, p).yearLayer,
@@ -420,4 +422,229 @@ export function findAuspiciousDaysAllDirections(
       days,
     };
   }).sort((a, b) => b.availableDays - a.availableDays);
+}
+
+/**
+ * 日の段階評価。
+ *
+ * 「三盤がすべて吉」だけを合格にすると、年天中殺や八方塞がりの年は
+ * 1 年走査しても 0 件になり、利用者は行き止まりに落ちる。完璧な日が
+ * 無い期間でも「統計的にマシな日」を段階付きで示せるように、
+ * 全か無かではなく 6 段階に割る。
+ *
+ *   S 三盤吉（従来の合格基準そのもの）
+ *   A 凶なし・吉が2盤
+ *   B 凶なし・吉が1盤
+ *   C 凶なし（すべて平）
+ *   D 軽い凶のみ（天中殺方位・月命殺・月的殺・ノードなど）
+ *   X 五大凶殺あり（五黄殺・暗剣殺・破・本命殺・的殺）
+ *
+ * X は「マシな日」としても決して勧めない。五大凶殺は移転で妥協の
+ * 対象にならない扱いなので、候補から常に除外する。集合の定義は
+ * noiseSeverity.ts が唯一の情報源で、地図の「大凶」の色分けと同じ。
+ */
+export type DayTier = "S" | "A" | "B" | "C" | "D" | "X";
+
+export const TIER_ORDER: readonly DayTier[] = ["S", "A", "B", "C", "D", "X"];
+
+export const TIER_LABELS: Record<DayTier, string> = {
+  S: "三盤吉",
+  A: "吉2盤・凶なし",
+  B: "吉1盤・凶なし",
+  C: "凶なし（平）",
+  D: "軽い凶のみ",
+  X: "五大凶殺あり",
+};
+
+export function gradeVerdict(v: DayVerdict): DayTier {
+  const layers = [v.yearLayer, v.monthLayer, v.dayLayer];
+  const noises = layers.filter(isInauspicious);
+  if (noises.some(isFatalNoise) || isFatalNoise(v.finalStatus)) {
+    return "X";
+  }
+  if (noises.length > 0 || isInauspicious(v.finalStatus)) return "D";
+  if (v.isTripleAuspicious) return "S";
+  const auspiciousLayers = layers.filter(isAuspicious).length;
+  if (auspiciousLayers >= 2) return "A";
+  if (auspiciousLayers === 1) return "B";
+  return "C";
+}
+
+export interface RankedDay {
+  date: string;
+  weekday: number;
+  tier: DayTier;
+  blockedByTenchusatsu: boolean;
+  rokuyo: string;
+  tags: string[];
+}
+
+export interface MonthTierSummary {
+  /** YYYY-MM */
+  month: string;
+  /** その月で（天中殺・X を除いて）最も良い段階。無ければ null。 */
+  bestTier: DayTier | null;
+  /** bestTier の日数。 */
+  bestTierDays: number;
+  /** bestTier の最初の日（クリックで飛ぶ先）。 */
+  firstDate: string | null;
+}
+
+export interface RankedDirectionSummary {
+  direction: Direction;
+  directionLabel: string;
+  scannedDays: number;
+  /** 段階ごとの日数（天中殺除外前）。X も含めて全日がどこかに入る。 */
+  tierCounts: Record<DayTier, number>;
+  /** 天中殺で塞がれた日と X を除いた、この方位の最良の段階。 */
+  bestAvailableTier: DayTier | null;
+  /** bestAvailableTier の日。天赦日・一粒万倍日を先頭に、日付順。 */
+  topDays: RankedDay[];
+  /** 月ごとの最良段階。走査範囲の月がすべて並ぶ。 */
+  months: MonthTierSummary[];
+  /** X 以外なのに天中殺で候補から外れた日数。設定を変えれば戻る。 */
+  blockedByTenchusatsuDays: number;
+}
+
+/**
+ * 期間内の全日を段階評価して、方位ごとにまとめる。
+ *
+ * findAuspiciousDaysAllDirections が S だけを拾うのに対し、こちらは
+ * 全日を格付けして持ち帰る。完璧な日が無い期間の「次善はどこか」と、
+ * 月単位の見取り図（どの月に窓が開くか）を一度の走査で出す。
+ */
+export function rankRelocationDays(
+  from: Date,
+  to: Date,
+  p: Omit<AuspiciousDayParams, "direction">,
+  opts: { topN?: number } = {},
+): RankedDirectionSummary[] {
+  const topN = opts.topN ?? 12;
+  const perDirection: Record<string, RankedDay[]> = {};
+  for (const dir of ALL_DIRECTIONS) perDirection[dir] = [];
+
+  let scanned = 0;
+  const cursor = new Date(from);
+  cursor.setHours(12, 0, 0, 0);
+  const end = new Date(to);
+  end.setHours(12, 0, 0, 0);
+
+  // 2 年（730 日）を上限に走査する。日ごとに盤 1 回なので走査コストは
+  // 線形で、これ以上先は年盤が二度替わって精度より不確かさが勝つ。
+  const MAX = 800;
+  while (cursor <= end && scanned < MAX) {
+    const all = judgeDayAllDirections(new Date(cursor), p);
+    scanned++;
+    for (const dir of ALL_DIRECTIONS) {
+      const v = all[dir];
+      perDirection[dir].push({
+        date: v.date,
+        weekday: v.weekday,
+        tier: gradeVerdict(v),
+        blockedByTenchusatsu: v.blockedByTenchusatsu,
+        rokuyo: v.rokuyo,
+        tags: v.tags,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  const tierRank = (t: DayTier) => TIER_ORDER.indexOf(t);
+
+  return ALL_DIRECTIONS.map((direction) => {
+    const days = perDirection[direction];
+
+    const tierCounts: Record<DayTier, number> = {
+      S: 0,
+      A: 0,
+      B: 0,
+      C: 0,
+      D: 0,
+      X: 0,
+    };
+    for (const d of days) tierCounts[d.tier]++;
+
+    // 候補になり得る日: X でなく、天中殺でも塞がれていない日。
+    const candidates = days.filter(
+      (d) => d.tier !== "X" && !d.blockedByTenchusatsu,
+    );
+    const blockedByTenchusatsuDays = days.filter(
+      (d) => d.tier !== "X" && d.blockedByTenchusatsu,
+    ).length;
+
+    let bestAvailableTier: DayTier | null = null;
+    for (const d of candidates) {
+      if (
+        bestAvailableTier === null ||
+        tierRank(d.tier) < tierRank(bestAvailableTier)
+      ) {
+        bestAvailableTier = d.tier;
+      }
+    }
+
+    const topDays =
+      bestAvailableTier === null
+        ? []
+        : candidates
+            .filter((d) => d.tier === bestAvailableTier)
+            .sort((a, b) => {
+              const aLucky =
+                (a.tags.includes("天赦日") ? 2 : 0) +
+                (a.tags.includes("一粒万倍日") ? 1 : 0);
+              const bLucky =
+                (b.tags.includes("天赦日") ? 2 : 0) +
+                (b.tags.includes("一粒万倍日") ? 1 : 0);
+              if (aLucky !== bLucky) return bLucky - aLucky;
+              return a.date.localeCompare(b.date);
+            })
+            .slice(0, topN);
+
+    // 月ごとの見取り図。走査した月をすべて並べ、月内の最良段階を出す。
+    const byMonth = new Map<string, RankedDay[]>();
+    for (const d of days) {
+      const m = d.date.slice(0, 7);
+      const list = byMonth.get(m);
+      if (list) list.push(d);
+      else byMonth.set(m, [d]);
+    }
+    const months: MonthTierSummary[] = [...byMonth.entries()].map(
+      ([month, list]) => {
+        const open = list.filter(
+          (d) => d.tier !== "X" && !d.blockedByTenchusatsu,
+        );
+        let best: DayTier | null = null;
+        for (const d of open) {
+          if (best === null || tierRank(d.tier) < tierRank(best)) best = d.tier;
+        }
+        const bestDays = open
+          .filter((d) => d.tier === best)
+          .sort((a, b) => a.date.localeCompare(b.date));
+        return {
+          month,
+          bestTier: best,
+          bestTierDays: bestDays.length,
+          firstDate: bestDays[0]?.date ?? null,
+        };
+      },
+    );
+
+    return {
+      direction,
+      directionLabel: DIRECTION_LABELS[direction],
+      scannedDays: scanned,
+      tierCounts,
+      bestAvailableTier,
+      topDays,
+      months,
+      blockedByTenchusatsuDays,
+    };
+  }).sort((a, b) => {
+    const ar = a.bestAvailableTier ? tierRank(a.bestAvailableTier) : 99;
+    const br = b.bestAvailableTier ? tierRank(b.bestAvailableTier) : 99;
+    if (ar !== br) return ar - br;
+    return (
+      (b.bestAvailableTier ? b.tierCounts[b.bestAvailableTier] : 0) -
+      (a.bestAvailableTier ? a.tierCounts[a.bestAvailableTier] : 0)
+    );
+  });
 }

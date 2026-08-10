@@ -15,6 +15,8 @@
  * 両方がこのファイルを使うことで、時間軸の解釈が 1 か所になる。
  */
 
+import { worstNoise } from "@/utils/noiseSeverity";
+
 export type LayerMode =
   | "final"
   | "year"
@@ -35,29 +37,20 @@ export interface DirectionLayers {
 
 /**
  * 重い凶が 1 つでもあればそれを採る。
- * 順序は「避けるべき度合い」で、五黄殺・暗剣殺が最も重い。
+ *
+ * 順序は noiseSeverity の NOISE_PRIORITY（五大凶殺が先頭）。以前は
+ * このファイルが独自の順序を持ち、破を本命殺・的殺・天中殺方位より
+ * 軽く扱っていた。エンジンの合成は破を五黄殺と同格の絶対格として
+ * 扱うので、破と本命殺が同居する方位で、全統合表示と組み合わせ表示の
+ * ラベルが食い違っていた。定義を一本化する。
  */
-const PRIORITY = [
-  "NOISE_GOU",
-  "NOISE_ANKEN",
-  "NOISE_HONMEI",
-  "NOISE_TEKI",
-  "NOISE_VOID",
-  "NOISE_HA",
-  "NOISE_NODE",
-];
-
 export function mergeStatuses(list: (string | undefined)[]): string {
   const valid = list.filter(Boolean) as string[];
   if (valid.length === 0) return "SAFE";
-  for (const p of PRIORITY) {
-    if (valid.includes(p)) return p;
-  }
-  // 月命殺・月命的殺のように優先順表に載っていない凶。以前はここで一律 "NOISE" に
-  // 潰していたため、単独の盤なら「月命的殺」と出るものが、組み合わせにした途端に
-  // 名前を失っていた。名前を残す。
-  const otherNoise = valid.find((s) => s.startsWith("NOISE"));
-  if (otherNoise) return otherNoise;
+  // 月命殺・月命的殺を含め、優先表に無い凶も名前を保ったまま返る。
+  // 一律 "NOISE" に潰すと地図のラベルも色も消えるため。
+  const noise = worstNoise(valid);
+  if (noise) return noise;
   if (valid.includes("OPTIMAL")) return "OPTIMAL";
   if (valid.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
   return "SAFE";
