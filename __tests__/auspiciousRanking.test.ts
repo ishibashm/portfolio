@@ -217,3 +217,46 @@ describe("rankRelocationDays の firstDate / windows", () => {
     }
   });
 });
+
+describe("topDays と firstDate の整合（8/10 が消えた不具合の回帰テスト）", () => {
+  const base = {
+    honmeiStar: 5,
+    voidZodiacs: [] as string[],
+    lon: 135.5,
+    tenchusatsuMode: "off" as const,
+    involuntaryMove: false,
+  };
+  // 2年走査。縁起日が遠い将来に散らばる状況を作る
+  const from = new Date("2026-08-10T12:00:00+09:00");
+  const to = new Date("2028-08-08T12:00:00+09:00");
+
+  it("topDays の先頭は必ず firstDate と一致する", () => {
+    // 意思決定サマリーは firstDate を出す。チップ（topDays）に
+    // その日が無いと「最速は8/10」と言いながら8/10が選べない。
+    const ranked = rankRelocationDays(from, to, base);
+    for (const s of ranked) {
+      if (!s.firstDate) continue;
+      expect(s.topDays[0]?.date).toBe(s.firstDate);
+    }
+  });
+
+  it("topDays は日付の昇順で、縁起優先の並べ替えをしない", () => {
+    const ranked = rankRelocationDays(from, to, base);
+    for (const s of ranked) {
+      const dates = s.topDays.map((d) => d.date);
+      expect([...dates].sort()).toEqual(dates);
+    }
+  });
+
+  it("luckyDays は天赦日か一粒万倍日だけを含む", () => {
+    const ranked = rankRelocationDays(from, to, base);
+    for (const s of ranked) {
+      for (const d of s.luckyDays) {
+        expect(d.tags.includes("天赦日") || d.tags.includes("一粒万倍日")).toBe(
+          true,
+        );
+        expect(d.tier).toBe(s.bestAvailableTier);
+      }
+    }
+  });
+});
