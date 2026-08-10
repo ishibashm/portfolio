@@ -841,6 +841,13 @@ export default function ArbitrageScannerPage() {
           rokuyo: string;
           tags: string[];
         }[];
+        luckyDays: {
+          date: string;
+          weekday: number;
+          tier: string;
+          rokuyo: string;
+          tags: string[];
+        }[];
         months: {
           month: string;
           bestTier: string | null;
@@ -3664,6 +3671,14 @@ export default function ArbitrageScannerPage() {
                       を候補に出します。五大凶殺（五黄殺・暗剣殺・破・本命殺・
                       的殺）の日だけは決して候補に出しません。日付を選ぶと、
                       スキャンの日付と方位フィルターがその日に切り替わります。
+                      <a
+                        href="/relocation/timing"
+                        className="ml-1 font-semibold text-indigo-600 underline"
+                      >
+                        全期間の詳細分析
+                      </a>
+                      では、過去から未来までの全日をカレンダーと分布で
+                      見られます。
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
@@ -3961,8 +3976,8 @@ export default function ArbitrageScannerPage() {
                                       {s.topDays.length > 0 && (
                                         <div>
                                           <p className="text-[9px] text-stone-400 mb-1">
-                                            おすすめ日（天赦日・一粒万倍日を
-                                            優先。選ぶとスキャンが切り替わる）
+                                            直近の候補日（日付順。選ぶと
+                                            スキャンが切り替わる）
                                           </p>
                                           <div className="flex flex-wrap gap-1">
                                             {s.topDays.map((d) => (
@@ -3991,6 +4006,44 @@ export default function ArbitrageScannerPage() {
                                                 </span>
                                                 {d.tags.includes("天赦日") && (
                                                   <span className="ml-0.5 text-[8px]">
+                                                    ✨
+                                                  </span>
+                                                )}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {s.luckyDays.length > 0 && (
+                                        <div>
+                                          <p className="text-[9px] text-stone-400 mb-1">
+                                            縁起の良い日（天赦日 ✨・
+                                            一粒万倍日。同じ段階の日から抜粋）
+                                          </p>
+                                          <div className="flex flex-wrap gap-1">
+                                            {s.luckyDays.map((d) => (
+                                              <button
+                                                key={`lucky-${d.date}`}
+                                                onClick={() =>
+                                                  applyTimingChoice(
+                                                    d.date,
+                                                    s.direction,
+                                                  )
+                                                }
+                                                className={`px-2 py-1 rounded-lg text-[10px] font-semibold border transition-colors ${
+                                                  targetDate === d.date &&
+                                                  filterDirection ===
+                                                    s.direction
+                                                    ? "bg-amber-500 border-amber-500 text-white"
+                                                    : "bg-amber-50 border-amber-200 text-amber-800 hover:border-amber-400"
+                                                }`}
+                                                title={`${d.date}（${"日月火水木金土"[d.weekday]}）${d.rokuyo} / ${d.tags.join("・")}`}
+                                              >
+                                                {d.date
+                                                  .slice(2)
+                                                  .replace(/-/g, "/")}
+                                                {d.tags.includes("天赦日") && (
+                                                  <span className="ml-0.5">
                                                     ✨
                                                   </span>
                                                 )}

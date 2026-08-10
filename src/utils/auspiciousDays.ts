@@ -545,8 +545,18 @@ export interface RankedDirectionSummary {
   tierCounts: Record<DayTier, number>;
   /** 天中殺で塞がれた日と X を除いた、この方位の最良の段階。 */
   bestAvailableTier: DayTier | null;
-  /** bestAvailableTier の日。天赦日・一粒万倍日を先頭に、日付順。 */
+  /**
+   * bestAvailableTier の日を「日付の早い順」に。直近の候補。
+   *
+   * 以前はここを天赦日・一粒万倍日の優先順に並べ替えてから切っていた。
+   * 意思決定サマリーは firstDate（純粋な日付順の先頭）を使うため、
+   * 「最速の候補: 8/10」と出ているのにチップには 8/10 が無い、という
+   * 食い違いが起きていた（縁起日が上位を占めて押し出される）。
+   * 並び順は 1 つにし、縁起日は luckyDays へ分けて両方見せる。
+   */
   topDays: RankedDay[];
+  /** うち天赦日・一粒万倍日が当たる日。縁起を優先したいとき用 */
+  luckyDays: RankedDay[];
   /** 月ごとの最良段階。走査範囲の月がすべて並ぶ。 */
   months: MonthTierSummary[];
   /** X 以外なのに天中殺で候補から外れた日数。設定を変えれば戻る。 */
@@ -638,21 +648,19 @@ export function rankRelocationDays(
         ? []
         : candidates.filter((d) => d.tier === bestAvailableTier);
     const bestDatesSorted = bestDays.map((d) => d.date).sort();
-    const topDays =
-      bestAvailableTier === null
-        ? []
-        : bestDays
-            .sort((a, b) => {
-              const aLucky =
-                (a.tags.includes("天赦日") ? 2 : 0) +
-                (a.tags.includes("一粒万倍日") ? 1 : 0);
-              const bLucky =
-                (b.tags.includes("天赦日") ? 2 : 0) +
-                (b.tags.includes("一粒万倍日") ? 1 : 0);
-              if (aLucky !== bLucky) return bLucky - aLucky;
-              return a.date.localeCompare(b.date);
-            })
-            .slice(0, topN);
+    const byDate = [...bestDays].sort((a, b) => a.date.localeCompare(b.date));
+    const topDays = byDate.slice(0, topN);
+    // 縁起日は別立て。日付順の直近リストから押し出されないようにする。
+    const luckyDays = byDate
+      .filter((d) => d.tags.includes("天赦日") || d.tags.includes("一粒万倍日"))
+      .sort((a, b) => {
+        const rank = (x: RankedDay) =>
+          (x.tags.includes("天赦日") ? 2 : 0) +
+          (x.tags.includes("一粒万倍日") ? 1 : 0);
+        const diff = rank(b) - rank(a);
+        return diff !== 0 ? diff : a.date.localeCompare(b.date);
+      })
+      .slice(0, topN);
 
     // 月ごとの見取り図。走査した月をすべて並べ、月内の最良段階を出す。
     const byMonth = new Map<string, RankedDay[]>();
@@ -690,6 +698,7 @@ export function rankRelocationDays(
       tierCounts,
       bestAvailableTier,
       topDays,
+      luckyDays,
       months,
       blockedByTenchusatsuDays,
       firstDate: bestDatesSorted[0] ?? null,

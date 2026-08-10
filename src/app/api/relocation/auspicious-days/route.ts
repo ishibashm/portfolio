@@ -8,6 +8,8 @@ import {
   ALL_DIRECTIONS,
   findAuspiciousDays,
   findAuspiciousDaysAllDirections,
+  gradeVerdict,
+  judgeDayAllDirections,
   rankRelocationDays,
 } from "@/utils/auspiciousDays";
 import {
@@ -105,6 +107,52 @@ export async function GET(request: Request) {
       directionFilterMode:
         searchParams.get("directionFilterMode") || "composite",
     };
+
+    // mode=timeline: 全日 × 全方位の格付けをそのまま返す。専用の分析
+    // ページ（/relocation/timing）がカレンダーヒートマップ・分布・
+    // 帯グラフを描くための素データ。方位ごとの配列ではなく日付ごとの
+    // 行にして、8 方位を 1 文字の段階コードに畳んで転送量を抑える
+    // （730 日 × 8 方位でも 30KB 程度）。
+    if (searchParams.get("mode") === "timeline") {
+      const days: {
+        date: string;
+        weekday: number;
+        rokuyo: string;
+        tags: string[];
+        blocked: boolean;
+        tiers: Record<string, string>;
+      }[] = [];
+      const cursor = new Date(from);
+      cursor.setHours(12, 0, 0, 0);
+      const end = new Date(to);
+      end.setHours(12, 0, 0, 0);
+      let guard = 0;
+      while (cursor <= end && guard < 800) {
+        const all = judgeDayAllDirections(new Date(cursor), base);
+        guard++;
+        const tiers: Record<string, string> = {};
+        for (const dir of ALL_DIRECTIONS) tiers[dir] = gradeVerdict(all[dir]);
+        const any = all[ALL_DIRECTIONS[0]];
+        days.push({
+          date: any.date,
+          weekday: any.weekday,
+          rokuyo: any.rokuyo,
+          tags: any.tags,
+          blocked: any.blockedByTenchusatsu,
+          tiers,
+        });
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return NextResponse.json({
+        honmeiStar: honmeiStar.classical,
+        voidZodiacs,
+        tenchusatsuMode,
+        rangeDays,
+        from: days[0]?.date ?? null,
+        to: days[days.length - 1]?.date ?? null,
+        days,
+      });
+    }
 
     // mode=ranked: 三盤吉だけでなく全日を 6 段階に格付けして返す。
     // 完璧な日が無い期間（年天中殺・八方塞がり）でも「次善の日」と
