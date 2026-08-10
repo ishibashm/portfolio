@@ -19,6 +19,7 @@ import {
   useMapEvents,
   GeoJSON,
 } from "react-leaflet";
+import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -174,18 +175,6 @@ function SyncMapCenter({ lat, lon }: { lat: number; lon: number }) {
 }
 
 // Invalidate Leaflet map size on load/resize
-function InvalidateMapSize() {
-  const map = useMap();
-  useEffect(() => {
-    map.invalidateSize();
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [map]);
-  return null;
-}
-
 // Automatically fit map bounds to show properties and the center
 function AutoFitBounds({
   properties,

@@ -13,6 +13,7 @@ import {
   Tooltip,
   useMapEvents,
 } from "react-leaflet";
+import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
@@ -99,29 +100,6 @@ function SyncMapCenter({ lat, lon }: { lat: number; lon: number }) {
   useEffect(() => {
     map.setView([lat, lon], map.getZoom());
   }, [lat, lon, map]);
-
-  return null;
-}
-
-function InvalidateMapSize() {
-  const map = useMap();
-  useEffect(() => {
-    map.invalidateSize();
-
-    const handleResize = () => {
-      map.invalidateSize();
-    };
-    window.addEventListener("resize", handleResize);
-
-    const timer = setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      clearTimeout(timer);
-    };
-  }, [map]);
 
   return null;
 }
