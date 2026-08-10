@@ -250,6 +250,17 @@ model RelocationHistory {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // 保存時点の吉凶判定のスナップショット。
+  //
+  // 判定エンジンは改良で変わり、過去の日付の判定も遡って変わる。
+  // 一覧表示は常に現在のエンジンで再評価するが（それが最新の知見）、
+  // 「決めたときに何と表示されていたか」はここでしか再現できない。
+  // 中身: { direction, bearingDeg, tier, finalStatus, yearLayer,
+  //         monthLayer, dayLayer, blockedByTenchusatsu, personalStar,
+  //         voidZodiacs, tenchusatsuMode, useClassical, directionFilterMode }
+  judgment      Json?
+  engineVersion String?
+
   User User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])

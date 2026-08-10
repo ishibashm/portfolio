@@ -61,6 +61,13 @@ interface EvaluatedHistoryItem {
       dayLayer: string;
     };
   };
+  /** 保存時点の判定スナップショット（保存後にエンジンが変わっても不変） */
+  judgment?: {
+    tier?: string;
+    finalStatus?: string;
+    direction?: string;
+  } | null;
+  engineVersion?: string | null;
 }
 
 // Map auspice codes to clean UX ratings
@@ -801,6 +808,27 @@ export default function RelocationHistoryPage() {
                       <span className="text-[10px] text-stone-500 font-mono mt-1.5 block">
                         評価コード: {selectedItem.evaluation.status}
                       </span>
+                      {/* 保存時のスナップショット。上の評価は常に現在の
+                          エンジンでの再評価なので、エンジン改良後は保存時と
+                          食い違い得る。決めたときに何と表示されていたかを
+                          消さずに残す。 */}
+                      {selectedItem.judgment?.finalStatus && (
+                        <span
+                          className={`text-[10px] font-mono mt-1 block ${
+                            selectedItem.judgment.finalStatus !==
+                            selectedItem.evaluation.status
+                              ? "text-amber-600 font-bold"
+                              : "text-stone-400"
+                          }`}
+                        >
+                          保存時の判定: {selectedItem.judgment.finalStatus}
+                          {selectedItem.engineVersion &&
+                            `（エンジン ${selectedItem.engineVersion}）`}
+                          {selectedItem.judgment.finalStatus !==
+                            selectedItem.evaluation.status &&
+                            " ※エンジン改良により現在の評価と異なります"}
+                        </span>
+                      )}
                       <p className="text-[11px] text-stone-500 mt-2 font-medium px-2 leading-relaxed">
                         {formatDirectionInfo(selectedItem.evaluation.status)}
                       </p>

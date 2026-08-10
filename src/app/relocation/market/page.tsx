@@ -28,6 +28,7 @@ import {
 } from "recharts";
 
 import marketStats from "@/data/marketStats.json";
+import calendarClimatology from "@/data/calendarClimatology.json";
 import type { MarketStats } from "@/utils/marketStats";
 import { trailingAverage } from "@/utils/marketStats";
 
@@ -418,6 +419,111 @@ export default function MarketAnalyticsPage() {
           {stats.volatilityRanking.length === 0 && (
             <p className="text-[11px] text-stone-400">データ待ち</p>
           )}
+        </Section>
+
+        {/* 暦の統計。市場（観測）とは別の、決定的な暦の要約 */}
+        <Section
+          title="暦の統計: 本命星別・三盤吉の日数（今年度と平年）"
+          subtitle="こちらは市場データではなく、九星の暦そのものの統計。年盤・月盤・日盤がすべて吉になる日が「どこかの方位で」何日あるかを、本命星ごとに 9 年窓（年盤の一巡）で数えたもの。星によって 2 倍以上の差があり、また同じ星でも年による当たり外れがある。天中殺は考慮していない（個人の設定に依るため）。"
+        >
+          {(() => {
+            const clim = calendarClimatology as any;
+            const profiles = clim?.profiles ?? {};
+            const from = clim?.meta?.from
+              ? new Date(`${clim.meta.from}T12:00:00+09:00`)
+              : null;
+            if (!from || Object.keys(profiles).length === 0) {
+              return <p className="text-[11px] text-stone-400">データ待ち</p>;
+            }
+            const idx = Math.min(
+              8,
+              Math.max(
+                0,
+                Math.floor((Date.now() - from.getTime()) / (365 * 86_400_000)),
+              ),
+            );
+            const rows = Array.from({ length: 9 }, (_, i) => i + 1).map(
+              (star) => {
+                const entries = Object.entries(profiles).filter(([k]) =>
+                  k.startsWith(`${star}|`),
+                ) as [string, any][];
+                const avg = (f: (p: any) => number) =>
+                  entries.length
+                    ? entries.reduce((a, [, p]) => a + f(p), 0) / entries.length
+                    : 0;
+                const thisYear = avg((p) => p.anySPerWindow?.[idx] ?? 0);
+                const normal = avg((p) => p.avgAnySPerYear ?? 0);
+                return {
+                  star,
+                  thisYear: Math.round(thisYear),
+                  normal: Math.round(normal),
+                  ratio: normal > 0 ? thisYear / normal : 0,
+                };
+              },
+            );
+            const sorted = [...rows].sort((a, b) => b.thisYear - a.thisYear);
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                      <th className="py-1.5 pr-2">本命星</th>
+                      <th className="py-1.5 pr-2 text-right">今年度の三盤吉</th>
+                      <th className="py-1.5 pr-2 text-right">9年平均</th>
+                      <th className="py-1.5 text-right">平年比</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sorted.map((r) => (
+                      <tr
+                        key={r.star}
+                        className="border-b border-gray-100 last:border-0"
+                      >
+                        <td className="py-1.5 pr-2 font-semibold">
+                          {
+                            [
+                              "",
+                              "一白水星",
+                              "二黒土星",
+                              "三碧木星",
+                              "四緑木星",
+                              "五黄土星",
+                              "六白金星",
+                              "七赤金星",
+                              "八白土星",
+                              "九紫火星",
+                            ][r.star]
+                          }
+                        </td>
+                        <td className="py-1.5 pr-2 text-right font-mono">
+                          {r.thisYear}日
+                        </td>
+                        <td className="py-1.5 pr-2 text-right font-mono">
+                          {r.normal}日
+                        </td>
+                        <td
+                          className={`py-1.5 text-right font-mono ${
+                            r.ratio >= 1.05
+                              ? "text-emerald-700"
+                              : r.ratio <= 0.95
+                                ? "text-rose-700"
+                                : ""
+                          }`}
+                        >
+                          {(r.ratio * 100).toFixed(0)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="mt-2 text-[10px] text-stone-400">
+                  ※天中殺グループ6通りの平均。個人の値は
+                  物件スキャナーの「引っ越し時期を探す」で自分の命式に
+                  対して表示される。
+                </p>
+              </div>
+            );
+          })()}
         </Section>
 
         {/* 方法論 */}

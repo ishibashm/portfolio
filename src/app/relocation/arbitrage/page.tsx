@@ -53,6 +53,21 @@ import {
   type DayTier,
 } from "@/utils/auspiciousDays";
 
+/**
+ * 暦の平年値。本命星×天中殺グループごとの、段階別の年平均日数（9年窓）。
+ * 「吉日12日」が多いのか少ないのかを読むための基準。決定的な暦の要約で
+ * あって観測データではないため、毎晩の再計算はしない。
+ */
+function climatologyFor(honmeiStar: number, voidZodiacs: string[]) {
+  const profiles = (calendarClimatology as any).profiles ?? {};
+  const joined = voidZodiacs.join("");
+  return (
+    profiles[`${honmeiStar}|${joined}`] ??
+    profiles[`${honmeiStar}|${[...voidZodiacs].reverse().join("")}`] ??
+    null
+  );
+}
+
 /** 段階バッジの配色。良い順に緑→青→灰→琥珀。X は候補に出さないので無い */
 const TIER_BADGE_CLASS: Record<DayTier, string> = {
   S: "bg-emerald-100 border-emerald-300 text-emerald-800",
@@ -120,6 +135,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 import dynamic from "next/dynamic";
 
 import prefecturesWithData from "@/data/prefecturesWithData.json";
+import calendarClimatology from "@/data/calendarClimatology.json";
 import {
   SmartFilters,
   hasStructuredFilters,
@@ -803,6 +819,10 @@ export default function ArbitrageScannerPage() {
   const [timingBusy, setTimingBusy] = useState(false);
   const [timingError, setTimingError] = useState<string | null>(null);
   const [timingRangeDays, setTimingRangeDays] = useState<365 | 730>(365);
+  const [timingProfile, setTimingProfile] = useState<{
+    honmeiStar: number;
+    voidZodiacs: string[];
+  } | null>(null);
   const [timingRanked, setTimingRanked] = useState<
     | null
     | {
@@ -1522,6 +1542,11 @@ export default function ArbitrageScannerPage() {
       const json = await res.json();
       if (!Array.isArray(json?.ranked)) throw new Error("empty result");
       setTimingRanked(json.ranked);
+      setTimingProfile(
+        typeof json?.honmeiStar === "number" && Array.isArray(json?.voidZodiacs)
+          ? { honmeiStar: json.honmeiStar, voidZodiacs: json.voidZodiacs }
+          : null,
+      );
       setTimingOpenDir(null);
     } catch {
       setTimingError(
@@ -3625,8 +3650,26 @@ export default function ArbitrageScannerPage() {
                         const hasS = usable.some(
                           (s) => s.bestAvailableTier === "S",
                         );
+                        const clim = timingProfile
+                          ? climatologyFor(
+                              timingProfile.honmeiStar,
+                              timingProfile.voidZodiacs,
+                            )
+                          : null;
                         return (
                           <div className="space-y-1.5">
+                            {clim && (
+                              <p className="text-[9px] leading-relaxed text-stone-400">
+                                あなたの命式（本命星{timingProfile!.honmeiStar}
+                                ・天中殺{timingProfile!.voidZodiacs.join("")}
+                                ）では、どこかの方位が三盤吉になる日は
+                                <b className="text-stone-600">
+                                  年平均{clim.avgAnySPerYear}日
+                                </b>
+                                （9年平均・天中殺考慮前）。今回の走査結果は
+                                この基準と比べて読んでください。
+                              </p>
+                            )}
                             {!hasS && (
                               <p className="rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
                                 この期間に三盤吉の日はありません。以下は
@@ -3724,6 +3767,27 @@ export default function ArbitrageScannerPage() {
                                           </div>
                                         </div>
                                       )}
+                                      {/* 平年値。9年（年盤一巡）平均の基準を
+                                          添えて「多いのか少ないのか」を読める
+                                          ようにする */}
+                                      {timingProfile &&
+                                        (() => {
+                                          const clim = climatologyFor(
+                                            timingProfile.honmeiStar,
+                                            timingProfile.voidZodiacs,
+                                          );
+                                          const d =
+                                            clim?.directions?.[s.direction]
+                                              ?.perYear;
+                                          if (!d) return null;
+                                          return (
+                                            <p className="text-[9px] text-stone-400">
+                                              この方位の平年値（9年平均・天中殺
+                                              考慮前）: 三盤吉 {d.S}
+                                              日/年・吉2盤 {d.A}日/年
+                                            </p>
+                                          );
+                                        })()}
                                       {/* 月ごとの見取り図。どの月に窓が開くか */}
                                       <div>
                                         <p className="text-[9px] text-stone-400 mb-1">
