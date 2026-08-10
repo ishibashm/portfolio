@@ -25,6 +25,8 @@ import {
   LogIn,
   Route,
   Calendar,
+  CalendarRange,
+  BarChart3,
   ExternalLink,
   BookOpen,
 } from "lucide-react";
@@ -44,6 +46,8 @@ const PUBLIC_ITEMS = [
 // 表示順・表示名は「引越しを決めるまでの順序」にしてある。
 const CORE_ICONS: Record<string, LucideIcon> = {
   "/relocation/arbitrage": TrendingUp,
+  "/relocation/timing": CalendarRange,
+  "/relocation/market": BarChart3,
   "/relocation/simulator": Route,
   "/relocation/wealth": Map,
   "/houi": Compass,
@@ -93,12 +97,14 @@ export function GlobalSidebar() {
         if (active) setEmail(data.user?.email ?? null);
       });
 
-      const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-        // INITIAL_SESSION は購読直後に必ず発火する初期通知で、上の getUser() と
-        // 内容が重複する。こちらを採用すると getUser() の結果を打ち消してしまう。
-        if (event === "INITIAL_SESSION") return;
-        setEmail(session?.user?.email ?? null);
-      });
+      const { data: sub } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          // INITIAL_SESSION は購読直後に必ず発火する初期通知で、上の getUser() と
+          // 内容が重複する。こちらを採用すると getUser() の結果を打ち消してしまう。
+          if (event === "INITIAL_SESSION") return;
+          setEmail(session?.user?.email ?? null);
+        },
+      );
       unsubscribe = () => sub.subscription.unsubscribe();
     });
 
@@ -151,9 +157,7 @@ export function GlobalSidebar() {
             className={`shrink-0 ${isActive ? "text-white" : "text-stone-400 group-hover:text-rose-500 transition-colors"}`}
           />
           {!isCollapsed && (
-            <span className="whitespace-nowrap">
-              {item.label}
-            </span>
+            <span className="whitespace-nowrap">{item.label}</span>
           )}
         </div>
         {!isCollapsed && isActive && (

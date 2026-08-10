@@ -1061,6 +1061,9 @@ export default function ArbitrageScannerPage() {
     let bLat = "34.3952";
     let bLon = "132.4482";
     let bDate = "1988-11-25T04:26";
+    // 時期分析から「この日の判定で塗られた地図を見たい」と来たときだけ
+    // 俯瞰で開く。県別の色分けは zoom < 10 でしか描かれないため。
+    let openOverview = false;
     let tDate = getTodayString();
     let rKm = filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm;
     let pref = "all";
@@ -1205,6 +1208,15 @@ export default function ArbitrageScannerPage() {
           /* 保存済み設定が壊れていても URL の日付は使う */
         }
       }
+      // 時期分析（/relocation/timing）からの受け渡し。
+      //
+      // 県別の色分けは俯瞰（zoom < 10）でしか描かれない。既定の初期表示は
+      // 出発地へズームインするため、日付だけ引き継いで飛んでくると
+      // 「その日の判定で塗られた地図」が見えないまま物件ピンだけが出る。
+      // 意図して俯瞰で開くための指定を受ける。
+      if (qs.get("view") === "overview") {
+        openOverview = true;
+      }
       const qDir = qs.get("direction");
       if (qDir && ALL_DIRECTIONS.includes(qDir as any)) {
         setFilterDirection(qDir);
@@ -1223,7 +1235,13 @@ export default function ArbitrageScannerPage() {
     setBaseLon(bsLon);
     setLocalLon(bsLon);
     // 出発地が未設定でも地図は開けるように、表示中心だけは日本全体にしておく
-    if (bsLat !== "" && bsLon !== "") {
+    if (openOverview) {
+      // 中心を OVERVIEW_CENTER に置くと isNationwideOverview が真になり、
+      // AutoFitBounds が俯瞰のズームへ寄せる。県別の色分けが見える。
+      setMapCenter(OVERVIEW_CENTER);
+      setPrefecture("all");
+      setRadiusKm("all");
+    } else if (bsLat !== "" && bsLon !== "") {
       const lat0 = parseFloat(bsLat);
       const lon0 = parseFloat(bsLon);
       setMapCenter([lat0, lon0]);
@@ -1241,8 +1259,10 @@ export default function ArbitrageScannerPage() {
     setLocalBirthDate(normalizeDateTimeLocal(bDate));
     setTargetDate(tDate);
     setLocalTargetDate(tDate);
-    setRadiusKm(rKm);
-    setPrefecture(pref);
+    if (!openOverview) {
+      setRadiusKm(rKm);
+      setPrefecture(pref);
+    }
     setUseClassical(classical);
     setLayerMode(layer);
     setUseTrueNorth(trueNorth);
