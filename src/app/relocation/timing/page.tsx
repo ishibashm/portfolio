@@ -42,6 +42,7 @@ import {
   summarizeWindows,
   type DayTier,
 } from "@/utils/auspiciousDays";
+import { TIER_FILL, BLOCKED_FILL } from "@/utils/tierDisplay";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import { loadSettings } from "@/lib/userSettings";
 
@@ -54,15 +55,6 @@ interface TimelineDay {
   tiers: Record<string, string>;
 }
 
-const TIER_FILL: Record<DayTier, string> = {
-  S: "#10b981",
-  A: "#14b8a6",
-  B: "#38bdf8",
-  C: "#d6d3d1",
-  D: "#f59e0b",
-  X: "#ef4444",
-};
-const BLOCKED_FILL = "#64748b";
 const TIERS: DayTier[] = ["S", "A", "B", "C", "D", "X"];
 
 const WEEKDAY_JP = "日月火水木金土";

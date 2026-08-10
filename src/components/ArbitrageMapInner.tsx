@@ -20,6 +20,7 @@ import {
   GeoJSON,
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
+import type { DayTier } from "@/utils/auspiciousDays";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -31,6 +32,12 @@ import {
   getRecommendationStarCount,
 } from "@/utils/arbitrageHelpers";
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
+import {
+  TIER_FILL,
+  TIER_JP,
+  TIER_SECTOR_OPACITY,
+  BLOCKED_FILL,
+} from "@/utils/tierDisplay";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 
 // Fix Leaflet default icon problem in Next.js
@@ -45,34 +52,20 @@ L.Icon.Default.mergeOptions({
 });
 
 /**
- * 段階→塗り色。時期スクリーニングのバッジと同じ意味の色。
- * 天中殺で塞がっている方位は段階に関係なく灰色に落とす。
+ * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
+ *
+ * フォーカスの初期値を物件の分布（fitBounds）で決めると、データの
+ * 到着順で毎回違う画角になる。半径は利用者が選んだ確定値なので、
+ * これだけから決めれば同じ条件では常に同じ画角になる。
+ * 扇形は zoom >= 10 でしか描かないため、下限は 10。
  */
-const TIER_FILL: Record<string, string> = {
-  S: "#10b981",
-  A: "#14b8a6",
-  B: "#38bdf8",
-  C: "#a8a29e",
-  D: "#f59e0b",
-  X: "#ef4444",
-};
-const TIER_JP: Record<string, string> = {
-  S: "三盤吉",
-  A: "吉2盤",
-  B: "吉1盤",
-  C: "平",
-  D: "軽い凶",
-  X: "五大凶殺",
-};
-/** 扇形の塗りの濃さ。良い段階ほど目立たせ、平は薄く敷く。 */
-const TIER_SECTOR_OPACITY: Record<string, number> = {
-  S: 0.18,
-  A: 0.14,
-  B: 0.1,
-  C: 0.04,
-  D: 0.08,
-  X: 0.1,
-};
+function zoomForRadius(radiusKm?: string): number {
+  const km = Number(radiusKm);
+  if (!Number.isFinite(km) || km <= 0) return 10; // "all" など
+  if (km <= 15) return 12;
+  if (km <= 35) return 11;
+  return 10;
+}
 
 // Map Click Handler to copy coordinates
 function MapClickHandler({
@@ -171,6 +164,10 @@ interface ArbitrageMapInnerProps {
   >;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
   targetDate?: string;
+  /** 出発地が入力済みか。フォーカスの初期値と「出発地へ」ボタンに使う */
+  hasBase?: boolean;
+  /** mapCenter の意味。area=検索の起点 / spot=個別の物件 */
+  focusKind?: "area" | "spot";
   /** 詳細パネルで開いている物件。リングで強調する */
   selectedPropertyId?: string | null;
   isTransitioningDate?: boolean;
@@ -213,98 +210,94 @@ function getDestination(
   return [(lat2 * 180) / Math.PI, (lon2 * 180) / Math.PI] as [number, number];
 }
 
-// Sync map center component
-function SyncMapCenter({ lat, lon }: { lat: number; lon: number }) {
+/**
+ * 地図のフォーカスを一元管理する。
+ *
+ * 以前は SyncMapCenter（中心が変わるたび zoom 13 へ）と AutoFitBounds
+ * （物件が届くたび分布に fitBounds）の 2 つが同じ地図を取り合っていた。
+ * どちらが最後に勝つかはデータの到着順で変わるので、開くたびに俯瞰
+ * だったり物件群への寄りだったりする。「初回のフォーカスが定まらない」
+ * のはこれが原因。
+ *
+ * 規則は 3 つだけ。すべて利用者が選んだ確定値から決まり、物件データの
+ * 中身や到着タイミングには依存しない。
+ *
+ *   1. 全国（keepWideView）に入った瞬間 → 俯瞰（OVERVIEW）
+ *   2. 検索の文脈（出発地・県・半径）が変わった → 出発地を中心に
+ *      半径ぶんのズーム
+ *   3. 物件をクリックした（focusKind="spot"） → その地点へ zoom 13
+ *
+ * それ以外（手でドラッグ・ズームした後など）は一切動かさない。
+ */
+function FocusController({
+  center,
+  prefecture,
+  radiusKm,
+  keepWideView = false,
+  hasBase = false,
+  focusKind = "area",
+}: {
+  center: [number, number];
+  prefecture?: string;
+  radiusKm?: string;
+  keepWideView?: boolean;
+  /** 出発地が入力済みか。未入力なら日本全体を広く出す */
+  hasBase?: boolean;
+  /** center の意味。area=検索の起点 / spot=個別の物件 */
+  focusKind?: "area" | "spot";
+}) {
   const map = useMap();
+  const prevRef = useRef<{
+    center: [number, number];
+    prefecture?: string;
+    radiusKm?: string;
+    wide: boolean;
+  } | null>(null);
+
   useEffect(() => {
-    map.setView([lat, lon], map.getZoom() < 12 ? 13 : map.getZoom());
-  }, [lat, lon, map]);
+    const prev = prevRef.current;
+    prevRef.current = { center, prefecture, radiusKm, wide: keepWideView };
+
+    if (keepWideView) {
+      // 全国に切り替わった瞬間だけ俯瞰へ戻す。俯瞰中も毎回引き戻すと、
+      // 全国を選んだまま気になる場所を拡大して見ることができなくなる。
+      if (!prev || !prev.wide) {
+        map.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM);
+      }
+      return;
+    }
+
+    const centerChanged =
+      !prev ||
+      prev.wide ||
+      Math.abs(prev.center[0] - center[0]) > 1e-4 ||
+      Math.abs(prev.center[1] - center[1]) > 1e-4;
+    const contextChanged =
+      !prev || prev.prefecture !== prefecture || prev.radiusKm !== radiusKm;
+
+    if (!centerChanged && !contextChanged) return;
+
+    if (focusKind === "spot" && centerChanged) {
+      map.setView(center, Math.max(map.getZoom(), 13));
+      return;
+    }
+    if (!hasBase) {
+      // 出発地が未入力なら方位も半径も定まらない。日本全体を広く出す。
+      map.setView([38.0, 137.0], 5);
+      return;
+    }
+    map.setView(center, zoomForRadius(radiusKm));
+  }, [center, prefecture, radiusKm, keepWideView, hasBase, focusKind, map]);
+
   return null;
 }
 
-// Invalidate Leaflet map size on load/resize
-// Automatically fit map bounds to show properties and the center
-function AutoFitBounds({
-  properties,
-  center,
-  prefecture,
-  keepWideView = false,
-}: {
-  properties: ScoredProperty[];
-  center: [number, number];
-  prefecture?: string;
-  /**
-   * 全国を俯瞰しているか。
-   *
-   * これが無いと「全国」を選んでも物件群へズームインしてしまい、
-   * 県別の色分け（ズーム10未満でしか描かない）が出ない。返ってくるのは
-   * 安い順の500件なので、全国を選ぶほど最も安い一角へ寄っていく、という
-   * 逆の動きになっていた。
-   */
-  keepWideView?: boolean;
-}) {
+/** 「出発地へ」「全国俯瞰」ボタンから map を触るためのハンドル。 */
+function MapRefGrabber({ onMap }: { onMap: (m: L.Map) => void }) {
   const map = useMap();
-  const prevPrefectureRef = useRef<string | undefined>(undefined);
-  const prevCenterRef = useRef<[number, number] | null>(null);
-  const prevPropsLengthRef = useRef<number>(0);
-  const prevWideRef = useRef<boolean>(false);
-
   useEffect(() => {
-    // If no properties, zoom out to show Japan if not already zoomed out
-    if (properties.length === 0) {
-      if (prevPropsLengthRef.current > 0 || !prevCenterRef.current) {
-        // Center roughly on Japan with a wide zoom
-        map.setView([38.0, 137.0], 5);
-        prevCenterRef.current = [38.0, 137.0];
-      }
-      prevPropsLengthRef.current = 0;
-      return;
-    }
-
-    // 全国に切り替わった瞬間だけ俯瞰へ戻す。俯瞰中も毎回引き戻すと、
-    // 全国を選んだまま気になる場所を拡大して見ることができなくなる。
-    if (keepWideView) {
-      if (!prevWideRef.current) {
-        map.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM);
-        prevCenterRef.current = center;
-        prevPrefectureRef.current = prefecture;
-      }
-      prevWideRef.current = true;
-      prevPropsLengthRef.current = properties.length;
-      return;
-    }
-    prevWideRef.current = false;
-
-    const prefectureChanged = prevPrefectureRef.current !== prefecture;
-    const centerChanged =
-      !prevCenterRef.current ||
-      Math.abs(prevCenterRef.current[0] - center[0]) > 0.01 ||
-      Math.abs(prevCenterRef.current[1] - center[1]) > 0.01;
-    const propsAdded =
-      prevPropsLengthRef.current === 0 && properties.length > 0;
-
-    if (prefectureChanged || centerChanged || propsAdded) {
-      // If prefecture is 'all' or undefined, keep the wide Japan view unless center was explicitly moved
-      if ((!prefecture || prefecture === "all") && !centerChanged) {
-        map.setView([38.0, 137.0], 5);
-      } else {
-        const bounds = L.latLngBounds([center]);
-        properties.forEach((p) => {
-          if (p.lat && p.lon) {
-            bounds.extend([p.lat, p.lon]);
-          }
-        });
-
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
-      }
-
-      prevPrefectureRef.current = prefecture;
-      prevCenterRef.current = center;
-    }
-
-    prevPropsLengthRef.current = properties.length;
-  }, [properties, center, prefecture, keepWideView, map]);
-
+    onMap(map);
+  }, [map, onMap]);
   return null;
 }
 
@@ -380,6 +373,8 @@ export default function ArbitrageMapInner({
   prefKigaku,
   dirKigaku,
   targetDate,
+  hasBase = false,
+  focusKind = "area",
   selectedPropertyId = null,
   isTransitioningDate = false,
   showListView = false,
@@ -414,6 +409,12 @@ export default function ArbitrageMapInner({
     },
     [],
   );
+
+  // 「出発地へ」「全国俯瞰」ボタンから setView するためのハンドル
+  const mapRef = useRef<L.Map | null>(null);
+  const handleMapReady = useCallback((m: L.Map) => {
+    mapRef.current = m;
+  }, []);
 
   const copyCoordinates = useCallback(
     (lat: number, lon: number, label?: string) => {
@@ -736,8 +737,12 @@ export default function ArbitrageMapInner({
       const { color, opacity, dashArray } = d.tier
         ? {
             // 天中殺で塞がっている方位は段階に関わらず灰色。俯瞰の県塗りと同じ扱い。
-            color: d.blocked ? "#a8a29e" : (TIER_FILL[d.tier] ?? "#a8a29e"),
-            opacity: d.blocked ? 0.06 : (TIER_SECTOR_OPACITY[d.tier] ?? 0.06),
+            color: d.blocked
+              ? "#a8a29e"
+              : (TIER_FILL[d.tier as DayTier] ?? "#a8a29e"),
+            opacity: d.blocked
+              ? 0.06
+              : (TIER_SECTOR_OPACITY[d.tier as DayTier] ?? 0.06),
             dashArray:
               d.blocked || d.tier === "X" || d.tier === "D"
                 ? "5,5"
@@ -768,7 +773,7 @@ export default function ArbitrageMapInner({
       const label = d.tier
         ? d.blocked
           ? `${d.dir} 天中殺`
-          : `${d.dir} ${d.tier} ${TIER_JP[d.tier] ?? ""}`
+          : `${d.dir} ${d.tier} ${TIER_JP[d.tier as DayTier] ?? ""}`
         : `${d.dir} (${getStatusText(d.status ?? "SAFE")})`;
 
       return (
@@ -828,13 +833,15 @@ export default function ArbitrageMapInner({
       >
         <BoundsListener onBoundsChange={handleBoundsChange} />
         <MapClickHandler onCopy={copyCoordinates} />
-        <SyncMapCenter lat={center[0]} lon={center[1]} />
         <InvalidateMapSize />
-        <AutoFitBounds
-          properties={properties}
+        <MapRefGrabber onMap={handleMapReady} />
+        <FocusController
           center={center}
           prefecture={prefecture}
+          radiusKm={radiusKm}
           keepWideView={keepWideView}
+          hasBase={hasBase}
+          focusKind={focusKind}
         />
 
         {/* OpenStreetMap / CartoDB Tiles (Theme Switchable) */}
@@ -850,8 +857,9 @@ export default function ArbitrageMapInner({
           maxNativeZoom={19}
         />
 
-        {/* Theme Switcher Button */}
-        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto">
+        {/* Theme Switcher + フォーカスの明示切り替え。
+            「今どこを見ているのか」を手で確定できるようにする */}
+        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5">
           <button
             onClick={() => {
               const nextTheme = mapTheme === "dark" ? "light" : "dark";
@@ -863,6 +871,31 @@ export default function ArbitrageMapInner({
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
+          <div className="flex gap-1">
+            {hasBase && (
+              <button
+                onClick={() =>
+                  mapRef.current?.setView(
+                    [baseLat, baseLon],
+                    zoomForRadius(radiusKm),
+                  )
+                }
+                title="出発地を中心に、検索半径が収まるズームへ"
+                className="px-2.5 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+              >
+                📍 出発地へ
+              </button>
+            )}
+            <button
+              onClick={() =>
+                mapRef.current?.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM)
+              }
+              title="全国を俯瞰して県ごとの方位の吉凶を見る"
+              className="px-2.5 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+            >
+              🗾 全国俯瞰
+            </button>
+          </div>
         </div>
 
         {/* 俯瞰の塗り分け切り替え + 凡例。方位モードは
@@ -921,50 +954,6 @@ export default function ArbitrageMapInner({
                 </span>
               </div>
             )}
-          </div>
-        )}
-
-        {/* 扇形（8方位）の凡例。俯瞰の県塗りと同じ段階なので同じ色・
-            同じ語で出す。どの日の判定かを明示しないと、時期パネルの
-            「その月の最良段階」と読み違える。 */}
-        {zoom >= 10 && dirKigaku && (
-          <div className="absolute bottom-4 left-4 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[9px] text-stone-700 space-y-1">
-            <div className="font-bold text-stone-600">
-              方位の判定
-              {targetDate ? `（${targetDate.slice(5).replace("-", "/")}）` : ""}
-            </div>
-            <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
-              {(
-                [
-                  ["S", "三盤吉"],
-                  ["A", "吉2盤"],
-                  ["B", "吉1盤"],
-                  ["C", "平"],
-                  ["D", "軽い凶"],
-                  ["X", "五大凶殺"],
-                ] as const
-              ).map(([t, label]) => (
-                <span key={t} className="flex items-center gap-1">
-                  <span
-                    className="inline-block h-2.5 w-2.5 rounded-sm"
-                    style={{ background: TIER_FILL[t] }}
-                  />
-                  {label}
-                </span>
-              ))}
-            </div>
-            <span className="block text-[8px] text-stone-400 max-w-44 leading-relaxed">
-              年・月・日の三盤を合成した、この日だけの判定。物件のピンは
-              盤の切り替え（
-              {layerMode === "year"
-                ? "年盤"
-                : layerMode === "month"
-                  ? "月盤"
-                  : layerMode === "day"
-                    ? "日盤"
-                    : "合成"}
-              ）に従うため、色が一致しないことがあります。
-            </span>
           </div>
         )}
 
@@ -1049,7 +1038,7 @@ export default function ArbitrageMapInner({
               if (overviewTint === "kigaku" && info) {
                 const fill = info.blocked
                   ? "#64748b"
-                  : (TIER_FILL[info.tier] ?? "#a8a29e");
+                  : (TIER_FILL[info.tier as DayTier] ?? "#a8a29e");
                 return {
                   fillColor: fill,
                   // データの無い県も方位の吉凶は薄く見せる。方位は
@@ -1091,7 +1080,7 @@ export default function ArbitrageMapInner({
                 ? `<div class="mt-1">方位: <b>${info.directionLabel}</b> — ${
                     info.blocked
                       ? '<b class="text-slate-500">天中殺で移転不可</b>'
-                      : `<b>${TIER_JP[info.tier] ?? info.tier}</b>`
+                      : `<b>${TIER_JP[info.tier as DayTier] ?? info.tier}</b>`
                   }<span class="text-[9px] text-stone-500">（選択日の判定）</span></div>`
                 : "";
               layer.bindPopup(
@@ -1106,11 +1095,12 @@ export default function ArbitrageMapInner({
           />
         )}
 
-        {/* Direction Sectors - Only shown when zoom >= 10 and we are showing individual pins */}
-        {zoom >= 10 &&
-          (visibleCount > 100 || zoom >= 15 || showListView) &&
-          !showHeatmap &&
-          sectorLayers}
+        {/* 方位の扇形。詳細ズームでは常に描く。
+            以前は「ピンを個別表示しているときだけ」という条件付きで、
+            物件が少ないとき（クラスター表示）に扇形が黙って消えていた。
+            方位の吉凶はこの画面の主役なので、物件の数で消えてはいけない。
+            市区町村バブル（件数の画面）のときだけ引っ込める */}
+        {zoom >= 10 && !showHeatmap && sectorLayers}
 
         {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
         {zoom >= 10 &&
@@ -1340,12 +1330,13 @@ export default function ArbitrageMapInner({
                                     style={{
                                       color: k.blocked
                                         ? "#64748b"
-                                        : (TIER_FILL[k.tier] ?? "#64748b"),
+                                        : (TIER_FILL[k.tier as DayTier] ??
+                                          "#64748b"),
                                     }}
                                   >
                                     {k.blocked
                                       ? "天中殺"
-                                      : `${k.tier} ${TIER_JP[k.tier] ?? ""}`}
+                                      : `${k.tier} ${TIER_JP[k.tier as DayTier] ?? ""}`}
                                   </span>
                                 </div>
                               )}
@@ -1433,67 +1424,110 @@ export default function ArbitrageMapInner({
                 })())}
       </MapContainer>
 
-      {/* Thermometer Legend Overlay (Top Left) */}
-      <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
-        <div className="font-bold text-[9px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
-          件数
-        </div>
-        <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
-          <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-stone-200" />
-          <div className="flex flex-col justify-between text-[7.5px] font-mono text-stone-500 select-none">
-            <span>{maxPrefOrBubbleCount.toLocaleString()}</span>
-            <span>
-              {Math.round(maxPrefOrBubbleCount * 0.75).toLocaleString()}
-            </span>
-            <span>
-              {Math.round(maxPrefOrBubbleCount * 0.5).toLocaleString()}
-            </span>
-            <span>
-              {Math.round(maxPrefOrBubbleCount * 0.25).toLocaleString()}
-            </span>
-            <span>0</span>
+      {/* 件数の温度計。数を色で塗っている画面（俯瞰の件数モード、
+          広域の市区町村バブル）のときだけ出す。方位の吉凶を見ている
+          画面に出すと「この赤は件数？凶？」の取り違えになる */}
+      {((zoom < 10 && (overviewTint === "count" || !prefKigaku)) ||
+        (zoom >= 10 && showHeatmap)) && (
+        <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
+          <div className="font-bold text-[9px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
+            件数
+          </div>
+          <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
+            <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-stone-200" />
+            <div className="flex flex-col justify-between text-[7.5px] font-mono text-stone-500 select-none">
+              <span>{maxPrefOrBubbleCount.toLocaleString()}</span>
+              <span>
+                {Math.round(maxPrefOrBubbleCount * 0.75).toLocaleString()}
+              </span>
+              <span>
+                {Math.round(maxPrefOrBubbleCount * 0.5).toLocaleString()}
+              </span>
+              <span>
+                {Math.round(maxPrefOrBubbleCount * 0.25).toLocaleString()}
+              </span>
+              <span>0</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Map Legend Overlay */}
-      <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
-        <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
-          アストロ吉凶（凡例）
+      {/* 吉凶の凡例（右下）。扇形・ピン・俯瞰の県塗り・時期パネルの
+          すべてが同じ段階（S〜X）なので、凡例もこの一つだけ。
+          命式が未入力で段階を出せないときだけ、従来の単盤の凡例に落ちる */}
+      {dirKigaku ? (
+        <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+          <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+            方位の吉凶
+            {targetDate
+              ? `（${targetDate.slice(5).replace("-", "/")} 時点）`
+              : ""}
+          </div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            {(["S", "A", "B", "C", "D", "X"] as const).map((t) => (
+              <div key={t} className="flex items-center gap-1.5">
+                <span
+                  className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                  style={{ background: TIER_FILL[t] }}
+                ></span>
+                <span>
+                  {t} {TIER_JP[t]}
+                </span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-2.5 h-2.5 rounded-full border border-stone-300"
+                style={{ background: BLOCKED_FILL }}
+              ></span>
+              <span>天中殺</span>
+            </div>
+          </div>
+          <span className="block text-[8px] text-stone-400 max-w-48 leading-relaxed">
+            年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で
+            塗っています。物件ごとの違いは条件の良さ（スコア・星数）で
+            見てください。
+          </span>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-          <div className="flex items-center gap-1.5 col-span-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
-            <span className="font-bold text-amber-600">
-              超大吉 (木星ライン特選)
-            </span>
+      ) : (
+        <div className="absolute bottom-4 right-4 bg-white/80 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-2">
+          <div className="font-bold border-b border-stone-200 pb-1 mb-0.5 text-stone-600">
+            アストロ吉凶（凡例）
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
-            <span>超吉 (最上吉)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-[#065f46]"></span>
-            <span>吉 (相性抜群)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
-            <span>警告・調整方位</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
-            <span>注意 (軽い凶)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
-            <span>大凶 (大凶方位)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
-            <span>通常 (吉凶なし)</span>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+            <div className="flex items-center gap-1.5 col-span-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309] shadow-[0_0_8px_rgba(251,191,36,0.6)]"></span>
+              <span className="font-bold text-amber-600">
+                超大吉 (木星ライン特選)
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#fbbf24] border border-[#b45309]"></span>
+              <span>超吉 (最上吉)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-[#065f46]"></span>
+              <span>吉 (相性抜群)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] border border-[#7c2d12]"></span>
+              <span>警告・調整方位</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-[#78350f]"></span>
+              <span>注意 (軽い凶)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-[#7f1d1d]"></span>
+              <span>大凶 (大凶方位)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
+              <span>通常 (吉凶なし)</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Toast Notification */}
       <AnimatePresence>

@@ -1,6 +1,7 @@
 // Real Estate Arbitrage astrology and pin color helper functions
 
 import { isFatalNoise } from "@/utils/noiseSeverity";
+import { tierPinColors } from "@/utils/tierDisplay";
 
 /**
  * 方位そのものの凶。空亡・月交点は「方位の凶」ではないので含めない。
@@ -55,55 +56,34 @@ export function getRecommendationStarCount(
  * 物件ピンの色。
  *
  * @param tier その物件の方位の、選択日の三盤段階（S〜X）。渡されたときは
- *   「行けるか行けないか」の一段目をこれで決める。
+ *   色・ラベルは完全にこの段階で決まり、扇形・県塗り・時期パネルと同じ
+ *   語彙（三盤吉/吉2盤/吉1盤/平/軽い凶/五大凶殺/天中殺）になる。
  *
  *   ピンの色は元々 astrologyStatus（サーバが layerMode ＝既定は年盤で
- *   出した単盤の判定）だけで決めていた。地図の扇形と時期パネルは三盤を
+ *   出した単盤の判定）だけで決めていて、「超大吉・超吉・吉・警告・注意・
+ *   大凶・通常」という独自の語彙だった。地図の扇形と時期パネルは三盤を
  *   合成した段階で判定するので、年盤だけ吉の方位が「赤い扇形の中に緑の
- *   ピン」として出てしまう。段階が凶（X・天中殺）ならピンもそちらに
- *   合わせ、盤ごとの差は詳細に置く。
+ *   ピン」として出るし、同じ地図の中に評価の言葉が 3 系統並ぶことに
+ *   なっていた。同じ方位の同じ日の吉凶は物件によらず同一なので、ピンの
+ *   吉凶も方位の段階そのもの。物件ごとの違い（条件の良さ）は星数と
+ *   スコアが担い、盤ごとの内訳はポップアップに残る。
  * @param blocked 天中殺で塞がっている方位か。
+ *
+ * tier が無いとき（生年月日・出発地が未入力）だけ、従来どおり
+ * astrologyStatus からの推定に落ちる。
  */
 export const getPropertyPinColors = (
   prop: any,
   tier?: string,
   blocked?: boolean,
 ) => {
+  if (tier || blocked) {
+    const unified = tierPinColors(tier ?? "C", blocked);
+    if (unified) return unified;
+  }
+
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
-
-  if (blocked) {
-    // ⬛ グレー（天中殺で塞がっている）
-    return {
-      fillColor: "#64748b",
-      borderColor: "#1e293b",
-      textClass: "text-slate-500 dark:text-slate-400",
-      bgClass: "bg-slate-500/10 border-slate-500/30",
-      label: "天中殺",
-    };
-  }
-
-  if (tier === "X") {
-    // 🟥 赤（五大凶殺）。扇形と同じ判断。
-    return {
-      fillColor: "#ef4444",
-      borderColor: "#7f1d1d",
-      textClass: "text-red-500 dark:text-red-400",
-      bgClass: "bg-red-500/10 border-red-500/30",
-      label: "大凶",
-    };
-  }
-
-  if (tier === "D") {
-    // 🟨 黄（軽い凶のみ）
-    return {
-      fillColor: "#f59e0b",
-      borderColor: "#78350f",
-      textClass: "text-amber-600 dark:text-amber-500",
-      bgClass: "bg-amber-500/5 border-amber-500/20",
-      label: "注意",
-    };
-  }
 
   if (prop.astrologyStatus === "OPTIMAL_BOOST") {
     // 🌟 ゴールド（超大吉）

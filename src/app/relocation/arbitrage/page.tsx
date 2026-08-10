@@ -54,6 +54,7 @@ import {
   judgeDayAllDirections,
   type DayTier,
 } from "@/utils/auspiciousDays";
+import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 
@@ -71,16 +72,6 @@ function climatologyFor(honmeiStar: number, voidZodiacs: string[]) {
     null
   );
 }
-
-/** 段階バッジの配色。良い順に緑→青→灰→琥珀。X は候補に出さないので無い */
-const TIER_BADGE_CLASS: Record<DayTier, string> = {
-  S: "bg-emerald-100 border-emerald-300 text-emerald-800",
-  A: "bg-teal-50 border-teal-300 text-teal-700",
-  B: "bg-sky-50 border-sky-300 text-sky-700",
-  C: "bg-stone-100 border-stone-300 text-stone-600",
-  D: "bg-amber-50 border-amber-300 text-amber-700",
-  X: "bg-rose-50 border-rose-300 text-rose-700",
-};
 
 /**
  * 吉凶ステータスの日本語表記。
@@ -273,6 +264,12 @@ export default function ArbitrageScannerPage() {
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
   const [dataLimit, setDataLimit] = useState(500);
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0, 137.0]); // Default to Japan center
+  /**
+   * mapCenter の意味。area=検索の起点（半径ぶんのズームで表示）、
+   * spot=個別の物件（zoom 13 で寄る）。地図側の FocusController が
+   * この区別でズームを決める。物件クリック以外は常に area。
+   */
+  const [mapFocusKind, setMapFocusKind] = useState<"area" | "spot">("area");
 
   // Viewport bounds for map searching
   const [mapBounds, setMapBounds] = useState<{
@@ -1238,12 +1235,14 @@ export default function ArbitrageScannerPage() {
     if (openOverview) {
       // 中心を OVERVIEW_CENTER に置くと isNationwideOverview が真になり、
       // AutoFitBounds が俯瞰のズームへ寄せる。県別の色分けが見える。
+      setMapFocusKind("area");
       setMapCenter(OVERVIEW_CENTER);
       setPrefecture("all");
       setRadiusKm("all");
     } else if (bsLat !== "" && bsLon !== "") {
       const lat0 = parseFloat(bsLat);
       const lon0 = parseFloat(bsLon);
+      setMapFocusKind("area");
       setMapCenter([lat0, lon0]);
       // 地図は moveend / zoomend でしか表示範囲を報告しないので、最初の検索は
       // 範囲が未確定のまま走る。既定が上限なしになったぶん、そこだけ全国
@@ -1285,6 +1284,7 @@ export default function ArbitrageScannerPage() {
           setLocalLat(String(lat));
           setBaseLon(String(lon));
           setLocalLon(String(lon));
+          setMapFocusKind("area");
           setMapCenter([lat, lon]);
           localStorage.setItem("arb_baseLat", String(lat));
           localStorage.setItem("arb_baseLon", String(lon));
@@ -1368,6 +1368,7 @@ export default function ArbitrageScannerPage() {
           setLocalLat(String(lat));
           setBaseLon(String(lon));
           setLocalLon(String(lon));
+          setMapFocusKind("area");
           setMapCenter([lat, lon]);
         }
       }
@@ -1749,8 +1750,10 @@ export default function ArbitrageScannerPage() {
     setBirthDate(localBirthDate);
     const submitLat = parseFloat(localLat);
     const submitLon = parseFloat(localLon);
-    if (!isNaN(submitLat) && !isNaN(submitLon))
+    if (!isNaN(submitLat) && !isNaN(submitLon)) {
+      setMapFocusKind("area");
       setMapCenter([submitLat, submitLon]);
+    }
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
@@ -1864,6 +1867,7 @@ export default function ArbitrageScannerPage() {
       if (!isNaN(lat) && !isNaN(lon)) nextCenter = [lat, lon];
     }
 
+    setMapFocusKind("area");
     setMapCenter(nextCenter);
     saveUnifiedConfig({
       prefecture: nextFilters.prefecture,
@@ -2177,13 +2181,32 @@ export default function ArbitrageScannerPage() {
     return true;
   });
 
+  /**
+   * 並べ替えで下に送る度合い。0=送らない、1=軽い凶、2=五大凶殺・天中殺。
+   *
+   * 盤が組めるときは、ピン・扇形と同じ三盤の段階で決める。以前は
+   * サーバの単盤 status で沈めていたので、「赤いピンなのに上位に居る」
+   * 「緑のピンなのに沈んでいる」が起き得た。色と順位は同じ物差しで。
+   */
+  const avoidRank = (p: {
+    direction: string | null;
+    astrologyStatus: string;
+  }): number => {
+    const k = p.direction ? dayKigaku?.byDirection[p.direction] : undefined;
+    if (k) {
+      if (k.blocked || k.tier === "X") return 2;
+      if (k.tier === "D") return 1;
+      return 0;
+    }
+    return isAvoidAstrologyStatus(p.astrologyStatus) ? 2 : 0;
+  };
+
   const sortedTableData = [...filteredData].sort((a, b) => {
     // 避けるべき方位・期間のものは、どれだけ条件が良くても上には出さない。
     // 総合スコアは重み次第で方位の比重が下がるため、順位のほうで担保する。
     if (sinkAvoidStatus) {
-      const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
-      const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
-      if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+      const r = avoidRank(a) - avoidRank(b);
+      if (r !== 0) return r;
     }
 
     for (const config of sortConfigs) {
@@ -2230,9 +2253,8 @@ export default function ArbitrageScannerPage() {
     .sort((a, b) => {
       // 表と同じく、避けるべき方位・期間のものは上に出さない。
       if (sinkAvoidStatus) {
-        const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
-        const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
-        if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+        const r = avoidRank(a) - avoidRank(b);
+        if (r !== 0) return r;
       }
       return b.totalScore - a.totalScore;
     })
@@ -2781,6 +2803,7 @@ export default function ArbitrageScannerPage() {
                             setBaseLat(latStr);
                             setLocalLon(lonStr);
                             setBaseLon(lonStr);
+                            setMapFocusKind("area");
                             setMapCenter([newLat, newLon]);
                             localStorage.setItem("arb_baseLat", latStr);
                             localStorage.setItem("arb_baseLon", lonStr);
@@ -4318,6 +4341,7 @@ export default function ArbitrageScannerPage() {
                             key={item.id}
                             onClick={() => {
                               setSelectedId(item.id);
+                              setMapFocusKind("spot");
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
@@ -4442,6 +4466,7 @@ export default function ArbitrageScannerPage() {
                             key={item.id}
                             onClick={() => {
                               setSelectedId(item.id);
+                              setMapFocusKind("spot");
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
@@ -4644,6 +4669,7 @@ export default function ArbitrageScannerPage() {
                                 key={item.id}
                                 onClick={() => {
                                   setSelectedId(item.id);
+                                  setMapFocusKind("spot");
                                   setMapCenter([item.lat, item.lon]);
                                 }}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
@@ -4767,6 +4793,8 @@ export default function ArbitrageScannerPage() {
               prefKigaku={dayKigaku?.byPrefecture}
               dirKigaku={dayKigaku?.byDirection}
               targetDate={targetDate}
+              hasBase={hasBaseLocation}
+              focusKind={mapFocusKind}
               selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}

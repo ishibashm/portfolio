@@ -36,12 +36,14 @@ describe("ピンの色は三盤の段階に従う", () => {
     expect(getPropertyPinColors(yearBoardLooksGood).label).toBe("吉");
   });
 
-  it("三盤で五大凶殺（X）なら、単盤が吉でもピンは大凶", () => {
-    expect(getPropertyPinColors(yearBoardLooksGood, "X").label).toBe("大凶");
+  it("三盤で五大凶殺（X）なら、単盤が吉でもピンは五大凶殺", () => {
+    expect(getPropertyPinColors(yearBoardLooksGood, "X").label).toBe(
+      "五大凶殺",
+    );
   });
 
-  it("三盤で軽い凶（D）なら注意", () => {
-    expect(getPropertyPinColors(yearBoardLooksGood, "D").label).toBe("注意");
+  it("三盤で軽い凶（D）なら軽い凶", () => {
+    expect(getPropertyPinColors(yearBoardLooksGood, "D").label).toBe("軽い凶");
   });
 
   it("天中殺で塞がっている方位は段階に関わらず天中殺", () => {
@@ -50,10 +52,23 @@ describe("ピンの色は三盤の段階に従う", () => {
     );
   });
 
-  it("三盤が良い段階（S/A/B/C）なら単盤の判定をそのまま活かす", () => {
-    for (const tier of ["S", "A", "B", "C"]) {
-      expect(getPropertyPinColors(yearBoardLooksGood, tier).label).toBe("吉");
-    }
+  it("段階が渡れば良い段階でも語彙は段階のもの（超吉・吉などの旧語彙は使わない）", () => {
+    // 同じ地図に「三盤吉/S」と「超吉/吉」の 2 系統が並ぶのが
+    // 食い違いの原因だった。段階があるときは常に段階の語彙。
+    expect(getPropertyPinColors(yearBoardLooksGood, "S").label).toBe("三盤吉");
+    expect(getPropertyPinColors(yearBoardLooksGood, "A").label).toBe("吉2盤");
+    expect(getPropertyPinColors(yearBoardLooksGood, "B").label).toBe("吉1盤");
+    expect(getPropertyPinColors(yearBoardLooksGood, "C").label).toBe("平");
+  });
+
+  it("扇形・県塗り・ピンで同じ段階は同じ色（tierDisplay が唯一の情報源）", async () => {
+    const { TIER_FILL } = await import("@/utils/tierDisplay");
+    expect(getPropertyPinColors(yearBoardLooksGood, "S").fillColor).toBe(
+      TIER_FILL.S,
+    );
+    expect(getPropertyPinColors(yearBoardLooksGood, "X").fillColor).toBe(
+      TIER_FILL.X,
+    );
   });
 });
 
