@@ -844,6 +844,13 @@ export default function ArbitrageScannerPage() {
           firstDate: string | null;
         }[];
         blockedByTenchusatsuDays: number;
+        firstDate: string | null;
+        windows: {
+          count: number;
+          avgLen: number;
+          maxLen: number;
+          avgGapDays: number | null;
+        } | null;
       }[]
   >(null);
   const [timingOpenDir, setTimingOpenDir] = useState<string | null>(null);
@@ -1967,6 +1974,22 @@ export default function ArbitrageScannerPage() {
       if (d.direction) counts[d.direction] = (counts[d.direction] ?? 0) + 1;
     }
     return counts;
+  }, [safeData]);
+
+  /** 方位別の総家賃の中央値。時期パネルで「その方位の相場感」を添える */
+  const directionRentMedians = useMemo(() => {
+    const by: Record<string, number[]> = {};
+    for (const d of safeData) {
+      if (d.direction && d.totalRent > 0) {
+        (by[d.direction] ??= []).push(d.totalRent);
+      }
+    }
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(by)) {
+      v.sort((a, b) => a - b);
+      out[k] = v[Math.floor(v.length / 2)];
+    }
+    return out;
   }, [safeData]);
 
   const filteredData = safeData.filter((d) => {
@@ -3670,6 +3693,135 @@ export default function ArbitrageScannerPage() {
                                 この基準と比べて読んでください。
                               </p>
                             )}
+                            {/* 意思決定サマリー。「結局いつ・どっちへ動くのが
+                                最速か」を先に一言で答える */}
+                            {(() => {
+                              const bestTier = usable[0].bestAvailableTier;
+                              const sameTier = usable
+                                .filter(
+                                  (u) =>
+                                    u.bestAvailableTier === bestTier &&
+                                    u.firstDate,
+                                )
+                                .sort((a, b) =>
+                                  a.firstDate!.localeCompare(b.firstDate!),
+                                );
+                              const first = sameTier[0];
+                              const second = sameTier.find(
+                                (u) => u.direction !== first?.direction,
+                              );
+                              if (!first?.firstDate) return null;
+                              return (
+                                <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-2.5 text-[10px] leading-relaxed text-stone-700">
+                                  <p>
+                                    最速の候補:{" "}
+                                    <button
+                                      onClick={() =>
+                                        applyTimingChoice(
+                                          first.firstDate as string,
+                                          first.direction,
+                                        )
+                                      }
+                                      className="font-bold text-indigo-700 underline"
+                                    >
+                                      {first.firstDate
+                                        .slice(5)
+                                        .replace("-", "/")}{" "}
+                                      に{first.directionLabel}へ
+                                    </button>
+                                    （{TIER_LABELS[bestTier as DayTier]}）
+                                    {second?.firstDate &&
+                                      second.firstDate !== first.firstDate && (
+                                        <>
+                                          。待てば{" "}
+                                          <button
+                                            onClick={() =>
+                                              applyTimingChoice(
+                                                second.firstDate as string,
+                                                second.direction,
+                                              )
+                                            }
+                                            className="font-semibold text-indigo-600 underline"
+                                          >
+                                            {second.firstDate
+                                              .slice(5)
+                                              .replace("-", "/")}{" "}
+                                            に{second.directionLabel}
+                                          </button>
+                                          も開きます
+                                        </>
+                                      )}
+                                    。
+                                  </p>
+                                </div>
+                              );
+                            })()}
+                            {/* 方位×月マトリクス。どの月にどの方位が開くかの
+                                俯瞰。セルはその月の最良段階 */}
+                            {usable.length > 0 && (
+                              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50 p-2">
+                                <p className="text-[9px] text-stone-400 mb-1.5">
+                                  方位×月の見取り図（セルはその月の最良段階。
+                                  クリックでその月の最初の候補日へ）
+                                </p>
+                                <table className="text-[8px]">
+                                  <thead>
+                                    <tr>
+                                      <th className="pr-1.5 text-left font-semibold text-stone-400">
+                                        方位
+                                      </th>
+                                      {usable[0].months.map((m) => (
+                                        <th
+                                          key={m.month}
+                                          className="px-0.5 font-mono font-normal text-stone-400"
+                                        >
+                                          {m.month.slice(5)}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {usable.map((u) => (
+                                      <tr key={u.direction}>
+                                        <td className="pr-1.5 font-bold text-stone-600 whitespace-nowrap">
+                                          {u.directionLabel}
+                                        </td>
+                                        {u.months.map((m) =>
+                                          m.bestTier && m.firstDate ? (
+                                            <td
+                                              key={m.month}
+                                              className="px-0.5 py-0.5"
+                                            >
+                                              <button
+                                                onClick={() =>
+                                                  applyTimingChoice(
+                                                    m.firstDate as string,
+                                                    u.direction,
+                                                  )
+                                                }
+                                                title={`${m.month} ${u.directionLabel}: ${TIER_LABELS[m.bestTier as DayTier]} ${m.bestTierDays}日`}
+                                                className={`h-5 w-5 rounded border text-[8px] font-bold ${TIER_BADGE_CLASS[m.bestTier as DayTier]}`}
+                                              >
+                                                {m.bestTier}
+                                              </button>
+                                            </td>
+                                          ) : (
+                                            <td
+                                              key={m.month}
+                                              className="px-0.5 py-0.5"
+                                            >
+                                              <span className="block h-5 w-5 rounded border border-stone-100 bg-stone-50 text-center leading-5 text-stone-300">
+                                                –
+                                              </span>
+                                            </td>
+                                          ),
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                             {!hasS && (
                               <p className="rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
                                 この期間に三盤吉の日はありません。以下は
@@ -3722,6 +3874,17 @@ export default function ArbitrageScannerPage() {
                                         {propCount}
                                       </b>
                                       件
+                                      {directionRentMedians[s.direction] !==
+                                        undefined && (
+                                        <span className="text-stone-400">
+                                          ・中央値
+                                          {(
+                                            directionRentMedians[s.direction] /
+                                            10000
+                                          ).toFixed(1)}
+                                          万
+                                        </span>
+                                      )}
                                     </span>
                                   </button>
                                   {isOpen && (
@@ -3766,6 +3929,24 @@ export default function ArbitrageScannerPage() {
                                             ))}
                                           </div>
                                         </div>
+                                      )}
+                                      {/* 窓の統計。引っ越しは1日では済まない
+                                          ので、候補日が何日続くか・逃したら
+                                          次までどれだけ空くかが判断材料 */}
+                                      {s.windows && (
+                                        <p className="text-[9px] text-stone-500">
+                                          {TIER_LABELS[tier]}の窓は
+                                          <b>{s.windows.count}回</b>
+                                          ・平均<b>{s.windows.avgLen}日</b>
+                                          続く（最長{s.windows.maxLen}日）
+                                          {s.windows.avgGapDays !== null && (
+                                            <>
+                                              。窓の間隔は平均
+                                              <b>{s.windows.avgGapDays}日</b>—
+                                              逃すと次までこれだけ待つ
+                                            </>
+                                          )}
+                                        </p>
                                       )}
                                       {/* 平年値。9年（年盤一巡）平均の基準を
                                           添えて「多いのか少ないのか」を読める

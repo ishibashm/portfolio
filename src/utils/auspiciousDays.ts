@@ -490,6 +490,53 @@ export interface MonthTierSummary {
   firstDate: string | null;
 }
 
+/**
+ * 「窓」の統計。候補日（同じ段階の日）が連続しているかたまりを窓と
+ * 呼ぶ。引っ越しの実務は 1 日では済まないので、窓が何日続くか・
+ * 逃したら次までどれだけ空くかが、急ぐべきかどうかの判断材料になる。
+ */
+export interface WindowSummary {
+  /** 窓の数 */
+  count: number;
+  /** 窓の平均の長さ（日） */
+  avgLen: number;
+  maxLen: number;
+  /** 窓と窓の間隔の平均（日）。窓が 1 つ以下なら null */
+  avgGapDays: number | null;
+}
+
+/** YYYY-MM-DD の昇順リストから連続日のかたまりを数える */
+export function summarizeWindows(sortedDates: string[]): WindowSummary | null {
+  if (sortedDates.length === 0) return null;
+  const toDay = (d: string) =>
+    Math.floor(Date.parse(`${d}T12:00:00Z`) / 86_400_000);
+  const runs: number[] = [];
+  const gaps: number[] = [];
+  let runStart = toDay(sortedDates[0]);
+  let prev = runStart;
+  for (let i = 1; i < sortedDates.length; i++) {
+    const cur = toDay(sortedDates[i]);
+    if (cur === prev + 1) {
+      prev = cur;
+      continue;
+    }
+    runs.push(prev - runStart + 1);
+    gaps.push(cur - prev - 1);
+    runStart = cur;
+    prev = cur;
+  }
+  runs.push(prev - runStart + 1);
+  return {
+    count: runs.length,
+    avgLen: Number((runs.reduce((a, b) => a + b, 0) / runs.length).toFixed(1)),
+    maxLen: Math.max(...runs),
+    avgGapDays:
+      gaps.length > 0
+        ? Number((gaps.reduce((a, b) => a + b, 0) / gaps.length).toFixed(1))
+        : null,
+  };
+}
+
 export interface RankedDirectionSummary {
   direction: Direction;
   directionLabel: string;
@@ -504,6 +551,10 @@ export interface RankedDirectionSummary {
   months: MonthTierSummary[];
   /** X 以外なのに天中殺で候補から外れた日数。設定を変えれば戻る。 */
   blockedByTenchusatsuDays: number;
+  /** bestAvailableTier の最初の日。意思決定サマリーが使う */
+  firstDate: string | null;
+  /** bestAvailableTier の窓（連続日）の統計 */
+  windows: WindowSummary | null;
 }
 
 /**
@@ -582,11 +633,15 @@ export function rankRelocationDays(
       }
     }
 
+    const bestDays =
+      bestAvailableTier === null
+        ? []
+        : candidates.filter((d) => d.tier === bestAvailableTier);
+    const bestDatesSorted = bestDays.map((d) => d.date).sort();
     const topDays =
       bestAvailableTier === null
         ? []
-        : candidates
-            .filter((d) => d.tier === bestAvailableTier)
+        : bestDays
             .sort((a, b) => {
               const aLucky =
                 (a.tags.includes("天赦日") ? 2 : 0) +
@@ -637,6 +692,8 @@ export function rankRelocationDays(
       topDays,
       months,
       blockedByTenchusatsuDays,
+      firstDate: bestDatesSorted[0] ?? null,
+      windows: summarizeWindows(bestDatesSorted),
     };
   }).sort((a, b) => {
     const ar = a.bestAvailableTier ? tierRank(a.bestAvailableTier) : 99;
