@@ -7,6 +7,7 @@ import {
   TIER_ORDER,
   gradeVerdict,
   rankRelocationDays,
+  summarizeWindows,
 } from "@/utils/auspiciousDays";
 
 /** gradeVerdict は盤の状態しか見ないので、それ以外は埋め草でよい */
@@ -151,6 +152,67 @@ describe("rankRelocationDays（実エンジンでの走査）", () => {
       expect(s.months.map((m) => m.month)).toEqual(["2026-08", "2026-09"]);
       for (const m of s.months) {
         if (m.firstDate) expect(m.firstDate.startsWith(m.month)).toBe(true);
+      }
+    }
+  });
+});
+
+describe("summarizeWindows（窓の統計）", () => {
+  it("連続日を窓としてまとめ、間隔を数える", () => {
+    const w = summarizeWindows([
+      "2026-08-01",
+      "2026-08-02",
+      "2026-08-03", // 3日の窓
+      "2026-08-10", // 1日の窓（間隔6日）
+      "2026-08-11", // →2日の窓
+    ])!;
+    expect(w.count).toBe(2);
+    expect(w.maxLen).toBe(3);
+    expect(w.avgLen).toBeCloseTo(2.5);
+    expect(w.avgGapDays).toBe(6);
+  });
+
+  it("窓が1つなら間隔は null", () => {
+    const w = summarizeWindows(["2026-08-01", "2026-08-02"])!;
+    expect(w.count).toBe(1);
+    expect(w.avgGapDays).toBeNull();
+  });
+
+  it("月またぎの連続も1つの窓", () => {
+    const w = summarizeWindows(["2026-08-31", "2026-09-01"])!;
+    expect(w.count).toBe(1);
+    expect(w.maxLen).toBe(2);
+  });
+
+  it("空なら null", () => {
+    expect(summarizeWindows([])).toBeNull();
+  });
+});
+
+describe("rankRelocationDays の firstDate / windows", () => {
+  const base = {
+    honmeiStar: 5,
+    voidZodiacs: [] as string[],
+    lon: 135.5,
+    tenchusatsuMode: "strict" as const,
+    involuntaryMove: false,
+  };
+  const from = new Date("2026-08-10T12:00:00+09:00");
+  const to = new Date("2026-09-08T12:00:00+09:00");
+
+  it("firstDate は bestAvailableTier の最初の候補日と一致する", () => {
+    const ranked = rankRelocationDays(from, to, base);
+    for (const s of ranked) {
+      if (s.bestAvailableTier === null) {
+        expect(s.firstDate).toBeNull();
+        expect(s.windows).toBeNull();
+      } else {
+        expect(s.firstDate).toBeTruthy();
+        // topDays は天赦日優先の並びだが、firstDate は純粋に日付順の先頭
+        const dates = s.topDays.map((d) => d.date).sort();
+        expect(s.firstDate! <= dates[0]).toBe(true);
+        expect(s.windows).not.toBeNull();
+        expect(s.windows!.count).toBeGreaterThan(0);
       }
     }
   });
