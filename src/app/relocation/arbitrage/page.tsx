@@ -2156,14 +2156,19 @@ export default function ArbitrageScannerPage() {
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-5 items-stretch min-h-[600px] relative">
-          {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode) */}
+        <div className="flex flex-col lg:flex-row gap-5 items-stretch relative">
+          {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode)
+              高さは地図に合わせて固定せず、中身に合わせて縮む。絞り込み
+              フィルターなどのアコーディオンを全部閉じると中身が短くなるため、
+              地図と同じ h-[...] で揃えていると下に大きな空白が残っていた。
+              lg 以上では max-h で地図の高さを上限にし、それより中身が
+              短ければそのぶん縮む（超えたら今まで通り内部スクロール）。 */}
           <div
             className={`transition-all duration-300 ease-in-out ${
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[30%]"
-            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col h-[calc(100vh-220px)] min-h-[600px] relative z-10`}
+            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col lg:self-start lg:max-h-[calc(100vh-220px)] relative z-10`}
           >
             {/* Sticky Header */}
             <div className="sticky top-0 bg-gray-50/95 dark:bg-stone-50/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0">
