@@ -54,6 +54,7 @@ import {
   judgeDayAllDirections,
   type DayTier,
 } from "@/utils/auspiciousDays";
+import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 
@@ -71,16 +72,6 @@ function climatologyFor(honmeiStar: number, voidZodiacs: string[]) {
     null
   );
 }
-
-/** 段階バッジの配色。良い順に緑→青→灰→琥珀。X は候補に出さないので無い */
-const TIER_BADGE_CLASS: Record<DayTier, string> = {
-  S: "bg-emerald-100 border-emerald-300 text-emerald-800",
-  A: "bg-teal-50 border-teal-300 text-teal-700",
-  B: "bg-sky-50 border-sky-300 text-sky-700",
-  C: "bg-stone-100 border-stone-300 text-stone-600",
-  D: "bg-amber-50 border-amber-300 text-amber-700",
-  X: "bg-rose-50 border-rose-300 text-rose-700",
-};
 
 /**
  * 吉凶ステータスの日本語表記。
@@ -273,6 +264,12 @@ export default function ArbitrageScannerPage() {
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
   const [dataLimit, setDataLimit] = useState(500);
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0, 137.0]); // Default to Japan center
+  /**
+   * mapCenter の意味。area=検索の起点（半径ぶんのズームで表示）、
+   * spot=個別の物件（zoom 13 で寄る）。地図側の FocusController が
+   * この区別でズームを決める。物件クリック以外は常に area。
+   */
+  const [mapFocusKind, setMapFocusKind] = useState<"area" | "spot">("area");
 
   // Viewport bounds for map searching
   const [mapBounds, setMapBounds] = useState<{
@@ -1238,12 +1235,14 @@ export default function ArbitrageScannerPage() {
     if (openOverview) {
       // 中心を OVERVIEW_CENTER に置くと isNationwideOverview が真になり、
       // AutoFitBounds が俯瞰のズームへ寄せる。県別の色分けが見える。
+      setMapFocusKind("area");
       setMapCenter(OVERVIEW_CENTER);
       setPrefecture("all");
       setRadiusKm("all");
     } else if (bsLat !== "" && bsLon !== "") {
       const lat0 = parseFloat(bsLat);
       const lon0 = parseFloat(bsLon);
+      setMapFocusKind("area");
       setMapCenter([lat0, lon0]);
       // 地図は moveend / zoomend でしか表示範囲を報告しないので、最初の検索は
       // 範囲が未確定のまま走る。既定が上限なしになったぶん、そこだけ全国
@@ -1285,6 +1284,7 @@ export default function ArbitrageScannerPage() {
           setLocalLat(String(lat));
           setBaseLon(String(lon));
           setLocalLon(String(lon));
+          setMapFocusKind("area");
           setMapCenter([lat, lon]);
           localStorage.setItem("arb_baseLat", String(lat));
           localStorage.setItem("arb_baseLon", String(lon));
@@ -1368,6 +1368,7 @@ export default function ArbitrageScannerPage() {
           setLocalLat(String(lat));
           setBaseLon(String(lon));
           setLocalLon(String(lon));
+          setMapFocusKind("area");
           setMapCenter([lat, lon]);
         }
       }
@@ -1749,8 +1750,10 @@ export default function ArbitrageScannerPage() {
     setBirthDate(localBirthDate);
     const submitLat = parseFloat(localLat);
     const submitLon = parseFloat(localLon);
-    if (!isNaN(submitLat) && !isNaN(submitLon))
+    if (!isNaN(submitLat) && !isNaN(submitLon)) {
+      setMapFocusKind("area");
       setMapCenter([submitLat, submitLon]);
+    }
 
     localStorage.setItem("arb_baseLat", localLat);
     localStorage.setItem("arb_baseLon", localLon);
@@ -1864,6 +1867,7 @@ export default function ArbitrageScannerPage() {
       if (!isNaN(lat) && !isNaN(lon)) nextCenter = [lat, lon];
     }
 
+    setMapFocusKind("area");
     setMapCenter(nextCenter);
     saveUnifiedConfig({
       prefecture: nextFilters.prefecture,
@@ -2008,13 +2012,23 @@ export default function ArbitrageScannerPage() {
   }, [safeData]);
 
   /**
-   * 俯瞰地図の「方位の吉凶」塗り分け。各県が出発地から見てどの方位に
-   * あり、選択日にその方位が動けるのかを県ごとに引く。暦の判定は
-   * 決定的な計算（実測 4ms/日）なのでクライアントで直接行い、
+   * 選択日の盤を 1 回だけ組み、方位別と県別の両方を切り出す。
+   *
+   * ここが「その日・その方位が動けるか」の唯一の情報源。地図の扇形、
+   * 俯瞰の県塗り、時期パネルの「選択日」列がすべてこの結果を読む。
+   *
+   * 以前は地図の扇形だけが別経路だった。扇形は物件の astrologyStatus の
+   * 多数決で塗っていて、その status はサーバが layerMode（既定は年盤）
+   * だけで出した単盤の判定だった。三盤で見ると凶の方位が、年盤だけ吉
+   * なら緑に塗られる——実際「今日は南が緑なのにセルは北西が S」という
+   * 食い違いになって出た。物件が 1 件も無い方位が既定の SAFE=通常吉と
+   * して緑寄りに出る問題も同じ経路。判定は盤から引き、物件からは引かない。
+   *
+   * 暦の判定は決定的な計算（実測 4ms/日）なのでクライアントで直接行い、
    * 日付チップを選んだ瞬間に地図が塗り替わる。
    * 本命星は時期スクリーニングと同じく classical を使う。
    */
-  const prefKigaku = useMemo(() => {
+  const dayKigaku = useMemo(() => {
     if (!hasBaseLocation || !birthDate || !targetDate) return undefined;
     try {
       const bd = new Date(
@@ -2033,30 +2047,34 @@ export default function ArbitrageScannerPage() {
           directionFilterMode,
         },
       );
-      const out: Record<
-        string,
-        {
-          direction: string;
-          directionLabel: string;
-          tier: string;
-          blocked: boolean;
-        }
-      > = {};
-      for (const t of SCRAPE_TARGETS) {
-        const dir = directionFromBearing(
-          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
-          useClassical ? "traditional" : "physical",
-        );
+      type Cell = {
+        direction: string;
+        directionLabel: string;
+        tier: string;
+        blocked: boolean;
+      };
+      const byDirection: Record<string, Cell> = {};
+      for (const dir of ALL_DIRECTIONS) {
         const v = all[dir];
         if (!v) continue;
-        out[t.name] = {
+        byDirection[dir] = {
           direction: dir,
           directionLabel: DIRECTION_LABELS[dir] ?? dir,
           tier: gradeVerdict(v),
           blocked: v.blockedByTenchusatsu,
         };
       }
-      return out;
+      const byPrefecture: Record<string, Cell> = {};
+      for (const t of SCRAPE_TARGETS) {
+        const dir = directionFromBearing(
+          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
+          useClassical ? "traditional" : "physical",
+        );
+        const cell = byDirection[dir];
+        if (!cell) continue;
+        byPrefecture[t.name] = cell;
+      }
+      return { byDirection, byPrefecture };
     } catch {
       return undefined;
     }
@@ -2163,13 +2181,32 @@ export default function ArbitrageScannerPage() {
     return true;
   });
 
+  /**
+   * 並べ替えで下に送る度合い。0=送らない、1=軽い凶、2=五大凶殺・天中殺。
+   *
+   * 盤が組めるときは、ピン・扇形と同じ三盤の段階で決める。以前は
+   * サーバの単盤 status で沈めていたので、「赤いピンなのに上位に居る」
+   * 「緑のピンなのに沈んでいる」が起き得た。色と順位は同じ物差しで。
+   */
+  const avoidRank = (p: {
+    direction: string | null;
+    astrologyStatus: string;
+  }): number => {
+    const k = p.direction ? dayKigaku?.byDirection[p.direction] : undefined;
+    if (k) {
+      if (k.blocked || k.tier === "X") return 2;
+      if (k.tier === "D") return 1;
+      return 0;
+    }
+    return isAvoidAstrologyStatus(p.astrologyStatus) ? 2 : 0;
+  };
+
   const sortedTableData = [...filteredData].sort((a, b) => {
     // 避けるべき方位・期間のものは、どれだけ条件が良くても上には出さない。
     // 総合スコアは重み次第で方位の比重が下がるため、順位のほうで担保する。
     if (sinkAvoidStatus) {
-      const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
-      const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
-      if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+      const r = avoidRank(a) - avoidRank(b);
+      if (r !== 0) return r;
     }
 
     for (const config of sortConfigs) {
@@ -2216,9 +2253,8 @@ export default function ArbitrageScannerPage() {
     .sort((a, b) => {
       // 表と同じく、避けるべき方位・期間のものは上に出さない。
       if (sinkAvoidStatus) {
-        const aAvoid = isAvoidAstrologyStatus(a.astrologyStatus) ? 1 : 0;
-        const bAvoid = isAvoidAstrologyStatus(b.astrologyStatus) ? 1 : 0;
-        if (aAvoid !== bAvoid) return aAvoid - bAvoid;
+        const r = avoidRank(a) - avoidRank(b);
+        if (r !== 0) return r;
       }
       return b.totalScore - a.totalScore;
     })
@@ -2767,6 +2803,7 @@ export default function ArbitrageScannerPage() {
                             setBaseLat(latStr);
                             setLocalLon(lonStr);
                             setBaseLon(lonStr);
+                            setMapFocusKind("area");
                             setMapCenter([newLat, newLon]);
                             localStorage.setItem("arb_baseLat", latStr);
                             localStorage.setItem("arb_baseLon", lonStr);
@@ -3864,15 +3901,28 @@ export default function ArbitrageScannerPage() {
                                 俯瞰。セルはその月の最良段階 */}
                             {usable.length > 0 && (
                               <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50 p-2">
-                                <p className="text-[9px] text-stone-400 mb-1.5">
-                                  方位×月の見取り図（セルはその月の最良段階。
-                                  クリックでその月の最初の候補日へ）
+                                <p className="text-[9px] text-stone-400 mb-1.5 leading-relaxed">
+                                  方位×月の見取り図。
+                                  <b className="text-stone-500">月のセル</b>
+                                  はその月の
+                                  <b className="text-stone-500">最良</b>
+                                  段階で、選択日の判定ではありません
+                                  （クリックでその月の最初の候補日へ）。 左端の
+                                  <b className="text-stone-500">選択日</b>
+                                  列が地図の扇形と同じ判定です。
                                 </p>
                                 <table className="text-[8px]">
                                   <thead>
                                     <tr>
                                       <th className="pr-1.5 text-left font-semibold text-stone-400">
                                         方位
+                                      </th>
+                                      <th className="px-0.5 font-mono font-normal text-indigo-400 border-r border-stone-200">
+                                        {targetDate
+                                          ? targetDate
+                                              .slice(5)
+                                              .replace("-", "/")
+                                          : "選択日"}
                                       </th>
                                       {usable[0].months.map((m) => (
                                         <th
@@ -3889,6 +3939,40 @@ export default function ArbitrageScannerPage() {
                                       <tr key={u.direction}>
                                         <td className="pr-1.5 font-bold text-stone-600 whitespace-nowrap">
                                           {u.directionLabel}
+                                        </td>
+                                        {/* 選択日の判定。地図の扇形と同じ値。
+                                            月セルの「その月の最良」と混同
+                                            しないよう罫線で区切る */}
+                                        <td className="px-0.5 py-0.5 border-r border-stone-200">
+                                          {(() => {
+                                            const t =
+                                              dayKigaku?.byDirection[
+                                                u.direction
+                                              ];
+                                            if (!t)
+                                              return (
+                                                <span className="block h-5 w-5 rounded border border-stone-100 bg-stone-50 text-center leading-5 text-stone-300">
+                                                  –
+                                                </span>
+                                              );
+                                            if (t.blocked)
+                                              return (
+                                                <span
+                                                  title={`${u.directionLabel}: 天中殺で塞がっています`}
+                                                  className="block h-5 w-5 rounded border border-stone-300 bg-stone-200 text-center leading-5 text-stone-500"
+                                                >
+                                                  殺
+                                                </span>
+                                              );
+                                            return (
+                                              <span
+                                                title={`${targetDate} ${u.directionLabel}: ${TIER_LABELS[t.tier as DayTier]}`}
+                                                className={`block h-5 w-5 rounded border text-center leading-5 font-bold ${TIER_BADGE_CLASS[t.tier as DayTier]}`}
+                                              >
+                                                {t.tier}
+                                              </span>
+                                            );
+                                          })()}
                                         </td>
                                         {u.months.map((m) =>
                                           m.bestTier && m.firstDate ? (
@@ -4257,6 +4341,7 @@ export default function ArbitrageScannerPage() {
                             key={item.id}
                             onClick={() => {
                               setSelectedId(item.id);
+                              setMapFocusKind("spot");
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
@@ -4368,12 +4453,20 @@ export default function ArbitrageScannerPage() {
                     // Card View List inside sidebar
                     <div className="space-y-3.5">
                       {propertiesInBounds.map((item) => {
-                        const pinColors = getPropertyPinColors(item);
+                        const k = item.direction
+                          ? dayKigaku?.byDirection[item.direction]
+                          : undefined;
+                        const pinColors = getPropertyPinColors(
+                          item,
+                          k?.tier,
+                          k?.blocked,
+                        );
                         return (
                           <div
                             key={item.id}
                             onClick={() => {
                               setSelectedId(item.id);
+                              setMapFocusKind("spot");
                               setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
@@ -4563,12 +4656,20 @@ export default function ArbitrageScannerPage() {
                         </thead>
                         <tbody>
                           {propertiesInBounds.map((item) => {
-                            const pinColors = getPropertyPinColors(item);
+                            const k = item.direction
+                              ? dayKigaku?.byDirection[item.direction]
+                              : undefined;
+                            const pinColors = getPropertyPinColors(
+                              item,
+                              k?.tier,
+                              k?.blocked,
+                            );
                             return (
                               <tr
                                 key={item.id}
                                 onClick={() => {
                                   setSelectedId(item.id);
+                                  setMapFocusKind("spot");
                                   setMapCenter([item.lat, item.lon]);
                                 }}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
@@ -4689,7 +4790,11 @@ export default function ArbitrageScannerPage() {
               radiusKm={radiusKm}
               prefecture={prefecture}
               keepWideView={isNationwideOverview}
-              prefKigaku={prefKigaku}
+              prefKigaku={dayKigaku?.byPrefecture}
+              dirKigaku={dayKigaku?.byDirection}
+              targetDate={targetDate}
+              hasBase={hasBaseLocation}
+              focusKind={mapFocusKind}
               selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
               showListView={showListView}
