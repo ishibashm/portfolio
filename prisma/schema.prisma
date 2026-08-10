@@ -234,6 +234,26 @@ model MetaphysicalStateLog {
   @@index([userId])
 }
 
+// 家賃市場の日次サマリー。毎晩 build_market_stats.ts が 1 県 1 行を upsert する。
+//
+// marketStats.json は毎晩上書きされるため、「家賃水準がどう動いてきたか」は
+// どこにも残らない。株価でいう終値の記録が無い状態で、後から遡って
+// 再構成することもできない（過去の掲載はパージで消えるため）。
+// ここに毎晩の中央値を積むことで、初めて時系列（家賃指数）が育つ。
+// 行数は 1 日 48 行（47 県 + 全国）で、10 年でも 18 万行に満たない。
+model MarketDailySummary {
+  date          DateTime @db.Date
+  prefecture    String // 県名。全国合算は "全国"
+  n             Int // 集計対象の掲載数
+  medianRent    Int // 総家賃（管理費込み）の中央値
+  medianSqmRent Int // ㎡単価の中央値。面積構成の変化に強い実質的な指数
+  p25Rent       Int
+  p75Rent       Int
+  createdAt     DateTime @default(now())
+
+  @@id([date, prefecture])
+}
+
 model RelocationHistory {
   id            String   @id @default(cuid())
   userId        String?
@@ -249,6 +269,17 @@ model RelocationHistory {
   notes         String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  // 保存時点の吉凶判定のスナップショット。
+  //
+  // 判定エンジンは改良で変わり、過去の日付の判定も遡って変わる。
+  // 一覧表示は常に現在のエンジンで再評価するが（それが最新の知見）、
+  // 「決めたときに何と表示されていたか」はここでしか再現できない。
+  // 中身: { direction, bearingDeg, tier, finalStatus, yearLayer,
+  //         monthLayer, dayLayer, blockedByTenchusatsu, personalStar,
+  //         voidZodiacs, tenchusatsuMode, useClassical, directionFilterMode }
+  judgment      Json?
+  engineVersion String?
 
   User User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 

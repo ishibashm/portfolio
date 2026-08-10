@@ -13,6 +13,9 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { gradeVerdict, judgeDay } from "@/utils/auspiciousDays";
+import { JUDGMENT_ENGINE_VERSION } from "@/utils/engineVersion";
+import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
 
@@ -164,9 +167,38 @@ export async function GET(request: Request) {
       : honmeiStar.physical;
 
     // 2. Fetch past move records from PostgreSQL
-    const histories = await prisma.relocationHistory.findMany({
-      orderBy: { departureDate: "desc" },
-    });
+    //
+    // findMany は既定で全スカラー列を SELECT する。judgment 列の
+    // スキーマ反映（prisma db push）より先にデプロイされても一覧が
+    // 壊れないよう、列エラーのときは旧列だけで取り直す。
+    let histories;
+    try {
+      histories = await prisma.relocationHistory.findMany({
+        orderBy: { departureDate: "desc" },
+      });
+    } catch (e: any) {
+      if (!String(e?.message ?? "").includes("judgment")) throw e;
+      console.warn("judgment column missing; falling back to legacy columns");
+      histories = (await prisma.relocationHistory.findMany({
+        orderBy: { departureDate: "desc" },
+        select: {
+          id: true,
+          userId: true,
+          departureDate: true,
+          datePrecision: true,
+          fromName: true,
+          fromLat: true,
+          fromLon: true,
+          toName: true,
+          toLat: true,
+          toLon: true,
+          purpose: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      })) as any[];
+    }
 
     const evaluatedHistories = [];
 
@@ -336,20 +368,103 @@ export async function POST(req: Request) {
       );
     }
 
-    const newRecord = await prisma.relocationHistory.create({
-      data: {
-        departureDate: new Date(departureDate),
-        datePrecision: datePrecision || "DAY",
-        fromName,
-        fromLat: parseFloat(fromLat),
-        fromLon: parseFloat(fromLon),
-        toName,
-        toLat: parseFloat(toLat),
-        toLon: parseFloat(toLon),
-        purpose: purpose || "TRAVEL",
-        notes: notes || null,
-      },
-    });
+    // 保存時点の判定スナップショット。
+    //
+    // 一覧は毎回「現在のエンジン」で再評価される。エンジンは改良で変わる
+    // ので（例: 2026-08-10 の五大凶殺への一本化）、過去の判定は遡って
+    // 変わる。「決めたときに何と表示されていたか」はこの瞬間にしか
+    // 取れないため、ここで凍結して添える。失敗しても記録本体は救う。
+    let judgment: Record<string, unknown> | null = null;
+    try {
+      let birthDate = new Date("1988-11-25T04:26+09:00");
+      let useClassical = false;
+      let directionFilterMode = "composite";
+      try {
+        const config = JSON.parse(await fs.readFile(CONFIG_FILE_PATH, "utf-8"));
+        if (config.birth_date)
+          birthDate = new Date(
+            config.birth_date.includes("T")
+              ? config.birth_date +
+                  (/[+-Z]/.test(config.birth_date.slice(-6)) ? "" : "+09:00")
+              : config.birth_date + "T12:00:00+09:00",
+          );
+        if (config.use_classical_board !== undefined)
+          useClassical = config.use_classical_board;
+        if (config.direction_filter_mode !== undefined)
+          directionFilterMode = config.direction_filter_mode;
+      } catch {}
+
+      const honmei = getHonmeiStar(birthDate);
+      const personalStar = useClassical ? honmei.classical : honmei.physical;
+      const voidZodiacs = getPersonalVoidZodiac(birthDate);
+      const bearing = getBearing(
+        parseFloat(fromLat),
+        parseFloat(fromLon),
+        parseFloat(toLat),
+        parseFloat(toLon),
+      );
+      const direction = bearingToDirection(bearing, useClassical);
+      const verdict = judgeDay(new Date(departureDate), {
+        honmeiStar: personalStar as number,
+        voidZodiacs,
+        lon: parseFloat(fromLon),
+        direction,
+        tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
+        involuntaryMove: false,
+        directionFilterMode,
+      });
+      judgment = {
+        direction,
+        bearingDeg: Number(bearing.toFixed(1)),
+        tier: gradeVerdict(verdict),
+        finalStatus: verdict.finalStatus,
+        yearLayer: verdict.yearLayer,
+        monthLayer: verdict.monthLayer,
+        dayLayer: verdict.dayLayer,
+        blockedByTenchusatsu: verdict.blockedByTenchusatsu,
+        personalStar,
+        voidZodiacs,
+        tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE,
+        useClassical,
+        directionFilterMode,
+      };
+    } catch (e) {
+      console.error("judgment snapshot failed (record is saved anyway):", e);
+    }
+
+    const baseData = {
+      departureDate: new Date(departureDate),
+      datePrecision: datePrecision || "DAY",
+      fromName,
+      fromLat: parseFloat(fromLat),
+      fromLon: parseFloat(fromLon),
+      toName,
+      toLat: parseFloat(toLat),
+      toLon: parseFloat(toLon),
+      purpose: purpose || "TRAVEL",
+      notes: notes || null,
+    };
+
+    let newRecord;
+    try {
+      newRecord = await prisma.relocationHistory.create({
+        data: {
+          ...baseData,
+          judgment: judgment ? (judgment as object) : undefined,
+          engineVersion: judgment ? JUDGMENT_ENGINE_VERSION : undefined,
+        },
+      });
+    } catch (e: any) {
+      // スキーマ反映（prisma db push）前のデプロイでも記録を失わないための
+      // 退避。judgment 列がまだ無い DB では列名エラーになるので、
+      // スナップショット無しで保存し直す。
+      if (String(e?.message ?? "").includes("judgment")) {
+        console.warn("judgment column missing; saving without snapshot");
+        newRecord = await prisma.relocationHistory.create({ data: baseData });
+      } else {
+        throw e;
+      }
+    }
 
     return NextResponse.json({ success: true, data: newRecord });
   } catch (error: any) {
