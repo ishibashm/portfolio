@@ -48,8 +48,15 @@ interface EvaluatedHistoryItem {
   toLon: number;
   purpose: "MIGRATION" | "TRAVEL";
   notes: string | null;
+  /** 真北基準。判定はこちらで行う */
   bearing: number;
   direction: string;
+  /**
+   * 方位磁針で測ったときの方位。真北と判定が分かれる記録だけ値が入る。
+   * 判定には使わない（現地で方位磁針を当てると別の方位に見える、という注意）。
+   */
+  magneticBearing?: number | null;
+  magneticDirection?: string | null;
   evaluation: {
     status: string;
     rating: string;
@@ -938,6 +945,17 @@ export default function RelocationHistoryPage() {
                           {selectedItem.bearing}° ({selectedItem.direction}方向)
                         </span>
                       </div>
+                      {/* 方位の境目に近く、方位磁針では別の方位に見える記録。
+                          判定は真北のままで、現地で測ったときのズレを添える */}
+                      {selectedItem.magneticDirection && (
+                        <div className="flex justify-between">
+                          <span className="text-stone-400">磁北で測ると:</span>
+                          <span className="text-amber-600 font-bold">
+                            {selectedItem.magneticBearing}° (
+                            {selectedItem.magneticDirection}方向)
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-stone-400">出発地経緯度:</span>
                         <span className="text-stone-600">
