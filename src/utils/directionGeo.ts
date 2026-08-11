@@ -157,6 +157,122 @@ export function destinationForDirection(
 }
 
 /**
+ * 扇形が画面の端に届かないと、方位は「近くだけの話」に見える。
+ *
+ * 地図の扇形は 30km 固定で描いていた。ズーム 11 の画面幅がおよそ 40km
+ * なので近景ではちょうど収まるが、引くと扇形の先が画面の途中で切れる。
+ * 「半径 50km くらいまでしか吉凶が出ない」という見え方はこれが理由で、
+ * 実際には方位の判定も物件の検索も距離の上限を持っていない。
+ *
+ * 長さは表示中の矩形から引く。出発地から見えている四隅までの最大距離を
+ * 取れば、どのズームでも扇形が画面の端まで届く。
+ */
+export const MAX_WEDGE_RANGE_KM = 3000;
+
+/** 表示範囲がまだ確定していないときの長さ。地図の初期ズームに合わせた近景ぶん。 */
+export const FALLBACK_WEDGE_RANGE_KM = 30;
+
+/**
+ * 扇形の半幅（度）。directionFromBearing の区切りと同じ値を返す。
+ *
+ * 幅を地図側に直接書いていたため、区切りの定義が 2 か所にあった。扇形の
+ * 縁と八方位の境目は同じものなので、ずれると「扇形の中にあるのに別の方位
+ * と判定される」帯ができる。ここから引くことで一致を保つ。
+ *
+ * traditional は四隅 60 度・四正 30 度（半幅 30 / 15）、physical は 45 度の
+ * 等分（半幅 22.5）。directionFromBearing の分岐と対応している。
+ */
+export function directionWedgeHalfWidth(
+  direction: CompassDirection,
+  nodeMapping: "traditional" | "physical" = "traditional",
+): number {
+  if (nodeMapping === "physical") return 22.5;
+  return direction.length === 2 ? 30 : 15;
+}
+
+export interface WedgeViewBounds {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
+/**
+ * 表示中の矩形を覆うのに必要な扇形の長さ km。
+ *
+ * 出発地が画面の外にあっても、四隅までの最大距離を取るので扇形は
+ * 画面を覆う。上限は日本の南北の広がりに合わせた MAX_WEDGE_RANGE_KM。
+ * 地図を世界規模まで引いたときに、扇形が地球を一周しないようにする。
+ */
+export function wedgeRangeKmForBounds(
+  baseLat: number,
+  baseLon: number,
+  bounds: WedgeViewBounds | null | undefined,
+): number {
+  if (!bounds) return FALLBACK_WEDGE_RANGE_KM;
+  const corners: [number, number][] = [
+    [bounds.minLat, bounds.minLon],
+    [bounds.minLat, bounds.maxLon],
+    [bounds.maxLat, bounds.minLon],
+    [bounds.maxLat, bounds.maxLon],
+  ];
+  const farthest = corners.reduce(
+    (max, [lat, lon]) =>
+      Math.max(max, distanceKmBetween(baseLat, baseLon, lat, lon)),
+    0,
+  );
+  if (!Number.isFinite(farthest) || farthest <= 0) {
+    return FALLBACK_WEDGE_RANGE_KM;
+  }
+  return Math.min(farthest, MAX_WEDGE_RANGE_KM);
+}
+
+/**
+ * 方位の扇形を描くための頂点列（[lat, lon] の配列）。
+ *
+ * 縁も大円で刻む。扇形の縁は「出発地から見た方位角がちょうど境界値に
+ * なる点の集まり」で、これは大円であってメルカトル上の直線ではない。
+ * 30km なら差は見えないが、全国を覆う長さでは数十 km ずれる。県の
+ * 塗り分け（bearingBetween → directionFromBearing）と扇形が別の県を
+ * 指してしまうため、半径方向も分割して打つ。
+ */
+export function directionWedgePoints(
+  lat: number,
+  lon: number,
+  centerBearing: number,
+  halfWidthDeg: number,
+  rangeKm: number,
+): [number, number][] {
+  const RADIAL_STEPS = 12;
+  const ARC_STEP_DEG = 5;
+
+  const points: [number, number][] = [[lat, lon]];
+  const push = (bearing: number, km: number) => {
+    const p = destinationAtBearing(lat, lon, bearing, km);
+    points.push([p.lat, p.lon]);
+  };
+
+  // 反時計回りの縁を外側へ
+  for (let i = 1; i <= RADIAL_STEPS; i++) {
+    push(centerBearing - halfWidthDeg, (rangeKm * i) / RADIAL_STEPS);
+  }
+  // 外周
+  for (
+    let offset = -halfWidthDeg + ARC_STEP_DEG;
+    offset < halfWidthDeg;
+    offset += ARC_STEP_DEG
+  ) {
+    push(centerBearing + offset, rangeKm);
+  }
+  // 時計回りの縁を内側へ
+  for (let i = RADIAL_STEPS; i >= 1; i--) {
+    push(centerBearing + halfWidthDeg, (rangeKm * i) / RADIAL_STEPS);
+  }
+
+  return points;
+}
+
+/**
  * 目的地が表示上どの方位に当たるか。destinationForDirection の逆。
  */
 export function directionForDestination(

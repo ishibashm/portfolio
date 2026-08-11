@@ -33,6 +33,13 @@ import {
 } from "@/utils/arbitrageHelpers";
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
 import {
+  destinationAtBearing,
+  directionWedgeHalfWidth,
+  directionWedgePoints,
+  wedgeRangeKmForBounds,
+  type CompassDirection,
+} from "@/utils/directionGeo";
+import {
   TIER_FILL,
   TIER_JP,
   TIER_SECTOR_OPACITY,
@@ -50,6 +57,12 @@ L.Icon.Default.mergeOptions({
   shadowUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
+
+/**
+ * 俯瞰と近景の境目のズーム。これ未満なら県の塗り分け、以上なら物件のピン。
+ * 表示範囲が API の絞り込みに使われる下限（geographyParamsForSearch）と同じ値。
+ */
+const OVERVIEW_ZOOM_MAX = 10;
 
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
@@ -126,6 +139,11 @@ interface ArbitrageMapInnerProps {
   baseLat: number;
   baseLon: number;
   mapCenter?: [number, number];
+  /**
+   * 真北で見るか磁北で見るか。今は扇形を真北に統一したため描画には
+   * 効いていない。真北・磁北を明示的な方位基準として扱い、物件判定・
+   * 県判定・扇形・移動履歴を同じ計算に寄せる別 PR の受け口として残す。
+   */
   useTrueNorth: boolean;
   layerMode: string;
   radiusKm?: string;
@@ -181,33 +199,6 @@ interface ArbitrageMapInnerProps {
     maxLon: number;
     zoom: number;
   }) => void;
-}
-
-// Helper to calculate coordinates of a point at a certain distance and bearing from origin
-function getDestination(
-  lat: number,
-  lon: number,
-  bearing: number,
-  distanceKm: number = 10,
-) {
-  const R = 6371; // Earth radius in km
-  const lat1 = (lat * Math.PI) / 180;
-  const lon1 = (lon * Math.PI) / 180;
-  const brng = (bearing * Math.PI) / 180;
-
-  const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(distanceKm / R) +
-      Math.cos(lat1) * Math.sin(distanceKm / R) * Math.cos(brng),
-  );
-
-  const lon2 =
-    lon1 +
-    Math.atan2(
-      Math.sin(brng) * Math.sin(distanceKm / R) * Math.cos(lat1),
-      Math.cos(distanceKm / R) - Math.sin(lat1) * Math.sin(lat2),
-    );
-
-  return [(lat2 * 180) / Math.PI, (lon2 * 180) / Math.PI] as [number, number];
 }
 
 /**
@@ -365,7 +356,6 @@ export default function ArbitrageMapInner({
   baseLat,
   baseLon,
   mapCenter,
-  useTrueNorth,
   layerMode,
   radiusKm,
   prefecture,
@@ -390,6 +380,11 @@ export default function ArbitrageMapInner({
     minLon: number;
     maxLon: number;
   } | null>(null);
+  /**
+   * 俯瞰（全国）か近景か。ズーム 10 を境に、県ごとの塗り分けと物件の
+   * ピンが入れ替わる。扇形は両方で描く。
+   */
+  const isOverview = zoom < OVERVIEW_ZOOM_MAX;
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
@@ -516,8 +511,31 @@ export default function ArbitrageMapInner({
     if (mapCenter) return mapCenter;
     return [baseLat, baseLon];
   }, [baseLat, baseLon, mapCenter]);
-  const declination = -8.2; // Tokyo magnetic declination
-  const rotationAngle = useTrueNorth ? 0 : declination;
+  /**
+   * 扇形は真北で描く。
+   *
+   * 以前はここで磁北ぶん（東京固定の -8.2 度）回していた。ところが同じ
+   * 画面の他の 2 つは真北で方位を決めている。
+   *
+   *   物件のピン   API の direction = getDirectionFromBearing(trueBearing)
+   *   県の塗り分け directionFromBearing(bearingBetween(...))
+   *
+   * 扇形だけが 8.2 度ずれた状態で、東京を出発地にすると 47 県中 17 県が
+   * 扇形と県塗りで別の方位を指していた。30km のうちは横ずれが 4km で
+   * 見えなかったが、扇形を画面いっぱいに伸ばすと 1500km 先で約 210km に
+   * なり、同じ画面に矛盾した 2 つの答えが並ぶ。
+   *
+   * 真北へ揃えて、3 つが同じ基準になる状態にする。
+   *
+   * 磁北そのものを落としたわけではない。真北・磁北を明示的な基準として
+   * 扱い、判定・API・移動履歴まで含めて計算を一本化するのは別 PR。
+   * useTrueNorth は受け口として interface に残してある。
+   */
+
+  /** 八方位の区切り方。県の塗り分け（dayKigaku）と同じ規則を使う。 */
+  const sectorNodeMapping: "traditional" | "physical" = useClassical
+    ? "traditional"
+    : "physical";
 
   // 市区町村ごとの集計データ (広域表示用)
   const municipalityData = useMemo(() => {
@@ -663,7 +681,7 @@ export default function ArbitrageMapInner({
    * その旨は凡例に出す。
    */
   const sectors = useMemo(() => {
-    const dirMap = [
+    const dirMap: { dir: CompassDirection; deg: number }[] = [
       { dir: "N", deg: 0 },
       { dir: "NE", deg: 45 },
       { dir: "E", deg: 90 },
@@ -731,6 +749,15 @@ export default function ArbitrageMapInner({
     return { color, opacity, dashArray };
   }, []);
 
+  /**
+   * 扇形の長さ。表示中の矩形の四隅までの最大距離を取るので、どのズームでも
+   * 画面の端まで届く。地図がまだ範囲を報告していない初回だけ近景ぶんに倒す。
+   */
+  const wedgeRangeKm = useMemo(
+    () => wedgeRangeKmForBounds(baseLat, baseLon, currentBounds),
+    [baseLat, baseLon, currentBounds],
+  );
+
   // Render direction sectors
   const sectorLayers = useMemo(() => {
     return sectors.map((d) => {
@@ -749,19 +776,32 @@ export default function ArbitrageMapInner({
                 : (undefined as string | undefined),
           }
         : getStyleForVector(d.status ?? "SAFE");
-      const baseBearing = rotationAngle + d.deg;
+      const baseBearing = d.deg;
 
-      // Draw wedge shape polygon extending 30km
-      const points: [number, number][] = [[baseLat, baseLon]];
-      const isCorner = ["NE", "SE", "SW", "NW"].includes(d.dir);
-      const halfWidth = useClassical ? (isCorner ? 30 : 15) : 22.5;
+      // 扇形は表示中の画面を覆う長さで描く。以前は 30km 固定で、引くと
+      // 先が画面の途中で切れていた。方位の判定に距離の上限は無いので、
+      // 見えている範囲の端までは同じ色で塗る。
+      //
+      // 幅は directionFromBearing の区切りから引く。扇形の縁と八方位の
+      // 境目は同じものなので、別々に書くとずれる。
+      const halfWidth = directionWedgeHalfWidth(d.dir, sectorNodeMapping);
+      const points = directionWedgePoints(
+        baseLat,
+        baseLon,
+        baseBearing,
+        halfWidth,
+        wedgeRangeKm,
+      );
 
-      for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
-        points.push(getDestination(baseLat, baseLon, baseBearing + offset, 30));
-      }
-
-      // Label position (centered in the wedge at 5km distance)
-      const labelPos = getDestination(baseLat, baseLon, baseBearing, 4);
+      // ラベルは扇形の長さに対する割合で置く。どのズームでも扇形の
+      // 中ほど手前に出て、近景での見え方は今までと変わらない。
+      const labelAt = destinationAtBearing(
+        baseLat,
+        baseLon,
+        baseBearing,
+        wedgeRangeKm * 0.15,
+      );
+      const labelPos: [number, number] = [labelAt.lat, labelAt.lon];
 
       const getStatusText = (status: string) => {
         if (status === "OPTIMAL") return "大吉方位";
@@ -786,8 +826,14 @@ export default function ArbitrageMapInner({
             pathOptions={{
               color: color,
               fillColor: color,
-              fillOpacity: opacity,
-              weight: (d.tier ? d.tier === "C" : d.status === "SAFE") ? 0.5 : 1,
+              // 俯瞰では県の塗り分けが下にある。扇形まで塗ると 2 枚の色が
+              // 重なって県の段階が読めなくなるので、境界線だけにする。
+              fillOpacity: isOverview ? 0 : opacity,
+              weight: isOverview
+                ? 1.5
+                : (d.tier ? d.tier === "C" : d.status === "SAFE")
+                  ? 0.5
+                  : 1,
               dashArray: dashArray,
             }}
             interactive={false}
@@ -812,9 +858,11 @@ export default function ArbitrageMapInner({
     center,
     baseLat,
     baseLon,
-    rotationAngle,
     getStyleForVector,
     useClassical,
+    sectorNodeMapping,
+    wedgeRangeKm,
+    isOverview,
   ]);
 
   if (!mounted) {
@@ -874,7 +922,13 @@ export default function ArbitrageMapInner({
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
-          <div className="flex gap-1">
+          {/* 近景 ⇄ 全国の切り替え。
+              以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
+              操作が要った。今どちらを見ているのかも画面に出ていない。
+              2 つを並べて現在地を反転表示にすると、切り替えられること
+              自体が見える。押した側が実際のズームと食い違わないよう、
+              選択状態は状態変数ではなく現在のズームから引く。 */}
+          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
             {hasBase && (
               <button
                 onClick={() =>
@@ -884,9 +938,13 @@ export default function ArbitrageMapInner({
                   )
                 }
                 title="出発地を中心に、検索半径が収まるズームへ"
-                className="px-2.5 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+                className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                  isOverview
+                    ? "text-stone-500 hover:bg-stone-100"
+                    : "bg-indigo-600 text-white"
+                }`}
               >
-                📍 出発地へ
+                📍 近景
               </button>
             )}
             <button
@@ -894,9 +952,13 @@ export default function ArbitrageMapInner({
                 mapRef.current?.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM)
               }
               title="全国を俯瞰して県ごとの方位の吉凶を見る"
-              className="px-2.5 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+              className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                isOverview
+                  ? "bg-indigo-600 text-white"
+                  : "text-stone-500 hover:bg-stone-100"
+              }`}
             >
-              🗾 全国俯瞰
+              🗾 全国
             </button>
           </div>
         </div>
@@ -1098,12 +1160,21 @@ export default function ArbitrageMapInner({
           />
         )}
 
-        {/* 方位の扇形。詳細ズームでは常に描く。
+        {/* 方位の扇形。ズームに関わらず常に描く。
             以前は「ピンを個別表示しているときだけ」という条件付きで、
             物件が少ないとき（クラスター表示）に扇形が黙って消えていた。
             方位の吉凶はこの画面の主役なので、物件の数で消えてはいけない。
-            市区町村バブル（件数の画面）のときだけ引っ込める */}
-        {zoom >= 10 && !showHeatmap && sectorLayers}
+
+            zoom >= 10 の条件も外した。引くと扇形ごと消えるため、全国を
+            見ている間は方位の境目がどこにも出ていなかった。俯瞰では
+            塗りを外して境界線だけにし、県の塗り分けと重ねて読ませる。
+            市区町村バブル（件数の画面）のときだけ引っ込める。
+
+            出発地が未設定のときは描かない。baseLat/baseLon はそのとき
+            地図の中心に倒れており、方位はどこから見た方位でもない。
+            30km のうちは小さく収まっていたが、画面を覆う長さにすると
+            「起点のない吉凶」を全面に出すことになる */}
+        {hasBase && !showHeatmap && sectorLayers}
 
         {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
         {zoom >= 10 &&
