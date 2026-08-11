@@ -544,8 +544,8 @@ async function main() {
       skipPref = false; // 目的の県に到達したので、これ以降の県はスキップしない
 
       // 都道府県の都市一覧を取得するためにページを作成
-      let context = await browser.newContext(CONTEXT_OPTIONS);
-      let page = await context.newPage();
+      const context = await browser.newContext(CONTEXT_OPTIONS);
+      const page = await context.newPage();
       await page.addInitScript(() => {
         Object.defineProperty(navigator, "webdriver", { get: () => undefined });
       });

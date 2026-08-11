@@ -235,7 +235,7 @@ export async function GET(request: Request) {
   }
 
   const targetDateStr = searchParams.get("targetDate") || "";
-  let targetDate = parseSafeDate(targetDateStr);
+  const targetDate = parseSafeDate(targetDateStr);
 
   // 月相コンディションの計算
   let lunarPhaseScore = 0;
