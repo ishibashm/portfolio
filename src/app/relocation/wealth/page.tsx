@@ -116,6 +116,9 @@ export default function RegionalWealthPage() {
   const [birthLat, setBirthLat] = useState("");
   const [birthLon, setBirthLon] = useState("");
   const [engineType, setEngineType] = useState("physical");
+  // 吉方位の絞り込み（本命星のみ／環境要因のみ など）。共通の設定バーで決まる。
+  // このページだけ受け取っておらず、変えても地図の色が動かなかった。
+  const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [layerMode, setLayerMode] = useState("final");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
@@ -269,6 +272,10 @@ export default function RegionalWealthPage() {
       overrideParams?.lunarPhaseModifier !== undefined
         ? overrideParams.lunarPhaseModifier
         : lunarPhaseModifier;
+    const currentDirectionFilterMode =
+      overrideParams?.directionFilterMode !== undefined
+        ? overrideParams.directionFilterMode
+        : directionFilterMode;
 
     // Save to localStorage & POST to user-config for global sync
     if (typeof window !== "undefined") {
@@ -344,6 +351,8 @@ export default function RegionalWealthPage() {
         );
       }
       if (currentLayerMode) params.append("layerMode", currentLayerMode);
+      // これを送っていなかったので、絞り込みを変えても地図が変わらなかった。
+      params.append("directionFilterMode", currentDirectionFilterMode);
       if (currentUseTrueNorth) params.append("useTrueNorth", "true");
       params.append("lunarPhaseModifier", currentLunarPhaseModifier.toString());
 
@@ -512,6 +521,7 @@ export default function RegionalWealthPage() {
                 : "physical"
               : "physical";
           const layer = config.layer_mode || "final";
+          const filterMode = config.direction_filter_mode || "composite";
           const trueNorth = config.use_true_north || false;
           const lunarPhase =
             config.lunar_phase_modifier !== undefined
@@ -527,6 +537,7 @@ export default function RegionalWealthPage() {
           setBaseLon(bsLon);
           setEngineType(engine);
           setLayerMode(layer);
+          setDirectionFilterMode(filterMode);
           setUseTrueNorth(trueNorth);
           setLunarPhaseModifier(lunarPhase);
           setTargetDate(tDate);
@@ -541,6 +552,7 @@ export default function RegionalWealthPage() {
               baseLon: bsLon,
               engineType: engine,
               layerMode: layer,
+              directionFilterMode: filterMode,
               useTrueNorth: trueNorth,
               lunarPhaseModifier: lunarPhase,
             },

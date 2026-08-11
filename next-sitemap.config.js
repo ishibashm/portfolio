@@ -1,21 +1,16 @@
 /**
- * サイトマップの除外は src/lib/siteStructure.ts の NON_CORE_ROUTES に合わせる。
- * next-sitemap は CommonJS の設定ファイルで TypeScript を読めないため、
- * ここだけは同じ一覧を手で持つ。片方を変えたらもう片方も直すこと。
+ * サイトマップの除外。
+ *
+ * 以前はここに同じ一覧を手で持ち「片方を変えたらもう片方も直すこと」と
+ * 書いてあったが、実際には食い違っていた。すでに削除した 9 ページ
+ * （/dashboard /metaphysical /trends /rentals /visualizer /x-viewer
+ * /research /extract /agent-log /ceremonial-sample）を除外し続け、
+ * siteStructure.ts の「1 か所に決める」という方針も崩れていた。
+ *
+ * next-sitemap は CommonJS で TypeScript を読めないので、実体を JSON に
+ * 置いて両方から読む。__tests__/nonCoreRoutes.test.ts が一致を見張る。
  */
-const NON_CORE = [
-  "/dashboard",
-  "/metaphysical",
-  "/trends",
-  "/rentals",
-  "/relocation/history",
-  "/visualizer",
-  "/x-viewer",
-  "/research",
-  "/extract",
-  "/agent-log",
-  "/ceremonial-sample",
-];
+const NON_CORE = require("./src/lib/nonCoreRoutes.json").routes;
 
 // ルートハンドラ（robots.txt / ads.txt / llms.txt など）まで
 // サイトマップに載ってしまうため除外する。ログイン画面も索引する意味がない。

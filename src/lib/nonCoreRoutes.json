@@ -1,0 +1,4 @@
+{
+  "comment": "検索・サイトマップから外すルート。src/lib/siteStructure.ts と next-sitemap.config.js の両方がここを読む。以前は同じ一覧を2か所で持ち『片方を変えたらもう片方も直すこと』と書いてあったが、実際には食い違い、削除済みの9ページ（/dashboard /metaphysical /trends /rentals /visualizer /x-viewer /research /extract /agent-log /ceremonial-sample）が next-sitemap 側に残っていた。JSON なら TypeScript からも CommonJS からも読めるので、持ち場を1つにする。",
+  "routes": ["/relocation/history"]
+}

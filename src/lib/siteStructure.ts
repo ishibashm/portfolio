@@ -81,11 +81,17 @@ export const CORE_ROUTES: CoreRoute[] = [
 
 /**
  * 非中核。ナビから外し、検索エンジンとAIクローラから閉じ、ログイン必須にする。
- * 残っているのはこの2つだけ（他は削除済み）。
+ * 残っているのは /relocation/history だけ（他は削除済み）。
+ *
+ * 実体は nonCoreRoutes.json に置いてある。next-sitemap.config.js が
+ * CommonJS で TypeScript を読めないため、以前は同じ一覧を2か所で持ち
+ * 「片方を変えたらもう片方も直すこと」と書いてあった。実際には食い違い、
+ * 削除済みの9ページが next-sitemap 側に残っていた。JSON ならどちらからも
+ * 読めるので、持ち場を1つにする。
  */
-export const NON_CORE_ROUTES: string[] = [
-  "/relocation/history", // 過去の移動から太極を出す。導線からは外す
-];
+import nonCore from "./nonCoreRoutes.json";
+
+export const NON_CORE_ROUTES: string[] = nonCore.routes;
 
 /**
  * robots.ts の Disallow 値。末尾にスラッシュを付けないこと。
