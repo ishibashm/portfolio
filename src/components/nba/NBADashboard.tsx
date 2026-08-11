@@ -19,9 +19,7 @@ import {
   BrainCircuit,
   RefreshCcw,
   TerminalSquare,
-  BookOpen,
   AlertTriangle,
-  Navigation,
   Orbit,
   Zap,
   TrendingUp,
@@ -29,15 +27,12 @@ import {
   Layers,
   Eye,
   Moon,
-  Sun,
   Flame,
   Award,
   ChevronDown,
   ChevronUp,
   Star,
   CalendarDays,
-  Rocket,
-  Clock,
   ShieldCheck,
 } from "lucide-react";
 import {
@@ -360,7 +355,7 @@ export function NBADashboard({
       } else {
         throw new Error(json.error || "Unknown error");
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(toUserMessage(err));
     } finally {
       setLoading(false);
