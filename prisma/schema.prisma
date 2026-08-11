@@ -472,3 +472,43 @@ model DirectionComment {
   @@index([user_id, created_at])
   @@map("direction_comments")
 }
+
+/// 九星気学の鑑定士の掲載。
+///
+/// 記事は計算結果を出せるが「うちの事情だとどうか」には答えられない。
+/// そこに応えられる人を並べておくと、読み手には次の行き先ができ、
+/// 鑑定士には集客の動機ができる。こちらは費用をかけずに、
+/// 計算では作れない中身と信頼性が増える。
+///
+/// 自己申告をそのまま公開しない。名乗るだけで連絡先付きの掲載が作れると、
+/// 宣伝と詐称の置き場になる。登録はログイン必須、公開は管理者の承認後。
+/// status が approved のものだけを返す。
+///
+/// 1 人 1 件。user_id を一意にして、同じ人が複数の掲載を持てないようにする。
+model Practitioner {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Supabase の user.id。1 人 1 件。
+  user_id  String @unique @db.Uuid
+  /// 連絡用。公開しない。
+  email    String
+  /// 掲載名（屋号・鑑定名）。
+  display_name String
+  /// 一行の紹介。
+  headline String
+  /// 対応地域。都道府県名か「オンライン」。
+  area     String
+  /// 得意分野。カンマ区切りではなく配列で持つ。
+  specialties String[]
+  /// 本文。
+  profile  String
+  /// 連絡先の URL。http/https のみ。
+  website_url String?
+  /// pending: 申請中 / approved: 公開中 / hidden: 非公開に戻した
+  status   String   @default("pending")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  /// 一覧は公開中のものを新しい順に引く。
+  @@index([status, created_at])
+  @@map("practitioners")
+}
