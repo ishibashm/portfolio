@@ -766,7 +766,10 @@ export default function ArbitrageMapInner({
       const getStatusText = (status: string) => {
         if (status === "OPTIMAL") return "大吉方位";
         if (status === "NOISE") return "凶方位";
-        return "通常吉";
+        // 既定を「通常吉」と書いていた。ここに落ちるのは主に SAFE で、
+        // SAFE は「凶方位ではない」であって吉ではない。扇形に「吉」と
+        // 書いてあるのに記事では「平」になる、という食い違いの元だった。
+        return "平穏";
       };
       // 段階つきなら「S 三盤吉」の形。時期パネルのセルと同じ記号にして
       // 突き合わせられるようにする。
@@ -1523,7 +1526,7 @@ export default function ArbitrageMapInner({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-[#475569] border border-[#1e293b]"></span>
-              <span>通常 (吉凶なし)</span>
+              <span>平穏 (凶方位ではない)</span>
             </div>
           </div>
         </div>
