@@ -15,6 +15,7 @@ import {
   calculateLunarPhaseCondition,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { directionFromBearing } from "@/utils/directionGeo";
 
 export const dynamic = "force-dynamic";
 
@@ -45,27 +46,6 @@ function getBearing(
     Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
   const brng = toDeg(Math.atan2(y, x));
   return (brng + 360) % 360;
-}
-
-function getDirectionFromBearing(
-  brng: number,
-  nodeMapping: "traditional" | "physical" = "traditional",
-): Direction {
-  const b = ((brng % 360) + 360) % 360;
-  if (nodeMapping === "physical") {
-    const index = Math.floor(((b + 22.5) % 360) / 45);
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    return dirs[index];
-  } else {
-    if (b >= 345 || b < 15) return "N";
-    if (b >= 15 && b < 75) return "NE";
-    if (b >= 75 && b < 105) return "E";
-    if (b >= 105 && b < 165) return "SE";
-    if (b >= 165 && b < 195) return "S";
-    if (b >= 195 && b < 255) return "SW";
-    if (b >= 255 && b < 285) return "W";
-    return "NW";
-  }
 }
 
 // 角度の差を計算する関数（円弧上の最短距離）
@@ -277,14 +257,11 @@ export async function GET(request: Request) {
 
       if (m.lat && m.lon) {
         trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);
-        direction = getDirectionFromBearing(trueBearing, nodeMapping); // True direction (地図上の方位)
+        direction = directionFromBearing(trueBearing, nodeMapping); // True direction (地図上の方位)
 
         // 偏角の補正 (動的に取得した値を使用)
         magneticBearing = (trueBearing - declination + 360) % 360;
-        magneticDirection = getDirectionFromBearing(
-          magneticBearing,
-          nodeMapping,
-        );
+        magneticDirection = directionFromBearing(magneticBearing, nodeMapping);
 
         // 1. 九星気学による方位スコア計算
         const targetDirection = useTrueNorth ? direction : magneticDirection;

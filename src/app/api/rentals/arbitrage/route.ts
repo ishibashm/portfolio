@@ -15,6 +15,7 @@ import {
   type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { directionFromBearing } from "@/utils/directionGeo";
 import { haLabelForLayer, type BoardLayer } from "@/lib/directionLabels";
 import {
   buildDailyAstroStates,
@@ -109,27 +110,6 @@ function getDistance(
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const d = R * c; // Distance in km
   return d;
-}
-
-function getDirectionFromBearing(
-  bearing: number,
-  nodeMapping: "traditional" | "physical" = "traditional",
-): Direction {
-  const b = ((bearing % 360) + 360) % 360;
-  if (nodeMapping === "physical") {
-    const index = Math.floor(((b + 22.5) % 360) / 45);
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    return dirs[index];
-  } else {
-    if (b >= 345 || b < 15) return "N";
-    if (b >= 15 && b < 75) return "NE";
-    if (b >= 75 && b < 105) return "E";
-    if (b >= 105 && b < 165) return "SE";
-    if (b >= 165 && b < 195) return "S";
-    if (b >= 195 && b < 255) return "SW";
-    if (b >= 255 && b < 285) return "W";
-    return "NW";
-  }
 }
 
 export async function GET(request: Request) {
@@ -646,8 +626,8 @@ export async function GET(request: Request) {
           p.lat,
           p.lon,
         );
-        const direction = getDirectionFromBearing(trueBearing, nodeMapping);
-        const magneticDirection = getDirectionFromBearing(
+        const direction = directionFromBearing(trueBearing, nodeMapping);
+        const magneticDirection = directionFromBearing(
           (trueBearing - ctx.declination + 360) % 360,
           nodeMapping,
         );

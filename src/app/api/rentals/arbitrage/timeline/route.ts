@@ -6,6 +6,7 @@ import {
   AstroEngine,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { directionFromBearing } from "@/utils/directionGeo";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
@@ -63,26 +64,6 @@ function getBearing(
   const x =
     Math.cos(l1) * Math.sin(l2) - Math.sin(l1) * Math.cos(l2) * Math.cos(dLon);
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
-}
-
-function getDirectionFromBearing(
-  bearing: number,
-  nodeMapping: "traditional" | "physical" = "traditional",
-): Direction {
-  const b = ((bearing % 360) + 360) % 360;
-  if (nodeMapping === "physical") {
-    const index = Math.floor(((b + 22.5) % 360) / 45);
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-    return dirs[index];
-  }
-  if (b >= 345 || b < 15) return "N";
-  if (b >= 15 && b < 75) return "NE";
-  if (b >= 75 && b < 105) return "E";
-  if (b >= 105 && b < 165) return "SE";
-  if (b >= 165 && b < 195) return "S";
-  if (b >= 195 && b < 255) return "SW";
-  if (b >= 255 && b < 285) return "W";
-  return "NW";
 }
 
 /**
@@ -247,8 +228,8 @@ export async function GET(request: Request) {
         propLat,
         propLon,
       );
-      const memberDirection = getDirectionFromBearing(bearing, nodeMapping);
-      const memberMagnetic = getDirectionFromBearing(
+      const memberDirection = directionFromBearing(bearing, nodeMapping);
+      const memberMagnetic = directionFromBearing(
         (bearing - declinations[index] + 360) % 360,
         nodeMapping,
       );
