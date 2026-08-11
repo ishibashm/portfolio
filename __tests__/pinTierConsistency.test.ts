@@ -111,3 +111,49 @@ describe("単盤と三盤は実際にずれる（食い違いの再現）", () =
     expect(gradeVerdict(d12.NW)).toBe("S");
   });
 });
+
+/**
+ * 段階が渡らないとき（生年月日・出発地が未入力）のピン。
+ *
+ * このときだけ astrologyStatus からの推定に落ちる。その推定が
+ * SAFE を吉に数えており、平穏な方位の物件に緑の「吉」ピンが立っていた。
+ * 同じ方位が記事では「平」と出るので、画面をまたぐと食い違う。
+ */
+describe("段階が無いときのピン（フォールバック）", () => {
+  const bare = (astrologyStatus: string, extra: Record<string, unknown> = {}) =>
+    getPropertyPinColors({ astrologyStatus, dateScores: [], ...extra });
+
+  it("SAFE は吉ではない", () => {
+    const pin = bare("SAFE");
+    expect(pin.label).toBe("平穏");
+    expect(pin.label).not.toContain("吉");
+  });
+
+  it("吉と呼ぶのは OPTIMAL 系だけ", () => {
+    for (const s of ["OPTIMAL", "OPTIMAL_REGULAR", "OPTIMAL_BOOST"]) {
+      expect(bare(s).label, s).toMatch(/吉/);
+    }
+  });
+
+  it("五大凶殺は大凶", () => {
+    for (const s of ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA", "NOISE_HONMEI", "NOISE_TEKI"]) {
+      expect(bare(s).label, s).toBe("大凶");
+    }
+  });
+
+  it("二次凶は注意（大凶と混ぜない）", () => {
+    for (const s of ["NOISE_VOID", "NOISE_NODE", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"]) {
+      expect(bare(s).label, s).toBe("注意");
+    }
+  });
+
+  it("天道や木星ラインが乗れば吉になる", () => {
+    expect(bare("SAFE", { isTendo: true }).label).toBe("吉");
+    expect(bare("SAFE", { astroFlags: ["JUPITER_LINE"] }).label).toBe("吉");
+  });
+
+  it("知らないコードでも「吉」に倒れない", () => {
+    expect(bare("NOISE_UNKNOWN_XYZ").label).not.toMatch(/吉/);
+    expect(bare("").label).toBe("平穏");
+  });
+});

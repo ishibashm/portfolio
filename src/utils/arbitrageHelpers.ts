@@ -129,9 +129,15 @@ export const getPropertyPinColors = (
     ["NOISE_VOID", "NOISE_NODE", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(
       prop.astrologyStatus,
     );
+  // SAFE を吉に数えていた。SAFE は「凶方位ではない」であって吉ではなく、
+  // 判定の本体（auspiciousDays.isAuspicious）は OPTIMAL 系だけを吉とする。
+  // ここが入っていたため、平穏な方位の物件に緑の「吉」ピンが立ち、
+  // 同じ方位が記事では「平」と出ていた。落として既定（平穏）に流す。
   const hasLucky =
     prop.isTendo ||
-    ["OPTIMAL", "SAFE"].includes(prop.astrologyStatus) ||
+    ["OPTIMAL", "OPTIMAL_REGULAR", "OPTIMAL_BOOST"].includes(
+      prop.astrologyStatus,
+    ) ||
     prop.astroFlags?.some((f: string) => f.endsWith("_LINE"));
 
   if (isUltra) {
@@ -167,12 +173,16 @@ export const getPropertyPinColors = (
     };
   }
 
-  // ⬜ グレー（通常・ネイビーグレー）➔ 地図と同化しないように境界線を濃く
+  // ⬜ グレー（平穏・ネイビーグレー）➔ 地図と同化しないように境界線を濃く
+  //
+  // 「通常」と書いていたが、この段は SAFE と同じ「凶方位ではない」状態。
+  // directionLabels の SAFE と同じ語にする。三盤で判定できるときは
+  // tierPinColors 側が「平」と出すので、意味も揃う。
   return {
     fillColor: "#475569", // slate-600
     borderColor: "#1e293b", // slate-900
     textClass: "text-slate-500 dark:text-slate-400",
     bgClass: "bg-slate-500/10 border-slate-500/30",
-    label: "通常",
+    label: "平穏",
   };
 };
