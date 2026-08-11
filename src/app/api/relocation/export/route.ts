@@ -16,6 +16,7 @@ import {
   getPhysicalMonthStar,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { denyUnlessAdmin } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,10 @@ function interpolateKpIndex(logs: any[]): any[] {
 
 export async function GET(request: Request) {
   try {
+    // 生年月日・拠点座標・引越し履歴を丸ごと吐く。history と同じ理由で塞ぐ。
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
+
     // 1. Read user config from local_tactical_config.json
     const configPath = path.join(process.cwd(), "local_tactical_config.json");
     let config: any = {};

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
+import { denyUnlessAdmin } from "@/lib/adminApi";
 import {
   getCurrentEnvironmentalFrequencies,
   generateBoard,
@@ -109,6 +110,11 @@ function getRatingLabel(status: string): {
 
 export async function GET(request: Request) {
   try {
+    // 記録は住所と引越しの理由をそのまま持つ。ページは ADMIN_EMAIL で
+    // 守られているが、middleware は "/api/..." を見ないのでここで塞ぐ。
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
+
     const { searchParams } = new URL(request.url);
     const useClassicalStr = searchParams.get("useClassical");
     const directionFilterModeStr = searchParams.get("directionFilterMode");
@@ -339,6 +345,9 @@ export async function GET(request: Request) {
 
 export async function POST(req: Request) {
   try {
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
+
     const body = await req.json();
     const {
       departureDate,
@@ -478,6 +487,10 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   try {
+    // id を渡すだけで誰でも他人の記録を消せる状態だった。
+    const denied = await denyUnlessAdmin();
+    if (denied) return denied;
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
