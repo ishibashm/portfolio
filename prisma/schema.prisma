@@ -433,3 +433,42 @@ model contact_messages {
   created_at DateTime @default(now()) @db.Timestamptz(6)
   handled    Boolean  @default(false)
 }
+
+/// 方位・日取りについての利用者の投稿。
+///
+/// 記事ページは計算結果が中心で、ページ間の差が数値だけになりやすい。
+/// 「実際にその方位へ引越してどうだったか」は計算では作れないうえ、
+/// 同じ方位でも人によって違うので、ページ固有の中身になる。
+/// AdSense の「価値の低いコンテンツ」への対処としても、ここが効く。
+///
+/// 投稿はログイン必須（Supabase の Google ログイン）。匿名を許すと
+/// レート制限と承認の仕組みが要るが、この DB は一度 Supabase Free の
+/// 500MB を超えて移設した経緯があり（docs/db-migration/README.md）、
+/// 行数が読めない書き込み口を増やしたくない。
+///
+/// topic_key でページに紐づける。ページ種別ごとに表を分けると、
+/// 一覧・投稿・削除を種別の数だけ書くことになる。
+///   houi:2026:3      … 本命三碧木星の 2026 年の記事
+///   houi:2026:3:9    … 同 9 月
+///   calendar:2026-09 … 2026 年 9 月の日取り
+///   area:23100       … 市区町村
+model DirectionComment {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// どのページに属するか。上のコメントの形式。
+  topic_key String
+  /// Supabase の user.id。表示には使わない。
+  user_id  String @db.Uuid
+  /// 投稿時点の表示名。Supabase 側で改名されても過去の投稿は変えない。
+  display_name String
+  /// 本文。長さは API 側でも検証する。
+  body     String
+  /// 荒らしを隠すための状態。既定は公開。
+  status   String   @default("published")
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  /// 一覧は topic_key で引いて新しい順に並べる。
+  @@index([topic_key, created_at])
+  /// 1 人あたりの投稿数の確認（連投の抑制）に使う。
+  @@index([user_id, created_at])
+  @@map("direction_comments")
+}

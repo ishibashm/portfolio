@@ -1,0 +1,157 @@
+name: Apply additive SQL
+
+# prisma/sql/*.sql を 1 本だけ当てる。
+#
+# 表や列を足すだけの変更に run-seed.yml（Setup Database Schema and Seed Data）
+# を使うと、prisma db push --accept-data-loss が走り、そのあとに取り込み
+# スクリプトが 3 本続く。表を 1 つ増やすのに払う代償として大きすぎる。
+#
+# ここで当てるのは「足すだけ」の DDL に限る。CREATE TABLE IF NOT EXISTS /
+# CREATE INDEX IF NOT EXISTS / ADD COLUMN IF NOT EXISTS のように、
+# 二度当てても同じ結果になるものだけを置くこと。DROP や型変更は入れない。
+#
+# 当てたあと prisma/schema.prisma 側の定義も必ず揃えること。
+# db push はスキーマに無い表・索引を消すので、片方だけだと次の run-seed で
+# 消える（db-index.yml と同じ注意）。
+#
+# 手元から DB に繋げない環境でも当てられるよう、ランナー上で psql を回す。
+# 接続情報は Secret の ENV_FILE から取るので、実行者の手元にもログにも出ない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: "prisma/sql/ 配下のファイル名"
+        required: true
+        default: "20260811_add_direction_comments.sql"
+      mode:
+        description: "dry-run: 中身と現状を見るだけ / apply: 実際に当てる"
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+
+# 書き込みを伴う他のワークフローと直列化する。
+concurrency:
+  group: rental-properties-write
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DIRECT_URL が要る。"
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Resolve connection
+        run: |
+          set -euo pipefail
+          URL="$(sed -n 's/^DIRECT_URL=//p' .env | tail -1)"
+          if [ -z "$URL" ]; then
+            echo "::error::.env に DIRECT_URL が無い。"
+            exit 1
+          fi
+          # ランナーには ~/.postgresql/root.crt が無く、verify-full が
+          # 証明書ファイルの不在で落ちる。OS の証明書ストアを使う。
+          # sslmode を緩めるほうは採らない（資格情報を載せる接続のため）。
+          case "$URL" in
+            *sslrootcert=*) ;;
+            *\?*) URL="${URL}&sslrootcert=system" ;;
+            *)    URL="${URL}?sslrootcert=system" ;;
+          esac
+          echo "::add-mask::$URL"
+          echo "PGURL=$URL" >> "$GITHUB_ENV"
+
+      # 実行するファイルを prisma/sql の中に閉じ込める。
+      # 入力に ../ を混ぜて別のファイルを読ませない。
+      - name: Resolve file
+        env:
+          INPUT_FILE: ${{ inputs.file }}
+        run: |
+          set -euo pipefail
+          case "$INPUT_FILE" in
+            */*|"") echo "::error::ファイル名だけを指定すること: $INPUT_FILE"; exit 1 ;;
+          esac
+          SQL_PATH="prisma/sql/$INPUT_FILE"
+          if [ ! -f "$SQL_PATH" ]; then
+            echo "::error::$SQL_PATH が無い。"
+            exit 1
+          fi
+          echo "SQL_PATH=$SQL_PATH" >> "$GITHUB_ENV"
+
+      - name: Show SQL
+        run: |
+          {
+            echo "## 当てる SQL: $SQL_PATH"
+            echo '```sql'
+            cat "$SQL_PATH"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Connection check
+        run: |
+          set -euo pipefail
+          psql "$PGURL" -At -c "
+            SELECT 'connected: ' || current_database()
+                   || '  ' || split_part(version(), ' on ', 1);"
+
+      - name: Before
+        run: |
+          set -euo pipefail
+          {
+            echo "## 実行前のテーブル一覧"
+            echo '```'
+            psql "$PGURL" -At -c "
+              SELECT tablename || '  ' || pg_size_pretty(pg_total_relation_size(quote_ident(tablename)::regclass))
+                FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # ON_ERROR_STOP を付けないと、途中で失敗しても最後まで進んで成功に見える。
+      # 1 つのトランザクションにまとめ、失敗したら何も残さない。
+      - name: Apply
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          psql "$PGURL" -v ON_ERROR_STOP=1 --single-transaction -f "$SQL_PATH"
+          echo "適用しました: $SQL_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: After
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## 実行後のテーブル一覧"
+            echo '```'
+            psql "$PGURL" -At -c "
+              SELECT tablename || '  ' || pg_size_pretty(pg_total_relation_size(quote_ident(tablename)::regclass))
+                FROM pg_tables WHERE schemaname='public' ORDER BY tablename;"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
