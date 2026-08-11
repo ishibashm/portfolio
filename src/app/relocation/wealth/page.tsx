@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { toUserMessage } from "@/lib/errorMessage";
+import type { Settings } from "@/lib/userSettings";
 import {
   loadProfilePresets,
   saveProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,10 +16,8 @@ import {
   ResponsiveContainer,
   ScatterChart,
   Scatter,
-  ZAxis,
 } from "recharts";
 import {
-  TrendingUp,
   Users,
   MapPin,
   Compass,
@@ -93,7 +90,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
       const minutes = String(d.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
-  } catch (e) {}
+  } catch {}
   if (dateStr.includes("T")) {
     return dateStr.substring(0, 16);
   }
@@ -160,14 +157,14 @@ export default function RegionalWealthPage() {
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
 
-  const saveUnifiedConfig = async (updatedFields: any) => {
+  const saveUnifiedConfig = async (updatedFields: Settings) => {
     try {
       const localData = localStorage.getItem("tactical_config_v1");
-      let currentLocal: any = {};
+      let currentLocal: Settings = {};
       if (localData) {
         try {
           currentLocal = JSON.parse(localData);
-        } catch (e) {}
+        } catch {}
       }
 
       const mergedConfig = {
@@ -302,7 +299,7 @@ export default function RegionalWealthPage() {
       if (localData) {
         try {
           currentLocal = JSON.parse(localData);
-        } catch (e) {}
+        } catch {}
       }
       localStorage.setItem(
         "tactical_config_v1",
@@ -364,7 +361,7 @@ export default function RegionalWealthPage() {
         try {
           const errJson = await res.json();
           if (errJson.message) errMsg = errJson.message;
-        } catch (e) {}
+        } catch {}
         throw new Error(errMsg);
       }
       const json = await res.json();
@@ -387,7 +384,7 @@ export default function RegionalWealthPage() {
           setBirthDate(normalizeDateTimeLocal(json.metadata.birthDate));
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       // 生の "Failed to fetch" をそのまま出さない。
       if (requestId === fetchRequestIdRef.current)
         setError(toUserMessage(err));
@@ -462,7 +459,7 @@ export default function RegionalWealthPage() {
           if (config.lunar_phase_modifier !== undefined)
             lunarPhase = config.lunar_phase_modifier;
           if (config.layer_mode !== undefined) layer = config.layer_mode;
-        } catch (e) {}
+        } catch {}
       }
 
       // 2. Fallback to specific slots if unified config doesn't have them
@@ -558,7 +555,7 @@ export default function RegionalWealthPage() {
             },
             false,
           );
-        } catch (e) {}
+        } catch {}
       }
     };
 
@@ -719,11 +716,6 @@ export default function RegionalWealthPage() {
     }
     return true;
   });
-
-  const chartData = filteredData.slice(0, 10).map((d) => ({
-    name: d.areaName.split(" ").pop() || d.areaName,
-    income: d.incomePerCapita,
-  }));
 
   const scatterData = filteredData.map((d) => ({
     name: d.areaName,
@@ -1335,7 +1327,7 @@ export default function RegionalWealthPage() {
                   )
                   .sort((a, b) => b.incomePerCapita - a.incomePerCapita)
                   .slice(0, 5)
-                  .map((item, i) => (
+                  .map((item) => (
                     <div
                       key={item.id}
                       className="flex justify-between items-center p-3 rounded-xl bg-gray-50 dark:bg-stone-50 border border-gray-100 dark:border-stone-200"
