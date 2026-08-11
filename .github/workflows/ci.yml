@@ -1,0 +1,69 @@
+# このリポジトリには長らく PR を検査する仕組みが無く、動いていたのは
+# deploy.yml（master への push で本番へ出す）だけだった。つまり壊れたコードが
+# 入っても、気づくのはデプロイが失敗したときか、本番の画面が壊れてからになる。
+#
+# 複数のセッションが並行して master に PR を出しているため、片方が壊した型を
+# もう片方が踏む経路がある。手元での確認は、確認した人の変更しか担保しない。
+#
+# ここで回すのは CLAUDE.md が要求している 3 つ（型・テスト・lint）に絞る。
+# どれも DB も API キーも要らないので、secret を PR の実行に渡さずに済む。
+# 公開リポジトリなので、これは意図的な線引き。
+#
+# next build はここでは回さない。ビルドは .env（DB 接続文字列を含む）を前提に
+# しており、PR の実行に渡すと公開リポジトリで秘密情報を晒す経路になる。
+# ビルドの検証は deploy.yml が master で行う。
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+# 同じ PR に続けて push したとき、古い実行は捨てる。
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Dockerfile が node:20-bookworm-slim なので、そこに合わせる。
+      # ここだけ新しくすると、CI が通ってデプロイが落ちる組み合わせが出る。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # --legacy-peer-deps は Dockerfile と同じ。素の npm ci は
+      # defuddle@0.8.0 が jsdom@^24 を要求するのに対して jsdom@^27 が
+      # 入っているため ERESOLVE で落ちる。ここを揃えないと、CI だけが
+      # 依存解決の段階で赤くなる。
+      - run: npm ci --legacy-peer-deps
+
+      # Prisma Client は生成物で、リポジトリには入っていない。
+      # 生成しないと tsc が @prisma/client の型を解決できずに落ちる。
+      # 接続はしないので、URL は形だけ合っていればよい。
+      - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # 現状は警告が 678 件あり、これは落とさない（--max-warnings を付けると
+      # 初回から全部赤くなる）。ここで止まるのは error だけ。警告を減らすのは
+      # 別の作業として切り出す。
+      - name: Lint
+        run: npm run lint
+
+      # 暦・天体計算のテストは年単位で日を回すため、1 本で数秒かかる。
+      # vitest.config.ts で testTimeout を 30 秒にしてある。
+      - name: Test
+        run: npm test
