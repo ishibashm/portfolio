@@ -4,22 +4,13 @@ import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   AlertTriangle,
-  Sparkles,
-  HelpCircle,
   Calendar,
   Compass,
-  User,
   Heart,
   ChevronRight,
-  TrendingUp,
   BrainCircuit,
 } from "lucide-react";
-import {
-  Direction,
-  StarFrequency,
-  getClassicalYearStar,
-  getPersonalVoidZodiac,
-} from "@/utils/ephemerisEngine";
+import { getClassicalYearStar } from "@/utils/ephemerisEngine";
 import { todayInJapan } from "@/utils/japanDate";
 
 function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
