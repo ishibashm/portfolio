@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
+import { directionFromBearing } from "@/utils/directionGeo";
 import {
   getHonmeiStar,
   getCurrentEnvironmentalFrequencies,
@@ -465,41 +466,15 @@ export async function GET(request: Request) {
 
       const magBrng = (trueBrng - declination + 360) % 360;
 
-      const getDir = (bearing: number): Direction => {
-        const b = ((bearing % 360) + 360) % 360;
-        if (useClassical) {
-          if (b >= 345 || b < 15) return "N";
-          if (b >= 15 && b < 75) return "NE";
-          if (b >= 75 && b < 105) return "E";
-          if (b >= 105 && b < 165) return "SE";
-          if (b >= 165 && b < 195) return "S";
-          if (b >= 195 && b < 255) return "SW";
-          if (b >= 255 && b < 285) return "W";
-          return "NW";
-        } else {
-          const index = Math.floor(((b + 22.5) % 360) / 45);
-          const dirs: Direction[] = [
-            "N",
-            "NE",
-            "E",
-            "SE",
-            "S",
-            "SW",
-            "W",
-            "NW",
-          ];
-          return dirs[index];
-        }
-      };
-
       const targetDir = {
-        trueDirection: getDir(trueBrng),
-        magneticDirection: getDir(magBrng),
+        trueDirection: directionFromBearing(trueBrng, nodeMapping),
+        magneticDirection: directionFromBearing(magBrng, nodeMapping),
       };
 
-      const targetDirName = useTrueNorth
-        ? targetDir.trueDirection
-        : targetDir.magneticDirection;
+      // 判定は真北。記事・物件検索・履歴・シミュレータと同じ基準に揃える。
+      // 磁北の方位と偏角は heading にそのまま残しているので、方位磁針で
+      // 測るとどう見えるかは書き出しから読み取れる。
+      const targetDirName = targetDir.trueDirection;
 
       targetEvaluation = {
         targetCoordinates: {
