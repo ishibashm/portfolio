@@ -39,6 +39,12 @@ import Link from "next/link";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
 import {
+  SCORE_TIER_LEGEND,
+  scoreTier,
+  scoreTierLabel,
+  scoreTextColor,
+} from "@/lib/scoreTier";
+import {
   COMPASS_DIRECTIONS,
   CompassDirection,
   destinationForDirection,
@@ -2573,13 +2579,17 @@ export const SolarTimeClock = () => {
     if (isDivergence)
       return "bg-amber-50 text-amber-500 border border-amber-200";
 
-    if (score >= 80)
-      return "bg-emerald-50 text-emerald-600 border border-emerald-200";
-    if (score >= 50)
-      return "bg-blue-50 text-blue-600 border border-blue-200";
-    if (score >= 30)
-      return "bg-amber-50 text-amber-500 border border-amber-200";
-    return "bg-red-50 text-red-600 border border-red-200";
+    // しきい値は lib/scoreTier に集約した。数値を直接書かない。
+    switch (scoreTier(score)) {
+      case "excellent":
+        return "bg-emerald-50 text-emerald-600 border border-emerald-200";
+      case "good":
+        return "bg-blue-50 text-blue-600 border border-blue-200";
+      case "caution":
+        return "bg-amber-50 text-amber-500 border border-amber-200";
+      default:
+        return "bg-red-50 text-red-600 border border-red-200";
+    }
   };
 
   const getDimensionCellBgColor = (
@@ -5524,13 +5534,7 @@ export const SolarTimeClock = () => {
                                   </span>
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
-                                      item.classicalScore >= 80
-                                        ? "text-emerald-600"
-                                        : item.classicalScore >= 50
-                                          ? "text-blue-600"
-                                          : item.classicalScore >= 30
-                                            ? "text-yellow-500"
-                                            : "text-red-500"
+                                      scoreTextColor(item.classicalScore)
                                     }`}
                                   >
                                     {item.classicalScore}
@@ -5551,13 +5555,7 @@ export const SolarTimeClock = () => {
                                   </span>
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
-                                      item.physicalIndepScore >= 80
-                                        ? "text-emerald-600"
-                                        : item.physicalIndepScore >= 50
-                                          ? "text-blue-600"
-                                          : item.physicalIndepScore >= 30
-                                            ? "text-yellow-500"
-                                            : "text-red-500"
+                                      scoreTextColor(item.physicalIndepScore)
                                     }`}
                                   >
                                     {item.physicalIndepScore}
@@ -5578,13 +5576,7 @@ export const SolarTimeClock = () => {
                                   </span>
                                   <span
                                     className={`font-mono font-bold text-[10px] ${
-                                      item.physicalCoupledScore >= 80
-                                        ? "text-emerald-600"
-                                        : item.physicalCoupledScore >= 50
-                                          ? "text-blue-600"
-                                          : item.physicalCoupledScore >= 30
-                                            ? "text-yellow-500"
-                                            : "text-red-500"
+                                      scoreTextColor(item.physicalCoupledScore)
                                     }`}
                                   >
                                     {item.physicalCoupledScore}
@@ -5828,17 +5820,18 @@ export const SolarTimeClock = () => {
 
               {/* Legend for Grid */}
               <div className="flex flex-wrap gap-3 text-[9px] font-mono text-stone-400 bg-white/80 p-2.5 rounded border border-stone-200">
+                {/* しきい値を凡例に直書きしない。lib/scoreTier から引く。 */}
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200"></span>
-                  大吉/吉 ({"≥ 80"})
+                  {SCORE_TIER_LEGEND[0].label} ({SCORE_TIER_LEGEND[0].bound})
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded bg-blue-50 border border-blue-200"></span>
-                  吉 ({"≥ 50"})
+                  {SCORE_TIER_LEGEND[1].label} ({SCORE_TIER_LEGEND[1].bound})
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded bg-amber-50 border border-amber-200"></span>
-                  警告 ({"≥ 30"})
+                  {SCORE_TIER_LEGEND[2].label} ({SCORE_TIER_LEGEND[2].bound})
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2.5 h-2.5 rounded bg-red-50 border border-red-200"></span>
@@ -6371,14 +6364,10 @@ export const SolarTimeClock = () => {
                           notes: "当日詳細判定",
                           evaluation: {
                             status: detail.status,
-                            rating:
-                              detail.score >= 80
-                                ? "大吉"
-                                : detail.score >= 50
-                                  ? "吉"
-                                  : detail.score >= 20
-                                    ? "凶"
-                                    : "大凶",
+                            // ここだけ 80/50/20 で「凶」と書いており、
+                            // 凡例の「警告 ≥ 30」と食い違っていた。
+                            // しきい値と語は lib/scoreTier から引く。
+                            rating: scoreTierLabel(detail.score),
                             color: "",
                             score: detail.score,
                             details: {
@@ -6442,13 +6431,7 @@ export const SolarTimeClock = () => {
                           </span>
                           <span
                             className={`text-2xl font-mono font-bold ${
-                              detail.score >= 80
-                                ? "text-emerald-600"
-                                : detail.score >= 50
-                                  ? "text-blue-600"
-                                  : detail.score >= 30
-                                    ? "text-yellow-500"
-                                    : "text-red-500"
+                              scoreTextColor(detail.score)
                             }`}
                           >
                             {detail.score}
