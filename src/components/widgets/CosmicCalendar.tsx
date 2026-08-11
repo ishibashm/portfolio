@@ -6,21 +6,15 @@ import {
   ChevronRight,
   Sun,
   Moon,
-  Info,
-  TrendingUp,
-  Globe,
   Radio,
   Zap,
   Activity,
-  AlertCircle,
-  HelpCircle,
   Clock,
-  ArrowRight,
 } from "lucide-react";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { AstroEngine, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { baziEngine } from "@/utils/baziEngine";
-import { Solar, Lunar } from "lunar-javascript";
+import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 export interface DayData {

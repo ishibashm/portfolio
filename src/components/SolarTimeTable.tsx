@@ -2,9 +2,16 @@
 
 import React, { useMemo, useState } from "react";
 import { getDailySolarSchedule, KimonScheduleItem } from "../utils/solarTime";
-import { getCurrentZodiac } from "../utils/ephemerisEngine";
+import {
+  getCurrentZodiac,
+  getCurrentEnvironmentalFrequencies,
+} from "../utils/ephemerisEngine";
 import { KigakuBoard } from "./KigakuBoard";
-import { BlockMath, InlineMath } from "react-katex";
+
+/** SolarTimeClock が渡してくる env そのもの。同じ形をここに書き写さない。 */
+type EnvironmentalFrequencies = ReturnType<
+  typeof getCurrentEnvironmentalFrequencies
+>;
 
 interface SolarTimeTableProps {
   date: Date;
@@ -17,7 +24,7 @@ interface SolarTimeTableProps {
   shieldCapacity: number;
   vectors?: Record<string, string> | null;
   honmeiStar?: { physical: number; classical: number } | null;
-  envData?: any;
+  envData?: EnvironmentalFrequencies | null;
   personalVoidZodiac?: string[];
   nbaData?: any;
   useClassical?: boolean;
@@ -60,7 +67,6 @@ export function SolarTimeTableComponent({
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState("");
 
-  const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || "";
   // 完全ローカル化に伴い、制限を解除し常にエクスポートを許可
   const isAuthorized = true;
 
@@ -611,8 +617,6 @@ export function SolarTimeTableComponent({
       {/* Vertical Timeline Feed */}
       <div className="flex flex-col gap-2">
         {schedule.map((item, index) => {
-          const now = new Date();
-          const isCurrent = now >= item.startStandard && now < item.endStandard;
           const isExpanded = expandedIndex === index;
           const isVoid = isVoidTimeHour(item);
           const evalPhase = evaluateTimePhase(item);
