@@ -1550,11 +1550,18 @@ export default function RegionalWealthPage() {
                   className="bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                 >
                   <option value="ALL">全ステータス</option>
-                  <option value="OPTIMAL">OPTIMAL (大吉)</option>
-                  <option value="SAFE">SAFE (吉)</option>
-                  <option value="NOISE">NOISE (凶・無効)</option>
-                  <option value="JUPITER">JUPITER (木星)</option>
-                  <option value="VENUS">VENUS (金星)</option>
+                  {/*
+                    SAFE を「吉」と書いていた。SAFE は「凶方位ではない」で
+                    あって吉ではなく、記事ページは「平」、判定の本体
+                    （auspiciousDays.isAuspicious）は OPTIMAL 系だけを吉と
+                    する。ここだけ吉と読めると、同じ市区町村が画面によって
+                    吉だったり平だったりする。表記は directionLabels に揃える。
+                  */}
+                  <option value="OPTIMAL">大吉方位</option>
+                  <option value="SAFE">平穏（凶方位ではない）</option>
+                  <option value="NOISE">凶方位</option>
+                  <option value="JUPITER">木星ライン</option>
+                  <option value="VENUS">金星ライン</option>
                 </select>
               </div>
               <div className="flex items-center gap-1.5">

@@ -100,3 +100,30 @@ export function directionLabelDetailed(status: string): string {
 export function isKnownDirectionStatus(status: string): boolean {
   return status in DIRECTION_LABELS;
 }
+
+/** 判定に使った盤。破の呼び名がこれで変わる。 */
+export type BoardLayer = "year" | "month" | "day" | "final";
+
+/**
+ * 破（NOISE_HA）の呼び名。
+ *
+ * 破は「その盤の十二支の正反対の方位」で、年盤なら歳破、月盤なら月破、
+ * 日盤なら日破を指す。エンジンはどれも同じ NOISE_HA を返すので、
+ * 表示側が盤を知らないまま「歳破」と書くと、月盤・日盤で嘘になる。
+ *
+ * 記事ページは月盤で「月破」に読み替えている（kigakuContent.ts:332-343）。
+ * 物件検索はそこが「歳破」固定だったので、ここに寄せて揃える。
+ * 盤を合成した結果（final）は、どの盤由来か分からないので併記する。
+ */
+export function haLabelForLayer(layer: BoardLayer): string {
+  switch (layer) {
+    case "year":
+      return "歳破";
+    case "month":
+      return "月破";
+    case "day":
+      return "日破";
+    default:
+      return "歳破/月破/日破";
+  }
+}

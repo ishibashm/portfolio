@@ -1,5 +1,6 @@
 import { EvaluationContext, TimingScorer } from "../types";
 import { directionLabelShort } from "@/lib/directionLabels";
+import { isFatalNoise } from "@/utils/noiseSeverity";
 import {
   getDayStar,
   getYearStar,
@@ -140,15 +141,9 @@ export class KigakuScorer implements TimingScorer {
         ctx.useClassical ? "traditional" : "physical",
       );
       const status = collision.finalVectors[ctx.targetDirection];
-      if (
-        [
-          "NOISE_GOU",
-          "NOISE_ANKEN",
-          "NOISE_HA",
-          "NOISE_HONMEI",
-          "NOISE_TEKI",
-        ].includes(status)
-      ) {
+      // 五大凶殺の集合をここに直接書いていた。値は noiseSeverity と同じだが、
+      // 写しなのであちらを変えてもここは追従しない。定義元から引く。
+      if (isFatalNoise(status)) {
         targetClashStatus = status;
         overallGood = false; // Prevent Complete Resonance on clashing directions
       } else if (status === "WARNING") {

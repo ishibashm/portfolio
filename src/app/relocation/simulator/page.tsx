@@ -41,6 +41,7 @@ import {
 } from "@/components/layout/MetaphysicalConfigBar";
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
+import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";
 import { toJapanDateString } from "@/utils/japanDate";
 
@@ -603,66 +604,11 @@ export default function RelocationSimulatorPage() {
 
       const finalStatus = filteredCollision.finalVectors[direction] || "SAFE";
 
-      const getRatingDetails = (status: string) => {
-        switch (status) {
-          case "OPTIMAL":
-            return {
-              rating: "大吉",
-              color:
-                "text-emerald-400 border border-emerald-500/30 bg-emerald-500/10",
-              score: 100,
-            };
-          case "OPTIMAL_REGULAR":
-            return {
-              rating: "吉",
-              color:
-                "text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5",
-              score: 50,
-            };
-          case "SAFE":
-            return {
-              rating: "普通",
-              color:
-                "text-stone-500 border border-stone-200/80 bg-stone-100/80",
-              score: 0,
-            };
-          case "WARNING":
-            return {
-              rating: "注意",
-              color: "text-amber-400 border border-amber-500/20 bg-amber-500/5",
-              score: -10,
-            };
-          case "NOISE_HONMEI":
-          case "NOISE_TEKI":
-          case "NOISE_GETSUMEI":
-          case "NOISE_GETSUTEKI":
-          case "NOISE_NODE":
-            return {
-              rating: "凶",
-              color:
-                "text-orange-400 border border-orange-500/20 bg-orange-500/5",
-              score: -30,
-            };
-          case "NOISE_VOID":
-          case "NOISE_GOU":
-          case "NOISE_ANKEN":
-          case "NOISE_HA":
-            return {
-              rating: "大凶",
-              color: "text-red-400 border border-red-500/30 bg-red-500/10",
-              score: -100,
-            };
-          default:
-            return {
-              rating: "普通",
-              color:
-                "text-stone-500 border border-stone-200/80 bg-stone-100/80",
-              score: 0,
-            };
-        }
-      };
-
-      const ratingInfo = getRatingDetails(finalStatus);
+      // 6 語への畳み方は @/lib/verdictRating に集約した。ここと
+      // api/relocation/history が同じ switch を写しで持っており、
+      // どちらも本命殺を「凶」、天中殺方位を「大凶」と、凶の唯一の定義
+      // （utils/noiseSeverity）と逆向きに重み付けしていた。
+      const ratingInfo = ratingForStatus(finalStatus);
 
       let stayDuration = 999;
       if (idx < steps.length - 1) {
