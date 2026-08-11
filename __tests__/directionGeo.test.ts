@@ -258,9 +258,7 @@ describe("directionWedgePoints", () => {
 
     const distances = points
       .slice(1)
-      .map(([lat, lon]) =>
-        distanceKmBetween(TOKYO.lat, TOKYO.lon, lat, lon),
-      );
+      .map(([lat, lon]) => distanceKmBetween(TOKYO.lat, TOKYO.lon, lat, lon));
     expect(Math.max(...distances)).toBeCloseTo(500, 6);
   });
 
@@ -407,7 +405,12 @@ describe("全国ズームでの扇形と県判定の一致", () => {
       // 扇形の内側ぎりぎり・中心線・外周と、距離を変えて確かめる。
       for (const offset of [-half + 0.5, 0, half - 0.5]) {
         for (const km of [30, 800, MAX_WEDGE_RANGE_KM]) {
-          const p = destinationAtBearing(base.lat, base.lon, center + offset, km);
+          const p = destinationAtBearing(
+            base.lat,
+            base.lon,
+            center + offset,
+            km,
+          );
           expect(
             directionFromBearing(
               bearingBetween(base.lat, base.lon, p.lat, p.lon),
@@ -493,5 +496,51 @@ describe("directionFromBearing（API ルートの実装からの集約）", () =
     }
     expect(directionFromBearing(NaN, "traditional")).toBe("NW");
     expect(directionFromBearing(NaN, "physical")).toBeUndefined();
+  });
+});
+
+/**
+ * 月交点の方位を出す箇所からの集約。
+ *
+ * ephemerisEngine の calculateVectorCollision と SolarTimeClock が、
+ * ドラゴンヘッド／テールの侵犯方位を出すために同じ区切りを持っていた。
+ * どちらも経度→方位角の変換部分だけが違い、区切りは常に伝統区分。
+ *
+ * ここが nodeMapping で切り替わると判定が変わるので、"traditional" 固定で
+ * あることを固定する。名前でも実装頭でも検索に掛からない場所にあったため、
+ * #135 / #136 / #140 / #141 の集約から漏れていた。
+ */
+describe("月交点の方位の区切り", () => {
+  function legacyNodeSector(bearing: number) {
+    const val = ((bearing % 360) + 360) % 360;
+    if (val >= 345 || val < 15) return "N";
+    if (val >= 15 && val < 75) return "NE";
+    if (val >= 75 && val < 105) return "E";
+    if (val >= 105 && val < 165) return "SE";
+    if (val >= 165 && val < 195) return "S";
+    if (val >= 195 && val < 255) return "SW";
+    if (val >= 255 && val < 285) return "W";
+    return "NW";
+  }
+
+  it("-720〜1080 度を 0.25 度刻みで、寄せる前と同じ答えを返す", () => {
+    const mismatches: string[] = [];
+    for (let b = -720; b <= 1080; b += 0.25) {
+      const now = directionFromBearing(b, "traditional");
+      const before = legacyNodeSector(b);
+      if (now !== before) mismatches.push(`${b}: ${before} → ${now}`);
+    }
+    expect(mismatches).toEqual([]);
+  });
+
+  it("physical を渡すと別の答えになる（固定すべき理由）", () => {
+    // 45 度等分に切り替えると同じ方位角が別の方位に落ちる。月交点の
+    // 区切りは nodeMapping に関わらず伝統区分でなければならない。
+    const differing = [20, 100, 200, 340].filter(
+      (b) =>
+        directionFromBearing(b, "physical") !==
+        directionFromBearing(b, "traditional"),
+    );
+    expect(differing.length).toBeGreaterThan(0);
   });
 });

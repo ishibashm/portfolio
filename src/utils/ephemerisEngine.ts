@@ -62,6 +62,7 @@ import {
 } from "astronomy-engine";
 import { Solar, Lunar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "./solarTime";
+import { directionFromBearing } from "./directionGeo";
 
 /**
  * Astronomical Engine: Validated Physical Orbital Coordinates
@@ -692,7 +693,6 @@ export function calculateVectorCollision(
   // ドラゴンヘッド/テールの侵犯方向
   const nodeDirs = new Set<Direction>();
   if (lunarNodeLon !== null) {
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const getBearing = (lon: number): Direction => {
       let val = 0;
       if (nodeMapping === "physical") {
@@ -705,14 +705,10 @@ export function calculateVectorCollision(
         val = (lon + 90) % 360;
       }
 
-      if (val >= 345 || val < 15) return "N";
-      if (val >= 15 && val < 75) return "NE";
-      if (val >= 75 && val < 105) return "E";
-      if (val >= 105 && val < 165) return "SE";
-      if (val >= 165 && val < 195) return "S";
-      if (val >= 195 && val < 255) return "SW";
-      if (val >= 255 && val < 285) return "W";
-      return "NW";
+      // 区切りは nodeMapping に関わらず常に伝統区分（四正30度・四隅60度）。
+      // nodeMapping が切り替えるのは上の経度→方位角の変換だけで、
+      // ここに nodeMapping を渡すと判定が変わるので固定で "traditional"。
+      return directionFromBearing(val, "traditional");
     };
     nodeDirs.add(getBearing(lunarNodeLon));
     nodeDirs.add(getBearing((lunarNodeLon + 180) % 360));
