@@ -2,13 +2,17 @@ import { describe, it, expect } from "vitest";
 import {
   COMPASS_DIRECTIONS,
   DIRECTION_BEARINGS,
+  FALLBACK_WEDGE_RANGE_KM,
+  MAX_WEDGE_RANGE_KM,
   bearingBetween,
   destinationAtBearing,
   destinationForDirection,
   directionForDestination,
   directionFromBearing,
+  directionWedgePoints,
   distanceKmBetween,
   normalizeBearing,
+  wedgeRangeKmForBounds,
 } from "@/utils/directionGeo";
 
 const NAGOYA = { lat: 35.1815, lon: 136.9064 };
@@ -190,5 +194,104 @@ describe("DIRECTION_BEARINGS", () => {
     COMPASS_DIRECTIONS.forEach((dir, i) => {
       expect(DIRECTION_BEARINGS[dir]).toBe(i * 45);
     });
+  });
+});
+
+const TOKYO = { lat: 35.6812, lon: 139.7671 };
+
+describe("wedgeRangeKmForBounds", () => {
+  it("表示範囲が未確定なら近景ぶんに倒す", () => {
+    expect(wedgeRangeKmForBounds(TOKYO.lat, TOKYO.lon, null)).toBe(
+      FALLBACK_WEDGE_RANGE_KM,
+    );
+  });
+
+  it("四隅のうち最も遠い角まで届く", () => {
+    // 出発地が中心にない矩形。北東の角が最も遠い。
+    const bounds = {
+      minLat: TOKYO.lat - 0.1,
+      maxLat: TOKYO.lat + 1.0,
+      minLon: TOKYO.lon - 0.1,
+      maxLon: TOKYO.lon + 1.0,
+    };
+    const range = wedgeRangeKmForBounds(TOKYO.lat, TOKYO.lon, bounds);
+    const farthest = distanceKmBetween(
+      TOKYO.lat,
+      TOKYO.lon,
+      bounds.maxLat,
+      bounds.maxLon,
+    );
+    expect(range).toBeCloseTo(farthest, 3);
+    // どの角も扇形の長さの内側に入る。
+    for (const [lat, lon] of [
+      [bounds.minLat, bounds.minLon],
+      [bounds.minLat, bounds.maxLon],
+      [bounds.maxLat, bounds.minLon],
+      [bounds.maxLat, bounds.maxLon],
+    ]) {
+      expect(
+        distanceKmBetween(TOKYO.lat, TOKYO.lon, lat, lon),
+      ).toBeLessThanOrEqual(range + 1e-6);
+    }
+  });
+
+  it("引きすぎても上限で止まる", () => {
+    const worldwide = {
+      minLat: -80,
+      maxLat: 80,
+      minLon: -179,
+      maxLon: 179,
+    };
+    expect(wedgeRangeKmForBounds(TOKYO.lat, TOKYO.lon, worldwide)).toBe(
+      MAX_WEDGE_RANGE_KM,
+    );
+  });
+});
+
+describe("directionWedgePoints", () => {
+  it("起点から始まり、外周は指定した長さに乗る", () => {
+    const points = directionWedgePoints(TOKYO.lat, TOKYO.lon, 45, 22.5, 500);
+
+    expect(points[0]).toEqual([TOKYO.lat, TOKYO.lon]);
+
+    const distances = points
+      .slice(1)
+      .map(([lat, lon]) =>
+        distanceKmBetween(TOKYO.lat, TOKYO.lon, lat, lon),
+      );
+    expect(Math.max(...distances)).toBeCloseTo(500, 6);
+  });
+
+  it("縁の点は境界の方位角にそろう（大円で刻む）", () => {
+    const center = 45;
+    const half = 22.5;
+    const points = directionWedgePoints(
+      TOKYO.lat,
+      TOKYO.lon,
+      center,
+      half,
+      1500,
+    );
+
+    // 起点を除く全点の方位角が扇形の角度内に収まる。メルカトル上の
+    // 直線で縁を引くとここが外れる（県の塗り分けと扇形がずれる原因）。
+    for (const [lat, lon] of points.slice(1)) {
+      const bearing = bearingBetween(TOKYO.lat, TOKYO.lon, lat, lon);
+      expect(bearing).toBeGreaterThanOrEqual(center - half - 1e-6);
+      expect(bearing).toBeLessThanOrEqual(center + half + 1e-6);
+    }
+  });
+
+  it("長さを変えても方位の割り当ては変わらない", () => {
+    // 扇形の中心線上の点は、遠くても同じ八方位に落ちる。
+    for (const km of [30, 300, 1500]) {
+      const p = destinationAtBearing(TOKYO.lat, TOKYO.lon, 45, km);
+      expect(
+        directionFromBearing(
+          bearingBetween(TOKYO.lat, TOKYO.lon, p.lat, p.lon),
+          "traditional",
+        ),
+      ).toBe("NE");
+    }
   });
 });
