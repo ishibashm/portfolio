@@ -34,8 +34,10 @@ import {
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
 import {
   destinationAtBearing,
+  directionWedgeHalfWidth,
   directionWedgePoints,
   wedgeRangeKmForBounds,
+  type CompassDirection,
 } from "@/utils/directionGeo";
 import {
   TIER_FILL,
@@ -137,6 +139,11 @@ interface ArbitrageMapInnerProps {
   baseLat: number;
   baseLon: number;
   mapCenter?: [number, number];
+  /**
+   * 真北で見るか磁北で見るか。今は扇形を真北に統一したため描画には
+   * 効いていない。真北・磁北を明示的な方位基準として扱い、物件判定・
+   * 県判定・扇形・移動履歴を同じ計算に寄せる別 PR の受け口として残す。
+   */
   useTrueNorth: boolean;
   layerMode: string;
   radiusKm?: string;
@@ -349,7 +356,6 @@ export default function ArbitrageMapInner({
   baseLat,
   baseLon,
   mapCenter,
-  useTrueNorth,
   layerMode,
   radiusKm,
   prefecture,
@@ -505,8 +511,31 @@ export default function ArbitrageMapInner({
     if (mapCenter) return mapCenter;
     return [baseLat, baseLon];
   }, [baseLat, baseLon, mapCenter]);
-  const declination = -8.2; // Tokyo magnetic declination
-  const rotationAngle = useTrueNorth ? 0 : declination;
+  /**
+   * 扇形は真北で描く。
+   *
+   * 以前はここで磁北ぶん（東京固定の -8.2 度）回していた。ところが同じ
+   * 画面の他の 2 つは真北で方位を決めている。
+   *
+   *   物件のピン   API の direction = getDirectionFromBearing(trueBearing)
+   *   県の塗り分け directionFromBearing(bearingBetween(...))
+   *
+   * 扇形だけが 8.2 度ずれた状態で、東京を出発地にすると 47 県中 17 県が
+   * 扇形と県塗りで別の方位を指していた。30km のうちは横ずれが 4km で
+   * 見えなかったが、扇形を画面いっぱいに伸ばすと 1500km 先で約 210km に
+   * なり、同じ画面に矛盾した 2 つの答えが並ぶ。
+   *
+   * 真北へ揃えて、3 つが同じ基準になる状態にする。
+   *
+   * 磁北そのものを落としたわけではない。真北・磁北を明示的な基準として
+   * 扱い、判定・API・移動履歴まで含めて計算を一本化するのは別 PR。
+   * useTrueNorth は受け口として interface に残してある。
+   */
+
+  /** 八方位の区切り方。県の塗り分け（dayKigaku）と同じ規則を使う。 */
+  const sectorNodeMapping: "traditional" | "physical" = useClassical
+    ? "traditional"
+    : "physical";
 
   // 市区町村ごとの集計データ (広域表示用)
   const municipalityData = useMemo(() => {
@@ -652,7 +681,7 @@ export default function ArbitrageMapInner({
    * その旨は凡例に出す。
    */
   const sectors = useMemo(() => {
-    const dirMap = [
+    const dirMap: { dir: CompassDirection; deg: number }[] = [
       { dir: "N", deg: 0 },
       { dir: "NE", deg: 45 },
       { dir: "E", deg: 90 },
@@ -747,13 +776,15 @@ export default function ArbitrageMapInner({
                 : (undefined as string | undefined),
           }
         : getStyleForVector(d.status ?? "SAFE");
-      const baseBearing = rotationAngle + d.deg;
+      const baseBearing = d.deg;
 
       // 扇形は表示中の画面を覆う長さで描く。以前は 30km 固定で、引くと
       // 先が画面の途中で切れていた。方位の判定に距離の上限は無いので、
       // 見えている範囲の端までは同じ色で塗る。
-      const isCorner = ["NE", "SE", "SW", "NW"].includes(d.dir);
-      const halfWidth = useClassical ? (isCorner ? 30 : 15) : 22.5;
+      //
+      // 幅は directionFromBearing の区切りから引く。扇形の縁と八方位の
+      // 境目は同じものなので、別々に書くとずれる。
+      const halfWidth = directionWedgeHalfWidth(d.dir, sectorNodeMapping);
       const points = directionWedgePoints(
         baseLat,
         baseLon,
@@ -827,9 +858,9 @@ export default function ArbitrageMapInner({
     center,
     baseLat,
     baseLon,
-    rotationAngle,
     getStyleForVector,
     useClassical,
+    sectorNodeMapping,
     wedgeRangeKm,
     isOverview,
   ]);

@@ -9,11 +9,13 @@ import {
   destinationForDirection,
   directionForDestination,
   directionFromBearing,
+  directionWedgeHalfWidth,
   directionWedgePoints,
   distanceKmBetween,
   normalizeBearing,
   wedgeRangeKmForBounds,
 } from "@/utils/directionGeo";
+import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 
 const NAGOYA = { lat: 35.1815, lon: 136.9064 };
 
@@ -292,6 +294,128 @@ describe("directionWedgePoints", () => {
           "traditional",
         ),
       ).toBe("NE");
+    }
+  });
+});
+
+/**
+ * 扇形の縁と八方位の境目は同じもの。ここがずれると「扇形の中にあるのに
+ * 別の方位と判定される」帯ができ、地図の色と物件・県の判定が食い違う。
+ */
+describe("directionWedgeHalfWidth", () => {
+  const MAPPINGS = ["traditional", "physical"] as const;
+
+  it.each(MAPPINGS)("%s: 扇形が八方位を隙間なく敷き詰める", (mapping) => {
+    const total = COMPASS_DIRECTIONS.reduce(
+      (sum, dir) => sum + directionWedgeHalfWidth(dir, mapping) * 2,
+      0,
+    );
+    expect(total).toBe(360);
+  });
+
+  it.each(MAPPINGS)("%s: 扇形の内側は必ずその方位に落ちる", (mapping) => {
+    const EPS = 0.01;
+    for (const dir of COMPASS_DIRECTIONS) {
+      const half = directionWedgeHalfWidth(dir, mapping);
+      const center = DIRECTION_BEARINGS[dir];
+      for (const offset of [-half + EPS, 0, half - EPS]) {
+        expect(
+          directionFromBearing(normalizeBearing(center + offset), mapping),
+        ).toBe(dir);
+      }
+    }
+  });
+
+  it.each(MAPPINGS)("%s: 扇形の外側は隣の方位に落ちる", (mapping) => {
+    const EPS = 0.01;
+    for (const dir of COMPASS_DIRECTIONS) {
+      const half = directionWedgeHalfWidth(dir, mapping);
+      const center = DIRECTION_BEARINGS[dir];
+      for (const offset of [-half - EPS, half + EPS]) {
+        expect(
+          directionFromBearing(normalizeBearing(center + offset), mapping),
+        ).not.toBe(dir);
+      }
+    }
+  });
+});
+
+/**
+ * 全国ズームでの一致。扇形は真北・八方位の中心方位角で描き、県の
+ * 塗り分けは bearingBetween → directionFromBearing で決める。両者が
+ * 同じ基準になっていないと、遠い県ほど大きくずれる。
+ *
+ * 以前は扇形だけ磁北ぶん（東京固定の -8.2 度）回しており、東京起点で
+ * 47 県中 17 県が食い違っていた。1500km 先では横ずれが約 210km になる。
+ */
+describe("全国ズームでの扇形と県判定の一致", () => {
+  /** その方位角を含む扇形の方位。扇形の描画と同じ定義で引く。 */
+  function wedgeContaining(
+    bearing: number,
+    mapping: "traditional" | "physical",
+  ) {
+    const b = normalizeBearing(bearing);
+    return COMPASS_DIRECTIONS.find((dir) => {
+      const half = directionWedgeHalfWidth(dir, mapping);
+      // -180〜180 の符号つき差。境目は directionFromBearing と同じ
+      // 半開区間 [中心-半幅, 中心+半幅) に合わせる。
+      const diff = ((b - DIRECTION_BEARINGS[dir] + 540) % 360) - 180;
+      return diff >= -half && diff < half;
+    });
+  }
+
+  const BASES = [
+    { name: "東京", lat: 35.6812, lon: 139.7671 },
+    { name: "那覇", lat: 26.2124, lon: 127.6809 },
+    { name: "札幌", lat: 43.0618, lon: 141.3545 },
+  ];
+
+  for (const mapping of ["traditional", "physical"] as const) {
+    it.each(BASES)(
+      `$name 起点・${mapping}: 47 県すべてで扇形と県判定が一致する`,
+      (base) => {
+        const mismatches: string[] = [];
+        for (const target of SCRAPE_TARGETS) {
+          const bearing = bearingBetween(
+            base.lat,
+            base.lon,
+            target.lat,
+            target.lon,
+          );
+          // 出発地とほぼ同じ場所は方位角が安定しないので除く。
+          if (distanceKmBetween(base.lat, base.lon, target.lat, target.lon) < 5)
+            continue;
+
+          const prefectureFill = directionFromBearing(bearing, mapping);
+          const wedge = wedgeContaining(bearing, mapping);
+          if (wedge !== prefectureFill) {
+            mismatches.push(
+              `${target.name} 方位角${bearing.toFixed(1)} 県塗り=${prefectureFill} 扇形=${wedge}`,
+            );
+          }
+        }
+        expect(mismatches).toEqual([]);
+      },
+    );
+  }
+
+  it("遠い県でも、扇形の中に描かれる点は同じ方位に判定される", () => {
+    const base = BASES[0];
+    for (const dir of COMPASS_DIRECTIONS) {
+      const half = directionWedgeHalfWidth(dir, "traditional");
+      const center = DIRECTION_BEARINGS[dir];
+      // 扇形の内側ぎりぎり・中心線・外周と、距離を変えて確かめる。
+      for (const offset of [-half + 0.5, 0, half - 0.5]) {
+        for (const km of [30, 800, MAX_WEDGE_RANGE_KM]) {
+          const p = destinationAtBearing(base.lat, base.lon, center + offset, km);
+          expect(
+            directionFromBearing(
+              bearingBetween(base.lat, base.lon, p.lat, p.lon),
+              "traditional",
+            ),
+          ).toBe(dir);
+        }
+      }
     }
   });
 });

@@ -172,6 +172,24 @@ export const MAX_WEDGE_RANGE_KM = 3000;
 /** 表示範囲がまだ確定していないときの長さ。地図の初期ズームに合わせた近景ぶん。 */
 export const FALLBACK_WEDGE_RANGE_KM = 30;
 
+/**
+ * 扇形の半幅（度）。directionFromBearing の区切りと同じ値を返す。
+ *
+ * 幅を地図側に直接書いていたため、区切りの定義が 2 か所にあった。扇形の
+ * 縁と八方位の境目は同じものなので、ずれると「扇形の中にあるのに別の方位
+ * と判定される」帯ができる。ここから引くことで一致を保つ。
+ *
+ * traditional は四隅 60 度・四正 30 度（半幅 30 / 15）、physical は 45 度の
+ * 等分（半幅 22.5）。directionFromBearing の分岐と対応している。
+ */
+export function directionWedgeHalfWidth(
+  direction: CompassDirection,
+  nodeMapping: "traditional" | "physical" = "traditional",
+): number {
+  if (nodeMapping === "physical") return 22.5;
+  return direction.length === 2 ? 30 : 15;
+}
+
 export interface WedgeViewBounds {
   minLat: number;
   maxLat: number;
