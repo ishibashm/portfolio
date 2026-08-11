@@ -166,18 +166,34 @@ export async function GET(request: Request) {
         item.toLon,
       );
 
-      // Respect declination if using Magnetic North
-      let decl = 0;
+      // 判定は真北で行う。
+      //
+      // ここだけ偏角を引いた方位角で判定していた。同じサイトの他は全て
+      // 真北で方位を決めている。
+      //
+      //   /houi の記事      全国向けの静的ページなので偏角を持てない
+      //   物件を方位で探す  direction は真北。磁北は注意喚起にだけ使う
+      //   このファイルの POST  保存時に凍結する判定スナップショットも真北
+      //
+      // 最後のものが分かりやすい実害で、同じ記録の「保存したときの判定」と
+      // 「一覧を開いたときの再評価」が、方位の境目付近で食い違っていた。
+      const direction = bearingToDirection(rawBearing, useClassical);
+
+      // 方位磁針で測るとどの方位に見えるか。判定には使わず、境目に近い
+      // 記録に注意を添えるためだけに持つ（物件検索の DECLINATION_WARNING
+      // と同じ扱い）。真北で見ると決めている人には引かない。
+      let magneticBearing: number | null = null;
+      let magneticDirection: Direction | null = null;
       if (!useTrueNorth) {
         const geoData = await getGeomagneticData(
           item.fromLat,
           item.fromLon,
           depDate.getTime(),
         );
-        decl = geoData?.declination || 0;
+        const decl = geoData?.declination || 0;
+        magneticBearing = (rawBearing - decl + 360) % 360;
+        magneticDirection = bearingToDirection(magneticBearing, useClassical);
       }
-      const adjustedBearing = (rawBearing - decl + 360) % 360;
-      const direction = bearingToDirection(adjustedBearing, useClassical);
 
       // Evaluate physical/classical orbital positions at time of departure
       const env = getCurrentEnvironmentalFrequencies(
@@ -262,8 +278,15 @@ export async function GET(request: Request) {
 
       evaluatedHistories.push({
         ...item,
-        bearing: parseFloat(adjustedBearing.toFixed(1)),
+        bearing: parseFloat(rawBearing.toFixed(1)),
         direction,
+        // 真北と磁北で方位が分かれる記録だけ値が入る。同じなら null。
+        magneticBearing:
+          magneticBearing === null || magneticDirection === direction
+            ? null
+            : parseFloat(magneticBearing.toFixed(1)),
+        magneticDirection:
+          magneticDirection === direction ? null : magneticDirection,
         evaluation: {
           status: finalStatus,
           rating: ratingInfo.rating,
