@@ -7417,7 +7417,7 @@ export const SolarTimeClock = () => {
                               </span>
                             </td>
                             {heatmapData.map((d, i) => {
-                              let st = d.vectors[dir];
+                              const st = d.vectors[dir];
                               const isTendoActive = d.tendoDir && d.tendoDir === dir;
                               // 見出しと同じく、地図が描いている 1 日だけを指す。
                               const isActiveCol = i === 0;

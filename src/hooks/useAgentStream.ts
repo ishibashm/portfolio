@@ -98,7 +98,7 @@ export const useAgentStream = (workspaceId: string) => {
 
         buffer += value;
         // 完全なSSEブロック（空行で終わる）を処理
-        let parts = buffer.split("\n\n");
+        const parts = buffer.split("\n\n");
         buffer = parts.pop() || ""; // 最後の不完全な部分はバッファに残す
 
         for (const part of parts) {

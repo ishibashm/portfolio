@@ -54,7 +54,7 @@ export default function YouTubeChat() {
       const reader = response.body
         .pipeThrough(new TextDecoderStream())
         .getReader();
-      let assistantMessage: ChatMessage = {
+      const assistantMessage: ChatMessage = {
         id: Math.random().toString(),
         role: "assistant",
         content: "⏳ 検索中...",

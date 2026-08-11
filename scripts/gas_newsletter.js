@@ -149,7 +149,7 @@ function doGet(e) {
     const cacheKey = "tech_digest_articles_json";
 
     // キャッシュの読み込み試行
-    let cachedData = cache.get(cacheKey);
+    const cachedData = cache.get(cacheKey);
     if (cachedData) {
       return ContentService.createTextOutput(cachedData).setMimeType(
         ContentService.MimeType.JSON,

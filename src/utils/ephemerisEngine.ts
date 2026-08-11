@@ -1322,7 +1322,7 @@ export function getUpcomingDoyouPeriod(baseDate: Date): DoyouPeriodInfo | null {
   };
 
   // Find the first day in a Doyou period, starting from baseDate
-  let current = new Date(baseDate.getTime());
+  const current = new Date(baseDate.getTime());
   current.setHours(12, 0, 0, 0); // normalize
   let foundType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
   let targetDate = new Date(current.getTime());

@@ -98,7 +98,7 @@ export const useOmniStore = create<OmniTerminalStore>()(
 
       addWidgetToCanvas: (widget) =>
         set((state) => {
-          let newWidgets = [...state.canvasWidgets];
+          const newWidgets = [...state.canvasWidgets];
 
           if (
             widget.type === "data_analyzer" ||

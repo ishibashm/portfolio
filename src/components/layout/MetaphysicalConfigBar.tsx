@@ -91,7 +91,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   // Load config on mount
   useEffect(() => {
     const loadConfig = async () => {
-      let loadedConfig = { ...DEFAULT_CONFIG };
+      const loadedConfig = { ...DEFAULT_CONFIG };
 
       // 1. Try local storage
       const localData = localStorage.getItem("tactical_config_v1");
