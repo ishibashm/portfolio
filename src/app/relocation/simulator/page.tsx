@@ -502,23 +502,6 @@ export default function RelocationSimulatorPage() {
     ? honmeiStar.classical
     : honmeiStar.physical;
 
-  // Declination calculation approximation (Clamped to 2017)
-  const getApproximateDeclination = (lat: number, lon: number): number => {
-    if (
-      isNaN(lat) ||
-      isNaN(lon) ||
-      lat === null ||
-      lon === null ||
-      lat === undefined ||
-      lon === undefined
-    ) {
-      return -7.5;
-    }
-    const baseDecl = -7.5;
-    const latDiff = lat - 35.0;
-    return baseDecl - latDiff * 0.15;
-  };
-
   // Evaluation pipeline with Base Shifting State Machine
   const evaluatedSteps = useMemo(() => {
     let currentBaseLat =
@@ -550,12 +533,8 @@ export default function RelocationSimulatorPage() {
         targetLat,
         targetLon,
       );
-      let decl = 0;
-      if (!useTrueNorth) {
-        decl = getApproximateDeclination(currentBaseLat, currentBaseLon);
-      }
-      const adjustedBearing = (rawBearing - decl + 360) % 360;
-      const direction = bearingToDirection(adjustedBearing, useClassical);
+      // 判定は真北。記事・物件検索・履歴・地図の扇形と同じ基準に揃える。
+      const direction = bearingToDirection(rawBearing, useClassical);
 
       // Metaphysical Evaluation
       const env = getCurrentEnvironmentalFrequencies(
@@ -713,7 +692,6 @@ export default function RelocationSimulatorPage() {
     startLat,
     startLon,
     startName,
-    useTrueNorth,
     personalStar,
     voidZodiacs,
     useClassical,
@@ -876,13 +854,6 @@ export default function RelocationSimulatorPage() {
     const latB = currentStep.toLat;
     const lonB = currentStep.toLon;
 
-    let declA = 0;
-    let declB = 0;
-    if (!useTrueNorth) {
-      declA = getApproximateDeclination(latA, lonA);
-      declB = getApproximateDeclination(latB, lonB);
-    }
-
     const validCandidates: {
       name: string;
       lat: number;
@@ -893,13 +864,11 @@ export default function RelocationSimulatorPage() {
     candidates.forEach((cand) => {
       // 1. Check A -> C direction
       const rawBearingC = getBearing(latA, lonA, cand.lat, cand.lon);
-      const adjustedC = (rawBearingC - declA + 360) % 360;
-      const dirC = bearingToDirection(adjustedC, useClassical);
+      const dirC = bearingToDirection(rawBearingC, useClassical);
 
       // 2. Check C -> B direction
       const rawBearingB = getBearing(cand.lat, cand.lon, latB, lonB);
-      const adjustedB = (rawBearingB - declB + 360) % 360;
-      const dirB = bearingToDirection(adjustedB, useClassical);
+      const dirB = bearingToDirection(rawBearingB, useClassical);
 
       const envA = getCurrentEnvironmentalFrequencies(
         parseSafeDate(currentStep.departureDate),
@@ -1001,7 +970,6 @@ export default function RelocationSimulatorPage() {
   }, [
     activeStepIndex,
     evaluatedSteps,
-    useTrueNorth,
     personalStar,
     voidZodiacs,
     useClassical,
@@ -1091,27 +1059,20 @@ export default function RelocationSimulatorPage() {
     const latB = currentStep.toLat;
     const lonB = currentStep.toLon;
 
-    let declA = 0;
-    let declB = 0;
-    if (!useTrueNorth) {
-      declA = getApproximateDeclination(latA, lonA);
-      declB = getApproximateDeclination(latB, lonB);
-    }
-
     const angleRanges = getDirAngleRanges(useClassical);
 
     safeDirs.forEach((d1) => {
       const rangeA = angleRanges[d1];
       if (!rangeA) return;
-      const angleA1 = (rangeA[0] + declA) % 360;
-      const angleA2 = (rangeA[1] + declA) % 360;
+      const angleA1 = rangeA[0] % 360;
+      const angleA2 = rangeA[1] % 360;
 
       safeDirs.forEach((d2) => {
         const d2Opp = dirOpposites[d2];
         const rangeB = angleRanges[d2Opp];
         if (!rangeB) return;
-        const angleB1 = (rangeB[0] + declB) % 360;
-        const angleB2 = (rangeB[1] + declB) % 360;
+        const angleB1 = rangeB[0] % 360;
+        const angleB2 = rangeB[1] % 360;
 
         const p1 = intersectRays(latA, lonA, angleA1, latB, lonB, angleB1);
         const p2 = intersectRays(latA, lonA, angleA1, latB, lonB, angleB2);
@@ -1137,12 +1098,10 @@ export default function RelocationSimulatorPage() {
 
           candidates.forEach((cand) => {
             const bearingFromA = getBearing(latA, lonA, cand.lat, cand.lon);
-            const adjA = (bearingFromA - declA + 360) % 360;
-            const dirFromA = bearingToDirection(adjA, useClassical);
+            const dirFromA = bearingToDirection(bearingFromA, useClassical);
 
             const bearingToB = getBearing(cand.lat, cand.lon, latB, lonB);
-            const adjB = (bearingToB - declB + 360) % 360;
-            const dirToB = bearingToDirection(adjB, useClassical);
+            const dirToB = bearingToDirection(bearingToB, useClassical);
 
             if (dirFromA === d1 && dirToB === d2) {
               recommendedPrefectures.add(cand.name);
@@ -1156,7 +1115,6 @@ export default function RelocationSimulatorPage() {
   }, [
     activeStepIndex,
     evaluatedSteps,
-    useTrueNorth,
     personalStar,
     voidZodiacs,
     useClassical,
@@ -1645,8 +1603,15 @@ export default function RelocationSimulatorPage() {
             <span className="text-stone-500 font-medium">方位の基準:</span>
             <button
               onClick={() => {
-                setUseTrueNorth(!useTrueNorth);
-                saveDraft(steps, startLat, startLon, startName, !useTrueNorth);
+                const next = !useTrueNorth;
+                setUseTrueNorth(next);
+                saveDraft(steps, startLat, startLon, startName, next);
+                // この画面はこの設定を読むだけで書き戻していなかった。
+                // 物件検索・資産マップは saveUnifiedConfig で共有設定に
+                // 書いており、ここだけ片方向だったので揃える。判定は
+                // 真北で固定なので、この設定が効くのは「方位磁針で測ると
+                // ずれる」注意（DECLINATION_WARNING）を出すかどうか。
+                saveUnifiedConfig({ use_true_north: next });
               }}
               className={`px-3 py-1.5 rounded-xl font-bold border transition-all ${
                 useTrueNorth
@@ -1654,7 +1619,7 @@ export default function RelocationSimulatorPage() {
                   : "bg-amber-500/20 text-amber-300 border-amber-500/30"
               }`}
             >
-              {useTrueNorth ? "真北 (天文幾何方位)" : "磁北 (風水磁気偏角補正)"}
+              {useTrueNorth ? "真北 (地図の北)" : "磁北 (方位磁針の北)"}
             </button>
           </div>
 
