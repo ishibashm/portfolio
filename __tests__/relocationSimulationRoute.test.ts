@@ -99,6 +99,23 @@ describe("/api/relocation/simulation", () => {
     });
   });
 
+  it("stores the plan name as given, personal or not", async () => {
+    // 利用ガイドは長く「プラン名に個人情報を入れないでください。保存した
+    // プランは共通の一覧に並びます」と案内していたが、この API は最初から
+    // 持ち主で絞っており、共通の一覧は存在しない。案内を「自由に付けて
+    // かまいません」に直したので、氏名を含む名前を伏せ字にも加工にもせず
+    // そのまま保存することを固定する。
+    create.mockResolvedValue({ id: "plan-1" });
+
+    const name = "山田家 2027年春の引越し";
+    const response = await POST(post({ name, steps: [] }));
+
+    expect(response.status).toBe(200);
+    expect(create).toHaveBeenCalledWith({
+      data: { name, steps: [], userId: user.id },
+    });
+  });
+
   it("reuses a legacy app user with the same email", async () => {
     userFindUnique
       .mockResolvedValueOnce(null)
