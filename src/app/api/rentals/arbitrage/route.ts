@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
   getHonmeiStar,
@@ -11,12 +12,10 @@ import {
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
   filterCollisionByMode,
-  getCurrentZodiac,
+  type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { haLabelForLayer, type BoardLayer } from "@/lib/directionLabels";
-import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
-import { Solar } from "lunar-javascript";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
@@ -162,7 +161,8 @@ export async function GET(request: Request) {
     | "personal_kigaku"
     | "personal_bazi"
     | "environmental";
-  const actionIntent = (searchParams.get("actionIntent") || "MIGRATION") as any;
+  const actionIntent = (searchParams.get("actionIntent") ||
+    "MIGRATION") as ActionIntent;
   const useTrueNorth = useTrueNorthStr === "true";
   // 掲載終了した物件は一覧から消えるだけなので、DB には残り続ける。
   // 実測では最終確認から 7 日以上経った行の半数が既に 404 だった。
@@ -312,14 +312,6 @@ export async function GET(request: Request) {
     dB,
   );
 
-  let activeVectors: Partial<Record<Direction, string>>;
-  if (layerMode === "year") activeVectors = vectorData.yearLayer;
-  else if (layerMode === "month") activeVectors = vectorData.monthLayer;
-  else if (layerMode === "day") activeVectors = vectorData.dayLayer;
-  else activeVectors = vectorData.finalVectors;
-
-  const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
-
   // 動的偏角の取得。出発地ごとに違うので人ごとに引く。
   const declinations = await Promise.all(
     party.map(async (m) => {
@@ -341,11 +333,10 @@ export async function GET(request: Request) {
       return -8.2;
     }),
   );
-  const declination = declinations[0];
 
   try {
     // 2. DBから物件データを取得 (緯度経度があるもの)
-    const whereClause: any = {
+    const whereClause: Prisma.rental_propertiesWhereInput = {
       lat: { not: null },
       lon: { not: null },
       rent: { not: null },
