@@ -7,10 +7,10 @@
  */
 import raw from "@/data/areaDirections.json";
 import {
-  getBearing,
-  getDistance,
-  getDirectionFromBearing,
-} from "@/lib/geoDirection";
+  bearingBetween,
+  distanceKmBetween,
+  directionFromBearing,
+} from "@/utils/directionGeo";
 import {
   DIRECTIONS,
   DIRECTION_LABELS,
@@ -60,10 +60,11 @@ export function neighboursByDirection(
 
   for (const a of AREAS) {
     if (a.code === origin.code) continue;
-    const distanceKm = getDistance(origin.lat, origin.lon, a.lat, a.lon);
+    const distanceKm = distanceKmBetween(origin.lat, origin.lon, a.lat, a.lon);
     if (distanceKm < MIN_KM || distanceKm > MAX_KM) continue;
-    const bearing = getBearing(origin.lat, origin.lon, a.lat, a.lon);
-    const direction = getDirectionFromBearing(bearing) as CompassDirection;
+    const bearing = bearingBetween(origin.lat, origin.lon, a.lat, a.lon);
+    // エリアページは気学の伝統区分（四正30度・四隅60度）で切る。
+    const direction = directionFromBearing(bearing, "traditional");
     if (!out[direction]) continue; // CENTER は返らないが型のため
     out[direction].push({
       ...a,
