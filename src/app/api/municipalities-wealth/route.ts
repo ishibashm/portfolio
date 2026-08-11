@@ -7,6 +7,7 @@ import {
   getCurrentEnvironmentalFrequencies,
   generateBoard,
   calculateVectorCollision,
+  filterCollisionByMode,
   getPersonalVoidZodiac,
   Direction,
   AstroEngine,
@@ -106,6 +107,12 @@ export async function GET(request: Request) {
   let birthDateStr = searchParams.get("birthDate");
   const engineType = searchParams.get("engineType") || "physical"; // 'physical' or 'classical'
   const layerMode = searchParams.get("layerMode") || "final"; // 'final', 'year', 'month', 'day'
+  const directionFilterMode = (searchParams.get("directionFilterMode") ||
+    "composite") as
+    | "composite"
+    | "personal_kigaku"
+    | "personal_bazi"
+    | "environmental";
   const useTrueNorth = searchParams.get("useTrueNorth") === "true";
   const useClassical = engineType === "classical";
   const nodeMapping = (searchParams.get("nodeMapping") ||
@@ -189,7 +196,7 @@ export async function GET(request: Request) {
   );
   const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
-  const vectorData = calculateVectorCollision(
+  const rawCollision = calculateVectorCollision(
     useClassical ? honmeiStar.classical : honmeiStar.physical,
     yB,
     mB,
@@ -201,6 +208,25 @@ export async function GET(request: Request) {
     baseLon,
     undefined,
     nodeMapping,
+  );
+
+  // 利用者が選んだ絞り込み（本命星のみ／環境要因のみ など）を通す。
+  //
+  // ここだけ filterCollisionByMode を呼んでおらず、設定を変えても
+  // 資産マップの色だけ変わらなかった。ほかの API（arbitrage / history /
+  // export / simulator）はすべて通している。
+  //
+  // 既定の "composite" は素通し（ephemerisEngine.ts:1429）なので、
+  // 指定が無いときの判定はこれまでと変わらない。
+  const vectorData = filterCollisionByMode(
+    rawCollision,
+    useClassical ? honmeiStar.classical : honmeiStar.physical,
+    null,
+    voidZodiacs,
+    directionFilterMode,
+    yB,
+    mB,
+    dB,
   );
 
   if (layerMode === "year") activeVectors = vectorData.yearLayer;
