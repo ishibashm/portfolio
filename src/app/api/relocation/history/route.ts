@@ -3,6 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
 import { denyUnlessAdmin } from "@/lib/adminApi";
+import { ratingForStatus } from "@/lib/verdictRating";
 import {
   getCurrentEnvironmentalFrequencies,
   generateBoard,
@@ -47,66 +48,11 @@ function bearingToDirection(
   return getKigakuSector(bearing, useClassical);
 }
 
-// Map auspice codes to clean UX ratings
-function getRatingLabel(status: string): {
-  rating: "大吉" | "吉" | "注意" | "普通" | "凶" | "大凶";
-  score: number;
-  color: string;
-} {
-  switch (status) {
-    case "OPTIMAL":
-      return {
-        rating: "大吉",
-        score: 100,
-        color:
-          "text-emerald-400 border border-emerald-500/30 bg-emerald-500/10",
-      };
-    case "OPTIMAL_REGULAR":
-      return {
-        rating: "吉",
-        score: 50,
-        color:
-          "text-emerald-500/80 border border-emerald-500/20 bg-emerald-500/5",
-      };
-    case "SAFE":
-      return {
-        rating: "普通",
-        score: 0,
-        color: "text-gray-400 border border-white/10 bg-white/5",
-      };
-    case "WARNING":
-      return {
-        rating: "注意",
-        score: -10,
-        color: "text-amber-400 border border-amber-500/20 bg-amber-500/5",
-      };
-    case "NOISE_HONMEI":
-    case "NOISE_TEKI":
-    case "NOISE_GETSUMEI":
-    case "NOISE_GETSUTEKI":
-    case "NOISE_NODE":
-      return {
-        rating: "凶",
-        score: -30,
-        color: "text-orange-400 border border-orange-500/20 bg-orange-500/5",
-      };
-    case "NOISE_VOID":
-    case "NOISE_GOU":
-    case "NOISE_ANKEN":
-    case "NOISE_HA":
-      return {
-        rating: "大凶",
-        score: -100,
-        color: "text-red-400 border border-red-500/30 bg-red-500/10",
-      };
-    default:
-      return {
-        rating: "普通",
-        score: 0,
-        color: "text-gray-400 border border-white/10 bg-white/5",
-      };
-  }
-}
+// 6 語への畳み方は @/lib/verdictRating に集約した。以前はここと
+// relocation/simulator が同じ switch を写しで持っており、どちらも
+// 本命殺・本命的殺（五大凶殺）を「凶」に、天中殺方位（二次凶）を
+// 「大凶」に置いていた。凶の唯一の定義（utils/noiseSeverity）と逆向き。
+const getRatingLabel = ratingForStatus;
 
 export async function GET(request: Request) {
   try {

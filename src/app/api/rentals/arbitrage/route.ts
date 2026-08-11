@@ -14,6 +14,7 @@ import {
   getCurrentZodiac,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { haLabelForLayer, type BoardLayer } from "@/lib/directionLabels";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
 import {
@@ -854,7 +855,9 @@ export async function GET(request: Request) {
         maxAstroFactor = "天中殺期間 (移転NG)";
       else if (astrologyStatus === "NOISE_GOU") maxAstroFactor = "五黄殺";
       else if (astrologyStatus === "NOISE_ANKEN") maxAstroFactor = "暗剣殺";
-      else if (astrologyStatus === "NOISE_HA") maxAstroFactor = "歳破";
+      // 破は盤で呼び名が変わる。月盤で絞っているのに「歳破」と出していた。
+      else if (astrologyStatus === "NOISE_HA")
+        maxAstroFactor = haLabelForLayer(layerMode as BoardLayer);
       else if (astrologyStatus === "NOISE_HONMEI") maxAstroFactor = "本命殺";
       else if (astrologyStatus === "NOISE_TEKI") maxAstroFactor = "本命的殺";
       else if (targetDay.isUltraLucky) maxAstroFactor = "超ウルトラ吉";
@@ -875,7 +878,10 @@ export async function GET(request: Request) {
         maxAstroFactor = "月交点ノイズ";
       else if (astroFlags.includes("DECLINATION_WARNING"))
         maxAstroFactor = "偏角境界";
-      else if (astrologyStatus === "SAFE") maxAstroFactor = "吉方位";
+      // SAFE は「凶ではない」であって吉ではない。auspiciousDays.isAuspicious は
+      // OPTIMAL 系だけを吉とし、記事ページも「平」と書く。ここだけ「吉方位」に
+      // していたため、物件検索で吉と出た方位が記事では吉でない、が起きていた。
+      else if (astrologyStatus === "SAFE") maxAstroFactor = "平穏";
 
       const totalRent = (p.rent || 0) + (p.management_fee || 0);
       const sizeSqm = Number(p.size_sqm);
