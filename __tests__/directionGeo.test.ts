@@ -419,3 +419,79 @@ describe("全国ズームでの扇形と県判定の一致", () => {
     }
   });
 });
+
+/**
+ * API ルートに置かれていた実装との等価性。
+ *
+ * municipalities-wealth / rentals-arbitrage / arbitrage-timeline の 3 本が
+ * それぞれ private な getDirectionFromBearing を持っていた。中身は同一
+ * だったが、直すときに 1 本忘れると物件の方位だけが古い区切りのままになる。
+ * directionFromBearing へ寄せたので、寄せる前と同じ答えを返すことを固定する。
+ *
+ * kigakuUtils 側のテストは boolean（useClassical）の入口と NaN ガードを
+ * 見ている。こちらは nodeMapping の入口と、ガードの無い素の入力を見る。
+ */
+describe("directionFromBearing（API ルートの実装からの集約）", () => {
+  /** 3 本の API ルートに入っていた実装。比較対象としてだけ残す。 */
+  function legacyGetDirectionFromBearing(
+    bearing: number,
+    nodeMapping: "traditional" | "physical" = "traditional",
+  ) {
+    const b = ((bearing % 360) + 360) % 360;
+    if (nodeMapping === "physical") {
+      const index = Math.floor(((b + 22.5) % 360) / 45);
+      const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      return dirs[index];
+    }
+    if (b >= 345 || b < 15) return "N";
+    if (b >= 15 && b < 75) return "NE";
+    if (b >= 75 && b < 105) return "E";
+    if (b >= 105 && b < 165) return "SE";
+    if (b >= 165 && b < 195) return "S";
+    if (b >= 195 && b < 255) return "SW";
+    if (b >= 255 && b < 285) return "W";
+    return "NW";
+  }
+
+  const MAPPINGS = ["traditional", "physical"] as const;
+
+  it.each(MAPPINGS)(
+    "%s: -720〜1080 度を 0.25 度刻みで、寄せる前と同じ答えを返す",
+    (mapping) => {
+      const mismatches: string[] = [];
+      for (let b = -720; b <= 1080; b += 0.25) {
+        const now = directionFromBearing(b, mapping);
+        const before = legacyGetDirectionFromBearing(b, mapping);
+        if (now !== before) mismatches.push(`${b}: ${before} → ${now}`);
+      }
+      expect(mismatches).toEqual([]);
+    },
+  );
+
+  it("既定の nodeMapping が traditional で揃う", () => {
+    // 3 本の API ルートの既定も traditional だった。寄せたことで既定が
+    // 入れ替わっていないことを見る（kigakuUtils 側は physical が既定）。
+    for (const b of [0, 20, 100, 200, 340]) {
+      expect(directionFromBearing(b)).toBe(legacyGetDirectionFromBearing(b));
+      expect(directionFromBearing(b)).toBe(
+        directionFromBearing(b, "traditional"),
+      );
+    }
+  });
+
+  it("有限でない入力でも寄せる前と同じ結果になる", () => {
+    // traditional は比較がすべて偽になって NW に落ちる。physical は
+    // 添字が NaN になり undefined が返る。型は Direction を名乗って
+    // いるので undefined は嘘だが、ここは寄せる前と同じ挙動を保つ。
+    // 直すなら呼び出し側の入力検証とセットで別途。
+    for (const b of [NaN, Infinity, -Infinity]) {
+      for (const mapping of MAPPINGS) {
+        expect(directionFromBearing(b, mapping)).toBe(
+          legacyGetDirectionFromBearing(b, mapping),
+        );
+      }
+    }
+    expect(directionFromBearing(NaN, "traditional")).toBe("NW");
+    expect(directionFromBearing(NaN, "physical")).toBeUndefined();
+  });
+});
