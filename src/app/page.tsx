@@ -123,6 +123,18 @@ export default function Home() {
             使い方ガイド
           </Link>
           <span>•</span>
+          {/*
+            鑑定士の掲載は登録制で、掲載が 0 件のあいだは記事側の導線
+            （PractitionerStrip）が何も描かない。ここに置いておかないと、
+            登録したい人がページに辿り着けない。
+          */}
+          <Link
+            href="/practitioners"
+            className="hover:text-rose-600 transition-colors"
+          >
+            鑑定士の掲載
+          </Link>
+          <span>•</span>
           <Link href="/about" className="hover:text-rose-600 transition-colors">
             このサイトについて
           </Link>

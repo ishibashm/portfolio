@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { DirectionComments } from "@/components/comments/DirectionComments";
+import { PractitionerStrip } from "@/components/practitioners/PractitionerStrip";
 import { houiYearTopic } from "@/lib/comments";
 import { DirectionEffects } from "@/components/houi/DirectionEffects";
 import { notFound } from "next/navigation";
@@ -296,6 +297,8 @@ export default async function Page({
         </section>
 
         <AreaEntryLinks heading="吉方位に何があるかを見る" />
+
+        <PractitionerStrip />
 
         <DirectionComments
           topicKey={houiYearTopic(year, star)}
