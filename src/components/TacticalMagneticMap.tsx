@@ -1,19 +1,11 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import dynamic from "next/dynamic";
-import {
-  Crosshair,
-  Maximize,
-  Minimize,
-  Download,
-  HelpCircle,
-  Layers,
-  Box,
-} from "lucide-react";
-import { BlockMath, InlineMath } from "react-katex";
+import { Crosshair, Download, Box } from "lucide-react";
 import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
+import type { LayerMode } from "@/utils/directionStatus";
 
 // Because Leaflet needs the window object, we must dynamically import it with ssr: false
 const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
@@ -54,8 +46,8 @@ interface MapProps {
     hazard?: boolean;
   };
   toggleLayer?: (layer: "terrain" | "weather" | "bio" | "hazard") => void;
-  activeLayerMode?: string;
-  setActiveLayerMode?: (mode: any) => void;
+  activeLayerMode?: LayerMode;
+  setActiveLayerMode?: (mode: LayerMode) => void;
   activeModel?: "physical" | "classical";
   properties?: any[];
   useTrueNorth?: boolean;
@@ -100,7 +92,6 @@ export function TacticalMagneticMapComponent({
     propsSetUseTrueNorth !== undefined
       ? propsSetUseTrueNorth
       : localSetUseTrueNorth;
-  const [activeDecryptTab, setActiveDecryptTab] = useState(1);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const isPhysical = activeModel === "physical";

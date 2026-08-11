@@ -7,12 +7,10 @@ import {
   Zap,
   Compass,
   Radio,
-  Sparkles,
   Waves,
   Cpu,
   Orbit,
 } from "lucide-react";
-import { InlineMath, BlockMath } from "react-katex";
 
 interface DashboardProps {
   kpIndex: number | null;
@@ -35,13 +33,16 @@ interface DashboardProps {
   timingRecommendation?: string;
 }
 
+// eot / timingDetails / timingRecommendation は SolarTimeClock から
+// 渡ってくるが、この画面では描画していない。呼び出し側を壊さないよう
+// 受け口は残し、分割代入からだけ外してある。
+
 export function BioMagneticDashboard({
   kpIndex,
   xrayFlux,
   magneticF,
   magneticD,
   magneticI,
-  eot,
   hrv,
   setHrv,
   gsr,
@@ -50,8 +51,6 @@ export function BioMagneticDashboard({
   setBaseSyncDays,
   ansLoad,
   shieldCapacity,
-  timingDetails,
-  timingRecommendation,
 }: DashboardProps) {
   // --- Animated Waveform State (Fake Data for UI Richness) ---
   const [waveformData, setWaveformData] = useState<number[]>(
@@ -114,15 +113,6 @@ export function BioMagneticDashboard({
           : xrayData.type === "B"
             ? 25
             : 10;
-
-  // Radar Chart Data Calculation
-  const radarRadius = 40;
-  const radarCenter = 50;
-  const getRadarPoint = (index: number, total: number, score: number) => {
-    const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
-    const r = radarRadius * score;
-    return `${radarCenter + r * Math.cos(angle)},${radarCenter + r * Math.sin(angle)}`;
-  };
 
   return (
     <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
