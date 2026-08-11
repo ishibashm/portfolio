@@ -76,8 +76,43 @@ async function main() {
   candidates.sort((a, b) => b.full.length - a.full.length);
   console.log(`候補の市区町村: ${candidates.length}`);
 
+  // 県ごとの掲載数。地図の俯瞰（県別の色分けと件数ラベル）が使う。
+  //
+  // 市区町村より先に数えるのは、掲載が 1 件も無い県の市区町村を
+  // 問い合わせないため。辞書を 12 県 441 件から 47 県 1,917 件に広げた結果、
+  // 素直に回すと問い合わせが 4 倍になる。県の合計が MIN_ROWS に満たなければ、
+  // その県のどの市区町村も MIN_ROWS を超えない。まとめて飛ばせる。
+  //
+  // 市区町村の集計から合算しないのは、掲載 30 件未満の市区町村が
+  // MIN_ROWS で落ちていて合計が実態より減るため。県単位で数え直す。
+  const prefTotals: Record<string, number> = {};
+  for (const prefName of Object.values(PREF_JP)) {
+    const { rows } = await pool.query(
+      `SELECT count(*)::int AS n
+         FROM rental_properties
+        WHERE address LIKE $1 || '%'
+          AND lat IS NOT NULL AND lon IS NOT NULL
+          AND rent IS NOT NULL AND size_sqm > 0
+          AND last_seen_at > now() - interval '30 days'
+          AND (expire_date IS NULL OR expire_date >= now())`,
+      [prefName],
+    );
+    const n = rows[0]?.n ?? 0;
+    if (n > 0) prefTotals[prefName] = n;
+  }
+
+  const prefsWorthScanning = new Set(
+    Object.entries(prefTotals)
+      .filter(([, n]) => n >= MIN_ROWS)
+      .map(([name]) => name),
+  );
+  const scannable = candidates.filter((c) => prefsWorthScanning.has(c.pref));
+  console.log(
+    `掲載のある県: ${prefsWorthScanning.size} / 問い合わせる市区町村: ${scannable.length}`,
+  );
+
   const areas: Area[] = [];
-  for (const c of candidates) {
+  for (const c of scannable) {
     const { rows } = await pool.query(
       `SELECT count(*)::int AS n,
               avg(lat) AS lat, avg(lon) AS lon,
@@ -129,30 +164,11 @@ async function main() {
     ),
   );
 
-  // 県ごとの掲載数。地図の俯瞰（県別の色分けと件数ラベル）が使う。
-  //
+  // prefTotals は市区町村より先に数えてある（掲載の無い県を飛ばすため）。
   // 以前の俯瞰は「API が返した安い順 500 件」を県名で数えて塗っていた。
   // 母数が 500 件では安い県だけが濃く出るし、その 500 件を出すために
   // 全国 45 万行の名寄せ（実測 18.4 秒）を走らせていた。俯瞰に必要なのは
-  // 県ごとの数字だけなので、ここで毎晩数えて静的に配る。
-  //
-  // 市区町村の集計から合算しないのは、掲載 30 件未満の市区町村が
-  // MIN_ROWS で落ちていて合計が実態より減るため。県単位で数え直す。
-  const prefTotals: Record<string, number> = {};
-  for (const prefName of Object.values(PREF_JP)) {
-    const { rows } = await pool.query(
-      `SELECT count(*)::int AS n
-         FROM rental_properties
-        WHERE address LIKE $1 || '%'
-          AND lat IS NOT NULL AND lon IS NOT NULL
-          AND rent IS NOT NULL AND size_sqm > 0
-          AND last_seen_at > now() - interval '30 days'
-          AND (expire_date IS NULL OR expire_date >= now())`,
-      [prefName],
-    );
-    const n = rows[0]?.n ?? 0;
-    if (n > 0) prefTotals[prefName] = n;
-  }
+  // 県ごとの数字だけなので、毎晩数えて静的に配る。
 
   // スキャナーの県プリセット用。areaDirections.json は 78KB あり、
   // client コンポーネントに読ませるとそのままバンドルに乗る。県名だけの
