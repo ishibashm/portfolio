@@ -57,6 +57,28 @@ export function toLogMessage(err: unknown): string {
 }
 
 /**
+ * API の応答本文に入れるエラー文言。
+ *
+ * `catch (error: any)` で `{ error: error.message || "既定の文言" }` と
+ * 書いていたものの置き換え。結果は同じで、
+ *
+ *   Error（message あり）  その message
+ *   Error（message が空）  既定の文言
+ *   Error 以外            既定の文言
+ *
+ * ログ用の `toLogMessage` と分けてあるのは、応答に素の値を混ぜないため。
+ * `toLogMessage(err) || 既定` にすると、Error 以外が投げられたときに
+ * `"[object Object]"` が応答本文に出てしまう。原因を追うための値は
+ * `console.error` の側に残す（各ルートで元の値をそのまま渡している）。
+ *
+ * 画面に出す文言を作る `toUserMessage` とも別。こちらは応答であって、
+ * そのまま利用者に見せると決まっているわけではない。
+ */
+export function toResponseMessage(err: unknown, fallback: string): string {
+  return (err instanceof Error && err.message) || fallback;
+}
+
+/**
  * 投げられたものに付いている `code` を取り出す。
  *
  * Node の fs は `ENOENT`、Prisma は `P2037` のようにコードで種類を伝えてくる。

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
+import { toResponseMessage } from "@/lib/errorMessage";
 
 /**
  * ログイン中の利用者ごとの設定（生年月日・出発地・基準値）。
@@ -133,10 +134,11 @@ export async function POST(req: Request) {
       success: true,
       updated_at: updatedAt.toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
+    // 原因を追うための値は console 側にそのまま残す。応答は文言だけ。
     console.error("Config Save Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to save config" },
+      { error: toResponseMessage(error, "Failed to save config") },
       { status: 500 },
     );
   }
