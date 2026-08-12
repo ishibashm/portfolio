@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
+import { toResponseMessage } from "@/lib/errorMessage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // Allow more time for AI processing
@@ -156,10 +157,10 @@ ${body}`,
     }
 
     return NextResponse.json({ success: true, results });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error processing webhook:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: toResponseMessage(error, "Internal server error") },
       { status: 500 },
     );
   }

@@ -4,6 +4,7 @@ import { google } from "@ai-sdk/google";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import { maskPII } from "@/utils/anonymizer";
+import { toResponseMessage } from "@/lib/errorMessage";
 
 export const runtime = "edge";
 
@@ -37,10 +38,10 @@ export async function POST(req: Request) {
       },
       { status: 403 },
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Summarize API Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to generate summary." },
+      { error: toResponseMessage(error, "Failed to generate summary.") },
       { status: 500 },
     );
   }
