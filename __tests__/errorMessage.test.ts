@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
+import { errorCode, toLogMessage, toUserMessage } from "@/lib/errorMessage";
 
 describe("画面に出すエラー文言", () => {
   it("ブラウザの英語をそのまま出さない", () => {
@@ -79,5 +79,35 @@ describe("ログに出すエラー文言", () => {
   it("画面用の文言とは別物である", () => {
     const err = new Error("Failed to fetch");
     expect(toLogMessage(err)).not.toBe(toUserMessage(err));
+  });
+});
+
+/**
+ * `e.code === "ENOENT"` のような分岐を `catch (e: any)` 無しで書くための取り出し。
+ * ここは**ログではなく制御**に使うので、取れなかったときに何が起きるかが要。
+ */
+describe("投げられたものから code を取り出す", () => {
+  it("Node の fs や Prisma が付ける code を取れる", () => {
+    const enoent = Object.assign(new Error("no such file"), {
+      code: "ENOENT",
+    });
+    expect(errorCode(enoent)).toBe("ENOENT");
+    // Prisma は Error の派生に code を持たせてくる。
+    expect(errorCode({ code: "P2037", message: "too many clients" })).toBe(
+      "P2037",
+    );
+  });
+
+  it("code が無いものは undefined（どの比較にも一致しない）", () => {
+    // `e.code === "ENOENT"` と書いていた頃と同じ結果になることが要点。
+    for (const v of [new Error("plain"), null, undefined, 42, "text", {}]) {
+      expect(errorCode(v), String(v)).toBeUndefined();
+    }
+  });
+
+  it("code が文字列でないものは拾わない", () => {
+    // 数値の errno を code と取り違えると、比較が静かに外れる。
+    expect(errorCode({ code: 2 })).toBeUndefined();
+    expect(errorCode({ code: null })).toBeUndefined();
   });
 });
