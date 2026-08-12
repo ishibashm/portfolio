@@ -836,8 +836,7 @@ export function SolarTimeTableComponent({
             </div>
 
             <p className="text-stone-500 text-xs font-mono mb-4 text-justify leading-relaxed">
-              以下のデータは現在の生体・環境・メタフィジカル計算式をすべて統合したフル・テレメトリーデータです。
-              本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければアーカイブ用としてエクスポートしてください。
+              以下のデータは現在の生体・環境・メタフィジカル計算式をすべて統合したフル・テレメトリーデータです。本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければアーカイブ用としてエクスポートしてください。
             </p>
 
             <div className="flex-grow overflow-auto border border-stone-200 bg-white/70 p-4 mb-4">
