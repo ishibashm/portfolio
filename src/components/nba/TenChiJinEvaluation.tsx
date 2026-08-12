@@ -126,7 +126,15 @@ export function TenChiJinEvaluation({
   simulatedShield = 80,
   onApplyAction,
   singleStepIndex = 0,
-  birthDate = "1988-11-25T04:26",
+  /**
+   * 生年月日。**既定値を置かない。**
+   *
+   * 以前は運営者のもの（1988-11-25T04:26）が入っていた。人（Jin）の
+   * スコアは本命星の相性で決まるので、渡し忘れた画面には他人の命式で
+   * 「総合シンクロ指数」が出る。空文字なら parseSafeDate が「今日生まれ」
+   * に落ちるので、それも避けて下で描画そのものを止める。
+   */
+  birthDate = "",
 }: TenChiJinEvaluationProps) {
   // Main User astrological hardware
   const mainUserBirthDateObj = useMemo(() => parseSafeDate(birthDate), [birthDate]);
@@ -369,6 +377,22 @@ export function TenChiJinEvaluation({
   const isTenLow = timeMetrics.score <= 40;
   const isChiLow = spaceMetrics.score <= 40;
   const isJinLow = humanMetrics.score <= 40;
+
+  // 生年月日が無いときは、指数を出さずに何が足りないかだけ出す。
+  // hooks はすべて上で呼び終えているので、ここで返してよい。
+  if (!birthDate) {
+    return (
+      <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md shadow-sm">
+        <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
+          <BrainCircuit size={16} className="text-stone-400" />
+          天地人・統合適合性マトリクス
+        </h3>
+        <p className="mt-3 text-xs leading-relaxed text-stone-500">
+          生年月日が未入力です。人（Jin）の評価は本命星の相性から決まるため、生年月日が無いと総合シンクロ指数は出せません。
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
