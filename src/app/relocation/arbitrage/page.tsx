@@ -258,7 +258,8 @@ export default function ArbitrageScannerPage() {
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
-  const [dataLimit, setDataLimit] = useState(500);
+  /** 一覧 API に渡す取得上限。変える手段が画面に無いので定数。 */
+  const dataLimit = 500;
   const [mapCenter, setMapCenter] = useState<[number, number]>([38.0, 137.0]); // Default to Japan center
   /**
    * mapCenter の意味。area=検索の起点（半径ぶんのズームで表示）、
@@ -311,7 +312,6 @@ export default function ArbitrageScannerPage() {
   const [localBirthLat, setLocalBirthLat] = useState("34.3952");
   const [localBirthLon, setLocalBirthLon] = useState("132.4482");
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
-  const [localTargetDate, setLocalTargetDate] = useState(getTodayString());
 
   // おすすめ度（星マーク）の描画
   // 星は総合スコアの見た目表現。arbitrageScore は割安さが 6 割を占めるため、
@@ -507,7 +507,6 @@ export default function ArbitrageScannerPage() {
   // 全体ロード時のカード型スケルトン
 
   // Pagination & Filtering state
-  const [currentPage, setCurrentPage] = useState(1);
   const [filterName, setFilterName] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   /**
@@ -530,7 +529,6 @@ export default function ArbitrageScannerPage() {
   const [smartBusy, setSmartBusy] = useState(false);
   // 詳細パネルに出している物件。カード・表・TOP5 のクリックで入る
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const itemsPerPage = 50;
 
   // 評価軸の重み。
   //
@@ -1019,7 +1017,6 @@ export default function ArbitrageScannerPage() {
     setBirthDate(bDate);
     setLocalBirthDate(normalizeDateTimeLocal(bDate));
     setTargetDate(tDate);
-    setLocalTargetDate(tDate);
     if (!openOverview) {
       setRadiusKm(rKm);
       setPrefecture(pref);
@@ -1097,7 +1094,6 @@ export default function ArbitrageScannerPage() {
 
         if (newTargetDate) {
           setTargetDate(newTargetDate);
-          setLocalTargetDate(newTargetDate);
         }
         if (newUseClassical !== undefined) {
           setUseClassical(newUseClassical);
@@ -1307,7 +1303,6 @@ export default function ArbitrageScannerPage() {
 
   const setLocalDateChange = (newDateStr: string) => {
     setTargetDate(newDateStr);
-    setLocalTargetDate(newDateStr);
     localStorage.setItem("arb_targetDate", newDateStr);
     saveUnifiedConfig({ target_date: newDateStr });
 
@@ -1366,7 +1361,6 @@ export default function ArbitrageScannerPage() {
   const applyTimingChoice = (dateStr: string, dir: string) => {
     setLocalDateChange(dateStr);
     setFilterDirection(dir);
-    setCurrentPage(1);
   };
 
   // Re-fetch data whenever params change
@@ -1533,7 +1527,6 @@ export default function ArbitrageScannerPage() {
     if (f.luckyOnly) setFilterLuckyOnly(true);
     if (f.layouts.length > 0) setFilterLayouts(f.layouts);
     setFilterName(f.keywords.join(" "));
-    setCurrentPage(1);
   };
 
   /**
@@ -1586,7 +1579,6 @@ export default function ArbitrageScannerPage() {
     localStorage.setItem(SEARCH_AREA_STORAGE_KEY, normalizedSearchArea);
     localStorage.setItem("arb_prefecture", nextFilters.prefecture);
     localStorage.setItem("arb_radiusKm", nextFilters.radiusKm);
-    setCurrentPage(1);
     return nextFilters;
   };
 
@@ -1620,14 +1612,12 @@ export default function ArbitrageScannerPage() {
   const handleTrueNorthToggle = (val: boolean) => {
     setUseTrueNorth(val);
     localStorage.setItem("arb_useTrueNorth", val.toString());
-    setCurrentPage(1);
     saveUnifiedConfig({ use_true_north: val });
   };
 
   const handleLayerModeChange = (val: string) => {
     setLayerMode(val);
     localStorage.setItem("arb_layerMode", val);
-    setCurrentPage(1);
     saveUnifiedConfig({ layer_mode: val });
   };
 
@@ -1636,14 +1626,12 @@ export default function ArbitrageScannerPage() {
   // Filters logic
   const handleFilterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilterName(e.target.value);
-    setCurrentPage(1);
   };
 
   const handleFilterStatusChange = (
     e: React.ChangeEvent<HTMLSelectElement>,
   ) => {
     setFilterStatus(e.target.value);
-    setCurrentPage(1);
   };
 
   const budgetYen = useMemo(() => {
@@ -2033,12 +2021,6 @@ export default function ArbitrageScannerPage() {
     filterMinTotal,
   ]);
 
-  const totalPages = Math.ceil(sortedTableData.length / itemsPerPage);
-  const currentTableData = sortedTableData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
-
   /**
    * 見出しクリックでの並べ替え。Shift 併用で第 2 キー以降を足す。
    *
@@ -2070,7 +2052,6 @@ export default function ArbitrageScannerPage() {
       }
       return [...prev, { key: newSort, direction: "desc" }];
     });
-    setCurrentPage(1);
   };
 
   const renderSortIndicator = (key: SortColumn) => {
@@ -2368,7 +2349,6 @@ export default function ArbitrageScannerPage() {
                     selectedDirection={filterDirection}
                     onSelectDirection={(dir) => {
                       setFilterDirection(dir);
-                      setCurrentPage(1);
                     }}
                   />
 
@@ -2662,7 +2642,6 @@ export default function ArbitrageScannerPage() {
                           checked={lunarPhaseModifier}
                           onChange={(e) => {
                             setLunarPhaseModifier(e.target.checked);
-                            setCurrentPage(1);
                           }}
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                         />
@@ -2846,7 +2825,6 @@ export default function ArbitrageScannerPage() {
                         value={filterDirection}
                         onChange={(e) => {
                           setFilterDirection(e.target.value);
-                          setCurrentPage(1);
                         }}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
@@ -2871,7 +2849,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMaxRent}
                           onChange={(e) => {
                             setFilterMaxRent(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -2886,7 +2863,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMaxAge}
                           onChange={(e) => {
                             setFilterMaxAge(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -2901,7 +2877,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMaxStation}
                           onChange={(e) => {
                             setFilterMaxStation(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -2916,7 +2891,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMinSize}
                           onChange={(e) => {
                             setFilterMinSize(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -2931,7 +2905,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMinYield}
                           onChange={(e) => {
                             setFilterMinYield(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -2949,7 +2922,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMinTotal}
                           onChange={(e) => {
                             setFilterMinTotal(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -3135,7 +3107,6 @@ export default function ArbitrageScannerPage() {
                             value={partyPolicy}
                             onChange={(e) => {
                               setPartyPolicy(e.target.value);
-                              setCurrentPage(1);
                             }}
                             className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                           >
@@ -3161,7 +3132,6 @@ export default function ArbitrageScannerPage() {
                             value={horizonDays}
                             onChange={(e) => {
                               setHorizonDays(Number(e.target.value));
-                              setCurrentPage(1);
                             }}
                             className="w-full px-2 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                           >
@@ -3204,7 +3174,6 @@ export default function ArbitrageScannerPage() {
                           title={preset.description}
                           onClick={() => {
                             setWeightPresetId(preset.id);
-                            setCurrentPage(1);
                           }}
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                             weightPresetId === preset.id
@@ -3223,7 +3192,6 @@ export default function ArbitrageScannerPage() {
                           setCustomSliders(weightsToSliders(activeWeights));
                           setWeightPresetId("custom");
                           setShowWeightPanel(true);
-                          setCurrentPage(1);
                         }}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
                           weightPresetId === "custom"
@@ -3295,7 +3263,6 @@ export default function ArbitrageScannerPage() {
                                     return { ...base, [key]: next };
                                   });
                                   setWeightPresetId("custom");
-                                  setCurrentPage(1);
                                 }}
                                 className="w-full h-1 accent-indigo-600 cursor-pointer"
                               />
@@ -3323,7 +3290,6 @@ export default function ArbitrageScannerPage() {
                           value={budgetManYen}
                           onChange={(e) => {
                             setBudgetManYen(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -3341,7 +3307,6 @@ export default function ArbitrageScannerPage() {
                           value={candidateStrategy}
                           onChange={(e) => {
                             setCandidateStrategy(e.target.value);
-                            setCurrentPage(1);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                         >
@@ -3373,7 +3338,6 @@ export default function ArbitrageScannerPage() {
                         value={tenchusatsuMode}
                         onChange={(e) => {
                           setTenchusatsuMode(e.target.value);
-                          setCurrentPage(1);
                         }}
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer focus:border-indigo-500"
                       >
@@ -3413,7 +3377,6 @@ export default function ArbitrageScannerPage() {
                         checked={involuntaryMove}
                         onChange={(e) => {
                           setInvoluntaryMove(e.target.checked);
-                          setCurrentPage(1);
                         }}
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                       />
@@ -3426,7 +3389,6 @@ export default function ArbitrageScannerPage() {
                         checked={sinkAvoidStatus}
                         onChange={(e) => {
                           setSinkAvoidStatus(e.target.checked);
-                          setCurrentPage(1);
                         }}
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
                       />
