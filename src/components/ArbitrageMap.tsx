@@ -45,6 +45,8 @@ interface ArbitrageMapProps {
       blocked: boolean;
     }
   >;
+  /** prefKigaku が無いときの理由。俯瞰の凡例にそのまま出す */
+  kigakuUnavailableReason?: string;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
   targetDate?: string;
   /** 出発地が入力済みか。フォーカスの初期値と「出発地へ」ボタンに使う */
