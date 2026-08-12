@@ -74,4 +74,38 @@ describe("日の点数の根拠", () => {
       expect(SOURCE, k).not.toContain(k);
     }
   });
+
+  it("個人の要素を「誰にでも共通」の点数に混ぜない", () => {
+    // 天中殺 −15 / 日破 −10 / 支合 +10 が入っていた。生年月日で変わる
+    // ものが入ったままだと、同じ日でも人によって点が違うのに
+    // 「暦の日取り（誰にでも共通）」と名乗ることになる。
+    const body = scoreBody();
+    expect(body).not.toContain("personalFortune");
+    expect(body).not.toContain("isVoid");
+    expect(body).not.toContain("isClash");
+    expect(body).not.toContain("isHarmony");
+  });
+});
+
+describe("意味の分け方が画面に出ている", () => {
+  it("点数は「暦の日取り／誰にでも共通」と名乗る", () => {
+    // 「適合度」だけでは何の適合か分からず、個人判定と区別も付かない。
+    expect(SOURCE).toContain("暦の日取り");
+    expect(SOURCE).toContain("誰にでも共通");
+  });
+
+  it("個人の判定を別枠で「生年月日から」と出す", () => {
+    expect(SOURCE).toContain("あなたの日");
+    expect(SOURCE).toContain("生年月日から");
+  });
+
+  it("生年月日が無いときは、無いと言う", () => {
+    // 黙って共通の点だけ見せると、それが個人の判定だと読まれる。
+    expect(SOURCE).toContain("生年月日を入れると");
+  });
+
+  it("方位の吉凶には出発地も要ると書き、時期分析へ送る", () => {
+    expect(SOURCE).toContain("出発地も要ります");
+    expect(SOURCE).toContain("/relocation/timing");
+  });
 });
