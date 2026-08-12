@@ -4,6 +4,7 @@ import {
   TIER_BORDER,
   BLOCKED_FILL,
   TIER_JP,
+  tierPinColors,
 } from "@/utils/tierDisplay";
 import type { DayTier } from "@/utils/auspiciousDays";
 
@@ -117,5 +118,51 @@ describe("段階の色", () => {
       D: "軽い凶",
       X: "五大凶殺",
     });
+  });
+});
+
+/**
+ * 文字色は塗りと別に持っている（Tailwind のクラス）。塗りだけ検査していた
+ * ため、S と B に同じ `dark:text-emerald-300` が入っていることに気付けなかった。
+ * ダークでは二つが完全に同色で、しかも A だけ暗く順序が崩れていた。
+ * 物件のポップアップの見出しがこの色で出る。
+ */
+describe("段階の文字色", () => {
+  /** "text-emerald-800 dark:text-emerald-300" → { light: 800, dark: 300 } */
+  function emeraldSteps(t: DayTier): { light: number; dark: number } {
+    const cls = tierPinColors(t)?.textClass ?? "";
+    const light = /(?:^|\s)text-emerald-(\d+)/.exec(cls);
+    const dark = /dark:text-emerald-(\d+)/.exec(cls);
+    if (!light || !dark) throw new Error(`緑の段階が読めない: ${t} → ${cls}`);
+    return { light: Number(light[1]), dark: Number(dark[1]) };
+  }
+
+  const KICHI: DayTier[] = ["S", "A", "B"];
+
+  it("吉の 3 段は、ライトでもダークでも別々の色", () => {
+    for (const mode of ["light", "dark"] as const) {
+      const steps = KICHI.map((t) => emeraldSteps(t)[mode]);
+      expect(new Set(steps).size, `${mode}: ${steps.join(",")}`).toBe(3);
+    }
+  });
+
+  it("ライトは暗いほど強い（S が一番濃い）", () => {
+    const [s, a, b] = KICHI.map((t) => emeraldSteps(t).light);
+    expect(s).toBeGreaterThan(a);
+    expect(a).toBeGreaterThan(b);
+  });
+
+  it("ダークは明るいほど強い（ライトと逆向きに並ぶ）", () => {
+    // 暗い背景では明るい文字ほど目立つので、順序は反転する。
+    const [s, a, b] = KICHI.map((t) => emeraldSteps(t).dark);
+    expect(s).toBeLessThan(a);
+    expect(a).toBeLessThan(b);
+  });
+
+  it("天中殺は段階の緑とは別系統（灰）", () => {
+    const blocked = tierPinColors("S", true);
+    expect(blocked?.textClass).toContain("slate");
+    expect(blocked?.textClass).not.toContain("emerald");
+    expect(blocked?.label).toBe("天中殺");
   });
 });
