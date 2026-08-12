@@ -3,7 +3,6 @@ import { toResponseMessage } from "@/lib/errorMessage";
 import fs from "fs/promises";
 import path from "path";
 import { OuraClient } from "@/lib/ouraClient";
-import { TavilyClient } from "@/lib/tavilyClient";
 import { IChingClient } from "@/lib/ichingClient";
 import { findLastRecordBackwards } from "@/utils/jsonlReader";
 import { NBAEngine, NBAParams } from "@/utils/nbaEngine";
@@ -30,10 +29,21 @@ import {
 
 export async function POST(req: Request) {
   try {
-    let clientBody: any = {};
+    // 画面から届く上書き。どれも任意で、無ければ Oura か既定値に落ちる。
+    let clientBody: {
+      ansLoad?: number;
+      shieldCapacity?: number;
+      hrv?: number;
+      gsr?: number;
+      birthDate?: string;
+      lon?: number;
+      useClassical?: boolean;
+      directionFilterMode?: string;
+      actionIntent?: string;
+    } = {};
     try {
       clientBody = await req.json();
-    } catch (e) {
+    } catch {
       // Ignore if no JSON body
     }
     const {
@@ -79,7 +89,7 @@ export async function POST(req: Request) {
         if (config.use_classical_board !== undefined) {
           useClassical = config.use_classical_board;
         }
-      } catch (e) {
+      } catch {
         console.warn(
           "Failed to read local_tactical_config.json, personal natal data will be omitted.",
         );
@@ -87,32 +97,33 @@ export async function POST(req: Request) {
     }
 
     // 1. Fetch Micro Environment Data (Oura) & Macro Environment Data (Space, Finance)
-    let readinessData: any = null;
-    let sleepData: any = null;
-    let stressData: any = null;
-    let resilienceData: any = null;
+    //
+    // 取れなかったものは null のままにして、下の既定値に落とす。1 つ落ちても
+    // 残りは使うので、Promise ごとに握る（元の実装と同じ扱い）。
+    //
+    // 以前は外側の let を .then の中で書き換えていた。型を付けると、
+    // TypeScript はコールバックの代入を追えないので「ずっと null」と
+    // 読んでしまう。待った結果をそのまま受け取る形にした。
+    const withFallback = <T>(p: Promise<T | null>, label: string) =>
+      p.catch((e) => {
+        console.warn(`Failed to fetch Oura ${label}:`, e);
+        return null;
+      });
 
-    const ouraPromises = [];
-    if (clientAnsLoad === undefined || clientShieldCapacity === undefined) {
-      ouraPromises.push(
-        oura
-          .getDailyReadiness(startDate, endDate)
-          .then((d) => (readinessData = d))
-          .catch((e) => console.warn("Failed to fetch Oura readiness:", e)),
-        oura
-          .getDailySleep(startDate, endDate)
-          .then((d) => (sleepData = d))
-          .catch((e) => console.warn("Failed to fetch Oura sleep:", e)),
-        oura
-          .getDailyStress(startDate, endDate)
-          .then((d) => (stressData = d))
-          .catch((e) => console.warn("Failed to fetch Oura stress:", e)),
-        oura
-          .getDailyResilience(startDate, endDate)
-          .then((d) => (resilienceData = d))
-          .catch((e) => console.warn("Failed to fetch Oura resilience:", e)),
-      );
-    }
+    const needsOura =
+      clientAnsLoad === undefined || clientShieldCapacity === undefined;
+
+    const ouraPromise = needsOura
+      ? Promise.all([
+          withFallback(oura.getDailyReadiness(startDate, endDate), "readiness"),
+          withFallback(oura.getDailySleep(startDate, endDate), "sleep"),
+          withFallback(oura.getDailyStress(startDate, endDate), "stress"),
+          withFallback(
+            oura.getDailyResilience(startDate, endDate),
+            "resilience",
+          ),
+        ])
+      : Promise.resolve([null, null, null, null] as const);
 
     let spaceWeatherData = {
       kpIndex: null as number | null,
@@ -123,7 +134,6 @@ export async function POST(req: Request) {
     let macroEconomicsData = { vix: 18.0, creditSpread: 4.2, isMocked: true };
 
     const corePromises = [
-      ...ouraPromises,
       fetchSpaceWeather()
         .then((d) => (spaceWeatherData = d))
         .catch((e) => console.error("Space weather fetch failed:", e)),
@@ -132,7 +142,8 @@ export async function POST(req: Request) {
         .catch((e) => console.error("Macro economics fetch failed:", e)),
     ];
 
-    await Promise.all(corePromises);
+    const [[readinessData, sleepData, stressData, resilienceData]] =
+      await Promise.all([ouraPromise, ...corePromises]);
 
     // 2. Fetch Macro Environment Data (Structured Raw Data from Astronomy Engine)
     const sunLon = AstroEngine.getSolarLongitude(today);
@@ -159,23 +170,6 @@ export async function POST(req: Request) {
 
     // Calculate precise Vedic features
     const vedicChart = vedicEngine.generateVedicChart(today);
-
-    // Calculate aspect risk factor based on specific hard aspects
-    let aspectRisk = 0;
-    allAspects.forEach((asp) => {
-      if (asp.type === "SQUARE" || asp.type === "OPPOSITION") {
-        aspectRisk += 5; // Moderate risk for squares/oppositions
-      }
-      if (
-        asp.type === "CONJUNCTION" &&
-        (asp.body1 === "Mars" ||
-          asp.body2 === "Mars" ||
-          asp.body1 === "Saturn" ||
-          asp.body2 === "Saturn")
-      ) {
-        aspectRisk += 10; // High risk for Mars/Saturn conjunctions
-      }
-    });
 
     // Calculate Tide and Conflict parameters
     const tideScore = calculateTideScore(today);
@@ -315,12 +309,14 @@ export async function POST(req: Request) {
         sunProgress: vedicChart.sunNakshatra.longitudeRemaining,
         tithi: `Lunar Day: ${Math.floor(((moonLon - sunLon + 360) % 360) / 12) + 1}`,
         ayanamsa: vedicChart.ayanamsa.toFixed(4),
+        // Object.entries は値の型を保つので、そのまま NakshatraData で読める。
+        // as any を挟んでいたが、vedicEngine が Record<string, NakshatraData>
+        // を返すと宣言しているので要らない。
         planetaryNakshatras: Object.entries(
           vedicChart.planetaryNakshatras,
         ).reduce(
           (acc, [name, data]) => {
-            const d = data as any;
-            acc[name] = `${d.name} (Pada ${d.pada})`;
+            acc[name] = `${data.name} (Pada ${data.pada})`;
             return acc;
           },
           {} as Record<string, string>,
@@ -487,15 +483,25 @@ export async function POST(req: Request) {
         "data",
         "nba_history.jsonl",
       );
-      const lastRecord = await findLastRecordBackwards(
+      // 履歴（nba_history.jsonl）のうち、前回の行動と状態だけを読む。
+      // ファイル全体を型にしない（外部 JSON の扱いは CLAUDE.md 4 節）。
+      const lastRecord = await findLastRecordBackwards<{
+        nba?: {
+          actionResult?: { suggestedAction?: string };
+          stateVector?: { ansLoad?: number; shieldCapacity?: number };
+        };
+      }>(
         historyFilePath,
-        (rec: any) => !!(rec && rec.nba && rec.nba.actionResult)
+        (rec) => !!(rec && rec.nba && rec.nba.actionResult),
       );
 
       if (lastRecord) {
-        const prevAction = lastRecord.nba.actionResult.suggestedAction;
-        const prevAnsLoad = lastRecord.nba.stateVector.ansLoad ?? 50;
-        const prevShield = lastRecord.nba.stateVector.shieldCapacity ?? 50;
+        // 欄が無い履歴もありうる。previousAction は null 可なので、
+        // undefined ではなく null に倒す（応答の形を変えない）。
+        const prevAction =
+          lastRecord.nba?.actionResult?.suggestedAction ?? null;
+        const prevAnsLoad = lastRecord.nba?.stateVector?.ansLoad ?? 50;
+        const prevShield = lastRecord.nba?.stateVector?.shieldCapacity ?? 50;
 
         const ansDelta = ansLoad - prevAnsLoad;
         const shieldDelta = shieldCapacity - prevShield;
