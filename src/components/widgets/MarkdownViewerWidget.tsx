@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { toLogMessage } from "@/lib/errorMessage";
 
 interface MarkdownFile {
   name: string;
@@ -28,8 +29,8 @@ export default function MarkdownViewerWidget() {
       if (!res.ok) throw new Error("ファイル一覧の取得に失敗しました");
       const data = await res.json();
       setFiles(data.files || []);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(toLogMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -47,8 +48,8 @@ export default function MarkdownViewerWidget() {
       if (!res.ok) throw new Error("ファイルの読み込みに失敗しました");
       const data = await res.json();
       setContent(data.content || "");
-    } catch (err: any) {
-      setContent(`エラー: ${err.message}`);
+    } catch (err) {
+      setContent(`エラー: ${toLogMessage(err)}`);
     }
   };
 
