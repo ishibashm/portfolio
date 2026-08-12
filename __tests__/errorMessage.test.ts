@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   errorCode,
+  errorStatus,
   toLogMessage,
   toResponseMessage,
   toUserMessage,
@@ -152,5 +153,37 @@ describe("投げられたものから code を取り出す", () => {
     // 数値の errno を code と取り違えると、比較が静かに外れる。
     expect(errorCode({ code: 2 })).toBeUndefined();
     expect(errorCode({ code: null })).toBeUndefined();
+  });
+});
+
+/**
+ * 数値の code を見るほう。Twitter の SDK は 401 / 403 を code に載せてくる。
+ * 文字列版と混ぜないことが要点で、混ぜるとどちらの比較も静かに外れる。
+ */
+describe("投げられたものから数値の code を取り出す", () => {
+  it("数値の code を取れる", () => {
+    expect(errorStatus({ code: 401 })).toBe(401);
+    expect(
+      errorStatus(Object.assign(new Error("forbidden"), { code: 403 })),
+    ).toBe(403);
+  });
+
+  it("文字列の code は拾わない", () => {
+    // "401" が 401 と一致しないのと同じで、拾うと分岐が静かに外れる。
+    expect(errorStatus({ code: "401" })).toBeUndefined();
+    expect(errorStatus({ code: "ENOENT" })).toBeUndefined();
+  });
+
+  it("文字列版とは互いに素", () => {
+    expect(errorCode({ code: 401 })).toBeUndefined();
+    expect(errorStatus({ code: "ENOENT" })).toBeUndefined();
+    expect(errorCode({ code: "ENOENT" })).toBe("ENOENT");
+    expect(errorStatus({ code: 401 })).toBe(401);
+  });
+
+  it("code が無いものは undefined", () => {
+    for (const v of [new Error("plain"), null, undefined, 42, "text", {}]) {
+      expect(errorStatus(v), String(v)).toBeUndefined();
+    }
   });
 });

@@ -97,3 +97,26 @@ export function errorCode(err: unknown): string | undefined {
   const code = err.code;
   return typeof code === "string" ? code : undefined;
 }
+
+/**
+ * 投げられたものに付いている **数値の** `code` を取り出す。
+ *
+ * `code` には 2 つの流儀がある。
+ *
+ *   文字列  Node の fs（ENOENT）、Prisma（P2037）  → 上の errorCode
+ *   数値    HTTP の状態を code に載せる SDK        → こちら
+ *
+ * 上の errorCode は数値を返さない。文字列との比較（`=== "ENOENT"`）に
+ * 数値が紛れ込むと、どの分岐にも入らないまま静かに落ちるため。
+ * 逆にこちらは文字列を返さない。理由は同じで、`=== 401` に文字列の
+ * "401" が来ても一致しない。
+ *
+ * 用がある側がどちらかを選ぶ。両方見たいときは 2 つ呼ぶ。
+ */
+export function errorStatus(err: unknown): number | undefined {
+  if (typeof err !== "object" || err === null || !("code" in err)) {
+    return undefined;
+  }
+  const code = err.code;
+  return typeof code === "number" ? code : undefined;
+}
