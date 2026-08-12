@@ -32,6 +32,17 @@ const eslintConfig = defineConfig([
     "packages/**",
     "x_downloads/**",
     "katmer-defuddle/**",
+
+    // .gitignore の「Ignore test and debug scripts」と同じもの。
+    //
+    // eslint は .gitignore を見ないので、手元にだけある使い捨ての
+    // スクリプトが警告の総数に混ざる。この作業は「PR の前後で総数が
+    // 増えていないこと」で判断しているので、人によって数が違うと
+    // 判断そのものが狂う。実測で 444 と 434（10 件ぶん）ずれていた。
+    "check_*.ts",
+    "test_*.ts",
+    "export_*.ts",
+    "scratch/**",
   ]),
 ]);
 
