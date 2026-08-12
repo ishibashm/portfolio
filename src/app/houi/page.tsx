@@ -53,8 +53,7 @@ export default function Page() {
           九星気学の本命星と吉方位の早見表
         </h1>
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>で決まります。
-          まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
+          引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
         <section className="mt-10">
@@ -94,17 +93,13 @@ export default function Page() {
         <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
           <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。
-            このサイトのスキャナーには、木星の黄経から星を求める
-            <b>独自モデル</b>も用意しており、設定で切り替えられます。
-            独自モデルでは木星の公転周期（約11.86年）にもとづくため
-            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。
-            一般的な資料と照らし合わせる場合は上の表を使ってください。
+            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
+            <b>独自モデル</b>も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
+            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
           </p>
           <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
             例: 1980年生まれは一般的な九星気学で
-            {STAR_NAMES[starForBirthYear(1980, "classical")]}、
-            独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
+            {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
             になります。
           </p>
         </section>
@@ -118,9 +113,7 @@ export default function Page() {
             吉方位が分かったら、その方位に何があるか
           </h2>
           <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            方位の吉凶だけでは引越し先は決まりません。
-            いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれの
-            エリアと家賃相場を確認できます。
+            方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
           </p>
           <Link
             href="/houi/area"
@@ -198,8 +191,7 @@ export default function Page() {
 
         <div className="mt-10 rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <p className="text-xs text-amber-900 leading-relaxed">
-            方位は<b>今住んでいる場所から見た向き</b>で決まります。
-            実際の物件で確認する場合は、出発地と生年月日を入れてスキャンしてください。
+            方位は<b>今住んでいる場所から見た向き</b>で決まります。実際の物件で確認する場合は、出発地と生年月日を入れてスキャンしてください。
           </p>
           <Link
             href="/relocation/arbitrage"

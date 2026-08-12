@@ -112,18 +112,14 @@ export default async function Page({
         </h1>
 
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
-          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと
-          引越し先は決められません。{area.full}を出発地として、
-          八方位それぞれにある市区町村と家賃相場をまとめました。
+          吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と家賃相場をまとめました。
         </p>
 
         <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
           <p className="text-xs text-slate-700 leading-relaxed">
             <b>{area.full}の相場</b>: 専有面積あたり{" "}
-            <b>{area.sqmRent.toLocaleString()}円/㎡</b>、
-            家賃（管理費込み）の中央値 <b>{area.medianRent.toLocaleString()}円</b>
-            。掲載中の {area.count.toLocaleString()} 件から集計しています。
-            以下の増減率はこの値を基準にした差です。
+            <b>{area.sqmRent.toLocaleString()}円/㎡</b>、家賃（管理費込み）の中央値 <b>{area.medianRent.toLocaleString()}円</b>
+            。掲載中の {area.count.toLocaleString()} 件から集計しています。以下の増減率はこの値を基準にした差です。
           </p>
           <p className="mt-2 text-[11px] text-slate-500">
             集計日: {new Date(AREA_GENERATED_AT).toLocaleDateString("ja-JP")}
@@ -220,8 +216,7 @@ export default async function Page({
             {year}年、自分にとっての吉方位はどれか
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            方位の吉凶は本命星ごとに違います。{year}年の年盤では次のとおりです。
-            上の表と突き合わせてください。
+            方位の吉凶は本命星ごとに違います。{year}年の年盤では次のとおりです。上の表と突き合わせてください。
           </p>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-xs border-collapse">
@@ -261,8 +256,7 @@ export default async function Page({
             <Link href="/houi" className="underline hover:text-rose-600">
               生まれ年から引ける早見表
             </Link>
-            をご覧ください。年盤で吉でも月によって変わるため、
-            実際に動く月の月盤も確認してください。
+            をご覧ください。年盤で吉でも月によって変わるため、実際に動く月の月盤も確認してください。
           </p>
         </section>
 
@@ -272,12 +266,10 @@ export default async function Page({
           </h2>
           <ul className="mt-3 text-xs text-amber-900 leading-relaxed list-disc pl-5 space-y-1.5">
             <li>
-              方位は市区町村の<b>中心どうし</b>で計算しています。同じ市の中でも
-              端のほうは方位が変わることがあります。実際の物件で確認してください。
+              方位は市区町村の<b>中心どうし</b>で計算しています。同じ市の中でも端のほうは方位が変わることがあります。実際の物件で確認してください。
             </li>
             <li>
-              相場は掲載中の物件から集計した平均です。間取りや築年数の構成が
-              エリアごとに違うため、単純比較には限界があります。
+              相場は掲載中の物件から集計した平均です。間取りや築年数の構成がエリアごとに違うため、単純比較には限界があります。
             </li>
             <li>
               九星気学は伝統的な考え方であり、科学的に効果が確認されたものではありません。
