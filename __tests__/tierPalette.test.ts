@@ -166,3 +166,42 @@ describe("段階の文字色", () => {
     expect(blocked?.label).toBe("天中殺");
   });
 });
+
+/**
+ * 帯（背景と枠）も文字色と同じ順序で読めること。
+ *
+ * ライトは色の濃さで強弱を出しているが、ダークではそれが反転する。
+ * 不透明度で薄めているので、暗い地の上では明るい色ほど濃く見える。
+ * S の bg-emerald-700/15 が一番目立たず、B の bg-emerald-300/15 が
+ * 一番目立つ——一番強い段階の帯が一番薄い、という逆の見え方だった。
+ */
+describe("段階の帯", () => {
+  const KICHI: DayTier[] = ["S", "A", "B"];
+
+  /** "dark:bg-emerald-400/25" → { hue: 400, alpha: 25 } */
+  function darkBg(t: DayTier): { hue: number; alpha: number } {
+    const cls = tierPinColors(t)?.bgClass ?? "";
+    const m = /dark:bg-emerald-(\d+)\/(\d+)/.exec(cls);
+    if (!m) throw new Error(`ダークの帯が読めない: ${t} → ${cls}`);
+    return { hue: Number(m[1]), alpha: Number(m[2]) };
+  }
+
+  it("ダークは色相を 1 つに固定する（不透明度だけで強弱を出す）", () => {
+    // 色相が混ざると、暗い地では明るい色のほうが濃く見えて順序が壊れる。
+    const hues = KICHI.map((t) => darkBg(t).hue);
+    expect(new Set(hues).size, `色相: ${hues.join(",")}`).toBe(1);
+  });
+
+  it("ダークの帯は S が一番濃い", () => {
+    const [s, a, b] = KICHI.map((t) => darkBg(t).alpha);
+    expect(s).toBeGreaterThan(a);
+    expect(a).toBeGreaterThan(b);
+  });
+
+  it("ライトの帯は触っていない（見え方を変えない）", () => {
+    // ダークだけ足す変更なので、ライト側のクラスはそのまま残っていること。
+    expect(tierPinColors("S")?.bgClass).toContain("bg-emerald-700/15");
+    expect(tierPinColors("A")?.bgClass).toContain("bg-emerald-500/10");
+    expect(tierPinColors("B")?.bgClass).toContain("bg-emerald-300/15");
+  });
+});

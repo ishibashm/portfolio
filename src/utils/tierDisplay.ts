@@ -111,10 +111,24 @@ const TIER_TEXT_CLASS: Record<DayTier, string> = {
   X: "text-red-500 dark:text-red-400",
 };
 
+/**
+ * 段階の帯（背景と枠）。文字色と同じ順序で読めること。
+ *
+ * ライトは色の濃さで強弱を出している（S が一番濃い緑）。この見え方は
+ * そのまま。
+ *
+ * ダークではこれが反転する。不透明度で薄めているので、暗い地の上では
+ * 「明るい色ほど濃く見える」——S の bg-emerald-700/15（暗い緑 15%）が
+ * 一番目立たず、B の bg-emerald-300/15（明るい緑 15%）が一番目立つ。
+ * 一番強い段階の帯が一番薄い、という逆の見え方になっていた。
+ *
+ * ダークだけ色相を 1 つ（emerald-400）に固定して、不透明度の差で
+ * 強弱を出す。25 → 15 → 8 で S → A → B。
+ */
 const TIER_BG_CLASS: Record<DayTier, string> = {
-  S: "bg-emerald-700/15 border-emerald-700/40",
-  A: "bg-emerald-500/10 border-emerald-500/30",
-  B: "bg-emerald-300/15 border-emerald-400/30",
+  S: "bg-emerald-700/15 border-emerald-700/40 dark:bg-emerald-400/25 dark:border-emerald-400/55",
+  A: "bg-emerald-500/10 border-emerald-500/30 dark:bg-emerald-400/15 dark:border-emerald-400/40",
+  B: "bg-emerald-300/15 border-emerald-400/30 dark:bg-emerald-400/8 dark:border-emerald-400/25",
   C: "bg-stone-500/10 border-stone-500/30",
   D: "bg-orange-500/10 border-orange-500/30",
   X: "bg-red-500/10 border-red-500/30",
