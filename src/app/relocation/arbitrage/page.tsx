@@ -123,6 +123,7 @@ import {
   parseSmartQuery,
 } from "@/utils/smartSearch";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
+import { directionUnstableNote } from "@/lib/directionDistance";
 import {
   DEFAULT_SEARCH_AREA,
   OVERVIEW_CENTER,
@@ -2320,6 +2321,24 @@ export default function ArbitrageScannerPage() {
                         ・約{Math.round(selectedProperty.distanceKm)}km
                       </span>
                     )}
+                    {/*
+                      近すぎて方位が定まらないときは、そう書く。
+
+                      5km 未満だと、住所のジオコーディングの誤差（数百 m）の
+                      ほうが方位を決めてしまう。判定は今までどおり出すが、
+                      「どれだけ当てになるか」を添えないと、同じ市内の物件で
+                      方位だけが違って並ぶ理由が読めない。
+
+                      文言と閾値は lib/directionDistance の 1 か所から引く。
+                      シミュレータ（#176・#181）が既に同じ注意を出しており、
+                      画面ごとに違う数字を書くと食い違う。
+                    */}
+                    {typeof selectedProperty.distanceKm === "number" &&
+                      directionUnstableNote(selectedProperty.distanceKm) && (
+                        <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
+                          {directionUnstableNote(selectedProperty.distanceKm)}
+                        </p>
+                      )}
                   </div>
 
                   {/* 総合スコアの内訳。全軸出す */}
