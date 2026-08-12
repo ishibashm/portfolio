@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { exec } from "child_process";
 import path from "path";
 import util from "util";
@@ -58,10 +59,13 @@ export async function GET(req: Request) {
         { status: 500 },
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Omni API Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: toResponseMessage(error, "Failed to fetch stock data"),
+      },
       { status: 500 },
     );
   }
