@@ -1,5 +1,4 @@
 "use client";
-import TelemetryChart from "./TelemetryChart";
 
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
@@ -105,12 +104,25 @@ import type { DayData } from "./widgets/CosmicCalendar";
 
 /**
  * 数式（KaTeX）。総合スコアタブの計算式の内訳でしか使わないので、
- * 静的に読むとホームを開いた全員が 460 KB（gzip 126 KB）を読むことになる。
+ * 静的に読むとホームを開いた全員が 256 KB（gzip 74 KB）を読むことになる。
  * CSS も components/MathFormula 側に置いてある。
  */
 const InlineMath = dynamic(() => import("./MathFormula"), {
   ssr: false,
   loading: () => <span className="text-stone-300">…</span>,
+});
+
+/**
+ * 環境テレメトリの折れ線（recharts）。「6. 履歴」タブの 1 か所でしか
+ * 使わないので、静的に読むとホームを開いた全員が recharts を読むことになる。
+ */
+const TelemetryChart = dynamic(() => import("./TelemetryChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-64 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
+      [ LOADING TELEMETRY CHART... ]
+    </div>
+  ),
 });
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
