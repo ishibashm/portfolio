@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import fs from "fs/promises";
 import path from "path";
 import { NBAEngine, NBAParams, ActionType } from "@/utils/nbaEngine";
@@ -336,10 +337,13 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, data: forecast });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Forecast Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: toResponseMessage(error, "Failed to build NBA forecast"),
+      },
       { status: 500 },
     );
   }
