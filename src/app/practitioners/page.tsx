@@ -117,14 +117,10 @@ export default function PractitionersPage() {
         九星気学の鑑定士
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-stone-600">
-        このサイトが出せるのは、暦と方位盤から機械的に決まるところまでです。
-        住む人の事情や家の間取りまで含めた判断は、人に相談したほうが早いことが
-        あります。ここでは、引越しの方位と日取りを扱う鑑定士を登録制で掲載しています。
+        このサイトが出せるのは、暦と方位盤から機械的に決まるところまでです。住む人の事情や家の間取りまで含めた判断は、人に相談したほうが早いことがあります。ここでは、引越しの方位と日取りを扱う鑑定士を登録制で掲載しています。
       </p>
       <p className="mt-2 text-xs leading-relaxed text-stone-500">
-        掲載内容は各鑑定士によるものです。当サイトは掲載の形式だけを確認しており、
-        鑑定の内容や結果を保証するものではありません。依頼の条件・料金は
-        直接ご確認ください。
+        掲載内容は各鑑定士によるものです。当サイトは掲載の形式だけを確認しており、鑑定の内容や結果を保証するものではありません。依頼の条件・料金は直接ご確認ください。
       </p>
 
       {count > 0 && (
@@ -194,8 +190,7 @@ export default function PractitionersPage() {
       <section className="mt-10 border-t border-stone-200 pt-6">
         <h2 className="text-base font-bold text-stone-800">掲載を申し込む</h2>
         <p className="mt-2 text-xs leading-relaxed text-stone-500">
-          掲載は無料です。内容を確認のうえ公開します。公開後に内容を書き換えた
-          場合も、あらためて確認します。
+          掲載は無料です。内容を確認のうえ公開します。公開後に内容を書き換えた場合も、あらためて確認します。
         </p>
 
         {done && (
