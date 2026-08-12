@@ -2077,6 +2077,161 @@ export default function ArbitrageScannerPage() {
     );
   };
 
+  /**
+   * 物件の詳細。カード・表・TOP5・地図のピンから開く。
+   *
+   * 以前はサイドバーの最上部に固定で出していた。絞込画面では TOP 5 が
+   * 一番下にあるので、そこから選ぶと詳細は画面外の上に出てしまい、
+   * 押しても何も起きていないように見えた（利用者からの指摘）。
+   *
+   * 出す場所を画面ごとに変える。中身は 1 つだけ持つ。
+   *
+   *   絞込画面  TOP 5 のすぐ下（押した場所の続きに出る）
+   *   一覧画面  最上部（カード・表がその下に続く）
+   */
+  const propertyDetailPanel = selectedProperty && (
+    <div className="bg-white dark:bg-stone-50 rounded-2xl border-2 border-indigo-200 shadow-md overflow-hidden">
+      <div className="flex items-start justify-between gap-2 p-3.5 pb-2">
+        <div className="min-w-0">
+          <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">
+            物件の詳細
+          </div>
+          {selectedProperty.url ? (
+            <a
+              href={selectedProperty.url}
+              target="_blank"
+              rel="noreferrer"
+              className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug hover:text-indigo-600 hover:underline break-words"
+            >
+              {selectedProperty.property_name}
+            </a>
+          ) : (
+            <div className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug break-words">
+              {selectedProperty.property_name}
+            </div>
+          )}
+          <div className="text-[10px] text-stone-500 mt-0.5 break-words">
+            {selectedProperty.address}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSelectedId(null)}
+          aria-label="詳細を閉じる"
+          className="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-white hover:bg-gray-200 text-stone-500 text-sm leading-none"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="px-3.5 pb-2 flex items-baseline gap-2">
+        <span className="font-mono text-xl font-bold text-indigo-600">
+          {((selectedProperty.totalRent || 0) / 10000).toFixed(1)}
+          <span className="text-xs">万円</span>
+        </span>
+        <span className="text-[9px] text-stone-400">
+          管理費込み
+          {selectedProperty.size_sqm
+            ? ` / ㎡単価 ${Math.round(
+                (selectedProperty.totalRent || 0) /
+                  Number(selectedProperty.size_sqm),
+              ).toLocaleString()}円`
+            : ""}
+        </span>
+        <span className="ml-auto">
+          {renderStars(
+            selectedProperty.totalScore,
+            selectedProperty.astrologyStatus,
+          )}
+        </span>
+      </div>
+
+      {/* 基本スペック。不動産アプリの物件概要と同じ並び */}
+      <div className="mx-3.5 mb-2 grid grid-cols-3 gap-px bg-gray-100 dark:bg-stone-200 rounded-xl overflow-hidden text-center">
+        {[
+          ["間取り", selectedProperty.layout || "—"],
+          [
+            "広さ",
+            selectedProperty.size_sqm
+              ? `${Number(selectedProperty.size_sqm)}㎡`
+              : "—",
+          ],
+          [
+            "築年数",
+            selectedProperty.building_age !== null &&
+            selectedProperty.building_age !== undefined
+              ? `築${selectedProperty.building_age}年`
+              : "—",
+          ],
+          ["階", selectedProperty.floor || "—"],
+          [
+            "駅徒歩",
+            selectedProperty.minutes_to_station !== null &&
+            selectedProperty.minutes_to_station !== undefined
+              ? `${selectedProperty.minutes_to_station}分`
+              : "—",
+          ],
+          ["掲載", `${selectedProperty.axisInputs?.listingCount ?? 1}社`],
+        ].map(([k, v]) => (
+          <div key={k as string} className="bg-white dark:bg-stone-50 py-1.5">
+            <div className="text-[8px] text-stone-400">{k}</div>
+            <div className="text-[11px] font-bold text-stone-800">{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 方位。このサイトの本体 */}
+      <div className="mx-3.5 mb-2 rounded-xl bg-indigo-50/60 dark:bg-indigo-50 border border-indigo-100 px-3 py-2 text-[10px] text-stone-700">
+        出発地から見て
+        <span className="font-bold text-indigo-700 mx-1">
+          {selectedProperty.direction ?? "方位不明"}
+        </span>
+        {selectedProperty.maxAstroFactor && (
+          <span className="font-semibold">
+            （{selectedProperty.maxAstroFactor}）
+          </span>
+        )}
+        {typeof selectedProperty.distanceKm === "number" && (
+          <span className="text-stone-500 ml-1">
+            ・約{Math.round(selectedProperty.distanceKm)}km
+          </span>
+        )}
+        {/*
+          近すぎて方位が定まらないときは、そう書く。
+
+          5km 未満だと、住所のジオコーディングの誤差（数百 m）の
+          ほうが方位を決めてしまう。判定は今までどおり出すが、
+          「どれだけ当てになるか」を添えないと、同じ市内の物件で
+          方位だけが違って並ぶ理由が読めない。
+
+          文言と閾値は lib/directionDistance の 1 か所から引く。
+          シミュレータ（#176・#181）が既に同じ注意を出しており、
+          画面ごとに違う数字を書くと食い違う。
+        */}
+        {typeof selectedProperty.distanceKm === "number" &&
+          directionUnstableNote(selectedProperty.distanceKm) && (
+            <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
+              {directionUnstableNote(selectedProperty.distanceKm)}
+            </p>
+          )}
+      </div>
+
+      {/* 総合スコアの内訳。全軸出す */}
+      <div className="mx-3.5 mb-3 pt-2 border-t border-gray-100 dark:border-stone-200">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-[9px] font-bold text-stone-500">
+            評価の内訳
+          </span>
+          <span className="text-[9px] font-mono text-stone-500">
+            総合 {selectedProperty.totalScore.toFixed(1)}
+          </span>
+        </div>
+        {renderAxisBars(selectedProperty, AXIS_ORDER.length)}
+        {renderPartyBreakdown(selectedProperty)}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
       <div className="max-w-[1600px] mx-auto space-y-6">
@@ -2204,159 +2359,6 @@ export default function ArbitrageScannerPage() {
 
             {/* Sidebar Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* 物件の詳細。カード・表・TOP5 のクリックで開く。
-                  絞込画面と一覧画面のどちらでも最上部に出す。地図はクリック
-                  時点でこの物件へ寄っている。 */}
-              {selectedProperty && (
-                <div className="bg-white dark:bg-stone-50 rounded-2xl border-2 border-indigo-200 shadow-md overflow-hidden">
-                  <div className="flex items-start justify-between gap-2 p-3.5 pb-2">
-                    <div className="min-w-0">
-                      <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">
-                        物件の詳細
-                      </div>
-                      {selectedProperty.url ? (
-                        <a
-                          href={selectedProperty.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug hover:text-indigo-600 hover:underline break-words"
-                        >
-                          {selectedProperty.property_name}
-                        </a>
-                      ) : (
-                        <div className="font-bold text-sm text-gray-900 dark:text-stone-900 leading-snug break-words">
-                          {selectedProperty.property_name}
-                        </div>
-                      )}
-                      <div className="text-[10px] text-stone-500 mt-0.5 break-words">
-                        {selectedProperty.address}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(null)}
-                      aria-label="詳細を閉じる"
-                      className="shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-white hover:bg-gray-200 text-stone-500 text-sm leading-none"
-                    >
-                      ×
-                    </button>
-                  </div>
-
-                  <div className="px-3.5 pb-2 flex items-baseline gap-2">
-                    <span className="font-mono text-xl font-bold text-indigo-600">
-                      {((selectedProperty.totalRent || 0) / 10000).toFixed(1)}
-                      <span className="text-xs">万円</span>
-                    </span>
-                    <span className="text-[9px] text-stone-400">
-                      管理費込み
-                      {selectedProperty.size_sqm
-                        ? ` / ㎡単価 ${Math.round(
-                            (selectedProperty.totalRent || 0) /
-                              Number(selectedProperty.size_sqm),
-                          ).toLocaleString()}円`
-                        : ""}
-                    </span>
-                    <span className="ml-auto">
-                      {renderStars(
-                        selectedProperty.totalScore,
-                        selectedProperty.astrologyStatus,
-                      )}
-                    </span>
-                  </div>
-
-                  {/* 基本スペック。不動産アプリの物件概要と同じ並び */}
-                  <div className="mx-3.5 mb-2 grid grid-cols-3 gap-px bg-gray-100 dark:bg-stone-200 rounded-xl overflow-hidden text-center">
-                    {[
-                      ["間取り", selectedProperty.layout || "—"],
-                      [
-                        "広さ",
-                        selectedProperty.size_sqm
-                          ? `${Number(selectedProperty.size_sqm)}㎡`
-                          : "—",
-                      ],
-                      [
-                        "築年数",
-                        selectedProperty.building_age !== null &&
-                        selectedProperty.building_age !== undefined
-                          ? `築${selectedProperty.building_age}年`
-                          : "—",
-                      ],
-                      ["階", selectedProperty.floor || "—"],
-                      [
-                        "駅徒歩",
-                        selectedProperty.minutes_to_station !== null &&
-                        selectedProperty.minutes_to_station !== undefined
-                          ? `${selectedProperty.minutes_to_station}分`
-                          : "—",
-                      ],
-                      [
-                        "掲載",
-                        `${selectedProperty.axisInputs?.listingCount ?? 1}社`,
-                      ],
-                    ].map(([k, v]) => (
-                      <div
-                        key={k as string}
-                        className="bg-white dark:bg-stone-50 py-1.5"
-                      >
-                        <div className="text-[8px] text-stone-400">{k}</div>
-                        <div className="text-[11px] font-bold text-stone-800">
-                          {v}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 方位。このサイトの本体 */}
-                  <div className="mx-3.5 mb-2 rounded-xl bg-indigo-50/60 dark:bg-indigo-50 border border-indigo-100 px-3 py-2 text-[10px] text-stone-700">
-                    出発地から見て
-                    <span className="font-bold text-indigo-700 mx-1">
-                      {selectedProperty.direction ?? "方位不明"}
-                    </span>
-                    {selectedProperty.maxAstroFactor && (
-                      <span className="font-semibold">
-                        （{selectedProperty.maxAstroFactor}）
-                      </span>
-                    )}
-                    {typeof selectedProperty.distanceKm === "number" && (
-                      <span className="text-stone-500 ml-1">
-                        ・約{Math.round(selectedProperty.distanceKm)}km
-                      </span>
-                    )}
-                    {/*
-                      近すぎて方位が定まらないときは、そう書く。
-
-                      5km 未満だと、住所のジオコーディングの誤差（数百 m）の
-                      ほうが方位を決めてしまう。判定は今までどおり出すが、
-                      「どれだけ当てになるか」を添えないと、同じ市内の物件で
-                      方位だけが違って並ぶ理由が読めない。
-
-                      文言と閾値は lib/directionDistance の 1 か所から引く。
-                      シミュレータ（#176・#181）が既に同じ注意を出しており、
-                      画面ごとに違う数字を書くと食い違う。
-                    */}
-                    {typeof selectedProperty.distanceKm === "number" &&
-                      directionUnstableNote(selectedProperty.distanceKm) && (
-                        <p className="mt-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
-                          {directionUnstableNote(selectedProperty.distanceKm)}
-                        </p>
-                      )}
-                  </div>
-
-                  {/* 総合スコアの内訳。全軸出す */}
-                  <div className="mx-3.5 mb-3 pt-2 border-t border-gray-100 dark:border-stone-200">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-bold text-stone-500">
-                        評価の内訳
-                      </span>
-                      <span className="text-[9px] font-mono text-stone-500">
-                        総合 {selectedProperty.totalScore.toFixed(1)}
-                      </span>
-                    </div>
-                    {renderAxisBars(selectedProperty, AXIS_ORDER.length)}
-                    {renderPartyBreakdown(selectedProperty)}
-                  </div>
-                </div>
-              )}
               {!showListView ? (
                 // VIEW 1: Filter Screen & Settings
                 <>
@@ -4121,10 +4123,16 @@ export default function ArbitrageScannerPage() {
                       )}
                     </div>
                   </ArbitrageSidebarSection>
+
+                  {/* 選んだ物件の詳細は TOP 5 のすぐ下に出す。押した場所の
+                      続きに出ないと、押しても何も起きていないように見える。 */}
+                  {propertyDetailPanel}
                 </>
               ) : (
                 // VIEW 2: Property List Screen (Cards or Table)
                 <div className="space-y-4">
+                  {/* 一覧画面では最上部。カード・表がこの下に続く。 */}
+                  {propertyDetailPanel}
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-stone-200 pb-2">
                     <h3 className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
                       物件リスト ({sortedTableData.length}件中、表示範囲内)
