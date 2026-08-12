@@ -63,8 +63,7 @@ export default function CalendarPage() {
                 引越しの日取りを選ぶ
               </h1>
               <p className="text-stone-600 mt-3 max-w-2xl text-sm md:text-base leading-relaxed">
-                契約・搬出入・入居の日を決めるためのカレンダーです。
-                六曜、天赦日、一粒万倍日、月相を日ごとに突き合わせて表示します。
+                契約・搬出入・入居の日を決めるためのカレンダーです。六曜、天赦日、一粒万倍日、月相を日ごとに突き合わせて表示します。
               </p>
             </div>
           </div>
@@ -77,8 +76,7 @@ export default function CalendarPage() {
         <section className="mb-10 rounded-3xl border border-slate-300 bg-white/95 p-6 md:p-8 shadow-lg shadow-slate-200/50">
           <h2 className="text-lg font-bold font-serif">引越しの日取りの決め方</h2>
           <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-            日取りは、暦の吉凶だけでは決まりません。方位と組み合わせて絞り込みます。
-            一般的には次の順で見ていきます。
+            日取りは、暦の吉凶だけでは決まりません。方位と組み合わせて絞り込みます。一般的には次の順で見ていきます。
           </p>
           <ol className="mt-4 text-sm text-slate-700 leading-relaxed list-decimal pl-5 space-y-2">
             <li>
@@ -89,16 +87,13 @@ export default function CalendarPage() {
               ）。
             </li>
             <li>
-              <b>年盤</b>でその年の吉方位を確認する。五黄殺・暗剣殺・歳破・本命殺に
-              当たる方位は避けます。
+              <b>年盤</b>でその年の吉方位を確認する。五黄殺・暗剣殺・歳破・本命殺に当たる方位は避けます。
             </li>
             <li>
               <b>月盤</b>で、動く月の吉方位を確認する。年盤で吉でも月盤で凶になることがあります。
             </li>
             <li>
-              <b>天中殺</b>の期間に当たっていないか確認する。生年月日ごとに決まり、
-              本命星では分かりません。この期間は方位に関係なく移転を避けるという
-              考え方があります。
+              <b>天中殺</b>の期間に当たっていないか確認する。生年月日ごとに決まり、本命星では分かりません。この期間は方位に関係なく移転を避けるという考え方があります。
             </li>
             <li>
               そのうえで、このカレンダーで<b>日の吉凶</b>を見て候補日を絞ります。
@@ -119,9 +114,7 @@ export default function CalendarPage() {
             </Link>
           </div>
           <p className="mt-4 text-[11px] text-slate-500 leading-relaxed">
-            六曜や天赦日は暦の考え方であり、科学的に効果が確認されたものではありません。
-            引越し業者の料金は大安や土日に上がる傾向があるため、
-            費用を優先するか暦を優先するかは分けて考えてください。
+            六曜や天赦日は暦の考え方であり、科学的に効果が確認されたものではありません。引越し業者の料金は大安や土日に上がる傾向があるため、費用を優先するか暦を優先するかは分けて考えてください。
           </p>
         </section>
 
@@ -132,9 +125,7 @@ export default function CalendarPage() {
         <section className="w-full max-w-4xl mx-auto mt-10 rounded-3xl border border-slate-200 bg-white/80 p-6">
           <h2 className="text-lg font-bold font-serif">月ごとの引越しに向く日</h2>
           <p className="mt-2 text-xs leading-relaxed text-slate-600">
-            生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・
-            一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの
-            吉方位を載せています。
+            生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの吉方位を載せています。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {calendarMonths().map((c) => (
