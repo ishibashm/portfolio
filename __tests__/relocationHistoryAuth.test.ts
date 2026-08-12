@@ -11,12 +11,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * ここで守るのは「ページと API の保護範囲が食い違わないこと」。
  */
 
-const { getUser, findMany, deleteFn, createFn } = vi.hoisted(() => ({
+const { getUser, findMany, deleteFn, createFn, readFile } = vi.hoisted(() => ({
   getUser: vi.fn(),
   findMany: vi.fn(),
   deleteFn: vi.fn(),
   createFn: vi.fn(),
+  readFile: vi.fn(),
 }));
+
+// 生年月日は設定ファイルから来る。route 側に既定値を置かなくなったので、
+// 「本人なら通る」を通すにはここで渡す必要がある。認証の話なので、
+// 日付そのものは何でもよい。
+vi.mock("fs/promises", () => ({ default: { readFile } }));
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser } }),
@@ -54,6 +60,9 @@ describe("引越し履歴 API の認証", () => {
     vi.clearAllMocks();
     process.env.ADMIN_EMAIL = owner.email;
     findMany.mockResolvedValue([]);
+    readFile.mockResolvedValue(
+      JSON.stringify({ birth_date: "1990-01-01T12:00" }),
+    );
     deleteFn.mockResolvedValue({ id: "x" });
     createFn.mockResolvedValue({ id: "x" });
   });

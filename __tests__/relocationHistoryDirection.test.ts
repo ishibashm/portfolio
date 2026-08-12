@@ -45,6 +45,8 @@ import { getKigakuSector } from "@/utils/kigakuUtils";
  */
 const FROM = { lat: 35.6812, lon: 139.7671 };
 const DECLINATION = -20;
+/** 判定に生年月日が要る。方位の検証には値そのものは効かない。 */
+const CONFIG = JSON.stringify({ birth_date: "1990-01-01T12:00" });
 
 function historyRow(toLat: number, toLon: number) {
   return {
@@ -82,8 +84,12 @@ describe("引越し履歴の方位の基準", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     denyUnlessAdmin.mockResolvedValue(null);
-    // 設定ファイルは読めない前提。既定のプロフィールで走る。
-    readFile.mockRejectedValue(new Error("no config"));
+    // 生年月日は設定ファイルから渡す。
+    //
+    // 以前はここを「読めない前提」にして、route 側の既定値（運営者の
+    // 生年月日）で走らせていた。既定値を外したので、判定に要るものは
+    // テスト側で明示する。方位の話なので、日付そのものは何でもよい。
+    readFile.mockResolvedValue(CONFIG);
     getGeomagneticData.mockResolvedValue({ declination: DECLINATION });
   });
 
@@ -131,7 +137,12 @@ describe("引越し履歴の方位の基準", () => {
   it("真北で見ると決めている人には偏角を引きにいかない", async () => {
     // use_true_north は設定ファイル側の値。真北で見ると決めているなら、
     // 磁北の注意は要らないので地磁気も引かない（記録ごとの外部呼び出し）。
-    readFile.mockResolvedValue(JSON.stringify({ use_true_north: true }));
+    readFile.mockResolvedValue(
+      JSON.stringify({
+        birth_date: "1990-01-01T12:00",
+        use_true_north: true,
+      }),
+    );
     const to = { lat: FROM.lat + 1.0, lon: FROM.lon + 0.08 };
     findMany.mockResolvedValue([historyRow(to.lat, to.lon)]);
 
@@ -144,5 +155,59 @@ describe("引越し履歴の方位の基準", () => {
     expect(row.magneticBearing).toBeNull();
     // 判定は真北のまま。設定によって変わらない。
     expect(row.direction).toBe("N");
+  });
+});
+
+/**
+ * 生年月日が設定されていないとき。
+ *
+ * 以前は route 側に運営者の生年月日（1988-11-25T04:26）が既定値として
+ * 入っていて、設定が読めなくても判定が出ていた。この一覧は
+ * denyUnlessAdmin で守られているので他人に出ることは無かったが、
+ * 公開リポジトリに実在する個人の生年月日が置かれている状態だった。
+ *
+ * 適当な日付に落として「それらしい判定」を出すより、足りないことを返す。
+ */
+describe("引越し履歴の生年月日", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    denyUnlessAdmin.mockResolvedValue(null);
+    getGeomagneticData.mockResolvedValue({ declination: DECLINATION });
+    findMany.mockResolvedValue([historyRow(FROM.lat + 1, FROM.lon)]);
+  });
+
+  it("設定が読めなければ判定せず、理由を返す", async () => {
+    readFile.mockRejectedValue(new Error("no config"));
+
+    const res = await GET(
+      new Request("http://localhost/api/relocation/history"),
+    );
+
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.success).toBe(false);
+    expect(json.error).toContain("生年月日が未設定です");
+  });
+
+  it("設定に birth_date が無ければ判定しない", async () => {
+    readFile.mockResolvedValue(JSON.stringify({ use_classical_board: true }));
+
+    const res = await GET(
+      new Request("http://localhost/api/relocation/history"),
+    );
+
+    expect(res.status).toBe(409);
+  });
+
+  it("設定に birth_date があれば、これまでどおり判定する", async () => {
+    readFile.mockResolvedValue(CONFIG);
+
+    const res = await GET(
+      new Request("http://localhost/api/relocation/history"),
+    );
+
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.data[0].evaluation.rating).toBeTruthy();
   });
 });
