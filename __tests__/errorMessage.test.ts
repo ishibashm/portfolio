@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { errorCode, toLogMessage, toUserMessage } from "@/lib/errorMessage";
+import {
+  errorCode,
+  toLogMessage,
+  toResponseMessage,
+  toUserMessage,
+} from "@/lib/errorMessage";
 
 describe("画面に出すエラー文言", () => {
   it("ブラウザの英語をそのまま出さない", () => {
@@ -79,6 +84,44 @@ describe("ログに出すエラー文言", () => {
   it("画面用の文言とは別物である", () => {
     const err = new Error("Failed to fetch");
     expect(toLogMessage(err)).not.toBe(toUserMessage(err));
+  });
+});
+
+/**
+ * API の応答本文に入れる文言。`error.message || "既定"` の置き換えなので、
+ * **旧コードと同じ結果になること**が要。
+ */
+describe("応答に入れるエラー文言", () => {
+  const FB = "Failed to save config";
+  /**
+   * 置き換え前の書き方。同じ答えになることをここで突き合わせる。
+   * 元は `catch (e: any)` の e だが、ここで any を足すと警告が増えるので、
+   * 読んでいた枝（message）だけの形にしてある。
+   */
+  const old = (e: { message?: string }) => e.message || FB;
+
+  it("Error のメッセージはそのまま使う", () => {
+    expect(toResponseMessage(new Error("unique constraint"), FB)).toBe(
+      "unique constraint",
+    );
+  });
+
+  it("メッセージが空の Error は既定に落ちる", () => {
+    expect(toResponseMessage(new Error(""), FB)).toBe(FB);
+  });
+
+  it("Error 以外は既定に落ちる（素の値を応答に混ぜない）", () => {
+    // toLogMessage を使うとここが "[object Object]" になり、応答が汚れる。
+    for (const v of [null, undefined, 42, "text", {}, { code: "P2037" }]) {
+      expect(toResponseMessage(v, FB), String(v)).toBe(FB);
+    }
+    expect(toLogMessage({})).toBe("[object Object]");
+  });
+
+  it("旧コードと同じ答えになる", () => {
+    for (const e of [new Error("boom"), new Error(""), { message: "" }]) {
+      expect(toResponseMessage(e, FB), String(e)).toBe(old(e));
+    }
   });
 });
 
