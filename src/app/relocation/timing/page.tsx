@@ -209,6 +209,22 @@ export default function TimingAnalyticsPage() {
       });
   }, []);
 
+  /**
+   * 走査に必要なものが揃っているか。
+   *
+   * 条件を runScan の中だけに置くと、画面は「読み込み中」を出したまま
+   * 何も起きない状態になる。走査の可否と画面の出し分けが同じ条件を見る。
+   */
+  const canScan = Boolean(settings?.baseLon && settings?.birthDate);
+
+  /** 足りないものの名前。そのまま画面に出す。 */
+  const missingLabel = [
+    settings?.baseLon ? null : "出発地",
+    settings?.birthDate ? null : "生年月日",
+  ]
+    .filter(Boolean)
+    .join("と");
+
   const runScan = useCallback(async () => {
     if (!settings?.baseLon || !settings?.birthDate) {
       setError(
@@ -956,9 +972,40 @@ export default function TimingAnalyticsPage() {
           </>
         )}
 
-        {!days && !busy && !error && (
+        {/*
+          「設定を読み込んでいます…」を出しっぱなしにしない。
+
+          出発地は localStorage（物件スキャナーが保存する）から取るので、
+          初めて来た人は空文字になる。空だと自動走査の条件を満たさず、
+          days が null のままこの文言が残り続けていた。読み込み中ではなく
+          入力待ちなので、待っても何も起きない。このページはサイトマップに
+          載っていて検索からも来るため、行き止まりになっていた（本番で実測）。
+
+          設定そのものがまだ来ていない一瞬だけ「読み込み中」、
+          来たうえで足りないなら、何が足りないかと次の行き先を出す。
+        */}
+        {!days && !busy && !error && !settings && (
           <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center text-xs text-stone-500">
             設定を読み込んでいます…
+          </div>
+        )}
+
+        {!days && !busy && !error && settings && !canScan && (
+          <div className="rounded-3xl border border-stone-200 bg-white p-8 text-center">
+            <p className="text-sm font-bold text-stone-700">
+              {missingLabel}を設定すると、ここに全期間の吉凶が出ます
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
+              いつ動くのが良いかは、出発地から見た方位と本命星で決まります。
+              どちらも物件スキャナーの設定と共有しているので、片方で入れれば
+              こちらにも反映されます。
+            </p>
+            <Link
+              href="/relocation/arbitrage"
+              className="mt-4 inline-block rounded-full bg-stone-800 px-5 py-2 text-xs text-white"
+            >
+              物件スキャナーで設定する
+            </Link>
           </div>
         )}
       </div>
