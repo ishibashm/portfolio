@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { toLogMessage } from "@/lib/errorMessage";
 
 /**
  * `/api/v1/analyzer/process` が返す 1 ポスト。どの欄も揃わないことがあるので
@@ -92,8 +93,8 @@ export default function DataAnalyzerWidget() {
             "サポートされていない形式のファイルですが、テキストとして表示しています。",
         });
       }
-    } catch (err: any) {
-      setError(`ファイルの読み込みエラー: ${err.message}`);
+    } catch (err) {
+      setError(`ファイルの読み込みエラー: ${toLogMessage(err)}`);
     }
   };
 
@@ -120,8 +121,8 @@ export default function DataAnalyzerWidget() {
 
       const parsed = await res.json();
       setResult(parsed);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(toLogMessage(err));
     } finally {
       setIsProcessing(false);
     }

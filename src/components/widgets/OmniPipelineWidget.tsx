@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useOmniStore } from "../../store/omniStore";
+import { toLogMessage } from "@/lib/errorMessage";
 
 export default function OmniPipelineWidget() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -70,8 +71,8 @@ export default function OmniPipelineWidget() {
         "completed",
         "ブラウザ起動完了。収集準備が整ったら次へ進んでください。",
       );
-    } catch (err: any) {
-      addLog("error", err.message);
+    } catch (err) {
+      addLog("error", toLogMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -161,10 +162,10 @@ export default function OmniPipelineWidget() {
 
       // 5. 完了してプレビュー表示へ
       addLog("completed", "全パイプライン処理が完了しました。");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Pipeline Error:", err);
-      addLog("error", err.message);
-      setError(err.message);
+      addLog("error", toLogMessage(err));
+      setError(toLogMessage(err));
     } finally {
       setIsProcessing(false);
     }
@@ -192,9 +193,9 @@ export default function OmniPipelineWidget() {
       const parsed = await res.json();
       setAnalysisResult(parsed);
       addLog("completed", "ファイルの解析が完了しました。");
-    } catch (err: any) {
-      setError(err.message);
-      addLog("error", err.message);
+    } catch (err) {
+      setError(toLogMessage(err));
+      addLog("error", toLogMessage(err));
     } finally {
       setIsProcessing(false);
     }

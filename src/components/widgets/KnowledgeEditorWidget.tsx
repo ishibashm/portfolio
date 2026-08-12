@@ -59,8 +59,11 @@ export default function KnowledgeEditorWidget() {
         // 保存後にグラフビューへ自動遷移してAha Momentを見せるデモフロー
         setActiveTab("graph");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || "エラーが発生しました");
+    } catch (err) {
+      // ここは画面に出す文言。toUserMessage に寄せると英語が日本語の案内に
+      // 置き換わって見え方が変わるので、旧コードと同じ形のまま any だけ外す。
+      // toResponseMessage は API の応答用なので、画面には使わない。
+      setError((err instanceof Error && err.message) || "エラーが発生しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -90,7 +93,8 @@ export default function KnowledgeEditorWidget() {
         );
         setTitle(file.name);
       }
-    } catch (err: any) {
+    } catch {
+      // err は読んでいない（固定の文言を出すだけ）。
       setError("ファイルの解析に失敗しました");
     } finally {
       setIsUploading(false);
