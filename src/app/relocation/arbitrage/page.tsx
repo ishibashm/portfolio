@@ -2337,8 +2337,13 @@ export default function ArbitrageScannerPage() {
                 </span>
               </div>
 
-              {/* Toggle Button for Filter/List View (Only when <= 100 properties) */}
-              {propertiesInBounds.length <= 100 ? (
+              {/* 一覧と絞込の切り替え。
+                  100 件以下という条件は「一覧を出せるか」だけに掛かる。
+                  以前はボタンごとこの条件の中にあり、一覧を出したあとで
+                  地図を動かして表示範囲が 100 件を超えると、戻るボタンが
+                  注意書きに差し替わって絞込へ帰れなくなっていた。
+                  一覧を見ている間は、件数にかかわらず戻り道を残す。 */}
+              {showListView || propertiesInBounds.length <= 100 ? (
                 <button
                   onClick={() => setShowListView(!showListView)}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
