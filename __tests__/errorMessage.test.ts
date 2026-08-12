@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toUserMessage } from "@/lib/errorMessage";
+import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
 
 describe("画面に出すエラー文言", () => {
   it("ブラウザの英語をそのまま出さない", () => {
@@ -50,5 +50,34 @@ describe("画面に出すエラー文言", () => {
     for (const v of ["Failed to fetch", "TypeError: x is not a function", ""]) {
       expect(toUserMessage(new Error(v))).not.toMatch(/[A-Za-z]{6,}/);
     }
+  });
+});
+
+/**
+ * ログ側は画面と逆で、**加工しない**のが正しい。原因を追う人が読むので、
+ * 英語のままでも生のメッセージが要る。toUserMessage と取り違えると
+ * ログから "Failed to fetch" が消えて原因が分からなくなる。
+ */
+describe("ログに出すエラー文言", () => {
+  it("Error はメッセージをそのまま出す（日本語に置き換えない）", () => {
+    expect(toLogMessage(new Error("Failed to fetch"))).toBe("Failed to fetch");
+    expect(toLogMessage(new Error("P2037 too many clients"))).toBe(
+      "P2037 too many clients",
+    );
+  });
+
+  it("Error 以外でも読める文字列になる", () => {
+    // `catch (e: any) { log(e.message) }` の頃はここが undefined になり、
+    // 何が投げられたのか分からないログが残っていた。
+    expect(toLogMessage("just a string")).toBe("just a string");
+    expect(toLogMessage(42)).toBe("42");
+    expect(toLogMessage(null)).toBe("null");
+    expect(toLogMessage(undefined)).toBe("undefined");
+    expect(toLogMessage({ code: "P2037" })).toBe("[object Object]");
+  });
+
+  it("画面用の文言とは別物である", () => {
+    const err = new Error("Failed to fetch");
+    expect(toLogMessage(err)).not.toBe(toUserMessage(err));
   });
 });
