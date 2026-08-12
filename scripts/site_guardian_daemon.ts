@@ -1,13 +1,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
-import {
-  Body,
-  Observer,
-  AstroTime,
-  Equator,
-  Horizontal,
-} from "astronomy-engine";
+import { Body, Observer, AstroTime, Equator, Horizon } from "astronomy-engine";
+import { Prisma } from "@prisma/client";
 import { getGeomagneticData } from "../src/utils/geomagnetism";
 import prisma from "../src/lib/prisma";
 import { getLocalAgentDecision } from "../src/utils/localAgentEngine";
@@ -244,9 +239,11 @@ async function triggerAgentEvolution(
         thoughtProcess: agentResponse.thoughtProcess,
         actions: agentResponse.actions,
         textResponse: agentResponse.textResponse || null,
+        // Json? の列に素の null は渡せない（Prisma が投げる）。
+        // 列を NULL にするのは DbNull。
         codeChange: agentResponse.toolCalls
           ? JSON.parse(JSON.stringify(agentResponse.toolCalls))
-          : null,
+          : Prisma.DbNull,
         status: errorMessage ? "FAILURE_ROLLEDBACK" : "SUCCESS",
         errorMessage: errorMessage,
       },
@@ -262,7 +259,7 @@ async function triggerAgentEvolution(
           details,
           thoughtProcess: "Agent local engine failed at runtime.",
           actions: "自律自己進化 (システムエラー)",
-          codeChange: null,
+          codeChange: Prisma.DbNull,
           status: "FAILURE_ROLLEDBACK",
           errorMessage: toLogMessage(err),
         },
@@ -311,7 +308,10 @@ async function checkEnvironment(state: DaemonState): Promise<DaemonState> {
     const observer = new Observer(lat, lon, 0);
     const time = new AstroTime(today);
     const equ = Equator(Body.Sun, time, observer, true, true);
-    const hor = Horizontal(time, observer, equ.ra, equ.dec, "apparent");
+    // 第 5 引数は "normal" / "jplhor" / 未指定（補正なし）の 3 つだけ。
+    // "apparent" は受け付けられず例外になる。見かけの高度（大気差込み）が
+    // 欲しいので、推奨の "normal" を使う。"jplhor" は単体テスト用。
+    const hor = Horizon(time, observer, equ.ra, equ.dec, "normal");
     solarAzimuth = hor.azimuth;
     solarElevation = hor.altitude;
     writeLog(
