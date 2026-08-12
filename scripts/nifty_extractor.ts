@@ -1,4 +1,4 @@
-import { chromium, Page } from "playwright";
+import { Browser, chromium, Page } from "playwright";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -60,15 +60,46 @@ const CONTEXT_OPTIONS = {
   timezoneId: "Asia/Tokyo",
 };
 
+/**
+ * 一覧ページの `window.Nifty.Data.Bukken` のうち、ここで読む枝だけ。
+ * 値は全部文字列で来る（賃料は万円、管理費は円、面積は m²）ので、
+ * 下の parse* を通してから保存する。欄ごと無い物件があるので任意。
+ *
+ * id だけは必須にしてある。Bukken は id をキーにした連想配列で、値にも
+ * 同じ id が入っており、ページを跨いだ重複除去がこれに依存している。
+ */
+interface NiftyBukken {
+  id: string;
+  url?: string;
+  title?: string;
+  address?: string;
+  rent?: string;
+  manageCost?: string;
+  layout?: string;
+  floorArea?: string;
+  buildAge?: string;
+  access?: string;
+  floor?: string;
+  expireDate?: string;
+}
+
+/** 一覧ページが window に置いていく物件データ。型定義は無いので自分で書く。 */
+type NiftyWindow = Window & {
+  Nifty?: { Data?: { Bukken?: Record<string, NiftyBukken> } };
+};
+
 // Map Nifty rent string (e.g. "12.5") to integer JPY (e.g. 125000)
-function parseRent(rentStr: string): number {
+// 以下の parse* が undefined も取るのは、その欄が無い物件があるため。
+// どれも先頭の falsy 判定で元からその場合を返しており、`string` を
+// 名乗っていたのが型の嘘だった（呼び出し側が any だったので通っていた）。
+function parseRent(rentStr: string | undefined): number {
   if (!rentStr || rentStr === "-") return 0;
   const num = parseFloat(rentStr);
   return isNaN(num) ? 0 : Math.round(num * 10000);
 }
 
 // Map Nifty floor area string (e.g. "33.4") to decimal
-function parseSize(sizeStr: string): number {
+function parseSize(sizeStr: string | undefined): number {
   if (!sizeStr || sizeStr === "-") return 0;
   const num = parseFloat(sizeStr);
   return isNaN(num) ? 0 : num;
@@ -77,7 +108,7 @@ function parseSize(sizeStr: string): number {
 // Map Nifty age string (e.g. "新築", "築10年", "18年11ヶ月") to integer years.
 // 取得できなかった場合に 0 を返すと「新築」と区別が付かず、築0年の物件が
 // 水増しされてしまうため null を返す。
-function parseAge(ageStr: string): number | null {
+function parseAge(ageStr: string | undefined): number | null {
   if (!ageStr || ageStr === "-") return null;
   if (ageStr === "新築") return 0;
   // 「11ヶ月」のように 1 年未満は年の表記が無い
@@ -90,7 +121,7 @@ function parseAge(ageStr: string): number | null {
 // Nifty の管理費は "9,800円" のように円単位・カンマ区切りで来る（賃料だけが万円単位）。
 // これまで保存していなかったため management_fee が全件 NULL になっており、
 // 利回り偏差値の元になる総賃料が管理費のぶん過小に出ていた。
-function parseManagementFee(costStr: string): number {
+function parseManagementFee(costStr: string | undefined): number {
   if (!costStr) return 0;
   if (/無料|なし|不要/.test(costStr)) return 0;
   const digits = costStr.replace(/[^\d]/g, "");
@@ -103,7 +134,7 @@ function parseManagementFee(costStr: string): number {
 // 掲載が終わった物件の詳細ページは 404 になるため、これを保存して
 // 期限切れをスキャナーから外す。実測では 7 日以上再確認できていない行の
 // 半数が既に 404 だった。
-function parseExpireDate(raw: string): Date | null {
+function parseExpireDate(raw: string | undefined): Date | null {
   if (!raw) return null;
   const m = raw.match(/^(\d{4})(\d{2})(\d{2})/);
   if (!m) return null;
@@ -115,13 +146,13 @@ function parseExpireDate(raw: string): Date | null {
 // "ＪＲ東海道本線/東刈谷駅 徒歩6分" や "バス15分 徒歩5分" から徒歩の分数を取る。
 // minutes_to_station カラムは以前から存在するのに一度も埋めていなかったため、
 // 画面の駅徒歩が常に「不明」になっていた。
-function parseWalkMinutes(accessStr: string): number | null {
+function parseWalkMinutes(accessStr: string | undefined): number | null {
   if (!accessStr) return null;
   const match = accessStr.match(/徒歩\s*(\d+)\s*分/);
   return match ? parseInt(match[1], 10) : null;
 }
 
-async function saveToDatabase(prisma: PrismaClient, properties: any[]) {
+async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
   let savedCount = 0;
   for (const prop of properties) {
     if (!prop.url) continue;
@@ -205,27 +236,26 @@ async function saveToDatabase(prisma: PrismaClient, properties: any[]) {
   console.log(`Upserted ${savedCount} records to database.`);
 }
 
-async function extractPropertiesFromPage(page: Page) {
+async function extractPropertiesFromPage(page: Page): Promise<NiftyBukken[]> {
   try {
-    const data = await page.evaluate(() => {
-      // @ts-ignore
-      return window.Nifty?.Data?.Bukken || {};
-    });
+    const data = await page.evaluate(
+      () => (window as NiftyWindow).Nifty?.Data?.Bukken || {},
+    );
     return Object.values(data);
-  } catch (e) {
+  } catch {
     return [];
   }
 }
 
 async function scrapeArea(
-  browser: any,
+  browser: Browser,
   prisma: PrismaClient,
   prefAlpha: string,
   cityAlpha: string,
   startPage: number = 1,
 ) {
   let currentPage = startPage;
-  const allProperties: any[] = [];
+  const allProperties: NiftyBukken[] = [];
   const seenIds = new Set<string>();
 
   let context = await browser.newContext(CONTEXT_OPTIONS);
@@ -334,7 +364,7 @@ async function scrapeArea(
     try {
       await page.close();
       await context.close();
-    } catch (_) {}
+    } catch {}
   }
 
   return allProperties;
@@ -437,7 +467,7 @@ function loadState(): {
     } else {
       console.log("State file does not exist.");
     }
-  } catch (e) {
+  } catch {
     console.warn("Failed to load state, starting from beginning.");
   }
   return { pref: null, city: null, page: 1 };
@@ -458,14 +488,14 @@ async function main() {
     try {
       dbHost = new URL(connectionString.replace("postgresql://", "http://"))
         .host;
-    } catch (_) {
+    } catch {
       dbHost = "configured-host";
     }
   }
   console.log(`Connecting to database at ${dbHost}...`);
   const pool = new Pool({ connectionString, max: 1 });
   const adapter = new PrismaPg(pool);
-  const prisma = new PrismaClient({ adapter } as any);
+  const prisma = new PrismaClient({ adapter });
 
   const browser = await chromium.launch(BROWSER_OPTIONS);
 
