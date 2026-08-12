@@ -401,6 +401,13 @@ export default function ArbitrageMapInner({
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
     "kigaku",
   );
+  /**
+   * 実際に塗っている側。判定が出せないときは選択に関わらず件数で塗るので、
+   * ボタンの強調・凡例・温度計はこちらを見る。既定が "kigaku" なので、
+   * overviewTint をそのまま見るとどのボタンも強調されないまま
+   * 件数の色を塗る、という食い違いが出る。
+   */
+  const effectiveTint: "kigaku" | "count" = prefKigaku ? overviewTint : "count";
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info";
@@ -990,7 +997,7 @@ export default function ArbitrageMapInner({
                 // 方位モードは判定が出せるときだけ押せる。押せない理由は
                 // 下の一文に出す（disabled だけだと理由が分からない）。
                 const disabled = mode === "kigaku" && !prefKigaku;
-                const active = !disabled && overviewTint === mode;
+                const active = effectiveTint === mode;
                 return (
                   <button
                     key={mode}
@@ -1012,23 +1019,20 @@ export default function ArbitrageMapInner({
             </div>
             {/* 何の色を見ているかを必ず 1 行で言う。方位モードに切り替え
                 られないときは、その理由もここに出す。 */}
-            {!prefKigaku && (
+            {effectiveTint === "count" && (
               <div className="max-w-44 space-y-1">
                 <div className="font-bold text-stone-600">
                   いまの色は掲載件数です
                 </div>
-                <div className="text-[8px] leading-relaxed text-stone-500">
-                  {kigakuUnavailableReason ??
-                    "条件が揃うと方位の吉凶で塗り分けます"}
-                </div>
+                {!prefKigaku && (
+                  <div className="text-[8px] leading-relaxed text-stone-500">
+                    {kigakuUnavailableReason ??
+                      "条件が揃うと方位の吉凶で塗り分けます"}
+                  </div>
+                )}
               </div>
             )}
-            {prefKigaku && overviewTint === "count" && (
-              <div className="max-w-44 font-bold text-stone-600">
-                いまの色は掲載件数です
-              </div>
-            )}
-            {prefKigaku && overviewTint === "kigaku" && (
+            {effectiveTint === "kigaku" && (
               <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
                 {(
                   [
@@ -1129,7 +1133,7 @@ export default function ArbitrageMapInner({
             地図がそのまま意思決定面になる。件数ラベルは両モード共通。 */}
         {zoom < 10 && geoData && (
           <GeoJSON
-            key={`pref-geo-${overviewTint}-${
+            key={`pref-geo-${effectiveTint}-${
               prefKigaku
                 ? Object.values(prefKigaku)
                     .map((i) => i.tier + (i.blocked ? "b" : ""))
@@ -1141,7 +1145,7 @@ export default function ArbitrageMapInner({
               const prefName = feature?.properties?.name || "";
               const count = prefCounts[prefName] || 0;
               const info = prefKigaku?.[prefName];
-              if (overviewTint === "kigaku" && info) {
+              if (effectiveTint === "kigaku" && info) {
                 const fill = info.blocked
                   ? "#64748b"
                   : (TIER_FILL[info.tier as DayTier] ?? "#a8a29e");
@@ -1542,7 +1546,7 @@ export default function ArbitrageMapInner({
       {/* 件数の温度計。数を色で塗っている画面（俯瞰の件数モード、
           広域の市区町村バブル）のときだけ出す。方位の吉凶を見ている
           画面に出すと「この赤は件数？凶？」の取り違えになる */}
-      {((zoom < 10 && (overviewTint === "count" || !prefKigaku)) ||
+      {((zoom < 10 && effectiveTint === "count") ||
         (zoom >= 10 && showHeatmap)) && (
         <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
           {/* 「件数」とだけ書いてあり、吉凶の色と見分けが付かなかった。

@@ -142,6 +142,21 @@ describe("俯瞰の塗り分けが何の色か分かる", () => {
     expect(countButton!.disabled).toBe(false);
   });
 
+  /**
+   * 既定の overviewTint は "kigaku"。判定を出せないときは件数で塗るので、
+   * 選択（"kigaku"）と実際に塗っている側（件数）が食い違う。ボタンの強調を
+   * 選択のほうに合わせると、件数の色を塗りながらどちらのボタンも
+   * 強調されない状態になり、凡例の「いまの色は掲載件数です」と噛み合わない。
+   */
+  it("判定を出せないときは「掲載件数」のボタンが選択中に見える", async () => {
+    const { countButton, kigakuButton } = await renderLegend({
+      prefKigaku: undefined,
+    });
+
+    expect(countButton!.className).toContain("bg-indigo-600");
+    expect(kigakuButton!.className).not.toContain("bg-indigo-600");
+  });
+
   it("理由が渡らなくても、色の意味は必ず言う", async () => {
     const { text } = await renderLegend({ prefKigaku: undefined });
     expect(text).toContain("いまの色は掲載件数です");
