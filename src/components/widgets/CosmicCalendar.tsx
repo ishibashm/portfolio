@@ -203,23 +203,27 @@ const ZHI_ELEMENTS: Record<string, string> = {
   "亥": "水 (Water)",
 };
 
-// Ingestion score calculation
 /**
- * 日の点数。
+ * 「暦の日取り」の点数。**誰にでも共通**の要素だけで出す。
  *
- * 見るのは暦だけにする。以前は水星・金星・火星の逆行で最大 22 点引いて
- * いたが、逆行は西洋占星術の要素で、このサイトが拠って立つ九星気学とは
- * 別の伝統。docs/site-spec.md でテーマを九星気学に統一したあとも、日の
- * 点数にだけ黙って混ざっていた。運営者に確認して外した。
+ * 見るのは六曜・暦注（天赦日・一粒万倍日）・月相の 3 つ。どれも日その
+ * ものの性質で、誰が見ても同じ値になる。
  *
- * 逆行そのものは参考として画面に残してある（順行/逆行の表示）。
- * 点数には効かせない。
+ * 以前はここに 2 種類の別物が混ざっていた。
+ *
+ *   水星・金星・火星の逆行  最大 −22 点。西洋占星術で、九星気学とは
+ *                           別の伝統（運営者に確認して外した）
+ *   天中殺・日破・支合      −15 / −10 / +10。生年月日で変わるので、
+ *                           そもそも「誰にでも共通」ではない
+ *
+ * 後者が入ったままだと、同じ日でも人によって点が違うのに「暦の日取り」と
+ * 名乗ることになる。個人の要素は点に混ぜず、隣に別枠で出す。
+ * 「このページではこの評価、別のページでは違う評価」を潰す作業の一環。
  */
 function calculateAlignmentScore(
   rokuyo: string,
   luckyDays: { isIchiryumanbai: boolean; isTensho: boolean },
   lunarPhase: string,
-  personalFortune?: { isVoid: boolean; isClash: boolean; isHarmony: boolean; dayZhi: string },
 ): number {
   let score = 60;
 
@@ -236,13 +240,6 @@ function calculateAlignmentScore(
 
   // Lunar adjustments
   if (lunarPhase === "満月" || lunarPhase === "新月") score += 5;
-
-  // Personal Fortune adjustments
-  if (personalFortune) {
-    if (personalFortune.isVoid) score -= 15;
-    if (personalFortune.isClash) score -= 10;
-    if (personalFortune.isHarmony) score += 10;
-  }
 
   return Math.max(0, Math.min(100, score));
 }
@@ -487,12 +484,7 @@ export function CosmicCalendar({
       }
     }
 
-    const score = calculateAlignmentScore(
-      rokuyo,
-      luckyDays,
-      lunarPhase.name,
-      personalFortune,
-    );
+    const score = calculateAlignmentScore(rokuyo, luckyDays, lunarPhase.name);
 
     return {
       date,
@@ -912,9 +904,14 @@ export function CosmicCalendar({
 
             {/* Score & Gauge */}
             <div className="mb-6">
+              {/* 「適合度」だけでは何の適合か分からず、隣の個人判定とも
+                  区別が付かない。何で決まる点なのかを名前に出す。 */}
               <div className="flex justify-between items-baseline mb-1.5">
-                <span className="text-[10px] font-mono text-stone-500 uppercase tracking-wider">
-                  適合度
+                <span className="text-[10px] font-mono text-stone-500 tracking-wider">
+                  暦の日取り
+                  <span className="ml-1 text-[9px] text-stone-400">
+                    誰にでも共通
+                  </span>
                 </span>
                 <span
                   className="text-lg font-mono font-bold"
@@ -947,6 +944,57 @@ export function CosmicCalendar({
                             : "rgb(248,113,113)",
                   }}
                 />
+              </div>
+
+              {/*
+                個人の判定を隣に並べる。上の点数は誰にでも共通の暦、
+                こちらは生年月日で変わるもの。同じ枠に混ぜると
+                「同じ日なのに人によって点が違う」の理由が分からなくなる。
+
+                生年月日が無いときは、無いと言う。黙って共通の点だけ
+                見せると、それが個人の判定だと読まれる。
+              */}
+              <div className="mt-3 border-t border-stone-200/70 pt-3">
+                <div className="mb-1.5 text-[10px] font-mono tracking-wider text-stone-500">
+                  あなたの日
+                  <span className="ml-1 text-[9px] text-stone-400">
+                    生年月日から
+                  </span>
+                </div>
+                {selectedDay.personalFortune ? (
+                  <div className="space-y-1 text-[11px] leading-relaxed text-stone-700">
+                    {selectedDay.personalFortune.isVoid && (
+                      <p>天中殺（空亡）の日です。</p>
+                    )}
+                    {selectedDay.personalFortune.isClash && (
+                      <p>日破（あなたの日支と対沖）の日です。</p>
+                    )}
+                    {selectedDay.personalFortune.isHarmony && (
+                      <p>支合（あなたの日支と調和）の日です。</p>
+                    )}
+                    {!selectedDay.personalFortune.isVoid &&
+                      !selectedDay.personalFortune.isClash &&
+                      !selectedDay.personalFortune.isHarmony && (
+                        <p className="text-stone-500">
+                          この日はとくに当たりも障りもありません。
+                        </p>
+                      )}
+                    <p className="text-[9px] text-stone-400">
+                      方位ごとの吉凶は出発地も要ります。
+                      <a
+                        href="/relocation/timing"
+                        className="ml-1 underline underline-offset-2"
+                      >
+                        時期分析で見る
+                      </a>
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[10px] leading-relaxed text-stone-500">
+                    生年月日を入れると、この日があなたにとって天中殺・日破・
+                    支合のどれに当たるかが出ます。
+                  </p>
+                )}
               </div>
             </div>
 
