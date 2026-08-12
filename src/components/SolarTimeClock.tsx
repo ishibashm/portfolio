@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
 import type { SpaceWeatherData } from "../utils/spaceWeather";
@@ -833,8 +834,8 @@ export const SolarTimeClock = () => {
           json.error,
         );
       }
-    } catch (err: any) {
-      console.error("[fetchNBAData] POST Request Error:", err.message || err);
+    } catch (err) {
+      console.error("[fetchNBAData] POST Request Error:", toLogMessage(err));
     }
   };
 
@@ -1109,7 +1110,7 @@ export const SolarTimeClock = () => {
       if (geminiKey && geminiKey !== "") {
         setGeminiKey("********");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Save Error:", err);
       alert("設定をこの端末に保存しました。");
     } finally {
@@ -2822,9 +2823,9 @@ export const SolarTimeClock = () => {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      alert(`エクスポートに失敗しました: ${e.message}`);
+      alert(`エクスポートに失敗しました: ${toUserMessage(e)}`);
     } finally {
       setIsExporting(false);
     }
@@ -3364,9 +3365,9 @@ export const SolarTimeClock = () => {
       }
 
       alert("現在のステータスをデータベースに保存しました。");
-    } catch (err: any) {
+    } catch (err) {
       console.error("Save Log Error:", err);
-      alert(`保存に失敗しました: ${err.message}`);
+      alert(`保存に失敗しました: ${toUserMessage(err)}`);
     } finally {
       setIsSavingLog(false);
     }
