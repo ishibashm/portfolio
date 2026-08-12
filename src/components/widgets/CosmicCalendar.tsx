@@ -204,10 +204,20 @@ const ZHI_ELEMENTS: Record<string, string> = {
 };
 
 // Ingestion score calculation
+/**
+ * 日の点数。
+ *
+ * 見るのは暦だけにする。以前は水星・金星・火星の逆行で最大 22 点引いて
+ * いたが、逆行は西洋占星術の要素で、このサイトが拠って立つ九星気学とは
+ * 別の伝統。docs/site-spec.md でテーマを九星気学に統一したあとも、日の
+ * 点数にだけ黙って混ざっていた。運営者に確認して外した。
+ *
+ * 逆行そのものは参考として画面に残してある（順行/逆行の表示）。
+ * 点数には効かせない。
+ */
 function calculateAlignmentScore(
   rokuyo: string,
   luckyDays: { isIchiryumanbai: boolean; isTensho: boolean },
-  retrogrades: { mercury: boolean; venus: boolean; mars: boolean },
   lunarPhase: string,
   personalFortune?: { isVoid: boolean; isClash: boolean; isHarmony: boolean; dayZhi: string },
 ): number {
@@ -224,11 +234,6 @@ function calculateAlignmentScore(
   if (luckyDays.isIchiryumanbai) score += 15;
   if (luckyDays.isTensho) score += 25;
 
-  // Retrograde penalties (communication and motivation drops)
-  if (retrogrades.mercury) score -= 6;
-  if (retrogrades.venus) score -= 8;
-  if (retrogrades.mars) score -= 8;
-
   // Lunar adjustments
   if (lunarPhase === "満月" || lunarPhase === "新月") score += 5;
 
@@ -244,8 +249,6 @@ function calculateAlignmentScore(
 
 // Actionable advice logic
 function getActionableAdvice(day: DayData): string {
-  const retrogradeCount = Object.values(day.retrogrades).filter(Boolean).length;
-
   // Personal Fortune overrides
   if (day.personalFortune) {
     if (day.personalFortune.isVoid) {
@@ -264,9 +267,6 @@ function getActionableAdvice(day: DayData): string {
   }
   if (day.score >= 65) {
     return "✨ [FAVORABLE_ENERGY] 物事を前向きに進めやすい安定した日です。特に一粒万倍日を活かした自己投資、新しい知識のインプット、買い物に適しています。";
-  }
-  if (retrogradeCount >= 3) {
-    return "⚠️ [COMMUNICATION_VOLATILITY] 3つ以上の天体逆行が重なり、通信障害やスケジュールの乱れが生じやすい警戒期です。契約書の見直しと丁寧な対話を。";
   }
   if (day.score < 45) {
     return "🛑 [ENERGY_DISSIPATION] 磁気ノイズや暦の凶兆が優勢です。大きな決断や新規の取り組みは極力避け、ルーチンワークや休息、メンテナンスに充ててください。";
@@ -490,7 +490,6 @@ export function CosmicCalendar({
     const score = calculateAlignmentScore(
       rokuyo,
       luckyDays,
-      retrogrades,
       lunarPhase.name,
       personalFortune,
     );
@@ -1059,12 +1058,17 @@ export function CosmicCalendar({
                 </div>
               )}
 
-              {/* Planet retrograde telemetry */}
+              {/* 逆行は参考として出すだけ。点数には効かせない（西洋占星術の
+                  要素で、このサイトが拠って立つ九星気学とは別の伝統）。
+                  何に効いているかを書かないと、点数の根拠だと読まれる。 */}
               <div className="p-3 bg-white/70 border border-stone-200/60 rounded-xl">
                 <div className="flex items-center gap-2 mb-2 text-[10px] text-stone-400 uppercase tracking-wider">
                   <Radio className="w-3.5 h-3.5 text-stone-500" />
                   Planetary Retrogrades
                 </div>
+                <p className="mb-2 text-[9px] leading-relaxed text-stone-400">
+                  参考情報です。日の点数には使っていません。
+                </p>
                 <div className="grid grid-cols-2 gap-2 text-[10.5px]">
                   <div className="flex justify-between items-center bg-white/70 p-1.5 rounded-lg border border-stone-200">
                     <span className="text-stone-400">水星 (Mercury)</span>
