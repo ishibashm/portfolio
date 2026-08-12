@@ -2,6 +2,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_BIRTH_DATE: "生年月日の形式が正しくありません。",
   INVALID_RANGE: "終了日は開始日以降の日付を指定してください。",
   INVALID_DIRECTION: "方位の指定が正しくありません。",
+  // 計算側で落ちたとき。入力の直しようが無いので、案内の向きが上と違う。
+  INTERNAL_ERROR:
+    "日取りの計算に失敗しました。時間をおいて、もう一度お試しください。",
 };
 
 export function getAuspiciousDayErrorMessage(code?: string): string {
