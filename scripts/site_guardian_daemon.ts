@@ -11,6 +11,7 @@ import {
 import { getGeomagneticData } from "../src/utils/geomagnetism";
 import prisma from "../src/lib/prisma";
 import { getLocalAgentDecision } from "../src/utils/localAgentEngine";
+import { toLogMessage } from "../src/lib/errorMessage";
 
 // Load environmental variables
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -46,7 +47,7 @@ function loadState(): DaemonState {
       const data = fs.readFileSync(STATE_FILE, "utf-8");
       return JSON.parse(data);
     }
-  } catch (e) {
+  } catch {
     writeLog(`Failed to load daemon state, using default state.`);
   }
   return {
@@ -64,18 +65,34 @@ function saveState(state: DaemonState) {
   }
 }
 
+/**
+ * 進化トリガに添えるテレメトリ。中身はトリガの種類ごとに違うので、
+ * 形は決めずに素の JSON として持つ（getLocalAgentDecision へそのまま渡す）。
+ */
+type EvolutionValue = Record<string, unknown>;
+
+/** 直近の活動ログ。下の findMany の select と同じ枝だけ。 */
+interface RecentActivityLog {
+  timestamp: Date;
+  triggerType: string;
+  status: string;
+  actions: string;
+  errorMessage: string | null;
+  details: string;
+}
+
 // Handle agent evolution using native local agent decision engine
 async function triggerAgentEvolution(
   triggerType: string,
   details: string,
-  value: any,
+  value: EvolutionValue,
 ) {
   writeLog(
     `🔥 Triggering Agent Evolution (Local TS Engine). Reason: [${triggerType}] ${details}`,
   );
 
   // Fetch recent logs to provide context to the agent
-  let systemLogs: any[] = [];
+  let systemLogs: RecentActivityLog[] = [];
   try {
     systemLogs = await prisma.agentActivityLog.findMany({
       take: 10,
@@ -89,8 +106,8 @@ async function triggerAgentEvolution(
         details: true,
       },
     });
-  } catch (e: any) {
-    writeLog(`Failed to fetch recent agent activity logs: ${e.message}`);
+  } catch (e) {
+    writeLog(`Failed to fetch recent agent activity logs: ${toLogMessage(e)}`);
   }
 
   const combinedValue = {
@@ -105,7 +122,6 @@ async function triggerAgentEvolution(
       details,
       combinedValue,
     );
-    let themeApplied = false;
     let errorMessage: string | null = null;
 
     if (agentResponse.toolCalls && agentResponse.toolCalls.length > 0) {
@@ -156,13 +172,14 @@ async function triggerAgentEvolution(
                 borderRadius: args.borderRadius || "8px",
               },
             });
-            themeApplied = true;
             writeLog(
               `🎨 [Theme Applied] New self-evolved theme written to DB.`,
             );
-          } catch (e: any) {
-            errorMessage = e.message;
-            writeLog(`🛡️ [Immunization Rollback] Theme rejected: ${e.message}`);
+          } catch (e) {
+            errorMessage = toLogMessage(e);
+            writeLog(
+              `🛡️ [Immunization Rollback] Theme rejected: ${toLogMessage(e)}`,
+            );
           }
         } else if (call.name === "write_blog_post") {
           try {
@@ -209,10 +226,10 @@ async function triggerAgentEvolution(
             writeLog(
               `📝 [Blog Posted] Autonomous diary post saved to DB: ${args.title}`,
             );
-          } catch (e: any) {
-            errorMessage = e.message;
+          } catch (e) {
+            errorMessage = toLogMessage(e);
             writeLog(
-              `🛡️ [Immunization Rollback] Blog post rejected: ${e.message}`,
+              `🛡️ [Immunization Rollback] Blog post rejected: ${toLogMessage(e)}`,
             );
           }
         }
@@ -234,9 +251,9 @@ async function triggerAgentEvolution(
         errorMessage: errorMessage,
       },
     });
-  } catch (err: any) {
+  } catch (err) {
     writeLog(
-      `[Error] Failed to process agent local engine execution: ${err.message}`,
+      `[Error] Failed to process agent local engine execution: ${toLogMessage(err)}`,
     );
     try {
       await prisma.agentActivityLog.create({
@@ -247,11 +264,11 @@ async function triggerAgentEvolution(
           actions: "自律自己進化 (システムエラー)",
           codeChange: null,
           status: "FAILURE_ROLLEDBACK",
-          errorMessage: err.message,
+          errorMessage: toLogMessage(err),
         },
       });
-    } catch (logErr: any) {
-      writeLog(`Failed to log agent failure to DB: ${logErr.message}`);
+    } catch (logErr) {
+      writeLog(`Failed to log agent failure to DB: ${toLogMessage(logErr)}`);
     }
   }
 }
@@ -281,9 +298,9 @@ async function checkEnvironment(state: DaemonState): Promise<DaemonState> {
     if (!isNaN(envLon) && envLon >= -180 && envLon <= 180) {
       lon = envLon;
     }
-  } catch (e: any) {
+  } catch (e) {
     writeLog(
-      `[Warning] Failed to parse observer coordinates from env: ${e.message}`,
+      `[Warning] Failed to parse observer coordinates from env: ${toLogMessage(e)}`,
     );
   }
 
@@ -300,8 +317,10 @@ async function checkEnvironment(state: DaemonState): Promise<DaemonState> {
     writeLog(
       `[Solar Telemetry] Azimuth: ${solarAzimuth.toFixed(2)}°, Elevation: ${solarElevation.toFixed(2)}°`,
     );
-  } catch (e: any) {
-    writeLog(`[Warning] Failed to calculate solar positions: ${e.message}`);
+  } catch (e) {
+    writeLog(
+      `[Warning] Failed to calculate solar positions: ${toLogMessage(e)}`,
+    );
   }
 
   // 2. Fetch Geomagnetic Vectoring
@@ -316,8 +335,8 @@ async function checkEnvironment(state: DaemonState): Promise<DaemonState> {
         `[Geomagnetic Telemetry] Declination: ${declination.toFixed(2)}°, Inclination: ${inclination.toFixed(2)}°`,
       );
     }
-  } catch (e: any) {
-    writeLog(`[Warning] Failed to calculate geomagnetism: ${e.message}`);
+  } catch (e) {
+    writeLog(`[Warning] Failed to calculate geomagnetism: ${toLogMessage(e)}`);
   }
 
   // 3. Trigger alignment optimization audit
@@ -364,8 +383,8 @@ async function main() {
   try {
     state = await checkEnvironment(state);
     saveState(state);
-  } catch (err: any) {
-    writeLog(`Critical error in daemon check loop: ${err.message}`);
+  } catch (err) {
+    writeLog(`Critical error in daemon check loop: ${toLogMessage(err)}`);
   }
 
   // Schedule next checks
@@ -373,13 +392,13 @@ async function main() {
     try {
       state = await checkEnvironment(state);
       saveState(state);
-    } catch (err: any) {
-      writeLog(`Critical error in daemon check loop: ${err.message}`);
+    } catch (err) {
+      writeLog(`Critical error in daemon check loop: ${toLogMessage(err)}`);
     }
   }, intervalMs);
 }
 
 main().catch((err) => {
-  writeLog(`Fatal daemon error: ${err.message}`);
+  writeLog(`Fatal daemon error: ${toLogMessage(err)}`);
   process.exit(1);
 });

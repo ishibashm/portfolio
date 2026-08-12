@@ -39,3 +39,19 @@ export function toUserMessage(
   if (hasJapanese(text)) return text;
   return fallback;
 }
+
+/**
+ * ログ（console / ファイル）に出す一行。**画面には出さない。**
+ *
+ * `catch (e: any) { console.error(e.message) }` が各所にあり、これが残り
+ * `any` の 2 割を占めていた。注釈を外すと `e` は `unknown` になって
+ * `.message` が読めなくなるが、キャストで逃げるのは避けたいので、
+ * 「Error なら message、そうでなければ文字列化」をここに 1 つ置く。
+ *
+ * 挙動の違いは 1 点だけ。Error 以外が投げられたとき、これまでログに
+ * `undefined` と出ていたのが実際の値になる。画面の文言は変わらない
+ * （そちらは上の `toUserMessage`）。
+ */
+export function toLogMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
