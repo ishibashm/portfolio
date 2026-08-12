@@ -31,8 +31,7 @@ import {
 } from "../utils/timing-optimizer";
 import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
 import type { NBAData } from "./nba/NBADashboard";
-import { Loader2, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
 import {
@@ -60,17 +59,8 @@ function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new 
   return fallback;
 }
 
-const NBADashboard = dynamic(
-  () => import("./nba/NBADashboard").then((mod) => mod.NBADashboard),
-  { ssr: false },
-);
 const SolarTimeTable = dynamic(
   () => import("./SolarTimeTable").then((mod) => mod.SolarTimeTable),
-  { ssr: false },
-);
-const TacticalActionCommand = dynamic(
-  () =>
-    import("./TacticalActionCommand").then((mod) => mod.TacticalActionCommand),
   { ssr: false },
 );
 const BioMagneticDashboard = dynamic(
@@ -548,40 +538,11 @@ const filterVectors = (
 
 export const SolarTimeClock = () => {
   const [calendarSelectedDay, setCalendarSelectedDay] = useState<DayData | null>(null);
-  const [sentinelNotification, setSentinelNotification] = useState<
-    string | null
-  >(null);
-  const sentinelTimeoutRef = React.useRef<any>(null);
 
-  const handleSentinelAction = (actionName: string) => {
-    let msg = "";
-    if (actionName.includes("set_color_theme")) {
-      msg =
-        "System: Portal color theme synchronized to Midnight Indigo (#06060c).";
-    } else if (actionName.includes("write_blog_post")) {
-      msg =
-        "System: Technical log '[Cosmic Report] Void-of-Course Alignment' posted.";
-    } else if (actionName.includes("get_system_logs")) {
-      msg = "System: Deep telemetry logs synchronized successfully (SUCCESS).";
-    } else {
-      msg = `System: Executed daemon action '${actionName}'.`;
-    }
-
-    if (sentinelTimeoutRef.current) {
-      clearTimeout(sentinelTimeoutRef.current);
-    }
-
-    setSentinelNotification(msg);
-    sentinelTimeoutRef.current = setTimeout(() => {
-      setSentinelNotification(null);
-      sentinelTimeoutRef.current = null;
-    }, 4000);
-  };
 
   const [baseTime, setBaseTime] = useState<Date | null>(null);
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<any>(null);
-  const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "profile" | "destination" | "timing" | "consult" | "history" | "scorecard"
   >("profile");
@@ -664,7 +625,6 @@ export const SolarTimeClock = () => {
   const [isSaving, setIsSaving] = useState(false);
   // 設定がこの端末だけのものか、クラウドにも同期されているか。
   // 「永久保存」と称して端末にしか残していなかったので、状態を明示する。
-  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [isSavingLog, setIsSavingLog] = useState(false);
 
   // Future Simulation & Intent State
@@ -725,36 +685,8 @@ export const SolarTimeClock = () => {
       setActiveLayerMode("final");
     }
   };
-  const [showAiAssistant, setShowAiAssistant] = useState(false);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
-
-  // [NEW] Agent latest tweet state
-  const [latestTweet, setLatestTweet] = useState<{
-    timestamp: string;
-    triggerType: string;
-    textResponse: string;
-    actions: string;
-  } | null>(null);
-
-  const fetchLatestTweet = async () => {
-    try {
-      const res = await fetch("/api/agent/latest-log");
-      if (res.ok) {
-        const data = await res.json();
-        setLatestTweet(data);
-      }
-    } catch (e) {
-      console.warn("Failed to fetch latest agent log/tweet:", e);
-    }
-  };
-
-  useEffect(() => {
-    fetchLatestTweet();
-    // Poll every 30 seconds to keep it fresh
-    const interval = setInterval(fetchLatestTweet, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Scorecard Tab States
   const [scorecardLoading, setScorecardLoading] = useState(false);
@@ -935,8 +867,7 @@ export const SolarTimeClock = () => {
     let isLoaded = false;
     // 匿名でも動くように端末の値を土台にし、ログイン中ならクラウドの値と
     // 新しいほうを採る。未ログインなら loadSettings が端末の値をそのまま返す。
-    const { settings: data, synced } = await loadSettings();
-    setIsCloudSynced(synced);
+    const { settings: data } = await loadSettings();
 
     if (Object.keys(data).length > 0) {
       try {
@@ -1056,7 +987,7 @@ export const SolarTimeClock = () => {
         if (localData) {
           try {
             currentLocal = JSON.parse(localData);
-          } catch (e) {}
+          } catch {}
         }
         localStorage.setItem(
           "tactical_config_v1",
@@ -1122,7 +1053,7 @@ export const SolarTimeClock = () => {
         if (savedPresetsStr) {
           try {
             currentPresets = JSON.parse(savedPresetsStr);
-          } catch (e) {}
+          } catch {}
         }
       }
 
@@ -1160,7 +1091,6 @@ export const SolarTimeClock = () => {
       // 以前はここが localStorage だけで、他の画面は /api/user-config だけを
       // 見ていたため、ホームで設定した出発地が物件検索に伝わらなかった。
       const { synced } = await saveSettings(configToSave);
-      setIsCloudSynced(synced);
 
       // Sync back to Relocation Matrix Dashboard
       if (typeof window !== "undefined") {
@@ -1461,7 +1391,6 @@ export const SolarTimeClock = () => {
   }, [birthDate, birthSolarData]);
 
   const {
-    board,
     layers: rawLayers,
     physicalLayers: rawPhysicalLayers,
     classicalLayers: rawClassicalLayers,
@@ -2847,9 +2776,6 @@ export const SolarTimeClock = () => {
       if (!res.ok) throw new Error("エクスポートAPIエラー");
       const apiData = await res.json();
 
-      const voidZodiacArray = voidZodiacOverride
-        ? voidZodiacOverride.split("")
-        : getPersonalVoidZodiac(parseSafeDate(birthDate));
 
       const unifiedPayload = {
         ...apiData,
@@ -2924,7 +2850,6 @@ export const SolarTimeClock = () => {
     const baseTime = new Date(heatmapAnchorMs);
 
     const data = [];
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(parseSafeDate(birthDate));
@@ -3462,12 +3387,6 @@ export const SolarTimeClock = () => {
   }, []);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 80);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
     // NOAA を直接叩かず /api/space-weather を経由する。
     // fetchSpaceWeather の中の `next: { revalidate }` はサーバの fetch でしか
     // 効かないので、ブラウザから呼ぶと利用者ごとに毎回 3 本走っていた。
@@ -3692,15 +3611,6 @@ export const SolarTimeClock = () => {
   const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);
   const isGlobalVoid = isYearVoid || isMonthVoid;
 
-  const activeYearBoard = useClassicalBoard
-    ? classicalYearBoard
-    : physicalYearBoard;
-  const activeMonthBoard = useClassicalBoard
-    ? classicalMonthBoard
-    : physicalMonthBoard;
-  const activeDayBoard = useClassicalBoard
-    ? classicalDayBoard
-    : physicalDayBoard;
 
   const renderMatrixCell = (
     dir: string,
@@ -3812,7 +3722,6 @@ export const SolarTimeClock = () => {
 
     const label = formatLabel(status);
     if (!honmeiStar) return <span>{label}</span>;
-    const star = board ? board[dir] : "?";
     let title = "🟦 通常ゾーン (SAFE)";
     let desc =
       "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
@@ -5485,7 +5394,7 @@ export const SolarTimeClock = () => {
                     <tbody className="divide-y divide-zinc-900/50 text-xs">
                       {scorecardSummary
                         .filter((item) => showNoiseDirections || !item.isNoise)
-                        .map((item, idx) => {
+                        .map((item) => {
                           const statusColor = (s: string) => {
                             if (s === "OPTIMAL")
                               return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
@@ -8042,12 +7951,6 @@ export const SolarTimeClock = () => {
           マスター状態を出力 (CSV/JSON)
         </button>
       </div>
-      {sentinelNotification && (
-        <div className="fixed bottom-24 right-6 lg:right-12 z-50 bg-purple-50 border border-purple-200 text-purple-700 px-4 py-2.5 rounded-lg shadow-2xl text-xs font-mono flex items-center gap-2 animate-fade-in backdrop-blur-sm">
-          <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
-          {sentinelNotification}
-        </div>
-      )}
     </div>
   );
 };
