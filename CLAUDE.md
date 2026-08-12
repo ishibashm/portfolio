@@ -128,7 +128,7 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 434**（ローカル実測。上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 377**（ローカル実測。上の注意を読むこと）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -151,28 +151,31 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 ### 現状の内訳（`npm run lint` 実行時点）
 
 ```
-248  @typescript-eslint/no-explicit-any
-120  @typescript-eslint/no-unused-vars
- 25  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
-  9  @typescript-eslint/ban-ts-comment
+239  @typescript-eslint/no-explicit-any
+ 86  @typescript-eslint/no-unused-vars
+ 21  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
+ 10  @typescript-eslint/ban-ts-comment
   8  @typescript-eslint/no-require-imports
- 21  react-hooks/set-state-in-effect ほか（同上で対象外）
+  8  react-hooks/set-state-in-effect ほか（同上で対象外）
 ```
+
+`catch (e: any)` は **0 件**（#215 で最後の 4 件が片付いた）。
 
 ファイル別の上位（`unused` / `any` / その他）：
 
 | 件数 | ファイル | 内訳 |
 |---|---|---|
-| 64 | `src/components/SolarTimeClock.tsx` | 22 / 37 / 5 |
+| 39 | `src/components/SolarTimeClock.tsx` | 2 / 32 / 5 |
 | 20 | `src/app/relocation/simulator/page.tsx` | 8 / 8 / 4 |
-| 16 | `src/components/FengShuiRelocation/App.jsx` | 7 / 0 / 9 |
 | 16 | `src/utils/ephemerisEngine.ts` | 3 / 13 / 0 |
 | 12 | `src/app/relocation/arbitrage/page.tsx` | 0 / 11 / 1 |
+| 12 | `src/components/ArbitrageMapInner.tsx` | 3 / 5 / 4 |
 | 12 | `src/utils/nbaEngine.ts` | 0 / 12 / 0 |
-| 11 | `src/app/api/nba/route.ts` | 4 / 7 / 0 |
 | 10 | `src/components/nba/NBADashboard.tsx` | 0 / 7 / 3 |
-| 10 | `src/components/widgets/OmniPipelineWidget.tsx` | 0 / 10 / 0 |
 | 10 | `src/utils/baziEngine.ts` | 1 / 9 / 0 |
+|  8 | `src/utils/arbitrageAstro.ts` | 0 / 7 / 1 |
+|  7 | `src/components/MagneticMapInner.tsx` | 2 / 3 / 2 |
+|  7 | `src/components/widgets/OmniPipelineWidget.tsx` | 0 / 7 / 0 |
 
 ### catch は片付いた。その過程で分かったこと
 
@@ -209,12 +212,18 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 
 ### 次にやるとよいもの
 
-**`src/components/SolarTimeClock.tsx`（64 件）** が残りの山。8,000 行あって
-現行機能の中核なので、次の順で 1 PR ずつ刻むのが安全。
+**`src/components/SolarTimeClock.tsx`（39 件）** が残りの山。8,000 行あって
+現行機能の中核。未使用（#213）と `catch`（#215）は済んでいるので、残りは
+**`any` 32 件**。`solarData` / `NBAData` など応答系は型を切る前にモデル化が要るが、
+**`api/nba` の応答は #212 でモデル化済み**なので、そこから引ける分がある。
 
-1. 未使用の import / 変数（22 件）— 消すだけ。事故りにくい
-2. `catch` の 4 件 — 上の表のとおり
-3. `any` 37 件 — `solarData` / `NBAData` など応答系は型を切る前にモデル化が要る
+このファイルを触るときは `docs/improvement-backlog.md` の 5 節を先に読むこと。
+**字面での一括置換で 2 回事故った**（同じ字面の使っている変数を消した／
+`const [a, setA]` の警告 2 件で同じ行を二重に消した）。eslint の**行番号**を使い、
+同じ行を指す警告は畳んでから消す。消したら必ず `npx tsc --noEmit` を通す。
+
+残る `no-unused-vars` 2 件（`setMapProperties` / `setPressureDrop`）は
+**消さないこと。**機能が初期値のまま止まっているしるしで、扱いは相談してから決める。
 
 `utils/ephemerisEngine.ts`（16 件）と `utils/nbaEngine.ts`（12 件）は**判定の中核**。
 型を触るだけでも、しきい値や条件式に手が滑ると影響が大きい。テストが厚いので
