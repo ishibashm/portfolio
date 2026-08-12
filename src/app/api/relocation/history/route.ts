@@ -15,6 +15,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { toLogMessage } from "@/lib/errorMessage";
 import { gradeVerdict, judgeDay } from "@/utils/auspiciousDays";
 import { JUDGMENT_ENGINE_VERSION } from "@/utils/engineVersion";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
         actionIntent = config.action_intent;
       if (config.physical_month_mode !== undefined)
         physicalMonthMode = config.physical_month_mode;
-    } catch (e) {}
+    } catch {}
 
     // Override from search params if provided
     if (useClassicalStr !== null) useClassical = useClassicalStr === "true";
@@ -128,8 +129,10 @@ export async function GET(request: Request) {
       histories = await prisma.relocationHistory.findMany({
         orderBy: { departureDate: "desc" },
       });
-    } catch (e: any) {
-      if (!String(e?.message ?? "").includes("judgment")) throw e;
+    } catch (e) {
+      // 列名エラーかどうかをメッセージで見分けている。Prisma が投げるのは
+      // Error の派生なので、toLogMessage は e.message と同じ文字列になる。
+      if (!toLogMessage(e).includes("judgment")) throw e;
       console.warn("judgment column missing; falling back to legacy columns");
       histories = (await prisma.relocationHistory.findMany({
         orderBy: { departureDate: "desc" },
@@ -303,10 +306,10 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, data: evaluatedHistories });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to resolve relocation history:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: toLogMessage(error) },
       { status: 500 },
     );
   }
@@ -432,11 +435,11 @@ export async function POST(req: Request) {
           engineVersion: judgment ? JUDGMENT_ENGINE_VERSION : undefined,
         },
       });
-    } catch (e: any) {
+    } catch (e) {
       // スキーマ反映（prisma db push）前のデプロイでも記録を失わないための
       // 退避。judgment 列がまだ無い DB では列名エラーになるので、
       // スナップショット無しで保存し直す。
-      if (String(e?.message ?? "").includes("judgment")) {
+      if (toLogMessage(e).includes("judgment")) {
         console.warn("judgment column missing; saving without snapshot");
         newRecord = await prisma.relocationHistory.create({ data: baseData });
       } else {
@@ -445,10 +448,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, data: newRecord });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to save relocation history entry:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: toLogMessage(error) },
       { status: 500 },
     );
   }
@@ -475,10 +478,10 @@ export async function DELETE(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to delete relocation history entry:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: toLogMessage(error) },
       { status: 500 },
     );
   }
