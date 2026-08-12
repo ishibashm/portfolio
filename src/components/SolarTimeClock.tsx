@@ -30,9 +30,7 @@ import {
   createPersonalizedOptimizer,
   OptimizationResult,
 } from "../utils/timing-optimizer";
-import { InlineMath, BlockMath } from "react-katex";
 import { TenChiJinEvaluation } from "./nba/TenChiJinEvaluation";
-import "katex/dist/katex.min.css";
 import type { NBAData } from "./nba/NBADashboard";
 import { Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -53,8 +51,6 @@ import {
 } from "@/utils/directionGeo";
 import { directionBoardInstant } from "@/utils/boardInstant";
 import { statusForLayerMode, type LayerMode } from "@/utils/directionStatus";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
   if (!dateStr) return fallback;
@@ -106,6 +102,16 @@ const CosmicCalendar = dynamic(
   { ssr: false },
 );
 import type { DayData } from "./widgets/CosmicCalendar";
+
+/**
+ * 数式（KaTeX）。総合スコアタブの計算式の内訳でしか使わないので、
+ * 静的に読むとホームを開いた全員が 460 KB（gzip 126 KB）を読むことになる。
+ * CSS も components/MathFormula 側に置いてある。
+ */
+const InlineMath = dynamic(() => import("./MathFormula"), {
+  ssr: false,
+  loading: () => <span className="text-stone-300">…</span>,
+});
 
 const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ssr: false,
