@@ -86,14 +86,6 @@ const ASTRO_STATUS_LABELS: Record<string, string> = {
   NOISE_NODE: "月交点ノイズ",
 };
 
-// 吉凶バッジ定義のインターフェース
-interface BadgeItem {
-  label: string;
-  type: "calendar" | "individual"; // 枠線のみ or 塗りつぶし
-  colorClass: string;
-  priority: number;
-}
-
 const getTodayString = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -500,242 +492,8 @@ export default function ArbitrageScannerPage() {
   };
 
   // 吉凶要因バッジの描画
-  const renderFactorBadges = (item: any) => {
-    const targetDay = item.dateScores?.[3];
-    if (!targetDay) return null;
-    const details = targetDay.scoreDetails;
-
-    const badges: BadgeItem[] = [];
-
-    // 1. 大凶要因
-    if (item.astrologyStatus === "NOISE_GOU")
-      badges.push({
-        label: "五黄殺",
-        type: "individual",
-        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
-        priority: 1,
-      });
-    if (item.astrologyStatus === "NOISE_ANKEN")
-      badges.push({
-        label: "暗剣殺",
-        type: "individual",
-        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
-        priority: 1,
-      });
-    if (item.astrologyStatus === "NOISE_HA")
-      badges.push({
-        label: "歳破",
-        type: "individual",
-        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
-        priority: 1,
-      });
-    if (item.astrologyStatus === "NOISE_HONMEI")
-      badges.push({
-        label: "本命殺",
-        type: "individual",
-        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
-        priority: 1,
-      });
-    if (item.astrologyStatus === "NOISE_TEKI")
-      badges.push({
-        label: "本命的殺",
-        type: "individual",
-        colorClass: "bg-red-500/25 text-red-600 border border-red-200",
-        priority: 1,
-      });
-
-    // 2. 最大吉要因
-    if (item.isTendo)
-      badges.push({
-        label: "天道方位",
-        type: "individual",
-        colorClass:
-          "bg-gradient-to-br from-amber-400/25 to-yellow-500/25 text-amber-600 border border-amber-200 font-bold",
-        priority: 2,
-      });
-    if (targetDay.luckyDays?.isTensho)
-      badges.push({
-        label: "天赦日",
-        type: "calendar",
-        colorClass:
-          "border border-yellow-400/50 text-yellow-300 bg-yellow-400/5",
-        priority: 2,
-      });
-
-    // 3. 通常の吉要因
-    if (targetDay.rokuyo?.includes("大安"))
-      badges.push({
-        label: "大安",
-        type: "calendar",
-        colorClass: "border border-indigo-200 text-indigo-600 bg-indigo-400/5",
-        priority: 3,
-      });
-    if (targetDay.luckyDays?.isIchiryumanbai)
-      badges.push({
-        label: "一粒万倍",
-        type: "calendar",
-        colorClass:
-          "border border-emerald-200 text-emerald-600 bg-emerald-400/5",
-        priority: 3,
-      });
-    if (item.astroFlags?.includes("JUPITER_LINE"))
-      badges.push({
-        label: "木星ライン",
-        type: "individual",
-        colorClass:
-          "bg-emerald-500/15 text-emerald-600 border border-emerald-200",
-        priority: 3,
-      });
-    if (item.astroFlags?.includes("VENUS_LINE"))
-      badges.push({
-        label: "金星ライン",
-        type: "individual",
-        colorClass: "bg-blue-500/15 text-blue-600 border border-blue-200",
-        priority: 3,
-      });
-    if (item.astroFlags?.includes("SUN_LINE"))
-      badges.push({
-        label: "太陽ライン",
-        type: "individual",
-        colorClass: "bg-purple-500/15 text-purple-600 border border-purple-200",
-        priority: 3,
-      });
-
-    // 4. 軽い凶や警告
-    if (
-      targetDay.status === "NOISE_VOID" ||
-      (details && details.voidPenalty < 0) ||
-      item.astroFlags?.includes("VOID_TIME_HAZARD")
-    ) {
-      const isBlocker = item.maxAstroFactor === "天中殺期間 (移転NG)";
-      badges.push({
-        label: isBlocker ? "天中殺 (移転NG)" : "天中殺",
-        type: "individual",
-        colorClass: isBlocker
-          ? "bg-red-500/25 text-red-600 border border-red-200 font-bold"
-          : "bg-orange-500/10 text-orange-600 border border-orange-200",
-        priority: isBlocker ? 1 : 4,
-      });
-    }
-    if (
-      item.astroFlags?.includes("DOYOU_HAZARD") ||
-      (details && details.doyouPenalty < 0)
-    )
-      badges.push({
-        label: "土用期間",
-        type: "calendar",
-        colorClass: "border border-stone-300 text-stone-500 bg-stone-100/60",
-        priority: 4,
-      });
-    if (item.astrologyStatus === "NOISE_GETSUMEI")
-      badges.push({
-        label: "月命殺",
-        type: "individual",
-        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
-        priority: 4,
-      });
-    if (item.astrologyStatus === "NOISE_GETSUTEKI")
-      badges.push({
-        label: "月命的殺",
-        type: "individual",
-        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
-        priority: 4,
-      });
-    if (item.astrologyStatus === "NOISE_NODE")
-      badges.push({
-        label: "月交点",
-        type: "individual",
-        colorClass: "bg-stone-100 text-stone-500 border border-stone-200",
-        priority: 4,
-      });
-    if (item.astroFlags?.includes("DECLINATION_WARNING"))
-      badges.push({
-        label: "偏角ズレ",
-        type: "individual",
-        colorClass:
-          "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20",
-        priority: 4,
-      });
-
-    // 優先度順、かつ同じ優先度なら「カレンダー共通（暦）」を左、「個別」を右に配置
-    badges.sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
-      if (a.type !== b.type) return a.type === "calendar" ? -1 : 1;
-      return 0;
-    });
-
-    const displayLimit = 5;
-    const visibleBadges = badges.slice(0, displayLimit);
-    const hiddenCount = badges.length - displayLimit;
-
-    return (
-      <div className="flex flex-wrap gap-1.5 items-center mt-2.5">
-        {visibleBadges.map((badge, idx) => (
-          <span
-            key={idx}
-            className={`px-2 py-0.5 rounded text-[9.5px] font-medium leading-none ${badge.colorClass}`}
-          >
-            {badge.label}
-          </span>
-        ))}
-        {hiddenCount > 0 && (
-          <div className="group relative">
-            <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200 hover:text-stone-700 cursor-help leading-none">
-              +{hiddenCount}
-            </span>
-            {/* ポップオーバー */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-48 bg-white/80 border border-stone-200 rounded-lg p-2.5 shadow-xl text-[10px] text-stone-600 hidden group-hover:block z-50 backdrop-blur-sm">
-              <div className="font-bold text-stone-500 border-b border-stone-200 pb-1 mb-1.5">
-                すべての吉凶要因:
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {badges.map((badge, idx) => (
-                  <span
-                    key={idx}
-                    className={`px-1.5 py-0.5 rounded text-[8.5px] font-medium leading-none ${badge.colorClass}`}
-                  >
-                    {badge.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // 全体ロード時のカード型スケルトン
-  const renderCardSkeletons = () => {
-    return Array.from({ length: 4 }).map((_, idx) => (
-      <tr
-        key={idx}
-        className="border-b border-gray-100 dark:border-stone-200 animate-pulse"
-      >
-        <td className="px-6 py-4">
-          <div className="w-16 h-4 bg-stone-100/80 rounded-md" />
-        </td>
-        <td className="px-6 py-4 space-y-2">
-          <div className="w-48 h-4 bg-stone-100/80 rounded-md" />
-          <div className="w-32 h-3 bg-stone-100/80 rounded-md" />
-          <div className="w-40 h-8 bg-stone-100/80 rounded-md mt-2" />
-        </td>
-        <td className="px-6 py-4 space-y-1.5">
-          <div className="w-20 h-4 bg-stone-100/80 rounded-md" />
-          <div className="w-24 h-3 bg-stone-100/80 rounded-md" />
-        </td>
-        <td className="px-6 py-4 text-right">
-          <div className="w-16 h-4 bg-stone-100/80 rounded-md ml-auto" />
-        </td>
-        <td className="px-6 py-4 text-right">
-          <div className="w-12 h-4 bg-stone-100/80 rounded-md ml-auto" />
-        </td>
-        <td className="px-6 py-4 text-right">
-          <div className="w-24 h-3 bg-stone-100/80 rounded-md ml-auto" />
-        </td>
-      </tr>
-    ));
-  };
 
   // Pagination & Filtering state
   const [currentPage, setCurrentPage] = useState(1);
@@ -1736,28 +1494,6 @@ export default function ArbitrageScannerPage() {
   };
 
   // Handle manual submit of location/birth date
-  const handleSettingsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setBaseLat(localLat);
-    setBaseLon(localLon);
-    setBirthDate(localBirthDate);
-    const submitLat = parseFloat(localLat);
-    const submitLon = parseFloat(localLon);
-    if (!isNaN(submitLat) && !isNaN(submitLon)) {
-      setMapFocusKind("area");
-      setMapCenter([submitLat, submitLon]);
-    }
-
-    localStorage.setItem("arb_baseLat", localLat);
-    localStorage.setItem("arb_baseLon", localLon);
-    localStorage.setItem("arb_birthDate", localBirthDate);
-
-    saveUnifiedConfig({
-      base_lat: parseFloat(localLat),
-      base_lon: parseFloat(localLon),
-      birth_date: localBirthDate,
-    });
-  };
 
   /**
    * 全国を俯瞰している状態か。
@@ -1868,45 +1604,7 @@ export default function ArbitrageScannerPage() {
     });
   };
 
-  const applyPreset = (
-    presetName: string,
-    lat: string,
-    lon: string,
-    pref: string,
-  ) => {
-    const nextFilters = applySearchAreaState(pref);
-    setLocalLat(lat);
-    setLocalLon(lon);
-    setBaseLat(lat);
-    setBaseLon(lon);
-    localStorage.setItem("arb_baseLat", lat);
-    localStorage.setItem("arb_baseLon", lon);
-    saveUnifiedConfig({
-      base_lat: parseFloat(lat),
-      base_lon: parseFloat(lon),
-      prefecture: nextFilters.prefecture,
-      radius_km: nextFilters.radiusKm,
-    });
-  };
-
   // Sync toggles instantly
-  const handleClassicalToggle = (val: boolean) => {
-    setUseClassical(val);
-    localStorage.setItem("arb_useClassical", val.toString());
-    setCurrentPage(1);
-    saveUnifiedConfig({ use_classical_board: val });
-
-    // Dispatch global event for instant sync
-    const event = new CustomEvent("metaphysical-config-updated", {
-      detail: {
-        targetDate: targetDate,
-        useClassicalBoard: val,
-        directionFilterMode: directionFilterMode,
-        actionIntent: actionIntent,
-      },
-    });
-    window.dispatchEvent(event);
-  };
 
   const handleTrueNorthToggle = (val: boolean) => {
     setUseTrueNorth(val);
@@ -1923,27 +1621,6 @@ export default function ArbitrageScannerPage() {
   };
 
   // Geolocation trigger
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const latStr = position.coords.latitude.toFixed(5);
-          const lonStr = position.coords.longitude.toFixed(5);
-          setLocalLat(latStr);
-          setLocalLon(lonStr);
-          setBaseLat(latStr);
-          setBaseLon(lonStr);
-          localStorage.setItem("arb_baseLat", latStr);
-          localStorage.setItem("arb_baseLon", lonStr);
-        },
-        (error) => {
-          alert("位置情報の取得に失敗しました: " + error.message);
-        },
-      );
-    } else {
-      alert("お使いのブラウザは位置情報をサポートしていません。");
-    }
-  };
 
   // Filters logic
   const handleFilterNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
