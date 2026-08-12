@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
 import { createClient } from "@/utils/supabase/server";
-import { z } from "zod";
-import { maskPII } from "@/utils/anonymizer";
 import { toResponseMessage } from "@/lib/errorMessage";
 
 export const runtime = "edge";
@@ -27,9 +23,6 @@ export async function POST(req: Request) {
         { status: 400 },
       );
     }
-
-    // Mask sensitive details
-    const maskedContent = maskPII(content);
 
     // Paid Gemini API call is disabled to prevent API charges
     return NextResponse.json(

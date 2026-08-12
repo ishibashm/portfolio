@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText } from "ai";
-import { google } from "@ai-sdk/google";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { createClient } from "@/utils/supabase/server";
 
 export const runtime = "edge";
@@ -16,7 +15,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { messages, docs } = await req.json();
+    const { messages, docs } = (await req.json()) as {
+      messages?: unknown;
+      // 返す一覧に使う枝だけ。ナレッジ検索の結果をそのまま受けている。
+      docs?: { title?: string; kb_id?: string | number }[];
+    };
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json(
@@ -25,43 +28,18 @@ export async function POST(req: Request) {
       );
     }
 
-    // Format knowledge chunks as the context for the model
-    const contextText =
-      docs && docs.length > 0
-        ? docs
-            .map((chunk: any) => {
-              const kbPrefix = typeof chunk.kb_id === "string" && chunk.kb_id.startsWith("KB")
-                ? chunk.kb_id
-                : "KB" + String(chunk.kb_id).padStart(6, "0");
-              return `<chunk id="${kbPrefix}-Part${chunk.chunk_index + 1}" source="${kbPrefix}" title="${chunk.title}">\n${chunk.chunk_content || chunk.content}\n</chunk>`;
-            })
-            .join("\n\n")
-        : "No relevant knowledge documents found.";
-
-    const systemPrompt = `You are an advanced RAG (Retrieval-Augmented Generation) assistant for the user's ITSM / Personal Knowledge Base. Your task is to answer the user's queries accurately, objectively, and ONLY based on the provided document chunks.
-
-Guidelines:
-1. Ground all your answers strictly in the text contained within the <chunk> tags.
-2. In your answers, cite the chunks you reference using their source ID and part in brackets, e.g., [KB000001-Part1]. Multiple citations should be separated by commas.
-3. Make the citations clickable links in markdown if you want, but formatting them simply as text [KB000001-Part1] is fine.
-4. If the provided chunks do not contain enough information to answer the question, state: "提供されたナレッジドキュメントから該当する情報を特定できませんでした。" (Could not identify the relevant information from the provided knowledge chunks) and do not make up any information.
-5. Always respond in Japanese unless the query is in another language.
-
-Knowledge Base Chunks:
-${contextText}`;
-
     // Paid Gemini API call is disabled to prevent API charges
     return NextResponse.json({
       success: true,
       text:
         docs && docs.length > 0
-          ? `【ナレッジ検索結果】\n${docs.map((d: any) => `- ${d.title} (${d.kb_id || "KB"})`).join("\n")}\n\n⚠️ 課金AI機能（Gemini API）は現在除外・無効化されています。上記の検索結果ドキュメントを直接参照してください。`
+          ? `【ナレッジ検索結果】\n${docs.map((d) => `- ${d.title} (${d.kb_id || "KB"})`).join("\n")}\n\n⚠️ 課金AI機能（Gemini API）は現在除外・無効化されています。上記の検索結果ドキュメントを直接参照してください。`
           : "⚠️ 課金AI機能（Gemini API）は現在除外・無効化されています。",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Chat Knowledge API Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to process chat request." },
+      { error: toResponseMessage(error, "Failed to process chat request.") },
       { status: 500 },
     );
   }
