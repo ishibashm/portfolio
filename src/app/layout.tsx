@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getAdsenseIds } from "@/lib/adsense";
 import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
-import "katex/dist/katex.min.css";
 import prisma from "@/lib/prisma";
 import {
   CORE_ROUTES,
