@@ -16,11 +16,11 @@ describe("userSettings", () => {
   it("merges instead of replacing so another screen's values survive", () => {
     writeLocalSettings({ base_lat: 35.1, base_lon: 136.9 });
     // 出発地を知らない画面が生年月日だけ保存しても、出発地は残る。
-    writeLocalSettings({ birth_date: "1988-11-25T04:26" });
+    writeLocalSettings({ birth_date: "1997-06-15T04:26" });
 
     const saved = readLocalSettings();
     expect(saved.base_lat).toBe(35.1);
-    expect(saved.birth_date).toBe("1988-11-25T04:26");
+    expect(saved.birth_date).toBe("1997-06-15T04:26");
   });
 
   it("keeps working when signed out", async () => {

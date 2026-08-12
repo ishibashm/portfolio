@@ -87,7 +87,8 @@ describe("距離の計算", () => {
   });
 
   it("京都〜名古屋がおよそ 110km", () => {
-    const km = distanceKmBetween(34.9911, 135.7248, 35.1815, 136.9064);
+    // 京都駅 → 名古屋市。実測 106.7km。
+    const km = distanceKmBetween(34.9858, 135.7588, 35.1815, 136.9064);
     expect(km).toBeGreaterThan(100);
     expect(km).toBeLessThan(120);
   });

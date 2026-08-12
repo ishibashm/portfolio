@@ -235,12 +235,23 @@ export default function ArbitrageScannerPage() {
     baseLon !== "" &&
     !isNaN(parseFloat(baseLat)) &&
     !isNaN(parseFloat(baseLon));
-  const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
-  const [birthLon, setBirthLon] = useState("132.4482");
+  /**
+   * 出生地の座標。**既定値を置かない。**
+   *
+   * 以前は運営者の出生地が入っていた。
+   * 天体ライン（SUN / VENUS / JUPITER_LINE）は出生日時と出生地から
+   * 決まるので、一度も入力していない人にも他人の出生地で計算した加点が
+   * 乗っていた。生年月日を空にした #202 の片割れで、こちらが残っていた。
+   *
+   * API 側（/api/rentals/arbitrage）は birthLat が数値でなければ null に
+   * 落として天体ラインを計算しない。空文字を送れば正しく止まる。
+   */
+  const [birthLat, setBirthLat] = useState("");
+  const [birthLon, setBirthLon] = useState("");
   /**
    * 生年月日。**既定値を置かない。**
    *
-   * 以前は運営者の生年月日（1988年11月25日）が入っていた。本命殺・
+   * 以前は運営者の生年月日が入っていた。本命殺・
    * 本命的殺・天中殺はここから決まるので、一度も入力していない人にも
    * 他人の命式で計算した判定が出ていた（本番で実測）。
    *
@@ -312,8 +323,8 @@ export default function ArbitrageScannerPage() {
   const [localLon, setLocalLon] = useState("");
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
   const [localBirthDate, setLocalBirthDate] = useState("");
-  const [localBirthLat, setLocalBirthLat] = useState("34.3952");
-  const [localBirthLon, setLocalBirthLon] = useState("132.4482");
+  const [localBirthLat, setLocalBirthLat] = useState("");
+  const [localBirthLon, setLocalBirthLon] = useState("");
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
 
   // おすすめ度（星マーク）の描画
@@ -818,8 +829,9 @@ export default function ArbitrageScannerPage() {
     // その地点を出発地として判定された結果を「自分の吉方位」だと思ってしまう。
     let bsLat = "";
     let bsLon = "";
-    let bLat = "34.3952";
-    let bLon = "132.4482";
+    // 出生地も同じ扱い。運営者の出生地が入っていた。
+    let bLat = "";
+    let bLon = "";
     let bDate = "";
     // 時期分析から「この日の判定で塗られた地図を見たい」と来たときだけ
     // 俯瞰で開く。県別の色分けは zoom < 10 でしか描かれないため。
@@ -2597,7 +2609,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
-                          出生地座標 (天体ライン用)
+                          出生地座標 (天体ライン用・任意)
                         </label>
                         <button
                           type="button"
@@ -2639,13 +2651,21 @@ export default function ArbitrageScannerPage() {
                           placeholder="経度"
                         />
                       </div>
+                      {!birthLat && (
+                        <p className="text-[10px] text-stone-400 dark:text-stone-500">
+                          未入力です。天体ライン（太陽・金星・木星）は出生地から決まるため、この加点は付きません。他の判定には影響しません。
+                        </p>
+                      )}
                     </div>
 
                     {showBirthMapPicker && (
                       <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200 dark:border-stone-200 relative z-20">
                         <LocationPickerInner
-                          initialLat={Number(birthLat) || 34.3952}
-                          initialLon={Number(birthLon) || 132.4482}
+                          // 未入力なら日本全体の中心から選んでもらう。ここに
+                          // 特定の街を置くと、その地点が「あなたの出生地」の
+                          // 初期値として選ばれてしまう。
+                          initialLat={Number(birthLat) || OVERVIEW_CENTER[0]}
+                          initialLon={Number(birthLon) || OVERVIEW_CENTER[1]}
                           onSelect={(newLat: number, newLon: number) => {
                             const latStr = newLat.toFixed(5);
                             const lonStr = newLon.toFixed(5);

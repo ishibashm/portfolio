@@ -32,7 +32,7 @@ export interface NumerologyData {
 export interface MetaphysicalData {
   // 生年月日から決まるものは null を取る。
   //
-  // 以前は生年月日が無いとき運営者のもの（1988-11-25T04:26）に落ちていた。
+  // 以前は生年月日が無いとき運営者のものに落ちていた。
   // /api/nba は公開の endpoint なので、空の body を投げるだけで運営者の
   // ライフパスナンバー・太陽星座・大運・命式が読める状態だった。
   // 無いものは無いとして返す。

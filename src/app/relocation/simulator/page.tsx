@@ -257,15 +257,28 @@ function intersectRays(
  */
 const EXAMPLE_BIRTH_DATE = "1990-01-01T12:00";
 
+/**
+ * 「先に例で動きを見る」の出発地、および座標が壊れていたときの落とし先。
+ *
+ * ここには運営者の自宅（町丁名と 4 桁の座標＝およそ 10m）が入っていた。
+ * 公開リポジトリなので、住所がそのまま読める状態でもあった。例に必要
+ * なのは「どこか 1 地点」だけなので、公共の目印（京都駅のあたり）に置く。
+ */
+const EXAMPLE_START = {
+  name: "京都市下京区",
+  lat: 34.9858,
+  lon: 135.7588,
+};
+
 export default function RelocationSimulatorPage() {
   // Global Profile Defaults
   //
   // 生年月日に既定値を置かない。入口（SimulatorStart）を通るか、
   // 例を開くか、保存済みの設定が読めたときにだけ入る。
   const [birthDate, setBirthDate] = useState("");
-  const [startLat, setStartLat] = useState(34.9911); // Kyoto
-  const [startLon, setStartLon] = useState(135.7248);
-  const [startName, setStartName] = useState("京都市右京区西京極");
+  const [startLat, setStartLat] = useState(EXAMPLE_START.lat);
+  const [startLon, setStartLon] = useState(EXAMPLE_START.lon);
+  const [startName, setStartName] = useState(EXAMPLE_START.name);
 
   // Accompanying Members
   const [members, setMembers] = useState<AccompanyingMember[]>([]);
@@ -281,9 +294,9 @@ export default function RelocationSimulatorPage() {
   // Simulation Steps
   const [steps, setSteps] = useState<SimulatorStep[]>([
     {
-      fromName: "京都市右京区西京極",
-      fromLat: 34.9911,
-      fromLon: 135.7248,
+      fromName: EXAMPLE_START.name,
+      fromLat: EXAMPLE_START.lat,
+      fromLon: EXAMPLE_START.lon,
       toName: "愛知県名古屋市",
       toLat: 35.1815,
       toLon: 136.9064,
@@ -558,11 +571,11 @@ export default function RelocationSimulatorPage() {
   const evaluatedSteps = useMemo(() => {
     let currentBaseLat =
       isNaN(startLat) || startLat === null || startLat === undefined
-        ? 34.9911
+        ? EXAMPLE_START.lat
         : startLat;
     let currentBaseLon =
       isNaN(startLon) || startLon === null || startLon === undefined
-        ? 135.7248
+        ? EXAMPLE_START.lon
         : startLon;
     let currentBaseName = startName || "起点";
 
@@ -572,11 +585,11 @@ export default function RelocationSimulatorPage() {
       const depDate = parseSafeDate(step.departureDate);
       const targetLat =
         isNaN(step.toLat) || step.toLat === null || step.toLat === undefined
-          ? 34.9911
+          ? EXAMPLE_START.lat
           : step.toLat;
       const targetLon =
         isNaN(step.toLon) || step.toLon === null || step.toLon === undefined
-          ? 135.7248
+          ? EXAMPLE_START.lon
           : step.toLon;
 
       const rawBearing = getBearing(

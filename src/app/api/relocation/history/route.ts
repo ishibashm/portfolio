@@ -81,7 +81,7 @@ export async function GET(request: Request) {
 
     // 1. Resolve active config
     //
-    // 生年月日に既定値を置かない。以前は運営者のもの（1988-11-25T04:26）が
+    // 生年月日に既定値を置かない。以前は運営者のものが
     // 入っていた。この route は denyUnlessAdmin で守られているので他人に
     // 判定が出ることは無かったが、公開リポジトリに実在する個人の生年月日と
     // 出生時刻が置かれている状態だった。

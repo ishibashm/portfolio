@@ -11,8 +11,8 @@ import { todayInJapan } from "@/utils/japanDate";
  * スライダーが一度に出る。最初に何を入れればいいのかが分からない。
  *
  * それだけなら「深い」で済むが、実際にはもっと悪かった。初期値として
- * 運営者の生年月日（1988-11-25）と、作った覚えのない計画
- * （京都市右京区西京極 → 名古屋市 / 2026-06-30 / 一時赴任）が入っていて、
+ * 運営者の生年月日と、作った覚えのない計画
+ * （京都市 → 名古屋市 / 2026-06-30 / 一時赴任）が入っていて、
  * それに対する判定まで出る。本番で「総合シンクロ指数 76/100 EXCELLENT」
  * 「安心してそのまま計画を実行してください」と表示されていた。
  * 初めて来た人は、これを自分の結果だと読む。
@@ -64,7 +64,7 @@ export function SimulatorStart({
       const json = await res.json();
       if (!res.ok || typeof json?.lat !== "number") {
         setError(
-          "その住所が見つかりませんでした。市区町村までで試してください（例: 京都市右京区）。",
+          "その住所が見つかりませんでした。市区町村までで試してください（例: 京都市下京区）。",
         );
         return;
       }
@@ -116,7 +116,7 @@ export function SimulatorStart({
             type="text"
             value={place}
             onChange={(e) => setPlace(e.target.value)}
-            placeholder="例: 京都市右京区"
+            placeholder="例: 京都市下京区"
             className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
           />
         </label>

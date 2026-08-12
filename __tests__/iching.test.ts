@@ -127,9 +127,9 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
   });
 
   describe("Kyoto Solar Time Longitude Correction", () => {
-    it("should calculate longitude correction for Kyoto (135.7248°) as exactly 2.8992 minutes for JST timezone", () => {
-      const correction = getLongitudeCorrection(135.7248, 9);
-      expect(correction).toBeCloseTo(2.8992, 4);
+    it("should calculate longitude correction for Kyoto (135.7588°) as exactly 3.0352 minutes for JST timezone", () => {
+      const correction = getLongitudeCorrection(135.7588, 9);
+      expect(correction).toBeCloseTo(3.0352, 4);
     });
 
     it("should calculate correct longitude correction for Tokyo (139.6917°) as exactly 18.7668 minutes for JST timezone", () => {
@@ -231,17 +231,19 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
   });
 
   describe("Vimshottari Dasha Calculation (Sidereal Moon Correction)", () => {
-    it("should calculate active Dasha as Jupiter-Moon for birth date 1988-11-25 04:26 at evaluation date 2026-06-12", () => {
-      const birthDate = new Date("1988-11-25T04:26:00+09:00");
+    it("should calculate active Dasha for birth date 1997-06-15 04:26 at evaluation date 2026-06-12", () => {
+      // 検算用の生年月日。以前は運営者のものを使っていた（公開リポジトリ）。
+      // 期待値は入れ替えたあとの実測値。
+      const birthDate = new Date("1997-06-15T04:26:00+09:00");
       const evaluationDate = new Date("2026-06-12T12:00:00+09:00");
 
       const vedic = new VedicEngine();
       const result = vedic.calculateVimshottariDasha(birthDate, evaluationDate);
 
-      expect(result.mahadasha).toBe("Jupiter");
+      expect(result.mahadasha).toBe("Rahu");
       expect(result.antardasha).toBe("Mars");
-      expect(result.formatted).toContain("木星-火星期");
-      expect(result.formatted).toContain("Jupiter-Mars");
+      expect(result.formatted).toContain("ラーフ-火星期");
+      expect(result.formatted).toContain("Rahu-Mars");
     });
   });
 

@@ -14,16 +14,17 @@ import {
 import { KigakuScorer } from "../src/utils/timing-optimizer/scorers/kigakuScorer";
 
 describe("Kyusei Kigaku High-Precision Calculations", () => {
-  it("should correctly calculate Honmei and Getsumei stars for 1988-11-25", () => {
-    const birthDate = new Date("1988-11-25T12:00:00+09:00");
+  it("should correctly calculate Honmei and Getsumei stars for 1997-06-15", () => {
+    // 検算用の生年月日。以前は運営者のものを使っていた（公開リポジトリ）。
+    const birthDate = new Date("1997-06-15T12:00:00+09:00");
 
     // Honmei (Classical) should be 3 (三碧木星)
     const yearStar = getClassicalYearStar(birthDate);
     expect(yearStar).toBe(3);
 
-    // Getsumei (Classical) should be 5 (五黄土星)
+    // Getsumei (Classical) should be 1 (一白水星)
     const monthStar = getClassicalMonthStar(birthDate);
-    expect(monthStar).toBe(5);
+    expect(monthStar).toBe(1);
   });
 
   it("should verify day star changes and solar terms", () => {
@@ -41,8 +42,8 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
       const scorer = new KigakuScorer();
       const ctx = {
         targetDate: new Date("2026-07-11T12:00:00+09:00"),
-        userBirthDate: new Date("1988-11-25T12:00:00+09:00"),
-        userKigakuStar: 3, // Classical Honmei Star for 1988-11-25
+        userBirthDate: new Date("1997-06-15T12:00:00+09:00"),
+        userKigakuStar: 3, // Classical Honmei Star for 1997-06-15
         actionType: "focus" as const,
         useClassical: true,
       };
@@ -55,7 +56,7 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
       const scorer = new KigakuScorer();
       const ctx = {
         targetDate: new Date("2026-07-11T12:00:00+09:00"),
-        userBirthDate: new Date("1988-11-25T12:00:00+09:00"),
+        userBirthDate: new Date("1997-06-15T12:00:00+09:00"),
         userKigakuStar: 3,
         actionType: "focus" as const,
         useClassical: true,
@@ -101,7 +102,7 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
       const scorer = new KigakuScorer();
       const ctx = {
         targetDate: new Date("2026-07-04T12:00:00+09:00"), // Day has Center 3, E is NOISE_ANKEN
-        userBirthDate: new Date("1988-11-25T12:00:00+09:00"),
+        userBirthDate: new Date("1997-06-15T12:00:00+09:00"),
         userKigakuStar: 3,
         actionType: "focus" as const,
         useClassical: true,
@@ -123,7 +124,7 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
       const scorer = new KigakuScorer();
       const ctx = {
         targetDate: new Date("2026-07-11T12:00:00+09:00"),
-        userBirthDate: new Date("1988-11-25T12:00:00+09:00"),
+        userBirthDate: new Date("1997-06-15T12:00:00+09:00"),
         userKigakuStar: 3,
         actionType: "focus" as const,
         useClassical: true,

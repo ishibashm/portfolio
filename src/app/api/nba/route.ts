@@ -229,7 +229,7 @@ export async function POST(req: Request) {
     // Fetch Metaphysical Data Stream
     //
     // 生年月日が無ければ null のまま渡す。以前はここで運営者の生年月日
-    // （1988-11-25T04:26）に落としていた。この endpoint は公開なので、
+    // に落としていた。この endpoint は公開なので、
     // 空の body を POST するだけで運営者のライフパスナンバー・太陽星座・
     // 大運・紫微斗数・九星が返っていた。上の personalBazi / voidZodiac は
     // 最初から null を通していたので、ここだけが穴だった。
