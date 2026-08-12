@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { embed } from "ai";
 import { google } from "@ai-sdk/google";
 import prisma from "@/lib/prisma";
@@ -44,10 +45,10 @@ export async function POST(req: Request) {
     `;
 
     return NextResponse.json({ success: true, chunks });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Search Chunks API Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to search chunks" },
+      { error: toResponseMessage(error, "Failed to search chunks") },
       { status: 500 }
     );
   }

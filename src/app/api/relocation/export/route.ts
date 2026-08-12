@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
@@ -790,10 +791,16 @@ export async function GET(request: Request) {
     };
 
     return NextResponse.json(payload);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Export Dataset Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message || String(error) },
+      {
+        // 既定に String(error) を渡すと、旧コードの
+        // `error.message || String(error)` と答えが一致する
+        // （message が空の Error でも "Error" が出る）。
+        success: false,
+        error: toResponseMessage(error, String(error)),
+      },
       { status: 500 },
     );
   }

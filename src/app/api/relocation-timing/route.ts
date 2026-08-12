@@ -93,7 +93,9 @@ export async function GET(req: Request) {
       timing: finalTiming,
       reason: finalReason,
     });
-  } catch (error: any) {
+  } catch (error) {
+    // 失敗しても下のフォールバックを返すので、error は console にしか
+    // 渡していない。console.error は unknown をそのまま受ける。
     console.error("AI Generation Error:", error);
     // フォールバック
     return NextResponse.json({
