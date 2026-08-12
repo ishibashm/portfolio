@@ -43,6 +43,14 @@ import {
   type DayTier,
 } from "@/utils/auspiciousDays";
 import { TIER_FILL, BLOCKED_FILL } from "@/utils/tierDisplay";
+import {
+  DAY_CATEGORIES,
+  allCategories,
+  isUnfiltered,
+  matchesTimingFilter,
+  toggleCategory,
+  type DayCategory,
+} from "@/lib/timingFilter";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
 import { loadSettings } from "@/lib/userSettings";
 
@@ -145,6 +153,10 @@ export default function TimingAnalyticsPage() {
   const [futureMonths, setFutureMonths] = useState(18);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [focusDir, setFocusDir] = useState<string | null>(null);
+  // ヒートマップの絞り込み。既定は全選択＝絞り込み前と同じ見た目。
+  // 段階と暦注は軸が違うので別々に持ち、AND で重ねる。
+  const [tierFilter, setTierFilter] = useState<Set<DayCategory>>(allCategories);
+  const [luckyOnly, setLuckyOnly] = useState(false);
 
   const [settings, setSettings] = useState<{
     birthDate: string;
@@ -386,6 +398,17 @@ export default function TimingAnalyticsPage() {
   }, [profile]);
 
   const activeDir = focusDir ?? perDirection[0]?.dir ?? null;
+
+  /** 絞り込みに残った日数。0 のときは「該当なし」と出す。 */
+  const matchedCount = useMemo(() => {
+    if (!days) return 0;
+    return days.filter((d) =>
+      matchesTimingFilter(d, activeDir, tierFilter, luckyOnly),
+    ).length;
+  }, [days, activeDir, tierFilter, luckyOnly]);
+
+  /** 絞り込み中か。既定（全選択・暦注オフ）なら false。 */
+  const filtering = !isUnfiltered(tierFilter, luckyOnly);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
@@ -630,6 +653,76 @@ export default function TimingAnalyticsPage() {
               subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。今日より前は薄く表示。マスをクリックするとその日の詳細が下に出ます。"
             >
               <div className="space-y-2">
+                {/* 段階の絞り込み。段階は既に計算済みなので、ここでやるのは
+                    表示を絞ることだけ。判定にも段階の割り当てにも触らない。 */}
+                <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-stone-200 bg-stone-50/60 p-2">
+                  <span className="mr-1 text-[10px] font-bold text-stone-500">
+                    段階で絞る
+                  </span>
+                  {DAY_CATEGORIES.map((c) => {
+                    const on = tierFilter.has(c);
+                    return (
+                      <button
+                        key={c}
+                        onClick={() =>
+                          setTierFilter((prev) => toggleCategory(prev, c))
+                        }
+                        aria-pressed={on}
+                        className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
+                          on
+                            ? "border-stone-400 bg-white text-stone-700"
+                            : "border-stone-200 bg-transparent text-stone-300"
+                        }`}
+                      >
+                        <span
+                          className="inline-block h-2 w-2 rounded-sm"
+                          style={{
+                            background:
+                              c === "BLOCKED"
+                                ? BLOCKED_FILL
+                                : TIER_FILL[c as DayTier],
+                            opacity: on ? 1 : 0.3,
+                          }}
+                        />
+                        {c === "BLOCKED" ? "天中殺" : TIER_LABELS[c]}
+                      </button>
+                    );
+                  })}
+
+                  {/* 暦注は方位とは独立に決まる。段階と同じ列に混ぜると
+                      「S かつ天赦日」が表現できないので、AND の別トグルにする。 */}
+                  <span className="mx-1 h-3 w-px bg-stone-300" />
+                  <button
+                    onClick={() => setLuckyOnly((v) => !v)}
+                    aria-pressed={luckyOnly}
+                    className={`rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
+                      luckyOnly
+                        ? "border-amber-400 bg-amber-50 text-amber-800"
+                        : "border-stone-200 text-stone-400"
+                    }`}
+                  >
+                    天赦日・一粒万倍日のみ
+                  </button>
+
+                  {filtering && (
+                    <button
+                      onClick={() => {
+                        setTierFilter(allCategories());
+                        setLuckyOnly(false);
+                      }}
+                      className="ml-auto rounded-full px-2 py-0.5 text-[10px] text-indigo-600 underline"
+                    >
+                      絞り込みを外す（{matchedCount}日）
+                    </button>
+                  )}
+                </div>
+
+                {filtering && matchedCount === 0 && (
+                  <p className="rounded-lg bg-stone-100 p-3 text-[11px] text-stone-500">
+                    該当なし。選んだ段階の日がこの期間にありません。
+                  </p>
+                )}
+
                 {monthRows.map(({ month, list }) => (
                   <div key={month} className="flex items-center gap-2">
                     <span className="w-14 shrink-0 font-mono text-[10px] text-stone-400">
@@ -647,6 +740,14 @@ export default function TimingAnalyticsPage() {
                         const lucky =
                           d.tags.includes("天赦日") ||
                           d.tags.includes("一粒万倍日");
+                        // 外れた日もマスは残す。詰めると日付の位置がずれて
+                        // 「何日が残ったか」が読めなくなる。塗りだけ落とす。
+                        const matched = matchesTimingFilter(
+                          d,
+                          activeDir,
+                          tierFilter,
+                          luckyOnly,
+                        );
                         return (
                           <button
                             key={d.date}
@@ -655,15 +756,17 @@ export default function TimingAnalyticsPage() {
                               TIER_LABELS[t] ?? t
                             }${d.blocked ? " / 天中殺" : ""}${
                               d.tags.length ? " / " + d.tags.join("・") : ""
-                            }`}
+                            }${matched ? "" : " / 絞り込みから外れています"}`}
                             className={`h-3.5 w-3.5 rounded-[2px] transition-transform hover:scale-125 ${
                               selectedDate === d.date
                                 ? "ring-2 ring-indigo-600 ring-offset-1"
                                 : ""
-                            } ${lucky ? "ring-1 ring-amber-400" : ""}`}
+                            } ${
+                              matched && lucky ? "ring-1 ring-amber-400" : ""
+                            } ${matched ? "" : "border border-dashed border-stone-300"}`}
                             style={{
-                              background: fill,
-                              opacity: past ? 0.28 : 1,
+                              background: matched ? fill : "transparent",
+                              opacity: matched ? (past ? 0.28 : 1) : 0.5,
                             }}
                           />
                         );
