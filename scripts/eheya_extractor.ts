@@ -11,7 +11,7 @@
  * robots.txt で禁止されているのは /mypage/ /detail/*\/env/ /detail/form/ /map/ /ssgtm/ で、
  * ここで見る /{県}/area/{市区町村コード}/search/ は対象外。
  */
-import { chromium, Page } from "playwright";
+import { Browser, chromium, Page } from "playwright";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -71,16 +71,22 @@ function checkTimeBudget(): boolean {
   return false;
 }
 
-/** "築17年" / "新築" / "築1年" → 年数。判別できなければ null（新築の 0 と混同しない） */
-function parseAge(ageStr: string): number | null {
+/**
+ * "築17年" / "新築" / "築1年" → 年数。判別できなければ null（新築の 0 と混同しない）
+ *
+ * 引数が undefined になり得るのは、元データに築年の欄が無い建物があるため。
+ * 先頭の `if (!ageStr)` が元からその場合を返しており、`string` を名乗って
+ * いたのが型の嘘だった（呼び出し側が any だったので通っていた）。
+ */
+function parseAge(ageStr: string | undefined): number | null {
   if (!ageStr) return null;
   if (ageStr.includes("新築")) return 0;
   const m = ageStr.match(/(\d+)\s*年/);
   return m ? parseInt(m[1], 10) : null;
 }
 
-/** "名鉄名古屋本線 富士松駅 徒歩8分" → 8 */
-function parseWalkMinutes(text: string): number | null {
+/** "名鉄名古屋本線 富士松駅 徒歩8分" → 8。無い建物があるので undefined も取る */
+function parseWalkMinutes(text: string | undefined): number | null {
   if (!text) return null;
   const m = text.match(/徒歩\s*(\d+)\s*分/);
   return m ? parseInt(m[1], 10) : null;
@@ -122,6 +128,73 @@ function saveState(pref: string, cityIndex: number, page: number) {
 
 type City = { code: string; name: string; count: number };
 
+/** 素の JSON。__NEXT_DATA__ を辿る途中の節点。 */
+type JsonObject = { [key: string]: unknown };
+
+interface CityEntry {
+  code: string | number;
+  name: string;
+  propertyCount?: { count?: number } | null;
+}
+
+interface CityGroup {
+  cities?: CityEntry[];
+}
+
+/**
+ * 市区町村一覧ページの `__NEXT_DATA__` のうち、ここで読む枝だけ。
+ * ページ全体を型にする意味はない。この形が変わったら取り込みが壊れる、
+ * という一覧を兼ねている。
+ */
+type CityListWindow = Window & {
+  __NEXT_DATA__?: {
+    props?: { pageProps?: { prefecture?: { cityGroups?: CityGroup[] } } };
+  };
+};
+
+/**
+ * 検索結果ページの `__NEXT_DATA__`。`buildings` がどの深さに入るかは
+ * ページによって違うので、`pageProps` は素の JSON のまま幅優先で辿る。
+ */
+type SearchWindow = Window & {
+  __NEXT_DATA__?: { props?: { pageProps?: JsonObject } };
+};
+
+/** 建物 1 棟。`__NEXT_DATA__` から読む枝だけ。 */
+interface Building {
+  name?: string;
+  address?: string;
+  age?: string;
+  mainTransportationText?: string;
+  isDKSelect?: boolean;
+  properties?: RoomEntry[];
+}
+
+/** 建物に属する部屋 1 室。同上。 */
+interface RoomEntry {
+  propertyFullId?: string;
+  price?: { number?: number | null } | null;
+  manageCost?: { number?: number | null } | null;
+  housePlan?: string;
+  floor?: string;
+  roomArea?: number | null;
+}
+
+/** 保存する 1 部屋ぶん。建物の情報を部屋へ写してフラットにしたもの。 */
+interface ExtractedRoom {
+  id: string;
+  name?: string;
+  address?: string;
+  age?: string;
+  transport?: string;
+  isDKSelect: boolean;
+  rent: number | null;
+  manageCost: number;
+  layout?: string;
+  floor?: string;
+  area: number | null;
+}
+
 async function fetchCities(page: Page, pref: string): Promise<City[]> {
   await page.goto(`https://www.eheya.net/${pref}/area/`, {
     waitUntil: "domcontentloaded",
@@ -129,41 +202,46 @@ async function fetchCities(page: Page, pref: string): Promise<City[]> {
   await page.waitForTimeout(1500);
   return page.evaluate(() => {
     const groups =
-      (window as any).__NEXT_DATA__?.props?.pageProps?.prefecture
+      (window as CityListWindow).__NEXT_DATA__?.props?.pageProps?.prefecture
         ?.cityGroups || [];
     return groups
-      .flatMap((g: any) => g.cities || [])
-      .map((c: any) => ({
+      .flatMap((g) => g.cities || [])
+      .map((c) => ({
         code: String(c.code),
         name: c.name,
         count: c.propertyCount?.count ?? 0,
       }))
       // 政令市の親エントリは件数 0 で、区が別に並ぶので取り込まない
-      .filter((c: any) => c.count > 0);
+      .filter((c) => c.count > 0);
   });
 }
 
 /** 検索結果 1 ページぶんの建物→部屋をフラットにして返す */
-async function extractPage(page: Page): Promise<any[]> {
+async function extractPage(page: Page): Promise<ExtractedRoom[]> {
   return page.evaluate(() => {
-    const pp = (window as any).__NEXT_DATA__?.props?.pageProps || {};
+    const pp = (window as SearchWindow).__NEXT_DATA__?.props?.pageProps || {};
     // 名前付き関数を evaluate に持ち込むと、tsx(esbuild) が付ける __name ヘルパーが
     // ブラウザ側に存在せず ReferenceError になる。再帰は使わず幅優先で辿る。
-    let buildings: any[] = [];
-    const queue: Array<{ node: any; depth: number }> = [{ node: pp, depth: 0 }];
+    // 型ガードを const の関数にするのも同じ理由で避け、その場で書いている。
+    let buildings: Building[] = [];
+    const queue: Array<{ node: JsonObject; depth: number }> = [
+      { node: pp, depth: 0 },
+    ];
     while (queue.length) {
       const { node, depth } = queue.shift()!;
       if (!node || typeof node !== "object" || depth > 5) continue;
       for (const [k, v] of Object.entries(node)) {
         if (k === "buildings" && Array.isArray(v) && v.length) {
-          buildings = v as any[];
+          // 素の JSON を型として読むのはここ 1 か所だけ。以降は Building。
+          buildings = v as Building[];
           queue.length = 0;
           break;
         }
-        if (v && typeof v === "object") queue.push({ node: v, depth: depth + 1 });
+        if (v && typeof v === "object")
+          queue.push({ node: v as JsonObject, depth: depth + 1 });
       }
     }
-    const rows: any[] = [];
+    const rows: ExtractedRoom[] = [];
     for (const b of buildings) {
       for (const p of b.properties || []) {
         if (!p.propertyFullId) continue;
@@ -186,7 +264,7 @@ async function extractPage(page: Page): Promise<any[]> {
   });
 }
 
-async function saveToDatabase(prisma: PrismaClient, rows: any[]) {
+async function saveToDatabase(prisma: PrismaClient, rows: ExtractedRoom[]) {
   let saved = 0;
   for (const r of rows) {
     if (!r.id || !r.address || r.rent == null || r.area == null) continue;
@@ -225,7 +303,7 @@ async function saveToDatabase(prisma: PrismaClient, rows: any[]) {
 }
 
 async function scrapeCity(
-  browser: any,
+  browser: Browser,
   prisma: PrismaClient,
   pref: string,
   city: City,
@@ -288,7 +366,7 @@ async function scrapeCity(
 async function main() {
   const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
   const pool = new Pool({ connectionString, max: 1 });
-  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) } as any);
+  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
   const browser = await chromium.launch({ headless: true });
 
   try {
