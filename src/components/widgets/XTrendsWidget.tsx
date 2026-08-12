@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toLogMessage } from "@/lib/errorMessage";
 
 export default function XTrendsWidget() {
   const [query, setQuery] = useState("");
@@ -28,8 +29,8 @@ export default function XTrendsWidget() {
 
       const data = await response.json();
       setResult(data.result);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(toLogMessage(err));
     } finally {
       setIsProcessing(false);
     }

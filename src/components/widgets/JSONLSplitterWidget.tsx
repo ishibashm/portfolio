@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { toLogMessage } from "@/lib/errorMessage";
 
 interface SplitFile {
   name: string;
@@ -89,8 +90,8 @@ export default function JSONLSplitterWidget() {
       }
 
       setSplitFiles(chunks);
-    } catch (err: any) {
-      setError(`ファイルの読み込みに失敗しました: ${err.message}`);
+    } catch (err) {
+      setError(`ファイルの読み込みに失敗しました: ${toLogMessage(err)}`);
     }
   };
 
