@@ -1,5 +1,23 @@
 import { NextResponse } from "next/server";
-import { TwitterApi } from "twitter-api-v2";
+import { errorStatus, toResponseMessage } from "@/lib/errorMessage";
+import { TwitterApi, type TweetPublicMetricsV2 } from "twitter-api-v2";
+
+/**
+ * この口が返すツイート 1 件。検索とユーザーの 2 経路で組み立てるので、
+ * 両方が満たす形をここに 1 つ置く。検索のときだけ著者が引けないことが
+ * あり（includes に載らない）、そのときは author が null になる。
+ */
+interface TweetSummary {
+  id: string;
+  text: string;
+  createdAt?: string;
+  author: {
+    name: string;
+    username: string;
+    profileImageUrl?: string;
+  } | null;
+  metrics?: TweetPublicMetricsV2;
+}
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -28,7 +46,7 @@ export async function GET(req: Request) {
     const client = new TwitterApi(bearerToken);
     const roClient = client.readOnly;
 
-    let tweets: any[] = [];
+    let tweets: TweetSummary[] = [];
 
     if (type === "search") {
       // Search for recent tweets
@@ -83,23 +101,28 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, tweets });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Twitter API Error:", error);
 
-    // Check if it's an authentication error or rate limit
-    if (error.code === 401 || error.code === 403) {
+    // Twitter の SDK は数値の code で返してくる（401 認証 / 403 権限）。
+    // errorCode は文字列しか返さないので、数値はこちらで取る。
+    const status = errorStatus(error);
+    if (status === 401 || status === 403) {
       return NextResponse.json(
         {
           error:
             "Authentication failed. Please check your Twitter API keys and app permissions (Basic/Pro plan may be required for some endpoints).",
         },
-        { status: error.code },
+        { status },
       );
     }
 
     return NextResponse.json(
       {
-        error: error.message || "Failed to fetch data from Twitter API",
+        error: toResponseMessage(
+          error,
+          "Failed to fetch data from Twitter API",
+        ),
       },
       { status: 500 },
     );
