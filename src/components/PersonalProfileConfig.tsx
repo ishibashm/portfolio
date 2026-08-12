@@ -345,8 +345,7 @@ export function PersonalProfileConfig({
         {needsLogin && (
           <div className="mb-2 flex items-center gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
             <span>
-              未ログインのため、保存済みプロフィールを読み込めていません。
-              ここでの保存はこの端末だけに残ります。
+              未ログインのため、保存済みプロフィールを読み込めていません。ここでの保存はこの端末だけに残ります。
             </span>
             <a
               href="/login"

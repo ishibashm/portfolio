@@ -931,8 +931,7 @@ export default function RegionalWealthPage() {
               {/* 説明が英語のままだった。日本語の検索から来る利用者には
                   何のページか読み取れず、ナビの呼び名とも一致していない。 */}
               <p className="text-stone-600 mt-1 text-sm">
-                方位（磁気偏角の補正込み）と、地域ごとの所得・地価をあわせて、
-                移住先の候補を比較します。
+                方位（磁気偏角の補正込み）と、地域ごとの所得・地価をあわせて、移住先の候補を比較します。
               </p>
               <div className="flex flex-wrap gap-2 mt-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-50 text-blue-700 dark:text-blue-600 border border-blue-200 dark:border-blue-800">
