@@ -235,7 +235,18 @@ export default function ArbitrageScannerPage() {
     !isNaN(parseFloat(baseLon));
   const [birthLat, setBirthLat] = useState("34.3952"); // Default Birth Location (Hiroshima)
   const [birthLon, setBirthLon] = useState("132.4482");
-  const [birthDate, setBirthDate] = useState("1988-11-25T04:26"); // Default Birth Date with time
+  /**
+   * 生年月日。**既定値を置かない。**
+   *
+   * 以前は運営者の生年月日（1988年11月25日）が入っていた。本命殺・
+   * 本命的殺・天中殺はここから決まるので、一度も入力していない人にも
+   * 他人の命式で計算した判定が出ていた（本番で実測）。
+   *
+   * 未入力を検知する仕組み（kigakuUnavailableReason）は !birthDate を
+   * 見ているが、既定値があるせいで永久に発火しなかった。出発地の座標を
+   * 空のままにしているのと同じ理由で、ここも空にする。
+   */
+  const [birthDate, setBirthDate] = useState("");
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
   const [directionFilterMode, setDirectionFilterMode] = useState("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
@@ -296,7 +307,7 @@ export default function ArbitrageScannerPage() {
   const [localLat, setLocalLat] = useState("");
   const [localLon, setLocalLon] = useState("");
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
-  const [localBirthDate, setLocalBirthDate] = useState("1988-11-25T04:26");
+  const [localBirthDate, setLocalBirthDate] = useState("");
   const [localBirthLat, setLocalBirthLat] = useState("34.3952");
   const [localBirthLon, setLocalBirthLon] = useState("132.4482");
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
@@ -808,7 +819,7 @@ export default function ArbitrageScannerPage() {
     let bsLon = "";
     let bLat = "34.3952";
     let bLon = "132.4482";
-    let bDate = "1988-11-25T04:26";
+    let bDate = "";
     // 時期分析から「この日の判定で塗られた地図を見たい」と来たときだけ
     // 俯瞰で開く。県別の色分けは zoom < 10 でしか描かれないため。
     let openOverview = false;
@@ -3487,9 +3498,16 @@ export default function ArbitrageScannerPage() {
                             : "走査し直す"}
                       </button>
                     </div>
-                    {!hasBaseLocation && (
+                    {/*
+                      無効になっている理由を必ず書く。以前は出発地の分しか
+                      無く、生年月日だけ未入力だとボタンが灰色のまま理由が
+                      読めなかった（#160 で時期分析を直したのと同じ形）。
+                    */}
+                    {(!hasBaseLocation || !birthDate) && (
                       <p className="text-[10px] text-amber-700">
-                        出発地が未設定です。方位は出発地から決まるため、先に「出発地座標」を設定してください。
+                        {!hasBaseLocation
+                          ? "出発地が未設定です。方位は出発地から決まるため、先に「出発地座標」を設定してください。"
+                          : "生年月日が未入力です。本命殺・天中殺は生年月日から決まるため、先に「生年月日」を入れてください。"}
                       </p>
                     )}
                     {timingError && (
