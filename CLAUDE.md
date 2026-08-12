@@ -105,9 +105,8 @@ grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えてい�
 - **新しく似た型を作らない。**既存の定義を使う
   （`utils/ephemerisEngine` の `Direction` / `StarFrequency` / `ActionIntent`、
   `utils/directionStatus` の `LayerMode`、`lib/userSettings` の `Settings` など）
-- `catch (e: any)` は、中身が `toUserMessage(e)` だけなら注釈を外すだけで通る
-  （`toUserMessage` の引数は元から `unknown`）。`error.message` を直接読む型は
-  挙動が変わるので別途方針を決める
+- `catch (e: any)` は `src/lib/errorMessage.ts` の取り出しを使えば外せる。
+  用途で使い分ける（4 節の表を見ること）。**キャストで押し通さない**
 
 ### React の props
 
@@ -123,8 +122,7 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 542**
-（#129・#131〜#133・#142・#145・#149）。
+`npm run lint` の警告を減らしている。**645 → 423**。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -147,52 +145,79 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 ### 現状の内訳（`npm run lint` 実行時点）
 
 ```
-326  @typescript-eslint/no-explicit-any
-165  @typescript-eslint/no-unused-vars
+248  @typescript-eslint/no-explicit-any
+120  @typescript-eslint/no-unused-vars
  25  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
- 13  react-hooks/set-state-in-effect    ← 同上（react-hooks の別ルール）
- 10  @typescript-eslint/ban-ts-comment
+  9  @typescript-eslint/ban-ts-comment
   8  @typescript-eslint/no-require-imports
-  5  react-hooks/purity ほか
+ 21  react-hooks/set-state-in-effect ほか（同上で対象外）
 ```
 
 ファイル別の上位（`unused` / `any` / その他）：
 
 | 件数 | ファイル | 内訳 |
 |---|---|---|
-| 67 | `src/components/SolarTimeClock.tsx` | 25 / 37 / 5 |
-| 32 | `src/app/relocation/arbitrage/page.tsx` | 19 / 12 / 1 |
+| 64 | `src/components/SolarTimeClock.tsx` | 22 / 37 / 5 |
 | 20 | `src/app/relocation/simulator/page.tsx` | 8 / 8 / 4 |
 | 16 | `src/components/FengShuiRelocation/App.jsx` | 7 / 0 / 9 |
 | 16 | `src/utils/ephemerisEngine.ts` | 3 / 13 / 0 |
-| 14 | `scripts/site_guardian_daemon.ts` | 2 / 12 / 0 |
-| 13 | `scripts/nifty_extractor.ts` | 4 / 8 / 1 |
-| 13 | `src/components/widgets/DataAnalyzerWidget.tsx` | 3 / 10 / 0 |
-| 12 | `src/app/api/nba/route.ts` | 4 / 8 / 0 |
+| 12 | `src/app/relocation/arbitrage/page.tsx` | 0 / 11 / 1 |
 | 12 | `src/utils/nbaEngine.ts` | 0 / 12 / 0 |
+| 11 | `src/app/api/nba/route.ts` | 4 / 7 / 0 |
+| 10 | `src/components/nba/NBADashboard.tsx` | 0 / 7 / 3 |
+| 10 | `src/components/widgets/OmniPipelineWidget.tsx` | 0 / 10 / 0 |
+| 10 | `src/utils/baziEngine.ts` | 1 / 9 / 0 |
+
+### catch は片付いた。その過程で分かったこと
+
+`catch (e: any)` は 65 件あって、**残りは `SolarTimeClock.tsx` の 4 件だけ**。
+注釈を外すと `e` は `unknown` になって `.message` や `.code` が読めなくなるので、
+`src/lib/errorMessage.ts` に取り出しを 3 つ置いた。**キャストは使っていない。**
+
+| 関数 | 何を返すか | どこで使うか |
+|---|---|---|
+| `toUserMessage(err, 既定?)` | 画面用に**加工した**文言。英語→日本語の案内 | 赤帯など、利用者が読むところ |
+| `toLogMessage(err)` | **加工しない**生の 1 行 | ログ。原因を追う人が読む |
+| `toResponseMessage(err, 既定)` | Error の message か、無ければ既定 | API の応答本文 |
+| `errorCode(err)` | **文字列の** `code`（`ENOENT` / `P2037`） | 種類で分岐するところ |
+| `errorStatus(err)` | **数値の** `code`（401 / 403） | 同上（SDK が数値で返す場合） |
+
+`errorCode` と `errorStatus` は**互いに素**。文字列版は数値を、数値版は文字列を返さない。
+`=== "ENOENT"` に数値が、`=== 401` に文字列の "401" が紛れ込むと、どの分岐にも入らない
+まま静かに落ちるため。
+
+**「catch を見たら一律に置換」ではない。**実際には 6 通りに分かれた。
+
+| 形 | どうするか | 例 |
+|---|---|---|
+| 応答にもログにも入れない | 注釈を外すだけ | `music/analyze`・`relocation-timing` |
+| ログだけ | `toLogMessage` | `site_guardian_daemon`・widget 各種 |
+| 応答に入れる（開発者向け） | 英語の既定を足す | `omni/*`・`timeline` |
+| 応答に入れる（**画面に届く**） | **日本語**の既定 | `api/nba`（`NBADashboard` が赤帯に出す） |
+| 応答が文言でなく**コード** | コードを返す | `relocation/auspicious-days` |
+| 再試行や種類の判定に使う | `errorCode` / `errorStatus` | `nifty_extractor`（P2037）・`api/twitter`（401/403） |
+
+**置き換える前に「その応答の error を誰が読むか」を必ず確かめること。**
+`api/nba` は画面に届くので、英語の既定だと `toUserMessage` に汎用の文言へ丸められて
+何の失敗か伝わらなくなる。機械的に流していたら取りこぼしていた。
 
 ### 次にやるとよいもの
 
-**`src/app/relocation/arbitrage/page.tsx`（32 件）** が手数の面で一番効く。
-19 件が未使用で、うち多くは import と、使われなくなったハンドラ・派生値。
+**`src/components/SolarTimeClock.tsx`（64 件）** が残りの山。8,000 行あって
+現行機能の中核なので、次の順で 1 PR ずつ刻むのが安全。
 
-```
-未使用の import   MapPin / Download / Settings / MetaphysicalConfigBar /
-                  MetaphysicalConfig / DEFAULT_RADIUS_KM
-未使用のハンドラ  renderFactorBadges / renderCardSkeletons /
-                  handleSettingsSubmit / applyPreset / handleClassicalToggle /
-                  handleUseCurrentLocation
-未使用の派生値    setDataLimit / localTargetDate / totalPages / currentTableData
-catch (e)         123 / 1111 / 1693 行（e を読んでいないので catch {} にできる）
-```
+1. 未使用の import / 変数（22 件）— 消すだけ。事故りにくい
+2. `catch` の 4 件 — 上の表のとおり
+3. `any` 37 件 — `solarData` / `NBAData` など応答系は型を切る前にモデル化が要る
 
-**ハンドラ 6 つは「消す」前に一度確認すること。**UI から外れた名残なのか、
-繋ぎ忘れなのかで扱いが変わる。繋ぎ忘れなら消すのは誤り。
+`utils/ephemerisEngine.ts`（16 件）と `utils/nbaEngine.ts`（12 件）は**判定の中核**。
+型を触るだけでも、しきい値や条件式に手が滑ると影響が大きい。テストが厚いので
+`npm test` は効くが、慎重に。
 
 `scripts/` は `tsconfig.json` の `exclude` に入っていて **`npx tsc --noEmit` の
 対象外**。スクリプトの型を触ったら、そのファイルだけを含む一時 tsconfig を
-作って別に通すこと（#149 が見本。`scripts/eheya_extractor.ts` の型の嘘は
-それで見つかった）。
+作って別に通すこと（#149 が見本。`scripts/eheya_extractor.ts` の型の嘘、#157 の
+`Horizontal` / `Prisma.DbNull` はどれもこれで見つかった）。
 
 ```jsonc
 // tsconfig.scripts.tmp.json（コミットしない）
@@ -201,17 +226,11 @@ catch (e)         123 / 1111 / 1693 行（e を読んでいないので catch {}
 
 スクレイパーの `any` は、ほとんどが「外部 JSON に型が無い」ことから来ている。
 **ページ全体を型にしない。**その取り込みが実際に読む枝だけを写し、素の JSON を
-型として読む箇所を 1 か所に閉じ込める（#149 の `Building` / `RoomEntry`）。
-`nifty_extractor.ts`（13 件）と `site_guardian_daemon.ts`（14 件）が同じ形。
-
-`SolarTimeClock.tsx`（67 件・5,000 行超）は**現行機能の中核**なので、事故ったときの
-影響が大きい。小さいファイルで手順が固まってから最後に回すのが安全。
+型として読む箇所を 1 か所に閉じ込める（#149 の `Building` / `RoomEntry`、
+#151 の `NiftyBukken`）。
 
 ### 手を付けずに残してあるもの（理由つき）
 
-- **`catch (error: any)` のうち `error.message` を直接読むもの** — リポジトリ全体に多数。
-  `error instanceof Error ? error.message : String(error)` に寄せると Error 以外が
-  投げられたときのレスポンス本文が変わる。方針を決めて一括でやるほうがよい
 - **API / エンジンの応答を抱えている `any`** — `NBAData` の中身、`forecastData`、
   `metadata`、`nbaEvaluations` など。型を切るには応答側のモデル化が先
 - **recharts の `Tooltip content={({...}: any)}`** — `TooltipContentProps` を当てると
@@ -242,3 +261,9 @@ catch (e)         123 / 1111 / 1693 行（e を読んでいないので catch {}
 | #141・#142 | 集約の取りこぼしと、その訂正の出し方 |
 | #147 | 俯瞰の県塗りが無言で別の意味の色に落ちるのを直した（提案書 A） |
 | #149 | 外部 JSON の `any` の外し方（読む枝だけ型にする。`scripts/` の型検証も） |
+| #153 | `catch` の方針決め。`toUserMessage` と `toLogMessage` の役割が逆であること |
+| #157 | `scripts/` を型に通して見つけた実害（太陽位置が既定値のままだった） |
+| #159・#198 | `errorCode`（文字列）と `errorStatus`（数値）を互いに素にした理由 |
+| #165・#168・#169 | ダークの配色。`dark:` が地色抜きで発火していた件 |
+| #175・#200 | 応答の `error` を誰が読むかで既定の言語が変わる（コード / 日本語 / 英語） |
+| #177〜#179 | 表示が遅い件。使わないタブの重い依存を遅延、外部 API をサーバ経由に |
