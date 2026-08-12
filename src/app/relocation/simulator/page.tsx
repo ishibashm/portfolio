@@ -41,6 +41,10 @@ import {
 } from "@/components/layout/MetaphysicalConfigBar";
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
+import {
+  directionUnstableNote,
+  distanceKmBetween,
+} from "@/lib/directionDistance";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";
@@ -85,6 +89,10 @@ interface SimulatorStep {
     rating: string;
     color: string;
   }>;
+  /** 出発地からの距離（km）。方位がどれだけ当てになるかを言うのに使う。 */
+  distanceKm?: number;
+  /** 近すぎて方位が定まらないときの一文。定まる距離なら null。 */
+  directionNote?: string | null;
 }
 
 interface SavedPlan {
@@ -550,6 +558,16 @@ export default function RelocationSimulatorPage() {
       // 判定は真北。記事・物件検索・履歴・地図の扇形と同じ基準に揃える。
       const direction = bearingToDirection(rawBearing, useClassical);
 
+      // 近すぎる移動では、方位が「実際にどう動いたか」より「ピンをどこに
+      // 置いたか」で決まる。1km なら 414m ずれれば方位が隣に変わる。
+      // 判定は従来どおり出したうえで、当てにならない距離だと画面に添える。
+      const distanceKm = distanceKmBetween(
+        currentBaseLat,
+        currentBaseLon,
+        targetLat,
+        targetLon,
+      );
+
       // Metaphysical Evaluation
       const env = getCurrentEnvironmentalFrequencies(
         depDate,
@@ -688,6 +706,8 @@ export default function RelocationSimulatorPage() {
             dayLayer: filteredCollision.dayLayer[direction] || "SAFE",
           },
         },
+        distanceKm,
+        directionNote: directionUnstableNote(distanceKm),
         memberEvaluations: mEvals,
       };
 
@@ -2086,6 +2106,16 @@ export default function RelocationSimulatorPage() {
                             ? "長期移住"
                             : "短期旅行"}
                         </span>
+                        {/* 近すぎる移動は方位がピンの置き方で変わる。
+                            判定は出したうえで、当てにならないと添える。 */}
+                        {step.directionNote && (
+                          <span
+                            className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-50 border border-amber-300 text-amber-700 leading-none"
+                            title={step.directionNote}
+                          >
+                            方位が定まりません
+                          </span>
+                        )}
                       </div>
 
                       {/* Controls: Move Up, Move Down, Delete */}
@@ -2257,6 +2287,15 @@ export default function RelocationSimulatorPage() {
                             {step.evaluation?.rating}
                           </span>
                         </div>
+                        {step.directionNote && (
+                          <p className="col-span-full rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
+                            {step.directionNote}
+                            <br />
+                            方位盤の判定は出していますが、この距離では
+                            出発地・行き先の指定を少し変えるだけで結果が
+                            変わります。
+                          </p>
+                        )}
                         {memberEvals.map((mEval) => (
                           <div
                             key={mEval.memberId}
