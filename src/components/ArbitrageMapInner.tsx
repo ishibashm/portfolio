@@ -776,6 +776,9 @@ export default function ArbitrageMapInner({
 
   // Render direction sectors
   const sectorLayers = useMemo(() => {
+    // 塗りを外して境界線だけにする条件。俯瞰（県の塗り分けが下にある）と、
+    // 件数バブル（掲載件数の色が下にある）の 2 つ。
+    const outlineOnly = isOverview || showHeatmap;
     return sectors.map((d) => {
       const { color, opacity, dashArray } = d.tier
         ? {
@@ -842,10 +845,12 @@ export default function ArbitrageMapInner({
             pathOptions={{
               color: color,
               fillColor: color,
-              // 俯瞰では県の塗り分けが下にある。扇形まで塗ると 2 枚の色が
-              // 重なって県の段階が読めなくなるので、境界線だけにする。
-              fillOpacity: isOverview ? 0 : opacity,
-              weight: isOverview
+              // 下に別の意味の色があるときは塗らない。俯瞰は県の塗り分け、
+              // 件数バブルは掲載件数で、どちらも扇形と重ねると 2 枚の色が
+              // 混ざって読めなくなる（#147 と同じ取り違えが起きる）。
+              // 境界線だけ残せば「どこからどこまでが東か」は分かる。
+              fillOpacity: outlineOnly ? 0 : opacity,
+              weight: outlineOnly
                 ? 1.5
                 : (d.tier ? d.tier === "C" : d.status === "SAFE")
                   ? 0.5
@@ -879,6 +884,7 @@ export default function ArbitrageMapInner({
     sectorNodeMapping,
     wedgeRangeKm,
     isOverview,
+    showHeatmap,
   ]);
 
   if (!mounted) {
@@ -1211,15 +1217,19 @@ export default function ArbitrageMapInner({
             方位の吉凶はこの画面の主役なので、物件の数で消えてはいけない。
 
             zoom >= 10 の条件も外した。引くと扇形ごと消えるため、全国を
-            見ている間は方位の境目がどこにも出ていなかった。俯瞰では
-            塗りを外して境界線だけにし、県の塗り分けと重ねて読ませる。
-            市区町村バブル（件数の画面）のときだけ引っ込める。
+            見ている間は方位の境目がどこにも出ていなかった。
+
+            市区町村バブル（件数の画面）でも消さない。バブルは物件が
+            120 件以上見えると**自動で**入るので、地図を動かして物件の
+            多い側へ寄っただけで扇形が消えていた（利用者からの指摘）。
+            下に別の意味の色があるときは、俯瞰と同じく塗りを外して
+            境界線だけにする。
 
             出発地が未設定のときは描かない。baseLat/baseLon はそのとき
             地図の中心に倒れており、方位はどこから見た方位でもない。
             30km のうちは小さく収まっていたが、画面を覆う長さにすると
             「起点のない吉凶」を全面に出すことになる */}
-        {hasBase && !showHeatmap && sectorLayers}
+        {hasBase && sectorLayers}
 
         {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
         {zoom >= 10 &&
