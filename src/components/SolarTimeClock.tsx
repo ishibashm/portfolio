@@ -594,7 +594,22 @@ export const SolarTimeClock = () => {
   const [showMapPicker, setShowMapPicker] = useState(false);
   const [activeLayerMode, setActiveLayerMode] = useState<LayerMode>("final");
   const [showOnlyNewBuild, setShowOnlyNewBuild] = useState(false);
+  /**
+   * 地図に出す物件。
+   *
+   * MagneticMapInner には最初から物件ピンを描く実装があり、
+   * 「☐ 全物件表示 / ☑ 新築のみ表示」の切替も置いてある。取ってくる側の
+   * /api/rentals/map もある。繋いでいなかったのはその 1 本だけで、
+   * mapProperties は setter を一度も呼ばれず常に空だった。つまり
+   * 切替を押しても、何も出ないものを絞り込んでいた。
+   *
+   * ここは公開のホーム（/）に載っている。開いた全員に 500 件を
+   * 取りに行かせたくないので、出すと決めた人にだけ取りに行く。
+   */
   const [mapProperties, setMapProperties] = useState<any[]>([]);
+  const [showProperties, setShowProperties] = useState(false);
+  const [propertiesLoading, setPropertiesLoading] = useState(false);
+  const [propertiesError, setPropertiesError] = useState<string | null>(null);
 
   // Geo & Environment State (Default: Tokyo)
   const [lat, setLat] = useState<number>(35.6895);
@@ -3458,6 +3473,36 @@ export const SolarTimeClock = () => {
       alive = false;
     };
   }, [lat, lon, targetLat, targetLon]);
+
+  useEffect(() => {
+    // 物件ピンは「出す」と押した人にだけ取りに行く。一度取ったら使い回す。
+    // ここは公開のホームなので、開いただけの人に 500 件を引かせない。
+    if (!showProperties || mapProperties.length > 0 || propertiesLoading) {
+      return;
+    }
+    let alive = true;
+    setPropertiesLoading(true);
+    setPropertiesError(null);
+    fetch("/api/rentals/map?limit=500")
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((rows) => {
+        if (!alive) return;
+        setMapProperties(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setPropertiesError(
+          "物件を読み込めませんでした。もう一度押すと再取得します。",
+        );
+        setShowProperties(false);
+      })
+      .finally(() => {
+        if (alive) setPropertiesLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [showProperties, mapProperties.length, propertiesLoading]);
 
   useEffect(() => {
     if (baseTime && lon) {
@@ -7724,12 +7769,33 @@ export const SolarTimeClock = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-2 self-stretch md:self-auto justify-end">
+                  {/* 物件ピンの表示。押した人にだけ取りに行く（公開ホームなので
+                      開いただけの人に 500 件を引かせない）。絞り込みは出して
+                      から出す。空のものを絞り込む選択肢は見せない。 */}
                   <button
-                    onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
-                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30"}`}
+                    onClick={() => setShowProperties(!showProperties)}
+                    disabled={propertiesLoading}
+                    className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors disabled:opacity-50 ${showProperties ? "bg-blue-500/20 text-blue-600 border-blue-200 hover:bg-blue-500/30" : "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30"}`}
                   >
-                    {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
+                    {propertiesLoading
+                      ? "物件を読み込み中…"
+                      : showProperties
+                        ? `☑ 物件を地図に出す (${mapProperties.length})`
+                        : "☐ 物件を地図に出す"}
                   </button>
+                  {showProperties && (
+                    <button
+                      onClick={() => setShowOnlyNewBuild(!showOnlyNewBuild)}
+                      className={`px-3 py-1 text-[10px] font-mono uppercase tracking-widest border rounded transition-colors ${showOnlyNewBuild ? "bg-emerald-500/20 text-emerald-600 border-emerald-200 hover:bg-emerald-500/30" : "bg-zinc-500/20 text-stone-500 border-zinc-500/50 hover:bg-zinc-500/30"}`}
+                    >
+                      {showOnlyNewBuild ? "☑ 新築のみ表示" : "☐ 全物件表示"}
+                    </button>
+                  )}
+                  {propertiesError && (
+                    <span className="px-2 py-1 text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded">
+                      {propertiesError}
+                    </span>
+                  )}
                   {!useClassicalBoard && (
                     <button
                       onClick={() =>
@@ -7850,9 +7916,11 @@ export const SolarTimeClock = () => {
                 activeLayerMode={activeLayerMode}
                 setActiveLayerMode={setActiveLayerMode}
                 properties={
-                  showOnlyNewBuild
-                    ? mapProperties.filter((p: any) => p.is_new_build)
-                    : mapProperties
+                  !showProperties
+                    ? []
+                    : showOnlyNewBuild
+                      ? mapProperties.filter((p: any) => p.is_new_build)
+                      : mapProperties
                 }
                 useTrueNorth={useTrueNorth}
                 setUseTrueNorth={setUseTrueNorth}
