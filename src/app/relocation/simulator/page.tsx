@@ -2274,6 +2274,26 @@ export default function RelocationSimulatorPage() {
                       </div>
                     </div>
 
+                    {/*
+                      近すぎて方位が定まらないときの説明。
+
+                      同行者の枠（members.length > 0）の中に置いていたので、
+                      ひとりで試算している人には出ていなかった。見出しの
+                      バッジだけが出て、理由が読めない状態だった（本番で実測）。
+                      同行者の有無に関係なく出す。
+                    */}
+                    {step.directionNote && (
+                      <div className="border-t border-stone-200/60 pt-3">
+                        <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
+                          {step.directionNote}
+                          <br />
+                          方位盤の判定は出していますが、この距離では
+                          出発地・行き先の指定を少し変えるだけで結果が
+                          変わります。
+                        </p>
+                      </div>
+                    )}
+
                     {/* Member Evaluations Matrix Row */}
                     {members.length > 0 && (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 border-t border-stone-200/60 pt-3">
@@ -2287,15 +2307,6 @@ export default function RelocationSimulatorPage() {
                             {step.evaluation?.rating}
                           </span>
                         </div>
-                        {step.directionNote && (
-                          <p className="col-span-full rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
-                            {step.directionNote}
-                            <br />
-                            方位盤の判定は出していますが、この距離では
-                            出発地・行き先の指定を少し変えるだけで結果が
-                            変わります。
-                          </p>
-                        )}
                         {memberEvals.map((mEval) => (
                           <div
                             key={mEval.memberId}
