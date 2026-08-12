@@ -95,17 +95,28 @@ export interface TierPinColors {
  * 段階の文字色。塗りと同じ順序（S が一番強い）で読めること。
  *
  * ダークは明るいほうが強く見えるので、ライトとは逆向きに並べる。
- * ライト  S 800 → A 600 → B 500（暗いほど強い）
+ * ライト  S 900 → A 800 → B 700（暗いほど強い）
  * ダーク  S 300 → A 400 → B 500（明るいほど強い）
  *
  * S と B に同じ `dark:text-emerald-300` を当てていて、ダークでは
  * 二つが完全に同色（ΔE 0）だった。しかも A だけ暗く、S→A→B の順序が
  * 崩れていた。物件のポップアップの見出しがこの色で出る。
+ *
+ * ライト側は 800/600/500 だったが、A と B が WCAG AA（本文 4.5:1）に
+ * 届いていなかった。地色 #f7f4f0 に対する実測。
+ *
+ *   emerald-500  2.25:1    emerald-800  6.91:1
+ *   emerald-600  3.34:1    emerald-900  8.83:1
+ *   emerald-700  4.90:1
+ *
+ * B だけ 700 に落とすと A（600）より暗くなって順序が壊れるので、
+ * 3 段まとめて 900/800/700 に下げてある。AA を満たす一番明るい段が
+ * 700 で、そこから 1 段ずつ。
  */
 const TIER_TEXT_CLASS: Record<DayTier, string> = {
-  S: "text-emerald-800 dark:text-emerald-300",
-  A: "text-emerald-600 dark:text-emerald-400",
-  B: "text-emerald-500 dark:text-emerald-500",
+  S: "text-emerald-900 dark:text-emerald-300",
+  A: "text-emerald-800 dark:text-emerald-400",
+  B: "text-emerald-700 dark:text-emerald-500",
   C: "text-stone-500 dark:text-stone-400",
   D: "text-orange-600 dark:text-orange-400",
   X: "text-red-500 dark:text-red-400",

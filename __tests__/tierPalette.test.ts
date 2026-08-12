@@ -152,6 +152,34 @@ describe("段階の文字色", () => {
     expect(a).toBeGreaterThan(b);
   });
 
+  /**
+   * ライトの 3 段が WCAG AA（本文 4.5:1）を満たすこと。
+   *
+   * 地色 #f7f4f0 に対する実測値。AA を満たす一番明るい段が 700 で、
+   * それより明るい段は届かない。
+   *
+   *   emerald-500  2.25:1   ✗
+   *   emerald-600  3.34:1   ✗
+   *   emerald-700  4.90:1   ✓
+   *   emerald-800  6.91:1   ✓
+   *   emerald-900  8.83:1   ✓
+   *
+   * 段の番号で見ているのは、Tailwind v4 の色が oklch で書かれていて、
+   * ここで実際の RGB に直すと変換の実装まで抱えることになるため。
+   * 色を触るときは上の実測をやり直すこと。
+   */
+  const AA_MIN_STEP = 700;
+
+  it("ライトの 3 段はコントラスト比 4.5:1 を満たす", () => {
+    for (const t of KICHI) {
+      const step = emeraldSteps(t).light;
+      expect(
+        step,
+        `${t} が明るすぎる（emerald-${step}）`,
+      ).toBeGreaterThanOrEqual(AA_MIN_STEP);
+    }
+  });
+
   it("ダークは明るいほど強い（ライトと逆向きに並ぶ）", () => {
     // 暗い背景では明るい文字ほど目立つので、順序は反転する。
     const [s, a, b] = KICHI.map((t) => emeraldSteps(t).dark);
