@@ -1608,9 +1608,7 @@ export default function ArbitrageMapInner({
             </div>
           </div>
           <span className="block text-[8px] text-stone-400 max-w-48 leading-relaxed">
-            年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で
-            塗っています。物件ごとの違いは条件の良さ（スコア・星数）で
-            見てください。
+            年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
           </span>
         </div>
       ) : (
