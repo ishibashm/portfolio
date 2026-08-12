@@ -2,11 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   DIRECTION_UNSTABLE_KM,
   directionUnstableNote,
-  distanceKmBetween,
   isDirectionUnstable,
   sectorShiftMeters,
 } from "@/lib/directionDistance";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import {
+  bearingBetween,
+  directionFromBearing,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
 
 /**
  * 近すぎる移動では方位が定まらない、という事実。

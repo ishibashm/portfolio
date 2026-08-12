@@ -6,6 +6,7 @@
  * 物件そのものの情報は載せない（掲載元の情報をそのまま転載しないため）。
  */
 import raw from "@/data/areaDirections.json";
+import { DIRECTION_UNSTABLE_KM } from "@/lib/directionDistance";
 import {
   bearingBetween,
   distanceKmBetween,
@@ -47,8 +48,14 @@ export interface NeighbourArea extends Area {
   rentDiffPct: number;
 }
 
-/** 近すぎる相手は方位が定まらないので除く。同一市内の区など。 */
-const MIN_KM = 5;
+/**
+ * 近すぎる相手は方位が定まらないので除く。同一市内の区など。
+ *
+ * 同じ判断をシミュレータの注意書きでも使うので、数字は
+ * lib/directionDistance に置いてある（1km なら 414m ずれるだけで方位が
+ * 隣に変わる、という計算が根拠）。2 か所に書くと片方だけ動く。
+ */
+const MIN_KM = DIRECTION_UNSTABLE_KM;
 /** 引越し先として現実的な範囲に絞る */
 const MAX_KM = 150;
 
