@@ -77,3 +77,84 @@ describe("物件スキャナーの既定値", () => {
     expect(src).toContain("生年月日が未入力です。");
   });
 });
+
+/**
+ * サーバ側。生年月日が無いときに個人の判定を作らないこと。
+ *
+ * 本番の API を直接叩くと、こうなっていた。
+ *
+ *   birthDate=[]                  W:OPTIMAL  SW:SAFE  N:NOISE_VOID  NE:NOISE_HA
+ *   birthDate=[1970-01-01T12:00]  すべて NOISE_TENCHU
+ *
+ * parseSafeDate("") が今日を返すので、「今日生まれ」の命式で計算した
+ * 判定がそのまま物件ごとの吉凶として出ていた。#202 で画面側の扇形は
+ * 止めたが、物件ごとの判定はここで作られ続けていた。
+ *
+ * ルートは DB に繋がるので、ここもソースを読んで見ている。
+ */
+const ROUTE = join(
+  process.cwd(),
+  "src",
+  "app",
+  "api",
+  "rentals",
+  "arbitrage",
+  "route.ts",
+);
+const route = readFileSync(ROUTE, "utf8").split("\r\n").join("\n");
+
+describe("一覧 API は生年月日が無いと個人の判定を作らない", () => {
+  it("ルートを読めている（空回りしていない）", () => {
+    expect(route).toContain("astrologyStatus");
+    expect(route).toContain("composeScore");
+  });
+
+  it("生年月日の有無を 1 か所で持っている", () => {
+    expect(route).toContain('const hasBirthDate = birthDateStr.trim() !== "";');
+  });
+
+  it("個人の判定は生年月日があるときだけ返す", () => {
+    for (const line of [
+      "astrologyStatus: hasBirthDate ? astrologyStatus : null,",
+      "astrologyScore: hasBirthDate ? astrologyScore : null,",
+      "maxAstroFactor: hasBirthDate ? maxAstroFactor : null,",
+      "dateScores: hasBirthDate ? dateScores : [],",
+      "timing: hasBirthDate ? timing : null,",
+    ]) {
+      expect(route, line).toContain(line);
+    }
+    expect(route).toContain("party: !hasBirthDate ? null : {");
+  });
+
+  it("総合点の軸も欠測にする（0 や 50 で埋めない）", () => {
+    // composeScore は null を「データ無し」として扱い、axisCoverage が
+    // 下がる。既にある仕組みに乗せる。
+    expect(route).toContain("astrology: hasBirthDate ? astrologyScore : null,");
+    expect(route).toContain(
+      "harmony: hasBirthDate ? targetJoint.harmony : null,",
+    );
+  });
+
+  it("期間走査は生年月日があるときだけ走らせる", () => {
+    expect(route).toContain(
+      "if (horizonDays > 0 && hasCoordinates && hasBirthDate) {",
+    );
+  });
+
+  it("印は生年月日に関係しないものだけ残す", () => {
+    expect(route).toContain("IMPERSONAL_ASTRO_FLAGS");
+    // 空亡と天体ラインは生年月日・出生地から決まるので入れない。
+    for (const flag of [
+      "VOID_TIME_HAZARD",
+      "SUN_LINE",
+      "VENUS_LINE",
+      "JUPITER_LINE",
+    ]) {
+      const block = route.slice(
+        route.indexOf("const IMPERSONAL_ASTRO_FLAGS"),
+        route.indexOf("function parseSafeDate"),
+      );
+      expect(block, flag).not.toContain(flag);
+    }
+  });
+});

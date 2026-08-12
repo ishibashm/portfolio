@@ -1903,7 +1903,8 @@ export default function ArbitrageScannerPage() {
    */
   const avoidRank = (p: {
     direction: string | null;
-    astrologyStatus: string;
+    // 生年月日が未入力のとき、API は判定を返さない（#205）。
+    astrologyStatus: string | null;
   }): number => {
     const k = p.direction ? dayKigaku?.byDirection[p.direction] : undefined;
     if (k) {
@@ -1911,7 +1912,7 @@ export default function ArbitrageScannerPage() {
       if (k.tier === "D") return 1;
       return 0;
     }
-    return isAvoidAstrologyStatus(p.astrologyStatus) ? 2 : 0;
+    return isAvoidAstrologyStatus(p.astrologyStatus ?? "") ? 2 : 0;
   };
 
   const sortedTableData = [...filteredData].sort((a, b) => {
