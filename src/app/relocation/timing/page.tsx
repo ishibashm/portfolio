@@ -432,8 +432,7 @@ export default function TimingAnalyticsPage() {
         <header>
           <h1 className="text-xl font-bold">引っ越し時期の全期間分析</h1>
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
-            過去から未来まで、日ごと・方位ごとの吉凶を一望します。判定は
-            暦から決まる計算なので、何度走らせても同じ答えが返ります。
+            過去から未来まで、日ごと・方位ごとの吉凶を一望します。判定は暦から決まる計算なので、何度走らせても同じ答えが返ります。
             <Link
               href="/relocation/arbitrage"
               className="mx-1 font-semibold text-indigo-600 underline"
@@ -520,14 +519,11 @@ export default function TimingAnalyticsPage() {
             .canBeAuspicious && (
             <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900">
               <b>
-                このモードでは三盤吉（S）が 0 件になります。めったに無いから
-                ではありません。
+                このモードでは三盤吉（S）が 0 件になります。めったに無いからではありません。
               </b>
               <span className="ml-1">
                 「{modeInfo(settings?.directionFilterMode ?? "composite").label}
-                」は凶の判定だけを行い、吉方位の判定をしないためです。
-                三盤吉を見るには「総合（既定）」か「本命星のみ」に切り替えて
-                走査し直してください。
+                」は凶の判定だけを行い、吉方位の判定をしないためです。三盤吉を見るには「総合（既定）」か「本命星のみ」に切り替えて走査し直してください。
               </span>
               <button
                 onClick={() => {
@@ -955,17 +951,13 @@ export default function TimingAnalyticsPage() {
                   段階は S（三盤吉）→ A（吉2盤）→ B（吉1盤）→ C（凶なし）→
                   D（軽い凶）の順。
                   <b>X（五大凶殺）は候補として提示しません</b>—
-                  五黄殺・暗剣殺・破・本命殺・的殺は移転で妥協の対象に
-                  ならないためです。
+                  五黄殺・暗剣殺・破・本命殺・的殺は移転で妥協の対象にならないためです。
                 </li>
                 <li>
-                  天中殺は方位ではなく期間の禁忌なので、段階とは独立に
-                  判定しています。「天中殺の扱い」の設定で結果が変わります。
+                  天中殺は方位ではなく期間の禁忌なので、段階とは独立に判定しています。「天中殺の扱い」の設定で結果が変わります。
                 </li>
                 <li>
-                  暦は決定的な計算です。ここに統計的な推定や予測は含まれず、
-                  分布・比率は「暦の構造の要約」であって観測データの分析では
-                  ありません。
+                  暦は決定的な計算です。ここに統計的な推定や予測は含まれず、分布・比率は「暦の構造の要約」であって観測データの分析ではありません。
                 </li>
               </ul>
             </Section>
@@ -996,9 +988,7 @@ export default function TimingAnalyticsPage() {
               {missingLabel}を設定すると、ここに全期間の吉凶が出ます
             </p>
             <p className="mx-auto mt-2 max-w-md text-xs leading-relaxed text-stone-500">
-              いつ動くのが良いかは、出発地から見た方位と本命星で決まります。
-              どちらも物件スキャナーの設定と共有しているので、片方で入れれば
-              こちらにも反映されます。
+              いつ動くのが良いかは、出発地から見た方位と本命星で決まります。どちらも物件スキャナーの設定と共有しているので、片方で入れればこちらにも反映されます。
             </p>
             <Link
               href="/relocation/arbitrage"
