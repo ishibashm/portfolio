@@ -865,7 +865,11 @@ export default function ArbitrageMapInner({
         ? d.blocked
           ? `${d.dir} 天中殺`
           : `${d.dir} ${d.tier} ${TIER_JP[d.tier as DayTier] ?? ""}`
-        : `${d.dir} (${getStatusText(d.status ?? "SAFE")})`;
+        : d.status === null
+          ? // 判定が無いときは方位名だけ。既定の "SAFE" に落とすと
+            // 「平穏（＝凶方位ではない）」と書いてしまう。
+            d.dir
+          : `${d.dir} (${getStatusText(d.status)})`;
 
       return (
         <React.Fragment key={`sector-wedge-${d.dir}`}>
