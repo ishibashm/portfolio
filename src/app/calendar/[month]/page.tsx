@@ -117,13 +117,11 @@ export default async function Page({
             <>
               {year}年{month}月で引越しに向くのは
               <b>{cal.recommended.map((d) => `${d.day}日`).join("・")}</b>
-              です。六曜で避けられる仏滅・赤口を外し、大安あるいは天赦日・
-              一粒万倍日が重なる日を挙げています。
+              です。六曜で避けられる仏滅・赤口を外し、大安あるいは天赦日・一粒万倍日が重なる日を挙げています。
             </>
           ) : (
             <>
-              {year}年{month}月は、六曜と土用を突き合わせると、条件を満たす日が
-              ありませんでした。前後の月もあわせてご検討ください。
+              {year}年{month}月は、六曜と土用を突き合わせると、条件を満たす日がありませんでした。前後の月もあわせてご検討ください。
             </>
           )}
           {cal.doyou && (
@@ -132,8 +130,7 @@ export default async function Page({
               なお<b>
                 {cal.doyou.start}から{cal.doyou.end}まで
               </b>
-              は土用にあたります。土いじりや基礎に関わることは避けるとされ、
-              間日を除いて候補から外しています。
+              は土用にあたります。土いじりや基礎に関わることは避けるとされ、間日を除いて候補から外しています。
             </>
           )}
         </p>
@@ -142,8 +139,7 @@ export default async function Page({
             どの月を見ているのかが文章からも分かるようにする。 */}
         <p className="mt-4 text-sm leading-relaxed text-slate-700">
           この期間の中宮は<b>{STAR_NAMES[cal.centerStar]}</b>（
-          {STAR_MEANINGS[cal.centerStar]?.keywords}）です。中宮の星は、その月
-          全体に乗る色合いを表すとされます。
+          {STAR_MEANINGS[cal.centerStar]?.keywords}）です。中宮の星は、その月全体に乗る色合いを表すとされます。
           {STAR_MEANINGS[cal.centerStar]?.good}
         </p>
 
@@ -191,9 +187,7 @@ export default async function Page({
             本命星ごとの吉方位（{cal.termStart}〜{cal.termEnd}）
           </h2>
           <p className="mt-4 text-xs leading-relaxed text-slate-600">
-            日取りが決まっても、向きが凶であれば意味がありません。
-            九星気学の月は暦の1日ではなく<b>節入り</b>で替わるため、この月盤が
-            効くのは<b>{cal.termStart}から{cal.termEnd}まで</b>です。中宮は
+            日取りが決まっても、向きが凶であれば意味がありません。九星気学の月は暦の1日ではなく<b>節入り</b>で替わるため、この月盤が効くのは<b>{cal.termStart}から{cal.termEnd}まで</b>です。中宮は
             {STAR_NAMES[cal.centerStar]}。
           </p>
           <div className="mt-5 overflow-x-auto">
@@ -234,8 +228,7 @@ export default async function Page({
             <Link href="/houi" className="text-rose-600 hover:underline">
               生まれ年から引ける早見表
             </Link>
-            をご覧ください。天中殺は生年月日ごとに決まるため、この表には
-            含めていません。
+            をご覧ください。天中殺は生年月日ごとに決まるため、この表には含めていません。
           </p>
         </section>
 
@@ -284,10 +277,7 @@ export default async function Page({
             自分の生年月日で確かめる
           </h2>
           <p className="mt-3 text-xs text-amber-900 leading-relaxed">
-            このページは暦だけで決まる情報をまとめたものです。天中殺と本命殺は
-            生年月日で変わり、方位は出発地から見た向きで決まります。
-            日取りと方位を自分の条件で確かめるには、生年月日と現住地を入れて
-            ください。
+            このページは暦だけで決まる情報をまとめたものです。天中殺と本命殺は生年月日で変わり、方位は出発地から見た向きで決まります。日取りと方位を自分の条件で確かめるには、生年月日と現住地を入れてください。
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
