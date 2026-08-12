@@ -2012,6 +2012,30 @@ export default function ArbitrageScannerPage() {
   }, [safeData]);
 
   /**
+   * 方位の吉凶を出せる条件。
+   *
+   * 以前はこの条件が dayKigaku の中にだけあり、満たさないと地図の県塗りが
+   * 「方位の吉凶」から「掲載件数」へ無言で切り替わっていた。どちらも同じ
+   * 県を色で塗るので、利用者には件数の色が吉凶に見える。
+   *
+   * 条件をここに 1 つ置いて、判定と凡例の両方がこれを見る。2 か所に書くと
+   * 条件を足したときに凡例だけが古くなる。
+   */
+  const canJudgeDirections = Boolean(
+    hasBaseLocation && birthDate && targetDate,
+  );
+
+  /** 出せない理由。地図の凡例にそのまま出す。 */
+  const kigakuUnavailableReason = useMemo(() => {
+    if (canJudgeDirections) return undefined;
+    const missing: string[] = [];
+    if (!hasBaseLocation) missing.push("出発地");
+    if (!birthDate) missing.push("生年月日");
+    if (!targetDate) missing.push("対象日");
+    return `${missing.join("と")}を入れると方位の吉凶で塗り分けます`;
+  }, [canJudgeDirections, hasBaseLocation, birthDate, targetDate]);
+
+  /**
    * 選択日の盤を 1 回だけ組み、方位別と県別の両方を切り出す。
    *
    * ここが「その日・その方位が動けるか」の唯一の情報源。地図の扇形、
@@ -2029,7 +2053,7 @@ export default function ArbitrageScannerPage() {
    * 本命星は時期スクリーニングと同じく classical を使う。
    */
   const dayKigaku = useMemo(() => {
-    if (!hasBaseLocation || !birthDate || !targetDate) return undefined;
+    if (!canJudgeDirections) return undefined;
     try {
       const bd = new Date(
         birthDate.includes("T") ? birthDate : `${birthDate}T12:00:00+09:00`,
@@ -2079,7 +2103,7 @@ export default function ArbitrageScannerPage() {
       return undefined;
     }
   }, [
-    hasBaseLocation,
+    canJudgeDirections,
     birthDate,
     targetDate,
     baseLat,
@@ -4792,6 +4816,7 @@ export default function ArbitrageScannerPage() {
               keepWideView={isNationwideOverview}
               prefKigaku={dayKigaku?.byPrefecture}
               dirKigaku={dayKigaku?.byDirection}
+              kigakuUnavailableReason={kigakuUnavailableReason}
               targetDate={targetDate}
               hasBase={hasBaseLocation}
               focusKind={mapFocusKind}

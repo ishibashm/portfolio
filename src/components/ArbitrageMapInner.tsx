@@ -165,6 +165,14 @@ interface ArbitrageMapInnerProps {
     }
   >;
   /**
+   * prefKigaku が無いときの理由（「生年月日を入れると…」）。
+   *
+   * 以前はここが空だと切り替えパネルごと消え、県塗りが「方位の吉凶」から
+   * 「掲載件数」へ無言で入れ替わっていた。どちらも同じ県を色で塗るので、
+   * 件数の色が吉凶に見える。理由を受け取って凡例に出す。
+   */
+  kigakuUnavailableReason?: string;
+  /**
    * 8方位 → 選択日の吉凶段階。扇形の塗り分けはこれを読む。
    *
    * prefKigaku と同じ 1 回の盤計算から切り出したもので、時期パネルの
@@ -362,6 +370,7 @@ export default function ArbitrageMapInner({
   keepWideView = false,
   prefKigaku,
   dirKigaku,
+  kigakuUnavailableReason,
   targetDate,
   hasBase = false,
   focusKind = "area",
@@ -392,6 +401,13 @@ export default function ArbitrageMapInner({
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
     "kigaku",
   );
+  /**
+   * 実際に塗っている側。判定が出せないときは選択に関わらず件数で塗るので、
+   * ボタンの強調・凡例・温度計はこちらを見る。既定が "kigaku" なので、
+   * overviewTint をそのまま見るとどのボタンも強調されないまま
+   * 件数の色を塗る、という食い違いが出る。
+   */
+  const effectiveTint: "kigaku" | "count" = prefKigaku ? overviewTint : "count";
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "info";
@@ -964,8 +980,12 @@ export default function ArbitrageMapInner({
         </div>
 
         {/* 俯瞰の塗り分け切り替え + 凡例。方位モードは
-            「どの県へなら動けるか」の意思決定面 */}
-        {zoom < 10 && prefKigaku && (
+            「どの県へなら動けるか」の意思決定面。
+
+            prefKigaku が無いときもパネルごと消さない。消すと県塗りが
+            件数に変わったことも、方位モードの存在も画面から分からず、
+            件数の色を吉凶と読み違える。 */}
+        {zoom < 10 && (
           <div className="absolute bottom-4 left-4 z-[1000] pointer-events-auto bg-white/85 backdrop-blur rounded-xl shadow-lg border border-stone-200 p-2.5 text-[9px] text-stone-700 space-y-1.5">
             <div className="flex items-center gap-1 select-none">
               {(
@@ -973,21 +993,46 @@ export default function ArbitrageMapInner({
                   ["kigaku", "方位の吉凶"],
                   ["count", "掲載件数"],
                 ] as const
-              ).map(([mode, label]) => (
-                <button
-                  key={mode}
-                  onClick={() => setOverviewTint(mode)}
-                  className={`px-2 py-1 rounded-md font-bold transition-colors ${
-                    overviewTint === mode
-                      ? "bg-indigo-600 text-white"
-                      : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+              ).map(([mode, label]) => {
+                // 方位モードは判定が出せるときだけ押せる。押せない理由は
+                // 下の一文に出す（disabled だけだと理由が分からない）。
+                const disabled = mode === "kigaku" && !prefKigaku;
+                const active = effectiveTint === mode;
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => setOverviewTint(mode)}
+                    disabled={disabled}
+                    title={disabled ? kigakuUnavailableReason : undefined}
+                    className={`px-2 py-1 rounded-md font-bold transition-colors ${
+                      disabled
+                        ? "bg-stone-100 text-stone-300 cursor-not-allowed"
+                        : active
+                          ? "bg-indigo-600 text-white"
+                          : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-            {overviewTint === "kigaku" && (
+            {/* 何の色を見ているかを必ず 1 行で言う。方位モードに切り替え
+                られないときは、その理由もここに出す。 */}
+            {effectiveTint === "count" && (
+              <div className="max-w-44 space-y-1">
+                <div className="font-bold text-stone-600">
+                  いまの色は掲載件数です
+                </div>
+                {!prefKigaku && (
+                  <div className="text-[8px] leading-relaxed text-stone-500">
+                    {kigakuUnavailableReason ??
+                      "条件が揃うと方位の吉凶で塗り分けます"}
+                  </div>
+                )}
+              </div>
+            )}
+            {effectiveTint === "kigaku" && (
               <div className="flex flex-wrap gap-x-2 gap-y-1 max-w-44">
                 {(
                   [
@@ -1088,7 +1133,7 @@ export default function ArbitrageMapInner({
             地図がそのまま意思決定面になる。件数ラベルは両モード共通。 */}
         {zoom < 10 && geoData && (
           <GeoJSON
-            key={`pref-geo-${overviewTint}-${
+            key={`pref-geo-${effectiveTint}-${
               prefKigaku
                 ? Object.values(prefKigaku)
                     .map((i) => i.tier + (i.blocked ? "b" : ""))
@@ -1100,7 +1145,7 @@ export default function ArbitrageMapInner({
               const prefName = feature?.properties?.name || "";
               const count = prefCounts[prefName] || 0;
               const info = prefKigaku?.[prefName];
-              if (overviewTint === "kigaku" && info) {
+              if (effectiveTint === "kigaku" && info) {
                 const fill = info.blocked
                   ? "#64748b"
                   : (TIER_FILL[info.tier as DayTier] ?? "#a8a29e");
@@ -1501,11 +1546,16 @@ export default function ArbitrageMapInner({
       {/* 件数の温度計。数を色で塗っている画面（俯瞰の件数モード、
           広域の市区町村バブル）のときだけ出す。方位の吉凶を見ている
           画面に出すと「この赤は件数？凶？」の取り違えになる */}
-      {((zoom < 10 && (overviewTint === "count" || !prefKigaku)) ||
+      {((zoom < 10 && effectiveTint === "count") ||
         (zoom >= 10 && showHeatmap)) && (
         <div className="absolute top-4 left-4 bg-white/80 text-stone-900 px-3 py-3.5 rounded-2xl shadow-xl border border-stone-200 backdrop-blur text-[10px] pointer-events-auto z-[1000] flex flex-col gap-1.5 w-18 items-center">
+          {/* 「件数」とだけ書いてあり、吉凶の色と見分けが付かなかった。
+              何を数えた色なのかまで書く。 */}
           <div className="font-bold text-[9px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
-            件数
+            掲載件数
+            <span className="block font-normal text-[7.5px] text-stone-400">
+              吉凶ではない
+            </span>
           </div>
           <div className="flex items-stretch h-36 gap-2 w-full justify-center pt-1">
             <div className="w-2.5 rounded-full bg-gradient-to-t from-[#818cf8] via-[#10b981] via-[#fbbf24] to-[#ef4444] border border-stone-200" />
