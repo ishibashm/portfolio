@@ -123,7 +123,8 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 578**（#129・#131〜#133・#142）。
+`npm run lint` の警告を減らしている。**645 → 542**
+（#129・#131〜#133・#142・#145・#149）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -146,13 +147,13 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 ### 現状の内訳（`npm run lint` 実行時点）
 
 ```
-343  @typescript-eslint/no-explicit-any
-171  @typescript-eslint/no-unused-vars
- 25  react-hooks/exhaustive-deps      ← 依存配列は再レンダリングのタイミングを変える。対象外
- 16  renders / render                 ← react-hooks の別メッセージ
+326  @typescript-eslint/no-explicit-any
+165  @typescript-eslint/no-unused-vars
+ 25  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
+ 13  react-hooks/set-state-in-effect    ← 同上（react-hooks の別ルール）
  10  @typescript-eslint/ban-ts-comment
   8  @typescript-eslint/no-require-imports
-  5  その他
+  5  react-hooks/purity ほか
 ```
 
 ファイル別の上位（`unused` / `any` / その他）：
@@ -162,13 +163,13 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 | 67 | `src/components/SolarTimeClock.tsx` | 25 / 37 / 5 |
 | 32 | `src/app/relocation/arbitrage/page.tsx` | 19 / 12 / 1 |
 | 20 | `src/app/relocation/simulator/page.tsx` | 8 / 8 / 4 |
-| 20 | `src/components/widgets/MarkdownViewerWidget.tsx` | 1 / 19 / 0 |
 | 16 | `src/components/FengShuiRelocation/App.jsx` | 7 / 0 / 9 |
-| 16 | `src/components/widgets/OmniPipelineWidget.tsx` | 6 / 10 / 0 |
 | 16 | `src/utils/ephemerisEngine.ts` | 3 / 13 / 0 |
-| 15 | `scripts/eheya_extractor.ts` | 0 / 15 / 0 |
 | 14 | `scripts/site_guardian_daemon.ts` | 2 / 12 / 0 |
 | 13 | `scripts/nifty_extractor.ts` | 4 / 8 / 1 |
+| 13 | `src/components/widgets/DataAnalyzerWidget.tsx` | 3 / 10 / 0 |
+| 12 | `src/app/api/nba/route.ts` | 4 / 8 / 0 |
+| 12 | `src/utils/nbaEngine.ts` | 0 / 12 / 0 |
 
 ### 次にやるとよいもの
 
@@ -187,6 +188,21 @@ catch (e)         123 / 1111 / 1693 行（e を読んでいないので catch {}
 
 **ハンドラ 6 つは「消す」前に一度確認すること。**UI から外れた名残なのか、
 繋ぎ忘れなのかで扱いが変わる。繋ぎ忘れなら消すのは誤り。
+
+`scripts/` は `tsconfig.json` の `exclude` に入っていて **`npx tsc --noEmit` の
+対象外**。スクリプトの型を触ったら、そのファイルだけを含む一時 tsconfig を
+作って別に通すこと（#149 が見本。`scripts/eheya_extractor.ts` の型の嘘は
+それで見つかった）。
+
+```jsonc
+// tsconfig.scripts.tmp.json（コミットしない）
+{ "extends": "./tsconfig.json", "include": ["scripts/<file>.ts"], "exclude": [] }
+```
+
+スクレイパーの `any` は、ほとんどが「外部 JSON に型が無い」ことから来ている。
+**ページ全体を型にしない。**その取り込みが実際に読む枝だけを写し、素の JSON を
+型として読む箇所を 1 か所に閉じ込める（#149 の `Building` / `RoomEntry`）。
+`nifty_extractor.ts`（13 件）と `site_guardian_daemon.ts`（14 件）が同じ形。
 
 `SolarTimeClock.tsx`（67 件・5,000 行超）は**現行機能の中核**なので、事故ったときの
 影響が大きい。小さいファイルで手順が固まってから最後に回すのが安全。
@@ -224,3 +240,5 @@ catch (e)         123 / 1111 / 1693 行（e を読んでいないので catch {}
 | #137 | 実装と食い違った案内文の修正。コードは既に正しかった例 |
 | #138 | 判定の基準を変える PR の書き方（旧挙動で落ちるテスト） |
 | #141・#142 | 集約の取りこぼしと、その訂正の出し方 |
+| #147 | 俯瞰の県塗りが無言で別の意味の色に落ちるのを直した（提案書 A） |
+| #149 | 外部 JSON の `any` の外し方（読む枝だけ型にする。`scripts/` の型検証も） |
