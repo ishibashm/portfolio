@@ -193,8 +193,13 @@ export async function GET(request: Request) {
       tenchusatsuMode,
       summaries: findAuspiciousDaysAllDirections(from, to, base),
     });
-  } catch (error: any) {
+  } catch (error) {
+    // このルートの error は「文言」ではなく「コード」で、画面側が
+    // lib/auspiciousDayErrors で日本語に直す（INVALID_RANGE など）。
+    // ここだけ JS の生のメッセージを入れていたので、画面には既定の
+    // 「日取りを取得できませんでした」しか出ず、原因も伝わらないまま
+    // 内部の文言が応答に混ざっていた。コードを返し、生の値はログに残す。
     console.error("Failed to compute auspicious days:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

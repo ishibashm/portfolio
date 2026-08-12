@@ -51,6 +51,16 @@ describe("medium-priority QA regression helpers", () => {
     );
   });
 
+  it("計算が落ちたときも、入力の直し方ではなく待つ案内を出す", () => {
+    // 500 の応答は INTERNAL_ERROR というコードを返す。ここが未対応だと
+    // 「入力内容を確認して再度お試しください」という、直しようの無い
+    // 案内が出ていた。
+    const msg = getAuspiciousDayErrorMessage("INTERNAL_ERROR");
+    expect(msg).toContain("時間をおいて");
+    expect(msg).not.toContain("入力内容");
+    expect(msg).not.toContain("INTERNAL_ERROR");
+  });
+
   it("distinguishes database failure from an empty agent log", () => {
     expect(getAgentLogFeedState(false, 0)).toBe("empty");
     expect(getAgentLogFeedState(true, 0)).toBe("unavailable");
