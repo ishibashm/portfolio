@@ -1,15 +1,38 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useOmniStore } from "../../store/omniStore";
+
+/**
+ * `/api/v1/analyzer/process` が返す 1 ポスト。どの欄も揃わないことがあるので
+ * すべて任意。この画面が読む枝だけを写している。
+ */
+interface AnalyzerPost {
+  text?: string;
+  author_handle?: string;
+  created_at?: string;
+  timestamp?: string;
+  media_paths?: string[];
+}
+
+/**
+ * 解析の結果。`category` で下の表示が切り替わる（finance / vision /
+ * markdown / general と、この画面が自分で入れる unknown）。応答側の値を
+ * union で固定すると増えたときに落ちるので、ここでは string のまま扱う。
+ */
+interface AnalyzerResult {
+  category: string;
+  summary: string;
+  keywords?: string[];
+  posts?: AnalyzerPost[];
+  items?: string[];
+}
 
 export default function DataAnalyzerWidget() {
   const [content, setContent] = useState<string>("");
   const [filename, setFilename] = useState<string>("");
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isIdentifying, setIsIdentifying] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AnalyzerResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
@@ -110,11 +133,13 @@ export default function DataAnalyzerWidget() {
       k.replace(/^[名動形]:\s*/, ""),
     );
     const relevantPosts = result.posts
-      .filter(
-        (p: any) => p.text && cleanKeywords.some((kw) => p.text.includes(kw)),
-      )
+      .filter((p) => {
+        // p.text をコールバックの外から絞り込めないので、いったん受ける
+        const text = p.text;
+        return text && cleanKeywords.some((kw) => text.includes(kw));
+      })
       .map(
-        (p: any) =>
+        (p) =>
           `[@${p.author_handle || "unknown"} - ${p.created_at || p.timestamp || ""}]\n${p.text}`,
       );
 
@@ -140,11 +165,13 @@ export default function DataAnalyzerWidget() {
       k.replace(/^[名動形]:\s*/, ""),
     );
     const relevantPosts = result.posts
-      .filter(
-        (p: any) => p.text && cleanKeywords.some((kw) => p.text.includes(kw)),
-      )
+      .filter((p) => {
+        // p.text をコールバックの外から絞り込めないので、いったん受ける
+        const text = p.text;
+        return text && cleanKeywords.some((kw) => text.includes(kw));
+      })
       .map(
-        (p: any) =>
+        (p) =>
           `[@${p.author_handle || "unknown"} - ${p.created_at || p.timestamp || ""}]\n${p.text}`,
       );
 
@@ -298,7 +325,7 @@ export default function DataAnalyzerWidget() {
                       {/* 抽出されたキーワードタグの表示 */}
                       {result.keywords && result.keywords.length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2 max-h-64 overflow-y-auto custom-scrollbar p-2 bg-slate-900/50 rounded-lg border border-slate-800">
-                          {result.keywords.map((kw: string, i: number) => {
+                          {result.keywords.map((kw, i) => {
                             const isSelected = selectedKeywords.includes(kw);
                             return (
                               <span
@@ -339,16 +366,18 @@ export default function DataAnalyzerWidget() {
                         </h3>
                         <div className="grid gap-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
                           {result.posts
-                            .filter(
-                              (p: any) =>
-                                p.text &&
+                            .filter((p) => {
+                              const text = p.text;
+                              return (
+                                text &&
                                 selectedKeywords.some((kw) =>
-                                  p.text.includes(
+                                  text.includes(
                                     kw.replace(/^[名動形]:\s*/, ""),
                                   ),
-                                ),
-                            )
-                            .map((p: any, idx: number) => (
+                                )
+                              );
+                            })
+                            .map((p, idx) => (
                               <div
                                 key={idx}
                                 className="bg-slate-900/80 border border-slate-700/50 p-4 rounded-lg flex flex-col gap-2"
@@ -366,34 +395,32 @@ export default function DataAnalyzerWidget() {
                                 </div>
                                 {p.media_paths && p.media_paths.length > 0 && (
                                   <div className="flex gap-2 mt-2 overflow-x-auto pb-1 custom-scrollbar">
-                                    {p.media_paths.map(
-                                      (mp: string, midx: number) => (
-                                        <div
-                                          key={midx}
-                                          className="h-16 bg-slate-800 rounded px-3 py-1 text-[10px] flex flex-col justify-center text-slate-400 font-mono border border-slate-700 whitespace-nowrap"
-                                        >
-                                          <span className="text-slate-500">
-                                            📎 添付画像
-                                          </span>
-                                          <span className="text-indigo-300 truncate max-w-[150px]">
-                                            {mp.split("/").pop() || mp}
-                                          </span>
-                                        </div>
-                                      ),
-                                    )}
+                                    {p.media_paths.map((mp, midx) => (
+                                      <div
+                                        key={midx}
+                                        className="h-16 bg-slate-800 rounded px-3 py-1 text-[10px] flex flex-col justify-center text-slate-400 font-mono border border-slate-700 whitespace-nowrap"
+                                      >
+                                        <span className="text-slate-500">
+                                          📎 添付画像
+                                        </span>
+                                        <span className="text-indigo-300 truncate max-w-[150px]">
+                                          {mp.split("/").pop() || mp}
+                                        </span>
+                                      </div>
+                                    ))}
                                   </div>
                                 )}
                               </div>
                             ))}
-                          {result.posts.filter(
-                            (p: any) =>
-                              p.text &&
+                          {result.posts.filter((p) => {
+                            const text = p.text;
+                            return (
+                              text &&
                               selectedKeywords.some((kw) =>
-                                p.text.includes(
-                                  kw.replace(/^[名動形]:\s*/, ""),
-                                ),
-                              ),
-                          ).length === 0 && (
+                                text.includes(kw.replace(/^[名動形]:\s*/, "")),
+                              )
+                            );
+                          }).length === 0 && (
                             <div className="text-sm text-slate-500 p-4 text-center">
                               ポストが見つかりませんでした。
                             </div>
@@ -428,7 +455,7 @@ export default function DataAnalyzerWidget() {
                             抽出された画像パス (プレビュー)
                           </h3>
                           <div className="grid grid-cols-2 gap-2">
-                            {result.items.map((path: string, i: number) => (
+                            {result.items.map((path, i) => (
                               <div
                                 key={i}
                                 className="text-[10px] font-mono bg-slate-900 p-2 border border-slate-800 rounded text-slate-400 truncate"
