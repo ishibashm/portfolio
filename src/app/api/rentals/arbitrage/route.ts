@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
@@ -1038,8 +1039,13 @@ export async function GET(request: Request) {
         },
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to analyze arbitrage rentals:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: toResponseMessage(error, "Failed to analyze arbitrage rentals"),
+      },
+      { status: 500 },
+    );
   }
 }

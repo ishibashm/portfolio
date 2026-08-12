@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import fs from "fs/promises";
 import path from "path";
 import { OuraClient } from "@/lib/ouraClient";
@@ -587,10 +588,18 @@ export async function POST(req: Request) {
       success: true,
       data: responseData,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in /api/nba:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        // ここは画面に届く。NBADashboard が json.error を throw して
+        // toUserMessage に通し、赤帯に出す。日本語で書く。
+        error: toResponseMessage(
+          error,
+          "指標の計算に失敗しました。時間をおいて、もう一度お試しください。",
+        ),
+      },
       { status: 500 },
     );
   }
