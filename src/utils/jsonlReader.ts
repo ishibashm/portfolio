@@ -1,4 +1,5 @@
 import fs from "fs/promises";
+import { errorCode } from "@/lib/errorMessage";
 
 /**
  * Reads a JSONL file from the end in chunks, finding the last record
@@ -12,8 +13,9 @@ export async function findLastRecordBackwards<T = any>(
   let fileHandle;
   try {
     fileHandle = await fs.open(filePath, "r");
-  } catch (error: any) {
-    if (error.code === "ENOENT") {
+  } catch (error) {
+    // ファイルがまだ無いのは正常。初回実行では履歴が作られていない。
+    if (errorCode(error) === "ENOENT") {
       return null;
     }
     throw error;
@@ -72,7 +74,7 @@ export async function findLastRecordBackwards<T = any>(
           if (validateFn(parsed)) {
             return parsed;
           }
-        } catch (e) {
+        } catch {
           // Ignore invalid JSON lines and proceed
         }
       }
@@ -85,7 +87,7 @@ export async function findLastRecordBackwards<T = any>(
         if (validateFn(parsed)) {
           return parsed;
         }
-      } catch (e) {
+      } catch {
         // Ignore
       }
     }

@@ -55,3 +55,23 @@ export function toUserMessage(
 export function toLogMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
+
+/**
+ * 投げられたものに付いている `code` を取り出す。
+ *
+ * Node の fs は `ENOENT`、Prisma は `P2037` のようにコードで種類を伝えてくる。
+ * これを見て分岐している箇所が `catch (e: any)` のまま残っていた。
+ * `code` は Error の標準プロパティではないので `instanceof Error` では
+ * 取れず、かといってキャストで押し通すのは避けたい。
+ *
+ * 文字列の `code` を持っていればそれを返し、無ければ undefined。
+ * `e.code === "ENOENT"` と書いていたときと同じ結果になる（`code` を
+ * 持たないものは undefined で、どの比較にも一致しない）。
+ */
+export function errorCode(err: unknown): string | undefined {
+  if (typeof err !== "object" || err === null || !("code" in err)) {
+    return undefined;
+  }
+  const code = err.code;
+  return typeof code === "string" ? code : undefined;
+}
