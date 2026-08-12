@@ -15,7 +15,9 @@ export async function POST(req: Request) {
     return NextResponse.json({
       sections,
     });
-  } catch (error: any) {
+  } catch (error) {
+    // 応答は固定の文言で、error は console にしか渡していない。
+    // console.error は unknown をそのまま受けるので注釈は要らない。
     console.error("Error analyzing music structure:", error);
     return NextResponse.json(
       { error: "Failed to analyze music structure" },

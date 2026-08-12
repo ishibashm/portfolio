@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { exec } from "child_process";
 import path from "path";
 import util from "util";
@@ -52,10 +53,13 @@ export async function POST(req: Request) {
         { status: 500 },
       );
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Omni API Predict Error:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: toResponseMessage(error, "Failed to run omni prediction"),
+      },
       { status: 500 },
     );
   }
