@@ -3,23 +3,16 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import {
   Loader2,
-  MapPin,
   TrendingUp,
   Sparkles,
   Filter,
-  Download,
   Search,
-  Settings,
   RefreshCw,
 } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { loadSettings } from "@/lib/userSettings";
-import {
-  MetaphysicalConfigBar,
-  MetaphysicalConfig,
-} from "@/components/layout/MetaphysicalConfigBar";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
   getRecommendationStarCount,
@@ -121,7 +114,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
       const minutes = String(d.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day}T${hours}:${minutes}`;
     }
-  } catch (e) {}
+  } catch {}
   if (dateStr.includes("T")) {
     return dateStr.substring(0, 16);
   }
@@ -142,7 +135,6 @@ import {
   DEFAULT_SEARCH_AREA,
   OVERVIEW_CENTER,
   initialViewBounds,
-  DEFAULT_RADIUS_KM,
   NEARBY_SEARCH_AREA,
   NATIONWIDE_SEARCH_AREA,
   SEARCH_AREA_STORAGE_KEY,
@@ -1109,7 +1101,7 @@ export default function ArbitrageScannerPage() {
         } else if (config.radius_km && config.radius_km !== "all") {
           rKm = String(config.radius_km);
         }
-      } catch (e) {}
+      } catch {}
     } else {
       // Fallback to legacy isolated keys
       const storedLat = localStorage.getItem("arb_baseLat");
@@ -1691,7 +1683,7 @@ export default function ArbitrageScannerPage() {
       if (localData) {
         try {
           currentLocal = JSON.parse(localData);
-        } catch (e) {}
+        } catch {}
       }
 
       const mergedConfig = {
