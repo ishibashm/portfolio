@@ -39,8 +39,7 @@ export function PractitionerStrip({ limit = 3 }: { limit?: number }) {
         この方位について相談できる人
       </h2>
       <p className="mt-1 text-[11px] leading-relaxed text-stone-500">
-        掲載は登録制です。内容は各鑑定士によるもので、当サイトが鑑定の結果を
-        保証するものではありません。
+        掲載は登録制です。内容は各鑑定士によるもので、当サイトが鑑定の結果を保証するものではありません。
       </p>
       <ul className="mt-4 space-y-3">
         {rows.map((p) => (
