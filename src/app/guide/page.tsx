@@ -168,8 +168,7 @@ export default function Page() {
           <p className="mt-2 text-xs leading-relaxed text-slate-700">
             ログインは不要です。ただし、
             <b>今住んでいる場所</b>と<b>生年月日</b>
-            を入れないと方位が決まりません。
-            どの画面から始める場合も、まずこの2つを入力してください。
+            を入れないと方位が決まりません。どの画面から始める場合も、まずこの2つを入力してください。
           </p>
           <Link
             href="/guide/basics"
@@ -184,8 +183,7 @@ export default function Page() {
         </div>
 
         <p className="mt-8 text-[11px] leading-relaxed text-slate-500">
-          九星気学や六曜は暦の考え方であり、科学的に効果が確認されたものではありません。
-          住まい選びの判断材料のひとつとしてお使いください。
+          九星気学や六曜は暦の考え方であり、科学的に効果が確認されたものではありません。住まい選びの判断材料のひとつとしてお使いください。
         </p>
       </article>
     </div>

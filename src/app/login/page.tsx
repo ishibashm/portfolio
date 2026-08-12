@@ -61,8 +61,7 @@ export default function LoginPage() {
           他の端末でも引き継げます。
         </p>
         <p className="text-stone-400 text-[10px] text-center mb-6 leading-relaxed">
-          ログインしなくても、方位の判定・物件検索・カレンダーは
-          そのままご利用いただけます。
+          ログインしなくても、方位の判定・物件検索・カレンダーはそのままご利用いただけます。
         </p>
 
         {/* Logged in User Status */}

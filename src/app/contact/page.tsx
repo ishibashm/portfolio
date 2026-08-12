@@ -54,8 +54,7 @@ export default function ContactPage() {
           お問い合わせ
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-slate-700">
-          判定内容の誤り、物件データの不備、掲載の停止依頼などをお寄せください。
-          いただいた内容は運営者のみが確認します。
+          判定内容の誤り、物件データの不備、掲載の停止依頼などをお寄せください。いただいた内容は運営者のみが確認します。
         </p>
 
         {state === "done" ? (
