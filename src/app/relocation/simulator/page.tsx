@@ -41,10 +41,8 @@ import {
 } from "@/components/layout/MetaphysicalConfigBar";
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
-import {
-  directionUnstableNote,
-  distanceKmBetween,
-} from "@/lib/directionDistance";
+import { directionUnstableNote } from "@/lib/directionDistance";
+import { distanceKmBetween } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";

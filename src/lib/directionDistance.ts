@@ -47,20 +47,8 @@ export function directionUnstableNote(distanceKm: number): string | null {
   return `この距離（約${distanceKm.toFixed(1)}km）では方位が定まりません。${shift}m ずれるだけで方位が隣に変わります。`;
 }
 
-/** 2 地点の距離（km）。方位と同じ球面の式で測る。 */
-export function distanceKmBetween(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+/*
+ * 距離そのものの計算は utils/directionGeo.distanceKmBetween を使う。
+ * ここで同じ式を書き直していたのを消した。CLAUDE.md が名指ししている
+ * 「寄せ先が既にあるか先に探す」を、自分で踏んだ。
+ */
