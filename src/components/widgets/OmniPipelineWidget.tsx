@@ -4,12 +4,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { useOmniStore } from "../../store/omniStore";
 
 export default function OmniPipelineWidget() {
-  const [step, setStep] = useState<number>(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Step 1: Collection
   const [url, setUrl] = useState("https://x.com/home");
-  const [mode, setMode] = useState("x_post");
+  // 収集モードは 92 行で "x_post" を直接渡している。state は読み出しが
+  // 無くなった残りなので置かない。
   const [isBrowserOpen, setIsBrowserOpen] = useState(false);
   const [logs, setLogs] = useState<
     { id: string; type: string; message: string }[]
@@ -24,8 +24,6 @@ export default function OmniPipelineWidget() {
   // Step 4: Finance Identification (Not used directly anymore, replaced by Watchlist)
   // const [identifiedAsset, setIdentifiedAsset] = useState<any>(null);
 
-  const addWidgetToCanvas = useOmniStore((state) => state.addWidgetToCanvas);
-  const addToWatchlist = useOmniStore((state) => state.addToWatchlist);
   const globalWatchlist = useOmniStore((state) => state.globalWatchlist);
 
   const logsEndRef = useRef<HTMLDivElement>(null);
