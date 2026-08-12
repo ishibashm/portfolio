@@ -90,8 +90,7 @@ export default function MarketAnalyticsPage() {
             家賃市場の計量分析（準備中）
           </h1>
           <p className="mt-2 text-xs leading-relaxed text-amber-800">
-            毎晩のデータ集計がまだ一度も走っていません。次回の夜間バッチが
-            完了すると、ここにヘドニック回帰・分布分析・生存分析が並びます。
+            毎晩のデータ集計がまだ一度も走っていません。次回の夜間バッチが完了すると、ここにヘドニック回帰・分布分析・生存分析が並びます。
           </p>
         </div>
       </div>
@@ -131,8 +130,7 @@ export default function MarketAnalyticsPage() {
         <header>
           <h1 className="text-xl font-bold">家賃市場の計量分析</h1>
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
-            株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を
-            賃貸市場に当てています。毎晩の巡回データから自動更新。最終更新:{" "}
+            株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を賃貸市場に当てています。毎晩の巡回データから自動更新。最終更新:{" "}
             {new Date(generated).toLocaleString("ja-JP")}
           </p>
         </header>
@@ -208,8 +206,7 @@ export default function MarketAnalyticsPage() {
             </div>
           ) : (
             <p className="rounded-xl bg-stone-50 border border-stone-200 p-3 text-[11px] leading-relaxed text-stone-500">
-              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。
-              毎晩の集計が 5 日ぶん貯まるとチャートが表示されます。
+              蓄積中（現在 {stats.rentIndexSeries.length} 日ぶん）。毎晩の集計が 5 日ぶん貯まるとチャートが表示されます。
             </p>
           )}
         </Section>
@@ -562,9 +559,7 @@ export default function MarketAnalyticsPage() {
                   </tbody>
                 </table>
                 <p className="mt-2 text-[10px] text-stone-400">
-                  ※天中殺グループ6通りの平均。個人の値は
-                  物件スキャナーの「引っ越し時期を探す」で自分の命式に
-                  対して表示される。
+                  ※天中殺グループ6通りの平均。個人の値は物件スキャナーの「引っ越し時期を探す」で自分の命式に対して表示される。
                 </p>
               </div>
             );
@@ -578,19 +573,13 @@ export default function MarketAnalyticsPage() {
         >
           <ul className="list-disc space-y-1.5 pl-4 text-[11px] leading-relaxed text-stone-600">
             <li>
-              <b>ヘドニック回帰</b>: log(家賃+管理費) を log(面積)・築年数・
-              駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・
-              構造は未投入なので、残差にはそれらの効果も混ざる。
-              「割安」に見える物件には理由があることも多い。
+              <b>ヘドニック回帰</b>: log(家賃+管理費) を log(面積)・築年数・駅徒歩分に最小二乗で回帰。県ごとに別モデル。間取り・階数・構造は未投入なので、残差にはそれらの効果も混ざる。「割安」に見える物件には理由があることも多い。
             </li>
             <li>
-              <b>生存分析</b>: パージ運用で消えた掲載は完全には観測できない。
-              「7日以上巡回で見ない＝終了」という近似を使っており、
-              長期側の推定は保守的でない可能性がある。
+              <b>生存分析</b>: パージ運用で消えた掲載は完全には観測できない。「7日以上巡回で見ない＝終了」という近似を使っており、長期側の推定は保守的でない可能性がある。
             </li>
             <li>
-              これは観測データの記述であって、因果関係でも将来の予測でもない。
-              個別の物件判断は
+              これは観測データの記述であって、因果関係でも将来の予測でもない。個別の物件判断は
               <Link
                 href="/relocation/arbitrage"
                 className="mx-0.5 font-semibold text-indigo-600 underline"
