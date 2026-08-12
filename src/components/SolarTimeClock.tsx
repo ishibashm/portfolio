@@ -5315,8 +5315,7 @@ export const SolarTimeClock = () => {
                     <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-1">
                       <div className="text-[8px] text-stone-400 italic">
                         ※
-                        本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。
-                        古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
+                        本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
                       </div>
                     </div>
                   </div>
@@ -7302,8 +7301,7 @@ export const SolarTimeClock = () => {
                             <strong className="text-indigo-700 font-mono">
                               {targetDirection}
                             </strong>{" "}
-                            方位（{useTrueNorth ? "真北" : "磁北"}基準）。
-                            同じ行に印を付けています。
+                            方位（{useTrueNorth ? "真北" : "磁北"}基準）。同じ行に印を付けています。
                           </span>
                         </span>
                       ) : (
@@ -7513,10 +7511,7 @@ export const SolarTimeClock = () => {
 
                       {heatmapMode === "12months" && (
                         <p className="mt-3 text-center text-[9px] text-stone-500 leading-relaxed">
-                          12ヶ月表示は<b>節入り基準の月</b>（暦の1日ではなく
-                          立春・啓蟄などで替わる月）で刻み、「その月の傾向」を
-                          見るため<b>日盤を含めずに年盤＋月盤で判定</b>しています。
-                          地図も自動的に年盤＋月盤へ切り替わり、先頭列と同じ判定を表示します。
+                          12ヶ月表示は<b>節入り基準の月</b>（暦の1日ではなく立春・啓蟄などで替わる月）で刻み、「その月の傾向」を見るため<b>日盤を含めずに年盤＋月盤で判定</b>しています。地図も自動的に年盤＋月盤へ切り替わり、先頭列と同じ判定を表示します。
                         </p>
                       )}
 

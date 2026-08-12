@@ -2529,8 +2529,7 @@ export function NBADashboard({
                   <p>
                     このエンジンでは、
                     <strong>「シールド（精神的・肉体的・資金的余裕）」</strong>
-                    が最も重要なリソースとして計算されます。
-                    通常時、移住（実行前進）にはシールドを
+                    が最も重要なリソースとして計算されます。通常時、移住（実行前進）にはシールドを
                     <span className="text-red-600">約15%</span>
                     消費しますが、天中殺などの悪環境下での強行（浄化移住）には
                     <span className="text-red-600">約40%</span>
