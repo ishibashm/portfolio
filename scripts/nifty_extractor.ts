@@ -7,6 +7,7 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 
 import { TARGET_PREFECTURE_SLUGS } from "../src/lib/scrapeTargets";
+import { errorCode, toLogMessage } from "../src/lib/errorMessage";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -152,6 +153,19 @@ function parseWalkMinutes(accessStr: string | undefined): number | null {
   return match ? parseInt(match[1], 10) : null;
 }
 
+/**
+ * 接続数の上限に当たったか。Prisma は code=P2037 で返すが、プールや
+ * ドライバ側から文字列だけで来ることもあるのでメッセージも見る。
+ *
+ * 同じ条件をループの中と後の 2 か所に書いていた。片方だけ直すと、
+ * 再試行はするのに最後の一行が出ない（またはその逆）という食い違いになる。
+ */
+function isConnectionLimitError(err: unknown): boolean {
+  return (
+    errorCode(err) === "P2037" || toLogMessage(err).includes("too many clients")
+  );
+}
+
 async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
   let savedCount = 0;
   for (const prop of properties) {
@@ -164,7 +178,7 @@ async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
 
     let retries = 3;
     let success = false;
-    let lastError: any = null;
+    let lastError: unknown = null;
 
     while (!success && retries > 0) {
       try {
@@ -201,30 +215,23 @@ async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
         });
         savedCount++;
         success = true;
-      } catch (e: any) {
+      } catch (e) {
         lastError = e;
-        if (
-          e.code === "P2037" ||
-          (e.message && e.message.includes("too many clients"))
-        ) {
+        if (isConnectionLimitError(e)) {
           console.warn(
             `⏳ Connection limit reached for ${absoluteUrl}. Retrying in 3s... (${retries} attempts left)`,
           );
           await new Promise((res) => setTimeout(res, 3000));
           retries--;
         } else {
-          console.error(`Failed to save ${absoluteUrl}:`, e.message || e);
+          // メッセージが空の Error のときは、これまで通り値そのものを出す。
+          console.error(`Failed to save ${absoluteUrl}:`, toLogMessage(e) || e);
           break;
         }
       }
     }
 
-    if (
-      !success &&
-      lastError &&
-      (lastError.code === "P2037" ||
-        (lastError.message && lastError.message.includes("too many clients")))
-    ) {
+    if (!success && lastError && isConnectionLimitError(lastError)) {
       console.error(
         `❌ Failed to save ${absoluteUrl} after all retries due to connection limits.`,
       );
@@ -422,9 +429,9 @@ async function fetchCitiesForPrefecture(
 
       console.log(`Found ${cities.length} cities in ${prefAlpha}.`);
       if (cities.length > 0) return cities;
-    } catch (error: any) {
+    } catch (error) {
       console.error(
-        `City list fetch failed for ${prefAlpha}: ${error?.message ?? error}`,
+        `City list fetch failed for ${prefAlpha}: ${toLogMessage(error)}`,
       );
     }
 
@@ -615,8 +622,11 @@ async function main() {
           const startPage =
             pref === state.pref && city === state.city ? state.page : 1;
           await scrapeArea(browser, prisma, pref, city, startPage);
-        } catch (error: any) {
-          console.error(`Error during extraction for ${city}:`, error.message);
+        } catch (error) {
+          console.error(
+            `Error during extraction for ${city}:`,
+            toLogMessage(error),
+          );
           // 万が一クラッシュしてもスクリプト全体が止まらないようにし、少し待機して休ませる
           await new Promise((res) => setTimeout(res, 10000));
         }
