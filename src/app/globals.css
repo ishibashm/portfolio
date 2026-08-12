@@ -1,5 +1,27 @@
 @import "tailwindcss";
 
+/*
+ * dark: を「OS の設定」ではなく「.dark が付いているとき」に切り替える。
+ *
+ * Tailwind v4 の dark: は既定で @media (prefers-color-scheme: dark) に
+ * コンパイルされる。ところがこのサイトは暗い地色を持っていない——
+ * 下の --background は #f7f4f0 の固定で、prefers-color-scheme の
+ * 上書きもどこにも無い。
+ *
+ * そのため OS をダークにしている利用者には「背景は明るいまま dark: だけが
+ * 発火する」状態になっていた。コードベース全体で dark: は 341 か所ある。
+ * 実測（物件ポップアップの見出し、段階の文字色）:
+ *
+ *              S       A       B
+ *   OS ダーク  1.5:1   1.9:1   2.5:1   ← 白地に明るい緑。ほぼ読めない
+ *   OS ライト  7.6:1   3.7:1   2.5:1
+ *
+ * .dark を付ける場所はいまどこにも無いので、この 1 行で dark: は効かなく
+ * なり、全員がライトの配色を見る。ダークテーマを入れるときは、地色を
+ * 用意したうえで html に .dark を付ければ、既存の dark: がそのまま効く。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* ===== High-Contrast Warm Glass Theme Tokens =====
      全サブドメイン共通のデザイントークン。
