@@ -1181,7 +1181,9 @@ export const SolarTimeClock = () => {
       let trueBrng = toDeg(Math.atan2(y, x));
       trueBrng = (trueBrng + 360) % 360;
 
-      const declination = geoData?.declination ?? -8.2;
+      // 取得できなければ補正なし。東京固定の値を当てるより、
+      // 「磁北でも同じ方位」として注意を出さないほうが正しい。
+      const declination = geoData?.declination ?? 0;
       const magBrng = (trueBrng - declination + 360) % 360;
 
       const getDir = (bearing: number): Direction =>
@@ -1253,7 +1255,7 @@ export const SolarTimeClock = () => {
       lon,
       dir as CompassDirection,
       distanceKm,
-      geoData?.declination ?? -8.2,
+      geoData?.declination ?? 0,
       useTrueNorth,
     );
 

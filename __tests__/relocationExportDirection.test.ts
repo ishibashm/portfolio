@@ -103,4 +103,31 @@ describe("書き出しの目的地評価の方位基準", () => {
     expect(a).toBeTruthy();
     expect(a).toEqual(b);
   });
+
+  /**
+   * 偏角が引けなかったときは東京の -8.2 度で埋めていた。沖縄や北海道の
+   * 利用者にも東京の偏角で計算した磁北の方位を見せることになる。
+   * 分からないときは補正なし（0）に倒し、「磁北でもずれない」として
+   * 注意を出さない。
+   */
+  it.each([
+    [
+      "取得に失敗したとき",
+      () => getGeomagneticData.mockRejectedValue(new Error("offline")),
+    ],
+    ["値が返らなかったとき", () => getGeomagneticData.mockResolvedValue(null)],
+  ])(
+    "偏角が %s は補正なしにして、磁北のズレを出さない",
+    async (_name, arrange) => {
+      arrange();
+
+      const json = await callExport(false);
+      const heading = json?.targetEvaluation?.heading;
+
+      expect(heading.declination).toBe(0);
+      // 東京の値で埋めていた頃はここが食い違い、方位磁針のズレとして出ていた。
+      expect(heading.magneticDirection).toBe(heading.trueDirection);
+      expect(heading.magneticBearing).toBeCloseTo(heading.trueBearing, 9);
+    },
+  );
 });

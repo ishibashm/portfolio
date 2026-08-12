@@ -217,7 +217,11 @@ export async function GET(request: Request) {
   const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
 
   // 動的偏角の取得
-  let declination = -8.2; // デフォルト偏角
+  // 取得できなかったときは 0（＝補正なし）に倒す。以前は東京の -8.2 度を
+  // 既定にしていたが、沖縄や北海道の利用者にも東京の偏角で計算した磁北の
+  // 方位を見せることになる。判定は真北で行うのでここは注意表示にしか
+  // 効かず、分からないときは「ずれない」として注意を出さないほうが正しい。
+  let declination = 0;
   try {
     const geoData = await getGeomagneticData(
       baseLat,
