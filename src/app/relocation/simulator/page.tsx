@@ -41,6 +41,7 @@ import {
 } from "@/components/layout/MetaphysicalConfigBar";
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
+import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";
 import { toJapanDateString } from "@/utils/japanDate";
@@ -274,6 +275,17 @@ export default function RelocationSimulatorPage() {
   ]);
 
   const [activeStepIndex, setActiveStepIndex] = useState<number | null>(0);
+  /**
+   * この人が自分で何か入れたか。
+   *
+   * false のあいだは判定を出さない。steps の初期値は例（京都市 → 名古屋市）
+   * で、birthDate の初期値は運営者の生年月日なので、そのまま判定を出すと
+   * 「本命星 3・総合シンクロ指数 76/100・安心して実行してください」が、
+   * 何も入れていない人の画面に出る。実際に本番でそう出ていた。
+   *
+   * 下書きが復元できたか、入口で入力したか、例を見ると押したときに true。
+   */
+  const [hasOwnInput, setHasOwnInput] = useState(false);
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
@@ -467,6 +479,8 @@ export default function RelocationSimulatorPage() {
         if (draft.planName !== undefined) setPlanName(draft.planName);
         if (draft.members && Array.isArray(draft.members))
           setMembers(draft.members);
+        // 前回の続きがあるなら、それはこの人が入れたもの。
+        setHasOwnInput(true);
       } catch (e) {}
     }
   };
@@ -1517,6 +1531,57 @@ export default function RelocationSimulatorPage() {
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
+      {/*
+        自分で何も入れていない人には、判定を出さずに入口だけを出す。
+
+        steps の初期値は例（京都市 → 名古屋市 / 2026-06-30 / 一時赴任）で、
+        birthDate の初期値は運営者の生年月日。そのまま描くと、開いただけの人に
+        「本命星 3」「総合シンクロ指数 76/100 EXCELLENT」「安心してそのまま
+        計画を実行してください」が出る。自分の結果だと読める形で、根拠の無い
+        断定を見せていた（本番で実測）。
+
+        機能は消していない。入口を通れば、これまでどおり全部出る。
+      */}
+      {!hasOwnInput ? (
+        <div className="max-w-7xl mx-auto px-4 pt-10 relative z-10 space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-black tracking-tight">
+              引越し先を試算する
+            </h1>
+            <p className="mt-2 text-sm text-stone-500">
+              出発地から見た方位と、動く時期の吉凶を試算します。
+            </p>
+          </div>
+          <SimulatorStart
+            onStart={(v) => {
+              setBirthDate(v.birthDate);
+              setStartName(v.startName);
+              setStartLat(v.startLat);
+              setStartLon(v.startLon);
+              const next = steps.map((st, i) =>
+                i === 0
+                  ? {
+                      ...st,
+                      fromName: v.startName,
+                      fromLat: v.startLat,
+                      fromLon: v.startLon,
+                      departureDate: v.departureDate,
+                      // 行き先は入口では聞かない。1 つ目のステップで選ぶ。
+                      toName: "",
+                      toLat: 0,
+                      toLon: 0,
+                      notes: "",
+                    }
+                  : st,
+              );
+              setSteps(next);
+              saveDraft(next, v.startLat, v.startLon, v.startName);
+              setHasOwnInput(true);
+            }}
+            onShowExample={() => setHasOwnInput(true)}
+          />
+        </div>
+      ) : (
       <div className="max-w-7xl mx-auto px-4 pt-10 relative z-10 space-y-8">
         {/* Metaphysical Configuration Bar */}
         <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
@@ -2802,6 +2867,7 @@ export default function RelocationSimulatorPage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
