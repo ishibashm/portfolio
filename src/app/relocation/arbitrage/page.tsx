@@ -2428,8 +2428,7 @@ export default function ArbitrageScannerPage() {
               物件を方位で探す
             </h1>
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
-              今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度を
-              あわせて並べます。凶方位の物件は下に送ります。
+              今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度をあわせて並べます。凶方位の物件は下に送ります。
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
@@ -2486,9 +2485,7 @@ export default function ArbitrageScannerPage() {
               出発地を設定してください
             </h2>
             <p className="text-xs text-amber-800 leading-relaxed">
-              吉方位は「今お住まいの場所から見てどの向きか」で決まります。
-              出発地が未設定のままでは方位が定まらず、割安さだけの並びになってしまうため、
-              スキャンを停止しています。左の「出発地座標」から現在のお住まいを指定してください。
+              吉方位は「今お住まいの場所から見てどの向きか」で決まります。出発地が未設定のままでは方位が定まらず、割安さだけの並びになってしまうため、スキャンを停止しています。左の「出発地座標」から現在のお住まいを指定してください。
             </p>
           </div>
         )}
@@ -3783,17 +3780,14 @@ export default function ArbitrageScannerPage() {
                       で格付けします（三盤吉 → 吉2盤 → 吉1盤 → 凶なし →
                       軽い凶のみ）。三盤吉の日が無い期間でも、
                       <span className="font-bold">その中で最もマシな日</span>
-                      を候補に出します。五大凶殺（五黄殺・暗剣殺・破・本命殺・
-                      的殺）の日だけは決して候補に出しません。日付を選ぶと、
-                      スキャンの日付と方位フィルターがその日に切り替わります。
+                      を候補に出します。五大凶殺（五黄殺・暗剣殺・破・本命殺・的殺）の日だけは決して候補に出しません。日付を選ぶと、スキャンの日付と方位フィルターがその日に切り替わります。
                       <a
                         href="/relocation/timing"
                         className="ml-1 font-semibold text-indigo-600 underline"
                       >
                         全期間の詳細分析
                       </a>
-                      では、過去から未来までの全日をカレンダーと分布で
-                      見られます。
+                      では、過去から未来までの全日をカレンダーと分布で見られます。
                     </p>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
@@ -3826,8 +3820,7 @@ export default function ArbitrageScannerPage() {
                     </div>
                     {!hasBaseLocation && (
                       <p className="text-[10px] text-amber-700">
-                        出発地が未設定です。方位は出発地から決まるため、先に
-                        「出発地座標」を設定してください。
+                        出発地が未設定です。方位は出発地から決まるため、先に「出発地座標」を設定してください。
                       </p>
                     )}
                     {timingError && (
@@ -3853,17 +3846,11 @@ export default function ArbitrageScannerPage() {
                               {totalBlocked > 0 ? (
                                 <p>
                                   重い凶ではない日が{totalBlocked}
-                                  日ありますが、すべて天中殺で移転不可と
-                                  判定されています。「天中殺の扱い」を
-                                  「弱める（禁止しない）」にするか、転勤などの
-                                  事情があれば「やむを得ない移動」にチェックを
-                                  入れると候補が現れます。
+                                  日ありますが、すべて天中殺で移転不可と判定されています。「天中殺の扱い」を「弱める（禁止しない）」にするか、転勤などの事情があれば「やむを得ない移動」にチェックを入れると候補が現れます。
                                 </p>
                               ) : (
                                 <p>
-                                  全日が五大凶殺（五黄殺・暗剣殺・破・本命殺・
-                                  的殺）に当たっています。期間を2年に広げて
-                                  再走査してください。
+                                  全日が五大凶殺（五黄殺・暗剣殺・破・本命殺・的殺）に当たっています。期間を2年に広げて再走査してください。
                                 </p>
                               )}
                             </div>
@@ -3888,8 +3875,7 @@ export default function ArbitrageScannerPage() {
                                 <b className="text-stone-600">
                                   年平均{clim.avgAnySPerYear}日
                                 </b>
-                                （9年平均・天中殺考慮前）。今回の走査結果は
-                                この基準と比べて読んでください。
+                                （9年平均・天中殺考慮前）。今回の走査結果はこの基準と比べて読んでください。
                               </p>
                             )}
                             {/* 意思決定サマリー。「結局いつ・どっちへ動くのが
@@ -3964,8 +3950,7 @@ export default function ArbitrageScannerPage() {
                                   <b className="text-stone-500">月のセル</b>
                                   はその月の
                                   <b className="text-stone-500">最良</b>
-                                  段階で、選択日の判定ではありません
-                                  （クリックでその月の最初の候補日へ）。 左端の
+                                  段階で、選択日の判定ではありません（クリックでその月の最初の候補日へ）。左端の
                                   <b className="text-stone-500">選択日</b>
                                   列が地図の扇形と同じ判定です。
                                 </p>
@@ -4072,9 +4057,7 @@ export default function ArbitrageScannerPage() {
                               <p className="rounded-lg bg-amber-50 border border-amber-200 px-2 py-1.5 text-[9px] leading-relaxed text-amber-800">
                                 この期間に三盤吉の日はありません。以下は
                                 <b>次善の候補</b>
-                                です（凶の無い日・吉が重なる日を優先）。
-                                急ぎでなければ、期間を広げて三盤吉を待つ
-                                選択もあります。
+                                です（凶の無い日・吉が重なる日を優先）。急ぎでなければ、期間を広げて三盤吉を待つ選択もあります。
                               </p>
                             )}
                             {usable.map((s) => {
@@ -4138,8 +4121,7 @@ export default function ArbitrageScannerPage() {
                                       {s.topDays.length > 0 && (
                                         <div>
                                           <p className="text-[9px] text-stone-400 mb-1">
-                                            直近の候補日（日付順。選ぶと
-                                            スキャンが切り替わる）
+                                            直近の候補日（日付順。選ぶとスキャンが切り替わる）
                                           </p>
                                           <div className="flex flex-wrap gap-1">
                                             {s.topDays.map((d) => (
@@ -4179,8 +4161,7 @@ export default function ArbitrageScannerPage() {
                                       {s.luckyDays.length > 0 && (
                                         <div>
                                           <p className="text-[9px] text-stone-400 mb-1">
-                                            縁起の良い日（天赦日 ✨・
-                                            一粒万倍日。同じ段階の日から抜粋）
+                                            縁起の良い日（天赦日 ✨・一粒万倍日。同じ段階の日から抜粋）
                                           </p>
                                           <div className="flex flex-wrap gap-1">
                                             {s.luckyDays.map((d) => (
@@ -4247,8 +4228,7 @@ export default function ArbitrageScannerPage() {
                                           if (!d) return null;
                                           return (
                                             <p className="text-[9px] text-stone-400">
-                                              この方位の平年値（9年平均・天中殺
-                                              考慮前）: 三盤吉 {d.S}
+                                              この方位の平年値（9年平均・天中殺考慮前）: 三盤吉 {d.S}
                                               日/年・吉2盤 {d.A}日/年
                                             </p>
                                           );
@@ -4256,8 +4236,7 @@ export default function ArbitrageScannerPage() {
                                       {/* 月ごとの見取り図。どの月に窓が開くか */}
                                       <div>
                                         <p className="text-[9px] text-stone-400 mb-1">
-                                          月ごとの最良（クリックでその月の
-                                          最初の候補日へ）
+                                          月ごとの最良（クリックでその月の最初の候補日へ）
                                         </p>
                                         <div className="flex flex-wrap gap-1">
                                           {s.months.map((m) =>
@@ -4296,9 +4275,7 @@ export default function ArbitrageScannerPage() {
                                       </div>
                                       {propCount === 0 && (
                                         <p className="text-[9px] text-amber-700">
-                                          この方位には現在の検索範囲に物件が
-                                          ありません。地図を動かすか検索範囲を
-                                          広げてください。
+                                          この方位には現在の検索範囲に物件がありません。地図を動かすか検索範囲を広げてください。
                                         </p>
                                       )}
                                     </div>
@@ -4309,8 +4286,7 @@ export default function ArbitrageScannerPage() {
                             {totalBlocked > 0 && (
                               <p className="text-[9px] text-stone-400">
                                 ほかに延べ{totalBlocked}
-                                日が天中殺で候補から外れています
-                                （「天中殺の扱い」で変わります）。
+                                日が天中殺で候補から外れています（「天中殺の扱い」で変わります）。
                               </p>
                             )}
                           </div>
@@ -4369,8 +4345,7 @@ export default function ArbitrageScannerPage() {
                           物件リストの並べ替えを変えても、ここは総合スコア順のままです。
                           {sinkAvoidStatus &&
                             "避けるべき方位・期間の物件は最下位に沈めています。"}
-                          割安の根拠になっている市場全体の統計（回帰・分布・
-                          流動性）は
+                          割安の根拠になっている市場全体の統計（回帰・分布・流動性）は
                           <a
                             href="/relocation/market"
                             className="mx-0.5 font-semibold text-indigo-600 underline"
