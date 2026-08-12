@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
@@ -46,10 +47,13 @@ export async function POST(req: Request) {
       log: logEntry,
       message: "Saved to local JSONL",
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to save metaphysical log locally:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: toResponseMessage(error, "Failed to save metaphysical log"),
+      },
       { status: 500 },
     );
   }

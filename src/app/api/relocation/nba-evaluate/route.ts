@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { NBAEngine, NBAParams } from "@/utils/nbaEngine";
 import { AspectEngine } from "@/utils/aspectEngine";
 import {
@@ -300,10 +301,13 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ success: true, data: results });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to evaluate relocation dates:", error);
     return NextResponse.json(
-      { success: false, error: error.message },
+      {
+        success: false,
+        error: toResponseMessage(error, "Failed to evaluate relocation dates"),
+      },
       { status: 500 },
     );
   }

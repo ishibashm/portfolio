@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { toResponseMessage } from "@/lib/errorMessage";
 import {
   getHonmeiStar,
   getPersonalVoidZodiac,
@@ -380,8 +381,11 @@ export async function GET(request: Request) {
         .map((joint, i) => (joint.everyoneSafe ? dateScores[i]?.date : null))
         .filter((d): d is string => !!d),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to build arbitrage timeline:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: toResponseMessage(error, "Failed to build arbitrage timeline") },
+      { status: 500 },
+    );
   }
 }
