@@ -39,8 +39,7 @@ export function DirectionEffects({
       <p className="mt-4 text-xs leading-relaxed text-slate-600">
         九星気学では、方位そのものよりも
         <b>その方位に回座している星</b>
-        が働きの中身を決めると考えます。同じ「東」でも、回座する星が変われば
-        起きることが変わります。{periodLabel}の並びは次のとおりです。
+        が働きの中身を決めると考えます。同じ「東」でも、回座する星が変われば起きることが変わります。{periodLabel}の並びは次のとおりです。
       </p>
 
       {good.length > 0 && (
@@ -86,9 +85,7 @@ export function DirectionEffects({
       )}
 
       <p className="mt-5 text-[11px] leading-relaxed text-slate-500">
-        ここに書いた働きは、後天定位盤における各星の象意にもとづく古典的な
-        考え方です。方位が持つ意味と、そこに回座する星の意味が一致するとき
-        （たとえば
+        ここに書いた働きは、後天定位盤における各星の象意にもとづく古典的な考え方です。方位が持つ意味と、そこに回座する星の意味が一致するとき（たとえば
         {STAR_MEANINGS[1].home === "N" ? "北に一白水星" : "定位と同じ配置"}
         ）は、同じ象意が重なるぶん働きが強く出るとされます。
       </p>

@@ -180,8 +180,7 @@ export default async function Page({
               月ごとの吉方位
             </h2>
             <p className="mt-4 text-sm leading-relaxed text-slate-700">
-              引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。
-              月ごとの判定は次から確認できます。
+              引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {MONTHS.map((m) => (
@@ -202,9 +201,7 @@ export default async function Page({
             算出方法による違い
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-slate-700">
-            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}中宮）による判定です。
-            このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、
-            設定で切り替えられます。同じ{year}年でも中宮が
+            上の表は一般的な九星気学（{STAR_NAMES[centerStar]}中宮）による判定です。このサイトのスキャナーには、木星の黄経から星を求める独自モデルも用意しており、設定で切り替えられます。同じ{year}年でも中宮が
             {STAR_NAMES[physical.centerStar]}になるため、判定が変わります。
           </p>
           <div className="mt-4 overflow-x-auto">
@@ -264,9 +261,7 @@ export default async function Page({
               ? "この年・この本命星では、どちらの算出方法でも同じ判定になります。"
               : "この年・この本命星では判定が一致しません。"}
             独自モデルは木星の公転周期（約11.86年）にもとづくため、
-            9年周期の一般的な九星気学とは星の巡り方が異なります。
-            一般的な資料と照らし合わせる場合は上段を、
-            スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
+            9年周期の一般的な九星気学とは星の巡り方が異なります。一般的な資料と照らし合わせる場合は上段を、スキャナーで独自モデルを選ぶ場合は下段をご覧ください。
           </p>
         </section>
 
