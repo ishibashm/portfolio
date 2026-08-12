@@ -2285,9 +2285,13 @@ export default function RelocationSimulatorPage() {
                         <p className="rounded-xl border border-amber-300 bg-amber-50 p-2 text-[10px] leading-relaxed text-amber-800">
                           {step.directionNote}
                           <br />
-                          方位盤の判定は出していますが、この距離では
-                          出発地・行き先の指定を少し変えるだけで結果が
-                          変わります。
+                          {/*
+                            JSX は行の折り返しを半角スペースにするので、
+                            日本語の文を複数行に割ると文中に空白が入る。
+                            本番で「結果が 変わります。」と出ていた。
+                            文字列として 1 つに渡す。
+                          */}
+                          {"方位盤の判定は出していますが、この距離では出発地・行き先の指定を少し変えるだけで結果が変わります。"}
                         </p>
                       </div>
                     )}
