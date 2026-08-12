@@ -5,7 +5,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
-import { fetchSpaceWeather, SpaceWeatherData } from "../utils/spaceWeather";
+import type { SpaceWeatherData } from "../utils/spaceWeather";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { Solar } from "lunar-javascript";
 
@@ -3456,7 +3456,18 @@ export const SolarTimeClock = () => {
   }, []);
 
   useEffect(() => {
-    fetchSpaceWeather().then((data) => setSpaceWeather(data));
+    // NOAA を直接叩かず /api/space-weather を経由する。
+    // fetchSpaceWeather の中の `next: { revalidate }` はサーバの fetch でしか
+    // 効かないので、ブラウザから呼ぶと利用者ごとに毎回 3 本走っていた。
+    fetch("/api/space-weather")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: SpaceWeatherData | null) => {
+        if (data) setSpaceWeather(data);
+      })
+      .catch(() => {
+        // 取れなくても画面は動く（既定値で計算する）。元の実装も
+        // 失敗時は null 揃いのオブジェクトを返すだけだった。
+      });
   }, []);
 
   useEffect(() => {
