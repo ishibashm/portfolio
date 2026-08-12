@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { toResponseMessage } from "@/lib/errorMessage";
 
 export const runtime = "nodejs";
 export const revalidate = 0; // Disable cache to get real-time latest log
@@ -29,10 +30,10 @@ export async function GET() {
         "Cache-Control": "public, s-maxage=10, stale-while-revalidate=29",
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Latest Log API Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch latest log" },
+      { error: toResponseMessage(error, "Failed to fetch latest log") },
       { status: 500 },
     );
   }
