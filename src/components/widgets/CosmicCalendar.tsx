@@ -991,8 +991,7 @@ export function CosmicCalendar({
                   </div>
                 ) : (
                   <p className="text-[10px] leading-relaxed text-stone-500">
-                    生年月日を入れると、この日があなたにとって天中殺・日破・
-                    支合のどれに当たるかが出ます。
+                    生年月日を入れると、この日があなたにとって天中殺・日破・支合のどれに当たるかが出ます。
                   </p>
                 )}
               </div>

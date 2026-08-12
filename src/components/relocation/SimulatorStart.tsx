@@ -89,8 +89,7 @@ export function SimulatorStart({
         3 つ入れると、試算がはじまります
       </h2>
       <p className="mt-1 text-xs leading-relaxed text-stone-500">
-        方位は「いま住んでいる場所から見てどの向きか」で決まります。
-        同行者や、大凶を避ける迂回ルートは、このあとで足せます。
+        方位は「いま住んでいる場所から見てどの向きか」で決まります。同行者や、大凶を避ける迂回ルートは、このあとで足せます。
       </p>
 
       <form onSubmit={submit} className="mt-5 space-y-4">

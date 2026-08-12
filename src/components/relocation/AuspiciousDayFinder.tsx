@@ -185,8 +185,7 @@ export function AuspiciousDayFinder() {
         三盤すべてが吉になる日を出す
       </h2>
       <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-        年盤・月盤・日盤のどれにも凶が入らない日だけを日付として並べます。
-        年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
+        年盤・月盤・日盤のどれにも凶が入らない日だけを日付として並べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
       </p>
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -347,10 +346,8 @@ export function AuspiciousDayFinder() {
             いまの結果は仮の設定によるものです
           </h3>
           <p className="mt-1 text-xs leading-relaxed text-amber-800">
-            生年月日「{DEFAULT_BIRTH_DATE}」・現住地「東京」を仮に置いて計算しています。
-            本命星は生年で変わり、方位は現住地から見た向きで決まるため、
-            <b>このままではあなたの吉日ではありません</b>。
-            上の入力欄をご自身の生年月日と現住地に変えて、もう一度お試しください。
+            生年月日「{DEFAULT_BIRTH_DATE}」・現住地「東京」を仮に置いて計算しています。本命星は生年で変わり、方位は現住地から見た向きで決まるため、
+            <b>このままではあなたの吉日ではありません</b>。上の入力欄をご自身の生年月日と現住地に変えて、もう一度お試しください。
           </p>
         </div>
       )}
