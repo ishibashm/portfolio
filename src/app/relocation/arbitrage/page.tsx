@@ -2234,7 +2234,12 @@ export default function ArbitrageScannerPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+      {/* 上限は 1600px だった。地図と一覧を左右に並べる画面なので、余った幅は
+          そのまま地図の描画面積と表の列幅になる。読み物の頁と違って行長が
+          伸びすぎる心配も無い（左は札状の絞込、右は地図）。4K の 27 インチを
+          縦置きすると幅が 2000px を超え、両端が数百 px ずつ空いていた。
+          超ワイドで間延びしないよう上限自体は残し、WQHD の幅まで広げる。 */}
+      <div className="max-w-[2560px] mx-auto space-y-6">
         {/* Header Title Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div>
