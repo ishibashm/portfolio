@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
+import { toResponseMessage } from "@/lib/errorMessage";
 import { createClient } from "@/utils/supabase/server";
-import { z } from "zod";
-import { maskPII } from "@/utils/anonymizer";
 
 export const runtime = "edge";
 
@@ -34,10 +31,10 @@ export async function POST(req: Request) {
       },
       { status: 403 },
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("BBS Analyze API Error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to analyze comments." },
+      { error: toResponseMessage(error, "Failed to analyze comments.") },
       { status: 500 },
     );
   }
