@@ -6,6 +6,7 @@ import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
 import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
 import type { SpaceWeatherData } from "../utils/spaceWeather";
+import type { SurfacePressureData } from "../utils/surfacePressure";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { Solar } from "lunar-javascript";
 
@@ -610,7 +611,24 @@ export const SolarTimeClock = () => {
   const [hrv, setHrv] = useState(30);
   const [gsr, setGsr] = useState(1.8);
   const [baseSyncDays, setBaseSyncDays] = useState(30);
-  const [pressureDrop, setPressureDrop] = useState(0); // 過去3時間の気圧降下量 (hPa)
+  /**
+   * 過去 3 時間の気圧変化量 (hPa)。負の値が降下。
+   *
+   * bioModelingEngine には最初から「気象病」モデルが入っていて、1hPa の
+   * 低下ごとに交感神経負荷を +3%（最大 30%）積む。標高や磁気嵐と重なると
+   * 相乗ぶんも乗る。しかし setter が一度も呼ばれておらず、常に 0＝
+   * 「気圧変化なし」で走っていた。/api/surface-pressure から入れる。
+   *
+   * 取れなかったときは 0 のまま（＝ペナルティなし）。宇宙天気と同じ扱いで、
+   * 外部が落ちても画面は動かす。
+   */
+  const [pressureDrop, setPressureDrop] = useState(0);
+  /** 気圧を実際に取れたか。取れていないのに 0 を「変化なし」と見せない。 */
+  const [pressureData, setPressureData] = useState<{
+    current: number;
+    drop: number;
+    timestamp: string | null;
+  } | null>(null);
 
   // New Data Science Bio-Baselines
   const [baseSyncTimestamp, setBaseSyncTimestamp] = useState<string | null>(
@@ -3407,6 +3425,39 @@ export const SolarTimeClock = () => {
   }, []);
 
   useEffect(() => {
+    // 気圧（気象病モデルの入力）。判定に使うのは「いる場所」の気圧なので、
+    // 目的地を選んでいればそちら、無ければ現在地で引く。
+    const pLat = targetLat || lat;
+    const pLon = targetLon || lon;
+    if (!Number.isFinite(pLat) || !Number.isFinite(pLon)) return;
+
+    let alive = true;
+    fetch(`/api/surface-pressure?lat=${pLat}&lon=${pLon}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: SurfacePressureData | null) => {
+        if (!alive || !data) return;
+        if (data.current === null || data.drop === null) {
+          // 取れていない。0 を入れて「変化なし」と見せない。
+          setPressureData(null);
+          setPressureDrop(0);
+          return;
+        }
+        setPressureData({
+          current: data.current,
+          drop: data.drop,
+          timestamp: data.timestamp,
+        });
+        setPressureDrop(data.drop);
+      })
+      .catch(() => {
+        // 宇宙天気と同じ。外部が落ちても画面は動かす。
+      });
+    return () => {
+      alive = false;
+    };
+  }, [lat, lon, targetLat, targetLon]);
+
+  useEffect(() => {
     if (baseTime && lon) {
       const targetTime = new Date(
         baseTime.getTime() + timeOffsetDays * 86400000,
@@ -4155,6 +4206,7 @@ export const SolarTimeClock = () => {
                 setBaseSyncDays={setBaseSyncDays}
                 ansLoad={ansLoad}
                 shieldCapacity={shieldCapacity}
+                pressure={pressureData}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
               />
