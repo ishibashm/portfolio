@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
+import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { loadSettings } from "@/lib/userSettings";
 import {
   MetaphysicalConfigBar,
@@ -2114,6 +2115,26 @@ export default function ArbitrageScannerPage() {
     useClassical,
   ]);
 
+  /**
+   * 方位ごとの「その日の段階」と「いま出ている物件数」。
+   *
+   * 一覧は㎡単価や総合スコアの順に並ぶので、「どっちへ動くか」を決める
+   * ための全体像が出ていなかった。段階は方位ごとに 1 つなので、方位を
+   * 1 行にして件数と段階を並べれば「南東に S が 12 件」が読める。
+   *
+   * 物件が 1 件も無い方位も残す。「そこには無い」も判断材料になる。
+   */
+  const directionTierRows = useMemo(() => {
+    if (!dayKigaku) return [];
+    return Object.values(dayKigaku.byDirection).map((cell) => ({
+      direction: cell.direction,
+      directionLabel: cell.directionLabel,
+      tier: cell.tier,
+      blocked: cell.blocked,
+      count: directionPropertyCounts[cell.direction] ?? 0,
+    }));
+  }, [dayKigaku, directionPropertyCounts]);
+
   /** 方位別の総家賃の中央値。時期パネルで「その方位の相場感」を添える */
   const directionRentMedians = useMemo(() => {
     const by: Record<string, number[]> = {};
@@ -2661,6 +2682,19 @@ export default function ArbitrageScannerPage() {
               {!showListView ? (
                 // VIEW 1: Filter Screen & Settings
                 <>
+                  {/* どの方位が動ける方位で、そこに物件がどれだけあるか。
+                      一覧は㎡単価や総合スコアの順なので、この全体像が
+                      どこにも出ていなかった。判定を出せないときは
+                      行が空になるのでコンポーネント側で何も描かない。 */}
+                  <DirectionTierOverview
+                    rows={directionTierRows}
+                    selectedDirection={filterDirection}
+                    onSelectDirection={(dir) => {
+                      setFilterDirection(dir);
+                      setCurrentPage(1);
+                    }}
+                  />
+
                   {/* Geographic & Calculations Settings */}
                   <ArbitrageSidebarSection
                     title="スキャン地域と計算方式"
