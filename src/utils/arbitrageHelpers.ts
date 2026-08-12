@@ -82,6 +82,25 @@ export const getPropertyPinColors = (
     if (unified) return unified;
   }
 
+  /*
+    判定が無いときは、判定を出さない。
+
+    生年月日が未入力だと API は astrologyStatus を返さない（本命殺・
+    天中殺・空亡はそこから決まるので、無いものを作らない）。以前は
+    ここを素通りして最後の既定「平穏」に落ちていた。「凶方位ではない」
+    という判定を、根拠なく出していたことになる。天道だけで「吉」に
+    なる枝もあり、そちらはもっと強い断定だった。
+  */
+  if (!tier && !blocked && !prop.astrologyStatus) {
+    return {
+      fillColor: "#a8a29e", // stone-400
+      borderColor: "#57534e", // stone-600
+      textClass: "text-stone-500 dark:text-stone-400",
+      bgClass: "bg-stone-500/10 border-stone-500/30",
+      label: "判定なし",
+    };
+  }
+
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
 

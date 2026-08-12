@@ -685,6 +685,18 @@ export default function ArbitrageMapInner({
   }, [properties, currentBounds, zoom, visibleCount, showListView]);
 
   /**
+   * 個人の判定が 1 件でも届いているか。
+   *
+   * 生年月日が未入力のとき、API は astrologyStatus を返さない
+   * （本命殺・天中殺・空亡はそこから決まるので、無いものを作らない）。
+   * 扇形もピンも凡例も、この状態では吉凶を名乗らない。
+   */
+  const hasPersonalVerdict = useMemo(
+    () => properties.some((p) => Boolean(p.astrologyStatus)),
+    [properties],
+  );
+
+  /**
    * 扇形（方位）の判定。
    *
    * dirKigaku があればそれを使う。三盤（年・月・日）を合成した段階で、
@@ -718,22 +730,32 @@ export default function ArbitrageMapInner({
           status: null as string | null,
         };
       }
+      // 判定が 1 件も無いなら、多数決を取る材料が無い。既定の "SAFE"
+      // （＝凶方位ではない）に落とすと、根拠なく「平穏」と塗ることになる。
+      if (!hasPersonalVerdict) {
+        return {
+          ...d,
+          tier: null as string | null,
+          blocked: false,
+          status: null as string | null,
+        };
+      }
       // フォールバック: 物件の status の多数決（単盤・参考値）
       const propsInDir = properties.filter((p) => p.direction === d.dir);
       let status = "SAFE";
       if (propsInDir.length > 0) {
         const optimalCount = propsInDir.filter((p) =>
-          p.astrologyStatus.includes("OPTIMAL"),
+          (p.astrologyStatus ?? "").includes("OPTIMAL"),
         ).length;
         const noiseCount = propsInDir.filter((p) =>
-          p.astrologyStatus.includes("NOISE"),
+          (p.astrologyStatus ?? "").includes("NOISE"),
         ).length;
         if (optimalCount > 0) status = "OPTIMAL";
         else if (noiseCount > propsInDir.length / 2) status = "NOISE";
       }
       return { ...d, tier: null as string | null, blocked: false, status };
     });
-  }, [properties, dirKigaku]);
+  }, [properties, dirKigaku, hasPersonalVerdict]);
 
   // Color mapping based on score
   const getPropertyColor = useCallback((score: number) => {
@@ -794,7 +816,14 @@ export default function ArbitrageMapInner({
                 ? "5,5"
                 : (undefined as string | undefined),
           }
-        : getStyleForVector(d.status ?? "SAFE");
+        : d.status === null
+          ? {
+              // 判定が無い。塗らずに輪郭だけ残す（方位の区切りは見える）。
+              color: "#a8a29e",
+              opacity: 0.02,
+              dashArray: "4,6" as string | undefined,
+            }
+          : getStyleForVector(d.status);
       const baseBearing = d.deg;
 
       // 扇形は表示中の画面を覆う長さで描く。以前は 30km 固定で、引くと
@@ -1619,6 +1648,30 @@ export default function ArbitrageMapInner({
           </div>
           <span className="block text-[8px] text-stone-400 max-w-48 leading-relaxed">
             年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
+          </span>
+        </div>
+      ) : !hasPersonalVerdict ? (
+        /*
+          個人の判定が無いとき。以前はここで「アストロ吉凶（凡例）」を
+          出し、超大吉／吉／注意／大凶／平穏を並べていた。生年月日が
+          未入力でも API が「今日生まれ」で計算した値を返していたため、
+          根拠の無い断定が色と言葉の両方で出ていた（本番で実測）。
+
+          API 側は判定を作らないようにした（#205）。ここでは、色が
+          何も意味していないことと、何を入れれば出るかだけを言う。
+        */
+        <div className="absolute bottom-4 right-4 max-w-52 bg-white/85 text-stone-900 px-3.5 py-3 rounded-xl shadow-lg border border-stone-200 backdrop-blur text-[10px] pointer-events-none z-[1000] flex flex-col gap-1.5">
+          <div className="font-bold border-b border-stone-200 pb-1 text-stone-600">
+            方位の吉凶は出していません
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#a8a29e] border border-[#57534e]"></span>
+            <span>判定なし（色に意味はありません）</span>
+          </div>
+          <span className="block text-[8px] leading-relaxed text-stone-500">
+            {kigakuUnavailableReason ??
+              "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
+            本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。
           </span>
         </div>
       ) : (

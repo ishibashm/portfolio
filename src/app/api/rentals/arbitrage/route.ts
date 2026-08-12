@@ -65,6 +65,21 @@ import {
 } from "@/utils/arbitrageParty";
 
 
+/**
+ * 生年月日に関係しない印。誰にとっても同じもの。
+ *
+ * 天道・月相・土用は暦から、偏角は出発地から決まる。生年月日が
+ * 入っていないときは、この 5 つだけを残す。空亡（VOID_TIME_HAZARD）と
+ * 天体ライン（SUN/VENUS/JUPITER_LINE）は生年月日・出生地から決まる。
+ */
+const IMPERSONAL_ASTRO_FLAGS = [
+  "DECLINATION_WARNING",
+  "TENDO",
+  "LUNAR_BOOST",
+  "LUNAR_PENALTY",
+  "DOYOU_HAZARD",
+];
+
 function parseSafeDate(dateStr: string | null | undefined): Date {
   if (!dateStr) return new Date();
   if (
@@ -125,6 +140,22 @@ export async function GET(request: Request) {
   const birthLat = parseFloat(searchParams.get("birthLat") || "NaN");
   const birthLon = parseFloat(searchParams.get("birthLon") || "NaN");
   const birthDateStr = searchParams.get("birthDate") || "";
+  /**
+   * 生年月日が入っているか。
+   *
+   * 本命殺・本命的殺・月命殺・月命的殺・天中殺・空亡は、すべて
+   * 生年月日から決まる。空のまま計算すると parseSafeDate が今日を返し、
+   * 「今日生まれ」の命式で判定した結果がそのまま物件ごとの吉凶として
+   * 出る。本番で実測して見つけた（#202 で画面側の扇形は止めたが、
+   * 物件ごとの判定はここで作られ続けていた）。
+   *
+   *   birthDate=[]  W:OPTIMAL  SW:SAFE  N:NOISE_VOID  NE:NOISE_HA
+   *
+   * 入っていないときは、個人の判定を**作らない**。値を偽らずに
+   * 欠けたまま返す。総合点は composeScore が「その軸はデータ無し」
+   * として扱い、axisCoverage が下がる（既にある仕組み）。
+   */
+  const hasBirthDate = birthDateStr.trim() !== "";
   const useClassicalStr = searchParams.get("useClassical");
   const layerMode = searchParams.get("layerMode") || "year";
   const useTrueNorthStr = searchParams.get("useTrueNorth");
@@ -765,7 +796,7 @@ export async function GET(request: Request) {
        * どれだけ良くてもその移転計画は成立しない。
        */
       let timing = null as ReturnType<typeof summarizeTiming> | null;
-      if (horizonDays > 0 && hasCoordinates) {
+      if (horizonDays > 0 && hasCoordinates && hasBirthDate) {
         const series = perMember.map((m) =>
           m.ctx.member.stationary || m.direction === null
             ? null
@@ -883,11 +914,12 @@ export async function GET(request: Request) {
           localStats?.median ?? null,
           localStats?.count ?? null,
         ),
-        astrology: astrologyScore,
+        // 生年月日が無いときは欠測。0 でも 50 でもなく「無い」を渡す。
+        astrology: hasBirthDate ? astrologyScore : null,
         // 移動する人が 2 人以上いるときだけ意味を持つ軸。
         // 平均だけ見ていると「片方に大吉・片方に大凶」と「全員そこそこ」が
         // 同じ点になるため、割れているかどうかを別に持つ。
-        harmony: targetJoint.harmony,
+        harmony: hasBirthDate ? targetJoint.harmony : null,
         // 走査期間のうち全員が動ける日の割合。対象日 1 日が凶でも、
         // 近い将来に開くなら候補として残すための軸。
         timing:
@@ -923,9 +955,16 @@ export async function GET(request: Request) {
         distanceKm,
         direction,
         magneticDirection,
-        astrologyStatus,
-        astrologyScore,
-        astroFlags,
+        astrologyStatus: hasBirthDate ? astrologyStatus : null,
+        astrologyScore: hasBirthDate ? astrologyScore : null,
+        /*
+          印のうち、生年月日に関係しないものだけ残す。天道・六曜・
+          土用・月相・偏角は誰にとっても同じ。空亡と天体ラインは
+          生年月日／出生地から決まるので落とす。
+        */
+        astroFlags: hasBirthDate
+          ? astroFlags
+          : astroFlags.filter((f) => IMPERSONAL_ASTRO_FLAGS.includes(f)),
         yieldScore,
         // 既定の重みでの総合点。画面側で重みを変えたときは再計算される。
         arbitrageScore: composed.score,
@@ -935,7 +974,7 @@ export async function GET(request: Request) {
          * 「全員にとってどうか」は 1 つの点に潰れてしまうので、
          * 判断の材料として人ごとの結果をそのまま返す。
          */
-        party: {
+        party: !hasBirthDate ? null : {
           policy: partyPolicy,
           score: targetJoint.score,
           everyoneSafe: targetJoint.everyoneSafe,
@@ -946,7 +985,7 @@ export async function GET(request: Request) {
           members: targetJoint.members,
         },
         /** いつなら全員で動けるか。horizonDays=0 なら null。 */
-        timing,
+        timing: hasBirthDate ? timing : null,
         // どれだけの重みが実データで埋まったか。低いほど根拠が薄い。
         axisCoverage: composed.coverage,
         axisInputs: {
@@ -957,8 +996,10 @@ export async function GET(request: Request) {
           listedDays,
         },
         isTendo,
-        maxAstroFactor,
-        dateScores,
+        maxAstroFactor: hasBirthDate ? maxAstroFactor : null,
+        // 日ごとの点は本命星と天中殺で決まる。受け手（AstroGridCalendar）は
+        // 空配列なら何も描かないので、無い状態をそのまま渡せる。
+        dateScores: hasBirthDate ? dateScores : [],
       };
     });
 
@@ -969,8 +1010,10 @@ export async function GET(request: Request) {
     // 安さで凶を挽回できる合成は目的と逆になる。
     // 完全に隠すのではなく順位で下に置き、フィルタで見られる状態は残す。
     scoredProperties.sort((a, b) => {
-      const aAvoid = isAvoidStatus(a.astrologyStatus) ? 1 : 0;
-      const bAvoid = isAvoidStatus(b.astrologyStatus) ? 1 : 0;
+      // 判定が無いとき（生年月日未入力）は両方 0 になり、割安さだけの
+      // 並びになる。凶を下げる仕掛けは、判定が出せるときだけ働く。
+      const aAvoid = isAvoidStatus(a.astrologyStatus ?? "") ? 1 : 0;
+      const bAvoid = isAvoidStatus(b.astrologyStatus ?? "") ? 1 : 0;
       if (aAvoid !== bAvoid) return aAvoid - bAvoid;
       return b.arbitrageScore - a.arbitrageScore;
     });

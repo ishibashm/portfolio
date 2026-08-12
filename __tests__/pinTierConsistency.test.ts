@@ -154,6 +154,45 @@ describe("段階が無いときのピン（フォールバック）", () => {
 
   it("知らないコードでも「吉」に倒れない", () => {
     expect(bare("NOISE_UNKNOWN_XYZ").label).not.toMatch(/吉/);
-    expect(bare("").label).toBe("平穏");
+  });
+
+  /**
+   * 判定そのものが無いとき。
+   *
+   * 以前は空文字が「平穏」になっていた。平穏は「凶方位ではない」という
+   * 判定であって、判定が無いこととは違う。生年月日が未入力のとき API は
+   * astrologyStatus を返さない（#205）ので、ここに落ちてくる。
+   * 根拠の無い断定を出さないよう、別の語にする。
+   */
+  it("判定が無いときは「平穏」と言わない", () => {
+    for (const v of ["", undefined, null]) {
+      const pin = getPropertyPinColors({
+        astrologyStatus: v,
+        dateScores: [],
+      });
+      expect(pin.label, String(v)).toBe("判定なし");
+      expect(pin.label, String(v)).not.toMatch(/吉|凶|平穏/);
+    }
+  });
+
+  it("判定が無ければ、天道が乗っていても吉と言わない", () => {
+    // 天道は暦から決まるので生年月日が無くても分かるが、それだけで
+    // 「吉方位」とは言えない。本命殺かどうかが未知のままになる。
+    const pin = getPropertyPinColors({
+      astrologyStatus: null,
+      dateScores: [],
+      isTendo: true,
+      astroFlags: ["TENDO"],
+    });
+    expect(pin.label).toBe("判定なし");
+  });
+
+  it("段階が渡っていれば、判定が無くても段階を使う", () => {
+    // 三盤で判定できるときは dirKigaku 側の段階が来る。空回り防止。
+    const pin = getPropertyPinColors(
+      { astrologyStatus: null, dateScores: [] },
+      "S",
+    );
+    expect(pin.label).not.toBe("判定なし");
   });
 });
