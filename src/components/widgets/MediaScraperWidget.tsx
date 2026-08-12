@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { toLogMessage } from "@/lib/errorMessage";
+
 export default function MediaScraperWidget() {
   const [url, setUrl] = useState("https://x.com/home");
   const [mode, setMode] = useState<
@@ -56,8 +58,8 @@ export default function MediaScraperWidget() {
         "completed",
         "ブラウザが起動しました。開いたウィンドウで手動ログインやページ移動を行った後、「2. 収集を開始する」を押してください。",
       );
-    } catch (error: any) {
-      addLog("error", `エラー: ${error.message}`);
+    } catch (error) {
+      addLog("error", `エラー: ${toLogMessage(error)}`);
     } finally {
       setIsProcessing(false);
     }
@@ -116,8 +118,8 @@ export default function MediaScraperWidget() {
           }
         }
       }
-    } catch (error: any) {
-      addLog("error", `通信エラー: ${error.message}`);
+    } catch (error) {
+      addLog("error", `通信エラー: ${toLogMessage(error)}`);
     } finally {
       setIsProcessing(false);
     }
@@ -129,8 +131,8 @@ export default function MediaScraperWidget() {
       await fetch("/api/v1/scraper/close", { method: "POST" });
       setIsBrowserOpen(false);
       addLog("completed", "ブラウザを終了しました。");
-    } catch (error: any) {
-      addLog("error", `エラー: ${error.message}`);
+    } catch (error) {
+      addLog("error", `エラー: ${toLogMessage(error)}`);
     }
   };
 
