@@ -65,6 +65,7 @@ describe("middleware を掛ける範囲", () => {
       "/ads.txt",
       "/llms.txt",
       "/llms-full.txt",
+      "/blog/feed.xml",
       "/manifest.json",
       "/sw.js",
     ]) {

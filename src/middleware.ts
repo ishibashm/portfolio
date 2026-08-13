@@ -23,7 +23,7 @@ const SUBDOMAIN_APPS: {
 // sub-app namespace — otherwise the redirect to /login lands on /trends/login.
 // The usage guide is the same document on every host for the same reason: under
 // `fortune.` it would otherwise resolve to /metaphysical/guide and 404.
-const HOST_NEUTRAL_PREFIXES = ["/login", "/auth", "/guide"];
+const HOST_NEUTRAL_PREFIXES = ["/login", "/auth", "/guide", "/blog"];
 
 function resolveSubdomainPath(host: string, pathname: string): string | null {
   const app = SUBDOMAIN_APPS.find(
@@ -88,6 +88,6 @@ export const config = {
    * ページはこれまでどおり通す（ログインの判定が要るため）。
    */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|blog/feed\\.xml|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
