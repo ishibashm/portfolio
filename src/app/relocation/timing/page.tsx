@@ -182,7 +182,10 @@ export default function TimingAnalyticsPage() {
       }
     };
     const base = {
-      birthDate: ls("arb_birthDate") || "1988-11-25T04:26",
+      // 既定値を置かない。以前は運営者の生年月日が入っていて、
+      // 未設定の人にも本命殺・天中殺の判定が出ていた。空なら
+      // canScan が false になり、下で「何が足りないか」を出す。
+      birthDate: ls("arb_birthDate") || "",
       baseLat: ls("arb_baseLat") || "",
       baseLon: ls("arb_baseLon") || "",
       tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as string,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -247,9 +247,22 @@ function intersectRays(
   return [lat, lon];
 }
 
+/**
+ * 「先に例で動きを見る」で使う生年月日。
+ *
+ * ここには運営者の生年月日が入っていた。公開リポジトリなので、
+ * 個人の生年月日と出生時刻がそのまま読める状態でもあった。
+ * 例に必要なのは「何か 1 つ日付が入っていること」だけなので、
+ * 例だと分かる日付に置き換える。
+ */
+const EXAMPLE_BIRTH_DATE = "1990-01-01T12:00";
+
 export default function RelocationSimulatorPage() {
   // Global Profile Defaults
-  const [birthDate, setBirthDate] = useState("1988-11-25T04:26");
+  //
+  // 生年月日に既定値を置かない。入口（SimulatorStart）を通るか、
+  // 例を開くか、保存済みの設定が読めたときにだけ入る。
+  const [birthDate, setBirthDate] = useState("");
   const [startLat, setStartLat] = useState(34.9911); // Kyoto
   const [startLon, setStartLon] = useState(135.7248);
   const [startName, setStartName] = useState("京都市右京区西京極");
@@ -292,6 +305,13 @@ export default function RelocationSimulatorPage() {
    * 下書きが復元できたか、入口で入力したか、例を見ると押したときに true。
    */
   const [hasOwnInput, setHasOwnInput] = useState(false);
+  /**
+   * 下書きから計画を戻したか。
+   *
+   * 生年月日だけが足りなくて入口に戻ってもらった人の計画を、
+   * 入口の送信で消さないために見る。
+   */
+  const restoredDraftRef = useRef(false);
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
@@ -485,8 +505,18 @@ export default function RelocationSimulatorPage() {
         if (draft.planName !== undefined) setPlanName(draft.planName);
         if (draft.members && Array.isArray(draft.members))
           setMembers(draft.members);
-        // 前回の続きがあるなら、それはこの人が入れたもの。
-        setHasOwnInput(true);
+        restoredDraftRef.current = true;
+        // 生年月日が下書きに入っているときだけ、判定まで戻す。
+        //
+        // 既定値を外す前は保存していなかった。その頃の下書きを復元すると
+        // 生年月日だけが空になり、parseSafeDate が「今日生まれ」に落として
+        // 根拠の無い本命星を出す。入口をもう一度通してもらう。計画そのものは
+        // 上で復元済みなので、聞くのは 3 つだけ。
+        if (typeof draft.birthDate === "string" && draft.birthDate) {
+          setBirthDate(draft.birthDate);
+          // 前回の続きがあるなら、それはこの人が入れたもの。
+          setHasOwnInput(true);
+        }
       } catch (e) {}
     }
   };
@@ -499,6 +529,7 @@ export default function RelocationSimulatorPage() {
     uTrue = useTrueNorth,
     pName = planName,
     updatedMembers = members,
+    bDate = birthDate,
   ) => {
     localStorage.setItem(
       "relocation_simulator_draft",
@@ -510,6 +541,7 @@ export default function RelocationSimulatorPage() {
         useTrueNorth: uTrue,
         planName: pName,
         members: updatedMembers,
+        birthDate: bDate,
       }),
     );
   };
@@ -1552,11 +1584,13 @@ export default function RelocationSimulatorPage() {
       {/*
         自分で何も入れていない人には、判定を出さずに入口だけを出す。
 
-        steps の初期値は例（京都市 → 名古屋市 / 2026-06-30 / 一時赴任）で、
-        birthDate の初期値は運営者の生年月日。そのまま描くと、開いただけの人に
-        「本命星 3」「総合シンクロ指数 76/100 EXCELLENT」「安心してそのまま
-        計画を実行してください」が出る。自分の結果だと読める形で、根拠の無い
-        断定を見せていた（本番で実測）。
+        steps の初期値は例（京都市 → 名古屋市 / 2026-06-30 / 一時赴任）。
+        以前は birthDate の初期値も運営者の生年月日で、そのまま描くと
+        開いただけの人に「本命星 3」「総合シンクロ指数 76/100 EXCELLENT」
+        「安心してそのまま計画を実行してください」が出ていた。自分の結果だと
+        読める形で、根拠の無い断定を見せていた（本番で実測）。
+        いまは既定値そのものを外してあるが、この門は残す。例の計画に対する
+        判定を、開いただけの人の結果として見せないため。
 
         機能は消していない。入口を通れば、これまでどおり全部出る。
       */}
@@ -1576,6 +1610,9 @@ export default function RelocationSimulatorPage() {
               setStartName(v.startName);
               setStartLat(v.startLat);
               setStartLon(v.startLon);
+              // 下書きから計画を戻した人は、生年月日だけが足りずにここへ
+              // 来ている。行き先まで消すと、戻したものを自分で壊すことになる。
+              const keepDestination = restoredDraftRef.current;
               const next = steps.map((st, i) =>
                 i === 0
                   ? {
@@ -1585,18 +1622,31 @@ export default function RelocationSimulatorPage() {
                       fromLon: v.startLon,
                       departureDate: v.departureDate,
                       // 行き先は入口では聞かない。1 つ目のステップで選ぶ。
-                      toName: "",
-                      toLat: 0,
-                      toLon: 0,
-                      notes: "",
+                      ...(keepDestination
+                        ? {}
+                        : { toName: "", toLat: 0, toLon: 0, notes: "" }),
                     }
                   : st,
               );
               setSteps(next);
-              saveDraft(next, v.startLat, v.startLon, v.startName);
+              saveDraft(
+                next,
+                v.startLat,
+                v.startLon,
+                v.startName,
+                undefined,
+                undefined,
+                undefined,
+                v.birthDate,
+              );
               setHasOwnInput(true);
             }}
-            onShowExample={() => setHasOwnInput(true)}
+            onShowExample={() => {
+              // 例にも生年月日は要る（本命星が決まらない）。
+              // 運営者のものではなく、例だと分かる日付を入れる。
+              setBirthDate(EXAMPLE_BIRTH_DATE);
+              setHasOwnInput(true);
+            }}
           />
         </div>
       ) : (
