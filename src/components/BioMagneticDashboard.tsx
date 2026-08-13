@@ -27,6 +27,17 @@ interface DashboardProps {
   setBaseSyncDays: (val: number) => void;
   ansLoad: number;
   shieldCapacity: number;
+  /**
+   * 地上気圧と、過去 3 時間の変化量 (hPa)。取れていなければ null。
+   *
+   * bioModelingEngine の「気象病」ペナルティ（1hPa の低下ごとに交感神経
+   * 負荷 +3%、最大 30%）の入力そのもの。ANS Load が上がった理由が
+   * 気圧なのか磁気嵐なのか、画面から分かるように並べて出す。
+   *
+   * null と 0 は違う。0 は「変化なしと分かっている」、null は「取れて
+   * いない」。取れていないときにペナルティ 0 の根拠として 0 を見せない。
+   */
+  pressure?: { current: number; drop: number } | null;
   // Timing Optimizer
 
   timingDetails?: { name: string; phenomenon: string; detail: string }[];
@@ -51,6 +62,7 @@ export function BioMagneticDashboard({
   setBaseSyncDays,
   ansLoad,
   shieldCapacity,
+  pressure = null,
 }: DashboardProps) {
   // --- Animated Waveform State (Fake Data for UI Richness) ---
   const [waveformData, setWaveformData] = useState<number[]>(
@@ -225,6 +237,62 @@ export function BioMagneticDashboard({
                 <span>X</span>
               </div>
             </div>
+          </div>
+
+          {/* 気圧（気象病モデルの入力） */}
+          <div className="col-span-2 mt-2 pt-2 border-t border-stone-200">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Waves size={12} className="text-sky-600" />
+              <span className="text-[9px] text-sky-500/80 font-bold uppercase tracking-wider">
+                SURFACE PRESSURE (3H DELTA)
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                <div className="text-[7px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                  現在
+                </div>
+                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                  {pressure ? pressure.current.toFixed(1) : "--"}
+                  <span className="text-[8px] text-stone-400 ml-0.5">hPa</span>
+                </div>
+              </div>
+              <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
+                <div className="text-[7px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                  3時間変化
+                </div>
+                <div
+                  className={`text-sm font-mono font-bold tracking-tight ${
+                    pressure && pressure.drop <= -3
+                      ? "text-red-500"
+                      : pressure && pressure.drop < 0
+                        ? "text-amber-600"
+                        : "text-stone-700"
+                  }`}
+                >
+                  {pressure
+                    ? `${pressure.drop > 0 ? "+" : ""}${pressure.drop.toFixed(1)}`
+                    : "--"}
+                  <span className="text-[8px] text-stone-400 ml-0.5">hPa</span>
+                </div>
+              </div>
+              <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
+                <div className="text-[7px] text-sky-600/70 mb-1 uppercase tracking-widest">
+                  自律神経負荷
+                </div>
+                <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
+                  {pressure
+                    ? `+${(pressure.drop < 0 ? Math.min(30, Math.abs(pressure.drop) * 3) : 0).toFixed(0)}`
+                    : "--"}
+                  <span className="text-[8px] text-stone-400 ml-0.5">%</span>
+                </div>
+              </div>
+            </div>
+            {!pressure && (
+              <div className="mt-1 text-[7px] text-stone-400">
+                気圧を取得できていません。この項目は負荷の計算に入っていません。
+              </div>
+            )}
           </div>
 
           {/* WMM Output Data Matrix */}
