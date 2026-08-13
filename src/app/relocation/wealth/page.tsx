@@ -1041,8 +1041,12 @@ export default function RegionalWealthPage() {
             </div>
           </div>
 
-          {/* Top Row: General Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+          {/* 判定に要るのは「いつ」「誰が」「どこから」の 3 つ。
+              目標日と生年月日はここに残し、出発地は下の座標欄。
+              残り 4 つ（計算エンジン・レイヤー・北の基準・月相補正）は
+              既定のまま使う人がほとんどなので詳細設定に畳む。
+              <details> なので畳んだままでも値は保持される（#247 と同じ）。 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1">
                 目標日
@@ -1074,6 +1078,16 @@ export default function RegionalWealthPage() {
                 title="出生時間が不明な場合は 12:00 等を入力してください"
               />
             </div>
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer list-none text-xs font-semibold text-stone-500 hover:text-indigo-600 select-none">
+              <span className="inline-block transition-transform group-open:rotate-90">
+                ▶
+              </span>{" "}
+              詳細設定（計算方式・北の基準・月相補正）
+            </summary>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-stone-400 mb-1">
                 方位計算エンジン
@@ -1148,73 +1162,78 @@ export default function RegionalWealthPage() {
                 <option value="false">無効 (古典評価)</option>
               </select>
             </div>
-          </div>
+            </div>
+            {/* 出生地は空亡（天中殺）の算出に使う。方位そのものは
+                出発地から決まるので、ここは既定のままの人が多い。 */}
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-stone-200">
+                {/* Birth Coordinates */}
+                <div className="flex flex-col gap-1 w-full md:w-auto">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-indigo-500 flex items-center gap-1">
+                      <Compass className="w-3 h-3" /> 出生地座標
+                    </label>
+                    <button
+                      onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
+                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                    >
+                      {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
+                    </button>
+                  </div>
+                  {showBirthMapPicker && (
+                    <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
+                      <LocationPickerInner
+                        initialLat={Number(birthLat) || 35.6895}
+                        initialLon={Number(birthLon) || 139.6917}
+                        onSelect={(newLat: number, newLon: number) => {
+                          setBirthLat(newLat.toFixed(5));
+                          setBirthLon(newLon.toFixed(5));
+                          saveUnifiedConfig({
+                            birth_lat: newLat,
+                            birth_lon: newLon,
+                          });
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={birthLat || ""}
+                      onChange={(e) => {
+                        setBirthLat(e.target.value);
+                        setSelectedPresetId("");
+                        saveUnifiedConfig({
+                          birth_lat: e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined,
+                        });
+                      }}
+                      className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      placeholder="緯度: 35.6"
+                    />
+                    <input
+                      type="number"
+                      value={birthLon || ""}
+                      onChange={(e) => {
+                        setBirthLon(e.target.value);
+                        setSelectedPresetId("");
+                        saveUnifiedConfig({
+                          birth_lon: e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined,
+                        });
+                      }}
+                      className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                      placeholder="経度: 139.6"
+                    />
+                  </div>
+                </div>
+            </div>
+          </details>
 
           {/* Bottom Row: Coordinates & Action */}
           <div className="flex flex-col md:flex-row gap-4 justify-between items-end pt-4 border-t border-gray-100 dark:border-stone-200">
             <div className="flex flex-col md:flex-row gap-4 md:gap-8 items-end w-full md:w-auto">
-              {/* Birth Coordinates */}
-              <div className="flex flex-col gap-1 w-full md:w-auto">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-semibold text-indigo-500 flex items-center gap-1">
-                    <Compass className="w-3 h-3" /> 出生地座標
-                  </label>
-                  <button
-                    onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
-                  >
-                    {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
-                  </button>
-                </div>
-                {showBirthMapPicker && (
-                  <div className="w-full h-48 mt-1 mb-2 relative z-20 rounded overflow-hidden border border-gray-300 dark:border-stone-300">
-                    <LocationPickerInner
-                      initialLat={Number(birthLat) || 35.6895}
-                      initialLon={Number(birthLon) || 139.6917}
-                      onSelect={(newLat: number, newLon: number) => {
-                        setBirthLat(newLat.toFixed(5));
-                        setBirthLon(newLon.toFixed(5));
-                        saveUnifiedConfig({
-                          birth_lat: newLat,
-                          birth_lon: newLon,
-                        });
-                      }}
-                    />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={birthLat || ""}
-                    onChange={(e) => {
-                      setBirthLat(e.target.value);
-                      setSelectedPresetId("");
-                      saveUnifiedConfig({
-                        birth_lat: e.target.value
-                          ? parseFloat(e.target.value)
-                          : undefined,
-                      });
-                    }}
-                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="緯度: 35.6"
-                  />
-                  <input
-                    type="number"
-                    value={birthLon || ""}
-                    onChange={(e) => {
-                      setBirthLon(e.target.value);
-                      setSelectedPresetId("");
-                      saveUnifiedConfig({
-                        birth_lon: e.target.value
-                          ? parseFloat(e.target.value)
-                          : undefined,
-                      });
-                    }}
-                    className="w-24 bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                    placeholder="経度: 139.6"
-                  />
-                </div>
-              </div>
 
               {/* Base Coordinates */}
               <div className="flex flex-col gap-1 w-full md:w-auto">
