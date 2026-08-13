@@ -6,6 +6,7 @@ import { Crosshair, Download, Box } from "lucide-react";
 import { MagneticSpatialHUD } from "./MagneticSpatialHUD";
 import { downloadKML } from "../utils/kmlExport";
 import type { LayerMode } from "@/utils/directionStatus";
+import type { MapProperty } from "@/lib/mapProperty";
 
 // Because Leaflet needs the window object, we must dynamically import it with ssr: false
 const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
@@ -49,7 +50,7 @@ interface MapProps {
   activeLayerMode?: LayerMode;
   setActiveLayerMode?: (mode: LayerMode) => void;
   activeModel?: "physical" | "classical";
-  properties?: any[];
+  properties?: MapProperty[];
   useTrueNorth?: boolean;
   setUseTrueNorth?: (val: boolean) => void;
   targetLat?: number | null;

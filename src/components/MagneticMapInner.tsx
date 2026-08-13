@@ -18,6 +18,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
 import { directionLabelShort } from "@/lib/directionLabels";
+import type { MapProperty } from "@/lib/mapProperty";
 
 // Fix for default marker icons in Leaflet with Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -53,7 +54,7 @@ interface MapInnerProps {
   };
   activeLayerMode?: string;
   useTrueNorth?: boolean;
-  properties?: any[];
+  properties?: MapProperty[];
   onSelectTarget?: (lat: number, lon: number) => void;
   targetLat?: number | null;
   targetLon?: number | null;
@@ -696,11 +697,15 @@ export default function MagneticMapInner({
         ))}
 
         {/* Real Estate Properties */}
-        {properties?.map((prop: any) =>
-          prop.lat && prop.lon ? (
+        {properties?.map((prop) => {
+          // 座標だけ局所に取り出す。lat/lon は null 許容で、下の click は
+          // 遅れて走るため、prop.lat のままだと絞り込みが効かない
+          // （呼ばれる時点で別の値になっている可能性を型が捨てられない）。
+          const { lat: propLat, lon: propLon } = prop;
+          return propLat && propLon ? (
             <CircleMarker
               key={prop.id || prop.url}
-              center={[prop.lat, prop.lon]}
+              center={[propLat, propLon]}
               radius={prop.is_new_build ? 5 : 3}
               pathOptions={{
                 color: prop.is_new_build ? "#10b981" : "#3b82f6",
@@ -710,8 +715,8 @@ export default function MagneticMapInner({
               }}
               eventHandlers={{
                 click: () => {
-                  setClickedPos([prop.lat, prop.lon]);
-                  onSelectTarget?.(prop.lat, prop.lon);
+                  setClickedPos([propLat, propLon]);
+                  onSelectTarget?.(propLat, propLon);
                 },
               }}
             >
@@ -731,8 +736,8 @@ export default function MagneticMapInner({
                 </div>
               </Tooltip>
             </CircleMarker>
-          ) : null,
-        )}
+          ) : null;
+        })}
       </MapContainer>
 
       {/* UI Overlay */}
