@@ -21,6 +21,7 @@ import {
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import type { DayTier } from "@/utils/auspiciousDays";
+import type { ScoredProperty } from "@/lib/scoredProperty";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -101,37 +102,6 @@ function MapClickHandler({
     },
   });
   return null;
-}
-
-export interface ScoredProperty {
-  id: string;
-  property_name: string;
-  rent: number | null;
-  management_fee: number | null;
-  layout: string | null;
-  size_sqm: any | null;
-  is_new_build: boolean | null;
-  minutes_to_station: number | null;
-  address: string | null;
-  lat: number | null;
-  lon: number | null;
-  building_age: number | null;
-  floor: string | null;
-  url: string | null;
-  totalRent: number;
-  propSqmRent: number;
-  distanceKm: number | null;
-  direction: string | null;
-  magneticDirection: string | null;
-  astrologyStatus: string;
-  astrologyScore: number;
-  yieldScore: number;
-  arbitrageScore: number;
-  totalScore: number;
-  isTendo?: boolean;
-  maxAstroFactor?: string;
-  astroFlags?: string[];
-  dateScores?: any[];
 }
 
 interface ArbitrageMapInnerProps {

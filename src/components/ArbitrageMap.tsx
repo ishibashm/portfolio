@@ -13,7 +13,7 @@ const ArbitrageMapInner = dynamic(() => import("./ArbitrageMapInner"), {
   ),
 });
 
-import type { ScoredProperty } from "./ArbitrageMapInner";
+import type { ScoredProperty } from "@/lib/scoredProperty";
 
 interface ArbitrageMapProps {
   properties: ScoredProperty[];
