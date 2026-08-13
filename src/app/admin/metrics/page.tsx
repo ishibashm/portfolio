@@ -32,6 +32,22 @@ import {
  * API は denyUnlessAdmin が守る。この画面は読むだけで何も書かない。
  */
 
+type UserRow = {
+  email: string;
+  createdAt: string | null;
+  updatedAt: string;
+  has: {
+    birthDate: boolean;
+    birthPlace: boolean;
+    baseLocation: boolean;
+    geminiKey: boolean;
+  };
+  presetCount: number;
+  favorites: number;
+  histories: number;
+  simulations: number;
+};
+
 type Summary = {
   sinceDay: string;
   generatedAt: string;
@@ -191,8 +207,25 @@ const DEVICE_LABELS: Record<string, string> = {
   unknown: "不明（記録開始前）",
 };
 
+/** 設定の有無を示す小さなバッジ。中身の生値はサーバが返さない。 */
+function FlagBadge({ on, label }: { on: boolean; label: string }) {
+  return (
+    <span
+      className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold border ${
+        on
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+          : "bg-stone-50 text-stone-300 border-stone-200"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function AdminMetricsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [users, setUsers] = useState<UserRow[] | null>(null);
+  const [usersError, setUsersError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -206,6 +239,23 @@ export default function AdminMetricsPage() {
       })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "読み込みに失敗しました。"),
+      );
+    // ユーザー一覧は別口。集計が読めても一覧が落ちることはあり得るので、
+    // 片方の失敗でもう片方を巻き込まない。
+    fetch("/api/metrics/users")
+      .then(async (res) => {
+        const body = await res.json();
+        if (!res.ok || !body.success) {
+          throw new Error(body.error || `HTTP ${res.status}`);
+        }
+        setUsers(body.data.users);
+      })
+      .catch((e) =>
+        setUsersError(
+          e instanceof Error
+            ? e.message
+            : "ユーザー一覧を読み込めませんでした。",
+        ),
       );
   }, []);
 
@@ -481,6 +531,99 @@ export default function AdminMetricsPage() {
                 </p>
               </section>
             </div>
+
+            {/* ── 登録ユーザーの一覧 ── */}
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1">
+                登録ユーザーの一覧
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-3">
+                自分以外のアカウントが居るかを確かめるための一覧です。設定の中身（生年月日・座標・APIキー）はサーバが返さず、有無だけをバッジで出します。
+              </p>
+              {usersError && (
+                <p className="text-sm text-rose-700">{usersError}</p>
+              )}
+              {!users && !usersError && (
+                <p className="text-sm text-stone-400">読み込んでいます…</p>
+              )}
+              {users && users.length === 0 && (
+                <p className="text-sm text-stone-400">
+                  設定を保存したユーザーはまだいません。
+                </p>
+              )}
+              {users && users.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-[10px] text-stone-400 border-b border-stone-200">
+                        <th className="py-1.5 pr-3 font-bold">メール</th>
+                        <th className="py-1.5 pr-3 font-bold">登録</th>
+                        <th className="py-1.5 pr-3 font-bold">最終保存</th>
+                        <th className="py-1.5 pr-3 font-bold">設定</th>
+                        <th className="py-1.5 pr-2 font-bold text-right">★</th>
+                        <th className="py-1.5 pr-2 font-bold text-right">
+                          履歴
+                        </th>
+                        <th className="py-1.5 font-bold text-right">プラン</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((u) => (
+                        <tr
+                          key={u.email}
+                          className="border-b border-stone-100 last:border-0"
+                        >
+                          <td className="py-1.5 pr-3 font-mono text-stone-700 break-all">
+                            {u.email}
+                          </td>
+                          <td
+                            className="py-1.5 pr-3 font-mono text-stone-500 whitespace-nowrap"
+                            title={u.createdAt ?? undefined}
+                          >
+                            {u.createdAt
+                              ? u.createdAt.slice(0, 10)
+                              : "記録開始前"}
+                          </td>
+                          <td
+                            className="py-1.5 pr-3 font-mono text-stone-500 whitespace-nowrap"
+                            title={u.updatedAt}
+                          >
+                            {relTime(u.updatedAt)}
+                          </td>
+                          <td className="py-1.5 pr-3">
+                            <span className="flex flex-wrap gap-1">
+                              <FlagBadge
+                                on={u.has.birthDate}
+                                label="生年月日"
+                              />
+                              <FlagBadge
+                                on={u.has.baseLocation}
+                                label="出発地"
+                              />
+                              <FlagBadge on={u.has.birthPlace} label="出生地" />
+                              <FlagBadge
+                                on={u.presetCount > 0}
+                                label={`ﾌﾟﾘｾｯﾄ${u.presetCount}`}
+                              />
+                              <FlagBadge on={u.has.geminiKey} label="APIｷｰ" />
+                            </span>
+                          </td>
+                          <td className="py-1.5 pr-2 font-mono text-right text-stone-700">
+                            {u.favorites}
+                          </td>
+                          <td className="py-1.5 pr-2 font-mono text-right text-stone-700">
+                            {u.histories}
+                          </td>
+                          <td className="py-1.5 font-mono text-right text-stone-700">
+                            {u.simulations}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </>
         )}
       </div>
