@@ -30,13 +30,19 @@ export interface NumerologyData {
 }
 
 export interface MetaphysicalData {
+  // 生年月日から決まるものは null を取る。
+  //
+  // 以前は生年月日が無いとき運営者のもの（1988-11-25T04:26）に落ちていた。
+  // /api/nba は公開の endpoint なので、空の body を投げるだけで運営者の
+  // ライフパスナンバー・太陽星座・大運・命式が読める状態だった。
+  // 無いものは無いとして返す。
   divineApi: {
     tarot: TarotCard;
-    numerology: NumerologyData;
+    numerology: NumerologyData | null;
     sourceInfo: string;
   };
   astrologyApi: {
-    horoscope: string;
+    horoscope: string | null;
     aspects: {
       aspect: string;
       angle: number;
@@ -45,7 +51,7 @@ export interface MetaphysicalData {
     sourceInfo: string;
   };
   vedAstro: {
-    activeDasha: string;
+    activeDasha: string | null;
     ashtakavargaPoints: Record<string, number>;
     planetaryStrengths: Record<string, number>;
     sourceInfo: string;
@@ -1163,8 +1169,18 @@ function getZiWeiDouShu(birthDate: Date, currentDate: Date) {
   };
 }
 
+/**
+ * @param birthDate 生年月日。無ければ null を渡す。
+ *
+ * null のときは、生年月日から決まるもの（ライフパスナンバー・太陽星座・
+ * 大運・紫微斗数・九星・マヤ・カバラ・ヒューマンデザイン）を出さない。
+ * タロット・易・奇門は当日の日付から決まるので、そのまま出す。
+ *
+ * 呼び出し側が `new Date()` に落とすと「今日生まれ」の判定になる。
+ * 運営者の生年月日に落とすと他人の判定になる。どちらもやらない。
+ */
 export function fetchMetaphysicalData(
-  birthDate: Date,
+  birthDate: Date | null,
   currentDate: Date,
   personalBazi: BaziResult | null,
   useClassical: boolean = true,
@@ -1188,37 +1204,41 @@ export function fetchMetaphysicalData(
   };
 
   // Numerology
-  const numerology = getLifePathNumber(birthDate);
+  const numerology = birthDate ? getLifePathNumber(birthDate) : null;
 
   // 2. AstrologyAPI
-  const sunSign = getSunSign(birthDate);
-  const horoscope = `本日の星回りによれば、${sunSign}の方にとって太陽のエネルギーと惑星の引力が調和し、長期的な戦略を立てるのに最適な日です。【活用法】直感に頼るだけでなく、データに基づいた論理的な移住計画や投資判断を推し進めてください。`;
-  const aspects: MetaphysicalData["astrologyApi"]["aspects"] = [
-    {
-      aspect: "太陽 セクスタイル ネイタル火星 (Sun Sextile Natal Mars)",
-      angle: 60,
-      quality: "harmonious",
-    },
-    {
-      aspect:
-        "トランジット土星 スクエア ネイタル金星 (Transit Saturn Square Natal Venus)",
-      angle: 90,
-      quality: "discordant",
-    },
-    {
-      aspect: "木星 トライン ネイタル太陽 (Jupiter Trine Natal Sun)",
-      angle: 120,
-      quality: "harmonious",
-    },
-  ];
+  const sunSign = birthDate ? getSunSign(birthDate) : null;
+  const horoscope = sunSign
+    ? `本日の星回りによれば、${sunSign}の方にとって太陽のエネルギーと惑星の引力が調和し、長期的な戦略を立てるのに最適な日です。【活用法】直感に頼るだけでなく、データに基づいた論理的な移住計画や投資判断を推し進めてください。`
+    : null;
+  // ネイタル（出生図）との角度なので、生年月日が無ければ出せない。
+  const aspects: MetaphysicalData["astrologyApi"]["aspects"] = !birthDate
+    ? []
+    : [
+        {
+          aspect: "太陽 セクスタイル ネイタル火星 (Sun Sextile Natal Mars)",
+          angle: 60,
+          quality: "harmonious",
+        },
+        {
+          aspect:
+            "トランジット土星 スクエア ネイタル金星 (Transit Saturn Square Natal Venus)",
+          angle: 90,
+          quality: "discordant",
+        },
+        {
+          aspect: "木星 トライン ネイタル太陽 (Jupiter Trine Natal Sun)",
+          angle: 120,
+          quality: "harmonious",
+        },
+      ];
 
   // 3. VedAstro
-  const vedicEngine = new VedicEngine();
-  const dashaResult = vedicEngine.calculateVimshottariDasha(
-    birthDate,
-    currentDate,
-  );
-  const activeDasha = dashaResult.formatted + " (現在のアクティブ・サブ期間)";
+  // ダシャーは出生時の月の位置から始まる周期なので、生年月日が要る。
+  const activeDasha = !birthDate
+    ? null
+    : new VedicEngine().calculateVimshottariDasha(birthDate, currentDate)
+        .formatted + " (現在のアクティブ・サブ期間)";
   const ashtakavargaPoints = {
     "太陽 (Sun)": 28 + Math.floor(rand() * 10),
     "月 (Moon)": 28 + Math.floor(rand() * 10),
@@ -1241,7 +1261,7 @@ export function fetchMetaphysicalData(
 
   // Da Yun Luck Pillar Match
   let daYunPillar: MetaphysicalData["chineseMetasoft"]["daYunPillar"] = null;
-  if (personalBazi && personalBazi.luckCycles) {
+  if (birthDate && personalBazi && personalBazi.luckCycles) {
     const currentYear = currentDate.getFullYear();
     const activeCycle = personalBazi.luckCycles.find(
       (c) => currentYear >= c.startYear && currentYear <= c.endYear,
@@ -1300,11 +1320,24 @@ export function fetchMetaphysicalData(
       : `安定した第${primaryNum}卦を得ました。変爻はありません。【活用法】現在の状態が強固です。既存の計画や安定した基盤に沿って、着実に移住・行動を進めるのが吉です。`;
 
   // 6. Build the extended systems
-  const ziWeiDouShu = getZiWeiDouShu(birthDate, currentDate);
-  const nineStarKi = getNineStarKi(birthDate, currentDate, useClassical);
-  const mayaTzolkin = getMayaTzolkin(birthDate, currentDate);
-  const kabbalahTree = getKabbalahTree(birthDate, currentDate);
-  const humanDesign = getHumanDesign(birthDate, currentDate);
+  //
+  // どれも命盤・本命星・キン・生命の樹・タイプを出生時刻から立てる。
+  // 生年月日が無ければ組まない（型の上でも省略可）。
+  const ziWeiDouShu = birthDate
+    ? getZiWeiDouShu(birthDate, currentDate)
+    : undefined;
+  const nineStarKi = birthDate
+    ? getNineStarKi(birthDate, currentDate, useClassical)
+    : undefined;
+  const mayaTzolkin = birthDate
+    ? getMayaTzolkin(birthDate, currentDate)
+    : undefined;
+  const kabbalahTree = birthDate
+    ? getKabbalahTree(birthDate, currentDate)
+    : undefined;
+  const humanDesign = birthDate
+    ? getHumanDesign(birthDate, currentDate)
+    : undefined;
   const geomancy = getGeomancy(currentDate);
 
   return {

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
 
 /**
  * 運営者の生年月日（1988-11-25T04:26）が既定値として残っていないこと。
@@ -84,5 +85,77 @@ describe("時期ヒートマップ", () => {
     expect(src).toContain(
       "const canScan = Boolean(settings?.baseLon && settings?.birthDate);",
     );
+  });
+});
+
+describe("天地人マトリクス", () => {
+  const src = read("src", "components", "nba", "TenChiJinEvaluation.tsx");
+
+  it("運営者の生年月日がコードに残っていない", () => {
+    expect(asLiteral(src)).toEqual([]);
+  });
+
+  it("生年月日の既定値が空", () => {
+    expect(src).toContain('birthDate = "",');
+  });
+
+  it("生年月日が無ければ指数を出さない", () => {
+    // parseSafeDate の既定は new Date()。空文字のまま計算させると
+    // 「今日生まれ」の本命星で総合シンクロ指数が出る。
+    expect(src).toContain("if (!birthDate) {");
+    expect(src).toContain("生年月日が未入力です。");
+  });
+});
+
+describe("/api/nba", () => {
+  const src = read("src", "app", "api", "nba", "route.ts");
+
+  it("運営者の生年月日がコードに残っていない", () => {
+    expect(asLiteral(src)).toEqual([]);
+  });
+
+  it("生年月日が無ければ null のまま渡す", () => {
+    expect(src).toContain(
+      "const targetBirthDate = birthDateStr ? new Date(birthDateStr) : null;",
+    );
+  });
+});
+
+describe("fetchMetaphysicalData", () => {
+  const today = new Date("2026-08-13T00:00:00+09:00");
+
+  it("生年月日が無ければ、生年月日から決まるものを出さない", () => {
+    const d = fetchMetaphysicalData(null, today, null);
+
+    expect(d.divineApi.numerology).toBeNull();
+    expect(d.astrologyApi.horoscope).toBeNull();
+    expect(d.astrologyApi.aspects).toEqual([]);
+    expect(d.vedAstro.activeDasha).toBeNull();
+    expect(d.chineseMetasoft.daYunPillar).toBeNull();
+    expect(d.ziWeiDouShu).toBeUndefined();
+    expect(d.nineStarKi).toBeUndefined();
+    expect(d.mayaTzolkin).toBeUndefined();
+    expect(d.kabbalahTree).toBeUndefined();
+    expect(d.humanDesign).toBeUndefined();
+  });
+
+  it("当日から決まるものは、生年月日が無くても出す", () => {
+    const d = fetchMetaphysicalData(null, today, null);
+
+    expect(d.divineApi.tarot.name).toBeTruthy();
+    expect(d.roxyApi.ichingCast.hexagramNumber).toBeGreaterThan(0);
+    expect(d.chineseMetasoft.qiMenGate.name).toBeTruthy();
+    expect(d.geomancy?.figureName).toBeTruthy();
+  });
+
+  it("生年月日があれば、これまでどおり全部出る", () => {
+    const d = fetchMetaphysicalData(new Date("1990-01-01T12:00"), today, null);
+
+    expect(d.divineApi.numerology?.lifePathNumber).toBeGreaterThan(0);
+    expect(d.astrologyApi.horoscope).toContain("本日の星回り");
+    expect(d.astrologyApi.aspects.length).toBeGreaterThan(0);
+    expect(d.vedAstro.activeDasha).toBeTruthy();
+    expect(d.nineStarKi?.yearStar).toBeTruthy();
+    expect(d.humanDesign?.chartType).toBeTruthy();
   });
 });
