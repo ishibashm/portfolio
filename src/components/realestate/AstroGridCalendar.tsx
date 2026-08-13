@@ -28,7 +28,13 @@ const DISASTER_EXPLANATIONS: Record<string, string> = {
     "偏角境界：真北と磁北の方位境界線上に位置し、磁気的なブレが生じやすい場所。",
 };
 
-interface DateScore {
+/**
+ * 1 日ぶんの吉凶。/api/rentals/arbitrage の dateScores の要素でもある。
+ *
+ * 物件側（lib/scoredProperty）がこの配列をそのまま持ち、この暦に渡す。
+ * 同じ形を 2 か所に書かないよう、定義はここ 1 つにして export する。
+ */
+export interface DateScore {
   date: string; // YYYY-MM-DD
   score: number;
   status: string;
