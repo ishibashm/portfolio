@@ -93,6 +93,7 @@ export const metadata: Metadata = {
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
+import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { unstable_cache } from "next/cache";
 
 const getActiveTheme = unstable_cache(
@@ -305,6 +306,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased`}
       >
+        <ChunkLoadRecovery />
         <PageViewBeacon />
         <div className="flex min-h-screen">
           <GlobalSidebar />
