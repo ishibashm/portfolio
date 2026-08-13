@@ -8,6 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *   2. COUNT の bigint を Number に落としてから応答に載せる
  *      （落とすと JSON.stringify が TypeError で 500 になる）
  *   3. device の NULL（列を足す前の行）は "unknown" として返す
+ *   4. ブログは**記録が 0 の記事も並べる**。一覧から消えると
+ *      「読まれていない」が見えず、効果検証にならない
+ *
+ * 記事の一覧は content/blog の実ファイルではなくモックを使う。
+ * 実ファイルを読むと、記事を 1 本足すたびにこのテストが落ちる。
  */
 
 const {
@@ -43,6 +48,31 @@ vi.mock("@/lib/prisma", () => ({
 }));
 
 vi.mock("@/lib/gcpBilling", () => ({ loadGcpBillingCost }));
+
+vi.mock("@/lib/blog", () => ({
+  getBlogPosts: () => [
+    {
+      slug: "new-post",
+      title: "新しい記事",
+      description: "",
+      publishedAt: "2026-08-13",
+      category: "引越しの考え方",
+      tags: [],
+      draft: false,
+      readingMinutes: 5,
+    },
+    {
+      slug: "old-post",
+      title: "古い記事",
+      description: "",
+      publishedAt: "2026-08-03",
+      category: "引越しの考え方",
+      tags: [],
+      draft: false,
+      readingMinutes: 4,
+    },
+  ],
+}));
 
 import { GET } from "@/app/api/metrics/summary/route";
 
@@ -95,7 +125,8 @@ describe("metrics summary の認可", () => {
 
     // Promise.all の並び順に mock を積む:
     // daily → topPaths → topReferrers → devices → hourly → prev30 → latest
-    // → 当月の外部 API 使用量
+    // → 当月の外部 API 使用量 → ブログのパス別 → ブログの参照元
+    // → ブログ→道具の到達
     queryRaw
       .mockResolvedValueOnce([
         { day: "2026-08-13", pv: BigInt(3), uv: BigInt(2) },
@@ -119,7 +150,14 @@ describe("metrics summary の認可", () => {
           output_tokens: BigInt(300),
           untracked_calls: BigInt(0),
         },
-      ]);
+      ])
+      .mockResolvedValueOnce([
+        { path: "/blog", pv: BigInt(4), uv: BigInt(3) },
+        { path: "/blog/old-post", pv: BigInt(9), uv: BigInt(6) },
+      ])
+      .mockResolvedValueOnce([{ referrer_host: "google.com", pv: BigInt(5) }])
+      .mockResolvedValueOnce([{ blog_days: BigInt(8), tool_days: BigInt(2) }])
+      .mockResolvedValueOnce([{ dow: 6, hour: 21, pv: BigInt(3) }]);
     // user_configs.count の呼び順:
     // 総数 → 保存7日 → 保存30日 → 新規今日 → 新規7日 → 新規30日 → 記録開始前
     userConfigCount
@@ -145,6 +183,8 @@ describe("metrics summary の認可", () => {
     expect(d.daily[0]).toEqual({ day: "2026-08-13", pv: 3, uv: 2 });
     expect(d.pvPrev30).toBe(5);
     expect(d.hourly[0]).toEqual({ hour: 21, pv: 3 });
+    // 曜日 × 時間帯は記録のある枠だけ返す（168 枠を埋めない）。
+    expect(d.weekdayHourly).toEqual([{ dow: 6, hour: 21, pv: 3 }]);
 
     // NULL device は unknown
     expect(d.devices).toEqual([
@@ -183,6 +223,39 @@ describe("metrics summary の認可", () => {
       message: null,
     });
     expect(d.latestViewAt).toBe("2026-08-13T12:00:00.000Z");
+
+    // 一覧（/blog）は記事の合計に混ぜない。別々に出す。
+    expect(d.blog.index).toEqual({ pv: 4, uv: 3 });
+    expect(d.blog.totals).toEqual({ pv: 9, uv: 6 });
+
+    // 記録が 1 件も無い new-post も 0 として並ぶ。並びは PV の多い順。
+    // daysSincePublished は「今日」を基準にするので値は日々変わる。
+    expect(d.blog.posts).toEqual([
+      {
+        slug: "old-post",
+        title: "古い記事",
+        path: "/blog/old-post",
+        publishedAt: "2026-08-03",
+        daysSincePublished: expect.any(Number),
+        pv: 9,
+        uv: 6,
+      },
+      {
+        slug: "new-post",
+        title: "新しい記事",
+        path: "/blog/new-post",
+        publishedAt: "2026-08-13",
+        daysSincePublished: expect.any(Number),
+        pv: 0,
+        uv: 0,
+      },
+    ]);
+    expect(d.blog.referrers).toEqual([{ host: "google.com", pv: 5 }]);
+    expect(d.blog.funnel).toEqual({
+      blogVisitDays: 8,
+      toolVisitDays: 2,
+      rate: 0.25,
+    });
   });
 
   it("api_usage を集計できないときは 0 回と偽らず、他の指標を返す", async () => {
@@ -195,7 +268,11 @@ describe("metrics summary の認可", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ n: BigInt(0) }])
       .mockResolvedValueOnce([{ latest: null }])
-      .mockRejectedValueOnce(new Error('relation "api_usage" does not exist'));
+      .mockRejectedValueOnce(new Error('relation "api_usage" does not exist'))
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ blog_days: BigInt(0), tool_days: BigInt(0) }])
+      .mockResolvedValueOnce([]);
     userConfigCount.mockResolvedValue(0);
     favCount.mockResolvedValue(0);
     histCount.mockResolvedValue(0);
@@ -218,5 +295,15 @@ describe("metrics summary の認可", () => {
       histories: 0,
       simulations: 0,
     });
+    // 閲覧が 1 件も無いとき、到達率は 0% ではなく null。
+    // 0/0 を 0% と書くと「読まれたのに誰も道具へ行かなかった」に見える。
+    expect(json.data.blog.funnel).toEqual({
+      blogVisitDays: 0,
+      toolVisitDays: 0,
+      rate: null,
+    });
+    expect(json.data.blog.posts.map((p: { pv: number }) => p.pv)).toEqual([
+      0, 0,
+    ]);
   });
 });
