@@ -36,6 +36,7 @@ import type { NBAData } from "./nba/NBADashboard";
 import { Loader2 } from "lucide-react";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
+import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import {
   SCORE_TIER_LEGEND,
   scoreTier,
@@ -695,7 +696,7 @@ export const SolarTimeClock = () => {
 
   // Scorecard Tab States
   const [scorecardLoading, setScorecardLoading] = useState(false);
-  const [wealthData, setWealthData] = useState<any[]>([]);
+  const [wealthData, setWealthData] = useState<MunicipalityWealthItem[]>([]);
   const [propertiesData, setPropertiesData] = useState<any[]>([]);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     null,
@@ -5577,13 +5578,19 @@ export const SolarTimeClock = () => {
                               <td className="p-3">
                                 {item.topArea ? (
                                   <div className="flex flex-col">
+                                    {/* 応答の項目は areaName / incomePerCapita。
+                                        以前は municipality_name_ja と
+                                        averageIncome を読んでおり、どちらも
+                                        存在しないため地域名が空欄・所得が
+                                        「NaN万円」になっていた。万円への
+                                        換算は移住比較のページと同じ。 */}
                                     <span className="text-stone-700 font-bold truncate max-w-[180px]">
-                                      {item.topArea.municipality_name_ja}
+                                      {item.topArea.areaName}
                                     </span>
                                     <span className="text-[10px] text-stone-400 font-mono mt-0.5">
                                       所得:{" "}
                                       {(
-                                        item.topArea.averageIncome / 10000
+                                        item.topArea.incomePerCapita / 10000
                                       ).toFixed(0)}
                                       万円
                                     </span>
