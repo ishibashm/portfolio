@@ -97,7 +97,8 @@ export default async function Page({
           { name: `${year}年${month}月`, path: `/calendar/${slug}` },
         ]}
       />
-      <article className="max-w-[820px] mx-auto px-5 py-12">
+      {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/calendar" className="hover:text-rose-600">
             引越しの日取りを選ぶ

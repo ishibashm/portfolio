@@ -111,8 +111,9 @@ export default function PractitionersPage() {
 
   const count = rows?.length ?? 0;
 
+  // 幅は全画面で 1700px に揃える（1/3 と同じ理由）。
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-[1700px] px-4 py-10">
       <h1 className="font-serif text-2xl font-bold text-stone-900">
         九星気学の鑑定士
       </h1>

@@ -15,9 +15,7 @@ export default function CalendarPage() {
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-      {/* 上限は 1400px だった。暦の升目を並べる道具の画面なので、
-          ホーム（1700px）に揃える。下の「月ごとのまとめ」だけは読み物
-          なので max-w-4xl のまま残す。 */}
+      {/* 幅は全画面で 1700px に揃える。 */}
       <main className="max-w-[1700px] w-full mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
         <header className="relative mb-12 p-6 md:p-8 rounded-3xl border border-slate-300 bg-white/95 backdrop-blur-xl shadow-lg shadow-slate-200/50 overflow-hidden">
@@ -125,7 +123,9 @@ export default function CalendarPage() {
             上のツールは生年月日を入れないと自分の結果が出ないが、
             「9月に引越すなら何日か」を先に知りたい人もいる。
             暦だけで決まる情報を月別ページに置いてあるので、そこへ渡す。 */}
-        <section className="w-full max-w-4xl mx-auto mt-10 rounded-3xl border border-slate-200 bg-white/80 p-6">
+        {/* #227 では読み物として max-w-4xl で残したが、全画面を幅いっぱいに
+            する方針になったのでここも外す。 */}
+        <section className="w-full mt-10 rounded-3xl border border-slate-200 bg-white/80 p-6">
           <h2 className="text-lg font-bold font-serif">月ごとの引越しに向く日</h2>
           <p className="mt-2 text-xs leading-relaxed text-slate-600">
             生年月日を入れずに読める、月ごとのまとめです。六曜・天赦日・一粒万倍日と土用を突き合わせた候補日と、本命星9つそれぞれの吉方位を載せています。
