@@ -10,15 +10,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  *   3. device の NULL（列を足す前の行）は "unknown" として返す
  */
 
-const { getUser, queryRaw, userConfigCount, favCount, histCount, simCount } =
-  vi.hoisted(() => ({
-    getUser: vi.fn(),
-    queryRaw: vi.fn(),
-    userConfigCount: vi.fn(),
-    favCount: vi.fn(),
-    histCount: vi.fn(),
-    simCount: vi.fn(),
-  }));
+const {
+  getUser,
+  queryRaw,
+  userConfigCount,
+  favCount,
+  histCount,
+  simCount,
+  loadGcpBillingCost,
+} = vi.hoisted(() => ({
+  getUser: vi.fn(),
+  queryRaw: vi.fn(),
+  userConfigCount: vi.fn(),
+  favCount: vi.fn(),
+  histCount: vi.fn(),
+  simCount: vi.fn(),
+  loadGcpBillingCost: vi.fn(),
+}));
 
 vi.mock("@/utils/supabase/server", () => ({
   createClient: async () => ({ auth: { getUser } }),
@@ -34,6 +42,8 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/gcpBilling", () => ({ loadGcpBillingCost }));
+
 import { GET } from "@/app/api/metrics/summary/route";
 
 const admin = {
@@ -47,6 +57,14 @@ describe("metrics summary の認可", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.ADMIN_EMAIL = admin.email;
+    loadGcpBillingCost.mockResolvedValue({
+      status: "ok",
+      invoiceMonth: "202608",
+      currency: "JPY",
+      total: 150,
+      services: [{ service: "Cloud Run", amount: 150 }],
+      message: null,
+    });
   });
 
   afterEach(() => {
@@ -77,6 +95,7 @@ describe("metrics summary の認可", () => {
 
     // Promise.all の並び順に mock を積む:
     // daily → topPaths → topReferrers → devices → hourly → prev30 → latest
+    // → 当月の外部 API 使用量
     queryRaw
       .mockResolvedValueOnce([
         { day: "2026-08-13", pv: BigInt(3), uv: BigInt(2) },
@@ -89,7 +108,18 @@ describe("metrics summary の認可", () => {
       ])
       .mockResolvedValueOnce([{ hour: 21, pv: BigInt(3) }])
       .mockResolvedValueOnce([{ n: BigInt(5) }])
-      .mockResolvedValueOnce([{ latest: new Date("2026-08-13T12:00:00Z") }]);
+      .mockResolvedValueOnce([{ latest: new Date("2026-08-13T12:00:00Z") }])
+      .mockResolvedValueOnce([
+        {
+          provider: "google",
+          model: "gemini-2.5-flash",
+          route: "/api/rentals/webhook",
+          calls: BigInt(3),
+          input_tokens: BigInt(1200),
+          output_tokens: BigInt(300),
+          untracked_calls: BigInt(0),
+        },
+      ]);
     // user_configs.count の呼び順:
     // 総数 → 保存7日 → 保存30日 → 新規今日 → 新規7日 → 新規30日 → 記録開始前
     userConfigCount
@@ -125,6 +155,68 @@ describe("metrics summary の認可", () => {
     expect(d.registeredUsers).toBe(10);
     expect(d.newUsers.beforeTracking).toBe(7);
     expect(d.usage).toEqual({ favorites: 6, histories: 4, simulations: 2 });
+    expect(d.externalApi).toEqual({
+      status: "ok",
+      message: null,
+      sinceDay: "2026-08-01",
+      totalCalls: 3,
+      totalEstimateYen: 0.1768674,
+      rows: [
+        {
+          provider: "google",
+          model: "gemini-2.5-flash",
+          route: "/api/rentals/webhook",
+          calls: 3,
+          inputTokens: 1200,
+          outputTokens: 300,
+          untrackedCalls: 0,
+          estimateYen: 0.1768674,
+        },
+      ],
+    });
+    expect(d.gcpBilling).toEqual({
+      status: "ok",
+      invoiceMonth: "202608",
+      currency: "JPY",
+      total: 150,
+      services: [{ service: "Cloud Run", amount: 150 }],
+      message: null,
+    });
     expect(d.latestViewAt).toBe("2026-08-13T12:00:00.000Z");
+  });
+
+  it("api_usage を集計できないときは 0 回と偽らず、他の指標を返す", async () => {
+    getUser.mockResolvedValue({ data: { user: admin }, error: null });
+    queryRaw
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      .mockResolvedValueOnce([{ latest: null }])
+      .mockRejectedValueOnce(new Error('relation "api_usage" does not exist'));
+    userConfigCount.mockResolvedValue(0);
+    favCount.mockResolvedValue(0);
+    histCount.mockResolvedValue(0);
+    simCount.mockResolvedValue(0);
+
+    const res = await GET();
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.data.externalApi).toEqual({
+      status: "error",
+      message: "api_usage の準備または集計に失敗しました。",
+      sinceDay: "2026-08-01",
+      totalCalls: null,
+      totalEstimateYen: null,
+      rows: [],
+    });
+    expect(json.data.usage).toEqual({
+      favorites: 0,
+      histories: 0,
+      simulations: 0,
+    });
   });
 });

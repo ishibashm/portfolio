@@ -4,6 +4,7 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import prisma from "@/lib/prisma";
 import { toResponseMessage } from "@/lib/errorMessage";
+import { recordApiCall, tokensFromAiSdkUsage } from "@/lib/apiUsage";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // Allow more time for AI processing
@@ -82,7 +83,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Extract property details using Gemini
-    const { object } = await generateObject({
+    const { object, usage } = await generateObject({
       model: google("gemini-2.5-flash"),
       schema: PropertySchema,
       prompt: `Extract real estate rental property information from the following email. If there are multiple properties, extract all of them.
@@ -92,6 +93,13 @@ Email Date: ${date}
 
 Email Body:
 ${body}`,
+    });
+
+    await recordApiCall({
+      provider: "google",
+      model: "gemini-2.5-flash",
+      route: "/api/rentals/webhook",
+      ...tokensFromAiSdkUsage(usage),
     });
 
     const results = [];
@@ -149,10 +157,7 @@ ${body}`,
         }
       } catch (e) {
         // 1 件が落ちても残りは取り込む。元の実装も同じ扱いだった。
-        console.error(
-          `Error saving property ${property.property_name}`,
-          e,
-        );
+        console.error(`Error saving property ${property.property_name}`, e);
       }
     }
 

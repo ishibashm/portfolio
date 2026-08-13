@@ -13,6 +13,7 @@ import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
+import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { loadSettings } from "@/lib/userSettings";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
@@ -2187,28 +2188,10 @@ export default function ArbitrageScannerPage() {
         </div>
         {/* お気に入り。閉じるボタンの隣に置く。物件名のすぐ横だと、
             名前が長いときに折り返しの位置で動いて押しにくい。 */}
-        <button
-          type="button"
-          onClick={() => toggleFavorite(selectedProperty.id)}
-          aria-pressed={favoriteIds.includes(selectedProperty.id)}
-          aria-label={
-            favoriteIds.includes(selectedProperty.id)
-              ? "お気に入りから外す"
-              : "お気に入りに追加"
-          }
-          title={
-            favoriteIds.includes(selectedProperty.id)
-              ? "お気に入りから外す"
-              : "お気に入りに追加"
-          }
-          className={`shrink-0 w-6 h-6 rounded-full text-sm leading-none transition-colors ${
-            favoriteIds.includes(selectedProperty.id)
-              ? "bg-amber-100 text-amber-500 hover:bg-amber-200"
-              : "bg-gray-100 dark:bg-white text-stone-400 hover:bg-gray-200 hover:text-amber-500"
-          }`}
-        >
-          {favoriteIds.includes(selectedProperty.id) ? "★" : "☆"}
-        </button>
+        <FavoriteButton
+          isFavorite={favoriteIds.includes(selectedProperty.id)}
+          onToggle={() => toggleFavorite(selectedProperty.id)}
+        />
         <button
           type="button"
           onClick={() => setSelectedId(null)}
@@ -3991,7 +3974,8 @@ export default function ArbitrageScannerPage() {
                                       {s.luckyDays.length > 0 && (
                                         <div>
                                           <p className="text-[9px] text-stone-400 mb-1">
-                                            縁起の良い日（天赦日 ✨・一粒万倍日。同じ段階の日から抜粋）
+                                            縁起の良い日（天赦日
+                                            ✨・一粒万倍日。同じ段階の日から抜粋）
                                           </p>
                                           <div className="flex flex-wrap gap-1">
                                             {s.luckyDays.map((d) => (
@@ -4058,7 +4042,8 @@ export default function ArbitrageScannerPage() {
                                           if (!d) return null;
                                           return (
                                             <p className="text-[9px] text-stone-400">
-                                              この方位の平年値（9年平均・天中殺考慮前）: 三盤吉 {d.S}
+                                              この方位の平年値（9年平均・天中殺考慮前）:
+                                              三盤吉 {d.S}
                                               日/年・吉2盤 {d.A}日/年
                                             </p>
                                           );
@@ -4233,16 +4218,22 @@ export default function ArbitrageScannerPage() {
                                   </span>
                                 </div>
                               </div>
-                              <div className="text-right shrink-0">
-                                <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold text-[11px]">
-                                  {Math.round((item.totalRent || 0) / 10000)}
-                                  万円
-                                </div>
-                                <div className="mt-1 flex justify-end">
-                                  {renderStars(
-                                    item.totalScore,
-                                    item.astrologyStatus,
-                                  )}
+                              <div className="flex items-start gap-1.5 shrink-0">
+                                <FavoriteButton
+                                  isFavorite={favoriteIds.includes(item.id)}
+                                  onToggle={() => toggleFavorite(item.id)}
+                                />
+                                <div className="text-right">
+                                  <div className="font-mono text-indigo-600 dark:text-indigo-600 font-bold text-[11px]">
+                                    {Math.round((item.totalRent || 0) / 10000)}
+                                    万円
+                                  </div>
+                                  <div className="mt-1 flex justify-end">
+                                    {renderStars(
+                                      item.totalScore,
+                                      item.astrologyStatus,
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -4355,6 +4346,10 @@ export default function ArbitrageScannerPage() {
                                   item.property_name
                                 )}
                               </h4>
+                              <FavoriteButton
+                                isFavorite={favoriteIds.includes(item.id)}
+                                onToggle={() => toggleFavorite(item.id)}
+                              />
                               <span
                                 className={`text-[8.5px] px-1.5 py-0.5 rounded font-bold shrink-0 leading-none ${pinColors.bgClass} ${pinColors.textClass}`}
                               >
@@ -4478,6 +4473,9 @@ export default function ArbitrageScannerPage() {
                       <table className="w-full text-xs text-left min-w-[500px]">
                         <thead className="text-[10px] text-stone-400 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
                           <tr>
+                            <th className="w-10 px-2 py-2.5 text-center font-bold">
+                              ★
+                            </th>
                             <th
                               className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
                               onClick={(e) => handleSortChange("arbitrage", e)}
@@ -4543,6 +4541,12 @@ export default function ArbitrageScannerPage() {
                                 }}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
+                                <td className="px-2 py-3 text-center">
+                                  <FavoriteButton
+                                    isFavorite={favoriteIds.includes(item.id)}
+                                    onToggle={() => toggleFavorite(item.id)}
+                                  />
+                                </td>
                                 <td className="px-4 py-3 font-mono">
                                   {renderStars(
                                     item.totalScore,

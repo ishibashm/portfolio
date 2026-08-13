@@ -47,6 +47,13 @@ jobs:
           # 履歴グラフの日次記録エンドポイント（/api/cron/telemetry）の合言葉。
           # Record Daily Telemetry ワークフローが同じ値で呼ぶ。
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Billing Export の参照先は秘密情報ではないため repository variables
+          # から渡す。Cloud Run 実行 SA の ADC を使い、JSON 鍵は作らない。
+          GCP_BILLING_EXPORT_TABLE: ${{ vars.GCP_BILLING_EXPORT_TABLE }}
+          GCP_BILLING_TARGET_PROJECT_ID: ${{ vars.GCP_BILLING_TARGET_PROJECT_ID }}
+          GCP_BILLING_QUERY_PROJECT_ID: ${{ vars.GCP_BILLING_QUERY_PROJECT_ID }}
+          GCP_BILLING_LOCATION: ${{ vars.GCP_BILLING_LOCATION }}
+          GCP_BILLING_TIMEOUT_MS: ${{ vars.GCP_BILLING_TIMEOUT_MS }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
@@ -67,6 +74,13 @@ jobs:
           fi
           if [ -n "$CRON_SECRET" ]; then
             echo "CRON_SECRET=$CRON_SECRET" >> .env
+          fi
+          if [ -n "$GCP_BILLING_EXPORT_TABLE" ]; then
+            echo "GCP_BILLING_EXPORT_TABLE=$GCP_BILLING_EXPORT_TABLE" >> .env
+            echo "GCP_BILLING_TARGET_PROJECT_ID=$GCP_BILLING_TARGET_PROJECT_ID" >> .env
+            echo "GCP_BILLING_QUERY_PROJECT_ID=$GCP_BILLING_QUERY_PROJECT_ID" >> .env
+            echo "GCP_BILLING_LOCATION=${GCP_BILLING_LOCATION:-US}" >> .env
+            echo "GCP_BILLING_TIMEOUT_MS=${GCP_BILLING_TIMEOUT_MS:-10000}" >> .env
           fi
 
       - name: Convert .env to env.json for Cloud Run

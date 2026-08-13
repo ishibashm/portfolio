@@ -12,6 +12,7 @@ import {
   hasStructuredFilters,
   parseSmartQuery,
 } from "@/utils/smartSearch";
+import { recordApiCall, tokensFromAnthropicUsage } from "@/lib/apiUsage";
 
 /**
  * 純粋な自然文の検索語を、絞り込み条件へ解釈する。
@@ -214,6 +215,12 @@ export async function POST(req: NextRequest) {
       );
     }
     const data = await res.json();
+    await recordApiCall({
+      provider: "anthropic",
+      model: MODEL,
+      route: "/api/rentals/parse-query",
+      ...tokensFromAnthropicUsage(data?.usage),
+    });
     const toolUse = (data?.content ?? []).find(
       (b: { type: string }) => b.type === "tool_use",
     );

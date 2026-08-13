@@ -12,8 +12,8 @@ import { todayInJapan } from "@/utils/japanDate";
  * 落ちるのでは本末転倒。書き込みが失敗してもログに残して先へ進む。
  *
  * **単価は推測で埋めない。**LLM の価格は改定されるうえ、ドルなら為替も
- * 要る。分からないものは null にして「呼び出し回数は出るが金額は出ない」
- * 状態にする。#257 の固定費と同じ扱い。回数だけでも十分に読める。
+ * 要る。提供元の公式価格と採用為替を note に残し、確認できないものだけ null に
+ * する。#257 の固定費と同じ扱い。回数だけでも十分に読める。
  */
 
 /** 記録 1 件ぶん。呼び出し側はこれだけ渡す。 */
@@ -29,11 +29,46 @@ export interface ApiCallRecord {
   outputTokens?: number;
 }
 
+type TokenCounts = Pick<ApiCallRecord, "inputTokens" | "outputTokens">;
+
+function tokenCount(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.trunc(value)
+    : undefined;
+}
+
+/** Vercel AI SDK が返す usage を記録用の名前へ揃える。 */
+export function tokensFromAiSdkUsage(
+  usage:
+    | { inputTokens?: number | null; outputTokens?: number | null }
+    | null
+    | undefined,
+): TokenCounts {
+  const inputTokens = tokenCount(usage?.inputTokens);
+  const outputTokens = tokenCount(usage?.outputTokens);
+  return {
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+  };
+}
+
+/** Anthropic Messages API の snake_case usage を記録用の名前へ揃える。 */
+export function tokensFromAnthropicUsage(
+  usage: { input_tokens?: unknown; output_tokens?: unknown } | null | undefined,
+): TokenCounts {
+  const inputTokens = tokenCount(usage?.input_tokens);
+  const outputTokens = tokenCount(usage?.output_tokens);
+  return {
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+  };
+}
+
 /**
  * 呼び出しを 1 件記録する。
  *
- * **失敗しても投げない。**呼び出し側は `void recordApiCall(...)` で
- * 投げっぱなしにしてよい。応答を待たせる理由が無い。
+ * **失敗しても投げない。**呼び出し側は応答後の実行停止で記録を落とさないため
+ * `await recordApiCall(...)` する。本体を失敗させず、記録完了だけは待つ。
  */
 export async function recordApiCall(call: ApiCallRecord): Promise<void> {
   try {
@@ -82,23 +117,23 @@ export const MODEL_PRICES: ModelPrice[] = [
   {
     provider: "google",
     model: "gemini-2.5-flash",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "メールからの物件取り込み。件数が増えると効いてくる",
+    inputYenPerMTok: 47.802,
+    outputYenPerMTok: 398.35,
+    note: "Google 公式 $0.30/$2.50 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
   {
     provider: "google",
     model: "gemini-2.5-pro",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "時期の相談。flash より単価が高い",
+    inputYenPerMTok: 199.175,
+    outputYenPerMTok: 1593.4,
+    note: "Google 公式（20万tok以下）$1.25/$10 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
   {
     provider: "anthropic",
     model: "claude-haiku-4-5",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "スマート検索の解釈。利用者が打つたびに呼ばれる",
+    inputYenPerMTok: 159.34,
+    outputYenPerMTok: 796.7,
+    note: "Anthropic 公式 $1/$5 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
 ];
 
@@ -106,6 +141,8 @@ export const MODEL_PRICES: ModelPrice[] = [
 export interface UsageRow {
   provider: string;
   model: string;
+  /** 同じモデルを複数機能で使っても費用の出どころを分ける。 */
+  route: string;
   calls: number;
   /** 数えられた分の合計。取れなかった呼び出しは含まない。 */
   inputTokens: number;

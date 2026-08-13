@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { generateText, tool } from "ai";
 import { z } from "zod";
 import { getKyuseiBoard, getKyusei } from "@/utils/kigaku";
+import { recordApiCall, tokensFromAiSdkUsage } from "@/lib/apiUsage";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -34,6 +35,13 @@ export async function GET(req: Request) {
           }),
         }),
       },
+    });
+
+    await recordApiCall({
+      provider: "google",
+      model: "gemini-2.5-pro",
+      route: "/api/relocation-timing",
+      ...tokensFromAiSdkUsage(response.usage),
     });
 
     // 2. AIからの「指示（toolCalls）」を確認する

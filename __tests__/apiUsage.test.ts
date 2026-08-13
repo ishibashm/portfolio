@@ -6,6 +6,8 @@ vi.mock("@/lib/prisma", () => ({ default: { apiUsage: { create } } }));
 import {
   estimateYen,
   MODEL_PRICES,
+  tokensFromAnthropicUsage,
+  tokensFromAiSdkUsage,
   recordApiCall,
   totalEstimateYen,
   type ModelPrice,
@@ -26,6 +28,7 @@ import {
 const row = (over: Partial<UsageRow> = {}): UsageRow => ({
   provider: "google",
   model: "gemini-2.5-flash",
+  route: "/api/rentals/webhook",
   calls: 10,
   inputTokens: 1_000_000,
   outputTokens: 500_000,
@@ -84,15 +87,34 @@ describe("呼び出しの記録", () => {
   });
 });
 
+describe("提供元の usage 応答", () => {
+  it("AI SDK のトークン数を記録用の形にする", () => {
+    expect(
+      tokensFromAiSdkUsage({ inputTokens: 1200, outputTokens: 300 }),
+    ).toEqual({ inputTokens: 1200, outputTokens: 300 });
+  });
+
+  it("Anthropic の snake_case を記録用の形にする", () => {
+    expect(
+      tokensFromAnthropicUsage({ input_tokens: 700, output_tokens: 90 }),
+    ).toEqual({ inputTokens: 700, outputTokens: 90 });
+  });
+
+  it("usage が無いときは 0 で埋めない", () => {
+    expect(tokensFromAiSdkUsage(undefined)).toEqual({});
+    expect(tokensFromAnthropicUsage(null)).toEqual({});
+  });
+});
+
 describe("推定額", () => {
   it("単価が入っていれば出る", () => {
     // 入力 100万tok × 30円 + 出力 50万tok × 120円 = 30 + 60 = 90
     expect(estimateYen(row(), priced)).toBe(90);
   });
 
-  it("単価が未設定なら出さない", () => {
-    // MODEL_PRICES は初期状態では全部 null。
-    expect(estimateYen(row())).toBeNull();
+  it("採用した公式単価と為替で推定する", () => {
+    // 入力 100万tok × 47.802円 + 出力 50万tok × 398.35円
+    expect(estimateYen(row())).toBeCloseTo(246.977, 6);
   });
 
   it("知らないモデルなら出さない", () => {
@@ -117,12 +139,25 @@ describe("推定額", () => {
     expect(totalEstimateYen([row(), row()], priced)).toBe(180);
   });
 
-  it("最初に置いた単価は、まだ埋めていない", () => {
-    // 推測の額をコミットしていないことの裏取り。実額を入れたら落ちるので、
-    // そのとき一緒に直す（意図した変更だと分かる）。
-    for (const p of MODEL_PRICES) {
-      expect(p.inputYenPerMTok, p.model).toBeNull();
-      expect(p.outputYenPerMTok, p.model).toBeNull();
-    }
+  it("本番で使う全モデルに確認済み単価がある", () => {
+    expect(MODEL_PRICES).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          model: "gemini-2.5-flash",
+          inputYenPerMTok: 47.802,
+          outputYenPerMTok: 398.35,
+        }),
+        expect.objectContaining({
+          model: "gemini-2.5-pro",
+          inputYenPerMTok: 199.175,
+          outputYenPerMTok: 1593.4,
+        }),
+        expect.objectContaining({
+          model: "claude-haiku-4-5",
+          inputYenPerMTok: 159.34,
+          outputYenPerMTok: 796.7,
+        }),
+      ]),
+    );
   });
 });
