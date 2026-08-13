@@ -15,6 +15,7 @@ import {
   getClassicalMonthStar,
   getCurrentEnvironmentalFrequencies,
   generateBoard,
+  BoardLayout,
   solarTermMonthAnchor,
   calculateVectorCollision,
   getPersonalVoidZodiac,
@@ -127,7 +128,8 @@ const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
 
 const getVectorBreakdown = (
   dir: Direction,
-  board: any,
+  // 盤は出せない日がある（生年月日が未入力など）。呼び出し側から null が来る。
+  board: BoardLayout | null,
   personalStar: StarFrequency,
   personalVoidZodiac: string[],
   layerType: "year" | "month" | "day" | "final",
@@ -303,9 +305,9 @@ const filterLayerData = (
   getsuMeiStar: StarFrequency | null,
   voidZodiacArray: string[],
   directionFilterMode: string,
-  yBoard: any,
-  mBoard: any,
-  dBoard: any,
+  yBoard: BoardLayout | null,
+  mBoard: BoardLayout | null,
+  dBoard: BoardLayout | null,
 ) => {
   // "optimal_only" / "exclude_noise" は算出レイヤーを削るのではなく、
   // ヒートマップ側の塗り分けだけを変える表示専用フィルタ。
@@ -431,7 +433,7 @@ const filterLayerData = (
   const filterStatus = (
     status: string | undefined,
     dir: Direction,
-    activeBoard: any,
+    activeBoard: BoardLayout | null,
   ) => {
     if (!status) return "SAFE";
     const resList: string[] = [];
@@ -475,10 +477,12 @@ const filterLayerData = (
     return combineStatuses(resList);
   };
 
-  const newYearLayer: any = {};
-  const newMonthLayer: any = {};
-  const newDayLayer: any = {};
-  const newFinalVectors: any = {};
+  // 8 方位ぶんを直後のループで必ず埋める。同じ形の受け皿が下の
+  // filterVectors にもあり（out）、そちらの書き方に合わせている。
+  const newYearLayer = {} as Record<Direction, string>;
+  const newMonthLayer = {} as Record<Direction, string>;
+  const newDayLayer = {} as Record<Direction, string>;
+  const newFinalVectors = {} as Record<Direction, string>;
 
   directions.forEach((d) => {
     newYearLayer[d] = filterStatus(layer.yearLayer[d], d, yBoard);
@@ -508,9 +512,9 @@ const filterVectors = (
   personalStar: StarFrequency,
   voidZodiacs: string[],
   lunarNodeLon: number | null,
-  yB: any,
-  mB: any,
-  dB: any,
+  yB: BoardLayout | null,
+  mB: BoardLayout | null,
+  dB: BoardLayout | null,
   mode: string,
   getsuMeiStar: StarFrequency | null = null,
   activeLayerMode: string = "final",
