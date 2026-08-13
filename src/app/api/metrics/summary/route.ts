@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 import { toLogMessage } from "@/lib/errorMessage";
 import { todayInJapan } from "@/utils/japanDate";
 import { estimateYen, totalEstimateYen, type UsageRow } from "@/lib/apiUsage";
 import { loadGcpBillingCost } from "@/lib/gcpBilling";
+import { getBlogPosts } from "@/lib/blog";
+import {
+  BLOG_INDEX_PATH,
+  TOOL_PATH_PATTERNS,
+  buildBlogFunnel,
+  buildBlogMetrics,
+} from "@/lib/blogMetrics";
 
 /**
  * 管理ページ（/admin/metrics）が読む集計。
@@ -21,7 +29,15 @@ import { loadGcpBillingCost } from "@/lib/gcpBilling";
  * day は JST の "YYYY-MM-DD" 文字列なので、辞書順の比較で切れる。
  *
  * 時間帯別は created_at (timestamptz) から出す。DB の TimeZone 設定に
- * 依存しないよう、SQL 中で 'Asia/Tokyo' を必ず明示する。
+ * 依存しないよう、SQL 中で 'Asia/Tokyo' を必ず明示する。窓は 2 つ:
+ *   hourly        24 枠 / 直近 7 日  「今どの時間に見られているか」
+ *   weekdayHourly 168 枠 / 直近 30 日「平日の昼か、週末の夜か」
+ * 枠数が 7 倍なので同じ 7 日で切ると 1 枠 0〜1 件になり読めない。
+ *
+ * ブログの効果検証（data.blog）だけは page_views 単体で完結しない。
+ * 「読まれていない記事」を出すには公開中の記事の一覧が要るので、
+ * content/blog の Markdown を getBlogPosts で読んで突き合わせる。
+ * 組み替えの規則は src/lib/blogMetrics.ts。
  */
 
 export const dynamic = "force-dynamic";
@@ -34,6 +50,9 @@ type PathRow = { path: string; pv: bigint; uv: bigint };
 type ReferrerRow = { referrer_host: string; pv: bigint };
 type DeviceRow = { device: string | null; pv: bigint; uv: bigint };
 type HourRow = { hour: number; pv: bigint };
+type WeekdayHourRow = { dow: number; hour: number; pv: bigint };
+type BlogPathRow = { path: string; pv: bigint; uv: bigint };
+type BlogFunnelRow = { blog_days: bigint; tool_days: bigint };
 type CountRow = { n: bigint };
 type MaxRow = { latest: Date | null };
 type ApiUsageSqlRow = {
@@ -73,6 +92,18 @@ async function loadApiUsage(monthStart: string): Promise<{
     };
   }
 }
+
+/**
+ * /blog と /blog/<slug> だけを拾う条件。/blog/feed.xml は拡張子付きで
+ * normalizePath に落とされるので page_views には入らない。
+ */
+const BLOG_MATCH = Prisma.sql`(path = ${BLOG_INDEX_PATH} OR path LIKE '/blog/%')`;
+
+/** 「道具のページ」の条件。対象は blogMetrics.ts の 1 か所で決める。 */
+const TOOL_MATCH = Prisma.join(
+  TOOL_PATH_PATTERNS.map((pattern) => Prisma.sql`path LIKE ${pattern}`),
+  " OR ",
+);
 
 /** JST の今日から n 日前の "YYYY-MM-DD"。day 列と同じ暦で切るための基準。 */
 function jstDayBefore(days: number): string {
@@ -120,6 +151,10 @@ export async function GET() {
       favoritesTotal,
       historiesTotal,
       simulationsTotal,
+      blogPaths,
+      blogReferrers,
+      blogFunnelRows,
+      weekdayHourly,
     ] = await Promise.all([
       prisma.$queryRaw<DailyRow[]>`
         SELECT day, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
@@ -173,6 +208,42 @@ export async function GET() {
       prisma.favoriteProperty.count(),
       prisma.relocationHistory.count(),
       prisma.relocationSimulation.count(),
+      // ── ブログの効果検証 ──
+      // 新しい問い合わせは**末尾に足す**。この配列の順が $queryRaw の
+      // 呼び出し順で、テストはその順にモックを積んでいる。間に挟むと
+      // 既存の期待値が全部ずれる。
+      prisma.$queryRaw<BlogPathRow[]>`
+        SELECT path, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
+        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH}
+        GROUP BY path`,
+      prisma.$queryRaw<ReferrerRow[]>`
+        SELECT referrer_host, COUNT(*) AS pv
+        FROM page_views
+        WHERE day >= ${since30} AND referrer_host IS NOT NULL AND ${BLOG_MATCH}
+        GROUP BY referrer_host ORDER BY COUNT(*) DESC LIMIT ${TOP_LIMIT}`,
+      // ブログを見た人日のうち、同じ日に道具のページも見た人日。
+      // visitor_hash は日付を混ぜてあるので、日をまたいだ追跡はできない。
+      // 「後日また来て使った」は原理的に測れず、実際より低く出る。
+      prisma.$queryRaw<BlogFunnelRow[]>`
+        WITH blog AS (
+          SELECT DISTINCT day, visitor_hash FROM page_views
+          WHERE day >= ${since30} AND ${BLOG_MATCH}
+        ), tool AS (
+          SELECT DISTINCT day, visitor_hash FROM page_views
+          WHERE day >= ${since30} AND (${TOOL_MATCH})
+        )
+        SELECT COUNT(*) AS blog_days, COUNT(t.visitor_hash) AS tool_days
+        FROM blog b
+        LEFT JOIN tool t ON t.day = b.day AND t.visitor_hash = b.visitor_hash`,
+      // 曜日 × 時間帯。既存の hourly（24 枠）は直近 7 日だが、こちらは
+      // 168 枠に分かれるので 7 日では 1 枠 0〜1 件にしかならない。
+      // 30 日で引く。dow は日曜が 0（Postgres の extract の定義）。
+      prisma.$queryRaw<WeekdayHourRow[]>`
+        SELECT extract(dow  from created_at AT TIME ZONE 'Asia/Tokyo')::int AS dow,
+               extract(hour from created_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
+               COUNT(*) AS pv
+        FROM page_views WHERE day >= ${since30}
+        GROUP BY 1, 2 ORDER BY 1, 2`,
     ]);
 
     const dailyNum = daily.map((r) => ({
@@ -183,6 +254,21 @@ export async function GET() {
     const byDay = new Map(dailyNum.map((r) => [r.day, r]));
     const sumPv = (from: string) =>
       dailyNum.reduce((s, r) => (r.day >= from ? s + r.pv : s), 0);
+    // 記事の一覧は content/blog の Markdown が持つ。記録が 1 件も無い
+    // 記事も 0 として並べたいので、page_views 側だけでは足りない。
+    const blog = buildBlogMetrics(
+      blogPaths.map((r) => ({
+        path: r.path,
+        pv: Number(r.pv),
+        uv: Number(r.uv),
+      })),
+      getBlogPosts(),
+      today,
+    );
+    const blogFunnel = buildBlogFunnel(
+      Number(blogFunnelRows[0]?.blog_days ?? 0),
+      Number(blogFunnelRows[0]?.tool_days ?? 0),
+    );
     const apiUsageRows: UsageRow[] = apiUsage.rows.map((r) => ({
       provider: r.provider,
       model: r.model,
@@ -238,6 +324,13 @@ export async function GET() {
         pvPrev30: Number(prev30Pv[0]?.n ?? 0),
         daily: dailyNum,
         hourly: hourly.map((r) => ({ hour: r.hour, pv: Number(r.pv) })),
+        // 記録のある枠だけが並ぶ（168 枠すべては返さない）。0 の枠を
+        // 埋めるのは描く側の仕事。応答を 168 行に膨らませない。
+        weekdayHourly: weekdayHourly.map((r) => ({
+          dow: r.dow,
+          hour: r.hour,
+          pv: Number(r.pv),
+        })),
         topPaths: topPaths.map((r) => ({
           path: r.path,
           pv: Number(r.pv),
@@ -252,6 +345,16 @@ export async function GET() {
           pv: Number(r.pv),
           uv: Number(r.uv),
         })),
+        blog: {
+          index: blog.index,
+          totals: blog.posts,
+          posts: blog.rows,
+          referrers: blogReferrers.map((r) => ({
+            host: r.referrer_host,
+            pv: Number(r.pv),
+          })),
+          funnel: blogFunnel,
+        },
       },
     });
   } catch (e) {
