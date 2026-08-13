@@ -573,6 +573,20 @@ export const TARGET_PREFECTURE_NAMES: readonly string[] = SCRAPE_TARGETS.map(
   (t) => t.name,
 );
 
+/**
+ * パージの「範囲内」判定に使う前方一致パターン。
+ *
+ * **県名を固定長で切って比べないこと。** 以前は住所の先頭 3 文字を県名と
+ * 突き合わせていた。47 都道府県のうち 3 文字でないのはちょうど 3 つ
+ * （いずれも 4 文字）で、その 3 県だけが毎晩「範囲外」として削除されていた。
+ * 対象リストには入っているので巡回は毎日走っており、取っては消すのを
+ * 繰り返していた。2026-08-12 の実測で 1 晩に 49,069 行。
+ *
+ * 長さを仮定せず、住所がこのパターンで始まるかどうかで見る。
+ */
+export const TARGET_PREFECTURE_LIKE: readonly string[] =
+  TARGET_PREFECTURE_NAMES.map((n) => `${n}%`);
+
 /** nifty に投げるローマ字スラッグ */
 export const TARGET_PREFECTURE_SLUGS: readonly string[] = SCRAPE_TARGETS.map(
   (t) => t.slug,

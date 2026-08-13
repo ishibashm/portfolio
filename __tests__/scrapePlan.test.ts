@@ -4,6 +4,8 @@ import prefecturesWithData from "@/data/prefecturesWithData.json";
 import {
   SCRAPE_MAX_PARALLEL,
   SCRAPE_TARGETS,
+  TARGET_PREFECTURE_LIKE,
+  TARGET_PREFECTURE_NAMES,
   isScheduledOn,
   targetsForDate,
 } from "@/lib/scrapeTargets";
@@ -168,6 +170,79 @@ describe("県別の掲載数（地図の俯瞰の元データ）", () => {
       prefecturesWithData.listingCounts ?? {};
     for (const pref of prefecturesWithData.prefs) {
       expect(counts[pref], `${pref} の掲載数が無い`).toBeGreaterThan(0);
+    }
+  });
+});
+
+/**
+ * パージの「範囲内」判定。
+ *
+ * `scripts/purge_rental_properties.ts` は住所と対象県名を突き合わせて、
+ * 範囲外の行を毎晩削除する。ここが取り込み側とずれると、その晩のうちに
+ * 消える。scrapeTargets.ts のコメントが「実際に岐阜がこの形で 0 件に
+ * なっている」と書いているのは、対象リストが 2 か所に分かれていた頃の話で、
+ * それは 1 か所に寄せて直っている。
+ *
+ * 直っていなかったのは**突き合わせ方**のほう。
+ *
+ *   substring(address from 1 for 3) <> ALL(県名の配列)
+ *
+ * 県名を 3 文字と決め打ちしていた。47 都道府県のうち 3 文字でないのは
+ * ちょうど 3 つ（神奈川県・和歌山県・鹿児島県。いずれも 4 文字）で、
+ * この 3 県だけが対象リストに入っているのに毎晩「範囲外」として消えていた。
+ * 2026-08-12 の本番ログで、神奈川 35,620 行・和歌山 13,449 行。
+ * 神奈川は metro（毎日 160 分）なので、その巡回がまるごと捨てられていた。
+ *
+ * 長さを仮定しないこと。
+ */
+describe("パージの範囲内判定", () => {
+  /** 実際の SQL と同じ意味を JS で置いたもの。`address LIKE ANY(patterns)` */
+  const inScope = (address: string) =>
+    TARGET_PREFECTURE_LIKE.some((p) => address.startsWith(p.slice(0, -1)));
+
+  it("パターンは県名 + % の前方一致", () => {
+    expect(TARGET_PREFECTURE_LIKE).toHaveLength(TARGET_PREFECTURE_NAMES.length);
+    for (const [i, name] of TARGET_PREFECTURE_NAMES.entries()) {
+      expect(TARGET_PREFECTURE_LIKE[i]).toBe(`${name}%`);
+    }
+  });
+
+  it("対象県の住所はすべて範囲内になる", () => {
+    for (const t of SCRAPE_TARGETS) {
+      expect(inScope(`${t.name}どこかの市どこかの町1-2-3`)).toBe(true);
+    }
+  });
+
+  it("県名が 4 文字の県も範囲内になる", () => {
+    // ここが落ちていた 3 県。個別に名指しで押さえる。
+    expect(inScope("神奈川県横浜市都筑区茅ケ崎中央1-1")).toBe(true);
+    expect(inScope("和歌山県和歌山市小松原通1-1")).toBe(true);
+    expect(inScope("鹿児島県鹿児島市山下町11-1")).toBe(true);
+  });
+
+  it("対象外の県は範囲外のまま", () => {
+    const names = new Set(TARGET_PREFECTURE_NAMES);
+    const outside = ["沖縄県", "佐賀県", "高知県"].filter((n) => !names.has(n));
+    // 全 47 県が対象なら、この検査は成立しない。その時点で消す。
+    for (const n of outside) {
+      expect(inScope(`${n}どこかの市1-1`)).toBe(false);
+    }
+    expect(inScope("架空県どこかの市1-1")).toBe(false);
+  });
+
+  it("先頭 3 文字での突き合わせは 3 県を取りこぼす（退行の見張り）", () => {
+    // 直した中身そのもの。同じ手を打ち直したらここで気付けるようにしておく。
+    const names = new Set<string>(TARGET_PREFECTURE_NAMES);
+    const byFixedLength = (address: string) => names.has(address.slice(0, 3));
+
+    const missed = TARGET_PREFECTURE_NAMES.filter(
+      (n) => !byFixedLength(`${n}どこかの市1-1`),
+    );
+    expect(missed.sort()).toEqual(["和歌山県", "神奈川県", "鹿児島県"].sort());
+
+    // 正しい判定はどれも取りこぼさない。
+    for (const n of TARGET_PREFECTURE_NAMES) {
+      expect(inScope(`${n}どこかの市1-1`)).toBe(true);
     }
   });
 });

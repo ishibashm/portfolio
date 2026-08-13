@@ -16,7 +16,10 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
-import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
+import {
+  TARGET_PREFECTURE_NAMES,
+  TARGET_PREFECTURE_LIKE,
+} from "../src/lib/scrapeTargets";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -56,15 +59,26 @@ async function main() {
     console.log(`Stale threshold: ${STALE_DAYS} days`);
     console.log(`Target prefectures: ${TARGET_PREFECTURES.join(" ")}`);
 
-    const outOfScopeWhere = `substring(address from 1 for 3) <> ALL($1::text[])`;
+    // 範囲内かどうかは前方一致で見る。**固定長で切って比べないこと。**
+    //
+    // ここは `substring(address from 1 for 3) <> ALL(県名の配列)` だった。
+    // 47 都道府県のうち 3 文字でないのはちょうど 3 つ（神奈川県・和歌山県・
+    // 鹿児島県。いずれも 4 文字）で、住所を 3 文字に切ると県名と一致しない。
+    // その 3 県だけが対象リストに入っているのに毎晩「範囲外」として削除され、
+    // データが永久に 0 件だった。巡回自体は毎日走っているので、取っては
+    // 消すのを繰り返していた（2026-08-12 の実測で 1 晩に 49,069 行、
+    // 神奈川だけで 160 分ぶんの巡回が捨てられていた）。
+    const outOfScopeWhere = `NOT (address LIKE ANY ($1::text[]))`;
     const staleWhere = `last_seen_at < now() - ($1::int * interval '1 day')`;
 
+    // 報告は 4 文字で切る。3 文字だと「神奈川」と出て、県名と読み比べても
+    // なぜ範囲外なのか分からない（実際そう出ていた）。
     const outOfScope = await q(
-      `SELECT substring(address from 1 for 3) AS pref, count(*) AS rows
+      `SELECT substring(address from 1 for 4) AS pref, count(*) AS rows
          FROM rental_properties
         WHERE ${outOfScopeWhere}
         GROUP BY 1 ORDER BY 2 DESC`,
-      [TARGET_PREFECTURES],
+      [TARGET_PREFECTURE_LIKE],
     );
     const staleCount = (
       await q(
@@ -104,10 +118,10 @@ async function main() {
     // （RETURNING で受けると 10 万行をクライアントに載せることになる）。
     const del = await pool.query(
       `DELETE FROM rental_properties
-        WHERE substring(address from 1 for 3) <> ALL($1::text[])
+        WHERE NOT (address LIKE ANY ($1::text[]))
            OR last_seen_at < now() - ($2::int * interval '1 day')
            OR (expire_date IS NOT NULL AND expire_date < now())`,
-      [TARGET_PREFECTURES, STALE_DAYS],
+      [TARGET_PREFECTURE_LIKE, STALE_DAYS],
     );
     const deleted = del.rowCount ?? 0;
     console.log(`\nDeleted ${deleted} rows.`);
