@@ -136,6 +136,7 @@ GCP_BILLING_EXPORT_TABLE="billing-project.billing.gcp_billing_export_v1_XXXXXX_X
 GCP_BILLING_TARGET_PROJECT_ID="portfolio-project"
 GCP_BILLING_QUERY_PROJECT_ID="billing-project"
 GCP_BILLING_LOCATION="US"
+GCP_BILLING_TIMEOUT_MS="10000"
 # Cloud Run の実行 SA に権限を付ける場合は省略可。JSON をリポジトリへ置かないこと。
 GCP_BILLING_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```

@@ -217,7 +217,10 @@ export async function GET() {
           status: apiUsage.status,
           message: apiUsage.message,
           sinceDay: monthStart,
-          totalCalls: apiUsageRows.reduce((sum, row) => sum + row.calls, 0),
+          totalCalls:
+            apiUsage.status === "ok"
+              ? apiUsageRows.reduce((sum, row) => sum + row.calls, 0)
+              : null,
           totalEstimateYen:
             apiUsage.status === "ok" ? totalEstimateYen(apiUsageRows) : null,
           rows: apiUsageRows.map((row) => ({

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
       },
     });
 
-    void recordApiCall({
+    await recordApiCall({
       provider: "google",
       model: "gemini-2.5-pro",
       route: "/api/relocation-timing",

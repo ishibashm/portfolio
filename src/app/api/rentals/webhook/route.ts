@@ -95,7 +95,7 @@ Email Body:
 ${body}`,
     });
 
-    void recordApiCall({
+    await recordApiCall({
       provider: "google",
       model: "gemini-2.5-flash",
       route: "/api/rentals/webhook",

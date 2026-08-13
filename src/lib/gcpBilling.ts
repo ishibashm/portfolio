@@ -6,6 +6,7 @@ type BillingEnv = Record<string, string | undefined>;
 interface BillingQueryOptions {
   query: string;
   location: string;
+  jobTimeoutMs: number;
   params: {
     invoiceMonth: string;
     targetProjectId: string;
@@ -32,6 +33,34 @@ export interface GcpBillingCost {
 
 const TABLE_NAME =
   /^[A-Za-z0-9][A-Za-z0-9-]*\.[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z0-9_]+$/;
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+function queryTimeoutMs(value: string | undefined): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 100 && parsed <= 30_000
+    ? Math.trunc(parsed)
+    : DEFAULT_TIMEOUT_MS;
+}
+
+async function withinTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("GCP Billing query timed out")),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function invoiceMonthInJapan(date: Date): string {
   const parts = new Intl.DateTimeFormat("en", {
@@ -135,6 +164,7 @@ export async function loadGcpBillingCost(
 
   try {
     const location = env.GCP_BILLING_LOCATION?.trim() || "US";
+    const timeoutMs = queryTimeoutMs(env.GCP_BILLING_TIMEOUT_MS);
     const queryProjectId =
       env.GCP_BILLING_QUERY_PROJECT_ID?.trim() || targetProjectId;
     const query = injectedQuery
@@ -149,14 +179,18 @@ export async function loadGcpBillingCost(
           const [rows] = await client.query(options);
           return rows;
         };
-    const rows = await query({
-      query: billingQuery(table),
-      location,
-      params: { invoiceMonth, targetProjectId },
-    });
+    const rows = await withinTimeout(
+      query({
+        query: billingQuery(table),
+        location,
+        jobTimeoutMs: timeoutMs,
+        params: { invoiceMonth, targetProjectId },
+      }),
+      timeoutMs,
+    );
 
-    const parsed = rows.flatMap((raw) => {
-      if (typeof raw !== "object" || raw === null) return [];
+    const parsed = rows.map((raw) => {
+      if (typeof raw !== "object" || raw === null) return null;
       const row = raw as Record<string, unknown>;
       const amount = amountOf(row.amount);
       if (
@@ -164,11 +198,19 @@ export async function loadGcpBillingCost(
         typeof row.service !== "string" ||
         amount === null
       ) {
-        return [];
+        return null;
       }
-      return [{ currency: row.currency, service: row.service, amount }];
+      return { currency: row.currency, service: row.service, amount };
     });
-    const currencies = new Set(parsed.map((row) => row.currency));
+    if (parsed.some((row) => row === null)) {
+      return emptyResult(
+        "error",
+        invoiceMonth,
+        "請求データに解釈できない行があるため合計を出せません。",
+      );
+    }
+    const validRows = parsed.filter((row) => row !== null);
+    const currencies = new Set(validRows.map((row) => row.currency));
     if (currencies.size > 1) {
       return emptyResult(
         "error",
@@ -180,9 +222,9 @@ export async function loadGcpBillingCost(
     return {
       status: "ok",
       invoiceMonth,
-      currency: parsed[0]?.currency ?? null,
-      total: parsed.reduce((sum, row) => sum + row.amount, 0),
-      services: parsed.map(({ service, amount }) => ({ service, amount })),
+      currency: validRows[0]?.currency ?? null,
+      total: validRows.reduce((sum, row) => sum + row.amount, 0),
+      services: validRows.map(({ service, amount }) => ({ service, amount })),
       message: null,
     };
   } catch (error) {

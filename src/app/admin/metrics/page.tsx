@@ -73,7 +73,7 @@ type Summary = {
     status: "ok" | "error";
     message: string | null;
     sinceDay: string;
-    totalCalls: number;
+    totalCalls: number | null;
     totalEstimateYen: number | null;
     rows: {
       provider: string;
@@ -509,8 +509,16 @@ export default function AdminMetricsPage() {
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <KpiCard
                   label="呼び出し回数"
-                  value={String(s.externalApi.totalCalls)}
-                  sub={`${s.externalApi.rows.length} 経路`}
+                  value={
+                    s.externalApi.totalCalls === null
+                      ? "—"
+                      : String(s.externalApi.totalCalls)
+                  }
+                  sub={
+                    s.externalApi.totalCalls === null
+                      ? "取得失敗"
+                      : `${s.externalApi.rows.length} 経路`
+                  }
                   icon={<TrendingUp className="w-4 h-4" />}
                 />
                 <KpiCard

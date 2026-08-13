@@ -184,4 +184,39 @@ describe("metrics summary の認可", () => {
     });
     expect(d.latestViewAt).toBe("2026-08-13T12:00:00.000Z");
   });
+
+  it("api_usage を集計できないときは 0 回と偽らず、他の指標を返す", async () => {
+    getUser.mockResolvedValue({ data: { user: admin }, error: null });
+    queryRaw
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      .mockResolvedValueOnce([{ latest: null }])
+      .mockRejectedValueOnce(new Error('relation "api_usage" does not exist'));
+    userConfigCount.mockResolvedValue(0);
+    favCount.mockResolvedValue(0);
+    histCount.mockResolvedValue(0);
+    simCount.mockResolvedValue(0);
+
+    const res = await GET();
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.data.externalApi).toEqual({
+      status: "error",
+      message: "api_usage の準備または集計に失敗しました。",
+      sinceDay: "2026-08-01",
+      totalCalls: null,
+      totalEstimateYen: null,
+      rows: [],
+    });
+    expect(json.data.usage).toEqual({
+      favorites: 0,
+      histories: 0,
+      simulations: 0,
+    });
+  });
 });

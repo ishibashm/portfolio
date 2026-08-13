@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
       );
     }
     const data = await res.json();
-    void recordApiCall({
+    await recordApiCall({
       provider: "anthropic",
       model: MODEL,
       route: "/api/rentals/parse-query",

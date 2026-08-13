@@ -44,12 +44,14 @@ GCP_BILLING_EXPORT_TABLE=project.dataset.gcp_billing_export_v1_XXXXXX_XXXXXX_XXX
 GCP_BILLING_TARGET_PROJECT_ID=portfolio-project
 GCP_BILLING_QUERY_PROJECT_ID=billing-query-project
 GCP_BILLING_LOCATION=US
+GCP_BILLING_TIMEOUT_MS=10000
 GCP_BILLING_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 ```
 
 - `GCP_BILLING_TARGET_PROJECT_ID`: 管理画面に出す利用額の対象
 - `GCP_BILLING_QUERY_PROJECT_ID`: BigQuery job を作るプロジェクト
 - `GCP_BILLING_LOCATION`: dataset の location と一致させる
+- `GCP_BILLING_TIMEOUT_MS`: クエリ上限。100〜30000ms、未設定時は 10000ms
 - `GCP_BILLING_SERVICE_ACCOUNT_JSON`: Cloud Run 実行 SA を使うなら省略可
 
 JSON の `private_key` に含まれる改行は `\n` のまま 1 行で保存する。画面は設定不足を

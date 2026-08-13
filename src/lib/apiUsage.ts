@@ -67,8 +67,8 @@ export function tokensFromAnthropicUsage(
 /**
  * 呼び出しを 1 件記録する。
  *
- * **失敗しても投げない。**呼び出し側は `void recordApiCall(...)` で
- * 投げっぱなしにしてよい。応答を待たせる理由が無い。
+ * **失敗しても投げない。**呼び出し側は応答後の実行停止で記録を落とさないため
+ * `await recordApiCall(...)` する。本体を失敗させず、記録完了だけは待つ。
  */
 export async function recordApiCall(call: ApiCallRecord): Promise<void> {
   try {

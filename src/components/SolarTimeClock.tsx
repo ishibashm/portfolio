@@ -70,6 +70,39 @@ function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new 
   return fallback;
 }
 
+interface ScorecardDirectionCell {
+  status: string;
+  score: number;
+  kigakuScore: number;
+  astroBonus: number;
+  timeGateModifier: number;
+}
+
+type ScorecardDirection = Exclude<Direction, "CENTER">;
+
+function emptyScorecardDirectionCells(): Record<
+  ScorecardDirection,
+  ScorecardDirectionCell
+> {
+  const empty = (): ScorecardDirectionCell => ({
+    status: "SAFE",
+    score: 0,
+    kigakuScore: 0,
+    astroBonus: 0,
+    timeGateModifier: 0,
+  });
+  return {
+    N: empty(),
+    NE: empty(),
+    E: empty(),
+    SE: empty(),
+    S: empty(),
+    SW: empty(),
+    W: empty(),
+    NW: empty(),
+  };
+}
+
 const SolarTimeTable = dynamic(
   () => import("./SolarTimeTable").then((mod) => mod.SolarTimeTable),
   { ssr: false },
@@ -1813,7 +1846,7 @@ export const SolarTimeClock = () => {
 
   const scorecard30DaysForecast = React.useMemo(() => {
     if (!baseTime || !honmeiStar) return null;
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(parseSafeDate(birthDate));
@@ -1916,7 +1949,7 @@ export const SolarTimeClock = () => {
 
   const scorecard30DaysForecastAllModels = React.useMemo(() => {
     if (!baseTime || !honmeiStar) return null;
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
       : getPersonalVoidZodiac(parseSafeDate(birthDate));
@@ -1961,7 +1994,7 @@ export const SolarTimeClock = () => {
       models: Record<
         "classical" | "physicalIndep" | "physicalCoupled",
         Record<
-          Direction,
+          ScorecardDirection,
           {
             status: string;
             score: number;
@@ -2106,11 +2139,9 @@ export const SolarTimeClock = () => {
         dateStr: toJapanDateString(testDateLocal),
         weekday: testDateLocal.getDay(),
         models: {
-          classical: {} as (typeof result)[number]["models"]["classical"],
-          physicalIndep:
-            {} as (typeof result)[number]["models"]["physicalIndep"],
-          physicalCoupled:
-            {} as (typeof result)[number]["models"]["physicalCoupled"],
+          classical: emptyScorecardDirectionCells(),
+          physicalIndep: emptyScorecardDirectionCells(),
+          physicalCoupled: emptyScorecardDirectionCells(),
         },
       };
 
@@ -2181,7 +2212,7 @@ export const SolarTimeClock = () => {
 
   const scorecardHonmeiStarsForecast = React.useMemo(() => {
     if (!baseTime) return null;
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const targetDateLocal = baseTime
       ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
       : new Date();
@@ -2236,7 +2267,7 @@ export const SolarTimeClock = () => {
       models: Record<
         "classical" | "physicalIndep" | "physicalCoupled",
         Record<
-          Direction,
+          ScorecardDirection,
           {
             status: string;
             score: number;
@@ -2350,11 +2381,9 @@ export const SolarTimeClock = () => {
         star,
         label: `${star} (${["一白水星", "二黒土星", "三碧木星", "四緑木星", "五黄土星", "六白金星", "七赤金星", "八白土星", "九紫火星"][star - 1]})`,
         models: {
-          classical: {} as (typeof result)[number]["models"]["classical"],
-          physicalIndep:
-            {} as (typeof result)[number]["models"]["physicalIndep"],
-          physicalCoupled:
-            {} as (typeof result)[number]["models"]["physicalCoupled"],
+          classical: emptyScorecardDirectionCells(),
+          physicalIndep: emptyScorecardDirectionCells(),
+          physicalCoupled: emptyScorecardDirectionCells(),
         },
       };
 
@@ -2662,7 +2691,7 @@ export const SolarTimeClock = () => {
         "伝統連動_時間ゲート調整",
       ];
       const rows: (string | number)[][] = [];
-      const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
       scorecard30DaysForecastAllModels.forEach((day) => {
@@ -2742,7 +2771,7 @@ export const SolarTimeClock = () => {
         "伝統連動_時間ゲート調整",
       ];
       const rows: (string | number)[][] = [];
-      const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+      const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
       scorecardHonmeiStarsForecast.forEach((star) => {
         dirs.forEach((dir) => {
@@ -6000,8 +6029,8 @@ export const SolarTimeClock = () => {
                                     "SW",
                                     "W",
                                     "NW",
-                                  ] as Direction[]
-                                ).map((dir: Direction) => {
+                                  ] as ScorecardDirection[]
+                                ).map((dir: ScorecardDirection) => {
                                   const classData = day.models.classical[dir];
                                   const indepData =
                                     day.models.physicalIndep[dir];
@@ -6193,8 +6222,8 @@ export const SolarTimeClock = () => {
                                     "SW",
                                     "W",
                                     "NW",
-                                  ] as Direction[]
-                                ).map((dir: Direction) => {
+                                  ] as ScorecardDirection[]
+                                ).map((dir: ScorecardDirection) => {
                                   const classData = star.models.classical[dir];
                                   const indepData =
                                     star.models.physicalIndep[dir];

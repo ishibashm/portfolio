@@ -36,6 +36,7 @@ describe("GCP 請求実額", () => {
     expect(query).toHaveBeenCalledWith(
       expect.objectContaining({
         location: "asia-northeast1",
+        jobTimeoutMs: 10_000,
         params: {
           invoiceMonth: "202608",
           targetProjectId: "portfolio-prod",
@@ -66,6 +67,30 @@ describe("GCP 請求実額", () => {
     expect(result.status).toBe("error");
     expect(result.total).toBeNull();
     expect(result.message).toContain("複数の通貨");
+  });
+
+  it("解釈できない行があれば残りだけで過小な合計を出さない", async () => {
+    const query = vi.fn().mockResolvedValue([
+      { currency: "JPY", service: "Cloud Run", amount: 100 },
+      { currency: "JPY", service: "BigQuery", amount: "not-a-number" },
+    ]);
+
+    const result = await loadGcpBillingCost(configured, query);
+
+    expect(result.status).toBe("error");
+    expect(result.total).toBeNull();
+    expect(result.message).toContain("解釈できない行");
+  });
+
+  it("クエリが応答しなくても期限で取得失敗にする", async () => {
+    const query = vi.fn(() => new Promise<unknown[]>(() => undefined));
+    const result = await loadGcpBillingCost(
+      { ...configured, GCP_BILLING_TIMEOUT_MS: "100" },
+      query,
+    );
+
+    expect(result.status).toBe("error");
+    expect(result.total).toBeNull();
   });
 
   it("テーブル名を検証し、SQL へ任意文字列を入れない", async () => {
