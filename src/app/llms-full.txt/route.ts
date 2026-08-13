@@ -5,6 +5,7 @@ import {
   SITE_TAGLINE,
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
+import { getBlogPosts } from "@/lib/blog";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -23,6 +24,9 @@ export async function GET() {
   const services = CORE_ROUTES.map(
     (r, i) => `### ${i + 1}. ${r.label}（${baseUrl}${r.href}）\n${r.summary}`,
   ).join("\n\n");
+  const blogPosts = getBlogPosts()
+    .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug})`)
+    .join("\n");
 
   const content = `# ${SITE_NAME} — ${SITE_TAGLINE}
 
@@ -45,6 +49,11 @@ ${SITE_DESCRIPTION}
 ## 提供している機能
 
 ${services}
+
+## 解説記事
+
+- [引越しの読みもの](${baseUrl}/blog): 計算規則と流派による解釈を区別して解説します。
+${blogPosts}
 
 ---
 

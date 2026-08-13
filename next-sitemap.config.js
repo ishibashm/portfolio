@@ -19,6 +19,7 @@ const NOT_A_PAGE = [
   "/ads.txt",
   "/llms.txt",
   "/llms-full.txt",
+  "/blog/feed.xml",
   "/login",
 ];
 
