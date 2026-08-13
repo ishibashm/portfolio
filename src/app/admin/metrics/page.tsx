@@ -10,6 +10,8 @@ import {
   Monitor,
   Star,
   Wallet,
+  BookOpen,
+  ArrowRightLeft,
 } from "lucide-react";
 import {
   FIXED_COSTS,
@@ -27,7 +29,9 @@ import {
  *
  * コンソール型の高密度レイアウト:
  *   上段  KPI カード 6 枚（数値大・ラベル小・前期間比の矢印・スパークライン）
- *   中段  日別 PV/UV と、時間帯別（JST・直近 7 日）
+ *   中段  日別 PV/UV の推移（折れ線）と、時間帯別（JST・直近 7 日）
+ *         曜日 × 時間帯（JST・直近 30 日）
+ *         ブログの効果検証（記事別・流入元・道具への到達率）
  *   下段  ページ別 / 参照元 / デバイス別 / 登録ユーザーの内訳
  *
  * このサイトの計測は匿名で、日をまたいで同じ人を追えない（visitor_hash に
@@ -102,9 +106,30 @@ type Summary = {
   pvPrev30: number;
   daily: { day: string; pv: number; uv: number }[];
   hourly: { hour: number; pv: number }[];
+  /** 曜日 × 時間帯（直近30日）。記録のある枠だけ来る。dow は日曜が 0。 */
+  weekdayHourly: { dow: number; hour: number; pv: number }[];
   topPaths: { path: string; pv: number; uv: number }[];
   topReferrers: { host: string; pv: number }[];
   devices: { device: string; pv: number; uv: number }[];
+  blog: {
+    index: { pv: number; uv: number };
+    totals: { pv: number; uv: number };
+    posts: {
+      slug: string;
+      title: string;
+      path: string;
+      publishedAt: string;
+      daysSincePublished: number;
+      pv: number;
+      uv: number;
+    }[];
+    referrers: { host: string; pv: number }[];
+    funnel: {
+      blogVisitDays: number;
+      toolVisitDays: number;
+      rate: number | null;
+    };
+  };
 };
 
 function formatYen(value: number | null, digits = 0): string {
@@ -252,6 +277,186 @@ function BarRow({
   );
 }
 
+/**
+ * 日別 PV / UV の推移。
+ *
+ * 以前は 1 日 1 本の横バーを 30 行並べていた。1 日ずつの値は読めるが、
+ * **増えているのか減っているのかが読めない**。効果検証で見たいのは
+ * 各日の絶対値ではなく傾きなので、時間を横軸に取る形に替える。
+ *
+ * recharts は使わない。この画面のためだけに読み込むには重く、
+ * CLAUDE.md にあるとおり Tooltip の型が any を増やす。既存の
+ * Sparkline と同じ手書きの SVG で足りる。
+ *
+ * preserveAspectRatio="none" で横に伸ばすので、線は
+ * vectorEffect="non-scaling-stroke" が要る（無いと太さまで伸びる）。
+ * 同じ理由で **SVG の中に文字を置かない**。目盛りは外の HTML で出す。
+ */
+function DailyChart({
+  daily,
+}: {
+  daily: { day: string; pv: number; uv: number }[];
+}) {
+  // 応答は新しい順。左を古い日にする。
+  const rows = [...daily].reverse();
+  if (rows.length < 2) {
+    return (
+      <p className="text-sm text-stone-400">
+        まだ推移を描けません（2日分から）。
+      </p>
+    );
+  }
+
+  const max = Math.max(1, ...rows.map((r) => r.pv), ...rows.map((r) => r.uv));
+  const W = 100;
+  const H = 40;
+  const x = (i: number) => (i / (rows.length - 1)) * W;
+  const y = (v: number) => H - (v / max) * H;
+  const line = (pick: (r: (typeof rows)[number]) => number) =>
+    rows.map((r, i) => `${i === 0 ? "M" : "L"}${x(i)},${y(pick(r))}`).join(" ");
+  const pvLine = line((r) => r.pv);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[10px] font-mono text-stone-400">
+        <span>{max} PV</span>
+        <span className="flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-1.5 rounded-sm bg-emerald-400/70" />
+            PV
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-3 h-[2px] bg-sky-500" />
+            UV
+          </span>
+        </span>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        className="w-full h-40 mt-1"
+        role="img"
+        aria-label="日別の PV と UV の推移"
+      >
+        {[0, 0.5, 1].map((t) => (
+          <line
+            key={t}
+            x1={0}
+            x2={W}
+            y1={H * t}
+            y2={H * t}
+            stroke="currentColor"
+            strokeWidth="1"
+            className="text-stone-200"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+        <path
+          d={`${pvLine} L${W},${H} L0,${H} Z`}
+          className="fill-emerald-400/25"
+        />
+        <path
+          d={pvLine}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="text-emerald-500"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          d={line((r) => r.uv)}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeDasharray="3 2"
+          className="text-sky-500"
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* 値を読むための当たり判定。線ではなく面で拾う。 */}
+        {rows.map((r, i) => (
+          <rect
+            key={r.day}
+            x={x(i) - W / rows.length / 2}
+            y={0}
+            width={W / rows.length}
+            height={H}
+            fill="transparent"
+          >
+            <title>{`${r.day}　PV ${r.pv} / UV ${r.uv}`}</title>
+          </rect>
+        ))}
+      </svg>
+      <div className="flex justify-between text-[10px] font-mono text-stone-400">
+        <span>{rows[0].day}</span>
+        <span>{rows[rows.length - 1].day}</span>
+      </div>
+    </div>
+  );
+}
+
+const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
+
+/**
+ * 曜日 × 時間帯（直近30日）。
+ *
+ * 時間帯だけの 24 枠では「平日の昼なのか週末の夜なのか」が均されて
+ * 消える。記事を出す曜日や告知の時間を決めるにはこちらが要る。
+ *
+ * 応答は記録のある枠だけ来る。168 枠の残りはここで 0 として埋める。
+ */
+function WeekdayHeatmap({
+  cells,
+}: {
+  cells: { dow: number; hour: number; pv: number }[];
+}) {
+  const byKey = new Map(cells.map((c) => [`${c.dow}-${c.hour}`, c.pv]));
+  const max = Math.max(1, ...cells.map((c) => c.pv));
+
+  if (cells.length === 0) {
+    return <p className="text-sm text-stone-400">まだ記録がありません。</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="min-w-[520px]">
+        <div className="flex gap-[2px] pl-6 mb-[2px]">
+          {Array.from({ length: 24 }, (_, h) => (
+            <span
+              key={h}
+              className="flex-1 text-center text-[8px] font-mono text-stone-400"
+            >
+              {h % 3 === 0 ? h : ""}
+            </span>
+          ))}
+        </div>
+        {WEEKDAY_LABELS.map((label, dow) => (
+          <div key={dow} className="flex items-center gap-[2px] mb-[2px]">
+            <span className="w-6 text-[10px] font-mono text-stone-500">
+              {label}
+            </span>
+            {Array.from({ length: 24 }, (_, h) => {
+              const pv = byKey.get(`${dow}-${h}`) ?? 0;
+              return (
+                <div
+                  key={h}
+                  className="flex-1 h-4 rounded-[2px] border border-stone-100"
+                  style={{
+                    backgroundColor:
+                      pv === 0
+                        ? undefined
+                        : `rgba(16, 185, 129, ${0.15 + (pv / max) * 0.65})`,
+                  }}
+                  title={`${label}曜 ${h}時: ${pv} PV`}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const DEVICE_LABELS: Record<string, string> = {
   pc: "PC",
   mobile: "スマホ",
@@ -312,7 +517,6 @@ export default function AdminMetricsPage() {
   }, []);
 
   const s = summary;
-  const maxPv = Math.max(1, ...(s?.daily.map((d) => d.pv) ?? []));
   const maxHour = Math.max(1, ...(s?.hourly.map((h) => h.pv) ?? []));
   const sparkAsc = s ? [...s.daily].reverse().map((d) => d.pv) : [];
   const devicePv = s?.devices.reduce((a, d) => a + d.pv, 0) ?? 0;
@@ -320,7 +524,7 @@ export default function AdminMetricsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
-      <div className="max-w-[1200px] mx-auto space-y-5">
+      <div className="max-w-[1700px] mx-auto space-y-5">
         <header className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h1 className="text-xl font-bold font-serif text-stone-900">
@@ -667,38 +871,18 @@ export default function AdminMetricsPage() {
             {/* ── 中段: 日別と時間帯別 ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
               <section className="lg:col-span-2 bg-white/90 border border-stone-200 rounded-2xl p-5">
-                <h2 className="text-sm font-bold text-stone-700 mb-3">
-                  日別の PV / UV
+                <h2 className="text-sm font-bold text-stone-700 mb-1">
+                  日別の PV / UV（30日）
                 </h2>
+                <p className="text-[10px] text-stone-400 mb-3">
+                  升目に触れるとその日の値が出ます。
+                </p>
                 {s.daily.length === 0 ? (
                   <p className="text-sm text-stone-400">
                     まだ記録がありません。
                   </p>
                 ) : (
-                  <div className="space-y-1">
-                    {s.daily.map((d) => (
-                      <div
-                        key={d.day}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <span className="w-20 font-mono text-stone-500">
-                          {d.day.slice(5)}
-                        </span>
-                        <div className="flex-1 h-4 bg-stone-100 rounded overflow-hidden">
-                          <div
-                            className="h-full bg-emerald-400/70"
-                            style={{ width: `${(d.pv / maxPv) * 100}%` }}
-                          />
-                        </div>
-                        <span className="w-10 text-right font-mono text-stone-700">
-                          {d.pv}
-                        </span>
-                        <span className="w-14 text-right font-mono text-[10px] text-stone-400">
-                          UV {d.uv}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <DailyChart daily={s.daily} />
                 )}
               </section>
 
@@ -734,6 +918,139 @@ export default function AdminMetricsPage() {
                 </div>
               </section>
             </div>
+
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1">
+                曜日 × 時間帯（JST・直近30日）
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-3">
+                濃いほど多い。左の 24 枠は 7 日ぶんなので「今」を、こちらは 30
+                日ぶんなので「平日の昼か週末の夜か」を見るためのもの。
+              </p>
+              <WeekdayHeatmap cells={s.weekdayHourly} />
+            </section>
+
+            {/* ── ブログの効果検証 ── */}
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-stone-400" />
+                ブログの効果検証（30日）
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-4">
+                記事は読まれているか、読んだ人が道具まで来ているか。
+                <span className="text-amber-600">
+                  到達率は同じ日に両方を見た割合です。
+                </span>
+                閲覧の記録は日をまたいで同じ人を追えないので、「記事を読んで後日また来て使った」は測れません。実際より低く出ます。
+              </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                <KpiCard
+                  label="記事 PV"
+                  value={s.blog.totals.pv.toLocaleString()}
+                  sub={`UV ${s.blog.totals.uv}`}
+                  icon={<BookOpen className="w-4 h-4" />}
+                />
+                <KpiCard
+                  label="一覧 PV"
+                  value={s.blog.index.pv.toLocaleString()}
+                  sub={`UV ${s.blog.index.uv}`}
+                  icon={<Eye className="w-4 h-4" />}
+                />
+                <KpiCard
+                  label="サイト全体に占める割合"
+                  value={
+                    s.pv30 === 0
+                      ? "—"
+                      : `${Math.round(((s.blog.totals.pv + s.blog.index.pv) / s.pv30) * 100)}%`
+                  }
+                  sub={`全体 ${s.pv30} PV`}
+                  icon={<TrendingUp className="w-4 h-4" />}
+                />
+                <KpiCard
+                  label="道具への到達率"
+                  value={
+                    s.blog.funnel.rate === null
+                      ? "—"
+                      : `${Math.round(s.blog.funnel.rate * 100)}%`
+                  }
+                  sub={`${s.blog.funnel.toolVisitDays} / ${s.blog.funnel.blogVisitDays} 人日`}
+                  icon={<ArrowRightLeft className="w-4 h-4" />}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="lg:col-span-2">
+                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                    記事別
+                  </h3>
+                  {s.blog.posts.length === 0 ? (
+                    <p className="text-sm text-stone-400">記事がありません。</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {s.blog.posts.map((post) => (
+                        <div
+                          key={post.slug}
+                          className="flex items-center gap-2 py-1 text-xs"
+                        >
+                          <a
+                            href={post.path}
+                            className="w-56 xl:w-80 truncate text-stone-600 hover:text-rose-600 hover:underline"
+                            title={`${post.title}（${post.path}）`}
+                          >
+                            {post.title}
+                          </a>
+                          <span className="w-16 text-right font-mono text-[10px] text-stone-400">
+                            {post.daysSincePublished}日前
+                          </span>
+                          <div className="flex-1 h-3 bg-stone-100 rounded overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-400/70"
+                              style={{
+                                width: `${(post.pv / Math.max(1, s.blog.posts[0].pv)) * 100}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="w-10 text-right font-mono text-stone-700">
+                            {post.pv}
+                          </span>
+                          <span className="w-14 text-right font-mono text-[10px] text-stone-400">
+                            UV {post.uv}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="mt-2 text-[10px] text-stone-400">
+                    公開中の記事は PV が 0
+                    でも並びます。一覧から消すと「読まれていない」が見えなくなるためです。
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                    記事への流入元
+                  </h3>
+                  {s.blog.referrers.length === 0 ? (
+                    <p className="text-sm text-stone-400">
+                      外部からの流入はまだありません。
+                    </p>
+                  ) : (
+                    s.blog.referrers.map((r) => (
+                      <BarRow
+                        key={r.host}
+                        label={r.host}
+                        value={r.pv}
+                        max={s.blog.referrers[0].pv}
+                      />
+                    ))
+                  )}
+                  <p className="mt-2 text-[10px] text-stone-400">
+                    サイト内の移動は記録していないので、ここに出るのは外部からの流入だけです。
+                  </p>
+                </div>
+              </div>
+            </section>
 
             {/* ── 下段: 内訳 ── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
