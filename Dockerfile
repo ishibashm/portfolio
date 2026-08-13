@@ -58,6 +58,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Copy Prisma schema and engine to ensure it runs correctly in standalone mode
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# ブログ記事の Markdown。src/lib/blog.ts が process.cwd() を起点に
+# 実行時へ読みに行くが、パスを組み立てて readFileSync するだけなので
+# Next の output file tracing では追えず、standalone には入らない。
+# 今は読み手が全部ビルド時（/blog は静的生成、feed.xml は force-static）
+# なので表に出ていないが、実行時に読む口を 1 つ足した瞬間、例外ではなく
+# **記事 0 件**が静かに返る（getBlogPosts はディレクトリが無いと [] を返す）。
+COPY --from=builder --chown=nextjs:nodejs /app/content ./content
+
 USER nextjs
 
 EXPOSE 3000
