@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deviceTypeFrom,
   isBotUserAgent,
   normalizePath,
   referrerHostFrom,
@@ -117,5 +118,51 @@ describe("visitorHash: 匿名で、日をまたいで追えない", () => {
     expect(visitorHash("1.2.3.45", "Mozilla", "2026-08-13")).not.toBe(
       visitorHash("1.2.3.4", "5Mozilla", "2026-08-13"),
     );
+  });
+});
+
+describe("deviceTypeFrom: 3 値と null だけ", () => {
+  it("iPhone は mobile", () => {
+    expect(
+      deviceTypeFrom(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe("mobile");
+  });
+
+  it("Android のスマホは mobile（Mobile を名乗る）", () => {
+    expect(
+      deviceTypeFrom(
+        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36",
+      ),
+    ).toBe("mobile");
+  });
+
+  it("iPad は tablet（Mobile を名乗らないので先に見る）", () => {
+    expect(
+      deviceTypeFrom(
+        "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1",
+      ),
+    ).toBe("tablet");
+  });
+
+  it("Android のタブレットは tablet（Mobile が付かない）", () => {
+    expect(
+      deviceTypeFrom(
+        "Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+      ),
+    ).toBe("tablet");
+  });
+
+  it("Windows は pc", () => {
+    expect(
+      deviceTypeFrom(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0 Safari/537.36",
+      ),
+    ).toBe("pc");
+  });
+
+  it("空なら null（既定で pc に倒さない。分からないものは分からないまま）", () => {
+    expect(deviceTypeFrom("")).toBeNull();
   });
 });

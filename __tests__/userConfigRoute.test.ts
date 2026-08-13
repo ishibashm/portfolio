@@ -93,5 +93,18 @@ describe("/api/user-config", () => {
       user_email: user.email,
       base_lat: 35.1,
     });
+    // 行の作成＝はじめての保存。管理ページが「新規登録」として数えるので、
+    // create のときだけ created_at を入れる（update では触らない）。
+    expect(create.mock.calls[0][0].data.created_at).toBeInstanceOf(Date);
+  });
+
+  it("既存行の更新では created_at を書き換えない", async () => {
+    findFirst.mockResolvedValue({ id: "cfg-1" });
+    update.mockResolvedValue({});
+
+    const res = await POST(post({ base_lat: 35.1 }));
+
+    expect(res.status).toBe(200);
+    expect(update.mock.calls[0][0].data).not.toHaveProperty("created_at");
   });
 });

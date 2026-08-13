@@ -123,7 +123,13 @@ export async function POST(req: Request) {
       });
     } else {
       await prisma.user_configs.create({
-        data: { user_id: toUserId(user), user_email: user.email, presets },
+        data: {
+          user_id: toUserId(user),
+          user_email: user.email,
+          presets,
+          // 行の作成＝はじめての保存。登録日として管理ページが数える。
+          created_at: new Date(),
+        },
       });
     }
 
