@@ -14,24 +14,32 @@ import {
   WEALTH_LEGEND_NOTES,
   WEALTH_LEGEND_SAMPLES,
 } from "@/lib/wealthMapPresentation";
+import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 
 const geoUrl =
   "https://raw.githubusercontent.com/dataofjapan/land/master/japan.topojson";
 
-interface MunicipalityData {
-  id: string;
-  areaCode: string;
-  areaName: string;
-  incomePerCapita: number;
-  lat: number | null;
-  lon: number | null;
-  astrologyScore: number;
-  astrologyStatus: string;
-  direction: string | null;
-  magneticDirection?: string | null;
-  trueBearing?: number | null;
-  magneticBearing?: number | null;
-}
+/**
+ * この地図が読む項目だけ。名前と型は集約先（lib/municipalityWealth）から引く。
+ *
+ * 以前はここに同じ形を書き写していた。応答の形は 1 つなのに宣言が
+ * 3 か所（この地図・移住比較のページ・SolarTimeClock の any）に散って
+ * おり、実際に SolarTimeClock 側が存在しない項目名を読んでいた（#231）。
+ *
+ * areaCode・astrologyScore・trueBearing・magneticBearing も宣言して
+ * いたが、この地図はどれも読んでいないので受け口から外した。
+ */
+type MunicipalityData = Pick<
+  MunicipalityWealthItem,
+  | "id"
+  | "areaName"
+  | "incomePerCapita"
+  | "lat"
+  | "lon"
+  | "astrologyStatus"
+  | "direction"
+  | "magneticDirection"
+>;
 
 interface WealthMapProps {
   data: MunicipalityData[];
