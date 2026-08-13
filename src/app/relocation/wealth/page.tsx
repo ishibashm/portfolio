@@ -8,15 +8,9 @@ import {
   saveProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ScatterChart,
-  Scatter,
-} from "recharts";
+import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
+import { parseWealthStatus } from "@/lib/wealthMapPresentation";
+import { directionLabelShort } from "@/lib/directionLabels";
 import {
   Users,
   MapPin,
@@ -60,6 +54,25 @@ const LocationPickerInner = dynamic(
   },
 );
 
+
+/**
+ * 方位 1 つぶんの所得の幅。散布図の置き換え（「スコア分布」）で使う。
+ *
+ * 該当エリアが 0 件の方位は幅を持たないので、判別できる形に分けておく。
+ * 同じ形に optional で持たせると、読む側が毎回 undefined を気にする。
+ */
+type DirectionBand =
+  | { dir: (typeof ALL_DIRECTIONS)[number]; areas: 0 }
+  | {
+      dir: (typeof ALL_DIRECTIONS)[number];
+      areas: number;
+      /** 方位の吉凶。方位から決まるので 1 方位に 1 つ。 */
+      status: string;
+      /** 一人当たり所得（万円）の最小・中央・最大。 */
+      min: number;
+      median: number;
+      max: number;
+    };
 
 const normalizeDateTimeLocal = (dateStr: string): string => {
   if (!dateStr) return "";
@@ -700,14 +713,44 @@ export default function RegionalWealthPage() {
     return true;
   });
 
-  const scatterData = filteredData.map((d) => ({
-    name: d.areaName,
-    income: Math.round(d.incomePerCapita / 10000), // 万円単位
-    astrologyScore: d.astrologyScore,
-    population: d.taxpayersCount,
-    direction: d.direction,
-    status: d.astrologyStatus,
-  }));
+  /**
+   * 方位ごとの所得の幅。散布図の置き換え。
+   *
+   * 以前は astrologyScore を横軸に取った散布図だったが、この点数は
+   * 方位の吉凶から決まる**離散値**（10/20/40/50/60/80/100 に付帯フラグの
+   * 加点）で、連続量ではない。結果として縦縞が 3 本並ぶだけの図になり、
+   * どの市区町村がどれかも読めなかった。
+   *
+   * この頁の問いは「吉方位の中で、生活が成り立つ所得のエリアはどこか」
+   * なので、方位を行に取り、その方位の吉凶と所得の幅を並べる。
+   * 吉凶は方位から決まるので、1 方位につき 1 つに定まる。
+   */
+  const directionBands: DirectionBand[] = ALL_DIRECTIONS.map((dir) => {
+    const areas = filteredData.filter(
+      (d) => (useTrueNorth ? d.direction : d.magneticDirection) === dir,
+    );
+    if (areas.length === 0) return { dir, areas: 0 };
+
+    const incomes = areas
+      .map((d) => d.incomePerCapita / 10000)
+      .sort((a, b) => a - b);
+    const { status } = parseWealthStatus(areas[0].astrologyStatus);
+
+    return {
+      dir,
+      areas: areas.length,
+      status,
+      min: incomes[0],
+      max: incomes[incomes.length - 1],
+      median: incomes[Math.floor(incomes.length / 2)],
+    };
+  });
+
+  /** 帯を同じ物差しで並べるための上限。全方位の最大所得。 */
+  const bandMaxIncome = Math.max(
+    1,
+    ...directionBands.map((b) => ("max" in b ? b.max : 0)),
+  );
 
   const handleExportCSV = () => {
     // Sort filtered data identically to the table
@@ -1346,56 +1389,81 @@ export default function RegionalWealthPage() {
               </div>
             </div>
 
-            {/* Scatter Chart Section */}
+            {/* 方位ごとの所得の幅。以前は「スコア分布」という散布図だった
+                （見出しも中身に合わせて変えた）。 */}
             <div className="bg-white dark:bg-white rounded-2xl shadow-sm p-4 border border-gray-200 dark:border-stone-200 flex-1 min-h-[300px] flex flex-col">
               <h2 className="text-sm font-semibold flex items-center gap-2 mb-4 text-stone-400 uppercase tracking-wider">
                 <Compass className="w-4 h-4 text-indigo-500" />
-                スコア分布
+                方位ごとの所得の幅
               </h2>
-              <div className="flex-1 w-full min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis
-                      type="number"
-                      dataKey="astrologyScore"
-                      name="方位スコア"
-                      domain={[0, 100]}
-                      tick={{ fill: "#6B7280", fontSize: 10 }}
-                    />
-                    <YAxis
-                      type="number"
-                      dataKey="income"
-                      name="所得"
-                      tick={{ fill: "#6B7280", fontSize: 10 }}
-                      tickFormatter={(value) => `${value}万`}
-                      width={40}
-                    />
-                    <Tooltip
-                      cursor={{ strokeDasharray: "3 3" }}
-                      contentStyle={{
-                        borderRadius: "8px",
-                        border: "none",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.3)",
-                        backgroundColor: "#1f2937",
-                        color: "#f3f4f6",
-                      }}
-                      formatter={(value, name) => {
-                        if (name === "所得") return [`${value}万円`, name];
-                        return [value, name];
-                      }}
-                      labelFormatter={() => ""}
-                    />
-                    <Scatter
-                      name="市区町村"
-                      data={scatterData}
-                      fill="#6366f1"
-                      fillOpacity={0.6}
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
+              {/* 方位ごとの所得の幅。棒の左端が最小、右端が最大、
+                  縦線が中央値。物差しは全方位で共通なので、方位どうしを
+                  そのまま見比べられる。 */}
+              <div className="flex-1 w-full min-h-0 flex flex-col justify-center gap-1.5">
+                {directionBands.map((b) => {
+                  if (!("max" in b)) {
+                    return (
+                      <div
+                        key={b.dir}
+                        className="flex items-center gap-2 text-[10px] text-stone-300"
+                      >
+                        <span className="w-6 shrink-0 font-bold text-stone-400">
+                          {DIRECTION_LABELS[b.dir]}
+                        </span>
+                        <span>該当なし</span>
+                      </div>
+                    );
+                  }
+
+                  const isNoise = b.status.startsWith("NOISE");
+                  const left = (b.min / bandMaxIncome) * 100;
+                  const width = Math.max(
+                    1.5,
+                    ((b.max - b.min) / bandMaxIncome) * 100,
+                  );
+                  const mid = (b.median / bandMaxIncome) * 100;
+
+                  return (
+                    <div key={b.dir} className="flex items-center gap-2">
+                      <span className="w-6 shrink-0 text-[11px] font-bold text-gray-900 dark:text-stone-800">
+                        {DIRECTION_LABELS[b.dir]}
+                      </span>
+                      <span
+                        className={`w-14 shrink-0 text-[9px] font-semibold ${
+                          isNoise ? "text-rose-500" : "text-emerald-600"
+                        }`}
+                      >
+                        {directionLabelShort(b.status)}
+                      </span>
+                      <div
+                        className="relative flex-1 h-3 rounded-full bg-stone-100"
+                        title={`${DIRECTION_LABELS[b.dir]}：${b.areas}エリア／所得 ${Math.round(b.min)}〜${Math.round(b.max)}万円（中央値 ${Math.round(b.median)}万円）`}
+                      >
+                        <div
+                          className={`absolute top-0 h-3 rounded-full ${
+                            isNoise ? "bg-rose-200" : "bg-emerald-300"
+                          }`}
+                          style={{ left: `${left}%`, width: `${width}%` }}
+                        />
+                        <div
+                          className={`absolute top-0 h-3 w-0.5 ${
+                            isNoise ? "bg-rose-500" : "bg-emerald-600"
+                          }`}
+                          style={{ left: `${mid}%` }}
+                        />
+                      </div>
+                      <span className="w-16 shrink-0 text-right font-mono text-[10px] text-stone-500">
+                        {Math.round(b.median)}万
+                      </span>
+                      <span className="w-8 shrink-0 text-right font-mono text-[9px] text-stone-400">
+                        {b.areas}件
+                      </span>
+                    </div>
+                  );
+                })}
+                <p className="mt-1 text-[9px] leading-relaxed text-stone-400">
+                  棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに 1 つです。
+                </p>
               </div>
             </div>
 
