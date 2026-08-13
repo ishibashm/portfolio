@@ -67,6 +67,24 @@ export function referrerHostFrom(
 }
 
 /**
+ * User-Agent からデバイスの種別だけを取り出す。
+ *
+ * 保存するのはこの 3 値（と判定不能の null）だけで、UA そのものは
+ * 保存しない。管理ページで「スマホから見られているのか PC なのか」を
+ * 読むための粒度で、それ以上に細かくしない（機種・OS・ブラウザ名は
+ * 個人の絞り込みに近づくだけで、判断には要らない）。
+ *
+ * 判定は素朴でよい。iPad は Mobile を名乗らないので先に見る。
+ * Android はタブレットだけ Mobile を名乗らない（Chrome の慣習）。
+ */
+export function deviceTypeFrom(ua: string): "pc" | "mobile" | "tablet" | null {
+  if (!ua) return null;
+  if (/iPad|Android(?!.*Mobile)|Tablet/i.test(ua)) return "tablet";
+  if (/Mobi|iPhone|Android/i.test(ua)) return "mobile";
+  return "pc";
+}
+
+/**
  * その日の中でだけ同一人物を束ねられる匿名ハッシュ。
  *
  * 日付を混ぜるので、翌日には同じ人を追えない（Plausible と同じ考え方）。

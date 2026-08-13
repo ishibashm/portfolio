@@ -125,6 +125,8 @@ export async function POST(req: Request) {
           user_id: toUserId(user),
           user_email: user.email,
           ...data,
+          // 行の作成＝はじめての保存。登録日として管理ページが数える。
+          created_at: updatedAt,
           updated_at: updatedAt,
         },
       });

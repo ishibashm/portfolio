@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import { toLogMessage } from "@/lib/errorMessage";
 import { todayInJapan } from "@/utils/japanDate";
 import {
+  deviceTypeFrom,
   isBotUserAgent,
   normalizePath,
   referrerHostFrom,
@@ -55,6 +56,8 @@ export async function POST(request: Request) {
           referrer,
           new URL(request.url).hostname,
         ),
+        // UA そのものは保存しない。pc / mobile / tablet の 3 値だけ。
+        device: deviceTypeFrom(ua),
       },
     });
   } catch (e) {
