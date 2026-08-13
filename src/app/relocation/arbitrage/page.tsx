@@ -10,6 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { loadSettings } from "@/lib/userSettings";
@@ -255,7 +256,8 @@ export default function ArbitrageScannerPage() {
     filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm,
   ); // Scan Radius (km)
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
-  const [useClassical, setUseClassical] = useState(false);
+  // 既定は古典（一般的な九星気学）。理由は下の読み込み処理のコメントに書いた。
+  const [useClassical, setUseClassical] = useState(true);
   const [layerMode, setLayerMode] = useState("year");
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState(true);
@@ -825,7 +827,13 @@ export default function ArbitrageScannerPage() {
     let tDate = getTodayString();
     let rKm = filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm;
     let pref = "all";
-    let classical = false;
+    // 何も保存されていないときは古典（一般的な九星気学）で始める。
+    //
+    // MetaphysicalConfigBar の既定も古典で、/houi の表も古典。ここだけ
+    // 独自モデルで始まると、バーがマウント時に古典を押し込んで一瞬で
+    // 判定が変わる（走査もやり直しになる）。公開している記事と同じ基準に
+    // 揃えておく。保存済みの設定がある人はそちらが優先される。
+    let classical = true;
     let layer = "year";
     let trueNorth = false;
 
@@ -2281,6 +2289,28 @@ export default function ArbitrageScannerPage() {
             </button>
           </div>
         </div>
+
+        {/*
+          算出方法の切替（古典 / 独自モデル）と、対象日・判定の絞り込み・目的。
+
+          2026-07-26 の 39d4bed（見た目を揃えるコミット）が、このバーごと
+          落としていた。以来スキャナー本体から切替ができない状態が続いて
+          いたが、/houi の記事は「このサイトのスキャナーには…独自モデルも
+          用意しており、設定で切り替えられます」と書いている。記事の側が
+          正しいので、バーを戻して仕様を合わせる。
+
+          反映は 2 経路ある。このバーは保存時に metaphysical-config-updated
+          を投げ、下の useEffect がそれを拾う。onConfigChange はマウント時
+          （まだイベントは飛ばない）にも呼ばれるので、両方つないでおく。
+        */}
+        <MetaphysicalConfigBar
+          onConfigChange={(newConfig) => {
+            setTargetDate(newConfig.targetDate);
+            setUseClassical(newConfig.useClassicalBoard);
+            setDirectionFilterMode(newConfig.directionFilterMode);
+            setActionIntent(newConfig.actionIntent);
+          }}
+        />
 
         {searchError && (
           <div
