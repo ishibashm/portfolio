@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isProtectedRoute } from "./routeAccess";
+import { isAdminEmail, isProtectedRoute } from "./routeAccess";
 
 /**
  * @param effectivePathname the path that will actually be rendered. On the
@@ -70,11 +70,10 @@ export async function updateSession(
     }
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const isAuthorized =
-    !adminEmail ||
-    (user?.email && user.email.toLowerCase() === adminEmail.toLowerCase());
-
+  // 判定は routeAccess の 1 か所だけ。ADMIN_EMAIL 未設定のときに
+  // 「ログインしていれば通す」ではなく「誰も通さない」になっている
+  // 理由は、そちらの isAdminEmail のコメントに書いてある。
+  const isAuthorized = isAdminEmail(user?.email);
 
   // If the user is unauthenticated and they are trying to access a protected route
   if (!user && requiresAuthentication) {

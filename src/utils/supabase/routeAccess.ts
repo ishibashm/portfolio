@@ -23,3 +23,33 @@ export const PROTECTED_ROUTE_PREFIXES = [
 export function isProtectedRoute(pathname: string) {
   return PROTECTED_ROUTE_PREFIXES.some((route) => pathname.startsWith(route));
 }
+
+/**
+ * 管理者かどうか。**middleware と API の両方がここだけを見る。**
+ *
+ * 以前は同じ規則が 2 か所に写してあり、どちらも
+ *   ADMIN_EMAIL が未設定なら、ログインしていれば通す
+ * だった。これは開いたまま失敗する（fail open）。環境変数を入れ忘れる、
+ * 消える、名前を打ち間違える — どの場合も**エラーにならず、ログイン
+ * さえすれば誰でも管理画面と管理 API が読める**状態になる。気付く
+ * きっかけが無い。
+ *
+ * 未設定は「全員が管理者」ではなく「**誰も管理者ではない**」と読む。
+ * 開発（NODE_ENV !== "production"）だけは、.env を置かずに動かせる
+ * ように従来どおり通す。
+ *
+ * 締め出されたときの直し方: Cloud Run の環境変数に ADMIN_EMAIL を
+ * 入れる（deploy.yml が読む ENV_FILE シークレット）。コード側の
+ * 変更では戻せないので、本番へ出す前に設定を確かめること。
+ *
+ * ここに置いたのは、middleware が Edge で動くため。adminApi.ts は
+ * getAuthUser 経由で Prisma まで引き込むので、そちらから import すると
+ * middleware のバンドルに入ってしまう。routeAccess は siteStructure しか
+ * 見ておらず、既に middleware が import している。
+ */
+export function isAdminEmail(email: string | null | undefined): boolean {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return process.env.NODE_ENV !== "production";
+  if (!email) return false;
+  return email.toLowerCase() === adminEmail.toLowerCase();
+}
