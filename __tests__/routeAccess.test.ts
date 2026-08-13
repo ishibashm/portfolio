@@ -52,6 +52,13 @@ describe("portfolio route access", () => {
     expect(isProtectedRoute("/relocation/history")).toBe(true);
   });
 
+  it("管理ページはログイン必須", () => {
+    // /admin/metrics はアクセス状況。閲覧記録は匿名だが、日別の並びから
+    // 「いつ誰かが触っていたか」は読めるので開けない。
+    expect(isProtectedRoute("/admin")).toBe(true);
+    expect(isProtectedRoute("/admin/metrics")).toBe(true);
+  });
+
   it("削除した /dashboard は保護対象に残さない", () => {
     // 全機能ランチャーは削除した。ログイン後の行き先もトップに移した。
     expect(isProtectedRoute("/dashboard")).toBe(false);
