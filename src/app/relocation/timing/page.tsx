@@ -431,7 +431,10 @@ export default function TimingAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
-      <div className="mx-auto max-w-6xl space-y-5">
+      {/* 上限は max-w-6xl（1152px）だった。日ごと・方位ごとの升目を
+          一望する画面なので、幅があるほど一度に見渡せる。
+          ホーム（1700px）に揃える。 */}
+      <div className="mx-auto max-w-[1700px] space-y-5">
         <header>
           <h1 className="text-xl font-bold">引っ越し時期の全期間分析</h1>
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
