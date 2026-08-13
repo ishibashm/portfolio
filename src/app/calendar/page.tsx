@@ -144,8 +144,15 @@ export default function CalendarPage() {
           </div>
         </section>
 
-        {/* Calendar Widget */}
-        <CosmicCalendar />
+        {/* Calendar Widget
+            上の「月ごとのまとめ」との間に余白が無く、カードの下端と
+            暦の上端が同じ位置に来ていた（実測でどちらも y=1591）。
+            暦のほうが横に広いので、上端の線がカードの左右にはみ出して
+            重なって見える。この頁の他のブロックは mb-12 / mb-10 / mt-10
+            で離してあるので、同じ間隔を与える。 */}
+        <div className="mt-10">
+          <CosmicCalendar />
+        </div>
       </main>
     </div>
   );
