@@ -110,16 +110,26 @@ function parseFrontmatter(source: string, slug: string): BlogPost {
 function readBlogPosts(): BlogPost[] {
   if (!fs.existsSync(BLOG_DIRECTORY)) return [];
 
-  return fs
-    .readdirSync(BLOG_DIRECTORY)
-    .filter((file) => file.endsWith(".md"))
-    .map((file) => {
-      const slug = file.slice(0, -3);
-      const source = fs.readFileSync(path.join(BLOG_DIRECTORY, file), "utf8");
-      return parseFrontmatter(source, slug);
-    })
-    .filter((post) => !post.draft)
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+  return (
+    fs
+      .readdirSync(BLOG_DIRECTORY)
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => {
+        const slug = file.slice(0, -3);
+        const source = fs.readFileSync(path.join(BLOG_DIRECTORY, file), "utf8");
+        return parseFrontmatter(source, slug);
+      })
+      .filter((post) => !post.draft)
+      // 同じ日付の記事が2本以上あると、日付だけの比較では順序が決まらない。
+      // Array#sort は安定なので readdirSync が返した順がそのまま残り、
+      // 一覧・RSS・サイトマップの並びがファイルシステム依存になる。
+      // slug で決着させて、どこで動かしても同じ並びにする。
+      .sort(
+        (a, b) =>
+          b.publishedAt.localeCompare(a.publishedAt) ||
+          a.slug.localeCompare(b.slug),
+      )
+  );
 }
 
 export function getBlogPosts(): BlogPostSummary[] {
