@@ -3,6 +3,8 @@ import prisma from "@/lib/prisma";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 import { toLogMessage } from "@/lib/errorMessage";
 import { todayInJapan } from "@/utils/japanDate";
+import { estimateYen, totalEstimateYen, type UsageRow } from "@/lib/apiUsage";
+import { loadGcpBillingCost } from "@/lib/gcpBilling";
 
 /**
  * 管理ページ（/admin/metrics）が読む集計。
@@ -34,6 +36,43 @@ type DeviceRow = { device: string | null; pv: bigint; uv: bigint };
 type HourRow = { hour: number; pv: bigint };
 type CountRow = { n: bigint };
 type MaxRow = { latest: Date | null };
+type ApiUsageSqlRow = {
+  provider: string;
+  model: string;
+  route: string;
+  calls: bigint;
+  input_tokens: bigint;
+  output_tokens: bigint;
+  untracked_calls: bigint;
+};
+
+async function loadApiUsage(monthStart: string): Promise<{
+  status: "ok" | "error";
+  rows: ApiUsageSqlRow[];
+  message: string | null;
+}> {
+  try {
+    const rows = await prisma.$queryRaw<ApiUsageSqlRow[]>`
+      SELECT provider, model, route,
+             COUNT(*) AS calls,
+             COALESCE(SUM(input_tokens), 0) AS input_tokens,
+             COALESCE(SUM(output_tokens), 0) AS output_tokens,
+             COUNT(*) FILTER (
+               WHERE input_tokens IS NULL OR output_tokens IS NULL
+             ) AS untracked_calls
+      FROM api_usage WHERE day >= ${monthStart}
+      GROUP BY provider, model, route
+      ORDER BY COUNT(*) DESC`;
+    return { status: "ok", rows, message: null };
+  } catch (error) {
+    console.error("api_usage の集計に失敗:", toLogMessage(error));
+    return {
+      status: "error",
+      rows: [],
+      message: "api_usage の準備または集計に失敗しました。",
+    };
+  }
+}
 
 /** JST の今日から n 日前の "YYYY-MM-DD"。day 列と同じ暦で切るための基準。 */
 function jstDayBefore(days: number): string {
@@ -54,6 +93,7 @@ export async function GET() {
     const since30 = jstDayBefore(DAYS - 1);
     const since60 = jstDayBefore(DAYS * 2 - 1);
     const since7 = jstDayBefore(6);
+    const monthStart = `${today.slice(0, 7)}-01`;
 
     const now = Date.now();
     const ago7 = new Date(now - 7 * 24 * 60 * 60 * 1000);
@@ -68,6 +108,8 @@ export async function GET() {
       hourly,
       prev30Pv,
       latestView,
+      apiUsage,
+      gcpBilling,
       registeredUsers,
       usersSaved7d,
       usersSaved30d,
@@ -109,6 +151,8 @@ export async function GET() {
         WHERE day >= ${since60} AND day < ${since30}`,
       prisma.$queryRaw<MaxRow[]>`
         SELECT max(created_at) AS latest FROM page_views`,
+      loadApiUsage(monthStart),
+      loadGcpBillingCost(),
       // 訪問とは別の軸。「設定を保存したことのある人」の数で、
       // Supabase Auth 全体のアカウント数ではない（auth スキーマは
       // Prisma から見えない）。
@@ -139,6 +183,15 @@ export async function GET() {
     const byDay = new Map(dailyNum.map((r) => [r.day, r]));
     const sumPv = (from: string) =>
       dailyNum.reduce((s, r) => (r.day >= from ? s + r.pv : s), 0);
+    const apiUsageRows: UsageRow[] = apiUsage.rows.map((r) => ({
+      provider: r.provider,
+      model: r.model,
+      route: r.route,
+      calls: Number(r.calls),
+      inputTokens: Number(r.input_tokens),
+      outputTokens: Number(r.output_tokens),
+      untrackedCalls: Number(r.untracked_calls),
+    }));
 
     return NextResponse.json({
       success: true,
@@ -160,6 +213,19 @@ export async function GET() {
           histories: historiesTotal,
           simulations: simulationsTotal,
         },
+        externalApi: {
+          status: apiUsage.status,
+          message: apiUsage.message,
+          sinceDay: monthStart,
+          totalCalls: apiUsageRows.reduce((sum, row) => sum + row.calls, 0),
+          totalEstimateYen:
+            apiUsage.status === "ok" ? totalEstimateYen(apiUsageRows) : null,
+          rows: apiUsageRows.map((row) => ({
+            ...row,
+            estimateYen: estimateYen(row),
+          })),
+        },
+        gcpBilling,
         today: byDay.get(today) ?? { day: today, pv: 0, uv: 0 },
         yesterday: byDay.get(yesterday) ?? { day: yesterday, pv: 0, uv: 0 },
         pv7: sumPv(since7),

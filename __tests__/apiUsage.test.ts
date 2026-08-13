@@ -6,6 +6,8 @@ vi.mock("@/lib/prisma", () => ({ default: { apiUsage: { create } } }));
 import {
   estimateYen,
   MODEL_PRICES,
+  tokensFromAnthropicUsage,
+  tokensFromAiSdkUsage,
   recordApiCall,
   totalEstimateYen,
   type ModelPrice,
@@ -26,6 +28,7 @@ import {
 const row = (over: Partial<UsageRow> = {}): UsageRow => ({
   provider: "google",
   model: "gemini-2.5-flash",
+  route: "/api/rentals/webhook",
   calls: 10,
   inputTokens: 1_000_000,
   outputTokens: 500_000,
@@ -81,6 +84,25 @@ describe("呼び出しの記録", () => {
     expect(data.input_tokens).toBe(1200);
     expect(data.output_tokens).toBe(300);
     expect(data.route).toBe("/api/rentals/parse-query");
+  });
+});
+
+describe("提供元の usage 応答", () => {
+  it("AI SDK のトークン数を記録用の形にする", () => {
+    expect(
+      tokensFromAiSdkUsage({ inputTokens: 1200, outputTokens: 300 }),
+    ).toEqual({ inputTokens: 1200, outputTokens: 300 });
+  });
+
+  it("Anthropic の snake_case を記録用の形にする", () => {
+    expect(
+      tokensFromAnthropicUsage({ input_tokens: 700, output_tokens: 90 }),
+    ).toEqual({ inputTokens: 700, outputTokens: 90 });
+  });
+
+  it("usage が無いときは 0 で埋めない", () => {
+    expect(tokensFromAiSdkUsage(undefined)).toEqual({});
+    expect(tokensFromAnthropicUsage(null)).toEqual({});
   });
 });
 

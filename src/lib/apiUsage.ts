@@ -29,6 +29,41 @@ export interface ApiCallRecord {
   outputTokens?: number;
 }
 
+type TokenCounts = Pick<ApiCallRecord, "inputTokens" | "outputTokens">;
+
+function tokenCount(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? Math.trunc(value)
+    : undefined;
+}
+
+/** Vercel AI SDK が返す usage を記録用の名前へ揃える。 */
+export function tokensFromAiSdkUsage(
+  usage:
+    | { inputTokens?: number | null; outputTokens?: number | null }
+    | null
+    | undefined,
+): TokenCounts {
+  const inputTokens = tokenCount(usage?.inputTokens);
+  const outputTokens = tokenCount(usage?.outputTokens);
+  return {
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+  };
+}
+
+/** Anthropic Messages API の snake_case usage を記録用の名前へ揃える。 */
+export function tokensFromAnthropicUsage(
+  usage: { input_tokens?: unknown; output_tokens?: unknown } | null | undefined,
+): TokenCounts {
+  const inputTokens = tokenCount(usage?.input_tokens);
+  const outputTokens = tokenCount(usage?.output_tokens);
+  return {
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+  };
+}
+
 /**
  * 呼び出しを 1 件記録する。
  *
@@ -106,6 +141,8 @@ export const MODEL_PRICES: ModelPrice[] = [
 export interface UsageRow {
   provider: string;
   model: string;
+  /** 同じモデルを複数機能で使っても費用の出どころを分ける。 */
+  route: string;
   calls: number;
   /** 数えられた分の合計。取れなかった呼び出しは含まない。 */
   inputTokens: number;

@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
-import { calculateSolarTime, getKimonHour } from "../utils/solarTime";
+import {
+  calculateSolarTime,
+  getKimonHour,
+  type SolarTimeResult,
+} from "../utils/solarTime";
 import { calculateBioMetrics } from "../utils/bioModelingEngine";
 import type { SpaceWeatherData } from "../utils/spaceWeather";
 import type { SurfacePressureData } from "../utils/surfacePressure";
@@ -584,7 +588,7 @@ export const SolarTimeClock = () => {
 
   const [baseTime, setBaseTime] = useState<Date | null>(null);
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
-  const [solarData, setSolarData] = useState<any>(null);
+  const [solarData, setSolarData] = useState<SolarTimeResult | null>(null);
   const [activeTab, setActiveTab] = useState<
     "profile" | "destination" | "timing" | "consult" | "history" | "scorecard"
   >("profile");
@@ -880,7 +884,7 @@ export const SolarTimeClock = () => {
     scorecardPrefecture,
   ]);
 
-  const fetchNBAData = async () => {
+  const fetchNBAData = React.useCallback(async () => {
     try {
       const targetDateStr = baseTime
         ? new Date(baseTime.getTime() + timeOffsetDays * 86400000).toISOString()
@@ -918,22 +922,24 @@ export const SolarTimeClock = () => {
     } catch (err) {
       console.error("[fetchNBAData] POST Request Error:", toLogMessage(err));
     }
-  };
+  }, [
+    ansLoad,
+    shieldCapacity,
+    hrv,
+    gsr,
+    birthDate,
+    lon,
+    baseTime,
+    timeOffsetDays,
+    useClassicalBoard,
+  ]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchNBAData();
     }, 1000); // 1s debounce
     return () => clearTimeout(timer);
-  }, [
-    ansLoad,
-    shieldCapacity,
-    birthDate,
-    lon,
-    timeOffsetDays,
-    baseTime,
-    useClassicalBoard,
-  ]);
+  }, [fetchNBAData]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -945,7 +951,7 @@ export const SolarTimeClock = () => {
     return () => clearInterval(interval);
   }, [isPlaying, playSpeedDays]);
 
-  const loadFromLocal = async () => {
+  const loadFromLocal = React.useCallback(async () => {
     let isLoaded = false;
     // 匿名でも動くように端末の値を土台にし、ログイン中ならクラウドの値と
     // 新しいほうを採る。未ログインなら loadSettings が端末の値をそのまま返す。
@@ -1032,17 +1038,17 @@ export const SolarTimeClock = () => {
 
     setConfigLoaded(true);
     return isLoaded;
-  };
+  }, []);
 
-  const handleLoadConfig = async (silent = true) => {
+  const handleLoadConfig = React.useCallback(async (silent = true) => {
     const localFound = await loadFromLocal();
     if (!localFound && !silent) alert("保存された設定が見つかりませんでした。");
     return localFound;
-  };
+  }, [loadFromLocal]);
 
   useEffect(() => {
     handleLoadConfig(true);
-  }, []);
+  }, [handleLoadConfig]);
 
   useEffect(() => {
     if (!configLoaded) return;
@@ -1199,7 +1205,7 @@ export const SolarTimeClock = () => {
     }
   };
 
-  const getTargetDirectionInfo = () => {
+  const getTargetDirectionInfo = React.useCallback(() => {
     if (targetLat !== null && targetLon !== null && lat && lon) {
       const toRad = (val: number) => (val * Math.PI) / 180;
       const toDeg = (val: number) => (val * 180) / Math.PI;
@@ -1228,7 +1234,14 @@ export const SolarTimeClock = () => {
       };
     }
     return null;
-  };
+  }, [
+    targetLat,
+    targetLon,
+    lat,
+    lon,
+    geoData?.declination,
+    useClassicalBoard,
+  ]);
 
   /**
    * 目的地の方位。地図で選んだ地点から決まる。
@@ -1242,18 +1255,7 @@ export const SolarTimeClock = () => {
     const info = getTargetDirectionInfo();
     if (!info) return null;
     return useTrueNorth ? info.trueDirection : info.magneticDirection;
-    // getTargetDirectionInfo は毎レンダー作り直される素の関数なので、
-    // 依存には実際に結果を変える値だけを並べる。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    targetLat,
-    targetLon,
-    lat,
-    lon,
-    useTrueNorth,
-    useClassicalBoard,
-    geoData?.declination,
-  ]);
+  }, [getTargetDirectionInfo, useTrueNorth]);
 
   /**
    * ヒートマップで選んでいる方位。地図の強調表示に渡す。
@@ -1658,6 +1660,8 @@ export const SolarTimeClock = () => {
     useClassicalBoard,
     solarData,
     ephemerisTime,
+    env,
+    lon,
   ]);
 
   const filteredLayers = React.useMemo(() => {
@@ -1775,8 +1779,8 @@ export const SolarTimeClock = () => {
   const physicalIndepLayers = filteredLayers.physicalIndepLayers;
   const physicalCoupledLayers = filteredLayers.physicalCoupledLayers;
 
-  const activeVectors = React.useMemo(() => {
-    let av: any = layers?.finalVectors || {};
+  const activeVectors = React.useMemo<Partial<Record<Direction, string>>>(() => {
+    let av: Partial<Record<Direction, string>> = layers?.finalVectors || {};
     if (activeLayerMode === "year") av = layers?.yearLayer || {};
     else if (activeLayerMode === "month") av = layers?.monthLayer || {};
     else if (activeLayerMode === "day") av = layers?.dayLayer || {};
@@ -2098,13 +2102,15 @@ export const SolarTimeClock = () => {
         doyou_coupled +
         (lunarPhaseModifier ? lunarPhaseScore : 0);
 
-      const dayModelData: any = {
+      const dayModelData: (typeof result)[number] = {
         dateStr: toJapanDateString(testDateLocal),
         weekday: testDateLocal.getDay(),
         models: {
-          classical: {},
-          physicalIndep: {},
-          physicalCoupled: {},
+          classical: {} as (typeof result)[number]["models"]["classical"],
+          physicalIndep:
+            {} as (typeof result)[number]["models"]["physicalIndep"],
+          physicalCoupled:
+            {} as (typeof result)[number]["models"]["physicalCoupled"],
         },
       };
 
@@ -2340,13 +2346,15 @@ export const SolarTimeClock = () => {
         activeLayerMode,
       );
 
-      const starData: any = {
+      const starData: (typeof result)[number] = {
         star,
         label: `${star} (${["一白水星", "二黒土星", "三碧木星", "四緑木星", "五黄土星", "六白金星", "七赤金星", "八白土星", "九紫火星"][star - 1]})`,
         models: {
-          classical: {},
-          physicalIndep: {},
-          physicalCoupled: {},
+          classical: {} as (typeof result)[number]["models"]["classical"],
+          physicalIndep:
+            {} as (typeof result)[number]["models"]["physicalIndep"],
+          physicalCoupled:
+            {} as (typeof result)[number]["models"]["physicalCoupled"],
         },
       };
 
@@ -2514,7 +2522,9 @@ export const SolarTimeClock = () => {
     physicalCoupledLayers,
   ]);
 
-  const parseBreakdown = (item: any) => {
+  const parseBreakdown = (
+    item: { astrologyStatus?: string | null } | null | undefined,
+  ) => {
     if (!item || !item.astrologyStatus) {
       return {
         kigaku: "SAFE",
@@ -2651,7 +2661,7 @@ export const SolarTimeClock = () => {
         "伝統連動_アストロボーナス",
         "伝統連動_時間ゲート調整",
       ];
-      const rows: any[] = [];
+      const rows: (string | number)[][] = [];
       const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
       const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -2731,7 +2741,7 @@ export const SolarTimeClock = () => {
         "伝統連動_アストロボーナス",
         "伝統連動_時間ゲート調整",
       ];
-      const rows: any[] = [];
+      const rows: (string | number)[][] = [];
       const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
       scorecardHonmeiStarsForecast.forEach((star) => {
@@ -3103,6 +3113,7 @@ export const SolarTimeClock = () => {
     directionFilterMode,
     activeLayerMode,
     physicalMonthMode,
+    lon,
   ]);
 
   const exportMasterTelemetry = () => {
@@ -3718,6 +3729,7 @@ export const SolarTimeClock = () => {
     lon,
     useClassicalBoard,
     useTrueNorth,
+    getTargetDirectionInfo,
   ]);
 
   const basePersonalVoidZodiac = React.useMemo(() => {
@@ -3744,7 +3756,7 @@ export const SolarTimeClock = () => {
         (useTrueNorth
           ? targetDirInfo.trueDirection
           : targetDirInfo.magneticDirection) as Direction
-      ];
+      ] ?? null;
   }
 
   const evalDate = baseTime
@@ -7081,7 +7093,10 @@ export const SolarTimeClock = () => {
                   <div className="flex-1 mt-2 flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-1">
                     {(() => {
                       const renderZone = (
-                        fv: any,
+                        fv:
+                          | Partial<Record<Direction, string>>
+                          | null
+                          | undefined,
                         title: string,
                         subtitle: string,
                         badgeColor: string,

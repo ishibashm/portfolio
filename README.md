@@ -130,9 +130,20 @@ JQUANTS_API_KEY="..."
 OURA_ACCESS_TOKEN="..."
 TAVILY_API_KEY="..."
 TWITTER_BEARER_TOKEN="..."
+
+# 管理画面の GCP 請求実額（Cloud Billing Export → BigQuery）
+GCP_BILLING_EXPORT_TABLE="billing-project.billing.gcp_billing_export_v1_XXXXXX_XXXXXX_XXXXXX"
+GCP_BILLING_TARGET_PROJECT_ID="portfolio-project"
+GCP_BILLING_QUERY_PROJECT_ID="billing-project"
+GCP_BILLING_LOCATION="US"
+# Cloud Run の実行 SA に権限を付ける場合は省略可。JSON をリポジトリへ置かないこと。
+GCP_BILLING_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```
 
 `JQUANTS_API_KEY` を設定すると、銘柄分析画面はJPX公式のJ-Quants API v2から最新の決算短信サマリーを取得します。未設定時や一時的な制限時はYahoo Financeの無料四半期財務データへ自動で切り替わり、APIキーはブラウザへ送信されません。
+
+GCP 請求実額の設定と必要権限は
+[docs/gcp-billing-costs.md](docs/gcp-billing-costs.md) を参照してください。
 
 ### 3. データベーススキーマの同期
 

@@ -69,6 +69,31 @@ type Summary = {
     beforeTracking: number;
   };
   usage: { favorites: number; histories: number; simulations: number };
+  externalApi: {
+    status: "ok" | "error";
+    message: string | null;
+    sinceDay: string;
+    totalCalls: number;
+    totalEstimateYen: number | null;
+    rows: {
+      provider: string;
+      model: string;
+      route: string;
+      calls: number;
+      inputTokens: number;
+      outputTokens: number;
+      untrackedCalls: number;
+      estimateYen: number | null;
+    }[];
+  };
+  gcpBilling: {
+    status: "ok" | "unconfigured" | "error";
+    invoiceMonth: string;
+    currency: string | null;
+    total: number | null;
+    services: { service: string; amount: number }[];
+    message: string | null;
+  };
   today: { day: string; pv: number; uv: number };
   yesterday: { day: string; pv: number; uv: number };
   pv7: number;
@@ -81,6 +106,26 @@ type Summary = {
   topReferrers: { host: string; pv: number }[];
   devices: { device: string; pv: number; uv: number }[];
 };
+
+function formatYen(value: number | null, digits = 0): string {
+  return value === null
+    ? "未設定"
+    : `¥${value.toLocaleString("ja-JP", { maximumFractionDigits: digits })}`;
+}
+
+function formatCurrency(value: number | null, currency: string | null): string {
+  if (value === null) return "未設定";
+  if (!currency) return value.toLocaleString("ja-JP");
+  try {
+    return new Intl.NumberFormat("ja-JP", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: currency === "JPY" ? 0 : 2,
+    }).format(value);
+  } catch {
+    return `${value.toLocaleString("ja-JP")} ${currency}`;
+  }
+}
 
 /** 「3分前」形式。管理画面は毎日見るものなので、絶対時刻より先に出す。 */
 function relTime(iso: string | null): string {
@@ -367,17 +412,12 @@ export default function AdminMetricsPage() {
               {(() => {
                 const total = totalMonthlyYen();
                 const unset = unsetItems();
-                const yen = (v: number | null, digits = 0) =>
-                  v === null
-                    ? "未設定"
-                    : `¥${v.toLocaleString("ja-JP", { maximumFractionDigits: digits })}`;
-
                 return (
                   <>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                       <KpiCard
                         label="月額合計"
-                        value={yen(total)}
+                        value={formatYen(total)}
                         sub={
                           unset.length > 0
                             ? `${unset.length}件が未設定のため出せません`
@@ -388,19 +428,22 @@ export default function AdminMetricsPage() {
                       />
                       <KpiCard
                         label="年額換算"
-                        value={yen(total === null ? null : total * 12)}
+                        value={formatYen(total === null ? null : total * 12)}
                         sub="月額 × 12"
                         icon={<Wallet className="w-4 h-4" />}
                       />
                       <KpiCard
                         label="登録者 1 人あたり"
-                        value={yen(perUnitYen(total, s.registeredUsers), 1)}
+                        value={formatYen(
+                          perUnitYen(total, s.registeredUsers),
+                          1,
+                        )}
                         sub={`登録 ${s.registeredUsers} 人`}
                         icon={<Users className="w-4 h-4" />}
                       />
                       <KpiCard
                         label="1000PV あたり"
-                        value={yen(perUnitYen(total, s.pv30, 1000), 1)}
+                        value={formatYen(perUnitYen(total, s.pv30, 1000), 1)}
                         sub={`30日 PV ${s.pv30}`}
                         icon={<Eye className="w-4 h-4" />}
                       />
@@ -427,7 +470,7 @@ export default function AdminMetricsPage() {
                                 : "text-stone-700"
                             }`}
                           >
-                            {yen(c.monthlyYen)}
+                            {formatYen(c.monthlyYen)}
                           </div>
                         </div>
                       ))}
@@ -439,13 +482,178 @@ export default function AdminMetricsPage() {
                       <strong className="text-amber-600">
                         推測の額は入れていません
                       </strong>
-                      。0 円と「未設定」は別物として扱います。従量課金（外部 API
-                      の呼び出し）と GCP
-                      の請求実額は、まだこの合計に入っていません。
+                      。0 円と「未設定」は別物として扱います。従量課金と GCP
+                      請求実額は、下の別枠で表示します。
                     </p>
                   </>
                 );
               })()}
+            </section>
+
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-stone-400" />
+                外部 API の従量（当月）
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-3">
+                {s.externalApi.sinceDay} 以降。成功して usage
+                が返った呼び出しを集計。
+              </p>
+
+              {s.externalApi.status === "error" && (
+                <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  {s.externalApi.message}
+                </p>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <KpiCard
+                  label="呼び出し回数"
+                  value={String(s.externalApi.totalCalls)}
+                  sub={`${s.externalApi.rows.length} 経路`}
+                  icon={<TrendingUp className="w-4 h-4" />}
+                />
+                <KpiCard
+                  label="推定額"
+                  value={formatYen(s.externalApi.totalEstimateYen, 2)}
+                  sub={
+                    s.externalApi.totalEstimateYen === null
+                      ? "単価またはトークンが未設定"
+                      : "当月のトークン実績 × 単価"
+                  }
+                  subCls={
+                    s.externalApi.totalEstimateYen === null
+                      ? "text-amber-600"
+                      : undefined
+                  }
+                  icon={<Wallet className="w-4 h-4" />}
+                />
+              </div>
+
+              {s.externalApi.status === "ok" &&
+              s.externalApi.rows.length === 0 ? (
+                <p className="text-sm text-stone-400">まだ記録がありません。</p>
+              ) : s.externalApi.rows.length > 0 ? (
+                <div className="divide-y divide-stone-100">
+                  {s.externalApi.rows.map((row) => (
+                    <div
+                      key={`${row.provider}:${row.model}:${row.route}`}
+                      className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-stone-700">
+                          {row.model}
+                        </div>
+                        <div className="text-[10px] text-stone-400 break-all">
+                          {row.provider} · {row.route}
+                        </div>
+                        <div className="text-[10px] text-stone-400">
+                          入力 {row.inputTokens.toLocaleString()} / 出力{" "}
+                          {row.outputTokens.toLocaleString()} tokens
+                          {row.untrackedCalls > 0 && (
+                            <span className="ml-1 text-amber-600">
+                              （未計測 {row.untrackedCalls} 回）
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-mono text-xs font-bold text-stone-700">
+                          {row.calls} 回
+                        </div>
+                        <div
+                          className={`font-mono text-[10px] ${
+                            row.estimateYen === null
+                              ? "text-amber-600"
+                              : "text-stone-500"
+                          }`}
+                        >
+                          {formatYen(row.estimateYen, 2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <p className="mt-3 text-[10px] leading-relaxed text-stone-400">
+                単価は <code>src/lib/apiUsage.ts</code>
+                {
+                  " に置きます。価格表と円換算を確認できるまでは未設定のままにし、推測額は出しません。"
+                }
+              </p>
+            </section>
+
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-stone-400" />
+                GCP 請求実額（当月）
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-3">
+                請求月 {s.gcpBilling.invoiceMonth.slice(0, 4)}/
+                {s.gcpBilling.invoiceMonth.slice(4)}。Billing Export の cost
+                から credits を差し引いた対象プロジェクトの実額。
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <KpiCard
+                  label="請求実額"
+                  value={formatCurrency(
+                    s.gcpBilling.total,
+                    s.gcpBilling.currency,
+                  )}
+                  sub={
+                    s.gcpBilling.status === "ok"
+                      ? `${s.gcpBilling.services.length} サービス`
+                      : (s.gcpBilling.message ?? "未設定")
+                  }
+                  subCls={
+                    s.gcpBilling.status === "ok" ? undefined : "text-amber-600"
+                  }
+                  icon={<Wallet className="w-4 h-4" />}
+                />
+                <KpiCard
+                  label="取得状態"
+                  value={
+                    s.gcpBilling.status === "ok"
+                      ? "取得済み"
+                      : s.gcpBilling.status === "unconfigured"
+                        ? "未設定"
+                        : "取得失敗"
+                  }
+                  sub="Cloud Billing Export → BigQuery"
+                  subCls={
+                    s.gcpBilling.status === "ok"
+                      ? "text-emerald-600"
+                      : "text-amber-600"
+                  }
+                  icon={<Wallet className="w-4 h-4" />}
+                />
+              </div>
+
+              {s.gcpBilling.services.length > 0 && (
+                <div className="divide-y divide-stone-100">
+                  {s.gcpBilling.services.map((item) => (
+                    <div
+                      key={item.service}
+                      className="flex items-center justify-between gap-3 py-2 text-xs"
+                    >
+                      <span className="font-bold text-stone-700">
+                        {item.service}
+                      </span>
+                      <span className="font-mono text-stone-600">
+                        {formatCurrency(item.amount, s.gcpBilling.currency)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="mt-3 text-[10px] leading-relaxed text-stone-400">
+                Cloud Billing API は実額を返さないため、Standard usage cost の
+                BigQuery export を読みます。未設定時は通信せず、0
+                円とは区別します。
+              </p>
             </section>
 
             {/* ── 中段: 日別と時間帯別 ── */}
