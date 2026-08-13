@@ -131,6 +131,38 @@ const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
   ),
 });
 
+/**
+ * 時期のヒートマップ 1 列ぶん。30 日表示は 1 日、12 ヶ月表示は 1 ヶ月。
+ *
+ * 外から来る応答ではなく、このファイルの中で組み立てている。形はそこで
+ * 確定しているので、読む枝だけでなく作る側の全項目を書いている。
+ */
+interface HeatmapColumn {
+  /** 升目の見出し。30 日は "8/13"、12 ヶ月は "2026-08"。 */
+  label: string;
+  /** 方位ごとの畳んだ判定。色はこれで決まる。 */
+  vectors: Record<Direction, string>;
+  /** 畳む前の層。押したときに年盤・月盤・日盤の内訳を出すのに使う。 */
+  rawVectorData: ReturnType<typeof calculateVectorCollision>;
+  /** 天道が回座している方位。無い日もある。 */
+  tendoDir?: Direction;
+  /** その列が天中殺に当たるか。 */
+  isVoid: boolean;
+  /** 基準日から何日ずれた列か。押すと地図の日付をここへ動かす。 */
+  offsetDays: number;
+}
+
+/** ヒートマップで押した升目。列（HeatmapColumn）と方位の組。 */
+interface TrendCell {
+  label: string;
+  dir: Direction;
+  status: string;
+  isTendo: boolean;
+  raw: HeatmapColumn["rawVectorData"];
+  tendoDir?: Direction;
+  offsetDays: number;
+}
+
 const getVectorBreakdown = (
   dir: Direction,
   // 盤は出せない日がある（生年月日が未入力など）。呼び出し側から null が来る。
@@ -684,9 +716,17 @@ export const SolarTimeClock = () => {
   const [heatmapMode, setHeatmapMode] = useState<
     "none" | "30days" | "12months"
   >("none");
-  const [heatmapData, setHeatmapData] = useState<any[]>([]);
+  /**
+   * 時期のヒートマップ 1 列ぶん。30 日表示と 12 ヶ月表示で共通。
+   *
+   * 作っているのは同ファイルの useMemo（2894 行あたり）で、外から来る
+   * 応答ではない。形はそこで確定している。
+   */
+  const [heatmapData, setHeatmapData] = useState<HeatmapColumn[]>([]);
   const [directionFilterMode, setDirectionFilterMode] = useState<string>("composite");
-  const [selectedTrendCell, setSelectedTrendCell] = useState<any | null>(null);
+  /** ヒートマップで押した升目。押した列と方位を覚えて詳細を出す。 */
+  const [selectedTrendCell, setSelectedTrendCell] =
+    useState<TrendCell | null>(null);
 
   const [targetLat, setTargetLat] = useState<number | null>(null);
   const [targetLon, setTargetLon] = useState<number | null>(null);
@@ -7457,7 +7497,11 @@ export const SolarTimeClock = () => {
                             </td>
                             {heatmapData.map((d, i) => {
                               const st = d.vectors[dir];
-                              const isTendoActive = d.tendoDir && d.tendoDir === dir;
+                              // 天道が無い列では undefined になっていた。使い道は
+                              // 3 か所とも真偽の分岐なので結果は変わらないが、
+                              // 押した升目に控える値なので boolean に寄せる。
+                              const isTendoActive =
+                                !!d.tendoDir && d.tendoDir === dir;
                               // 見出しと同じく、地図が描いている 1 日だけを指す。
                               const isActiveCol = i === 0;
                               const isLuckyFilter = directionFilterMode === "optimal_only";
