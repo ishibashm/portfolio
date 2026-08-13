@@ -75,7 +75,10 @@ export default async function Page({
         ]}
       />
 
-      <article className="max-w-[820px] mx-auto px-5 py-12">
+      {/* 本文の頁も含めて、幅は全画面で 1700px に揃える方針（利用者の
+          指示）。以前は読み幅（820px）で止めていたが、索引だけ広げた
+          結果、章に入った瞬間に狭くなるのが不揃いだった。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/guide" className="hover:text-rose-600">
             {GUIDE_INDEX.title}

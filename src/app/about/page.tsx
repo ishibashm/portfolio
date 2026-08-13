@@ -18,7 +18,8 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
-      <article className="max-w-[760px] mx-auto px-5 py-12">
+      {/* 幅は全画面で 1700px に揃える（/guide/[slug] と同じ理由）。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <h1 className="text-3xl font-bold font-serif tracking-tight">
           このサイトについて
         </h1>
