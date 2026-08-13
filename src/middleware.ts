@@ -75,7 +75,19 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  /**
+   * 検索エンジンが読む静的ファイルを middleware から外す。
+   *
+   * 外していないと、`/sitemap.xml` を取りに来ただけで updateSession が
+   * 走り、**1 回ごとに Supabase の getUser() へネットワーク往復**が入る。
+   * 認証が要らない公開ファイルなのに、Supabase が遅い・落ちているときは
+   * そのまま取得の失敗になる。Search Console は sitemap.xml と
+   * sitemap.rss を「取得できませんでした」として記録していた。
+   *
+   * ここに並べるのは「誰が来ても同じ内容を返す公開ファイル」だけ。
+   * ページはこれまでどおり通す（ログインの判定が要るため）。
+   */
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap|robots\\.txt|ads\\.txt|llms|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
