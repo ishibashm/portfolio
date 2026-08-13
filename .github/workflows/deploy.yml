@@ -115,6 +115,12 @@ jobs:
           docker build --secret id=env,src=.env -t $DOCKER_TAG .
           docker push $DOCKER_TAG
 
+      # --cpu-boost はコールドスタートの間だけ CPU 割り当てを上げる。
+      # min-instances=0 の構成では、最初の 1 リクエストが Node の起動と
+      # モジュール読み込みを丸ごと待つ。Googlebot がこの待ちでタイムアウトし
+      # クロールエラーになっていた疑いがあるため、起動だけ速くする。
+      # 課金は起動中の数秒ぶんの CPU 秒だけで、無料枠の内側に収まる。
+      #
       # google-github-actions/deploy-cloudrun echoes the gcloud command it runs,
       # which expands env_vars_file into --update-env-vars KEY=VALUE pairs and
       # prints every value into the Actions log. This repository is public, so
@@ -134,6 +140,7 @@ jobs:
             --max-instances=2 \
             --min-instances=0 \
             --concurrency=80 \
+            --cpu-boost \
             --allow-unauthenticated \
             --quiet
 
