@@ -530,7 +530,16 @@ export default function ArbitrageScannerPage() {
   const [filterDirection, setFilterDirection] = useState("ALL");
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
   const [filterMinYield, setFilterMinYield] = useState<string>("");
-  const [filterMaxAge, setFilterMaxAge] = useState<string>("5");
+  /**
+   * 築年数上限。**既定は空（制限なし）。**
+   *
+   * 以前は "5" が入っていた。件数を最も強く絞る条件がこれで、初めて
+   * 開いた人には「この地域にはこれだけしか無い」と見える。使い方
+   * ガイドにも「結果が少ないと感じたら築年数上限を空にする（いちばん
+   * 効きます）」と書いてあり、既定が絞り込みになっているのが実態と
+   * 合っていなかった。絞るかどうかは利用者が決める。
+   */
+  const [filterMaxAge, setFilterMaxAge] = useState<string>("");
   const [filterMaxStation, setFilterMaxStation] = useState<string>("");
   const [filterMinSize, setFilterMinSize] = useState<string>("");
   const [filterMinTotal, setFilterMinTotal] = useState<string>("");
