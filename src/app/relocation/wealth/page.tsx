@@ -43,6 +43,10 @@ import {
   isRecommendedRelocationStatus,
 } from "@/lib/relocationPresentation";
 import { todayInJapan } from "@/utils/japanDate";
+// 応答の形は 1 か所で持つ。以前はこのページと WealthMap に同じ形を
+// 書き写しており、SolarTimeClock は any で受けていた。宣言が散って
+// いたため、存在しない項目名を読んでいるのに気付けなかった（#231）。
+import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 
 const LocationPickerInner = dynamic(
   () => import("@/components/LocationPickerInner"),
@@ -56,27 +60,6 @@ const LocationPickerInner = dynamic(
   },
 );
 
-interface MunicipalityWealth {
-  id: string;
-  areaCode: string;
-  areaName: string;
-  taxableIncomeThousandYen: number;
-  taxpayersCount: number;
-  incomeYen: number;
-  incomePerCapita: number;
-  lat: number | null;
-  lon: number | null;
-  astrologyScore: number;
-  astrologyStatus: string;
-  direction: string | null;
-  magneticDirection?: string | null;
-  trueBearing?: number | null;
-  magneticBearing?: number | null;
-  dataYear: string;
-  landPricePerSqm?: number;
-  cospaIndex?: number;
-  distanceKm?: number;
-}
 
 const normalizeDateTimeLocal = (dateStr: string): string => {
   if (!dateStr) return "";
@@ -99,7 +82,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 
 export default function RegionalWealthPage() {
   const fetchRequestIdRef = useRef(0);
-  const [data, setData] = useState<MunicipalityWealth[]>([]);
+  const [data, setData] = useState<MunicipalityWealthItem[]>([]);
   const [metadata, setMetadata] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
