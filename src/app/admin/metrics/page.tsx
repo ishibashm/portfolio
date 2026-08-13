@@ -9,7 +9,14 @@ import {
   Clock,
   Monitor,
   Star,
+  Wallet,
 } from "lucide-react";
+import {
+  FIXED_COSTS,
+  perUnitYen,
+  totalMonthlyYen,
+  unsetItems,
+} from "@/lib/operatingCosts";
 
 /**
  * アクセス状況（管理者専用）。
@@ -346,6 +353,100 @@ export default function AdminMetricsPage() {
                 icon={<Star className="w-4 h-4" />}
               />
             </div>
+
+            {/* ── 経費 ──
+                金額は lib/operatingCosts に置いてある。未設定のものは
+                そう出す。推測した額を並べると、あとから見た人がそれを
+                実額だと思い込む。 */}
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2">
+                <Wallet className="w-4 h-4 text-stone-400" />
+                運用の経費（固定費）
+              </h2>
+
+              {(() => {
+                const total = totalMonthlyYen();
+                const unset = unsetItems();
+                const yen = (v: number | null, digits = 0) =>
+                  v === null
+                    ? "未設定"
+                    : `¥${v.toLocaleString("ja-JP", { maximumFractionDigits: digits })}`;
+
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      <KpiCard
+                        label="月額合計"
+                        value={yen(total)}
+                        sub={
+                          unset.length > 0
+                            ? `${unset.length}件が未設定のため出せません`
+                            : "固定費のみ"
+                        }
+                        subCls={unset.length > 0 ? "text-amber-600" : undefined}
+                        icon={<Wallet className="w-4 h-4" />}
+                      />
+                      <KpiCard
+                        label="年額換算"
+                        value={yen(total === null ? null : total * 12)}
+                        sub="月額 × 12"
+                        icon={<Wallet className="w-4 h-4" />}
+                      />
+                      <KpiCard
+                        label="登録者 1 人あたり"
+                        value={yen(perUnitYen(total, s.registeredUsers), 1)}
+                        sub={`登録 ${s.registeredUsers} 人`}
+                        icon={<Users className="w-4 h-4" />}
+                      />
+                      <KpiCard
+                        label="1000PV あたり"
+                        value={yen(perUnitYen(total, s.pv30, 1000), 1)}
+                        sub={`30日 PV ${s.pv30}`}
+                        icon={<Eye className="w-4 h-4" />}
+                      />
+                    </div>
+
+                    <div className="divide-y divide-stone-100">
+                      {FIXED_COSTS.map((c) => (
+                        <div
+                          key={c.key}
+                          className="flex items-start justify-between gap-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-stone-700">
+                              {c.label}
+                            </div>
+                            <div className="text-[10px] text-stone-400 leading-relaxed">
+                              {c.note}
+                            </div>
+                          </div>
+                          <div
+                            className={`shrink-0 font-mono text-xs ${
+                              c.monthlyYen === null
+                                ? "text-amber-600"
+                                : "text-stone-700"
+                            }`}
+                          >
+                            {yen(c.monthlyYen)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="mt-3 text-[10px] leading-relaxed text-stone-400">
+                      金額は <code>src/lib/operatingCosts.ts</code>{" "}
+                      に書いてあります。実額が分かったものから埋めてください。
+                      <strong className="text-amber-600">
+                        推測の額は入れていません
+                      </strong>
+                      。0 円と「未設定」は別物として扱います。従量課金（外部 API
+                      の呼び出し）と GCP
+                      の請求実額は、まだこの合計に入っていません。
+                    </p>
+                  </>
+                );
+              })()}
+            </section>
 
             {/* ── 中段: 日別と時間帯別 ── */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
