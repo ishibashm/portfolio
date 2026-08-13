@@ -376,7 +376,9 @@ export default function RelocationHistoryPage() {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="max-w-6xl mx-auto px-4 pt-10 relative z-10 space-y-6">
+      {/* 上限は max-w-6xl（1152px）だった。移動の記録を表で並べる画面
+          なので、ホーム（1700px）に揃える。 */}
+      <div className="max-w-[1700px] mx-auto px-4 pt-10 relative z-10 space-y-6">
         {/* Metaphysical Configuration Bar */}
         <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
 

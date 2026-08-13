@@ -126,7 +126,10 @@ export default function MarketAnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
-      <div className="mx-auto max-w-5xl space-y-5">
+      {/* 上限は max-w-5xl（1024px）だった。表とグラフを並べる道具の
+          画面なので、ホーム（1700px）に揃える。上のデータ準備中の
+          案内カードは中央に小さく出すのが正しいので max-w-3xl のまま。 */}
+      <div className="mx-auto max-w-[1700px] space-y-5">
         <header>
           <h1 className="text-xl font-bold">家賃市場の計量分析</h1>
           <p className="mt-1 text-xs leading-relaxed text-stone-500">
