@@ -39,6 +39,8 @@ import { Loader2 } from "lucide-react";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import { loadSettings, saveSettings } from "@/lib/userSettings";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
+import type { MapProperty } from "@/lib/mapProperty";
+import type { ScoredProperty } from "@/lib/scoredProperty";
 import {
   SCORE_TIER_LEGEND,
   scoreTier,
@@ -606,7 +608,7 @@ export const SolarTimeClock = () => {
    * ここは公開のホーム（/）に載っている。開いた全員に 500 件を
    * 取りに行かせたくないので、出すと決めた人にだけ取りに行く。
    */
-  const [mapProperties, setMapProperties] = useState<any[]>([]);
+  const [mapProperties, setMapProperties] = useState<MapProperty[]>([]);
   const [showProperties, setShowProperties] = useState(false);
   const [propertiesLoading, setPropertiesLoading] = useState(false);
   const [propertiesError, setPropertiesError] = useState<string | null>(null);
@@ -731,7 +733,7 @@ export const SolarTimeClock = () => {
   // Scorecard Tab States
   const [scorecardLoading, setScorecardLoading] = useState(false);
   const [wealthData, setWealthData] = useState<MunicipalityWealthItem[]>([]);
-  const [propertiesData, setPropertiesData] = useState<any[]>([]);
+  const [propertiesData, setPropertiesData] = useState<ScoredProperty[]>([]);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(
     null,
   );
@@ -5811,7 +5813,9 @@ export const SolarTimeClock = () => {
                   {/* Model Selector */}
                   <select
                     value={gridModelView}
-                    onChange={(e: any) => setGridModelView(e.target.value)}
+                    onChange={(e) =>
+                      setGridModelView(e.target.value as typeof gridModelView)
+                    }
                     className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                   >
                     <option value="consensus">合意判定 (Consensus)</option>
@@ -5827,7 +5831,9 @@ export const SolarTimeClock = () => {
                   {/* 表示軸 (Dimension Selector) */}
                   <select
                     value={gridDimension}
-                    onChange={(e: any) => setGridDimension(e.target.value)}
+                    onChange={(e) =>
+                      setGridDimension(e.target.value as typeof gridDimension)
+                    }
                     className="bg-stone-50 text-stone-600 border border-stone-200 rounded-md px-2 py-1 text-[10px] font-mono focus:outline-none cursor-pointer"
                   >
                     <option value="total">表示軸: 総合スコア</option>
@@ -6588,9 +6594,15 @@ export const SolarTimeClock = () => {
                                           {rental.property_name}
                                         </span>
                                         <span className="text-[9px] text-stone-400 font-mono">
+                                          {/* 応答の項目は building_age。
+                                              age_years は存在せず、ここは
+                                              ずっと「築年数: 年」と空欄で
+                                              出ていた。#231 と同じ形。
+                                              築 0 年（新築）と値が無い場合を
+                                              取り違えないよう、null は「不明」。 */}
                                           距離: {rental.distanceKm?.toFixed(1)}
-                                          km | 広さ: {rental.size_sqm}㎡ |
-                                          築年数: {rental.age_years}年
+                                          km | 広さ: {rental.size_sqm}㎡ | 築年数:{" "}
+                                          {rental.building_age ?? "不明"}年
                                         </span>
                                       </div>
                                     </div>
@@ -7919,7 +7931,7 @@ export const SolarTimeClock = () => {
                   !showProperties
                     ? []
                     : showOnlyNewBuild
-                      ? mapProperties.filter((p: any) => p.is_new_build)
+                      ? mapProperties.filter((p) => p.is_new_build)
                       : mapProperties
                 }
                 useTrueNorth={useTrueNorth}
