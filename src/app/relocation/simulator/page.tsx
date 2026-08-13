@@ -1595,7 +1595,7 @@ export default function RelocationSimulatorPage() {
         機能は消していない。入口を通れば、これまでどおり全部出る。
       */}
       {!hasOwnInput ? (
-        <div className="max-w-7xl mx-auto px-4 pt-10 relative z-10 space-y-6">
+        <div className="max-w-[1700px] mx-auto px-4 pt-10 relative z-10 space-y-6">
           <div className="text-center">
             <h1 className="text-3xl font-black tracking-tight">
               引越し先を試算する
@@ -1650,7 +1650,10 @@ export default function RelocationSimulatorPage() {
           />
         </div>
       ) : (
-      <div className="max-w-7xl mx-auto px-4 pt-10 relative z-10 space-y-8">
+      /* 上限は max-w-7xl（1280px）だった。試算結果を並べる道具の画面なので、
+         ホーム（1700px）に揃える。入口の画面（上）も同じ幅にして、
+         入力の前後で器の幅が変わらないようにする。 */
+      <div className="max-w-[1700px] mx-auto px-4 pt-10 relative z-10 space-y-8">
         {/* Metaphysical Configuration Bar */}
         <MetaphysicalConfigBar onConfigChange={handleConfigChange} />
 
