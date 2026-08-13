@@ -3868,7 +3868,7 @@ export const SolarTimeClock = () => {
       ></div>
 
       {isGlobalVoid && (
-        <div className="w-full max-w-5xl px-3 md:px-4 mt-2 animate-fade-in z-50">
+        <div className="w-full max-w-[1600px] px-3 md:px-4 mt-2 animate-fade-in z-50">
           <div className="bg-white border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
@@ -3887,8 +3887,8 @@ export const SolarTimeClock = () => {
         </div>
       )}
 
-      <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-5xl px-3 md:px-4 animate-fade-in-up mt-4">
-        <div className="w-full max-w-4xl text-center mb-2 px-4">
+      <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1600px] px-3 md:px-4 animate-fade-in-up mt-4">
+        <div className="w-full max-w-[1400px] text-center mb-2 px-4">
           {/* このコンポーネントはトップページの中に埋め込まれており、
               ページの h1 は別にある。h1 を 2 つ置くと文書構造が壊れるので h2 にする。 */}
           <h2 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
@@ -3913,7 +3913,7 @@ export const SolarTimeClock = () => {
           </button>
         </div>
 
-        <div className="w-full max-w-5xl grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
+        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
           {/* Cosmic Calendar Widget (Calendar Grid) */}
           <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
             <CosmicCalendar
@@ -3934,7 +3934,7 @@ export const SolarTimeClock = () => {
         </div>
 
         {showHowItWorks && (
-          <div className="w-full max-w-4xl animate-fade-in px-4">
+          <div className="w-full max-w-[1400px] animate-fade-in px-4">
             <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
               <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
@@ -3991,7 +3991,7 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        <div className="w-full max-w-4xl flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
+        <div className="w-full max-w-[1400px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
             onClick={() => selectTab("profile")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
@@ -4056,7 +4056,7 @@ export const SolarTimeClock = () => {
 
         {/* --- TAB CONTENT: 1. PROFILE --- */}
         {activeTab === "profile" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-4xl">
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1400px]">
             {/* Action Intent Selector */}
             <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
               <label
@@ -4139,7 +4139,7 @@ export const SolarTimeClock = () => {
         {activeTab === "destination" && (
           <div className="w-full flex flex-col items-center space-y-8">
             {/* BioMagnetic Dashboard (Load Prediction) */}
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-[1400px]">
               <BioMagneticDashboard
                 kpIndex={spaceWeather?.kpIndex || null}
                 xrayFlux={spaceWeather?.xrayFlux || null}
@@ -4206,7 +4206,7 @@ export const SolarTimeClock = () => {
               このタブには下の Ephemeris Engine Diagnostics が残る。
             */}
 
-            <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-4xl">
+            <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-[1400px]">
               <div className="flex items-center gap-2 mb-2">
                 <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-600">
                   Ephemeris Engine Diagnostics
@@ -5241,10 +5241,10 @@ export const SolarTimeClock = () => {
 
         {/* --- TAB CONTENT: 5. SCORECARD --- */}
         {activeTab === "scorecard" && (
-          <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-4xl">
+          <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-[1400px]">
             {/* Control Panel Header */}
             {/*
-              説明文とコントロールを横並びにすると、コンテナ(max-w-4xl=896px)に
+              説明文とコントロールを横並びにすると、当時のコンテナ幅 896px に
               対してコントロール群が 606px を占め、説明文が 212px まで潰れる。
               日本語は文字ごとに改行できるため min-content が実質 1 文字になり、
               flex の min-width:auto では守られない（実測で 768px 以上の全幅で
@@ -6545,7 +6545,7 @@ export const SolarTimeClock = () => {
         {/* --- MAP CONTENT (Appended to DESTINATION tab) --- */}
         {activeTab === "destination" && (
           <div className="w-full flex flex-col items-center space-y-8 mt-8">
-            <div className="w-full max-w-4xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div className="w-full max-w-[1400px] mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               {/* Spatial Targeting */}
               <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -7068,7 +7068,7 @@ export const SolarTimeClock = () => {
               </div>
 
               {/* FULL-WIDTH TREND ANALYTICS SECTION (spans both columns of the grid) */}
-              <div className="w-full max-w-4xl md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+              <div className="w-full max-w-[1400px] md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
                   <div className="flex items-center gap-2">
                     <span className="text-rose-500 font-bold text-base">◆</span>
@@ -7578,7 +7578,7 @@ export const SolarTimeClock = () => {
               </div>
 
               {/* Module 4: Tactical Magnetic Map */}
-            <div className="w-full max-w-4xl mt-0">
+            <div className="w-full max-w-[1400px] mt-0">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
                 {/* Cyberpunk Filter Selector */}
                 <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
@@ -7805,7 +7805,7 @@ export const SolarTimeClock = () => {
             </div>
 
             {/* System Manual / Documentation */}
-            <div className="w-full max-w-4xl mt-4">
+            <div className="w-full max-w-[1400px] mt-4">
               <details className="bg-white/80 border border-stone-200 rounded-md p-4 group cursor-pointer">
                 <summary className="text-[10px] sm:text-xs font-mono text-stone-500 uppercase tracking-widest flex items-center gap-2 outline-none">
                   <span className="text-emerald-500 group-open:rotate-90 transition-transform">
@@ -7890,7 +7890,7 @@ export const SolarTimeClock = () => {
 
         {/* --- TAB CONTENT: 6. INSIGHTS (HISTORY) --- */}
         {activeTab === "history" && (
-          <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in mt-4">
+          <div className="w-full max-w-[1400px] flex flex-col gap-6 animate-fade-in mt-4">
             <TelemetryChart />
           </div>
         )}

@@ -49,7 +49,11 @@ export default function Home() {
       {/* サイトが何をするところかを最初に言い切る。
           以前は「知性と感性をかさねるポータル」で、3つのサブドメイン
           （占い・株トレンド・ナレッジベース）へのランチャーになっていた。 */}
-      <header className="w-full max-w-[1000px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
+      {/* 各ブロックの幅の上限。以前は 1000px で、4K を縦置きした画面
+          （幅 1800px 前後）では左右に 400px ずつ余っていた。中身の主役は
+          下のダッシュボードなので、そこが収まる幅まで広げる。
+          本文の行長は段落側の max-w-[70ch] が守る。 */}
+      <header className="w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 p-8 md:p-10 rounded-3xl shadow-lg shadow-slate-200/50">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2.5 rounded-2xl bg-rose-600 text-white shadow-md shadow-rose-200">
             <Compass className="w-5 h-5" />
@@ -75,7 +79,10 @@ export default function Home() {
 
       {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、
           ナビ・メタデータ・llms.txt と説明がずれない。 */}
-      <div className="w-full max-w-[1000px] grid gap-4 sm:grid-cols-2">
+      {/* 幅を広げたぶん、2 列のままだと 1 枚が 800px を超えて説明文が
+          2 行しかない札が間延びする。広い画面では列を増やして、札の
+          縦横比を今までの見え方に近づける。 */}
+      <div className="w-full max-w-[1700px] grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {CORE_ROUTES.map((r) => (
           <Link
             key={r.href}
@@ -94,7 +101,7 @@ export default function Home() {
       </div>
 
       {/* 方位と時刻の基礎。引越しの日取りを見るための道具として置く */}
-      <div className="w-full max-w-[1000px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 md:p-8 shadow-lg shadow-slate-200/50">
+      <div className="w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 md:p-8 shadow-lg shadow-slate-200/50">
         <div className="mb-6 border-b border-slate-200 pb-4">
           <h2 className="text-xl font-bold text-slate-900 font-serif">
             いまの方位と時刻
@@ -109,12 +116,12 @@ export default function Home() {
       </div>
 
       {/* Monetization Native Ad Banner Unit */}
-      <div className="w-full max-w-[1000px]">
+      <div className="w-full max-w-[1700px]">
         <AdBanner />
       </div>
 
       {/* Footer with Compliance & LLMO Links */}
-      <footer className="w-full max-w-[1000px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
+      <footer className="w-full max-w-[1700px] flex flex-col sm:flex-row items-center justify-between py-6 px-4 text-xs font-semibold text-slate-600 border-t border-slate-300/80 gap-4">
         <div>
           © 2026 {SITE_NAME}. {SITE_TAGLINE}ためのサービスです。
         </div>
