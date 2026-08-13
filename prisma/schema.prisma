@@ -512,3 +512,30 @@ model Practitioner {
   @@index([status, created_at])
   @@map("practitioners")
 }
+
+/// ページ閲覧の記録。誰が来ているかではなく「来ているかどうか」を測る。
+///
+/// アクセス解析が何も無く、利用者がいるのかどうかすら分からなかったので、
+/// 最小の自前計測を置く。外部サービス（GA など）を使わないのは、
+/// クッキー同意バナーを出したくないのと、データを外に出さないため。
+///
+/// 個人を特定できるものは持たない。
+///   - visitor_hash は sha256(IP + UA + 日付)。日付が入るので翌日には
+///     同じ人を追えない（Plausible と同じ考え方）。IP そのものは保存しない
+///   - クッキーも localStorage も使わない
+model PageView {
+  id            String   @id @default(cuid())
+  /// 集計の単位となる日（JST）。"2026-08-13" 形式。
+  day           String
+  /// 閲覧されたパス。クエリは含めない。
+  path          String
+  /// その日の中でだけ同一人物を束ねられる匿名ハッシュ。
+  visitor_hash  String
+  /// 参照元のホスト名だけ（URL 全体は持たない）。直接来訪は null。
+  referrer_host String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  /// 日別の PV/UV 集計と、ページ別の内訳の両方をこの並びで引く。
+  @@index([day, path])
+  @@map("page_views")
+}

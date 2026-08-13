@@ -92,6 +92,7 @@ export const metadata: Metadata = {
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
+import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { unstable_cache } from "next/cache";
 
 const getActiveTheme = unstable_cache(
@@ -304,6 +305,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased`}
       >
+        <PageViewBeacon />
         <div className="flex min-h-screen">
           <GlobalSidebar />
           <main className="flex-1 w-full min-w-0">{children}</main>
