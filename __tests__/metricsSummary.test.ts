@@ -78,15 +78,17 @@ describe("metrics summary の認可", () => {
     // Promise.all の並び順に mock を積む:
     // daily → topPaths → topReferrers → devices → hourly → prev30 → latest
     queryRaw
-      .mockResolvedValueOnce([{ day: "2026-08-13", pv: 3n, uv: 2n }])
-      .mockResolvedValueOnce([{ path: "/houi", pv: 3n, uv: 2n }])
-      .mockResolvedValueOnce([{ referrer_host: "t.co", pv: 1n }])
       .mockResolvedValueOnce([
-        { device: "mobile", pv: 2n, uv: 1n },
-        { device: null, pv: 1n, uv: 1n },
+        { day: "2026-08-13", pv: BigInt(3), uv: BigInt(2) },
       ])
-      .mockResolvedValueOnce([{ hour: 21, pv: 3n }])
-      .mockResolvedValueOnce([{ n: 5n }])
+      .mockResolvedValueOnce([{ path: "/houi", pv: BigInt(3), uv: BigInt(2) }])
+      .mockResolvedValueOnce([{ referrer_host: "t.co", pv: BigInt(1) }])
+      .mockResolvedValueOnce([
+        { device: "mobile", pv: BigInt(2), uv: BigInt(1) },
+        { device: null, pv: BigInt(1), uv: BigInt(1) },
+      ])
+      .mockResolvedValueOnce([{ hour: 21, pv: BigInt(3) }])
+      .mockResolvedValueOnce([{ n: BigInt(5) }])
       .mockResolvedValueOnce([{ latest: new Date("2026-08-13T12:00:00Z") }]);
     // user_configs.count の呼び順:
     // 総数 → 保存7日 → 保存30日 → 新規今日 → 新規7日 → 新規30日 → 記録開始前
