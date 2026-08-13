@@ -159,3 +159,41 @@ describe("fetchMetaphysicalData", () => {
     expect(d.humanDesign?.chartType).toBeTruthy();
   });
 });
+
+describe("/api/relocation/history", () => {
+  const src = read("src", "app", "api", "relocation", "history", "route.ts");
+
+  it("運営者の生年月日がコードに残っていない", () => {
+    expect(asLiteral(src)).toEqual([]);
+  });
+
+  it("GET も POST も、生年月日を設定から取るだけで落とし先を持たない", () => {
+    expect(src).toContain("let birthDate: Date | null = null;");
+    expect(src).toContain("if (config.birth_date) birthDate = parseSafeDate(");
+  });
+
+  it("設定が無ければ一覧を評価せず、理由を返す", () => {
+    // 適当な日付に落として「それらしい判定」を出さない。
+    expect(src).toContain("生年月日が未設定です。");
+    expect(src).toContain("{ status: 409 },");
+  });
+
+  it("保存時のスナップショットは取らないが、記録は保存する", () => {
+    expect(src).toContain(
+      "birth_date is not configured; skipping judgment snapshot",
+    );
+    expect(src).toContain("judgment snapshot failed (record is saved anyway):");
+  });
+});
+
+describe("移動履歴ページ", () => {
+  const src = read("src", "app", "relocation", "history", "page.tsx");
+
+  it("読めなかった理由を握りつぶさない", () => {
+    // 以前は res.ok が偽のとき何もせず、記録 0 件と見分けが付かなかった。
+    expect(src).toContain(
+      "const [loadError, setLoadError] = useState<string | null>(null);",
+    );
+    expect(src).toContain("記録を評価できませんでした");
+  });
+});

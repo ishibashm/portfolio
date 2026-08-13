@@ -80,7 +80,16 @@ export async function GET(request: Request) {
     };
 
     // 1. Resolve active config
-    let birthDate = parseSafeDate("1988-11-25T04:26");
+    //
+    // 生年月日に既定値を置かない。以前は運営者のもの（1988-11-25T04:26）が
+    // 入っていた。この route は denyUnlessAdmin で守られているので他人に
+    // 判定が出ることは無かったが、公開リポジトリに実在する個人の生年月日と
+    // 出生時刻が置かれている状態だった。
+    //
+    // 下の判定（本命殺・本命的殺・空亡）は生年月日が無いと出せない。
+    // 適当な日付に落として「それらしい判定」を出すより、設定が足りない
+    // ことをそのまま返す。
+    let birthDate: Date | null = null;
     let useTrueNorth = false;
     let useClassical = false;
     let directionFilterMode:
@@ -112,6 +121,17 @@ export async function GET(request: Request) {
     if (directionFilterModeStr !== null)
       directionFilterMode = directionFilterModeStr as any;
     if (actionIntentStr !== null) actionIntent = actionIntentStr;
+
+    if (!birthDate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "生年月日が未設定です。過去の移動の吉凶は本命星と空亡から決まるため、先に設定してください。",
+        },
+        { status: 409 },
+      );
+    }
 
     const voidZodiacs = getPersonalVoidZodiac(birthDate);
     const honmeiStar = getHonmeiStar(birthDate);
@@ -355,9 +375,13 @@ export async function POST(req: Request) {
     // ので（例: 2026-08-10 の五大凶殺への一本化）、過去の判定は遡って
     // 変わる。「決めたときに何と表示されていたか」はこの瞬間にしか
     // 取れないため、ここで凍結して添える。失敗しても記録本体は救う。
+    //
+    // 生年月日が設定されていなければ、スナップショットは取らずに null で
+    // 残す。GET と同じ理由（既定値を置かない）で、ここも落とし先を持たない。
+    // 記録そのものは保存する。
     let judgment: Record<string, unknown> | null = null;
     try {
-      let birthDate = new Date("1988-11-25T04:26+09:00");
+      let birthDate: Date | null = null;
       let useClassical = false;
       let directionFilterMode = "composite";
       try {
@@ -374,6 +398,12 @@ export async function POST(req: Request) {
         if (config.direction_filter_mode !== undefined)
           directionFilterMode = config.direction_filter_mode;
       } catch {}
+
+      if (!birthDate) {
+        throw new Error(
+          "birth_date is not configured; skipping judgment snapshot",
+        );
+      }
 
       const honmei = getHonmeiStar(birthDate);
       const personalStar = useClassical ? honmei.classical : honmei.physical;

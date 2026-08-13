@@ -21,6 +21,7 @@ import {
   Award,
 } from "lucide-react";
 import { directionLabelDetailed } from "@/lib/directionLabels";
+import { toUserMessage } from "@/lib/errorMessage";
 import {
   MetaphysicalConfigBar,
   MetaphysicalConfig,
@@ -133,6 +134,13 @@ function getRatingLabel(status: string): {
 export default function RelocationHistoryPage() {
   const [historyItems, setHistoryItems] = useState<EvaluatedHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  /**
+   * 一覧が出せない理由。
+   *
+   * 以前はここを握りつぶしていて、生年月日が未設定でも「記録が 0 件」に
+   * 見えた。判定は本命星と空亡から決まるので、足りないものはそのまま出す。
+   */
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedItem, setSelectedItem] = useState<EvaluatedHistoryItem | null>(
     null,
@@ -225,24 +233,30 @@ export default function RelocationHistoryPage() {
       params.append("actionIntent", activeIntent);
 
       const res = await fetch(`/api/relocation/history?${params.toString()}`);
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success) {
-          setHistoryItems(result.data);
+      const result = await res.json().catch(() => null);
+      if (res.ok && result?.success) {
+        setLoadError(null);
+        setHistoryItems(result.data);
 
-          // Keep the selected item updated with the new evaluations if it exists
-          if (selectedItem) {
-            const updatedSelected = result.data.find(
-              (item: any) => item.id === selectedItem.id,
-            );
-            if (updatedSelected) {
-              setSelectedItem(updatedSelected);
-            }
+        // Keep the selected item updated with the new evaluations if it exists
+        if (selectedItem) {
+          const updatedSelected = result.data.find(
+            (item: any) => item.id === selectedItem.id,
+          );
+          if (updatedSelected) {
+            setSelectedItem(updatedSelected);
           }
         }
+      } else {
+        setHistoryItems([]);
+        setLoadError(
+          result?.error ||
+            "記録を読み込めませんでした。時間をおいて試してください。",
+        );
       }
     } catch (error) {
       console.error("Failed to load history:", error);
+      setLoadError(toUserMessage(error, "記録を読み込めませんでした。"));
     } finally {
       setIsLoading(false);
     }
@@ -647,6 +661,15 @@ export default function RelocationHistoryPage() {
                     className="h-28 w-full rounded-3xl bg-white/40 border border-stone-200 animate-pulse"
                   ></div>
                 ))}
+              </div>
+            ) : loadError ? (
+              <div className="p-10 rounded-[2.5rem] bg-amber-50/60 border border-amber-200 text-center">
+                <h4 className="font-bold text-amber-900">
+                  記録を評価できませんでした
+                </h4>
+                <p className="mt-2 text-xs leading-relaxed text-amber-800">
+                  {loadError}
+                </p>
               </div>
             ) : historyItems.length === 0 ? (
               <div className="p-10 rounded-[2.5rem] bg-white/20 border border-dashed border-stone-200 text-center flex flex-col items-center justify-center gap-4">
