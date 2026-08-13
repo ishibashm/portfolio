@@ -539,3 +539,26 @@ model PageView {
   @@index([day, path])
   @@map("page_views")
 }
+
+/// お気に入りに入れた物件。
+///
+/// 物件そのもの（rental_properties）は掲載が終わると消えるか、掲載終了の
+/// 印が付く。外部キーで縛ると、消えたときにお気に入りごと消えて「なぜ
+/// 減ったのか」が利用者に分からない。property_id は**ただの文字列**として
+/// 持ち、表示側で引けなかったものは「掲載終了」として出す。
+///
+/// 同じ人が同じ物件を二度入れられないよう (user_id, property_id) に一意を
+/// 置く。押すたびに行が増えると、外すときにどれを消すかが決まらない。
+model FavoriteProperty {
+  id          String   @id @default(cuid())
+  /// Supabase の user.id。user_configs と同じ安定キーを使う。
+  user_id     String   @db.Uuid
+  /// rental_properties.id。外部キーにはしない（上のコメント）。
+  property_id String
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  /// 一覧は「新しく入れた順」で出す。
+  @@unique([user_id, property_id])
+  @@index([user_id, created_at])
+  @@map("favorite_properties")
+}
