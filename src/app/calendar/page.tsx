@@ -15,7 +15,10 @@ export default function CalendarPage() {
       <div className="fixed top-[-10vw] left-[-10vw] w-[40vw] h-[40vw] bg-rose-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
       <div className="fixed bottom-[-10vw] right-[-10vw] w-[40vw] h-[40vw] bg-amber-200/25 rounded-full blur-[100px] pointer-events-none -z-10" />
 
-      <main className="max-w-[1400px] w-full mx-auto px-6 py-10 relative z-10">
+      {/* 上限は 1400px だった。暦の升目を並べる道具の画面なので、
+          ホーム（1700px）に揃える。下の「月ごとのまとめ」だけは読み物
+          なので max-w-4xl のまま残す。 */}
+      <main className="max-w-[1700px] w-full mx-auto px-6 py-10 relative z-10">
         {/* Header Section */}
         <header className="relative mb-12 p-6 md:p-8 rounded-3xl border border-slate-300 bg-white/95 backdrop-blur-xl shadow-lg shadow-slate-200/50 overflow-hidden">
           {/* Cyber Decorative Lines */}

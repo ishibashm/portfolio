@@ -913,7 +913,10 @@ export default function RegionalWealthPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 p-4 md:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+      {/* 上限は max-w-7xl（1280px）だった。地図と候補一覧を左右に並べる
+          画面なので、余った幅はそのまま地図の描画面積になる。同じ作りの
+          /relocation/arbitrage に合わせる。 */}
+      <div className="max-w-[2560px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30">
           <div className="flex items-center gap-4">
