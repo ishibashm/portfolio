@@ -48,11 +48,15 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
-      <article className="max-w-[820px] mx-auto px-5 py-12">
+      {/* 早見表であって読み物ではない。長い本文はリード文だけで、あとは
+          9 つの星の札と年ごとの一覧なので、記事の読み幅で止める理由が無い。
+          /guide の索引と同じ 1700px。記事側（/houi/[year]/[star]）は本文が
+          長いので 820px のまま。行長は段落の max-w-[70ch] で守る。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           九星気学の本命星と吉方位の早見表
         </h1>
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           引越しの方位は、自分の<b>本命星</b>と、その年の<b>年盤</b>で決まります。まず生まれ年から本命星を確認し、その年の方位一覧に進んでください。
         </p>
 
@@ -64,7 +68,9 @@ export default function Page() {
             九星気学の一年は<b>立春（2月4日ごろ）</b>で切り替わります。
             1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。
           </p>
-          <div className="mt-5 space-y-3">
+          {/* 9 枚。1 列のままだと器を広げても札が伸びるだけなので、
+              広い画面では折り返す。 */}
+          <div className="mt-5 space-y-3 xl:space-y-0 xl:grid xl:grid-cols-3 xl:gap-3">
             {STARS.map((s) => (
               <div
                 key={s}

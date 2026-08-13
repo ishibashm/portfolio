@@ -17,7 +17,8 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
-      <article className="max-w-[860px] mx-auto px-5 py-12">
+      {/* 都道府県ごとのリンク一覧。読み物ではないので /houi と揃える。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
           <Link href="/houi" className="hover:text-rose-600">
             方位の早見表
@@ -29,7 +30,7 @@ export default function Page() {
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           エリア別の方位と家賃相場
         </h1>
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
           <b>いま住んでいる市区町村</b>を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
         </p>
