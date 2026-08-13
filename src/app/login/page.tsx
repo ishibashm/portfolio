@@ -136,18 +136,31 @@ export default function LoginPage() {
             production that also discloses the admin address. */}
         {process.env.NODE_ENV === "development" && (
           <div className="w-full mt-4 pt-4 border-t border-rose-100/80 flex flex-col items-center">
+            {/* 既定値に実在のアドレスを置かない。
+                本番のバンドルからは NODE_ENV のガードごと消えるが、
+                公開リポジトリのソースには平文で残る（収集の的になる）。
+                ローカルで使うときは .env.local に
+                NEXT_PUBLIC_ADMIN_EMAIL を入れる。 */}
             <button
               type="button"
+              disabled={!process.env.NEXT_PUBLIC_ADMIN_EMAIL}
               onClick={() => {
+                const devUser = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+                if (!devUser) return;
                 document.cookie = `dev_bypass_user=${encodeURIComponent(
-                  process.env.NEXT_PUBLIC_ADMIN_EMAIL || "ishibashm@gmail.com",
+                  devUser,
                 )}; path=/; max-age=31536000`;
                 window.location.href = nextUrl;
               }}
-              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all"
+              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-mono text-[10px] uppercase tracking-wider py-2.5 rounded-xl active:scale-[0.98] transition-all disabled:opacity-40"
             >
               ⚡ 開発用バイパスでログイン
             </button>
+            {!process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
+              <p className="mt-2 text-[9px] text-stone-400 text-center leading-relaxed">
+                .env.local に NEXT_PUBLIC_ADMIN_EMAIL を設定すると使えます。
+              </p>
+            )}
           </div>
         )}
 

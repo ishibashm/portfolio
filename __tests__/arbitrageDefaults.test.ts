@@ -1,15 +1,22 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  FORMER_BIRTH_DATE,
+  FORMER_BIRTH_DATETIME,
+  FORMER_BIRTH_LAT,
+  FORMER_BIRTH_LON,
+  stringLiteralsContaining,
+} from "./helpers/formerDefaults";
 
 /**
  * 物件スキャナーが、入力していない人に他人の命式で判定を出さないこと。
  *
- * 以前は運営者の生年月日（1988-11-25T04:26）と出生地（広島）が既定値として
- * 入っていた。本命殺・本命的殺・天中殺はここから決まるので、生年月日を
- * 一度も入れていない人にも判定が出ていた。本番で実測した状態:
+ * 以前は運営者の生年月日と出生地が既定値として入っていた。本命殺・
+ * 本命的殺・天中殺はここから決まるので、生年月日を一度も入れていない
+ * 人にも判定が出ていた。本番で実測した状態:
  *
- *   入力欄の生年月日: 1988-11-25T04:26   ← 一度も入力していない
+ *   入力欄に生年月日が入っている          ← 一度も入力していない
  *   「方位の吉凶で塗り分けます」は出ない  ← 判定は止まっていない
  *   「三盤吉」が出ている                  ← 本命星を使った判定が出ている
  *
@@ -58,10 +65,10 @@ describe("物件スキャナーの既定値", () => {
   });
 
   it("運営者の生年月日が値として残っていない", () => {
-    // 文字列リテラルとして出てこないこと。上の経緯コメントは
-    // 引用符の外に書いてあるので当たらない。
-    expect(src).not.toContain('"1988-11-25');
-    expect(src).not.toContain("'1988-11-25");
+    // 文字列リテラルとして出てこないこと。経緯を書いたコメントは
+    // 引用符の外にあるので当たらない。
+    expect(stringLiteralsContaining(src, FORMER_BIRTH_DATE)).toEqual([]);
+    expect(src).not.toContain(FORMER_BIRTH_DATETIME);
   });
 
   it("未入力を検知する側は触っていない", () => {
@@ -156,5 +163,49 @@ describe("一覧 API は生年月日が無いと個人の判定を作らない",
       );
       expect(block, flag).not.toContain(flag);
     }
+  });
+});
+
+/**
+ * 出生地の既定値。
+ *
+ * #202 は生年月日だけを外していて、出生地が残っていた。
+ * 天体ライン（SUN / VENUS / JUPITER_LINE）は出生日時と
+ * 出生地から決まるので、一度も入力していない人にも他人の出生地で
+ * 計算した加点が乗っていた。
+ */
+describe("物件スキャナーの出生地", () => {
+  it("出生地に既定値を置いていない", () => {
+    expect(src).toContain('const [birthLat, setBirthLat] = useState("");');
+    expect(src).toContain('const [birthLon, setBirthLon] = useState("");');
+    expect(src).toContain(
+      'const [localBirthLat, setLocalBirthLat] = useState("");',
+    );
+    expect(src).toContain(
+      'const [localBirthLon, setLocalBirthLon] = useState("");',
+    );
+  });
+
+  it("保存値が無いときも出生地は空のまま読み込む", () => {
+    expect(src).toContain('let bLat = "";');
+    expect(src).toContain('let bLon = "";');
+  });
+
+  it("運営者の出生地が値として残っていない", () => {
+    expect(src).not.toContain(FORMER_BIRTH_LAT);
+    expect(src).not.toContain(FORMER_BIRTH_LON);
+  });
+
+  it("地図で選ぶときの初期位置に特定の街を置かない", () => {
+    // ここに街を置くと、その地点が「あなたの出生地」の初期値として
+    // 選ばれてしまう。日本全体の中心から選んでもらう。
+    expect(src).toContain(
+      "initialLat={Number(birthLat) || OVERVIEW_CENTER[0]}",
+    );
+  });
+
+  it("未入力なら、何が付かないのかを画面に出す", () => {
+    expect(src).toContain("{!birthLat && (");
+    expect(src).toContain("天体ライン（太陽・金星・木星）は出生地から決まる");
   });
 });

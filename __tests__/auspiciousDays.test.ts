@@ -11,8 +11,12 @@ import {
 } from "@/utils/auspiciousDays";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 
-// 三碧木星・午未天中殺の人を基準にする（実データで挙動を確認済みのケース）
-const BIRTH = new Date("1988-11-25T04:26:00+09:00");
+// 三碧木星・午未天中殺の人を基準にする。
+//
+// 以前は運営者の生年月日を使っていた。公開リポジトリなので、同じ
+// 組み合わせ（本命星 3・午未天中殺）になる別の日付に置き換えた。
+// 判定は本命星と空亡だけで決まるので、結果は変わらない。
+const BIRTH = new Date("1997-06-15T04:26:00+09:00");
 const NAGOYA_LON = 136.9008;
 
 const baseParams = {
@@ -55,7 +59,9 @@ describe("judgeDay", () => {
     // それを「三盤とも吉」と数えると、日盤が的殺の日まで混ざる。
     const days: ReturnType<typeof judgeDay>[] = [];
     for (let d = 1; d <= 31; d++) {
-      days.push(judgeDay(new Date(2026, 11, d, 12), { ...baseParams, direction: "SE" }));
+      days.push(
+        judgeDay(new Date(2026, 11, d, 12), { ...baseParams, direction: "SE" }),
+      );
     }
     for (const v of days) {
       if (!v.isTripleAuspicious) continue;
@@ -72,18 +78,27 @@ describe("judgeDay", () => {
   });
 
   it("暦注の札が付く", () => {
-    const v = judgeDay(new Date(2026, 8, 7, 12), { ...baseParams, direction: "SE" });
+    const v = judgeDay(new Date(2026, 8, 7, 12), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(v.tags).toContain("一粒万倍日");
   });
 
   it("天中殺の当たり具合を年・月・日で返す", () => {
     // 2026 年は午未天中殺の人にとって年天中殺（年支＝未）。
-    const v = judgeDay(new Date(2026, 8, 15, 12), { ...baseParams, direction: "SE" });
+    const v = judgeDay(new Date(2026, 8, 15, 12), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(v.voidScopes.year).toBe(true);
   });
 
   it("扱いを strict にすると同じ日が移転不可になる", () => {
-    const off = judgeDay(new Date(2026, 8, 15, 12), { ...baseParams, direction: "SE" });
+    const off = judgeDay(new Date(2026, 8, 15, 12), {
+      ...baseParams,
+      direction: "SE",
+    });
     const strict = judgeDay(new Date(2026, 8, 15, 12), {
       ...baseParams,
       tenchusatsuMode: "strict",
@@ -111,18 +126,20 @@ describe("findYearBoardWindow", () => {
       ...baseParams,
       direction: "SE",
     });
-    const before = judgeDay(new Date(2027, 1, 3, 12), { ...baseParams, direction: "SE" });
+    const before = judgeDay(new Date(2027, 1, 3, 12), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(before.yearLayer).not.toBe(w.afterYearBoardStatus);
   });
 });
 
 describe("findAuspiciousDays", () => {
   it("南東の三盤吉日を列挙し、年盤の期限を添える", () => {
-    const s = findAuspiciousDays(
-      new Date(2026, 7, 4),
-      new Date(2027, 1, 3),
-      { ...baseParams, direction: "SE" },
-    );
+    const s = findAuspiciousDays(new Date(2026, 7, 4), new Date(2027, 1, 3), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(s.directionLabel).toBe("南東");
     expect(s.tripleAuspiciousDays).toBeGreaterThan(0);
     expect(s.days).toHaveLength(s.tripleAuspiciousDays);
@@ -139,11 +156,10 @@ describe("findAuspiciousDays", () => {
       new Date(2027, 1, 3),
       { ...baseParams, tenchusatsuMode: "strict", direction: "SE" },
     );
-    const off = findAuspiciousDays(
-      new Date(2026, 7, 4),
-      new Date(2027, 1, 3),
-      { ...baseParams, direction: "SE" },
-    );
+    const off = findAuspiciousDays(new Date(2026, 7, 4), new Date(2027, 1, 3), {
+      ...baseParams,
+      direction: "SE",
+    });
     // 盤の判定は同じなので、列挙される日数は変わらない
     expect(strict.tripleAuspiciousDays).toBe(off.tripleAuspiciousDays);
     // 変わるのは「実質使える日数」のほう
@@ -153,31 +169,29 @@ describe("findAuspiciousDays", () => {
   });
 
   it("availableDays は 三盤吉 − 天中殺で不可 になる", () => {
-    const s = findAuspiciousDays(
-      new Date(2026, 7, 4),
-      new Date(2027, 1, 3),
-      { ...baseParams, tenchusatsuMode: "strict", direction: "SE" },
-    );
+    const s = findAuspiciousDays(new Date(2026, 7, 4), new Date(2027, 1, 3), {
+      ...baseParams,
+      tenchusatsuMode: "strict",
+      direction: "SE",
+    });
     expect(s.availableDays).toBe(
       s.tripleAuspiciousDays - s.blockedByTenchusatsuDays,
     );
   });
 
   it("開始日と終了日が同じでも壊れない", () => {
-    const s = findAuspiciousDays(
-      new Date(2026, 8, 7),
-      new Date(2026, 8, 7),
-      { ...baseParams, direction: "SE" },
-    );
+    const s = findAuspiciousDays(new Date(2026, 8, 7), new Date(2026, 8, 7), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(s.scannedDays).toBe(1);
   });
 
   it("終了日が開始日より前なら 0 日", () => {
-    const s = findAuspiciousDays(
-      new Date(2026, 8, 7),
-      new Date(2026, 8, 1),
-      { ...baseParams, direction: "SE" },
-    );
+    const s = findAuspiciousDays(new Date(2026, 8, 7), new Date(2026, 8, 1), {
+      ...baseParams,
+      direction: "SE",
+    });
     expect(s.scannedDays).toBe(0);
     expect(s.days).toEqual([]);
   });

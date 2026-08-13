@@ -2,9 +2,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
+import {
+  FORMER_BIRTH_DATE,
+  stringLiteralsContaining,
+} from "./helpers/formerDefaults";
 
 /**
- * 運営者の生年月日（1988-11-25T04:26）が既定値として残っていないこと。
+ * 運営者の生年月日が既定値として残っていないこと。
  *
  * 物件スキャナーは #202・#208 で直し、__tests__/arbitrageDefaults.test.ts が
  * 見張っている。ここはそれ以外の場所。同じ不具合が 2 つの形で出ていた。
@@ -26,9 +30,7 @@ const read = (...parts: string[]) =>
 
 /** 説明の文中に出てくるぶんは通す。コードに書かれた日付だけを弾く。 */
 const asLiteral = (src: string) =>
-  [...src.matchAll(/["'`]([^"'`\n]*1988-11-25[^"'`\n]*)["'`]/g)].map(
-    (m) => m[0],
-  );
+  stringLiteralsContaining(src, FORMER_BIRTH_DATE);
 
 describe("引越しシミュレータ", () => {
   const src = read("src", "app", "relocation", "simulator", "page.tsx");
