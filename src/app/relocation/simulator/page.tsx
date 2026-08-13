@@ -1673,17 +1673,19 @@ export default function RelocationSimulatorPage() {
         {/* Header Block */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-stone-200/60 pb-8">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 mb-3">
-              <Compass className="w-3.5 h-3.5" />{" "}
-              段階的移動＆仮吉方シミュレーター
-            </div>
             {/* ナビ・サイトマップと同じ呼び名にする。英語の副題を足すと、
                 検索から来た人には別のページに見える。 */}
             <h1 className="text-4xl font-black tracking-tight">
               引越し先を試算する
             </h1>
             <p className="text-sm text-stone-500 mt-2">
-              75日ルールに基づく「本拠地（太極）」の自動追跡と、大凶を回避する「仮吉方（迂回）」ルートを検証・保存できます。
+              行き先と日付を入れると、方位の吉凶を試算します。大凶のときは、遠回りして凶を避ける「仮吉方」ルートも提案します。
+            </p>
+            <p className="text-xs font-mono text-stone-400 mt-2">
+              本命星:{" "}
+              <strong className="text-indigo-500">{personalStar}</strong>
+              {"　"}空亡:{" "}
+              <strong className="text-rose-400">{voidZodiacs.join("")}</strong>
             </p>
           </div>
 
@@ -1741,49 +1743,6 @@ export default function RelocationSimulatorPage() {
                     ? "ログインして保存"
                     : "プランを保存"}
               </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Global Settings & Toggles */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center p-4 rounded-3xl bg-white/30 border border-stone-200/60 backdrop-blur-md text-xs">
-          {/* Compass Toggle */}
-          <div className="flex items-center justify-between md:justify-start gap-4">
-            <span className="text-stone-500 font-medium">方位の基準:</span>
-            <button
-              onClick={() => {
-                const next = !useTrueNorth;
-                setUseTrueNorth(next);
-                saveDraft(steps, startLat, startLon, startName, next);
-                // この画面はこの設定を読むだけで書き戻していなかった。
-                // 物件検索・資産マップは saveUnifiedConfig で共有設定に
-                // 書いており、ここだけ片方向だったので揃える。判定は
-                // 真北で固定なので、この設定が効くのは「方位磁針で測ると
-                // ずれる」注意（DECLINATION_WARNING）を出すかどうか。
-                saveUnifiedConfig({ use_true_north: next });
-              }}
-              className={`px-3 py-1.5 rounded-xl font-bold border transition-all ${
-                useTrueNorth
-                  ? "bg-indigo-500/20 text-indigo-600 border-indigo-500/30"
-                  : "bg-amber-500/20 text-amber-300 border-amber-500/30"
-              }`}
-            >
-              {useTrueNorth ? "真北 (地図の北)" : "磁北 (方位磁針の北)"}
-            </button>
-          </div>
-
-          {/* User Hardware Baseline HUD */}
-          <div className="flex items-center gap-3 text-stone-500 font-mono border-t md:border-t-0 md:border-x border-stone-200 px-0 md:px-6 py-2 md:py-0">
-            <span>
-              本命星:{" "}
-              <strong className="text-indigo-400">{personalStar}</strong>
-            </span>
-            <span>
-              空亡地支:{" "}
-              <strong className="text-red-400">{voidZodiacs.join("")}</strong>
-            </span>
-          </div>
-
           {/* Saved Plans dropdown */}
           <div className="flex items-center justify-between md:justify-end gap-2">
             <span className="text-stone-400 shrink-0">保存済みプラン:</span>
@@ -1819,16 +1778,156 @@ export default function RelocationSimulatorPage() {
                 ))}
               </select>
             )}
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Unified Ten-Chi-Jin Plan Level Panel */}
+        <div className="w-full">
+          <TenChiJinEvaluation
+            mode="plan"
+            steps={steps}
+            members={validMembers}
+            nbaEvaluations={nbaEvaluations}
+            simulatedAns={simulatedAns}
+            simulatedShield={simulatedShield}
+            birthDate={birthDate}
+            onApplyAction={(actionType, data) => {
+              if (actionType === "DETOUR" && data) {
+                handleApplyDetour(data);
+              } else if (actionType === "DATE" && typeof data === "string") {
+                if (activeStepIndex !== null) {
+                  handleUpdateStep(activeStepIndex, { departureDate: data });
+                }
+              }
+            }}
+          />
+        </div>
+
+        {/*
+          使う頻度の低い設定は、初期表示から下ろしてここに畳む。
+
+          この画面は「行き先と日付を入れて吉凶を見る」道具なのに、開いた
+          瞬間に生体スライダー・宇宙天気・同伴者・方位の基準・保存欄が
+          全部並んでいて、どこから触ればいいのか分からなかった。判定に
+          必須なのは出発地・行き先・日付だけなので、それ以外は開くまで
+          見せない。
+
+          <details> を使うのは、畳んでいても中身がマウントされたままに
+          なるため。スライダーの値やポータル同期の状態は保持される。
+        */}
+        <details className="group rounded-[2.5rem] border border-stone-200/80 bg-white/20 backdrop-blur-md">
+          <summary className="cursor-pointer select-none list-none p-5 flex items-center justify-between gap-3 text-xs font-bold text-stone-500 hover:text-stone-700 transition-colors">
+            <span className="flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-stone-400" />
+              詳細設定（同伴者・当日の体調・方位の基準）
+            </span>
+            <span className="text-[10px] font-normal text-stone-400 group-open:hidden">開く ▸</span>
+            <span className="text-[10px] font-normal text-stone-400 hidden group-open:inline">閉じる ▾</span>
+          </summary>
+          <div className="px-5 pb-5 space-y-6">
+            {/* Accompanying Members Config */}
+            <div className="p-5 rounded-3xl bg-white/20 border border-stone-200/80 shadow-md space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <h3 className="text-xs font-mono font-bold tracking-widest text-stone-400 uppercase flex items-center gap-2">
+                  <Users className="w-4 h-4 text-indigo-400" /> 同伴者（家族など、一緒に動く人）
+                </h3>
+                <button
+                  onClick={() => {
+                    const name = prompt(
+                      "同伴者の名前を入力してください：",
+                      `同伴者 ${members.length + 1}`,
+                    );
+                    if (!name) return;
+                    const bdate = prompt(
+                      "同伴者の生年月日を入力してください（例：1965-05-15）：",
+                      "1990-01-01",
+                    );
+                    if (!bdate) return;
+                    if (!isValidIsoDate(bdate)) {
+                      alert(
+                        "生年月日は実在する日付を YYYY-MM-DD 形式で入力してください。",
+                      );
+                      return;
+                    }
+                    const newMembers = [
+                      ...members,
+                      { id: Date.now().toString(), name, birthDate: bdate },
+                    ];
+                    setMembers(newMembers);
+                    saveDraft(
+                      steps,
+                      startLat,
+                      startLon,
+                      startName,
+                      useTrueNorth,
+                      planName,
+                      newMembers,
+                    );
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
+                >
+                  <UserPlus className="w-3.5 h-3.5" /> 同伴者を追加
+                </button>
+              </div>
+
+              {members.length === 0 ? (
+                <div className="text-[10px] text-stone-400 font-mono italic">
+                  同伴者はいません（単身移動シミュレーション）
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="p-3.5 rounded-2xl bg-white/70 border border-stone-200 flex items-center justify-between gap-3 shadow-inner"
+                    >
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs font-bold text-stone-900">
+                          {member.name}
+                        </span>
+                        <span className="text-[9px] font-mono text-stone-400">
+                          生年月日: {member.birthDate} (
+                          {isValidIsoDate(member.birthDate)
+                            ? `${getClassicalYearStar(parseSafeDate(member.birthDate))}・空亡: ${getPersonalVoidZodiac(parseSafeDate(member.birthDate)).join("")}`
+                            : "入力値が不正です"}
+                          )
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const newMembers = members.filter(
+                            (m) => m.id !== member.id,
+                          );
+                          setMembers(newMembers);
+                          saveDraft(
+                            steps,
+                            startLat,
+                            startLon,
+                            startName,
+                            useTrueNorth,
+                            planName,
+                            newMembers,
+                          );
+                        }}
+                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-colors cursor-pointer"
+                        title="同伴者を削除"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
         {/* Biosignal Simulation Sliders Panel */}
         <div className="p-6 rounded-[2.5rem] bg-white/10 border border-stone-200/80 backdrop-blur-md space-y-4 shadow-inner">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/60 pb-3">
             <div>
               <h3 className="text-xs font-mono font-bold tracking-widest text-stone-500 uppercase flex items-center gap-1.5">
                 <Sliders className="w-4 h-4 text-indigo-400 animate-pulse" />{" "}
-                生体・宇宙天気シミュレーション制御
+                当日の体調・宇宙天気を仮定する（任意）
               </h3>
               <p className="text-[10px] text-stone-400 mt-1">
                 移動当日の生体状況と宇宙天気のノイズ負荷を擬似設定します。ポータルのリアルタイムデータと同期することも可能です。
@@ -1934,28 +2033,35 @@ export default function RelocationSimulatorPage() {
             </div>
           )}
         </div>
+            <div className="flex items-center gap-4 text-xs p-4 rounded-3xl bg-white/30 border border-stone-200/60">
+          {/* Compass Toggle */}
+          <div className="flex items-center justify-between md:justify-start gap-4">
+            <span className="text-stone-500 font-medium">方位の基準:</span>
+            <button
+              onClick={() => {
+                const next = !useTrueNorth;
+                setUseTrueNorth(next);
+                saveDraft(steps, startLat, startLon, startName, next);
+                // この画面はこの設定を読むだけで書き戻していなかった。
+                // 物件検索・資産マップは saveUnifiedConfig で共有設定に
+                // 書いており、ここだけ片方向だったので揃える。判定は
+                // 真北で固定なので、この設定が効くのは「方位磁針で測ると
+                // ずれる」注意（DECLINATION_WARNING）を出すかどうか。
+                saveUnifiedConfig({ use_true_north: next });
+              }}
+              className={`px-3 py-1.5 rounded-xl font-bold border transition-all ${
+                useTrueNorth
+                  ? "bg-indigo-500/20 text-indigo-600 border-indigo-500/30"
+                  : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+              }`}
+            >
+              {useTrueNorth ? "真北 (地図の北)" : "磁北 (方位磁針の北)"}
+            </button>
+          </div>
 
-        {/* Unified Ten-Chi-Jin Plan Level Panel */}
-        <div className="w-full">
-          <TenChiJinEvaluation
-            mode="plan"
-            steps={steps}
-            members={validMembers}
-            nbaEvaluations={nbaEvaluations}
-            simulatedAns={simulatedAns}
-            simulatedShield={simulatedShield}
-            birthDate={birthDate}
-            onApplyAction={(actionType, data) => {
-              if (actionType === "DETOUR" && data) {
-                handleApplyDetour(data);
-              } else if (actionType === "DATE" && typeof data === "string") {
-                if (activeStepIndex !== null) {
-                  handleUpdateStep(activeStepIndex, { departureDate: data });
-                }
-              }
-            }}
-          />
-        </div>
+            </div>
+          </div>
+        </details>
 
         {/* Dashboard Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1964,8 +2070,7 @@ export default function RelocationSimulatorPage() {
             {/* Start Location Config */}
             <div className="p-5 rounded-3xl bg-white/20 border border-stone-200/80 shadow-md space-y-4">
               <h3 className="text-xs font-mono font-bold tracking-widest text-stone-400 uppercase flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-amber-500" /> 出発初期地点
-                (STARTING SOURCE POINT)
+                <MapPin className="w-4 h-4 text-amber-500" /> 出発地（いま住んでいる場所）
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
@@ -1997,102 +2102,6 @@ export default function RelocationSimulatorPage() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Accompanying Members Config */}
-            <div className="p-5 rounded-3xl bg-white/20 border border-stone-200/80 shadow-md space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <h3 className="text-xs font-mono font-bold tracking-widest text-stone-400 uppercase flex items-center gap-2">
-                  <Users className="w-4 h-4 text-indigo-400" /> 同伴者の設定
-                  (ACCOMPANYING MEMBERS)
-                </h3>
-                <button
-                  onClick={() => {
-                    const name = prompt(
-                      "同伴者の名前を入力してください：",
-                      `同伴者 ${members.length + 1}`,
-                    );
-                    if (!name) return;
-                    const bdate = prompt(
-                      "同伴者の生年月日を入力してください（例：1965-05-15）：",
-                      "1990-01-01",
-                    );
-                    if (!bdate) return;
-                    if (!isValidIsoDate(bdate)) {
-                      alert(
-                        "生年月日は実在する日付を YYYY-MM-DD 形式で入力してください。",
-                      );
-                      return;
-                    }
-                    const newMembers = [
-                      ...members,
-                      { id: Date.now().toString(), name, birthDate: bdate },
-                    ];
-                    setMembers(newMembers);
-                    saveDraft(
-                      steps,
-                      startLat,
-                      startLon,
-                      startName,
-                      useTrueNorth,
-                      planName,
-                      newMembers,
-                    );
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 text-[10px] font-bold rounded-lg border border-indigo-500/30 active:scale-95 transition-all"
-                >
-                  <UserPlus className="w-3.5 h-3.5" /> 同伴者を追加
-                </button>
-              </div>
-
-              {members.length === 0 ? (
-                <div className="text-[10px] text-stone-400 font-mono italic">
-                  同伴者はいません（単身移動シミュレーション）
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="p-3.5 rounded-2xl bg-white/70 border border-stone-200 flex items-center justify-between gap-3 shadow-inner"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-bold text-stone-900">
-                          {member.name}
-                        </span>
-                        <span className="text-[9px] font-mono text-stone-400">
-                          生年月日: {member.birthDate} (
-                          {isValidIsoDate(member.birthDate)
-                            ? `${getClassicalYearStar(parseSafeDate(member.birthDate))}・空亡: ${getPersonalVoidZodiac(parseSafeDate(member.birthDate)).join("")}`
-                            : "入力値が不正です"}
-                          )
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const newMembers = members.filter(
-                            (m) => m.id !== member.id,
-                          );
-                          setMembers(newMembers);
-                          saveDraft(
-                            steps,
-                            startLat,
-                            startLon,
-                            startName,
-                            useTrueNorth,
-                            planName,
-                            newMembers,
-                          );
-                        }}
-                        className="p-1.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 opacity-60 hover:opacity-100 hover:bg-red-500/20 transition-colors cursor-pointer"
-                        title="同伴者を削除"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Sequence Steps Cards */}
