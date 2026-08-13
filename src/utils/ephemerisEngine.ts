@@ -30,6 +30,21 @@ export type Direction =
 export type BoardLayout = Record<Direction, StarFrequency>;
 
 /**
+ * 土用（Doyou）と間日（Mabi）の状態。
+ *
+ * calculateVectorCollision の戻り値の中に同じ形が書いてあり、受け側
+ * （SolarTimeClock・arbitrageAstro・municipalities-wealth）は any で
+ * 受けていた。形は 1 つなので、名前を付けてここから引く。
+ */
+export type DoyouState = {
+  inDoyou: boolean;
+  doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null;
+  isMabi: boolean;
+  /** 土用の期間中で、かつ間日でない。移転を避ける対象。 */
+  isDoyouHazard: boolean;
+};
+
+/**
  * 魔法陣（後天定位盤 / 洛書）の数学的生成
  * 中宮（Center）に入る星を基準に、固定の軌道（遁甲）で星を配置する。
  * 軌道: 中宮 -> NW -> W -> NE -> S -> N -> SW -> E -> SE
@@ -661,12 +676,7 @@ export function calculateVectorCollision(
     | "NOISE_HA"
   >;
   tendoDirection?: Direction;
-  doyouState?: {
-    inDoyou: boolean;
-    doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null;
-    isMabi: boolean;
-    isDoyouHazard: boolean;
-  };
+  doyouState?: DoyouState;
 } {
   const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
@@ -767,7 +777,7 @@ export function calculateVectorCollision(
     : undefined;
 
   // 土用 (Doyou) & 間日 (Mabi)
-  let doyouState: any = undefined;
+  let doyouState: DoyouState | undefined = undefined;
   if (targetDate) {
     const L0 = AstroEngine.getSolarLongitude(targetDate);
     let doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null = null;
@@ -1029,13 +1039,23 @@ export function calculateVectorCollision(
   }
   // Apply 土用殺 (Doyou-satsu) to finalVectors
   if (doyouState && doyouState.isDoyouHazard) {
-    const doyouSatsuDirections: Record<string, Direction> = {
+    const doyouSatsuDirections: Record<
+      NonNullable<DoyouState["doyouType"]>,
+      Direction
+    > = {
       SPRING: "SE",
       SUMMER: "SW",
       AUTUMN: "NW",
       WINTER: "NE",
     };
-    const targetDoyouSatsuDir = doyouSatsuDirections[doyouState.doyouType];
+    // doyouType は null を取りうる型だが、ここには null では入れない
+    // （isDoyouHazard = inDoyou && !isMabi、inDoyou = doyouType !== null）。
+    // 以前は doyouSatsuDirections[null] を引いており、JS では obj["null"]
+    // すなわち undefined になって下の if で落ちていた。この三項の偽側も
+    // 同じく undefined を返すので、結果は前と変わらない。
+    const targetDoyouSatsuDir = doyouState.doyouType
+      ? doyouSatsuDirections[doyouState.doyouType]
+      : undefined;
     if (targetDoyouSatsuDir) {
       finalVectors[targetDoyouSatsuDir] = "NOISE_GOU";
     }

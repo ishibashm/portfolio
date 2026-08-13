@@ -16,6 +16,7 @@ import {
   getCurrentEnvironmentalFrequencies,
   generateBoard,
   BoardLayout,
+  DoyouState,
   solarTermMonthAnchor,
   calculateVectorCollision,
   getPersonalVoidZodiac,
@@ -299,7 +300,7 @@ const filterLayerData = (
     dayLayer: Partial<Record<Direction, string>>;
     finalVectors: Record<Direction, string>;
     tendoDirection?: Direction;
-    doyouState?: any;
+    doyouState?: DoyouState;
   },
   personalStar: StarFrequency,
   getsuMeiStar: StarFrequency | null,
@@ -3619,11 +3620,16 @@ export const SolarTimeClock = () => {
 
   const renderMatrixCell = (
     dir: string,
-    star: any,
-    status: any,
+    // 盤の升目の星。呼び出し側は physicalYearBoard.SE のように盤から引く。
+    star: StarFrequency,
+    // その方位の状態。層（yearLayer など）は方位を持たない日があるので undefined が来る。
+    status: string | undefined,
     isCenter: boolean = false,
   ) => {
-    const getColorClass = (s: string) => {
+    // 受け口は string だったが、呼び出しは status（undefined あり）を
+    // そのまま渡していた。先頭の !s が既に undefined を受けているので、
+    // 実際に来る値に型を合わせるだけ。
+    const getColorClass = (s: string | undefined) => {
       if (!s) return "text-stone-400";
       if (s.startsWith("NOISE_GOU") || s.startsWith("NOISE_ANKEN"))
         return "text-red-500 font-bold bg-red-50 border-red-200";
@@ -3680,7 +3686,8 @@ export const SolarTimeClock = () => {
     isClassical,
   }: {
     status: string;
-    board: any;
+    // #219 と同じ。盤を出せない日は呼び出し側から null が来る。
+    board: BoardLayout | null;
     isFinal?: boolean;
     layerType: "year" | "month" | "day" | "final";
     dir: Direction;
