@@ -1,4 +1,5 @@
 import { SITE_NAME } from "@/lib/siteStructure";
+import { SITE_URL } from "@/lib/siteUrl";
 
 /**
  * ページ単位の構造化データ。
@@ -9,7 +10,7 @@ import { SITE_NAME } from "@/lib/siteStructure";
  * ばらつくので、ここで組み立てる。
  */
 
-const BASE = "https://cloud-palette.com";
+const BASE = SITE_URL;
 
 function Script({ data }: { data: unknown }) {
   return (
@@ -21,28 +22,37 @@ function Script({ data }: { data: unknown }) {
 }
 
 export function ArticleJsonLd({
+  type = "Article",
   headline,
   description,
   path,
   keywords,
+  datePublished,
+  dateModified,
 }: {
+  type?: "Article" | "BlogPosting";
   headline: string;
   description: string;
   path: string;
   keywords?: string[];
+  datePublished?: string;
+  dateModified?: string;
 }) {
   return (
     <Script
       data={{
         "@context": "https://schema.org",
-        "@type": "Article",
+        "@type": type,
         headline,
         description,
         inLanguage: "ja",
         url: `${BASE}${path}`,
         mainEntityOfPage: { "@type": "WebPage", "@id": `${BASE}${path}` },
         publisher: { "@id": `${BASE}/#organization` },
+        author: { "@id": `${BASE}/#organization` },
         isAccessibleForFree: true,
+        ...(datePublished ? { datePublished } : {}),
+        ...(dateModified ? { dateModified } : {}),
         ...(keywords?.length ? { keywords: keywords.join(", ") } : {}),
       }}
     />
