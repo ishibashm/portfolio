@@ -74,11 +74,16 @@ export default function Page() {
         keywords={["使い方", "マニュアル", "引越し", "吉方位", "九星気学"]}
       />
 
-      <article className="max-w-[820px] mx-auto px-5 py-12">
+      {/* ここは読み物ではなく**札の索引**。本文が長いのはリード文だけで、
+          あとは手順の札とリンクなので、記事と同じ 820px で止める理由が無い。
+          道具の頁と同じ 1700px にして、下の <ol> を広い画面で 2 列にする。
+          記事側（/guide/[slug]）は本文が長いので 820px のまま。
+          行長はこの器ではなく、下のリード文の max-w-[70ch] で守る。 */}
+      <article className="max-w-[1700px] mx-auto px-5 py-12">
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {GUIDE_INDEX.title}
         </h1>
-        <p className="mt-5 text-sm leading-relaxed text-slate-700">
+        <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           {GUIDE_INDEX.lead}
         </p>
 
@@ -89,11 +94,15 @@ export default function Page() {
             決めていく順番
           </h2>
 
-          <ol className="mt-6 relative">
-            {/* 縦の導線。番号の丸の中心（left-4）に合わせる */}
+          {/* 広い画面では 2 列にする。1 列のまま器だけ広げると、説明が
+              1 行しかない札が 1600px に伸びるだけで、幅が何にもならない。
+              2 列なら 1 枚の幅は今までとほぼ同じまま、5 手順が一度に見える。 */}
+          <ol className="mt-6 relative xl:grid xl:grid-cols-2 xl:gap-x-8">
+            {/* 縦の導線。番号の丸の中心（left-4）に合わせる。
+                2 列に折り返すと札の並びと導線がつながらないので、そこでは消す。 */}
             <span
               aria-hidden="true"
-              className="absolute left-4 top-3 bottom-3 w-px bg-slate-300"
+              className="absolute left-4 top-3 bottom-3 w-px bg-slate-300 xl:hidden"
             />
             {FLOW.map((f, i) => {
               const page = byslug.get(f.slug);
@@ -165,7 +174,7 @@ export default function Page() {
           <h2 className="text-sm font-bold text-amber-900">
             はじめてお使いの方へ
           </h2>
-          <p className="mt-2 text-xs leading-relaxed text-slate-700">
+          <p className="mt-2 max-w-[70ch] text-xs leading-relaxed text-slate-700">
             ログインは不要です。ただし、
             <b>今住んでいる場所</b>と<b>生年月日</b>
             を入れないと方位が決まりません。どの画面から始める場合も、まずこの2つを入力してください。
@@ -182,7 +191,7 @@ export default function Page() {
           <AdBanner />
         </div>
 
-        <p className="mt-8 text-[11px] leading-relaxed text-slate-500">
+        <p className="mt-8 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
           九星気学や六曜は暦の考え方であり、科学的に効果が確認されたものではありません。住まい選びの判断材料のひとつとしてお使いください。
         </p>
       </article>
