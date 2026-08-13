@@ -98,6 +98,10 @@ public/robots.txt
 # docs/qa だけを戻していたので、それ以外の新しい文書が黙って追跡から漏れていた。
 !docs/**/*.md
 !docs/*.md
+# 公開ブログの記事。コードと一緒にレビュー・デプロイする Markdown は追跡する。
+!content/
+!content/blog/
+!content/blog/*.md
 # 移行・運用の手順書も同じ。README.md 以外が黙って無視されるため、
 # 手順書を足したつもりが追跡されていない、という事故が起きる。
 !docs/db-migration/*.md
