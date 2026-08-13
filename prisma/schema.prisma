@@ -570,3 +570,33 @@ model FavoriteProperty {
   @@index([user_id, created_at])
   @@map("favorite_properties")
 }
+
+/// 外部 API の呼び出し 1 回。従量課金の推定に使う。
+///
+/// 1 回 1 行で持つ。日ごとに畳んだ形にすると、あとから「どの経路が高いか」を
+/// 出したくなったときに戻せない。呼び出し自体が多くない（メール取込・
+/// スマート検索・時期の相談）ので、行数は問題にならない。
+///
+/// トークン数を持つのは、LLM の課金が回数ではなくトークンで決まるため。
+/// 取れない提供元・経路では null にする。**0 と null は別物**で、
+/// 0 は「使わなかった」、null は「数えられなかった」。
+model ApiUsage {
+  id            String   @id @default(cuid())
+  /// 集計の単位となる日（JST）。"2026-08-13" 形式。page_views と揃える。
+  day           String
+  /// 提供元。"google" / "anthropic" など。課金はここ単位で来る。
+  provider      String
+  /// モデル名。同じ提供元でも単価が違うので分けて数える。
+  model         String
+  /// 呼び出した経路。どの機能が費用を出しているかを見るため。
+  route         String
+  /// 入力トークン。取れないときは null（0 ではない）。
+  input_tokens  Int?
+  /// 出力トークン。同上。
+  output_tokens Int?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  /// 日別・提供元別の集計をこの並びで引く。
+  @@index([day, provider])
+  @@map("api_usage")
+}
