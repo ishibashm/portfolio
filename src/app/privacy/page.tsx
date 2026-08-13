@@ -12,7 +12,8 @@ export const metadata: Metadata = {
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 py-12 px-4 md:px-8">
-      <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-xl border border-slate-300 rounded-3xl p-8 md:p-12 shadow-xl">
+      {/* 幅は全画面で 1700px に揃える（1/3 と同じ理由）。 */}
+      <div className="max-w-[1700px] mx-auto bg-white/90 backdrop-blur-xl border border-slate-300 rounded-3xl p-8 md:p-12 shadow-xl">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-xs font-semibold text-rose-600 hover:text-rose-700 mb-6 transition-colors"
