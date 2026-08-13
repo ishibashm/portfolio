@@ -125,6 +125,7 @@ import {
 } from "@/utils/smartSearch";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import { directionUnstableNote } from "@/lib/directionDistance";
+import { addFavorite, loadFavorites, removeFavorite } from "@/lib/favorites";
 import {
   DEFAULT_SEARCH_AREA,
   OVERVIEW_CENTER,
@@ -547,6 +548,15 @@ export default function ArbitrageScannerPage() {
   const [filterLayouts, setFilterLayouts] = useState<string[]>([]);
   // 凶（NOISE 系）を除外。「吉方位のみ」の解釈先
   const [filterLuckyOnly, setFilterLuckyOnly] = useState(false);
+  /**
+   * お気に入りに入れた物件の id。
+   *
+   * 保存先（ログイン中はクラウド、未ログインは端末）は lib/favorites に
+   * 隠してある。ここは「今どれが入っているか」だけを持つ。
+   */
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  /** お気に入りだけに絞る。 */
+  const [filterFavoritesOnly, setFilterFavoritesOnly] = useState(false);
   // スマート検索の入力と、LLM 解釈の実行中表示
   const [smartQuery, setSmartQuery] = useState("");
   const [smartBusy, setSmartBusy] = useState(false);
@@ -1849,6 +1859,34 @@ export default function ArbitrageScannerPage() {
     return out;
   }, [safeData]);
 
+  // お気に入りは開いたときに一度だけ読む。物件の再スキャンでは変わらない。
+  useEffect(() => {
+    let alive = true;
+    loadFavorites().then(({ ids }) => {
+      if (alive) setFavoriteIds(ids);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /**
+   * ★ の出し入れ。
+   *
+   * 画面の状態を先に変えて、保存はそのあとで追う。押した瞬間に色が
+   * 変わらないと、効いたのかどうか分からない。保存が失敗しても
+   * lib/favorites が端末には残すので、次に開いたときにも出る。
+   */
+  const toggleFavorite = (propertyId: string) => {
+    const wasFavorite = favoriteIds.includes(propertyId);
+    setFavoriteIds((prev) =>
+      wasFavorite
+        ? prev.filter((id) => id !== propertyId)
+        : [propertyId, ...prev],
+    );
+    void (wasFavorite ? removeFavorite : addFavorite)(propertyId);
+  };
+
   const filteredData = safeData.filter((d) => {
     if (
       filterStatus !== "ALL" &&
@@ -1875,6 +1913,8 @@ export default function ArbitrageScannerPage() {
       )
         return false;
     }
+
+    if (filterFavoritesOnly && !favoriteIds.includes(d.id)) return false;
 
     if (filterDirection !== "ALL" && d.direction !== filterDirection)
       return false;
@@ -2037,10 +2077,12 @@ export default function ArbitrageScannerPage() {
     if (filterMinTotal !== "") count++;
     if (filterLayouts.length > 0) count++;
     if (filterLuckyOnly) count++;
+    if (filterFavoritesOnly) count++;
     return count;
   }, [
     filterLayouts,
     filterLuckyOnly,
+    filterFavoritesOnly,
     filterName,
     filterStatus,
     filterMaxRent,
@@ -2143,6 +2185,30 @@ export default function ArbitrageScannerPage() {
             {selectedProperty.address}
           </div>
         </div>
+        {/* お気に入り。閉じるボタンの隣に置く。物件名のすぐ横だと、
+            名前が長いときに折り返しの位置で動いて押しにくい。 */}
+        <button
+          type="button"
+          onClick={() => toggleFavorite(selectedProperty.id)}
+          aria-pressed={favoriteIds.includes(selectedProperty.id)}
+          aria-label={
+            favoriteIds.includes(selectedProperty.id)
+              ? "お気に入りから外す"
+              : "お気に入りに追加"
+          }
+          title={
+            favoriteIds.includes(selectedProperty.id)
+              ? "お気に入りから外す"
+              : "お気に入りに追加"
+          }
+          className={`shrink-0 w-6 h-6 rounded-full text-sm leading-none transition-colors ${
+            favoriteIds.includes(selectedProperty.id)
+              ? "bg-amber-100 text-amber-500 hover:bg-amber-200"
+              : "bg-gray-100 dark:bg-white text-stone-400 hover:bg-gray-200 hover:text-amber-500"
+          }`}
+        >
+          {favoriteIds.includes(selectedProperty.id) ? "★" : "☆"}
+        </button>
         <button
           type="button"
           onClick={() => setSelectedId(null)}
@@ -2790,6 +2856,24 @@ export default function ArbitrageScannerPage() {
                       </p>
                     </div>
 
+                    {/* お気に入りだけを見る。★ を付けた物件が無いあいだは
+                        押しても 0 件になるだけなので、出さない。 */}
+                    {favoriteIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setFilterFavoritesOnly((v) => !v)}
+                        aria-pressed={filterFavoritesOnly}
+                        className={`w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                          filterFavoritesOnly
+                            ? "bg-amber-100 text-amber-700 border border-amber-300"
+                            : "bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 text-stone-500 hover:text-amber-600 hover:border-amber-300"
+                        }`}
+                      >
+                        <span>{filterFavoritesOnly ? "★" : "☆"}</span>
+                        お気に入りだけ表示（{favoriteIds.length}件）
+                      </button>
+                    )}
+
                     {/* 適用中の条件チップ。何で絞れているかを常に見せ、
                         個別に外せるようにする。スマート検索で入った条件も
                         手で入れた条件も、区別せずここに出る。 */}
@@ -2847,6 +2931,12 @@ export default function ArbitrageScannerPage() {
                           <FilterChip
                             label="凶方位を除外"
                             onRemove={() => setFilterLuckyOnly(false)}
+                          />
+                        )}
+                        {filterFavoritesOnly && (
+                          <FilterChip
+                            label="お気に入りのみ"
+                            onRemove={() => setFilterFavoritesOnly(false)}
                           />
                         )}
                         {filterMinYield && (
