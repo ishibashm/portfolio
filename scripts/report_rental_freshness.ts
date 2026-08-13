@@ -8,6 +8,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
+
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
   : path.resolve(process.cwd(), "../.env");
@@ -74,7 +76,9 @@ async function main() {
 
     if (limitMb > 0) {
       const usedPct = Math.round((usedMb / limitMb) * 100);
-      lines.push(`| Database size | ${usedMb} MB / ${limitMb} MB (${usedPct}%) |`);
+      lines.push(
+        `| Database size | ${usedMb} MB / ${limitMb} MB (${usedPct}%) |`,
+      );
       if (usedPct >= 80) {
         console.log(
           `::warning::Database is at ${usedPct}% of the ${limitMb} MB limit.`,
@@ -138,9 +142,19 @@ async function main() {
       cnt: string;
       geo: string;
       newest: Date | null;
-    }>(`
+    }>(
+      // 県名は 3 文字とは限らない（神奈川県・和歌山県・鹿児島県は 4 文字）。
+      // 固定長で切ると「神奈川」と出て、対象県一覧と読み比べても一致して
+      // いるのか分からない。実際、パージが同じ切り方でこの 3 県を毎晩
+      // 消していたのを、この表が「神奈川 35,620 行」と見せて覆っていた。
+      // 対象県の一覧に前方一致させ、当たった県名をそのまま出す。
+      `
       SELECT
-        substring(address from 1 for 3) AS pref,
+        COALESCE(
+          (SELECT t FROM unnest($1::text[]) AS t
+            WHERE address LIKE t || '%' LIMIT 1),
+          substring(address from 1 for 4)
+        )                               AS pref,
         count(*)                        AS cnt,
         count(lat)                      AS geo,
         max(last_seen_at)               AS newest
@@ -149,7 +163,9 @@ async function main() {
       GROUP BY 1
       ORDER BY max(last_seen_at) DESC NULLS LAST
       LIMIT 20
-    `);
+    `,
+      [TARGET_PREFECTURE_NAMES],
+    );
 
     lines.push(
       "",
