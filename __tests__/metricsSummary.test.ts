@@ -160,7 +160,7 @@ describe("metrics summary の認可", () => {
       message: null,
       sinceDay: "2026-08-01",
       totalCalls: 3,
-      totalEstimateYen: null,
+      totalEstimateYen: 0.1768674,
       rows: [
         {
           provider: "google",
@@ -170,7 +170,7 @@ describe("metrics summary の認可", () => {
           inputTokens: 1200,
           outputTokens: 300,
           untrackedCalls: 0,
-          estimateYen: null,
+          estimateYen: 0.1768674,
         },
       ],
     });

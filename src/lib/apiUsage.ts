@@ -12,8 +12,8 @@ import { todayInJapan } from "@/utils/japanDate";
  * 落ちるのでは本末転倒。書き込みが失敗してもログに残して先へ進む。
  *
  * **単価は推測で埋めない。**LLM の価格は改定されるうえ、ドルなら為替も
- * 要る。分からないものは null にして「呼び出し回数は出るが金額は出ない」
- * 状態にする。#257 の固定費と同じ扱い。回数だけでも十分に読める。
+ * 要る。提供元の公式価格と採用為替を note に残し、確認できないものだけ null に
+ * する。#257 の固定費と同じ扱い。回数だけでも十分に読める。
  */
 
 /** 記録 1 件ぶん。呼び出し側はこれだけ渡す。 */
@@ -117,23 +117,23 @@ export const MODEL_PRICES: ModelPrice[] = [
   {
     provider: "google",
     model: "gemini-2.5-flash",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "メールからの物件取り込み。件数が増えると効いてくる",
+    inputYenPerMTok: 47.802,
+    outputYenPerMTok: 398.35,
+    note: "Google 公式 $0.30/$2.50 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
   {
     provider: "google",
     model: "gemini-2.5-pro",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "時期の相談。flash より単価が高い",
+    inputYenPerMTok: 199.175,
+    outputYenPerMTok: 1593.4,
+    note: "Google 公式（20万tok以下）$1.25/$10 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
   {
     provider: "anthropic",
     model: "claude-haiku-4-5",
-    inputYenPerMTok: null,
-    outputYenPerMTok: null,
-    note: "スマート検索の解釈。利用者が打つたびに呼ばれる",
+    inputYenPerMTok: 159.34,
+    outputYenPerMTok: 796.7,
+    note: "Anthropic 公式 $1/$5 per MTok × 日銀 2026-08-13 中心相場 159.34円/USD",
   },
 ];
 

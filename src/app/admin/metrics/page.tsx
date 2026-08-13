@@ -526,8 +526,8 @@ export default function AdminMetricsPage() {
                   value={formatYen(s.externalApi.totalEstimateYen, 2)}
                   sub={
                     s.externalApi.totalEstimateYen === null
-                      ? "単価またはトークンが未設定"
-                      : "当月のトークン実績 × 単価"
+                      ? "未計測トークンあり／対象外モデル"
+                      : "当月実績 × 公式単価（2026-08-13換算）"
                   }
                   subCls={
                     s.externalApi.totalEstimateYen === null

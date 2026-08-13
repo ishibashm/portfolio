@@ -37,7 +37,8 @@ Secret に保存する。鍵ファイルをリポジトリへ置かない。
 
 ## 3. 環境変数
 
-本番では GitHub Secret `ENV_FILE` に次を追加し、再デプロイする。
+本番では次を GitHub Actions の repository variables に登録して再デプロイする。
+`.github/workflows/deploy.yml` が `.env` と Cloud Run へ渡す。
 
 ```env
 GCP_BILLING_EXPORT_TABLE=project.dataset.gcp_billing_export_v1_XXXXXX_XXXXXX_XXXXXX
@@ -45,14 +46,14 @@ GCP_BILLING_TARGET_PROJECT_ID=portfolio-project
 GCP_BILLING_QUERY_PROJECT_ID=billing-query-project
 GCP_BILLING_LOCATION=US
 GCP_BILLING_TIMEOUT_MS=10000
-GCP_BILLING_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 ```
 
 - `GCP_BILLING_TARGET_PROJECT_ID`: 管理画面に出す利用額の対象
 - `GCP_BILLING_QUERY_PROJECT_ID`: BigQuery job を作るプロジェクト
 - `GCP_BILLING_LOCATION`: dataset の location と一致させる
 - `GCP_BILLING_TIMEOUT_MS`: クエリ上限。100〜30000ms、未設定時は 10000ms
-- `GCP_BILLING_SERVICE_ACCOUNT_JSON`: Cloud Run 実行 SA を使うなら省略可
+- Cloud Run 実行 SA の Application Default Credentials を使うため、
+  `GCP_BILLING_SERVICE_ACCOUNT_JSON` は登録しない。別 SA を使う場合だけ Secret に置く
 
 JSON の `private_key` に含まれる改行は `\n` のまま 1 行で保存する。画面は設定不足を
 0 円とは扱わず「未設定」、権限や query の失敗を「取得失敗」と表示する。
@@ -65,3 +66,14 @@ JSON の `private_key` に含まれる改行は `\n` のまま 1 行で保存す
 4. サービス別金額の合計が GCP Billing report の同じ請求月・project と一致することを確認する
 
 表示は当月の暫定実額であり、遅延計上や訂正により後から変わることがある。
+
+## 5. 本番設定（2026-08-13）
+
+- project: `blog-471319`
+- dataset: `billing_export`（US）
+- table: `gcp_billing_export_v1_01454A_33E5E6_746172`
+- query identity: Cloud Run 実行 SA（Application Default Credentials）
+
+dataset 作成、実行 SA の BigQuery job 権限、GitHub Actions variables は設定済み。
+Google Cloud コンソールで Standard usage cost export を有効化すると、テーブル作成後は
+追加の鍵発行や再デプロイなしで管理画面から読める。

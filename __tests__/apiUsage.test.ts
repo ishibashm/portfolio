@@ -112,9 +112,9 @@ describe("推定額", () => {
     expect(estimateYen(row(), priced)).toBe(90);
   });
 
-  it("単価が未設定なら出さない", () => {
-    // MODEL_PRICES は初期状態では全部 null。
-    expect(estimateYen(row())).toBeNull();
+  it("採用した公式単価と為替で推定する", () => {
+    // 入力 100万tok × 47.802円 + 出力 50万tok × 398.35円
+    expect(estimateYen(row())).toBeCloseTo(246.977, 6);
   });
 
   it("知らないモデルなら出さない", () => {
@@ -139,12 +139,25 @@ describe("推定額", () => {
     expect(totalEstimateYen([row(), row()], priced)).toBe(180);
   });
 
-  it("最初に置いた単価は、まだ埋めていない", () => {
-    // 推測の額をコミットしていないことの裏取り。実額を入れたら落ちるので、
-    // そのとき一緒に直す（意図した変更だと分かる）。
-    for (const p of MODEL_PRICES) {
-      expect(p.inputYenPerMTok, p.model).toBeNull();
-      expect(p.outputYenPerMTok, p.model).toBeNull();
-    }
+  it("本番で使う全モデルに確認済み単価がある", () => {
+    expect(MODEL_PRICES).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          model: "gemini-2.5-flash",
+          inputYenPerMTok: 47.802,
+          outputYenPerMTok: 398.35,
+        }),
+        expect.objectContaining({
+          model: "gemini-2.5-pro",
+          inputYenPerMTok: 199.175,
+          outputYenPerMTok: 1593.4,
+        }),
+        expect.objectContaining({
+          model: "claude-haiku-4-5",
+          inputYenPerMTok: 159.34,
+          outputYenPerMTok: 796.7,
+        }),
+      ]),
+    );
   });
 });
