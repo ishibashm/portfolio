@@ -2290,7 +2290,7 @@ export default function ArbitrageScannerPage() {
               物件を方位で探す
             </h1>
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
-              今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度をあわせて並べます。凶方位の物件は下に送ります。
+              今住んでいる場所から見た方位の吉凶で並べ、同じ段階の中は家賃の安い順に出します。凶方位の物件は下に送ります。
             </p>
 
             {/* 走査の件数。「何件見つかって、そのうち何件を評価したか」。
@@ -2317,7 +2317,7 @@ export default function ArbitrageScannerPage() {
                   {scanCounts.truncated
                     ? // 打ち切られている＝一覧の外にもっと良い物件が居るかも
                       // しれない。「全部見た上での順位」と読まれないよう断る。
-                      `割安な順に上位 ${scanCounts.analyzed.toLocaleString()} 件を評価しています`
+                      `家賃の安い順に上位 ${scanCounts.analyzed.toLocaleString()} 件を評価しています`
                     : `${scanCounts.analyzed.toLocaleString()} 件すべてを評価しています`}
                 </span>
                 {/* 減らした理由。黙って減らすと「昨日より少ない」の原因が
@@ -2429,7 +2429,7 @@ export default function ArbitrageScannerPage() {
               出発地を設定してください
             </h2>
             <p className="text-xs text-amber-800 leading-relaxed">
-              吉方位は「今お住まいの場所から見てどの向きか」で決まります。出発地が未設定のままでは方位が定まらず、割安さだけの並びになってしまうため、スキャンを停止しています。左の「出発地座標」から現在のお住まいを指定してください。
+              吉方位は「今お住まいの場所から見てどの向きか」で決まります。出発地が未設定のままでは方位が定まらず、家賃だけの並びになってしまうため、スキャンを停止しています。左の「出発地座標」から現在のお住まいを指定してください。
             </p>
           </div>
         )}
@@ -4437,7 +4437,7 @@ export default function ArbitrageScannerPage() {
             {loading && data.length === 0 ? (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-stone-600">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
-                データベースから割安物件を走査中...
+                物件を探しています...
               </div>
             ) : null}
             {loading && data.length > 0 && (

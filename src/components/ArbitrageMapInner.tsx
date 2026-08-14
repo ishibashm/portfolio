@@ -597,7 +597,6 @@ export default function ArbitrageMapInner({
         latSum: number;
         lonSum: number;
         count: number;
-        scoreSum: number;
         properties: ScoredProperty[];
       }
     > = {};
@@ -611,14 +610,12 @@ export default function ArbitrageMapInner({
           latSum: 0,
           lonSum: 0,
           count: 0,
-          scoreSum: 0,
           properties: [],
         };
       }
       groups[muni].latSum += p.lat;
       groups[muni].lonSum += p.lon;
       groups[muni].count += 1;
-      groups[muni].scoreSum += p.arbitrageScore;
       groups[muni].properties.push(p);
     });
 
@@ -627,7 +624,6 @@ export default function ArbitrageMapInner({
       lat: g.latSum / g.count,
       lon: g.lonSum / g.count,
       count: g.count,
-      avgScore: g.scoreSum / g.count,
       properties: g.properties,
     }));
   }, [properties, zoom]);
@@ -789,15 +785,6 @@ export default function ArbitrageMapInner({
       return { ...d, tier: null as string | null, blocked: false, status };
     });
   }, [properties, dirKigaku, hasPersonalVerdict]);
-
-  // Color mapping based on score
-  const getPropertyColor = useCallback((score: number) => {
-    if (score >= 75) return "#10b981"; // Excellent (Emerald)
-    if (score >= 60) return "#34d399"; // Good (Mint)
-    if (score >= 50) return "#3b82f6"; // Moderate (Blue)
-    if (score >= 40) return "#f59e0b"; // Warning (Amber)
-    return "#ef4444"; // Bad (Red)
-  }, []);
 
   // Kigaku Vector Styles
   const getStyleForVector = useCallback((status: string) => {
@@ -1415,12 +1402,6 @@ export default function ArbitrageMapInner({
                                 {muni.count}件
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span>平均推奨度:</span>
-                              <span className="font-bold text-emerald-600">
-                                {muni.avgScore.toFixed(1)}点
-                              </span>
-                            </div>
                           </div>
                           <div className="text-[9px] text-stone-500 mt-2 text-center">
                             ※ズームインすると詳細物件ピンが表示されます
@@ -1619,45 +1600,6 @@ export default function ArbitrageMapInner({
                                   {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
                                   <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
                                 </span>
-                              </div>
-                            </div>
-
-                            <div className="mt-2.5 bg-gray-50 rounded-lg p-2 flex justify-between items-center text-[10px] border border-gray-100">
-                              <div>
-                                <div className="text-stone-500">
-                                  利回り偏差値
-                                </div>
-                                <div className="font-mono font-bold text-indigo-600 text-xs">
-                                  {prop.yieldScore.toFixed(1)}
-                                </div>
-                              </div>
-                              <div className="text-right border-l border-gray-200 pl-2">
-                                <div className="text-stone-400 font-medium">
-                                  おすすめ度
-                                </div>
-                                <div className="flex gap-0.5 text-amber-600 mt-0.5">
-                                  {(() => {
-                                    const starCount =
-                                      getRecommendationStarCount(
-                                        prop.totalScore,
-                                        prop.astrologyStatus,
-                                      );
-                                    return Array.from({ length: 5 }).map(
-                                      (_, i) => (
-                                        <span
-                                          key={i}
-                                          className={
-                                            i < starCount
-                                              ? "opacity-100 text-amber-600"
-                                              : "opacity-20 text-stone-400"
-                                          }
-                                        >
-                                          ★
-                                        </span>
-                                      ),
-                                    );
-                                  })()}
-                                </div>
                               </div>
                             </div>
 
