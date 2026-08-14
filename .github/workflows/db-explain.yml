@@ -1,0 +1,51 @@
+name: Explain arbitrage scan queries
+
+# スキャナーの遅さを推測ではなく実行計画で確かめる。
+#
+# scripts/explain_arbitrage_query.ts を実 DB に対して流す。EXPLAIN ANALYZE は
+# 対象クエリを実際に実行するが、SELECT だけなので行は変えない。読み取りの
+# 負荷は掛かるため、夜間巡回（scrape-rentals）と重ねて回さないこと。
+#
+# 画面の「走査時間 DB 23.8s」のような報告を受けたら、これを回して
+# どの段階（seq scan / ソート / regexp）に時間が落ちているかを見る。
+
+on:
+  workflow_dispatch:
+    inputs:
+      timeout_ms:
+        description: "1 本あたりの上限（ms）"
+        required: false
+        default: "120000"
+
+jobs:
+  explain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Explain
+        env:
+          EXPLAIN_TIMEOUT_MS: ${{ inputs.timeout_ms }}
+        run: npx -y tsx scripts/explain_arbitrage_query.ts
