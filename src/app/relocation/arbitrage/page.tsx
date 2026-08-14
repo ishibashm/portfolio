@@ -2004,54 +2004,6 @@ export default function ArbitrageScannerPage() {
   > | null>(null);
 
   /**
-   * 家賃の分布（総家賃・1万円刻み）。家賃上限を打つ前に「いくつに
-   * すれば何件残るか」を見せるための棒グラフの中身。
-   *
-   * **家賃上限そのものは分布の条件に入れない。**入れると上限より右の
-   * 棒が全部 0 になり、上限を上げたら何件増えるかが見えなくなる。
-   * それ以外の絞り込み（間取り・築年・徒歩・広さ）と地図の表示範囲は
-   * 反映する。見えている範囲の分布でないと、上限を決める材料にならない。
-   */
-  const [rentBuckets, setRentBuckets] = useState<
-    { fromYen: number; toYen: number | null; count: number }[] | null
-  >(null);
-
-  const rentHistogramQuery = useMemo(() => {
-    const params = new URLSearchParams();
-    if (filterMaxAge) params.set("maxBuildingAge", filterMaxAge);
-    if (filterMaxStation) params.set("maxStationMin", filterMaxStation);
-    if (filterMinSize) params.set("minSizeSqm", filterMinSize);
-    if (filterLayouts.length > 0)
-      params.set("layouts", expandLayoutSelections(filterLayouts).join(","));
-    if (mapBounds) {
-      params.set("minLat", String(mapBounds.minLat));
-      params.set("maxLat", String(mapBounds.maxLat));
-      params.set("minLon", String(mapBounds.minLon));
-      params.set("maxLon", String(mapBounds.maxLon));
-    }
-    return params.toString();
-  }, [filterMaxAge, filterMaxStation, filterMinSize, filterLayouts, mapBounds]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      fetch(`/api/rentals/arbitrage/rent-histogram?${rentHistogramQuery}`)
-        .then((res) => res.json())
-        .then((body) => {
-          if (cancelled) return;
-          setRentBuckets(body?.success ? body.data.buckets : null);
-        })
-        .catch(() => {
-          if (!cancelled) setRentBuckets(null);
-        });
-    }, 400);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [rentHistogramQuery]);
-
-  /**
    * 地図の表示範囲に入る掲載件数。null なら出さない。
    *
    * ズームや移動のたびに軽い口（viewport-count）で数え直す。走査の
@@ -3112,70 +3064,7 @@ export default function ArbitrageScannerPage() {
                       </select>
                     </div>
 
-                    {/* 家賃の分布。上限を打つ前に「いくつにすれば何件
-                        残るか」を見せる。棒を押すとその升の上端が上限に
-                        入る。上限フィルター自体は分布に反映しない
-                        （上限より右が全部 0 になり、上げる判断ができない） */}
-                    {rentBuckets && rentBuckets.some((b) => b.count > 0) && (
-                      <div className="space-y-1">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
-                            総家賃の分布（棒を押すと上限に入ります）
-                          </span>
-                          <span className="text-[8px] text-stone-400">
-                            表示範囲・他の絞り込みを反映
-                          </span>
-                        </div>
-                        <div className="flex items-end gap-px h-12">
-                          {rentBuckets.map((b) => {
-                            const max = Math.max(
-                              ...rentBuckets.map((x) => x.count),
-                            );
-                            const manYen = Math.round(b.fromYen / 10000);
-                            const label =
-                              b.toYen === null
-                                ? `${manYen}万円以上: ${b.count.toLocaleString()}件`
-                                : `${manYen}〜${manYen + 1}万円: ${b.count.toLocaleString()}件（クリックで上限 ${manYen + 1} 万円）`;
-                            const selected =
-                              filterMaxRent !== "" &&
-                              b.toYen !== null &&
-                              b.toYen <= Number(filterMaxRent) * 10000;
-                            return (
-                              <button
-                                key={b.fromYen}
-                                type="button"
-                                title={label}
-                                onClick={() => {
-                                  // あふれ升は上限の値にならないので外す扱い
-                                  if (b.toYen === null) setFilterMaxRent("");
-                                  else
-                                    setFilterMaxRent(String(b.toYen / 10000));
-                                }}
-                                className="flex-1 flex flex-col justify-end h-full cursor-pointer group"
-                              >
-                                <span
-                                  style={{
-                                    height: `${max > 0 ? Math.max(b.count > 0 ? 6 : 0, (b.count / max) * 100) : 0}%`,
-                                  }}
-                                  className={`block w-full rounded-t-sm transition-colors ${
-                                    selected
-                                      ? "bg-indigo-500 group-hover:bg-indigo-600"
-                                      : "bg-stone-300 group-hover:bg-indigo-300"
-                                  }`}
-                                />
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <div className="flex justify-between text-[8px] text-stone-400 font-mono">
-                          <span>0</span>
-                          <span>15万</span>
-                          <span>30万〜</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Rent & Age filters */}
+                    {/* Rent & Age & Yield filters */}
                     <div className="grid grid-cols-2 gap-3.5">
                       <div className="space-y-1">
                         <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
