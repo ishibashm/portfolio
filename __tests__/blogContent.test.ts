@@ -41,8 +41,11 @@ describe("ブログの公開記事", () => {
     expect(getBlogPost("not-found")).toBeUndefined();
   });
 
+  // RSS は DB を先に見るようになった（lib/blogStore）。このテストは
+  // DB を用意していないので Markdown に落ちる経路を通る。落ちる先が
+  // 壊れると、ここが先に落ちる。
   it("公開記事をRSSでも購読できる", async () => {
-    const response = getBlogFeed();
+    const response = await getBlogFeed();
     const xml = await response.text();
 
     expect(response.headers.get("content-type")).toContain(

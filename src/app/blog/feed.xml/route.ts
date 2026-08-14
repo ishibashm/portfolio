@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
-import { getBlogPosts } from "@/lib/blog";
+import { loadBlogPosts } from "@/lib/blogStore";
 import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 
-export const dynamic = "force-static";
+/**
+ * 記事が DB に入るようになったので force-static は外す。
+ *
+ * ビルド時に焼き切ると、管理画面から出した記事が次のデプロイまで
+ * 購読側に届かない。1 時間ごとに作り直す（下の Cache-Control の
+ * s-maxage と同じ間隔にしてある）。
+ *
+ * middleware は /blog/feed.xml を通していない（src/middleware.ts の
+ * matcher で除外済み）ので、ここが動的になっても Supabase への
+ * 往復は増えない。
+ */
+export const revalidate = 3600;
 
 function xml(value: string): string {
   return value
@@ -14,8 +25,8 @@ function xml(value: string): string {
     .replaceAll("'", "&apos;");
 }
 
-export function GET() {
-  const posts = getBlogPosts();
+export async function GET() {
+  const posts = await loadBlogPosts();
   const items = posts
     .map((post) => {
       const url = `${SITE_URL}/blog/${post.slug}`;
