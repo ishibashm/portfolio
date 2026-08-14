@@ -12,6 +12,11 @@
  *   3. max(last_seen_at)      鮮度表示。絞り込み条件を持たない
  *   4. uniqueCountSql         名寄せ後の件数（「条件に一致 N 件」）
  *
+ * あわせて家賃分布（rent-histogram）も測る。これは走査とは別の口だが、
+ * 同じ画面から同時に呼ばれるので、走査と足して DB にどれだけ載るかを
+ * 見たい。一度、範囲なしで全国を集計する形で入れて事故にした（#320）ので、
+ * 「測らずに足さない」を手順として残す。
+ *
  * 相場の統計（statsAndMunicipalitySql）は評価軸の廃止と同時に消えた。
  *
  *   環境変数
@@ -29,6 +34,7 @@ import {
   uniqueCountSql,
   type GeoFilters,
 } from "../src/utils/arbitrageQuery";
+import { RENT_BUCKET_SQL } from "../src/lib/rentHistogram";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -187,6 +193,17 @@ async function main() {
       pool,
       "名寄せ後の件数 uniqueCountSql",
       uniqueCountSql(whereSql),
+      params,
+    );
+    // 家賃分布。本番の口は表示範囲を必須にしているので、ここで測る
+    // 「県だけ」「全国」は本番より広い＝上限として読む。
+    await explain(
+      pool,
+      "家賃分布 rent-histogram",
+      `SELECT ${RENT_BUCKET_SQL} AS bucket, count(*)::int AS n
+         FROM rental_properties
+        WHERE ${whereSql}
+     GROUP BY bucket`,
       params,
     );
   }
