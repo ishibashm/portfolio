@@ -132,6 +132,7 @@ import {
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import { buildScanCounts } from "@/lib/arbitrageCounts";
+import { compareKigakuThenRent, kigakuRank } from "@/lib/arbitrageRanking";
 import { addFavorite, loadFavorites, removeFavorite } from "@/lib/favorites";
 import {
   DEFAULT_SEARCH_AREA,
@@ -796,6 +797,7 @@ export default function ArbitrageScannerPage() {
 
   // Sorting state
   type SortColumn =
+    | "kigaku"
     | "arbitrage"
     | "yield"
     | "astrology"
@@ -806,8 +808,16 @@ export default function ArbitrageScannerPage() {
     key: SortColumn;
     direction: "desc" | "asc";
   }
+  /**
+   * 既定は「吉凶の段階 → 家賃の安い順」。
+   *
+   * 以前は総合スコア（11 軸の加重平均）の高い順だった。評価軸と重みは
+   * 廃止の方針（利用者の指示）なので、並びの一義は方位の吉凶に戻す。
+   * kigaku の desc は「良い段階が上」の意味。
+   */
   const [sortConfigs, setSortConfigs] = useState<SortConfig[]>([
-    { key: "arbitrage", direction: "desc" },
+    { key: "kigaku", direction: "desc" },
+    { key: "rent", direction: "asc" },
   ]);
 
   // 重み・予算・抽出戦略は端末に残す。毎回選び直すのは実用的でない。
@@ -2010,6 +2020,15 @@ export default function ArbitrageScannerPage() {
    * サーバの単盤 status で沈めていたので、「赤いピンなのに上位に居る」
    * 「緑のピンなのに沈んでいる」が起き得た。色と順位は同じ物差しで。
    */
+  /**
+   * 並び順に使う吉凶の重み。段階（S〜X）と天中殺は選択日の盤
+   * （dayKigaku）から引く。ピン・扇形・県塗りと同じ唯一の情報源。
+   * 盤が組めないとき（生年月日未入力など）は全件が同順位になり、
+   * 並びは次の鍵（家賃）で決まる。
+   */
+  const kigakuRankOf = (direction: string | null): number =>
+    kigakuRank(direction ? dayKigaku?.byDirection[direction] : undefined);
+
   const avoidRank = (p: {
     direction: string | null;
     // 生年月日が未入力のとき、API は判定を返さない（#205）。
@@ -2035,7 +2054,10 @@ export default function ArbitrageScannerPage() {
     for (const config of sortConfigs) {
       let result = 0;
       const key = config.key;
-      if (key === "arbitrage") result = b.totalScore - a.totalScore;
+      if (key === "kigaku")
+        // 小さい順位が上。desc（既定）でそのまま「良い段階が上」になる。
+        result = kigakuRankOf(a.direction) - kigakuRankOf(b.direction);
+      else if (key === "arbitrage") result = b.totalScore - a.totalScore;
       else if (key === "yield") result = b.yieldScore - a.yieldScore;
       else if (key === "astrology")
         result = b.astrologyScore - a.astrologyScore;
@@ -2079,7 +2101,12 @@ export default function ArbitrageScannerPage() {
         const r = avoidRank(a) - avoidRank(b);
         if (r !== 0) return r;
       }
-      return b.totalScore - a.totalScore;
+      // 一覧の既定と同じ「吉凶の段階 → 家賃の安い順」。以前は総合スコア
+      // 順だったが、評価軸の廃止（利用者の指示）で並びの物差しを揃えた。
+      return compareKigakuThenRent(
+        { kigakuRank: kigakuRankOf(a.direction), totalRent: a.totalRent },
+        { kigakuRank: kigakuRankOf(b.direction), totalRent: b.totalRent },
+      );
     })
     .slice(0, 5);
 
