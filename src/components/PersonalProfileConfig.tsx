@@ -114,6 +114,13 @@ export function PersonalProfileConfig({
 }: PersonalProfileProps) {
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
   const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
+  /**
+   * 詳細設定（天中殺の上書き・判定に使う要素・生体の基準値・API キー）を
+   * 畳んでおく。既定は閉じる。初めて開いた人が設定すべきなのは
+   * 生年月日と現在地だけで、専門項目が同列に並んでいると、全部
+   * 埋めないと使えないように見える（利用者の指摘で画面を整理した）。
+   */
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [presets, setPresets] = useState<ProfilePreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState<string>("");
@@ -224,9 +231,7 @@ export function PersonalProfileConfig({
   const handleDeletePreset = async () => {
     if (!selectedPresetId) return;
     const target = presets.find((p) => p.id === selectedPresetId);
-    if (
-      !confirm(`プリセット「${target?.name}」を削除してもよろしいですか？`)
-    )
+    if (!confirm(`プリセット「${target?.name}」を削除してもよろしいですか？`))
       return;
     const updated = presets.filter((p) => p.id !== selectedPresetId);
     await savePresetsToStorage(updated);
@@ -425,7 +430,7 @@ export function PersonalProfileConfig({
           <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
             <CalendarClock size={12} className="text-stone-400" />
             <span className="text-[9px] text-stone-500 tracking-wider">
-              ハードウェア初期値 (生年月日・出生地)
+              生まれたとき（生年月日・出生地）
             </span>
           </div>
 
@@ -434,7 +439,7 @@ export function PersonalProfileConfig({
               htmlFor="profile-birth"
               className="text-[8px] text-stone-400 uppercase"
             >
-              生年月日・出生時間 (Birth Timestamp)
+              生年月日・出生時間
             </label>
             <input
               id="profile-birth"
@@ -444,7 +449,8 @@ export function PersonalProfileConfig({
               className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full"
             />
             <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              自律神経の初期ベースライン（本命星システム）を設定。
+              本命星と天中殺はここから決まります。時間が不明なら 00:00
+              のままで構いません。
             </span>
           </div>
 
@@ -453,29 +459,29 @@ export function PersonalProfileConfig({
             <div className="flex items-center gap-1.5 mb-1.5">
               <Fingerprint size={12} className="text-blue-600" />
               <span className="text-[8px] text-blue-600 font-bold uppercase tracking-widest">
-                算出された特性 (Derived Identity)
+                あなたの星（生年月日から自動算出）
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1">
               <div>
-                <span className="text-[7px] text-stone-400 uppercase block mb-0.5">
-                  Honmei Star (Physical)
+                <span className="text-[7px] text-stone-400 block mb-0.5">
+                  本命星（物理・天体基準）
                 </span>
                 <span className="text-sm text-emerald-600 font-bold">
                   {derivedHonmeiStar?.physical || "---"}
                 </span>
               </div>
               <div>
-                <span className="text-[7px] text-stone-400 uppercase block mb-0.5">
-                  Honmei Star (Classical)
+                <span className="text-[7px] text-stone-400 block mb-0.5">
+                  本命星（古典・暦基準）
                 </span>
                 <span className="text-sm text-stone-500 font-bold">
                   {derivedHonmeiStar?.classical || "---"}
                 </span>
               </div>
               <div className="col-span-2 border-t border-blue-200 pt-1 mt-1">
-                <span className="text-[7px] text-stone-400 uppercase block mb-0.5">
-                  Void Zodiac (天中殺)
+                <span className="text-[7px] text-stone-400 block mb-0.5">
+                  天中殺
                 </span>
                 <span className="text-xs text-red-600 font-bold tracking-widest">
                   {derivedPersonalVoid?.join("・") || "---"}
@@ -484,31 +490,34 @@ export function PersonalProfileConfig({
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 mt-2">
-            <label
-              htmlFor="profile-void"
-              className="text-[8px] text-stone-400 uppercase"
-            >
-              Void Zodiac (天中殺) Override
-            </label>
-            <select
-              id="profile-void"
-              value={voidZodiacOverride || ""}
-              onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
-              className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
-            >
-              <option value="">生年月日から自動計算</option>
-              <option value="戌亥">戌亥 (Inui)</option>
-              <option value="申酉">申酉 (Sarutori)</option>
-              <option value="午未">午未 (Umapi)</option>
-              <option value="辰巳">辰巳 (Tatsumi)</option>
-              <option value="寅卯">寅卯 (Torau)</option>
-              <option value="子丑">子丑 (Neushi)</option>
-            </select>
-            <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              独自の流派や自覚に基づく天中殺の上書き。
-            </span>
-          </div>
+          {/* ここから下は詳細設定。既定では畳む */}
+          {showAdvanced && (
+            <div className="flex flex-col gap-1 mt-2">
+              <label
+                htmlFor="profile-void"
+                className="text-[8px] text-stone-400 uppercase"
+              >
+                天中殺の上書き
+              </label>
+              <select
+                id="profile-void"
+                value={voidZodiacOverride || ""}
+                onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
+                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
+              >
+                <option value="">生年月日から自動計算</option>
+                <option value="戌亥">戌亥 (Inui)</option>
+                <option value="申酉">申酉 (Sarutori)</option>
+                <option value="午未">午未 (Umapi)</option>
+                <option value="辰巳">辰巳 (Tatsumi)</option>
+                <option value="寅卯">寅卯 (Torau)</option>
+                <option value="子丑">子丑 (Neushi)</option>
+              </select>
+              <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
+                流派や自覚が自動算出と違うときだけ使います。通常は自動計算のままで構いません。
+              </span>
+            </div>
+          )}
 
           <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center justify-between">
@@ -553,29 +562,31 @@ export function PersonalProfileConfig({
               />
             </div>
             <div className="col-span-2 text-[7px] text-stone-400 mt-0.5 text-justify">
-              生まれた瞬間の磁場（磁束密度と伏角）がハードの防御力係数を決定。
+              任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。
             </div>
           </div>
 
-          <div className="flex flex-col gap-1 mt-2">
-            <label className="text-[8px] text-stone-400 uppercase flex items-center justify-between">
-              <span>Gemini API Key (Expert Council)</span>
-              <span className="text-[7px] text-stone-400">
-                ※ 暗号化されてDBに保存されます
+          {showAdvanced && (
+            <div className="flex flex-col gap-1 mt-2">
+              <label className="text-[8px] text-stone-400 uppercase flex items-center justify-between">
+                <span>Gemini API キー（AI 相談用・任意）</span>
+                <span className="text-[7px] text-stone-400">
+                  ※ 暗号化されてDBに保存されます
+                </span>
+              </label>
+              <input
+                type="password"
+                value={geminiKey || ""}
+                onChange={(e) => setGeminiKey?.(e.target.value)}
+                placeholder="AI_..."
+                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
+              />
+              <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
+                AI
+                への相談機能を使うときだけ必要です。空のままで他の機能はすべて動きます。
               </span>
-            </label>
-            <input
-              type="password"
-              value={geminiKey || ""}
-              onChange={(e) => setGeminiKey?.(e.target.value)}
-              placeholder="AI_..."
-              className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
-            />
-            <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              Knowledge Baseとは異なり、こちらは高度推論用のため gemini-2.5-pro
-              が指定されています。
-            </span>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Current Anchor (Base) */}
@@ -583,7 +594,7 @@ export function PersonalProfileConfig({
           <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
             <Crosshair size={12} className="text-stone-400" />
             <span className="text-[9px] text-stone-500 tracking-wider">
-              現在の居住地 (基準座標・±0V基準)
+              いま住んでいるところ（出発地）
             </span>
           </div>
 
@@ -630,178 +641,209 @@ export function PersonalProfileConfig({
               />
             </div>
             <div className="col-span-2 text-[7px] text-stone-400 mt-0.5 text-justify">
-              現在の自律神経が同調（順化）している絶対的な磁気ゼロポイント。電位差（ダメージ/回復）の方位ベクトル計算の起点。
+              方位はここから測ります。物件検索・地図・カレンダーと共通の値です。
             </div>
           </div>
 
           <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-sm">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-600 mt-0.5 min-w-[10px]" />
-              <p className="text-[8px] text-blue-200/70 leading-relaxed text-justify">
-                現在位置のGPS（{baseLat.toFixed(2)}, {baseLon.toFixed(2)}
-                ）を基準に、タクティカルマップの磁気偏角とベクトルがリアルタイム生成されています。
+              <p className="text-[8px] text-stone-500 leading-relaxed text-justify">
+                現在の設定: 北緯 {baseLat.toFixed(2)} 度・東経{" "}
+                {baseLon.toFixed(2)}{" "}
+                度。下の「デバイスのGPSを取得」で今いる場所に合わせられます。
               </p>
             </div>
           </div>
 
-          {/* Bio-Baseline Configuration */}
-          <div className="mt-4 pt-4 border-t border-stone-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] text-stone-500 tracking-wider font-bold">
-                生体情報ベースライン (Z-Score)
-              </span>
-              <span className="text-[7px] text-emerald-500">
-                {baseSyncTimestamp
-                  ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}`
-                  : "Not Synced"}
-              </span>
-            </div>
+          {/* Bio-Baseline Configuration（詳細設定） */}
+          {showAdvanced && (
+            <div className="mt-4 pt-4 border-t border-stone-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[9px] text-stone-500 tracking-wider font-bold">
+                  体調の基準値（HRV・GSR / 任意）
+                </span>
+                <span className="text-[7px] text-emerald-500">
+                  {baseSyncTimestamp
+                    ? `Sync: ${new Date(baseSyncTimestamp).toLocaleDateString()}`
+                    : "Not Synced"}
+                </span>
+              </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="bio-hrv-mean"
-                  className="text-[8px] text-stone-400 uppercase"
-                >
-                  HRV 平均 (ms)
-                </label>
-                <input
-                  id="bio-hrv-mean"
-                  type="number"
-                  step="0.1"
-                  value={baselineHrvMean ?? ""}
-                  onChange={(e) => setBaselineHrvMean?.(Number(e.target.value))}
-                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="bio-hrv-std"
-                  className="text-[8px] text-stone-400 uppercase"
-                >
-                  HRV 標準偏差
-                </label>
-                <input
-                  id="bio-hrv-std"
-                  type="number"
-                  step="0.1"
-                  value={baselineHrvStd ?? ""}
-                  onChange={(e) => setBaselineHrvStd?.(Number(e.target.value))}
-                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="bio-gsr-mean"
-                  className="text-[8px] text-stone-400 uppercase"
-                >
-                  GSR 平均 (μS)
-                </label>
-                <input
-                  id="bio-gsr-mean"
-                  type="number"
-                  step="0.1"
-                  value={baselineGsrMean ?? ""}
-                  onChange={(e) => setBaselineGsrMean?.(Number(e.target.value))}
-                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="bio-gsr-std"
-                  className="text-[8px] text-stone-400 uppercase"
-                >
-                  GSR 標準偏差
-                </label>
-                <input
-                  id="bio-gsr-std"
-                  type="number"
-                  step="0.1"
-                  value={baselineGsrStd ?? ""}
-                  onChange={(e) => setBaselineGsrStd?.(Number(e.target.value))}
-                  className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
-                />
-              </div>
-            </div>
-            <p className="text-[7px] text-stone-400 mt-1 text-justify">
-              直近1ヶ月のHRV（心拍変動）とGSR（皮膚電気反応）の平均値・標準偏差を入力すると、ANS
-              LoadのZ-Score異常検知がパーソナライズされます。
-            </p>
-          </div>
-
-          {/* Timing Optimizer Engine Configuration */}
-          <div className="mt-4 pt-4 border-t border-stone-200">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-[9px] text-purple-600 tracking-wider font-bold uppercase">
-                Multi-Dimensional Timing Engine
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-3 mt-3">
-              {/* 心理学スコアラー */}
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[8px] text-stone-500 font-bold uppercase">
-                    Behavioral Psychology (Fresh Start)
-                  </span>
-                  <span className="text-[7px] text-stone-400">
-                    月初や月曜、誕生日などのモチベーションブーストを加味します
-                  </span>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="bio-hrv-mean"
+                    className="text-[8px] text-stone-400 uppercase"
+                  >
+                    HRV 平均 (ms)
+                  </label>
                   <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={usePsychologyScorer ?? true}
-                    onChange={(e) => setUsePsychologyScorer?.(e.target.checked)}
+                    id="bio-hrv-mean"
+                    type="number"
+                    step="0.1"
+                    value={baselineHrvMean ?? ""}
+                    onChange={(e) =>
+                      setBaselineHrvMean?.(Number(e.target.value))
+                    }
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
                   />
-                  <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="bio-hrv-std"
+                    className="text-[8px] text-stone-400 uppercase"
+                  >
+                    HRV 標準偏差
+                  </label>
+                  <input
+                    id="bio-hrv-std"
+                    type="number"
+                    step="0.1"
+                    value={baselineHrvStd ?? ""}
+                    onChange={(e) =>
+                      setBaselineHrvStd?.(Number(e.target.value))
+                    }
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="bio-gsr-mean"
+                    className="text-[8px] text-stone-400 uppercase"
+                  >
+                    GSR 平均 (μS)
+                  </label>
+                  <input
+                    id="bio-gsr-mean"
+                    type="number"
+                    step="0.1"
+                    value={baselineGsrMean ?? ""}
+                    onChange={(e) =>
+                      setBaselineGsrMean?.(Number(e.target.value))
+                    }
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="bio-gsr-std"
+                    className="text-[8px] text-stone-400 uppercase"
+                  >
+                    GSR 標準偏差
+                  </label>
+                  <input
+                    id="bio-gsr-std"
+                    type="number"
+                    step="0.1"
+                    value={baselineGsrStd ?? ""}
+                    onChange={(e) =>
+                      setBaselineGsrStd?.(Number(e.target.value))
+                    }
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                  />
+                </div>
+              </div>
+              <p className="text-[7px] text-stone-400 mt-1 text-justify">
+                スマートウォッチ等で測った直近1ヶ月の平均・標準偏差を入れると、体調の異常検知があなた基準になります。無くても動きます。
+              </p>
+            </div>
+          )}
+
+          {/* Timing Optimizer Engine Configuration（詳細設定） */}
+          {showAdvanced && (
+            <div className="mt-4 pt-4 border-t border-stone-200">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="text-[9px] text-purple-600 tracking-wider font-bold">
+                  日取りの判定に使う要素
+                </span>
               </div>
 
-              {/* 気学スコアラー */}
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[8px] text-stone-500 font-bold uppercase">
-                    Oriental Astrology (Kigaku)
-                  </span>
-                  <span className="text-[7px] text-stone-400">
-                    東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します
-                  </span>
+              <div className="flex flex-col gap-3 mt-3">
+                {/* 心理学スコアラー */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-stone-500 font-bold">
+                      行動心理（月初・月曜・誕生日）
+                    </span>
+                    <span className="text-[7px] text-stone-400">
+                      月初や月曜、誕生日などのモチベーションブーストを加味します
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={usePsychologyScorer ?? true}
+                      onChange={(e) =>
+                        setUsePsychologyScorer?.(e.target.checked)
+                      }
+                    />
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={useKigakuScorer ?? true}
-                    onChange={(e) => setUseKigakuScorer?.(e.target.checked)}
-                  />
-                  <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
-              </div>
 
-              {/* 西洋占星術スコアラー */}
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[8px] text-stone-500 font-bold uppercase">
-                    Western Astrology (Transits & Void)
-                  </span>
-                  <span className="text-[7px] text-stone-400">
-                    月星座やボイドタイムによる警告と適性を判定します
-                  </span>
+                {/* 気学スコアラー */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-stone-500 font-bold">
+                      九星気学（五行と本命星）
+                    </span>
+                    <span className="text-[7px] text-stone-400">
+                      東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={useKigakuScorer ?? true}
+                      onChange={(e) => setUseKigakuScorer?.(e.target.checked)}
+                    />
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={useAstrologyScorer ?? true}
-                    onChange={(e) => setUseAstrologyScorer?.(e.target.checked)}
-                  />
-                  <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
-                </label>
+
+                {/* 西洋占星術スコアラー */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] text-stone-500 font-bold">
+                      西洋占星術（月星座・ボイドタイム）
+                    </span>
+                    <span className="text-[7px] text-stone-400">
+                      月星座やボイドタイムによる警告と適性を判定します
+                    </span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={useAstrologyScorer ?? true}
+                      onChange={(e) =>
+                        setUseAstrologyScorer?.(e.target.checked)
+                      }
+                    />
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
+
+        {/* 詳細設定の開閉。専門項目（天中殺の上書き・判定に使う要素・
+            体調の基準値・API キー）はここを開いたときだけ出す */}
+        <div className="md:col-span-2">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-expanded={showAdvanced}
+            className="w-full px-4 py-2 rounded-sm font-mono text-[10px] border border-stone-300 text-stone-500 hover:bg-stone-100 transition-colors cursor-pointer text-left"
+          >
+            {showAdvanced
+              ? "▲ 詳細設定を閉じる"
+              : "▼ 詳細設定（天中殺の上書き・判定に使う要素・体調の基準値・API キー）"}
+          </button>
         </div>
 
         <div className="md:col-span-2 pt-4 flex justify-between gap-2 border-t border-stone-200 mt-2 flex-wrap">

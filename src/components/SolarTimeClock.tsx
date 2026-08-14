@@ -4250,10 +4250,7 @@ export const SolarTimeClock = () => {
                 htmlFor="home-action-intent"
                 className="text-[10px] text-stone-400 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
               >
-                <span className="text-emerald-500">◆</span> Action Intent{" "}
-                <span className="text-[8px] text-stone-400">
-                  / 移住・移動の目的
-                </span>
+                <span className="text-emerald-500">◆</span> 移住・移動の目的
               </label>
               <select
                 id="home-action-intent"
@@ -4263,18 +4260,10 @@ export const SolarTimeClock = () => {
                 }
                 className="w-full bg-white/70 border border-stone-300 text-sm text-stone-600 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               >
-                <option value="DEFAULT">
-                  Normal Ops (日常の行動・短期旅行)
-                </option>
-                <option value="REST">
-                  Rest & Recovery (休養・療養を目的とした移動)
-                </option>
-                <option value="BUSINESS">
-                  Business / Attack (交渉・ビジネスを目的とした移動)
-                </option>
-                <option value="MIGRATION">
-                  Relocation (引越し・長期移住・拠点の変更)
-                </option>
+                <option value="DEFAULT">日常の行動・短期旅行</option>
+                <option value="REST">休養・療養を目的とした移動</option>
+                <option value="BUSINESS">交渉・ビジネスを目的とした移動</option>
+                <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
               </select>
               <p className="text-[9px] text-stone-400 mt-3 leading-relaxed">
                 「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
