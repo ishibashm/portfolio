@@ -19,6 +19,25 @@ export interface BlogPost {
 
 export type BlogPostSummary = Omit<BlogPost, "body">;
 
+/**
+ * 記法を除いた本文の文字数。読了時間の元。
+ *
+ * DB に移した記事も同じ数え方にする必要があるので、外から使えるように
+ * してある（lib/blogStore）。ここと 2 通りになると、同じ記事なのに
+ * 置き場によって「約3分」と「約4分」が入れ替わる。
+ */
+function countPlainCharacters(body: string): number {
+  return body
+    .replace(/\[[^\]]+\]\([^)]+\)/g, "")
+    .replace(/[#*_`>|-]/g, "")
+    .replace(/\s/g, "").length;
+}
+
+/** 本文から読了時間（分）を出す。1 分未満でも 1 分と出す。 */
+export function readingMinutesOf(body: string): number {
+  return Math.max(1, Math.ceil(countPlainCharacters(body) / 500));
+}
+
 function parseFrontmatter(source: string, slug: string): BlogPost {
   const normalized = source.replace(/\r\n/g, "\n");
   if (!normalized.startsWith(`${FRONTMATTER_BOUNDARY}\n`)) {
@@ -84,11 +103,6 @@ function parseFrontmatter(source: string, slug: string): BlogPost {
     );
   }
 
-  const plainLength = body
-    .replace(/\[[^\]]+\]\([^)]+\)/g, "")
-    .replace(/[#*_`>|-]/g, "")
-    .replace(/\s/g, "").length;
-
   return {
     slug,
     title: metadata.get("title")!,
@@ -102,7 +116,7 @@ function parseFrontmatter(source: string, slug: string): BlogPost {
       .map((tag) => tag.trim())
       .filter(Boolean),
     draft: draftValue === "true",
-    readingMinutes: Math.max(1, Math.ceil(plainLength / 500)),
+    readingMinutes: readingMinutesOf(body),
     body,
   };
 }
