@@ -81,12 +81,32 @@ interface MetaphysicalConfigBarProps {
   onConfigChange?: (config: MetaphysicalConfig) => void;
 }
 
+/** 座標入力の受け口。範囲はそれぞれ緯度 ±90 / 経度 ±180。 */
+type CoordField = "baseLat" | "baseLon" | "birthLat" | "birthLon";
+
+const COORD_RANGE: Record<CoordField, number> = {
+  baseLat: 90,
+  baseLon: 180,
+  birthLat: 90,
+  birthLon: 180,
+};
+
 export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   onConfigChange,
 }) => {
   const [config, setConfig] = useState<MetaphysicalConfig>(DEFAULT_CONFIG);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  /**
+   * 座標の下書き。確定（blur）まで saveConfig しない。
+   *
+   * 座標は桁が多く、1 文字ごとに保存すると「35」の時点で東京が能登沖に
+   * 飛び、そのたび API へも POST が走る。入力中は下書きに置き、離れた
+   * ときに数値として通れば保存、通らなければ元の値に戻す。
+   */
+  const [coordDrafts, setCoordDrafts] = useState<
+    Partial<Record<CoordField, string>>
+  >({});
 
   // Load config on mount
   useEffect(() => {
@@ -258,6 +278,59 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     saveConfig({ ...config, useClassicalBoard: !config.useClassicalBoard });
   };
 
+  /**
+   * 座標の確定。数値として通れば保存、通らなければ元の値に戻す。
+   *
+   * 空欄は「触っていない」として何もしない。バーから座標を消す操作は
+   * 提供しない（消すと、そのページだけでなく全ページの判定が同時に
+   * 出せなくなる。消したい場面が無いのに事故の口だけ増える）。
+   */
+  const commitCoord = (field: CoordField) => {
+    const draft = coordDrafts[field];
+    if (draft === undefined) return;
+    setCoordDrafts((prev) => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+    const trimmed = draft.trim();
+    if (trimmed === "") return;
+    const value = Number(trimmed);
+    if (!Number.isFinite(value) || Math.abs(value) > COORD_RANGE[field]) {
+      return; // 下書きを捨てるだけで、保存済みの値はそのまま
+    }
+    if (value === config[field]) return;
+    saveConfig({ ...config, [field]: value });
+  };
+
+  /** 座標欄の表示値。下書きがあれば下書き、無ければ保存済みの値。 */
+  const coordValue = (field: CoordField): string => {
+    const draft = coordDrafts[field];
+    if (draft !== undefined) return draft;
+    const saved = config[field];
+    return typeof saved === "number" && Number.isFinite(saved)
+      ? String(saved)
+      : "";
+  };
+
+  /** 座標 1 枠。緯度・経度のペアで 4 回使うので畳んである。 */
+  const coordInput = (field: CoordField, placeholder: string) => (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={coordValue(field)}
+      placeholder={placeholder}
+      onChange={(e) =>
+        setCoordDrafts((prev) => ({ ...prev, [field]: e.target.value }))
+      }
+      onBlur={() => commitCoord(field)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      }}
+      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:border-indigo-200 transition-colors shadow-inner"
+    />
+  );
+
   const handleFilterChange = (
     mode: MetaphysicalConfig["directionFilterMode"],
   ) => {
@@ -330,6 +403,23 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               </span>
               <span className="text-stone-600 font-semibold">
                 {getIntentLabel(config.actionIntent).split(" ")[0]}
+              </span>
+            </div>
+            {/* 生年月日は判定の前提なので、畳んだ状態でも設定の有無が
+                見えるようにする。未設定なら琥珀色で「開けば直せる」ことを
+                示す（未設定のまま使うと判定が出ないため）。 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-stone-400 font-bold uppercase tracking-wider">
+                生年月日:
+              </span>
+              <span
+                className={
+                  config.birthDate
+                    ? "text-stone-600 font-semibold"
+                    : "text-amber-600 font-semibold"
+                }
+              >
+                {config.birthDate?.slice(0, 10) ?? "未設定"}
               </span>
             </div>
           </div>
@@ -479,6 +569,54 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                           : "環境のみ"}
                   </button>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* プロフィール（生年月日・出生地・現在地）。
+              保存経路（tactical_config_v1 / user-config）も同期イベントも
+              以前からこのバーを通っていて、入力欄だけが無かった。そのため
+              「ホームで設定してから来てください」という導線になっており、
+              どのページからでも直せるようにする（利用者の要望）。
+              ホームと同じ値を読み書きするので、どちらで変えても揃う。 */}
+          <div className="space-y-2 pt-3 border-t border-stone-200">
+            <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5 text-indigo-600" />
+              プロフィール（全ページ共通・判定の基準）
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <span className="text-[9px] text-stone-400 block">
+                  生年月日（本命星と天中殺の基準）
+                </span>
+                <input
+                  type="date"
+                  value={config.birthDate?.slice(0, 10) ?? ""}
+                  onChange={(e) => {
+                    // 空は「消した」ではなく入力途中。保存しない。
+                    if (e.target.value)
+                      saveConfig({ ...config, birthDate: e.target.value });
+                  }}
+                  className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:border-indigo-200 transition-colors shadow-inner"
+                />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] text-stone-400 block">
+                  現在地＝出発地（方位はここから測る）
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {coordInput("baseLat", "緯度 34.99")}
+                  {coordInput("baseLon", "経度 135.72")}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] text-stone-400 block">
+                  出生地（任意・天体ラインの基準）
+                </span>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {coordInput("birthLat", "緯度 37.57")}
+                  {coordInput("birthLon", "経度 126.98")}
+                </div>
               </div>
             </div>
           </div>
