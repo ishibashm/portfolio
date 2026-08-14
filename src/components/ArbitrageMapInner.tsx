@@ -170,6 +170,8 @@ interface ArbitrageMapInnerProps {
    * 断りを出すためのフラグとして受け取る。
    */
   prefCountsFiltered?: boolean;
+  /** 地図の表示範囲に入る掲載件数（名寄せ前）。null なら出さない */
+  viewportListingCount?: number | null;
   /**
    * 地図の空きを押したときに、その地点を判定へ送る。
    *
@@ -377,6 +379,7 @@ export default function ArbitrageMapInner({
   kigakuUnavailableReason,
   prefCounts: prefCountsProp,
   prefCountsFiltered = false,
+  viewportListingCount = null,
   onInspectSpot,
   targetDate,
   hasBase = false,
@@ -1005,6 +1008,19 @@ export default function ArbitrageMapInner({
 
         {/* Theme Switcher + フォーカスの明示切り替え。
             「今どこを見ているのか」を手で確定できるようにする */}
+        {/* 表示範囲の掲載件数。ズーム・移動に追従して数え直される。
+            数えているのは掲載件数（名寄せ前）なので必ず「掲載」と書く。
+            走査後に見出しへ出る「条件に一致 N 件」（名寄せ後）とは
+            別の数字で、混ぜると桁が合わない */}
+        {viewportListingCount !== null && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-full shadow-lg border border-stone-200 px-3.5 py-1.5 text-[10px] text-stone-600">
+            この範囲に掲載
+            <b className="mx-1 font-mono text-sm text-indigo-700">
+              {viewportListingCount.toLocaleString()}
+            </b>
+            件
+          </div>
+        )}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5">
           <button
             onClick={() => {

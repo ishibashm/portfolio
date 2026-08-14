@@ -54,6 +54,11 @@ interface ArbitrageMapProps {
   prefCounts?: Record<string, number>;
   /** 上が絞り込みを反映した値か。凡例の断り書きに使う */
   prefCountsFiltered?: boolean;
+  /**
+   * 地図の表示範囲に入る掲載件数（名寄せ前）。ページ側が軽い口で
+   * 数え直して渡す。null なら出さない。
+   */
+  viewportListingCount?: number | null;
   /** 地図の空きを押したとき、その地点を判定へ送る */
   onInspectSpot?: (lat: number, lon: number) => void;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
