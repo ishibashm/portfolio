@@ -100,7 +100,10 @@ export default async function BlogPostPage({
               </span>
             </div>
 
-            <h1 className="mt-5 font-serif text-3xl font-bold leading-tight tracking-tight md:text-4xl md:leading-tight">
+            {/* 見出し・区切り線も本文と同じ読み幅で止める。ここだけ
+                カラムいっぱい（およそ 1350px）に伸びていたため、700px で
+                折り返す本文の上に倍近い見出しが乗っていた。 */}
+            <h1 className="mt-5 max-w-[70ch] font-serif text-3xl font-bold leading-tight tracking-tight md:text-4xl md:leading-tight">
               {post.title}
             </h1>
             <p className="mt-5 max-w-[70ch] border-l-4 border-rose-300 pl-4 text-sm leading-7 text-slate-600">
@@ -111,11 +114,11 @@ export default async function BlogPostPage({
               <BlogArticleBody body={post.body} />
             </div>
 
-            <div className="mt-12">
+            <div className="mt-12 max-w-[70ch]">
               <AdBanner />
             </div>
 
-            <div className="mt-10 border-t border-slate-300 pt-6">
+            <div className="mt-10 max-w-[70ch] border-t border-slate-300 pt-6">
               <Link
                 href="/blog"
                 className="text-sm font-bold text-rose-600 hover:underline"

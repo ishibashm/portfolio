@@ -2,23 +2,41 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 
+/**
+ * 本文の読み幅。
+ *
+ * 以前は段落・箇条書きにだけ max-w-[70ch] が付いていて、**表・見出しの
+ * 罫線・区切り線には上限が無かった**。記事のカラムは 1700px からサイド
+ * バー 300px を引いた幅（およそ 1350px）なので、本文が 700px で止まる
+ * 隣で表と罫線だけが倍近くまで伸び、同じ記事の中で列が 2 本あるように
+ * 見えていた。
+ *
+ * 読み幅は 1 か所で決める。個々の要素に書くと、要素を足したときに必ず
+ * 付け忘れる（実際そうなった）。器（1700px）は狭めない。CLAUDE.md 3 節の
+ * とおり、行長は器ではなく中身の側で守る。
+ */
+const MEASURE = "max-w-[70ch]";
+
 const components: Components = {
   h2: ({ children, ...props }) => (
     <h2
-      className="mt-12 scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900"
+      className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900`}
       {...props}
     >
       {children}
     </h2>
   ),
   h3: ({ children, ...props }) => (
-    <h3 className="mt-8 font-serif text-lg font-bold text-slate-900" {...props}>
+    <h3
+      className={`mt-8 ${MEASURE} font-serif text-lg font-bold text-slate-900`}
+      {...props}
+    >
       {children}
     </h3>
   ),
   p: ({ children, ...props }) => (
     <p
-      className="mt-4 max-w-[70ch] text-[15px] leading-8 text-slate-700"
+      className={`mt-4 ${MEASURE} text-[15px] leading-8 text-slate-700`}
       {...props}
     >
       {children}
@@ -26,7 +44,7 @@ const components: Components = {
   ),
   ul: ({ children, ...props }) => (
     <ul
-      className="mt-4 max-w-[70ch] list-disc space-y-2 pl-6 text-[15px] leading-7 text-slate-700"
+      className={`mt-4 ${MEASURE} list-disc space-y-2 pl-6 text-[15px] leading-7 text-slate-700`}
       {...props}
     >
       {children}
@@ -34,7 +52,7 @@ const components: Components = {
   ),
   ol: ({ children, ...props }) => (
     <ol
-      className="mt-4 max-w-[70ch] list-decimal space-y-2 pl-6 text-[15px] leading-7 text-slate-700"
+      className={`mt-4 ${MEASURE} list-decimal space-y-2 pl-6 text-[15px] leading-7 text-slate-700`}
       {...props}
     >
       {children}
@@ -60,14 +78,18 @@ const components: Components = {
   },
   blockquote: ({ children, ...props }) => (
     <blockquote
-      className="mt-6 rounded-r-2xl border-l-4 border-rose-400 bg-rose-50 px-5 py-1 text-slate-700"
+      className={`mt-6 ${MEASURE} rounded-r-2xl border-l-4 border-rose-400 bg-rose-50 px-5 py-1 text-slate-700`}
       {...props}
     >
       {children}
     </blockquote>
   ),
+  // 読み幅に収まらない表は、器を広げずに中で横スクロールさせる。
+  // 表のためだけに読み幅を広げると、本文の行長がその表に引きずられる。
   table: ({ children, ...props }) => (
-    <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-300 bg-white/90">
+    <div
+      className={`mt-6 ${MEASURE} overflow-x-auto rounded-2xl border border-slate-300 bg-white/90`}
+    >
       <table className="min-w-full border-collapse text-sm" {...props}>
         {children}
       </table>
@@ -104,7 +126,9 @@ const components: Components = {
       {children}
     </code>
   ),
-  hr: ({ ...props }) => <hr className="my-10 border-slate-300" {...props} />,
+  hr: ({ ...props }) => (
+    <hr className={`my-10 ${MEASURE} border-slate-300`} {...props} />
+  ),
 };
 
 export function BlogArticleBody({ body }: { body: string }) {
