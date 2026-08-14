@@ -110,79 +110,47 @@ export default async function BlogPostPage({
         </nav>
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-          {/* 本文は 70ch で折り返すので、1700px の器では記事カラムの右が
-              空く。器は狭めない（CLAUDE.md 3 節）。空いた側に目次を置いて
-              2 段にする。xl 未満は 1 段のまま（目次を出す幅が無い）。 */}
-          <article className="xl:grid xl:grid-cols-[minmax(0,70ch)_minmax(0,1fr)] xl:items-start xl:gap-12">
-            <div>
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                <span className="rounded-full bg-rose-50 px-3 py-1 font-bold text-rose-700">
-                  {post.category}
-                </span>
-                <time dateTime={post.publishedAt}>
-                  公開 {formatBlogDate(post.publishedAt)}
+          <article>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              <span className="rounded-full bg-rose-50 px-3 py-1 font-bold text-rose-700">
+                {post.category}
+              </span>
+              <time dateTime={post.publishedAt}>
+                公開 {formatBlogDate(post.publishedAt)}
+              </time>
+              {post.updatedAt && post.updatedAt !== post.publishedAt && (
+                <time dateTime={post.updatedAt}>
+                  更新 {formatBlogDate(post.updatedAt)}
                 </time>
-                {post.updatedAt && post.updatedAt !== post.publishedAt && (
-                  <time dateTime={post.updatedAt}>
-                    更新 {formatBlogDate(post.updatedAt)}
-                  </time>
-                )}
-                <span className="inline-flex items-center gap-1">
-                  <Clock3 className="h-3.5 w-3.5" /> 約{post.readingMinutes}分
-                </span>
-              </div>
-
-              {/* 見出し・区切り線も本文と同じ読み幅で止める。ここだけ
-                カラムいっぱい（およそ 1350px）に伸びていたため、700px で
-                折り返す本文の上に倍近い見出しが乗っていた。 */}
-              <h1 className="mt-5 max-w-[70ch] font-serif text-3xl font-bold leading-tight tracking-tight md:text-4xl md:leading-tight">
-                {post.title}
-              </h1>
-              <p className="mt-5 max-w-[70ch] border-l-4 border-rose-300 pl-4 text-sm leading-7 text-slate-600">
-                {post.description}
-              </p>
-
-              <div className="mt-8">
-                <BlogArticleBody body={post.body} />
-              </div>
-
-              <div className="mt-12 max-w-[70ch]">
-                <AdBanner />
-              </div>
-
-              <div className="mt-10 max-w-[70ch] border-t border-slate-300 pt-6">
-                <Link
-                  href="/blog"
-                  className="text-sm font-bold text-rose-600 hover:underline"
-                >
-                  ← 記事一覧へ戻る
-                </Link>
-              </div>
+              )}
+              <span className="inline-flex items-center gap-1">
+                <Clock3 className="h-3.5 w-3.5" /> 約{post.readingMinutes}分
+              </span>
             </div>
 
-            {/* 目次。見出しが 1 つでは目次にならないので 2 つから出す。
-                アンカー id は描画側（BlogArticleBody の h2）と同じ
-                headingId で作っているため、必ず飛べる。 */}
-            {headings.length >= 2 && (
-              <nav
-                aria-label="目次"
-                className="hidden xl:block xl:sticky xl:top-8 rounded-2xl border border-slate-300 bg-white/80 p-5"
+            <h1 className="mt-5 font-serif text-3xl font-bold leading-tight tracking-tight md:text-4xl md:leading-tight">
+              {post.title}
+            </h1>
+            <p className="mt-5 border-l-4 border-rose-300 pl-4 text-sm leading-7 text-slate-600">
+              {post.description}
+            </p>
+
+            <div className="mt-8">
+              <BlogArticleBody body={post.body} />
+            </div>
+
+            <div className="mt-12">
+              <AdBanner />
+            </div>
+
+            <div className="mt-10 border-t border-slate-300 pt-6">
+              <Link
+                href="/blog"
+                className="text-sm font-bold text-rose-600 hover:underline"
               >
-                <h2 className="font-serif text-sm font-bold">目次</h2>
-                <ol className="mt-3 space-y-2.5 text-xs leading-5">
-                  {headings.map((h) => (
-                    <li key={h.id}>
-                      <a
-                        href={`#${h.id}`}
-                        className="text-slate-600 hover:text-rose-600"
-                      >
-                        {h.text}
-                      </a>
-                    </li>
-                  ))}
-                </ol>
-              </nav>
-            )}
+                ← 記事一覧へ戻る
+              </Link>
+            </div>
           </article>
 
           <aside className="space-y-5 lg:sticky lg:top-8">
@@ -215,6 +183,32 @@ export default async function BlogPostPage({
                   ))}
                 </div>
               </section>
+            )}
+
+            {/* 目次は「あわせて読む」の下（運営者の指定）。本文の横に
+                独立した段として置いていたときは、目次が短いのでその下が
+                丸ごと余白になっていた。見出しが 1 つでは目次にならない
+                ので 2 つから出す。アンカー id は描画側（BlogArticleBody の
+                h2）と同じ headingId で作っているため、必ず飛べる。 */}
+            {headings.length >= 2 && (
+              <nav
+                aria-label="目次"
+                className="rounded-2xl border border-slate-300 bg-white/80 p-5"
+              >
+                <h2 className="font-serif text-sm font-bold">目次</h2>
+                <ol className="mt-3 space-y-2.5 text-xs leading-5">
+                  {headings.map((h) => (
+                    <li key={h.id}>
+                      <a
+                        href={`#${h.id}`}
+                        className="text-slate-600 hover:text-rose-600"
+                      >
+                        {h.text}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </nav>
             )}
           </aside>
         </div>
