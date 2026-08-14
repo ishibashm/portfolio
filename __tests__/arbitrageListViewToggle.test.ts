@@ -4,21 +4,19 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
- * 一覧を出したあと、絞込の画面に戻れること。
+ * 一覧⇄絞込の切り替えが、件数にかかわらずいつでもできること。
  *
- * 一覧⇄絞込の切り替えボタンは「表示範囲内が 100 件以下」という条件の
- * 中に丸ごと入っていた。100 件以下は**一覧を出せるか**の条件であって、
- * 戻れるかの条件ではない。一覧を出したまま地図を動かして範囲が
- * 100 件を超えると、ボタンが「※100件以下で一覧表示可能」という
- * 注意書きに差し替わり、絞込へ帰る手段が画面から消えていた
- * （利用者から「一覧を表示した後に条件を指定する表示に戻れない」
- * として報告。実際に 500 件の範囲で再現している）。
+ * 経緯は 2 段ある。最初、切り替えボタンは「表示範囲内が 100 件以下」
+ * という条件の中に丸ごと入っていて、一覧を出したまま件数が増えると
+ * 絞込へ帰る手段が画面から消えていた。次に「一覧表示中は戻れる」に
+ * 直したが、100 件を超えると一覧に**入れない**制限は残っていた。
+ * 数百件でも問題なく表示できることを利用者が確認したので、制限ごと
+ * 外した（候補はもともと 500 件が上限なので際限なく増えない）。
  *
- * 画面全体を描いて確かめたいところだが、この頁は 4,500 行あり
- * 地図・スキャン API・保存設定まで巻き込むため、判定式そのものを
- * ソースから読んで固定する。文字列の一致ではなく、TypeScript の
- * パーサで「『絞込に戻る』を出す三項演算子」を特定し、その条件が
- * 件数だけを見ていないことを見る。書き方を変えても壊れない。
+ * ここで固定するのは「切り替えを件数で縛らない」こと。ボタンの
+ * ラベルを出し分ける三項演算子（showListView ? 戻る : 表示）を
+ * TypeScript のパーサで特定し、その条件が showListView そのもので
+ * あること＝外側に件数の条件が無いことを見る。
  */
 
 const PAGE = join(process.cwd(), "src/app/relocation/arbitrage/page.tsx");
@@ -54,31 +52,17 @@ function toggleCondition(): string {
   return found[0];
 }
 
-describe("物件を方位で探す：一覧から絞込に戻れる", () => {
-  it("切り替えボタンの条件が件数だけを見ていない", () => {
+describe("物件を方位で探す：一覧⇄絞込の切り替えを件数で縛らない", () => {
+  it("切り替えの条件は showListView だけ（件数の条件が無い）", () => {
+    // 旧実装（100 件以下でだけ一覧に入れる）に戻すと、外側の三項演算子が
+    // 復活してここで捕まる（条件に propertiesInBounds.length が現れる）。
     const condition = toggleCondition();
-    expect(
-      condition.includes("showListView"),
-      `一覧表示中かどうかを見ていない: ${condition}`,
-    ).toBe(true);
+    expect(condition.trim()).toBe("showListView");
   });
 
-  it("一覧表示中は件数にかかわらずボタンが出る", () => {
-    // 条件式を実際に評価する。旧実装（件数だけ）ならここで落ちる。
-    const condition = toggleCondition();
-    const evaluate = (showListView: boolean, count: number) =>
-      Function(
-        "showListView",
-        "propertiesInBounds",
-        `return Boolean(${condition});`,
-      )(showListView, { length: count });
-
-    // 報告された状況：一覧を見ている最中に 500 件へ増えた。
-    expect(evaluate(true, 500), "一覧表示中に戻れない").toBe(true);
-    expect(evaluate(true, 10)).toBe(true);
-
-    // 絞込の画面では、今まで通り 100 件以下でだけ一覧に入れる。
-    expect(evaluate(false, 100)).toBe(true);
-    expect(evaluate(false, 101)).toBe(false);
+  it("「※100件以下で一覧表示可能」の注意書きが残っていない", () => {
+    const source = readFileSync(PAGE, "utf8");
+    expect(source).not.toContain("※100件以下で一覧表示可能");
+    expect(source).not.toContain("propertiesInBounds.length <= 100");
   });
 });
