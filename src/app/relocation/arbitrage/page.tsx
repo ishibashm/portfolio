@@ -2120,6 +2120,72 @@ export default function ArbitrageScannerPage() {
   ]);
 
   /**
+   * 全国俯瞰の県別件数を、いまの絞り込みで数え直す。
+   *
+   * 地図の県ラベルは src/data/prefecturesWithData.json（毎晩作る静的な
+   * 値）を読んでおり、**絞り込みをどう変えても数字が動かなかった**。
+   * 条件を足したあと「まだこの県にこれだけあるのか」を読み違える。
+   *
+   * 画面が持っている物件（最大 500 件・安い順）から数えるのでは代わりに
+   * ならない。全国で 45 万行あるうちの 500 件なので、母数が県の実勢と
+   * まるで違う。DB 側で数え直す口（/api/rentals/arbitrage/prefecture-counts）
+   * を叩く。
+   *
+   * 送るのは SQL で表せる条件だけ。方位・吉凶・総合スコア・利回り偏差・
+   * お気に入りは出発地と生年月日から画面側で出す値で、DB の列に無い。
+   * 反映していないことは地図の凡例に出す（prefCountsFiltered）。
+   */
+  const countableFilterQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    if (filterMaxRent) params.set("maxRentMan", filterMaxRent);
+    if (filterMaxAge) params.set("maxBuildingAge", filterMaxAge);
+    if (filterMaxStation) params.set("maxStationMin", filterMaxStation);
+    if (filterMinSize) params.set("minSizeSqm", filterMinSize);
+    if (filterLayouts.length > 0)
+      params.set("layouts", filterLayouts.join(","));
+    return params.toString();
+  }, [
+    filterMaxRent,
+    filterMaxAge,
+    filterMaxStation,
+    filterMinSize,
+    filterLayouts,
+  ]);
+
+  /** 数え直した県別件数。null なら静的ファイルの値をそのまま使う。 */
+  const [livePrefCounts, setLivePrefCounts] = useState<Record<
+    string,
+    number
+  > | null>(null);
+
+  useEffect(() => {
+    // 絞り込みが空なら静的な値に戻す。同じ数字を数え直す意味が無い。
+    if (!countableFilterQuery) {
+      setLivePrefCounts(null);
+      return;
+    }
+    let cancelled = false;
+    // 入力のたびに叩かない。チップを続けて押すと 1 回にまとまる。
+    const timer = setTimeout(() => {
+      fetch(`/api/rentals/arbitrage/prefecture-counts?${countableFilterQuery}`)
+        .then((res) => res.json())
+        .then((body) => {
+          if (cancelled) return;
+          // 数え直せなかったときは静的な値に戻す。前の条件の数字を
+          // 残すと、条件と数字が食い違ったまま画面に出る。
+          setLivePrefCounts(body?.success ? body.data.counts : null);
+        })
+        .catch(() => {
+          if (!cancelled) setLivePrefCounts(null);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [countableFilterQuery]);
+
+  /**
    * 見出しクリックでの並べ替え。Shift 併用で第 2 キー以降を足す。
    *
    * 以前はここで並び順を組み立てずに元の配列をそのまま返していたため、
@@ -4735,6 +4801,8 @@ export default function ArbitrageScannerPage() {
               prefKigaku={dayKigaku?.byPrefecture}
               dirKigaku={dayKigaku?.byDirection}
               kigakuUnavailableReason={kigakuUnavailableReason}
+              prefCounts={livePrefCounts ?? undefined}
+              prefCountsFiltered={livePrefCounts !== null}
               targetDate={targetDate}
               hasBase={hasBaseLocation}
               focusKind={mapFocusKind}

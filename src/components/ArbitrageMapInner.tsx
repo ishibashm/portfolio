@@ -143,6 +143,23 @@ interface ArbitrageMapInnerProps {
    */
   kigakuUnavailableReason?: string;
   /**
+   * 県名 → 掲載件数。俯瞰の県ラベルと「件数」塗りが読む。
+   *
+   * 渡されないときは src/data/prefecturesWithData.json（毎晩作る静的な
+   * 値）に落ちる。**絞り込みを掛けているあいだはページ側が数え直した値を
+   * 渡す。**静的な値だけを見ていたころは、条件をどう変えても県の数字が
+   * 動かず、絞り込んだあとの分布を読み違えた。
+   */
+  prefCounts?: Record<string, number>;
+  /**
+   * 上の prefCounts が絞り込みを反映した値か。
+   *
+   * 反映できるのは SQL で表せる条件（家賃・間取り・築年・徒歩・広さ）
+   * だけで、方位や吉凶は含まれない。数字の意味が変わるので、凡例に
+   * 断りを出すためのフラグとして受け取る。
+   */
+  prefCountsFiltered?: boolean;
+  /**
    * 8方位 → 選択日の吉凶段階。扇形の塗り分けはこれを読む。
    *
    * prefKigaku と同じ 1 回の盤計算から切り出したもので、時期パネルの
@@ -341,6 +358,8 @@ export default function ArbitrageMapInner({
   prefKigaku,
   dirKigaku,
   kigakuUnavailableReason,
+  prefCounts: prefCountsProp,
+  prefCountsFiltered = false,
   targetDate,
   hasBase = false,
   focusKind = "area",
@@ -437,11 +456,17 @@ export default function ArbitrageMapInner({
   // 全国 45 万行の名寄せを走らせることになる。俯瞰に要るのは県ごとの
   // 数字だけなので、build_area_dataset.ts が毎晩数えて静的に配る値を使う。
   // 取り込みが進んで新しい県にデータが載れば、翌朝ここも自動で増える。
+  //
+  // 絞り込みが掛かっているあいだは、ページ側が数え直した値（prefCountsProp）
+  // を優先する。静的な値だけを見ていたころは依存配列も空で、条件をどう
+  // 変えても県の数字が動かなかった。
   const prefCounts: Record<string, number> = useMemo(
     () =>
+      prefCountsProp ??
       (prefecturesWithData as { listingCounts?: Record<string, number> })
-        .listingCounts ?? {},
-    [],
+        .listingCounts ??
+      {},
+    [prefCountsProp],
   );
 
   const handleBoundsChange = useCallback(
@@ -1031,8 +1056,19 @@ export default function ArbitrageMapInner({
             {effectiveTint === "count" && (
               <div className="max-w-44 space-y-1">
                 <div className="font-bold text-stone-600">
-                  いまの色は掲載件数です
+                  {prefCountsFiltered
+                    ? "いまの色は絞込後の件数です"
+                    : "いまの色は掲載件数です"}
                 </div>
+                {/* 絞り込みのうち反映できるのは SQL で表せる条件だけ。
+                    方位・吉凶は出発地と生年月日から画面側で出す値なので、
+                    この数字には入っていない。断らずに出すと「方位で
+                    絞ったのに減らない」と読まれる。 */}
+                {prefCountsFiltered && (
+                  <div className="text-[8px] leading-relaxed text-stone-500">
+                    家賃・間取り・築年・徒歩・広さを反映しています。方位と吉凶は含みません。
+                  </div>
+                )}
                 {!prefKigaku && (
                   <div className="text-[8px] leading-relaxed text-stone-500">
                     {kigakuUnavailableReason ??
