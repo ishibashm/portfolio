@@ -2516,8 +2516,11 @@ export default function ArbitrageScannerPage() {
                 <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
                   条件 ({activeFiltersCount})
                 </span>
-                <span className="text-[11px] font-semibold text-stone-400 dark:text-stone-500">
-                  表示範囲内:{" "}
+                <span
+                  className="text-[11px] font-semibold text-stone-400 dark:text-stone-500 cursor-help"
+                  title="走査で取得した候補（名寄せ・絞り込み後、上限500件）のうち、地図の表示範囲に入る数。地図の「この範囲に掲載 N 件」は名寄せ前の掲載数なので、同じ範囲でも数字は一致しません。"
+                >
+                  候補のうち範囲内:{" "}
                   <b className="text-gray-900 dark:text-stone-900 font-mono text-xs">
                     {propertiesInBounds.length}
                   </b>{" "}
@@ -2526,28 +2529,21 @@ export default function ArbitrageScannerPage() {
               </div>
 
               {/* 一覧と絞込の切り替え。
-                  100 件以下という条件は「一覧を出せるか」だけに掛かる。
-                  以前はボタンごとこの条件の中にあり、一覧を出したあとで
-                  地図を動かして表示範囲が 100 件を超えると、戻るボタンが
-                  注意書きに差し替わって絞込へ帰れなくなっていた。
-                  一覧を見ている間は、件数にかかわらず戻り道を残す。 */}
-              {showListView || propertiesInBounds.length <= 100 ? (
-                <button
-                  onClick={() => setShowListView(!showListView)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                    showListView
-                      ? "bg-zinc-200 dark:bg-stone-100 hover:bg-zinc-300 dark:hover:bg-stone-200 text-gray-700 dark:text-stone-600"
-                      : "bg-teal-500 hover:bg-teal-600 text-stone-900 shadow-sm"
-                  }`}
-                >
-                  <Filter className="w-3.5 h-3.5" />
-                  {showListView ? "絞込に戻る" : "一覧を表示"}
-                </button>
-              ) : (
-                <span className="text-[10px] text-stone-400 font-medium">
-                  ※100件以下で一覧表示可能
-                </span>
-              )}
+                  以前は「100 件以下のときだけ一覧を出せる」制限があった。
+                  一覧が重くなる前提の名残だが、実際には数百件でも問題なく
+                  表示できることを利用者が確認したので、制限ごと外した。
+                  候補はもともと 500 件が上限なので、際限なく増えもしない。 */}
+              <button
+                onClick={() => setShowListView(!showListView)}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                  showListView
+                    ? "bg-zinc-200 dark:bg-stone-100 hover:bg-zinc-300 dark:hover:bg-stone-200 text-gray-700 dark:text-stone-600"
+                    : "bg-teal-500 hover:bg-teal-600 text-stone-900 shadow-sm"
+                }`}
+              >
+                <Filter className="w-3.5 h-3.5" />
+                {showListView ? "絞込に戻る" : "一覧を表示"}
+              </button>
             </div>
 
             {/* Sidebar Scrollable Content */}
@@ -4250,7 +4246,8 @@ export default function ArbitrageScannerPage() {
                   {propertyDetailPanel}
                   <div className="flex items-center justify-between border-b border-gray-200 dark:border-stone-200 pb-2">
                     <h3 className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
-                      物件リスト ({sortedTableData.length}件中、表示範囲内)
+                      物件リスト（候補 {sortedTableData.length}{" "}
+                      件中、表示範囲内を表示）
                     </h3>
 
                     {/* Card vs Table toggle switches */}
