@@ -968,11 +968,16 @@ export const SolarTimeClock = () => {
   ]);
 
   useEffect(() => {
+    // プロフィールタブは判定を表示しないので、開いている間は判定計算
+    // （/api/nba への POST）を叩かない。ホームを開いた瞬間に生年月日や
+    // 座標を打つたび再計算が走っていた。別のタブへ移った時点で
+    // activeTab が変わり、この効果が発火して 1 秒後に取りに行く。
+    if (activeTab === "profile") return;
     const timer = setTimeout(() => {
       fetchNBAData();
     }, 1000); // 1s debounce
     return () => clearTimeout(timer);
-  }, [fetchNBAData]);
+  }, [fetchNBAData, activeTab]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
