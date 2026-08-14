@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BookOpenText, Clock3, Rss } from "lucide-react";
-import { getBlogPosts, formatBlogDate } from "@/lib/blog";
+import { formatBlogDate } from "@/lib/blog";
+import { loadBlogPosts } from "@/lib/blogStore";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 
@@ -25,8 +26,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function BlogPage() {
-  const posts = getBlogPosts();
+/**
+ * 記事は DB に入るようになったので、ビルド時に焼き切らない。
+ *
+ * 値は 60 秒。**この画面だけで決められる数字ではない。**ルートレイアウトが
+ * `fetch(..., { next: { revalidate: 60 } })` を持っており、Next はルート内の
+ * セグメントと fetch の revalidate のうち**いちばん小さい値**を採る。
+ * ここに 300 と書いても実際は 60 になる（prerender-manifest で確認済み）。
+ * 実際に効く値を書いておかないと、次に読む人が 5 分だと思って調べ直す。
+ */
+export const revalidate = 60;
+
+export default async function BlogPage() {
+  const posts = await loadBlogPosts();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">

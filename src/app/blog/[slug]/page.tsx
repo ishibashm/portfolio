@@ -5,14 +5,38 @@ import { Clock3 } from "lucide-react";
 import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
-import { getBlogPost, getBlogPosts, formatBlogDate } from "@/lib/blog";
+import {
+  getBlogPosts as getMarkdownBlogPosts,
+  formatBlogDate,
+} from "@/lib/blog";
+import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 
-export const dynamicParams = false;
+/**
+ * DB に入れた記事は、ビルド時には存在しない。焼き切らずに受ける。
+ *
+ * dynamicParams を false のままにすると、管理画面から出した記事の URL が
+ * 404 になる（generateStaticParams が返した slug 以外を拒むため）。
+ */
+export const dynamicParams = true;
+/**
+ * 60 秒。ルートレイアウトの fetch が revalidate: 60 を持っており、Next は
+ * ルート内でいちばん小さい値を採るので、ここを大きくしても効かない。
+ * 実際に効く値を書く（/blog も同じ）。
+ */
+export const revalidate = 60;
 
+/**
+ * 事前に焼く slug は **Markdown 側だけ**から出す。
+ *
+ * ここで DB を引くと、ビルドが DB へ繋がることを前提にしてしまう。
+ * 繋がらなければビルドごと落ちる。DB にしか無い記事は dynamicParams で
+ * 初回アクセス時に組めばよく、事前生成は「確実に手元にあるもの」に
+ * 限るのが安全。
+ */
 export function generateStaticParams() {
-  return getBlogPosts().map((post) => ({ slug: post.slug }));
+  return getMarkdownBlogPosts().map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({
@@ -21,7 +45,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await loadBlogPost(slug);
   if (!post) return {};
 
   const path = `/blog/${post.slug}`;
@@ -48,11 +72,13 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = getBlogPost(slug);
+  const post = await loadBlogPost(slug);
   if (!post) notFound();
 
   const path = `/blog/${post.slug}`;
-  const related = getBlogPosts().filter((item) => item.slug !== post.slug);
+  const related = (await loadBlogPosts()).filter(
+    (item) => item.slug !== post.slug,
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
