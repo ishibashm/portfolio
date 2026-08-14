@@ -85,19 +85,38 @@ model user_configs {
   updated_at           DateTime  @default(dbgenerated("timezone('utc'::text, now())")) @db.Timestamptz(6)
 }
 
+/// 記事。これまで content/blog/*.md に置いていたものを DB へ移す。
+///
+/// 表そのものは以前からある（使われないまま残っていた）。新しく作らず、
+/// 足りない列を足して使う。同じ役目の表を 2 つ持つと、どちらが本物か
+/// 分からなくなる。
+///
+/// 本文は Markdown のまま持つ。書き味と表示（BlogArticleBody）を変えずに
+/// 置き場だけ移すため。HTML に直して保存すると、あとで表示を変えたときに
+/// 過去の記事だけ古い見た目のまま残る。
 model BlogPost {
-  id          String   @id
+  id          String   @id @default(cuid())
   title       String
   slug        String   @unique
   content     String
+  /// 一覧に出す要約。frontmatter の description に対応する。
   excerpt     String?
+  /// 記事の分類。frontmatter の category に対応する。
+  category    String?
   publishedAt DateTime @default(now())
-  updatedAt   DateTime
-  authorId    String
+  updatedAt   DateTime @updatedAt
+  /// NextAuth の User。**管理画面から書いた記事には紐づく相手が居ない**
+  /// ので任意にする。必須のままだと、記事を 1 本書くために User の行を
+  /// 先に作る必要があり、認証の都合が記事の都合に混ざる。
+  authorId    String?
+  /// カンマ区切り。frontmatter の tags と同じ形にして、移行で崩れないようにする。
   tags        String
   featured    Boolean  @default(false)
   published   Boolean  @default(false)
-  User        User     @relation(fields: [authorId], references: [id])
+  User        User?    @relation(fields: [authorId], references: [id])
+
+  /// 一覧は「公開済みを新しい順」でしか引かない。
+  @@index([published, publishedAt])
 }
 
 model PortfolioImage {
