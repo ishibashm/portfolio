@@ -131,6 +131,7 @@ import {
 } from "@/utils/smartSearch";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import { directionUnstableNote } from "@/lib/directionDistance";
+import { buildScanCounts } from "@/lib/arbitrageCounts";
 import { addFavorite, loadFavorites, removeFavorite } from "@/lib/favorites";
 import {
   DEFAULT_SEARCH_AREA,
@@ -250,6 +251,15 @@ export default function ArbitrageScannerPage() {
   const [isTransitioningDate, setIsTransitioningDate] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
+
+  /**
+   * 走査の件数。「何件見つかって、そのうち何件を評価したか」。
+   *
+   * 出ていたのは「物件リスト (N件中、表示範囲内)」だけで、この N は
+   * 取得した窓（上限 500 件）を並べ替えたあとの数。全国で走査しても
+   * 500 としか出ないので、条件を緩めるべきかどうかが読めなかった。
+   */
+  const scanCounts = useMemo(() => buildScanCounts(metadata), [metadata]);
 
   // Sidebar & Layout views states
   const [showListView, setShowListView] = useState(false);
@@ -2438,6 +2448,52 @@ export default function ArbitrageScannerPage() {
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
               今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度をあわせて並べます。凶方位の物件は下に送ります。
             </p>
+
+            {/* 走査の件数。「何件見つかって、そのうち何件を評価したか」。
+                今まではどこにも出ておらず、全国で走査しても一覧の見出しは
+                「500件中」としか言わなかった。条件を緩めるべきなのか、
+                これで全部なのかが読めない。
+
+                出すのは名寄せ後の件数（uniqueCount）。生の行数は同じ部屋の
+                別の掲載も数えているので、件数として見せると開いたときに
+                同じ建物が並ぶ。分からないときは数字を出さない（下の
+                matched === null の枝）。 */}
+            {!loading && scanCounts.analyzed > 0 && (
+              <div className="mt-2.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                {scanCounts.matched !== null && (
+                  <span className="text-xs text-stone-600">
+                    条件に一致
+                    <b className="mx-1 font-mono text-lg text-stone-900">
+                      {scanCounts.matched.toLocaleString()}
+                    </b>
+                    件
+                  </span>
+                )}
+                <span className="text-[10px] text-stone-500">
+                  {scanCounts.truncated
+                    ? // 打ち切られている＝一覧の外にもっと良い物件が居るかも
+                      // しれない。「全部見た上での順位」と読まれないよう断る。
+                      `割安な順に上位 ${scanCounts.analyzed.toLocaleString()} 件を評価しています`
+                    : `${scanCounts.analyzed.toLocaleString()} 件すべてを評価しています`}
+                </span>
+                {/* 減らした理由。黙って減らすと「昨日より少ない」の原因が
+                    画面から追えない。0 のときは出さない。 */}
+                {scanCounts.duplicatesHidden > 0 && (
+                  <span className="text-[10px] text-stone-400">
+                    同じ部屋の重複{" "}
+                    {scanCounts.duplicatesHidden.toLocaleString()} 件をまとめ
+                  </span>
+                )}
+                {scanCounts.staleHidden > 0 && (
+                  <span className="text-[10px] text-stone-400">
+                    {scanCounts.staleDays
+                      ? `${scanCounts.staleDays}日以上見かけない `
+                      : "掲載の切れた "}
+                    {scanCounts.staleHidden.toLocaleString()} 件を除外
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-3 shrink-0 self-start md:self-center">
             {/* 物件データそのものの鮮度。「再スキャン」は算出のやり直しであって
