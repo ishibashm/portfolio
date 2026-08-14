@@ -2003,6 +2003,47 @@ export default function ArbitrageScannerPage() {
     number
   > | null>(null);
 
+  /**
+   * 地図の表示範囲に入る掲載件数。null なら出さない。
+   *
+   * ズームや移動のたびに軽い口（viewport-count）で数え直す。走査の
+   * 結果（数秒遅れ）とは別に、件数だけが指の動きに追従する。
+   * 数えるのは掲載件数（名寄せ前）なので、画面は必ず「掲載」と
+   * 単位を書き、「条件に一致 N 件」（名寄せ後）と区別する。
+   */
+  const [viewportCount, setViewportCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!mapBounds) {
+      setViewportCount(null);
+      return;
+    }
+    let cancelled = false;
+    // 地図を掴んでいる間は bounds が連続で変わる。離してから 1 回だけ。
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(countableFilterQuery);
+      params.set("minLat", String(mapBounds.minLat));
+      params.set("maxLat", String(mapBounds.maxLat));
+      params.set("minLon", String(mapBounds.minLon));
+      params.set("maxLon", String(mapBounds.maxLon));
+      fetch(`/api/rentals/arbitrage/viewport-count?${params.toString()}`)
+        .then((res) => res.json())
+        .then((body) => {
+          if (cancelled) return;
+          // 数えられなかった回は非表示に倒す。前の範囲の数字を出した
+          // ままにすると、地図と数字が食い違ったまま並ぶ。
+          setViewportCount(body?.success ? Number(body.data.count) : null);
+        })
+        .catch(() => {
+          if (!cancelled) setViewportCount(null);
+        });
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [mapBounds, countableFilterQuery]);
+
   useEffect(() => {
     // 絞り込みが空なら静的な値に戻す。同じ数字を数え直す意味が無い。
     if (!countableFilterQuery) {
@@ -4363,6 +4404,7 @@ export default function ArbitrageScannerPage() {
               kigakuUnavailableReason={kigakuUnavailableReason}
               prefCounts={livePrefCounts ?? undefined}
               prefCountsFiltered={livePrefCounts !== null}
+              viewportListingCount={viewportCount}
               onInspectSpot={(lat, lon) =>
                 setSpotRequest((prev) => ({
                   lat,
