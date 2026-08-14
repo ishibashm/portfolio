@@ -1,4 +1,9 @@
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
+import * as dotenv from "dotenv";
+import * as fs from "fs";
+import * as path from "path";
 import { getBlogPost, getBlogPosts } from "../src/lib/blog";
 
 /**
@@ -25,7 +30,30 @@ import { getBlogPost, getBlogPosts } from "../src/lib/blog";
  * 落ち着いてから別途決める。
  */
 
-const prisma = new PrismaClient();
+const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
+  ? path.resolve(process.cwd(), ".env")
+  : path.resolve(process.cwd(), "../.env");
+dotenv.config({ path: envPath });
+
+/**
+ * 接続は pg のアダプタ経由で作る。
+ *
+ * Prisma 7 では `new PrismaClient()` を引数なしでは作れず、
+ * PrismaClientInitializationError で落ちる。このリポジトリの他の
+ * スクリプト（count_prefectures / import_land_prices など）と
+ * src/lib/prisma.ts はすべてアダプタを渡している。
+ *
+ * ここは manage_blog.ts の書き方を写して引数なしにしてしまい、実際に
+ * 本番の Actions で落とした。**manage_blog.ts / list_posts.ts /
+ * delete_dummy.ts は同じ理由で今も動かない。**どれも実行されていない
+ * ので表に出ていないだけで、直すなら別途。
+ */
+const pool = new Pool({
+  // 書き込むのでプーラ経由でない DIRECT_URL を優先する。
+  connectionString: process.env.DIRECT_URL || process.env.DATABASE_URL,
+  max: 1,
+});
+const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const OVERWRITE = process.env.IMPORT_OVERWRITE === "true";
 const DRY_RUN = process.env.IMPORT_DRY_RUN === "true";
