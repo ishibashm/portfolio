@@ -436,35 +436,51 @@ export async function GET(request: Request) {
     // 2 回**走っていた。並べれば待ち時間はおよそ片方ぶんで済む。
     //
     // await はしない。物件が 0 件のときは早期に返すので、そこで拾う。
-    const combinedPromise = prisma.$queryRawUnsafe<
-      Array<{
-        stats: {
-          mean: number | null;
-          stddev: number | null;
-          n: number;
-          size_mean: number | null;
-          size_stddev: number | null;
-          age_mean: number | null;
-          age_stddev: number | null;
-          station_mean: number | null;
-          station_stddev: number | null;
-        } | null;
-        municipalities: Array<{
-          municipality: string;
-          n: number;
-          median: number | null;
-        }>;
-      }>
-    >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+    //
+    // SET LOCAL work_mem について:
+    // サーバの work_mem は pg-tune.sh が 64MB に固定している。全国走査は
+    // 約 100 万行 × 371 バイトの名寄せソートで、実行計画に temp
+    // read=41971 written=41976（約 330MB のディスク書き込み）が出ていた
+    // （2026-08-14 の EXPLAIN ANALYZE 実測。selectSql 22.1 秒）。
+    // ソートが要るのはこの 2 本だけなので、サーバ設定は変えず、
+    // トランザクション内だけ広げる。箱は 24GB で、この重さの問い合わせは
+    // 1 リクエストに 2 本・同時利用者も少ないため 512MB × 2 は収まる。
+    const combinedPromise = prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe("SET LOCAL work_mem = '512MB'");
+      return tx.$queryRawUnsafe<
+        Array<{
+          stats: {
+            mean: number | null;
+            stddev: number | null;
+            n: number;
+            size_mean: number | null;
+            size_stddev: number | null;
+            age_mean: number | null;
+            age_stddev: number | null;
+            station_mean: number | null;
+            station_stddev: number | null;
+          } | null;
+          municipalities: Array<{
+            municipality: string;
+            n: number;
+            median: number | null;
+          }>;
+        }>
+      >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+    });
 
     const dbStartedAt = Date.now();
     const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
-      prisma.$queryRawUnsafe<any[]>(
-        selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
-        ...params,
-        limit,
-      ),
+      // work_mem を広げる理由は上の combinedPromise のコメントを参照。
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe("SET LOCAL work_mem = '512MB'");
+        return tx.$queryRawUnsafe<any[]>(
+          selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
+          ...params,
+          limit,
+        );
+      }),
       prisma.rental_properties.count({
         where: whereClause,
       }),
