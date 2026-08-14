@@ -47,6 +47,13 @@ jobs:
           # 履歴グラフの日次記録エンドポイント（/api/cron/telemetry）の合言葉。
           # Record Daily Telemetry ワークフローが同じ値で呼ぶ。
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # 管理画面（/admin）と管理 API を開ける唯一のアドレス。
+          # ENV_FILE の中に既にあるなら、この secret は未設定でよい（下の
+          # 追記は後勝ちなので、両方あればこちらが勝つ）。ENV_FILE は
+          # 書き込み専用で中身を読めず、追記もできない（入れ直すには
+          # .env の全文を再入力することになる）ため、単体でも渡せる口を
+          # 用意しておく。CRON_SECRET と同じ形。
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           # Billing Export の参照先は秘密情報ではないため repository variables
           # から渡す。Cloud Run 実行 SA の ADC を使い、JSON 鍵は作らない。
           GCP_BILLING_EXPORT_TABLE: ${{ vars.GCP_BILLING_EXPORT_TABLE }}
@@ -75,12 +82,27 @@ jobs:
           if [ -n "$CRON_SECRET" ]; then
             echo "CRON_SECRET=$CRON_SECRET" >> .env
           fi
+          if [ -n "$ADMIN_EMAIL" ]; then
+            echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env
+          fi
           if [ -n "$GCP_BILLING_EXPORT_TABLE" ]; then
             echo "GCP_BILLING_EXPORT_TABLE=$GCP_BILLING_EXPORT_TABLE" >> .env
             echo "GCP_BILLING_TARGET_PROJECT_ID=$GCP_BILLING_TARGET_PROJECT_ID" >> .env
             echo "GCP_BILLING_QUERY_PROJECT_ID=$GCP_BILLING_QUERY_PROJECT_ID" >> .env
             echo "GCP_BILLING_LOCATION=${GCP_BILLING_LOCATION:-US}" >> .env
             echo "GCP_BILLING_TIMEOUT_MS=${GCP_BILLING_TIMEOUT_MS:-10000}" >> .env
+          fi
+          # ここまでで組み上がった .env に ADMIN_EMAIL があることを確かめる。
+          # 出どころは問わない（ENV_FILE の中でも、上の追記でもよい）。
+          #
+          # 未設定のまま出すと、管理画面と管理 API が誰にも開けなくなる
+          # （utils/supabase/routeAccess.ts の isAdminEmail）。以前は逆に
+          # 「ログインしていれば誰でも通る」だった。どちらも事故なので、
+          # 静かに出さずにここで止める。SERVER_ACTIONS_KEY と同じ扱い。
+          # grep -q なので値はログに出ない。
+          if ! grep -qE '^ADMIN_EMAIL=.+' .env; then
+            echo "::error::ADMIN_EMAIL is not set. Add it to the ENV_FILE secret, or register a separate ADMIN_EMAIL secret. 未設定のまま出すと /admin と /api/metrics/* が誰にも開けなくなる。"
+            exit 1
           fi
 
       - name: Convert .env to env.json for Cloud Run

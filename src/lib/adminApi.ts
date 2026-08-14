@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/userConfig";
+import { isAdminEmail } from "@/utils/supabase/routeAccess";
 
 /**
  * 管理者専用 API の入口。
@@ -19,9 +20,11 @@ import { getAuthUser } from "@/lib/userConfig";
  * 書いている。その前提を守るための関数がこれ。
  *
  * 判定は middleware と同じ規則にする。2 か所で別の規則を持つと必ずずれる。
+ * 実体は utils/supabase/routeAccess の isAdminEmail 1 つで、middleware も
+ * そこを見る（以前はこの 2 か所に同じ条件式が写してあった）。
  *   - 未ログインなら 401
- *   - ADMIN_EMAIL が設定されていて一致しなければ 403
- *   - ADMIN_EMAIL が未設定なら、ログインしていれば通す（middleware と同じ）
+ *   - ADMIN_EMAIL と一致しなければ 403
+ *   - ADMIN_EMAIL が**未設定なら本番では誰も通さない**。開発だけ通す
  *
  * 使い方:
  *   const denied = await denyUnlessAdmin();
@@ -37,8 +40,7 @@ export async function denyUnlessAdmin(): Promise<NextResponse | null> {
     );
   }
 
-  const adminEmail = process.env.ADMIN_EMAIL;
-  if (adminEmail && user.email !== adminEmail.toLowerCase()) {
+  if (!isAdminEmail(user.email)) {
     return NextResponse.json(
       { success: false, error: "Forbidden" },
       { status: 403 },
