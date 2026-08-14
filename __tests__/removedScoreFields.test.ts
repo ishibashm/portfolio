@@ -26,6 +26,11 @@ const REMOVED_FIELDS = [
   "axisCoverage",
   "axisMissing",
   "axisContributions",
+  // 相場の統計と一緒に消した項目。?. で守られていると落ちない代わりに、
+  // 「永久に出ない枠」として画面に残る。実際 1 か所残っていた。
+  "localMedianSqmRent",
+  "localSampleCount",
+  "municipalityCount",
 ];
 
 /** 判定と無関係の別機能。NBA は自前の totalScore を持っている。 */

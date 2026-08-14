@@ -4218,19 +4218,6 @@ export default function ArbitrageScannerPage() {
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span>近隣相場比:</span>
-                                <span className="font-semibold text-gray-800 dark:text-stone-700">
-                                  {item.axisInputs?.localMedianSqmRent
-                                    ? `${Math.round(
-                                        (item.propSqmRent /
-                                          item.axisInputs.localMedianSqmRent -
-                                          1) *
-                                          100,
-                                      )}%`
-                                    : "—"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
                                 <span>掲載:</span>
                                 <span className="font-semibold text-gray-800 dark:text-stone-700">
                                   {item.axisInputs?.listedDays !== null &&
