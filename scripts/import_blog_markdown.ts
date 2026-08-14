@@ -102,6 +102,16 @@ async function main() {
 main()
   .catch((e) => {
     console.error(e);
+    // いちばん多い失敗が「スキーマをまだ当てていない」。Prisma の
+    // 生のエラーだけだと、何をすればよいのか読み取れない。
+    const message = e instanceof Error ? e.message : String(e);
+    if (/does not exist|Unknown argument|column/i.test(message)) {
+      console.error(
+        "\nヒント: BlogPost の列がまだ当たっていない可能性があります。" +
+          "\n先に GitHub Actions の " +
+          '"Setup Database Schema and Seed Data" を実行してください。',
+      );
+    }
     process.exit(1);
   })
   .finally(async () => {

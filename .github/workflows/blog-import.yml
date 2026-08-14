@@ -1,0 +1,81 @@
+name: Import blog articles into the database
+
+# content/blog/*.md を BlogPost へ取り込む。
+#
+# 手元から流すには本番 DB への接続情報が要る。Windows では環境変数の
+# 書き方も違う（IMPORT_DRY_RUN=true ... は cmd/PowerShell では通らない）。
+# 接続情報は ENV_FILE の中にあるので、ランナー上で回すほうが確実で、
+# 手元にも、ログにも DB の URL が出ない。
+#
+# スキーマの適用（prisma db push）はここではしない。列が足りていなければ
+# 取り込みは落ちる。先に "Setup Database Schema and Seed Data" を回すこと。
+# 適用は一方向なので、同じワークフローに混ぜて「取り込むつもりが
+# スキーマまで当たっていた」を起こさない。
+#
+# 既定はドライラン。何が入るかを出すだけで、書き込まない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run: 中身を出すだけ / apply: 実際に書き込む"
+        required: true
+        type: choice
+        options:
+          - dry-run
+          - apply
+        default: dry-run
+      overwrite:
+        description: "DB に既にある記事もファイルの内容で上書きする"
+        type: boolean
+        required: false
+        default: false
+      confirm:
+        description: "overwrite のときだけ必要。実行するなら OVERWRITE と入力"
+        required: false
+        default: ""
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # 上書きは、管理画面で直した記事をファイルの内容で戻す操作。
+      # 取り込み直しのつもりで押して編集を失う事故を防ぐ。
+      - name: Guard
+        if: ${{ inputs.overwrite && inputs.confirm != 'OVERWRITE' }}
+        run: |
+          echo "::error::overwrite のときは confirm に OVERWRITE と入力すること。"
+          exit 1
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Import
+        env:
+          IMPORT_DRY_RUN: ${{ inputs.mode == 'dry-run' }}
+          IMPORT_OVERWRITE: ${{ inputs.overwrite }}
+        run: npx -y tsx scripts/import_blog_markdown.ts
