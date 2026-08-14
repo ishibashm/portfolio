@@ -4,10 +4,8 @@ import {
   candidateOrderSql,
   cleanPropertyName,
   innerSql,
-  municipalityStatsSql,
   selectSql,
-  statsAndMunicipalitySql,
-  statsSql,
+  uniqueCountSql,
   GeoFilters,
 } from "@/utils/arbitrageQuery";
 import { CANDIDATE_STRATEGIES } from "@/utils/arbitrageScoring";
@@ -155,124 +153,32 @@ describe("selectSql", () => {
   });
 });
 
-describe("statsSql / municipalityStatsSql", () => {
-  const where = buildWhereSql(baseFilters).sql;
+describe("uniqueCountSql（名寄せ後の件数）", () => {
+  const { sql: where } = buildWhereSql(baseFilters);
 
-  it("相場統計は㎡単価だけでなく面積・築年・駅徒歩も返す", () => {
-    const sql = statsSql(where, true);
-    for (const column of [
-      "AS mean",
-      "AS stddev",
-      "AS size_mean",
-      "AS size_stddev",
-      "AS age_mean",
-      "AS station_mean",
-    ]) {
-      expect(sql).toContain(column);
-    }
-  });
-
-  it("ばらつきが計算できない場合に NULL を返さない", () => {
-    // stddev_pop は 1 行だと NULL を返す。偏差値の計算が NaN になるため
-    // COALESCE で 0 に倒しておく必要がある。
-    expect(statsSql(where, true)).toContain("coalesce(stddev_pop");
-  });
-
-  it("近隣相場は平均ではなく中央値で出す（高額物件の裾に引きずられない）", () => {
-    const sql = municipalityStatsSql(where, true);
-    expect(sql).toContain("percentile_cont(0.5)");
-    expect(sql).toContain("GROUP BY municipality");
-    expect(sql).toContain("municipality IS NOT NULL");
-  });
-});
-
-describe("statsAndMunicipalitySql", () => {
-  const { sql: whereSql } = buildWhereSql(baseFilters);
-
-  it("innerSql を 1 回しか評価しない", () => {
-    // 分けて投げていたときは同じ DISTINCT ON のソートが 2 回走っていた。
-    // ソートキーに名寄せ用の regexp_replace が入っているので、行ごとの
-    // 正規表現評価まで丸ごと 2 回になっていた。ここが戻ると遅さも戻る。
-    const sql = statsAndMunicipalitySql(whereSql, true);
-    const occurrences = sql.split("FROM rental_properties").length - 1;
-    expect(occurrences).toBe(1);
-  });
-
-  it("CTE を MATERIALIZED で固定する", () => {
-    // 付けないと Postgres が CTE をインライン展開し、参照している 2 箇所で
-    // それぞれ評価しうる。1 回で確定させたい。
-    expect(statsAndMunicipalitySql(whereSql, true)).toContain(
-      "AS MATERIALIZED",
-    );
-  });
-
-  it("分けて投げていたときと同じ射影を返す", () => {
-    const combined = statsAndMunicipalitySql(whereSql, true);
-    for (const col of [
-      "AS mean",
-      "AS stddev",
-      "AS size_mean",
-      "AS size_stddev",
-      "AS age_mean",
-      "AS age_stddev",
-      "AS station_mean",
-      "AS station_stddev",
-    ]) {
-      expect(statsSql(whereSql, true)).toContain(col);
-      expect(combined).toContain(col);
-    }
-    expect(municipalityStatsSql(whereSql, true)).toContain("AS median");
-    expect(combined).toContain("AS median");
-  });
-
-  it("市区町村が無い行を集計に混ぜない", () => {
-    expect(statsAndMunicipalitySql(whereSql, true)).toContain(
-      "WHERE municipality IS NOT NULL",
-    );
-  });
-
-  it("dedupe を切っても組み立てられる", () => {
-    const sql = statsAndMunicipalitySql(whereSql, false);
-    expect(sql.split("FROM rental_properties").length - 1).toBe(1);
+  // 相場の統計（statsAndMunicipalitySql）は評価軸の廃止で消えた。
+  // 残る用途は「条件に一致 N 件」の数え上げだけで、これは DISTINCT ON の
+  // 実体化ではなく GROUP BY で数える。名寄せキーの索引の並びのまま
+  // 集約できるため、ソートが要らない。
+  it("GROUP BY で数える（DISTINCT ON の実体化に戻さない）", () => {
+    const sql = uniqueCountSql(where);
+    expect(sql).toContain("GROUP BY name_key, floor, layout, size_sqm, rent");
     expect(sql).not.toContain("DISTINCT ON");
-  });
-});
-
-describe("statsAndMunicipalitySql の CTE の幅", () => {
-  const { sql: whereSql } = buildWhereSql(baseFilters);
-
-  it("統計に要らない列を CTE に載せない", () => {
-    // 実体化した 39 万行を 2 箇所から読むので、幅がそのまま一時ファイルの量に
-    // なる。innerSql をそのまま載せると width=407 まで膨らみ、統合の利得が
-    // 往復で相殺される（実測 temp 38,214 blocks）。
-    const sql = statsAndMunicipalitySql(whereSql, true);
-    const cte = sql.slice(0, sql.indexOf(") \n") + 1);
-    expect(cte).not.toContain("listing_count");
-    expect(cte).not.toContain("SELECT DISTINCT ON (regexp_replace");
+    expect(sql).toContain("count(*)::int AS n");
   });
 
-  it("統計が読む 5 列は CTE に載っている", () => {
-    const sql = statsAndMunicipalitySql(whereSql, true);
-    for (const col of [
-      "AS sqm_rent",
-      "size_sqm",
-      "building_age",
-      "minutes_to_station",
-      "AS municipality",
-    ]) {
-      expect(sql).toContain(col);
-    }
+  it("名寄せの単位は候補の取り出しと同じキー", () => {
+    // ここがずれると「条件に一致 N 件」と一覧の名寄せ結果が食い違う。
+    const count = uniqueCountSql(where);
+    const select = innerSql(where, true);
+    expect(count).toContain("name_key, floor, layout, size_sqm, rent");
+    expect(select).toContain("name_key, floor, layout, size_sqm, rent");
   });
 
-  it("名寄せのキーと採用順は innerSql と変わらない", () => {
-    // 選択リストを絞っても DISTINCT ON / ORDER BY が同じなら、残る 1 件は同じ。
-    const narrow = statsAndMunicipalitySql(whereSql, true);
-    const wide = innerSql(whereSql, true);
-    for (const fragment of ["DISTINCT ON", "floor, layout, size_sqm, rent"]) {
-      expect(narrow).toContain(fragment);
-      expect(wide).toContain(fragment);
-    }
-    expect(narrow).toContain("last_seen_at DESC NULLS LAST");
+  it("行ごとの正規表現に戻さない", () => {
+    const sql = uniqueCountSql(where);
+    expect(sql).not.toContain("regexp_replace(property_name");
+    expect(sql).not.toContain("regexp_match(address");
   });
 });
 
@@ -287,7 +193,6 @@ describe("名寄せキーの前払い（name_key / municipality_key 列）", () 
     for (const sql of [
       innerSql(where, true),
       selectSql(where, true, 1, "value"),
-      statsAndMunicipalitySql(where, true),
     ]) {
       expect(sql).toContain("name_key");
       expect(sql).toContain("municipality_key AS municipality");
