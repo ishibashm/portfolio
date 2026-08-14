@@ -47,6 +47,13 @@ interface ArbitrageMapProps {
   >;
   /** prefKigaku が無いときの理由。俯瞰の凡例にそのまま出す */
   kigakuUnavailableReason?: string;
+  /**
+   * 県名 → 掲載件数。渡さないと静的ファイル（毎晩生成）の値になる。
+   * 絞り込み中はページ側が数え直した値を渡す。
+   */
+  prefCounts?: Record<string, number>;
+  /** 上が絞り込みを反映した値か。凡例の断り書きに使う */
+  prefCountsFiltered?: boolean;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */
   targetDate?: string;
   /** 出発地が入力済みか。フォーカスの初期値と「出発地へ」ボタンに使う */
