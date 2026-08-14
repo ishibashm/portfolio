@@ -126,10 +126,54 @@ async function main() {
     const deleted = del.rowCount ?? 0;
     console.log(`\nDeleted ${deleted} rows.`);
 
-    // DELETE だけでは領域が OS に返らず pg_database_size も縮まない。
-    // Supabase の 500MB クォータはこのサイズで判定されるため VACUUM FULL が要る。
-    console.log("Running VACUUM FULL to reclaim the space...");
-    await pool.query("VACUUM (FULL, ANALYZE) rental_properties");
+    // 領域の回収。**既定では VACUUM FULL を打たない。**
+    //
+    // ここは無条件に VACUUM (FULL, ANALYZE) を打っていた。理由は
+    // 「DELETE だけでは領域が OS に返らず、Supabase の 500MB クォータは
+    // pg_database_size で判定されるため」。**その前提はもう無い。**
+    // 移行先の Oracle Cloud Always Free は 200GB あり、いまの DB は
+    // 数百MB。毎晩スペースを OS へ返す必要が無くなっている。
+    //
+    // 一方で代償は残ったままだった。VACUUM FULL は対象テーブルに
+    // ACCESS EXCLUSIVE ロックを取る。掛かっているあいだ
+    // rental_properties は**読むこともできない**ので、物件スキャナーの
+    // 走査はロック待ちで止まる。dbcapacity 側のコメントが
+    // 「scrape-rentals が走っている最中に重ねないこと」と書いているのに、
+    // その scrape-rentals 自身が毎晩打っていた。
+    //
+    // 通常の VACUUM は領域を OS へ返さないが、消した分を同じテーブルの
+    // 再利用に回すので肥大は止まる。取得と削除が毎晩釣り合っている限り
+    // これで足りる。ロックも取らない（読み書きと同時に走る）。
+    //
+    // FULL が要るのは、消した量が大きくて実際に縮めたいときだけ。
+    // 判断は容量で決める。手で打ちたいときは PURGE_VACUUM_FULL=true。
+    const sizeMb = Number(
+      (
+        await q(
+          `SELECT (pg_total_relation_size('rental_properties') / 1024 / 1024)::int AS mb`,
+        )
+      )[0].mb,
+    );
+    const fullThresholdMb = parseInt(
+      process.env.PURGE_VACUUM_FULL_OVER_MB || "4096",
+      10,
+    );
+    const wantFull =
+      process.env.PURGE_VACUUM_FULL === "true" || sizeMb >= fullThresholdMb;
+
+    if (wantFull) {
+      console.log(
+        `Running VACUUM FULL (table ${sizeMb}MB >= ${fullThresholdMb}MB or forced). ` +
+          "This locks rental_properties for reads and writes.",
+      );
+      await pool.query("VACUUM (FULL, ANALYZE) rental_properties");
+    } else {
+      console.log(
+        `Running plain VACUUM ANALYZE (table ${sizeMb}MB < ${fullThresholdMb}MB). ` +
+          "No exclusive lock; the scanner keeps working.",
+      );
+      await pool.query("VACUUM (ANALYZE) rental_properties");
+    }
 
     const sizeAfter = (
       await q(
