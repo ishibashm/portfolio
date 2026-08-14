@@ -47,10 +47,6 @@ export interface ScoredProperty {
   /** ㎡単価。totalRent / size_sqm。 */
   propSqmRent: number;
   astrologyScore: number;
-  yieldScore: number;
-  /** 既定の重みでの総合点。画面側で重みを変えたときは再計算される。 */
-  arbitrageScore: number;
-  totalScore: number;
   isTendo?: boolean;
   maxAstroFactor?: string;
   astroFlags?: string[];

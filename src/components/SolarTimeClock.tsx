@@ -2490,8 +2490,10 @@ export const SolarTimeClock = () => {
         const itemDir = useTrueNorth ? item.direction : item.magneticDirection;
         return itemDir === dir;
       });
+      // 総合スコアは廃止した（#304〜#308）。物件を方位で探す画面と同じく
+      // 家賃の安い順にする。ここは方位ごとの代表を 1 件出すだけ。
       const topRentals = [...rentalsForDir].sort(
-        (a, b) => (b.arbitrageScore || 0) - (a.arbitrageScore || 0),
+        (a, b) => (a.totalRent || 0) - (b.totalRent || 0),
       );
       const topRental = topRentals[0] || null;
 
@@ -5804,10 +5806,7 @@ export const SolarTimeClock = () => {
                                         {(
                                           item.topRental.totalRent / 10000
                                         ).toFixed(1)}
-                                        万円 | 差益:{" "}
-                                        {item.topRental.arbitrageScore?.toFixed(
-                                          1,
-                                        )}
+                                        万円
                                       </span>
                                     </a>
                                   ) : (
@@ -5823,10 +5822,7 @@ export const SolarTimeClock = () => {
                                         {(
                                           item.topRental.totalRent / 10000
                                         ).toFixed(1)}
-                                        万円 | 差益:{" "}
-                                        {item.topRental.arbitrageScore?.toFixed(
-                                          1,
-                                        )}
+                                        万円
                                       </span>
                                     </div>
                                   )
@@ -6681,9 +6677,6 @@ export const SolarTimeClock = () => {
                                         </span>
                                       </div>
                                     </div>
-                                    <span className="text-[10px] font-mono font-bold text-emerald-600 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0">
-                                      差益: {rental.arbitrageScore?.toFixed(1)}
-                                    </span>
                                   </div>
 
                                   <div className="flex justify-between items-center border-t border-stone-200 pt-1.5 text-[10px] text-stone-500">
