@@ -19,6 +19,7 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 
 import { PREF_JP } from "../src/lib/scrapeTargets";
+import { LIVE_LISTING_SQL } from "../src/lib/rentalListingSql";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -87,14 +88,14 @@ async function main() {
   // MIN_ROWS で落ちていて合計が実態より減るため。県単位で数え直す。
   const prefTotals: Record<string, number> = {};
   for (const prefName of Object.values(PREF_JP)) {
+    // 条件は lib/rentalListingSql から引く。/api/rentals/arbitrage/
+    // prefecture-counts（絞り込み後の件数）と同じものを見ないと、
+    // 絞り込みを何も掛けていないのに数字が違う、という形で出る。
     const { rows } = await pool.query(
       `SELECT count(*)::int AS n
          FROM rental_properties
         WHERE address LIKE $1 || '%'
-          AND lat IS NOT NULL AND lon IS NOT NULL
-          AND rent IS NOT NULL AND size_sqm > 0
-          AND last_seen_at > now() - interval '30 days'
-          AND (expire_date IS NULL OR expire_date >= now())`,
+          AND ${LIVE_LISTING_SQL}`,
       [prefName],
     );
     const n = rows[0]?.n ?? 0;
@@ -121,10 +122,7 @@ async function main() {
                 ORDER BY rent + coalesce(management_fee,0)) AS median_rent
          FROM rental_properties
         WHERE address LIKE $1 || '%'
-          AND lat IS NOT NULL AND lon IS NOT NULL
-          AND rent IS NOT NULL AND size_sqm > 0
-          AND last_seen_at > now() - interval '30 days'
-          AND (expire_date IS NULL OR expire_date >= now())`,
+          AND ${LIVE_LISTING_SQL}`,
       [c.full],
     );
     const r = rows[0];
