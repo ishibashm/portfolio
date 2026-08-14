@@ -1,6 +1,26 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import type { ReactNode } from "react";
+import { headingId } from "@/lib/blogToc";
+
+/**
+ * React の子から文字だけを集める。h2 のアンカー id の元。
+ *
+ * 見出しに強調（**）が入ると children は要素の配列になるので、
+ * 文字列連結では拾えない。id の作り方そのものは lib/blogToc の
+ * headingId に寄せてあり、目次側と必ず同じ値になる。
+ */
+function textOf(node: ReactNode): string {
+  if (typeof node === "string" || typeof node === "number") {
+    return String(node);
+  }
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (node && typeof node === "object" && "props" in node) {
+    return textOf((node as { props: { children?: ReactNode } }).props.children);
+  }
+  return "";
+}
 
 /**
  * 本文の読み幅。
@@ -20,6 +40,7 @@ const MEASURE = "max-w-[70ch]";
 const components: Components = {
   h2: ({ children, ...props }) => (
     <h2
+      id={headingId(textOf(children))}
       className={`mt-12 ${MEASURE} scroll-mt-6 border-b border-slate-300 pb-2 font-serif text-2xl font-bold text-slate-900`}
       {...props}
     >
