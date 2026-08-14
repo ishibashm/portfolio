@@ -179,6 +179,30 @@ const TARGET_PREFECTURES = SCRAPE_TARGETS.filter(
  * API ではどちらも prefecture=all なので、radiusKm まで一緒に保存しないと
  * 表示と実際の検索範囲が食い違う。
  */
+/**
+ * 間取りの選択肢。
+ *
+ * 値は utils/smartSearch の normalizeLayout が返す形と揃える。スマート
+ * 検索に「2LDK」と打った場合と、ここを押した場合で結果が変わってはいけない。
+ *
+ * 絞り込みは layout の部分一致（"2LDK".includes(選択値)）なので、
+ * **S 付き（2SLDK など）はここでは拾えない。**拾うには一致の規則を
+ * 変えることになり、既に出ている結果の意味が変わる。今回は入口を足す
+ * だけにして、S 付きはスマート検索で「2SLDK」と打つ経路を残す。
+ */
+const LAYOUT_OPTIONS: { value: string; label: string }[] = [
+  { value: "1R", label: "ワンルーム" },
+  { value: "1K", label: "1K" },
+  { value: "1DK", label: "1DK" },
+  { value: "1LDK", label: "1LDK" },
+  { value: "2K", label: "2K" },
+  { value: "2DK", label: "2DK" },
+  { value: "2LDK", label: "2LDK" },
+  { value: "3DK", label: "3DK" },
+  { value: "3LDK", label: "3LDK" },
+  { value: "4LDK", label: "4LDK" },
+];
+
 /** 適用中の絞り込み 1 件ぶんのチップ。× で外す */
 function FilterChip({
   label,
@@ -2839,6 +2863,43 @@ export default function ArbitrageScannerPage() {
                       </p>
                     </div>
 
+                    {/* 間取り。これまでスマート検索に「2LDK」と打つ以外の
+                        入口が無く、チップから外すことしかできなかった。
+                        値はスマート検索の正規化（utils/smartSearch の
+                        normalizeLayout）と同じ形にする。ここだけ別の表記に
+                        すると、同じ条件なのに入り口によって結果が変わる。 */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        間取り
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        {LAYOUT_OPTIONS.map((opt) => {
+                          const on = filterLayouts.includes(opt.value);
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() =>
+                                setFilterLayouts((prev) =>
+                                  prev.includes(opt.value)
+                                    ? prev.filter((v) => v !== opt.value)
+                                    : [...prev, opt.value],
+                                )
+                              }
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                                on
+                                  ? "bg-indigo-100 text-indigo-700 border-indigo-300"
+                                  : "bg-gray-50 dark:bg-white border-gray-200 dark:border-stone-200 text-stone-500 hover:text-indigo-600 hover:border-indigo-300"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     {/* お気に入りだけを見る。★ を付けた物件が無いあいだは
                         押しても 0 件になるだけなので、出さない。 */}
                     {favoriteIds.length > 0 && (
@@ -4469,9 +4530,17 @@ export default function ArbitrageScannerPage() {
                     </div>
                   ) : (
                     // Table View Mode inside expanded sidebar (55% width)
+                    /* 横に入り切らないときは列を潰さずスクロールさせる。
+                       min-w が 500px だったころは、実際に要る幅（列が
+                       8〜10 本で 900px 前後）との差をブラウザが自動レイア
+                       ウトで吸収し、いちばん縮められる列（方位・吉凶）を
+                       1 文字ずつ縦積みにしていた。「W (天道方位)」が縦書き
+                       のように出ていたのはこれ。
+                       thead の whitespace-nowrap は white-space が継承
+                       されるので、中の th すべてに効く。 */
                     <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50">
-                      <table className="w-full text-xs text-left min-w-[500px]">
-                        <thead className="text-[10px] text-stone-400 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
+                      <table className="w-full text-xs text-left min-w-[900px]">
+                        <thead className="whitespace-nowrap text-[10px] text-stone-400 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
                           <tr>
                             <th className="w-10 px-2 py-2.5 text-center font-bold">
                               ★
@@ -4572,7 +4641,7 @@ export default function ArbitrageScannerPage() {
                                     {item.address}
                                   </div>
                                 </td>
-                                <td className="px-4 py-3">
+                                <td className="px-4 py-3 whitespace-nowrap">
                                   <div className="flex flex-col gap-0.5">
                                     <span
                                       className={`font-semibold ${pinColors.textClass}`}
@@ -4583,7 +4652,7 @@ export default function ArbitrageScannerPage() {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-4 py-3 text-right font-mono font-semibold">
+                                <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap">
                                   {item.totalRent.toLocaleString()}円
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono">
@@ -4629,7 +4698,7 @@ export default function ArbitrageScannerPage() {
                                     </td>
                                   );
                                 })}
-                                <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px]">
+                                <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px] whitespace-nowrap">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分
                                 </td>
