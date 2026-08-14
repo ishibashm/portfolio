@@ -121,6 +121,96 @@ export function buildBlogMetrics(
   };
 }
 
+export type BlogDayPathCount = { day: string; path: string; pv: number };
+
+export type BlogDailyBreakdown = {
+  /** 列にする記事（窓の中で PV の多い順・最大 3 本）。 */
+  postColumns: { slug: string; title: string }[];
+  /** 新しい日が先頭。記録の無い日も 0 で埋める。 */
+  days: {
+    day: string;
+    /** 一覧（/blog）。記事と混ぜない。 */
+    index: number;
+    /** postColumns の slug → その日の PV。 */
+    posts: Record<string, number>;
+    /** 列に入らなかった記事の合計。 */
+    other: number;
+    total: number;
+  }[];
+};
+
+/** today から daysBack 日ぶんの "YYYY-MM-DD"（新しい順）。 */
+function recentDays(today: string, daysBack: number): string[] {
+  const base = Date.parse(`${today}T00:00:00Z`);
+  if (Number.isNaN(base)) return [];
+  return Array.from({ length: daysBack }, (_, i) =>
+    new Date(base - i * 86_400_000).toISOString().slice(0, 10),
+  );
+}
+
+/**
+ * 直近 daysBack 日の「その日、何がどれだけ読まれたか」。
+ *
+ * 30 日合計の記事別だけだと「昨日動きがあったのか」「どの記事が今
+ * 読まれているのか」が読めない、という指摘への答え。日を行、記事を列に
+ * した升目にする。
+ *
+ * 列は窓の中で PV の多い順に最大 3 本。全記事を列にすると、記事が
+ * 増えた時点で表が横に伸びて読めなくなる。入らなかった記事は「その他」
+ * に畳む。**記録の無い日も 0 の行で出す。**行が抜けると「その日は
+ * 記録が無い」と「その日は 0 だった」の区別がつかない。
+ */
+export function buildBlogDailyBreakdown(
+  counts: BlogDayPathCount[],
+  posts: BlogPostSummary[],
+  today: string,
+  daysBack = 7,
+): BlogDailyBreakdown {
+  const days = recentDays(today, daysBack);
+  const daySet = new Set(days);
+  const knownSlugs = new Map(posts.map((p) => [p.slug, p.title]));
+
+  // 窓の中の記事別合計。列を選ぶためだけに使う。
+  const totalBySlug = new Map<string, number>();
+  for (const row of counts) {
+    if (!daySet.has(row.day)) continue;
+    const slug = blogSlugFromPath(row.path);
+    if (slug && knownSlugs.has(slug)) {
+      totalBySlug.set(slug, (totalBySlug.get(slug) ?? 0) + row.pv);
+    }
+  }
+  const postColumns = [...totalBySlug.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([slug]) => ({ slug, title: knownSlugs.get(slug)! }));
+  const columnSlugs = new Set(postColumns.map((c) => c.slug));
+
+  const rows = days.map((day) => {
+    let index = 0;
+    let other = 0;
+    const perPost: Record<string, number> = {};
+    for (const c of postColumns) perPost[c.slug] = 0;
+
+    for (const row of counts) {
+      if (row.day !== day) continue;
+      if (row.path === BLOG_INDEX_PATH) {
+        index += row.pv;
+        continue;
+      }
+      const slug = blogSlugFromPath(row.path);
+      if (!slug) continue;
+      if (columnSlugs.has(slug)) perPost[slug] += row.pv;
+      else other += row.pv;
+    }
+
+    const total =
+      index + other + Object.values(perPost).reduce((s, v) => s + v, 0);
+    return { day, index, posts: perPost, other, total };
+  });
+
+  return { postColumns, days: rows };
+}
+
 export type BlogFunnel = {
   /** ブログを見た「人日」。同じ人の別の日は別に数える。 */
   blogVisitDays: number;

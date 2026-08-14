@@ -114,6 +114,19 @@ type Summary = {
   blog: {
     index: { pv: number; uv: number };
     totals: { pv: number; uv: number };
+    /** ブログ全体（一覧+記事）の日別。新しい順。 */
+    daily: { day: string; pv: number; uv: number }[];
+    /** 直近7日の日 × 記事の内訳。days は新しい順・0 埋め済み。 */
+    recentBreakdown: {
+      postColumns: { slug: string; title: string }[];
+      days: {
+        day: string;
+        index: number;
+        posts: Record<string, number>;
+        other: number;
+        total: number;
+      }[];
+    };
     posts: {
       slug: string;
       title: string;
@@ -977,6 +990,86 @@ export default function AdminMetricsPage() {
                   sub={`${s.blog.funnel.toolVisitDays} / ${s.blog.funnel.blogVisitDays} 人日`}
                   icon={<ArrowRightLeft className="w-4 h-4" />}
                 />
+              </div>
+
+              {/* ── 1日の動きと内訳 ──
+                  30日合計だけだと「昨日動きがあったのか」「いま何が
+                  読まれているのか」が読めない、という指摘への答え。
+                  左が動き（折れ線・30日）、右がその内訳（直近7日 ×
+                  記事）。内訳は記録の無い日も 0 の行で出す。行が抜けると
+                  「記録が無い」と「0 だった」の区別がつかない。 */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
+                <div className="lg:col-span-2 rounded-xl border border-stone-200 bg-white/60 p-4">
+                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                    ブログの日別 PV / UV（30日）
+                  </h3>
+                  {s.blog.daily.length === 0 ? (
+                    <p className="text-sm text-stone-400">
+                      まだ記録がありません。
+                    </p>
+                  ) : (
+                    <DailyChart daily={s.blog.daily} />
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-stone-200 bg-white/60 p-4 overflow-x-auto">
+                  <h3 className="text-xs font-bold text-stone-600 mb-2">
+                    直近7日の内訳
+                  </h3>
+                  <table className="w-full text-[11px] font-mono">
+                    <thead className="text-[9px] text-stone-400">
+                      <tr className="border-b border-stone-200">
+                        <th className="py-1 pr-2 text-left font-bold">日付</th>
+                        <th className="py-1 px-1.5 text-right font-bold">
+                          一覧
+                        </th>
+                        {s.blog.recentBreakdown.postColumns.map((c) => (
+                          <th
+                            key={c.slug}
+                            className="py-1 px-1.5 text-right font-bold max-w-[72px] truncate"
+                            title={c.title}
+                          >
+                            {c.title}
+                          </th>
+                        ))}
+                        <th className="py-1 px-1.5 text-right font-bold">他</th>
+                        <th className="py-1 pl-1.5 text-right font-bold">計</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {s.blog.recentBreakdown.days.map((row) => (
+                        <tr
+                          key={row.day}
+                          className="border-b border-stone-100 last:border-0"
+                        >
+                          <td className="py-1 pr-2 text-stone-500">
+                            {row.day.slice(5)}
+                          </td>
+                          <td className="py-1 px-1.5 text-right text-stone-600">
+                            {row.index}
+                          </td>
+                          {s.blog.recentBreakdown.postColumns.map((c) => (
+                            <td
+                              key={c.slug}
+                              className="py-1 px-1.5 text-right text-stone-700"
+                            >
+                              {row.posts[c.slug] ?? 0}
+                            </td>
+                          ))}
+                          <td className="py-1 px-1.5 text-right text-stone-400">
+                            {row.other}
+                          </td>
+                          <td className="py-1 pl-1.5 text-right font-bold text-stone-800">
+                            {row.total}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p className="mt-2 text-[9px] text-stone-400 leading-relaxed">
+                    列は直近7日で読まれた順に3本まで。残りは「他」です。
+                  </p>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
