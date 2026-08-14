@@ -6,7 +6,7 @@ import { toLogMessage } from "@/lib/errorMessage";
 import { todayInJapan } from "@/utils/japanDate";
 import { estimateYen, totalEstimateYen, type UsageRow } from "@/lib/apiUsage";
 import { loadGcpBillingCost } from "@/lib/gcpBilling";
-import { getBlogPosts } from "@/lib/blog";
+import { loadBlogPosts } from "@/lib/blogStore";
 import {
   BLOG_INDEX_PATH,
   TOOL_PATH_PATTERNS,
@@ -37,7 +37,7 @@ import {
  *
  * ブログの効果検証（data.blog）だけは page_views 単体で完結しない。
  * 「読まれていない記事」を出すには公開中の記事の一覧が要るので、
- * content/blog の Markdown を getBlogPosts で読んで突き合わせる。
+ * 記事の一覧は blogStore（DB 優先・Markdown フォールバック）から読む。
  * 組み替えの規則は src/lib/blogMetrics.ts。
  */
 
@@ -274,7 +274,7 @@ export async function GET() {
       dailyNum.reduce((s, r) => (r.day >= from ? s + r.pv : s), 0);
     // 記事の一覧は content/blog の Markdown が持つ。記録が 1 件も無い
     // 記事も 0 として並べたいので、page_views 側だけでは足りない。
-    const blogPosts = getBlogPosts();
+    const blogPosts = await loadBlogPosts();
     const blog = buildBlogMetrics(
       blogPaths.map((r) => ({
         path: r.path,
