@@ -65,13 +65,17 @@ L.Icon.Default.mergeOptions({
  */
 const OVERVIEW_ZOOM_MAX = 10;
 
+/** 扇形を消したかどうかを覚えておく先。地図のテーマ（map_theme）と同じ扱い。 */
+const SECTORS_STORAGE_KEY = "arbitrage_show_sectors";
+
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
  *
  * フォーカスの初期値を物件の分布（fitBounds）で決めると、データの
  * 到着順で毎回違う画角になる。半径は利用者が選んだ確定値なので、
  * これだけから決めれば同じ条件では常に同じ画角になる。
- * 扇形は zoom >= 10 でしか描かないため、下限は 10。
+ * 下限の 10 は俯瞰と近景の境目（OVERVIEW_ZOOM_MAX）。ここより引くと
+ * 物件のピンが県の塗り分けに変わる。
  */
 function zoomForRadius(radiusKm?: string): number {
   const km = Number(radiusKm);
@@ -400,6 +404,18 @@ export default function ArbitrageMapInner({
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<any>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
+  /**
+   * 扇形を描くか。
+   *
+   * 扇形は画面の端まで届く長さで 8 枚描くので、地図の上に常に 8 色が
+   * 乗っている。方位を決めたあと「この辺に何があるか」を見たいときは、
+   * 地形も駅名も色の下になって読めない。見たいときに出せる形にする。
+   *
+   * **既定は表示のまま。**この画面の主役は方位の吉凶で、初めて開いた人に
+   * 出ていないと、何を見る画面なのかが分からない。消す判断は利用者に任せ、
+   * その選択だけを localStorage に覚えさせる（地図のテーマと同じ扱い）。
+   */
+  const [showSectors, setShowSectors] = useState(true);
   // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
     "kigaku",
@@ -444,6 +460,11 @@ export default function ArbitrageMapInner({
     setMounted(true);
     const saved = localStorage.getItem("map_theme") as "dark" | "light";
     if (saved) setMapTheme(saved);
+
+    // 既定は表示。"0" が入っているときだけ消す。未設定と「消した」を
+    // 取り違えないよう、真偽値の文字列ではなく明示の "0" だけを見る。
+    if (localStorage.getItem(SECTORS_STORAGE_KEY) === "0")
+      setShowSectors(false);
 
     const handleThemeChange = () => {
       const current = localStorage.getItem("map_theme") as "dark" | "light";
@@ -996,6 +1017,36 @@ export default function ArbitrageMapInner({
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
+          {/* 扇形の表示切り替え。出発地が無いとそもそも扇形を描かないので、
+              そのときはボタンも出さない（押しても何も起きないボタンを
+              置かない）。
+
+              ラベルには「押すとどうなるか」ではなく**今どうなっているか**を
+              書く。押すと文言が入れ替わる形にすると、消したあとに「非表示に
+              する」と書いてあるボタンが残り、押したのに効いていないように
+              見える。理由の説明は title に置く。 */}
+          {hasBase && (
+            <button
+              onClick={() => {
+                const next = !showSectors;
+                setShowSectors(next);
+                localStorage.setItem(SECTORS_STORAGE_KEY, next ? "1" : "0");
+              }}
+              title={
+                showSectors
+                  ? "方位の扇形を消して地図だけにする"
+                  : "方位の扇形を表示する"
+              }
+              aria-pressed={showSectors}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                showSectors
+                  ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                  : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+              }`}
+            >
+              🧭 方位 {showSectors ? "表示中" : "非表示"}
+            </button>
+          )}
           {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
               操作が要った。今どちらを見ているのかも画面に出ていない。
@@ -1291,8 +1342,12 @@ export default function ArbitrageMapInner({
             出発地が未設定のときは描かない。baseLat/baseLon はそのとき
             地図の中心に倒れており、方位はどこから見た方位でもない。
             30km のうちは小さく収まっていたが、画面を覆う長さにすると
-            「起点のない吉凶」を全面に出すことになる */}
-        {hasBase && sectorLayers}
+            「起点のない吉凶」を全面に出すことになる。
+
+            右上のボタンで消せる（既定は表示）。画面いっぱいの 8 色の下に
+            地形も駅名も隠れるため、方位を決めたあと「その辺に何があるか」を
+            見る段では邪魔になる。俯瞰でも近景でも同じボタンで効く */}
+        {hasBase && showSectors && sectorLayers}
 
         {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
         {zoom >= 10 &&
