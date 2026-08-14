@@ -10,6 +10,7 @@ import {
   formatBlogDate,
 } from "@/lib/blog";
 import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
+import { pickRelatedPosts } from "@/lib/blogRelated";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 import { extractHeadings } from "@/lib/blogToc";
@@ -77,9 +78,9 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   const path = `/blog/${post.slug}`;
-  const related = (await loadBlogPosts()).filter(
-    (item) => item.slug !== post.slug,
-  );
+  // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
+  // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
+  const related = pickRelatedPosts(post, await loadBlogPosts());
   const headings = extractHeadings(post.body);
 
   return (
