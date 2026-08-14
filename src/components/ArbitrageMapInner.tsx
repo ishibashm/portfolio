@@ -81,11 +81,18 @@ function zoomForRadius(radiusKm?: string): number {
   return 10;
 }
 
-// Map Click Handler to copy coordinates
+/**
+ * 地図の空きを押したときの受け口。
+ *
+ * 以前はここで座標をクリップボードへ写していた。地点の判定を見るには
+ * それを絞り込み欄へ貼り直す必要があり、手が 1 つ余計に要る。判定へ
+ * 直接送る（onPick）。座標を写したいときは、起点や物件のカードに
+ * 「座標をコピー」のボタンが別にある。
+ */
 function MapClickHandler({
-  onCopy,
+  onPick,
 }: {
-  onCopy: (lat: number, lon: number) => void;
+  onPick: (lat: number, lon: number) => void;
 }) {
   useMapEvents({
     click(e) {
@@ -98,7 +105,7 @@ function MapClickHandler({
       ) {
         return;
       }
-      onCopy(e.latlng.lat, e.latlng.lng);
+      onPick(e.latlng.lat, e.latlng.lng);
     },
   });
   return null;
@@ -159,6 +166,12 @@ interface ArbitrageMapInnerProps {
    * 断りを出すためのフラグとして受け取る。
    */
   prefCountsFiltered?: boolean;
+  /**
+   * 地図の空きを押したときに、その地点を判定へ送る。
+   *
+   * 渡さないときは従来どおり座標をクリップボードへ写す。
+   */
+  onInspectSpot?: (lat: number, lon: number) => void;
   /**
    * 8方位 → 選択日の吉凶段階。扇形の塗り分けはこれを読む。
    *
@@ -360,6 +373,7 @@ export default function ArbitrageMapInner({
   kigakuUnavailableReason,
   prefCounts: prefCountsProp,
   prefCountsFiltered = false,
+  onInspectSpot,
   targetDate,
   hasBase = false,
   focusKind = "area",
@@ -933,7 +947,17 @@ export default function ArbitrageMapInner({
         zoomControl={false}
       >
         <BoundsListener onBoundsChange={handleBoundsChange} />
-        <MapClickHandler onCopy={copyCoordinates} />
+        <MapClickHandler
+          onPick={(lat, lon) => {
+            if (onInspectSpot) {
+              onInspectSpot(lat, lon);
+              showToast("この地点の方位と吉凶を絞り込み欄に出しました", "info");
+              return;
+            }
+            // 受け手がいない場合だけ従来どおり座標を写す。
+            copyCoordinates(lat, lon);
+          }}
+        />
         <InvalidateMapSize />
         <MapRefGrabber onMap={handleMapReady} />
         <FocusController
