@@ -428,6 +428,36 @@ export async function GET(request: Request) {
       prefecture,
     });
 
+    // 相場の基準値を出す集計を、物件の取得より先に走らせる。
+    //
+    // この問い合わせが見るのは絞り込み条件（whereSql / params）だけで、
+    // 取得した物件には依存しない。にもかかわらず物件を待ってから投げて
+    // いたので、**同じ 45 万行の DISTINCT ON と regexp_replace が順番に
+    // 2 回**走っていた。並べれば待ち時間はおよそ片方ぶんで済む。
+    //
+    // await はしない。物件が 0 件のときは早期に返すので、そこで拾う。
+    const combinedPromise = prisma.$queryRawUnsafe<
+      Array<{
+        stats: {
+          mean: number | null;
+          stddev: number | null;
+          n: number;
+          size_mean: number | null;
+          size_stddev: number | null;
+          age_mean: number | null;
+          age_stddev: number | null;
+          station_mean: number | null;
+          station_stddev: number | null;
+        } | null;
+        municipalities: Array<{
+          municipality: string;
+          n: number;
+          median: number | null;
+        }>;
+      }>
+    >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+
+    const dbStartedAt = Date.now();
     const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
       prisma.$queryRawUnsafe<any[]>(
@@ -459,6 +489,9 @@ export async function GET(request: Request) {
     const properties = rawProperties;
 
     if (properties.length === 0) {
+      // 先に走らせた集計をここで捨てる。拾わないと、失敗したときに
+      // unhandled rejection になる（結果はもう使わない）。
+      void combinedPromise.catch(() => {});
       return NextResponse.json({
         properties: [],
         stats: {},
@@ -469,29 +502,12 @@ export async function GET(request: Request) {
     // 相場の基準値は「取得した 500 件」ではなく絞り込み条件に合う全件から出す。
     // 安い順に切り出した集合で平均を取ると基準そのものが下がり、
     // どれも平均並みという評価になって裁定シグナルが消える。
-    // 2 本に分けて投げると、DISTINCT ON のための 45 万行のソートが 2 回走る。
-    // ソートキーに名寄せ用の regexp_replace が入っているので、行ごとの
-    // 正規表現評価まで丸ごと 2 回になる。1 回の評価にまとめる。
-    const combined = await prisma.$queryRawUnsafe<
-      Array<{
-        stats: {
-          mean: number | null;
-          stddev: number | null;
-          n: number;
-          size_mean: number | null;
-          size_stddev: number | null;
-          age_mean: number | null;
-          age_stddev: number | null;
-          station_mean: number | null;
-          station_stddev: number | null;
-        } | null;
-        municipalities: Array<{
-          municipality: string;
-          n: number;
-          median: number | null;
-        }>;
-      }>
-    >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+    // 統計と市区町村の中央値を 2 本に分けて投げると、DISTINCT ON のための
+    // 45 万行のソートが 2 回走る。ソートキーに名寄せ用の regexp_replace が
+    // 入っているので、行ごとの正規表現評価まで丸ごと 2 回になる。
+    // 1 回の評価にまとめてあり、投げるのは上（物件の取得と同時）。
+    const combined = await combinedPromise;
+    const dbElapsedMs = Date.now() - dbStartedAt;
 
     const statsRow = combined[0]?.stats ? [combined[0].stats] : [];
     const municipalityRows = combined[0]?.municipalities ?? [];
@@ -1017,6 +1033,17 @@ export async function GET(request: Request) {
       if (aAvoid !== bAvoid) return aAvoid - bAvoid;
       return b.arbitrageScore - a.arbitrageScore;
     });
+
+    // 遅いという報告に対して、どこが遅いのかを言えるようにする。
+    //
+    // この応答は「DB の待ち」と「盤の計算」の 2 つでできている。前者は
+    // 絞り込みの広さで、後者は走査日数（horizonDays）と同行者の人数で
+    // 決まる。片方しか見ずに手を入れても外す。1 行だけ残す。
+    console.log(
+      `arbitrage: db ${dbElapsedMs}ms / compute ${Date.now() - dbStartedAt - dbElapsedMs}ms ` +
+        `(pref=${prefecture} radius=${radiusKm} rows=${properties.length}/${totalCount} ` +
+        `horizon=${horizonDays} party=${party.length})`,
+    );
 
     const upcomingDoyou = getUpcomingDoyouPeriod(targetDate);
 
