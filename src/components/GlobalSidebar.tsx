@@ -321,9 +321,12 @@ export function GlobalSidebar() {
           {/* Creator Signature */}
           {!isCollapsed && (
             <div className="text-[9px] text-stone-400 font-mono text-center tracking-wider mt-1 select-none">
+              {/* 署名は略記にする。運営者としての正式な表記は /about の
+                  「運営」に置いてあり、そちらは短くしない（誰が運営して
+                  いるかを確かめに来る人が読む欄なので）。 */}
               Engineered by{" "}
               <span className="text-stone-500 font-medium hover:text-rose-500 transition-colors">
-                M. Ishibashi
+                M. Ishi
               </span>
             </div>
           )}

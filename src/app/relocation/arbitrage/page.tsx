@@ -54,6 +54,10 @@ import {
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import {
+  expandLayoutSelections,
+  matchesLayoutSelection,
+} from "@/lib/layoutMatch";
 
 /**
  * 暦の平年値。本命星×天中殺グループごとの、段階別の年平均日数（9年窓）。
@@ -1965,10 +1969,9 @@ export default function ArbitrageScannerPage() {
       if (d.totalScore < Number(filterMinTotal)) return false;
     }
 
-    if (filterLayouts.length > 0) {
-      const layout = (d.layout || "").toUpperCase();
-      if (!filterLayouts.some((l) => layout.includes(l))) return false;
-    }
+    // 一致の規則は lib/layoutMatch の 1 か所。県別の件数へ送る値も
+    // 同じところで広げる。片方だけ広げると件数と一覧が食い違う。
+    if (!matchesLayoutSelection(d.layout, filterLayouts)) return false;
 
     // 凶の除外。ステータス未算出は「凶と断定できない」ので残す。
     if (
@@ -2142,8 +2145,9 @@ export default function ArbitrageScannerPage() {
     if (filterMaxAge) params.set("maxBuildingAge", filterMaxAge);
     if (filterMaxStation) params.set("maxStationMin", filterMaxStation);
     if (filterMinSize) params.set("minSizeSqm", filterMinSize);
+    // 広げた形（2LDK なら 2SLDK も）で送る。API 側の一致規則は変えない。
     if (filterLayouts.length > 0)
-      params.set("layouts", filterLayouts.join(","));
+      params.set("layouts", expandLayoutSelections(filterLayouts).join(","));
     return params.toString();
   }, [
     filterMaxRent,
@@ -2152,6 +2156,18 @@ export default function ArbitrageScannerPage() {
     filterMinSize,
     filterLayouts,
   ]);
+
+  /**
+   * 地図でクリックされた地点。「この地点を調べる」へ送る。
+   *
+   * seq は「同じ場所をもう一度押した」を区別するための連番。座標だけを
+   * 見ていると、押し直しても値が変わらず何も起きない。
+   */
+  const [spotRequest, setSpotRequest] = useState<{
+    lat: number;
+    lon: number;
+    seq: number;
+  } | null>(null);
 
   /** 数え直した県別件数。null なら静的ファイルの値をそのまま使う。 */
   const [livePrefCounts, setLivePrefCounts] = useState<Record<
@@ -2940,6 +2956,7 @@ export default function ArbitrageScannerPage() {
                       useClassical={useClassical}
                       dirKigaku={dayKigaku?.byDirection}
                       kigakuUnavailableReason={kigakuUnavailableReason}
+                      requestedPoint={spotRequest}
                       onFocus={(lat, lon) => {
                         setMapFocusKind("spot");
                         setMapCenter([lat, lon]);
@@ -4820,6 +4837,13 @@ export default function ArbitrageScannerPage() {
               kigakuUnavailableReason={kigakuUnavailableReason}
               prefCounts={livePrefCounts ?? undefined}
               prefCountsFiltered={livePrefCounts !== null}
+              onInspectSpot={(lat, lon) =>
+                setSpotRequest((prev) => ({
+                  lat,
+                  lon,
+                  seq: (prev?.seq ?? 0) + 1,
+                }))
+              }
               targetDate={targetDate}
               hasBase={hasBaseLocation}
               focusKind={mapFocusKind}

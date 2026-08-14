@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Loader2 } from "lucide-react";
 import {
   bearingBetween,
@@ -66,6 +66,7 @@ export function SpotVerdict({
   useClassical,
   dirKigaku,
   kigakuUnavailableReason,
+  requestedPoint,
   onFocus,
 }: {
   baseLat: number;
@@ -75,6 +76,13 @@ export function SpotVerdict({
   dirKigaku?: Record<string, DirectionCell>;
   /** 盤を出せない理由（生年月日が未入力など）。そのまま出す */
   kigakuUnavailableReason?: string;
+  /**
+   * 地図のクリックで指された地点。
+   *
+   * seq は「同じ座標をもう一度クリックした」を区別するための連番。
+   * 座標だけを見ていると、同じ場所を押し直したときに何も起きない。
+   */
+  requestedPoint?: { lat: number; lon: number; seq: number } | null;
   /** 地図をその地点へ寄せる */
   onFocus?: (lat: number, lon: number) => void;
 }) {
@@ -84,6 +92,20 @@ export function SpotVerdict({
   const [target, setTarget] = useState<SpotTarget | null>(null);
 
   const hasBase = Number.isFinite(baseLat) && Number.isFinite(baseLon);
+
+  // 地図でクリックされたら、住所を引かずにそのまま判定へ入れる。
+  // 座標は既に分かっているので、ジオコーディングを挟む理由が無い。
+  // 入力欄にも書き戻して、何を見ているかを画面に残す。
+  const requestedSeq = requestedPoint?.seq ?? 0;
+  const requestedLat = requestedPoint?.lat;
+  const requestedLon = requestedPoint?.lon;
+  useEffect(() => {
+    if (requestedLat === undefined || requestedLon === undefined) return;
+    const text = `${requestedLat.toFixed(6)}, ${requestedLon.toFixed(6)}`;
+    setQuery(text);
+    setError(null);
+    setTarget({ lat: requestedLat, lon: requestedLon, name: text });
+  }, [requestedSeq, requestedLat, requestedLon]);
 
   const lookup = async () => {
     const text = query.trim();
@@ -170,7 +192,7 @@ export function SpotVerdict({
         </button>
       </div>
       <p className="text-[9px] text-stone-400 leading-relaxed">
-        一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックして写した座標も貼り付けられます。
+        一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックすると、その地点がここに入ります。
       </p>
 
       {error && <p className="text-[10px] text-rose-600">{error}</p>}
