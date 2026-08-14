@@ -361,12 +361,24 @@ model rental_properties {
   //
   // prisma db push はスキーマに無いインデックスを削除する。手で作らず
   // 必ずここに書くこと（run-seed.yml が db push を実行する）。
+  /// 名寄せキー（建物名の正規化）と市区町村キー。**書き込み時に
+  /// トリガーが埋める**（prisma/sql/20260814_add_rental_dedupe_keys.sql）。
+  /// 以前はスキャナーがリクエストのたびに正規表現で作っていて、
+  /// 全国走査 22 秒の律速になっていた。トリガーは Prisma の管理外なので
+  /// db push に消されないが、**この 2 列と下の索引は消される**。
+  /// スキーマから外さないこと。
+  name_key           String?
+  municipality_key   String?
+
   @@index([last_seen_at])
   @@index([lat, lon])
   // 都道府県での絞り込みは address LIKE '兵庫県%' の前方一致。
   // 既定の照合順序では通常の btree が前方一致に使われないため、
   // 演算子クラスを指定する。
   @@index([address(ops: raw("text_pattern_ops"))])
+  // 名寄せ（DISTINCT ON）の並びをそのまま引く。これが無いと
+  // 100 万行のソートに戻る。
+  @@index([name_key, floor, layout, size_sqm, rent])
 }
 
 // 町丁目 → 座標の永続キャッシュ。geocode_properties.ts が作成・管理する

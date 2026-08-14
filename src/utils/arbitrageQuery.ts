@@ -22,10 +22,18 @@ export function cleanPropertyName(name: string): string {
 }
 
 /**
- * cleanPropertyName の SQL 版。JS 側と同じ後置きを落として建物名だけにする。
- * 名寄せキーに使うため、両者がずれると重複が残る。
+ * 名寄せキー（建物名）は name_key 列を読む。
+ *
+ * 以前はここに regexp_replace の式があり、リクエストのたびに対象行
+ * それぞれへ評価していた。全国走査 22 秒の律速がこの CPU だと
+ * EXPLAIN ANALYZE で確定したため（2026-08-14。work_mem を広げても
+ * 変わらなかった）、書き込み時にトリガーで埋めた列を読む形にした。
+ *
+ * 式そのものは prisma/sql/20260814_add_rental_dedupe_keys.sql の
+ * トリガーに移してある。cleanPropertyName（JS 版）と後置きの落とし方が
+ * ずれると重複が残るのは変わらないので、**変えるときは 3 か所
+ * （JS・トリガー・バックフィル）を必ず揃える**。
  */
-const NAME_KEY_SQL = `regexp_replace(property_name, '[\\s　]*((?:地下)?[0-9]+階)?[\\s　]*(新築|築[0-9]+年([0-9]+ヶ月)?)?の?賃貸物件[\\s　]*$', '')`;
 
 const SQM_RENT_SQL = `((rent + COALESCE(management_fee, 0))::float8 / size_sqm::float8)`;
 
@@ -40,16 +48,10 @@ const SQM_RENT_SQL = `((rent + COALESCE(management_fee, 0))::float8 / size_sqm::
  * 「京」+「都」で切れる。政令市は「名古屋市中区」まで含めないと、
  * 市全体が 1 つの相場になって区ごとの差が消える。
  */
-const PREF_RE = "^(北海道|東京都|京都府|大阪府|.{2,3}県)";
-export const MUNICIPALITY_SQL = `NULLIF(
-  COALESCE((regexp_match(address, '${PREF_RE}'))[1], '') ||
-  COALESCE(
-    (regexp_match(regexp_replace(address, '${PREF_RE}', ''), '^(.+?市.+?区)'))[1],
-    (regexp_match(regexp_replace(address, '${PREF_RE}', ''), '^(.+?[市区町村])'))[1],
-    ''
-  ),
-  ''
-)`;
+/**
+ * 市区町村キーは municipality_key 列を読む（住所の正規表現 5 回ぶんが
+ * 行ごとに消える）。式はトリガー側。上の name_key と同じ注意。
+ */
 
 /**
  * 同じ部屋の重複掲載をまとめるキー。
@@ -60,7 +62,7 @@ export const MUNICIPALITY_SQL = `NULLIF(
  * 住所も座標もキーに使えない。建物名・階・間取り・面積・賃料の一致で
  * 同じ部屋とみなす。
  */
-const DEDUPE_KEY_SQL = `${NAME_KEY_SQL}, floor, layout, size_sqm, rent`;
+const DEDUPE_KEY_SQL = `name_key, floor, layout, size_sqm, rent`;
 
 /**
  * 残す1件を選ぶ順序。同じ部屋でも会社によって駅徒歩や管理費が欠けるため、
@@ -156,7 +158,7 @@ export function buildWhereSql(f: GeoFilters): { sql: string; params: any[] } {
  * 捨てずに market 軸へ渡す。
  */
 export function innerSql(whereSql: string, dedupe: boolean): string {
-  const extraCols = `${SQM_RENT_SQL} AS sqm_rent, ${MUNICIPALITY_SQL} AS municipality`;
+  const extraCols = `${SQM_RENT_SQL} AS sqm_rent, municipality_key AS municipality`;
   return dedupe
     ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) *, ${extraCols},
               count(*) OVER (PARTITION BY ${DEDUPE_KEY_SQL})::int AS listing_count
@@ -259,7 +261,7 @@ export function statsSql(whereSql: string, dedupe: boolean): string {
 function statsInnerSql(whereSql: string, dedupe: boolean): string {
   const cols = `${SQM_RENT_SQL} AS sqm_rent,
                 size_sqm, building_age, minutes_to_station,
-                ${MUNICIPALITY_SQL} AS municipality`;
+                municipality_key AS municipality`;
   return dedupe
     ? `SELECT DISTINCT ON (${DEDUPE_KEY_SQL}) ${cols}
          FROM rental_properties

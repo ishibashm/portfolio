@@ -275,3 +275,33 @@ describe("statsAndMunicipalitySql の CTE の幅", () => {
     expect(narrow).toContain("last_seen_at DESC NULLS LAST");
   });
 });
+
+describe("名寄せキーの前払い（name_key / municipality_key 列）", () => {
+  const { sql: where } = buildWhereSql(baseFilters);
+
+  // 以前はリクエストのたびに regexp_replace / regexp_match を対象行
+  // それぞれへ評価していて、全国走査 22 秒の律速だった（EXPLAIN の実測）。
+  // 書き込み時にトリガーで埋めた列を読む形に変えた。ここが正規表現に
+  // 戻ると、速度の退行が「なんとなく遅い」としてしか現れないので固定する。
+  it("クエリは列を読む。行ごとの正規表現に戻さない", () => {
+    for (const sql of [
+      innerSql(where, true),
+      selectSql(where, true, 1, "value"),
+      statsAndMunicipalitySql(where, true),
+    ]) {
+      expect(sql).toContain("name_key");
+      expect(sql).toContain("municipality_key AS municipality");
+      expect(sql).not.toContain("regexp_replace(property_name");
+      expect(sql).not.toContain("regexp_match(address");
+    }
+  });
+
+  it("名寄せの単位は変えていない（キーの列構成が同じ）", () => {
+    const sql = innerSql(where, true);
+    expect(sql).toContain(
+      "DISTINCT ON (name_key, floor, layout, size_sqm, rent)",
+    );
+    // 残す 1 件の選び方（欠損の少ないもの → 新しいもの）もそのまま
+    expect(sql).toContain("last_seen_at DESC NULLS LAST");
+  });
+});
