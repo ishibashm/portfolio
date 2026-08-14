@@ -547,12 +547,22 @@ export default function AdminMetricsPage() {
               直近30日。閲覧の記録は匿名で、日をまたいで同じ人を追えません。クローラは除外済み。管理者だけが見られます。
             </p>
           </div>
-          {s && (
-            <span className="text-[10px] font-mono text-stone-400 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              最新の閲覧: {relTime(s.latestViewAt)}
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {/* 記事の編集への導線。管理ページはどこからも遷移できない
+                設計なので、管理ページ同士だけは行き来できるようにする */}
+            <a
+              href="/admin/blog"
+              className="px-3.5 py-1.5 rounded-xl border border-stone-200 bg-white text-xs font-semibold text-stone-600 hover:bg-stone-50"
+            >
+              記事を編集する
+            </a>
+            {s && (
+              <span className="text-[10px] font-mono text-stone-400 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                最新の閲覧: {relTime(s.latestViewAt)}
+              </span>
+            )}
+          </div>
         </header>
 
         {error && (
