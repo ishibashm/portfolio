@@ -5,7 +5,7 @@ import {
   SITE_TAGLINE,
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
-import { getBlogPosts } from "@/lib/blog";
+import { loadBlogPosts } from "@/lib/blogStore";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -24,7 +24,10 @@ export async function GET() {
   const services = CORE_ROUTES.map(
     (r, i) => `### ${i + 1}. ${r.label}（${baseUrl}${r.href}）\n${r.summary}`,
   ).join("\n\n");
-  const blogPosts = getBlogPosts()
+  // 記事は DB（blogStore）から。管理画面で公開した記事が Markdown を
+  // 経由せずここへ載るようにする。DB が読めないときは Markdown に
+  // 倒れる（blogStore の既定の挙動）。
+  const blogPosts = (await loadBlogPosts())
     .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug})`)
     .join("\n");
 

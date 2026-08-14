@@ -49,8 +49,10 @@ vi.mock("@/lib/prisma", () => ({
 
 vi.mock("@/lib/gcpBilling", () => ({ loadGcpBillingCost }));
 
-vi.mock("@/lib/blog", () => ({
-  getBlogPosts: () => [
+// 実装は blogStore（DB 優先・Markdown フォールバック）を読む。
+// テストでは DB を用意しないので、一覧をそのまま返すモックにする。
+vi.mock("@/lib/blogStore", () => ({
+  loadBlogPosts: async () => [
     {
       slug: "new-post",
       title: "新しい記事",
