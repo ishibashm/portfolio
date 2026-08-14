@@ -24,29 +24,16 @@ import {
   isAvoidStatus,
 } from "@/utils/arbitrageAstro";
 import {
-  AXIS_ORDER,
-  AxisScores,
   CandidateStrategy,
   DEFAULT_CANDIDATE_STRATEGY,
-  DEFAULT_PRESET_ID,
-  composeScore,
-  getPreset,
   isCandidateStrategy,
-  scoreBuilding,
-  scoreCost,
-  scoreLocalValue,
-  scoreMarket,
-  scoreProximity,
-  scoreSpace,
-  scoreStationAccess,
-  tScore,
 } from "@/utils/arbitrageScoring";
 
 import {
   buildWhereSql,
   cleanPropertyName,
   selectSql,
-  statsAndMunicipalitySql,
+  uniqueCountSql,
 } from "@/utils/arbitrageQuery";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -63,7 +50,6 @@ import {
   partyWeights,
   summarizeTiming,
 } from "@/utils/arbitrageParty";
-
 
 /**
  * 生年月日に関係しない印。誰にとっても同じもの。
@@ -199,18 +185,10 @@ export async function GET(request: Request) {
     ? candidateStrategyRaw
     : DEFAULT_CANDIDATE_STRATEGY;
 
-  // 月額予算（円）。cost 軸の基準。未指定なら cost 軸は算出しない。
-  const budgetRaw = parseInt(searchParams.get("budget") || "", 10);
-  const budgetYen = Number.isFinite(budgetRaw) && budgetRaw > 0 ? budgetRaw : null;
-
-  // 総合スコアの重み。画面側でも重み替えができるので、ここは
-  // 「サーバが返す既定順」を決めるためだけに使う。
-  const weightPresetId = searchParams.get("weightPreset") || DEFAULT_PRESET_ID;
-  const weights = getPreset(weightPresetId).weights;
-
   // 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人を足せる。
   // 方位は起点によって変わるので、人ごとに別々に判定してから合成する。
-  const partyPolicyRaw = searchParams.get("partyPolicy") || DEFAULT_PARTY_POLICY;
+  const partyPolicyRaw =
+    searchParams.get("partyPolicy") || DEFAULT_PARTY_POLICY;
   const partyPolicy: PartyPolicy = isPartyPolicy(partyPolicyRaw)
     ? partyPolicyRaw
     : DEFAULT_PARTY_POLICY;
@@ -445,50 +423,40 @@ export async function GET(request: Request) {
     // 消しただけで実行時間は変わらなかった（22.1s → 22.8s。律速は
     // ディスクではなく、行ごとの正規表現とソート比較の CPU）。
     // 速くならないうえに事故の入口になるので、素の 1 本で投げる。
-    const combinedPromise = prisma.$queryRawUnsafe<
-      Array<{
-        stats: {
-          mean: number | null;
-          stddev: number | null;
-          n: number;
-          size_mean: number | null;
-          size_stddev: number | null;
-          age_mean: number | null;
-          age_stddev: number | null;
-          station_mean: number | null;
-          station_stddev: number | null;
-        } | null;
-        municipalities: Array<{
-          municipality: string;
-          n: number;
-          median: number | null;
-        }>;
-      }>
-    >(statsAndMunicipalitySql(whereSql, dedupe), ...params);
+    // 相場の統計と市区町村の中央値はここで取っていた（評価軸の材料）。
+    // 評価軸の廃止で要らなくなり、残る用途は「名寄せ後の件数」だけに
+    // なったので、数えるだけのクエリに置き換えた。全国走査の実測では
+    // 統計＋中央値が 2 本目として 5〜8 秒かかっていた部分。
+    const uniqueCountPromise = dedupe
+      ? prisma.$queryRawUnsafe<Array<{ n: number }>>(
+          uniqueCountSql(whereSql),
+          ...params,
+        )
+      : null;
 
     const dbStartedAt = Date.now();
     const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
-      prisma.$queryRawUnsafe<any[]>(
-        selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
-        ...params,
-        limit,
-      ),
-      prisma.rental_properties.count({
-        where: whereClause,
-      }),
-      // 定期スクレイピング（.github/workflows/scrape-rentals.yml）がいつ回ったかを
-      // 画面から確認できるようにする。絞り込み条件に依存しない全体の鮮度。
-      prisma.rental_properties.aggregate({
-        _max: { last_seen_at: true },
-      }),
-      // 鮮度で落とした件数。急に件数が減った理由が画面から分かるようにする。
-      maxSeenDays > 0
-        ? prisma.rental_properties.count({
-            where: { ...whereClause, last_seen_at: undefined },
-          })
-        : Promise.resolve(0),
-    ]);
+        prisma.$queryRawUnsafe<any[]>(
+          selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
+          ...params,
+          limit,
+        ),
+        prisma.rental_properties.count({
+          where: whereClause,
+        }),
+        // 定期スクレイピング（.github/workflows/scrape-rentals.yml）がいつ回ったかを
+        // 画面から確認できるようにする。絞り込み条件に依存しない全体の鮮度。
+        prisma.rental_properties.aggregate({
+          _max: { last_seen_at: true },
+        }),
+        // 鮮度で落とした件数。急に件数が減った理由が画面から分かるようにする。
+        maxSeenDays > 0
+          ? prisma.rental_properties.count({
+              where: { ...whereClause, last_seen_at: undefined },
+            })
+          : Promise.resolve(0),
+      ]);
 
     const staleHidden =
       maxSeenDays > 0 ? Math.max(0, beforeFreshnessCount - totalCount) : 0;
@@ -500,7 +468,7 @@ export async function GET(request: Request) {
     if (properties.length === 0) {
       // 先に走らせた集計をここで捨てる。拾わないと、失敗したときに
       // unhandled rejection になる（結果はもう使わない）。
-      void combinedPromise.catch(() => {});
+      void uniqueCountPromise?.catch(() => {});
       return NextResponse.json({
         properties: [],
         stats: {},
@@ -517,41 +485,15 @@ export async function GET(request: Request) {
       });
     }
 
-    // 相場の基準値は「取得した 500 件」ではなく絞り込み条件に合う全件から出す。
-    // 安い順に切り出した集合で平均を取ると基準そのものが下がり、
-    // どれも平均並みという評価になって裁定シグナルが消える。
-    // 統計と市区町村の中央値を 2 本に分けて投げると、DISTINCT ON のための
-    // 45 万行のソートが 2 回走る。ソートキーに名寄せ用の regexp_replace が
-    // 入っているので、行ごとの正規表現評価まで丸ごと 2 回になる。
-    // 1 回の評価にまとめてあり、投げるのは上（物件の取得と同時）。
-    const combined = await combinedPromise;
+    // 名寄せ後の件数（uniqueCount）は候補の取得と並行で数えている。
+    // dedupe を切っているときは生の行数がそのまま件数。
+    const uniqueCountRows = await uniqueCountPromise;
     const dbElapsedMs = Date.now() - dbStartedAt;
 
-    const statsRow = combined[0]?.stats ? [combined[0].stats] : [];
-    const municipalityRows = combined[0]?.municipalities ?? [];
-    const meanSqmRent = Number(statsRow[0]?.mean ?? 0);
-    const stdDevSqmRent = Number(statsRow[0]?.stddev ?? 0);
-    const uniqueCount = Number(statsRow[0]?.n ?? 0);
+    const uniqueCount = dedupe
+      ? Number(uniqueCountRows?.[0]?.n ?? 0)
+      : totalCount;
     const duplicatesHidden = dedupe ? Math.max(0, totalCount - uniqueCount) : 0;
-
-    const meanSizeSqm = Number(statsRow[0]?.size_mean ?? 0);
-    const stdDevSizeSqm = Number(statsRow[0]?.size_stddev ?? 0);
-    const meanBuildingAge = Number(statsRow[0]?.age_mean ?? 0);
-    const meanMinutesToStation = Number(statsRow[0]?.station_mean ?? 0);
-
-    // 市区町村 → { 中央値, サンプル数 }。localValue 軸の参照表。
-    const municipalityStats = new Map<
-      string,
-      { median: number; count: number }
-    >();
-    for (const row of municipalityRows) {
-      const median = Number(row.median);
-      if (!row.municipality || !Number.isFinite(median)) continue;
-      municipalityStats.set(row.municipality, {
-        median,
-        count: Number(row.n),
-      });
-    }
 
     const scoredAt = new Date();
 
@@ -729,23 +671,21 @@ export async function GET(request: Request) {
             Math.abs(relocatedASC - ctx.jupiterLon) < 5;
         }
 
-        const days = ctx.states
-          .slice(0, WINDOW_SIZE)
-          .map((state) =>
-            scoreDateForProperty(state, {
-              hasCoordinates,
-              direction,
-              magneticDirection,
-              useTrueNorth,
-              hasSunLine,
-              hasVenusLine,
-              hasJupiterLine,
-              hasBirthLocation: ctx.hasBirthLocation,
-              actionIntent,
-              tenchusatsuMode,
-              involuntaryMove,
-            }),
-          );
+        const days = ctx.states.slice(0, WINDOW_SIZE).map((state) =>
+          scoreDateForProperty(state, {
+            hasCoordinates,
+            direction,
+            magneticDirection,
+            useTrueNorth,
+            hasSunLine,
+            hasVenusLine,
+            hasJupiterLine,
+            hasBirthLocation: ctx.hasBirthLocation,
+            actionIntent,
+            tenchusatsuMode,
+            involuntaryMove,
+          }),
+        );
 
         return {
           ctx,
@@ -841,8 +781,10 @@ export async function GET(request: Request) {
               ),
         );
         const dayCount = series.find((s) => s !== null)?.length ?? 0;
-        const daily: { date: string; joint: ReturnType<typeof combineOutcomes> }[] =
-          [];
+        const daily: {
+          date: string;
+          joint: ReturnType<typeof combineOutcomes>;
+        }[] = [];
         for (let i = 0; i < dayCount; i++) {
           const outcomes = perMember.map((m, mi) => {
             const entry = series[mi]?.[i];
@@ -928,47 +870,10 @@ export async function GET(request: Request) {
       const sizeSqm = Number(p.size_sqm);
       const propSqmRent = totalRent / sizeSqm;
 
-      // 割安度は「㎡単価が安いほど高得点」なので偏差値を反転させる。
-      //
-      // 以前は `100 - tScore + 50` としており、相場ちょうどの物件が 100 点に
-      // なっていた。総合スコアの 6 割がこの値だったため、ほぼ全件が
-      // おすすめ度 5 つ星（80 点以上）で表示され、順位が読めなくなっていた。
-      const yieldScore = tScore(propSqmRent, meanSqmRent, stdDevSqmRent, true);
-
-      const municipality: string | null = p.municipality ?? null;
-      const localStats = municipality
-        ? municipalityStats.get(municipality)
-        : undefined;
+      // 評価軸（割安度・広さ・築年など）の計算はここにあった。
+      // 評価軸の廃止（利用者の指示）で外した。残るのは判定そのもの
+      // （方位・吉凶・時期・天中殺・同行者）と、物件の生の属性。
       const listingCount = Number(p.listing_count ?? 1);
-
-      const axes: AxisScores = {
-        value: yieldScore,
-        localValue: scoreLocalValue(
-          propSqmRent,
-          localStats?.median ?? null,
-          localStats?.count ?? null,
-        ),
-        // 生年月日が無いときは欠測。0 でも 50 でもなく「無い」を渡す。
-        astrology: hasBirthDate ? astrologyScore : null,
-        // 移動する人が 2 人以上いるときだけ意味を持つ軸。
-        // 平均だけ見ていると「片方に大吉・片方に大凶」と「全員そこそこ」が
-        // 同じ点になるため、割れているかどうかを別に持つ。
-        harmony: hasBirthDate ? targetJoint.harmony : null,
-        // 走査期間のうち全員が動ける日の割合。対象日 1 日が凶でも、
-        // 近い将来に開くなら候補として残すための軸。
-        timing:
-          timing && timing.scannedDays > 0
-            ? (timing.allClearDays / timing.scannedDays) * 100
-            : null,
-        access: scoreStationAccess(p.minutes_to_station),
-        proximity: scoreProximity(distanceKm),
-        space: scoreSpace(sizeSqm, p.layout, meanSizeSqm, stdDevSizeSqm),
-        building: scoreBuilding(p.building_age, p.floor, p.is_new_build),
-        market: scoreMarket(p.first_seen_at, listingCount, scoredAt),
-        cost: scoreCost(totalRent, budgetYen),
-      };
-
-      const composed = composeScore(axes, weights);
 
       // 掲載開始からの経過日数。market 軸の内訳として画面に出す。
       const listedDays = p.first_seen_at
@@ -999,33 +904,27 @@ export async function GET(request: Request) {
         astroFlags: hasBirthDate
           ? astroFlags
           : astroFlags.filter((f) => IMPERSONAL_ASTRO_FLAGS.includes(f)),
-        yieldScore,
-        // 既定の重みでの総合点。画面側で重みを変えたときは再計算される。
-        arbitrageScore: composed.score,
-        axes,
         /**
          * 同行者ぶんの内訳。誰の方位がどうで、誰が引っかかっているか。
          * 「全員にとってどうか」は 1 つの点に潰れてしまうので、
          * 判断の材料として人ごとの結果をそのまま返す。
          */
-        party: !hasBirthDate ? null : {
-          policy: partyPolicy,
-          score: targetJoint.score,
-          everyoneSafe: targetJoint.everyoneSafe,
-          blockedBy: targetJoint.blockedBy,
-          spread: targetJoint.spread,
-          harmony: targetJoint.harmony,
-          bindingMember: targetJoint.bindingMember,
-          members: targetJoint.members,
-        },
+        party: !hasBirthDate
+          ? null
+          : {
+              policy: partyPolicy,
+              score: targetJoint.score,
+              everyoneSafe: targetJoint.everyoneSafe,
+              blockedBy: targetJoint.blockedBy,
+              spread: targetJoint.spread,
+              harmony: targetJoint.harmony,
+              bindingMember: targetJoint.bindingMember,
+              members: targetJoint.members,
+            },
         /** いつなら全員で動けるか。horizonDays=0 なら null。 */
         timing: hasBirthDate ? timing : null,
-        // どれだけの重みが実データで埋まったか。低いほど根拠が薄い。
-        axisCoverage: composed.coverage,
+        // 画面が「掲載: N日 / M社」に出す生の属性。評価軸ではない。
         axisInputs: {
-          municipality,
-          localMedianSqmRent: localStats?.median ?? null,
-          localSampleCount: localStats?.count ?? null,
           listingCount,
           listedDays,
         },
@@ -1038,18 +937,16 @@ export async function GET(request: Request) {
     });
 
     // 避けるべき方位・期間のものは、どれだけ安くても上には出さない。
-    //
-    // arbitrageScore は方位 0.4 : 割安 0.6 の加重なので、五黄殺でも十分安ければ
-    // 上位に来ていた。方位とタイミングで意思決定するための道具なので、
-    // 安さで凶を挽回できる合成は目的と逆になる。
     // 完全に隠すのではなく順位で下に置き、フィルタで見られる状態は残す。
+    // 同順位の中は㎡単価の安い順（候補の切り出しと同じ物差し）。
+    // 最終的な見た目の並びは画面（吉凶の段階 → 家賃の安い順）が決める。
     scoredProperties.sort((a, b) => {
       // 判定が無いとき（生年月日未入力）は両方 0 になり、割安さだけの
       // 並びになる。凶を下げる仕掛けは、判定が出せるときだけ働く。
       const aAvoid = isAvoidStatus(a.astrologyStatus ?? "") ? 1 : 0;
       const bAvoid = isAvoidStatus(b.astrologyStatus ?? "") ? 1 : 0;
       if (aAvoid !== bAvoid) return aAvoid - bAvoid;
-      return b.arbitrageScore - a.arbitrageScore;
+      return a.propSqmRent - b.propSqmRent;
     });
 
     // 遅いという報告に対して、どこが遅いのかを言えるようにする。
@@ -1081,24 +978,9 @@ export async function GET(request: Request) {
         nodeMapping,
         physicalMonthMode,
         targetDate: targetDate.toISOString().split("T")[0],
-        meanSqmRent,
-        stdDevSqmRent,
-        // 各軸が「相対評価」であることを画面で説明するための母集団の姿。
-        population: {
-          meanSqmRent,
-          stdDevSqmRent,
-          meanSizeSqm,
-          stdDevSizeSqm,
-          meanBuildingAge,
-          meanMinutesToStation,
-          municipalityCount: municipalityStats.size,
-        },
         candidateStrategy,
         tenchusatsuMode,
         involuntaryMove,
-        weightPreset: weightPresetId,
-        budget: budgetYen,
-        axisKeys: AXIS_ORDER,
         // 誰を、どうまとめて、何日先まで見たか。画面に前提を出すため。
         party: {
           policy: partyPolicy,

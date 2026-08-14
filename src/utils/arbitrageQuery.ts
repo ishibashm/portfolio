@@ -230,6 +230,23 @@ const STATS_PROJECTION = `avg(sqm_rent) AS mean,
                  avg(minutes_to_station::float8) AS station_mean,
                  coalesce(stddev_pop(minutes_to_station::float8), 0) AS station_stddev`;
 
+/**
+ * 名寄せ後の件数だけを数える。
+ *
+ * 以前は相場の統計（statsAndMunicipalitySql）の副産物として取っていたが、
+ * 評価軸の廃止で統計そのものが要らなくなった。件数のためだけに
+ * DISTINCT ON の実体化を残すのは高くつくので、GROUP BY で数える。
+ * 名寄せキーの索引（rental_properties_name_key_..._idx）の並びのまま
+ * 集約できるため、ソートが要らない。
+ */
+export function uniqueCountSql(whereSql: string): string {
+  return `SELECT count(*)::int AS n
+            FROM (SELECT 1
+                    FROM rental_properties
+                   WHERE ${whereSql}
+                GROUP BY ${DEDUPE_KEY_SQL}) t`;
+}
+
 export function statsSql(whereSql: string, dedupe: boolean): string {
   return `SELECT ${STATS_PROJECTION}
             FROM (${innerSql(whereSql, dedupe)}) t`;

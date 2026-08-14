@@ -130,16 +130,8 @@ describe("一覧 API は生年月日が無いと個人の判定を作らない",
     ]) {
       expect(route, line).toContain(line);
     }
-    expect(route).toContain("party: !hasBirthDate ? null : {");
-  });
-
-  it("総合点の軸も欠測にする（0 や 50 で埋めない）", () => {
-    // composeScore は null を「データ無し」として扱い、axisCoverage が
-    // 下がる。既にある仕組みに乗せる。
-    expect(route).toContain("astrology: hasBirthDate ? astrologyScore : null,");
-    expect(route).toContain(
-      "harmony: hasBirthDate ? targetJoint.harmony : null,",
-    );
+    // prettier が三項演算子を複数行に割るので、行頭の条件だけを見る。
+    expect(route).toContain("party: !hasBirthDate");
   });
 
   it("期間走査は生年月日があるときだけ走らせる", () => {
