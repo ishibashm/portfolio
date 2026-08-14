@@ -149,6 +149,9 @@ async function main() {
     `maxSeenDays=${MAX_SEEN_DAYS} / 1 本あたりの上限 ${TIMEOUT_MS} ms`,
   );
   await pool.query(`SET statement_timeout = ${TIMEOUT_MS}`);
+  // API 側（route.ts）は重い 2 本を SET LOCAL work_mem='512MB' で流す。
+  // ここも揃えないと、本番より遅い条件を測って別の結論を出してしまう。
+  await pool.query(`SET work_mem = '512MB'`);
 
   // 鮮度の集計だけは絞り込み条件を持たないので、条件ごとに測る意味が無い。
   await explain(
