@@ -504,7 +504,16 @@ export async function GET(request: Request) {
       return NextResponse.json({
         properties: [],
         stats: {},
-        metadata: { totalCount: 0, limit, dataUpdatedAt, staleHidden, maxSeenDays },
+        // 候補が 1 件も取れないなら、名寄せ後の集合も空。統計クエリは
+        // 上で捨てているので、uniqueCount はここで 0 と確定させる。
+        metadata: {
+          totalCount: 0,
+          uniqueCount: 0,
+          limit,
+          dataUpdatedAt,
+          staleHidden,
+          maxSeenDays,
+        },
       });
     }
 
@@ -1105,13 +1114,25 @@ export async function GET(request: Request) {
         },
         totalAnalyzed: properties.length,
         totalCount,
+        /**
+         * 名寄せしたあとの件数。**画面が「○○件」と出すのはこちら。**
+         *
+         * totalCount は生の行数で、同じ部屋の別の掲載も別々に数えている。
+         * 「1,000 件見つかりました」と出して、開いたら同じ建物が並ぶ、が
+         * 起きる数字なので、そのまま件数として見せない。
+         *
+         * 窓（limit）の中ではなく、絞り込みに合う全件を名寄せした数。
+         * 統計クエリ（statsInnerSql）が DISTINCT ON のあとに数えている。
+         */
+        uniqueCount,
         limit,
         dataUpdatedAt,
         staleHidden,
         maxSeenDays,
         // 走査にかかった時間の内訳。画面が鮮度の隣に出す。
         timing: { dbMs: dbElapsedMs, computeMs },
-        // 取得した窓の中でまとめた重複件数。totalCount は生の行数のまま。
+        // 名寄せでまとめた件数（totalCount - uniqueCount）。窓の中だけの
+        // 数ではなく、絞り込みに合う全件が対象。
         duplicatesHidden,
         dedupe,
         upcomingDoyou,
