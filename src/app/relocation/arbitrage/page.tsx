@@ -2454,6 +2454,20 @@ export default function ArbitrageScannerPage() {
                 })}
               </span>
             )}
+            {/* 走査時間の内訳。「遅い」の報告を、Cloud Run のログを開かずに
+                数字で受け取るための表示。DB は絞り込みの広さ、判定は
+                走査日数と同行者の人数で決まる。ここに無い時間（通信・
+                コールドスタート・描画）は体感との差として現れる。 */}
+            {metadata?.timing && (
+              <span
+                className="text-[10px] text-stone-500 font-mono leading-tight text-right"
+                title="サーバ側の走査時間。体感との差は通信・起動・描画のぶんです"
+              >
+                <span className="block text-stone-400">走査時間</span>
+                DB {(metadata.timing.dbMs / 1000).toFixed(1)}s / 判定{" "}
+                {(metadata.timing.computeMs / 1000).toFixed(1)}s
+              </span>
+            )}
             <button
               onClick={() => fetchData()}
               disabled={loading}

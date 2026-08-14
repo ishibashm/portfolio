@@ -1038,9 +1038,12 @@ export async function GET(request: Request) {
     //
     // この応答は「DB の待ち」と「盤の計算」の 2 つでできている。前者は
     // 絞り込みの広さで、後者は走査日数（horizonDays）と同行者の人数で
-    // 決まる。片方しか見ずに手を入れても外す。1 行だけ残す。
+    // 決まる。片方しか見ずに手を入れても外す。ログに 1 行残し、同じ値を
+    // metadata.timing でも返す。Cloud Run のログを開ける人だけが数字を
+    // 見られる状態だと、報告と調査のあいだに毎回一往復挟まる。
+    const computeMs = Date.now() - dbStartedAt - dbElapsedMs;
     console.log(
-      `arbitrage: db ${dbElapsedMs}ms / compute ${Date.now() - dbStartedAt - dbElapsedMs}ms ` +
+      `arbitrage: db ${dbElapsedMs}ms / compute ${computeMs}ms ` +
         `(pref=${prefecture} radius=${radiusKm} rows=${properties.length}/${totalCount} ` +
         `horizon=${horizonDays} party=${party.length})`,
     );
@@ -1097,6 +1100,8 @@ export async function GET(request: Request) {
         dataUpdatedAt,
         staleHidden,
         maxSeenDays,
+        // 走査にかかった時間の内訳。画面が鮮度の隣に出す。
+        timing: { dbMs: dbElapsedMs, computeMs },
         // 取得した窓の中でまとめた重複件数。totalCount は生の行数のまま。
         duplicatesHidden,
         dedupe,
