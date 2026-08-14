@@ -18,24 +18,12 @@ import { SpotVerdict } from "@/components/relocation/SpotVerdict";
 import { loadSettings } from "@/lib/userSettings";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
-  getRecommendationStarCount,
   getPropertyPinColors,
   isAvoidStatus as isAvoidAstrologyStatus,
 } from "@/utils/arbitrageHelpers";
 import {
-  AXIS_META,
-  AXIS_ORDER,
-  AxisKey,
-  AxisScores,
   CANDIDATE_STRATEGIES,
   DEFAULT_CANDIDATE_STRATEGY,
-  DEFAULT_PRESET_ID,
-  WEIGHT_PRESETS,
-  composeScore,
-  getPreset,
-  scoreCost,
-  slidersToWeights,
-  weightsToSliders,
 } from "@/utils/arbitrageScoring";
 import { DEFAULT_PARTY_POLICY, PARTY_POLICIES } from "@/utils/arbitrageParty";
 import {
@@ -369,76 +357,6 @@ export default function ArbitrageScannerPage() {
   const [localBirthLon, setLocalBirthLon] = useState("");
   const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
 
-  // おすすめ度（星マーク）の描画
-  // 星は総合スコアの見た目表現。arbitrageScore は割安さが 6 割を占めるため、
-  // 凶方位や天中殺でも安ければ 5 つ星が付き、「移転NG ★★★★★」という
-  // 矛盾した表示になっていた。避けるべきものは 1 つ星に倒す。
-  const renderStars = (score: number, status?: string) => {
-    const count = getRecommendationStarCount(score, status);
-    if (count === 1 && status && isAvoidAstrologyStatus(status)) {
-      return renderStarRow(1, "避けるべき方位・期間のため評価を下げています");
-    }
-    return renderStarRow(count, `おすすめ度: ${score.toFixed(1)}`);
-  };
-
-  /** 軸スコアの色。50 を境に暖色／寒色へ振り、一目で強弱が分かるようにする。 */
-  const axisBarColor = (score: number) => {
-    if (score >= 75) return "bg-emerald-500";
-    if (score >= 60) return "bg-lime-500";
-    if (score >= 45) return "bg-amber-400";
-    if (score >= 30) return "bg-orange-400";
-    return "bg-rose-400";
-  };
-
-  /**
-   * 物件 1 件の軸別プロファイル。
-   *
-   * 総合スコアだけでは「なぜ上位なのか」が分からず、重みを変えても
-   * 順位が入れ替わる理由が読めない。重みが乗っている軸だけを、
-   * 重みの大きい順に並べて出す。
-   */
-  const renderAxisBars = (item: any, max = 5) => {
-    const axes: AxisScores = item.axes ?? {};
-    const shown = AXIS_ORDER.filter((key) => (activeWeights[key] ?? 0) > 0)
-      .sort((a, b) => (activeWeights[b] ?? 0) - (activeWeights[a] ?? 0))
-      .slice(0, max);
-
-    if (shown.length === 0) return null;
-
-    return (
-      <div className="space-y-1">
-        {shown.map((key) => {
-          const value = axes[key];
-          const meta = AXIS_META[key];
-          const weightPct = Math.round((activeWeights[key] ?? 0) * 100);
-          const missing = value === null || value === undefined;
-          return (
-            <div
-              key={key}
-              className="flex items-center gap-1.5"
-              title={`${meta.label}（重み ${weightPct}%）: ${meta.hint}`}
-            >
-              <span className="w-14 shrink-0 text-[9px] text-stone-500 truncate">
-                {meta.label}
-              </span>
-              <div className="flex-1 h-1.5 rounded-full bg-stone-200/80 overflow-hidden">
-                {!missing && (
-                  <div
-                    className={`h-full rounded-full ${axisBarColor(value as number)}`}
-                    style={{ width: `${Math.max(2, value as number)}%` }}
-                  />
-                )}
-              </div>
-              <span className="w-7 shrink-0 text-right text-[9px] font-mono text-stone-500">
-                {missing ? "—" : Math.round(value as number)}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
   /**
    * 同行者がいるときの内訳。
    *
@@ -539,25 +457,6 @@ export default function ArbitrageScannerPage() {
       </div>
     );
   };
-  const renderStarRow = (starCount: number, hint: string) => {
-    return (
-      <div className="flex gap-0.5 text-amber-600 text-xs" title={hint}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <span
-            key={i}
-            className={
-              i < starCount
-                ? "opacity-100 text-amber-600"
-                : "opacity-20 text-stone-400"
-            }
-          >
-            ★
-          </span>
-        ))}
-      </div>
-    );
-  };
-
   // 吉凶要因バッジの描画
 
   // 全体ロード時のカード型スケルトン
@@ -571,7 +470,6 @@ export default function ArbitrageScannerPage() {
    */
   const [filterDirection, setFilterDirection] = useState("ALL");
   const [filterMaxRent, setFilterMaxRent] = useState<string>("");
-  const [filterMinYield, setFilterMinYield] = useState<string>("");
   /**
    * 築年数上限。**既定は空（制限なし）。**
    *
@@ -584,7 +482,6 @@ export default function ArbitrageScannerPage() {
   const [filterMaxAge, setFilterMaxAge] = useState<string>("");
   const [filterMaxStation, setFilterMaxStation] = useState<string>("");
   const [filterMinSize, setFilterMinSize] = useState<string>("");
-  const [filterMinTotal, setFilterMinTotal] = useState<string>("");
   // 間取り。スマート検索から入る。手で選ぶ UI は無い（チップで外せる）
   const [filterLayouts, setFilterLayouts] = useState<string[]>([]);
   // 凶（NOISE 系）を除外。「吉方位のみ」の解釈先
@@ -604,19 +501,10 @@ export default function ArbitrageScannerPage() {
   // 詳細パネルに出している物件。カード・表・TOP5 のクリックで入る
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // 評価軸の重み。
-  //
-  // 同じ候補集合でも、通勤で選ぶ人と開運で選ぶ人では見るべき順位が違う。
-  // 重み付けは画面側で行うので、切り替えても再スキャン（DBアクセス）は起きない。
-  const [weightPresetId, setWeightPresetId] =
-    useState<string>(DEFAULT_PRESET_ID);
-  const [customSliders, setCustomSliders] = useState<Record<AxisKey, number>>(
-    () => weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights),
-  );
-  const [showWeightPanel, setShowWeightPanel] = useState(false);
-  // 予算（万円/月）。cost 軸の基準になる。空なら cost 軸は使わない。
-  const [budgetManYen, setBudgetManYen] = useState<string>("");
-  // 候補を DB から切り出すときの角度。重みだけ変えても母集合が変わらないため。
+  // 評価軸・重み・総合スコアは廃止した（利用者の指示）。並びは
+  // 「吉凶の段階 → 家賃の安い順」（lib/arbitrageRanking）で決まる。
+  // 候補を DB から切り出すときの角度。絞り込みだけでは 500 件の窓に
+  // 何を入れるかが決まらないため、これは軸ではなく窓の切り方として残す。
   const [candidateStrategy, setCandidateStrategy] = useState<string>(
     DEFAULT_CANDIDATE_STRATEGY,
   );
@@ -778,32 +666,8 @@ export default function ArbitrageScannerPage() {
     );
   };
 
-  const activeWeights = useMemo(
-    () =>
-      weightPresetId === "custom"
-        ? slidersToWeights(customSliders)
-        : getPreset(weightPresetId).weights,
-    [weightPresetId, customSliders],
-  );
-
-  /** テーブルに列として出す軸。重みの大きい順に 4 つまで。 */
-  const tableAxisColumns = useMemo(
-    () =>
-      AXIS_ORDER.filter((key) => (activeWeights[key] ?? 0) > 0)
-        .sort((a, b) => (activeWeights[b] ?? 0) - (activeWeights[a] ?? 0))
-        .slice(0, 4),
-    [activeWeights],
-  );
-
   // Sorting state
-  type SortColumn =
-    | "kigaku"
-    | "arbitrage"
-    | "yield"
-    | "astrology"
-    | "rent"
-    | "distance"
-    | AxisKey;
+  type SortColumn = "kigaku" | "astrology" | "rent" | "distance";
   interface SortConfig {
     key: SortColumn;
     direction: "desc" | "asc";
@@ -820,26 +684,16 @@ export default function ArbitrageScannerPage() {
     { key: "rent", direction: "asc" },
   ]);
 
-  // 重み・予算・抽出戦略は端末に残す。毎回選び直すのは実用的でない。
+  // 抽出戦略・同行者などは端末に残す。毎回選び直すのは実用的でない。
+  // 鍵の名前は変えない。変えると他の項目（同行者・天中殺の扱い）まで
+  // 巻き添えで初期化される。重みの保存値（weightPresetId 等）は
+  // 読まなくなったので、次の保存で自然に消える。
   const AXIS_PREFS_KEY = "arb_axis_prefs_v1";
   useEffect(() => {
     try {
       const raw = localStorage.getItem(AXIS_PREFS_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
-      if (typeof saved.weightPresetId === "string")
-        setWeightPresetId(saved.weightPresetId);
-      if (saved.customSliders && typeof saved.customSliders === "object") {
-        const sliders = weightsToSliders(getPreset(DEFAULT_PRESET_ID).weights);
-        for (const key of AXIS_ORDER) {
-          const value = Number(saved.customSliders[key]);
-          if (Number.isFinite(value))
-            sliders[key] = Math.max(0, Math.min(100, value));
-        }
-        setCustomSliders(sliders);
-      }
-      if (typeof saved.budgetManYen === "string")
-        setBudgetManYen(saved.budgetManYen);
       if (typeof saved.candidateStrategy === "string")
         setCandidateStrategy(saved.candidateStrategy);
       if (typeof saved.sinkAvoidStatus === "boolean")
@@ -864,9 +718,6 @@ export default function ArbitrageScannerPage() {
       localStorage.setItem(
         AXIS_PREFS_KEY,
         JSON.stringify({
-          weightPresetId,
-          customSliders,
-          budgetManYen,
           candidateStrategy,
           sinkAvoidStatus,
           partyMembers,
@@ -880,9 +731,6 @@ export default function ArbitrageScannerPage() {
       // 保存できなくても動作には影響しない。
     }
   }, [
-    weightPresetId,
-    customSliders,
-    budgetManYen,
     candidateStrategy,
     sinkAvoidStatus,
     partyMembers,
@@ -1724,37 +1572,8 @@ export default function ArbitrageScannerPage() {
     setFilterStatus(e.target.value);
   };
 
-  const budgetYen = useMemo(() => {
-    const value = Number(budgetManYen) * 10000;
-    return Number.isFinite(value) && value > 0 ? value : null;
-  }, [budgetManYen]);
-
-  /**
-   * 重みを当てて総合スコアを出し直す。
-   *
-   * サーバは既定の重みで付けた点を返すが、重みを変えるたびに DB を叩き直すのは
-   * 無駄なうえ体感も悪い。軸ごとの点はサーバが返しているので、合成だけ
-   * ここでやる。予算（cost 軸）も総家賃だけで決まるのでここで計算する。
-   */
-  const scoredData = useMemo(() => {
-    return data.map((d) => {
-      const axes: AxisScores = {
-        ...(d.axes ?? {}),
-        cost: scoreCost(d.totalRent, budgetYen),
-      };
-      const composed = composeScore(axes, activeWeights);
-      return {
-        ...d,
-        axes,
-        totalScore: composed.score,
-        axisCoverage: composed.coverage,
-        axisContributions: composed.contributions,
-        axisMissing: composed.missing,
-      };
-    });
-  }, [data, activeWeights, budgetYen]);
-
-  const safeData = scoredData.filter((d) => d.astrologyScore >= 0);
+  // 総合スコアの合成は廃止した。API の行をそのまま使う。
+  const safeData = data.filter((d) => d.astrologyScore >= 0);
 
   /**
    * 現在読み込んでいる物件の方位別件数。時期スクリーニングで
@@ -1876,7 +1695,7 @@ export default function ArbitrageScannerPage() {
   /**
    * 方位ごとの「その日の段階」と「いま出ている物件数」。
    *
-   * 一覧は㎡単価や総合スコアの順に並ぶので、「どっちへ動くか」を決める
+   * 一覧は吉凶と家賃の順に並ぶので、「どっちへ動くか」を決める
    * ための全体像が出ていなかった。段階は方位ごとに 1 つなので、方位を
    * 1 行にして件数と段階を並べれば「南東に S が 12 件」が読める。
    *
@@ -1949,11 +1768,6 @@ export default function ArbitrageScannerPage() {
       if (d.totalRent > maxRent) return false;
     }
 
-    if (filterMinYield) {
-      const minYield = Number(filterMinYield);
-      if (d.yieldScore < minYield) return false;
-    }
-
     if (filterMaxAge) {
       const maxAge = Number(filterMaxAge);
       if (
@@ -1983,10 +1797,6 @@ export default function ArbitrageScannerPage() {
     if (filterMinSize) {
       const minSize = Number(filterMinSize);
       if (!d.size_sqm || Number(d.size_sqm) < minSize) return false;
-    }
-
-    if (filterMinTotal) {
-      if (d.totalScore < Number(filterMinTotal)) return false;
     }
 
     // 一致の規則は lib/layoutMatch の 1 か所。県別の件数へ送る値も
@@ -2045,7 +1855,7 @@ export default function ArbitrageScannerPage() {
 
   const sortedTableData = [...filteredData].sort((a, b) => {
     // 避けるべき方位・期間のものは、どれだけ条件が良くても上には出さない。
-    // 総合スコアは重み次第で方位の比重が下がるため、順位のほうで担保する。
+    // 並べ替えを家賃や距離に変えても、凶方位が上に混ざらないよう順位で担保する。
     if (sinkAvoidStatus) {
       const r = avoidRank(a) - avoidRank(b);
       if (r !== 0) return r;
@@ -2057,24 +1867,11 @@ export default function ArbitrageScannerPage() {
       if (key === "kigaku")
         // 小さい順位が上。desc（既定）でそのまま「良い段階が上」になる。
         result = kigakuRankOf(a.direction) - kigakuRankOf(b.direction);
-      else if (key === "arbitrage") result = b.totalScore - a.totalScore;
-      else if (key === "yield") result = b.yieldScore - a.yieldScore;
       else if (key === "astrology")
         result = b.astrologyScore - a.astrologyScore;
       else if (key === "rent") result = b.totalRent - a.totalRent;
       else if (key === "distance")
         result = (a.distanceKm || 0) - (b.distanceKm || 0);
-      else {
-        // 軸そのものでの並べ替え。未算出（null）は常に後ろに置く。
-        const av = a.axes?.[key as AxisKey];
-        const bv = b.axes?.[key as AxisKey];
-        const aMissing = av === null || av === undefined;
-        const bMissing = bv === null || bv === undefined;
-        if (aMissing && bMissing) result = 0;
-        else if (aMissing) return 1;
-        else if (bMissing) return -1;
-        else result = (bv as number) - (av as number);
-      }
 
       if (result !== 0) {
         return config.direction === "desc" ? result : -result;
@@ -2086,10 +1883,8 @@ export default function ArbitrageScannerPage() {
   /**
    * 「掘り出し物件 TOP 5」の中身。
    *
-   * 以前は filteredData の先頭 5 件を出していた。filteredData は絞り込んだだけで
-   * 並べ替えていないので、実際に出ていたのは API が返した順――SQL が㎡単価の
-   * 安い順に切り出した候補の先頭――で、総合スコアとは無関係だった。
-   * 「最強」と名乗る以上、総合スコアで選ぶ。
+   * 一覧の既定と同じ「吉凶の段階 → 家賃の安い順」で選ぶ。以前は
+   * 総合スコア順だったが、評価軸の廃止で並びの物差しを揃えた。
    *
    * 表の並べ替えには追従させない。家賃順に並べ替えたときにここまで家賃順に
    * なると、パネルの見出しと中身が食い違う。
@@ -2135,12 +1930,10 @@ export default function ArbitrageScannerPage() {
     if (filterName !== "") count++;
     if (filterStatus !== "ALL") count++;
     if (filterMaxRent !== "") count++;
-    if (filterMinYield !== "") count++;
     if (filterMaxAge !== "") count++;
     if (filterDirection !== "ALL") count++;
     if (filterMaxStation !== "") count++;
     if (filterMinSize !== "") count++;
-    if (filterMinTotal !== "") count++;
     if (filterLayouts.length > 0) count++;
     if (filterLuckyOnly) count++;
     if (filterFavoritesOnly) count++;
@@ -2152,12 +1945,10 @@ export default function ArbitrageScannerPage() {
     filterName,
     filterStatus,
     filterMaxRent,
-    filterMinYield,
     filterMaxAge,
     filterDirection,
     filterMaxStation,
     filterMinSize,
-    filterMinTotal,
   ]);
 
   /**
@@ -2172,7 +1963,7 @@ export default function ArbitrageScannerPage() {
    * まるで違う。DB 側で数え直す口（/api/rentals/arbitrage/prefecture-counts）
    * を叩く。
    *
-   * 送るのは SQL で表せる条件だけ。方位・吉凶・総合スコア・利回り偏差・
+   * 送るのは SQL で表せる条件だけ。方位・吉凶・
    * お気に入りは出発地と生年月日から画面側で出す値で、DB の列に無い。
    * 反映していないことは地図の凡例に出す（prefCountsFiltered）。
    */
@@ -2360,12 +2151,6 @@ export default function ArbitrageScannerPage() {
               ).toLocaleString()}円`
             : ""}
         </span>
-        <span className="ml-auto">
-          {renderStars(
-            selectedProperty.totalScore,
-            selectedProperty.astrologyStatus,
-          )}
-        </span>
       </div>
 
       {/* 基本スペック。不動産アプリの物件概要と同じ並び */}
@@ -2438,17 +2223,8 @@ export default function ArbitrageScannerPage() {
           )}
       </div>
 
-      {/* 総合スコアの内訳。全軸出す */}
-      <div className="mx-3.5 mb-3 pt-2 border-t border-gray-100 dark:border-stone-200">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-[9px] font-bold text-stone-500">
-            評価の内訳
-          </span>
-          <span className="text-[9px] font-mono text-stone-500">
-            総合 {selectedProperty.totalScore.toFixed(1)}
-          </span>
-        </div>
-        {renderAxisBars(selectedProperty, AXIS_ORDER.length)}
+      {/* 同行者の内訳。誰にとってどうか、いつなら全員で動けるか */}
+      <div className="mx-3.5 mb-3">
         {renderPartyBreakdown(selectedProperty)}
       </div>
     </div>
@@ -2677,7 +2453,7 @@ export default function ArbitrageScannerPage() {
                 // VIEW 1: Filter Screen & Settings
                 <>
                   {/* どの方位が動ける方位で、そこに物件がどれだけあるか。
-                      一覧は㎡単価や総合スコアの順なので、この全体像が
+                      一覧は吉凶と家賃の順なので、この全体像が
                       どこにも出ていなかった。判定を出せないときは
                       行が空になるのでコンポーネント側で何も描かない。 */}
                   <DirectionTierOverview
@@ -3180,18 +2956,6 @@ export default function ArbitrageScannerPage() {
                             onRemove={() => setFilterFavoritesOnly(false)}
                           />
                         )}
-                        {filterMinYield && (
-                          <FilterChip
-                            label={`利回り${filterMinYield}以上`}
-                            onRemove={() => setFilterMinYield("")}
-                          />
-                        )}
-                        {filterMinTotal && (
-                          <FilterChip
-                            label={`総合${filterMinTotal}点以上`}
-                            onRemove={() => setFilterMinTotal("")}
-                          />
-                        )}
                       </div>
                     )}
 
@@ -3313,37 +3077,6 @@ export default function ArbitrageScannerPage() {
                           value={filterMinSize}
                           onChange={(e) => {
                             setFilterMinSize(e.target.value);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
-                          最小利回り偏差値
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 60"
-                          value={filterMinYield}
-                          onChange={(e) => {
-                            setFilterMinYield(e.target.value);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label
-                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
-                          title="現在の重み配分で計算した総合スコアの下限。重みを変えると同じ値でも通る物件が変わる。"
-                        >
-                          総合スコア下限
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 60"
-                          value={filterMinTotal}
-                          onChange={(e) => {
-                            setFilterMinTotal(e.target.value);
                           }}
                           className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
                         />
@@ -3574,148 +3307,19 @@ export default function ArbitrageScannerPage() {
                       </p>
                     </div>
                   </ArbitrageSidebarSection>
-                  {/* 評価軸パネル。
-                      同じ候補集合を別の角度から見直すための操作をここに集める。
-                      重みの変更は画面内で完結するので再スキャンは起きない。 */}
+                  {/* 判定と候補の設定。
+                      評価軸の重み（プリセット・スライダー）と月額予算は
+                      廃止した（利用者の指示）。残るのは候補の切り出し方と、
+                      天中殺の扱い。どちらも順位の計算ではなく「何を候補に
+                      入れるか」「凶をどう扱うか」の設定。 */}
                   <ArbitrageSidebarSection
-                    title="評価軸の重み"
+                    title="判定と候補の設定"
                     summary={
-                      weightPresetId === "custom"
-                        ? "手動調整"
-                        : getPreset(weightPresetId).label
+                      TENCHUSATSU_MODES.find((m) => m.id === tenchusatsuMode)
+                        ?.label ?? ""
                     }
                   >
-                    <p className="text-[10px] text-stone-500 leading-relaxed">
-                      何を重視して順位を付けるかを選びます。切り替えても再スキャンは走りません。
-                    </p>
-
-                    <div className="flex flex-wrap gap-1.5">
-                      {WEIGHT_PRESETS.map((preset) => (
-                        <button
-                          key={preset.id}
-                          title={preset.description}
-                          onClick={() => {
-                            setWeightPresetId(preset.id);
-                          }}
-                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
-                            weightPresetId === preset.id
-                              ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                              : "bg-gray-50 dark:bg-white text-stone-600 border-gray-200 dark:border-stone-200 hover:border-indigo-300"
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                      <button
-                        title="スライダーで軸ごとの重みを自由に決める"
-                        onClick={() => {
-                          // 直前に見ていた配分を初期値にすると、
-                          // 「今の順位を少しだけ動かす」調整がしやすい。
-                          setCustomSliders(weightsToSliders(activeWeights));
-                          setWeightPresetId("custom");
-                          setShowWeightPanel(true);
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${
-                          weightPresetId === "custom"
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
-                            : "bg-gray-50 dark:bg-white text-stone-600 border-gray-200 dark:border-stone-200 hover:border-indigo-300"
-                        }`}
-                      >
-                        カスタム
-                      </button>
-                    </div>
-
-                    {weightPresetId !== "custom" && (
-                      <p className="text-[10px] text-stone-400 leading-relaxed">
-                        {getPreset(weightPresetId).description}
-                      </p>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setShowWeightPanel((v) => !v)}
-                      className="text-[10px] font-semibold text-indigo-600 hover:underline"
-                    >
-                      {showWeightPanel
-                        ? "軸ごとのスライダーを隠す"
-                        : "軸ごとのスライダーを表示"}
-                    </button>
-
-                    {showWeightPanel && (
-                      <div className="space-y-2 pt-1 border-t border-gray-100 dark:border-stone-200">
-                        {AXIS_ORDER.map((key) => {
-                          const meta = AXIS_META[key];
-                          const pct = Math.round(
-                            (activeWeights[key] ?? 0) * 100,
-                          );
-                          return (
-                            <div key={key} className="space-y-0.5">
-                              <div className="flex items-center justify-between">
-                                <label
-                                  className="text-[10px] font-semibold text-stone-500 cursor-help"
-                                  title={meta.hint}
-                                >
-                                  {meta.label}
-                                </label>
-                                <span className="text-[10px] font-mono text-stone-400">
-                                  {pct}%
-                                </span>
-                              </div>
-                              <input
-                                type="range"
-                                min={0}
-                                max={100}
-                                value={
-                                  weightPresetId === "custom"
-                                    ? (customSliders[key] ?? 0)
-                                    : Math.round(
-                                        weightsToSliders(activeWeights)[key],
-                                      )
-                                }
-                                onChange={(e) => {
-                                  const next = Number(e.target.value);
-                                  // プリセットを触った瞬間にカスタムへ移す。
-                                  // 元のプリセット名のまま値だけ変わると、
-                                  // 何を見ているのか分からなくなる。
-                                  setCustomSliders((prev) => {
-                                    const base =
-                                      weightPresetId === "custom"
-                                        ? prev
-                                        : weightsToSliders(activeWeights);
-                                    return { ...base, [key]: next };
-                                  });
-                                  setWeightPresetId("custom");
-                                }}
-                                className="w-full h-1 accent-indigo-600 cursor-pointer"
-                              />
-                            </div>
-                          );
-                        })}
-                        <p className="text-[10px] text-stone-400 pt-1">
-                          データが無い軸は 0
-                          点ではなく評価対象外として扱い、残りの軸で正規化します（カードの「軸カバー」表示）。
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3.5 pt-1 border-t border-gray-100 dark:border-stone-200">
-                      <div className="space-y-1">
-                        <label
-                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
-                          title={AXIS_META.cost.hint}
-                        >
-                          月額予算 (万円)
-                        </label>
-                        <input
-                          type="number"
-                          placeholder="例: 12"
-                          value={budgetManYen}
-                          onChange={(e) => {
-                            setBudgetManYen(e.target.value);
-                          }}
-                          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                      </div>
+                    <div className="pt-1 border-t border-gray-100 dark:border-stone-200">
                       <div className="space-y-1">
                         <label
                           htmlFor="arb-strategy"
@@ -4367,17 +3971,17 @@ export default function ArbitrageScannerPage() {
                       })()}
                   </ArbitrageSidebarSection>
 
-                  {/* TOP 5 お買い得アコーディオン。
+                  {/* TOP 5 アコーディオン。
                       「アービトラージ」という呼び名は売買の裁定取引を連想させ、
                       賃貸検索のこのサイトにはふさわしくないという指摘で
                       「掘り出し物件」に改めた。URL とコード内の識別子は
                       互換のため据え置く。 */}
                   <ArbitrageSidebarSection
-                    title="掘り出し物件 TOP 5"
+                    title="いま良い方位の物件 TOP 5"
                     summary={
                       loading
                         ? "検索中"
-                        : `${topArbitrage.length}件・総合スコア順`
+                        : `${topArbitrage.length}件・吉方位→家賃順`
                     }
                     icon={
                       <Sparkles className="h-4 w-4 text-amber-500 animate-bounce" />
@@ -4388,44 +3992,18 @@ export default function ArbitrageScannerPage() {
                           順位の出どころを、開いた時点で読める場所に書く。 */}
                       <div className="rounded-xl bg-amber-50/70 dark:bg-amber-50 border border-amber-200/70 p-2.5 text-[10px] leading-relaxed text-stone-600">
                         <p>
-                          <span className="font-bold text-stone-700">
-                            掘り出し物件
-                          </span>
-                          とは、ここでは
-                          <span className="font-bold">
-                            周辺の相場より割安に借りられる物件
-                          </span>
-                          のことです。割安さを、方位・暦・住みやすさと合わせて1つの点数にしています。
-                        </p>
-                        <p className="mt-1.5">
                           並び順は
-                          <span className="font-bold">総合スコアの高い順</span>
-                          。総合スコアは
                           <span className="font-bold">
-                            {AXIS_ORDER.length}つの評価軸の加重平均
+                            方位の吉凶の段階（S→A→B→C→D→X）
                           </span>
-                          で、重みは「評価軸の重み」で選んだ配分（現在
-                          <span className="font-bold">
-                            「
-                            {weightPresetId === "custom"
-                              ? "手動調整"
-                              : getPreset(weightPresetId).label}
-                            」
-                          </span>
-                          ）を使います。各物件の下のバーが、重みの大きい順に上位3軸の得点です。
+                          、同じ段階の中では
+                          <span className="font-bold">家賃の安い順</span>
+                          です。点数や重み付けはありません。
                         </p>
                         <p className="mt-1.5 text-stone-500">
-                          物件リストの並べ替えを変えても、ここは総合スコア順のままです。
+                          物件リストの並べ替えを変えても、ここはこの順のままです。
                           {sinkAvoidStatus &&
                             "避けるべき方位・期間の物件は最下位に沈めています。"}
-                          割安の根拠になっている市場全体の統計（回帰・分布・流動性）は
-                          <a
-                            href="/relocation/market"
-                            className="mx-0.5 font-semibold text-indigo-600 underline"
-                          >
-                            市場分析
-                          </a>
-                          で毎晩公開しています。
                         </p>
                       </div>
                       {loading ? (
@@ -4442,7 +4020,7 @@ export default function ArbitrageScannerPage() {
                           合致する物件がありません。
                         </div>
                       ) : (
-                        topArbitrage.map((item, rank) => (
+                        topArbitrage.map((item) => (
                           <div
                             key={item.id}
                             onClick={() => {
@@ -4486,45 +4064,8 @@ export default function ArbitrageScannerPage() {
                                     {Math.round((item.totalRent || 0) / 10000)}
                                     万円
                                   </div>
-                                  <div className="mt-1 flex justify-end">
-                                    {renderStars(
-                                      item.totalScore,
-                                      item.astrologyStatus,
-                                    )}
-                                  </div>
                                 </div>
                               </div>
-                            </div>
-
-                            {/* なぜこの順位なのか。重みの大きい上位3軸の得点を
-                                そのまま出す。カード表示と同じ描画を使う。 */}
-                            <div className="mt-2 pt-2 border-t border-gray-200/70 dark:border-stone-200">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[9px] font-bold text-stone-500">
-                                  第{rank + 1}位の根拠
-                                </span>
-                                <span
-                                  className="text-[9px] font-mono text-stone-500"
-                                  title={
-                                    item.axisMissing?.length
-                                      ? `未算出の軸: ${item.axisMissing
-                                          .map(
-                                            (k: AxisKey) => AXIS_META[k].label,
-                                          )
-                                          .join("、")}`
-                                      : "全ての軸にデータあり"
-                                  }
-                                >
-                                  総合 {item.totalScore.toFixed(1)}
-                                  {item.axisCoverage < 0.999 && (
-                                    <span className="ml-1 text-amber-600">
-                                      （軸カバー{" "}
-                                      {Math.round(item.axisCoverage * 100)}%）
-                                    </span>
-                                  )}
-                                </span>
-                              </div>
-                              {renderAxisBars(item, 3)}
                             </div>
                           </div>
                         ))
@@ -4628,14 +4169,6 @@ export default function ArbitrageScannerPage() {
                                     : "不明"}
                                 </span>
                               </div>
-                              <div className="flex justify-between">
-                                <span>利回り偏差値:</span>
-                                <span
-                                  className={`font-bold ${item.yieldScore > 60 ? "text-emerald-500" : "text-gray-900 dark:text-stone-900"}`}
-                                >
-                                  {item.yieldScore.toFixed(1)}
-                                </span>
-                              </div>
                               <div className="flex justify-between col-span-2">
                                 <span>広さ/築年/徒歩:</span>
                                 <span className="font-semibold text-gray-800 dark:text-stone-700">
@@ -4677,38 +4210,8 @@ export default function ArbitrageScannerPage() {
                               </div>
                             </div>
 
-                            {/* 総合スコアの内訳。なぜこの順位なのかを軸ごとに示す。 */}
-                            <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200">
-                              {renderAxisBars(item)}
-                            </div>
-
                             {/* 誰にとってどうか、いつなら全員で動けるか。 */}
                             {renderPartyBreakdown(item)}
-
-                            <div className="mt-2.5 flex justify-between items-center bg-gray-50 dark:bg-white/80 rounded-lg px-2 py-1.5">
-                              {renderStars(
-                                item.totalScore,
-                                item.astrologyStatus,
-                              )}
-                              <span
-                                className="text-[8px] text-stone-500 font-semibold"
-                                title={
-                                  item.axisMissing?.length
-                                    ? `未算出の軸: ${item.axisMissing
-                                        .map((k: AxisKey) => AXIS_META[k].label)
-                                        .join("、")}`
-                                    : "全ての軸にデータあり"
-                                }
-                              >
-                                総合 {item.totalScore.toFixed(1)}
-                                {item.axisCoverage < 0.999 && (
-                                  <span className="ml-1 text-amber-600">
-                                    （軸カバー{" "}
-                                    {Math.round(item.axisCoverage * 100)}%）
-                                  </span>
-                                )}
-                              </span>
-                            </div>
 
                             {/* Small date calendar row inside card */}
                             <div className="mt-2.5">
@@ -4742,20 +4245,14 @@ export default function ArbitrageScannerPage() {
                             <th className="w-10 px-2 py-2.5 text-center font-bold">
                               ★
                             </th>
-                            <th
-                              className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
-                              onClick={(e) => handleSortChange("arbitrage", e)}
-                            >
-                              おすすめ度 {renderSortIndicator("arbitrage")}
-                            </th>
                             <th className="px-4 py-2.5 font-bold">
                               物件名 / 住所
                             </th>
                             <th
                               className="px-4 py-2.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
-                              onClick={(e) => handleSortChange("astrology", e)}
+                              onClick={(e) => handleSortChange("kigaku", e)}
                             >
-                              方位・吉凶 {renderSortIndicator("astrology")}
+                              方位・吉凶 {renderSortIndicator("kigaku")}
                             </th>
                             <th
                               className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
@@ -4763,25 +4260,6 @@ export default function ArbitrageScannerPage() {
                             >
                               総家賃 {renderSortIndicator("rent")}
                             </th>
-                            <th
-                              className="px-4 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
-                              onClick={(e) => handleSortChange("yield", e)}
-                            >
-                              利回り偏差 {renderSortIndicator("yield")}
-                            </th>
-                            {/* 重みが乗っている軸だけを列にする。全 9 軸を常時出すと
-                                横に伸びて読めないうえ、見ていない軸まで判断材料に見える。 */}
-                            {tableAxisColumns.map((key) => (
-                              <th
-                                key={key}
-                                title={AXIS_META[key].hint}
-                                className="px-3 py-2.5 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors font-bold"
-                                onClick={(e) => handleSortChange(key, e)}
-                              >
-                                {AXIS_META[key].short}{" "}
-                                {renderSortIndicator(key)}
-                              </th>
-                            ))}
                             <th className="px-4 py-2.5 text-right font-bold">
                               平米 / 築年 / 徒歩
                             </th>
@@ -4812,12 +4290,6 @@ export default function ArbitrageScannerPage() {
                                     isFavorite={favoriteIds.includes(item.id)}
                                     onToggle={() => toggleFavorite(item.id)}
                                   />
-                                </td>
-                                <td className="px-4 py-3 font-mono">
-                                  {renderStars(
-                                    item.totalScore,
-                                    item.astrologyStatus,
-                                  )}
                                 </td>
                                 <td className="px-4 py-3">
                                   <div className="font-bold text-gray-900 dark:text-stone-800 truncate max-w-[180px]">
@@ -4852,49 +4324,6 @@ export default function ArbitrageScannerPage() {
                                 <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap">
                                   {item.totalRent.toLocaleString()}円
                                 </td>
-                                <td className="px-4 py-3 text-right font-mono">
-                                  <span
-                                    className={
-                                      item.yieldScore > 60
-                                        ? "text-emerald-500 font-bold"
-                                        : ""
-                                    }
-                                  >
-                                    {item.yieldScore.toFixed(1)}
-                                  </span>
-                                </td>
-                                {tableAxisColumns.map((key) => {
-                                  const value = item.axes?.[key];
-                                  const missing =
-                                    value === null || value === undefined;
-                                  return (
-                                    <td
-                                      key={key}
-                                      className="px-3 py-3 text-right font-mono"
-                                    >
-                                      {missing ? (
-                                        <span
-                                          className="text-stone-300"
-                                          title="この物件はこの軸のデータが未取得のため、総合スコアの計算から外しています"
-                                        >
-                                          —
-                                        </span>
-                                      ) : (
-                                        <span
-                                          className={
-                                            value >= 70
-                                              ? "text-emerald-600 font-bold"
-                                              : value < 35
-                                                ? "text-rose-500"
-                                                : ""
-                                          }
-                                        >
-                                          {Math.round(value)}
-                                        </span>
-                                      )}
-                                    </td>
-                                  );
-                                })}
                                 <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px] whitespace-nowrap">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分

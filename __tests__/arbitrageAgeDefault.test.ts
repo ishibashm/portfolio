@@ -63,13 +63,9 @@ describe("物件を方位で探す：築年数上限の既定", () => {
   });
 
   it("他の絞り込みも既定は空のまま（築年数だけ特別扱いしない）", () => {
-    for (const name of [
-      "filterMaxRent",
-      "filterMinYield",
-      "filterMaxStation",
-      "filterMinSize",
-      "filterMinTotal",
-    ]) {
+    // filterMinYield / filterMinTotal は評価軸の廃止と同時に消えた
+    // （利回り偏差＝割安度、総合スコア下限＝重み付きの点数だったため）。
+    for (const name of ["filterMaxRent", "filterMaxStation", "filterMinSize"]) {
       expect(initialValue(name), name).toBe('""');
     }
   });
