@@ -1004,7 +1004,7 @@ export async function GET(request: Request) {
          * 起きる数字なので、そのまま件数として見せない。
          *
          * 窓（limit）の中ではなく、絞り込みに合う全件を名寄せした数。
-         * 統計クエリ（statsInnerSql）が DISTINCT ON のあとに数えている。
+         * uniqueCountSql が名寄せキーの GROUP BY で数えている。
          */
         uniqueCount,
         limit,

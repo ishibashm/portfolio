@@ -10,12 +10,9 @@
  *   1. selectSql              候補 500 件の取り出し
  *   2. count(*)               条件に合う総数
  *   3. max(last_seen_at)      鮮度表示。絞り込み条件を持たない
- *   4. statsSql               相場の基準値
- *   5. municipalityStatsSql   市区町村ごとの中央値
+ *   4. uniqueCountSql         名寄せ後の件数（「条件に一致 N 件」）
  *
- * 1・4・5 は同じ innerSql（DISTINCT ON ＋ 全体に対する count(*) OVER）を
- * それぞれ別のクエリとして評価する。同じ計算を 3 回している疑いがあり、
- * ここで 1 本ずつ時間を出す。
+ * 相場の統計（statsAndMunicipalitySql）は評価軸の廃止と同時に消えた。
  *
  *   環境変数
  *     EXPLAIN_PREFECTURE   絞り込む都道府県。既定は "all"（最悪ケース）
@@ -29,7 +26,7 @@ import * as dotenv from "dotenv";
 import {
   buildWhereSql,
   selectSql,
-  statsAndMunicipalitySql,
+  uniqueCountSql,
   type GeoFilters,
 } from "../src/utils/arbitrageQuery";
 
@@ -188,8 +185,8 @@ async function main() {
     );
     await explain(
       pool,
-      "統計＋市区町村 statsAndMunicipalitySql（現行）",
-      statsAndMunicipalitySql(whereSql, DEDUPE),
+      "名寄せ後の件数 uniqueCountSql",
+      uniqueCountSql(whereSql),
       params,
     );
   }
