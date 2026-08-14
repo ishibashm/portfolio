@@ -157,7 +157,14 @@ describe("metrics summary の認可", () => {
       ])
       .mockResolvedValueOnce([{ referrer_host: "google.com", pv: BigInt(5) }])
       .mockResolvedValueOnce([{ blog_days: BigInt(8), tool_days: BigInt(2) }])
-      .mockResolvedValueOnce([{ dow: 6, hour: 21, pv: BigInt(3) }]);
+      .mockResolvedValueOnce([{ dow: 6, hour: 21, pv: BigInt(3) }])
+      .mockResolvedValueOnce([
+        { day: "2026-08-13", pv: BigInt(9), uv: BigInt(5) },
+      ])
+      .mockResolvedValueOnce([
+        { day: "2026-08-13", path: "/blog/old-post", pv: BigInt(7) },
+        { day: "2026-08-13", path: "/blog", pv: BigInt(2) },
+      ]);
     // user_configs.count の呼び順:
     // 総数 → 保存7日 → 保存30日 → 新規今日 → 新規7日 → 新規30日 → 記録開始前
     userConfigCount
@@ -251,6 +258,24 @@ describe("metrics summary の認可", () => {
       },
     ]);
     expect(d.blog.referrers).toEqual([{ host: "google.com", pv: 5 }]);
+
+    // 日別。UV は日単位の DISTINCT で、記事別の合算ではない。
+    expect(d.blog.daily).toEqual([{ day: "2026-08-13", pv: 9, uv: 5 }]);
+
+    // 直近7日の内訳。記録の無い日も 0 の行で出る（行の抜けと 0 を
+    // 区別するため）。today は実行日なので、行数と中身だけ見る。
+    expect(d.blog.recentBreakdown.days).toHaveLength(7);
+    expect(d.blog.recentBreakdown.postColumns).toEqual([
+      { slug: "old-post", title: "古い記事" },
+    ]);
+    const filled = d.blog.recentBreakdown.days.find(
+      (row: { day: string }) => row.day === "2026-08-13",
+    );
+    if (filled) {
+      expect(filled.index).toBe(2);
+      expect(filled.posts["old-post"]).toBe(7);
+      expect(filled.total).toBe(9);
+    }
     expect(d.blog.funnel).toEqual({
       blogVisitDays: 8,
       toolVisitDays: 2,
@@ -272,6 +297,8 @@ describe("metrics summary の認可", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ blog_days: BigInt(0), tool_days: BigInt(0) }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     userConfigCount.mockResolvedValue(0);
     favCount.mockResolvedValue(0);

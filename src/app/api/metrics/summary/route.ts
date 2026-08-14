@@ -10,6 +10,7 @@ import { getBlogPosts } from "@/lib/blog";
 import {
   BLOG_INDEX_PATH,
   TOOL_PATH_PATTERNS,
+  buildBlogDailyBreakdown,
   buildBlogFunnel,
   buildBlogMetrics,
 } from "@/lib/blogMetrics";
@@ -52,6 +53,8 @@ type DeviceRow = { device: string | null; pv: bigint; uv: bigint };
 type HourRow = { hour: number; pv: bigint };
 type WeekdayHourRow = { dow: number; hour: number; pv: bigint };
 type BlogPathRow = { path: string; pv: bigint; uv: bigint };
+type BlogDayRow = { day: string; pv: bigint; uv: bigint };
+type BlogDayPathRow = { day: string; path: string; pv: bigint };
 type BlogFunnelRow = { blog_days: bigint; tool_days: bigint };
 type CountRow = { n: bigint };
 type MaxRow = { latest: Date | null };
@@ -155,6 +158,8 @@ export async function GET() {
       blogReferrers,
       blogFunnelRows,
       weekdayHourly,
+      blogDaily,
+      blogDayPaths,
     ] = await Promise.all([
       prisma.$queryRaw<DailyRow[]>`
         SELECT day, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
@@ -244,6 +249,19 @@ export async function GET() {
                COUNT(*) AS pv
         FROM page_views WHERE day >= ${since30}
         GROUP BY 1, 2 ORDER BY 1, 2`,
+      // ブログの日別。UV は「その日にブログを見た人数」なので、
+      // 記事別の UV を足しても出ない（同じ人が2本読むと2になる）。
+      // 日単位で DISTINCT を取り直す。
+      prisma.$queryRaw<BlogDayRow[]>`
+        SELECT day, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
+        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH}
+        GROUP BY day ORDER BY day DESC`,
+      // 直近 7 日の日 × 記事。内訳の升目の元。30 日ぶん送ると
+      // 応答が日数 × 記事数に膨らむので、窓を絞る。
+      prisma.$queryRaw<BlogDayPathRow[]>`
+        SELECT day, path, COUNT(*) AS pv
+        FROM page_views WHERE day >= ${since7} AND ${BLOG_MATCH}
+        GROUP BY day, path`,
     ]);
 
     const dailyNum = daily.map((r) => ({
@@ -256,18 +274,28 @@ export async function GET() {
       dailyNum.reduce((s, r) => (r.day >= from ? s + r.pv : s), 0);
     // 記事の一覧は content/blog の Markdown が持つ。記録が 1 件も無い
     // 記事も 0 として並べたいので、page_views 側だけでは足りない。
+    const blogPosts = getBlogPosts();
     const blog = buildBlogMetrics(
       blogPaths.map((r) => ({
         path: r.path,
         pv: Number(r.pv),
         uv: Number(r.uv),
       })),
-      getBlogPosts(),
+      blogPosts,
       today,
     );
     const blogFunnel = buildBlogFunnel(
       Number(blogFunnelRows[0]?.blog_days ?? 0),
       Number(blogFunnelRows[0]?.tool_days ?? 0),
+    );
+    const blogBreakdown = buildBlogDailyBreakdown(
+      blogDayPaths.map((r) => ({
+        day: r.day,
+        path: r.path,
+        pv: Number(r.pv),
+      })),
+      blogPosts,
+      today,
     );
     const apiUsageRows: UsageRow[] = apiUsage.rows.map((r) => ({
       provider: r.provider,
@@ -349,6 +377,12 @@ export async function GET() {
           index: blog.index,
           totals: blog.posts,
           posts: blog.rows,
+          daily: blogDaily.map((r) => ({
+            day: r.day,
+            pv: Number(r.pv),
+            uv: Number(r.uv),
+          })),
+          recentBreakdown: blogBreakdown,
           referrers: blogReferrers.map((r) => ({
             host: r.referrer_host,
             pv: Number(r.pv),
