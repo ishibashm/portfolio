@@ -14,6 +14,7 @@ import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
+import { SpotVerdict } from "@/components/relocation/SpotVerdict";
 import { loadSettings } from "@/lib/userSettings";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
@@ -2928,6 +2929,22 @@ export default function ArbitrageScannerPage() {
                         家賃・間取り・徒歩分・築年数・広さ・方位・「吉方位のみ」を1行で。残りは物件名・住所の検索語になります。
                       </p>
                     </div>
+
+                    {/* 一覧に無い場所の判定。物件データに載っていない住所や
+                        これから内見に行く先を、画面を移らずに確かめる。
+                        判定は新しく作らず、県の塗り分けと同じ経路の方位と、
+                        既に組んである dayKigaku の段階をそのまま使う。 */}
+                    <SpotVerdict
+                      baseLat={Number(baseLat)}
+                      baseLon={Number(baseLon)}
+                      useClassical={useClassical}
+                      dirKigaku={dayKigaku?.byDirection}
+                      kigakuUnavailableReason={kigakuUnavailableReason}
+                      onFocus={(lat, lon) => {
+                        setMapFocusKind("spot");
+                        setMapCenter([lat, lon]);
+                      }}
+                    />
 
                     {/* 間取り。これまでスマート検索に「2LDK」と打つ以外の
                         入口が無く、チップから外すことしかできなかった。
