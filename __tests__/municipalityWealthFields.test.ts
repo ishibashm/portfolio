@@ -26,6 +26,8 @@ import { describe, expect, it } from "vitest";
 
 const SOURCES = [
   "src/components/SolarTimeClock.tsx",
+  // 総合スコアの表はタブ分割（2/3）でこちらへ移った
+  "src/components/home/ScorecardPanel.tsx",
   "src/app/relocation/wealth/page.tsx",
   "src/components/WealthMap.tsx",
   "src/app/api/municipalities-wealth/route.ts",
@@ -64,7 +66,8 @@ describe("市区町村の所得データ：存在しない項目を読まない"
   });
 
   it("正しい項目名を実際に参照している（空回りしていない）", () => {
-    const reads = propertyReads("src/components/SolarTimeClock.tsx");
+    // 「推奨エリア」の表示はタブ分割で ScorecardPanel へ移った
+    const reads = propertyReads("src/components/home/ScorecardPanel.tsx");
     expect(reads.has("areaName")).toBe(true);
     expect(reads.has("incomePerCapita")).toBe(true);
   });

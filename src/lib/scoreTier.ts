@@ -11,6 +11,38 @@
  * 「複数の要素を合成した 0〜100 の点」だけで、役割が違う。
  */
 
+/**
+ * 判定ステータス（OPTIMAL / SAFE / NOISE_〜）を 0〜100 の点に落とす。
+ *
+ * SolarTimeClock の中に置かれていたが、総合スコアタブの分割
+ * （home/ScorecardPanel）で両方のファイルが使うようになったので
+ * ここへ移した。中身は 1 文字も変えていない。値は判定の見え方を
+ * 決める数字なので触らない（CLAUDE.md 3 節）。
+ */
+export const getStatusScore = (status: string) => {
+  if (!status) return 50;
+  if (status === "OPTIMAL") return 100;
+  if (status === "OPTIMAL_REGULAR") return 90;
+  if (status === "SAFE") return 80;
+  if (status === "WARNING") return 60;
+  if (status.startsWith("NOISE_VOID") || status.startsWith("NOISE_NODE"))
+    return 40;
+  if (
+    status.startsWith("NOISE_HONMEI") ||
+    status.startsWith("NOISE_TEKI") ||
+    status.startsWith("NOISE_GETSUMEI") ||
+    status.startsWith("NOISE_GETSUTEKI")
+  )
+    return 20;
+  if (
+    status.startsWith("NOISE_GOU") ||
+    status.startsWith("NOISE_ANKEN") ||
+    status.startsWith("NOISE_HA")
+  )
+    return 10;
+  return 50;
+};
+
 export const SCORE_THRESHOLDS = {
   /** これ以上なら大吉 */
   excellent: 80,
