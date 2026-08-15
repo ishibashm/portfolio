@@ -367,8 +367,8 @@ model rental_properties {
   /// 全国走査 22 秒の律速になっていた。トリガーは Prisma の管理外なので
   /// db push に消されないが、**この 2 列と下の索引は消される**。
   /// スキーマから外さないこと。
-  name_key           String?
-  municipality_key   String?
+  name_key         String?
+  municipality_key String?
 
   @@index([last_seen_at])
   @@index([lat, lon])
@@ -392,6 +392,25 @@ model geocode_towns {
   lat        Float?
   lon        Float?
   not_found  Boolean  @default(false)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// 郵便番号と住所・座標の対応表。
+///
+/// 場所の入力を楽にするために持つ。元データは日本郵便の郵便番号データで、
+/// **あちらに座標は無い**ので、住所から座標は取り込みのときに国土地理院で
+/// 引いて一緒に持つ（画面を開くたびに外へ出ないようにするため）。
+///
+/// 表と索引は prisma/sql/20260815_add_postal_codes.sql が正。db push は
+/// スキーマに無い表・索引を消すので、片方だけ直さないこと。
+model postal_codes {
+  /// 7 桁。ハイフンは持たない。
+  code       String   @id @db.Char(7)
+  /// 都道府県から町域まで繋げた形。
+  address    String
+  /// 引けなかった番号は null で残す（行は消さない）。
+  lat        Float?
+  lon        Float?
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 }
 
@@ -489,18 +508,18 @@ model contact_messages {
 ///   calendar:2026-09 … 2026 年 9 月の日取り
 ///   area:23100       … 市区町村
 model DirectionComment {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// どのページに属するか。上のコメントの形式。
-  topic_key String
+  topic_key    String
   /// Supabase の user.id。表示には使わない。
-  user_id  String @db.Uuid
+  user_id      String   @db.Uuid
   /// 投稿時点の表示名。Supabase 側で改名されても過去の投稿は変えない。
   display_name String
   /// 本文。長さは API 側でも検証する。
-  body     String
+  body         String
   /// 荒らしを隠すための状態。既定は公開。
-  status   String   @default("published")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
+  status       String   @default("published")
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
 
   /// 一覧は topic_key で引いて新しい順に並べる。
   @@index([topic_key, created_at])
@@ -522,27 +541,27 @@ model DirectionComment {
 ///
 /// 1 人 1 件。user_id を一意にして、同じ人が複数の掲載を持てないようにする。
 model Practitioner {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Supabase の user.id。1 人 1 件。
-  user_id  String @unique @db.Uuid
+  user_id      String   @unique @db.Uuid
   /// 連絡用。公開しない。
-  email    String
+  email        String
   /// 掲載名（屋号・鑑定名）。
   display_name String
   /// 一行の紹介。
-  headline String
+  headline     String
   /// 対応地域。都道府県名か「オンライン」。
-  area     String
+  area         String
   /// 得意分野。カンマ区切りではなく配列で持つ。
-  specialties String[]
+  specialties  String[]
   /// 本文。
-  profile  String
+  profile      String
   /// 連絡先の URL。http/https のみ。
-  website_url String?
+  website_url  String?
   /// pending: 申請中 / approved: 公開中 / hidden: 非公開に戻した
-  status   String   @default("pending")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  status       String   @default("pending")
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   /// 一覧は公開中のものを新しい順に引く。
   @@index([status, created_at])
