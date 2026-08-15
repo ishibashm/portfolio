@@ -1,0 +1,95 @@
+name: Import property transactions
+
+# 不動産の成約価格（実際に売れた価格）を取り込む。**先に DDL を当てておくこと**
+# （Actions → Apply additive SQL → 20260815_add_property_transactions.sql）。
+#
+# 元は国土交通省「不動産情報ライブラリ」の取引価格情報。**地価公示と同じ
+# API キー**（LIBRARY_API_KEY）で引けるので、鍵の追加は要らない。
+#
+# 3 段構え。どれも途中で止めて再開できる。
+#
+#   probe    応答の形を出すだけ。**1 行も書き込まない**
+#   fetch    取引を取り込む（座標は空のまま）
+#   geocode  座標が空の行を国土地理院で引いて埋める
+#
+# **最初に必ず probe を回すこと。**この取り込みを書いた環境からは国交省の
+# API へ出られず、応答の項目名を確かめられなかった。推測のまま fetch を
+# 回すと「行は入るが中身が全部 null」になり、失敗に気付けない。
+# probe で項目名を見て、scripts 側の対応づけ（toRow）が合っていることを
+# 確かめてから fetch に進む。
+#
+# fetch は保険として、最初に取れた 1 件で対応づけを検査する。主要な項目が
+# 取れていなければその場で止まる（何万件も空の行を書き込まない）。
+#
+# geocode は公共の口を叩くので、夜間巡回（scrape-rentals）と重ねないこと。
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "probe: 形を見るだけ / fetch: 取り込む / geocode: 座標を埋める"
+        required: true
+        type: choice
+        options:
+          - probe
+          - fetch
+          - geocode
+        default: probe
+      area:
+        description: "都道府県コード（26 など）。空で全国"
+        required: false
+        default: ""
+      year_from:
+        description: "取り込む最初の年"
+        required: false
+        default: "2020"
+      year_to:
+        description: "取り込む最後の年。空で去年"
+        required: false
+        default: ""
+      price_class:
+        description: "価格の種類（01 / 02）。空で指定しない。probe が 0 件のときに試す"
+        required: false
+        default: ""
+      time_budget_min:
+        description: "上限（分）。0 で無制限"
+        required: false
+        default: "50"
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Import
+        env:
+          TX_STAGE: ${{ inputs.stage }}
+          TX_AREA: ${{ inputs.area }}
+          TX_YEAR_FROM: ${{ inputs.year_from }}
+          TX_YEAR_TO: ${{ inputs.year_to }}
+          TX_PRICE_CLASS: ${{ inputs.price_class }}
+          TX_TIME_BUDGET_MIN: ${{ inputs.time_budget_min }}
+        run: npx -y tsx scripts/import_property_transactions.ts
