@@ -28,7 +28,8 @@ import * as zlib from "zlib";
  *
  * 環境変数
  *   POSTAL_TIME_BUDGET_MIN  2 段目の上限（分）。既定 0（無制限）
- *   POSTAL_SOURCE_URL       ken_all の zip の場所。既定は日本郵便
+ *   POSTAL_SOURCE_URL       ken_all の zip の場所。渡せばそれだけを使う。
+ *                           既定は日本郵便の候補を順に試す
  */
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -40,9 +41,35 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is not set.");
 }
 
-const SOURCE_URL =
-  process.env.POSTAL_SOURCE_URL ||
-  "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip";
+/**
+ * ken_all の置き場の候補。**上から順に試す。**
+ *
+ * 日本郵便は配布の場所をときどき変える。実際、こちらが最初に書いた
+ * .../utf/zip/utf_ken_all.zip は 404 だった（2026-08-15 の実行）。
+ * 1 つ決め打ちにすると、変わるたびにスクリプトごと落ちる。
+ *
+ * 落ちる代わりに、**どれが何を返したかを全部出してから終わる**。
+ * 次に直すときに、推測ではなく実際の応答から決められる。
+ *
+ * POSTAL_SOURCE_URL を渡せば、その 1 つだけを使う。
+ */
+const SOURCE_CANDIDATES = process.env.POSTAL_SOURCE_URL
+  ? [process.env.POSTAL_SOURCE_URL]
+  : [
+      // UTF-8 版（住所が UTF-8。こちらが第一希望）
+      "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip",
+      "https://www.post.japanpost.jp/zipcode/dl/utf/utf_ken_all.zip",
+      // 小書き版（Shift-JIS）。UTF-8 が取れないときの受け皿
+      "https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip",
+      "https://www.post.japanpost.jp/zipcode/dl/oogaki/zip/ken_all.zip",
+    ];
+
+/**
+ * 素の fetch は User-Agent を送らない。配布側が UA の無い要求に 404 を
+ * 返すことがあるので、ふつうの閲覧と同じ形にしておく。
+ */
+const UA =
+  "Mozilla/5.0 (compatible; cloud-palette/1.0; +https://cloud-palette.com)";
 
 const GSI_ENDPOINT = "https://msearch.gsi.go.jp/address-search/AddressSearch";
 
@@ -122,14 +149,54 @@ function unzipSingleFile(buf: Buffer): string {
   throw new Error(`未対応の圧縮方式: ${method}`);
 }
 
-async function stageFetch(pool: Pool) {
-  console.log(`日本郵便のデータを取得: ${SOURCE_URL}`);
-  const res = await fetch(SOURCE_URL, { signal: AbortSignal.timeout(120000) });
-  if (!res.ok) {
-    throw new Error(`取得に失敗しました: ${res.status}`);
+/**
+ * 候補を順に試して、最初に取れたものを返す。
+ *
+ * 全部駄目なら、**どれが何を返したかを並べて**投げる。次に直す人が
+ * 推測しなくて済むようにするため。
+ */
+async function downloadKenAll(): Promise<{ url: string; buf: Buffer }> {
+  const tried: string[] = [];
+
+  for (const url of SOURCE_CANDIDATES) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": UA, Accept: "*/*" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!res.ok) {
+        tried.push(`${res.status} ${url}`);
+        console.log(`  × ${res.status} ${url}`);
+        continue;
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      // 中身が zip か確かめる。案内ページの HTML が 200 で返ることがある。
+      if (buf.length < 4 || buf.readUInt32LE(0) !== 0x04034b50) {
+        tried.push(`zip ではない (${buf.length} bytes) ${url}`);
+        console.log(`  × zip ではない (${buf.length} bytes) ${url}`);
+        continue;
+      }
+      console.log(`  ○ ${url}`);
+      return { url, buf };
+    } catch (e) {
+      tried.push(`${String(e).slice(0, 60)} ${url}`);
+      console.log(`  × ${String(e).slice(0, 60)} ${url}`);
+    }
   }
-  const buf = Buffer.from(await res.arrayBuffer());
-  console.log(`  ${(buf.length / 1024 / 1024).toFixed(1)} MB`);
+
+  throw new Error(
+    "ken_all を取得できませんでした。試した先:\n  " +
+      tried.join("\n  ") +
+      "\n\n日本郵便の配布ページで現在の URL を確認し、" +
+      "POSTAL_SOURCE_URL に渡して再実行してください。",
+  );
+}
+
+async function stageFetch(pool: Pool) {
+  console.log("日本郵便のデータを取得します。候補を順に試します:");
+  const { url, buf } = await downloadKenAll();
+  console.log(`  ${(buf.length / 1024 / 1024).toFixed(1)} MB（${url}）`);
 
   const text = unzipSingleFile(buf);
   const lines = text.split(/\r?\n/).filter(Boolean);
