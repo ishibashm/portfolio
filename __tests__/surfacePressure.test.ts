@@ -178,7 +178,9 @@ describe("画面への配線", () => {
     // 気象病モデルが常に「変化なし」で走っていた。
     const src = read("src", "components", "SolarTimeClock.tsx");
     expect(src).toContain("/api/surface-pressure?lat=");
-    expect(src).toContain("setPressureDrop(data.drop);");
+    // 応答が壊れている場合に備えて、値は先に取り出してから数として
+    // 確かめている（#332 以降）。呼んでいることだけを見る。
+    expect(src).toMatch(/setPressureDrop\((data\.drop|drop)\);/);
     expect(src).toContain("pressure={pressureData}");
   });
 
