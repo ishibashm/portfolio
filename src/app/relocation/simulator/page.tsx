@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Compass,
   Plus,
@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   MapPin,
   HelpCircle,
-  Calendar,
   ChevronRight,
   Info,
   Clock,
@@ -19,7 +18,6 @@ import {
   Users,
   UserPlus,
   Sliders,
-  CheckCircle2,
   ArrowUp,
   ArrowDown,
 } from "lucide-react";
@@ -47,6 +45,12 @@ import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";
 import { toJapanDateString } from "@/utils/japanDate";
+import type { MetaphysicalData } from "@/utils/metaphysicalApis";
+import {
+  readLocalSettings,
+  SETTINGS_KEY,
+  type Settings,
+} from "@/lib/userSettings";
 
 // Dynamically import Leaflet map to disable SSR
 const SimulatorMap = dynamic(() => import("@/components/nba/SimulatorMap"), {
@@ -96,8 +100,28 @@ interface SimulatorStep {
 interface SavedPlan {
   id: string;
   name: string;
-  steps: any;
+  /**
+   * 保存時は { steps, members } を書くが、members を持たない旧形式の
+   * プランは配列がそのまま入っている。読む側で両対応する。
+   */
+  steps:
+    | SimulatorStep[]
+    | { steps: SimulatorStep[]; members?: AccompanyingMember[] };
   updatedAt: string;
+}
+
+/**
+ * /api/relocation/nba-evaluate が日付ごとに返す評価。応答の全部ではなく、
+ * この画面が実際に読む項目だけを写している（#149 の方針）。
+ * metaphysical は API が utils/metaphysicalApis の MetaphysicalData を
+ * そのまま入れて返すので、既存の型を使う（似た型を新しく作らない）。
+ */
+interface NbaDateEvaluation {
+  date: string;
+  qValue: number;
+  suggestedAction: string;
+  riskFactors: string[];
+  metaphysical: MetaphysicalData | null;
 }
 
 interface AccompanyingMember {
@@ -346,7 +370,9 @@ export default function RelocationSimulatorPage() {
   >("DEFAULT");
 
   // NBA Evaluations from server evaluation endpoint
-  const [nbaEvaluations, setNbaEvaluations] = useState<Record<string, any>>({});
+  const [nbaEvaluations, setNbaEvaluations] = useState<
+    Record<string, NbaDateEvaluation>
+  >({});
   const [isEvaluatingNba, setIsEvaluatingNba] = useState(false);
 
   // Portal Sync State
@@ -530,7 +556,7 @@ export default function RelocationSimulatorPage() {
           // 前回の続きがあるなら、それはこの人が入れたもの。
           setHasOwnInput(true);
         }
-      } catch (e) {}
+      } catch {}
     }
   };
 
@@ -832,8 +858,8 @@ export default function RelocationSimulatorPage() {
       if (res.ok) {
         const result = await res.json();
         if (result.success && result.data) {
-          const mapping: Record<string, any> = {};
-          result.data.forEach((item: any) => {
+          const mapping: Record<string, NbaDateEvaluation> = {};
+          result.data.forEach((item: NbaDateEvaluation) => {
             mapping[item.date] = item;
           });
           setNbaEvaluations((prev) => ({ ...prev, ...mapping }));
@@ -1450,9 +1476,9 @@ export default function RelocationSimulatorPage() {
 
   const handleLoadPlan = (plan: SavedPlan) => {
     try {
-      const payload = plan.steps as any;
-      let parsedSteps = [];
-      let parsedMembers = [];
+      const payload = plan.steps;
+      let parsedSteps: SimulatorStep[] = [];
+      let parsedMembers: AccompanyingMember[] = [];
       if (Array.isArray(payload)) {
         parsedSteps = payload;
       } else if (payload && typeof payload === "object") {
@@ -1480,7 +1506,7 @@ export default function RelocationSimulatorPage() {
         plan.name,
         parsedMembers,
       );
-    } catch (e) {
+    } catch {
       alert("データの展開に失敗しました。");
     }
   };
@@ -1507,22 +1533,20 @@ export default function RelocationSimulatorPage() {
     }
   };
 
-  const saveUnifiedConfig = async (updatedFields: any) => {
+  const saveUnifiedConfig = async (updatedFields: {
+    use_true_north?: boolean;
+    base_lat?: number;
+    base_lon?: number;
+  }) => {
     try {
-      const localData = localStorage.getItem("tactical_config_v1");
-      let currentLocal: any = {};
-      if (localData) {
-        try {
-          currentLocal = JSON.parse(localData);
-        } catch (e) {}
-      }
-
-      const mergedConfig = {
-        ...currentLocal,
+      // 端末の設定の読み出しは lib/userSettings に既にある。ここで
+      // JSON.parse を書き直さない（同じことを 2 か所に書かない）。
+      const mergedConfig: Settings = {
+        ...readLocalSettings(),
         ...updatedFields,
       };
 
-      localStorage.setItem("tactical_config_v1", JSON.stringify(mergedConfig));
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(mergedConfig));
 
       await fetch("/api/user-config", {
         method: "POST",
@@ -2285,7 +2309,7 @@ export default function RelocationSimulatorPage() {
                           value={step.purpose}
                           onChange={(e) =>
                             handleUpdateStep(idx, {
-                              purpose: e.target.value as any,
+                              purpose: e.target.value as SimulatorStep["purpose"],
                             })
                           }
                           className="w-full px-3 py-2 bg-white/80 border border-stone-200 rounded-xl text-xs text-stone-600 focus:outline-none focus:border-indigo-500/20 cursor-pointer"
@@ -2689,7 +2713,7 @@ export default function RelocationSimulatorPage() {
                               <div className="text-xs font-bold text-stone-600">
                                 開運門:{" "}
                                 <span className="text-indigo-400 font-mono">
-                                  {meta.chineseMetasoft.qiMenGate.gate}
+                                  {meta.chineseMetasoft.qiMenGate.name}
                                 </span>
                               </div>
                               <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
@@ -2797,7 +2821,7 @@ export default function RelocationSimulatorPage() {
                               <div className="text-xs font-bold text-stone-600">
                                 カード:{" "}
                                 <span className="text-indigo-400">
-                                  {meta.divineApi.tarot.card}
+                                  {meta.divineApi.tarot.name}
                                 </span>
                               </div>
                               <p className="text-[10px] text-stone-500 leading-relaxed font-sans">

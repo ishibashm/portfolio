@@ -19,7 +19,10 @@ export interface TarotCard {
   name: string;
   suit: string;
   arcana: "Major" | "Minor";
-  orientation: "Upright" | "Reversed";
+  // 実値は日本語併記。以前は型が "Upright" | "Reversed" を名乗り、
+  // 作る側が as any で押し込んでいた（型の嘘）。画面はこの文字列に
+  // .includes("正位置") で分岐しており、実値のほうが正。
+  orientation: "正位置 (Upright)" | "逆位置 (Reversed)";
   meaning: string;
   riskModifier: number;
 }
@@ -1196,7 +1199,7 @@ export function fetchMetaphysicalData(
   const rawCard = TAROT_DECK[tarotIdx];
   const tarot: TarotCard = {
     ...rawCard,
-    orientation: isReversed ? "逆位置 (Reversed)" : ("正位置 (Upright)" as any),
+    orientation: isReversed ? "逆位置 (Reversed)" : "正位置 (Upright)",
     riskModifier: isReversed ? -rawCard.riskModifier : rawCard.riskModifier, // reverse risk impact
     meaning: isReversed
       ? `逆位置: エネルギーの滞り、内面へのフォーカス、またはカードの性質（${rawCard.meaning.split("。")[0]}）の極端な現れを意味します。${rawCard.meaning.split("。")[1]}`
