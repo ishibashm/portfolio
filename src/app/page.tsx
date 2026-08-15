@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { QuickProfileBar } from "@/components/home/QuickProfileBar";
 import {
   CORE_ROUTES,
   SITE_NAME,
@@ -76,6 +77,12 @@ export default function Home() {
           <ArrowRight className="w-4 h-4" />
         </Link>
       </header>
+
+      {/* 生年月日・現在地・生まれたところ。**このサイトの答えはこの 3 つで
+          決まる**ので、頁の一番上に置く。以前は下のダッシュボードの
+          「1. プロフィール」タブの中にあり、開いた人はまず未入力のままの
+          結果を見ていた（利用者の指摘）。 */}
+      <QuickProfileBar />
 
       {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、
           ナビ・メタデータ・llms.txt と説明がずれない。 */}
