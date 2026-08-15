@@ -281,7 +281,13 @@ export function SolarTimeTableComponent({
   };
 
   return (
-    <div className="w-full max-w-4xl mt-8 flex flex-col gap-4">
+    /*
+      幅の上限はここでは持たない。以前は max-w-4xl（896px）を自分で持って
+      いて、外側を 1700px にしても効かなかった（#347 と同じ型）。
+      ここは 1 日 12 帯の一覧なので、広げたぶんがそのまま各帯の情報量に
+      なる（時刻・八門・星・吉凶が折り返さずに並ぶ）。
+    */
+    <div className="w-full mt-8 flex flex-col gap-4">
       {/* HUD Header */}
       <div className="flex flex-wrap items-end justify-between gap-2 border-b border-stone-200 pb-2">
         <div className="flex items-center gap-2">
