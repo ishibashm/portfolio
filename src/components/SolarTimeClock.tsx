@@ -972,21 +972,6 @@ export const SolarTimeClock = () => {
     handleLoadConfig(true);
   }, [handleLoadConfig]);
 
-  /*
-    頁の上の入力欄（QuickProfileBar）で保存されたら読み直す。
-    同じ頁に生年月日と出発地を入れる場所が 2 つあるので、片方で
-    入れた値がもう片方に出ないと「保存できていない」と見える。
-    行事名は物件検索の設定バーが使っているものと同じ。
-  */
-  useEffect(() => {
-    const reload = () => {
-      handleLoadConfig(true);
-    };
-    window.addEventListener("metaphysical-config-updated", reload);
-    return () =>
-      window.removeEventListener("metaphysical-config-updated", reload);
-  }, [handleLoadConfig]);
-
   useEffect(() => {
     if (!configLoaded) return;
 
