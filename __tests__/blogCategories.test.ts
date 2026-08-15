@@ -63,13 +63,31 @@ describe("記事一覧のカテゴリ分け", () => {
     expect(forward).toEqual(backward);
   });
 
+  // id は日本語のカテゴリ名から作る。作り方が雑だと別の名前が同じ id に
+  // つぶれ、目次のリンクが同じ節へ飛ぶ。**名前の違う節を自前で並べて見る。**
+  // 以前は実際の記事から作り、節が 2 つ以上あることを求めていた。記事の
+  // カテゴリが 1 種類になると落ちるが、それは id の作り方の話ではない。
   it("アンカーidは節ごとに違う値になる", () => {
-    const groups = groupPostsByCategory(getBlogPosts());
-    const ids = groups.map((g) => g.id);
+    const ids = groupPostsByCategory([
+      post("a", "方位の読み方"),
+      post("b", "暦とタイミング"),
+      post("c", "データの見方"),
+      post("d", "引越しの考え方"),
+    ]).map((g) => g.id);
 
-    expect(ids.length).toBeGreaterThan(1);
+    expect(ids).toHaveLength(4);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => id.length > 0 && !/\s/.test(id))).toBe(true);
+  });
+
+  // 実際の記事から作った id も、空白を含まずリンクに使える形であること。
+  // 節がいくつになるかは記事しだいなので数えない。
+  it("実際の記事から作ったidもリンクに使える", () => {
+    const groups = groupPostsByCategory(getBlogPosts());
+
+    expect(groups.length).toBeGreaterThan(0);
+    expect(new Set(groups.map((g) => g.id)).size).toBe(groups.length);
+    expect(groups.every((g) => g.id.length > 0 && !/\s/.test(g.id))).toBe(true);
   });
 
   it("記事を1本も落とさない", () => {
