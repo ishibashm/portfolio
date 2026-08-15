@@ -62,6 +62,21 @@ import {
 import { directionBoardInstant } from "@/utils/boardInstant";
 import { statusForLayerMode, type LayerMode } from "@/utils/directionStatus";
 
+/**
+ * 書き出し用の 1 セル。オブジェクトや配列を "[object Object]" に
+ * しないための畳み込み。区切りは行内の "|"（CSV の , と衝突しない）。
+ */
+export function formatCsvDetail(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.join(" | ");
+  if (typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" | ");
+  }
+  return String(value);
+}
+
 function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
   if (!dateStr) return fallback;
   const d = new Date(dateStr);
@@ -2998,11 +3013,19 @@ export const SolarTimeClock = () => {
       nbaData?.micro.ansLoad || "",
       nbaData?.micro.shieldCapacity || "",
       nbaData?.nba.stateVector.ephemerisData?.source || "",
-      nbaData?.nba.stateVector.ephemerisData?.planetaryPositions || "",
+      /*
+        _Detail の 3 列は中身がオブジェクトや配列。そのまま並べると
+        `${v}` で "[object Object]" になり、列として読めなかった
+        （型が any だったので tsc も止められなかった）。CSV の 1 セルに
+        収まる形へ畳んでから出す。
+      */
+      formatCsvDetail(
+        nbaData?.nba.stateVector.ephemerisData?.planetaryPositions,
+      ),
       nbaData?.nba.stateVector.astrologyData?.source || "",
-      nbaData?.nba.stateVector.astrologyData?.transits || "",
+      formatCsvDetail(nbaData?.nba.stateVector.astrologyData?.transits),
       nbaData?.nba.stateVector.ragContext?.source || "",
-      nbaData?.nba.stateVector.ragContext?.classicalRules || "",
+      formatCsvDetail(nbaData?.nba.stateVector.ragContext?.classicalRules),
       nbaData?.nba.stateVector.environmentalRisk ?? "",
       nbaData?.nba.stateVector.solarPhase ?? "",
       nbaData?.macro.streams?.ephemeris?.sun ?? "",

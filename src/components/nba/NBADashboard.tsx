@@ -167,6 +167,36 @@ export interface MetaphysicalData {
   };
 }
 
+/**
+ * 天体位置。/api/nba は同じものを macro.streams.ephemeris と
+ * nba.stateVector.ephemerisData.planetaryPositions の両方に入れて返す
+ * （前者は画面用、後者は判定エンジンへ渡した入力の控え）。
+ * 同じ形を 2 か所に書かないため名前を付ける。
+ */
+export interface EphemerisPositions {
+  sun: string;
+  moon: string;
+  mercury: string;
+  venus: string;
+  mars: string;
+  jupiter: string;
+  saturn: string;
+  lunarNode: string;
+}
+
+/** 12 ヶ月予測（/api/nba/forecast）の 1 ヶ月ぶん。 */
+export interface NBAForecastPoint {
+  name: string;
+  date: string;
+  envCost: number;
+  shield: number;
+  action: string;
+  rawAction: string;
+  icon: string;
+  isVoidTime: boolean;
+  qValue: number;
+}
+
 export interface NBAData {
   micro: {
     hrv: number;
@@ -177,16 +207,7 @@ export interface NBAData {
   macro: {
     environmentalNoise: string;
     streams?: {
-      ephemeris: {
-        sun: string;
-        moon: string;
-        mercury: string;
-        venus: string;
-        mars: string;
-        jupiter: string;
-        saturn: string;
-        lunarNode: string;
-      };
+      ephemeris: EphemerisPositions;
       environmentalBazi?: BaziData & { context: string };
       personalBazi?:
         | (BaziData & { context: string; voidZodiac: string })
@@ -233,20 +254,25 @@ export interface NBAData {
       solarPhase: number;
       stressLevel?: number;
       resilience?: string;
+      /**
+       * 判定エンジンへ渡した入力の控え。中身は macro.streams と同じ実体で、
+       * route が同じ値を入れている（ephemeris / westernAstrology.aspects /
+       * environmentalBazi / personalBazi / vedicAstrology）。
+       */
       ephemerisData?: {
         source: string;
-        planetaryPositions: any;
+        planetaryPositions: EphemerisPositions;
       };
       astrologyData?: {
         source: string;
-        transits: any;
+        transits: string[];
       };
       ragContext?: {
         source: string;
-        classicalRules: any;
-        personalBazi?: any;
+        classicalRules: BaziData & { context: string };
+        personalBazi?: (BaziData & { context: string; voidZodiac: string }) | null;
       };
-      vedicAstrology?: any;
+      vedicAstrology?: VedicData;
       ichingHexagram?: {
         number: number;
         name: string;
@@ -282,7 +308,7 @@ export function NBADashboard({
   onRefresh?: () => void;
 }) {
   const [internalData, setInternalData] = useState<NBAData | null>(null);
-  const [forecastData, setForecastData] = useState<any[]>([]);
+  const [forecastData, setForecastData] = useState<NBAForecastPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [forecastLoading, setForecastLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
