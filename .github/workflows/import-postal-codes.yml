@@ -1,0 +1,67 @@
+name: Import postal codes
+
+# 郵便番号の対応表を作る。**先に DDL を当てておくこと**
+# （Actions → Apply additive SQL → 20260815_add_postal_codes.sql）。
+#
+# 2 段構えで、どちらも途中で止めて再開できる。
+#
+#   fetch    日本郵便の ken_all を取り込む（番号と住所）。数分で終わる
+#   geocode  座標が空の行を国土地理院で引いて埋める。時間がかかる
+#
+# 初回は fetch → geocode の順に回す。fetch さえ通れば「郵便番号 → 住所」は
+# 引けるので、画面の郵便番号欄は先に使える（座標が無い番号は「見つからない」
+# 扱いになるだけで、地名での入力はいつでも使える）。
+#
+# geocode は公共の口を叩くので、夜間巡回（scrape-rentals）と重ねないこと。
+# 時間で打ち切って次回に続けられるよう、既定で 50 分の上限を入れてある。
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "fetch: 番号と住所 / geocode: 座標を埋める / all: 両方"
+        required: true
+        type: choice
+        options:
+          - fetch
+          - geocode
+          - all
+        default: fetch
+      time_budget_min:
+        description: "geocode の上限（分）。0 で無制限"
+        required: false
+        default: "50"
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Import
+        env:
+          POSTAL_STAGE: ${{ inputs.stage }}
+          POSTAL_TIME_BUDGET_MIN: ${{ inputs.time_budget_min }}
+        run: npx -y tsx scripts/import_postal_codes.ts
