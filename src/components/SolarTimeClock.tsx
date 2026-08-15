@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
 import {
   calculateSolarTime,
+  getDailySolarSchedule,
   getKimonHour,
   type SolarTimeResult,
 } from "../utils/solarTime";
@@ -146,6 +147,10 @@ const ConsultPanel = dynamic(() => import("./home/ConsultPanel"), {
     </div>
   ),
 });
+
+// ポータルは 1 枚目で必ず描くので、遅延にすると初回にちらつく。
+// 中身は既に計算済みの値を並べるだけで軽い。
+import HomePortal from "./home/HomePortal";
 
 const DestinationMapPanel = dynamic(() => import("./home/DestinationMapPanel"), {
   ssr: false,
@@ -475,8 +480,14 @@ export const SolarTimeClock = () => {
   const [ephemerisTime, setEphemerisTime] = useState<Date | null>(null);
   const [solarData, setSolarData] = useState<SolarTimeResult | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "profile" | "destination" | "timing" | "consult" | "history" | "scorecard"
-  >("profile");
+    | "portal"
+    | "profile"
+    | "destination"
+    | "timing"
+    | "consult"
+    | "history"
+    | "scorecard"
+  >("portal");
 
   // 前回開いていたタブを覚えておく。プロフィールは初回設定用で、
   // 日常的に開くのは目的地/健康やタイミングのほうなのに、
@@ -493,9 +504,15 @@ export const SolarTimeClock = () => {
     const saved = localStorage.getItem("stc_activeTab");
     if (
       saved &&
-      ["profile", "destination", "timing", "consult", "history", "scorecard"].includes(
-        saved,
-      )
+      [
+        "portal",
+        "profile",
+        "destination",
+        "timing",
+        "consult",
+        "history",
+        "scorecard",
+      ].includes(saved)
     ) {
       setActiveTab(saved as typeof activeTab);
     }
@@ -3234,18 +3251,29 @@ export const SolarTimeClock = () => {
       .then((res) => (res.ok ? res.json() : null))
       .then((data: SurfacePressureData | null) => {
         if (!alive || !data) return;
-        if (data.current === null || data.drop === null) {
+        /*
+          「数として使えるか」で見る。以前は `=== null` だけを見ていたが、
+          応答の形が崩れて項目ごと無いとき（undefined）を素通りさせ、
+          {current: undefined} を state に入れていた。読む側は
+          .toFixed() を呼ぶので、その瞬間に画面ごと落ちる。
+          2026-08-14 に本番を真っ白にしたのと同じ形（#320）。
+          外から来る値は「無い」だけでなく「壊れている」ことがある。
+        */
+        const current = data.current;
+        const drop = data.drop;
+        if (typeof current !== "number" || !Number.isFinite(current) ||
+            typeof drop !== "number" || !Number.isFinite(drop)) {
           // 取れていない。0 を入れて「変化なし」と見せない。
           setPressureData(null);
           setPressureDrop(0);
           return;
         }
         setPressureData({
-          current: data.current,
-          drop: data.drop,
+          current,
+          drop,
           timestamp: data.timestamp,
         });
-        setPressureDrop(data.drop);
+        setPressureDrop(drop);
       })
       .catch(() => {
         // 宇宙天気と同じ。外部が落ちても画面は動かす。
@@ -3487,10 +3515,27 @@ export const SolarTimeClock = () => {
       ] ?? null;
   }
 
-  const evalDate = baseTime
-    ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
-    : new Date();
+  /*
+    ポータルの時間帯（下の useMemo）が評価日を見るので、毎回別物の
+    Date にすると依存が毎描画で変わってしまう。ここで固定する。
+  */
+  const evalDate = React.useMemo(
+    () =>
+      baseTime
+        ? new Date(baseTime.getTime() + timeOffsetDays * 86400000)
+        : new Date(),
+    [baseTime, timeOffsetDays],
+  );
   const currentZodiac = getCurrentZodiac(evalDate, lon || 139.6917);
+  /**
+   * ポータルが読む 2 時間ごとの時間帯。詳細画面（SolarTimeTable）と
+   * 同じ関数・同じ引数で出す。別々に出すと、同じ日なのに画面によって
+   * 時間帯がずれる。
+   */
+  const portalSchedule = React.useMemo(
+    () => getDailySolarSchedule(evalDate, lon || 139.6917),
+    [evalDate, lon],
+  );
   const isYearVoid = personalVoidZodiac.includes(currentZodiac.yearZodiac);
   const isMonthVoid = personalVoidZodiac.includes(currentZodiac.monthZodiac);
   const isDayVoid = personalVoidZodiac.includes(currentZodiac.dayZodiac);
@@ -3563,25 +3608,6 @@ export const SolarTimeClock = () => {
           </button>
         </div>
 
-        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
-          {/* Cosmic Calendar Widget (Calendar Grid) */}
-          <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar
-              view="calendar"
-              selectedDayState={calendarSelectedDay}
-              setSelectedDayState={setCalendarSelectedDay}
-            />
-          </div>
-
-          {/* Cosmic Calendar Widget (Telemetry Details) */}
-          <div className="xl:col-span-5 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar
-              view="telemetry"
-              selectedDayState={calendarSelectedDay}
-              setSelectedDayState={setCalendarSelectedDay}
-            />
-          </div>
-        </div>
 
         {showHowItWorks && (
           <div className="w-full max-w-[1400px] animate-fade-in px-4">
@@ -3642,6 +3668,16 @@ export const SolarTimeClock = () => {
         )}
 
         <div className="w-full max-w-[1400px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
+          <button
+            onClick={() => selectTab("portal")}
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+              activeTab === "portal"
+                ? "bg-stone-800 text-white border border-stone-800"
+                : "text-stone-400 hover:text-stone-600"
+            }`}
+          >
+            ホーム
+          </button>
           <button
             onClick={() => selectTab("profile")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
@@ -3705,6 +3741,24 @@ export const SolarTimeClock = () => {
         </div>
 
         {/* --- TAB CONTENT: 1. PROFILE --- */}
+        {/* --- TAB CONTENT: 0. PORTAL（1 枚目。要点だけを枠で並べる） --- */}
+        {activeTab === "portal" && (
+          <HomePortal
+            onOpenTab={selectTab}
+            evalDate={evalDate}
+            vectors={activeVectors}
+            schedule={portalSchedule}
+            personalVoidZodiac={personalVoidZodiac}
+            honmeiStar={honmeiStar}
+            useClassicalBoard={useClassicalBoard}
+            forecast={scorecard30DaysForecast}
+            kpIndex={spaceWeather?.kpIndex ?? null}
+            pressure={pressureData}
+            declination={geoData?.declination ?? null}
+            hasBirthDate={Boolean(birthDate)}
+          />
+        )}
+
         {activeTab === "profile" && (
           <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1400px]">
             {/* Action Intent Selector */}
@@ -3971,6 +4025,32 @@ export const SolarTimeClock = () => {
             <TelemetryChart />
           </div>
         )}
+
+        {/*
+          吉日カレンダー。以前はタブより上に置いていたが、画面 1 枚ぶんを
+          占めるため、開いた直後に見えるのがカレンダーだけになっていた。
+          先に「今日どうなのか」を見せたいので、タブの内容の後ろへ移した。
+          どのタブでも出るのは今までどおり。
+        */}
+        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
+          {/* Cosmic Calendar Widget (Calendar Grid) */}
+          <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+            <CosmicCalendar
+              view="calendar"
+              selectedDayState={calendarSelectedDay}
+              setSelectedDayState={setCalendarSelectedDay}
+            />
+          </div>
+
+          {/* Cosmic Calendar Widget (Telemetry Details) */}
+          <div className="xl:col-span-5 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
+            <CosmicCalendar
+              view="telemetry"
+              selectedDayState={calendarSelectedDay}
+              setSelectedDayState={setCalendarSelectedDay}
+            />
+          </div>
+        </div>
       </div>
       {/* Telemetry and Audit Log */}
       <SystemTelemetryLog
