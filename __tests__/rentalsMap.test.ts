@@ -138,7 +138,9 @@ describe("画面への配線", () => {
   });
 
   it("出していないときは地図に渡さない", () => {
-    expect(panelSrc).toContain("!showProperties\n                    ? []");
+    // 字下げは整形で変わる（実際に prettier で変わって CI が落ちた）ので、
+    // 空白に寛容な形で「出していないなら空配列を渡す」だけを見る。
+    expect(panelSrc).toMatch(/!showProperties\s*\?\s*\[\]/);
   });
 
   it("空のものを絞り込む選択肢を見せない", () => {
