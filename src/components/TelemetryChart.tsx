@@ -12,56 +12,32 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+/** 読み込みの結末。「空」と「失敗」を別に扱う（案内する文言が違う）。 */
+type Phase = "loading" | "ready" | "empty" | "error";
+
 export default function TelemetryChart() {
   const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [phase, setPhase] = useState<Phase>("loading");
 
   useEffect(() => {
     async function fetchData() {
       try {
         const res = await fetch("/api/telemetry/history");
-        if (res.ok) {
-          const json = await res.json();
-          if (json.length > 0) {
-            setData(json);
-            setLoading(false);
-            return;
-          }
+        if (!res.ok) {
+          setPhase("error");
+          return;
         }
+        const json = await res.json();
+        if (!Array.isArray(json) || json.length === 0) {
+          setPhase("empty");
+          return;
+        }
+        setData(json);
+        setPhase("ready");
       } catch (e) {
         console.error(e);
+        setPhase("error");
       }
-
-      // Fallback to full mock data for all parameters in the project
-      const mockData = Array.from({ length: 14 }).map((_, i) => ({
-        date: new Date(Date.now() - (13 - i) * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-        // 1. Ephemeris (天体位相)
-        sunLon: (45 + i * 1) % 360,
-        moonLon: (210 + i * 13) % 360,
-        jupiterLon: (120 + i * 0.1) % 360,
-        lunarNode: (300 - i * 0.05) % 360,
-        // 2. Space Weather (宇宙天気)
-        kpIndex: Math.random() * 4 + 1,
-        xrayFlux: Math.pow(10, -7 + Math.random() * 3), // e.g. 1e-7 to 1e-4
-        // 3. Geomagnetism (局所地磁気)
-        magneticF: Math.floor(Math.random() * 500 + 45000),
-        magneticD: -7.5 + Math.random() * 0.5,
-        magneticI: 49.0 + Math.random() * 0.5,
-        // 4. Bio-Sync (生体適応力 - Oura/Bio)
-        hrv: Math.floor(Math.random() * 30 + 40), // 40-70ms
-        gsr: Math.random() * 2 + 1, // 1-3 uS
-        ansLoad: Math.floor(Math.random() * 40 + 20), // 20-60%
-        shieldCapacity: Math.floor(Math.random() * 30 + 70), // 70-100%
-        // 5. Geomancy & Lunar (気学星・月相)
-        yearStar: Math.floor(Math.random() * 9 + 1), // 1-9
-        monthStar: Math.floor(Math.random() * 9 + 1), // 1-9
-        dayStar: Math.floor(Math.random() * 9 + 1), // 1-9
-        lunarIllumination: Math.floor(Math.random() * 100), // 0-100%
-      }));
-      setData(mockData);
-      setLoading(false);
     }
 
     fetchData();
@@ -84,12 +60,40 @@ export default function TelemetryChart() {
     document.body.removeChild(a);
   };
 
-  if (loading)
+  if (phase === "loading")
     return (
       <div className="text-stone-400 font-mono text-xs">
         Loading chart data...
       </div>
     );
+
+  /*
+    記録が無いとき・取れなかったときは、**そう書く。**
+
+    以前はここで Math.random() の作り物に差し替えて、そのまま描いていた。
+    画面には作り物であることが一切出ず、利用者は自分の記録として乱数の
+    グラフを見ていた。九星（yearStar / monthStar / dayStar）まで乱数
+    だったので、明らかに嘘の数字が出ていた。CSV の書き出しも同じ乱数を
+    そのまま出していて、手元に作り物のデータが残る状態だった。
+
+    **数字を作らない。**貯まっていないなら「貯まっていない」と出す。
+  */
+  if (phase !== "ready") {
+    return (
+      <div className="w-full bg-white/80 border border-stone-200 rounded-xl p-6 text-center">
+        <p className="text-sm font-bold text-stone-700 mb-2">
+          {phase === "empty"
+            ? "まだ記録がありません"
+            : "記録を読み込めませんでした"}
+        </p>
+        <p className="text-xs text-stone-500 leading-relaxed max-w-[70ch] mx-auto">
+          {phase === "empty"
+            ? "この画面は、日ごとの環境（天体の位置・宇宙天気・地磁気）と体調の記録を並べて、引越しの前後で何が変わったかを後から見返すためのものです。記録は夜間の巡回で 1 日 1 件ずつ貯まります。"
+            : "時間をおいて開き直してください。直らない場合は記録の巡回が止まっている可能性があります。"}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col gap-6">
