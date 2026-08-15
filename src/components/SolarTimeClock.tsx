@@ -3595,7 +3595,7 @@ export const SolarTimeClock = () => {
       ></div>
 
       {isGlobalVoid && (
-        <div className="w-full max-w-[1600px] px-3 md:px-4 mt-2 animate-fade-in z-50">
+        <div className="w-full max-w-[1700px] px-3 md:px-4 mt-2 animate-fade-in z-50">
           <div className="bg-white border-2 border-red-200 rounded-md p-3 md:p-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] flex flex-col items-center text-center">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
@@ -3614,8 +3614,8 @@ export const SolarTimeClock = () => {
         </div>
       )}
 
-      <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1600px] px-3 md:px-4 animate-fade-in-up mt-4">
-        <div className="w-full max-w-[1400px] text-center mb-2 px-4">
+      <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1700px] px-3 md:px-4 animate-fade-in-up mt-4">
+        <div className="w-full max-w-[1700px] text-center mb-2 px-4">
           {/* このコンポーネントはトップページの中に埋め込まれており、
               ページの h1 は別にある。h1 を 2 つ置くと文書構造が壊れるので h2 にする。 */}
           <h2 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
@@ -3642,7 +3642,7 @@ export const SolarTimeClock = () => {
 
 
         {showHowItWorks && (
-          <div className="w-full max-w-[1400px] animate-fade-in px-4">
+          <div className="w-full max-w-[1700px] animate-fade-in px-4">
             <div className="bg-stone-50 border border-stone-200 p-4 sm:p-6 shadow-2xl relative overflow-hidden flex flex-col gap-4 text-justify text-stone-600 text-xs sm:text-sm font-sans leading-relaxed">
               <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/50"></div>
               <h2 className="text-emerald-500 font-bold uppercase tracking-widest border-b border-stone-200 pb-2 mb-2 font-mono text-[11px] sm:text-xs flex items-center gap-2">
@@ -3699,7 +3699,7 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        <div className="w-full max-w-[1400px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
+        <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
           <button
             onClick={() => selectTab("portal")}
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
@@ -3792,7 +3792,7 @@ export const SolarTimeClock = () => {
         )}
 
         {activeTab === "profile" && (
-          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1400px]">
+          <div className="w-full flex flex-col items-center space-y-8 animate-fade-in max-w-[1700px]">
             {/* Action Intent Selector */}
             <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
               <label
@@ -3819,6 +3819,13 @@ export const SolarTimeClock = () => {
               </p>
             </div>
 
+            {/*
+              広い画面では 2 枚を横に並べる。1 列に積んだままだと、
+              器を 1700px にしても中の札が伸びるだけで幅が何も買わない
+              （CLAUDE.md 3 節）。この 2 枚はどちらも 900px 前後で
+              自然に収まるので、並べるとちょうど埋まる。
+            */}
+            <div className="w-full grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             {/* Hardware Init & Anchor Config */}
             <PersonalProfileConfig
               birthDate={birthDate}
@@ -3857,6 +3864,7 @@ export const SolarTimeClock = () => {
               derivedPersonalVoid={personalVoidZodiac}
             />
             <TenchusatsuVisualizer birthDateStr={birthDate} />
+            </div>
           </div>
         )}
 
@@ -3864,7 +3872,7 @@ export const SolarTimeClock = () => {
         {activeTab === "destination" && (
           <div className="w-full flex flex-col items-center space-y-8">
             {/* BioMagnetic Dashboard (Load Prediction) */}
-            <div className="w-full max-w-[1400px]">
+            <div className="w-full max-w-[1700px]">
               <BioMagneticDashboard
                 kpIndex={spaceWeather?.kpIndex || null}
                 xrayFlux={spaceWeather?.xrayFlux || null}
@@ -4053,7 +4061,7 @@ export const SolarTimeClock = () => {
 
         {/* --- TAB CONTENT: 6. INSIGHTS (HISTORY) --- */}
         {activeTab === "history" && (
-          <div className="w-full max-w-[1400px] flex flex-col gap-6 animate-fade-in mt-4">
+          <div className="w-full max-w-[1700px] flex flex-col gap-6 animate-fade-in mt-4">
             <TelemetryChart />
           </div>
         )}
@@ -4064,7 +4072,7 @@ export const SolarTimeClock = () => {
           占めていた。利用者の指示で /calendar に一本化し、ここは導線だけ
           にする。**表示の分だけホームが軽くなる。**
         */}
-        <div className="w-full max-w-[1600px] px-4">
+        <div className="w-full max-w-[1700px] px-4">
           <Link
             href="/calendar"
             className="flex items-center justify-between gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors"

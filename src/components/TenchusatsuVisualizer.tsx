@@ -38,7 +38,12 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
   });
 
   return (
-    <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 max-w-4xl mt-4 w-full">
+    /*
+      幅の上限はここでは持たない。以前は max-w-4xl（896px）を自分で持って
+      いて、外側を広げても効かず両端に余白が残っていた。置かれる側が
+      列で幅を決める。
+    */
+    <div className="bg-white/80 rounded-sm shadow-lg border border-stone-200 p-4 mt-4 w-full h-full">
       <h3 className="text-[10px] uppercase font-mono tracking-widest text-stone-500 mb-4 border-b border-stone-200 pb-2 flex items-center gap-2">
         <span className="text-red-500 blur-[0.5px]">◆</span> Tenchusatsu (Void)
         Cycle Diagnostics / 天中殺周期の解読

@@ -281,7 +281,12 @@ export function PersonalProfileConfig({
   const storageMode = getProfileStorageMode(presetCloudSynced, needsLogin);
 
   return (
-    <div className="w-full max-w-4xl mt-4 bg-white/80 border border-stone-200 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
+    /*
+      幅の上限はここでは持たない。以前は max-w-4xl（896px）で、外側を
+      1700px にしても効かず、画面の両端に余白が残っていた（利用者の指摘）。
+      置かれる側（プロフィールのタブ）が列で幅を決める。
+    */
+    <div className="w-full h-full mt-4 bg-white/80 border border-stone-200 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
         <Database size={120} className="text-stone-400" />
       </div>
