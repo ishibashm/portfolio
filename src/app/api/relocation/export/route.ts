@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { KnowledgeDocument } from "@prisma/client";
 import { toResponseMessage } from "@/lib/errorMessage";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
@@ -88,11 +89,19 @@ export async function GET(request: Request) {
 
     // 1. Read user config from local_tactical_config.json
     const configPath = path.join(process.cwd(), "local_tactical_config.json");
+    /*
+      この any は残す。項目を型にすると direction_filter_mode が string に
+      なり、filterCollisionByMode の union（composite / personal_kigaku /
+      personal_bazi / environmental）に渡せなくなる。通すには問い合わせ文字列
+      の検証が要るが、いまは範囲外の値がそのままエンジンへ流れて
+      environmental の枝に落ちており、検証を足すと答えが変わる。
+      別途（PR 本文に書いた）。
+    */
     let config: any = {};
     try {
       const configContent = await fs.readFile(configPath, "utf8");
       config = JSON.parse(configContent);
-    } catch (e) {
+    } catch {
       console.warn("Failed to read local_tactical_config.json for export API.");
     }
 
@@ -601,7 +610,9 @@ export async function GET(request: Request) {
       "api gateway",
     ];
 
-    const isRelocationRelevant = (doc: any): boolean => {
+    // 絞り込みが読むのは 5 列だけ。Prisma の行をそのまま受けられるよう、
+    // 読む列だけを名乗る形にしておく（3 か所から同じ関数を呼ぶ）。
+    const isRelocationRelevant = (doc: KnowledgeDocument): boolean => {
       const titleLower = (doc.title || "").toLowerCase();
       const contentLower = (doc.content || "").toLowerCase();
       const tagsStr = (doc.tags || []).join(" ").toLowerCase();

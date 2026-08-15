@@ -9,16 +9,12 @@ import {
   Plus,
   Trash2,
   Compass,
-  AlertTriangle,
   X,
   ChevronRight,
   Info,
   History,
   HelpCircle,
-  Clock,
   ArrowRight,
-  TrendingUp,
-  Award,
 } from "lucide-react";
 import { directionLabelDetailed } from "@/lib/directionLabels";
 import { toUserMessage } from "@/lib/errorMessage";
@@ -236,12 +232,15 @@ export default function RelocationHistoryPage() {
       const result = await res.json().catch(() => null);
       if (res.ok && result?.success) {
         setLoadError(null);
-        setHistoryItems(result.data);
+        // 応答の中身は下の setHistoryItems と同じ型。ここで名前を付けて
+        // おくと、選び直しの find にも同じ型が効く。
+        const items: EvaluatedHistoryItem[] = result.data;
+        setHistoryItems(items);
 
         // Keep the selected item updated with the new evaluations if it exists
         if (selectedItem) {
-          const updatedSelected = result.data.find(
-            (item: any) => item.id === selectedItem.id,
+          const updatedSelected = items.find(
+            (item) => item.id === selectedItem.id,
           );
           if (updatedSelected) {
             setSelectedItem(updatedSelected);
