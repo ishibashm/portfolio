@@ -12,6 +12,10 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { todayInJapan } from "@/utils/japanDate";
+import {
+  loadProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
 
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
@@ -107,6 +111,28 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   const [coordDrafts, setCoordDrafts] = useState<
     Partial<Record<CoordField, string>>
   >({});
+  /**
+   * 保存済みプロフィール（ホームの「保存済みプロフィールの呼び出し」と
+   * 同じもの）。ホームまで戻らないと呼び出せない、という指摘への対応。
+   * 展開パネルを開いたときに一度だけ読む。バーは全ページに居るので、
+   * マウント時に読むと開きもしないページで毎回 API を叩くことになる。
+   */
+  const [presets, setPresets] = useState<ProfilePreset[] | null>(null);
+
+  useEffect(() => {
+    if (!isExpanded || presets !== null) return;
+    let alive = true;
+    loadProfilePresets(fetch, localStorage)
+      .then((r) => {
+        if (alive) setPresets(r.presets);
+      })
+      .catch(() => {
+        if (alive) setPresets([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [isExpanded, presets]);
 
   // Load config on mount
   useEffect(() => {
@@ -311,6 +337,27 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     return typeof saved === "number" && Number.isFinite(saved)
       ? String(saved)
       : "";
+  };
+
+  /**
+   * 保存済みプロフィールを反映する。書き込むのは判定の基準
+   * （生年月日・出生地・現在地）だけ。プリセットには HRV や API キー
+   * など専門項目も入っているが、それらはホームの画面が管理していて、
+   * バーから黙って上書きすると「触っていない設定が変わった」になる。
+   */
+  const applyPreset = (id: string) => {
+    const preset = presets?.find((entry) => entry.id === id);
+    if (!preset) return;
+    saveConfig({
+      ...config,
+      birthDate: preset.birthDate,
+      birthLat: preset.birthLat,
+      birthLon: preset.birthLon,
+      baseLat: preset.baseLat,
+      baseLon: preset.baseLon,
+    });
+    // 座標欄に古い下書きが残っていると、反映した値が見えない。
+    setCoordDrafts({});
   };
 
   /** 座標 1 枠。緯度・経度のペアで 4 回使うので畳んである。 */
@@ -580,10 +627,31 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               どのページからでも直せるようにする（利用者の要望）。
               ホームと同じ値を読み書きするので、どちらで変えても揃う。 */}
           <div className="space-y-2 pt-3 border-t border-stone-200">
-            <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
-              <Compass className="w-3.5 h-3.5 text-indigo-600" />
-              プロフィール（全ページ共通・判定の基準）
-            </label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <Compass className="w-3.5 h-3.5 text-indigo-600" />
+                プロフィール（全ページ共通・判定の基準）
+              </label>
+              {/* 保存済みプロフィールの呼び出し。ホームで保存したもの
+                  （本人・家族など）をどのページからでも切り替えられる。
+                  選ぶと生年月日と座標が入れ替わり、判定が引き直される */}
+              {presets !== null && presets.length > 0 && (
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) applyPreset(e.target.value);
+                  }}
+                  className="px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-600 outline-none focus:border-indigo-200 cursor-pointer"
+                >
+                  <option value="">保存済みプロフィールを呼び出す...</option>
+                  {presets.map((preset) => (
+                    <option key={preset.id} value={preset.id}>
+                      {preset.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <span className="text-[9px] text-stone-400 block">
