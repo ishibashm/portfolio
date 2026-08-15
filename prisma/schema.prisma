@@ -414,6 +414,44 @@ model postal_codes {
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 }
 
+/// 不動産の成約価格（実際に売買された価格）。
+///
+/// 元データは国土交通省「不動産情報ライブラリ」の取引価格情報。地価公示と
+/// 同じ API キーで引ける。売り出し中の個別物件ではなく「いくらで売れたか」の
+/// 実績で、相場の基準に使う。
+///
+/// 表と索引は prisma/sql/20260815_add_property_transactions.sql が正。
+/// db push はスキーマに無い表・索引を消すので、片方だけ直さないこと。
+model property_transactions {
+  /// 国交省の応答に安定した id が無いので、こちらで作る。
+  id                String   @id
+  trade_year        Int
+  trade_quarter     Int
+  municipality_code String
+  prefecture        String
+  municipality      String
+  /// 町名まで。番地は公開されない。
+  district_name     String?
+  /// 「宅地(土地)」「中古マンション等」など。
+  property_type     String?
+  trade_price       BigInt?
+  area_sqm          Float?
+  /// 総額 / 面積。画面で割り算をしないよう取り込み時に出す。
+  unit_price_sqm    Float?
+  building_year     Int?
+  structure         String?
+  use_type          String?
+  /// 地区名から引いた座標。引けなければ null で残す。
+  lat               Float?
+  lon               Float?
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([municipality_code, trade_year, trade_quarter])
+  @@index([property_type])
+  @@index([lat, lon])
+}
+
 model RealEstateTarget {
   id             String   @id @default(cuid())
   title          String
