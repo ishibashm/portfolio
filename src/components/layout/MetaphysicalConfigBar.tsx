@@ -16,6 +16,7 @@ import {
   loadProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
+import { PlaceInput } from "@/components/relocation/PlaceInput";
 
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
@@ -86,14 +87,6 @@ interface MetaphysicalConfigBarProps {
 }
 
 /** 座標入力の受け口。範囲はそれぞれ緯度 ±90 / 経度 ±180。 */
-type CoordField = "baseLat" | "baseLon" | "birthLat" | "birthLon";
-
-const COORD_RANGE: Record<CoordField, number> = {
-  baseLat: 90,
-  baseLon: 180,
-  birthLat: 90,
-  birthLon: 180,
-};
 
 export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
   onConfigChange,
@@ -108,9 +101,6 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
    * 飛び、そのたび API へも POST が走る。入力中は下書きに置き、離れた
    * ときに数値として通れば保存、通らなければ元の値に戻す。
    */
-  const [coordDrafts, setCoordDrafts] = useState<
-    Partial<Record<CoordField, string>>
-  >({});
   /**
    * 保存済みプロフィール（ホームの「保存済みプロフィールの呼び出し」と
    * 同じもの）。ホームまで戻らないと呼び出せない、という指摘への対応。
@@ -304,40 +294,11 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     saveConfig({ ...config, useClassicalBoard: !config.useClassicalBoard });
   };
 
-  /**
-   * 座標の確定。数値として通れば保存、通らなければ元の値に戻す。
-   *
-   * 空欄は「触っていない」として何もしない。バーから座標を消す操作は
-   * 提供しない（消すと、そのページだけでなく全ページの判定が同時に
-   * 出せなくなる。消したい場面が無いのに事故の口だけ増える）。
-   */
-  const commitCoord = (field: CoordField) => {
-    const draft = coordDrafts[field];
-    if (draft === undefined) return;
-    setCoordDrafts((prev) => {
-      const next = { ...prev };
-      delete next[field];
-      return next;
-    });
-    const trimmed = draft.trim();
-    if (trimmed === "") return;
-    const value = Number(trimmed);
-    if (!Number.isFinite(value) || Math.abs(value) > COORD_RANGE[field]) {
-      return; // 下書きを捨てるだけで、保存済みの値はそのまま
-    }
-    if (value === config[field]) return;
-    saveConfig({ ...config, [field]: value });
-  };
-
-  /** 座標欄の表示値。下書きがあれば下書き、無ければ保存済みの値。 */
-  const coordValue = (field: CoordField): string => {
-    const draft = coordDrafts[field];
-    if (draft !== undefined) return draft;
-    const saved = config[field];
-    return typeof saved === "number" && Number.isFinite(saved)
-      ? String(saved)
-      : "";
-  };
+  /*
+    座標の下書き（打ちかけを保持して確定時に検証する仕組み）は、
+    緯度経度の直接入力を PlaceInput の中に畳んだので不要になった。
+    検証は PlaceInput 側が持つ。
+  */
 
   /**
    * 保存済みプロフィールを反映する。書き込むのは判定の基準
@@ -356,27 +317,27 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
       baseLat: preset.baseLat,
       baseLon: preset.baseLon,
     });
-    // 座標欄に古い下書きが残っていると、反映した値が見えない。
-    setCoordDrafts({});
   };
 
-  /** 座標 1 枠。緯度・経度のペアで 4 回使うので畳んである。 */
-  const coordInput = (field: CoordField, placeholder: string) => (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={coordValue(field)}
-      placeholder={placeholder}
-      onChange={(e) =>
-        setCoordDrafts((prev) => ({ ...prev, [field]: e.target.value }))
-      }
-      onBlur={() => commitCoord(field)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-      }}
-      className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:border-indigo-200 transition-colors shadow-inner"
-    />
-  );
+  /**
+   * いま端末がいる場所を現在地にする。以前は「デバイスの GPS を取得」
+   * という別の場所にしかなく、座標欄からは辿れなかった。
+   */
+  const useCurrentLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        saveConfig({
+          ...config,
+          baseLat: Number(pos.coords.latitude.toFixed(6)),
+          baseLon: Number(pos.coords.longitude.toFixed(6)),
+        }),
+      () => {
+        /* 断られても画面は止めない。地名でも入れられる */
+      },
+      { timeout: 10000 },
+    );
+  };
 
   const handleFilterChange = (
     mode: MetaphysicalConfig["directionFilterMode"],
@@ -668,24 +629,32 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-stone-700 focus:outline-none focus:border-indigo-200 transition-colors shadow-inner"
                 />
               </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-stone-400 block">
-                  現在地＝出発地（方位はここから測る）
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {coordInput("baseLat", "緯度 34.99")}
-                  {coordInput("baseLon", "経度 135.72")}
-                </div>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[9px] text-stone-400 block">
-                  出生地（任意・天体ラインの基準）
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {coordInput("birthLat", "緯度 37.57")}
-                  {coordInput("birthLon", "経度 126.98")}
-                </div>
-              </div>
+              {/*
+                以前は緯度経度をそのまま 4 つ並べていた。14 桁の数字は
+                人が読み書きする値ではなく、とくに出生地は自分の座標を
+                知っている人のほうが少ない。地名・郵便番号で入れられる
+                ようにして、緯度経度は畳んだ（利用者の要望）。
+              */}
+              <PlaceInput
+                label="現在地＝出発地"
+                lat={config.baseLat ?? null}
+                lon={config.baseLon ?? null}
+                onChange={(lat, lon) =>
+                  saveConfig({ ...config, baseLat: lat, baseLon: lon })
+                }
+                help="方位はここから測ります。物件検索・地図・カレンダーと共通の値です。"
+                onUseCurrentLocation={useCurrentLocation}
+              />
+              <PlaceInput
+                label="生まれたところ"
+                optional
+                lat={config.birthLat ?? null}
+                lon={config.birthLon ?? null}
+                onChange={(lat, lon) =>
+                  saveConfig({ ...config, birthLat: lat, birthLon: lon })
+                }
+                help="天体ライン（補助的な判定）に使います。市区町村までで十分で、未入力でも方位の吉凶は出ます。"
+              />
             </div>
           </div>
 
