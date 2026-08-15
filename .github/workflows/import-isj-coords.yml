@@ -1,0 +1,83 @@
+name: Fill postal coords (ISJ)
+
+# 郵便番号の座標を、国土交通省「位置参照情報（大字・町丁目レベル）」で
+# **まとめて**埋める。
+#
+# これまでの Import postal codes の geocode 段は 1 件ずつ国土地理院へ
+# 問い合わせていて、実測 50 分で 5,333 件（約 107 件/分）。残り 11 万件で
+# 約 18 時間・22 回の手動実行になる。こちらは都道府県ごとの zip（各
+# 0.03〜0.35MB）を 47 本落として突き合わせるので、**1 回で大半が埋まる**。
+#
+# 2 段構え。
+#
+#   probe  取得できるか・文字コード・見出しを出すだけ。**書き込まない**
+#   fill   47 県を落として、座標が空の行を埋める
+#
+# **最初に必ず probe を回すこと。**この環境から国土交通省へ出られず、
+# zip の置き場と CSV の列名を確かめられなかった。版数の書き方も
+# meta 側が 19b、データ側が 19.0b と揺れているので候補を順に試す。
+# 全滅したときは配布ページからリンクを拾い、それも駄目なら試した URL を
+# 全部出して終わる（推測を重ねないため）。
+#
+# すでに埋まっている行は触らない（WHERE lat IS NULL）。fill で当たらな
+# かった住所は、これまで通り Import postal codes の geocode 段が拾う。
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "probe: 置き場と形を見るだけ / fill: 埋める"
+        required: true
+        type: choice
+        options:
+          - probe
+          - fill
+        default: probe
+      version:
+        description: "版数。既定 19.0b（令和 7 年度）"
+        required: false
+        default: "19.0b"
+      prefs:
+        description: "都道府県コードを絞る（01,13 など）。空で 47 全部"
+        required: false
+        default: ""
+      source_url:
+        description: "1 県ぶんの zip を直に指定（probe の確認用）"
+        required: false
+        default: ""
+
+jobs:
+  fill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Fill
+        env:
+          ISJ_STAGE: ${{ inputs.stage }}
+          ISJ_VERSION: ${{ inputs.version }}
+          ISJ_PREFS: ${{ inputs.prefs }}
+          ISJ_SOURCE_URL: ${{ inputs.source_url }}
+        run: npx -y tsx scripts/import_isj_coords.ts
