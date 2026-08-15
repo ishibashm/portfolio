@@ -14,6 +14,7 @@
  * 読まないものまで書き写すと、応答が変わったときに嘘が増える（#149）。
  */
 import type { DateScore } from "@/components/realestate/AstroGridCalendar";
+import type { JointOutcome, TimingSummary } from "@/utils/arbitrageParty";
 
 export interface ScoredProperty {
   id: string;
@@ -55,4 +56,16 @@ export interface ScoredProperty {
    * そのまま渡す。要素の形は向こうの DateScore が正。
    */
   dateScores?: DateScore[];
+  /**
+   * 同行者の内訳。route は utils/arbitrageParty の JointOutcome を
+   * そのまま入れて返す。生年月日が無い走査では null。
+   */
+  party?: JointOutcome | null;
+  /** いつなら全員で動けるか。horizonDays=0 か生年月日なしなら null。 */
+  timing?: TimingSummary | null;
+  /** 掲載の生の属性（「掲載: N日 / M社」）。評価軸ではない。 */
+  axisInputs?: {
+    listingCount: number | null;
+    listedDays: number | null;
+  };
 }

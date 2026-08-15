@@ -15,7 +15,8 @@ import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSideba
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
-import { loadSettings } from "@/lib/userSettings";
+import { loadSettings, type Settings } from "@/lib/userSettings";
+import type { ScoredProperty } from "@/lib/scoredProperty";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
   getPropertyPinColors,
@@ -52,8 +53,53 @@ import {
  * 「吉日12日」が多いのか少ないのかを読むための基準。決定的な暦の要約で
  * あって観測データではないため、毎晩の再計算はしない。
  */
+/**
+ * /api/rentals/arbitrage の metadata のうち、この画面が読む枝。
+ * 件数まわりは lib/arbitrageCounts の ScanCountsInput が正
+ * （欠けても落とさない前提の unknown）なので、それを継承する。
+ */
+interface ScanMetadata extends ScanCountsInput {
+  dataUpdatedAt?: string | null;
+  timing?: { dbMs: number; computeMs: number } | null;
+}
+
+/**
+ * metaphysical-config-updated が運んでくる中身。出し手によって
+ * camelCase と snake_case が混在しているので、読む側は両方を見る。
+ */
+type ConfigUpdateDetail = Partial<{
+  targetDate: string;
+  target_date: string;
+  useClassicalBoard: boolean;
+  use_classical_board: boolean;
+  directionFilterMode: string;
+  direction_filter_mode: string;
+  actionIntent: string;
+  action_intent: string;
+  birthDate: string;
+  birth_date: string;
+  birthLat: number;
+  birth_lat: number;
+  birthLon: number;
+  birth_lon: number;
+  baseLat: number;
+  base_lat: number;
+  baseLon: number;
+  base_lon: number;
+}>;
+
+/** 平年値（calendarClimatology.json）のうち、この画面が読む枝。 */
+interface ClimatologyProfile {
+  avgAnySPerYear: number;
+  directions?: Record<
+    string,
+    { perYear: Record<"S" | "A" | "B" | "C" | "D" | "X", number> } | undefined
+  >;
+}
+
 function climatologyFor(honmeiStar: number, voidZodiacs: string[]) {
-  const profiles = (calendarClimatology as any).profiles ?? {};
+  const profiles: Record<string, ClimatologyProfile | undefined> =
+    calendarClimatology.profiles ?? {};
   const joined = voidZodiacs.join("");
   return (
     profiles[`${honmeiStar}|${joined}`] ??
@@ -119,7 +165,10 @@ import {
 } from "@/utils/smartSearch";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import { directionUnstableNote } from "@/lib/directionDistance";
-import { buildScanCounts } from "@/lib/arbitrageCounts";
+import {
+  buildScanCounts,
+  type ScanCountsInput,
+} from "@/lib/arbitrageCounts";
 import { compareKigakuThenRent, kigakuRank } from "@/lib/arbitrageRanking";
 import { addFavorite, loadFavorites, removeFavorite } from "@/lib/favorites";
 import {
@@ -234,11 +283,11 @@ const LocationPickerInner = dynamic(
 );
 
 export default function ArbitrageScannerPage() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ScoredProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isTransitioningDate, setIsTransitioningDate] = useState(false);
-  const [metadata, setMetadata] = useState<any>(null);
+  const [metadata, setMetadata] = useState<ScanMetadata | null>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
   /**
@@ -364,9 +413,9 @@ export default function ArbitrageScannerPage() {
    * いるのか」が消える。合流の判断はそこが要なので、人ごとの方位と
    * 判定、そして全員で動ける直近の日をそのまま出す。
    */
-  const renderPartyBreakdown = (item: any) => {
+  const renderPartyBreakdown = (item: ScoredProperty) => {
     if (!hasParty || !item.party?.members?.length) return null;
-    const members = item.party.members as any[];
+    const members = item.party.members;
 
     return (
       <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 space-y-1">
@@ -441,7 +490,7 @@ export default function ArbitrageScannerPage() {
                 走査した{item.timing.scannedDays}日はすべて不可（
                 {item.timing.alwaysBlockedBy
                   .map(
-                    (b: any) =>
+                    (b) =>
                       `${b.name}: ${ASTRO_STATUS_LABELS[b.status] ?? b.status}`,
                   )
                   .join("、")}
@@ -913,7 +962,7 @@ export default function ArbitrageScannerPage() {
         openOverview = true;
       }
       const qDir = qs.get("direction");
-      if (qDir && ALL_DIRECTIONS.includes(qDir as any)) {
+      if (qDir && ALL_DIRECTIONS.some((d) => d === qDir)) {
         setFilterDirection(qDir);
       }
       const qTenchu = qs.get("tenchusatsuMode");
@@ -992,7 +1041,7 @@ export default function ArbitrageScannerPage() {
     }
 
     const handleGlobalConfigUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<any>;
+      const customEvent = e as CustomEvent<ConfigUpdateDetail>;
       if (customEvent.detail) {
         const detail = customEvent.detail;
 
@@ -1377,10 +1426,10 @@ export default function ArbitrageScannerPage() {
     initialLoaded,
   ]);
 
-  const saveUnifiedConfig = async (updatedFields: any) => {
+  const saveUnifiedConfig = async (updatedFields: Settings) => {
     try {
       const localData = localStorage.getItem("tactical_config_v1");
-      let currentLocal: any = {};
+      let currentLocal: Settings = {};
       if (localData) {
         try {
           currentLocal = JSON.parse(localData);
@@ -4188,7 +4237,10 @@ export default function ArbitrageScannerPage() {
                             onClick={() => {
                               setSelectedId(item.id);
                               setMapFocusKind("spot");
-                              setMapCenter([item.lat, item.lon]);
+                              // 座標の無い行では中心を動かさない（型上 lat/lon は
+                              // nullable。null を渡すと leaflet 側で落ちる）
+                              if (item.lat !== null && item.lon !== null)
+                                setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-2.5 rounded-xl bg-gray-50 dark:bg-white border border-gray-200/50 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs"
                           >
@@ -4289,7 +4341,10 @@ export default function ArbitrageScannerPage() {
                             onClick={() => {
                               setSelectedId(item.id);
                               setMapFocusKind("spot");
-                              setMapCenter([item.lat, item.lon]);
+                              // 座標の無い行では中心を動かさない（型上 lat/lon は
+                              // nullable。null を渡すと leaflet 側で落ちる）
+                              if (item.lat !== null && item.lon !== null)
+                                setMapCenter([item.lat, item.lon]);
                             }}
                             className="p-3.5 rounded-2xl bg-white dark:bg-stone-50 border border-gray-200/60 dark:border-stone-200 hover:border-indigo-200 cursor-pointer transition-colors shadow-2xs relative group"
                           >
@@ -4431,7 +4486,8 @@ export default function ArbitrageScannerPage() {
                                 onClick={() => {
                                   setSelectedId(item.id);
                                   setMapFocusKind("spot");
-                                  setMapCenter([item.lat, item.lon]);
+                                  if (item.lat !== null && item.lon !== null)
+                                    setMapCenter([item.lat, item.lon]);
                                 }}
                                 className="border-b border-gray-100 dark:border-stone-200 hover:bg-gray-50 dark:hover:bg-white/80 transition-colors cursor-pointer"
                               >
