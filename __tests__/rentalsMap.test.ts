@@ -115,6 +115,14 @@ describe("画面への配線", () => {
   )
     .split("\r\n")
     .join("\n");
+  // 地図の描画側はタブ分割（3/3）で home/DestinationMapPanel へ移った。
+  // 取得の効率（fetch の門番）は親、渡し方（表示条件）はパネルが持つ。
+  const panelSrc = readFileSync(
+    join(process.cwd(), "src", "components", "home", "DestinationMapPanel.tsx"),
+    "utf8",
+  )
+    .split("\r\n")
+    .join("\n");
 
   it("押した人にだけ取りに行く（公開ホームなので既定では引かない）", () => {
     expect(src).toContain('fetch("/api/rentals/map?limit=500")');
@@ -130,10 +138,10 @@ describe("画面への配線", () => {
   });
 
   it("出していないときは地図に渡さない", () => {
-    expect(src).toContain("!showProperties\n                    ? []");
+    expect(panelSrc).toContain("!showProperties\n                    ? []");
   });
 
   it("空のものを絞り込む選択肢を見せない", () => {
-    expect(src).toContain("{showProperties && (");
+    expect(panelSrc).toContain("{showProperties && (");
   });
 });

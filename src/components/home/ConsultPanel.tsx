@@ -45,7 +45,7 @@ const InlineMath = dynamic(() => import("../MathFormula"), {
  * 受けるともう片方が「同名の別の型」として弾かれる。ここは表示する
  * だけなので、値の型は string で受ける。
  */
-type Layers = {
+export type Layers = {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;

@@ -7,8 +7,24 @@ vi.mock("next/dynamic", async () => {
   const ReactModule = await vi.importActual<typeof import("react")>("react");
 
   return {
-    default: () =>
-      function DynamicComponentStub(props: Record<string, unknown>) {
+    default: (loader: () => Promise<{ default: React.ComponentType }>) => {
+      // ヒートマップのボタンはタブ分割（3/3）で home/DestinationMapPanel
+      // （dynamic 読込）へ移った。押す対象なので、この 1 つだけは実体を
+      // 描く。見分けはパネルにしか無い props（heatmapData）で行う。
+      const Lazy = ReactModule.lazy(loader);
+      return function DynamicComponentStub(props: Record<string, unknown>) {
+        if ("heatmapData" in props) {
+          return ReactModule.createElement(
+            ReactModule.Suspense,
+            { fallback: null },
+            ReactModule.createElement(
+              Lazy as React.ComponentType<Record<string, unknown>>,
+              props,
+            ),
+          );
+        }
+        // 地図（TacticalMagneticMap）は従来どおりスタブ。渡された
+        // activeLayerMode を出すだけにして、連動の結果を読む。
         if ("activeLayerMode" in props) {
           return ReactModule.createElement(
             "output",
@@ -17,7 +33,8 @@ vi.mock("next/dynamic", async () => {
           );
         }
         return null;
-      },
+      };
+    },
   };
 });
 
@@ -49,6 +66,18 @@ describe("ヒートマップと地図の時間軸連動", () => {
       root.render(<SolarTimeClock />);
       await Promise.resolve();
     });
+    // DestinationMapPanel は React.lazy 経由で、モジュールの解決に
+    // 数百 ms かかることがある（実測で 1 tick では足りない）。ボタンが
+    // 出るまで待つ。上限を超えたら下の toBeDefined が実態を報告する。
+    for (let i = 0; i < 40; i++) {
+      const found = Array.from(container.querySelectorAll("button")).some(
+        (candidate) => candidate.textContent?.trim() === "12 MONTHS",
+      );
+      if (found) break;
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      });
+    }
 
     const button = (label: string) =>
       Array.from(container.querySelectorAll("button")).find(
