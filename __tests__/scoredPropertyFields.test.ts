@@ -30,6 +30,8 @@ import { describe, expect, it } from "vitest";
  */
 const SOURCES = [
   "src/components/SolarTimeClock.tsx",
+  // 総合スコアの「推奨賃貸物件」はタブ分割（2/3）でこちらへ移った
+  "src/components/home/ScorecardPanel.tsx",
   "src/components/ArbitrageMapInner.tsx",
   "src/app/relocation/arbitrage/page.tsx",
 ];
@@ -67,7 +69,8 @@ describe("物件データ：存在しない項目を読まない", () => {
   });
 
   it("築年数は building_age を参照している（空回りしていない）", () => {
-    const reads = propertyReads("src/components/SolarTimeClock.tsx");
+    // 表示はタブ分割で ScorecardPanel へ移った
+    const reads = propertyReads("src/components/home/ScorecardPanel.tsx");
     expect(reads.has("building_age")).toBe(true);
   });
 
