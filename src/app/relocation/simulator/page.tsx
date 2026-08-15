@@ -1786,21 +1786,36 @@ export default function RelocationSimulatorPage() {
                 保存プランなし
               </span>
             ) : (
-              <select
-                onChange={(e) => {
-                  const plan = plans.find((p) => p.id === e.target.value);
-                  if (plan) handleLoadPlan(plan);
-                }}
-                value={currentPlanId || ""}
-                className="bg-white/80 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-600 outline-none cursor-pointer max-w-[150px] sm:max-w-none"
-              >
-                <option value="">-- 選択して読込 --</option>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <>
+                <select
+                  onChange={(e) => {
+                    const plan = plans.find((p) => p.id === e.target.value);
+                    if (plan) handleLoadPlan(plan);
+                  }}
+                  value={currentPlanId || ""}
+                  className="bg-white/80 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-600 outline-none cursor-pointer max-w-[150px] sm:max-w-none"
+                >
+                  <option value="">-- 選択して読込 --</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                {/* 削除処理（handleDeletePlan）は前からあったのに、押す場所が
+                    どこにも無かった。一覧が select なので、項目ごとではなく
+                    「選択中のプラン」に対するボタンとして置く。 */}
+                {currentPlanId && (
+                  <button
+                    onClick={(e) => handleDeletePlan(currentPlanId, e)}
+                    className="shrink-0 flex items-center gap-1 px-2 py-1.5 text-[10px] text-red-400 hover:text-red-600 hover:bg-red-500/10 border border-transparent hover:border-red-200 rounded-lg transition-colors"
+                    title="選択中のプランを削除"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    削除
+                  </button>
+                )}
+              </>
             )}
               </div>
             </div>
