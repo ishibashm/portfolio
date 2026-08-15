@@ -1,0 +1,57 @@
+name: Audit property coordinates
+
+# 物件の座標が住所と合っているかを、実データで数える。**読み取りだけ。**
+#
+# 利用者から「物件の場所と地図の場所が合っていないものがちらほらある」と
+# 報告を受けたときに回す。scripts/audit_property_coords.ts が、
+# 住所の市区町村ごとの中央値からどれだけ離れているかを集計し、
+# 外れの実例と、同一座標に固まっている点を出す。
+#
+# SELECT しかしないので行は変えない。ただし全行を読む集計なので、
+# 夜間巡回（scrape-rentals）と重ねて回さないこと。
+
+on:
+  workflow_dispatch:
+    inputs:
+      threshold_km:
+        description: "これを超えたら外れとみなす距離（km）"
+        required: false
+        default: "30"
+      samples:
+        description: "一覧に出す実例の件数"
+        required: false
+        default: "40"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty. DATABASE_URL / DIRECT_URL are required."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Audit
+        env:
+          COORD_AUDIT_KM: ${{ inputs.threshold_km }}
+          COORD_AUDIT_SAMPLES: ${{ inputs.samples }}
+        run: npx -y tsx scripts/audit_property_coords.ts
