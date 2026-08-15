@@ -56,12 +56,16 @@ if (!process.env.DATABASE_URL) {
 const SOURCE_CANDIDATES = process.env.POSTAL_SOURCE_URL
   ? [process.env.POSTAL_SOURCE_URL]
   : [
+      /*
+        2026 年 5 月頃に配布のパスが /zipcode/dl/... から
+        /service/search/zipcode/download/... に変わった。旧パスは 404
+        （2026-08-15 の実行で 4 つとも確認）。下の 2 つは利用者が
+        実際に 200 を確認した現行のパス。
+      */
       // UTF-8 版（住所が UTF-8。こちらが第一希望）
-      "https://www.post.japanpost.jp/zipcode/dl/utf/zip/utf_ken_all.zip",
-      "https://www.post.japanpost.jp/zipcode/dl/utf/utf_ken_all.zip",
+      "https://www.post.japanpost.jp/service/search/zipcode/download/utf/zip/utf_ken_all.zip",
       // 小書き版（Shift-JIS）。UTF-8 が取れないときの受け皿
-      "https://www.post.japanpost.jp/zipcode/dl/kogaki/zip/ken_all.zip",
-      "https://www.post.japanpost.jp/zipcode/dl/oogaki/zip/ken_all.zip",
+      "https://www.post.japanpost.jp/service/search/zipcode/download/kogaki/zip/ken_all.zip",
     ];
 
 /**
@@ -149,47 +153,122 @@ function unzipSingleFile(buf: Buffer): string {
   throw new Error(`未対応の圧縮方式: ${method}`);
 }
 
+/** 1 つの URL を取りにいく。zip でなければ理由つきで捨てる。 */
+async function tryDownload(
+  url: string,
+  tried: string[],
+): Promise<Buffer | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, Accept: "*/*" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(120000),
+    });
+    if (!res.ok) {
+      tried.push(`${res.status} ${url}`);
+      console.log(`  × ${res.status} ${url}`);
+      return null;
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    // 中身が zip か確かめる。案内ページの HTML が 200 で返ることがある。
+    if (buf.length < 4 || buf.readUInt32LE(0) !== 0x04034b50) {
+      tried.push(`zip ではない (${buf.length} bytes) ${url}`);
+      console.log(`  × zip ではない (${buf.length} bytes) ${url}`);
+      return null;
+    }
+    console.log(`  ○ ${url}`);
+    return buf;
+  } catch (e) {
+    tried.push(`${String(e).slice(0, 60)} ${url}`);
+    console.log(`  × ${String(e).slice(0, 60)} ${url}`);
+    return null;
+  }
+}
+
 /**
- * 候補を順に試して、最初に取れたものを返す。
+ * 配布ページの HTML から zip へのリンクを拾う。
  *
- * 全部駄目なら、**どれが何を返したかを並べて**投げる。次に直す人が
- * 推測しなくて済むようにするため。
+ * 直リンクの候補は 4 つとも 404 だった（2026-08-15 の実行。UA を付けても
+ * 同じ）。zip の場所をこれ以上推測しても外し続けるだけなので、
+ * **配布ページに実際に書かれているリンクをそのまま使う**。
+ *
+ * 見つけたリンクは ken_all 以外も含めて全部ログに出す。ページの構成が
+ * また変わっても、次はログから直接決められる。
  */
+const INDEX_PAGES = [
+  "https://www.post.japanpost.jp/zipcode/download.html",
+  "https://www.post.japanpost.jp/service/search/zipcode/download/",
+];
+
+async function discoverZipLinks(tried: string[]): Promise<string[]> {
+  const found: string[] = [];
+  for (const page of INDEX_PAGES) {
+    try {
+      const res = await fetch(page, {
+        headers: { "User-Agent": UA, Accept: "*/*" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(60000),
+      });
+      if (!res.ok) {
+        tried.push(`${res.status} ${page}`);
+        console.log(`  × ${res.status} ${page}`);
+        continue;
+      }
+      const html = await res.text();
+      const links = [...html.matchAll(/href="([^"]+\.zip)"/gi)].map(
+        (m) => m[1],
+      );
+      console.log(`  ○ ${page} — zip リンク ${links.length} 件`);
+      for (const href of links) {
+        try {
+          const abs = new URL(href, page).toString();
+          if (!found.includes(abs)) {
+            found.push(abs);
+            console.log(`      ${abs}`);
+          }
+        } catch {
+          /* 壊れた href は飛ばす */
+        }
+      }
+    } catch (e) {
+      tried.push(`${String(e).slice(0, 60)} ${page}`);
+      console.log(`  × ${String(e).slice(0, 60)} ${page}`);
+    }
+  }
+  return found;
+}
+
 async function downloadKenAll(): Promise<{ url: string; buf: Buffer }> {
   const tried: string[] = [];
 
+  // 1. 直リンクの候補（POSTAL_SOURCE_URL があればそれだけ）
   for (const url of SOURCE_CANDIDATES) {
-    try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": UA, Accept: "*/*" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(120000),
-      });
-      if (!res.ok) {
-        tried.push(`${res.status} ${url}`);
-        console.log(`  × ${res.status} ${url}`);
-        continue;
-      }
-      const buf = Buffer.from(await res.arrayBuffer());
-      // 中身が zip か確かめる。案内ページの HTML が 200 で返ることがある。
-      if (buf.length < 4 || buf.readUInt32LE(0) !== 0x04034b50) {
-        tried.push(`zip ではない (${buf.length} bytes) ${url}`);
-        console.log(`  × zip ではない (${buf.length} bytes) ${url}`);
-        continue;
-      }
-      console.log(`  ○ ${url}`);
-      return { url, buf };
-    } catch (e) {
-      tried.push(`${String(e).slice(0, 60)} ${url}`);
-      console.log(`  × ${String(e).slice(0, 60)} ${url}`);
+    const buf = await tryDownload(url, tried);
+    if (buf) return { url, buf };
+  }
+
+  // 2. 配布ページからリンクを拾って試す。URL 指定があるときは飛ばす
+  //    （指定が駄目なら指定を直してもらうのが筋）。
+  if (!process.env.POSTAL_SOURCE_URL) {
+    console.log("直リンクが全滅。配布ページからリンクを探します:");
+    const links = await discoverZipLinks(tried);
+    // ken_all を優先し、utf 版を先に。ほかの zip（事業所など）は使わない。
+    const kenAll = links
+      .filter((u) => /ken_?all/i.test(u))
+      .sort((a, b) => Number(/utf/i.test(b)) - Number(/utf/i.test(a)));
+    for (const url of kenAll) {
+      const buf = await tryDownload(url, tried);
+      if (buf) return { url, buf };
     }
   }
 
   throw new Error(
     "ken_all を取得できませんでした。試した先:\n  " +
       tried.join("\n  ") +
-      "\n\n日本郵便の配布ページで現在の URL を確認し、" +
-      "POSTAL_SOURCE_URL に渡して再実行してください。",
+      "\n\n配布ページ自体も開けない場合、海外 IP（GitHub のランナー）からの" +
+      "取得が拒まれている可能性があります。その場合は手元のブラウザで" +
+      "ダウンロードし、このリポジトリの Release に zip を添付して、" +
+      "その URL を POSTAL_SOURCE_URL に渡して再実行してください。",
   );
 }
 
