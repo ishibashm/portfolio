@@ -42,6 +42,7 @@ import { directionLabelDetailed } from "@/lib/directionLabels";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import { distanceKmBetween } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
+import { FavoritePicker } from "@/components/relocation/FavoritePicker";
 import { ratingForStatus } from "@/lib/verdictRating";
 import { isValidIsoDate } from "@/utils/dateValidation";
 import { toJapanDateString } from "@/utils/japanDate";
@@ -352,6 +353,13 @@ export default function RelocationSimulatorPage() {
   const [useTrueNorth, setUseTrueNorth] = useState(false);
   const [plans, setPlans] = useState<SavedPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
+  /**
+   * ★ から目的地を選ぶ一覧を、どの段で開いているか。
+   * 段ごとに目的地が違うので、1 つの真偽値では足りない。
+   */
+  const [favoritePickerStep, setFavoritePickerStep] = useState<number | null>(
+    null,
+  );
   const [planName, setPlanName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPlans, setIsLoadingPlans] = useState(false);
@@ -2287,9 +2295,28 @@ export default function RelocationSimulatorPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[9px] uppercase font-bold text-stone-400">
-                          目的地
-                        </label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-[9px] uppercase font-bold text-stone-400">
+                            目的地
+                          </label>
+                          {/*
+                            住所を手で打つのが大変、という声から足した導線。
+                            物件を方位で探す画面で ★ を付けた部屋を、
+                            名前と座標ごと呼び出す。打ち間違いで方位が
+                            変わる事故も無くなる。
+                          */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFavoritePickerStep(
+                                favoritePickerStep === idx ? null : idx,
+                              )
+                            }
+                            className="text-[10px] text-indigo-500 hover:text-indigo-700 hover:underline shrink-0"
+                          >
+                            ★ お気に入りから選ぶ
+                          </button>
+                        </div>
                         <input
                           type="text"
                           value={step.toName}
@@ -2333,6 +2360,25 @@ export default function RelocationSimulatorPage() {
                           <option value="TRAVEL">短期旅行 (拠点不動)</option>
                         </select>
                       </div>
+
+                      {favoritePickerStep === idx && (
+                        <div className="col-span-1 sm:col-span-2 md:col-span-3">
+                          <FavoritePicker
+                            onClose={() => setFavoritePickerStep(null)}
+                            onPick={({ name, lat, lon }) => {
+                              // 名前と座標を一緒に入れる。名前だけ入れて
+                              // 座標が前のままだと、画面の表示と判定が
+                              // 食い違う（一番たちが悪い壊れ方）。
+                              handleUpdateStep(idx, {
+                                toName: name,
+                                toLat: lat,
+                                toLon: lon,
+                              });
+                              setFavoritePickerStep(null);
+                            }}
+                          />
+                        </div>
+                      )}
 
                       <div className="flex flex-col gap-1.5 col-span-1 sm:col-span-2 md:col-span-3 border-t border-stone-200/60 pt-3">
                         <label className="text-[9px] uppercase font-bold text-stone-400">
