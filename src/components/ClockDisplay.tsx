@@ -73,7 +73,12 @@ export function ClockDisplay({
   };
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between w-full max-w-4xl border border-stone-200 bg-white/70 p-6 rounded-sm md:backdrop-blur-sm relative gap-6 md:gap-0">
+    /*
+      幅の上限はここでは持たない（#347 と同じ型）。中身は左右に離して
+      置く 2 つの塊なので、広げると間が開くだけになる。そうならないよう
+      justify-between をやめ、中央に寄せて間隔で並べる。
+    */
+    <div className="flex flex-col md:flex-row items-center justify-center gap-10 w-full border border-stone-200 bg-white/70 p-6 rounded-sm md:backdrop-blur-sm relative">
       <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-emerald-500"></div>
       <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-emerald-500"></div>
 

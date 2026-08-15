@@ -127,7 +127,12 @@ export function BioMagneticDashboard({
             : 10;
 
   return (
-    <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+    /*
+      幅の上限はここでは持たない。以前は max-w-4xl（896px）を自分で持って
+      いて、外側を 1700px にしても効かず両端に余白が残っていた（#347 と
+      同じ型）。2 枚の札は横並びのままなので、広げるとそのまま埋まる。
+    */
+    <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
       {/* 1. ENVIRONMENTAL TELEMETRY */}
       <div className="bg-stone-50 border border-stone-200 p-4 shadow-2xl relative overflow-hidden group flex flex-col h-full">
         {/* HUD Corner Accents */}
