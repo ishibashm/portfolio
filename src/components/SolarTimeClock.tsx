@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { toLogMessage, toUserMessage } from "@/lib/errorMessage";
 import {
   calculateSolarTime,
@@ -40,7 +41,11 @@ import {
 } from "../utils/timing-optimizer";
 import type { NBAData } from "./nba/NBADashboard";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
-import { loadSettings, saveSettings } from "@/lib/userSettings";
+import {
+  loadSettings,
+  saveSettings,
+  SETTINGS_KEY,
+} from "@/lib/userSettings";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import type { MapProperty } from "@/lib/mapProperty";
 import type { ScoredProperty } from "@/lib/scoredProperty";
@@ -170,11 +175,7 @@ const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
   ),
 });
 
-const CosmicCalendar = dynamic(
-  () => import("./widgets/CosmicCalendar").then((mod) => mod.CosmicCalendar),
-  { ssr: false },
-);
-import type { DayData } from "./widgets/CosmicCalendar";
+// CosmicCalendar は /calendar に一本化したので、ここでは読み込まない。
 
 /**
  * 環境テレメトリの折れ線（recharts）。「6. 履歴」タブの 1 か所でしか
@@ -473,7 +474,6 @@ const filterVectors = (
 };
 
 export const SolarTimeClock = () => {
-  const [calendarSelectedDay, setCalendarSelectedDay] = useState<DayData | null>(null);
 
 
   const [baseTime, setBaseTime] = useState<Date | null>(null);
@@ -515,6 +515,23 @@ export const SolarTimeClock = () => {
       ].includes(saved)
     ) {
       setActiveTab(saved as typeof activeTab);
+      return;
+    }
+
+    /*
+      初めての人には入力を先に出す。このサイトの答えは生年月日・出生地・
+      現在地の 3 つで決まるので、それが未設定のままポータルを見せても
+      「生年月日を入れると出ます」しか並ばない。
+      設定済みの人には結果（ポータル）を先に出す。
+    */
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      const configured = Boolean(parsed && parsed.birth_date);
+      setActiveTab(configured ? "portal" : "profile");
+    } catch {
+      // 読めないときは入力から。結果が出ない画面を見せるよりよい。
+      setActiveTab("profile");
     }
   }, []);
 
@@ -4027,29 +4044,26 @@ export const SolarTimeClock = () => {
         )}
 
         {/*
-          吉日カレンダー。以前はタブより上に置いていたが、画面 1 枚ぶんを
-          占めるため、開いた直後に見えるのがカレンダーだけになっていた。
-          先に「今日どうなのか」を見せたいので、タブの内容の後ろへ移した。
-          どのタブでも出るのは今までどおり。
+          暦カレンダーと選んだ日の詳細は /calendar に同じものがある。
+          ここにも置いていたので、同じ道具が 2 か所にあり、画面 1 枚ぶんを
+          占めていた。利用者の指示で /calendar に一本化し、ここは導線だけ
+          にする。**表示の分だけホームが軽くなる。**
         */}
-        <div className="w-full max-w-[1600px] grid grid-cols-1 xl:grid-cols-12 gap-6 px-4 items-start">
-          {/* Cosmic Calendar Widget (Calendar Grid) */}
-          <div className="xl:col-span-7 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar
-              view="calendar"
-              selectedDayState={calendarSelectedDay}
-              setSelectedDayState={setCalendarSelectedDay}
-            />
-          </div>
-
-          {/* Cosmic Calendar Widget (Telemetry Details) */}
-          <div className="xl:col-span-5 bg-white/80 border border-stone-200 rounded-2xl p-6 shadow-[0_0_20px_rgba(0,0,0,0.5)] backdrop-blur-md transition-all flex flex-col overflow-hidden">
-            <CosmicCalendar
-              view="telemetry"
-              selectedDayState={calendarSelectedDay}
-              setSelectedDayState={setCalendarSelectedDay}
-            />
-          </div>
+        <div className="w-full max-w-[1600px] px-4">
+          <Link
+            href="/calendar"
+            className="flex items-center justify-between gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors"
+          >
+            <span className="flex flex-col">
+              <span className="text-xs font-bold text-stone-700">
+                引越しの日取りを選ぶ（暦カレンダー）
+              </span>
+              <span className="text-[10px] text-stone-400">
+                天赦日・一粒万倍日・天中殺と、方位の吉凶を月ごとに見ます。
+              </span>
+            </span>
+            <span className="text-indigo-500 text-xs shrink-0">開く →</span>
+          </Link>
         </div>
       </div>
       {/* Telemetry and Audit Log */}
