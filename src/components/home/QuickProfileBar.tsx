@@ -290,6 +290,7 @@ export function QuickProfileBar() {
         </div>
 
         <PlaceInput
+          variant="form"
           label="いま住んでいるところ（出発地）"
           lat={baseLat}
           lon={baseLon}
@@ -308,6 +309,7 @@ export function QuickProfileBar() {
         />
 
         <PlaceInput
+          variant="form"
           label="生まれたところ"
           lat={birthLat}
           lon={birthLon}

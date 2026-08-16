@@ -37,7 +37,55 @@ export interface PlaceInputProps {
   help?: string;
   /** 「いまいる場所を使う」を出すか。現在地の欄でだけ true。 */
   onUseCurrentLocation?: () => void;
+  /**
+   * 見た目の縮尺。既定の "compact" は設定バー（MetaphysicalConfigBar）用の
+   * 小さい字。"form" はホーム上部の「まずここを入れる」用で、隣に並ぶ
+   * 生年月日の欄（ラベル text-sm・入力 py-2.5）と同じ縮尺にする。
+   * 縮尺が混ざると、同じ段に並べたときに欄の高さと字の大きさが
+   * 食い違って崩れて見える（利用者の指摘）。
+   */
+  variant?: "compact" | "form";
 }
+
+/** 縮尺ごとの class。構造は同じで、字の大きさと余白だけが違う。 */
+const VARIANT_STYLES = {
+  compact: {
+    label: "text-[10px] uppercase font-bold text-stone-500",
+    optionalBadge: "ml-1.5 text-[9px] font-normal text-stone-400",
+    currentLocation:
+      "text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
+    input:
+      "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300",
+    searching: "text-[10px] text-stone-400 animate-pulse",
+    notice: "text-[10px] text-amber-600",
+    suggestion:
+      "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors",
+    picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
+    pinSize: 10,
+    help: "text-[9px] text-stone-400 leading-relaxed",
+    coordsToggle: "self-start text-[9px] text-stone-400 hover:text-stone-600",
+    coordInput:
+      "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
+  },
+  form: {
+    label: "text-sm font-bold text-slate-800",
+    optionalBadge: "ml-1.5 text-xs font-normal text-slate-400",
+    currentLocation:
+      "text-xs text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
+    input:
+      "w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-900 placeholder-slate-300 outline-none focus:border-rose-400 transition-colors",
+    searching: "text-xs text-slate-400 animate-pulse",
+    notice: "text-xs text-amber-600",
+    suggestion:
+      "w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-rose-50 transition-colors",
+    picked: "flex items-center gap-1.5 text-xs text-slate-500",
+    pinSize: 12,
+    help: "text-xs text-slate-500 leading-relaxed",
+    coordsToggle: "self-start text-xs text-slate-400 hover:text-slate-600",
+    coordInput:
+      "px-2 py-2 bg-white border border-slate-300 rounded-lg text-sm font-mono text-slate-700",
+  },
+} as const;
 
 interface Suggestion {
   name: string;
@@ -61,7 +109,9 @@ export function PlaceInput({
   optional,
   help,
   onUseCurrentLocation,
+  variant = "compact",
 }: PlaceInputProps) {
+  const s = VARIANT_STYLES[variant];
   const [query, setQuery] = React.useState("");
   const [suggestions, setSuggestions] = React.useState<Suggestion[]>([]);
   const [searching, setSearching] = React.useState(false);
@@ -164,19 +214,15 @@ export function PlaceInput({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-[10px] uppercase font-bold text-stone-500">
+        <label className={s.label}>
           {label}
-          {optional && (
-            <span className="ml-1.5 text-[9px] font-normal text-stone-400">
-              （任意）
-            </span>
-          )}
+          {optional && <span className={s.optionalBadge}>（任意）</span>}
         </label>
         {onUseCurrentLocation && (
           <button
             type="button"
             onClick={onUseCurrentLocation}
-            className="text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline shrink-0"
+            className={s.currentLocation}
           >
             いまいる場所を使う
           </button>
@@ -191,27 +237,23 @@ export function PlaceInput({
           setNotice(null);
         }}
         placeholder="市区町村・住所・郵便番号（例: 京都市南区 / 6018001）"
-        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300"
+        className={s.input}
       />
 
-      {searching && (
-        <p className="text-[10px] text-stone-400 animate-pulse">
-          探しています…
-        </p>
-      )}
+      {searching && <p className={s.searching}>探しています…</p>}
 
-      {notice && <p className="text-[10px] text-amber-600">{notice}</p>}
+      {notice && <p className={s.notice}>{notice}</p>}
 
       {suggestions.length > 0 && (
         <ul className="flex flex-col gap-0.5 border border-stone-200 rounded-lg overflow-hidden">
-          {suggestions.map((s) => (
-            <li key={`${s.name}-${s.lat}-${s.lon}`}>
+          {suggestions.map((suggestion) => (
+            <li key={`${suggestion.name}-${suggestion.lat}-${suggestion.lon}`}>
               <button
                 type="button"
-                onClick={() => pick(s)}
-                className="w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors"
+                onClick={() => pick(suggestion)}
+                className={s.suggestion}
               >
-                {s.name}
+                {suggestion.name}
               </button>
             </li>
           ))}
@@ -219,8 +261,8 @@ export function PlaceInput({
       )}
 
       {/* 決まった場所。座標そのものではなく、地名で確かめられるようにする */}
-      <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
-        <MapPin size={10} className="text-stone-400 shrink-0" />
+      <div className={s.picked}>
+        <MapPin size={s.pinSize} className="text-stone-400 shrink-0" />
         {picked ? (
           <span className="truncate">{picked}</span>
         ) : hasCoords ? (
@@ -234,9 +276,7 @@ export function PlaceInput({
         )}
       </div>
 
-      {help && (
-        <p className="text-[9px] text-stone-400 leading-relaxed">{help}</p>
-      )}
+      {help && <p className={s.help}>{help}</p>}
 
       {/*
         緯度経度は畳んでおく。地図で拾った値を手で微調整している人が
@@ -245,7 +285,7 @@ export function PlaceInput({
       <button
         type="button"
         onClick={() => setShowCoords(!showCoords)}
-        className="self-start text-[9px] text-stone-400 hover:text-stone-600"
+        className={s.coordsToggle}
       >
         {showCoords ? "▲ 緯度経度を隠す" : "▼ 緯度経度を直接入れる"}
       </button>
@@ -261,7 +301,7 @@ export function PlaceInput({
               if (Number.isFinite(v) && lon !== null) onChange(v, lon);
             }}
             placeholder="緯度"
-            className="px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700"
+            className={s.coordInput}
           />
           <input
             type="number"
@@ -272,7 +312,7 @@ export function PlaceInput({
               if (Number.isFinite(v) && lat !== null) onChange(lat, v);
             }}
             placeholder="経度"
-            className="px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700"
+            className={s.coordInput}
           />
         </div>
       )}
