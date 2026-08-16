@@ -13,22 +13,12 @@ import {
   FolderOpen,
   UserCheck,
 } from "lucide-react";
-import dynamic from "next/dynamic";
 import {
   loadProfilePresets,
   saveProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { getProfileStorageMode } from "@/lib/profilePresentation";
-
-const LocationPickerInner = dynamic(() => import("./LocationPickerInner"), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
-      [ INITIALIZING MAP INTERFACE... ]
-    </div>
-  ),
-});
 
 interface PersonalProfileProps {
   birthDate: string;
@@ -112,8 +102,6 @@ export function PersonalProfileConfig({
   derivedHonmeiStar,
   derivedPersonalVoid,
 }: PersonalProfileProps) {
-  const [showBirthMapPicker, setShowBirthMapPicker] = useState(false);
-  const [showBaseMapPicker, setShowBaseMapPicker] = useState(false);
   /**
    * 詳細設定（天中殺の上書き・判定に使う要素・生体の基準値・API キー）を
    * 畳んでおく。既定は閉じる。初めて開いた人が設定すべきなのは
@@ -439,23 +427,22 @@ export function PersonalProfileConfig({
             </span>
           </div>
 
+          {/*
+            生年月日の入力は頁の上（まずここを入れる）に移した。同じ欄が
+            2 か所にあると、どちらが効いているのか分からなくなる。
+            ここには**入っている値と、そこから出た結果だけ**を出す。
+          */}
           <div className="flex flex-col gap-1">
-            <label
-              htmlFor="profile-birth"
-              className="text-[8px] text-stone-400 uppercase"
-            >
+            <span className="text-[8px] text-stone-400 uppercase">
               生年月日・出生時間
-            </label>
-            <input
-              id="profile-birth"
-              type="datetime-local"
-              value={birthDate}
-              onChange={(e) => setBirthDate(e.target.value)}
-              className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full"
-            />
+            </span>
+            <span className="text-sm text-stone-700 font-bold">
+              {birthDate || "未設定"}
+            </span>
             <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              本命星と天中殺はここから決まります。時間が不明なら 00:00
-              のままで構いません。
+              {
+                "変えるときは頁の上の「まずここを入れる」から。本命星と天中殺はここから決まります。"
+              }
             </span>
           </div>
 
@@ -524,51 +511,19 @@ export function PersonalProfileConfig({
             </div>
           )}
 
+          {/* 出生地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[8px] text-stone-400 uppercase">
-                出生地座標 (緯度・経度)
-              </label>
-              <button
-                onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-blue-500/20 text-blue-600 border-blue-200" : "bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200"}`}
-              >
-                {showBirthMapPicker ? "[ 地図を閉じる ]" : "[ 地図検索 ]"}
-              </button>
-            </div>
-            {showBirthMapPicker && (
-              <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20 border border-stone-300 rounded overflow-hidden">
-                <LocationPickerInner
-                  initialLat={birthLat || 35.6895}
-                  initialLon={birthLon || 139.6917}
-                  onSelect={(newLat: number, newLon: number) => {
-                    setBirthLat(Number(newLat.toFixed(5)));
-                    setBirthLon(Number(newLon.toFixed(5)));
-                  }}
-                />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              <input
-                type="number"
-                step="0.000001"
-                value={birthLat}
-                onChange={(e) => setBirthLat(Number(e.target.value))}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase text-center"
-                placeholder="Lat"
-              />
-              <input
-                type="number"
-                step="0.000001"
-                value={birthLon}
-                onChange={(e) => setBirthLon(Number(e.target.value))}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase text-center"
-                placeholder="Lon"
-              />
-            </div>
-            <div className="col-span-2 text-[7px] text-stone-400 mt-0.5 text-justify">
-              任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。
-            </div>
+            <span className="text-[8px] text-stone-400 uppercase">
+              出生地座標 (緯度・経度)
+            </span>
+            <span className="text-xs text-stone-700 font-bold">
+              北緯 {birthLat.toFixed(3)} / 東経 {birthLon.toFixed(3)}
+            </span>
+            <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
+              {
+                "任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。変えるときは頁の上から。"
+              }
+            </span>
           </div>
 
           {showAdvanced && (
@@ -603,60 +558,30 @@ export function PersonalProfileConfig({
             </span>
           </div>
 
+          {/* 現在地の入力も上へ移した（地名・郵便番号でも入れられる）。 */}
           <div className="flex flex-col gap-1 mt-2">
-            <div className="flex items-center justify-between">
-              <label className="text-[8px] text-stone-400 uppercase">
-                現在地の座標 (緯度・経度)
-              </label>
-              <button
-                onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-500/20 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-300 hover:bg-stone-200"}`}
-              >
-                {showBaseMapPicker ? "[ 地図を閉じる ]" : "[ 地図検索 ]"}
-              </button>
-            </div>
-            {showBaseMapPicker && (
-              <div className="w-full h-48 sm:h-64 mt-1 mb-1 animate-fade-in z-20 border border-stone-300 rounded overflow-hidden">
-                <LocationPickerInner
-                  initialLat={baseLat || 35.6895}
-                  initialLon={baseLon || 139.6917}
-                  onSelect={(newLat: number, newLon: number) => {
-                    setBaseLat(Number(newLat.toFixed(5)));
-                    setBaseLon(Number(newLon.toFixed(5)));
-                  }}
-                />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              <input
-                type="number"
-                step="0.000001"
-                value={baseLat}
-                onChange={(e) => setBaseLat(Number(e.target.value))}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-emerald-500 transition-colors w-full uppercase text-center"
-                placeholder="Lat"
-              />
-              <input
-                type="number"
-                step="0.000001"
-                value={baseLon}
-                onChange={(e) => setBaseLon(Number(e.target.value))}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-emerald-500 transition-colors w-full uppercase text-center"
-                placeholder="Lon"
-              />
-            </div>
-            <div className="col-span-2 text-[7px] text-stone-400 mt-0.5 text-justify">
+            <span className="text-[8px] text-stone-400 uppercase">
+              現在地の座標 (緯度・経度)
+            </span>
+            <span className="text-xs text-stone-700 font-bold">
+              北緯 {baseLat.toFixed(3)} / 東経 {baseLon.toFixed(3)}
+            </span>
+            <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
               方位はここから測ります。物件検索・地図・カレンダーと共通の値です。
-            </div>
+            </span>
           </div>
 
           <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-sm">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-600 mt-0.5 min-w-[10px]" />
               <p className="text-[8px] text-stone-500 leading-relaxed text-justify">
-                現在の設定: 北緯 {baseLat.toFixed(2)} 度・東経{" "}
-                {baseLon.toFixed(2)}{" "}
-                度。下の「デバイスのGPSを取得」で今いる場所に合わせられます。
+                生年月日・現在地・生まれたところは、
+                <strong className="text-stone-700">
+                  頁の上の「まずここを入れる」
+                </strong>
+                {
+                  "で変えます。地名や郵便番号でも入れられます。ここは算出結果と、普段は触らない設定だけを置いています。"
+                }
               </p>
             </div>
           </div>
