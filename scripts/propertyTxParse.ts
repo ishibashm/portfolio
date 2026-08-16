@@ -88,9 +88,18 @@ export function toRow(r: RawRecord, year: number, quarter: number): Row | null {
   const type = str(r.Type);
 
   /*
-    国交省の応答に安定した id が無い。同じ取引を二度入れないための鍵を
-    こちらで作る。市区町村・地区・種類・面積・価格・期がすべて同じ行は
-    同一の取引とみなす。厳密な同定ではないが、二度入れを防ぐには足りる。
+    国交省の応答に安定した id が無いので、こちらで鍵を作る。
+
+    最初は「市区町村・地区・種類・面積・価格・期」だけで作っていた。
+    **同じ町で同じ広さ・同じ価格の取引が同じ四半期に 2 件あると潰れる。**
+    京都府の 1 回目の取り込みで実際に起きて、PostgreSQL が
+    「ON CONFLICT DO UPDATE command cannot affect row a second time」
+    で落ちた（同じ INSERT に同じ id が 2 つあると拒む）。
+
+    区別に使える項目を増やす。それでも同じになる行は残るので、
+    通し番号を付けるのは呼び出し側（toRows）が受け持つ。
+    **落とさない。**同じ条件の取引が複数あること自体が相場の情報なので、
+    重複として捨てると件数が減って平均がずれる。
   */
   const id = [
     municipalityCode,
@@ -98,6 +107,11 @@ export function toRow(r: RawRecord, year: number, quarter: number): Row | null {
     type ?? "",
     area ?? "",
     price ?? "",
+    toNumber(r.TotalFloorArea) ?? "",
+    toNumber(r.BuildingYear) ?? "",
+    str(r.Structure) ?? "",
+    str(r.Use) ?? "",
+    str(r.Region) ?? "",
     year,
     quarter,
   ].join("|");
@@ -120,6 +134,40 @@ export function toRow(r: RawRecord, year: number, quarter: number): Row | null {
     structure: str(r.Structure),
     use_type: str(r.Use),
   };
+}
+
+/**
+ * 応答をまとめて行にする。**id が重ならないことを保証する。**
+ *
+ * 項目を増やしても、まったく同じ内容の取引は残る（同じ町で同じ間取り・
+ * 同じ価格の部屋が同じ四半期に 2 つ売れる、など普通にある）。そこには
+ * 通し番号を付けて別の行にする。
+ *
+ * 捨てない。**同じ条件の取引が複数あること自体が相場の情報**で、
+ * 重複として落とすと件数が減って平均がずれる。
+ *
+ * 番号は「応答に出てきた順」で決まる。同じ年・四半期・県を引き直せば
+ * 同じ並びが返るので、**二度回しても同じ id になり、行は増えない。**
+ */
+export function toRows(
+  records: RawRecord[],
+  year: number,
+  quarter: number,
+): Row[] {
+  const seen = new Map<string, number>();
+  const rows: Row[] = [];
+
+  for (const r of records) {
+    const row = toRow(r, year, quarter);
+    if (!row) continue;
+
+    const n = (seen.get(row.id) ?? 0) + 1;
+    seen.set(row.id, n);
+    // 1 件目はそのまま。2 件目以降だけ番号を足して、既存の id を変えない。
+    rows.push(n === 1 ? row : { ...row, id: `${row.id}#${n}` });
+  }
+
+  return rows;
 }
 
 /** 対応づけの検査に使う主要な項目。 */
