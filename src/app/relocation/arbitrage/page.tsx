@@ -12,6 +12,7 @@ import {
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
+import { TransactionsPanel } from "@/components/relocation/TransactionsPanel";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
@@ -345,6 +346,11 @@ export default function ArbitrageScannerPage() {
   const [radiusKm, setRadiusKm] = useState(
     filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm,
   ); // Scan Radius (km)
+  /**
+   * 賃貸（いま契約できる物件のスキャン）か、購入（国交省の成約相場）か。
+   * 購入は物件一覧ではなく相場の表示なので、スキャンの状態には触らない。
+   */
+  const [listingType, setListingType] = useState<"rent" | "buy">("rent");
   const [prefecture, setPrefecture] = useState("all"); // Target Prefecture
   // 既定は古典（一般的な九星気学）。理由は下の読み込み処理のコメントに書いた。
   const [useClassical, setUseClassical] = useState(true);
@@ -2627,11 +2633,10 @@ export default function ArbitrageScannerPage() {
                             : searchAreaForFilters(prefecture, radiusKm)
                     }
                   >
-                    {/* 物件種別。現状のデータ源は賃貸のみで、売買
-                        （中古マンション・土地）は未収集。選べない選択肢を
-                        隠すと構想自体が伝わらないので、無効ボタンとして
-                        見せて準備中であることを明示する。スクレイパーと
-                        スキーマ（listing_type 相当）が揃った時点で有効化する。 */}
+                    {/* 物件種別。購入側は国交省の成約価格（取引の実績）で、
+                        賃貸のような「いま契約できる物件」の一覧ではない。
+                        混同させないよう、購入の中身は成約相場のパネル
+                        （TransactionsPanel）に切り替える。 */}
                     <div className="space-y-1">
                       <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
                         物件種別
@@ -2639,20 +2644,38 @@ export default function ArbitrageScannerPage() {
                       <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
                         <button
                           type="button"
-                          className="flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
+                          onClick={() => setListingType("rent")}
+                          className={`flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                            listingType === "rent"
+                              ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
+                              : "text-stone-400 hover:text-stone-600"
+                          }`}
                         >
                           賃貸
                         </button>
                         <button
                           type="button"
-                          disabled
-                          title="売買（中古マンション・土地）のデータ収集は準備中です。収集が始まりしだい選べるようになります。"
-                          className="flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold text-stone-400 cursor-not-allowed"
+                          onClick={() => setListingType("buy")}
+                          title="国土交通省の成約価格（過去に実際に売買された価格）を方位別に表示します。"
+                          className={`flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all ${
+                            listingType === "buy"
+                              ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
+                              : "text-stone-400 hover:text-stone-600"
+                          }`}
                         >
-                          購入（準備中）
+                          購入（成約相場）
                         </button>
                       </div>
                     </div>
+
+                    {listingType === "buy" && (
+                      <TransactionsPanel
+                        lat={hasBaseLocation ? parseFloat(baseLat) : 0}
+                        lon={hasBaseLocation ? parseFloat(baseLon) : 0}
+                        radiusKm={radiusKm === "all" ? null : Number(radiusKm)}
+                        hasBase={hasBaseLocation}
+                      />
+                    )}
 
                     {/* Search Area Selection */}
                     <div className="space-y-1">
