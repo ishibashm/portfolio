@@ -457,8 +457,14 @@ export default function HomePortal({
               </Link>
             </li>
             <li>
+              {/*
+                以前は /relocation/auspicious-days を指していた。**その頁は
+                無い**（あるのは同じ名前の API だけ）。ホームから 404 へ
+                リンクしていて、Search Console が 404 として拾っていた。
+                暦カレンダーの実体は /calendar（siteStructure の定義と同じ）。
+              */}
               <Link
-                href="/relocation/auspicious-days"
+                href="/calendar"
                 className="text-indigo-500 hover:underline"
               >
                 引越しの日取りを選ぶ →
