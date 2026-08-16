@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Activity,
   Shield,
@@ -48,6 +48,18 @@ interface DashboardProps {
 // 渡ってくるが、この画面では描画していない。呼び出し側を壊さないよう
 // 受け口は残し、分割代入からだけ外してある。
 
+/*
+  背景の飾りの波形（opacity 10% の SVG）。以前は 100ms の setInterval で
+  乱数を流し込み、このコンポーネント全体を毎秒 10 回描き直していた。
+  実データではない飾りのために、地図と同じタブで CPU を使い続けて
+  操作のかくつきに足していたので、固定の波形にして動かさない。
+*/
+const DECOR_WAVE_PATH = `M 0,50 ${Array.from(
+  { length: 40 },
+  (_, i) =>
+    `L ${i * 10},${(50 + Math.sin(i / 3) * 14 + Math.sin(i / 1.3) * 6).toFixed(1)}`,
+).join(" ")}`;
+
 export function BioMagneticDashboard({
   kpIndex,
   xrayFlux,
@@ -64,27 +76,6 @@ export function BioMagneticDashboard({
   shieldCapacity,
   pressure = null,
 }: DashboardProps) {
-  // --- Animated Waveform State (Fake Data for UI Richness) ---
-  const [waveformData, setWaveformData] = useState<number[]>(
-    Array.from({ length: 40 }, () => 50),
-  );
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWaveformData((prev) => {
-        const newData = [
-          ...prev.slice(1),
-          50 +
-            (Math.random() * 40 - 20) +
-            (hrv > 80
-              ? Math.sin(Date.now() / 200) * 10
-              : Math.cos(Date.now() / 100) * 20),
-        ];
-        return newData;
-      });
-    }, 100);
-    return () => clearInterval(interval);
-  }, [hrv]);
-
   const getKpColor = (kp: number | null) => {
     if (kp === null) return "text-stone-400";
     if (kp >= 5)
@@ -367,7 +358,7 @@ export function BioMagneticDashboard({
             preserveAspectRatio="none"
           >
             <path
-              d={`M 0,50 ${waveformData.map((val, i) => `L ${i * 10},${val}`).join(" ")}`}
+              d={DECOR_WAVE_PATH}
               fill="none"
               stroke="#3b82f6"
               strokeWidth="2"
