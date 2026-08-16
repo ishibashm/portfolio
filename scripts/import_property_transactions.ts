@@ -2,6 +2,13 @@ import { Pool } from "pg";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
+import {
+  pickRecords,
+  toRow,
+  checkMapping,
+  type RawRecord,
+  type Row,
+} from "./propertyTxParse";
 
 /**
  * 不動産の成約価格を取り込む。国土交通省「不動産情報ライブラリ」の
@@ -16,9 +23,14 @@ import * as path from "path";
  *   fetch    取引を取り込む（座標は NULL）
  *   geocode  座標が NULL の行を国土地理院で引いて埋める
  *
- * probe を分けてあるのは、**開発の環境から国交省 API へ出られず、
- * 応答の項目名をこちらで確かめられないため**。推測で対応づけを書くと
- * 1 回目の取り込みが黙って空振りする。まず形を見てから決める。
+ * probe を分けてあるのは、開発の環境から国交省 API へ出られず、応答の
+ * 項目名をこちらで確かめられなかったため。推測で対応づけを書くと 1 回目の
+ * 取り込みが黙って空振りする。
+ *
+ * **2026-08-16 の probe で実物を確認済み**（京都府・2025 年第 1 四半期・
+ * 2,964 件）。包みは { status, data }、項目は 29 個で、想定していた
+ * 対応づけと一致した。読み取りは scripts/propertyTxParse.ts に切り出して
+ * あり、probe が返した実物の 2 件をそのままテストに食わせている。
  *
  * 使い方:
  *   POSTAL_STAGE 相当は TX_STAGE。既定は probe（安全側）
@@ -78,12 +90,6 @@ function prefectureCodes(): string[] {
   return Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, "0"));
 }
 
-/**
- * 応答の 1 件。**項目名は probe で実物を見てから確定させる。**
- * ここに書いてあるのは公開仕様に基づく想定で、確認前は当てにしない。
- */
-type RawRecord = Record<string, unknown>;
-
 function buildUrl(year: number, quarter: number, area: string): string {
   const params = new URLSearchParams({
     year: String(year),
@@ -112,22 +118,6 @@ async function callApiRaw(
     throw new Error(`${res.status} ${url}`);
   }
   return { url, json: await res.json() };
-}
-
-/**
- * 一覧が入っている枝を探す。**"data" 決め打ちにしない。**
- * 提供元が包みの名前を変えたときに 0 件で静かに終わるのを防ぐ。
- */
-function pickRecords(json: unknown): RawRecord[] {
-  if (Array.isArray(json)) return json as RawRecord[];
-  if (!json || typeof json !== "object") return [];
-  const obj = json as Record<string, unknown>;
-  for (const key of ["data", "Data", "results", "items"]) {
-    if (Array.isArray(obj[key])) return obj[key] as RawRecord[];
-  }
-  // 名前が違っても、配列の枝が 1 つだけならそれを使う。
-  const arrays = Object.values(obj).filter(Array.isArray);
-  return arrays.length === 1 ? (arrays[0] as RawRecord[]) : [];
 }
 
 async function callApi(
@@ -186,115 +176,6 @@ async function stageProbe() {
   );
 }
 
-/** 文字列から数だけを取り出す。「1,234万円」のような表記に備える。 */
-function toNumber(v: unknown): number | null {
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v !== "string") return null;
-  const digits = v.replace(/[^0-9.-]/g, "");
-  if (!digits) return null;
-  const n = Number(digits);
-  return Number.isFinite(n) ? n : null;
-}
-
-function str(v: unknown): string | null {
-  return typeof v === "string" && v.length > 0 ? v : null;
-}
-
-interface Row {
-  id: string;
-  trade_year: number;
-  trade_quarter: number;
-  municipality_code: string;
-  prefecture: string;
-  municipality: string;
-  district_name: string | null;
-  property_type: string | null;
-  trade_price: number | null;
-  area_sqm: number | null;
-  unit_price_sqm: number | null;
-  building_year: number | null;
-  structure: string | null;
-  use_type: string | null;
-}
-
-/**
- * 応答の 1 件を表の 1 行にする。
- *
- * **項目名は probe で確かめてから直すこと。**下の名前は公開仕様に
- * 基づく想定で、実物と違えば全部 null になる（黙って空の行が並ぶ）。
- * そうならないよう、fetch の最初の 1 件で「主要な項目が全部 null」なら
- * 止めて知らせる（下の assertMapping）。
- */
-function toRow(r: RawRecord, year: number, quarter: number): Row | null {
-  const municipalityCode = str(r.MunicipalityCode);
-  const prefecture = str(r.Prefecture);
-  const municipality = str(r.Municipality);
-  if (!municipalityCode || !prefecture || !municipality) return null;
-
-  const price = toNumber(r.TradePrice);
-  const area = toNumber(r.Area);
-  const district = str(r.DistrictName);
-  const type = str(r.Type);
-
-  /*
-    国交省の応答に安定した id が無い。同じ取引を二度入れないための鍵を
-    こちらで作る。市区町村・地区・種類・面積・価格・期がすべて同じ行は
-    同一の取引とみなす。厳密な同定ではないが、二度入れを防ぐには足りる。
-  */
-  const id = [
-    municipalityCode,
-    district ?? "",
-    type ?? "",
-    area ?? "",
-    price ?? "",
-    year,
-    quarter,
-  ].join("|");
-
-  return {
-    id,
-    trade_year: year,
-    trade_quarter: quarter,
-    municipality_code: municipalityCode,
-    prefecture,
-    municipality,
-    district_name: district,
-    property_type: type,
-    trade_price: price,
-    area_sqm: area,
-    // 割り算はここでやる。画面に置くと面積 0 の行で Infinity になる。
-    unit_price_sqm:
-      price !== null && area !== null && area > 0 ? price / area : null,
-    building_year: toNumber(r.BuildingYear),
-    structure: str(r.Structure),
-    use_type: str(r.Use),
-  };
-}
-
-/**
- * 対応づけが実物と合っているかを、最初の 1 件で確かめる。
- *
- * 合っていないと「行は入るが中身が全部 null」になり、**失敗したことに
- * 気付けないまま何万件も書き込む**。それを防ぐ。
- */
-function assertMapping(rows: RawRecord[]) {
-  const sample = rows[0];
-  const mapped = toRow(sample, YEAR_TO, 1);
-  if (!mapped) {
-    console.error("\n応答の項目名が想定と違います。実際の 1 件:");
-    console.error(JSON.stringify(sample, null, 2));
-    throw new Error(
-      "対応づけ（toRow）が合っていません。TX_STAGE=probe で項目名を確認し、" +
-        "toRow を直してから再実行してください。",
-    );
-  }
-  if (mapped.trade_price === null && mapped.area_sqm === null) {
-    console.error("\n価格も面積も取れていません。実際の 1 件:");
-    console.error(JSON.stringify(sample, null, 2));
-    throw new Error("対応づけ（toRow）が合っていません。");
-  }
-}
-
 async function stageFetch(pool: Pool) {
   let total = 0;
   let checked = false;
@@ -320,7 +201,8 @@ async function stageFetch(pool: Pool) {
 
         // 最初に取れた応答で対応づけを確かめる。合わなければここで止まる。
         if (!checked) {
-          assertMapping(raw);
+          const problem = checkMapping(raw[0]);
+          if (problem) throw new Error(problem);
           checked = true;
           console.log("対応づけの確認: OK");
         }
