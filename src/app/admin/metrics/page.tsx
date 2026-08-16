@@ -108,6 +108,11 @@ type Summary = {
   hourly: { hour: number; pv: number }[];
   /** 曜日 × 時間帯（直近30日）。記録のある枠だけ来る。dow は日曜が 0。 */
   weekdayHourly: { dow: number; hour: number; pv: number }[];
+  /** 今日と昨日の日付（JST）。数え直さず、集計と同じものを使う。 */
+  intradayToday: string;
+  intradayYesterday: string;
+  /** 今日と昨日の時間別。記録のある時刻だけ来る。 */
+  intraday: { day: string; hour: number; pv: number; uv: number }[];
   topPaths: { path: string; pv: number; uv: number }[];
   topReferrers: { host: string; pv: number }[];
   devices: { device: string; pv: number; uv: number }[];
@@ -407,6 +412,126 @@ function DailyChart({
   );
 }
 
+/**
+ * 今日 1 日の中の動き。昨日の同じ時刻と並べる。
+ *
+ * 「時間帯別（直近 7 日）」は 7 日ぶんを重ねた**いつもの傾向**で、
+ * 今日どう増えているかは読めない（利用者の指摘）。ここは今日だけを見る。
+ *
+ * 昨日を薄い棒で後ろに置き、同じ時刻どうしで比べられるようにする。
+ * 差は棒の下に出す。**まだ来ていない時刻は棒を描かない**（0 件なのか
+ * 時刻が来ていないのかを取り違えないため）。
+ *
+ * 応答は記録のある時刻だけ来る。残りはここで 0 として埋める。
+ */
+function IntradayChart({
+  rows,
+  today,
+  yesterday,
+  nowHour,
+}: {
+  rows: { day: string; hour: number; pv: number; uv: number }[];
+  today: string;
+  yesterday: string;
+  nowHour: number;
+}) {
+  const pick = (day: string) => {
+    const map = new Map(
+      rows.filter((r) => r.day === day).map((r) => [r.hour, r]),
+    );
+    return Array.from({ length: 24 }, (_, h) => ({
+      hour: h,
+      pv: map.get(h)?.pv ?? 0,
+      uv: map.get(h)?.uv ?? 0,
+    }));
+  };
+
+  const todayRows = pick(today);
+  const yesterdayRows = pick(yesterday);
+  const max = Math.max(
+    1,
+    ...todayRows.map((r) => r.pv),
+    ...yesterdayRows.map((r) => r.pv),
+  );
+
+  const todaySum = todayRows.reduce((s, r) => s + r.pv, 0);
+  // 昨日は「今の時刻まで」で切る。1 日ぶんと比べると必ず負けて見える。
+  const yesterdaySoFar = yesterdayRows
+    .filter((r) => r.hour <= nowHour)
+    .reduce((s, r) => s + r.pv, 0);
+  const diff = todaySum - yesterdaySoFar;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
+        <span className="font-mono font-bold text-stone-700">
+          今日 {todaySum} PV
+        </span>
+        <span className="font-mono text-stone-400">
+          昨日の同じ時刻まで {yesterdaySoFar} PV
+        </span>
+        <span
+          className={`font-mono font-bold ${
+            diff > 0
+              ? "text-emerald-600"
+              : diff < 0
+                ? "text-rose-600"
+                : "text-stone-400"
+          }`}
+        >
+          {diff > 0 ? `+${diff}` : diff}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-12 gap-1">
+        {todayRows.map((r) => {
+          const future = r.hour > nowHour;
+          const prev = yesterdayRows[r.hour].pv;
+          const delta = r.pv - prev;
+          return (
+            <div
+              key={r.hour}
+              className="flex flex-col items-center gap-0.5"
+              title={`${r.hour}時: 今日 ${r.pv} PV / ${r.uv} UV・昨日 ${prev} PV`}
+            >
+              <div className="relative w-full h-16 bg-stone-50 rounded-sm overflow-hidden">
+                {/* 昨日（薄い棒・後ろ） */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 bg-stone-200"
+                  style={{ height: `${(prev / max) * 100}%` }}
+                />
+                {/* 今日（濃い棒・手前）。まだ来ていない時刻は描かない。 */}
+                {!future && (
+                  <div
+                    className="absolute bottom-0 left-1/4 right-1/4 bg-emerald-500"
+                    style={{ height: `${(r.pv / max) * 100}%` }}
+                  />
+                )}
+              </div>
+              <div className="text-[8px] font-mono text-stone-400">
+                {r.hour}
+              </div>
+              <div
+                className={`text-[8px] font-mono ${
+                  future
+                    ? "text-stone-300"
+                    : delta > 0
+                      ? "text-emerald-600"
+                      : delta < 0
+                        ? "text-rose-500"
+                        : "text-stone-300"
+                }`}
+              >
+                {future ? "–" : delta > 0 ? `+${delta}` : delta}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 const WEEKDAY_LABELS = ["日", "月", "火", "水", "木", "金", "土"];
 
 /**
@@ -531,6 +656,19 @@ export default function AdminMetricsPage() {
 
   const s = summary;
   const maxHour = Math.max(1, ...(s?.hourly.map((h) => h.pv) ?? []));
+
+  /*
+    いまが JST の何時か。今日の棒を「まだ来ていない時刻」まで描かない
+    ために使う。0 件なのか時刻が来ていないのかを取り違えると、
+    「今日は伸びていない」と読み違える。
+  */
+  const nowHourJst = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Tokyo",
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date()),
+  );
   const sparkAsc = s ? [...s.daily].reverse().map((d) => d.pv) : [];
   const devicePv = s?.devices.reduce((a, d) => a + d.pv, 0) ?? 0;
   const hourMap = new Map(s?.hourly.map((h) => [h.hour, h.pv]) ?? []);
@@ -941,6 +1079,27 @@ export default function AdminMetricsPage() {
                 </div>
               </section>
             </div>
+
+            {/*
+              今日 1 日の中の動き。上の「時間帯別（直近 7 日）」は
+              いつもの傾向で、今日どう増えているかは読めない。
+            */}
+            <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
+              <h2 className="text-sm font-bold text-stone-700 mb-1">
+                今日の時間別（JST・昨日と比較）
+              </h2>
+              <p className="text-[10px] text-stone-400 mb-3">
+                {
+                  "濃い棒が今日、薄い棒が昨日の同じ時刻。下の数字は昨日との差。まだ来ていない時刻は棒を描きません。"
+                }
+              </p>
+              <IntradayChart
+                rows={s.intraday}
+                today={s.intradayToday}
+                yesterday={s.intradayYesterday}
+                nowHour={nowHourJst}
+              />
+            </section>
 
             <section className="bg-white/90 border border-stone-200 rounded-2xl p-5">
               <h2 className="text-sm font-bold text-stone-700 mb-1">

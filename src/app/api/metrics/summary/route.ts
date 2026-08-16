@@ -51,6 +51,13 @@ type PathRow = { path: string; pv: bigint; uv: bigint };
 type ReferrerRow = { referrer_host: string; pv: bigint };
 type DeviceRow = { device: string | null; pv: bigint; uv: bigint };
 type HourRow = { hour: number; pv: bigint };
+/** 今日と昨日の時間別。day は 'YYYY-MM-DD'。 */
+type IntradayRow = {
+  day: string;
+  hour: number;
+  pv: bigint;
+  uv: bigint;
+};
 type WeekdayHourRow = { dow: number; hour: number; pv: bigint };
 type BlogPathRow = { path: string; pv: bigint; uv: bigint };
 type BlogDayRow = { day: string; pv: bigint; uv: bigint };
@@ -140,6 +147,7 @@ export async function GET() {
       topReferrers,
       devices,
       hourly,
+      intraday,
       prev30Pv,
       latestView,
       apiUsage,
@@ -186,6 +194,23 @@ export async function GET() {
                COUNT(*) AS pv
         FROM page_views WHERE day >= ${since7}
         GROUP BY 1 ORDER BY 1`,
+      /*
+        今日 1 日の中の動き。上の hourly は 7 日ぶんを重ねた「いつも
+        見られている時間帯」で、**今日どう増えているかは読めない**
+        （利用者の指摘）。今日と昨日を同じ形で返し、同じ時刻どうしで
+        比べられるようにする。
+
+        UV も出す。PV だけだと、1 人が回遊しただけなのか人が来たのかが
+        分からない。
+      */
+      prisma.$queryRaw<IntradayRow[]>`
+        SELECT day::text AS day,
+               extract(hour from created_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
+               COUNT(*) AS pv,
+               COUNT(DISTINCT visitor_hash) AS uv
+        FROM page_views
+        WHERE day IN (${today}, ${yesterday})
+        GROUP BY 1, 2 ORDER BY 1, 2`,
       prisma.$queryRaw<CountRow[]>`
         SELECT COUNT(*) AS n FROM page_views
         WHERE day >= ${since60} AND day < ${since30}`,
@@ -352,6 +377,20 @@ export async function GET() {
         pvPrev30: Number(prev30Pv[0]?.n ?? 0),
         daily: dailyNum,
         hourly: hourly.map((r) => ({ hour: r.hour, pv: Number(r.pv) })),
+        /*
+          今日 1 日の中の動き。記録のある時刻だけが並ぶ（24 枠すべては
+          返さない）。0 の枠を埋めるのは描く側の仕事。
+          today / yesterday の日付も返す。描く側で「今日」を数え直すと、
+          日付が変わる瞬間にここと食い違う。
+        */
+        intradayToday: today,
+        intradayYesterday: yesterday,
+        intraday: intraday.map((r) => ({
+          day: r.day,
+          hour: r.hour,
+          pv: Number(r.pv),
+          uv: Number(r.uv),
+        })),
         // 記録のある枠だけが並ぶ（168 枠すべては返さない）。0 の枠を
         // 埋めるのは描く側の仕事。応答を 168 行に膨らませない。
         weekdayHourly: weekdayHourly.map((r) => ({
