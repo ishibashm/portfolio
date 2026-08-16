@@ -27,12 +27,13 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: "probe: 形を見るだけ / fetch: 取り込む / geocode: 座標を埋める"
+        description: "probe: 形を見るだけ / fetch: 取り込む / isjfill: 座標を ISJ で一括で埋める / geocode: 残りを 1 件ずつ埋める"
         required: true
         type: choice
         options:
           - probe
           - fetch
+          - isjfill
           - geocode
         default: probe
       area:

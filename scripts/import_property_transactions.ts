@@ -8,6 +8,19 @@ import {
   checkMapping,
   type RawRecord,
 } from "./propertyTxParse";
+import {
+  unzipEntries,
+  pickCsv,
+  decode,
+  parseCsv,
+  stripChome,
+  push,
+  averagePoint,
+} from "./isjParse";
+import {
+  prefectureCodes as isjPrefectureCodes,
+  downloadPrefecture,
+} from "./isjFetch";
 
 /**
  * 不動産の成約価格を取り込む。国土交通省「不動産情報ライブラリ」の
@@ -20,7 +33,13 @@ import {
  *
  *   probe    応答の形を出すだけ。**書き込まない**
  *   fetch    取引を取り込む（座標は NULL）
- *   geocode  座標が NULL の行を国土地理院で引いて埋める
+ *   isjfill  座標が NULL の行を ISJ（位置参照情報）の一覧で一括で埋める
+ *   geocode  座標が NULL の行を国土地理院で 1 件ずつ引いて埋める
+ *
+ * isjfill を先に回すこと。geocode は 1 件 200ms かかり、実測 50 分で
+ * 16,803 件（全国 247 万件では約 147 回・120 時間）。ISJ の一覧との
+ * 突き合わせなら郵便番号と同じく 1 回で大半が埋まり、漏れだけを
+ * geocode が拾えばよい。
  *
  * probe を分けてあるのは、開発の環境から国交省 API へ出られず、応答の
  * 項目名をこちらで確かめられなかったため。推測で対応づけを書くと 1 回目の
@@ -338,6 +357,139 @@ async function stageGeocode(pool: Pool) {
   }
 }
 
+/**
+ * 座標が NULL の行を、ISJ（位置参照情報）の一覧との突き合わせで埋める。
+ *
+ * 鍵は 2 通り。細かいほうから当てる。
+ *
+ *   1. 都道府県|市区町村|地区名          （ISJ の大字町丁目そのまま）
+ *   2. 都道府県|市区町村|丁目を落とした名前（成約の地区名は丁目を持たない）
+ *
+ * 2 は同じ鍵に複数の丁目の点が来るので平均を取る（町の代表点。
+ * 実測で 92.8% の物件が市区町村中央値から 5km 以内、#333）。
+ *
+ * 地区名が無い行だけは市区町村の代表点で埋める。geocode 段へ回しても
+ * 同じ粒度（市区町村の代表点）しか返らないため。地区名があるのに
+ * 当たらなかった行は埋めず、geocode 段に残す。
+ */
+async function stageIsjFill(pool: Pool) {
+  const exact = new Map<string, { lat: number; lon: number }>();
+  const baseGroups = new Map<string, { lat: number; lon: number }[]>();
+  const cityGroups = new Map<string, { lat: number; lon: number }[]>();
+
+  let files = 0;
+  // ISJ 側の県の回し方は ISJ_PREFS が決める（TX_AREA とは別）。
+  for (const pref of isjPrefectureCodes()) {
+    const got = await downloadPrefecture(pref);
+    if (!got) continue;
+    files++;
+
+    const rows = parseCsv(decode(pickCsv(unzipEntries(got.buf)).body));
+    for (const r of rows) {
+      const point = { lat: r.lat, lon: r.lon };
+      exact.set(`${r.pref}|${r.city}|${r.town}`, point);
+      push(baseGroups, `${r.pref}|${r.city}|${stripChome(r.town)}`, point);
+      push(cityGroups, `${r.pref}|${r.city}`, point);
+    }
+    console.log(`  ${pref}: ${rows.length} 件（累計の鍵 ${exact.size}）`);
+
+    // 提供元に連続で当てない。zip は小さいので短くてよい。
+    await new Promise((r) => setTimeout(r, 300));
+  }
+
+  if (files === 0) {
+    throw new Error(
+      "1 県も取得できませんでした。ISJ_STAGE=probe（import_isj_coords.ts）で置き場を確かめてください。",
+    );
+  }
+
+  const base = new Map<string, { lat: number; lon: number }>();
+  for (const [k, v] of baseGroups) base.set(k, averagePoint(v));
+  const city = new Map<string, { lat: number; lon: number }>();
+  for (const [k, v] of cityGroups) city.set(k, averagePoint(v));
+
+  console.log(
+    `\n一覧の用意ができました: そのまま ${exact.size} / 丁目落とし ${base.size} / 市区町村 ${city.size}`,
+  );
+
+  let cursor = "";
+  let filled = 0;
+  let missed = 0;
+  const hits = { exact: 0, base: 0, city: 0 };
+
+  while (true) {
+    if (budgetReached()) {
+      console.log("⏱️ 時間の上限に達しました。続きは次回に回します。");
+      break;
+    }
+
+    const { rows } = await pool.query<{
+      id: string;
+      prefecture: string;
+      municipality: string;
+      district_name: string | null;
+    }>(
+      `SELECT id, prefecture, municipality, district_name
+         FROM property_transactions
+        WHERE lat IS NULL AND id > $1
+        ORDER BY id
+        LIMIT 5000`,
+      [cursor],
+    );
+    if (rows.length === 0) break;
+
+    const ids: string[] = [];
+    const lats: number[] = [];
+    const lons: number[] = [];
+
+    for (const row of rows) {
+      cursor = row.id;
+      const key = `${row.prefecture}|${row.municipality}|${row.district_name ?? ""}`;
+      let point = exact.get(key) ?? base.get(key);
+      let kind: "exact" | "base" | "city" | null = point
+        ? exact.has(key)
+          ? "exact"
+          : "base"
+        : null;
+
+      if (!point && !row.district_name) {
+        point = city.get(`${row.prefecture}|${row.municipality}`);
+        if (point) kind = "city";
+      }
+
+      if (!point || !kind) {
+        missed++;
+        continue;
+      }
+      hits[kind]++;
+      ids.push(row.id);
+      lats.push(point.lat);
+      lons.push(point.lon);
+    }
+
+    if (ids.length > 0) {
+      await pool.query(
+        `UPDATE property_transactions AS p
+            SET lat = v.lat, lon = v.lon, updated_at = now()
+           FROM (SELECT unnest($1::text[]) AS id,
+                        unnest($2::double precision[]) AS lat,
+                        unnest($3::double precision[]) AS lon) AS v
+          WHERE p.id = v.id`,
+        [ids, lats, lons],
+      );
+      filled += ids.length;
+    }
+    console.log(`  埋めた ${filled} 件 / 当たらなかった ${missed} 件`);
+  }
+
+  console.log(
+    `\n内訳: そのまま ${hits.exact} / 丁目落とし ${hits.base} / 市区町村 ${hits.city}`,
+  );
+  console.log(
+    `当たらなかった ${missed} 件は、これまで通り TX_STAGE=geocode が拾います。`,
+  );
+}
+
 async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
   try {
@@ -348,6 +500,9 @@ async function main() {
     if (STAGE === "fetch") {
       const n = await stageFetch(pool);
       console.log(`✅ 取り込み ${n} 件`);
+    }
+    if (STAGE === "isjfill") {
+      await stageIsjFill(pool);
     }
     if (STAGE === "geocode") {
       await stageGeocode(pool);
