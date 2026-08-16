@@ -126,9 +126,9 @@ describe("metrics summary の認可", () => {
     getUser.mockResolvedValue({ data: { user: admin }, error: null });
 
     // Promise.all の並び順に mock を積む:
-    // daily → topPaths → topReferrers → devices → hourly → prev30 → latest
-    // → 当月の外部 API 使用量 → ブログのパス別 → ブログの参照元
-    // → ブログ→道具の到達
+    // daily → topPaths → topReferrers → devices → hourly → intraday
+    // → prev30 → latest → 当月の外部 API 使用量 → ブログのパス別
+    // → ブログの参照元 → ブログ→道具の到達
     queryRaw
       .mockResolvedValueOnce([
         { day: "2026-08-13", pv: BigInt(3), uv: BigInt(2) },
@@ -140,6 +140,10 @@ describe("metrics summary の認可", () => {
         { device: null, pv: BigInt(1), uv: BigInt(1) },
       ])
       .mockResolvedValueOnce([{ hour: 21, pv: BigInt(3) }])
+      .mockResolvedValueOnce([
+        { day: "2026-08-16", hour: 9, pv: BigInt(4), uv: BigInt(2) },
+        { day: "2026-08-15", hour: 9, pv: BigInt(2), uv: BigInt(1) },
+      ])
       .mockResolvedValueOnce([{ n: BigInt(5) }])
       .mockResolvedValueOnce([{ latest: new Date("2026-08-13T12:00:00Z") }])
       .mockResolvedValueOnce([
@@ -192,6 +196,11 @@ describe("metrics summary の認可", () => {
     expect(d.daily[0]).toEqual({ day: "2026-08-13", pv: 3, uv: 2 });
     expect(d.pvPrev30).toBe(5);
     expect(d.hourly[0]).toEqual({ hour: 21, pv: 3 });
+    // 今日と昨日の時間別。行はそのまま返し、0 の枠は埋めない。
+    expect(d.intraday).toEqual([
+      { day: "2026-08-16", hour: 9, pv: 4, uv: 2 },
+      { day: "2026-08-15", hour: 9, pv: 2, uv: 1 },
+    ]);
     // 曜日 × 時間帯は記録のある枠だけ返す（168 枠を埋めない）。
     expect(d.weekdayHourly).toEqual([{ dow: 6, hour: 21, pv: 3 }]);
 
@@ -288,6 +297,7 @@ describe("metrics summary の認可", () => {
   it("api_usage を集計できないときは 0 回と偽らず、他の指標を返す", async () => {
     getUser.mockResolvedValue({ data: { user: admin }, error: null });
     queryRaw
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
