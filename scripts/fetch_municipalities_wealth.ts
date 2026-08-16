@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 import path from "path";
 import fs from "fs/promises";
+import { aggregateWealth, type EstatStatsResponse } from "./estatWealth";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -32,7 +33,7 @@ async function fetchWealthData() {
 
   try {
     const response = await fetch(url);
-    const data = await response.json();
+    const data = (await response.json()) as EstatStatsResponse;
 
     if (data.GET_STATS_DATA.RESULT.STATUS !== 0) {
       console.error("APIエラー:", data.GET_STATS_DATA.RESULT.ERROR_MSG);
@@ -40,66 +41,17 @@ async function fetchWealthData() {
       return;
     }
 
-    const valueList = data.GET_STATS_DATA.STATISTICAL_DATA.DATA_INF.VALUE;
-    const areaList =
-      data.GET_STATS_DATA.STATISTICAL_DATA.CLASS_INF.CLASS_OBJ.find(
-        (obj: any) => obj["@id"] === "area",
-      ).CLASS;
-
     console.log(
-      `\n計 ${valueList.length} 件のデータレコードを取得しました。データ集計を開始します...`,
+      `\n計 ${data.GET_STATS_DATA.STATISTICAL_DATA.DATA_INF.VALUE.length} 件のデータレコードを取得しました。データ集計を開始します...`,
     );
 
-    // 地域コードをキーにしたマップを作成
-    const municipalities: Record<string, any> = {};
-
-    // エリア名のマッピング（地域コード -> 地域名）
-    const areaMap: Record<string, string> = {};
-    if (Array.isArray(areaList)) {
-      areaList.forEach((area: any) => {
-        areaMap[area["@code"]] = area["@name"];
-      });
-    }
-
-    // データの集計
-    valueList.forEach((val: any) => {
-      const areaCode = val["@area"];
-      const catCode = val["@cat01"];
-      const value = parseFloat(val["$"]); // 数値に変換
-
-      if (!municipalities[areaCode]) {
-        municipalities[areaCode] = {
-          areaCode: areaCode,
-          areaName: areaMap[areaCode] || "不明",
-          taxableIncomeThousandYen: 0,
-          taxpayersCount: 0,
-        };
-      }
-
-      if (catCode === "C120110") {
-        municipalities[areaCode].taxableIncomeThousandYen = value;
-      } else if (catCode === "C120120") {
-        municipalities[areaCode].taxpayersCount = value;
-      }
-    });
-
-    // 1人あたりの所得を計算し、配列に変換
-    const results = Object.values(municipalities)
-      .map((m: any) => {
-        // 課税対象所得は千円単位なので、円単位に直す
-        const incomeYen = m.taxableIncomeThousandYen * 1000;
-        // 1人あたりの所得を計算
-        const incomePerCapita =
-          m.taxpayersCount > 0 ? incomeYen / m.taxpayersCount : 0;
-
-        return {
-          ...m,
-          incomeYen,
-          incomePerCapita: Math.round(incomePerCapita), // 四捨五入して整数に
-        };
-      })
-      // 納税者数が0のデータ（欠損値など）を除外
-      .filter((m: any) => m.taxpayersCount > 0 && m.incomePerCapita > 0)
+    /*
+      応答の読み方・集計・1 人あたり所得の出し方は
+      scripts/import_municipalities_wealth.ts と丸ごと同じものが書いてあった。
+      片方だけ直すと、ここが書き出す JSON と DB の数字が食い違う。
+      scripts/estatWealth.ts に寄せた（答えは __tests__/estatWealth.test.ts）。
+    */
+    const results = aggregateWealth(data)
       // お金持ち度（1人あたり所得）が高い順にソート
       .sort((a, b) => b.incomePerCapita - a.incomePerCapita);
 
