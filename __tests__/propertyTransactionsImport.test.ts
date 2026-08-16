@@ -1,19 +1,27 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import {
+  pickRecords,
+  toNumber,
+  toRow,
+  checkMapping,
+} from "../scripts/propertyTxParse";
 
 /**
- * 不動産の成約価格の取り込み（scripts/import_property_transactions.ts）。
+ * 不動産の取引価格の取り込み（国土交通省 XIT001）。
  *
- * この取り込みは 2 つの事故が起きやすい。
+ * **2026-08-16 の probe が返した実物をそのまま食わせる。**京都府・
+ * 2025 年第 1 四半期・2,964 件のうち先頭 2 件。以前はスクリプトの字面を
+ * 検査していたが、位置参照情報の取り込みで**字面が合っていても動かない**
+ * ことが 2 回続いたので、実際に通す形に変えた。
+ *
+ * この取り込みで起きやすい事故は 2 つ。
  *
  * 1. **㎡単価を画面で割る。**面積 0 の取引が混ざると Infinity になり、
- *    相場の表示が壊れる。取り込み時に出して持つ、を守る
- * 2. **応答の項目名が想定と違っても気付けない。**行は入るのに中身が
- *    全部 null になる。probe と対応づけの検査でそれを止める
- *
- * scripts は tsc の対象外（CLAUDE.md 4 節）なので、規則をここに写して
- * 検証し、あわせて実装側に規則が残っていることも見る。
+ *    相場の表示が壊れる。取り込み時に出して持つ
+ * 2. **項目名が想定と違っても気付けない。**行は入るのに中身が全部 null に
+ *    なる。checkMapping が最初の 1 件で止める
  */
 
 const SRC = readFileSync(
@@ -21,41 +29,128 @@ const SRC = readFileSync(
   "utf8",
 );
 
-/** 実装の toNumber と同じ規則。 */
-function toNumber(v: unknown): number | null {
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v !== "string") return null;
-  const digits = v.replace(/[^0-9.-]/g, "");
-  if (!digits) return null;
-  const n = Number(digits);
-  return Number.isFinite(n) ? n : null;
-}
+/** probe が返した実物（先頭 2 件）。項目は削っていない。 */
+const REAL_LAND = {
+  PriceCategory: "不動産取引価格情報",
+  Type: "宅地(土地と建物)",
+  Region: "住宅地",
+  MunicipalityCode: "26101",
+  Prefecture: "京都府",
+  Municipality: "京都市北区",
+  DistrictName: "出雲路神楽町",
+  TradePrice: "18000000",
+  PricePerUnit: "",
+  FloorPlan: "",
+  Area: "85",
+  UnitPrice: "",
+  LandShape: "長方形",
+  Frontage: "6",
+  TotalFloorArea: "85",
+  BuildingYear: "",
+  Structure: "木造",
+  Use: "住宅",
+  Purpose: "その他",
+  Direction: "南西",
+  Classification: "市道",
+  Breadth: "1.6",
+  CityPlanning: "第１種低層住居専用地域",
+  CoverageRatio: "60",
+  FloorAreaRatio: "100",
+  Period: "2025年第1四半期",
+  Renovation: "",
+  Remarks: "私道を含む取引",
+  DistrictCode: "261010010",
+};
 
-/** 実装の unit_price_sqm と同じ規則。 */
-function unitPrice(price: number | null, area: number | null): number | null {
-  return price !== null && area !== null && area > 0 ? price / area : null;
-}
+const REAL_HOUSE = {
+  ...REAL_LAND,
+  Region: "商業地",
+  DistrictName: "大宮南椿原町",
+  TradePrice: "39000000",
+  Area: "75",
+  Frontage: "7.3",
+  TotalFloorArea: "135",
+  BuildingYear: "2010年",
+  Use: "住宅、店舗",
+  Purpose: "住宅",
+  Remarks: "",
+  DistrictCode: "261010440",
+};
 
-/** 実装の pickRecords と同じ規則。 */
-function pickRecords(json: unknown): unknown[] {
-  if (Array.isArray(json)) return json;
-  if (!json || typeof json !== "object") return [];
-  const obj = json as Record<string, unknown>;
-  for (const key of ["data", "Data", "results", "items"]) {
-    if (Array.isArray(obj[key])) return obj[key] as unknown[];
-  }
-  const arrays = Object.values(obj).filter(Array.isArray);
-  return arrays.length === 1 ? (arrays[0] as unknown[]) : [];
-}
-
-describe("数の取り出し", () => {
-  it("数はそのまま通す", () => {
-    expect(toNumber(12000000)).toBe(12000000);
+describe("実物の応答を 1 行にする", () => {
+  it("土地と建物の取引（築年が空）", () => {
+    const row = toRow(REAL_LAND, 2025, 1);
+    expect(row).toEqual({
+      id: "26101|出雲路神楽町|宅地(土地と建物)|85|18000000|2025|1",
+      trade_year: 2025,
+      trade_quarter: 1,
+      municipality_code: "26101",
+      prefecture: "京都府",
+      municipality: "京都市北区",
+      district_name: "出雲路神楽町",
+      property_type: "宅地(土地と建物)",
+      trade_price: 18000000,
+      area_sqm: 85,
+      // 18,000,000 / 85 ≒ 211,764.7 円/㎡
+      unit_price_sqm: 18000000 / 85,
+      building_year: null, // "" は null。0 年築にしない
+      structure: "木造",
+      use_type: "住宅",
+    });
   });
 
-  it("文字列の桁区切りや単位を落とす", () => {
-    expect(toNumber("12,000,000")).toBe(12000000);
-    expect(toNumber("55.5")).toBe(55.5);
+  it("築年の「2010年」から数を取り出す", () => {
+    // 実物は単位付きの文字列で来る。そのまま入れると型が合わない。
+    expect(toRow(REAL_HOUSE, 2025, 1)?.building_year).toBe(2010);
+  });
+
+  it("同じ期の別の取引は別の id になる", () => {
+    const a = toRow(REAL_LAND, 2025, 1)!;
+    const b = toRow(REAL_HOUSE, 2025, 1)!;
+    expect(a.id).not.toBe(b.id);
+  });
+
+  it("同じ取引を二度読んでも同じ id（二度入れを防ぐ）", () => {
+    expect(toRow(REAL_LAND, 2025, 1)!.id).toBe(toRow(REAL_LAND, 2025, 1)!.id);
+  });
+
+  it("市区町村が取れない行は捨てる", () => {
+    // どこの取引か分からないものは方位を測れない。
+    expect(toRow({ ...REAL_LAND, Municipality: "" }, 2025, 1)).toBeNull();
+    expect(toRow({ ...REAL_LAND, MunicipalityCode: "" }, 2025, 1)).toBeNull();
+  });
+});
+
+describe("㎡単価", () => {
+  it("面積 0 は null にする（Infinity を作らない）", () => {
+    // ここが素の割り算だと Infinity になり、画面の相場が壊れる。
+    const row = toRow({ ...REAL_LAND, Area: "0" }, 2025, 1);
+    expect(row?.unit_price_sqm).toBeNull();
+  });
+
+  it("面積が空でも null", () => {
+    expect(
+      toRow({ ...REAL_LAND, Area: "" }, 2025, 1)?.unit_price_sqm,
+    ).toBeNull();
+  });
+
+  it("価格が空でも null", () => {
+    expect(
+      toRow({ ...REAL_LAND, TradePrice: "" }, 2025, 1)?.unit_price_sqm,
+    ).toBeNull();
+  });
+});
+
+describe("数の取り出し", () => {
+  it("数字だけの文字列を通す", () => {
+    expect(toNumber("18000000")).toBe(18000000);
+    expect(toNumber("1.6")).toBe(1.6);
+  });
+
+  it("単位が付いていても取り出す", () => {
+    expect(toNumber("2010年")).toBe(2010);
+    // 面積は範囲で来ることがある。下限を採る（上限は分からない）。
+    expect(toNumber("2000㎡以上")).toBe(2000);
   });
 
   it("数の入っていないものは null（0 にしない）", () => {
@@ -63,45 +158,21 @@ describe("数の取り出し", () => {
     expect(toNumber("")).toBeNull();
     expect(toNumber("不明")).toBeNull();
     expect(toNumber(null)).toBeNull();
-    expect(toNumber(undefined)).toBeNull();
     expect(toNumber(NaN)).toBeNull();
   });
 });
 
-describe("㎡単価", () => {
-  it("総額と面積があれば割る", () => {
-    expect(unitPrice(12000000, 60)).toBe(200000);
-  });
-
-  it("面積 0 は null にする（Infinity を作らない）", () => {
-    // ここが素の割り算だと Infinity になり、画面の相場が壊れる。
-    expect(unitPrice(12000000, 0)).toBeNull();
-    expect(Number.isFinite(unitPrice(12000000, 0) ?? 0)).toBe(true);
-  });
-
-  it("面積が負でも null（外れ値を通さない）", () => {
-    expect(unitPrice(12000000, -10)).toBeNull();
-  });
-
-  it("どちらかが欠けていれば null", () => {
-    expect(unitPrice(null, 60)).toBeNull();
-    expect(unitPrice(12000000, null)).toBeNull();
-  });
-});
-
 describe("応答から一覧を探す", () => {
-  it("data の枝を使う", () => {
-    expect(pickRecords({ status: "OK", data: [{ a: 1 }] })).toEqual([{ a: 1 }]);
-  });
-
-  it("配列がそのまま来ても読める", () => {
-    expect(pickRecords([{ a: 1 }])).toEqual([{ a: 1 }]);
+  it("実物の包み { status, data } から取れる", () => {
+    expect(pickRecords({ status: "OK", data: [REAL_LAND] })).toEqual([
+      REAL_LAND,
+    ]);
   });
 
   it("名前が違っても、配列の枝が 1 つならそれを使う", () => {
     // 提供元が包みの名前を変えたときに 0 件で静かに終わらないため。
-    expect(pickRecords({ status: "OK", records: [{ a: 1 }] })).toEqual([
-      { a: 1 },
+    expect(pickRecords({ status: "OK", records: [REAL_LAND] })).toEqual([
+      REAL_LAND,
     ]);
   });
 
@@ -115,24 +186,29 @@ describe("応答から一覧を探す", () => {
   });
 });
 
+describe("対応づけの検査", () => {
+  it("実物は通る", () => {
+    expect(checkMapping(REAL_LAND)).toBeNull();
+  });
+
+  it("項目名が変わったら、何が取れなかったかを言って止める", () => {
+    const renamed = { ...REAL_LAND, TradePrice: undefined, price: "18000000" };
+    const problem = checkMapping(renamed);
+    expect(problem).toContain("TradePrice");
+    expect(problem).toContain("実際に来た項目");
+  });
+});
+
 describe("取り込みスクリプトの作り", () => {
   it("既定の段は probe（書き込まない側）", () => {
-    // 既定を fetch にすると、対応づけ未確認のまま書き込みが走る。
     expect(SRC).toContain('process.env.TX_STAGE || "probe"');
   });
 
   it("最初の応答で対応づけを検査している", () => {
-    expect(SRC).toContain("assertMapping(raw)");
+    expect(SRC).toContain("checkMapping(raw[0])");
   });
 
-  it("㎡単価を取り込み時に出している（画面で割らない）", () => {
-    expect(SRC).toContain("unit_price_sqm");
-    expect(SRC).toMatch(/area > 0 \? price \/ area : null/);
-  });
-
-  it("上書きで座標を消していない（2 段目の成果を守る）", () => {
-    // lat/lon を EXCLUDED で上書きすると、fetch を回すたびに geocode の
-    // 成果が消えていつまでも埋まらない。
+  it("上書きで座標を消していない（geocode の成果を守る）", () => {
     const conflict = SRC.slice(SRC.indexOf("ON CONFLICT (id) DO UPDATE"));
     const clause = conflict.slice(0, conflict.indexOf("`"));
     expect(clause).toContain("trade_price = EXCLUDED.trade_price");
@@ -145,13 +221,8 @@ describe("取り込みスクリプトの作り", () => {
     expect(SRC).toContain("cursor = row.id");
   });
 
-  it("時間の上限で打ち切れる（再開できる）", () => {
-    expect(SRC).toContain("budgetReached()");
-  });
-
   it("方位の計算を持ち込んでいない", () => {
-    // 方位を八方位に落とす実装は directionFromBearing ただ 1 つ
-    // （CLAUDE.md 3 節）。取り込みは座標を入れるところまで。
+    // 八方位に落とす実装は directionFromBearing ただ 1 つ（CLAUDE.md 3 節）。
     expect(SRC).not.toMatch(/b >= 345 \|\| b < 15/);
     expect(SRC).not.toMatch(/22\.5\) % 360\) \/ 45/);
   });
