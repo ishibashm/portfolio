@@ -191,7 +191,7 @@ export default function DestinationMapPanel({
 }: DestinationMapPanelProps) {
   return (
     <div className="w-full flex flex-col items-center space-y-8 mt-8">
-      <div className="w-full max-w-[1400px] mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+      <div className="w-full max-w-[1700px] mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
         {/* Spatial Targeting */}
         <div className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
@@ -699,7 +699,7 @@ export default function DestinationMapPanel({
         </div>
 
         {/* FULL-WIDTH TREND ANALYTICS SECTION (spans both columns of the grid) */}
-        <div className="w-full max-w-[1400px] md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
+        <div className="w-full max-w-[1700px] md:col-span-2 bg-white/80 backdrop-blur-xl border border-rose-100/80 p-6 rounded-3xl shadow-xl shadow-rose-100/30 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-rose-100/60 pb-4">
             <div className="flex items-center gap-2">
               <span className="text-rose-500 font-bold text-base">◆</span>
@@ -1271,7 +1271,7 @@ export default function DestinationMapPanel({
       </div>
 
       {/* Module 4: Tactical Magnetic Map */}
-      <div className="w-full max-w-[1400px] mt-0">
+      <div className="w-full max-w-[1700px] mt-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
           <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
@@ -1511,7 +1511,7 @@ export default function DestinationMapPanel({
       </div>
 
       {/* System Manual / Documentation */}
-      <div className="w-full max-w-[1400px] mt-4">
+      <div className="w-full max-w-[1700px] mt-4">
         <details className="bg-white/80 border border-stone-200 rounded-md p-4 group cursor-pointer">
           <summary className="text-[10px] sm:text-xs font-mono text-stone-500 uppercase tracking-widest flex items-center gap-2 outline-none">
             <span className="text-emerald-500 group-open:rotate-90 transition-transform">
