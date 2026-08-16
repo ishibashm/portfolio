@@ -10,6 +10,12 @@ name: Apply additive SQL
 # CREATE INDEX IF NOT EXISTS / ADD COLUMN IF NOT EXISTS のように、
 # 二度当てても同じ結果になるものだけを置くこと。DROP や型変更は入れない。
 #
+# 例外は 1 つだけ。**表の定義を変えずに中身を空にする DELETE。**
+# 取り込みをやり直すときに要る（鍵の付け方を変えた場合など）。これも
+# 二度当てて同じ結果になるという条件は満たす。**表を消す DROP TABLE では
+# 代用しないこと。**schema.prisma との対応が外れ、次の db push で作り直しに
+# なる。実例は 20260816_reset_property_transactions.sql。
+#
 # 当てたあと prisma/schema.prisma 側の定義も必ず揃えること。
 # db push はスキーマに無い表・索引を消すので、片方だけだと次の run-seed で
 # 消える（db-index.yml と同じ注意）。
