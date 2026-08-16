@@ -440,8 +440,9 @@ export function PersonalProfileConfig({
               {birthDate || "未設定"}
             </span>
             <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              変えるときは頁の上の「まずここを入れる」から。本命星と天中殺は
-              ここから決まります。
+              {
+                "変えるときは頁の上の「まずここを入れる」から。本命星と天中殺はここから決まります。"
+              }
             </span>
           </div>
 
@@ -519,8 +520,9 @@ export function PersonalProfileConfig({
               北緯 {birthLat.toFixed(3)} / 東経 {birthLon.toFixed(3)}
             </span>
             <span className="text-[7px] text-stone-400 mt-0.5 text-justify">
-              任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は
-              出ます。変えるときは頁の上から。
+              {
+                "任意。天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。変えるときは頁の上から。"
+              }
             </span>
           </div>
 
@@ -577,8 +579,9 @@ export function PersonalProfileConfig({
                 <strong className="text-stone-700">
                   頁の上の「まずここを入れる」
                 </strong>
-                で変えます。地名や郵便番号でも入れられます。ここは算出結果と、
-                普段は触らない設定だけを置いています。
+                {
+                  "で変えます。地名や郵便番号でも入れられます。ここは算出結果と、普段は触らない設定だけを置いています。"
+                }
               </p>
             </div>
           </div>
