@@ -1,191 +1,111 @@
-# AI Asset Builder Hub & Meta-Metaphysical Hub
+# Cloud Palette
 
-本リポジトリは、個人の**生体リズム（バイオメトリクス）**、**環境マクロ（市場センチメント・ニュース）**、そして**天体物理学・占星術的タイミング**を高度に統合し、決定論的な意思決定エンジンと、金融・不動産などの「資産形成（Asset Formation）」分析ツールを組み合わせた、次世代型のコックピット・プラットフォームです。
+引越しの方位とタイミングを決めるサイト（[cloud-palette.com](https://cloud-palette.com)）。
 
-単なるポートフォリオサイトを超え、クオンツ研究パイプライン、Webスクレイピング、AIによるUIジェネレータ、ナレッジマネジメント（Second Brain）が一体となった、セキュアで自律的なAI統合ワークスペースハブとして機能します。
+九星気学の方位盤と暦を計算し、賃貸物件の実データと突き合わせて、
+「どの方位へ・いつ・どこに住むか」を一つの画面で検討できるようにする。
 
----
-
-## 🌌 主要機能モジュール
-
-### 1. 🧠 Oracle Engine & NBA 意思決定エンジン (`src/app/metaphysical`)
-
-自身の内部状態と外部のマクロ環境、宇宙のリズムを同期させ、**「次に行うべき最善の行動 (Next Best Action = NBA)」**を動的に算出する意思決定エンジンです。
-
-- **生体データ同期 (Biometrics)**: Oura Ring API を経由して、日々の Readiness（コンディション）や Recovery Index（回復指標）をリアルタイムに取得。心身の負荷（ANS Load）を算出。
-- **環境マクロ収集 (Macro Environment)**: Tavily Search API を用いて世界市場のセンチメント、地政学リスク、マクロ経済トレンドを自律調査し、環境リスク値を動的に評価。
-- **天体物理・暦法エンジン (Cosmic Rhythms)**: Swiss Ephemeris (`sweph-wasm`) および AstroEngine をバックエンドに持ち、太陽黄経や火星・土星などの惑星軌道位置を物理計算。さらに旧暦・月相・六曜の判定も統合。
-- **NBAアルゴリズム**: これら多次元のベクトルを、決定論的な強化学習風ルールエンジンに入力し、現在の状況における「推奨行動」「確信度 (Confidence)」をリアルタイム出力します。
-
-### 2. 🗺️ Relocation & Wealth Matrix (吉方位・地域所得マトリクス) (`src/app/relocation/wealth`)
-
-天体位置・気学モデルと、日本国内の市区町村の所得統計・地価データを掛け合わせ、**「移住・拠点設立に最も適した地域」**を探索するシミュレーションダッシュボードです。
-
-- **富の地理的マッピング**: 国土交通省（MLIT）の不動産情報ライブラリおよび独自集計データから、全国の自治体ごとの「1人あたり平均所得」「納税義務者数」「基準地価」をデータベース化。
-- **磁気偏角補正 (Magnetic Declination)**: `geomagnetism` パッケージを用いて、地球上の緯度経度における磁偏角（東京付近で約 -8.2度）を算出し、通常の「真北基準」だけでなく「磁北基準」による高精度な方位判定を実行。
-- **コスパ指数 (Cospa Index)**: 平均所得を地価で除した「稼ぎやすく地価が安い地域」を算出し、かつ基準地からの距離制限フィルターを適用。
-- **ビジュアル・マッピング**: Leaflet / React-Leaflet を用いて、マップ上に「大吉 (OPTIMAL)」「吉 (SAFE)」「凶 (NOISE)」の方位角ラインと、所得規模に応じたヒートマップ円を動的描画。CSVやJSON形式での一括エクスポートもサポート。
-
-### 3. 🏠 不動産アービトラージ・スキャナー (`src/app/relocation/arbitrage`)
-
-110万件を超える不動産情報、または Playwright やメールスクレイピング経由で収集された最新の賃貸物件データベースから、**「方位の運気」と「市場価格の歪み（割安さ）」**を同時に満たす物件を走査します。
-
-- **11 軸の多角評価 (Evaluation Axes)**: 物件を「広域割安度 / 近隣割安度 / 方位・吉凶 / 同行者との一致 / 時期の開き / 駅アクセス / 現住地からの近さ / 広さ / 建物・築年 / 市場妙味 / 予算適合」の 11 軸（各 0〜100、50 が母集団の中央）で採点。軸ごとの計算は `src/utils/arbitrageScoring.ts` に純関数として切り出してある。
-- **複数人での移転判定 (Party)**: 同居する人や、別の場所から合流する親族を同行者として登録すると、**人ごとに別々の出発地から方位を測って**判定し、全員ぶんを 1 つの結論にまとめる。まとめ方は「全員一致（誰か 1 人でも凶なら不可）/ 平均 / 重み付き」から選択。誰が引っかかっているかを名前で示し、片方に大吉・片方に大凶という状態は「同行者との一致」軸で平均に埋もれないようにしている。移転先に既に住んでいて動かない人は方位判定から外す。
-- **時期の探索 (Timing)**: 対象日 1 日だけでなく、指定した日数（最大 90 日先）を走査して「移動する全員が動ける日」を数え、直近の 1 日を提示する。走査した全期間が塞がっている場合は、その理由（天中殺など）と誰が原因かを返す — 年単位で成立する天中殺は移転先を変えても開かないため、物件を探し直すのか時期を変えるのかで打ち手が変わる。カレンダーは 7日 / 30日 / 90日 / 12ヶ月 / 24ヶ月 の範囲に対応。
-- **重み付けプリセット**: 「割安重視 / 開運重視 / 通勤・利便 / 広さ・住環境 / 築浅重視 / 家計重視 / 穴場発掘」など、意思決定の型ごとに重みを切り替え可能。スライダーによる任意配分にも対応し、切り替えは画面内で完結する（再スキャン不要）。データが欠けている軸は 0 点ではなく評価対象外として扱い、残る軸で正規化したうえで「軸カバー率」を表示する。
-- **利回り偏差値 (Yield Score)**: 検索条件に合う全件の平米単価から乖離度を計算し、市場平均に対して割安な物件を偏差値化。
-- **近隣相場との比較**: 住所から市区町村（政令市は行政区）単位で平米単価の中央値を集計し、同じ街の中での歪みを検出。広域平均だけでは「郊外はどれも割安」に潰れてしまうため。
-- **候補抽出戦略**: DB から候補を切り出す順序（割安順 / 総合バランス順 / 築浅順 / 広い順 / 駅近順 / 新着順）も選択可能。重みだけを変えても、母集合に入っていない物件は評価されないため。
-- **気学フィルターの適用**: 利用者の生年月日と移動ターゲット日をもとに、年盤・月盤・日盤それぞれの吉方位ベクトルとのコリジョン（衝突）を判定し、物件ごとに「OPTIMAL / SAFE / NOISE」のステータスを自動付与。避けるべき方位・期間の物件は、総合スコアの重み配分にかかわらず最下位へ沈める（解除可）。
-
-### 4. 🎨 AI Visualizer Studio & Component Gallery (`src/app/visualizer`)
-
-AIを活用して、ダッシュボードウィジェットやX（Twitter）風の各種デザインカードを直感的に生成・カスタマイズし、公開・共有できるクリエイティブスタジオです。
-
-- **Monaco Editor 連携**: 入力データ（JSON形式）を Monaco Editor 上で自由に編集。
-- **AI Refinement (対話型洗練)**: チャット形式で「もっとサイバーパンク風にして」「フォントをOutfitに変更して」と入力することで、Tailwind CSS を適用した美しいHTMLコンポーネントコードをAIがリアルタイムに再生成。
-- **マルチメディア波形解析**: MP3ファイルのドラッグ＆ドロップ、または YouTube 共有リンクの入力に対応。Web Audio API を用いてオーディオバッファの周波数・波形を Canvas 上にリアルタイム視覚化。
-- **AI楽曲構成判定**: アップロードされた音源のテンポ（BPM）やキーを解析し、AIによって楽曲の構成（イントロ、Aメロ、サビ、アウトロ等）のタイムラインを自動抽出し、構造化。
-- **共有とギャラリー**: 生成したコンポーネントを Prisma (PostgreSQL/Supabase) に保存し、`html2canvas` によるPNG画像エクスポート、および一意の公開共有リンクをワンクリックで発行。
-
-### 5. 📚 ITIL Second Brain / ナレッジマネジメント (`src/app/knowledge`)
-
-日々のリサーチで得られたWeb上の膨大な情報資産を、クリーンな形でナレッジ化し、蓄積するローカル知識ベース（ITIL準拠）です。
-
-- **Defuddle 抽出エンジン**: 指定された外部URLから、広告やナビゲーションノイズを完全に除去し、主要本文のみを完全な Markdown ドキュメントとしてクリーン抽出。
-- **ITIL チケット管理形式**: 抽出した記事は「KB000001」のような一意のナレッジIDが自動採番され、ステータス（Draft/Published）、優先度（High/Medium/Low）、カテゴリ、タグ等で構造化され、データベースに永続化されます。
-- **データ連携**: 後述のX（Twitter）データエンジンやスクレイピングファイルも、ワンクリックでこのセカンドブレインにインデックス登録が可能です。
-
-### 6. 📊 AI Quant Researcher (クオンツ研究パイプライン)
-
-株式市場のデータとオルタナティブデータ（SNSトレンド、YouTube等）を融合し、アルファ（投資仮説・ルール）を生成するリサーチモジュールです。
-
-- **J-Quants API V2 連携**: 取引所公式の API を用いて個別銘柄の四半期財務情報および株価四本値を取得。
-- **Gemini Hypothesis Generator**: 抽出した時系列・財務データを Google Gemini (Vercel AI SDK経由) に流し込み、勝率の高いトレードアルゴリズムの自動発掘や個別レポート（`reports/report_*.md`）を自動生成。
-- **X (Twitter) Scraper & Viewer (`src/app/research`)**: 任意の検索URLから特定のアカウントやキーワードの投稿群を Playwright を用いて自動取得。画像・動画・外部リンクなどの添付メディアも含めて `./x_downloads` へ構造化 Markdown として自動保存し、ギャラリー表示や全文検索が可能な専用ビューワー (`src/app/x-viewer`) を完備。
-- **Yakumoin Scraper**: 暦法に基づく毎日の吉凶方位の更新状態を Playwright で自動収集・アーカイブ化。
+**仕様の正は [`docs/site-spec.md`](docs/site-spec.md)。**
+この README と食い違ったら site-spec を優先すること。
+作業の決め事は [`CLAUDE.md`](CLAUDE.md) にある。
 
 ---
 
-## 🛠️ 技術スタック & アーキテクチャ
+## 何を答えるサイトか
 
-本システムは **pnpm Monorepo** 構成を採用し、フロントエンド・バックエンドの厳密な型安全性を確保しています。
+```
+どの方位へ動くか   九星気学の方位盤（年盤・月盤・日盤）で吉凶を出す
+いつ動くか         六曜・天赦日・一粒万倍日・土用・天中殺を突き合わせる
+どこに住むか       賃貸物件の実データを方位と相場の両方で絞る
+```
 
-- **コアフレームワーク**: Next.js 16 (App Router), React 19, TypeScript
-- **スタイリング & アニメーション**: Tailwind CSS v4, Framer Motion, Lucide React
-- **データベース & ORM**: Supabase (PostgreSQL), Prisma Client
-- **データスクレイピング & パース**: Playwright, JSDOM, Defuddle (Node)
-- **物理・占星・地理計算**:
-  - `sweph-wasm` (Swiss Ephemeris WebAssemblyポート)
-  - `astronomy-engine` (精密天体位置計算)
-  - `geomagnetism` (地球磁気偏角補正モデル)
-  - `lunar-javascript` (旧暦・六曜等の太陰太陽暦変換)
-- **AI統合**: Vercel AI SDK (`ai`), `@ai-sdk/google` (Gemini 2.5/3.5シリーズ)
-- **エディタ・可視化**: Recharts (チャート描画), Monaco Editor (JSON・コード編集), Cytoscape.js (ネットワーク構造可視化), Leaflet (地図マッピング)
+この 3 つに関わらないものは置かない。中核ページの定義は
+`src/lib/siteStructure.ts` の `CORE_ROUTES` が唯一の定義元で、
+ナビ・robots・サイトマップはすべてここを参照する。
 
----
+| URL                     | 役割                                                 |
+| ----------------------- | ---------------------------------------------------- |
+| `/`                     | ホーム。方位盤とヒートマップ、生年月日・現在地の設定 |
+| `/relocation/arbitrage` | 物件を方位で探す                                     |
+| `/relocation/timing`    | 引越し時期を分析する                                 |
+| `/relocation/market`    | 家賃相場を分析する                                   |
+| `/relocation/simulator` | 引越し先を試算する                                   |
+| `/relocation/wealth`    | 移住先の地域を比べる                                 |
+| `/houi`                 | 本命星と吉方位を調べる（年 × 星 × 月の静的記事つき） |
+| `/calendar`             | 引越しの日取りを選ぶ                                 |
+| `/guide`                | 使い方と九星気学の説明                               |
+| `/blog`                 | 読みもの（歴史・考え方・データの見方）               |
 
-## 🤖 AIエージェント・ハーネス (自律開発環境)
+管理画面（`/admin`）は `ADMIN_EMAIL` に一致する利用者だけが開ける。
+閲覧の集計（日別・時間帯別・ブログの効果検証）と記事エディタがある。
 
-本プロジェクトには、AIエージェント（Antigravity や Claude など）が自律的かつ健全にプロジェクトを編集・拡張するための環境（エージェント・ハーネス）が整備されています。
+## 判定の決め事
 
-- **`CLAUDE.md` (ルール層)**: AIエージェントが遵守すべき技術的制約、コーディング規約、アーキテクチャの基本設計ルールを記述。
-- **`MEMORY.md` (コンテキスト/記憶層)**: セッションを跨いで引き継ぐべき「現在の開発状況」「次に行うべき実装項目」「既知の課題」を随時アップデートして管理。
-- **自律型エージェントスキル (`.roo/skills/`)**:
-  - `plan.md` : 実装前に影響範囲を洗い出し、計画を合意するための手順。
-  - `review.md` : 実装後に型チェック (`npx tsc --noEmit`) や Lint で品質を自己保証する手順。
-  - `quant-research.md` : 金融やマクロ経済の調査を実行する際の手順。
-- **自己診断ツール**: エージェント制御の整合性をテストするため、`npm run review-harness` コマンドでハーネス検証ツールを実行可能。
+- **判定器は 1 つ。**方位の吉凶は `src/utils/ephemerisEngine.ts` の
+  `calculateVectorCollision` だけが決める
+- **方位角を八方位に落とす実装も 1 つ。**`src/utils/directionGeo.ts` の
+  `directionFromBearing`。新しく書かない
+- **判定は必ず真北で行う。**磁北は「方位磁針で測るとずれる」注意としてのみ
+  使う。偏角は出発地ごとに `utils/geomagnetism` から引き、取得できないときは
+  0（補正なし）
+- 天中殺は解釈が流派で割れるため、扱いを 5 通り（厳格〜使わない）から選べる
+- 西洋占星術の要素は判定に混ぜない（表示は参考情報のみ）
 
----
+## 技術構成
 
-## 🚀 開発環境のセットアップ
+- Next.js（App Router）+ React + TypeScript
+- Tailwind CSS
+- Prisma + PostgreSQL（認証は Supabase Auth）
+- Leaflet / React-Leaflet（地図）、Recharts（チャート）
+- Cloud Run へ `deploy.yml` でデプロイ（master への push で動く。
+  **マージした時点で利用者に見えている**）
 
-### 1. 依存関係のインストール
+## データ
 
-プロジェクトのルートディレクトリで以下のコマンドを実行します。
+| データ         | 入れ方                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| 賃貸物件       | `.github/workflows/scrape-*.yml` が毎晩巡回 → `rental_properties`                        |
+| エリア集計     | `scripts/build_area_dataset.ts` などが JSON を作り直してコミット                         |
+| 郵便番号の座標 | `Import postal codes`（日本郵便）+ `Fill postal coords (ISJ)`（国土交通省 位置参照情報） |
+| 成約価格       | `Import property transactions` Action（国交省 不動産情報ライブラリ）                     |
+
+スキーマの変え方（追加 SQL・索引・作り直し）は site-spec の 5.3 節を見ること。
+`prisma db push` はスキーマに無い表・索引を消すので、SQL で当てたものは
+`prisma/schema.prisma` にも必ず書く。
+
+## 開発環境
 
 ```bash
-# 依存パッケージのインストール
-pnpm install
-
-# Playwright ブラウザのインストール
-npx playwright install
+cp .env.local.example .env.local   # これが無いと dev が本番 DB を向く
+npm ci --legacy-peer-deps          # 素の npm ci は ERESOLVE で落ちる
+npm run dev:db:up                  # ローカル Postgres（docker）
+npm run dev:db:push
+npm run dev
 ```
 
-### 2. 環境変数の設定
+`.env.local` を作らずに `npm run dev` すると**本番の user_configs などに
+書き込みが飛ぶ**。実際に事故が起きているので必ずコピーすること。
 
-プロジェクトルートに `.env` ファイルを作成し、`.env.example` を参考に必要なキーを入力します。
+## 検証コマンド
 
-```env
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."
-
-# Gemini API Key (Next.js SDK / AI SDK用)
-GEMINI_API_KEY="AIzaSy..."
-
-# 外部サービスAPI連携（必要に応じて）
-JQUANTS_API_KEY="..."
-OURA_ACCESS_TOKEN="..."
-TAVILY_API_KEY="..."
-TWITTER_BEARER_TOKEN="..."
-
-# 管理画面の GCP 請求実額（Cloud Billing Export → BigQuery）
-GCP_BILLING_EXPORT_TABLE="billing-project.billing.gcp_billing_export_v1_XXXXXX_XXXXXX_XXXXXX"
-GCP_BILLING_TARGET_PROJECT_ID="portfolio-project"
-GCP_BILLING_QUERY_PROJECT_ID="billing-project"
-GCP_BILLING_LOCATION="US"
-GCP_BILLING_TIMEOUT_MS="10000"
-# Cloud Run の実行 SA に権限を付ける場合は省略可。JSON をリポジトリへ置かないこと。
-GCP_BILLING_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
-```
-
-`JQUANTS_API_KEY` を設定すると、銘柄分析画面はJPX公式のJ-Quants API v2から最新の決算短信サマリーを取得します。未設定時や一時的な制限時はYahoo Financeの無料四半期財務データへ自動で切り替わり、APIキーはブラウザへ送信されません。
-
-GCP 請求実額の設定と必要権限は
-[docs/gcp-billing-costs.md](docs/gcp-billing-costs.md) を参照してください。
-
-### 3. データベーススキーマの同期
-
-Prismaを使用して、Supabase等のPostgreSQLインスタンスにテーブル定義を反映します。
+PR を出す前に全部通す。1 つでも落ちたら出さない。
 
 ```bash
-# データベースへ定義のプッシュ
-npx prisma db push
-
-# Prisma Clientの再生成
-npx prisma generate
+npm ci --legacy-peer-deps
+npx prisma generate    # これが無いと tsc が @prisma/client を解決できない
+npx tsc --noEmit
+npm test
+npm run lint           # error 0 / warning あり が正常。総数を増やさない
 ```
 
-### 4. 開発サーバーの起動
+`scripts/` は `tsc --noEmit` の対象外。スクリプトの型を触ったら、
+そのファイルだけを含む一時 tsconfig で別に通す（CLAUDE.md 4 節）。
 
-ローカル開発サーバーを起動します。
+## ドキュメント
 
-```bash
-pnpm run dev
-```
-
-起動後、ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスすると、Oracleコックピットダッシュボードが表示されます。
-
----
-
-## 📊 スクリプトの実行方法
-
-本プロジェクトには、データ収集や計算処理を行うための便利なコマンドが用意されています。
-
-- **クオンツ株式リサーチ**:
-  J-Quants から財務データを取得し、AIによるレポートを生成します。
-  ```bash
-  npm run research
-  ```
-- **吉方位所得データの計算とエクスポート**:
-  `local_tactical_config.json` に設定された基準地・生年月日情報をもとに、全国自治体の所得情報と方位運気スコアを一括計算し、`docs/` 以下にJSONおよびCSV（Excel対応）で保存します。
-  ```bash
-  npm run export-calculated-wealth
-  ```
-- **エージェント・ハーネスの診断**:
-  AIエージェントの制御ルールが正しく維持されているかを診断・検証します。
-  ```bash
-  npm run review-harness
-  ```
+| ファイル                                                     | 中身                                             |
+| ------------------------------------------------------------ | ------------------------------------------------ |
+| [`docs/site-spec.md`](docs/site-spec.md)                     | 仕様の正。ページ・判定・暦・データ・品質の見張り |
+| [`CLAUDE.md`](CLAUDE.md)                                     | 作業の決め事。検証・PR の出し方・触るときの注意  |
+| [`docs/improvement-backlog.md`](docs/improvement-backlog.md) | 改善の積み残しと判断待ち                         |
+| [`docs/gcp-billing-costs.md`](docs/gcp-billing-costs.md)     | 管理画面の GCP 請求実額の設定                    |
