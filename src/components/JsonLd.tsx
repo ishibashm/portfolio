@@ -81,6 +81,12 @@ export function DatasetJsonLd({
         url: `${BASE}${path}`,
         dateModified,
         isAccessibleForFree: true,
+        /*
+          利用条件。Search Console が「項目 license がありません（任意）」を
+          出していた。利用規約の第 2 条にデータセットの引用条件（ドメインを
+          明記すれば AI・LLM も引用可）を書いてあるので、そこを指す。
+        */
+        license: `${BASE}/terms`,
         creator: { "@id": `${BASE}/#organization` },
         // 掲載中の賃貸情報から自前で集計したもの、という出所を明示する
         measurementTechnique: "掲載中の賃貸物件から算出した専有面積あたりの賃料",

@@ -19,6 +19,30 @@ const nextConfig: NextConfig = {
         destination: "https://cloud-palette.com/:path*",
         statusCode: 301,
       },
+      /*
+        Search Console の 404 一覧（2026-08-16 の書き出し・19 件）にあった
+        もののうち、**後継がはっきりしている 1 つ**だけ受ける。
+
+        内訳は 15 件が /_next/static/media/*.woff2（ビルドごとにハッシュが
+        変わるフォント。古い版の残骸で、放っておけば消える）、
+        /about と /blog は**いま実在する**（クロールが 2026-02 で古いだけ）、
+        /portfolio は旧サイトの頁で後継が無い。
+
+        後継が無いものを送らないのは、送り先の中身が元の頁と無関係だと
+        Google が soft 404 として扱うため。**404 のままが正しい。**
+      */
+      {
+        // 問い合わせ。日本語の URL から英語の経路へ移した。
+        source: "/お問い合わせ",
+        destination: "/contact",
+        permanent: true,
+      },
+      {
+        // 上と同じ宛先。符号化された形で来たときも受ける。
+        source: "/%E3%81%8A%E5%95%8F%E3%81%84%E5%90%88%E3%82%8F%E3%81%9B",
+        destination: "/contact",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

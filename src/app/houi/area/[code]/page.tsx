@@ -81,9 +81,15 @@ export default async function Page({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+      {/*
+        description は 50 文字以上にする。Google の Dataset は 50〜5000 字を
+        求め、以前の文（45 字）は Search Console で「文字列長が無効」の
+        重大な問題として弾かれていた。地名は短いものだと 4 文字なので、
+        地名を除いた地の文だけで 50 字を超える長さにしてある。
+      */}
       <DatasetJsonLd
         name={`${area.full}から見た方位別のエリアと家賃相場`}
-        description={`${area.full}を出発地としたときの八方位ごとの市区町村と、専有面積あたりの家賃相場。`}
+        description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、掲載中の賃貸物件から集計した専有面積あたりの家賃相場をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
         path={path}
         dateModified={AREA_GENERATED_AT}
       />
