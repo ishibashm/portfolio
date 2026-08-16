@@ -5,6 +5,7 @@ import {
   pickRecords,
   toNumber,
   toRow,
+  toRows,
   checkMapping,
 } from "../scripts/propertyTxParse";
 
@@ -81,7 +82,7 @@ describe("実物の応答を 1 行にする", () => {
   it("土地と建物の取引（築年が空）", () => {
     const row = toRow(REAL_LAND, 2025, 1);
     expect(row).toEqual({
-      id: "26101|出雲路神楽町|宅地(土地と建物)|85|18000000|2025|1",
+      id: "26101|出雲路神楽町|宅地(土地と建物)|85|18000000|85||木造|住宅|住宅地|2025|1",
       trade_year: 2025,
       trade_quarter: 1,
       municipality_code: "26101",
@@ -118,6 +119,75 @@ describe("実物の応答を 1 行にする", () => {
     // どこの取引か分からないものは方位を測れない。
     expect(toRow({ ...REAL_LAND, Municipality: "" }, 2025, 1)).toBeNull();
     expect(toRow({ ...REAL_LAND, MunicipalityCode: "" }, 2025, 1)).toBeNull();
+  });
+});
+
+/**
+ * 京都府の 1 回目の取り込みが、ここで落ちた。
+ *
+ *   error: ON CONFLICT DO UPDATE command cannot affect row a second time
+ *
+ * 同じ INSERT に同じ id が 2 つあると PostgreSQL が拒む。id を
+ * 「市区町村・地区・種類・面積・価格・期」だけで作っていたので、
+ * **同じ町で同じ広さ・同じ価格の取引が同じ四半期に 2 件あると潰れていた。**
+ * 京都市では普通に起きる。
+ */
+describe("同じ内容の取引が複数あっても id が重ならない", () => {
+  it("まったく同じ 2 件に別の id を振る", () => {
+    const rows = toRows([REAL_LAND, REAL_LAND], 2025, 1);
+    expect(rows).toHaveLength(2); // 捨てない
+    expect(rows[0].id).not.toBe(rows[1].id);
+    expect(rows[1].id).toBe(`${rows[0].id}#2`);
+  });
+
+  it("3 件以上でも重ならない", () => {
+    const rows = toRows([REAL_LAND, REAL_LAND, REAL_LAND], 2025, 1);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(3);
+  });
+
+  it("1 件目の id は番号を付けない（既存の行の id を変えない）", () => {
+    expect(toRows([REAL_LAND], 2025, 1)[0].id).toBe(
+      toRow(REAL_LAND, 2025, 1)!.id,
+    );
+  });
+
+  it("二度読んでも同じ id（行が増えない）", () => {
+    const a = toRows([REAL_LAND, REAL_LAND], 2025, 1).map((r) => r.id);
+    const b = toRows([REAL_LAND, REAL_LAND], 2025, 1).map((r) => r.id);
+    expect(a).toEqual(b);
+  });
+
+  it("面積や築年が違えば番号は付かない（別の取引として区別できる）", () => {
+    // id に使う項目を増やしたので、この 2 件はそもそも衝突しない。
+    const rows = toRows([REAL_LAND, REAL_HOUSE], 2025, 1);
+    expect(rows.map((r) => r.id).some((id) => id.includes("#"))).toBe(false);
+  });
+
+  it("構造だけが違う取引も別の行になる", () => {
+    const rows = toRows(
+      [REAL_LAND, { ...REAL_LAND, Structure: "ＲＣ" }],
+      2025,
+      1,
+    );
+    expect(rows[0].id).not.toBe(rows[1].id);
+    expect(rows[1].id).not.toContain("#");
+  });
+
+  it("市区町村が取れない行を除いても番号がずれない", () => {
+    const rows = toRows(
+      [{ ...REAL_LAND, Municipality: "" }, REAL_LAND, REAL_LAND],
+      2025,
+      1,
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0].id).not.toContain("#");
+    expect(rows[1].id).toContain("#2");
+  });
+
+  it("まとめて作った id は全部ちがう（同じ INSERT に入れられる）", () => {
+    const many = Array.from({ length: 50 }, () => REAL_LAND);
+    const rows = toRows(many, 2025, 1);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
   });
 });
 

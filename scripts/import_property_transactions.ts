@@ -4,10 +4,9 @@ import * as fs from "fs";
 import * as path from "path";
 import {
   pickRecords,
-  toRow,
+  toRows,
   checkMapping,
   type RawRecord,
-  type Row,
 } from "./propertyTxParse";
 
 /**
@@ -207,9 +206,9 @@ async function stageFetch(pool: Pool) {
           console.log("対応づけの確認: OK");
         }
 
-        const rows = raw
-          .map((r) => toRow(r, year, quarter))
-          .filter((r): r is Row => r !== null);
+        // id が重ならない形でまとめて作る。同じ内容の取引には
+        // 通し番号が付く（同じ INSERT に同じ id を入れない）。
+        const rows = toRows(raw, year, quarter);
         if (rows.length === 0) continue;
 
         /*
