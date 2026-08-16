@@ -13,6 +13,13 @@ import {
   averagePoint,
   type IsjRow,
 } from "./isjParse";
+import {
+  ISJ_VERSION,
+  prefectureCodes,
+  zipCandidates,
+  discoverZipLinks,
+  downloadPrefecture,
+} from "./isjFetch";
 
 /**
  * 郵便番号の座標を、**まとめ取りした一覧で埋める。**
@@ -57,117 +64,6 @@ if (!process.env.DATABASE_URL) {
 }
 
 const STAGE = process.env.ISJ_STAGE || "probe";
-const VERSION = process.env.ISJ_VERSION || "19.0b";
-
-const UA =
-  "Mozilla/5.0 (compatible; cloud-palette/1.0; +https://cloud-palette.com)";
-
-/** 配布ページ。直リンクが全滅したときにここからリンクを拾う。 */
-const INDEX_PAGES = [
-  "https://nlftp.mlit.go.jp/cgi-bin/isj/dls/_choose_files.cgi",
-  "https://nlftp.mlit.go.jp/isj/index.html",
-];
-
-function prefectureCodes(): string[] {
-  if (process.env.ISJ_PREFS) {
-    return process.env.ISJ_PREFS.split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-  return Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, "0"));
-}
-
-/**
- * 1 県ぶんの zip の候補。**上から順に試す。**
- *
- * 決め打ちにしない。日本郵便で置き場が変わって 2 回外している
- * （#342・#343）。ここも版数の書き方が meta では 19b、データ側では
- * 19.0b と揺れているので、両方を候補に入れる。
- * どれが何を返したかは全部ログに出す。
- */
-function zipCandidates(pref: string): string[] {
-  if (process.env.ISJ_SOURCE_URL) return [process.env.ISJ_SOURCE_URL];
-  const short = VERSION.replace(".0", ""); // 19.0b -> 19b
-  return [
-    `https://nlftp.mlit.go.jp/isj/dls/data/${VERSION}/${pref}000-${VERSION}.zip`,
-    `https://nlftp.mlit.go.jp/isj/dls/data/${short}/${pref}000-${VERSION}.zip`,
-    `https://nlftp.mlit.go.jp/isj/dls/data/${VERSION}/${pref}000-${short}.zip`,
-  ];
-}
-
-async function tryDownload(
-  url: string,
-  tried: string[],
-): Promise<Buffer | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": UA, Accept: "*/*" },
-      redirect: "follow",
-      signal: AbortSignal.timeout(120000),
-    });
-    if (!res.ok) {
-      tried.push(`${res.status} ${url}`);
-      return null;
-    }
-    const buf = Buffer.from(await res.arrayBuffer());
-    // 案内ページの HTML が 200 で返ることがある。中身が zip か確かめる。
-    if (buf.length < 4 || buf.readUInt32LE(0) !== 0x04034b50) {
-      tried.push(`zip ではない (${buf.length} bytes) ${url}`);
-      return null;
-    }
-    return buf;
-  } catch (e) {
-    tried.push(`${String(e).slice(0, 60)} ${url}`);
-    return null;
-  }
-}
-
-/** 配布ページの HTML から zip へのリンクを拾う。 */
-async function discoverZipLinks(): Promise<string[]> {
-  const found: string[] = [];
-  for (const page of INDEX_PAGES) {
-    try {
-      const res = await fetch(page, {
-        headers: { "User-Agent": UA, Accept: "*/*" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(60000),
-      });
-      if (!res.ok) {
-        console.log(`  × ${res.status} ${page}`);
-        continue;
-      }
-      const html = decode(Buffer.from(await res.arrayBuffer()));
-      const links = [...html.matchAll(/href="([^"]+\.zip)"/gi)].map(
-        (m) => m[1],
-      );
-      console.log(`  ○ ${page} — zip リンク ${links.length} 件`);
-      for (const href of links) {
-        try {
-          const abs = new URL(href, page).toString();
-          if (!found.includes(abs)) found.push(abs);
-        } catch {
-          /* 壊れた href は飛ばす */
-        }
-      }
-    } catch (e) {
-      console.log(`  × ${String(e).slice(0, 60)} ${page}`);
-    }
-  }
-  return found;
-}
-
-async function downloadPrefecture(
-  pref: string,
-): Promise<{ url: string; buf: Buffer } | null> {
-  const tried: string[] = [];
-  for (const url of zipCandidates(pref)) {
-    const buf = await tryDownload(url, tried);
-    if (buf) return { url, buf };
-  }
-  console.log(`  × ${pref} を取得できません:`);
-  for (const t of tried) console.log(`      ${t}`);
-  return null;
-}
 
 /**
  * 形を確かめるだけ。**1 行も書き込まない。**
@@ -175,7 +71,7 @@ async function downloadPrefecture(
  */
 async function stageProbe() {
   const pref = prefectureCodes()[0];
-  console.log(`形を確認します: 都道府県コード ${pref} / 版 ${VERSION}`);
+  console.log(`形を確認します: 都道府県コード ${pref} / 版 ${ISJ_VERSION}`);
   console.log("候補:");
   for (const u of zipCandidates(pref)) console.log(`  ${u}`);
 
