@@ -25,6 +25,11 @@
 import React, { useEffect, useState } from "react";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { readLocalSettings, saveSettings } from "@/lib/userSettings";
+import {
+  loadProfilePresets,
+  saveProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
 
 /** 東京。設定が無いときに下のダッシュボードが使う値と揃える。 */
 const FALLBACK_LAT = 35.6895;
@@ -43,6 +48,15 @@ export function QuickProfileBar() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState<"none" | "local" | "cloud">("none");
 
+  /*
+    保存済みプロフィール。家族ぶんや、引越し前後の設定を切り替えるために
+    使う。**保存先は既存の 1 か所（lib/profilePresetSync）。**プロフィールの
+    タブが使っているものと同じで、別に持たない。
+  */
+  const [presets, setPresets] = useState<ProfilePreset[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [newName, setNewName] = useState("");
+
   // 端末に入っている値を読む。クラウドとの突き合わせは下の
   // ダッシュボードが起動時にやるので、ここでは端末の値だけを見る
   // （読み込みを待たずに欄が出るほうが、入力の入口としては速い）。
@@ -55,21 +69,114 @@ export function QuickProfileBar() {
     setBirthLon(toNumber(s.birth_lon));
   }, []);
 
+  useEffect(() => {
+    let alive = true;
+    loadProfilePresets(fetch, localStorage)
+      .then((r) => {
+        if (alive) setPresets(r.presets);
+      })
+      .catch(() => {
+        /* 読めなくても入力欄は使える。呼び出しの札が出ないだけ。 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  /** いま画面に入っている 3 つを設定として書く。 */
+  const persist = async () => {
+    const patch: Record<string, unknown> = {};
+    if (birthDate) patch.birth_date = birthDate;
+    if (baseLat !== null) patch.base_lat = baseLat;
+    if (baseLon !== null) patch.base_lon = baseLon;
+    if (birthLat !== null) patch.birth_lat = birthLat;
+    if (birthLon !== null) patch.birth_lon = birthLon;
+
+    const result = await saveSettings(patch);
+    setSaved(result.synced ? "cloud" : "local");
+    // 同じ頁のダッシュボードと設定バーに読み直させる。
+    window.dispatchEvent(new CustomEvent("metaphysical-config-updated"));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const patch: Record<string, unknown> = {};
-      if (birthDate) patch.birth_date = birthDate;
-      if (baseLat !== null) patch.base_lat = baseLat;
-      if (baseLon !== null) patch.base_lon = baseLon;
-      if (birthLat !== null) patch.birth_lat = birthLat;
-      if (birthLon !== null) patch.birth_lon = birthLon;
+      await persist();
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-      const result = await saveSettings(patch);
+  /** 保存済みを選ぶ。欄に入れて、そのまま設定にも反映する。 */
+  const handlePick = async (id: string) => {
+    setSelectedId(id);
+    const preset = presets.find((p) => p.id === id);
+    if (!preset) return;
+
+    setBirthDate(preset.birthDate);
+    setBaseLat(preset.baseLat);
+    setBaseLon(preset.baseLon);
+    setBirthLat(preset.birthLat);
+    setBirthLon(preset.birthLon);
+
+    setIsSaving(true);
+    try {
+      const result = await saveSettings({
+        birth_date: preset.birthDate,
+        base_lat: preset.baseLat,
+        base_lon: preset.baseLon,
+        birth_lat: preset.birthLat,
+        birth_lon: preset.birthLon,
+      });
       setSaved(result.synced ? "cloud" : "local");
-
-      // 同じ頁のダッシュボードと設定バーに読み直させる。
       window.dispatchEvent(new CustomEvent("metaphysical-config-updated"));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /**
+   * いまの内容を保存済みに足す（名前があれば新規、選択中なら上書き）。
+   *
+   * 上書きのときは**元のプロフィールの他の項目を残す。**天中殺の上書きや
+   * 体調の基準値はプロフィールのタブで入れるもので、ここには出していない。
+   * 差し替えると、ここから保存するたびに消えてしまう。
+   */
+  const handleSavePreset = async () => {
+    const name = newName.trim();
+    const existing = presets.find((p) => p.id === selectedId);
+    if (!name && !existing) return;
+    if (baseLat === null || baseLon === null) return;
+
+    const values = {
+      birthDate,
+      birthLat: birthLat ?? FALLBACK_LAT,
+      birthLon: birthLon ?? FALLBACK_LON,
+      baseLat,
+      baseLon,
+    };
+
+    const next: ProfilePreset[] = name
+      ? [
+          ...presets,
+          {
+            id:
+              typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : String(presets.length + 1),
+            name,
+            ...values,
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : presets.map((p) => (p.id === selectedId ? { ...p, ...values } : p));
+
+    setIsSaving(true);
+    try {
+      setPresets(next);
+      await saveProfilePresets(next, fetch, localStorage);
+      await persist();
+      setNewName("");
     } finally {
       setIsSaving(false);
     }
@@ -104,6 +211,57 @@ export function QuickProfileBar() {
           }
         </p>
       )}
+
+      {/*
+        保存済みプロフィールの呼び出しと保存。家族ぶんや、引越し前後の
+        設定を切り替えるために使う。1 つも無いうちは出さない（初めての人に
+        空の選択肢を見せない）。名前の欄はいつでも出しておく。
+      */}
+      <div className="flex flex-wrap items-end gap-3 mb-6 pb-5 border-b border-slate-200">
+        {presets.length > 0 && (
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-bold text-slate-700">
+              保存済みから選ぶ
+            </span>
+            <select
+              value={selectedId}
+              onChange={(e) => handlePick(e.target.value)}
+              className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
+            >
+              <option value="">-- 選択 --</option>
+              {presets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-bold text-slate-700">
+            {selectedId && !newName ? "選んだものに上書き" : "名前を付けて保存"}
+          </span>
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="例: 自分 / 家族"
+            className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={handleSavePreset}
+          disabled={isSaving || (!newName.trim() && !selectedId)}
+          className="px-4 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 text-sm font-bold text-slate-700 transition-colors"
+        >
+          プロフィールに保存
+        </button>
+        <p className="w-full text-xs text-slate-500 leading-relaxed">
+          {
+            "ログインしていれば他の端末からも呼び出せます。天中殺の上書きや体調の基準値は「1. プロフィール」タブで入れます（ここから保存しても消えません）。"
+          }
+        </p>
+      </div>
 
       {/*
         3 つ横並び。1700px の器に 1 列で積むと、入力欄が 1 本だけ横に
