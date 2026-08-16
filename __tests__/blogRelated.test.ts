@@ -106,14 +106,18 @@ describe("あわせて読む記事の選び方", () => {
   });
 
   // 旧実装は「自分以外の全記事」だった。記事が増えるほど脇が伸びる。
-  // その挙動に戻すとこのテストが落ちる。
-  it("実際の記事でも脇に全記事を並べない", () => {
+  // その挙動に戻したときに落ちるのは上の「上限を超えない」（候補 30 本）で、
+  // ここではない。**記事の本数を前提にしない。**以前は実際の記事が
+  // RELATED_LIMIT + 1 本より多いことを求めていて、記事を減らすと落ちた。
+  // 落ちても分かるのは「減った」だけで、選び方が壊れたかは読み取れない。
+  // ここで見たいのは実際の記事でも同じ経路が通ることなので、それだけ見る。
+  it("実際の記事でも自分を外し、上限を超えない", () => {
     const posts = getBlogPosts();
-    expect(posts.length).toBeGreaterThan(RELATED_LIMIT + 1);
+    expect(posts.length).toBeGreaterThan(0);
 
     const related = pickRelatedPosts(posts[0], posts);
 
-    expect(related).toHaveLength(RELATED_LIMIT);
-    expect(related.length).toBeLessThan(posts.length - 1);
+    expect(related.map((item) => item.slug)).not.toContain(posts[0].slug);
+    expect(related).toHaveLength(Math.min(RELATED_LIMIT, posts.length - 1));
   });
 });
