@@ -283,7 +283,7 @@ export default function ScorecardPanel({
     <>
       {/* --- TAB CONTENT: 5. SCORECARD --- */}
       {active && (
-        <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-[1400px]">
+        <div className="w-full flex flex-col items-center space-y-6 animate-fade-in max-w-[1700px]">
           {/* Control Panel Header */}
           {/*
               説明文とコントロールを横並びにすると、当時のコンテナ幅 896px に

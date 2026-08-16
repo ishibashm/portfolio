@@ -513,7 +513,7 @@ export function ConsultPanel({
             このタブには下の Ephemeris Engine Diagnostics が残る。
           */}
 
-        <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-[1400px]">
+        <div className="mt-8 flex flex-col gap-4 border-b border-stone-200 pb-4 w-full max-w-[1700px]">
           <div className="flex items-center gap-2 mb-2">
             <h2 className="text-[10px] uppercase font-mono tracking-[0.3em] text-purple-600">
               Ephemeris Engine Diagnostics
