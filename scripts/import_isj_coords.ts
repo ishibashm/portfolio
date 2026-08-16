@@ -2,7 +2,17 @@ import { Pool } from "pg";
 import * as dotenv from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import * as zlib from "zlib";
+import {
+  unzipEntries,
+  pickCsv,
+  decode,
+  describeEncodings,
+  parseCsv,
+  stripChome,
+  push,
+  averagePoint,
+  type IsjRow,
+} from "./isjParse";
 
 /**
  * 郵便番号の座標を、**まとめ取りした一覧で埋める。**
@@ -85,38 +95,6 @@ function zipCandidates(pref: string): string[] {
   ];
 }
 
-/** zip の中の 1 本目のファイルを取り出す（生のまま返す）。 */
-function unzipFirstFile(buf: Buffer): Buffer {
-  if (buf.readUInt32LE(0) !== 0x04034b50) {
-    throw new Error("zip の形が想定と違います");
-  }
-  const method = buf.readUInt16LE(8);
-  const nameLen = buf.readUInt16LE(26);
-  const extraLen = buf.readUInt16LE(28);
-  const start = 30 + nameLen + extraLen;
-
-  const sigIndex = buf.indexOf(Buffer.from([0x50, 0x4b, 0x01, 0x02]), start);
-  const end = sigIndex > 0 ? sigIndex : buf.length;
-  const body = buf.subarray(start, end);
-
-  if (method === 0) return body;
-  if (method === 8) return zlib.inflateRawSync(body);
-  throw new Error(`未対応の圧縮方式: ${method}`);
-}
-
-/**
- * 中身を文字にする。**位置参照情報は Shift-JIS。**
- * UTF-8 として読むと市区町村名が化けて、突き合わせが 1 件も当たらない
- * （黙って 0 件で終わるので、気付きにくい）。先頭に UTF-8 の BOM が
- * あるときだけ UTF-8 として読む。
- */
-function decode(buf: Buffer): string {
-  if (buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
-    return buf.subarray(3).toString("utf8");
-  }
-  return new TextDecoder("shift_jis").decode(buf);
-}
-
 async function tryDownload(
   url: string,
   tried: string[],
@@ -178,85 +156,6 @@ async function discoverZipLinks(): Promise<string[]> {
   return found;
 }
 
-interface IsjRow {
-  pref: string;
-  city: string;
-  town: string;
-  lat: number;
-  lon: number;
-}
-
-/**
- * CSV を読む。列は見出し行の名前で引く。**位置で決め打ちしない**
- * （版が上がると列が増えることがある）。
- */
-function parseCsv(text: string): IsjRow[] {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length < 2) return [];
-
-  const header = lines[0].split(",").map((c) => c.replace(/^"|"$/g, "").trim());
-  const idx = (name: string) => header.findIndex((h) => h.includes(name));
-
-  const iPref = idx("都道府県名");
-  const iCity = idx("市区町村名");
-  const iTown = idx("大字町丁目名");
-  const iLat = idx("緯度");
-  const iLon = idx("経度");
-
-  if (iPref < 0 || iCity < 0 || iTown < 0 || iLat < 0 || iLon < 0) {
-    throw new Error(
-      `見出しに必要な列がありません: ${header.join(" / ")}\n` +
-        "版が変わって列名が違う可能性があります。probe の出力を見てください。",
-    );
-  }
-
-  const rows: IsjRow[] = [];
-  for (const line of lines.slice(1)) {
-    const cols = line.split(",").map((c) => c.replace(/^"|"$/g, "").trim());
-    const lat = Number(cols[iLat]);
-    const lon = Number(cols[iLon]);
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-    if (lat === 0 && lon === 0) continue; // 0,0 は大西洋上。方位が出てしまう
-    rows.push({
-      pref: cols[iPref],
-      city: cols[iCity],
-      town: cols[iTown],
-      lat,
-      lon,
-    });
-  }
-  return rows;
-}
-
-/**
- * 「〜一丁目」の丁目を落とした形。
- *
- * 郵便番号側の町域は括弧の但し書きを外してあるので「丸の内」までしか
- * 無いが、位置参照情報は「丸の内一丁目」で持っている。そのままでは
- * 1 件も当たらない。丁目を落とした鍵でも引けるようにする。
- */
-function stripChome(town: string): string {
-  return town.replace(/[一二三四五六七八九十〇零壱弐参百千]+丁目$/, "");
-}
-
-/** 鍵ごとに点を貯める。 */
-function push(
-  groups: Map<string, { lat: number; lon: number }[]>,
-  key: string,
-  point: { lat: number; lon: number },
-) {
-  const list = groups.get(key);
-  if (list) list.push(point);
-  else groups.set(key, [point]);
-}
-
-/** 同じ鍵に複数の点があるときの代表点。**平均を取る。** */
-function averagePoint(points: { lat: number; lon: number }[]) {
-  const lat = points.reduce((s, p) => s + p.lat, 0) / points.length;
-  const lon = points.reduce((s, p) => s + p.lon, 0) / points.length;
-  return { lat, lon };
-}
-
 async function downloadPrefecture(
   pref: string,
 ): Promise<{ url: string; buf: Buffer } | null> {
@@ -299,8 +198,15 @@ async function stageProbe() {
   }
 
   console.log(`\n○ 取得できました: ${got.url}`);
-  const raw = unzipFirstFile(got.buf);
-  const text = decode(raw);
+
+  const entries = unzipEntries(got.buf);
+  console.log(`\n■ zip の中身（${entries.length} 項目）`);
+  for (const e of entries) console.log(`  ${e.name} (${e.body.length} bytes)`);
+
+  const csv = pickCsv(entries);
+  console.log(`\n■ 使う CSV: ${csv.name}`);
+
+  const text = decode(csv.body);
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
   console.log(`  行数: ${lines.length}`);
@@ -308,7 +214,20 @@ async function stageProbe() {
   console.log(`\n■ 値の例（先頭 3 行）`);
   for (const l of lines.slice(1, 4)) console.log(`  ${l}`);
 
-  const rows = parseCsv(text);
+  /*
+    ここで落ちても probe は止めない。**何が見えたかを全部出してから
+    終わる**ほうが、次に直すときに推測しなくて済む。
+  */
+  let rows: IsjRow[] = [];
+  try {
+    rows = parseCsv(text);
+  } catch (e) {
+    console.log(`\n× 列を引けませんでした: ${String(e)}`);
+    console.log("\n■ 文字コードの読み比べ");
+    console.log(describeEncodings(csv.body));
+    return;
+  }
+
   console.log(`\n■ 読めた件数: ${rows.length}`);
   if (rows.length > 0) {
     const r = rows[0];
@@ -344,7 +263,7 @@ async function stageFill(pool: Pool) {
     if (!got) continue;
     files++;
 
-    const rows = parseCsv(decode(unzipFirstFile(got.buf)));
+    const rows = parseCsv(decode(pickCsv(unzipEntries(got.buf)).body));
     for (const r of rows) {
       const point = { lat: r.lat, lon: r.lon };
       exact.set(`${r.pref}${r.city}${r.town}`, point);
