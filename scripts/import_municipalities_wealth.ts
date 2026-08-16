@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 import path from "path";
+import { aggregateWealth, type EstatStatsResponse } from "./estatWealth";
 
 dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
@@ -16,7 +17,14 @@ async function fetchAndImportWealthData() {
   const statsDataId = "0000020103"; // 市区町村データのID
   // C120110: 課税対象所得（千円）, C120120: 納税義務者数（人）
   const cdCat01 = "C120110,C120120";
-  const cdTime = "2021100000"; // e-Statの「2021年度」
+  /*
+    年度は 1 か所で決める。以前は問い合わせの cdTime が "2021100000"、
+    行に付ける dataYear が "2021" と別々に書いてあった。**年度を上げる
+    ときに片方だけ直すと、去年のデータに今年の年度が付く**（逆も同じ）。
+    どちらも DATA_YEAR から作る。
+  */
+  const DATA_YEAR = "2021";
+  const cdTime = `${DATA_YEAR}100000`; // e-Stat の年度コード
 
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData?appId=${ESTAT_APP_ID}&statsDataId=${statsDataId}&cdCat01=${cdCat01}&cdTime=${cdTime}`;
 
@@ -24,65 +32,27 @@ async function fetchAndImportWealthData() {
 
   try {
     const response = await fetch(url);
-    const data = await response.json();
+    const data = (await response.json()) as EstatStatsResponse;
 
     if (data.GET_STATS_DATA.RESULT.STATUS !== 0) {
       console.error("APIエラー:", data.GET_STATS_DATA.RESULT.ERROR_MSG);
       return;
     }
 
-    const valueList = data.GET_STATS_DATA.STATISTICAL_DATA.DATA_INF.VALUE;
-    const areaList =
-      data.GET_STATS_DATA.STATISTICAL_DATA.CLASS_INF.CLASS_OBJ.find(
-        (obj: any) => obj["@id"] === "area",
-      ).CLASS;
+    /*
+      応答の読み方・集計・1 人あたり所得の出し方は、書き出す側
+      （scripts/fetch_municipalities_wealth.ts）と丸ごと同じものが
+      書いてあった。片方だけ直すと、書き出した JSON とこの DB の数字が
+      食い違う。scripts/estatWealth.ts に寄せた（#352 の続き。答えは
+      __tests__/estatWealth.test.ts）。
 
-    // 地域コードをキーにしたマップを作成
-    const municipalities: Record<string, any> = {};
-    const areaMap: Record<string, string> = {};
-
-    if (Array.isArray(areaList)) {
-      areaList.forEach((area: any) => {
-        areaMap[area["@code"]] = area["@name"];
-      });
-    }
-
-    // データの集計
-    valueList.forEach((val: any) => {
-      const areaCode = val["@area"];
-      const catCode = val["@cat01"];
-      const value = parseFloat(val["$"]);
-
-      if (!municipalities[areaCode]) {
-        municipalities[areaCode] = {
-          areaCode: areaCode,
-          areaName: areaMap[areaCode] || "不明",
-          taxableIncomeThousandYen: 0,
-          taxpayersCount: 0,
-        };
-      }
-
-      if (catCode === "C120110") {
-        municipalities[areaCode].taxableIncomeThousandYen = value;
-      } else if (catCode === "C120120") {
-        municipalities[areaCode].taxpayersCount = value;
-      }
-    });
-
-    const results = Object.values(municipalities)
-      .map((m: any) => {
-        const incomeYen = m.taxableIncomeThousandYen * 1000;
-        const incomePerCapita =
-          m.taxpayersCount > 0 ? incomeYen / m.taxpayersCount : 0;
-
-        return {
-          ...m,
-          incomeYen,
-          incomePerCapita: Math.round(incomePerCapita),
-          dataYear: "2021",
-        };
-      })
-      .filter((m: any) => m.taxpayersCount > 0 && m.incomePerCapita > 0);
+      dataYear は取り込む年度の目印なので、上の cdTime と同じ場所で
+      決まるようにここで足す。
+    */
+    const results = aggregateWealth(data).map((m) => ({
+      ...m,
+      dataYear: DATA_YEAR,
+    }));
 
     console.log(
       `\nデータベースへ ${results.length} 件のデータを保存・更新します...`,
