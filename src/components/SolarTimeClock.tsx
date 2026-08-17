@@ -65,7 +65,10 @@ import {
   directionFromBearing,
   distanceKmBetween,
 } from "@/utils/directionGeo";
-import { directionBoardInstant } from "@/utils/boardInstant";
+import {
+  directionBoardInstant,
+  forecastAnchorMs as toForecastAnchorMs,
+} from "@/utils/boardInstant";
 import { statusForLayerMode, type LayerMode } from "@/utils/directionStatus";
 
 /**
@@ -1727,8 +1730,35 @@ export const SolarTimeClock = () => {
   // getStatusScore は home/ScorecardPanel と共用になったので
   // lib/scoreTier へ移した（判定ステータス → 0〜100 の点）。
 
+  /**
+   * 30 日ぶんの予報・ヒートマップを組み立てる基準日（その日の正午）。
+   *
+   * baseTime は時計として 60 秒ごとに差し替わる。これをそのまま予報の
+   * 依存に置くと、**日付が変わっていないのに 1 分ごとに 30 日ぶんを
+   * 作り直す。**実測（この環境）で
+   *
+   *   scorecard30DaysForecast          79ms
+   *   scorecard30DaysForecastAllModels 97ms
+   *
+   * の計 176ms が毎分メインスレッドを止めていた。地図の操作が引っかかる
+   * のはこれが大きい（手元より遅い端末では数倍になる）。
+   *
+   * 正午に寄せるのは、**地図と同じ時刻で評価する**ため。地図と
+   * ヒートマップは directionBoardInstant でその日の正午を使っている。
+   * 予報だけ「今この瞬間」で評価していたので、節入りが日中に来る日は
+   * 地図と予報で盤が食い違っていた（2026 年は 12 回。__tests__ に実例を
+   * 固定してある）。
+   *
+   * 正午は日付の境目を跨がないので、見出しの日付は変わらない。
+   */
+  const forecastAnchorMs = useMemo(
+    () => (baseTime ? toForecastAnchorMs(baseTime) : null),
+    [baseTime],
+  );
+
   const scorecard30DaysForecast = React.useMemo(() => {
-    if (!baseTime || !honmeiStar) return null;
+    if (forecastAnchorMs === null || !honmeiStar) return null;
+    const anchor = new Date(forecastAnchorMs);
     const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
@@ -1753,9 +1783,10 @@ export const SolarTimeClock = () => {
     };
 
     for (let i = 0; i < 30; i++) {
-      const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
-      const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
-      const testDate = testDateSolar.solarTime;
+      const testDateLocal = new Date(forecastAnchorMs + i * 86400000);
+      // 地図と同じ関数で評価時刻を出す。別々に組み立てていたせいで、
+      // 節入りが日中に来る日は地図と予報で月盤が食い違っていた。
+      const testDate = directionBoardInstant(anchor, 0, lon || 139.6917, i);
       const testEnv = getCurrentEnvironmentalFrequencies(
         testDate,
         lon || 139.6917,
@@ -1818,7 +1849,8 @@ export const SolarTimeClock = () => {
     }
     return result;
   }, [
-    baseTime,
+    // 時計の毎分更新で作り直さないよう、日単位に丸めた基準日を使う
+    forecastAnchorMs,
     honmeiStar,
     voidZodiacOverride,
     birthDate,
@@ -1831,7 +1863,8 @@ export const SolarTimeClock = () => {
   ]);
 
   const scorecard30DaysForecastAllModels = React.useMemo(() => {
-    if (!baseTime || !honmeiStar) return null;
+    if (forecastAnchorMs === null || !honmeiStar) return null;
+    const anchor = new Date(forecastAnchorMs);
     const dirs: ScorecardDirection[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
     const voidZodiacArray = voidZodiacOverride
       ? voidZodiacOverride.split("")
@@ -1874,12 +1907,11 @@ export const SolarTimeClock = () => {
     const result: ScorecardDayForecastEntry[] = [];
 
     for (let i = 0; i < 30; i++) {
-      const testDateLocal = new Date(baseTime.getTime() + i * 86400000);
+      const testDateLocal = new Date(forecastAnchorMs + i * 86400000);
       const testSolar = Solar.fromDate(testDateLocal);
       const testLunar = testSolar.getLunar();
 
-      const testDateSolar = calculateSolarTime(testDateLocal, lon || 139.6917);
-      const testDate = testDateSolar.solarTime;
+      const testDate = directionBoardInstant(anchor, 0, lon || 139.6917, i);
       const testEnv = getCurrentEnvironmentalFrequencies(
         testDate,
         lon || 139.6917,
@@ -2063,7 +2095,8 @@ export const SolarTimeClock = () => {
 
     return result;
   }, [
-    baseTime,
+    // 時計の毎分更新で作り直さないよう、日単位に丸めた基準日を使う
+    forecastAnchorMs,
     honmeiStar,
     voidZodiacOverride,
     birthDate,
@@ -2691,24 +2724,17 @@ export const SolarTimeClock = () => {
     }
   };
 
-  // ヒートマップの基準日。
-  //
-  // baseTime は時計として 60 秒ごとに更新される。これをそのまま依存に置くと、
-  // 日付が変わっていないのに 30日分（または12ヶ月分）の盤を毎分作り直していた。
-  // 実測で 1 回あたり約 90ms かかり、そのぶんメインスレッドが止まる。
-  // 日単位に丸めて、日付か条件が変わったときだけ組み直す。
-  // 正午に寄せているのは、読み込んだ時刻によって結果が揺れないようにするため。
-  const heatmapAnchorMs = useMemo(() => {
-    if (!baseTime) return null;
-    const d = new Date(baseTime);
-    d.setHours(12, 0, 0, 0);
-    return d.getTime();
-  }, [baseTime]);
-
   useEffect(() => {
-    if (heatmapMode === "none" || heatmapAnchorMs === null || !honmeiStar || !env)
+    // 基準日は予報と共通（forecastAnchorMs）。ここに 2 つ目の丸めを
+    // 置かない。同じ「その日の正午」を 2 か所で作っていた。
+    if (
+      heatmapMode === "none" ||
+      forecastAnchorMs === null ||
+      !honmeiStar ||
+      !env
+    )
       return;
-    const baseTime = new Date(heatmapAnchorMs);
+    const baseTime = new Date(forecastAnchorMs);
 
     const data = [];
     const voidZodiacArray = voidZodiacOverride
@@ -2870,7 +2896,7 @@ export const SolarTimeClock = () => {
   }, [
     heatmapMode,
     // 時計の毎分更新で作り直さないよう、日単位に丸めた基準日を使う
-    heatmapAnchorMs,
+    forecastAnchorMs,
     timeOffsetDays,
     honmeiStar,
     getsuMeiStar,

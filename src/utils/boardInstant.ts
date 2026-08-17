@@ -34,10 +34,27 @@ export function directionBoardInstant(
   lon: number,
   dayOffset = 0,
 ): Date {
-  const anchor = new Date(baseTime);
-  anchor.setHours(12, 0, 0, 0);
+  const anchor = new Date(forecastAnchorMs(baseTime));
   const local = new Date(
     anchor.getTime() + (timeOffsetDays + dayOffset) * 86400000,
   );
   return calculateSolarTime(local, lon).solarTime;
+}
+
+/**
+ * 上の「その日の代表点（正午）」を ms で返すだけの関数。
+ *
+ * 30 日ぶんを組み立てる画面（予報・ヒートマップ）は、これを useMemo の
+ * 依存に置く。時計の baseTime をそのまま依存にすると、**日付が変わって
+ * いないのに 60 秒ごとに 30 日ぶんを作り直す。**実測（クラウド側）で
+ * 予報 79ms ＋ 全モデル予報 97ms の計 176ms が毎分メインスレッドを
+ * 止めていた。地図の操作が引っかかる原因のひとつ。
+ *
+ * **正午から動かさないこと。**動かすと予報と地図が別の盤を見る
+ * （`__tests__/forecastAnchor.test.ts` が落ちる）。
+ */
+export function forecastAnchorMs(baseTime: Date): number {
+  const anchor = new Date(baseTime);
+  anchor.setHours(12, 0, 0, 0);
+  return anchor.getTime();
 }
