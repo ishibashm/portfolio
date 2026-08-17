@@ -633,7 +633,20 @@ export const SolarTimeClock = () => {
   const [physicalMonthMode, setPhysicalMonthMode] = useState<
     "coupled" | "independent"
   >("independent");
-  const [useTrueNorth, setUseTrueNorth] = useState<boolean>(false);
+  /*
+    方位の表示の基準。**既定は真北。**
+
+    判定は上の targetDirection のとおり真北で固定なので、この値が効くのは
+
+      - 画面に「方位（真北）」「方位（磁北）」のどちらを出すか
+      - API へ渡す use_true_north（物件検索・資産マップが
+        DECLINATION_WARNING を出すかどうかの判断に使う）
+      - wealthData の direction / magneticDirection のどちらと突き合わせるか
+
+    の 3 つ。以前の初期値は偽で、**既定が磁北**だった。表示だけでなく
+    判定にも効いていたため、既定で磁北基準の吉凶を出していた。
+  */
+  const [useTrueNorth, setUseTrueNorth] = useState<boolean>(true);
   const [lunarPhaseModifier, setLunarPhaseModifier] = useState<boolean>(true);
 
   const [heatmapMode, setHeatmapMode] = useState<
@@ -1188,11 +1201,34 @@ export const SolarTimeClock = () => {
    * 「自分が行きたい場所がいつ吉になるか」が読めない状態だったので、
    * 目的地に対応する行へ印を付けるために使う。
    */
-  const targetDirection = useMemo(() => {
-    const info = getTargetDirectionInfo();
-    if (!info) return null;
-    return useTrueNorth ? info.trueDirection : info.magneticDirection;
-  }, [getTargetDirectionInfo, useTrueNorth]);
+  /*
+    **判定は必ず真北**（CLAUDE.md 3 節）。以前はここが
+
+      return useTrueNorth ? info.trueDirection : info.magneticDirection;
+
+    で、`useTrueNorth` の初期値は偽だったので、**既定では磁北基準の方位で
+    吉凶を読んでいた。**この targetDirection がヒートマップのどの行を指すか
+    と地図のどの扇形を強調するかを決めるので、答えそのものが磁北基準だった。
+
+    偏角のぶん方位が変わる目的地は少なくない。0.1 度刻みで走査した実測で、
+    真北と磁北で八方位の割り当てが変わるのは
+
+      偏角 -5 度（沖縄あたり） 11.1%
+      偏角 -7 度（東京あたり） 15.6%
+      偏角 -9 度（北海道あたり） 20.0%
+
+    伝統区分・45 度等分のどちらでも同じ割合だった。**6〜9 件に 1 件は
+    吉凶が入れ替わりうる。**さらに `/houi` の記事は全国向けの静的ページで
+    真北なので、記事と道具が食い違ってもいた。
+
+    トグルは残す。ただし効くのは「方位磁針で測るとどこを指すか」の表示と、
+    API へ渡す use_true_north だけで、**判定の基準は選べない。**
+    simulator の同じトグルにも「判定は真北で固定」と書いてある。
+  */
+  const targetDirection = useMemo(
+    () => getTargetDirectionInfo()?.trueDirection ?? null,
+    [getTargetDirectionInfo],
+  );
 
   /**
    * ヒートマップで選んでいる方位。地図の強調表示に渡す。
@@ -1219,13 +1255,20 @@ export const SolarTimeClock = () => {
       if (Number.isFinite(measured) && measured > 1) distanceKm = measured;
     }
 
+    /*
+      置く側も真北。**読む側（targetDirection）と揃えないと往復しない。**
+      以前は useTrueNorth を渡していたので、磁北表示のときは
+      「北東へ動かす」で置いた地点を読み直すと北になる、ということが
+      起きえた（偏角が方位の幅の何分の一かを占めるため）。
+      往復は __tests__/targetDirectionTrueNorth.test.ts で固定してある。
+    */
     const dest = destinationForDirection(
       lat,
       lon,
       dir as CompassDirection,
       distanceKm,
       geoData?.declination ?? 0,
-      useTrueNorth,
+      true,
     );
 
     setTargetLat(Number(dest.lat.toFixed(5)));
@@ -1286,12 +1329,9 @@ export const SolarTimeClock = () => {
         );
 
         if (targetDirInfo) {
+          // 判定は真北（上の targetDirection の注記と同じ理由）。
           const s =
-            vectorData.finalVectors[
-              (useTrueNorth
-                ? targetDirInfo.trueDirection
-                : targetDirInfo.magneticDirection) as Direction
-            ];
+            vectorData.finalVectors[targetDirInfo.trueDirection as Direction];
           if (s === "SAFE" || s === "OPTIMAL") {
             foundOffset = offset;
             break;
@@ -3532,12 +3572,9 @@ export const SolarTimeClock = () => {
   let targetVectorStatus: string | null = null;
 
   if (targetDirInfo && activeVectors) {
+    // 判定は真北。磁北の方位は「方位磁針で測るとずれる」注意にだけ使う。
     targetVectorStatus =
-      activeVectors[
-        (useTrueNorth
-          ? targetDirInfo.trueDirection
-          : targetDirInfo.magneticDirection) as Direction
-      ] ?? null;
+      activeVectors[targetDirInfo.trueDirection as Direction] ?? null;
   }
 
   /*
