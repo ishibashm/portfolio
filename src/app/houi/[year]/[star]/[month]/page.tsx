@@ -11,7 +11,6 @@ import {
   getMonthDirections,
   monthContentYears,
 } from "@/lib/kigakuContent";
-import { AdBanner } from "@/components/ads/AdBanner";
 import { AreaEntryLinks } from "@/components/houi/AreaEntryLinks";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
@@ -68,6 +67,16 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/houi/${year}/${star}/${month}` },
+    /*
+      索引には載せない（follow は許す）。理由は
+      /houi/area/[code] と同じで、2 年 × 9 星 × 12 か月 = 216 URL を
+      同じ雛形で展開しており、変わるのは月盤の数値だけ。
+
+      **年別（/houi/[year]/[star]、27 ページ）は索引に残す。**あちらは
+      本命星ごとに吉凶の並びがまるごと変わり、利用者の記録も付くので、
+      URL ごとに中身が違う。ここで一緒に外さないこと。
+    */
+    robots: { index: false, follow: true },
     openGraph: {
       images: ["/ogp.png"], title, description, type: "article" },
   };
@@ -216,9 +225,11 @@ export default async function Page({
 
         <AreaEntryLinks heading={`${month}月の吉方位に何があるかを見る`} />
 
-        <div className="mt-10">
-          <AdBanner />
-        </div>
+        {/*
+          広告は置かない。索引から外した雛形展開のページに広告を置くのは、
+          AdSense の「有用性の低いコンテンツ」の指摘にそのまま当たる。
+          広告は記事・手引き・ホーム・索引ページに絞る。
+        */}
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">

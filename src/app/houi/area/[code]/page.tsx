@@ -17,7 +17,6 @@ import {
   contentYears,
   getYearDirections,
 } from "@/lib/kigakuContent";
-import { AdBanner } from "@/components/ads/AdBanner";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 /**
@@ -50,6 +49,25 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/houi/area/${area.code}` },
+    /*
+      索引には載せない。**道具としては残す**（follow は許す）。
+
+      このページは areaDirections.json の 1,022 市区町村を同じ雛形で
+      展開したもので、**地の文はどの URL でも同一**、変わるのは地名と
+      表の数字だけ。1 サイトで 1,022 URL は Google の言う
+      「スケーリングされたコンテンツ」に当たり、AdSense からも
+      「有用性の低いコンテンツ」としてサイト全体の配信を止められた。
+
+      Search Console の実測でも、この 1,022 ページは事実上索引されて
+      いない（878 URL のうち登録済み 78、検出only 811、表示回数ほぼ 0）。
+      **外しても失う流入が無い**ので、索引の対象を「1 ページ 1 記事」に
+      なっているページへ絞る。
+
+      吉方位からエリアを引く導線としては有用なので、リンクも中身も
+      そのまま残す。索引に戻すなら、市区町村ごとではなく都道府県ごとに
+      まとめて、各ページに固有の文章を書くのが先（docs 参照）。
+    */
+    robots: { index: false, follow: true },
     openGraph: {
       images: ["/ogp.png"], title, description, type: "article" },
   };
@@ -214,9 +232,11 @@ export default async function Page({
           </div>
         </section>
 
-        <div className="mt-10">
-          <AdBanner />
-        </div>
+        {/*
+          広告は置かない。索引から外した雛形展開のページに広告を置くのは、
+          AdSense の「有用性の低いコンテンツ」の指摘にそのまま当たる。
+          広告は記事・手引き・ホーム・索引ページに絞る。
+        */}
 
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
