@@ -18,6 +18,11 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
 import { directionLabelShort } from "@/lib/directionLabels";
+import {
+  COMPASS_DIRECTIONS,
+  DIRECTION_BEARINGS,
+  directionWedgeHalfWidth,
+} from "@/utils/directionGeo";
 import type { MapProperty } from "@/lib/mapProperty";
 
 // Fix for default marker icons in Leaflet with Next.js
@@ -150,7 +155,8 @@ export default function MagneticMapInner({
   ansLoad = 0,
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   activeLayerMode = "final",
-  useTrueNorth = false,
+  // useTrueNorth は受け口だけ残す。扇形は必ず真北で描くようになったので
+  // ここでは読まない（呼び出し側は今も渡している）。
   properties = [],
   onSelectTarget,
   targetLat,
@@ -191,34 +197,36 @@ export default function MagneticMapInner({
 
   const center = React.useMemo<[number, number]>(() => [lat, lon], [lat, lon]);
 
-  // Calculate bearings based on TRUE NORTH (0) + Magnetic Declination
-  const magNorthBearing = React.useMemo(
-    () => (useTrueNorth ? 0 : declination),
-    [declination, useTrueNorth],
-  );
+  /*
+    磁北線を引く方位角。**扇形には使わない。**
+
+    以前はこれを扇形と境界の赤帯にも足していた（`useTrueNorth` が偽の
+    ときは偏角のぶん全体が回る）。塗り分けている吉凶は真北基準で出した
+    ものなので、真北で出した判定を磁北の位置に置いて描いていたことになる。
+    伝統区分の四正は幅 30 度しかなく、偏角（日本でおよそ 5〜9 度）は
+    その 4 分の 1 前後にあたる。同じ地点が、ホームの地図では扇形の中
+    なのに arbitrage / wealth（directionFromBearing で真北から出す）では
+    隣の方位、ということが起きていた。
+
+    磁北は「方位磁針で測るとずれる」注意としてだけ使う（CLAUDE.md 3 節）。
+    青い磁北線は偏角そのものなので、`useTrueNorth` では切り替えない。
+    切り替えていたせいで、真北表示にすると**磁北線が真北を指していた。**
+  */
+  const magNorthBearing = declination;
 
   // Memoize sectors based on activeLayerMode and layers
   const sectors = React.useMemo(() => {
-    const dirMap = [
-      { dir: "N", deg: 0 },
-      { dir: "NE", deg: 45 },
-      { dir: "E", deg: 90 },
-      { dir: "SE", deg: 135 },
-      { dir: "S", deg: 180 },
-      { dir: "SW", deg: 225 },
-      { dir: "W", deg: 270 },
-      { dir: "NW", deg: 315 },
-    ];
-
-    return dirMap.map((d) => {
+    // 方位角と扇形の幅は utils/directionGeo から引く。ここに一覧を
+    // 書き戻さないこと（区切りが 2 か所になると扇形と判定がずれる）。
+    return COMPASS_DIRECTIONS.map((dir) => {
       let status = "SAFE";
       if (layers) {
         // 時間軸の畳み方はヒートマップと共有する。ここに個別実装を戻さないこと。
-        status = statusForLayerMode(layers, d.dir, activeLayerMode || "final");
-      } else if (vectors && vectors[d.dir]) {
-        status = vectors[d.dir];
+        status = statusForLayerMode(layers, dir, activeLayerMode || "final");
+      } else if (vectors && vectors[dir]) {
+        status = vectors[dir];
       }
-      return { ...d, status };
+      return { dir, deg: DIRECTION_BEARINGS[dir], status };
     });
   }, [vectors, layers, activeLayerMode]);
 
@@ -332,11 +340,11 @@ export default function MagneticMapInner({
 
       const { color, opacity, weight, dashArray } =
         getStyleForVector(displayStatus);
-      const baseBearing = magNorthBearing + d.deg;
+      // 真北基準。判定と同じ向きで描く（上の magNorthBearing の注記）。
+      const baseBearing = d.deg;
 
       const points: [number, number][] = [center];
-      const isCorner = ["NE", "SE", "SW", "NW"].includes(d.dir);
-      const halfWidth = nodeMapping === "physical" ? 22.5 : isCorner ? 30 : 15;
+      const halfWidth = directionWedgeHalfWidth(d.dir, nodeMapping);
       for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
       }
@@ -516,7 +524,6 @@ export default function MagneticMapInner({
   }, [
     sectors,
     getStyleForVector,
-    magNorthBearing,
     center,
     lat,
     lon,
@@ -532,7 +539,9 @@ export default function MagneticMapInner({
 
   const dangerLayer = React.useMemo(() => {
     return boundaries.map((b, idx) => {
-      const baseBearing = magNorthBearing + b;
+      // 扇形と同じく真北基準。境界の帯だけ回っていると、扇形の縁と
+      // 赤帯が別の場所に出る。
+      const baseBearing = b;
       const points: [number, number][] = [center];
       for (let offset = -2; offset <= 2; offset += 1) {
         points.push(getDestination(lat, lon, baseBearing + offset, 1000));
@@ -548,7 +557,7 @@ export default function MagneticMapInner({
         />
       );
     });
-  }, [boundaries, magNorthBearing, center, lat, lon]);
+  }, [boundaries, center, lat, lon]);
 
   // 4. Mock Hazard Layer (Phase 2 GIS Integration)
   const hazardLayer = React.useMemo(() => {
