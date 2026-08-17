@@ -188,16 +188,38 @@ interface QWeights {
   bias: number;
 }
 
-// Weights mimicking a trained policy matrix (W^T * X + B)
+/*
+  Weights mimicking a trained policy matrix (W^T * X + B)
+
+  **占星術の 3 つの重みは 0 に固定してある。**
+
+    w_vedic  ヴェーダ占星術（ティティ＝月の日）
+    w_ephem  西洋占星術（火星・土星のアスペクト）
+    w_astro  西洋占星術（トランジットのソフト／ハード）
+
+  ブログと手引きで「このサイトでは風水・奇門遁甲・ヴァーストゥは使って
+  いない」と書いているのに、この 3 つが提案の点数に入っていた
+  （元は 0.5 / 0.4 / 0.6 など）。**案内と実装のどちらかが嘘になる**ので、
+  利用者の判断で実装側を案内に合わせた。
+
+  0 を掛けるだけにして式の形は変えていない。特徴量（f5〜f7）も今までどおり
+  計算してログには出す。どの入力が来ていたかを追えるほうが、後から
+  「入れ直すか」を判断しやすい。
+
+  **入れ直すなら、先に案内文を直すこと。**片方だけ変えると元に戻る。
+  0 でなくなると __tests__/nbaAstrologyExcluded.test.ts が落ちる。
+*/
+const ASTROLOGY_EXCLUDED = 0;
+
 const PolicyWeights: Record<ActionType, QWeights> = {
   EXECUTE_RELOCATION: {
     w_ans: -0.4,
     w_shield: 0.8,
     w_risk: -0.8,
     w_solar: 0.3,
-    w_vedic: 0.5,
-    w_ephem: 0.4,
-    w_astro: 0.6,
+    w_vedic: ASTROLOGY_EXCLUDED,
+    w_ephem: ASTROLOGY_EXCLUDED,
+    w_astro: ASTROLOGY_EXCLUDED,
     w_rag: 0.5,
     w_personal: 1.0,
     bias: -0.2,
@@ -207,9 +229,9 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_shield: 1.0,
     w_risk: -0.4,
     w_solar: 0.2,
-    w_vedic: 0.3,
-    w_ephem: 0.2,
-    w_astro: 0.4,
+    w_vedic: ASTROLOGY_EXCLUDED,
+    w_ephem: ASTROLOGY_EXCLUDED,
+    w_astro: ASTROLOGY_EXCLUDED,
     w_rag: 0.3,
     w_personal: 0.5,
     bias: -0.5,
@@ -219,9 +241,9 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_shield: -0.2,
     w_risk: 0.4,
     w_solar: -0.2,
-    w_vedic: -0.4,
-    w_ephem: -0.3,
-    w_astro: -0.2,
+    w_vedic: ASTROLOGY_EXCLUDED,
+    w_ephem: ASTROLOGY_EXCLUDED,
+    w_astro: ASTROLOGY_EXCLUDED,
     w_rag: -0.3,
     w_personal: 0.2,
     bias: 0.5,
@@ -231,9 +253,9 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_shield: 0.4,
     w_risk: 0.0,
     w_solar: 0.1,
-    w_vedic: 0.1,
-    w_ephem: 0.2,
-    w_astro: 0.2,
+    w_vedic: ASTROLOGY_EXCLUDED,
+    w_ephem: ASTROLOGY_EXCLUDED,
+    w_astro: ASTROLOGY_EXCLUDED,
     w_rag: 0.1,
     w_personal: 0.1,
     bias: 0.3,
@@ -243,9 +265,9 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_shield: -0.7,
     w_risk: 0.9,
     w_solar: 0.0,
-    w_vedic: -0.5,
-    w_ephem: -0.8,
-    w_astro: -0.8,
+    w_vedic: ASTROLOGY_EXCLUDED,
+    w_ephem: ASTROLOGY_EXCLUDED,
+    w_astro: ASTROLOGY_EXCLUDED,
     w_rag: -0.6,
     w_personal: -1.0,
     bias: 0.0,
@@ -360,19 +382,28 @@ export class NBAEngine {
       Math.min(1.0, (windSpeedVal - 300) / 500),
     );
 
-    const astrologySource = target.astrologyData ?? state.astrologyData;
-    let aspectsRiskScore =
+    /*
+      環境リスク。**西洋占星術のアスペクトによる補正をやめた。**
+
+      以前はここで
+
+        aspectsRiskScore += hardWeight * 0.1 - softWeight * 0.05
+
+      とトランジット（スクエア・オポジションなど）を足し引きしていた。
+      占星術を「使っていない」と案内しているのに、**重みを 0 にしても
+      この経路から答えに残る。**しかも f3_risk は w_risk（-0.8〜0.9）で
+      効くうえ、attention の鍵にも unifiedRiskScore の比較にも入るので、
+      3 つの重みより広く影響していた。
+
+      実測（__tests__/nbaAstrologyExcluded.test.ts を書いて気付いた）:
+      トランジットを TRINE・SEXTILE から SQUARE・OPPOSITION に替えるだけで
+      EXECUTE_RELOCATION の Q 値が 0.845 → 0.743 動いていた。
+
+      いまは環境リスクそのもの。名前に aspects が残っているのは、
+      StateLayers を読む側が 5 か所あるため（改名は別途）。
+    */
+    const aspectsRiskScore =
       (target.environmentalRisk ?? state.environmentalRisk ?? 50) / 100.0;
-    if (astrologySource?.transits && Array.isArray(astrologySource.transits)) {
-      const { hardWeight, softWeight } = getAspectsScoresFromTransits(
-        astrologySource.transits,
-        astrologySource.retrogrades ?? [],
-      );
-      aspectsRiskScore = Math.max(
-        0,
-        Math.min(1.0, aspectsRiskScore + hardWeight * 0.1 - softWeight * 0.05),
-      );
-    }
 
     // --- Layer 3: Metaphysical & Calendrical State (Target Date) ---
     const qiMenGateSource = target.qiMenGate ?? state.qiMenGate;
@@ -881,12 +912,24 @@ export class NBAEngine {
     const k_year = (nineStarKiSource?.yearStar || 5) / 9.0;
     const k_month = (nineStarKiSource?.monthStar || 5) / 9.0;
     const k_day = (nineStarKiSource?.dayStar || 5) / 9.0;
-    const k_lunar = f5_vedic;
 
     const spaceWeatherSource = current.spaceWeather ?? state.spaceWeather;
     const k_space = (spaceWeatherSource?.kpIndex || 3.0) / 9.0;
     const k_vix = f3_risk;
-    const keys = [k_year, k_month, k_day, k_lunar, k_space, k_vix];
+
+    /*
+      鍵は 5 つ。**以前はここに k_lunar = f5_vedic（ヴェーダのティティ）が
+      4 番目に入っていた。**
+
+      重みを 0 にしただけでは、占星術はここから答えに残る。この鍵は
+      softmax の分母に入り、下の dmToRiskAttention（= 日主から VIX への
+      注目度）を通じて q に効く。**「除外」と言うなら鍵からも抜く**のが
+      筋なので抜いた。
+
+      抜くと並びが 1 つ詰まるので、下の添字も 5 → 4 に直している。
+      鍵を足し引きするときは、必ず添字と既定値を一緒に見ること。
+    */
+    const keys = [k_year, k_month, k_day, k_space, k_vix];
 
     const attentionMatrix: number[][] = [];
     const d_k = 3.0;
@@ -899,7 +942,13 @@ export class NBAEngine {
       attentionMatrix.push(rowWeights);
     }
 
-    const dmToRiskAttention = attentionMatrix[2][5] || 0.16;
+    /*
+      日主（queries の 3 番目）から VIX（keys の最後）への注目度。
+      鍵が 6 つだった頃は添字 5 で、既定値も 1/6 ≒ 0.16 だった。
+      鍵を 5 つにしたので添字 4、既定値は 1/5 = 0.2（均等な重み）。
+      softmax の出力は 0 にならないので、この既定値は形が壊れたときの保険。
+    */
+    const dmToRiskAttention = attentionMatrix[2][4] || 0.2;
     const attentionRiskAdjustment = dmToRiskAttention * f3_risk * 0.2;
 
     const ansStressGate = sigmoid(f1_ans, 12, 0.65);
