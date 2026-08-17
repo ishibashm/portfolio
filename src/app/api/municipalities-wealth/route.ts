@@ -94,13 +94,12 @@ export async function GET(request: Request) {
     | "personal_bazi"
     | "environmental";
   /*
-    **判定には使わない。**判定は真北で固定にした（下の targetDirection）。
-    いま残っているのは DECLINATION_WARNING を出すかどうかの条件だけで、
-    そこも「真北で見る人には注意を出さない」という筋の通らない扱いなので、
-    別の PR で外す。応答には magneticDirection / magneticBearing を常に
-    載せてあるので、方位磁針で測ったときの向きは画面側で出せる。
+    useTrueNorth は**もう読まない。**判定は真北で固定（下の
+    targetDirection）、偏角の注意も真北と磁北がずれれば必ず出すので、
+    この口に基準を選ぶ余地が無くなった。呼び出し側は今も付けてくるが
+    無視して構わない。応答には magneticDirection / magneticBearing を
+    常に載せてあるので、方位磁針で測ったときの向きは画面側で出せる。
   */
-  const useTrueNorth = searchParams.get("useTrueNorth") === "true";
   const useClassical = engineType === "classical";
   const nodeMapping = (searchParams.get("nodeMapping") ||
     (useClassical ? "traditional" : "physical")) as "traditional" | "physical";
@@ -318,12 +317,27 @@ export async function GET(request: Request) {
               break;
           }
 
-          // 境界線アラート: 真北のセクターと磁北のセクターが異なる場合 (e.g., 地図では北東だが、磁北では北など)
-          if (
-            !useTrueNorth &&
-            direction !== magneticDirection &&
-            astrologyScore < 80
-          ) {
+          /*
+            境界線アラート。真北の扇と、方位磁針で測ったときの扇が
+            違う地点に付ける（例: 地図では北東だが、方位磁針では北）。
+
+            以前は 2 つ余計な条件が付いていて、**ほぼ出せなかった。**
+
+              !useTrueNorth      真北で見る人には出さない、という扱い。
+                                 判定を真北に固定した（#381・#382）ので、
+                                 この条件のままだと誰にも出なくなる
+              astrologyScore<80  大吉・吉には出さない。だが
+                                 lib/wealthMapPresentation.ts は凡例に
+                                 「OPTIMAL + DECLINATION_WARNING」を
+                                 見本として持ち「大吉かつ偏角警告
+                                 （大きい琥珀の点）」と説明している。
+                                 **API が返せない見本を凡例に載せていた。**
+
+            方位磁針で 7 度ずれて隣の凶方位に入るのは、むしろ吉方位を
+            狙っているときに起きる事故なので、点数で絞る理由が無い。
+            CLAUDE.md 3 節が磁北の唯一の用途として挙げているのがこれ。
+          */
+          if (direction !== magneticDirection) {
             astroFlags.push("DECLINATION_WARNING");
           }
         }
