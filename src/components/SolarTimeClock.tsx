@@ -623,9 +623,6 @@ export const SolarTimeClock = () => {
     useState(0);
   const [circadianMultiplier, setCircadianMultiplier] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
-  // 設定がこの端末だけのものか、クラウドにも同期されているか。
-  // 「永久保存」と称して端末にしか残していなかったので、状態を明示する。
-  const [isSavingLog, setIsSavingLog] = useState(false);
 
   // Future Simulation & Intent State
   const [timeOffsetDays, setTimeOffsetDays] = useState<number>(0);
@@ -3219,54 +3216,24 @@ export const SolarTimeClock = () => {
     URL.revokeObjectURL(jsonUrl);
   };
 
-  const handleSaveStateToDatabase = async () => {
-    if (!env || !layers) {
-      alert("保存するデータが準備されていません。");
-      return;
-    }
+  /*
+    「データベースに保存」は撤去した。名前と実態が合っておらず、
+    直しても意味のある機能にならなかった。
 
-    setIsSavingLog(true);
-    try {
-      const payload = {
-        targetDate: baseTime
-          ? new Date(
-              baseTime.getTime() + timeOffsetDays * 86400000,
-            ).toISOString()
-          : new Date().toISOString(),
-        environmentalBazi: env,
-        personalBazi: honmeiStar,
-        physicalLayers: physicalLayers,
-        classicalLayers: classicalLayers,
-        physicalIndependentLayers: physicalIndepLayers,
-        physicalCoupledLayers: physicalCoupledLayers,
-        ansLoad: ansLoad,
-        kpIndex: spaceWeather?.kpIndex || null,
-        metadata: {
-          actionIntent,
-          geoData,
-          shieldCapacity,
-          timeOffsetDays,
-        },
-      };
+      - **DB に入っていなかった。**保存先は /api/metaphysical-log で、
+        process.cwd()/data/metaphysical_logs.jsonl への追記だった。
+        Cloud Run のコンテナは使い捨てなので、**次の起動で消える。**
+        Prisma の MetaphysicalStateLog には誰も書き込んでいなかった
+        （管理画面の書き出しはこの表を読むので、常に空だった）
+      - **認可が無かった。**誰でも POST できて、生年月日から出した本命星・
+        座標・盤の全体を、そのまま行として書き足せた
+      - **失敗しても「保存しました」と出ていた。**res.ok しか見ておらず、
+        書き込みの成否は応答の中身に入っていなかった
 
-      const res = await fetch("/api/metaphysical-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error("APIエラーが発生しました");
-      }
-
-      alert("現在のステータスをデータベースに保存しました。");
-    } catch (err) {
-      console.error("Save Log Error:", err);
-      alert(`保存に失敗しました: ${toUserMessage(err)}`);
-    } finally {
-      setIsSavingLog(false);
-    }
-  };
+    盤を残したいときは、隣の「テレメトリ書き出し」（CSV / JSON）が
+    端末に落とすので、そちらで足りる。表（MetaphysicalStateLog）は
+    残してある。消すと本番 DB への一方向の変更になるため、扱いは別途。
+  */
 
   useEffect(() => {
     const now = new Date();
@@ -4155,35 +4122,6 @@ export const SolarTimeClock = () => {
       />
 
       <div className="fixed bottom-6 left-6 lg:left-72 z-50 flex flex-col sm:flex-row gap-3">
-        <button
-          onClick={handleSaveStateToDatabase}
-          disabled={isSavingLog}
-          className="px-4 py-3 bg-purple-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(168,85,247,0.4)] hover:bg-purple-500 hover:scale-105 transition-all flex items-center gap-2 border border-purple-200 backdrop-blur-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSavingLog ? (
-            <span className="animate-pulse">保存中...</span>
-          ) : (
-            <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                <polyline points="17 21 17 13 7 13 7 21" />
-                <polyline points="7 3 7 8 15 8" />
-              </svg>
-              データベースに保存
-            </>
-          )}
-        </button>
-
         <button
           onClick={exportMasterTelemetry}
           className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-200 backdrop-blur-md"
