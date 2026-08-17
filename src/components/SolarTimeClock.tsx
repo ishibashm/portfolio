@@ -1922,7 +1922,9 @@ export const SolarTimeClock = () => {
     if (wealthData && wealthData.length > 0) {
       dirs.forEach((dir) => {
         const item = wealthData.find(
-          (w) => (useTrueNorth ? w.direction : w.magneticDirection) === dir,
+          // 突き合わせも真北。API 側が真北で判定するようになった（#382）ので、
+          // magneticDirection と突き合わせると別の方位の枠に入る。
+          (w) => w.direction === dir,
         );
         if (item && item.astrologyStatus) {
           let bonus = 0;
@@ -2143,7 +2145,6 @@ export const SolarTimeClock = () => {
     activeLayerMode,
     physicalMonthMode,
     wealthData,
-    useTrueNorth,
     lunarPhaseModifier,
   ]);
 
@@ -2179,7 +2180,9 @@ export const SolarTimeClock = () => {
     if (wealthData && wealthData.length > 0) {
       dirs.forEach((dir) => {
         const item = wealthData.find(
-          (w) => (useTrueNorth ? w.direction : w.magneticDirection) === dir,
+          // 突き合わせも真北。API 側が真北で判定するようになった（#382）ので、
+          // magneticDirection と突き合わせると別の方位の枠に入る。
+          (w) => w.direction === dir,
         );
         if (item && item.astrologyStatus) {
           let bonus = 0;
@@ -2366,7 +2369,6 @@ export const SolarTimeClock = () => {
     activeLayerMode,
     physicalMonthMode,
     wealthData,
-    useTrueNorth,
     lunarPhaseModifier,
   ]);
 
@@ -2394,7 +2396,8 @@ export const SolarTimeClock = () => {
       };
 
       const areasForDir = wealthData.filter((item) => {
-        const itemDir = useTrueNorth ? item.direction : item.magneticDirection;
+        // 真北で束ねる（上と同じ理由）。
+        const itemDir = item.direction;
         return itemDir === dir;
       });
       const topAreas = [...areasForDir].sort(
@@ -2403,7 +2406,8 @@ export const SolarTimeClock = () => {
       const topArea = topAreas[0] || null;
 
       const rentalsForDir = propertiesData.filter((item) => {
-        const itemDir = useTrueNorth ? item.direction : item.magneticDirection;
+        // 真北で束ねる（上と同じ理由）。
+        const itemDir = item.direction;
         return itemDir === dir;
       });
       // 総合スコアは廃止した（#304〜#308）。物件を方位で探す画面と同じく
@@ -2468,7 +2472,6 @@ export const SolarTimeClock = () => {
     scorecard30DaysForecast,
     wealthData,
     propertiesData,
-    useTrueNorth,
     classicalLayers,
     physicalIndepLayers,
     physicalCoupledLayers,
@@ -3516,10 +3519,14 @@ export const SolarTimeClock = () => {
     }
 
     const dirInfo = getTargetDirectionInfo();
+    /*
+      時期の最適化に渡す目的地の方位。**判定は必ず真北**なので、
+      ここも trueDirection で固定する（#381 と同じ理由）。
+      磁北を渡していたときは、同じ目的地でもホームの地図と時期の提案が
+      別の方位を見ていることがあった。
+    */
     const targetDirection = dirInfo
-      ? ((useTrueNorth
-          ? dirInfo.trueDirection
-          : dirInfo.magneticDirection) as Direction)
+      ? (dirInfo.trueDirection as Direction)
       : undefined;
 
     const result = optimizer.evaluate({
