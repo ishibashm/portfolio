@@ -809,11 +809,14 @@ export async function GET(request: Request) {
       }
 
       const astroFlags: string[] = [];
-      if (
-        !useTrueNorth &&
-        direction !== magneticDirection &&
-        astrologyScore < 80
-      ) {
+      /*
+        真北の扇と方位磁針の扇が違う地点に付ける。条件から
+        `!useTrueNorth` と `astrologyScore < 80` を外した理由は
+        api/municipalities-wealth/route.ts の同じ箇所に書いてある
+        （前者は判定を真北に固定したので誰にも出なくなる、後者は凡例が
+        「大吉かつ偏角警告」を見本に持っているのに出せなかった）。
+      */
+      if (direction !== magneticDirection) {
         astroFlags.push("DECLINATION_WARNING");
       }
       if (isTendo) astroFlags.push("TENDO");
