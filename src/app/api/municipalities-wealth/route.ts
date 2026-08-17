@@ -93,6 +93,13 @@ export async function GET(request: Request) {
     | "personal_kigaku"
     | "personal_bazi"
     | "environmental";
+  /*
+    **判定には使わない。**判定は真北で固定にした（下の targetDirection）。
+    いま残っているのは DECLINATION_WARNING を出すかどうかの条件だけで、
+    そこも「真北で見る人には注意を出さない」という筋の通らない扱いなので、
+    別の PR で外す。応答には magneticDirection / magneticBearing を常に
+    載せてあるので、方位磁針で測ったときの向きは画面側で出せる。
+  */
   const useTrueNorth = searchParams.get("useTrueNorth") === "true";
   const useClassical = engineType === "classical";
   const nodeMapping = (searchParams.get("nodeMapping") ||
@@ -267,8 +274,18 @@ export async function GET(request: Request) {
         magneticBearing = (trueBearing - declination + 360) % 360;
         magneticDirection = directionFromBearing(magneticBearing, nodeMapping);
 
-        // 1. 九星気学による方位スコア計算
-        const targetDirection = useTrueNorth ? direction : magneticDirection;
+        /*
+          1. 九星気学による方位スコア計算
+
+          **判定は必ず真北**（CLAUDE.md 3 節）。以前はここが
+
+            const targetDirection = useTrueNorth ? direction : magneticDirection;
+
+          で、useTrueNorth の既定は偽だったので、**移住先マップの吉凶を
+          既定で磁北基準で出していた。**磁北の方位は下の
+          DECLINATION_WARNING にだけ使う。
+        */
+        const targetDirection = direction;
         if (activeVectors && targetDirection) {
           astrologyStatus = activeVectors[targetDirection] || "UNKNOWN";
           switch (astrologyStatus) {

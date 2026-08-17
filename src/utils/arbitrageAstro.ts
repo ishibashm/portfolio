@@ -256,9 +256,23 @@ export function scoreDateForProperty(
   );
 
   if (ctx.hasCoordinates) {
-    const targetDirection = ctx.useTrueNorth
-      ? ctx.direction
-      : ctx.magneticDirection;
+    /*
+      **判定は必ず真北**（CLAUDE.md 3 節）。以前はここが
+
+        const targetDirection = ctx.useTrueNorth
+          ? ctx.direction
+          : ctx.magneticDirection;
+
+      で、`useTrueNorth` の既定は偽だったので、**物件検索の日別の吉凶を
+      既定で磁北基準で出していた。**方位角を 0.5 度刻みで掃いた実測で、
+      真北と磁北で八方位の割り当てが変わるのは偏角 -7 度（東京あたり）で
+      15.6%。物件の 6〜7 件に 1 件は別の方位として採点されていた。
+
+      `magneticDirection` は「方位磁針で測るとずれる」注意
+      （DECLINATION_WARNING）にだけ使う。ctx の受け口は残してあるが、
+      **採点には読まない。**
+    */
+    const targetDirection = ctx.direction;
 
     if (state.activeVectors && targetDirection) {
       dailyStatus = state.activeVectors[targetDirection] || "UNKNOWN";
