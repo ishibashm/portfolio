@@ -43,6 +43,22 @@ const nextConfig: NextConfig = {
         destination: "/contact",
         permanent: true,
       },
+      {
+        /*
+          購読の口。RSS は /blog/feed.xml にある。
+
+          Search Console が `/feed/` を「noindex タグによって除外」として
+          挙げていた。実在しないので 404 ページが返り、その 404 ページに
+          noindex が付いているだけ、という読み方になる。
+
+          `/feed` は旧サイト（WordPress 系）の慣習的な経路で、**後継が
+          はっきりしている**ので送る。ここは soft 404 の心配が無い
+          （送り先が元の URL の目的とまったく同じ）。
+        */
+        source: "/feed",
+        destination: "/blog/feed.xml",
+        permanent: true,
+      },
     ];
   },
   async rewrites() {
