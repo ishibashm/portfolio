@@ -23,6 +23,33 @@ const NOT_A_PAGE = [
   "/login",
 ];
 
+/**
+ * 雛形を展開しただけのページ。**索引に載せない**ので、サイトマップからも
+ * 外す。noindex とサイトマップの両方に載せると指示が食い違う。
+ *
+ * 対象は市区町村別（1,022 ページ。地の文はどの URL でも同一で、変わるのは
+ * 地名と表の数字だけ）と、月別（2 年 × 9 星 × 12 か月 = 216 ページ。
+ * 月盤の数値だけが違う）。**年別の 27 ページは残す**（本命星ごとに吉凶の
+ * 並びがまるごと変わるため）。
+ *
+ * AdSense に「有用性の低いコンテンツ」でサイト全体の配信を止められた。
+ * Search Console の実測でも、この 1,238 ページは事実上索引されていない
+ * （878 URL のうち登録済み 78 / 検出only 811 / 表示回数ほぼ 0）ので、
+ * 外して失う流入は無い。
+ *
+ * NON_CORE のように JSON へ出していないのは、**参照するのがここだけ**
+ * だから。テストは exclude をこのファイルから読むので、実体が 2 か所に
+ * なることはない。
+ *
+ * **照合は glob ではない。**next-sitemap は minimatch も fast-glob も
+ * 使わず、パターンを `^...$` の正規表現に直して当てる。そのとき
+ * アスタリスクは `[\s\S]*` になるので、**`/` を越える**（glob の常識と逆）。
+ * ここのパターンは段数がぴったり合うかで判断できる形に選んであり、
+ * 越えるかどうかに依らない。段数を変えるときは
+ * __tests__/sitemapThinPages.test.ts を必ず見ること。
+ */
+const THIN_GENERATED = ["/houi/area/*", "/houi/*/*/*"];
+
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com",
@@ -34,5 +61,6 @@ module.exports = {
     ...NON_CORE,
     ...NON_CORE.map((p) => `${p}/*`),
     ...NOT_A_PAGE,
+    ...THIN_GENERATED,
   ],
 };
