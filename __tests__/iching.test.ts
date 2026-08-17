@@ -351,44 +351,61 @@ describe("Metaphysical Decision Engine Calibration & Verification Tests", () => 
         );
       });
 
-      it("should apply retrograde celestial aspect weight decay", async () => {
+      /*
+        以前ここは「逆行のアスペクトは重みが減衰するので、
+        aspectsRiskScore が下がる」ことを固定していた。
+
+          expect(layersWithRetro.astrophysical.aspectsRiskScore)
+            .toBeLessThan(layersNoRetro.astrophysical.aspectsRiskScore);
+
+        西洋占星術のアスペクトを判定から外したので、**この前提はもう
+        成り立たない。**利用者の判断で「案内どおり占星術は使わない」に
+        揃えた（詳細は nbaEngine.ts の encodeStateLayers と
+        __tests__/nbaAstrologyExcluded.test.ts）。
+
+        テストは消さず、**逆向きの主張に書き換える。**アスペクトの補正が
+        戻ってきたらここで落ちる。
+      */
+      it("should NOT let celestial aspects move the risk score (astrology excluded)", async () => {
         const nba = new NBAEngine();
 
-        // Define transits including retrograde planet (e.g. MERCURY)
         const transits = ["MERCURY SQUARE SUN ORB: 2.50"];
 
-        const stateNoRetrograde: NBAParams["stateVector"] = {
+        const base: NBAParams["stateVector"] = {
           ansLoad: 50,
           shieldCapacity: 50,
           environmentalNoise: "test",
+          environmentalRisk: 40,
           solarPhase: 120,
+        };
+
+        const noAstrology = nba.encodeStateLayers(base);
+        const softAspects = nba.encodeStateLayers({
+          ...base,
           astrologyData: {
             source: "test",
-            transits,
+            transits: ["VENUS TRINE MOON ORB: 1.00"],
             retrogrades: [],
           },
-        };
+        });
+        const hardAspects = nba.encodeStateLayers({
+          ...base,
+          astrologyData: { source: "test", transits, retrogrades: [] },
+        });
+        const withRetrograde = nba.encodeStateLayers({
+          ...base,
+          astrologyData: { source: "test", transits, retrogrades: ["MERCURY"] },
+        });
 
-        const stateWithRetrograde: NBAParams["stateVector"] = {
-          ansLoad: 50,
-          shieldCapacity: 50,
-          environmentalNoise: "test",
-          solarPhase: 120,
-          astrologyData: {
-            source: "test",
-            transits,
-            retrogrades: ["MERCURY"],
-          },
-        };
-
-        // Call encodeStateLayers
-        const layersNoRetro = nba.encodeStateLayers(stateNoRetrograde);
-        const layersWithRetro = nba.encodeStateLayers(stateWithRetrograde);
-
-        // Aspect risk score should be lower for retrograde transit due to weight decay
-        expect(layersWithRetro.astrophysical.aspectsRiskScore).toBeLessThan(
-          layersNoRetro.astrophysical.aspectsRiskScore,
-        );
+        // 環境リスク（40）そのもの。トランジットも逆行も足し引きしない。
+        for (const layers of [
+          noAstrology,
+          softAspects,
+          hardAspects,
+          withRetrograde,
+        ]) {
+          expect(layers.astrophysical.aspectsRiskScore).toBe(0.4);
+        }
       });
 
       it("should default displacement penalty to 1.0 at Null Island (GPS loss)", () => {
