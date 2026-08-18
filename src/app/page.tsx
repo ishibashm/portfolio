@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { QuickProfileBar } from "@/components/home/QuickProfileBar";
+import { LazyMount } from "@/components/LazyMount";
 import {
   CORE_ROUTES,
   SITE_NAME,
@@ -28,16 +29,24 @@ const SolarTimeClock = dynamic(
   () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
-        <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
-          <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-          <span>Solar Time & Geomancy Engine ロード中...</span>
-        </div>
-      </div>
-    ),
+    loading: () => <ClockPlaceholder />,
   }
 );
+
+/*
+  読み込み中と、まだ画面に近づいていないときの置き換え。両方で同じものを
+  出す。高さを持たせて、出た瞬間のずれを小さくする。
+*/
+function ClockPlaceholder() {
+  return (
+    <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
+      <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
+        <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
+        <span>Solar Time & Geomancy Engine ロード中...</span>
+      </div>
+    </div>
+  );
+}
 
 
 export default function Home() {
@@ -128,8 +137,18 @@ export default function Home() {
             日盤の吉凶は真太陽時で切り替わります。引越し当日の動き出す時刻を決めるときに使います。
           </p>
         </div>
+        {/*
+          時計は初期表示に入っていない。360x640 の画面で測ると、ページ全体
+          5833px のうち時計の開始位置は 2856px（4.5 画面ぶん下）。ヘッダー →
+          プロフィール欄 → 中核ページの札 7 枚 → 時計、の 4 番目にある。
+
+          dynamic で分割してあっても、**読み込んだ後は必ず実行される**ので
+          初回表示の待ち時間に乗っていた。画面に近づくまで作らない。
+        */}
         <div className="p-2 rounded-2xl bg-stone-50/80 border border-slate-200 shadow-inner">
-          <SolarTimeClock />
+          <LazyMount fallback={<ClockPlaceholder />}>
+            <SolarTimeClock />
+          </LazyMount>
         </div>
       </div>
 
