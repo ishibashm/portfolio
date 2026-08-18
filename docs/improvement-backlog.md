@@ -588,17 +588,70 @@ scriptParseCompile   391ms
 **単独で一番重いのは lunar-javascript の 100KB。**判定に要るので消せないが、
 初回表示の前に要るものではない。
 
+### 上の「Supabase が時計の依存に混ざっている」は誤りだった（訂正）
+
+一度そう書いたが、**静的 import を全部辿ったら Supabase に到達しない。**
+入口（57 ファイル）からも `SolarTimeClock`（47 ファイル）からも該当なし。
+
+実際は `GlobalSidebar` 自身。`loadSupabase()` を **mount の `useEffect` で
+呼んでいる**（同ファイル 94 行）。ログイン状態を出すためなので当然の作り。
+
+**遅延読みは意図どおり効いている。**共有バンドルには入っておらず、
+コメントが心配していた「`/houi` の記事ページでも 60KB 配る」状態には
+なっていない。**時間として遅れていないだけ**で、それを「効いていない」と
+読み違えた。
+
+### 実体は入口の束ね読みだった（#392 で解消）
+
+`src/app/page.tsx` は時計を**まとめ役の入口経由**で読んでいた。
+
+```ts
+import("@/domains/metaphysical").then((mod) => mod.SolarTimeClock)
+```
+
+`@/domains/metaphysical/index.ts` は **8 つの部品を再輸出する入口**で、
+1 つだけ取り出しても**束ねられた 8 つ全部が同じチャンクに入る。**
+ホームが描くのは時計だけなので、残り 7 つは一度も使われない。
+
+静的 import を辿ると、入口経由 57 ファイル・部品直 47 ファイル。
+余分な 10 本はソース計 116,826 バイト。
+
+```
+SolarTimeTable(34KB)  BioMagneticDashboard(23KB)  TacticalMagneticMap(19KB)
+kmlExport(14KB)  VolumetricBioMap(9KB)  MagneticSpatialHUD(7KB)
+TenchusatsuVisualizer(5KB)  tenchusatsu(3KB)  KigakuBoard(3KB)  index.ts
+```
+
+部品を直に読むよう 1 行変えた結果。
+
+| | 入口経由 | 部品直 |
+|---|---|---|
+| **JS 転送（gzip）** | **386,058 B** | **142,951 B（-63%）** |
+| **未使用 JS** | **70,567 B** | **0 B** |
+| Performance | 43 | 48 / 51 / 54（3 回） |
+| LCP | 7.1 s | 5.3〜5.7 s |
+| Speed Index | 5.3 s | 3.5〜3.6 s |
+| TBT | 1,020 ms | 800〜1,120 ms |
+| TTI | 8.0 s | 6.3 s |
+| scriptEvaluation | 2,885 ms | 2,650 ms |
+
+**JS 転送の数字は 3 回とも同じ 142,951 バイト**（ビルドで決まるので揺れない）。
+点数のほうは ±3 揺れる。**元の 43 は 1 回しか測っていない**ので、点数だけで
+判断せず転送量のほうを根拠にすること。
+
+**入口を消してはいけない。**他の頁が使う。読む側を直すだけ。
+
+`VolumetricBioMap` は**リポジトリ全体でどこからも使われていない。**
+消してよいかは別途（CLAUDE.md 4 節「ファイルを丸ごと消す」）。
+
 ### 次にやるとよいこと（未着手・要相談）
 
 1. **時計を画面に入るまで動かさない。**`IntersectionObserver` で
-   `SolarTimeClock` の mount を遅らせる。2 波目の 234KB がまるごと後ろに回る。
-   ホームの主役の出方が変わるので相談してから
-2. **Supabase が時計の依存に混ざっている。**`GlobalSidebar` はわざわざ
-   遅延読みにしているのに（同ファイルのコメント参照）、時計の側から
-   62KB ぶん引かれている。どこから来ているか未特定
-3. **`unused-javascript` が 69KB。**`5536`（49KB 中 40KB 未使用）と
-   `5852`（47KB 中 30KB 未使用）
-4. `color-contrast` と `font-size` は accessibility 側（下記）
+   `SolarTimeClock` の mount を遅らせる。ホームの主役の出方が変わるので
+   相談してから
+2. **同じ束ね読みが他の頁にも無いか。**入口を作ってある領域は
+   `src/domains/` 配下にいくつかある
+3. `color-contrast` と `font-size` は accessibility 側（下記）
 
 ### accessibility で残っているもの
 
