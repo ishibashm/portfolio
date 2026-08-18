@@ -25,7 +25,9 @@ import {
   KigakuBoard と、それらが引く kmlExport・tenchusatsu で、ソース計
   116,826 バイト。うち VolumetricBioMap は**どこからも使われていない。**
 
-  部品を直に読む。入口は他の頁のために残す。
+  部品を直に読む。**入口は残すが、読み手はもう居ない**（この変更で
+  最後の読み手が外れた。src/domains/ の入口 4 つはどれも読まれていない）。
+  消してよいかは相談中。入口から読む形に戻さないこと。
 */
 const SolarTimeClock = dynamic(
   () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
