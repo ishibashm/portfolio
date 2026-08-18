@@ -122,3 +122,101 @@ export async function probeSearchConsole(
     return { ok: false, reason: "apiError", detail: toLogMessage(e) };
   }
 }
+
+const INSPECT_URL =
+  "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect";
+
+/** Search Console に登録しているプロパティ。ドメイン所有の形。 */
+export const SITE_URL_PROPERTY = "sc-domain:cloud-palette.com";
+
+/**
+ * URL 検査の結果のうち、判断に使う枝だけ。
+ *
+ * **応答の全体を型にしない。**外部の JSON をそのまま写すと、
+ * 使いもしない枝の変更で壊れる（CLAUDE.md 4 節）。
+ */
+export interface UrlIndexStatus {
+  url: string;
+  /** PASS / PARTIAL / FAIL / NEUTRAL。索引に載っているかの総合判定。 */
+  verdict?: string;
+  /** 「送信して索引に登録済み」「検出 - インデックス未登録」などの日本語相当。 */
+  coverageState?: string;
+  /** ALLOWED / DISALLOWED。robots.txt でどう見えているか。 */
+  robotsTxtState?: string;
+  /** INDEXING_ALLOWED / BLOCKED_BY_META_TAG。**noindex が効いたかはここ。** */
+  indexingState?: string;
+  lastCrawlTime?: string;
+  googleCanonical?: string;
+  userCanonical?: string;
+  /** 取得に失敗したときだけ入る。 */
+  error?: string;
+}
+
+/**
+ * 1 つの URL を検査する。
+ *
+ * 枠は 1 プロパティあたり 1 日 2,000 URL・1 分 600 URL。数十件を回す用途なら
+ * 気にしなくてよいが、**全ページを舐める使い方はできない。**
+ */
+export async function inspectUrl(
+  token: string,
+  url: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<UrlIndexStatus> {
+  try {
+    const res = await fetchImpl(INSPECT_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        inspectionUrl: url,
+        siteUrl: SITE_URL_PROPERTY,
+        languageCode: "ja",
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return { url, error: `${res.status} ${text.slice(0, 200)}` };
+    }
+
+    const body = (await res.json()) as {
+      inspectionResult?: { indexStatusResult?: Record<string, string> };
+    };
+    const r = body.inspectionResult?.indexStatusResult ?? {};
+
+    return {
+      url,
+      verdict: r.verdict,
+      coverageState: r.coverageState,
+      robotsTxtState: r.robotsTxtState,
+      indexingState: r.indexingState,
+      lastCrawlTime: r.lastCrawlTime,
+      googleCanonical: r.googleCanonical,
+      userCanonical: r.userCanonical,
+    };
+  } catch (e) {
+    return { url, error: toLogMessage(e) };
+  }
+}
+
+/**
+ * まとめて検査する。**1 件ずつ順に投げる。**
+ *
+ * 並列にしないのは、1 分 600 件の上限に当てないため。数十件なら順でも
+ * 十分に速く、途中で弾かれて全部やり直すより確実。
+ */
+export async function inspectUrls(
+  token: string,
+  urls: string[],
+  fetchImpl: typeof fetch = fetch,
+): Promise<UrlIndexStatus[]> {
+  const out: UrlIndexStatus[] = [];
+  for (const url of urls) {
+    out.push(await inspectUrl(token, url, fetchImpl));
+  }
+  return out;
+}
