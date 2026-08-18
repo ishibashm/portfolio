@@ -5,8 +5,13 @@ import { errorCode } from "@/lib/errorMessage";
  * Reads a JSONL file from the end in chunks, finding the last record
  * that matches the validation function. This prevents loading the entire
  * file into memory.
+ *
+ * 既定は `unknown`。以前は `any` で、**型を渡さない呼び出しでは
+ * `validateFn` の引数も戻り値も検査されなかった。**行の中身は外から来る
+ * JSON なので、呼び出す側が「この取り込みで実際に読む枝」を型として渡す
+ * （外部 JSON の扱いは CLAUDE.md 4 節。`api/nba` が見本）。
  */
-export async function findLastRecordBackwards<T = any>(
+export async function findLastRecordBackwards<T = unknown>(
   filePath: string,
   validateFn: (record: T) => boolean
 ): Promise<T | null> {
