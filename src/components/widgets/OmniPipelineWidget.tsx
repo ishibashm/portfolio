@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useOmniStore } from "../../store/omniStore";
 import { toLogMessage } from "@/lib/errorMessage";
+// 応答の型は DataAnalyzerWidget と共通。@/lib/analyzerResult に出してある。
+import type { AnalyzerPost, AnalyzerResult } from "@/lib/analyzerResult";
 
 export default function OmniPipelineWidget() {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -18,7 +20,9 @@ export default function OmniPipelineWidget() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Step 2 & 3: Analysis & Keywords
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<AnalyzerResult | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([]);
 
@@ -211,10 +215,11 @@ export default function OmniPipelineWidget() {
     );
     const relevantPosts = analysisResult.posts
       .filter(
-        (p: any) => p.text && cleanKeywords.some((kw) => p.text.includes(kw)),
+        (p: AnalyzerPost) =>
+          p.text && cleanKeywords.some((kw) => p.text!.includes(kw)),
       )
       .map(
-        (p: any) =>
+        (p: AnalyzerPost) =>
           `[@${p.author_handle || "unknown"} - ${p.created_at || p.timestamp || ""}]\n${p.text}`,
       );
 
@@ -241,10 +246,11 @@ export default function OmniPipelineWidget() {
     );
     const relevantPosts = analysisResult.posts
       .filter(
-        (p: any) => p.text && cleanKeywords.some((kw) => p.text.includes(kw)),
+        (p: AnalyzerPost) =>
+          p.text && cleanKeywords.some((kw) => p.text!.includes(kw)),
       )
       .map(
-        (p: any) =>
+        (p: AnalyzerPost) =>
           `[@${p.author_handle || "unknown"} - ${p.created_at || p.timestamp || ""}]\n${p.text}`,
       );
 
@@ -430,29 +436,41 @@ export default function OmniPipelineWidget() {
             </div>
 
             {/* Keywords Cloud */}
-            <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-4">
-              <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">
-                頻出キーワード (クリックで選択)
-              </h4>
-              <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
-                {analysisResult.keywords.map((kw: string, i: number) => (
-                  <span
-                    key={i}
-                    onClick={() => toggleKeyword(kw)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer select-none ${
-                      selectedKeywords.includes(kw)
-                        ? "bg-orange-500 text-white border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] scale-105"
-                        : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-indigo-900/50 hover:border-indigo-500/50"
-                    }`}
-                  >
-                    {kw}
-                  </span>
-                ))}
+            {/*
+              keywords は分類によっては返ってこない（型でも任意）。以前は
+              有無を見ずに .map していたので、返らない応答に当たると描画中に
+              落ちてウィジェットが白くなっていた。同じ口を叩く
+              DataAnalyzerWidget は 327 行で有無を見ている。そちらに揃える。
+            */}
+            {analysisResult.keywords && analysisResult.keywords.length > 0 && (
+              <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 p-4">
+                <h4 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-widest">
+                  頻出キーワード (クリックで選択)
+                </h4>
+                <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                  {analysisResult.keywords.map((kw: string, i: number) => (
+                    <span
+                      key={i}
+                      onClick={() => toggleKeyword(kw)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer select-none ${
+                        selectedKeywords.includes(kw)
+                          ? "bg-orange-500 text-white border-orange-400 shadow-[0_0_15px_rgba(249,115,22,0.4)] scale-105"
+                          : "bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-indigo-900/50 hover:border-indigo-500/50"
+                      }`}
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Post Preview & Action */}
-            {selectedKeywords.length > 0 && (
+            {/*
+              posts も分類によっては返ってこない。keywords と同じ理由で
+              有無を見る（DataAnalyzerWidget は 361 行で見ている）。
+            */}
+            {selectedKeywords.length > 0 && analysisResult.posts && (
               <div className="border-2 border-orange-500/30 bg-orange-950/10 rounded-xl p-5 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
                 <h4 className="text-sm font-bold text-orange-400 flex items-center gap-2 mb-4">
@@ -463,13 +481,13 @@ export default function OmniPipelineWidget() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 mb-6">
                   {analysisResult.posts
                     .filter(
-                      (p: any) =>
+                      (p: AnalyzerPost) =>
                         p.text &&
                         selectedKeywords.some((kw) =>
-                          p.text.includes(kw.replace(/^[名動形]:\s*/, "")),
+                          p.text!.includes(kw.replace(/^[名動形]:\s*/, "")),
                         ),
                     )
-                    .map((p: any, idx: number) => (
+                    .map((p: AnalyzerPost, idx: number) => (
                       <div
                         key={idx}
                         className="bg-slate-900/80 border border-slate-700/50 p-4 rounded-lg flex flex-col gap-2"

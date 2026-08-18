@@ -2,31 +2,8 @@
 
 import { useState, useRef } from "react";
 import { toLogMessage } from "@/lib/errorMessage";
-
-/**
- * `/api/v1/analyzer/process` が返す 1 ポスト。どの欄も揃わないことがあるので
- * すべて任意。この画面が読む枝だけを写している。
- */
-interface AnalyzerPost {
-  text?: string;
-  author_handle?: string;
-  created_at?: string;
-  timestamp?: string;
-  media_paths?: string[];
-}
-
-/**
- * 解析の結果。`category` で下の表示が切り替わる（finance / vision /
- * markdown / general と、この画面が自分で入れる unknown）。応答側の値を
- * union で固定すると増えたときに落ちるので、ここでは string のまま扱う。
- */
-interface AnalyzerResult {
-  category: string;
-  summary: string;
-  keywords?: string[];
-  posts?: AnalyzerPost[];
-  items?: string[];
-}
+// 同じ応答を OmniPipelineWidget も読むので、型は @/lib/analyzerResult に出した。
+import type { AnalyzerResult } from "@/lib/analyzerResult";
 
 export default function DataAnalyzerWidget() {
   const [content, setContent] = useState<string>("");
