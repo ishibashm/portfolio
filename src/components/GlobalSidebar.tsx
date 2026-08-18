@@ -172,8 +172,16 @@ export function GlobalSidebar() {
   return (
     <>
       {/* Mobile Toggle Button */}
+      {/*
+        中身が図形だけのボタンには名前を付ける。Lighthouse の
+        「Buttons do not have an accessible name」がこれ。読み上げでは
+        「ボタン」としか読まれず、何をするのか分からない。
+        開いているかどうかも aria-expanded で伝える。
+      */}
       <button
         onClick={toggleSidebar}
+        aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
+        aria-expanded={isOpen}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 shadow-md shadow-rose-100/40"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -273,11 +281,21 @@ export function GlobalSidebar() {
             </Link>
           )}
 
-          {/* Collapse Toggle for Desktop */}
+          {/*
+            Collapse Toggle for Desktop
+
+            「メニューを閉じる」と名乗っていたが、**閉じない。**押すと
+            アイコンだけの細い列になる（isCollapsed）。同じ名前を上の
+            開閉ボタンにも付けたところ、読み上げ上まったく同じ名前の
+            ボタンが 2 つ並ぶ形になって取り違えが起きた。
+            やることに合わせて「畳む / 広げる」にする。
+          */}
           <button
             onClick={toggleCollapse}
+            aria-label={isCollapsed ? "メニューを広げる" : "メニューを畳む"}
+            aria-expanded={!isCollapsed}
             className={`hidden lg:flex items-center text-stone-400 hover:text-stone-700 p-2 rounded-xl hover:bg-stone-100/80 transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
-            title={isCollapsed ? "メニューを展開" : "メニューを閉じる"}
+            title={isCollapsed ? "メニューを広げる" : "メニューを畳む"}
           >
             {isCollapsed ? (
               <PanelLeftOpen size={18} />
@@ -286,7 +304,7 @@ export function GlobalSidebar() {
             )}
             {!isCollapsed && (
               <span className="text-sm font-medium whitespace-nowrap">
-                メニューを閉じる
+                メニューを畳む
               </span>
             )}
           </button>
