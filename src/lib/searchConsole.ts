@@ -220,3 +220,100 @@ export async function inspectUrls(
   }
   return out;
 }
+
+const SEARCH_ANALYTICS_URL = `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(
+  SITE_URL_PROPERTY,
+)}/searchAnalytics/query`;
+
+/** 検索クエリ 1 語ぶんの実績。 */
+export interface QueryStat {
+  query: string;
+  clicks: number;
+  impressions: number;
+  /** 0〜1。表示されたうち何割が押されたか。 */
+  ctr: number;
+  /** 平均掲載順位。小さいほど上。 */
+  position: number;
+}
+
+/**
+ * 検索クエリ別の実績を取る。
+ *
+ * **記事の題材を探すために使う。**「表示はされているのにクリックされて
+ * いない語」は、読者が探していて、こちらがまだ答えていない話題。
+ *
+ * 日付は YYYY-MM-DD。Search Console のデータは 2〜3 日遅れるので、
+ * 直近まで詰めても空になる。呼ぶ側で余裕を持たせること。
+ *
+ * rowLimit の上限は 25,000。既定の 1,000 で足りる。
+ */
+export async function fetchQueryStats(
+  token: string,
+  opts: { startDate: string; endDate: string; rowLimit?: number },
+  fetchImpl: typeof fetch = fetch,
+): Promise<QueryStat[]> {
+  const res = await fetchImpl(SEARCH_ANALYTICS_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      startDate: opts.startDate,
+      endDate: opts.endDate,
+      dimensions: ["query"],
+      rowLimit: opts.rowLimit ?? 1000,
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`searchAnalytics ${res.status} ${text.slice(0, 200)}`);
+  }
+
+  const body = (await res.json()) as {
+    rows?: {
+      keys?: string[];
+      clicks?: number;
+      impressions?: number;
+      ctr?: number;
+      position?: number;
+    }[];
+  };
+
+  return (body.rows ?? []).map((r) => ({
+    query: r.keys?.[0] ?? "",
+    clicks: r.clicks ?? 0,
+    impressions: r.impressions ?? 0,
+    ctr: r.ctr ?? 0,
+    position: r.position ?? 0,
+  }));
+}
+
+/**
+ * 記事の題材になりそうな語を選ぶ。
+ *
+ * **「表示はされているが、クリックされていない」語を上に置く。**
+ * 読者はその語で探してこのサイトを目にしているのに、開いていない。
+ * 答えが無いか、あっても見出しから読み取れていない、ということ。
+ *
+ * 除外の条件は 2 つ。
+ *
+ *   表示が少なすぎる語   … たまたま 1 回出ただけ。題材にならない
+ *   既にクリックがある語 … 答えられている。書き足す必要が薄い
+ *
+ * 並びは表示回数の多い順。同じなら掲載順位が悪い順（伸びしろが大きい）。
+ */
+export function topicCandidates(
+  stats: QueryStat[],
+  opts: { minImpressions?: number; limit?: number } = {},
+): QueryStat[] {
+  const minImpressions = opts.minImpressions ?? 5;
+  const limit = opts.limit ?? 30;
+
+  return stats
+    .filter((s) => s.impressions >= minImpressions && s.clicks === 0)
+    .sort((a, b) => b.impressions - a.impressions || b.position - a.position)
+    .slice(0, limit);
+}
