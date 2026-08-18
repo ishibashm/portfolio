@@ -14,20 +14,15 @@ import {
 } from "@/lib/siteStructure";
 
 /*
-  @/domains/metaphysical は 8 つの部品をまとめて再輸出する入口。ここから
-  SolarTimeClock だけを取り出しても、**束ねられた 8 つ全部が同じチャンクに
-  入る。**ホームが描くのは時計だけなので、残り 7 つはこの頁では一度も
-  使われない。
+  **部品を直に読むこと。まとめ役の入口を作って、そこから読まないこと。**
 
-  実測で、入口経由だと 57 ファイル・部品直だと 47 ファイル。余分な 10 本は
-  SolarTimeTable / TacticalMagneticMap / BioMagneticDashboard /
-  VolumetricBioMap / MagneticSpatialHUD / TenchusatsuVisualizer /
-  KigakuBoard と、それらが引く kmlExport・tenchusatsu で、ソース計
-  116,826 バイト。うち VolumetricBioMap は**どこからも使われていない。**
+  以前は src/domains/metaphysical という 8 部品を再輸出する入口から
+  読んでいた。1 つだけ取り出しても**束ねられた 8 つ全部が同じチャンクに
+  入る。**ホームが描くのは時計だけなので、残り 7 つは一度も使われないまま
+  配られていた（実測で JS 転送 gzip 386KB → 143KB、未使用 JS 70KB → 0。#392）。
 
-  部品を直に読む。**入口は残すが、読み手はもう居ない**（この変更で
-  最後の読み手が外れた。src/domains/ の入口 4 つはどれも読まれていない）。
-  消してよいかは相談中。入口から読む形に戻さないこと。
+  その入口は #396 で消した。dynamic import の先に再輸出だけの層を挟むと
+  同じことが起きる。
 */
 const SolarTimeClock = dynamic(
   () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
