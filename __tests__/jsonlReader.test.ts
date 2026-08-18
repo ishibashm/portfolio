@@ -5,6 +5,21 @@ import { findLastRecordBackwards } from "../src/utils/jsonlReader";
 
 const testFilePath = path.join(process.cwd(), "data", "test_nba_history.jsonl");
 
+/**
+ * このテストが書き込む行の形。
+ *
+ * 以前は `(r: any) => r.id === 1` と書いていたので、**綴りを間違えても
+ * 気付けなかった**（`r.di` でも型検査を通る）。実際に読む枝だけを型にする
+ * のは、外部 JSON の扱いと同じ方針（CLAUDE.md 4 節）。
+ */
+interface Record_ {
+  id: number;
+  type: string;
+  data?: string;
+  value?: string;
+  payload?: string;
+}
+
 describe("jsonlReader - findLastRecordBackwards", () => {
   beforeEach(async () => {
     // Ensure parent directory exists
@@ -14,7 +29,7 @@ describe("jsonlReader - findLastRecordBackwards", () => {
   afterEach(async () => {
     try {
       await fs.unlink(testFilePath);
-    } catch (e) {
+    } catch {
       // Ignore if file doesn't exist
     }
   });
@@ -34,7 +49,10 @@ describe("jsonlReader - findLastRecordBackwards", () => {
     const record = { id: 1, type: "nba", data: "test" };
     await fs.writeFile(testFilePath, JSON.stringify(record) + "\n", "utf-8");
     
-    const result = await findLastRecordBackwards(testFilePath, (r) => r.id === 1);
+    const result = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.id === 1
+    );
     expect(result).toEqual(record);
   });
 
@@ -49,7 +67,10 @@ describe("jsonlReader - findLastRecordBackwards", () => {
       "utf-8"
     );
 
-    const result = await findLastRecordBackwards(testFilePath, (r) => r.id === 3);
+    const result = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.id === 3
+    );
     expect(result).toBeNull();
   });
 
@@ -65,7 +86,10 @@ describe("jsonlReader - findLastRecordBackwards", () => {
       "utf-8"
     );
 
-    const result = await findLastRecordBackwards(testFilePath, (r: any) => r.type === "nba");
+    const result = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.type === "nba"
+    );
     expect(result).toEqual(records[1]); // should return the last matching record (id: 2)
   });
 
@@ -73,13 +97,16 @@ describe("jsonlReader - findLastRecordBackwards", () => {
     const content = `{"id": 1, "type": "nba"}\n{invalid_json}\n{"id": 3, "type": "nba"}\n`;
     await fs.writeFile(testFilePath, content, "utf-8");
 
-    const result = await findLastRecordBackwards(testFilePath, (r: any) => r.id === 1);
+    const result = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.id === 1
+    );
     expect(result).toEqual({ id: 1, type: "nba" });
   });
 
   it("should handle large files and parse backwards across multiple chunks", async () => {
     // Write 2000 lines of ~100 bytes each to exceed typical 64KB chunk boundary
-    const records: any[] = [];
+    const records: Record_[] = [];
     for (let i = 1; i <= 2000; i++) {
       records.push({
         id: i,
@@ -95,12 +122,18 @@ describe("jsonlReader - findLastRecordBackwards", () => {
     );
 
     // Find the last record with id 1501
-    const result = await findLastRecordBackwards(testFilePath, (r: any) => r.id === 1501);
+    const result = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.id === 1501
+    );
     expect(result?.id).toBe(1501);
     expect(result?.type).toBe("nba");
 
     // Find the last special record (should be id 2000)
-    const specialResult = await findLastRecordBackwards(testFilePath, (r: any) => r.type === "special");
+    const specialResult = await findLastRecordBackwards<Record_>(
+      testFilePath,
+      (r) => r.type === "special"
+    );
     expect(specialResult?.id).toBe(2000);
   });
 });
