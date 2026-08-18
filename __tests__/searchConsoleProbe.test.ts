@@ -1,5 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { fetchAccessToken, probeSearchConsole } from "@/lib/searchConsole";
+import {
+  SITE_URL_PROPERTY,
+  fetchAccessToken,
+  inspectUrl,
+  inspectUrls,
+  probeSearchConsole,
+} from "@/lib/searchConsole";
+import { inspectionTargets } from "@/lib/searchConsoleTargets";
 
 /**
  * Search Console の疎通確認の固定。
@@ -147,5 +154,96 @@ describe("疎通の確認", () => {
 
     await probeSearchConsole(f);
     expect(sitesUrl).toContain(SITES_HOST);
+  });
+});
+
+describe("URL 検査", () => {
+  it("プロパティは sc-domain の形で送る", async () => {
+    // 実測で Search Console の登録は sc-domain:cloud-palette.com（ドメイン所有）。
+    // URL プレフィックス形式で送ると 403 になる。
+    let sentBody: Record<string, string> = {};
+    const f = fakeFetch((_url, init) => {
+      sentBody = JSON.parse(String(init?.body ?? "{}"));
+      return new Response(JSON.stringify({ inspectionResult: {} }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    await inspectUrl("T", "https://cloud-palette.com/blog", f);
+    expect(sentBody.siteUrl).toBe(SITE_URL_PROPERTY);
+    expect(SITE_URL_PROPERTY).toBe("sc-domain:cloud-palette.com");
+    expect(sentBody.inspectionUrl).toBe("https://cloud-palette.com/blog");
+  });
+
+  it("判断に使う枝だけを取り出す", async () => {
+    const f = fakeFetch(
+      () =>
+        new Response(
+          JSON.stringify({
+            inspectionResult: {
+              indexStatusResult: {
+                verdict: "PASS",
+                coverageState: "Submitted and indexed",
+                robotsTxtState: "ALLOWED",
+                indexingState: "INDEXING_ALLOWED",
+                lastCrawlTime: "2026-08-16T00:00:00Z",
+                // 使わない枝。落ちても壊れないこと。
+                pageFetchState: "SUCCESSFUL",
+                referringUrls: ["https://example.com"],
+              },
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+    );
+
+    const r = await inspectUrl("T", "https://cloud-palette.com/", f);
+    expect(r.verdict).toBe("PASS");
+    expect(r.indexingState).toBe("INDEXING_ALLOWED");
+    expect(r.error).toBeUndefined();
+  });
+
+  it("失敗しても投げず、その URL の error に残す", async () => {
+    // 1 件の失敗で全部が止まると、残りの状況が分からなくなる。
+    const f = fakeFetch(() => new Response("quota exceeded", { status: 429 }));
+    const rows = await inspectUrls(
+      "T",
+      ["https://cloud-palette.com/a", "https://cloud-palette.com/b"],
+      f,
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0].error).toContain("429");
+    expect(rows[1].error).toContain("429");
+  });
+});
+
+describe("検査する URL の選び方", () => {
+  it("載るべきものと、外したはずのものの両方を見る", () => {
+    const targets = inspectionTargets();
+    const groups = new Set(targets.map((t) => t.group));
+
+    // 記事と道具だけ見ても、#379 の noindex が効いたかは分からない。
+    expect(groups.has("article")).toBe(true);
+    expect(groups.has("core")).toBe(true);
+    expect(groups.has("noindexed")).toBe(true);
+
+    // 外したはずのものは shouldBeIndexed が偽。
+    for (const t of targets.filter((t) => t.group === "noindexed")) {
+      expect(t.shouldBeIndexed).toBe(false);
+    }
+    for (const t of targets.filter((t) => t.group !== "noindexed")) {
+      expect(t.shouldBeIndexed).toBe(true);
+    }
+  });
+
+  it("1 日の枠（2,000 件）に対して十分小さい", () => {
+    // 全ページを舐めるための仕組みではない。増やしすぎると枠を焼く。
+    expect(inspectionTargets().length).toBeLessThan(100);
+  });
+
+  it("同じ URL を二重に検査しない", () => {
+    const urls = inspectionTargets().map((t) => t.url);
+    expect(new Set(urls).size).toBe(urls.length);
   });
 });
