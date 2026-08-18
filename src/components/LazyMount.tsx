@@ -50,9 +50,12 @@ export function LazyMount({
     if (shown) return;
 
     // 監視の仕組みが無ければ、待たずに出す。中身を隠さないことを優先する。
+    //
+    // 効果の中で同期に setShown すると連鎖描画になる
+    // （react-hooks/set-state-in-effect）。次の順番に回す。
     if (typeof IntersectionObserver === "undefined") {
-      setShown(true);
-      return;
+      const timer = setTimeout(() => setShown(true), 0);
+      return () => clearTimeout(timer);
     }
 
     const el = ref.current;

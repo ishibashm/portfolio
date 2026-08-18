@@ -1,5 +1,5 @@
 import { render, screen, act } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { LazyMount } from "@/components/LazyMount";
 
@@ -94,7 +94,7 @@ describe("LazyMount", () => {
     expect(screen.queryByText("中身")).toBeNull();
   });
 
-  it("IntersectionObserver が無い環境では待たずに出す", () => {
+  it("IntersectionObserver が無い環境では待たずに出す", async () => {
     // ここが抜けると、中身が永久に出ない環境ができる。
     // @ts-expect-error 監視の仕組みが無い環境を作る
     delete globalThis.IntersectionObserver;
@@ -104,6 +104,7 @@ describe("LazyMount", () => {
         <Marker />
       </LazyMount>,
     );
-    expect(screen.getByText("中身")).toBeTruthy();
+    // 効果の中で同期に出すと連鎖描画になるので、次の順番に回している。
+    expect(await screen.findByText("中身")).toBeTruthy();
   });
 });
