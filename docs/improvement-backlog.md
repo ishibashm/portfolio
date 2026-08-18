@@ -500,3 +500,122 @@ DDL 適用済み・稼働中。**ログイン中はクラウド、未ログイ�
 
 **記事だけ狭くする例外を戻さないこと。**読みにくさが出たら器ではなく段落側で
 対処する（`max-w-[70ch]`、目次を横に置いて 2 段、など）。
+
+---
+
+## 11. 表示速度 — 主犯は CSS ではなく JavaScript（実測 2026-08-18）
+
+PageSpeed Insights の点数が低い件。**最初「CSS の 184KB を削るのが一番効く」と
+書いたが、実測したら効かなかった。**ここに測定値ごと残す。
+
+### 測り方
+
+`npm run build` の standalone をローカルで起動し、Lighthouse 12 をモバイル・
+既定のスロットリングで掛けた。本番ではなくローカルなので絶対値は比べない。
+**同じ場所で前後を比べる**（lint の総数と同じ注意）。
+
+```bash
+cd .next/standalone && PORT=3066 node server.js
+CHROME_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome \
+  npx lighthouse@12 http://127.0.0.1:3066/ --only-categories=performance \
+  --form-factor=mobile --screenEmulation.mobile --output=json
+```
+
+`public/` と `.next/static` を standalone 配下に写し忘れると**全資材が 404 に
+なったまま測れてしまう。**その状態の点数は 100 になる。リクエスト数
+（正常なら 123 件）を必ず確認すること。1 度これで「100 になった」と誤読した。
+
+### 結果
+
+| | 2 ウェイト（現行） | 1 ウェイト（実験） |
+|---|---|---|
+| Performance | **43** | **40** |
+| FCP | 3.6 s | 3.3 s |
+| LCP | 7.1 s | 9.0 s |
+| TBT | 1,020 ms | 1,530 ms |
+| 初期 CSS 転送（gzip） | 96 KB | 64 KB |
+| 描画を止めた合計 | 1,746 ms | 1,446 ms |
+| scriptEvaluation | 2,885 ms | 3,008 ms |
+
+**CSS は狙いどおり 32KB 減り、描画を止める時間も 300ms 減ったのに、点数は
+上がらない。**43 → 40 は測定のばらつきの範囲。Lighthouse 自身も
+`render-blocking-resources` を **`Est savings of 0 ms`** と評価している。
+この行を読まずに CSS を主犯だと書いていた。
+
+**フォントのウェイト削減は採用しない。**効果が無いうえ、セリフ体テーマ
+（`fontTheme === "serif"`）の本文が 400 を使う。`layout.tsx` のコメントに
+書いてあるとおり。
+
+### 主犯
+
+メインスレッドの内訳（2 ウェイト版）。
+
+```
+scriptEvaluation   2,885ms   ← 4 割
+styleLayout        1,935ms
+other              1,348ms
+scriptParseCompile   391ms
+```
+
+`bootup-time` の筆頭は chunk `3794-…js` で **2,540ms（うち scripting 2,000ms）**。
+中身を見たら **React と Next のランタイム本体**だった。
+
+**DOM は 493 要素しかない。**要素数ではなく、`src/app/page.tsx` が丸ごと
+`"use client"` で `SolarTimeClock`（8,000 行）をハイドレートしているコスト。
+`dynamic(..., { ssr: false })` で分割はされているが、**読み込んだ後は必ず
+実行される**ので初回表示の待ち時間にそのまま乗る。
+
+### 何が読まれているか
+
+ホームで読まれる JS は **gzip で 386KB・40 本。**時刻順に見ると 2 波ある。
+
+```
+191ms   webpack / 4bd1b696(63KB=React) / 3794(52KB) / app/page(11KB)   ← 初期
+858ms   44530001(12KB) 5536(50KB) 428ccf76(100KB) 481c1c7c(20KB)
+        5852(52KB)                                                     ← 時計の依存
+```
+
+2 波目は `SolarTimeClock` の `dynamic` import が引いてくる依存。中身を見ると
+
+| chunk | gzip | 中身 |
+|---|---|---|
+| `428ccf76` | **100KB** | **lunar-javascript**（干支・節気・八卦。判定の土台） |
+| `5852` | 52KB | — |
+| `5536` | 50KB | **Supabase**（`GlobalSidebar` が遅延読みしている当のもの） |
+| `481c1c7c` | 20KB | astronomy-engine |
+| `44530001` | 12KB | Supabase の続き |
+
+**単独で一番重いのは lunar-javascript の 100KB。**判定に要るので消せないが、
+初回表示の前に要るものではない。
+
+### 次にやるとよいこと（未着手・要相談）
+
+1. **時計を画面に入るまで動かさない。**`IntersectionObserver` で
+   `SolarTimeClock` の mount を遅らせる。2 波目の 234KB がまるごと後ろに回る。
+   ホームの主役の出方が変わるので相談してから
+2. **Supabase が時計の依存に混ざっている。**`GlobalSidebar` はわざわざ
+   遅延読みにしているのに（同ファイルのコメント参照）、時計の側から
+   62KB ぶん引かれている。どこから来ているか未特定
+3. **`unused-javascript` が 69KB。**`5536`（49KB 中 40KB 未使用）と
+   `5852`（47KB 中 30KB 未使用）
+4. `color-contrast` と `font-size` は accessibility 側（下記）
+
+### accessibility で残っているもの
+
+Lighthouse の A11y は 90。`button-name` は #390 で 0 件にした。残りは 2 つ。
+
+- **`color-contrast`（score 0）** — `text-stone-400` の小さい字と
+  `text-emerald-600` が主。配色の決めごとを変える話になる
+- **`font-size`（score 0）** — 読める大きさの字が **57.95%** しかない。
+  `text-[7px]` `text-[9px]` `text-[10px]` が原因
+
+### 直したもの（#389）
+
+`public/` のアイコン 3 枚が「中身は 1024×1024 の JPEG、拡張子だけ `.png`」の
+**バイト単位で同一のファイル**だった（各 501,687 バイト）。`manifest.json` は
+192×192 / 512×512 / 180×180 の `image/png` と宣言していたので**型も寸法も全部
+うそ**。`favicon.ico` は存在せず、全ページで 404 が 1 件出ていた。
+
+寸法ごとに作り直して **1,505,061 → 126,933 バイト（-92%）。**
+`__tests__/appIcons.test.ts` が `manifest.json` の側から引いて PNG の IHDR と
+突き合わせるので、拡張子だけ直した状態では通らない。
