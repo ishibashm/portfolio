@@ -2,9 +2,11 @@ import { describe, it, expect, vi } from "vitest";
 import {
   SITE_URL_PROPERTY,
   fetchAccessToken,
+  fetchQueryStats,
   inspectUrl,
   inspectUrls,
   probeSearchConsole,
+  topicCandidates,
 } from "@/lib/searchConsole";
 import { inspectionTargets } from "@/lib/searchConsoleTargets";
 
@@ -245,5 +247,119 @@ describe("検査する URL の選び方", () => {
   it("同じ URL を二重に検査しない", () => {
     const urls = inspectionTargets().map((t) => t.url);
     expect(new Set(urls).size).toBe(urls.length);
+  });
+});
+
+describe("検索クエリからの題材選び", () => {
+  const stats = [
+    // 表示が多く、クリックが無い。**これが欲しいもの。**
+    {
+      query: "引越し 方位 測り方",
+      clicks: 0,
+      impressions: 120,
+      ctr: 0,
+      position: 18,
+    },
+    {
+      query: "天中殺 引越し",
+      clicks: 0,
+      impressions: 80,
+      ctr: 0,
+      position: 25,
+    },
+    // 既にクリックがある = 答えられている
+    {
+      query: "九星気学 吉方位",
+      clicks: 12,
+      impressions: 300,
+      ctr: 0.04,
+      position: 5,
+    },
+    // 表示が少なすぎる = たまたま
+    { query: "方位 とは", clicks: 0, impressions: 2, ctr: 0, position: 60 },
+  ];
+
+  it("表示があってクリックの無い語だけを拾う", () => {
+    const picked = topicCandidates(stats).map((s) => s.query);
+    expect(picked).toContain("引越し 方位 測り方");
+    expect(picked).toContain("天中殺 引越し");
+    // 答えられている語は題材にしない。
+    expect(picked).not.toContain("九星気学 吉方位");
+    // たまたま 1〜2 回出ただけの語も題材にしない。
+    expect(picked).not.toContain("方位 とは");
+  });
+
+  it("表示回数の多い順に並べる", () => {
+    const picked = topicCandidates(stats);
+    expect(picked[0].query).toBe("引越し 方位 測り方");
+    expect(picked[0].impressions).toBeGreaterThan(picked[1].impressions);
+  });
+
+  it("表示回数が同じなら掲載順位の悪いほうを先に（伸びしろが大きい）", () => {
+    const tied = [
+      { query: "A", clicks: 0, impressions: 50, ctr: 0, position: 8 },
+      { query: "B", clicks: 0, impressions: 50, ctr: 0, position: 40 },
+    ];
+    expect(topicCandidates(tied).map((s) => s.query)).toEqual(["B", "A"]);
+  });
+
+  it("しきい値と件数は変えられる", () => {
+    expect(topicCandidates(stats, { minImpressions: 1 })).toHaveLength(3);
+    expect(topicCandidates(stats, { limit: 1 })).toHaveLength(1);
+  });
+
+  it("空でも落ちない", () => {
+    expect(topicCandidates([])).toEqual([]);
+  });
+});
+
+describe("検索クエリの取得", () => {
+  it("プロパティ名を URL に符号化して入れる", async () => {
+    // sc-domain: のコロンをそのまま入れると経路が壊れる。
+    let seenUrl = "";
+    const f = fakeFetch((url) => {
+      seenUrl = url;
+      return new Response(JSON.stringify({ rows: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    await fetchQueryStats(
+      "T",
+      { startDate: "2026-05-01", endDate: "2026-08-01" },
+      f,
+    );
+    expect(seenUrl).toContain(encodeURIComponent(SITE_URL_PROPERTY));
+    expect(seenUrl).toContain("searchAnalytics/query");
+  });
+
+  it("rows が無くても空配列（データがまだ無いとき）", async () => {
+    const f = fakeFetch(
+      () =>
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+    );
+    expect(
+      await fetchQueryStats(
+        "T",
+        { startDate: "2026-05-01", endDate: "2026-08-01" },
+        f,
+      ),
+    ).toEqual([]);
+  });
+
+  it("弾かれたら投げる（黙って空を返さない）", async () => {
+    // 空配列で返すと「候補が無い」と区別がつかず、権限切れに気付けない。
+    const f = fakeFetch(() => new Response("forbidden", { status: 403 }));
+    await expect(
+      fetchQueryStats(
+        "T",
+        { startDate: "2026-05-01", endDate: "2026-08-01" },
+        f,
+      ),
+    ).rejects.toThrow("403");
   });
 });
