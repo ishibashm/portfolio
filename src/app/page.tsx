@@ -13,8 +13,22 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
 
+/*
+  @/domains/metaphysical は 8 つの部品をまとめて再輸出する入口。ここから
+  SolarTimeClock だけを取り出しても、**束ねられた 8 つ全部が同じチャンクに
+  入る。**ホームが描くのは時計だけなので、残り 7 つはこの頁では一度も
+  使われない。
+
+  実測で、入口経由だと 57 ファイル・部品直だと 47 ファイル。余分な 10 本は
+  SolarTimeTable / TacticalMagneticMap / BioMagneticDashboard /
+  VolumetricBioMap / MagneticSpatialHUD / TenchusatsuVisualizer /
+  KigakuBoard と、それらが引く kmlExport・tenchusatsu で、ソース計
+  116,826 バイト。うち VolumetricBioMap は**どこからも使われていない。**
+
+  部品を直に読む。入口は他の頁のために残す。
+*/
 const SolarTimeClock = dynamic(
-  () => import("@/domains/metaphysical").then((mod) => mod.SolarTimeClock),
+  () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
   {
     ssr: false,
     loading: () => (
