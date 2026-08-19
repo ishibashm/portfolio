@@ -865,7 +865,7 @@ export function NBADashboard({
                   </div>
                 </div>
 
-                <div className="text-[8px] text-stone-600 font-mono text-right mt-4">
+                <div className="text-[10px] text-stone-600 font-mono text-right mt-4">
                   Last sync:{" "}
                   {data?.macro.streams?.spaceWeather?.timestamp
                     ? new Date(
@@ -941,7 +941,7 @@ export function NBADashboard({
                   </div>
                 </div>
 
-                <div className="text-[8px] text-stone-600 font-mono text-right mt-4">
+                <div className="text-[10px] text-stone-600 font-mono text-right mt-4">
                   データエンジン状態: 安定 (STABLE)
                 </div>
               </div>
@@ -1024,7 +1024,7 @@ export function NBADashboard({
                   </div>
                 </div>
 
-                <div className="text-[8px] text-stone-600 font-mono text-right mt-4">
+                <div className="text-[10px] text-stone-600 font-mono text-right mt-4">
                   Epoch: UTC2026
                 </div>
               </div>
@@ -1115,7 +1115,7 @@ export function NBADashboard({
                   </div>
                 </div>
 
-                <div className="text-[8px] text-stone-600 font-mono text-right mt-4">
+                <div className="text-[10px] text-stone-600 font-mono text-right mt-4">
                   Oura連携アクティブ
                 </div>
               </div>
@@ -1198,7 +1198,7 @@ export function NBADashboard({
                             <Compass className="w-3 h-3" /> 西洋占星術 (Western
                             Transits)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             {data.macro.streams?.metaphysical?.astrologyApi?.sourceInfo?.split(
                               " ",
                             )[0] || "AstrologyAPI"}
@@ -1215,7 +1215,7 @@ export function NBADashboard({
                                 >
                                   <span>{asp.aspect}</span>
                                   <span
-                                    className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                                       asp.quality === "harmonious"
                                         ? "bg-emerald-500/20 text-emerald-600 border border-emerald-500/25"
                                         : asp.quality === "discordant"
@@ -1246,7 +1246,7 @@ export function NBADashboard({
                           <p className="text-[10px] text-indigo-600 uppercase font-bold tracking-widest flex items-center gap-1">
                             <Star className="w-3 h-3" /> インド占星術 (Jyotish)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             VedAstro MCP
                           </span>
                         </div>
@@ -1294,7 +1294,7 @@ export function NBADashboard({
                               <Star className="w-3 h-3" /> 紫微斗数 (Zi Wei Dou
                               Shu)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               Calendar Stars
                             </span>
                           </div>
@@ -1353,7 +1353,7 @@ export function NBADashboard({
                               <Layers className="w-3 h-3" /> ヒューマンデザイン
                               (Human Design)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               Synthesis Engine
                             </span>
                           </div>
@@ -1451,7 +1451,7 @@ export function NBADashboard({
                             <Flame className="w-3 h-3" /> 四柱推命 / 大運 (BaZi
                             / Luck Pillars)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             Luck Pillars / KlavisAI MCP
                           </span>
                         </div>
@@ -1529,7 +1529,7 @@ export function NBADashboard({
                                 </span>
                               </div>
                               <span
-                                className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                   data.macro.streams?.metaphysical
                                     ?.chineseMetasoft?.qiMenGate?.status ===
                                   "Auspicious"
@@ -1556,7 +1556,7 @@ export function NBADashboard({
                           <p className="text-[10px] text-amber-600 uppercase font-bold tracking-widest flex items-center gap-1">
                             <Award className="w-3 h-3" /> 数秘術 (Numerology)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             DivineAPI
                           </span>
                         </div>
@@ -1586,7 +1586,7 @@ export function NBADashboard({
                               <Layers className="w-3 h-3" /> 九星気学 (Nine Star
                               Ki)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               9-Cycle Magic Square
                             </span>
                           </div>
@@ -1650,7 +1650,7 @@ export function NBADashboard({
                               <Moon className="w-3 h-3" /> マヤ暦
                               (Tzolk&apos;in)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               Sacred 260 Kin
                             </span>
                           </div>
@@ -1718,7 +1718,7 @@ export function NBADashboard({
                             <p className="text-[10px] text-amber-600 uppercase font-bold tracking-widest flex items-center gap-1">
                               <Award className="w-3 h-3" /> カバラ (生命の樹)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               Resonance Path
                             </span>
                           </div>
@@ -1833,7 +1833,7 @@ export function NBADashboard({
                           <p className="text-[10px] text-purple-600 uppercase font-bold tracking-widest mb-2 flex items-center gap-1">
                             <Zap className="w-3 h-3" /> 易経 (I-Ching Casting)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             RoxyAPI / strobus/i-ching
                           </span>
                         </div>
@@ -1875,7 +1875,7 @@ export function NBADashboard({
                                           </div>
                                         )}
                                         {isChanging && (
-                                          <span className="text-[7px] text-red-600 font-black">
+                                          <span className="text-[9px] text-red-600 font-black">
                                             ●
                                           </span>
                                         )}
@@ -1897,7 +1897,7 @@ export function NBADashboard({
                                 {data?.macro.streams?.metaphysical?.roxyApi
                                   ?.ichingCast?.relatingHexagram && (
                                   <div className="mt-1">
-                                    <span className="text-stone-600 text-[8px] block uppercase">
+                                    <span className="text-stone-600 text-[10px] block uppercase">
                                       之卦/変卦 (Relating)
                                     </span>
                                     <span className="text-stone-600 block text-[9px] truncate">
@@ -1933,7 +1933,7 @@ export function NBADashboard({
                             <Eye className="w-3 h-3" /> タロット展開 (Tarot
                             Draw)
                           </p>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             DivineAPI
                           </span>
                         </div>
@@ -1946,7 +1946,7 @@ export function NBADashboard({
                               className="w-16 h-28 shrink-0 rounded-lg bg-gradient-to-b from-indigo-950 via-purple-950 to-black border-2 border-amber-200 flex flex-col items-center justify-between p-2 text-center shadow-lg cursor-default relative overflow-hidden"
                             >
                               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-amber-500/5 via-transparent to-transparent opacity-75" />
-                              <span className="text-[6px] text-amber-500/70 font-extrabold uppercase tracking-widest">
+                              <span className="text-[9px] text-amber-500/70 font-extrabold uppercase tracking-widest">
                                 {
                                   data?.macro.streams?.metaphysical?.divineApi
                                     ?.tarot?.arcana
@@ -1955,13 +1955,13 @@ export function NBADashboard({
                               <div className="p-1 rounded-full bg-stone-100/80 border border-stone-200/80">
                                 <Sparkles className="w-4 h-4 text-amber-600" />
                               </div>
-                              <span className="text-[8px] font-black text-stone-900 leading-tight break-words truncate w-full">
+                              <span className="text-[10px] font-black text-stone-900 leading-tight break-words truncate w-full">
                                 {
                                   data?.macro.streams?.metaphysical?.divineApi
                                     ?.tarot?.name
                                 }
                               </span>
-                              <span className="text-[6px] text-stone-500 truncate w-full">
+                              <span className="text-[9px] text-stone-500 truncate w-full">
                                 {
                                   data?.macro.streams?.metaphysical?.divineApi
                                     ?.tarot?.orientation
@@ -1982,7 +1982,7 @@ export function NBADashboard({
 
                               <div className="mt-2.5">
                                 <span
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-extrabold border ${
+                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold border ${
                                     (data?.macro.streams?.metaphysical
                                       ?.divineApi?.tarot?.riskModifier ?? 0) < 0
                                       ? "bg-emerald-500/10 text-emerald-600 border-emerald-200"
@@ -2019,7 +2019,7 @@ export function NBADashboard({
                               <Compass className="w-3 h-3" /> ジオマンシー
                               (Geomancy)
                             </p>
-                            <span className="text-[8px] text-stone-600">
+                            <span className="text-[10px] text-stone-600">
                               Medieval 16 Figures Cast
                             </span>
                           </div>
@@ -2053,7 +2053,7 @@ export function NBADashboard({
                                       ?.figureName
                                   }
                                 </span>
-                                <span className="text-[8px] text-purple-600 uppercase px-1 py-0.5 rounded bg-purple-500/10 border border-purple-200">
+                                <span className="text-[10px] text-purple-600 uppercase px-1 py-0.5 rounded bg-purple-500/10 border border-purple-200">
                                   {
                                     data?.macro.streams?.metaphysical?.geomancy
                                       ?.element
@@ -2080,7 +2080,7 @@ export function NBADashboard({
                     </div>
                   </div>
 
-                  <div className="h-10 mt-4 flex items-center justify-end text-[8px] text-stone-600 uppercase tracking-widest font-bold font-mono">
+                  <div className="h-10 mt-4 flex items-center justify-end text-[10px] text-stone-600 uppercase tracking-widest font-bold font-mono">
                     Synchronicity engine: ONLINE
                   </div>
                 </div>
@@ -2197,7 +2197,7 @@ export function NBADashboard({
                           <BrainCircuit className="w-3.5 h-3.5" />{" "}
                           行動ポリシー選択確率マトリクス
                         </h4>
-                        <span className="text-[8px] text-indigo-400/70 font-mono">
+                        <span className="text-[10px] text-indigo-400/70 font-mono">
                           Q = 期待報酬 / PROB = 選択確率
                         </span>
                       </div>
@@ -2234,7 +2234,7 @@ export function NBADashboard({
                                       {action.replace("_", " ")}
                                     </span>
                                     <span
-                                      className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${isDeactivated ? "bg-red-500/20 text-red-600 border border-red-200 animate-pulse" : qValue > 0 ? "bg-emerald-500/20 text-emerald-600 border border-emerald-200" : qValue < 0 ? "bg-red-500/20 text-red-600 border border-red-200" : "bg-gray-500/20 text-stone-500 border border-gray-500/30"}`}
+                                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isDeactivated ? "bg-red-500/20 text-red-600 border border-red-200 animate-pulse" : qValue > 0 ? "bg-emerald-500/20 text-emerald-600 border border-emerald-200" : qValue < 0 ? "bg-red-500/20 text-red-600 border border-red-200" : "bg-gray-500/20 text-stone-500 border border-gray-500/30"}`}
                                     >
                                       {isDeactivated
                                         ? "Q: DEACTIVATED (天中殺)"
@@ -2390,7 +2390,7 @@ export function NBADashboard({
                           title="閾値 65%"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[8px] text-stone-600 mt-1 font-mono">
+                      <div className="flex justify-between items-center text-[10px] text-stone-600 mt-1 font-mono">
                         <span>
                           負荷:{" "}
                           {Number(data.nba.stateVector.ansLoad).toFixed(0)}%
@@ -2435,7 +2435,7 @@ export function NBADashboard({
                           title="閾値 70%"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[8px] text-stone-600 mt-1 font-mono">
+                      <div className="flex justify-between items-center text-[10px] text-stone-600 mt-1 font-mono">
                         <span>
                           脆弱性:{" "}
                           {(100 - data.nba.stateVector.shieldCapacity).toFixed(
@@ -2491,7 +2491,7 @@ export function NBADashboard({
                       書いていたが、#380 でエンジンの鍵から月相を抜いたとき
                       ここを直し忘れ、列が 1 つずれて出ていた。
                     */}
-                    <div className="grid grid-cols-6 gap-1 text-[8px] font-mono text-stone-600 text-center font-bold">
+                    <div className="grid grid-cols-6 gap-1 text-[10px] font-mono text-stone-600 text-center font-bold">
                       <div>Q \ K</div>
                       {NBA_ATTENTION_KEYS.map((k) => (
                         <div key={k.short} title={k.title}>
@@ -2518,7 +2518,7 @@ export function NBADashboard({
                             return (
                               <div
                                 key={kIdx}
-                                className={`h-6 rounded flex items-center justify-center text-[8px] font-mono font-bold transition-all relative group ${isHigh ? "text-stone-900 border border-indigo-200 shadow-[0_0_8px_rgba(99,102,241,0.4)]" : "text-stone-600"}`}
+                                className={`h-6 rounded flex items-center justify-center text-[10px] font-mono font-bold transition-all relative group ${isHigh ? "text-stone-900 border border-indigo-200 shadow-[0_0_8px_rgba(99,102,241,0.4)]" : "text-stone-600"}`}
                                 style={{
                                   backgroundColor: `rgba(99, 102, 241, ${opacity})`,
                                 }}
@@ -2533,7 +2533,7 @@ export function NBADashboard({
                     })}
                   </div>
                 </div>
-                <div className="mt-2 text-[8px] text-stone-600 font-mono text-center">
+                <div className="mt-2 text-[10px] text-stone-600 font-mono text-center">
                   Softmax(QKᵀ / √d_k) 特徴量相関
                 </div>
               </div>
@@ -2726,7 +2726,7 @@ export function NBADashboard({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[8px] px-1.5 py-0.5 rounded bg-white border border-stone-200 text-emerald-600 font-mono animate-pulse">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-white border border-stone-200 text-emerald-600 font-mono animate-pulse">
                         ● ACTIVE
                       </span>
                       <BrainCircuit className="w-3.5 h-3.5 text-stone-600" />
