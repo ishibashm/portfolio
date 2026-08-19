@@ -1,6 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isAdminEmail, isProtectedRoute } from "./routeAccess";
+import {
+  isAdminEmail,
+  isProtectedRoute,
+  resolveAuthRedirect,
+} from "./routeAccess";
 
 /**
  * @param effectivePathname the path that will actually be rendered. On the
@@ -75,34 +79,29 @@ export async function updateSession(
   // 理由は、そちらの isAdminEmail のコメントに書いてある。
   const isAuthorized = isAdminEmail(user?.email);
 
-  // If the user is unauthenticated and they are trying to access a protected route
-  if (!user && requiresAuthentication) {
+  // 行き先の判断は routeAccess の resolveAuthRedirect が 1 つだけ持つ。
+  // ここに書いていたときに「ログイン済みの人をログイン画面へ送り返し、
+  // そのログイン画面が管理者しか外へ出さない」噛み合わせで詰まった。
+  // 理由と直したあとの規則は、そちらのコメントに書いてある。
+  const redirect = resolveAuthRedirect({
+    pathname,
+    isLoggedIn: Boolean(user),
+    isAdmin: isAuthorized,
+    nextTarget: request.nextUrl.pathname + request.nextUrl.search,
+  });
+
+  if (redirect?.kind === "login") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set(
-      "next",
-      request.nextUrl.pathname + request.nextUrl.search,
-    );
+    url.search = "";
+    url.searchParams.set("next", redirect.next);
     return NextResponse.redirect(url);
   }
 
-  // If the user is logged in, but their email does NOT match the owner's ADMIN_EMAIL
-  if (user && !isAuthorized && requiresAuthentication) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("error", "Unauthorized access.");
-    url.searchParams.set(
-      "next",
-      request.nextUrl.pathname + request.nextUrl.search,
-    );
-    return NextResponse.redirect(url);
-  }
-
-  // ログイン済みで /login に来たらトップへ。
-  // 以前の行き先だった /dashboard は削除した。
-  if (user && isAuthorized && pathname === "/login") {
+  if (redirect?.kind === "home") {
     const url = request.nextUrl.clone();
     url.pathname = "/";
+    url.search = "";
     return NextResponse.redirect(url);
   }
 
