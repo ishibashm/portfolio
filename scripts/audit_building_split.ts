@@ -23,7 +23,13 @@ import * as dotenv from "dotenv";
 dotenv.config();
 dotenv.config({ path: ".env.local", override: true });
 
-const PREF = process.env.SPLIT_AUDIT_PREF || "";
+/*
+  「全国」は絞らない指定。空文字で表すと workflow_dispatch が
+  **空入力を default（京都府）に落とす**ため、全国のつもりで回して
+  京都の数字を見てしまう（実際にやった）。空ではなく言葉で指定する。
+*/
+const rawPref = process.env.SPLIT_AUDIT_PREF || "";
+const PREF = rawPref === "全国" ? "" : rawPref;
 
 async function main() {
   const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
