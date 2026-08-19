@@ -75,7 +75,7 @@ import {
   GeoVector,
   SiderealTime,
 } from "astronomy-engine";
-import { Solar, Lunar } from "lunar-javascript";
+import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "./solarTime";
 import { directionFromBearing } from "./directionGeo";
 
@@ -951,8 +951,12 @@ export function calculateVectorCollision(
         dStatus = "OPTIMAL";
     }
 
-    const layers = [yStatus, mStatus, dStatus];
-
+    /*
+      ここに const layers = [yStatus, mStatus, dStatus] があったが、誰も
+      読んでいなかった。MIGRATION 側は criticalLayers = [yStatus, mStatus]
+      を別に作り、それ以外の側は else 節の中で同じ名前で組み直している。
+      外側のものは影に隠れていて、参照が 1 つも無い。
+    */
     if (actionIntent === "MIGRATION") {
       // For relocation, Year and Month layers are extremely critical (long-term), Day is short-term.
       const yRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(yStatus);
