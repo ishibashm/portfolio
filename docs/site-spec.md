@@ -226,8 +226,9 @@ direction_comments   1 人 1 日 10 件、本文 800 字
 ### 5.3 スキーマの変え方
 
 ```
-表や列を足すだけ   prisma/sql/*.sql を書き、Apply additive SQL を手動実行
+表や列を足すだけ   prisma/sql/*.sql を書き、Apply additive SQL を実行
                    （二度当てても同じ結果になる DDL だけ置くこと）
+                   dry-run で確かめてから apply。既定値は置かない
 索引               Apply DB indexes（CONCURRENTLY で当てる）
 全面的な作り直し   Setup Database Schema and Seed Data
                    （db push --accept-data-loss + 取り込み 3 本。重い）
