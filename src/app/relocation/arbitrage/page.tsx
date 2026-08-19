@@ -2563,10 +2563,26 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[30%]"
-            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm overflow-hidden flex flex-col lg:self-start lg:max-h-[calc(100vh-220px)] relative z-10`}
+            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm lg:overflow-hidden flex flex-col lg:self-start lg:max-h-[calc(100vh-220px)] relative z-10`}
           >
-            {/* Sticky Header */}
-            <div className="sticky top-0 bg-gray-50/95 dark:bg-stone-50/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0">
+            {/*
+                上に貼り付く見出し。**スマホでは貼り付いていなかった。**
+
+                外側に overflow-hidden が付いていたため、sticky の効き先が
+                その箱になる。lg 以上は中身が別に内部スクロールするので
+                見出しは動かないが、スマホは箱ごと頁と一緒に流れるので、
+                「一覧を表示」が画面の外へ出ていた（420px で実測。
+                スクロールすると y = -265 まで送られる）。
+
+                利用者から「一覧を表示のボタンを他の場所にも出せないか」と
+                相談があったが、**増やす前に、貼り付くはずのものが貼り付いて
+                いなかった。**同じボタンを 2 つ置くより、意図どおり追従させる。
+
+                overflow-hidden は角丸で中身を切るためのものなので、内部
+                スクロールがある lg 以上だけに付ける。スマホでは見出し側に
+                同じ角丸を持たせて見た目を合わせる。
+              */}
+            <div className="sticky top-0 bg-gray-50/95 dark:bg-stone-50/95 backdrop-blur border-b border-gray-200 dark:border-stone-200 p-3 flex items-center justify-between z-30 shrink-0 rounded-t-3xl lg:rounded-none">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-bold bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-800/40">
                   条件 ({activeFiltersCount})
