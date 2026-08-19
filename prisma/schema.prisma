@@ -472,6 +472,42 @@ model property_transactions {
   @@index([lat, lon])
 }
 
+/// 地価公示・都道府県地価調査を**地点のまま**持つ。
+///
+/// 市区町村ごとの 1 つの数字（municipality_wealth.land_price_per_sqm）は
+/// 「代表点が入る 1.2km 四方の平均」で、市域平均ではない。
+/// 「この土地の値段は普通か」を見るには地点そのものが要る。
+///
+/// 項目名は probe（run 32305342276）で実物を確認済み。対応は
+/// scripts/landPriceParse.ts に書いてある。
+model land_price_points {
+  /// 地点の整理番号。年をまたいで同じ地点を指す。
+  point_id                BigInt
+  /// 基準年。2025 なら令和7年1月1日時点。
+  year                    Int
+  /// 当年の価格（円/㎡）。読めなかった地点は行を作らない。
+  price_per_sqm           BigInt
+  /// 前年の価格（円/㎡）。無い年・無い地点がある。
+  last_year_price_per_sqm BigInt?
+  /// 0 = 地価公示 / 1 = 都道府県地価調査。
+  land_price_type         Int?
+  /// 「住宅地」「商業地」など。
+  use_category            String?
+  location                String?
+  standard_lot_number     String?
+  prefecture              String?
+  municipality            String?
+  lat                     Float?
+  lon                     Float?
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([point_id, year])
+  @@index([year, lat, lon])
+  @@index([year, prefecture, municipality])
+  @@index([year, use_category, price_per_sqm])
+}
+
 model RealEstateTarget {
   id             String   @id @default(cuid())
   title          String
