@@ -61,6 +61,35 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  /*
+    都道府県の輪郭は、内容が変わらないのに毎回取り直しになっていた。
+
+    public/ に置いたファイルに Next.js が付ける既定は
+    `Cache-Control: public, max-age=0`。ブラウザは**開くたびにサーバへ
+    確認**しに行く。ETag があるので中身の再送は無いが、往復そのものが
+    残る。スマホの回線では、これが「2 回目も遅い」の正体になっていた
+    （利用者から報告あり）。
+
+    県境は年に何度も動くものではない。1 日を過ぎたら裏で取り直しつつ、
+    画面には手元のものをすぐ出す（stale-while-revalidate）。これなら
+    輪郭を引き直したときも、翌日には行き渡る。
+
+    **max-age を 1 年にして immutable にはしない。**ファイル名にハッシュが
+    付かないので、更新したときに古いものが 1 年残りうる。
+  */
+  async headers() {
+    return [
+      {
+        source: "/prefectures.geojson",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
