@@ -513,9 +513,23 @@ export function SolarTimeTableComponent({
                 {item.etoKanji}
               </div>
 
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between relative z-10 gap-2 md:gap-4">
+              {/*
+                  横 1 列にするのは xl（1280px）から。以前は md（768px）で
+                  横並びにしていたが、この行は時刻の範囲（2026/08/19 22:55 -
+                  2026/08/20 00:55）だけで 330px あり、干支・九星・八門・
+                  判定・ボタンを足すと 1000px 近く要る。タブレットでは
+                  収まらず、時刻が箱からはみ出して「戊子の刻」に重なり、
+                  干支が 1 文字ずつ縦に折り返していた（利用者の画面で確認）。
+                  収まらない幅では縦に積む。
+                */}
+              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between relative z-10 gap-2 xl:gap-4">
                 {/* Time and Zodiac */}
-                <div className="flex items-center gap-3 min-w-[200px]">
+                {/*
+                    min-w-[200px] は「200px までは縮んでよい」の意味になる。
+                    中の時刻は whitespace-nowrap なので、縮んだぶんがそのまま
+                    はみ出して隣に重なっていた。縮ませない（shrink-0）。
+                  */}
+                <div className="flex items-center gap-3 shrink-0 flex-wrap">
                   <span className="text-sm sm:text-base font-mono text-stone-800 font-bold tracking-widest drop-shadow-md whitespace-nowrap">
                     {formatTime(item.startStandard)} -{" "}
                     {formatTime(item.endStandard)}
@@ -533,9 +547,9 @@ export function SolarTimeTableComponent({
                 </div>
 
                 {/* Kyusei and Hachimon Summaries */}
-                <div className="flex flex-row items-center gap-2 md:gap-4 flex-1 text-[10px] sm:text-xs w-full">
+                <div className="flex flex-row items-center gap-2 xl:gap-4 flex-1 min-w-0 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
-                  <div className="flex flex-col w-1/3 md:w-auto">
+                  <div className="flex flex-col w-1/3 xl:w-auto shrink-0">
                     <span className="text-stone-600 text-[10px] uppercase tracking-widest leading-none mb-1">
                       Star(周波数)
                     </span>
@@ -564,7 +578,7 @@ export function SolarTimeTableComponent({
                 </div>
 
                 {/* Status Badge & Toggle Button */}
-                <div className="flex items-center justify-between w-full md:w-auto gap-2 mt-2 md:mt-0">
+                <div className="flex items-center justify-between w-full xl:w-auto gap-2 mt-2 xl:mt-0 shrink-0">
                   <div className="flex-shrink-0">
                     {isVoid && (
                       <span className="bg-red-50 text-red-500 border border-red-500/80 px-2 py-0.5 font-bold text-[10px] tracking-widest md:animate-pulse shadow-md">
