@@ -51,7 +51,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
               `}
             >
               {/* Direction Label */}
-              <span className="absolute top-1 left-1.5 text-[8px] text-stone-600 uppercase tracking-widest font-light">
+              <span className="absolute top-1 left-1.5 text-[10px] text-stone-600 uppercase tracking-widest font-light">
                 {label}
               </span>
 
