@@ -24,9 +24,10 @@ import {
   directionWedgeHalfWidth,
 } from "@/utils/directionGeo";
 import type { MapProperty } from "@/lib/mapProperty";
+import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
 
-// Fix for default marker icons in Leaflet with Next.js
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+// 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
+clearLeafletDefaultIconUrl();
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -147,12 +148,13 @@ export default function MagneticMapInner({
   lat,
   lon,
   declination,
-  intensity = 50000,
+  // intensity は受け口だけ残す。呼び出し側が渡しており、消すとずれる
+  // （CLAUDE.md 3 節。BioMagneticDashboard が見本）。
   vectors,
   layers,
   honmeiStar,
   kpIndex,
-  ansLoad = 0,
+  // ansLoad も同じく受け口だけ残す。
   hudLayers = { terrain: true, weather: true, bio: true, hazard: false },
   activeLayerMode = "final",
   // useTrueNorth は受け口だけ残す。扇形は必ず真北で描くようになったので

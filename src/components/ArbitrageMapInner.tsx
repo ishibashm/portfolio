@@ -23,6 +23,7 @@ import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import type { DayTier } from "@/utils/auspiciousDays";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
+import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -45,21 +46,8 @@ import {
 } from "@/utils/tierDisplay";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 
-/*
-  Next.js では Leaflet の既定アイコンが 404 になる。Leaflet は内部の
-  _getIconUrl で画像の場所を組み立てるので、それを外してから下の
-  mergeOptions で URL を直接指定する。
-
-  _getIconUrl は @types/leaflet に載っていない内部の欄。以前は any に
-  キャストして通していたが、実在する欄なので**宣言する**（キャストは
-  使わない。CLAUDE.md 3 節）。
-*/
-// Icon.Default に内部の欄を足した形。交差型なので代入はそのまま通り、
-// キャストが要らない。
-type LeafletIconWithInternals = L.Icon.Default & { _getIconUrl?: string };
-
-const iconDefaultPrototype: LeafletIconWithInternals = L.Icon.Default.prototype;
-delete iconDefaultPrototype._getIconUrl;
+// 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
+clearLeafletDefaultIconUrl();
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
