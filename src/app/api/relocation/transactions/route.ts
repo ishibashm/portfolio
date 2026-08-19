@@ -68,6 +68,12 @@ export async function GET(request: Request) {
       MAX_LIMIT,
     );
     const propertyType = searchParams.get("property_type");
+    /*
+      建物比率の下限（0〜1）。「建物がしっかりしているのに土地は普通」を
+      探す口。値は取り込み時に前計算した building_ratio（積算による推定。
+      #415・#416）で、ここでは索引の効く数値比較しかしない。
+    */
+    const minBuildingRatio = toNum(searchParams.get("min_building_ratio"));
     const nodeMapping =
       searchParams.get("node_mapping") === "physical"
         ? ("physical" as const)
@@ -88,6 +94,9 @@ export async function GET(request: Request) {
           lat: { not: null, gte: lat - latDelta, lte: lat + latDelta },
           lon: { not: null, gte: lon - lonDelta, lte: lon + lonDelta },
           ...(propertyType ? { property_type: propertyType } : {}),
+          ...(minBuildingRatio !== null
+            ? { building_ratio: { gte: minBuildingRatio } }
+            : {}),
         },
         orderBy: [{ trade_year: "desc" }, { trade_quarter: "desc" }],
         take: SCAN_CAP,
@@ -111,6 +120,14 @@ export async function GET(request: Request) {
           areaSqm: r.area_sqm,
           unitPriceSqm: r.unit_price_sqm,
           buildingYear: r.building_year,
+          totalFloorAreaSqm: r.total_floor_area_sqm,
+          // 積算による推定（est_）。実額ではない。null は「計算に要る
+          // 項目が欠けている」（延床・築年・構造のどれか）。
+          estBuildingPrice:
+            r.est_building_price === null ? null : Number(r.est_building_price),
+          estLandPrice:
+            r.est_land_price === null ? null : Number(r.est_land_price),
+          buildingRatio: r.building_ratio,
           tradeYear: r.trade_year,
           tradeQuarter: r.trade_quarter,
           lat: r.lat,

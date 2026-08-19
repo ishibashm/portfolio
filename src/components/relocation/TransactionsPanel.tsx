@@ -28,6 +28,11 @@ interface TxRow {
   areaSqm: number | null;
   unitPriceSqm: number | null;
   buildingYear: number | null;
+  totalFloorAreaSqm: number | null;
+  /** 積算による推定（実額ではない）。null は延床・築年・構造のどれかが欠けている。 */
+  estBuildingPrice: number | null;
+  estLandPrice: number | null;
+  buildingRatio: number | null;
   tradeYear: number;
   tradeQuarter: number;
   distanceKm: number;
@@ -80,9 +85,15 @@ export function TransactionsPanel({
     error: string | null;
   } | null>(null);
   const [typeFilter, setTypeFilter] = useState("");
+  /*
+    建物比率（積算推定）の下限。API 側で索引の効く数値比較に落ちる
+    （#415・#416 で取り込み時に前計算済み）。条件を変えると取り直しに
+    なるので requestKey に含める。
+  */
+  const [minRatio, setMinRatio] = useState("");
 
   const effectiveRadius = radiusKm ?? 300;
-  const requestKey = `${lat},${lon},${effectiveRadius}`;
+  const requestKey = `${lat},${lon},${effectiveRadius},${minRatio}`;
   const data = result?.key === requestKey ? result.data : null;
   const error = result?.key === requestKey ? result.error : null;
   const loading = hasBase && result?.key !== requestKey;
@@ -92,7 +103,8 @@ export function TransactionsPanel({
     let alive = true;
 
     fetch(
-      `/api/relocation/transactions?lat=${lat}&lon=${lon}&radius_km=${effectiveRadius}`,
+      `/api/relocation/transactions?lat=${lat}&lon=${lon}&radius_km=${effectiveRadius}` +
+        (minRatio ? `&min_building_ratio=${minRatio}` : ""),
     )
       .then(async (res) => {
         const body = await res.json();
@@ -120,7 +132,7 @@ export function TransactionsPanel({
     return () => {
       alive = false;
     };
-  }, [lat, lon, effectiveRadius, hasBase, requestKey]);
+  }, [lat, lon, effectiveRadius, hasBase, requestKey, minRatio]);
 
   if (!hasBase) {
     return (
@@ -143,6 +155,33 @@ export function TransactionsPanel({
         {
           "ここに出るのは国土交通省の成約価格（過去に実際に売買された価格）です。いま買える物件の一覧ではありません。購入を検討する方位の相場観に使ってください。"
         }
+      </div>
+
+      {/*
+        建物比率（積算推定）での絞り込み。「建物がしっかりしているのに
+        土地は普通」を探す口。条件を変えるとサーバから取り直すため、
+        読み込み中に消えないよう data の外に置く。
+        推定を持つのは戸建て（宅地(土地と建物)）だけなので、絞ると
+        マンション・土地の事例は外れる。その旨は選択肢の下に明記する。
+      */}
+      <div>
+        <select
+          value={minRatio}
+          onChange={(e) => setMinRatio(e.target.value)}
+          className="w-full px-3 py-2 bg-gray-50 dark:bg-white border border-gray-200 dark:border-stone-200 rounded-xl text-xs outline-none cursor-pointer"
+        >
+          <option value="">建物比率で絞らない</option>
+          <option value="0.3">建物比率 3割以上</option>
+          <option value="0.5">建物比率 5割以上</option>
+          <option value="0.7">建物比率 7割以上</option>
+        </select>
+        {minRatio && (
+          <p className="text-[9px] text-stone-600 leading-relaxed mt-1">
+            {
+              "比率は積算（延床×再調達単価×残存年数比）による推定です。戸建てのみ計算でき、マンション・土地の事例はこの絞り込みでは表示されません。"
+            }
+          </p>
+        )}
       </div>
 
       {loading && (
@@ -234,6 +273,13 @@ export function TransactionsPanel({
                     <span>
                       {r.tradeYear}年Q{r.tradeQuarter}
                     </span>
+                    {r.buildingRatio !== null && (
+                      <span>
+                        建物{Math.round(r.buildingRatio * 100)}%（建物
+                        {manYen(r.estBuildingPrice)}・土地
+                        {manYen(r.estLandPrice)}）
+                      </span>
+                    )}
                     <span className="text-stone-500 font-bold">
                       {DIRECTION_LABELS[r.direction] ?? r.direction}・
                       {r.distanceKm}km
