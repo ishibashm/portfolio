@@ -130,7 +130,7 @@ export function TacticalMagneticMapComponent({
 
               {/* Layer Mode Switcher with Combinations */}
               <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
-                <span className="px-1.5 py-1 text-[8px] text-stone-600 bg-white border-r border-stone-200">
+                <span className="px-1.5 py-1 text-[10px] text-stone-600 bg-white border-r border-stone-200">
                   時間軸:
                 </span>
                 <button

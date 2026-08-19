@@ -734,11 +734,11 @@ export default function RelocationHistoryPage() {
                               <Calendar className="w-3.5 h-3.5 text-stone-600" />{" "}
                               {displayDate}
                             </span>
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-stone-100/80 border border-stone-200/80 text-stone-500 leading-none">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100/80 border border-stone-200/80 text-stone-500 leading-none">
                               {getPrecisionBadge(item.datePrecision)}
                             </span>
                             <span
-                              className={`px-1.5 py-0.5 rounded text-[8px] font-bold border leading-none ${
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border leading-none ${
                                 item.purpose === "MIGRATION"
                                   ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
                                   : "bg-purple-500/10 text-purple-400 border-purple-500/20"
