@@ -73,6 +73,12 @@ describe("estimateBuildingSplit", () => {
     expect(s.buildingRatio).toBe(1.0);
   });
 
+  it("延床ちょうど 2000㎡（「2000㎡以上」の下限読み）は計算する", () => {
+    expect(
+      estimateBuildingSplit({ ...base, total_floor_area_sqm: 2000 }),
+    ).not.toBeNull();
+  });
+
   it("複合表記「ＲＣ、木造」は先に並べた側（ＲＣ）で読む", () => {
     const s = estimateBuildingSplit({ ...base, structure: "ＲＣ、木造" })!;
     // ＲＣ: 残存 (47-10)/47、100㎡ × 20万 → 15,744,681
@@ -89,6 +95,13 @@ describe("estimateBuildingSplit", () => {
     ["築年が無い", { building_year: null }],
     ["構造が無い", { structure: null }],
     ["総額が無い", { trade_price: null }],
+    [
+      // 国交省は面積を「2000㎡以上」で頭打ちにするので、2000 超の数値は
+      // 正規の値ではない。全国監査で見つかった延床 9999㎡（岩沼市・
+      // 総額 3 億 → 建物 3 億・土地 0 になっていた）の再発防止。
+      "延床が 2000㎡ を超える（異常値）",
+      { total_floor_area_sqm: 9999 },
+    ],
   ] as const) {
     it(`${name} → null（NULL のまま残す）`, () => {
       expect(estimateBuildingSplit({ ...base, ...patch })).toBeNull();

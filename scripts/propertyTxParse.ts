@@ -93,6 +93,15 @@ const STRUCTURE_TABLE: [RegExp, { unitPrice: number; life: number }][] = [
 /** 法定耐用年数を過ぎても残す割合。 */
 const MIN_REMAINING_RATIO = 0.2;
 
+/*
+  延床のもっともらしい上限。国交省の応答は面積の文字列を「2000㎡以上」で
+  頭打ちにする（上の toNumber の注記）ので、2000 を超える数値が来ること
+  自体が正規の経路ではあり得ない。実際、全国監査（run 32274278035）で
+  岩沼市の 1 件に延床 9999㎡（総額 3 億）が見つかり、建物 3 億・土地 0 と
+  推定されていた。異常値から作った推定は残さず NULL にする。
+*/
+const MAX_PLAUSIBLE_FLOOR_SQM = 2000;
+
 export interface BuildingSplit {
   estBuildingPrice: number;
   estLandPrice: number;
@@ -118,6 +127,7 @@ export function estimateBuildingSplit(row: {
   const floor = row.total_floor_area_sqm;
   const built = row.building_year;
   if (!price || price <= 0 || !floor || floor <= 0 || !built) return null;
+  if (floor > MAX_PLAUSIBLE_FLOOR_SQM) return null;
   if (!row.structure) return null;
 
   const entry = STRUCTURE_TABLE.find(([re]) => re.test(row.structure!));
