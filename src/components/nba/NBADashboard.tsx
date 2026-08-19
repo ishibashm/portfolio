@@ -589,7 +589,7 @@ export function NBADashboard({
               else fetchNBAData();
             }}
             disabled={loading || (externalData !== undefined && !onRefresh)}
-            className="p-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-stone-900 font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-md shadow-rose-200"
+            className="p-2.5 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-semibold transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2 cursor-pointer shadow-md shadow-rose-200"
             title="データを更新"
           >
             <RefreshCcw
@@ -1411,7 +1411,7 @@ export function NBADashboard({
 
                   <button
                     onClick={() => setShowVedic(!showVedic)}
-                    className="w-full mt-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-200 text-indigo-600 hover:text-stone-900 transition-all text-xs font-bold flex items-center justify-center gap-2.5 cursor-pointer shadow-inner"
+                    className="w-full mt-4 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-200 text-indigo-600 hover:text-white transition-all text-xs font-bold flex items-center justify-center gap-2.5 cursor-pointer shadow-inner"
                   >
                     <span>インド占星術詳細レポート (Vedic Jyotish)</span>
                     {showVedic ? (

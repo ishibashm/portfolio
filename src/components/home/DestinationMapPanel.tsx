@@ -1019,7 +1019,7 @@ export default function DestinationMapPanel({
                           ) {
                             bgClass = isLuckyFilter
                               ? "bg-purple-100/70 text-purple-700"
-                              : "bg-purple-500 text-stone-900 font-medium";
+                              : "bg-purple-600 text-white font-medium";
                           } else if (
                             st?.startsWith("NOISE_VOID") ||
                             st?.startsWith("NOISE_NODE")
@@ -1260,7 +1260,7 @@ export default function DestinationMapPanel({
 
                 <button
                   onClick={() => setSelectedTrendCell(null)}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-stone-900 font-medium text-xs rounded-xl transition-colors cursor-pointer"
+                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs rounded-xl transition-colors cursor-pointer"
                 >
                   了解
                 </button>

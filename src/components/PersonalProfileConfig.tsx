@@ -815,7 +815,7 @@ export function PersonalProfileConfig({
               className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group cursor-pointer ${
                 isSaving
                   ? "bg-stone-100 text-stone-600 cursor-wait"
-                  : "bg-blue-600 hover:bg-blue-500 text-stone-900 shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
+                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
               }`}
             >
               {isSaving
