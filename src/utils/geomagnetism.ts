@@ -1,7 +1,12 @@
 "use server";
 
-// @ts-ignore
+/*
+  geomagnetism は package.json の "types" で geomagnetism.d.ts を配っている。
+  以前は // @ts-ignore を付けていたが、型が無いわけではなかった。付けたままだと
+  model の戻り値も any になり、point() の綴りを間違えても気付けない。
+*/
 import geomagnetism from "geomagnetism";
+import type { GeomagnetismModel } from "geomagnetism";
 
 export interface GeomagneticData {
   declination: number; // D (degrees)
@@ -19,23 +24,23 @@ export async function getGeomagneticData(
   timestamp: number = Date.now(),
 ): Promise<GeomagneticData | null> {
   let date = new Date(timestamp);
-  let model: any = null;
+  let model: GeomagnetismModel | null = null;
 
   // Try to load the model with the requested date.
   // Catch RangeErrors if the model validity period in the installed library version is exceeded.
   try {
     model = geomagnetism.model(date);
-  } catch (e) {
+  } catch {
     // Fallback 1: Try WMM-2020 limit (typically valid up to Dec 10, 2024)
     try {
       date = new Date("2024-12-01");
       model = geomagnetism.model(date);
-    } catch (e2) {
+    } catch {
       // Fallback 2: Try WMM-2015 max limit
       try {
         date = new Date("2019-12-14");
         model = geomagnetism.model(date);
-      } catch (e3) {
+      } catch {
         // Fallback 3: Try WMM-2015 min limit
         try {
           date = new Date("2014-12-16");
