@@ -111,7 +111,7 @@ export function PWAInstallPrompt() {
             </div>
             <div className="text-left">
               <div className="text-xs font-semibold leading-tight">アプリをインストール</div>
-              <div className="text-[10px] text-indigo-300/70 font-mono">iOS / Android / Desktop</div>
+              <div className="text-[10px] text-indigo-700 font-mono">iOS / Android / Desktop</div>
             </div>
           </div>
           <Download size={15} className="text-indigo-600 group-hover:translate-y-0.5 transition-transform shrink-0" />
