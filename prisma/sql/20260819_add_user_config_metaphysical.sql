@@ -1,0 +1,34 @@
+-- user_configs に「画面の設定」をまとめて入れる列を足す。
+--
+-- ## なぜ列を 1 本にするか
+--
+-- 設定バーの 5 つ（盤の種類・月盤の方式・方位の絞り込み・行動意図・
+-- 時支の時刻基準）は、これまで**端末にしか残っていなかった。**
+-- MetaphysicalConfigBar は /api/user-config へ送っているつもりだったが、
+-- user_configs に列が無く、buildPatch も落としていたので黙って消えていた。
+-- lib/userSettings.ts が「別の端末で開くと消える、から抜け出す」と書いて
+-- いる当の状態になっていた。
+--
+-- 列を 1 対 1 で足すと、**設定を 1 つ増やすたびに本番 DB への一方向の
+-- 変更が要る。**実際この 5 つ目は今日増えた。JSONB 1 本にしておけば、
+-- 以後この目的での DDL は要らない。同じ表の presets が既に JSONB。
+--
+-- 集計や絞り込みには使わない（利用者ごとの表示・判定の好み）ので索引も
+-- 置かない。置くなら中身の形が固まってから。
+--
+-- ## 既定値を置かない
+--
+-- created_at のときと同じ理由。DEFAULT を置くと、この DDL を当てた日に
+-- 既存の全員が「その設定を選んだ」ことになる。NULL のままにして、
+-- 読む側が「未設定＝これまでどおりの既定」と扱う。
+--
+-- **とくに zodiac_time_basis は既定が standard（従来の答え）でなければ
+-- ならない。**ここで DEFAULT を置くと全利用者の判定が動く。
+--
+-- 足すだけの DDL。二度当てても同じ結果になる。
+-- 定義は prisma/schema.prisma の user_configs と揃えること。
+--
+-- 適用: Actions → Apply additive SQL → file: このファイル名 / mode: apply
+
+ALTER TABLE "user_configs"
+ADD COLUMN IF NOT EXISTS "metaphysical_config" JSONB;
