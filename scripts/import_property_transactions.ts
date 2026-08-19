@@ -238,15 +238,22 @@ async function stageFetch(pool: Pool) {
           `INSERT INTO property_transactions
              (id, trade_year, trade_quarter, municipality_code, prefecture,
               municipality, district_name, property_type, trade_price,
-              area_sqm, unit_price_sqm, building_year, structure, use_type)
+              area_sqm, unit_price_sqm, building_year, structure, use_type,
+              total_floor_area_sqm, est_building_price, est_land_price,
+              building_ratio)
            SELECT * FROM unnest(
              $1::text[], $2::int[], $3::int[], $4::text[], $5::text[],
              $6::text[], $7::text[], $8::text[], $9::bigint[],
-             $10::float8[], $11::float8[], $12::int[], $13::text[], $14::text[])
+             $10::float8[], $11::float8[], $12::int[], $13::text[], $14::text[],
+             $15::float8[], $16::bigint[], $17::bigint[], $18::float8[])
            ON CONFLICT (id) DO UPDATE SET
              trade_price = EXCLUDED.trade_price,
              area_sqm = EXCLUDED.area_sqm,
              unit_price_sqm = EXCLUDED.unit_price_sqm,
+             total_floor_area_sqm = EXCLUDED.total_floor_area_sqm,
+             est_building_price = EXCLUDED.est_building_price,
+             est_land_price = EXCLUDED.est_land_price,
+             building_ratio = EXCLUDED.building_ratio,
              updated_at = now()`,
           [
             rows.map((r) => r.id),
@@ -263,6 +270,10 @@ async function stageFetch(pool: Pool) {
             rows.map((r) => r.building_year),
             rows.map((r) => r.structure),
             rows.map((r) => r.use_type),
+            rows.map((r) => r.total_floor_area_sqm),
+            rows.map((r) => r.est_building_price),
+            rows.map((r) => r.est_land_price),
+            rows.map((r) => r.building_ratio),
           ],
         );
         total += rows.length;

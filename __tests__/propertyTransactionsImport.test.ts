@@ -97,6 +97,16 @@ describe("実物の応答を 1 行にする", () => {
       building_year: null, // "" は null。0 年築にしない
       structure: "木造",
       use_type: "住宅",
+      /*
+        土地と建物の推定内訳（#415 で足した列）。この実物は**築年が空**
+        なので残存年数比が出せず、延床（85㎡）は拾えても est_* は null の
+        まま残るのが正しい。値が入る場合の固定は
+        __tests__/buildingSplit.test.ts が手計算で持っている。
+      */
+      total_floor_area_sqm: 85,
+      est_building_price: null,
+      est_land_price: null,
+      building_ratio: null,
     });
   });
 

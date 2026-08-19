@@ -88,6 +88,20 @@ describe("metrics summary の認可", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    /*
+      「今日」を固定する。直近 7 日の内訳（recentBreakdown）は実行日から
+      窓を切るが、記録の作り置きは 2026-08-13 固定なので、**実行日が
+      2026-08-20（JST）になった瞬間に窓から落ちて必ず失敗する**時限に
+      なっていた。実際に 8/19 23:53 JST では通り、0:03 JST（日付が
+      変わった直後）の CI で落ちた（#416）。
+
+      shouldAdvanceTime を付けるのは、時計を完全に止めると route の中の
+      await が進まなくなるため。起点だけ固定して針は動かす。
+    */
+    vi.useFakeTimers({
+      shouldAdvanceTime: true,
+      now: new Date("2026-08-14T12:00:00+09:00"),
+    });
     process.env.ADMIN_EMAIL = admin.email;
     loadGcpBillingCost.mockResolvedValue({
       status: "ok",
@@ -100,6 +114,7 @@ describe("metrics summary の認可", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     if (originalAdmin === undefined) delete process.env.ADMIN_EMAIL;
     else process.env.ADMIN_EMAIL = originalAdmin;
   });
