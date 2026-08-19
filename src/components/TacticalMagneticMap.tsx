@@ -220,7 +220,7 @@ export function TacticalMagneticMapComponent({
                 <button
                   onClick={() => toggleLayer?.("hazard")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-600"}`}
-                  title="HZD (ハザードマップ・外部GIS連携)"
+                  title="洪水と土砂災害の想定区域を重ねる（出典: ハザードマップポータルサイト）"
                 >
                   HZD [災害域]
                 </button>
