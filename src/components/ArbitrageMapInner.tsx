@@ -22,16 +22,13 @@ import {
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import type { DayTier } from "@/utils/auspiciousDays";
 import type { ScoredProperty } from "@/lib/scoredProperty";
+import type { FeatureCollection } from "geojson";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
-import { scaleLinear } from "d3-scale";
 import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
-import {
-  getPropertyPinColors,
-  getRecommendationStarCount,
-} from "@/utils/arbitrageHelpers";
+import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
 import {
   destinationAtBearing,
@@ -48,8 +45,21 @@ import {
 } from "@/utils/tierDisplay";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 
-// Fix Leaflet default icon problem in Next.js
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+/*
+  Next.js では Leaflet の既定アイコンが 404 になる。Leaflet は内部の
+  _getIconUrl で画像の場所を組み立てるので、それを外してから下の
+  mergeOptions で URL を直接指定する。
+
+  _getIconUrl は @types/leaflet に載っていない内部の欄。以前は any に
+  キャストして通していたが、実在する欄なので**宣言する**（キャストは
+  使わない。CLAUDE.md 3 節）。
+*/
+// Icon.Default に内部の欄を足した形。交差型なので代入はそのまま通り、
+// キャストが要らない。
+type LeafletIconWithInternals = L.Icon.Default & { _getIconUrl?: string };
+
+const iconDefaultPrototype: LeafletIconWithInternals = L.Icon.Default.prototype;
+delete iconDefaultPrototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -370,7 +380,8 @@ export default function ArbitrageMapInner({
   baseLat,
   baseLon,
   mapCenter,
-  layerMode,
+  // layerMode は受け口だけ残す。呼び出し側が渡しており、消すとずれる
+  // （CLAUDE.md 3 節。BioMagneticDashboard が見本）。
   radiusKm,
   prefecture,
   keepWideView = false,
@@ -405,7 +416,7 @@ export default function ArbitrageMapInner({
    */
   const isOverview = zoom < OVERVIEW_ZOOM_MAX;
   const [showHeatmap, setShowHeatmap] = useState(false);
-  const [geoData, setGeoData] = useState<any>(null);
+  const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
   const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
   /**
    * 扇形を描くか。
@@ -1451,7 +1462,7 @@ export default function ArbitrageMapInner({
               : // 3. 詳細表示：個別物件ピン
                 (() => {
                   const sortedProperties = [...properties].sort((a, b) => {
-                    const getPriority = (p: any) => {
+                    const getPriority = (p: ScoredProperty) => {
                       const targetDay = p.dateScores?.[3];
                       const isUltra = targetDay?.isUltraLucky;
                       const isHeavyBad = [
