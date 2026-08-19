@@ -91,6 +91,32 @@ export interface ScorecardSummaryRow {
   isDivergenceAlert: boolean;
 }
 
+/*
+  段階の色は表・札・詳細のどこでも同じでなければならない。同じ実装が
+  2 か所に写されていたので、ここに 1 つだけ置いて全部から引く。
+*/
+const statusBadgeClass = (s: string) => {
+  if (s === "OPTIMAL")
+    return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
+  if (s === "OPTIMAL_REGULAR")
+    return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
+  if (s === "SAFE") return "text-blue-600 bg-blue-500/10 border-blue-200";
+  if (s === "WARNING")
+    return "text-orange-600 bg-orange-500/10 border-orange-200";
+  if (s.startsWith("NOISE_VOID"))
+    return "text-stone-600 bg-stone-100 border-stone-300";
+  if (s.startsWith("NOISE_NODE"))
+    return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
+  return "text-red-600 bg-red-500/10 border-red-200";
+};
+
+const kigakuTextClass = (s: string) => {
+  if (s === "OPTIMAL" || s === "OPTIMAL_REGULAR") return "text-emerald-600";
+  if (s === "SAFE") return "text-blue-600";
+  if (s === "WARNING") return "text-orange-600";
+  return "text-red-600";
+};
+
 const parseBreakdown = (
   item: { astrologyStatus?: string | null } | null | undefined,
 ) => {
@@ -404,7 +430,185 @@ export default function ScorecardPanel({
               {scorecardLoading && (
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent animate-pulse z-50"></div>
               )}
-              <div className="overflow-x-auto">
+              {/*
+                  この表は 11 列あって 1120px 無いと収まらない。以前は
+                  どの画面幅でも表のまま出していたので、タブレットでは
+                  見出し行だけが横に流れ、「方位　古典　物理独立 …」が
+                  押して選ぶ帯（タブ）に見える、と利用者から報告があった。
+                  実際には選べないし、なぜ流れるのかも画面からは分からない。
+
+                  狭い画面では表をやめて方位ごとの札にする。出す中身は
+                  表とまったく同じで、並べ方を縦にするだけ。これで横に
+                  流れる帯が無くなり、押せる単位（＝方位の札）が見た目で
+                  分かるようになる。
+                */}
+              <div className="2xl:hidden divide-y divide-stone-200">
+                {scorecardSummary
+                  .filter((item) => showNoiseDirections || !item.isNoise)
+                  .map((item) => {
+                    const bd = parseBreakdown(item.topArea);
+                    const models = [
+                      {
+                        label: "古典",
+                        status: item.classicalStatus,
+                        score: item.classicalScore,
+                      },
+                      {
+                        label: "物理独立",
+                        status: item.physicalIndepStatus,
+                        score: item.physicalIndepScore,
+                      },
+                      {
+                        label: "伝統連動",
+                        status: item.physicalCoupledStatus,
+                        score: item.physicalCoupledScore,
+                      },
+                    ];
+
+                    return (
+                      <div
+                        key={item.direction}
+                        onClick={() => setSelectedDirection(item.direction)}
+                        className="p-4 space-y-3 hover:bg-white/80 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-stone-700">
+                            {item.labelJa} ({item.direction})
+                          </span>
+                          {item.isConsensusClear && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                              トリプル大吉 🌟
+                            </span>
+                          )}
+                          {item.isDivergenceAlert && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
+                              位相差警告 ⚠️
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 3 つの計算モデル */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          {models.map((m) => (
+                            <div
+                              key={m.label}
+                              className="flex items-center justify-between gap-2 bg-white border border-stone-200 rounded-lg px-2.5 py-1.5"
+                            >
+                              <span className="text-[10px] text-stone-600">
+                                {m.label}
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(m.status)}`}
+                                >
+                                  {m.status.replace("NOISE_", "")}
+                                </span>
+                                <span
+                                  className={`font-mono font-bold text-[10px] ${scoreTextColor(m.score)}`}
+                                >
+                                  {m.score}
+                                </span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* 3 つの個別判断軸 */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono">
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-2.5 py-1.5">
+                            <div className="text-[10px] text-stone-600">
+                              ① 気学方位
+                            </div>
+                            <div
+                              className={`font-bold ${kigakuTextClass(bd.kigaku)}`}
+                            >
+                              {bd.kigaku.replace("NOISE_", "")}
+                            </div>
+                            <div className="text-[9px] text-stone-600">
+                              ベース: {bd.kigakuScore}点
+                            </div>
+                          </div>
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5">
+                            <div className="text-[10px] text-stone-600">
+                              ② アストロ
+                            </div>
+                            <div
+                              className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-600"}`}
+                            >
+                              {bd.astro.length > 0
+                                ? bd.astro.join(", ")
+                                : "ラインなし"}
+                            </div>
+                            <div className="text-[9px] text-stone-600">
+                              加算: +{bd.astroScore}点
+                            </div>
+                          </div>
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                            <div className="text-[10px] text-stone-600">
+                              ③ 時間ゲート
+                            </div>
+                            <div
+                              className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-600"}`}
+                            >
+                              {bd.timeGate.length > 0
+                                ? bd.timeGate.join(", ")
+                                : "通常時間"}
+                            </div>
+                            <div className="text-[9px] text-stone-600">
+                              調整: {bd.timeGateScore > 0 ? "+" : ""}
+                              {bd.timeGateScore}点
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[10px] text-stone-600 space-y-0.5">
+                          <div>
+                            <span className="text-stone-500">30日吉日:</span>{" "}
+                            <span className="font-mono">
+                              {item.luckyDays}日
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-stone-500">推奨エリア:</span>{" "}
+                            {item.topArea ? (
+                              <span className="text-stone-700 font-bold">
+                                {item.topArea.areaName}
+                                <span className="font-mono font-normal text-stone-600">
+                                  （所得{" "}
+                                  {(
+                                    item.topArea.incomePerCapita / 10000
+                                  ).toFixed(0)}
+                                  万円）
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="italic">データなし</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-stone-500">推奨物件:</span>{" "}
+                            {item.topRental ? (
+                              <span className="text-stone-700 font-bold">
+                                {item.topRental.property_name}
+                                <span className="font-mono font-normal text-stone-600">
+                                  （賃料{" "}
+                                  {(item.topRental.totalRent / 10000).toFixed(
+                                    1,
+                                  )}
+                                  万円）
+                                </span>
+                              </span>
+                            ) : (
+                              <span className="italic">対象物件なし</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              <div className="hidden 2xl:block overflow-x-auto">
                 {/*
                     12 列のうち 9 列に固定幅を振っているため、w-full だけだと
                     幅指定の無い末尾 2 列にしわ寄せが行く。日本語は文字ごとに
@@ -440,31 +644,7 @@ export default function ScorecardPanel({
                     {scorecardSummary
                       .filter((item) => showNoiseDirections || !item.isNoise)
                       .map((item) => {
-                        const statusColor = (s: string) => {
-                          if (s === "OPTIMAL")
-                            return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
-                          if (s === "OPTIMAL_REGULAR")
-                            return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
-                          if (s === "SAFE")
-                            return "text-blue-600 bg-blue-500/10 border-blue-200";
-                          if (s === "WARNING")
-                            return "text-orange-600 bg-orange-500/10 border-orange-200";
-                          if (s.startsWith("NOISE_VOID"))
-                            return "text-stone-600 bg-stone-100 border-stone-300";
-                          if (s.startsWith("NOISE_NODE"))
-                            return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-                          return "text-red-600 bg-red-500/10 border-red-200";
-                        };
-
                         const bd = parseBreakdown(item.topArea);
-                        const kigakuTextColor = (s: string) => {
-                          if (s === "OPTIMAL" || s === "OPTIMAL_REGULAR")
-                            return "text-emerald-600";
-                          if (s === "SAFE") return "text-blue-600";
-                          if (s === "WARNING") return "text-orange-600";
-                          return "text-red-600";
-                        };
-
                         return (
                           <tr
                             key={item.direction}
@@ -483,7 +663,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.classicalStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.classicalStatus)}`}
                                 >
                                   {item.classicalStatus.replace("NOISE_", "")}
                                 </span>
@@ -501,7 +681,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalIndepStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.physicalIndepStatus)}`}
                                 >
                                   {item.physicalIndepStatus.replace(
                                     "NOISE_",
@@ -522,7 +702,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalCoupledStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(item.physicalCoupledStatus)}`}
                                 >
                                   {item.physicalCoupledStatus.replace(
                                     "NOISE_",
@@ -563,7 +743,7 @@ export default function ScorecardPanel({
                             <td className="p-3 bg-emerald-50 border-x border-stone-200 font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`font-bold ${kigakuTextColor(bd.kigaku)}`}
+                                  className={`font-bold ${kigakuTextClass(bd.kigaku)}`}
                                 >
                                   {bd.kigaku.replace("NOISE_", "")}
                                 </span>
@@ -1240,22 +1420,6 @@ export default function ScorecardPanel({
           );
           if (!detail) return null;
 
-          const statusColor = (s: string) => {
-            if (s === "OPTIMAL")
-              return "text-emerald-600 bg-emerald-500/10 border-emerald-200";
-            if (s === "OPTIMAL_REGULAR")
-              return "text-emerald-500 bg-emerald-500/5 border-emerald-200";
-            if (s === "SAFE")
-              return "text-blue-600 bg-blue-500/10 border-blue-200";
-            if (s === "WARNING")
-              return "text-orange-600 bg-orange-500/10 border-orange-200";
-            if (s.startsWith("NOISE_VOID"))
-              return "text-stone-600 bg-stone-100 border-stone-300";
-            if (s.startsWith("NOISE_NODE"))
-              return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-            return "text-red-600 bg-red-500/10 border-red-200";
-          };
-
           return (
             <div className="fixed inset-0 z-50 overflow-hidden font-sans">
               {/* Backdrop */}
@@ -1371,7 +1535,7 @@ export default function ScorecardPanel({
                           Astrological Wave
                         </span>
                         <span
-                          className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusColor(detail.status)}`}
+                          className={`inline-flex items-center self-start px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold border uppercase tracking-wider ${statusBadgeClass(detail.status)}`}
                         >
                           {detail.status}
                         </span>
@@ -1532,7 +1696,7 @@ export default function ScorecardPanel({
                                     </strong>
                                   </span>
                                   <span
-                                    className={`px-1 py-0.5 rounded text-[10px] font-mono border ${statusColor(rental.astrologyStatus)}`}
+                                    className={`px-1 py-0.5 rounded text-[10px] font-mono border ${statusBadgeClass(rental.astrologyStatus)}`}
                                   >
                                     {rental.astrologyStatus}
                                   </span>

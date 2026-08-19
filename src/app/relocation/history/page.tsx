@@ -370,7 +370,7 @@ export default function RelocationHistoryPage() {
   const formatDirectionInfo = directionLabelDetailed;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-white relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
       {/* Background Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
