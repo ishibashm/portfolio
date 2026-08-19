@@ -13,6 +13,7 @@ import {
   getLunarDistance,
   getCurrentZodiac,
   getHonmeiStar,
+  type ZodiacTimeBasis,
   clashMap,
   checkIsDoyouHazard,
   getCurrentEnvironmentalFrequencies,
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
       birthDate?: string;
       lon?: number;
       useClassical?: boolean;
+      zodiacTimeBasis?: ZodiacTimeBasis;
       directionFilterMode?: string;
       actionIntent?: string;
     } = {};
@@ -178,7 +180,14 @@ export async function POST(req: Request) {
     const tideScore = calculateTideScore(today);
     const lunarDistance = getLunarDistance(today);
 
-    const currentZodiac = getCurrentZodiac(today, lon);
+    /*
+      時支の時刻基準。**省かれたら標準時**（従来の答え）に倒す。流派で
+      分かれるので既定は変えない（#404）。値は画面から来るので、
+      "solar" 以外は信用しない。
+    */
+    const zodiacTimeBasis: ZodiacTimeBasis =
+      clientBody.zodiacTimeBasis === "solar" ? "solar" : "standard";
+    const currentZodiac = getCurrentZodiac(today, lon, zodiacTimeBasis);
     const isVoidTime =
       voidZodiacArray.includes(currentZodiac.yearZodiac) ||
       voidZodiacArray.includes(currentZodiac.monthZodiac) ||
