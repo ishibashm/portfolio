@@ -24,6 +24,13 @@ import type { DayTier } from "@/utils/auspiciousDays";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
 import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
+import { HazardTileOverlay } from "@/components/HazardTileOverlay";
+import {
+  HAZARD_TABS,
+  HAZARD_STORAGE_KEY,
+  normalizeHazardTab,
+  type HazardTabId,
+} from "@/lib/hazardLayers";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -418,6 +425,16 @@ export default function ArbitrageMapInner({
    * その選択だけを localStorage に覚えさせる（地図のテーマと同じ扱い）。
    */
   const [showSectors, setShowSectors] = useState(true);
+  /*
+    重ねるハザードマップ（国交省）のタブ。"none" で消す。選択は端末に残す。
+    effect で読むと set-state-in-effect の警告になるので遅延初期化で読む
+    （この部品は ssr:false で読まれるが、念のため window の有無は見る）。
+  */
+  const [hazardTab, setHazardTab] = useState<HazardTabId>(() =>
+    typeof window === "undefined"
+      ? "none"
+      : normalizeHazardTab(localStorage.getItem(HAZARD_STORAGE_KEY)),
+  );
   // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
     "kigaku",
@@ -992,6 +1009,9 @@ export default function ArbitrageMapInner({
           maxNativeZoom={19}
         />
 
+        {/* ハザードの重ね描き。区域が無い場所はタイル自体が無く透明で返る */}
+        <HazardTileOverlay tab={hazardTab} />
+
         {/* Theme Switcher + フォーカスの明示切り替え。
             「今どこを見ているのか」を手で確定できるようにする */}
         {/* 表示範囲の掲載件数。ズーム・移動に追従して数え直される。
@@ -1017,6 +1037,40 @@ export default function ArbitrageMapInner({
           </div>
         )}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5">
+          {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
+              「なし」を明示的に置くのは、消す操作を選び直しではなく
+              1 押しにするため。選択は端末に残す。 */}
+          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+            {(
+              [
+                ["none", "なし"],
+                ...Object.entries(HAZARD_TABS).map(
+                  ([id, def]) => [id, def.label] as const,
+                ),
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => {
+                  setHazardTab(id as HazardTabId);
+                  localStorage.setItem(HAZARD_STORAGE_KEY, id);
+                }}
+                aria-pressed={hazardTab === id}
+                title={
+                  id === "none"
+                    ? "ハザードの重ね描きを消す"
+                    : `${label}の想定区域を重ねて表示（出典: ハザードマップポータルサイト）`
+                }
+                className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                  hazardTab === id
+                    ? "bg-rose-600 text-white"
+                    : "text-stone-600 hover:bg-white"
+                }`}
+              >
+                {id === "none" ? "⚠️ なし" : label}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => {
               const nextTheme = mapTheme === "dark" ? "light" : "dark";
