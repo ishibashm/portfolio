@@ -1031,7 +1031,7 @@ export default function ArbitrageMapInner({
                 同じ部屋の別掲載も別々に数えた生の掲載数で、一覧は名寄せ・
                 絞り込み後の候補（上限500件）。断らずに並べると、どちらかが
                 壊れているように見える（利用者の指摘） */}
-            <div className="text-[8px] leading-tight text-stone-600">
+            <div className="text-[10px] leading-tight text-stone-600">
               重複を含む掲載数。一覧の候補数とは数え方が違います
             </div>
           </div>
@@ -1205,12 +1205,12 @@ export default function ArbitrageMapInner({
                     この数字には入っていない。断らずに出すと「方位で
                     絞ったのに減らない」と読まれる。 */}
                 {prefCountsFiltered && (
-                  <div className="text-[8px] leading-relaxed text-stone-500">
+                  <div className="text-[10px] leading-relaxed text-stone-500">
                     家賃・間取り・築年・徒歩・広さを反映しています。方位と吉凶は含みません。
                   </div>
                 )}
                 {!prefKigaku && (
-                  <div className="text-[8px] leading-relaxed text-stone-500">
+                  <div className="text-[10px] leading-relaxed text-stone-500">
                     {kigakuUnavailableReason ??
                       "条件が揃うと方位の吉凶で塗り分けます"}
                   </div>
@@ -1244,7 +1244,7 @@ export default function ArbitrageMapInner({
                   />
                   天中殺
                 </span>
-                <span className="block w-full text-[8px] text-stone-600">
+                <span className="block w-full text-[10px] text-stone-600">
                   出発地から見た各県の方位の、選択日の判定
                 </span>
               </div>
@@ -1755,7 +1755,7 @@ export default function ArbitrageMapInner({
               <span>天中殺</span>
             </div>
           </div>
-          <span className="block text-[8px] text-stone-600 max-w-48 leading-relaxed">
+          <span className="block text-[10px] text-stone-600 max-w-48 leading-relaxed">
             年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
           </span>
         </div>
@@ -1777,7 +1777,7 @@ export default function ArbitrageMapInner({
             <span className="w-2.5 h-2.5 rounded-full bg-[#a8a29e] border border-[#57534e]"></span>
             <span>判定なし（色に意味はありません）</span>
           </div>
-          <span className="block text-[8px] leading-relaxed text-stone-500">
+          <span className="block text-[10px] leading-relaxed text-stone-500">
             {kigakuUnavailableReason ??
               "生年月日と出発地を入れると、その日の方位の吉凶で塗り分けます。"}
             本命殺・天中殺は生年月日から決まるため、入力が無い状態では判定しません。

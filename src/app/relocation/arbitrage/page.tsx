@@ -2339,7 +2339,7 @@ export default function ArbitrageScannerPage() {
           ["掲載", `${selectedProperty.axisInputs?.listingCount ?? 1}社`],
         ].map(([k, v]) => (
           <div key={k as string} className="bg-white dark:bg-stone-50 py-1.5">
-            <div className="text-[8px] text-stone-600">{k}</div>
+            <div className="text-[10px] text-stone-600">{k}</div>
             <div className="text-[11px] font-bold text-stone-800">{v}</div>
           </div>
         ))}
@@ -2750,7 +2750,7 @@ export default function ArbitrageScannerPage() {
                           onClick={() =>
                             setShowBaseMapPicker(!showBaseMapPicker)
                           }
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBaseMapPicker ? "閉じる" : "地図で検索"}
                         </button>
@@ -2825,7 +2825,7 @@ export default function ArbitrageScannerPage() {
                           onClick={() =>
                             setShowBirthMapPicker(!showBirthMapPicker)
                           }
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBirthMapPicker ? "閉じる" : "地図で検索"}
                         </button>
@@ -3204,7 +3204,7 @@ export default function ArbitrageScannerPage() {
                           <span className="text-[10px] font-semibold text-stone-600 dark:text-stone-500">
                             総家賃の分布（棒を押すと上限に入ります）
                           </span>
-                          <span className="text-[8px] text-stone-600">
+                          <span className="text-[10px] text-stone-600">
                             表示範囲・他の絞り込みを反映
                           </span>
                         </div>
@@ -3249,7 +3249,7 @@ export default function ArbitrageScannerPage() {
                             );
                           })}
                         </div>
-                        <div className="flex justify-between text-[8px] text-stone-600 font-mono">
+                        <div className="flex justify-between text-[10px] text-stone-600 font-mono">
                           <span>0</span>
                           <span>15万</span>
                           <span>30万〜</span>
@@ -3863,7 +3863,7 @@ export default function ArbitrageScannerPage() {
                                   <b className="text-stone-500">選択日</b>
                                   列が地図の扇形と同じ判定です。
                                 </p>
-                                <table className="text-[8px]">
+                                <table className="text-[10px]">
                                   <thead>
                                     <tr>
                                       <th className="pr-1.5 text-left font-semibold text-stone-600">
@@ -3940,7 +3940,7 @@ export default function ArbitrageScannerPage() {
                                                   )
                                                 }
                                                 title={`${m.month} ${u.directionLabel}: ${TIER_LABELS[m.bestTier as DayTier]} ${m.bestTierDays}日`}
-                                                className={`h-5 w-5 rounded border text-[8px] font-bold ${TIER_BADGE_CLASS[m.bestTier as DayTier]}`}
+                                                className={`h-5 w-5 rounded border text-[10px] font-bold ${TIER_BADGE_CLASS[m.bestTier as DayTier]}`}
                                               >
                                                 {m.bestTier}
                                               </button>
@@ -3992,7 +3992,7 @@ export default function ArbitrageScannerPage() {
                                         {s.directionLabel}
                                       </span>
                                       <span
-                                        className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${TIER_BADGE_CLASS[tier]}`}
+                                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${TIER_BADGE_CLASS[tier]}`}
                                       >
                                         {TIER_LABELS[tier]}
                                       </span>
@@ -4054,11 +4054,11 @@ export default function ArbitrageScannerPage() {
                                                 {d.date
                                                   .slice(2)
                                                   .replace(/-/g, "/")}
-                                                <span className="ml-0.5 text-[8px] opacity-70">
+                                                <span className="ml-0.5 text-[10px] opacity-70">
                                                   {"日月火水木金土"[d.weekday]}
                                                 </span>
                                                 {d.tags.includes("天赦日") && (
-                                                  <span className="ml-0.5 text-[8px]">
+                                                  <span className="ml-0.5 text-[10px]">
                                                     ✨
                                                   </span>
                                                 )}

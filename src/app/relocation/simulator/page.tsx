@@ -1725,7 +1725,7 @@ export default function RelocationSimulatorPage() {
             {/* Overall Quality Score Badge */}
             <div className="flex items-center gap-4 bg-white/80 p-4 rounded-3xl border border-stone-200/60 backdrop-blur-md shadow-2xl">
               <div className="text-center">
-                <span className="text-[8px] uppercase tracking-widest text-stone-600 font-bold block leading-none mb-1.5">
+                <span className="text-[10px] uppercase tracking-widest text-stone-600 font-bold block leading-none mb-1.5">
                   計画総合適合度
                 </span>
                 <span
@@ -2221,7 +2221,7 @@ export default function RelocationSimulatorPage() {
                         >
                           STEP {idx + 1} : {step.evaluation?.rating}
                         </div>
-                        <span className="px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-stone-100/80 border border-stone-200/80 text-stone-600 leading-none">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-stone-100/80 border border-stone-200/80 text-stone-600 leading-none">
                           {step.purpose === "MIGRATION"
                             ? "長期移住"
                             : "短期旅行"}
@@ -2230,7 +2230,7 @@ export default function RelocationSimulatorPage() {
                             判定は出したうえで、当てにならないと添える。 */}
                         {step.directionNote && (
                           <span
-                            className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-50 border border-amber-300 text-amber-700 leading-none"
+                            className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 border border-amber-300 text-amber-700 leading-none"
                             title={step.directionNote}
                           >
                             方位が定まりません
@@ -2752,7 +2752,7 @@ export default function RelocationSimulatorPage() {
                                   🚪 奇門遁甲 (Qi Men Dun Jia)
                                 </span>
                                 <span
-                                  className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                     meta.chineseMetasoft.qiMenGate.status ===
                                     "Auspicious"
                                       ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
@@ -2803,7 +2803,7 @@ export default function RelocationSimulatorPage() {
                                 </div>
                                 {meta.roxyApi.ichingCast.changingLines?.length >
                                   0 && (
-                                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/25">
                                     変爻あり
                                   </span>
                                 )}
@@ -2825,7 +2825,7 @@ export default function RelocationSimulatorPage() {
                                           key={idx}
                                           className="flex items-center gap-2"
                                         >
-                                          <span className="text-[8px] font-mono text-stone-600 w-3">
+                                          <span className="text-[10px] font-mono text-stone-600 w-3">
                                             L{6 - idx}
                                           </span>
                                           <div className="flex gap-0.5 w-16 h-1.5 rounded overflow-hidden">
@@ -2845,7 +2845,7 @@ export default function RelocationSimulatorPage() {
                                               />
                                             )}
                                           </div>
-                                          <span className="text-[8px] font-mono text-stone-600">
+                                          <span className="text-[10px] font-mono text-stone-600">
                                             {lineVal}
                                           </span>
                                         </div>
@@ -2868,7 +2868,7 @@ export default function RelocationSimulatorPage() {
                                   🃏 タロットカード (Tarot)
                                 </span>
                                 <span
-                                  className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                                     meta.divineApi.tarot.orientation.includes(
                                       "正位置",
                                     )
@@ -2888,7 +2888,7 @@ export default function RelocationSimulatorPage() {
                               <p className="text-[10px] text-stone-500 leading-relaxed font-sans">
                                 {meta.divineApi.tarot.meaning}
                               </p>
-                              <div className="text-[8px] text-stone-600 font-mono flex items-center justify-between pt-1.5 border-t border-stone-200">
+                              <div className="text-[10px] text-stone-600 font-mono flex items-center justify-between pt-1.5 border-t border-stone-200">
                                 <span>
                                   リスク寄与度:{" "}
                                   <strong
