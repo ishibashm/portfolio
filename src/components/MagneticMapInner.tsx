@@ -25,6 +25,7 @@ import {
 } from "@/utils/directionGeo";
 import type { MapProperty } from "@/lib/mapProperty";
 import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
+import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 clearLeafletDefaultIconUrl();
@@ -561,38 +562,6 @@ export default function MagneticMapInner({
     });
   }, [boundaries, center, lat, lon]);
 
-  // 4. Mock Hazard Layer (Phase 2 GIS Integration)
-  const hazardLayer = React.useMemo(() => {
-    if (!hudLayers.hazard) return null;
-
-    // Create some mock hazard zones (e.g., fault lines, flood zones) around the center
-    return (
-      <React.Fragment>
-        {/* Mock Fault Line */}
-        <Polyline
-          positions={[
-            getDestination(lat, lon, 45, 100),
-            getDestination(lat, lon, 225, 100),
-          ]}
-          color="#ef4444"
-          weight={2}
-          dashArray="5,5"
-          opacity={0.6}
-        />
-        <Marker
-          position={getDestination(lat, lon, 45, 100)}
-          icon={L.divIcon({
-            className: "custom-div-icon",
-            html: `<div style="color: #ef4444; background: rgba(0,0,0,0.5); padding: 2px; text-shadow: 0 0 4px black; font-weight: bold; font-family: monospace; font-size: 9px;">[HZD] Fault Line</div>`,
-            iconSize: [80, 20],
-            iconAnchor: [0, 10],
-          })}
-          interactive={false}
-        />
-      </React.Fragment>
-    );
-  }, [hudLayers.hazard, lat, lon]);
-
   // Concentric Rings for Shield Attenuation Theory (in meters)
   const attenuationRings: number[] = [250000, 500000, 1000000];
 
@@ -671,8 +640,23 @@ export default function MagneticMapInner({
         {/* Draw Danger Zones (Red) at Boundaries */}
         {dangerLayer}
 
-        {/* Draw Hazard / GIS Overlay if enabled */}
-        {hazardLayer}
+        {/*
+          ハザードの重ね描き。国交省「重ねるハザードマップ」の実タイル。
+
+          以前は**実在しない「断層線」を出発地から固定の方角に描く
+          モック**だった（[HZD] Fault Line のラベル付き）。実在しない
+          災害情報を実在の地図に重ねるのは誤解を招くので、実物に替えた。
+
+          この HUD は 1 つのボタンなので、引越し先の検討で汎用に効く
+          洪水と土砂（3 区域）を重ねる。津波・高潮まで見たいときは
+          物件検索の地図（タブで選べる）を使う。
+        */}
+        {hudLayers.hazard && (
+          <>
+            <HazardTileOverlay tab="flood" />
+            <HazardTileOverlay tab="sediment" />
+          </>
+        )}
 
         {/* Draw True North Line (Geographic) */}
         <Polyline
