@@ -1,10 +1,40 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Download, Share, PlusSquare, X, Smartphone, Check } from "lucide-react";
+import { Download, Share, PlusSquare, X, Smartphone } from "lucide-react";
+
+/*
+  ここで使う 2 つは**どちらも標準に入っていない**ので、lib.dom には型が無い。
+  以前は any とキャストで通していたが、それだと綴りを間違えても気付けない
+  （deferredPrompt.promt() でも検査を通る）。実在する API なので、
+  「無いことにする」のではなく宣言する。
+
+  - beforeinstallprompt … Chromium 系だけが出す。入れるかどうかを尋ねる前に
+    横取りして、こちらの好きな場所でボタンを出すために使う
+  - navigator.standalone … iOS の Safari だけが持つ。ホーム画面から開かれた
+    かどうか。display-mode: standalone を見られない古い iOS のための併用
+*/
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  readonly userChoice: Promise<{
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+}
+
+declare global {
+  interface WindowEventMap {
+    beforeinstallprompt: BeforeInstallPromptEvent;
+  }
+  interface Navigator {
+    /** iOS Safari のみ。ホーム画面から開かれていれば true。 */
+    standalone?: boolean;
+  }
+}
 
 export function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
@@ -14,7 +44,7 @@ export function PWAInstallPrompt() {
     // Check if already in standalone mode
     if (
       window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true
+      window.navigator.standalone === true
     ) {
       setIsStandalone(true);
       return;
@@ -26,7 +56,7 @@ export function PWAInstallPrompt() {
     setIsIOS(iosDevice);
 
     // Listen for beforeinstallprompt event on Android / Chromium
-    const handleBeforeInstallPrompt = (e: Event) => {
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
