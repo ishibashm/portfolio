@@ -76,7 +76,7 @@ import {
   SiderealTime,
 } from "astronomy-engine";
 import { Solar } from "lunar-javascript";
-import { getZonedDateTimeFields } from "./solarTime";
+import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
 import { directionFromBearing } from "./directionGeo";
 
 /**
@@ -1150,11 +1150,35 @@ export function getPersonalVoidZodiac(birthDate: Date): string[] {
 }
 
 /**
+ * 時刻の基準。
+ *
+ *   "standard"  標準時（JST 一律）。**既定。**これまでの挙動
+ *   "solar"     真太陽時（経度補正 + 均時差）
+ *
+ * 流派で分かれるため、既定は変えずに設定で切り替える形にしている
+ * （利用者の判断。#398 で報告した件）。
+ */
+export type ZodiacTimeBasis = "standard" | "solar";
+
+/**
  * 日付と経度から、その時点の「年・月・日・時」の十二支（文字列）を天体物理学的に取得する
+ *
+ * ## lon の扱い
+ *
+ * **`timeBasis` が "standard"（既定）のとき、lon は使わない。**
+ * 呼び出し側は 19 か所すべてが実際の出発地を渡しているが、これまでは
+ * それを捨てて JST の時計時刻で八字を組んでいた。標準子午線 135 度の
+ * 時刻であって、誰の真太陽時でもない。那覇と根室で 71 分の開きがあり、
+ * 時支の 1 枠 120 分に対して境目付近では答えが変わる。
+ *
+ * "solar" にすると lon から真太陽時を出して八字に渡す。**年支と月支は
+ * 変わらない**（木星黄経・太陽黄経で決まる地心の量なので経度に依らない）。
+ * 変わるのは時支と、真夜中付近の日支。
  */
 export function getCurrentZodiac(
   date: Date,
   lon: number = 139.6917,
+  timeBasis: ZodiacTimeBasis = "standard",
 ): {
   yearZodiac: string;
   monthZodiac: string;
@@ -1212,7 +1236,16 @@ export function getCurrentZodiac(
   const ZODIACS_GANZHI = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
   const dayZodiac = ZODIACS_GANZHI[zhi];
   */
-  const fields = getZonedDateTimeFields(date, 9);
+  /*
+    八字に渡す時刻。"standard" では JST の時計時刻をそのまま使う（従来）。
+    "solar" では出発地の真太陽時に直してから渡す。時刻がずれるので、
+    時支だけでなく**真夜中付近では日支も動く**。真太陽時では日の境目も
+    真太陽時の 0 時になるため、これは意図した挙動。
+  */
+  const basisDate =
+    timeBasis === "solar" ? calculateSolarTime(date, lon, 9).solarTime : date;
+
+  const fields = getZonedDateTimeFields(basisDate, 9);
   const solar = Solar.fromYmdHms(
     fields.year,
     fields.month,
