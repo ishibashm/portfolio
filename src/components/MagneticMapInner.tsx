@@ -801,7 +801,7 @@ export default function MagneticMapInner({
           </div>
 
           {honmeiStar && (
-            <div className="text-[8px] text-[#a855f7] border-t border-stone-200 pt-1 mt-1 font-mono">
+            <div className="text-[10px] text-[#a855f7] border-t border-stone-200 pt-1 mt-1 font-mono">
               HARDWARE SYNC: {honmeiStar.physical}
             </div>
           )}
