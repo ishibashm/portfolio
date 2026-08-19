@@ -77,7 +77,7 @@ export function BioMagneticDashboard({
   pressure = null,
 }: DashboardProps) {
   const getKpColor = (kp: number | null) => {
-    if (kp === null) return "text-stone-400";
+    if (kp === null) return "text-stone-600";
     if (kp >= 5)
       return "text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.8)]";
     if (kp >= 4)
@@ -140,7 +140,7 @@ export function BioMagneticDashboard({
           <Radio size={14} className="text-emerald-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600 font-bold">
             Environmental Telemetry{" "}
-            <span className="text-stone-400 font-normal">
+            <span className="text-stone-600 font-normal">
               / 外部環境パラメータ
             </span>
           </h2>
@@ -155,8 +155,8 @@ export function BioMagneticDashboard({
         <div className="grid grid-cols-2 gap-3 text-xs font-mono relative z-10">
           {/* KP Index Circular Gauge */}
           <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
-            <span className="text-[8px] text-stone-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Orbit size={10} className="text-stone-400" /> KP-INDEX (NOAA)
+            <span className="text-[8px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Orbit size={10} className="text-stone-600" /> KP-INDEX (NOAA)
             </span>
             <div className="flex items-center justify-between">
               <div className="relative w-14 h-14">
@@ -203,15 +203,15 @@ export function BioMagneticDashboard({
                 ))}
               </div>
             </div>
-            <div className="mt-2 text-[7px] text-stone-400 text-right">
+            <div className="mt-2 text-[7px] text-stone-600 text-right">
               0-9 PLANETARY SCALE
             </div>
           </div>
 
           {/* XRAY FLUX Linear Gauge */}
           <div className="flex flex-col p-3 bg-white/70 border border-stone-200 rounded-sm relative overflow-hidden">
-            <span className="text-[8px] text-stone-400 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Zap size={10} className="text-stone-400" /> X-RAY FLUX
+            <span className="text-[8px] text-stone-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Zap size={10} className="text-stone-600" /> X-RAY FLUX
             </span>
             <div className="flex flex-col grow justify-center gap-2">
               <div
@@ -225,7 +225,7 @@ export function BioMagneticDashboard({
                   style={{ width: `${xrayPct}%` }}
                 ></div>
               </div>
-              <div className="flex justify-between text-[6px] text-stone-400 mt-0.5">
+              <div className="flex justify-between text-[6px] text-stone-600 mt-0.5">
                 <span>A</span>
                 <span>B</span>
                 <span>C</span>
@@ -250,7 +250,7 @@ export function BioMagneticDashboard({
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {pressure ? pressure.current.toFixed(1) : "--"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">hPa</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">hPa</span>
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200">
@@ -269,7 +269,7 @@ export function BioMagneticDashboard({
                   {pressure
                     ? `${pressure.drop > 0 ? "+" : ""}${pressure.drop.toFixed(1)}`
                     : "--"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">hPa</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">hPa</span>
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center">
@@ -280,12 +280,12 @@ export function BioMagneticDashboard({
                   {pressure
                     ? `+${(pressure.drop < 0 ? Math.min(30, Math.abs(pressure.drop) * 3) : 0).toFixed(0)}`
                     : "--"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">%</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">%</span>
                 </div>
               </div>
             </div>
             {!pressure && (
-              <div className="mt-1 text-[7px] text-stone-400">
+              <div className="mt-1 text-[7px] text-stone-600">
                 気圧を取得できていません。この項目は負荷の計算に入っていません。
               </div>
             )}
@@ -300,7 +300,7 @@ export function BioMagneticDashboard({
                   LOCAL GEOMAGNETICS (WMM2020)
                 </span>
               </div>
-              <span className="text-[7px] text-stone-400 px-1 py-0.5 bg-white rounded-sm">
+              <span className="text-[7px] text-stone-600 px-1 py-0.5 bg-white rounded-sm">
                 V.2020-2025
               </span>
             </div>
@@ -316,7 +316,7 @@ export function BioMagneticDashboard({
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {magneticF ? `${magneticF.toFixed(0)}` : "CALC"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">nT</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">nT</span>
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
@@ -325,7 +325,7 @@ export function BioMagneticDashboard({
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {magneticD ? `${magneticD.toFixed(2)}` : "--"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">°</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">°</span>
                 </div>
               </div>
               <div className="bg-white/80 p-2 flex flex-col items-center justify-center border-r border-stone-200 last:border-0">
@@ -334,7 +334,7 @@ export function BioMagneticDashboard({
                 </div>
                 <div className="text-sm text-stone-700 font-mono font-bold tracking-tight">
                   {magneticI ? `${magneticI.toFixed(2)}` : "--"}
-                  <span className="text-[8px] text-stone-400 ml-0.5">°</span>
+                  <span className="text-[8px] text-stone-600 ml-0.5">°</span>
                 </div>
               </div>
             </div>
@@ -371,7 +371,7 @@ export function BioMagneticDashboard({
           <Activity size={14} className="text-blue-500 md:animate-pulse" />
           <h2 className="text-[10px] uppercase font-mono tracking-widest text-stone-600 font-bold">
             Bio-Sync Diagnostics{" "}
-            <span className="text-stone-400 font-normal">
+            <span className="text-stone-600 font-normal">
               / 生体同期パラメータ
             </span>
           </h2>
@@ -385,8 +385,8 @@ export function BioMagneticDashboard({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-10 text-xs font-mono h-full">
           {/* Inputs Panel */}
           <div className="flex flex-col gap-3 bg-white/70 p-3 border border-stone-200 rounded-sm">
-            <span className="text-[8px] text-stone-400 font-bold uppercase tracking-wider mb-1 flex items-center gap-1 border-b border-stone-200 pb-1">
-              <Cpu size={10} className="text-stone-400" /> SENSOR OVERRIDES
+            <span className="text-[8px] text-stone-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1 border-b border-stone-200 pb-1">
+              <Cpu size={10} className="text-stone-600" /> SENSOR OVERRIDES
             </span>
 
             <div className="flex flex-col gap-1.5">
@@ -445,9 +445,9 @@ export function BioMagneticDashboard({
             <div className="flex flex-col">
               <div className="text-[9px] text-stone-500 mb-2 uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between items-center">
                 <span className="font-bold flex items-center gap-1">
-                  <Waves size={10} className="text-stone-400" /> ANS OVERLOAD
+                  <Waves size={10} className="text-stone-600" /> ANS OVERLOAD
                 </span>
-                <span className="text-[7px] text-stone-400 font-mono">
+                <span className="text-[7px] text-stone-600 font-mono">
                   DANGER_CALC
                 </span>
               </div>
@@ -473,7 +473,7 @@ export function BioMagneticDashboard({
                   })}
                 </div>
               </div>
-              <div className="text-[7px] text-stone-400 leading-tight mt-2 text-justify">
+              <div className="text-[7px] text-stone-600 leading-tight mt-2 text-justify">
                 ※ 移住・移動先の環境に対する自律神経ストレス予測
               </div>
             </div>
@@ -496,7 +496,7 @@ export function BioMagneticDashboard({
                   style={{ width: `${shieldCapacity}%` }}
                 ></div>
               </div>
-              <div className="text-[7px] text-stone-400 tracking-normal mt-1 text-justify">
+              <div className="text-[7px] text-stone-600 tracking-normal mt-1 text-justify">
                 ※ 空間座標の環境磁場に対する順化度合（バッファー値）
               </div>
             </div>

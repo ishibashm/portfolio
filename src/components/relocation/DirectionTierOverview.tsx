@@ -80,7 +80,7 @@ export function DirectionTierOverview({
     <div className="rounded-2xl border border-stone-200 bg-white p-4">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-xs font-bold text-stone-700">方位ごとの内訳</h3>
-        <span className="text-[10px] text-stone-400">
+        <span className="text-[10px] text-stone-600">
           表示中 {total.toLocaleString()} 件
         </span>
       </div>

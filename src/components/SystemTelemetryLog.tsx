@@ -157,7 +157,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
                 key={log.id}
                 className="flex gap-2 animate-fade-in text-shadow-sm"
               >
-                <span className="text-stone-400 select-none">
+                <span className="text-stone-600 select-none">
                   [{log.timestamp}]
                 </span>
                 <span className={`${getColor(log.type)}`}>{log.message}</span>
@@ -180,7 +180,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${declination ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
             WMM2020
           </span>
         </div>
@@ -191,7 +191,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${env ? "bg-blue-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
             JPL DE440
           </span>
         </div>
@@ -202,13 +202,13 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${lat ? "bg-purple-500 animate-pulse" : "bg-zinc-600"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-400 tracking-wider">
+          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
             GPS SYNC
           </span>
         </div>
 
         {/* Toggle Caret */}
-        <div className="ml-2 pl-2 border-l border-stone-200 text-stone-400">
+        <div className="ml-2 pl-2 border-l border-stone-200 text-stone-600">
           {isOpen ? "▼" : "▲"}
         </div>
       </div>

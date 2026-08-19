@@ -38,7 +38,7 @@ export const VedicReport = ({ data }: { data: VedicData }) => {
 
           <div className="space-y-6 relative z-10">
             <div>
-              <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1">
+              <p className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
                 Nakshatra (宿)
               </p>
               <p className="text-2xl font-black text-stone-900 text-indigo-600">
@@ -63,7 +63,7 @@ export const VedicReport = ({ data }: { data: VedicData }) => {
             </div>
 
             <div className="pt-4 border-t border-stone-200/60">
-              <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1">
+              <p className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
                 Tithi (太陰暦日)
               </p>
               <p className="text-lg font-bold text-stone-600">{data.tithi}</p>
@@ -83,7 +83,7 @@ export const VedicReport = ({ data }: { data: VedicData }) => {
 
           <div className="space-y-6 relative z-10">
             <div>
-              <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1">
+              <p className="text-[10px] text-stone-600 uppercase tracking-widest mb-1">
                 Surya Nakshatra (太陽の宿)
               </p>
               <p className="text-2xl font-black text-stone-900 text-amber-600">
@@ -109,7 +109,7 @@ export const VedicReport = ({ data }: { data: VedicData }) => {
 
             <div className="pt-4 border-t border-stone-200/60 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-stone-400 uppercase tracking-widest mb-1 flex items-center gap-1">
+                <p className="text-[10px] text-stone-600 uppercase tracking-widest mb-1 flex items-center gap-1">
                   <Compass className="w-3 h-3" /> Ayanamsa (歳差補正)
                 </p>
                 <p className="text-sm font-mono text-stone-600">

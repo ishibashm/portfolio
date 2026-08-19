@@ -210,7 +210,7 @@ export default function HomePortal({
       {/* 一番上の帯。「今どうなのか」を 1 行で答える */}
       <div className="w-full bg-white border border-stone-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2 shadow-sm">
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-400">いま良い方位</span>
+          <span className="text-[10px] text-stone-600">いま良い方位</span>
           {hasBirthDate && best?.rating ? (
             <>
               <strong className="text-xl font-bold text-stone-700">
@@ -221,13 +221,13 @@ export default function HomePortal({
               </span>
             </>
           ) : (
-            <span className="text-xs text-stone-400">
+            <span className="text-xs text-stone-600">
               生年月日を入れると出ます
             </span>
           )}
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="text-[10px] text-stone-400">いまの時間帯</span>
+          <span className="text-[10px] text-stone-600">いまの時間帯</span>
           {timing?.current ? (
             <strong
               className={`text-sm font-bold ${
@@ -245,18 +245,18 @@ export default function HomePortal({
                   : "ふつう"}
             </strong>
           ) : (
-            <span className="text-xs text-stone-400">—</span>
+            <span className="text-xs text-stone-600">—</span>
           )}
         </div>
         {timing?.next && (
           <div className="flex items-baseline gap-2">
-            <span className="text-[10px] text-stone-400">次に動ける</span>
+            <span className="text-[10px] text-stone-600">次に動ける</span>
             <strong className="text-sm font-bold text-emerald-600">
               {hhmm(timing.next.item.startStandard)}
             </strong>
           </div>
         )}
-        <div className="ml-auto text-[10px] text-stone-400">
+        <div className="ml-auto text-[10px] text-stone-600">
           {evalDate.getFullYear()}/{evalDate.getMonth() + 1}/
           {evalDate.getDate()} 基準
         </div>
@@ -280,7 +280,7 @@ export default function HomePortal({
                   <span className="font-bold text-stone-600">{d.ja}</span>
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      d.rating?.color ?? "text-stone-400"
+                      d.rating?.color ?? "text-stone-600"
                     }`}
                   >
                     {d.status ? directionLabelShort(d.status) : "—"}
@@ -289,7 +289,7 @@ export default function HomePortal({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-stone-400 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               生年月日を入れると、あなたの本命星から 8 方位の吉凶が出ます。
             </p>
           )}
@@ -311,7 +311,7 @@ export default function HomePortal({
               </p>
               {timing.current && (
                 <div className="text-xs bg-stone-50 border border-stone-200 rounded-lg p-2">
-                  <div className="text-[10px] text-stone-400">いま</div>
+                  <div className="text-[10px] text-stone-600">いま</div>
                   <div className="font-bold text-stone-700">
                     {hhmm(timing.current.item.startStandard)}–
                     {hhmm(timing.current.item.endStandard)}{" "}
@@ -333,13 +333,13 @@ export default function HomePortal({
                   </div>
                 </div>
               ) : (
-                <p className="text-[10px] text-stone-400">
+                <p className="text-[10px] text-stone-600">
                   今日はこの先「動いてよい」時間帯がありません。
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-xs text-stone-400">時間帯を計算中です。</p>
+            <p className="text-xs text-stone-600">時間帯を計算中です。</p>
           )}
         </Card>
 
@@ -359,7 +359,7 @@ export default function HomePortal({
                   <span className="text-stone-500">
                     <strong className="text-amber-600">{w.luckyDays}</strong> 日
                     {w.firstDate && (
-                      <span className="text-[10px] text-stone-400 ml-1.5">
+                      <span className="text-[10px] text-stone-600 ml-1.5">
                         最短 {w.firstDate.slice(5)}
                       </span>
                     )}
@@ -368,7 +368,7 @@ export default function HomePortal({
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-stone-400 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               {hasBirthDate
                 ? "この 30 日に動ける方位がありません。期間を広げて探してください。"
                 : "生年月日を入れると、30 日先までの窓が出ます。"}
@@ -383,20 +383,20 @@ export default function HomePortal({
         >
           <dl className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <dt className="text-[9px] text-stone-400">地磁気 Kp</dt>
+              <dt className="text-[9px] text-stone-600">地磁気 Kp</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {kpIndex !== null ? kpIndex.toFixed(1) : "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-400">気圧</dt>
+              <dt className="text-[9px] text-stone-600">気圧</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {pressure ? `${pressure.current.toFixed(0)}` : "—"}
-                <span className="text-[9px] text-stone-400 ml-0.5">hPa</span>
+                <span className="text-[9px] text-stone-600 ml-0.5">hPa</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[9px] text-stone-400">偏角</dt>
+              <dt className="text-[9px] text-stone-600">偏角</dt>
               <dd className="text-sm font-bold text-stone-700">
                 {declination !== null ? `${declination.toFixed(1)}°` : "—"}
               </dd>
@@ -419,19 +419,19 @@ export default function HomePortal({
           {honmeiStar ? (
             <dl className="flex flex-col gap-1 text-xs">
               <div className="flex justify-between">
-                <dt className="text-stone-400">本命星（暦）</dt>
+                <dt className="text-stone-600">本命星（暦）</dt>
                 <dd className="font-bold text-stone-700">
                   {honmeiStar.classical}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-stone-400">本命星（物理）</dt>
+                <dt className="text-stone-600">本命星（物理）</dt>
                 <dd className="font-bold text-stone-700">
                   {honmeiStar.physical}
                 </dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-stone-400">天中殺</dt>
+                <dt className="text-stone-600">天中殺</dt>
                 <dd className="font-bold text-red-500">
                   {personalVoidZodiac.length > 0
                     ? personalVoidZodiac.join("・")
@@ -440,7 +440,7 @@ export default function HomePortal({
               </div>
             </dl>
           ) : (
-            <p className="text-xs text-stone-400 leading-relaxed">
+            <p className="text-xs text-stone-600 leading-relaxed">
               生年月日と出発地を入れると、ここに本命星と天中殺が出ます。
             </p>
           )}

@@ -60,7 +60,7 @@ export default function LoginPage() {
           <br />
           他の端末でも引き継げます。
         </p>
-        <p className="text-stone-400 text-[10px] text-center mb-6 leading-relaxed">
+        <p className="text-stone-600 text-[10px] text-center mb-6 leading-relaxed">
           ログインしなくても、方位の判定・物件検索・カレンダーはそのままご利用いただけます。
         </p>
 
@@ -157,14 +157,14 @@ export default function LoginPage() {
               ⚡ 開発用バイパスでログイン
             </button>
             {!process.env.NEXT_PUBLIC_ADMIN_EMAIL && (
-              <p className="mt-2 text-[9px] text-stone-400 text-center leading-relaxed">
+              <p className="mt-2 text-[9px] text-stone-600 text-center leading-relaxed">
                 .env.local に NEXT_PUBLIC_ADMIN_EMAIL を設定すると使えます。
               </p>
             )}
           </div>
         )}
 
-        <p className="text-[10px] text-stone-400 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
+        <p className="text-[10px] text-stone-600 text-center mt-6 font-mono leading-relaxed max-w-[280px]">
           {process.env.NODE_ENV === "development"
             ? "ローカル開発環境で動作しています。"
             : ""}

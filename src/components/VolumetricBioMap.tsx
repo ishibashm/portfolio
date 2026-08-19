@@ -191,7 +191,7 @@ export function VolumetricBioMap({
           />
           {/* North Indicator */}
           <div
-            className="absolute left-1/2 top-0 -translate-x-1/2 text-[12px] font-mono text-stone-400 font-bold tracking-widest"
+            className="absolute left-1/2 top-0 -translate-x-1/2 text-[12px] font-mono text-stone-600 font-bold tracking-widest"
             style={{ transform: "rotateX(-60deg) translateZ(20px)" }}
           >
             [ MAGNETIC_NORTH ]
@@ -200,7 +200,7 @@ export function VolumetricBioMap({
       </div>
 
       {/* 3D Depth Legend */}
-      <div className="absolute bottom-6 right-6 font-mono text-[9px] text-stone-400 flex flex-col gap-2 bg-white/70 p-3 border border-stone-200 md:backdrop-blur-sm shadow-xl">
+      <div className="absolute bottom-6 right-6 font-mono text-[9px] text-stone-600 flex flex-col gap-2 bg-white/70 p-3 border border-stone-200 md:backdrop-blur-sm shadow-xl">
         <div className="text-stone-500 border-b border-stone-200 pb-1 mb-1 font-bold">
           VOLUMETRIC_DEPTH_KEY
         </div>

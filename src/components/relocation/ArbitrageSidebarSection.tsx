@@ -45,7 +45,7 @@ export function ArbitrageSidebarSection({
             <span className="truncate">{title}</span>
           </span>
           <span className="flex min-w-0 shrink-0 items-center gap-1.5">
-            <span className="max-w-32 truncate text-[10px] font-semibold normal-case tracking-normal text-stone-400">
+            <span className="max-w-32 truncate text-[10px] font-semibold normal-case tracking-normal text-stone-600">
               {summary}
             </span>
             <ChevronRight

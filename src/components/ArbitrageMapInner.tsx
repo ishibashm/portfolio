@@ -1011,7 +1011,7 @@ export default function ArbitrageMapInner({
                 同じ部屋の別掲載も別々に数えた生の掲載数で、一覧は名寄せ・
                 絞り込み後の候補（上限500件）。断らずに並べると、どちらかが
                 壊れているように見える（利用者の指摘） */}
-            <div className="text-[8px] leading-tight text-stone-400">
+            <div className="text-[8px] leading-tight text-stone-600">
               重複を含む掲載数。一覧の候補数とは数え方が違います
             </div>
           </div>
@@ -1190,7 +1190,7 @@ export default function ArbitrageMapInner({
                   />
                   天中殺
                 </span>
-                <span className="block w-full text-[8px] text-stone-400">
+                <span className="block w-full text-[8px] text-stone-600">
                   出発地から見た各県の方位の、選択日の判定
                 </span>
               </div>
@@ -1207,7 +1207,7 @@ export default function ArbitrageMapInner({
                   現在地・スキャン起点
                 </div>
                 <div
-                  className="text-[10px] text-stone-400 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
+                  className="text-[10px] text-stone-600 mt-1 cursor-pointer hover:bg-zinc-100 p-1 rounded-md border border-transparent hover:border-zinc-200 transition-all group flex items-center justify-between"
                   onClick={() => copyCoordinates(baseLat, baseLon, "起点")}
                   title="クリックで座標をコピー"
                 >
@@ -1215,7 +1215,7 @@ export default function ArbitrageMapInner({
                     経度: {baseLon.toFixed(5)} <br />
                     緯度: {baseLat.toFixed(5)}
                   </div>
-                  <Copy className="w-3 h-3 text-stone-600 group-hover:text-stone-400 ml-2" />
+                  <Copy className="w-3 h-3 text-stone-600 group-hover:text-stone-800 ml-2" />
                 </div>
               </div>
             </Popup>
@@ -1403,7 +1403,7 @@ export default function ArbitrageMapInner({
                           <div className="font-bold text-sm text-gray-900 leading-tight border-b border-gray-100 pb-1 mb-1.5">
                             {muni.name}
                           </div>
-                          <div className="space-y-1 text-stone-400">
+                          <div className="space-y-1 text-stone-600">
                             <div className="flex justify-between">
                               <span>検出物件数:</span>
                               <span className="font-bold text-gray-900">
@@ -1536,7 +1536,7 @@ export default function ArbitrageMapInner({
                               </span>
                             )}
 
-                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-400 text-[11px]">
+                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-600 text-[11px]">
                               <div className="flex justify-between">
                                 <span>総賃料:</span>
                                 <span className="font-bold text-gray-900">
@@ -1604,7 +1604,7 @@ export default function ArbitrageMapInner({
                                 title="クリックで座標をコピー"
                               >
                                 <span>緯度経度:</span>
-                                <span className="font-mono text-[9px] text-stone-500 flex items-center gap-1 group-hover:text-stone-400">
+                                <span className="font-mono text-[9px] text-stone-500 flex items-center gap-1 group-hover:text-stone-600">
                                   {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
                                   <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
                                 </span>
@@ -1647,7 +1647,7 @@ export default function ArbitrageMapInner({
               何を数えた色なのかまで書く。 */}
           <div className="font-bold text-[9px] text-stone-600 tracking-tight text-center pb-0.5 border-b border-stone-200 w-full">
             掲載件数
-            <span className="block font-normal text-[7.5px] text-stone-400">
+            <span className="block font-normal text-[7.5px] text-stone-600">
               吉凶ではない
             </span>
           </div>
@@ -1701,7 +1701,7 @@ export default function ArbitrageMapInner({
               <span>天中殺</span>
             </div>
           </div>
-          <span className="block text-[8px] text-stone-400 max-w-48 leading-relaxed">
+          <span className="block text-[8px] text-stone-600 max-w-48 leading-relaxed">
             年・月・日の三盤を合成した選択日の判定。扇形もピンも同じ段階で塗っています。物件ごとの違いは条件の良さ（スコア・星数）で見てください。
           </span>
         </div>

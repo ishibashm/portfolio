@@ -36,7 +36,7 @@ const TacticalMagneticMap = dynamic(
 const LocationPickerInner = dynamic(() => import("../LocationPickerInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
+    <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600">
       [ INITIALIZING MAP INTERFACE... ]
     </div>
   ),
@@ -199,12 +199,12 @@ export default function DestinationMapPanel({
             <span className="text-emerald-500 animate-pulse">▶</span>
             <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
               Spatial Targeting{" "}
-              <span className="text-[9px] text-stone-400 font-normal ml-1">
+              <span className="text-[9px] text-stone-600 font-normal ml-1">
                 / 空間・目的の捕捉
               </span>
             </h3>
           </div>
-          <p className="text-[10px] text-stone-400 mb-4 h-8 mt-1">
+          <p className="text-[10px] text-stone-600 mb-4 h-8 mt-1">
             目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
           </p>
           <div className="flex flex-col gap-3 mt-auto">
@@ -212,10 +212,10 @@ export default function DestinationMapPanel({
                       折り返される（375px の実測で幅 42px）。縦に積む。 */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-sm">
               <div className="flex flex-col min-w-0">
-                <label className="text-[10px] text-stone-400 uppercase tracking-widest">
+                <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Action Intent
                 </label>
-                <span className="text-[8px] text-stone-400">
+                <span className="text-[8px] text-stone-600">
                   行動の性質により吉凶の計算結果が変わります
                 </span>
               </div>
@@ -235,10 +235,10 @@ export default function DestinationMapPanel({
 
             <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
               <div className="flex flex-col">
-                <label className="text-[10px] text-stone-400 uppercase tracking-widest">
+                <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Target Date
                 </label>
-                <span className="text-[8px] text-stone-400">
+                <span className="text-[8px] text-stone-600">
                   評価する目標日を指定します
                 </span>
               </div>
@@ -293,14 +293,14 @@ export default function DestinationMapPanel({
               <div className="flex justify-end gap-1 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Previous Day"
                 >
                   ◀
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Next Day"
                 >
                   ▶
@@ -308,31 +308,31 @@ export default function DestinationMapPanel({
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   TODAY
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +30D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +90D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +180D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-400 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +1Y
                 </button>
@@ -341,9 +341,9 @@ export default function DestinationMapPanel({
 
             <div className="flex flex-col gap-1.5 bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] text-stone-400 uppercase tracking-widest flex items-center gap-1">
+                <label className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center gap-1">
                   目的地座標{" "}
-                  <span className="text-[9px] text-stone-400">緯度/経度</span>
+                  <span className="text-[9px] text-stone-600">緯度/経度</span>
                 </label>
                 <button
                   onClick={() => setShowMapPicker(!showMapPicker)}
@@ -443,7 +443,7 @@ export default function DestinationMapPanel({
                 <div
                   className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
                     targetVectorStatus.startsWith("NOISE_VOID")
-                      ? "bg-stone-50 border-stone-200 text-stone-400 repeating-linear-gradient-45"
+                      ? "bg-stone-50 border-stone-200 text-stone-600 repeating-linear-gradient-45"
                       : targetVectorStatus.startsWith("NOISE_NODE")
                         ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
                         : targetVectorStatus.startsWith("NOISE")
@@ -456,13 +456,13 @@ export default function DestinationMapPanel({
                 >
                   <div className="flex items-center gap-2">
                     <span
-                      className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-400 border-stone-300"}`}
+                      className={`font-bold border px-1 ${useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-600 border-stone-300"}`}
                       title="真北基準"
                     >
                       真北: {targetDirInfo.trueDirection}
                     </span>
                     <span
-                      className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-400 border-stone-300"}`}
+                      className={`font-bold border px-1 ${!useTrueNorth ? "text-emerald-600 border-emerald-200" : "text-stone-600 border-stone-300"}`}
                       title="磁北基準"
                     >
                       磁北: {targetDirInfo.magneticDirection}
@@ -508,39 +508,39 @@ export default function DestinationMapPanel({
           <div className="bg-white border border-stone-200 p-4 rounded-xl shadow-lg relative overflow-hidden h-full flex flex-col">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
             <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
-              <span className="text-stone-400 animate-pulse">◆</span>
+              <span className="text-stone-600 animate-pulse">◆</span>
               <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
                 ゾーン分類{" "}
-                <span className="text-[9px] text-stone-400 font-normal ml-1">
+                <span className="text-[9px] text-stone-600 font-normal ml-1">
                   / 空間分類
                 </span>
               </h3>
             </div>
             <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-sm border border-stone-200 shadow-inner">
-              <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>BASE GEO (基準地)</span>
                 <span className="text-stone-600 font-bold">
                   {lat?.toFixed(4)}N, {lon?.toFixed(4)}E
                 </span>
               </div>
-              <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
+              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>TARGET DATE (目標日)</span>
                 <span className="text-emerald-600 font-bold">
                   {evalDate.toLocaleDateString()}{" "}
-                  <span className="text-stone-400 font-normal ml-1">
+                  <span className="text-stone-600 font-normal ml-1">
                     (
                     {timeOffsetDays > 0 ? `+${timeOffsetDays}` : timeOffsetDays}
                     d)
                   </span>
                 </span>
               </div>
-              <div className="text-[9px] text-stone-400 font-mono flex justify-between items-center">
+              <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center">
                 <span>SUBJECT (対象波長)</span>
                 <span className="text-purple-600 font-bold">
                   {honmeiStar
                     ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}`
                     : "Unset"}{" "}
-                  <span className="text-stone-400 font-normal ml-1">
+                  <span className="text-stone-600 font-normal ml-1">
                     ({birthDate.split("T")[0]})
                   </span>
                 </span>
@@ -995,7 +995,7 @@ export default function DestinationMapPanel({
                           // 凶除外モードでは大凶セルを消さずグレーで「除外済み」と明示する
                           const isExcluded = isExcludeFilter && isMajorNoise;
 
-                          let bgClass = "bg-stone-50/50 text-stone-400";
+                          let bgClass = "bg-stone-50/50 text-stone-600";
                           if (isExcluded) {
                             bgClass =
                               "bg-stone-300/70 text-stone-500 line-through opacity-70";
@@ -1218,7 +1218,7 @@ export default function DestinationMapPanel({
                       レイヤー（層）別判定ブレイクダウン
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-400">年盤 (Year):</span>
+                      <span className="text-stone-600">年盤 (Year):</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.yearLayer?.[
                           selectedTrendCell.dir
@@ -1226,7 +1226,7 @@ export default function DestinationMapPanel({
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-400">月盤 (Month):</span>
+                      <span className="text-stone-600">月盤 (Month):</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.monthLayer?.[
                           selectedTrendCell.dir
@@ -1234,7 +1234,7 @@ export default function DestinationMapPanel({
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px]">
-                      <span className="text-stone-400">日盤 (Day):</span>
+                      <span className="text-stone-600">日盤 (Day):</span>
                       <span className="font-semibold text-stone-700">
                         {selectedTrendCell.raw?.dayLayer?.[
                           selectedTrendCell.dir
@@ -1242,12 +1242,12 @@ export default function DestinationMapPanel({
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px] pt-1 border-t border-stone-200">
-                      <span className="text-stone-400">天道作用:</span>
+                      <span className="text-stone-600">天道作用:</span>
                       <span
                         className={
                           selectedTrendCell.isTendo
                             ? "text-amber-600 font-bold"
-                            : "text-stone-400"
+                            : "text-stone-600"
                         }
                       >
                         {selectedTrendCell.isTendo
@@ -1275,7 +1275,7 @@ export default function DestinationMapPanel({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
           <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
-            <span className="text-[8px] font-mono text-stone-400 uppercase tracking-wider px-1">
+            <span className="text-[8px] font-mono text-stone-600 uppercase tracking-wider px-1">
               観点Filter:
             </span>
             <button

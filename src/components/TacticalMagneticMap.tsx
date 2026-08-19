@@ -12,7 +12,7 @@ import type { MapProperty } from "@/lib/mapProperty";
 const MagneticMapInner = dynamic(() => import("./MagneticMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-96 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400 md:animate-pulse">
+    <div className="w-full h-96 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600 md:animate-pulse">
       [ INITIALIZING SPATIAL VECTORS... ]
     </div>
   ),
@@ -130,14 +130,14 @@ export function TacticalMagneticMapComponent({
 
               {/* Layer Mode Switcher with Combinations */}
               <div className="pointer-events-auto flex items-center mt-1.5 bg-white/80 border border-stone-200 rounded-sm overflow-hidden text-[9px] font-mono flex-wrap max-w-full">
-                <span className="px-1.5 py-1 text-[8px] text-stone-400 bg-white border-r border-stone-200">
+                <span className="px-1.5 py-1 text-[8px] text-stone-600 bg-white border-r border-stone-200">
                   時間軸:
                 </span>
                 <button
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("final")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "final" || !activeLayerMode ? "bg-emerald-50 text-emerald-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🪐 全統合(年+月+日)
                 </button>
@@ -145,7 +145,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   📅 年+月
                 </button>
@@ -153,7 +153,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month_day" ? "bg-blue-50 text-blue-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   🌓 月+日
                 </button>
@@ -161,7 +161,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year_day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year_day" ? "bg-amber-50 text-amber-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   ☀️ 年+日
                 </button>
@@ -169,7 +169,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("year")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "year" ? "bg-indigo-50 text-indigo-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   年
                 </button>
@@ -177,7 +177,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("month")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-400 hover:text-stone-600"} border-r border-stone-200 cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "month" ? "bg-purple-50 text-purple-600 font-bold" : "text-stone-600 hover:text-stone-800"} border-r border-stone-200 cursor-pointer`}
                 >
                   月
                 </button>
@@ -185,7 +185,7 @@ export function TacticalMagneticMapComponent({
                   onClick={() =>
                     setActiveLayerMode && setActiveLayerMode("day")
                   }
-                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-600 font-bold" : "text-stone-400 hover:text-stone-600"} cursor-pointer`}
+                  className={`px-2 py-1 transition-colors ${activeLayerMode === "day" ? "bg-cyan-50 text-cyan-600 font-bold" : "text-stone-600 hover:text-stone-800"} cursor-pointer`}
                 >
                   日
                 </button>
@@ -198,28 +198,28 @@ export function TacticalMagneticMapComponent({
               <div className="pointer-events-auto flex items-center bg-white/80 border border-stone-200 p-0.5 rounded-sm mr-2 hidden lg:flex">
                 <button
                   onClick={() => toggleLayer?.("terrain")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-400"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-600"}`}
                   title="TER (地形・磁場ベース)"
                 >
                   TER [基盤帯]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("weather")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-400"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-600"}`}
                   title="WTH (宇宙天気・磁気嵐)"
                 >
                   WTH [変動波]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("bio")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-400"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-600"}`}
                   title="BIO (生体共鳴・固有波長)"
                 >
                   BIO [生体波]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("hazard")}
-                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-400"}`}
+                  className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors border-l border-stone-200 ${hudLayers.hazard ? "text-red-500 bg-red-500/10 font-bold" : "text-stone-600"}`}
                   title="HZD (ハザードマップ・外部GIS連携)"
                 >
                   HZD [災害域]
@@ -269,7 +269,7 @@ export function TacticalMagneticMapComponent({
           {/* Model Indicator Watermark */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-10 opacity-[0.03]">
             <div
-              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-stone-400"}`}
+              className={`text-6xl md:text-8xl font-black uppercase tracking-tighter -rotate-12 ${isPhysical ? "text-emerald-500" : "text-stone-600"}`}
             >
               {isPhysical ? "[ PHYSICAL MODEL ]" : "[ CLASSICAL MODEL ]"}
             </div>
@@ -331,7 +331,7 @@ export function TacticalMagneticMapComponent({
             <span className="text-red-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
             吉凶方位の分析ロジック（空間ベクトル）
           </div>
-          <span className="group-open:rotate-180 transition-transform text-stone-400">
+          <span className="group-open:rotate-180 transition-transform text-stone-600">
             ▼
           </span>
         </summary>

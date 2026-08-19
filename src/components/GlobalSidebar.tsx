@@ -156,7 +156,7 @@ export function GlobalSidebar() {
         <div className="flex items-center gap-3">
           <Icon
             size={18}
-            className={`shrink-0 ${isActive ? "text-white" : "text-stone-400 group-hover:text-rose-500 transition-colors"}`}
+            className={`shrink-0 ${isActive ? "text-white" : "text-stone-600 group-hover:text-rose-500 transition-colors"}`}
           />
           {!isCollapsed && (
             <span className="whitespace-nowrap">{item.label}</span>
@@ -230,7 +230,7 @@ export function GlobalSidebar() {
               要るように見えてしまう。日本語の見出しに合わせる。 */}
           <div className="my-4 border-t border-rose-100/60" />
           {!isCollapsed && (
-            <div className="px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-400">
+            <div className="px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600">
               引越しを決める
             </div>
           )}
@@ -294,7 +294,7 @@ export function GlobalSidebar() {
             onClick={toggleCollapse}
             aria-label={isCollapsed ? "メニューを広げる" : "メニューを畳む"}
             aria-expanded={!isCollapsed}
-            className={`hidden lg:flex items-center text-stone-400 hover:text-stone-700 p-2 rounded-xl hover:bg-stone-100/80 transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+            className={`hidden lg:flex items-center text-stone-600 hover:text-stone-700 p-2 rounded-xl hover:bg-stone-100/80 transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
             title={isCollapsed ? "メニューを広げる" : "メニューを畳む"}
           >
             {isCollapsed ? (
@@ -329,7 +329,7 @@ export function GlobalSidebar() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={closeSidebar}
-              className="flex items-center justify-center gap-1.5 text-[10px] text-stone-400 hover:text-stone-600 transition-colors"
+              className="flex items-center justify-center gap-1.5 text-[10px] text-stone-600 hover:text-stone-800 transition-colors"
             >
               {EXTERNAL_ITEM.label}
               <ExternalLink size={10} className="shrink-0" />
@@ -338,7 +338,7 @@ export function GlobalSidebar() {
 
           {/* Creator Signature */}
           {!isCollapsed && (
-            <div className="text-[9px] text-stone-400 font-mono text-center tracking-wider mt-1 select-none">
+            <div className="text-[9px] text-stone-600 font-mono text-center tracking-wider mt-1 select-none">
               {/* 署名は略記にする。運営者としての正式な表記は /about の
                   「運営」に置いてあり、そちらは短くしない（誰が運営して
                   いるかを確かめに来る人が読む欄なので）。 */}

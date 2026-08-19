@@ -511,14 +511,14 @@ export default function TimingAnalyticsPage() {
               {busy ? "走査中…" : "この範囲で走査"}
             </button>
             {profile && (
-              <span className="text-[10px] text-stone-400">
+              <span className="text-[10px] text-stone-600">
                 本命星 {profile.honmeiStar}・天中殺{" "}
                 {profile.voidZodiacs.join("")}
                 {days && `・${days.length}日を評価`}
               </span>
             )}
           </div>
-          <p className="mt-2 text-[10px] leading-relaxed text-stone-400">
+          <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
             {modeInfo(settings?.directionFilterMode ?? "composite").hint}
           </p>
           {!modeInfo(settings?.directionFilterMode ?? "composite")
@@ -557,7 +557,7 @@ export default function TimingAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
                       <th className="py-1.5 pr-2">方位</th>
                       <th className="py-1.5 pr-2">最良</th>
                       <th className="py-1.5 pr-2 text-right">該当日数</th>
@@ -608,7 +608,7 @@ export default function TimingAnalyticsPage() {
                             ? `${p.windows.avgGapDays}日`
                             : "—"}
                         </td>
-                        <td className="py-1.5 text-right font-mono text-stone-400">
+                        <td className="py-1.5 text-right font-mono text-stone-600">
                           {p.blocked}日
                         </td>
                       </tr>
@@ -716,7 +716,7 @@ export default function TimingAnalyticsPage() {
                     className={`rounded-full border px-2 py-0.5 text-[10px] transition-colors ${
                       luckyOnly
                         ? "border-amber-400 bg-amber-50 text-amber-800"
-                        : "border-stone-200 text-stone-400"
+                        : "border-stone-200 text-stone-600"
                     }`}
                   >
                     天赦日・一粒万倍日のみ
@@ -743,7 +743,7 @@ export default function TimingAnalyticsPage() {
 
                 {monthRows.map(({ month, list }) => (
                   <div key={month} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0 font-mono text-[10px] text-stone-400">
+                    <span className="w-14 shrink-0 font-mono text-[10px] text-stone-600">
                       {month.slice(2)}
                     </span>
                     <div className="flex flex-wrap gap-[2px]">
@@ -897,7 +897,7 @@ export default function TimingAnalyticsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-[11px]">
                     <thead>
-                      <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                      <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
                         <th className="py-1.5 pr-2">方位</th>
                         <th className="py-1.5 pr-2 text-right">
                           三盤吉（年換算）

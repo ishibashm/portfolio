@@ -125,7 +125,7 @@ export function DirectionComments({
                     {c.displayName}
                   </span>
                   <time
-                    className="text-[11px] text-stone-400"
+                    className="text-[11px] text-stone-600"
                     dateTime={c.createdAt}
                   >
                     {new Date(c.createdAt).toLocaleDateString("ja-JP")}
@@ -181,7 +181,7 @@ export function DirectionComments({
           />
           <div className="flex items-center justify-between">
             <span
-              className={`text-[11px] ${tooLong ? "text-rose-600" : "text-stone-400"}`}
+              className={`text-[11px] ${tooLong ? "text-rose-600" : "text-stone-600"}`}
             >
               {trimmed.length} / {COMMENT_MAX_LENGTH}
               {tooShort && `（${COMMENT_MIN_LENGTH}文字以上）`}

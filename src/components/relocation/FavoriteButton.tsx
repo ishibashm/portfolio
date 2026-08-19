@@ -33,7 +33,7 @@ export function FavoriteButton({
       } ${
         isFavorite
           ? "bg-amber-100 text-amber-500 hover:bg-amber-200"
-          : "bg-gray-100 dark:bg-white text-stone-400 hover:bg-gray-200 hover:text-amber-500"
+          : "bg-gray-100 dark:bg-white text-stone-600 hover:bg-gray-200 hover:text-amber-500"
       } ${className}`}
     >
       {isFavorite ? "★" : "☆"}

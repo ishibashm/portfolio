@@ -162,7 +162,7 @@ export function SpotVerdict({
     <div className="space-y-1.5">
       <label
         htmlFor="arb-spot-query"
-        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
       >
         この地点を調べる
       </label>
@@ -191,7 +191,7 @@ export function SpotVerdict({
           {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : "調べる"}
         </button>
       </div>
-      <p className="text-[9px] text-stone-400 leading-relaxed">
+      <p className="text-[9px] text-stone-600 leading-relaxed">
         一覧に無い場所でも、出発地から見た方位とその日の吉凶を出します。地図をクリックすると、その地点がここに入ります。
       </p>
 

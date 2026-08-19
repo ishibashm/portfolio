@@ -182,7 +182,7 @@ export default function SimulatorMap({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-full min-h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-400 backdrop-blur-md">
+      <div className="w-full h-full min-h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-600 backdrop-blur-md">
         [ LOADING SIMULATOR MAP ENGINE... ]
       </div>
     );
@@ -208,7 +208,7 @@ export default function SimulatorMap({
             }
             className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-stone-200 rounded-2xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-200 transition-all backdrop-blur-md"
           />
-          <span className="w-4 h-4 text-stone-400 absolute left-3 top-3.5 flex items-center justify-center">
+          <span className="w-4 h-4 text-stone-600 absolute left-3 top-3.5 flex items-center justify-center">
             🔍
           </span>
           <button

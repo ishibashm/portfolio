@@ -276,7 +276,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-400">
+      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-600">
         マップを読み込み中...
       </div>
     ),
@@ -431,7 +431,7 @@ export default function ArbitrageScannerPage() {
           </span>
           {item.party.harmony !== null && (
             <span
-              className="text-[9px] font-mono text-stone-400"
+              className="text-[9px] font-mono text-stone-600"
               title="移動する人どうしで評価がどれだけ揃っているか。低いと片方だけに良い場所。"
             >
               一致度 {Math.round(item.party.harmony)}
@@ -447,7 +447,7 @@ export default function ArbitrageScannerPage() {
             <span className="text-stone-500 truncate max-w-[45%]">
               {m.name}
               {m.direction === null && (
-                <span className="ml-1 text-stone-400">(移動なし)</span>
+                <span className="ml-1 text-stone-600">(移動なし)</span>
               )}
             </span>
             {m.direction !== null && (
@@ -483,7 +483,7 @@ export default function ArbitrageScannerPage() {
                 <span className="font-bold text-emerald-600">
                   {item.timing.nextAllClearDate}
                 </span>
-                <span className="text-stone-400">
+                <span className="text-stone-600">
                   {" "}
                   （{item.timing.scannedDays}日中 {item.timing.allClearDays}日）
                 </span>
@@ -2300,7 +2300,7 @@ export default function ArbitrageScannerPage() {
           {((selectedProperty.totalRent || 0) / 10000).toFixed(1)}
           <span className="text-xs">万円</span>
         </span>
-        <span className="text-[9px] text-stone-400">
+        <span className="text-[9px] text-stone-600">
           管理費込み
           {selectedProperty.size_sqm
             ? ` / ㎡単価 ${Math.round(
@@ -2339,7 +2339,7 @@ export default function ArbitrageScannerPage() {
           ["掲載", `${selectedProperty.axisInputs?.listingCount ?? 1}社`],
         ].map(([k, v]) => (
           <div key={k as string} className="bg-white dark:bg-stone-50 py-1.5">
-            <div className="text-[8px] text-stone-400">{k}</div>
+            <div className="text-[8px] text-stone-600">{k}</div>
             <div className="text-[11px] font-bold text-stone-800">{v}</div>
           </div>
         ))}
@@ -2440,13 +2440,13 @@ export default function ArbitrageScannerPage() {
                 {/* 減らした理由。黙って減らすと「昨日より少ない」の原因が
                     画面から追えない。0 のときは出さない。 */}
                 {scanCounts.duplicatesHidden > 0 && (
-                  <span className="text-[10px] text-stone-400">
+                  <span className="text-[10px] text-stone-600">
                     同じ部屋の重複{" "}
                     {scanCounts.duplicatesHidden.toLocaleString()} 件をまとめ
                   </span>
                 )}
                 {scanCounts.staleHidden > 0 && (
-                  <span className="text-[10px] text-stone-400">
+                  <span className="text-[10px] text-stone-600">
                     {scanCounts.staleDays
                       ? `${scanCounts.staleDays}日以上見かけない `
                       : "掲載の切れた "}
@@ -2461,7 +2461,7 @@ export default function ArbitrageScannerPage() {
                 DB は更新されないため、取り込みがいつ回ったのかを別に示す。 */}
             {metadata?.dataUpdatedAt && (
               <span className="text-[10px] text-stone-500 font-mono leading-tight text-right">
-                <span className="block text-stone-400">物件データ最終取込</span>
+                <span className="block text-stone-600">物件データ最終取込</span>
                 {new Date(metadata.dataUpdatedAt).toLocaleString("ja-JP", {
                   year: "numeric",
                   month: "2-digit",
@@ -2480,7 +2480,7 @@ export default function ArbitrageScannerPage() {
                 className="text-[10px] text-stone-500 font-mono leading-tight text-right"
                 title="サーバ側の走査時間。体感との差は通信・起動・描画のぶんです"
               >
-                <span className="block text-stone-400">走査時間</span>
+                <span className="block text-stone-600">走査時間</span>
                 DB {(metadata.timing.dbMs / 1000).toFixed(1)}s / 判定{" "}
                 {(metadata.timing.computeMs / 1000).toFixed(1)}s
               </span>
@@ -2572,7 +2572,7 @@ export default function ArbitrageScannerPage() {
                   条件 ({activeFiltersCount})
                 </span>
                 <span
-                  className="text-[11px] font-semibold text-stone-400 dark:text-stone-500 cursor-help"
+                  className="text-[11px] font-semibold text-stone-600 dark:text-stone-500 cursor-help"
                   title="走査で取得した候補（名寄せ・絞り込み後、上限500件）のうち、地図の表示範囲に入る数。地図の「この範囲に掲載 N 件」は名寄せ前の掲載数なので、同じ範囲でも数字は一致しません。"
                 >
                   候補のうち範囲内:{" "}
@@ -2638,7 +2638,7 @@ export default function ArbitrageScannerPage() {
                         混同させないよう、購入の中身は成約相場のパネル
                         （TransactionsPanel）に切り替える。 */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                         物件種別
                       </label>
                       <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg select-none">
@@ -2648,7 +2648,7 @@ export default function ArbitrageScannerPage() {
                           className={`flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all ${
                             listingType === "rent"
                               ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
-                              : "text-stone-400 hover:text-stone-600"
+                              : "text-stone-600 hover:text-stone-800"
                           }`}
                         >
                           賃貸
@@ -2660,7 +2660,7 @@ export default function ArbitrageScannerPage() {
                           className={`flex-1 px-2.5 py-1.5 rounded-md text-[10px] font-bold transition-all ${
                             listingType === "buy"
                               ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
-                              : "text-stone-400 hover:text-stone-600"
+                              : "text-stone-600 hover:text-stone-800"
                           }`}
                         >
                           購入（成約相場）
@@ -2681,7 +2681,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label
                         htmlFor="arb-search-area"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
                       >
                         検索範囲
                       </label>
@@ -2712,10 +2712,10 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label
                         htmlFor="arb-birth"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block flex items-center justify-between"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block flex items-center justify-between"
                       >
                         <span>生年月日 (吉方位用)</span>
-                        <span className="text-[9px] text-stone-400 font-normal">
+                        <span className="text-[9px] text-stone-600 font-normal">
                           時間指定可
                         </span>
                       </label>
@@ -2737,7 +2737,7 @@ export default function ArbitrageScannerPage() {
                         以前は入力欄自体が無く、既定の座標が黙って使われていた。 */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500">
                           出発地座標 (現在のお住まい・方位の基準)
                           {!hasBaseLocation && (
                             <span className="ml-1 text-amber-600 font-bold">
@@ -2750,7 +2750,7 @@ export default function ArbitrageScannerPage() {
                           onClick={() =>
                             setShowBaseMapPicker(!showBaseMapPicker)
                           }
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBaseMapPicker ? "閉じる" : "地図で検索"}
                         </button>
@@ -2817,7 +2817,7 @@ export default function ArbitrageScannerPage() {
                     {/* Birth Location coordinates */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500">
                           出生地座標 (天体ライン用・任意)
                         </label>
                         <button
@@ -2825,7 +2825,7 @@ export default function ArbitrageScannerPage() {
                           onClick={() =>
                             setShowBirthMapPicker(!showBirthMapPicker)
                           }
-                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-100 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                         >
                           {showBirthMapPicker ? "閉じる" : "地図で検索"}
                         </button>
@@ -2861,7 +2861,7 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                       {!birthLat && (
-                        <p className="text-[10px] text-stone-400 dark:text-stone-500">
+                        <p className="text-[10px] text-stone-600 dark:text-stone-500">
                           未入力です。天体ライン（太陽・金星・木星）は出生地から決まるため、この加点は付きません。他の判定には影響しません。
                         </p>
                       )}
@@ -2895,7 +2895,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label
                         htmlFor="arb-layer"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
                       >
                         方位盤の計算レイヤー
                       </label>
@@ -2916,7 +2916,7 @@ export default function ArbitrageScannerPage() {
 
                     {/* Options Toggles */}
                     <div className="flex flex-col gap-2 pt-1 border-t border-gray-100 dark:border-stone-200">
-                      <label className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 text-[10px] text-stone-600 dark:text-stone-500 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={useTrueNorth}
@@ -2927,7 +2927,7 @@ export default function ArbitrageScannerPage() {
                         />
                         真北を使用 (無効時は磁北補正)
                       </label>
-                      <label className="flex items-center gap-2 text-[10px] text-stone-400 dark:text-stone-500 cursor-pointer select-none">
+                      <label className="flex items-center gap-2 text-[10px] text-stone-600 dark:text-stone-500 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={lunarPhaseModifier}
@@ -2956,7 +2956,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1.5">
                       <label
                         htmlFor="arb-smart-search"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
                       >
                         スマート検索（条件をまとめて入力）
                       </label>
@@ -2985,7 +2985,7 @@ export default function ArbitrageScannerPage() {
                           {smartBusy ? "解釈中…" : "検索"}
                         </button>
                       </div>
-                      <p className="text-[9px] text-stone-400 leading-relaxed">
+                      <p className="text-[9px] text-stone-600 leading-relaxed">
                         家賃・間取り・徒歩分・築年数・広さ・方位・「吉方位のみ」を1行で。残りは物件名・住所の検索語になります。
                       </p>
                     </div>
@@ -3013,7 +3013,7 @@ export default function ArbitrageScannerPage() {
                         normalizeLayout）と同じ形にする。ここだけ別の表記に
                         すると、同じ条件なのに入り口によって結果が変わる。 */}
                     <div className="space-y-1.5">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                         間取り
                       </label>
                       <div className="flex flex-wrap gap-1">
@@ -3132,7 +3132,7 @@ export default function ArbitrageScannerPage() {
 
                     {/* Search query input */}
                     <div className="space-y-1">
-                      <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                      <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                         物件名・住所検索
                       </label>
                       <div className="relative">
@@ -3151,7 +3151,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label
                         htmlFor="arb-status"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block"
                       >
                         吉凶ステータス
                       </label>
@@ -3172,7 +3172,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-1">
                       <label
                         htmlFor="arb-direction"
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block cursor-help"
                         title="現住地から見た方位で物件を絞ります。方位を決めてから物件を選ぶときに使います。"
                       >
                         方位で絞る
@@ -3201,10 +3201,10 @@ export default function ArbitrageScannerPage() {
                     {rentBuckets && rentBuckets.some((b) => b.count > 0) && (
                       <div className="space-y-1">
                         <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
+                          <span className="text-[10px] font-semibold text-stone-600 dark:text-stone-500">
                             総家賃の分布（棒を押すと上限に入ります）
                           </span>
-                          <span className="text-[8px] text-stone-400">
+                          <span className="text-[8px] text-stone-600">
                             表示範囲・他の絞り込みを反映
                           </span>
                         </div>
@@ -3249,7 +3249,7 @@ export default function ArbitrageScannerPage() {
                             );
                           })}
                         </div>
-                        <div className="flex justify-between text-[8px] text-stone-400 font-mono">
+                        <div className="flex justify-between text-[8px] text-stone-600 font-mono">
                           <span>0</span>
                           <span>15万</span>
                           <span>30万〜</span>
@@ -3260,7 +3260,7 @@ export default function ArbitrageScannerPage() {
                     {/* Rent & Age filters */}
                     <div className="grid grid-cols-2 gap-3.5">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                           総家賃上限 (万円)
                         </label>
                         <input
@@ -3274,7 +3274,7 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                           築年数上限 (年)
                         </label>
                         <input
@@ -3288,7 +3288,7 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                           駅徒歩上限 (分)
                         </label>
                         <input
@@ -3302,7 +3302,7 @@ export default function ArbitrageScannerPage() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block">
+                        <label className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block">
                           専有面積下限 (㎡)
                         </label>
                         <input
@@ -3336,7 +3336,7 @@ export default function ArbitrageScannerPage() {
                     <div className="space-y-3">
                       {savedProfiles.length > 0 && (
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold text-stone-400 block">
+                          <label className="text-[10px] font-semibold text-stone-600 block">
                             保存済みプロフィールから追加
                           </label>
                           <div className="flex flex-wrap gap-1.5">
@@ -3395,7 +3395,7 @@ export default function ArbitrageScannerPage() {
                           </div>
 
                           <div className="space-y-1">
-                            <label className="text-[10px] font-semibold text-stone-400 block">
+                            <label className="text-[10px] font-semibold text-stone-600 block">
                               生年月日時
                             </label>
                             <input
@@ -3412,7 +3412,7 @@ export default function ArbitrageScannerPage() {
 
                           <div className="space-y-1">
                             <label
-                              className="text-[10px] font-semibold text-stone-400 block cursor-help"
+                              className="text-[10px] font-semibold text-stone-600 block cursor-help"
                               title="この人が今住んでいる場所。ここからの向きでこの人の方位が決まる。"
                             >
                               出発地（現住地）の緯度・経度
@@ -3489,7 +3489,7 @@ export default function ArbitrageScannerPage() {
 
                       <div className="grid grid-cols-2 gap-3 pt-1 border-t border-gray-100 dark:border-stone-200">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold text-stone-400 block">
+                          <label className="text-[10px] font-semibold text-stone-600 block">
                             まとめ方
                           </label>
                           <select
@@ -3512,7 +3512,7 @@ export default function ArbitrageScannerPage() {
                         </div>
                         <div className="space-y-1">
                           <label
-                            className="text-[10px] font-semibold text-stone-400 block cursor-help"
+                            className="text-[10px] font-semibold text-stone-600 block cursor-help"
                             title="対象日から何日先まで「全員が動ける日」を探すか。0 にすると時期の判定をしない。"
                           >
                             時期の走査 (日先)
@@ -3533,7 +3533,7 @@ export default function ArbitrageScannerPage() {
                         </div>
                       </div>
 
-                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                      <p className="text-[10px] text-stone-600 leading-relaxed">
                         {
                           PARTY_POLICIES.find((p) => p.id === partyPolicy)
                             ?.description
@@ -3557,7 +3557,7 @@ export default function ArbitrageScannerPage() {
                       <div className="space-y-1">
                         <label
                           htmlFor="arb-strategy"
-                          className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                          className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block cursor-help"
                           title="DB から候補を切り出すときの順序。重みだけを変えても、母集合に入っていない物件は評価されない。"
                         >
                           候補の集め方
@@ -3589,7 +3589,7 @@ export default function ArbitrageScannerPage() {
                         扱うかは流派によって違うので選べるようにする。 */}
                     <div className="space-y-1 pt-1 border-t border-gray-100 dark:border-stone-200">
                       <label
-                        className="text-[10px] font-semibold text-stone-400 dark:text-stone-500 block cursor-help"
+                        className="text-[10px] font-semibold text-stone-600 dark:text-stone-500 block cursor-help"
                         title="天中殺（算命学）＝空亡（四柱推命）。九星気学には本来無い概念で、どこまで禁止則として扱うかは流派によって異なる。"
                       >
                         天中殺の扱い
@@ -3611,14 +3611,14 @@ export default function ArbitrageScannerPage() {
                           </option>
                         ))}
                       </select>
-                      <p className="text-[10px] text-stone-400 leading-relaxed">
+                      <p className="text-[10px] text-stone-600 leading-relaxed">
                         {
                           TENCHUSATSU_MODES.find(
                             (m) => m.id === tenchusatsuMode,
                           )?.description
                         }
                       </p>
-                      <p className="text-[9px] text-stone-400 leading-relaxed">
+                      <p className="text-[9px] text-stone-600 leading-relaxed">
                         根拠:{" "}
                         {
                           TENCHUSATSU_MODES.find(
@@ -3701,7 +3701,7 @@ export default function ArbitrageScannerPage() {
                             className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
                               timingRangeDays === d
                                 ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs"
-                                : "text-stone-400 hover:text-gray-700"
+                                : "text-stone-600 hover:text-gray-700"
                             }`}
                           >
                             {d === 365 ? "1年" : "2年"}
@@ -3777,7 +3777,7 @@ export default function ArbitrageScannerPage() {
                         return (
                           <div className="space-y-1.5">
                             {clim && (
-                              <p className="text-[9px] leading-relaxed text-stone-400">
+                              <p className="text-[9px] leading-relaxed text-stone-600">
                                 あなたの命式（本命星{timingProfile!.honmeiStar}
                                 ・天中殺{timingProfile!.voidZodiacs.join("")}
                                 ）では、どこかの方位が三盤吉になる日は
@@ -3854,7 +3854,7 @@ export default function ArbitrageScannerPage() {
                                 俯瞰。セルはその月の最良段階 */}
                             {usable.length > 0 && (
                               <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50 p-2">
-                                <p className="text-[9px] text-stone-400 mb-1.5 leading-relaxed">
+                                <p className="text-[9px] text-stone-600 mb-1.5 leading-relaxed">
                                   方位×月の見取り図。
                                   <b className="text-stone-500">月のセル</b>
                                   はその月の
@@ -3866,7 +3866,7 @@ export default function ArbitrageScannerPage() {
                                 <table className="text-[8px]">
                                   <thead>
                                     <tr>
-                                      <th className="pr-1.5 text-left font-semibold text-stone-400">
+                                      <th className="pr-1.5 text-left font-semibold text-stone-600">
                                         方位
                                       </th>
                                       <th className="px-0.5 font-mono font-normal text-indigo-400 border-r border-stone-200">
@@ -3879,7 +3879,7 @@ export default function ArbitrageScannerPage() {
                                       {usable[0].months.map((m) => (
                                         <th
                                           key={m.month}
-                                          className="px-0.5 font-mono font-normal text-stone-400"
+                                          className="px-0.5 font-mono font-normal text-stone-600"
                                         >
                                           {m.month.slice(5)}
                                         </th>
@@ -4006,7 +4006,7 @@ export default function ArbitrageScannerPage() {
                                         className={
                                           propCount > 0
                                             ? "text-teal-600"
-                                            : "text-stone-400"
+                                            : "text-stone-600"
                                         }
                                       >
                                         {propCount}
@@ -4014,7 +4014,7 @@ export default function ArbitrageScannerPage() {
                                       件
                                       {directionRentMedians[s.direction] !==
                                         undefined && (
-                                        <span className="text-stone-400">
+                                        <span className="text-stone-600">
                                           ・中央値
                                           {(
                                             directionRentMedians[s.direction] /
@@ -4029,7 +4029,7 @@ export default function ArbitrageScannerPage() {
                                     <div className="px-2.5 pb-2.5 border-t border-gray-100 dark:border-stone-200 pt-2 space-y-2">
                                       {s.topDays.length > 0 && (
                                         <div>
-                                          <p className="text-[9px] text-stone-400 mb-1">
+                                          <p className="text-[9px] text-stone-600 mb-1">
                                             直近の候補日（日付順。選ぶとスキャンが切り替わる）
                                           </p>
                                           <div className="flex flex-wrap gap-1">
@@ -4069,7 +4069,7 @@ export default function ArbitrageScannerPage() {
                                       )}
                                       {s.luckyDays.length > 0 && (
                                         <div>
-                                          <p className="text-[9px] text-stone-400 mb-1">
+                                          <p className="text-[9px] text-stone-600 mb-1">
                                             縁起の良い日（天赦日
                                             ✨・一粒万倍日。同じ段階の日から抜粋）
                                           </p>
@@ -4137,7 +4137,7 @@ export default function ArbitrageScannerPage() {
                                               ?.perYear;
                                           if (!d) return null;
                                           return (
-                                            <p className="text-[9px] text-stone-400">
+                                            <p className="text-[9px] text-stone-600">
                                               この方位の平年値（9年平均・天中殺考慮前）:
                                               三盤吉 {d.S}
                                               日/年・吉2盤 {d.A}日/年
@@ -4146,7 +4146,7 @@ export default function ArbitrageScannerPage() {
                                         })()}
                                       {/* 月ごとの見取り図。どの月に窓が開くか */}
                                       <div>
-                                        <p className="text-[9px] text-stone-400 mb-1">
+                                        <p className="text-[9px] text-stone-600 mb-1">
                                           月ごとの最良（クリックでその月の最初の候補日へ）
                                         </p>
                                         <div className="flex flex-wrap gap-1">
@@ -4195,7 +4195,7 @@ export default function ArbitrageScannerPage() {
                               );
                             })}
                             {totalBlocked > 0 && (
-                              <p className="text-[9px] text-stone-400">
+                              <p className="text-[9px] text-stone-600">
                                 ほかに延べ{totalBlocked}
                                 日が天中殺で候補から外れています（「天中殺の扱い」で変わります）。
                               </p>
@@ -4250,7 +4250,7 @@ export default function ArbitrageScannerPage() {
                           ))}
                         </div>
                       ) : topArbitrage.length === 0 ? (
-                        <div className="p-6 text-center text-stone-400 text-[10px]">
+                        <div className="p-6 text-center text-stone-600 text-[10px]">
                           合致する物件がありません。
                         </div>
                       ) : (
@@ -4283,7 +4283,7 @@ export default function ArbitrageScannerPage() {
                                     {item.property_name}
                                   </div>
                                 )}
-                                <div className="text-[10px] text-stone-400 mt-1 flex flex-col gap-0.5">
+                                <div className="text-[10px] text-stone-600 mt-1 flex flex-col gap-0.5">
                                   <span className="font-semibold">
                                     {item.direction
                                       ? `${item.direction} (${item.maxAstroFactor || "計算中"})`
@@ -4329,13 +4329,13 @@ export default function ArbitrageScannerPage() {
                     <div className="flex items-center gap-1 bg-zinc-200 dark:bg-white p-0.5 rounded-lg shrink-0 select-none">
                       <button
                         onClick={() => setShowTableView(false)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-400 hover:text-gray-700 dark:hover:text-stone-600"}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${!showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
                       >
                         カード
                       </button>
                       <button
                         onClick={() => setShowTableView(true)}
-                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-400 hover:text-gray-700 dark:hover:text-stone-600"}`}
+                        className={`px-2.5 py-1 rounded-md text-[9px] font-bold transition-all ${showTableView ? "bg-white dark:bg-stone-100 text-gray-900 dark:text-stone-900 shadow-xs" : "text-stone-600 hover:text-gray-700 dark:hover:text-stone-800"}`}
                       >
                         テーブル
                       </button>
@@ -4343,7 +4343,7 @@ export default function ArbitrageScannerPage() {
                   </div>
 
                   {propertiesInBounds.length === 0 ? (
-                    <div className="p-12 text-center text-stone-400 text-xs">
+                    <div className="p-12 text-center text-stone-600 text-xs">
                       現在の表示範囲内に条件合致する物件がありません。地図をドラッグするかズームアウトしてください。
                     </div>
                   ) : !showTableView ? (
@@ -4397,11 +4397,11 @@ export default function ArbitrageScannerPage() {
                               </span>
                             </div>
 
-                            <div className="text-[10px] text-stone-400 truncate max-w-xs">
+                            <div className="text-[10px] text-stone-600 truncate max-w-xs">
                               {item.address || "住所情報なし"}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 text-[10px] text-stone-400 dark:text-stone-500 font-mono">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-2.5 pt-2 border-t border-gray-100 dark:border-stone-200 text-[10px] text-stone-600 dark:text-stone-500 font-mono">
                               <div className="flex justify-between">
                                 <span>総賃料:</span>
                                 <span className="font-bold text-gray-900 dark:text-stone-900">
@@ -4468,7 +4468,7 @@ export default function ArbitrageScannerPage() {
                        されるので、中の th すべてに効く。 */
                     <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-stone-200 bg-white dark:bg-stone-50">
                       <table className="w-full text-xs text-left min-w-[900px]">
-                        <thead className="whitespace-nowrap text-[10px] text-stone-400 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
+                        <thead className="whitespace-nowrap text-[10px] text-stone-600 uppercase bg-gray-50 dark:bg-white/80 border-b border-gray-200 dark:border-stone-200">
                           <tr>
                             <th className="w-10 px-2 py-2.5 text-center font-bold">
                               ★
@@ -4553,7 +4553,7 @@ export default function ArbitrageScannerPage() {
                                 <td className="px-4 py-3 text-right font-mono font-semibold whitespace-nowrap">
                                   {item.totalRent.toLocaleString()}円
                                 </td>
-                                <td className="px-4 py-3 text-right text-stone-400 font-mono text-[10px] whitespace-nowrap">
+                                <td className="px-4 py-3 text-right text-stone-600 font-mono text-[10px] whitespace-nowrap">
                                   {item.size_sqm}㎡ / 築{item.building_age || 0}
                                   年 / {item.minutes_to_station || "不明"}分
                                 </td>

@@ -384,7 +384,7 @@ export function TenChiJinEvaluation({
     return (
       <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md shadow-sm">
         <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
-          <BrainCircuit size={16} className="text-stone-400" />
+          <BrainCircuit size={16} className="text-stone-600" />
           天地人・統合適合性マトリクス
         </h3>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
@@ -403,7 +403,7 @@ export function TenChiJinEvaluation({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-stone-200">
         <div>
-          <span className="text-[10px] font-mono tracking-widest text-stone-400 uppercase block mb-1">
+          <span className="text-[10px] font-mono tracking-widest text-stone-600 uppercase block mb-1">
             [ SYSTEM INTEGRATION EVALUATION ]
           </span>
           <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
@@ -413,7 +413,7 @@ export function TenChiJinEvaluation({
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[9px] font-mono text-stone-400 uppercase block">
+            <span className="text-[9px] font-mono text-stone-600 uppercase block">
               総合シンクロ指数
             </span>
             <div className="flex items-baseline gap-1">
@@ -428,7 +428,7 @@ export function TenChiJinEvaluation({
               >
                 {overallScore}
               </span>
-              <span className="text-stone-400 text-xs font-mono">/100</span>
+              <span className="text-stone-600 text-xs font-mono">/100</span>
             </div>
           </div>
           <div
@@ -484,7 +484,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${timeMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-400 leading-normal font-sans">
+          <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {timeMetrics.riskFactors.length > 0
               ? `注意: ${timeMetrics.riskFactors.slice(0, 2).join("・")}等による制限`
               : "宇宙天気、惑星アスペクトともに良好"}
@@ -524,7 +524,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${spaceMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-400 leading-normal font-sans">
+          <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {spaceMetrics.hasSevereClash
               ? `警戒: 強力な方位凶殺（${spaceMetrics.worstClashType}）を検出`
               : "移動方向の地磁気エネルギーは安全領域"}
@@ -564,7 +564,7 @@ export function TenChiJinEvaluation({
               style={{ width: `${humanMetrics.score}%` }}
             />
           </div>
-          <span className="text-[10px] text-stone-400 leading-normal font-sans">
+          <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {members.length > 0
               ? `相性: ${humanMetrics.compatibilityScore}% (同伴者 ${members.length} 名)`
               : "個人コンディションが100%連動中"}
