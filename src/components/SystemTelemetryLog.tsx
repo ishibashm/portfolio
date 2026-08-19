@@ -149,7 +149,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
             <span className="text-[9px] font-mono text-emerald-500 uppercase tracking-widest">
               Calculation Audit Log // DE440
             </span>
-            <span className="text-[8px] font-mono text-emerald-600">LIVE</span>
+            <span className="text-[10px] font-mono text-emerald-600">LIVE</span>
           </div>
           <div className="flex-1 overflow-y-auto p-2 font-mono text-[9px] leading-relaxed relative flex flex-col gap-1">
             {logs.map((log) => (
@@ -180,7 +180,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${declination ? "bg-emerald-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
+          <span className="text-[10px] font-mono text-stone-600 tracking-wider">
             WMM2020
           </span>
         </div>
@@ -191,7 +191,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${env ? "bg-blue-500 animate-pulse" : "bg-red-500"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
+          <span className="text-[10px] font-mono text-stone-600 tracking-wider">
             JPL DE440
           </span>
         </div>
@@ -202,7 +202,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
           <div
             className={`w-1.5 h-1.5 rounded-full ${lat ? "bg-purple-500 animate-pulse" : "bg-zinc-600"}`}
           ></div>
-          <span className="text-[8px] font-mono text-stone-600 tracking-wider">
+          <span className="text-[10px] font-mono text-stone-600 tracking-wider">
             GPS SYNC
           </span>
         </div>

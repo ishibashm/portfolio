@@ -677,29 +677,29 @@ export function CosmicCalendar({
                 <div className="flex gap-0.5 items-center leading-none">
                   {/* Tiny label for major days */}
                   {day.luckyDays.isTensho && (
-                    <span className="text-[8px] font-bold text-amber-600 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
+                    <span className="text-[10px] font-bold text-amber-600 font-mono scale-90 select-none bg-amber-500/10 px-0.5 rounded" title="天赦日">
                       赦
                     </span>
                   )}
                   {!day.luckyDays.isTensho && day.luckyDays.isIchiryumanbai && (
-                    <span className="text-[8px] font-bold text-emerald-600 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
+                    <span className="text-[10px] font-bold text-emerald-600 font-mono scale-90 select-none bg-emerald-500/10 px-0.5 rounded" title="一粒万倍日">
                       万
                     </span>
                   )}
 
                   {/* Personal Astro Fortunes */}
                   {day.personalFortune?.isVoid && (
-                    <span className="text-[8px] font-bold text-purple-600 font-mono scale-90 select-none bg-purple-500/20 border border-purple-200 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
+                    <span className="text-[10px] font-bold text-purple-600 font-mono scale-90 select-none bg-purple-500/20 border border-purple-200 px-0.5 rounded animate-pulse" title="天中殺 (Void)">
                       殺
                     </span>
                   )}
                   {day.personalFortune?.isClash && (
-                    <span className="text-[8px] font-bold text-rose-600 font-mono scale-90 select-none bg-rose-500/20 border border-rose-200 px-0.5 rounded" title="日破 (Clash)">
+                    <span className="text-[10px] font-bold text-rose-600 font-mono scale-90 select-none bg-rose-500/20 border border-rose-200 px-0.5 rounded" title="日破 (Clash)">
                       破
                     </span>
                   )}
                   {day.personalFortune?.isHarmony && (
-                    <span className="text-[8px] font-bold text-sky-600 font-mono scale-90 select-none bg-sky-500/20 border border-sky-200 px-0.5 rounded" title="支合 (Harmony)">
+                    <span className="text-[10px] font-bold text-sky-600 font-mono scale-90 select-none bg-sky-500/20 border border-sky-200 px-0.5 rounded" title="支合 (Harmony)">
                       合
                     </span>
                   )}
@@ -728,7 +728,7 @@ export function CosmicCalendar({
             {LEGEND_MARKS.map((item) => (
               <div key={item.mark} className="flex items-center gap-1">
                 <span
-                  className={`text-[8px] font-bold font-mono px-0.5 rounded select-none ${item.className}`}
+                  className={`text-[10px] font-bold font-mono px-0.5 rounded select-none ${item.className}`}
                 >
                   {item.mark}
                 </span>
