@@ -55,18 +55,37 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <h4 className="font-semibold text-[9px] text-stone-600 uppercase tracking-widest mb-2 border-b border-stone-200 pb-1">
             Base Imprint (日干支)
           </h4>
+          {/*
+              左右に振る行は、収まらないときだけ 2 段にする。以前は
+              flex-nowrap のまま縮めていたので、狭い列（タブレットで
+              2 列に割れたとき）に「Void Zodiac / Group:」とラベルが
+              割れ、値も「午未 (Uma-/Hitsuji)」と語中で折れていた。
+              ラベルと値それぞれは割らせず（whitespace-nowrap）、
+              入らなければ値ごと次の行へ落とす。落ちても右寄せのまま
+              にするため ml-auto を付ける。
+            */}
           <dl className="space-y-1 text-sm font-mono">
-            <div className="flex justify-between items-center">
-              <dt className="text-stone-600 text-[10px]">Birth Date:</dt>
-              <dd className="text-stone-600">{birthDateStr}</dd>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+                Birth Date:
+              </dt>
+              <dd className="text-stone-600 ml-auto whitespace-nowrap">
+                {birthDateStr}
+              </dd>
             </div>
-            <div className="flex justify-between items-center">
-              <dt className="text-stone-600 text-[10px]">Day Pillar (干支):</dt>
-              <dd className="font-bold text-stone-600">{data.ganZhi}</dd>
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+                Day Pillar (干支):
+              </dt>
+              <dd className="font-bold text-stone-600 ml-auto whitespace-nowrap">
+                {data.ganZhi}
+              </dd>
             </div>
-            <div className="flex justify-between items-center">
-              <dt className="text-stone-600 text-[10px]">Void Zodiac Group:</dt>
-              <dd className="text-red-500 font-bold tracking-widest">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <dt className="text-stone-600 text-[10px] whitespace-nowrap">
+                Void Zodiac Group:
+              </dt>
+              <dd className="text-red-700 font-bold tracking-widest ml-auto whitespace-nowrap">
                 {data.tenchusatsu.name}
               </dd>
             </div>
@@ -80,7 +99,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
         {/* Status */}
         <div className="flex flex-col justify-center">
           <div
-            className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col gap-2`}
+            className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col justify-center gap-2 h-full`}
           >
             <span className="text-[10px] tracking-widest uppercase font-bold text-stone-600">
               Current Year Status ({currentYear})
@@ -90,7 +109,9 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
                 <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-red-500 animate-pulse">
                   VOID PHASE
                 </span>
-                <span className="text-[10px] text-red-400/80">
+                {/* 以前は red-400/80。赤地（red-50）に対して約 1.9:1 で
+                    読めなかった。red-700 で 5.9:1。 */}
+                <span className="text-[10px] text-red-700">
                   現在は年の天中殺期間です。能動的な行動はリセットされやすい状態です。
                 </span>
               </>
