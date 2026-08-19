@@ -24,19 +24,11 @@ import {
   directionWedgeHalfWidth,
 } from "@/utils/directionGeo";
 import type { MapProperty } from "@/lib/mapProperty";
-import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
+import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
-clearLeafletDefaultIconUrl();
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
+applyLeafletDefaultIcon();
 
 interface MapInnerProps {
   lat: number;
