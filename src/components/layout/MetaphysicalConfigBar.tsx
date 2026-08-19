@@ -12,6 +12,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { todayInJapan } from "@/utils/japanDate";
+import type { ZodiacTimeBasis } from "@/utils/ephemerisEngine";
 import {
   loadProfilePresets,
   type ProfilePreset,
@@ -21,6 +22,16 @@ import { PlaceInput } from "@/components/relocation/PlaceInput";
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
   useClassicalBoard: boolean; // true = 暦基準, false = 木星黄経基準
+  /**
+   * 時支をどの時刻で採るか。
+   *
+   *   "standard"  標準時（JST 一律）。**既定。**従来の答えのまま
+   *   "solar"     真太陽時（出発地の経度補正 + 均時差）
+   *
+   * 流派で分かれるので切り替えにしてある。詳しくは
+   * `ZodiacTimeBasis`（utils/ephemerisEngine）。
+   */
+  zodiacTimeBasis: ZodiacTimeBasis;
   physicalMonthMode?: "coupled" | "independent";
   directionFilterMode:
     | "composite"
@@ -65,6 +76,18 @@ function normalizeActionIntent(
     : "DEFAULT";
 }
 
+/**
+ * 時支の時刻基準を正す。**"solar" 以外は全部 "standard" に倒す。**
+ *
+ * 古い localStorage や別画面から来た値には、この欄が無いことがある。
+ * 無いときに undefined のまま持ち回ると、「既定は標準時」という約束が
+ * 画面ごとの書き方（`!== "solar"` か `=== "standard"` か）に依存してしまう。
+ * ここで 1 か所に倒しておく。
+ */
+export function normalizeZodiacTimeBasis(value: unknown): ZodiacTimeBasis {
+  return value === "solar" ? "solar" : "standard";
+}
+
 function normalizeConfig(config: MetaphysicalConfig): MetaphysicalConfig {
   return {
     ...config,
@@ -72,11 +95,14 @@ function normalizeConfig(config: MetaphysicalConfig): MetaphysicalConfig {
       config.directionFilterMode,
     ),
     actionIntent: normalizeActionIntent(config.actionIntent),
+    zodiacTimeBasis: normalizeZodiacTimeBasis(config.zodiacTimeBasis),
   };
 }
 const DEFAULT_CONFIG: MetaphysicalConfig = {
   targetDate: todayInJapan(),
   useClassicalBoard: true,
+  // 既定は据え置き。変えると全利用者の答えが動く。
+  zodiacTimeBasis: "standard",
   physicalMonthMode: "independent",
   directionFilterMode: "composite",
   actionIntent: "DEFAULT",
@@ -136,6 +162,16 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           const parsed = JSON.parse(localData);
           if (parsed.use_classical_board !== undefined)
             loadedConfig.useClassicalBoard = parsed.use_classical_board;
+          /*
+            時支の時刻基準。**端末にだけ残す。**
+
+            /api/user-config は use_classical_board などと同じくこの欄を
+            受けない（user_configs に列が無く、buildPatch も落とす）。
+            列を足すのは本番 DB への一方向の変更なので、ここでは
+            localStorage だけに寄せている。
+          */
+          if (parsed.zodiac_time_basis === "solar")
+            loadedConfig.zodiacTimeBasis = "solar";
           if (parsed.physical_month_mode !== undefined)
             loadedConfig.physicalMonthMode = parsed.physical_month_mode;
           if (parsed.direction_filter_mode !== undefined)
@@ -229,6 +265,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
     const apiBody: any = {
       use_classical_board: updatedConfig.useClassicalBoard,
+      zodiac_time_basis: updatedConfig.zodiacTimeBasis,
       physical_month_mode: updatedConfig.physicalMonthMode || "independent",
       direction_filter_mode: updatedConfig.directionFilterMode,
       action_intent: updatedConfig.actionIntent,
@@ -541,6 +578,48 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* 時支の時刻基準 */}
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+                <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 時支の時刻
+              </label>
+              <div className="grid grid-cols-2 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
+                <button
+                  type="button"
+                  onClick={() =>
+                    saveConfig({ ...config, zodiacTimeBasis: "standard" })
+                  }
+                  className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    config.zodiacTimeBasis !== "solar"
+                      ? "bg-indigo-500/20 text-indigo-600 border border-indigo-200"
+                      : "text-stone-400 hover:text-stone-600"
+                  }`}
+                  title="標準時: 日本標準時（東経135度）の時計時刻で時支を決めます。出発地に関わらず全国同じ答えになります。"
+                >
+                  標準時
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    saveConfig({ ...config, zodiacTimeBasis: "solar" })
+                  }
+                  className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                    config.zodiacTimeBasis === "solar"
+                      ? "bg-amber-500/20 text-amber-600 border border-amber-200"
+                      : "text-stone-400 hover:text-stone-600"
+                  }`}
+                  title="真太陽時: 出発地の経度と均時差で時刻を補正してから時支を決めます。那覇と根室では最大71分ずれます。"
+                >
+                  真太陽時
+                </button>
+              </div>
+              <p className="text-[9px] text-stone-400 leading-relaxed">
+                {config.zodiacTimeBasis === "solar"
+                  ? "出発地の経度で時刻を補正します。時支と、真夜中付近では日支も変わります。年盤・月盤は変わりません。"
+                  : "全国一律で日本標準時（東経135度）を使います。"}
+              </p>
             </div>
 
             {/* Direction Filter Mode */}
