@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { getDailySolarSchedule, KimonScheduleItem } from "../utils/solarTime";
 import {
   getCurrentZodiac,
+  type ZodiacTimeBasis,
   getCurrentEnvironmentalFrequencies,
 } from "../utils/ephemerisEngine";
 import { KigakuBoard } from "./KigakuBoard";
@@ -33,6 +34,8 @@ interface SolarTimeTableProps {
   personalVoidZodiac?: string[];
   nbaData?: any;
   useClassical?: boolean;
+  /** 時支をどの時刻で採るか。省くと標準時（従来の答え）。 */
+  zodiacTimeBasis?: ZodiacTimeBasis;
 }
 
 export function SolarTimeTableComponent({
@@ -50,6 +53,7 @@ export function SolarTimeTableComponent({
   personalVoidZodiac,
   nbaData,
   useClassical,
+  zodiacTimeBasis = "standard",
 }: SolarTimeTableProps) {
   const schedule = useMemo(
     () => getDailySolarSchedule(date, longitude),
@@ -57,8 +61,8 @@ export function SolarTimeTableComponent({
   );
 
   const currentZodiac = useMemo(
-    () => getCurrentZodiac(date, longitude),
-    [date, longitude],
+    () => getCurrentZodiac(date, longitude, zodiacTimeBasis),
+    [date, longitude, zodiacTimeBasis],
   );
 
   const isYearVoid =
