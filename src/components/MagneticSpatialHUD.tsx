@@ -159,10 +159,10 @@ export function MagneticSpatialHUD({
 
       {/* HUD Overlays */}
       <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center pointer-events-none select-none">
-        <div className="text-[8px] font-mono text-blue-400/70 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
+        <div className="text-[10px] font-mono text-blue-400/70 border-t border-blue-200 px-2 bg-white/70 md:backdrop-blur-sm">
           SPATIAL INTERFERENCE HUD v1.0
         </div>
-        <div className="flex gap-4 text-[7px] font-mono text-stone-600 mt-0.5">
+        <div className="flex gap-4 text-[9px] font-mono text-stone-600 mt-0.5">
           <span>D: {declination.toFixed(1)}°</span>
           <span>I: {inclination.toFixed(1)}°</span>
           <span className={kpIndex >= 4 ? "text-red-500" : "text-emerald-500"}>
@@ -188,7 +188,7 @@ export function MagneticSpatialHUD({
           <span>SHIELD CAP (護身):</span>
           <span className="text-emerald-500">{shieldCapacity}%</span>
         </div>
-        <div className="mt-2 text-[7px] text-stone-600 leading-tight">
+        <div className="mt-2 text-[9px] text-stone-600 leading-tight">
           磁力線の立体的な向きを可視化。伏角が急なほど、垂直方向のノイズ（天気）の影響を受けやすくなります。
         </div>
       </div>
