@@ -434,31 +434,41 @@ model postal_codes {
 /// db push はスキーマに無い表・索引を消すので、片方だけ直さないこと。
 model property_transactions {
   /// 国交省の応答に安定した id が無いので、こちらで作る。
-  id                String   @id
-  trade_year        Int
-  trade_quarter     Int
-  municipality_code String
-  prefecture        String
-  municipality      String
+  id                   String   @id
+  trade_year           Int
+  trade_quarter        Int
+  municipality_code    String
+  prefecture           String
+  municipality         String
   /// 町名まで。番地は公開されない。
-  district_name     String?
+  district_name        String?
   /// 「宅地(土地)」「中古マンション等」など。
-  property_type     String?
-  trade_price       BigInt?
-  area_sqm          Float?
+  property_type        String?
+  trade_price          BigInt?
+  area_sqm             Float?
   /// 総額 / 面積。画面で割り算をしないよう取り込み時に出す。
-  unit_price_sqm    Float?
-  building_year     Int?
-  structure         String?
-  use_type          String?
+  unit_price_sqm       Float?
+  building_year        Int?
+  structure            String?
+  use_type             String?
   /// 地区名から引いた座標。引けなければ null で残す。
-  lat               Float?
-  lon               Float?
-  created_at        DateTime @default(now()) @db.Timestamptz(6)
-  updated_at        DateTime @default(now()) @db.Timestamptz(6)
+  lat                  Float?
+  lon                  Float?
+  /// 延床面積。宅地(土地と建物)・中古マンション等に付く。
+  total_floor_area_sqm Float?
+  /// 積算評価による建物・土地の**推定**内訳。est_ は実額との取り違え防止。
+  /// 式と単価表は scripts/propertyTxParse.ts（出典つき）。
+  /// NULL は「計算に要る項目が欠けている」。既定値を置かない。
+  est_building_price   BigInt?
+  est_land_price       BigInt?
+  /// est_building_price / trade_price（0〜1）。絞り込みはこの 1 本で引く。
+  building_ratio       Float?
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @default(now()) @db.Timestamptz(6)
 
   @@index([municipality_code, trade_year, trade_quarter])
   @@index([property_type])
+  @@index([property_type, building_ratio])
   @@index([lat, lon])
 }
 
