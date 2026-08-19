@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       prefecture:
-        description: "都道府県名で絞る（例: 京都府）。空で全国"
+        description: "都道府県名で絞る（例: 京都府）。「全国」で絞らない（空にしても default に落ちるだけなので、全国は言葉で指定する）"
         required: false
         default: "京都府"
 
