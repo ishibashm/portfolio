@@ -35,10 +35,12 @@ type LeafletIconWithInternals = L.Icon.Default & { _getIconUrl?: string };
 /**
  * 既定アイコンの URL の組み立てを止める。
  *
- * **呼んだあとに `L.Icon.Default.mergeOptions` で URL を指定すること。**
- * 指定しないとマーカーが出ない。
+ * **applyLeafletDefaultIcon の中でだけ使う。**これだけ呼んで
+ * `mergeOptions` を忘れるとマーカーが 1 つも出なくなるので、
+ * 外へは出さない（以前は export していて、呼び出し側 5 か所が
+ * それぞれ URL を書いていた。行き先が 2 通りに割れた原因でもある）。
  */
-export function clearLeafletDefaultIconUrl(): void {
+function clearLeafletDefaultIconUrl(): void {
   const prototype: LeafletIconWithInternals = L.Icon.Default.prototype;
   delete prototype._getIconUrl;
 }
@@ -46,8 +48,7 @@ export function clearLeafletDefaultIconUrl(): void {
 /**
  * 既定マーカーの画像を、**同梱のものに**差し替える。
  *
- * これ 1 つ呼べば済む。`clearLeafletDefaultIconUrl` を呼んでから
- * `mergeOptions` を自分で書く必要は無い。
+ * **地図の部品はこれ 1 つだけ呼ぶ。**URL を自分で書く必要は無い。
  *
  * ## なぜ CDN をやめたか
  *
