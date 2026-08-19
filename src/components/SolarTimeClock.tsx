@@ -151,7 +151,7 @@ const TenchusatsuVisualizer = dynamic(
 const ConsultPanel = dynamic(() => import("./home/ConsultPanel"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-400">
+    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
       [ 診断ボードを読込中... ]
     </div>
   ),
@@ -164,7 +164,7 @@ import HomePortal from "./home/HomePortal";
 const DestinationMapPanel = dynamic(() => import("./home/DestinationMapPanel"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-400">
+    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
       [ 地図とヒートマップを読込中... ]
     </div>
   ),
@@ -173,7 +173,7 @@ const DestinationMapPanel = dynamic(() => import("./home/DestinationMapPanel"), 
 const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-400">
+    <div className="w-full h-40 flex items-center justify-center font-mono text-xs text-stone-600">
       [ 総合スコアを読込中... ]
     </div>
   ),
@@ -188,7 +188,7 @@ const ScorecardPanel = dynamic(() => import("./home/ScorecardPanel"), {
 const TelemetryChart = dynamic(() => import("./TelemetryChart"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-64 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
+    <div className="w-full h-64 bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600">
       [ LOADING TELEMETRY CHART... ]
     </div>
   ),
@@ -3771,7 +3771,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "portal"
                 ? "bg-stone-800 text-white border border-stone-800"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             ホーム
@@ -3781,7 +3781,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "profile"
                 ? "bg-purple-500/10 text-purple-600 border border-purple-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             1. プロフィール
@@ -3791,7 +3791,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "destination"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             2. 目的地/健康
@@ -3801,7 +3801,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "timing"
                 ? "bg-indigo-500/10 text-indigo-600 border border-indigo-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             3. タイミング
@@ -3811,7 +3811,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "consult"
                 ? "bg-amber-500/10 text-amber-500 border border-amber-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             4. 環境データ
@@ -3821,7 +3821,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "scorecard"
                 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             5. 総合スコア
@@ -3831,7 +3831,7 @@ export const SolarTimeClock = () => {
             className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
               activeTab === "history"
                 ? "bg-sky-500/10 text-sky-600 border border-sky-200"
-                : "text-stone-400 hover:text-stone-600"
+                : "text-stone-600 hover:text-stone-800"
             }`}
           >
             6. 履歴
@@ -3863,7 +3863,7 @@ export const SolarTimeClock = () => {
             <div className="w-full bg-white border border-stone-200 rounded-xl p-4 flex flex-col shadow-lg z-10 shrink-0">
               <label
                 htmlFor="home-action-intent"
-                className="text-[10px] text-stone-400 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
+                className="text-[10px] text-stone-600 uppercase font-mono tracking-widest mb-2 flex items-center gap-1"
               >
                 <span className="text-emerald-500">◆</span> 移住・移動の目的
               </label>
@@ -3880,7 +3880,7 @@ export const SolarTimeClock = () => {
                 <option value="BUSINESS">交渉・ビジネスを目的とした移動</option>
                 <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
               </select>
-              <p className="text-[9px] text-stone-400 mt-3 leading-relaxed">
+              <p className="text-[9px] text-stone-600 mt-3 leading-relaxed">
                 「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
               </p>
             </div>
@@ -4178,7 +4178,7 @@ export const SolarTimeClock = () => {
               <span className="text-xs font-bold text-stone-700">
                 引越しの日取りを選ぶ（暦カレンダー）
               </span>
-              <span className="text-[10px] text-stone-400">
+              <span className="text-[10px] text-stone-600">
                 天赦日・一粒万倍日・天中殺と、方位の吉凶を月ごとに見ます。
               </span>
             </span>

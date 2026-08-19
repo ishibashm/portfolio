@@ -143,7 +143,7 @@ export default function PastMoveMap({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-400 backdrop-blur-md">
+      <div className="w-full h-[400px] bg-white/80 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-600 backdrop-blur-md">
         [ LOADING INTERACTIVE MAP ENGINE... ]
       </div>
     );
@@ -170,7 +170,7 @@ export default function PastMoveMap({
               }
               className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-indigo-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-indigo-200 focus:ring-1 focus:ring-indigo-500/50 transition-all shadow-inner"
             />
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
+            <Search className="w-4 h-4 text-stone-600 absolute left-3 top-3.5" />
             <button
               type="button"
               onClick={() => handleGeocode("from", searchFromQuery)}
@@ -199,7 +199,7 @@ export default function PastMoveMap({
               }
               className="w-full pl-9 pr-20 py-2.5 bg-white/70 border border-red-200 rounded-xl text-xs font-mono text-stone-900 placeholder-zinc-500 focus:outline-none focus:border-red-200 focus:ring-1 focus:ring-red-500/50 transition-all shadow-inner"
             />
-            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-3.5" />
+            <Search className="w-4 h-4 text-stone-600 absolute left-3 top-3.5" />
             <button
               type="button"
               onClick={() => handleGeocode("to", searchToQuery)}

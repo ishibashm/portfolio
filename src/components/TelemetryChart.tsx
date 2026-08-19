@@ -62,7 +62,7 @@ export default function TelemetryChart() {
 
   if (phase === "loading")
     return (
-      <div className="text-stone-400 font-mono text-xs">
+      <div className="text-stone-600 font-mono text-xs">
         Loading chart data...
       </div>
     );

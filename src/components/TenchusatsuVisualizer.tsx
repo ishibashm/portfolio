@@ -52,26 +52,26 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Profile */}
         <div className="bg-white/70 p-3 rounded-sm border border-stone-200 flex flex-col justify-center">
-          <h4 className="font-semibold text-[9px] text-stone-400 uppercase tracking-widest mb-2 border-b border-stone-200 pb-1">
+          <h4 className="font-semibold text-[9px] text-stone-600 uppercase tracking-widest mb-2 border-b border-stone-200 pb-1">
             Base Imprint (日干支)
           </h4>
           <dl className="space-y-1 text-sm font-mono">
             <div className="flex justify-between items-center">
-              <dt className="text-stone-400 text-[10px]">Birth Date:</dt>
+              <dt className="text-stone-600 text-[10px]">Birth Date:</dt>
               <dd className="text-stone-600">{birthDateStr}</dd>
             </div>
             <div className="flex justify-between items-center">
-              <dt className="text-stone-400 text-[10px]">Day Pillar (干支):</dt>
+              <dt className="text-stone-600 text-[10px]">Day Pillar (干支):</dt>
               <dd className="font-bold text-stone-600">{data.ganZhi}</dd>
             </div>
             <div className="flex justify-between items-center">
-              <dt className="text-stone-400 text-[10px]">Void Zodiac Group:</dt>
+              <dt className="text-stone-600 text-[10px]">Void Zodiac Group:</dt>
               <dd className="text-red-500 font-bold tracking-widest">
                 {data.tenchusatsu.name}
               </dd>
             </div>
           </dl>
-          <div className="mt-3 text-[9px] text-stone-400 leading-tight">
+          <div className="mt-3 text-[9px] text-stone-600 leading-tight">
             *
             算出された日干支から、あなたの人生におけるエネルギー欠落周期（天中殺）を特定しました。
           </div>
@@ -82,7 +82,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           <div
             className={`p-4 rounded-sm border ${data.isYearTenchusatsu ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"} text-center flex flex-col gap-2`}
           >
-            <span className="text-[10px] tracking-widest uppercase font-bold text-stone-400">
+            <span className="text-[10px] tracking-widest uppercase font-bold text-stone-600">
               Current Year Status ({currentYear})
             </span>
             {data.isYearTenchusatsu ? (

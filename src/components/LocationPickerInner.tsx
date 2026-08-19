@@ -81,7 +81,7 @@ export default function LocationPickerInner({
 
   if (!isMounted) {
     return (
-      <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-400">
+      <div className="w-full h-full bg-stone-50 border border-stone-200 flex items-center justify-center font-mono text-xs text-stone-600">
         [ LOADING MAP ENGINE... ]
       </div>
     );

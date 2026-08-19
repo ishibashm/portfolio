@@ -190,7 +190,7 @@ const getDimensionCellBgColor = (
   if (dimension === "astro") {
     if (score >= 30) return "bg-blue-50 text-blue-600 border border-blue-200";
     if (score > 0) return "bg-blue-50 text-blue-400/80 border border-blue-200";
-    return "text-stone-400 border border-stone-200";
+    return "text-stone-600 border border-stone-200";
   }
   if (dimension === "timeGate") {
     if (score <= -100)
@@ -198,7 +198,7 @@ const getDimensionCellBgColor = (
     if (score < 0) return "bg-amber-50 text-amber-500 border border-amber-200";
     if (score > 0)
       return "bg-emerald-50 text-emerald-600 border border-emerald-200";
-    return "text-stone-400 border border-stone-200";
+    return "text-stone-600 border border-stone-200";
   }
   return "";
 };
@@ -302,7 +302,7 @@ export default function ScorecardPanel({
               <p className="text-stone-500 text-[10px] sm:text-xs leading-relaxed max-w-xl">
                 直近30日の時空波動予測、各方位における富裕エリア所得、および賃貸相場に対する割安度の偏差値指標を統合した意思決定コックピットです。
               </p>
-              <div className="mt-2 text-stone-400 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
+              <div className="mt-2 text-stone-600 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                 <span>
                   <strong className="text-emerald-600">🌟 トリプル大吉:</strong>{" "}
                   3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
@@ -393,7 +393,7 @@ export default function ScorecardPanel({
           {scorecardLoading && wealthData.length === 0 ? (
             <div className="w-full bg-stone-50 border border-stone-200 rounded-xl p-12 flex flex-col items-center justify-center gap-3">
               <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-              <span className="text-[10px] font-mono text-stone-400 tracking-[0.2em] uppercase">
+              <span className="text-[10px] font-mono text-stone-600 tracking-[0.2em] uppercase">
                 Loading Relocation Scenarios...
               </span>
             </div>
@@ -450,7 +450,7 @@ export default function ScorecardPanel({
                           if (s === "WARNING")
                             return "text-orange-600 bg-orange-500/10 border-orange-200";
                           if (s.startsWith("NOISE_VOID"))
-                            return "text-stone-400 bg-stone-100 border-stone-300";
+                            return "text-stone-600 bg-stone-100 border-stone-300";
                           if (s.startsWith("NOISE_NODE"))
                             return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
                           return "text-red-600 bg-red-500/10 border-red-200";
@@ -473,7 +473,7 @@ export default function ScorecardPanel({
                           >
                             {/* Direction */}
                             <td className="p-3 font-mono font-bold text-stone-700 flex items-center gap-1.5 whitespace-nowrap">
-                              <span className="text-[10px] text-stone-400">
+                              <span className="text-[10px] text-stone-600">
                                 ▶
                               </span>
                               {item.labelJa} ({item.direction})
@@ -553,7 +553,7 @@ export default function ScorecardPanel({
                               )}
                               {!item.isConsensusClear &&
                                 !item.isDivergenceAlert && (
-                                  <span className="text-stone-400 text-[10px] font-mono">
+                                  <span className="text-stone-600 text-[10px] font-mono">
                                     -
                                   </span>
                                 )}
@@ -567,7 +567,7 @@ export default function ScorecardPanel({
                                 >
                                   {bd.kigaku.replace("NOISE_", "")}
                                 </span>
-                                <span className="text-[9px] text-stone-400">
+                                <span className="text-[9px] text-stone-600">
                                   ベース: {bd.kigakuScore}点
                                 </span>
                               </div>
@@ -577,13 +577,13 @@ export default function ScorecardPanel({
                             <td className="p-3 bg-blue-50 border-r border-stone-200 font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-400"}`}
+                                  className={`text-[10px] ${bd.astroScore > 0 ? "text-blue-600 font-bold" : "text-stone-600"}`}
                                 >
                                   {bd.astro.length > 0
                                     ? bd.astro.join(", ")
                                     : "ラインなし"}
                                 </span>
-                                <span className="text-[9px] text-stone-400">
+                                <span className="text-[9px] text-stone-600">
                                   加算: +{bd.astroScore}点
                                 </span>
                               </div>
@@ -593,13 +593,13 @@ export default function ScorecardPanel({
                             <td className="p-3 bg-amber-50 border-r border-stone-200 font-mono">
                               <div className="flex flex-col">
                                 <span
-                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-400"}`}
+                                  className={`text-[10px] ${bd.timeGateScore < 0 ? "text-red-600 font-bold" : bd.timeGateScore > 0 ? "text-emerald-600 font-bold" : "text-stone-600"}`}
                                 >
                                   {bd.timeGate.length > 0
                                     ? bd.timeGate.join(", ")
                                     : "通常時間"}
                                 </span>
-                                <span className="text-[9px] text-stone-400 border-t border-stone-200 mt-0.5 pt-0.5">
+                                <span className="text-[9px] text-stone-600 border-t border-stone-200 mt-0.5 pt-0.5">
                                   調整: {bd.timeGateScore > 0 ? "+" : ""}
                                   {bd.timeGateScore}点
                                 </span>
@@ -624,7 +624,7 @@ export default function ScorecardPanel({
                                   <span className="text-stone-700 font-bold truncate max-w-[180px]">
                                     {item.topArea.areaName}
                                   </span>
-                                  <span className="text-[10px] text-stone-400 font-mono mt-0.5">
+                                  <span className="text-[10px] text-stone-600 font-mono mt-0.5">
                                     所得:{" "}
                                     {(
                                       item.topArea.incomePerCapita / 10000
@@ -633,7 +633,7 @@ export default function ScorecardPanel({
                                   </span>
                                 </div>
                               ) : (
-                                <span className="text-stone-400 text-[10px] italic">
+                                <span className="text-stone-600 text-[10px] italic">
                                   データなし
                                 </span>
                               )}
@@ -655,7 +655,7 @@ export default function ScorecardPanel({
                                     >
                                       {item.topRental.property_name}
                                     </span>
-                                    <span className="text-[10px] text-stone-400 font-mono mt-0.5 group-hover/item:text-zinc-450">
+                                    <span className="text-[10px] text-stone-600 font-mono mt-0.5 group-hover/item:text-zinc-450">
                                       賃料:{" "}
                                       {(
                                         item.topRental.totalRent / 10000
@@ -671,7 +671,7 @@ export default function ScorecardPanel({
                                     >
                                       {item.topRental.property_name}
                                     </span>
-                                    <span className="text-[10px] text-stone-400 font-mono mt-0.5">
+                                    <span className="text-[10px] text-stone-600 font-mono mt-0.5">
                                       賃料:{" "}
                                       {(
                                         item.topRental.totalRent / 10000
@@ -681,7 +681,7 @@ export default function ScorecardPanel({
                                   </div>
                                 )
                               ) : (
-                                <span className="text-stone-400 text-[10px] italic">
+                                <span className="text-stone-600 text-[10px] italic">
                                   対象物件なし
                                 </span>
                               )}
@@ -705,7 +705,7 @@ export default function ScorecardPanel({
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
                   多次元吉凶パターンマトリクス (Grid Scorecard)
                 </h3>
-                <p className="text-stone-400 text-[10px] sm:text-xs">
+                <p className="text-stone-600 text-[10px] sm:text-xs">
                   本命星別、または日付別の全方位吉凶パターンを網羅した詳細グリッド表です。
                 </p>
               </div>
@@ -778,7 +778,7 @@ export default function ScorecardPanel({
             </div>
 
             {/* Legend for Grid */}
-            <div className="flex flex-wrap gap-3 text-[9px] font-mono text-stone-400 bg-white/80 p-2.5 rounded border border-stone-200">
+            <div className="flex flex-wrap gap-3 text-[9px] font-mono text-stone-600 bg-white/80 p-2.5 rounded border border-stone-200">
               {/* しきい値を凡例に直書きしない。lib/scoreTier から引く。 */}
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded bg-emerald-50 border border-emerald-200"></span>
@@ -1250,7 +1250,7 @@ export default function ScorecardPanel({
             if (s === "WARNING")
               return "text-orange-600 bg-orange-500/10 border-orange-200";
             if (s.startsWith("NOISE_VOID"))
-              return "text-stone-400 bg-stone-100 border-stone-300";
+              return "text-stone-600 bg-stone-100 border-stone-300";
             if (s.startsWith("NOISE_NODE"))
               return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
             return "text-red-600 bg-red-500/10 border-red-200";
@@ -1367,7 +1367,7 @@ export default function ScorecardPanel({
                     {/* Status & Score Block */}
                     <div className="bg-white/80 border border-stone-200 rounded-lg p-4 flex items-center justify-between">
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10px] text-stone-400 uppercase tracking-widest font-mono">
+                        <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
                           Astrological Wave
                         </span>
                         <span
@@ -1377,7 +1377,7 @@ export default function ScorecardPanel({
                         </span>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <span className="text-[10px] text-stone-400 uppercase tracking-widest font-mono">
+                        <span className="text-[10px] text-stone-600 uppercase tracking-widest font-mono">
                           Score
                         </span>
                         <span
@@ -1396,7 +1396,7 @@ export default function ScorecardPanel({
                         <h4 className="text-[11px] font-mono text-stone-500 uppercase tracking-wider flex items-center gap-1.5">
                           <span>📅 直近30日の時空吉凶シミュレーション</span>
                         </h4>
-                        <span className="text-[9px] text-stone-400 font-mono">
+                        <span className="text-[9px] text-stone-600 font-mono">
                           吉日数: {detail.luckyDays}日
                         </span>
                       </div>
@@ -1404,7 +1404,7 @@ export default function ScorecardPanel({
                       <div className="grid grid-cols-6 gap-1 bg-white/70 p-2 border border-stone-200 rounded-md">
                         {detail.dates.map((d, i) => {
                           let bg =
-                            "bg-white/80 border-stone-200 text-stone-400";
+                            "bg-white/80 border-stone-200 text-stone-600";
                           if (d.status === "OPTIMAL")
                             bg =
                               "bg-emerald-500/20 border-emerald-200 text-emerald-600";
@@ -1454,14 +1454,14 @@ export default function ScorecardPanel({
                               className="bg-white/70 border border-stone-200 rounded p-2.5 flex items-center justify-between text-xs"
                             >
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono text-stone-400">
+                                <span className="text-[10px] font-mono text-stone-600">
                                   #{idx + 1}
                                 </span>
                                 <div className="flex flex-col">
                                   <span className="text-stone-700 font-bold">
                                     {area.areaName}
                                   </span>
-                                  <span className="text-[9px] text-stone-400 font-mono mt-0.5">
+                                  <span className="text-[9px] text-stone-600 font-mono mt-0.5">
                                     コード: {area.areaCode}
                                   </span>
                                 </div>
@@ -1472,7 +1472,7 @@ export default function ScorecardPanel({
                                     ? `${(area.incomePerCapita / 10000).toFixed(1)}万円`
                                     : `${(area.taxableIncomeThousandYen / 1000).toFixed(0)}万円`}
                                 </span>
-                                <span className="text-[9px] text-stone-400 font-sans mt-0.5">
+                                <span className="text-[9px] text-stone-600 font-sans mt-0.5">
                                   一人当たり平均所得
                                 </span>
                               </div>
@@ -1480,7 +1480,7 @@ export default function ScorecardPanel({
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-stone-400 italic">
+                        <p className="text-xs text-stone-600 italic">
                           該当するエリアがありません。
                         </p>
                       )}
@@ -1498,7 +1498,7 @@ export default function ScorecardPanel({
                               <>
                                 <div className="flex justify-between items-start gap-2">
                                   <div className="flex items-start gap-2">
-                                    <span className="text-[10px] font-mono text-stone-400 mt-0.5">
+                                    <span className="text-[10px] font-mono text-stone-600 mt-0.5">
                                       #{idx + 1}
                                     </span>
                                     <div className="flex flex-col">
@@ -1508,7 +1508,7 @@ export default function ScorecardPanel({
                                       >
                                         {rental.property_name}
                                       </span>
-                                      <span className="text-[9px] text-stone-400 font-mono">
+                                      <span className="text-[9px] text-stone-600 font-mono">
                                         {/* 応答の項目は building_age。
                                               age_years は存在せず、ここは
                                               ずっと「築年数: 年」と空欄で
@@ -1565,7 +1565,7 @@ export default function ScorecardPanel({
                           })}
                         </div>
                       ) : (
-                        <p className="text-xs text-stone-400 italic">
+                        <p className="text-xs text-stone-600 italic">
                           該当する物件情報がありません。
                         </p>
                       )}

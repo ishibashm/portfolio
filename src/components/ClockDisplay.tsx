@@ -84,9 +84,9 @@ export function ClockDisplay({
 
       {/* 1. Spatial Phase (Kimon) */}
       <div className="text-center md:text-left space-y-1 w-1/3">
-        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-stone-400 uppercase font-mono mb-1">
+        <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-stone-600 uppercase font-mono mb-1">
           Matrix Phase
-          <span className="hidden sm:block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-[7px] tracking-normal text-stone-600 mt-1 normal-case font-sans whitespace-nowrap">
             (地磁気と太陽角による空間位相)
           </span>
         </div>
@@ -104,7 +104,7 @@ export function ClockDisplay({
       <div className="text-center space-y-1 border-x border-stone-200 px-4 w-1/3">
         <div className="text-[9px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] text-purple-400/80 uppercase font-mono mb-1">
           Lunar Cycle
-          <span className="hidden sm:block text-[7px] tracking-normal text-stone-400 mt-1 normal-case font-sans whitespace-nowrap">
+          <span className="hidden sm:block text-[7px] tracking-normal text-stone-600 mt-1 normal-case font-sans whitespace-nowrap">
             (太陰暦 / 東洋カレンダー基準)
           </span>
         </div>
@@ -129,14 +129,14 @@ export function ClockDisplay({
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[9px] uppercase tracking-widest text-stone-400 font-mono">
+          <div className="text-[9px] uppercase tracking-widest text-stone-600 font-mono">
             Standard JST
           </div>
-          <div className="text-lg font-mono font-light text-stone-400">
+          <div className="text-lg font-mono font-light text-stone-600">
             {formatTime(now)}
           </div>
         </div>
-        <div className="text-[8px] font-mono text-stone-400 gap-2 flex justify-end">
+        <div className="text-[8px] font-mono text-stone-600 gap-2 flex justify-end">
           <span>EOT:{eot.toFixed(1)}m</span>
           <span>OS:{longOffset.toFixed(1)}m</span>
         </div>

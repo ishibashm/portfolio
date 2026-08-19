@@ -132,7 +132,7 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
                 <span className="truncate">{factor.name}</span>
               </div>
               <div className="flex justify-between items-end mt-1">
-                <span className="text-[10px] font-mono text-stone-400">
+                <span className="text-[10px] font-mono text-stone-600">
                   Val: {factor.value?.toFixed(0)}
                 </span>
                 <span
@@ -218,12 +218,12 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
                       {meta?.icon} {meta?.label}
                     </h4>
                   </div>
-                  <p className="text-[10px] text-stone-400">{meta?.desc}</p>
+                  <p className="text-[10px] text-stone-600">{meta?.desc}</p>
                 </div>
 
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="flex flex-col items-end">
-                    <span className="text-[9px] text-stone-400 uppercase tracking-widest">
+                    <span className="text-[9px] text-stone-600 uppercase tracking-widest">
                       Q-Value (期待値)
                     </span>
                     <span
@@ -238,7 +238,7 @@ export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({
               </div>
 
               <div className="mt-2 pt-2 border-t border-stone-200/60 relative z-10">
-                <span className="text-[9px] text-stone-400 uppercase tracking-widest">
+                <span className="text-[9px] text-stone-600 uppercase tracking-widest">
                   評価要因 (Influence Factors)
                 </span>
                 {renderFactorBars(actionId)}

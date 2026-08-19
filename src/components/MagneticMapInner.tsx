@@ -447,13 +447,13 @@ export default function MagneticMapInner({
               <div className="bg-stone-50 text-stone-700 p-2 font-mono text-[10px] border border-stone-200 shadow-xl max-w-[200px]">
                 <div className="text-blue-600 border-b border-stone-200 mb-1 pb-1 uppercase tracking-widest flex justify-between items-center">
                   <span>{d.dir} Sector</span>
-                  <span className="text-stone-400 font-normal">
+                  <span className="text-stone-600 font-normal">
                     Analysis {dashArray ? "(破線)" : "(実線)"}
                   </span>
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between gap-4">
-                    <span className="text-stone-400">環境:</span>
+                    <span className="text-stone-600">環境:</span>
                     <span
                       className={
                         y.includes("NOISE") ||
@@ -467,7 +467,7 @@ export default function MagneticMapInner({
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-stone-400">個人:</span>
+                    <span className="text-stone-600">個人:</span>
                     <span
                       className={
                         d.status.includes("HONMEI") || d.status.includes("TEKI")
@@ -770,7 +770,7 @@ export default function MagneticMapInner({
             現在地偏角 (WMM2020): {declination > 0 ? "東偏" : "西偏"}
             {Math.abs(declination).toFixed(2)}°
           </div>
-          <div className="text-[9px] text-stone-400 mt-0.5 leading-tight max-w-[200px]">
+          <div className="text-[9px] text-stone-600 mt-0.5 leading-tight max-w-[200px]">
             ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。月交点（空間方位）と月相（時間補正）は別個に評価されています。
           </div>
         </div>
@@ -778,7 +778,7 @@ export default function MagneticMapInner({
 
       <div className="absolute bottom-4 right-4 z-[1000] pointer-events-none">
         <div className="bg-white/80 md:backdrop-blur-md px-3 py-2 border border-stone-200 rounded-sm text-[9px] flex flex-col gap-1.5 shadow-xl">
-          <div className="text-stone-400 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
+          <div className="text-stone-600 font-mono uppercase tracking-widest border-b border-stone-200 pb-1 flex justify-between gap-4">
             <span>Legend</span>
             <span className="text-emerald-500">
               [{activeLayerMode.toUpperCase()}]
@@ -812,7 +812,7 @@ export default function MagneticMapInner({
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 border-t border-dashed border-zinc-500"></div>
-              <span className="text-stone-400">距離リング</span>
+              <span className="text-stone-600">距離リング</span>
             </div>
           </div>
 
@@ -832,7 +832,7 @@ export default function MagneticMapInner({
               <span>Target Coordinates</span>
               <button
                 onClick={() => setClickedPos(null)}
-                className="text-stone-400 hover:text-stone-900"
+                className="text-stone-600 hover:text-stone-900"
               >
                 ✕
               </button>

@@ -146,7 +146,7 @@ export function TransactionsPanel({
       </div>
 
       {loading && (
-        <p className="text-xs text-stone-400 animate-pulse">
+        <p className="text-xs text-stone-600 animate-pulse">
           成約事例を読み込んでいます…
         </p>
       )}
@@ -181,7 +181,7 @@ export function TransactionsPanel({
                         <span className="block text-[11px] font-mono text-stone-700">
                           {unitManYen(d.medianUnitPriceSqm)}
                         </span>
-                        <span className="block text-[9px] text-stone-400">
+                        <span className="block text-[9px] text-stone-600">
                           {d.count.toLocaleString()} 件
                         </span>
                       </span>
@@ -227,7 +227,7 @@ export function TransactionsPanel({
                       {manYen(r.tradePrice)}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-x-2 text-[9px] text-stone-400 mt-0.5">
+                  <div className="flex flex-wrap gap-x-2 text-[9px] text-stone-600 mt-0.5">
                     <span>{r.propertyType ?? "種別不明"}</span>
                     {r.areaSqm !== null && <span>{r.areaSqm}㎡</span>}
                     <span>{unitManYen(r.unitPriceSqm)}</span>
@@ -244,7 +244,7 @@ export function TransactionsPanel({
             </ul>
           </section>
 
-          <p className="text-[9px] text-stone-400 leading-relaxed">
+          <p className="text-[9px] text-stone-600 leading-relaxed">
             範囲内 {data.totalInRadius.toLocaleString()} 件
             {data.truncated ? "（多いため新しい順に切っています）" : ""}。
             {data.pendingCoords > 0

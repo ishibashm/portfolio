@@ -103,7 +103,7 @@ export function SimulatorStart({
             onChange={(e) => setBirthDate(e.target.value)}
             className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
           />
-          <span className="mt-1 block text-[11px] text-stone-400">
+          <span className="mt-1 block text-[11px] text-stone-600">
             本命星と天中殺を出すのに使います。保存はされません。
           </span>
         </label>

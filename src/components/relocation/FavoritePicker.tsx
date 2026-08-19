@@ -98,7 +98,7 @@ export function FavoritePicker({ onPick, onClose }: FavoritePickerProps) {
         </h4>
         <button
           onClick={onClose}
-          className="text-[10px] text-stone-400 hover:text-stone-600"
+          className="text-[10px] text-stone-600 hover:text-stone-800"
         >
           閉じる
         </button>
@@ -111,7 +111,7 @@ export function FavoritePicker({ onPick, onClose }: FavoritePickerProps) {
       )}
 
       {items === null && (
-        <p className="text-xs text-stone-400 animate-pulse">読み込み中...</p>
+        <p className="text-xs text-stone-600 animate-pulse">読み込み中...</p>
       )}
 
       {error && <p className="text-xs text-red-500">{error}</p>}
@@ -151,7 +151,7 @@ export function FavoritePicker({ onPick, onClose }: FavoritePickerProps) {
                   className={`w-full text-left px-2.5 py-2 rounded-lg border text-xs transition-colors ${
                     usable
                       ? "bg-white border-stone-200 hover:border-indigo-300 hover:bg-indigo-50/60 cursor-pointer"
-                      : "bg-stone-50 border-stone-200 text-stone-400 cursor-not-allowed"
+                      : "bg-stone-50 border-stone-200 text-stone-600 cursor-not-allowed"
                   }`}
                 >
                   <span className="block font-bold text-stone-700 truncate">
@@ -160,7 +160,7 @@ export function FavoritePicker({ onPick, onClose }: FavoritePickerProps) {
                   <span className="block text-[10px] text-stone-500 truncate">
                     {p.address ?? "住所なし"}
                   </span>
-                  <span className="block text-[10px] text-stone-400 mt-0.5">
+                  <span className="block text-[10px] text-stone-600 mt-0.5">
                     {p.layout ?? "間取り不明"}
                     {rent !== null && ` / ${rent.toLocaleString()} 円`}
                     {!usable && " / 座標が無いため選べません"}

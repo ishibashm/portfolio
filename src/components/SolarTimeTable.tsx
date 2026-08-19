@@ -303,7 +303,7 @@ export function SolarTimeTableComponent({
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-[8px] font-mono text-stone-400 tracking-widest hidden md:block">
+          <div className="text-[8px] font-mono text-stone-600 tracking-widest hidden md:block">
             {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
           </div>
           {isAuthorized && (
@@ -322,7 +322,7 @@ export function SolarTimeTableComponent({
         <div
           className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-stone-400 tracking-widest">
+          <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>YEAR PHASE</span>
             <span className={isYearVoid ? "text-red-600" : "text-purple-600"}>
               {envData?.yearStar}
@@ -339,10 +339,10 @@ export function SolarTimeTableComponent({
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             長期的なベースとなる年の波長と干支
           </div>
         </div>
@@ -350,7 +350,7 @@ export function SolarTimeTableComponent({
         <div
           className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-stone-400 tracking-widest">
+          <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>MONTH PHASE</span>
             <span className={isMonthVoid ? "text-red-600" : "text-amber-600"}>
               {envData?.monthStar}
@@ -367,10 +367,10 @@ export function SolarTimeTableComponent({
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             潮汐力による中期の波長と月の干支
           </div>
         </div>
@@ -378,7 +378,7 @@ export function SolarTimeTableComponent({
         <div
           className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
-          <div className="flex justify-between items-center text-stone-400 tracking-widest">
+          <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <div className="flex items-center gap-1">
               <span>DAY PHASE</span>
               {envData?.isYinPhase !== undefined && (
@@ -404,10 +404,10 @@ export function SolarTimeTableComponent({
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-400 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-400 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             地球自転による短期の波長と日の干支。
             {envData?.isYinPhase !== undefined && (
               <span className="block mt-0.5">
@@ -445,7 +445,7 @@ export function SolarTimeTableComponent({
         </div>
       </div>
 
-      <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-400 group">
+      <details className="mb-4 bg-white/80 border border-stone-200 text-[9px] font-mono text-stone-600 group">
         <summary className="p-2 cursor-pointer hover:bg-white/80 list-none flex items-center justify-between uppercase tracking-widest">
           <div className="flex items-center gap-2">
             <span className="text-blue-500 blur-[0.5px]">◆</span> [ ALGORITHM ]
@@ -526,7 +526,7 @@ export function SolarTimeTableComponent({
                     >
                       {item.etoKanji}の刻
                     </span>
-                    <span className="text-[9px] text-stone-400 font-mono hidden sm:inline-block tracking-widest uppercase">
+                    <span className="text-[9px] text-stone-600 font-mono hidden sm:inline-block tracking-widest uppercase">
                       [{item.reading}]
                     </span>
                   </div>
@@ -536,7 +536,7 @@ export function SolarTimeTableComponent({
                 <div className="flex flex-row items-center gap-2 md:gap-4 flex-1 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
                   <div className="flex flex-col w-1/3 md:w-auto">
-                    <span className="text-stone-400 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-600 text-[8px] uppercase tracking-widest leading-none mb-1">
                       Star(周波数)
                     </span>
                     <span
@@ -547,7 +547,7 @@ export function SolarTimeTableComponent({
                   </div>
                   {/* 八門 */}
                   <div className="flex flex-col flex-1">
-                    <span className="text-stone-400 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-600 text-[8px] uppercase tracking-widest leading-none mb-1">
                       Gate(ゲート)
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -556,7 +556,7 @@ export function SolarTimeTableComponent({
                       >
                         {item.hachimon.japanese}
                       </span>
-                      <span className="text-[9px] text-stone-400 hidden sm:inline-block border-l border-stone-300 pl-1.5">
+                      <span className="text-[9px] text-stone-600 hidden sm:inline-block border-l border-stone-300 pl-1.5">
                         {getGateDescription(item.hachimon.japanese)}
                       </span>
                     </div>
@@ -577,14 +577,14 @@ export function SolarTimeTableComponent({
                       </span>
                     )}
                     {!isVoid && !isOptimal && (
-                      <span className="text-stone-400 text-[10px] font-mono tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
+                      <span className="text-stone-600 text-[10px] font-mono tracking-widest border border-stone-200 px-2 py-0.5 bg-white/70">
                         ROUTINE
                       </span>
                     )}
                   </div>
                   <button
                     onClick={() => toggleRow(index)}
-                    className="text-[10px] text-stone-400 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-white/80 px-2 py-1 border border-stone-200 whitespace-nowrap"
+                    className="text-[10px] text-stone-600 hover:text-blue-600 flex items-center gap-1 transition-colors uppercase tracking-widest font-bold bg-white/80 px-2 py-1 border border-stone-200 whitespace-nowrap"
                   >
                     <span
                       className={expandedIndex === index ? "text-blue-500" : ""}
@@ -639,7 +639,7 @@ export function SolarTimeTableComponent({
                                   {evalPhase.myElement.id})
                                 </span>
                               </span>
-                              <span className="text-stone-400">×</span>
+                              <span className="text-stone-600">×</span>
                               <span className="bg-white border border-stone-200 px-1.5 py-0.5">
                                 Time Qi:{" "}
                                 <span
@@ -651,7 +651,7 @@ export function SolarTimeTableComponent({
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-stone-400">Status:</span>
+                              <span className="text-stone-600">Status:</span>
                               <span
                                 className={`font-bold ${evalPhase.isFavorable ? "text-emerald-600" : "text-stone-500"}`}
                               >
@@ -680,7 +680,7 @@ export function SolarTimeTableComponent({
 
                   {/* Compass Matrix */}
                   <div className="bg-white/70 p-2 border border-stone-200 rounded-sm flex flex-col items-center justify-center min-w-[200px]">
-                    <div className="text-[9px] text-stone-400 uppercase tracking-widest mb-2 font-bold">
+                    <div className="text-[9px] text-stone-600 uppercase tracking-widest mb-2 font-bold">
                       Kigaku Compass Matrix
                     </div>
                     <div className="scale-75 origin-top opacity-90">
@@ -704,7 +704,7 @@ export function SolarTimeTableComponent({
               </h3>
               <button
                 onClick={() => setShowPreview(false)}
-                className="text-stone-400 hover:text-stone-900 font-mono text-xl leading-none"
+                className="text-stone-600 hover:text-stone-900 font-mono text-xl leading-none"
               >
                 &times;
               </button>

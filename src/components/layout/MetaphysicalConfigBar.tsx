@@ -412,7 +412,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <div className="flex items-center gap-1.5">
-              <span className="text-stone-400 font-bold uppercase tracking-wider">
+              <span className="text-stone-600 font-bold uppercase tracking-wider">
                 目標日:
               </span>
               <span className="text-stone-900 font-bold">
@@ -420,7 +420,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-stone-400 font-bold uppercase tracking-wider">
+              <span className="text-stone-600 font-bold uppercase tracking-wider">
                 基準:
               </span>
               <span
@@ -436,7 +436,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-stone-400 font-bold uppercase tracking-wider">
+              <span className="text-stone-600 font-bold uppercase tracking-wider">
                 フィルタ:
               </span>
               <span className="text-stone-600 font-semibold">
@@ -444,7 +444,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-stone-400 font-bold uppercase tracking-wider">
+              <span className="text-stone-600 font-bold uppercase tracking-wider">
                 目的:
               </span>
               <span className="text-stone-600 font-semibold">
@@ -455,7 +455,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 見えるようにする。未設定なら琥珀色で「開けば直せる」ことを
                 示す（未設定のまま使うと判定が出ないため）。 */}
             <div className="flex items-center gap-1.5">
-              <span className="text-stone-400 font-bold uppercase tracking-wider">
+              <span className="text-stone-600 font-bold uppercase tracking-wider">
                 生年月日:
               </span>
               <span
@@ -473,15 +473,15 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
         <div className="flex items-center gap-3 ml-auto">
           {isSyncing && (
-            <span className="text-[10px] text-stone-400 flex items-center gap-1">
+            <span className="text-[10px] text-stone-600 flex items-center gap-1">
               <RefreshCw className="w-3 h-3 animate-spin text-indigo-600" />
               Syncing...
             </span>
           )}
           {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-stone-400" />
+            <ChevronUp className="w-4 h-4 text-stone-600" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-stone-400" />
+            <ChevronDown className="w-4 h-4 text-stone-600" />
           )}
         </div>
       </div>
@@ -492,7 +492,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {/* Target Date */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-indigo-600" /> 目標年月日
               </label>
               <input
@@ -505,7 +505,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
             {/* Board Standard */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 方位盤基準
               </label>
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
@@ -517,7 +517,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.useClassicalBoard
                       ? "bg-indigo-500/20 text-indigo-600 border border-indigo-200"
-                      : "text-stone-400 hover:text-stone-600"
+                      : "text-stone-600 hover:text-stone-800"
                   }`}
                 >
                   暦基準 (古典)
@@ -530,7 +530,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     !config.useClassicalBoard
                       ? "bg-amber-500/20 text-amber-600 border border-amber-200"
-                      : "text-stone-400 hover:text-stone-600"
+                      : "text-stone-600 hover:text-stone-800"
                   }`}
                 >
                   木星黄経 (物理)
@@ -540,7 +540,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               {/* Sub-option for Physical Month Star Calculation */}
               {!config.useClassicalBoard && (
                 <div className="pt-1 space-y-1">
-                  <span className="text-[9px] text-stone-400 block">
+                  <span className="text-[9px] text-stone-600 block">
                     月盤の算出方法:
                   </span>
                   <div className="grid grid-cols-2 gap-1 p-0.5 bg-white rounded-lg border border-stone-200">
@@ -556,7 +556,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                         config.physicalMonthMode === "independent" ||
                         !config.physicalMonthMode
                           ? "bg-stone-100 text-stone-900 shadow-sm"
-                          : "bg-transparent text-stone-400 hover:text-stone-600"
+                          : "bg-transparent text-stone-600 hover:text-stone-800"
                       }`}
                       title="物理独立型: 年盤は木星、月盤は太陽の位置から、それぞれ他方に依存せず独立して算出します。"
                     >
@@ -570,7 +570,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       className={`py-1 rounded text-[9px] font-bold transition-all ${
                         config.physicalMonthMode === "coupled"
                           ? "bg-stone-100 text-stone-900 shadow-sm"
-                          : "bg-transparent text-stone-400 hover:text-stone-600"
+                          : "bg-transparent text-stone-600 hover:text-stone-800"
                       }`}
                       title="伝統連動型: 木星黄経から年盤を決定し、伝統的な九星気学の規則に従って月盤を連動算出します。"
                     >
@@ -583,7 +583,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
             {/* 時支の時刻基準 */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 時支の時刻
               </label>
               <div className="grid grid-cols-2 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
@@ -595,7 +595,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.zodiacTimeBasis !== "solar"
                       ? "bg-indigo-500/20 text-indigo-600 border border-indigo-200"
-                      : "text-stone-400 hover:text-stone-600"
+                      : "text-stone-600 hover:text-stone-800"
                   }`}
                   title="標準時: 日本標準時（東経135度）の時計時刻で時支を決めます。出発地に関わらず全国同じ答えになります。"
                 >
@@ -609,14 +609,14 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                   className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                     config.zodiacTimeBasis === "solar"
                       ? "bg-amber-500/20 text-amber-600 border border-amber-200"
-                      : "text-stone-400 hover:text-stone-600"
+                      : "text-stone-600 hover:text-stone-800"
                   }`}
                   title="真太陽時: 出発地の経度と均時差で時刻を補正してから時支を決めます。那覇と根室では最大71分ずれます。"
                 >
                   真太陽時
                 </button>
               </div>
-              <p className="text-[9px] text-stone-400 leading-relaxed">
+              <p className="text-[9px] text-stone-600 leading-relaxed">
                 {config.zodiacTimeBasis === "solar"
                   ? "出発地の経度で時刻を補正します。時支と、真夜中付近では日支も変わります。年盤・月盤は変わりません。"
                   : "全国一律で日本標準時（東経135度）を使います。"}
@@ -625,7 +625,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
             {/* Direction Filter Mode */}
             <div className="space-y-2 col-span-1 sm:col-span-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Compass className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 吉凶方位フィルター
               </label>
@@ -645,7 +645,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                     className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
                       config.directionFilterMode === mode
                         ? "bg-stone-100 text-stone-900 border-stone-300 shadow-sm"
-                        : "bg-transparent text-stone-400 border-transparent hover:text-stone-600"
+                        : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
                     }`}
                   >
                     {mode === "composite"
@@ -669,7 +669,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               ホームと同じ値を読み書きするので、どちらで変えても揃う。 */}
           <div className="space-y-2 pt-3 border-t border-stone-200">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Compass className="w-3.5 h-3.5 text-indigo-600" />
                 プロフィール（全ページ共通・判定の基準）
               </label>
@@ -695,7 +695,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <span className="text-[9px] text-stone-400 block">
+                <span className="text-[9px] text-stone-600 block">
                   生年月日（本命星と天中殺の基準）
                 </span>
                 <input
@@ -741,7 +741,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-stone-200">
             {/* Action Intent Weighting */}
             <div className="space-y-2">
-              <label className="text-[10px] uppercase font-bold text-stone-400 tracking-wider flex items-center gap-1">
+              <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 アクション目的 (重みづけ)
               </label>
@@ -755,7 +755,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                       className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
                         config.actionIntent === intent
                           ? "bg-indigo-500/20 text-indigo-600 border-indigo-200"
-                          : "bg-transparent text-stone-400 border-transparent hover:text-stone-600"
+                          : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
                       }`}
                     >
                       {intent === "DEFAULT"
@@ -772,8 +772,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
 
             {/* Explanation box */}
-            <div className="p-3 bg-white/70 rounded-xl border border-stone-200 flex items-start gap-2.5 text-[10px] text-stone-400 leading-normal">
-              <Info className="w-4 h-4 text-stone-400 shrink-0 mt-0.5" />
+            <div className="p-3 bg-white/70 rounded-xl border border-stone-200 flex items-start gap-2.5 text-[10px] text-stone-600 leading-normal">
+              <Info className="w-4 h-4 text-stone-600 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-stone-500 block mb-0.5">
                   フィルター/目的の効果説明

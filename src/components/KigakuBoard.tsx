@@ -51,7 +51,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
               `}
             >
               {/* Direction Label */}
-              <span className="absolute top-1 left-1.5 text-[8px] text-stone-400 uppercase tracking-widest font-light">
+              <span className="absolute top-1 left-1.5 text-[8px] text-stone-600 uppercase tracking-widest font-light">
                 {label}
               </span>
 
@@ -71,7 +71,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
                   {star.japanese.substring(0, 2)}
                 </span>
                 <span
-                  className={`text-[9px] uppercase tracking-widest mt-1 ${isCenter ? "text-emerald-600" : "text-stone-400"}`}
+                  className={`text-[9px] uppercase tracking-widest mt-1 ${isCenter ? "text-emerald-600" : "text-stone-600"}`}
                 >
                   {star.japanese.substring(2)}
                 </span>
@@ -80,7 +80,7 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
           );
         })}
       </div>
-      <div className="mt-2 text-[9px] text-stone-400 tracking-widest uppercase">
+      <div className="mt-2 text-[9px] text-stone-600 tracking-widest uppercase">
         Luo Shu Layout (South Top)
       </div>
     </div>

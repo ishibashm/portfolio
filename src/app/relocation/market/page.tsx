@@ -51,7 +51,7 @@ function KpiCard({
       className="rounded-2xl border border-gray-200 bg-white p-4 shadow-xs"
       title={hint}
     >
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-600">
         {label}
       </p>
       <p className="mt-1 text-xl font-bold text-stone-800">{value}</p>
@@ -339,7 +339,7 @@ export default function MarketAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
                   <th className="py-1.5 pr-2">県</th>
                   <th className="py-1.5 pr-2 text-right">掲載数</th>
                   <th className="py-1.5 pr-2 text-right">家賃中央値</th>
@@ -399,7 +399,7 @@ export default function MarketAnalyticsPage() {
                     ) : (
                       <td
                         colSpan={4}
-                        className="py-1.5 text-right text-stone-400"
+                        className="py-1.5 text-right text-stone-600"
                       >
                         標本不足
                       </td>
@@ -419,7 +419,7 @@ export default function MarketAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-[11px]">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
                   <th className="py-1.5 pr-2">市区町村</th>
                   <th className="py-1.5 pr-2 text-right">掲載数</th>
                   <th className="py-1.5 pr-2 text-right">㎡単価中央値</th>
@@ -462,7 +462,7 @@ export default function MarketAnalyticsPage() {
             </table>
           </div>
           {stats.volatilityRanking.length === 0 && (
-            <p className="text-[11px] text-stone-400">データ待ち</p>
+            <p className="text-[11px] text-stone-600">データ待ち</p>
           )}
         </Section>
 
@@ -478,7 +478,7 @@ export default function MarketAnalyticsPage() {
               ? new Date(`${clim.meta.from}T12:00:00+09:00`)
               : null;
             if (!from || Object.keys(profiles).length === 0) {
-              return <p className="text-[11px] text-stone-400">データ待ち</p>;
+              return <p className="text-[11px] text-stone-600">データ待ち</p>;
             }
             const idx = Math.min(
               8,
@@ -511,7 +511,7 @@ export default function MarketAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-[11px]">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-400">
+                    <tr className="border-b border-gray-200 text-left text-[10px] uppercase tracking-wider text-stone-600">
                       <th className="py-1.5 pr-2">本命星</th>
                       <th className="py-1.5 pr-2 text-right">今年度の三盤吉</th>
                       <th className="py-1.5 pr-2 text-right">9年平均</th>
@@ -561,7 +561,7 @@ export default function MarketAnalyticsPage() {
                     ))}
                   </tbody>
                 </table>
-                <p className="mt-2 text-[10px] text-stone-400">
+                <p className="mt-2 text-[10px] text-stone-600">
                   ※天中殺グループ6通りの平均。個人の値は物件スキャナーの「引っ越し時期を探す」で自分の命式に対して表示される。
                 </p>
               </div>

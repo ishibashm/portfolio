@@ -47,7 +47,7 @@ const LocationPickerInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-400">
+      <div className="w-full h-full bg-gray-100 dark:bg-stone-100 flex items-center justify-center font-mono text-xs text-stone-600">
         マップを読み込み中...
       </div>
     ),
@@ -1048,7 +1048,7 @@ export default function RegionalWealthPage() {
               <details> なので畳んだままでも値は保持される（#247 と同じ）。 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 目標日
               </label>
               <input
@@ -1063,7 +1063,7 @@ export default function RegionalWealthPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 生年月日 (出生チャート)
               </label>
               <input
@@ -1089,7 +1089,7 @@ export default function RegionalWealthPage() {
             </summary>
             <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 方位計算エンジン
               </label>
               <select
@@ -1108,7 +1108,7 @@ export default function RegionalWealthPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 方位計算レイヤー
               </label>
               <select
@@ -1127,7 +1127,7 @@ export default function RegionalWealthPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 北基準方位
               </label>
               <select
@@ -1145,7 +1145,7 @@ export default function RegionalWealthPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-stone-400 mb-1">
+              <label className="block text-xs font-semibold text-stone-600 mb-1">
                 月相タイミング補正
               </label>
               <select
@@ -1174,7 +1174,7 @@ export default function RegionalWealthPage() {
                     </label>
                     <button
                       onClick={() => setShowBirthMapPicker(!showBirthMapPicker)}
-                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                      className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBirthMapPicker ? "bg-indigo-50 dark:bg-indigo-50 text-indigo-600 dark:text-indigo-600 border-indigo-200 dark:border-indigo-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                     >
                       {showBirthMapPicker ? "地図を閉じる" : "地図検索"}
                     </button>
@@ -1243,7 +1243,7 @@ export default function RegionalWealthPage() {
                   </label>
                   <button
                     onClick={() => setShowBaseMapPicker(!showBaseMapPicker)}
-                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-400 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border transition-colors ${showBaseMapPicker ? "bg-emerald-50 dark:bg-emerald-50 text-emerald-600 dark:text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-gray-50 dark:bg-white text-stone-600 dark:text-stone-500 border-gray-200 dark:border-stone-200"}`}
                   >
                     {showBaseMapPicker ? "地図を閉じる" : "地図検索"}
                   </button>
@@ -1301,7 +1301,7 @@ export default function RegionalWealthPage() {
                       setSelectedPresetId("");
                     }}
                     title="現在地をGPSで取得"
-                    className="p-2.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 rounded-lg text-stone-400 dark:text-stone-500 transition-colors shrink-0"
+                    className="p-2.5 bg-gray-100 dark:bg-stone-100 hover:bg-gray-200 dark:hover:bg-stone-200 rounded-lg text-stone-600 dark:text-stone-500 transition-colors shrink-0"
                   >
                     <LocateFixed className="w-4 h-4" />
                   </button>
@@ -1339,7 +1339,7 @@ export default function RegionalWealthPage() {
                 <MapPin className="w-5 h-5 text-indigo-500" />
                 吉方位マップ
               </h2>
-              <div className="text-xs text-stone-400">
+              <div className="text-xs text-stone-600">
                 中心座標:{" "}
                 {metadata ? `${metadata.baseLat}, ${metadata.baseLon}` : "..."}
               </div>
@@ -1383,7 +1383,7 @@ export default function RegionalWealthPage() {
                         <div className="font-bold text-gray-900 dark:text-stone-800">
                           {item.areaName}
                         </div>
-                        <div className="text-xs text-stone-400 flex items-center gap-1 mt-1">
+                        <div className="text-xs text-stone-600 flex items-center gap-1 mt-1">
                           <span
                             className={`w-2 h-2 rounded-full ${getBaseAstrologyStatus(item.astrologyStatus) === "OPTIMAL" ? "bg-emerald-500" : "bg-blue-400"}`}
                           ></span>
@@ -1401,7 +1401,7 @@ export default function RegionalWealthPage() {
                   isRecommendedRelocationStatus(item.astrologyStatus),
                 ).length === 0 &&
                   !loading && (
-                  <div className="text-sm text-stone-400 text-center py-4">
+                  <div className="text-sm text-stone-600 text-center py-4">
                     条件に合う安全な方位が見つかりませんでした
                   </div>
                   )}
@@ -1411,7 +1411,7 @@ export default function RegionalWealthPage() {
             {/* 方位ごとの所得の幅。以前は「スコア分布」という散布図だった
                 （見出しも中身に合わせて変えた）。 */}
             <div className="bg-white dark:bg-white rounded-2xl shadow-sm p-4 border border-gray-200 dark:border-stone-200 flex-1 min-h-[300px] flex flex-col">
-              <h2 className="text-sm font-semibold flex items-center gap-2 mb-4 text-stone-400 uppercase tracking-wider">
+              <h2 className="text-sm font-semibold flex items-center gap-2 mb-4 text-stone-600 uppercase tracking-wider">
                 <Compass className="w-4 h-4 text-indigo-500" />
                 方位ごとの所得の幅
               </h2>
@@ -1426,7 +1426,7 @@ export default function RegionalWealthPage() {
                         key={b.dir}
                         className="flex items-center gap-2 text-[10px] text-stone-300"
                       >
-                        <span className="w-6 shrink-0 font-bold text-stone-400">
+                        <span className="w-6 shrink-0 font-bold text-stone-600">
                           {DIRECTION_LABELS[b.dir]}
                         </span>
                         <span>該当なし</span>
@@ -1474,13 +1474,13 @@ export default function RegionalWealthPage() {
                       <span className="w-16 shrink-0 text-right font-mono text-[10px] text-stone-500">
                         {Math.round(b.median)}万
                       </span>
-                      <span className="w-8 shrink-0 text-right font-mono text-[9px] text-stone-400">
+                      <span className="w-8 shrink-0 text-right font-mono text-[9px] text-stone-600">
                         {b.areas}件
                       </span>
                     </div>
                   );
                 })}
-                <p className="mt-1 text-[9px] leading-relaxed text-stone-400">
+                <p className="mt-1 text-[9px] leading-relaxed text-stone-600">
                   棒は一人当たり所得の幅（左端が最小・右端が最大）、縦線が中央値です。物差しは全方位で共通。吉凶は方位から決まるので方位ごとに 1 つです。
                 </p>
               </div>
@@ -1507,7 +1507,7 @@ export default function RegionalWealthPage() {
                 </svg>
                 データインテリジェンス基盤
               </h2>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 leading-relaxed">
+              <p className="text-xs text-stone-600 dark:text-stone-500 mb-4 leading-relaxed">
                 本システムは、占術モデルによる方位スコア（アストロカートグラフィ・九星気学）に加え、日本の最も信頼性が高い公的不動産データを統合し、各地域の「投資対効果（コスパ）」と「富裕度」をシミュレーションしています。
               </p>
 
@@ -1540,7 +1540,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-400 leading-tight">
+                    <p className="text-[10px] text-stone-600 leading-tight">
                       620万件超の不動産取引データ、地価公示情報をベースにした公式統計値を用いています。
                     </p>
                   </div>
@@ -1574,7 +1574,7 @@ export default function RegionalWealthPage() {
                         <line x1="10" x2="21" y1="14" y2="3" />
                       </svg>
                     </div>
-                    <p className="text-[10px] text-stone-400 leading-tight">
+                    <p className="text-[10px] text-stone-600 leading-tight">
                       AIによる構造化・賃料推定が可能な商用DBの概念を応用し、「コスパ指数（所得/地価）」を導出しています。
                     </p>
                   </div>
@@ -1641,7 +1641,7 @@ export default function RegionalWealthPage() {
                 </select>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+                <span className="text-xs font-medium text-stone-600 dark:text-stone-500">
                   所得(万円)≧
                 </span>
                 <input
@@ -1656,7 +1656,7 @@ export default function RegionalWealthPage() {
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+                <span className="text-xs font-medium text-stone-600 dark:text-stone-500">
                   距離(km)≦
                 </span>
                 <input
@@ -1671,7 +1671,7 @@ export default function RegionalWealthPage() {
                 />
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+                <span className="text-xs font-medium text-stone-600 dark:text-stone-500">
                   スコア≧
                 </span>
                 <input
@@ -1690,7 +1690,7 @@ export default function RegionalWealthPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left whitespace-nowrap">
-              <thead className="text-xs text-stone-400 dark:text-stone-500 uppercase bg-gray-50 dark:bg-white/80">
+              <thead className="text-xs text-stone-600 dark:text-stone-500 uppercase bg-gray-50 dark:bg-white/80">
                 <tr>
                   <th
                     scope="col"
@@ -1758,7 +1758,7 @@ export default function RegionalWealthPage() {
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-stone-400">
+                          <span className="font-mono font-bold text-stone-600">
                             {item.direction !== item.magneticDirection ? (
                               <span
                                 title={`真北: ${item.direction} / 磁北: ${item.magneticDirection}`}
@@ -1796,13 +1796,13 @@ export default function RegionalWealthPage() {
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-600"
                             : item.astrologyScore >= 60
                               ? "bg-blue-500/10 text-blue-600 dark:text-blue-600"
-                              : "bg-gray-500/10 text-stone-400 dark:text-stone-500"
+                              : "bg-gray-500/10 text-stone-600 dark:text-stone-500"
                         }`}
                       >
                         {item.astrologyScore}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right font-mono text-stone-400">
+                    <td className="px-6 py-4 text-right font-mono text-stone-600">
                       {item.distanceKm
                         ? `${item.distanceKm.toFixed(1)} km`
                         : "-"}
@@ -1810,7 +1810,7 @@ export default function RegionalWealthPage() {
                     <td className="px-6 py-4 text-right font-mono font-medium text-indigo-600 dark:text-indigo-600">
                       {formatCurrency(item.incomePerCapita)}
                     </td>
-                    <td className="px-6 py-4 text-right text-stone-400 dark:text-stone-500">
+                    <td className="px-6 py-4 text-right text-stone-600 dark:text-stone-500">
                       {item.landPricePerSqm
                         ? formatCurrency(item.landPricePerSqm)
                         : "-"}
@@ -1824,7 +1824,7 @@ export default function RegionalWealthPage() {
                         "-"
                       )}
                     </td>
-                    <td className="px-6 py-4 text-right text-stone-400 dark:text-stone-500">
+                    <td className="px-6 py-4 text-right text-stone-600 dark:text-stone-500">
                       <div className="flex items-center justify-end gap-1">
                         <Users className="w-4 h-4 opacity-50" />
                         {new Intl.NumberFormat("ja-JP").format(
@@ -1839,7 +1839,7 @@ export default function RegionalWealthPage() {
                   <tr>
                     <td
                       colSpan={8}
-                      className="px-6 py-8 text-center text-stone-400"
+                      className="px-6 py-8 text-center text-stone-600"
                     >
                       条件に一致するデータが見つかりませんでした。
                     </td>
@@ -1852,7 +1852,7 @@ export default function RegionalWealthPage() {
           {/* Pagination Controls */}
           {totalPages > 1 && (
             <div className="p-4 border-t border-gray-200 dark:border-stone-200 flex items-center justify-between">
-              <div className="text-sm text-stone-400 dark:text-stone-500">
+              <div className="text-sm text-stone-600 dark:text-stone-500">
                 全{" "}
                 <span className="font-medium text-gray-900 dark:text-stone-800">
                   {sortedTableData.length}
@@ -1876,7 +1876,7 @@ export default function RegionalWealthPage() {
                   <ChevronLeft className="w-4 h-4" />
                   前へ
                 </button>
-                <div className="flex items-center px-2 text-sm text-stone-400 dark:text-stone-500">
+                <div className="flex items-center px-2 text-sm text-stone-600 dark:text-stone-500">
                   {currentPage} / {totalPages}
                 </div>
                 <button

@@ -65,7 +65,7 @@ export const BaziReport = ({
 
   const renderPillar = (title: string, pillar: BaziPillar) => (
     <div className="flex flex-col items-center p-4 bg-white/70 border border-stone-200/60 rounded-2xl">
-      <span className="text-[10px] text-stone-400 uppercase tracking-widest mb-3 font-bold">
+      <span className="text-[10px] text-stone-600 uppercase tracking-widest mb-3 font-bold">
         {title}
       </span>
       <div className="flex flex-col items-center gap-1 mb-3">
@@ -83,17 +83,17 @@ export const BaziReport = ({
       </div>
       <div className="w-full space-y-2 border-t border-stone-200/60 pt-3">
         <div className="flex justify-between items-center text-[10px]">
-          <span className="text-stone-400">蔵干</span>
+          <span className="text-stone-600">蔵干</span>
           <span className="text-stone-600 font-mono">
             {pillar.hiddenStems?.join(", ")}
           </span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
-          <span className="text-stone-400">十二運</span>
+          <span className="text-stone-600">十二運</span>
           <span className="text-emerald-600 font-bold">{pillar.lifeStage}</span>
         </div>
         <div className="flex justify-between items-center text-[10px]">
-          <span className="text-stone-400">納音</span>
+          <span className="text-stone-600">納音</span>
           <span className="text-purple-600 truncate ml-2">{pillar.nayin}</span>
         </div>
       </div>
@@ -141,7 +141,7 @@ export const BaziReport = ({
               「{data.summary.description}」
             </p>
             <div className="pt-4 border-t border-stone-200/60">
-              <p className="text-[10px] text-stone-400 uppercase font-bold mb-2">
+              <p className="text-[10px] text-stone-600 uppercase font-bold mb-2">
                 神殺 / 特殊星
               </p>
               <div className="flex flex-wrap gap-2">
@@ -208,7 +208,7 @@ export const BaziReport = ({
                 className="flex justify-between border-b border-stone-200/60 pb-1"
               >
                 <span className="text-emerald-600">{term}</span>
-                <span className="text-stone-400">{time?.split(" ")[0]}</span>
+                <span className="text-stone-600">{time?.split(" ")[0]}</span>
               </div>
             ))}
           </div>
@@ -249,7 +249,7 @@ export const BaziReport = ({
                 key={i}
                 className="flex-shrink-0 w-24 p-3 rounded-xl bg-white/70 border border-stone-200/60 text-center"
               >
-                <p className="text-[10px] text-stone-400 mb-1">
+                <p className="text-[10px] text-stone-600 mb-1">
                   {cycle.startYear} -
                 </p>
                 <p className="text-xl font-bold text-stone-900 mb-1">

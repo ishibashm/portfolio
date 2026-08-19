@@ -239,7 +239,7 @@ export function AstroGridCalendar({
   const getWeekdayColor = (day: DateScore) => {
     if (day.holiday.isHoliday || day.weekday === 0) return "text-red-600"; // 日曜・祝日: 赤
     if (day.weekday === 6) return "text-blue-600"; // 土曜: 青
-    return "text-stone-400 dark:text-stone-500";
+    return "text-stone-600 dark:text-stone-500";
   };
 
   return (
@@ -306,12 +306,12 @@ export function AstroGridCalendar({
       </div>
 
       {rangeMode !== "7days" && extendedLoading && (
-        <div className="text-[11px] text-stone-400 px-1 py-2">
+        <div className="text-[11px] text-stone-600 px-1 py-2">
           {rangeMode === "12months" ? "12ヶ月分" : "30日分"}の吉凶を計算中…
         </div>
       )}
       {rangeMode !== "7days" && !extendedLoading && displayedDays.length === 0 && (
-        <div className="text-[11px] text-stone-400 px-1 py-2">
+        <div className="text-[11px] text-stone-600 px-1 py-2">
           この期間の吉凶を取得できませんでした。
         </div>
       )}
@@ -406,7 +406,7 @@ export function AstroGridCalendar({
               <div className="space-y-2 border-t border-stone-200 pt-2 mt-2">
                 {/* 算出内訳 */}
                 <div>
-                  <div className="text-stone-400 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                  <div className="text-stone-600 font-bold uppercase text-[9px] tracking-wider mb-0.5">
                     吉凶の内訳式:
                   </div>
                   <div className="text-[9.5px] font-mono text-stone-600 leading-normal">
@@ -492,7 +492,7 @@ export function AstroGridCalendar({
 
                 {/* 暦情報 */}
                 <div className="mb-2 text-stone-600">
-                  <div className="text-stone-400 font-bold uppercase text-[9px] tracking-wider mb-0.5">
+                  <div className="text-stone-600 font-bold uppercase text-[9px] tracking-wider mb-0.5">
                     当日の暦注:
                   </div>
                   <div className="font-semibold text-stone-900">

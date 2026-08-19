@@ -285,7 +285,7 @@ export default function PractitionersPage() {
                 className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
                 placeholder="どんな相談を受けているか、どのくらいの期間やっているか、料金の目安などを書いてください。"
               />
-              <span className="mt-1 block text-[11px] text-stone-400">
+              <span className="mt-1 block text-[11px] text-stone-600">
                 {profile.trim().length} / {PRACTITIONER_LIMITS.profileMax}
               </span>
             </Field>

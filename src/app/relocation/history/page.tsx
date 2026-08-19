@@ -27,7 +27,7 @@ import {
 const PastMoveMap = dynamic(() => import("@/components/nba/PastMoveMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[320px] bg-stone-50/60 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-400 backdrop-blur-md">
+    <div className="w-full h-[320px] bg-stone-50/60 border border-stone-200 rounded-3xl flex items-center justify-center font-mono text-xs text-stone-600 backdrop-blur-md">
       [ INITIALIZING MAP ENGINE... ]
     </div>
   ),
@@ -443,7 +443,7 @@ export default function RelocationHistoryPage() {
               </span>
             </div>
           </div>
-          <span className="text-stone-400 text-[10px] hidden md:inline">
+          <span className="text-stone-600 text-[10px] hidden md:inline">
             ※詳細設定は上部のコントロールバーから変更できます。
           </span>
         </div>
@@ -489,7 +489,7 @@ export default function RelocationHistoryPage() {
                                 className={`py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                                   datePrecision === p
                                     ? "bg-indigo-500/20 text-indigo-600 border border-indigo-500/30"
-                                    : "text-stone-400 hover:text-stone-700"
+                                    : "text-stone-600 hover:text-stone-700"
                                 }`}
                               >
                                 {getPrecisionBadge(p)}
@@ -577,7 +577,7 @@ export default function RelocationHistoryPage() {
                           if (name) setToName(name);
                         }}
                       />
-                      <div className="grid grid-cols-2 gap-4 mt-3 text-[9px] font-mono text-stone-400 leading-none">
+                      <div className="grid grid-cols-2 gap-4 mt-3 text-[9px] font-mono text-stone-600 leading-none">
                         <div>
                           出発地座標: {fromLat.toFixed(5)}, {fromLon.toFixed(5)}
                         </div>
@@ -674,14 +674,14 @@ export default function RelocationHistoryPage() {
               </div>
             ) : historyItems.length === 0 ? (
               <div className="p-10 rounded-[2.5rem] bg-white/20 border border-dashed border-stone-200 text-center flex flex-col items-center justify-center gap-4">
-                <div className="p-4 bg-white/80 rounded-full border border-stone-200 text-stone-400 shadow-inner">
+                <div className="p-4 bg-white/80 rounded-full border border-stone-200 text-stone-600 shadow-inner">
                   <Compass className="w-8 h-8" />
                 </div>
                 <div className="max-w-sm">
                   <h4 className="font-bold text-stone-900">
                     履歴が登録されていません
                   </h4>
-                  <p className="text-xs text-stone-400 mt-1.5 leading-relaxed">
+                  <p className="text-xs text-stone-600 mt-1.5 leading-relaxed">
                     引越しやかつて行った旅行の履歴を追加し、方位やタイミングの吉凶的影響を分析しましょう。右上から追加できます。
                   </p>
                 </div>
@@ -731,7 +731,7 @@ export default function RelocationHistoryPage() {
                         <div className="flex flex-col">
                           <div className="flex flex-wrap items-center gap-2 mb-1.5">
                             <span className="text-xs font-mono font-bold text-stone-500 flex items-center gap-1">
-                              <Calendar className="w-3.5 h-3.5 text-stone-400" />{" "}
+                              <Calendar className="w-3.5 h-3.5 text-stone-600" />{" "}
                               {displayDate}
                             </span>
                             <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-stone-100/80 border border-stone-200/80 text-stone-500 leading-none">
@@ -754,16 +754,16 @@ export default function RelocationHistoryPage() {
                             <span className="text-indigo-600 font-medium text-sm">
                               {item.fromName}
                             </span>
-                            <ArrowRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                            <ArrowRight className="w-3.5 h-3.5 text-stone-600 shrink-0" />
                             <span className="text-red-300 font-medium text-sm">
                               {item.toName}
                             </span>
-                            <span className="text-[10px] font-mono text-stone-400 bg-white px-1.5 py-0.5 rounded font-normal shrink-0">
+                            <span className="text-[10px] font-mono text-stone-600 bg-white px-1.5 py-0.5 rounded font-normal shrink-0">
                               {item.direction} ({item.bearing}°方位)
                             </span>
                           </h3>
                           {item.notes && (
-                            <p className="text-xs text-stone-400 mt-1 leading-relaxed line-clamp-1">
+                            <p className="text-xs text-stone-600 mt-1 leading-relaxed line-clamp-1">
                               {item.notes}
                             </p>
                           )}
@@ -771,7 +771,7 @@ export default function RelocationHistoryPage() {
                       </div>
 
                       <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 border-t border-stone-200/60 pt-3 md:pt-0 md:border-t-0">
-                        <span className="text-[10px] text-stone-400 font-mono block md:hidden">
+                        <span className="text-[10px] text-stone-600 font-mono block md:hidden">
                           クリックして詳細を表示
                         </span>
                         <div className="flex items-center gap-2">
@@ -783,7 +783,7 @@ export default function RelocationHistoryPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                           <ChevronRight
-                            className={`w-4 h-4 text-stone-400 group-hover:text-stone-500 transition-all shrink-0 ${isSelected ? "rotate-90 text-indigo-400" : ""}`}
+                            className={`w-4 h-4 text-stone-600 group-hover:text-stone-500 transition-all shrink-0 ${isSelected ? "rotate-90 text-indigo-400" : ""}`}
                           />
                         </div>
                       </div>
@@ -809,7 +809,7 @@ export default function RelocationHistoryPage() {
                     {/* Header Details */}
                     <div className="flex justify-between items-start gap-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 text-[9px] font-bold text-stone-400 tracking-wider uppercase mb-1">
+                        <div className="inline-flex items-center gap-1.5 text-[9px] font-bold text-stone-600 tracking-wider uppercase mb-1">
                           <MapPin className="w-3 h-3 text-indigo-400" />{" "}
                           方位鑑定詳細
                         </div>
@@ -828,7 +828,7 @@ export default function RelocationHistoryPage() {
                     {/* Auspice Rating Panel */}
                     <div className="mt-6 p-5 rounded-2xl bg-stone-100/80 border border-stone-200/80 text-center relative overflow-hidden shadow-inner">
                       <div className="absolute top-0 right-0 w-24 h-24 bg-stone-100/80 rounded-full blur-2xl"></div>
-                      <span className="text-[9px] uppercase tracking-widest text-stone-400 font-bold block mb-1">
+                      <span className="text-[9px] uppercase tracking-widest text-stone-600 font-bold block mb-1">
                         総合吉凶評価
                       </span>
                       <span
@@ -849,7 +849,7 @@ export default function RelocationHistoryPage() {
                             selectedItem.judgment.finalStatus !==
                             selectedItem.evaluation.status
                               ? "text-amber-600 font-bold"
-                              : "text-stone-400"
+                              : "text-stone-600"
                           }`}
                         >
                           保存時の判定: {selectedItem.judgment.finalStatus}
@@ -878,7 +878,7 @@ export default function RelocationHistoryPage() {
                             <span className="font-bold text-stone-500">
                               年盤レイヤー (Long-term)
                             </span>
-                            <span className="text-[10px] text-stone-400">
+                            <span className="text-[10px] text-stone-600">
                               約60年〜数年間の引力波
                             </span>
                           </div>
@@ -886,7 +886,7 @@ export default function RelocationHistoryPage() {
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.yearLayer ===
                               "N/A"
-                                ? "text-stone-400"
+                                ? "text-stone-600"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.yearLayer,
                                   ).color.split(" ")[0]
@@ -906,7 +906,7 @@ export default function RelocationHistoryPage() {
                             <span className="font-bold text-stone-500">
                               月盤レイヤー (Mid-term)
                             </span>
-                            <span className="text-[10px] text-stone-400">
+                            <span className="text-[10px] text-stone-600">
                               約数ヶ月〜数年間の影響
                             </span>
                           </div>
@@ -914,7 +914,7 @@ export default function RelocationHistoryPage() {
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.monthLayer ===
                               "N/A"
-                                ? "text-stone-400"
+                                ? "text-stone-600"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.monthLayer,
                                   ).color.split(" ")[0]
@@ -935,14 +935,14 @@ export default function RelocationHistoryPage() {
                             <span className="font-bold text-stone-500">
                               日盤レイヤー (Short-term)
                             </span>
-                            <span className="text-[10px] text-stone-400">
+                            <span className="text-[10px] text-stone-600">
                               数日〜数週間の短期引力
                             </span>
                           </div>
                           <span
                             className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               selectedItem.evaluation.details.dayLayer === "N/A"
-                                ? "text-stone-400"
+                                ? "text-stone-600"
                                 : getRatingLabel(
                                     selectedItem.evaluation.details.dayLayer,
                                   ).color.split(" ")[0]
@@ -960,11 +960,11 @@ export default function RelocationHistoryPage() {
 
                     {/* Metadata Coordinates List */}
                     <div className="mt-6 p-4 rounded-xl bg-white/80 border border-stone-200/80 text-[10px] font-mono space-y-2">
-                      <div className="text-stone-400 uppercase tracking-widest text-[9px] font-bold border-b border-stone-200 pb-1.5 mb-2">
+                      <div className="text-stone-600 uppercase tracking-widest text-[9px] font-bold border-b border-stone-200 pb-1.5 mb-2">
                         移動座標 (Coordinates)
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-400">真方位角:</span>
+                        <span className="text-stone-600">真方位角:</span>
                         <span className="text-stone-600 font-bold">
                           {selectedItem.bearing}° ({selectedItem.direction}方向)
                         </span>
@@ -973,7 +973,7 @@ export default function RelocationHistoryPage() {
                           判定は真北のままで、現地で測ったときのズレを添える */}
                       {selectedItem.magneticDirection && (
                         <div className="flex justify-between">
-                          <span className="text-stone-400">磁北で測ると:</span>
+                          <span className="text-stone-600">磁北で測ると:</span>
                           <span className="text-amber-600 font-bold">
                             {selectedItem.magneticBearing}° (
                             {selectedItem.magneticDirection}方向)
@@ -981,14 +981,14 @@ export default function RelocationHistoryPage() {
                         </div>
                       )}
                       <div className="flex justify-between">
-                        <span className="text-stone-400">出発地経緯度:</span>
+                        <span className="text-stone-600">出発地経緯度:</span>
                         <span className="text-stone-600">
                           {selectedItem.fromLat.toFixed(4)},{" "}
                           {selectedItem.fromLon.toFixed(4)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-stone-400">目的地経緯度:</span>
+                        <span className="text-stone-600">目的地経緯度:</span>
                         <span className="text-stone-600">
                           {selectedItem.toLat.toFixed(4)},{" "}
                           {selectedItem.toLon.toFixed(4)}
@@ -997,7 +997,7 @@ export default function RelocationHistoryPage() {
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-stone-400 leading-relaxed font-normal flex items-start gap-1.5 border-t border-stone-200/60 pt-4">
+                  <div className="text-[10px] text-stone-600 leading-relaxed font-normal flex items-start gap-1.5 border-t border-stone-200/60 pt-4">
                     <Info className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
                     <span>
                       気学における方位の吉凶は、出発時における天体の電磁的干渉に基づきます。吉方位はあなたのハードウェア周波数を整え、大凶方位は自律神経負荷を高めトラブルの原因になり得ます。
@@ -1005,13 +1005,13 @@ export default function RelocationHistoryPage() {
                   </div>
                 </motion.div>
               ) : (
-                <div className="h-full rounded-[2rem] border border-dashed border-stone-200 p-8 text-center flex flex-col items-center justify-center gap-4 text-stone-400 sticky top-6 bg-white/10 min-h-[300px]">
-                  <HelpCircle className="w-8 h-8 text-stone-400 animate-pulse" />
+                <div className="h-full rounded-[2rem] border border-dashed border-stone-200 p-8 text-center flex flex-col items-center justify-center gap-4 text-stone-600 sticky top-6 bg-white/10 min-h-[300px]">
+                  <HelpCircle className="w-8 h-8 text-stone-600 animate-pulse" />
                   <div className="max-w-xs">
                     <h4 className="font-bold text-stone-500 text-sm">
                       詳細鑑定ボード
                     </h4>
-                    <p className="text-xs text-stone-400 mt-2 leading-relaxed">
+                    <p className="text-xs text-stone-600 mt-2 leading-relaxed">
                       タイムラインから特定の移動履歴を選択すると、ここに年盤・月盤・日盤ごとの詳細な方位の吉凶評価が展開されます。
                     </p>
                   </div>

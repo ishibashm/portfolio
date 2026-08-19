@@ -356,18 +356,18 @@ export default function AdminBlogPage() {
 
         <div className="bg-white/90 border border-stone-200 rounded-3xl overflow-hidden shadow-lg">
           {posts === null ? (
-            <div className="p-10 flex items-center justify-center gap-2 text-stone-400 text-sm">
+            <div className="p-10 flex items-center justify-center gap-2 text-stone-600 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               読み込み中...
             </div>
           ) : posts.length === 0 ? (
-            <div className="p-10 text-center text-stone-400 text-sm">
+            <div className="p-10 text-center text-stone-600 text-sm">
               記事がまだありません。「新しい記事」から作れます。
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left min-w-[720px]">
-                <thead className="whitespace-nowrap text-[10px] text-stone-400 uppercase bg-stone-50 border-b border-stone-200">
+                <thead className="whitespace-nowrap text-[10px] text-stone-600 uppercase bg-stone-50 border-b border-stone-200">
                   <tr>
                     <th className="px-4 py-2.5 font-bold">タイトル / slug</th>
                     <th className="px-4 py-2.5 font-bold">状態</th>
@@ -387,7 +387,7 @@ export default function AdminBlogPage() {
                         <div className="font-bold text-stone-800">
                           {p.title}
                         </div>
-                        <div className="font-mono text-[10px] text-stone-400">
+                        <div className="font-mono text-[10px] text-stone-600">
                           {p.slug}
                           {p.published && (
                             <Link

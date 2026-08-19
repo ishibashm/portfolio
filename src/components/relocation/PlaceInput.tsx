@@ -51,19 +51,19 @@ export interface PlaceInputProps {
 const VARIANT_STYLES = {
   compact: {
     label: "text-[10px] uppercase font-bold text-stone-500",
-    optionalBadge: "ml-1.5 text-[9px] font-normal text-stone-400",
+    optionalBadge: "ml-1.5 text-[9px] font-normal text-stone-600",
     currentLocation:
       "text-[10px] text-emerald-600 hover:text-emerald-700 hover:underline shrink-0",
     input:
       "w-full px-3 py-2 bg-white border border-stone-200 rounded-xl text-xs text-stone-700 placeholder-stone-300 focus:outline-none focus:border-indigo-300",
-    searching: "text-[10px] text-stone-400 animate-pulse",
+    searching: "text-[10px] text-stone-600 animate-pulse",
     notice: "text-[10px] text-amber-600",
     suggestion:
       "w-full text-left px-2.5 py-1.5 text-xs text-stone-700 hover:bg-indigo-50 transition-colors",
     picked: "flex items-center gap-1.5 text-[10px] text-stone-500",
     pinSize: 10,
-    help: "text-[9px] text-stone-400 leading-relaxed",
-    coordsToggle: "self-start text-[9px] text-stone-400 hover:text-stone-600",
+    help: "text-[9px] text-stone-600 leading-relaxed",
+    coordsToggle: "self-start text-[9px] text-stone-600 hover:text-stone-800",
     coordInput:
       "px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[11px] font-mono text-stone-700",
   },
@@ -262,7 +262,7 @@ export function PlaceInput({
 
       {/* 決まった場所。座標そのものではなく、地名で確かめられるようにする */}
       <div className={s.picked}>
-        <MapPin size={s.pinSize} className="text-stone-400 shrink-0" />
+        <MapPin size={s.pinSize} className="text-stone-600 shrink-0" />
         {picked ? (
           <span className="truncate">{picked}</span>
         ) : hasCoords ? (
@@ -270,7 +270,7 @@ export function PlaceInput({
             設定済み（北緯 {lat.toFixed(3)} / 東経 {lon.toFixed(3)}）
           </span>
         ) : (
-          <span className="text-stone-400">
+          <span className="text-stone-600">
             {optional ? "未設定でも判定は出ます" : "まだ設定されていません"}
           </span>
         )}
