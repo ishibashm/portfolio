@@ -552,6 +552,39 @@ export default function ArbitrageMapInner({
 
   const visibleCount = visibleProperties.length;
 
+  /*
+    個別ピンを描く対象。**画面の外の物件までピンを作っていた。**
+
+    3 つ目の枝（詳細表示）は properties をそのまま並べていたので、
+    候補の上限 500 件ぶんの Marker が、画面に入っていないものも含めて
+    作られる。Leaflet は 1 つずつ DOM を持つので、混んだ地域ほど
+    そのまま重くなる（利用者から「スマホだと地図の表示に時間がかかる」
+    と報告）。見えないものは作らない。
+
+    端は少し余分に見る。境界が更新されるのは moveend / zoomend なので、
+    指で動かしている最中は古い境界のままになる。ぴったりで切ると
+    その間に縁が空く。画面の 25% ぶん外まで含めておけば、動かし終える
+    前に穴が見えることはない。
+
+    **画面に入っている物件の見え方は 1 つも変えていない。**
+  */
+  const pinProperties = useMemo(() => {
+    if (!currentBounds) return properties;
+
+    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
+    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
+
+    return properties.filter((p) => {
+      if (p.lat === null || p.lon === null) return false;
+      return (
+        p.lat >= currentBounds.minLat - latPad &&
+        p.lat <= currentBounds.maxLat + latPad &&
+        p.lon >= currentBounds.minLon - lonPad &&
+        p.lon <= currentBounds.maxLon + lonPad
+      );
+    });
+  }, [properties, currentBounds]);
+
   useEffect(() => {
     if (zoom >= 12) {
       setShowHeatmap(false);
@@ -1495,7 +1528,7 @@ export default function ArbitrageMapInner({
                 })
               : // 3. 詳細表示：個別物件ピン
                 (() => {
-                  const sortedProperties = [...properties].sort((a, b) => {
+                  const sortedProperties = [...pinProperties].sort((a, b) => {
                     const getPriority = (p: ScoredProperty) => {
                       const targetDay = p.dateScores?.[3];
                       const isUltra = targetDay?.isUltraLucky;
