@@ -1,0 +1,50 @@
+name: Probe land prices
+
+# 地価公示・都道府県地価調査（XPT002）の**項目名を実物で確かめるだけ**。
+#
+# import_land_prices.ts は価格の項目名を推測で拾い、当たらなければ
+# 「properties の中で 1000 より大きい数値を何でも 1 つ」拾う実装に
+# なっている。その値は市区町村の landPricePerSqm に入り、
+# /relocation/wealth のコスパ指数（所得 ÷ 地価）の分母になる。
+#
+# 直す前に本当の項目名を見る。**外部 API を読むだけで、DB には
+# 一切書かない。**DATABASE_URL も要らない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: "取得する年（例: 2025）。import 側は 2023 で固定されたままなので、どの年まで取れるかもここで確かめる"
+        required: false
+        default: "2025"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Probe
+        env:
+          LAND_PROBE_YEAR: ${{ inputs.year }}
+        run: npx tsx scripts/probe_land_prices.ts | tee -a "$GITHUB_STEP_SUMMARY"
