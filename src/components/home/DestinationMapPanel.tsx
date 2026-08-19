@@ -215,7 +215,7 @@ export default function DestinationMapPanel({
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Action Intent
                 </label>
-                <span className="text-[8px] text-stone-600">
+                <span className="text-[10px] text-stone-600">
                   行動の性質により吉凶の計算結果が変わります
                 </span>
               </div>
@@ -238,7 +238,7 @@ export default function DestinationMapPanel({
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Target Date
                 </label>
-                <span className="text-[8px] text-stone-600">
+                <span className="text-[10px] text-stone-600">
                   評価する目標日を指定します
                 </span>
               </div>
@@ -274,7 +274,7 @@ export default function DestinationMapPanel({
               <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-sm">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
                 >
                   {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
                 </button>
@@ -282,7 +282,7 @@ export default function DestinationMapPanel({
                   value={playSpeedDays}
                   onChange={(e) => setPlaySpeedDays(Number(e.target.value))}
                   disabled={isPlaying}
-                  className="bg-transparent text-stone-500 text-[8px] font-mono outline-none cursor-pointer"
+                  className="bg-transparent text-stone-500 text-[10px] font-mono outline-none cursor-pointer"
                 >
                   <option value={1}>1D/tick</option>
                   <option value={7}>1W/tick</option>
@@ -293,14 +293,14 @@ export default function DestinationMapPanel({
               <div className="flex justify-end gap-1 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Previous Day"
                 >
                   ◀
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Next Day"
                 >
                   ▶
@@ -308,31 +308,31 @@ export default function DestinationMapPanel({
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   TODAY
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +30D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +90D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +180D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-[8px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +1Y
                 </button>
@@ -496,7 +496,7 @@ export default function DestinationMapPanel({
                       </span>
                     )}
                   </div>
-                  <span className="text-[8px] opacity-70">TARGET EVAL</span>
+                  <span className="text-[10px] opacity-70">TARGET EVAL</span>
                 </div>
               )}
             </div>
@@ -583,7 +583,7 @@ export default function DestinationMapPanel({
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
                         {title}{" "}
-                        <span className="text-[8px] opacity-70 font-normal">
+                        <span className="text-[10px] opacity-70 font-normal">
                           {subtitle}
                         </span>
                       </div>
@@ -627,7 +627,7 @@ export default function DestinationMapPanel({
                             >
                               <div className="flex items-center gap-0.5">
                                 {isTarget && (
-                                  <span className="text-[8px] animate-pulse">
+                                  <span className="text-[10px] animate-pulse">
                                     🎯
                                   </span>
                                 )}
@@ -635,7 +635,7 @@ export default function DestinationMapPanel({
                                   {map[dir]}
                                 </span>
                               </div>
-                              <span className="text-[7px] font-mono opacity-80 mt-0.5 whitespace-nowrap">
+                              <span className="text-[9px] font-mono opacity-80 mt-0.5 whitespace-nowrap">
                                 {statusLabel}
                               </span>
                             </div>
@@ -923,7 +923,7 @@ export default function DestinationMapPanel({
                           }
                         >
                           {isActiveCol && (
-                            <span className="block text-[8px] leading-none text-rose-500">
+                            <span className="block text-[10px] leading-none text-rose-500">
                               地図
                             </span>
                           )}
@@ -1094,7 +1094,7 @@ export default function DestinationMapPanel({
               )}
 
               {/* Legend Bar */}
-              <div className="flex gap-3 mt-3 text-[7px] font-mono text-stone-500 justify-center flex-wrap">
+              <div className="flex gap-3 mt-3 text-[9px] font-mono text-stone-500 justify-center flex-wrap">
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   <span className="text-amber-600 font-bold">✨</span> 天道
                   (Tendou) 回座
@@ -1275,7 +1275,7 @@ export default function DestinationMapPanel({
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
           <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
-            <span className="text-[8px] font-mono text-stone-600 uppercase tracking-wider px-1">
+            <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider px-1">
               観点Filter:
             </span>
             <button

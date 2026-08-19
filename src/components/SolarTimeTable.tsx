@@ -298,12 +298,12 @@ export function SolarTimeTableComponent({
           <h2 className="text-xs uppercase font-mono tracking-[0.3em] text-stone-500">
             Temporal Filter Matrix
           </h2>
-          <span className="text-[8px] bg-stone-100 text-stone-500 px-1 py-0.5 ml-2">
+          <span className="text-[10px] bg-stone-100 text-stone-500 px-1 py-0.5 ml-2">
             v2.4.2
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <div className="text-[8px] font-mono text-stone-600 tracking-widest hidden md:block">
+          <div className="text-[10px] font-mono text-stone-600 tracking-widest hidden md:block">
             {date.toLocaleDateString()} / LON: {longitude.toFixed(4)}
           </div>
           {isAuthorized && (
@@ -335,14 +335,14 @@ export function SolarTimeTableComponent({
               {currentZodiac.yearZodiac}
             </span>
             {isYearVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             長期的なベースとなる年の波長と干支
           </div>
         </div>
@@ -363,14 +363,14 @@ export function SolarTimeTableComponent({
               {currentZodiac.monthZodiac}
             </span>
             {isMonthVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             潮汐力による中期の波長と月の干支
           </div>
         </div>
@@ -383,7 +383,7 @@ export function SolarTimeTableComponent({
               <span>DAY PHASE</span>
               {envData?.isYinPhase !== undefined && (
                 <span
-                  className={`text-[8px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-600 bg-blue-50" : "border-amber-200 text-amber-600 bg-amber-50"}`}
+                  className={`text-[10px] px-1 py-0.5 border ${envData.isYinPhase ? "border-blue-200 text-blue-600 bg-blue-50" : "border-amber-200 text-amber-600 bg-amber-50"}`}
                 >
                   {envData.isYinPhase ? "陰遁 (YIN)" : "陽遁 (YANG)"}
                 </span>
@@ -400,14 +400,14 @@ export function SolarTimeTableComponent({
               {currentZodiac.dayZodiac}
             </span>
             {isDayVoid ? (
-              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[8px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
+              <span className="bg-red-50 text-red-700 px-1 py-0.5 text-[10px] md:animate-pulse ml-auto border border-red-200 whitespace-nowrap">
                 VOID / 天中殺
               </span>
             ) : (
-              <span className="text-stone-600 text-[8px] ml-auto">NORMAL</span>
+              <span className="text-stone-600 text-[10px] ml-auto">NORMAL</span>
             )}
           </div>
-          <div className="text-[8px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
+          <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
             地球自転による短期の波長と日の干支。
             {envData?.isYinPhase !== undefined && (
               <span className="block mt-0.5">
@@ -536,7 +536,7 @@ export function SolarTimeTableComponent({
                 <div className="flex flex-row items-center gap-2 md:gap-4 flex-1 text-[10px] sm:text-xs w-full">
                   {/* 九星 */}
                   <div className="flex flex-col w-1/3 md:w-auto">
-                    <span className="text-stone-600 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-600 text-[10px] uppercase tracking-widest leading-none mb-1">
                       Star(周波数)
                     </span>
                     <span
@@ -547,7 +547,7 @@ export function SolarTimeTableComponent({
                   </div>
                   {/* 八門 */}
                   <div className="flex flex-col flex-1">
-                    <span className="text-stone-600 text-[8px] uppercase tracking-widest leading-none mb-1">
+                    <span className="text-stone-600 text-[10px] uppercase tracking-widest leading-none mb-1">
                       Gate(ゲート)
                     </span>
                     <div className="flex items-center gap-1.5">

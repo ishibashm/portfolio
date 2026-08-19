@@ -483,7 +483,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.classicalStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.classicalStatus)}`}
                                 >
                                   {item.classicalStatus.replace("NOISE_", "")}
                                 </span>
@@ -501,7 +501,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalIndepStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalIndepStatus)}`}
                                 >
                                   {item.physicalIndepStatus.replace(
                                     "NOISE_",
@@ -522,7 +522,7 @@ export default function ScorecardPanel({
                             <td className="p-3 whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[8px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalCoupledStatus)}`}
+                                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border uppercase tracking-wider ${statusColor(item.physicalCoupledStatus)}`}
                                 >
                                   {item.physicalCoupledStatus.replace(
                                     "NOISE_",
@@ -542,12 +542,12 @@ export default function ScorecardPanel({
                             {/* Consensus / Highlights */}
                             <td className="p-3 whitespace-nowrap text-center">
                               {item.isConsensusClear && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
                                   トリプル大吉 🌟
                                 </span>
                               )}
                               {item.isDivergenceAlert && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
                                   位相差警告 ⚠️
                                 </span>
                               )}
@@ -1429,7 +1429,7 @@ export default function ScorecardPanel({
                               className={`border p-1 text-center rounded flex flex-col items-center justify-center transition-all ${bg}`}
                               title={`${d.dateStr}: ${d.status}`}
                             >
-                              <span className="text-[7px] opacity-70 font-mono">
+                              <span className="text-[9px] opacity-70 font-mono">
                                 {mMonth}/{mDay}
                               </span>
                               <span className="text-[9px] font-bold font-mono">
@@ -1532,7 +1532,7 @@ export default function ScorecardPanel({
                                     </strong>
                                   </span>
                                   <span
-                                    className={`px-1 py-0.5 rounded text-[8px] font-mono border ${statusColor(rental.astrologyStatus)}`}
+                                    className={`px-1 py-0.5 rounded text-[10px] font-mono border ${statusColor(rental.astrologyStatus)}`}
                                   >
                                     {rental.astrologyStatus}
                                   </span>
