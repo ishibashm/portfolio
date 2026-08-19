@@ -508,11 +508,11 @@ function IntradayChart({
                   />
                 )}
               </div>
-              <div className="text-[8px] font-mono text-stone-600">
+              <div className="text-[10px] font-mono text-stone-600">
                 {r.hour}
               </div>
               <div
-                className={`text-[8px] font-mono ${
+                className={`text-[10px] font-mono ${
                   future
                     ? "text-stone-300"
                     : delta > 0
@@ -561,7 +561,7 @@ function WeekdayHeatmap({
           {Array.from({ length: 24 }, (_, h) => (
             <span
               key={h}
-              className="flex-1 text-center text-[8px] font-mono text-stone-600"
+              className="flex-1 text-center text-[10px] font-mono text-stone-600"
             >
               {h % 3 === 0 ? h : ""}
             </span>

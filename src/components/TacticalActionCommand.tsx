@@ -72,7 +72,7 @@ export function TacticalActionCommandComponent({
         <div className="shrink-0 flex items-center justify-center bg-white/70 border border-current p-2 md:p-4 min-w-[80px] md:min-w-[120px]">
           <div className="flex flex-col items-center">
             <Icon size={32} className={`md:size-[42px] mb-1 ${iconClass}`} />
-            <div className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-mono mt-1">
+            <div className="text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-mono mt-1">
               Defcon
             </div>
             <div className="text-3xl md:text-5xl font-black font-sans tracking-tighter leading-none">
@@ -86,7 +86,7 @@ export function TacticalActionCommandComponent({
             <h2 className="text-[9px] md:text-[10px] uppercase font-mono tracking-widest bg-white/70 px-2 py-0.5 border border-current self-start sm:self-auto">
               Command Directive
             </h2>
-            <span className="text-[7px] md:text-[8px] font-mono opacity-80">
+            <span className="text-[9px] md:text-[10px] font-mono opacity-80">
               {logicTrace}
             </span>
           </div>
