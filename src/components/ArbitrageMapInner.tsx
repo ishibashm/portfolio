@@ -23,7 +23,7 @@ import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import type { DayTier } from "@/utils/auspiciousDays";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
-import { clearLeafletDefaultIconUrl } from "@/lib/leafletDefaultIcon";
+import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import {
   HAZARD_TABS,
@@ -54,15 +54,7 @@ import {
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
-clearLeafletDefaultIconUrl();
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
+applyLeafletDefaultIcon();
 
 /**
  * 俯瞰と近景の境目のズーム。これ未満なら県の塗り分け、以上なら物件のピン。

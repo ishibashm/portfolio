@@ -1,4 +1,7 @@
 import L from "leaflet";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 /**
  * Leaflet の既定マーカーの画像を差し替える下ごしらえ。
@@ -38,4 +41,35 @@ type LeafletIconWithInternals = L.Icon.Default & { _getIconUrl?: string };
 export function clearLeafletDefaultIconUrl(): void {
   const prototype: LeafletIconWithInternals = L.Icon.Default.prototype;
   delete prototype._getIconUrl;
+}
+
+/**
+ * 既定マーカーの画像を、**同梱のものに**差し替える。
+ *
+ * これ 1 つ呼べば済む。`clearLeafletDefaultIconUrl` を呼んでから
+ * `mergeOptions` を自分で書く必要は無い。
+ *
+ * ## なぜ CDN をやめたか
+ *
+ * 5 か所すべてが CDN を指していたが、**行き先が 2 通りに割れていた。**
+ *
+ *   ArbitrageMapInner / MagneticMapInner  cdnjs の leaflet **1.7.1**
+ *   LocationPickerInner / SimulatorMap /
+ *   PastMoveMap                          unpkg の leaflet **1.9.4**
+ *
+ * package.json の leaflet は 1.9.4 なので、前者は**入っている版と
+ * 違う版の画像**を取りに行っていた。今は同じ絵なので見た目に出て
+ * いないだけで、揃っている理由が無い。
+ *
+ * node_modules の leaflet には同じ画像が入っている。バンドラに通せば
+ * 版は常に一致し、外部の CDN が落ちてもマーカーが消えない。取りに
+ * 行く先が 1 つ減るので、初回表示も速くなる。
+ */
+export function applyLeafletDefaultIcon(): void {
+  clearLeafletDefaultIconUrl();
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2x.src,
+    iconUrl: markerIcon.src,
+    shadowUrl: markerShadow.src,
+  });
 }
