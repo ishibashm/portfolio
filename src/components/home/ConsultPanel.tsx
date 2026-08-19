@@ -305,7 +305,7 @@ export function ConsultPanel({
       <div
         className={`p-1 flex flex-col items-center justify-center border rounded-sm transition-all ${baseClass} ${colorClass}`}
       >
-        <span className="text-[7px] text-stone-600 uppercase tracking-widest">
+        <span className="text-[9px] text-stone-600 uppercase tracking-widest">
           {dir}
         </span>
         <span
@@ -314,7 +314,7 @@ export function ConsultPanel({
           {star || "-"}
         </span>
         {!isCenter && status && (
-          <span className="text-[5px] sm:text-[6px] uppercase tracking-tighter opacity-80 leading-none">
+          <span className="text-[9px] uppercase tracking-tighter opacity-80 leading-none">
             {status.replace("NOISE_", "")}
           </span>
         )}
@@ -445,7 +445,7 @@ export function ConsultPanel({
           </div>
           <div className="text-stone-500 mb-1 leading-tight">{desc}</div>
           {isTendoDir && (
-            <div className="text-[8px] text-emerald-600 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
+            <div className="text-[10px] text-emerald-600 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
               ✨ 天道波動重畳中
               (吉殺効果により本命殺・的殺等の個人的凶殺を無害化)
             </div>
@@ -544,7 +544,7 @@ export function ConsultPanel({
                     <span className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">
                       Honmei Star
                     </span>
-                    <span className="text-[8px] text-purple-600 bg-purple-500/10 px-1 border border-purple-200">
+                    <span className="text-[10px] text-purple-600 bg-purple-500/10 px-1 border border-purple-200">
                       BASE FREQUENCY
                     </span>
                   </div>
@@ -583,7 +583,7 @@ export function ConsultPanel({
                         {birthEnv?.classicalYearStar}
                       </span>
                     </div>
-                    <span className="text-[8px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-stone-600 mt-1">
                       Phys / Class
                     </span>
                   </div>
@@ -594,7 +594,7 @@ export function ConsultPanel({
                     <span className="text-lg font-mono text-amber-600 font-bold">
                       {birthEnv?.monthStar || "--"}
                     </span>
-                    <span className="text-[8px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-stone-600 mt-1">
                       Physical
                     </span>
                   </div>
@@ -605,7 +605,7 @@ export function ConsultPanel({
                     <span className="text-lg font-mono text-blue-600 font-bold">
                       {birthEnv?.dayStar || "--"}
                     </span>
-                    <span className="text-[8px] text-stone-600 mt-1">
+                    <span className="text-[10px] text-stone-600 mt-1">
                       Physical
                     </span>
                   </div>
@@ -623,7 +623,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         JUPITER{" "}
-                        <span className="text-[8px] text-purple-500 border border-purple-200 px-0.5">
+                        <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5">
                           Y
                         </span>
                       </span>
@@ -634,7 +634,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
-                        <span className="text-[8px] text-amber-500 border border-amber-200 px-0.5">
+                        <span className="text-[10px] text-amber-500 border border-amber-200 px-0.5">
                           M
                         </span>
                       </span>
@@ -645,7 +645,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         SOLAR{" "}
-                        <span className="text-[8px] text-blue-500 border border-blue-200 px-0.5">
+                        <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5">
                           D
                         </span>
                       </span>
@@ -671,7 +671,7 @@ export function ConsultPanel({
                   </div>
                   <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-200 rounded-sm px-2 py-0.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-[8px] text-emerald-600 font-mono tracking-widest">
+                    <span className="text-[10px] text-emerald-600 font-mono tracking-widest">
                       TRACKING
                     </span>
                   </div>
@@ -696,7 +696,7 @@ export function ConsultPanel({
                         {env?.classicalYearStar}
                       </span>
                     </div>
-                    <span className="text-[8px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-stone-600 mt-2">
                       Phys / Class
                     </span>
                   </div>
@@ -707,7 +707,7 @@ export function ConsultPanel({
                     <span className="text-2xl font-mono text-amber-600 font-bold leading-none">
                       {env?.monthStar || "--"}
                     </span>
-                    <span className="text-[8px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-stone-600 mt-2">
                       Physical
                     </span>
                   </div>
@@ -718,7 +718,7 @@ export function ConsultPanel({
                     <span className="text-2xl font-mono text-blue-600 font-bold leading-none">
                       {env?.dayStar || "--"}
                     </span>
-                    <span className="text-[8px] text-stone-600 mt-2">
+                    <span className="text-[10px] text-stone-600 mt-2">
                       Physical
                     </span>
                   </div>
@@ -736,7 +736,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         JUPITER{" "}
-                        <span className="text-[8px] text-purple-500 border border-purple-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5 animate-pulse">
                           Y
                         </span>
                       </span>
@@ -747,7 +747,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
-                        <span className="text-[8px] text-amber-500 border border-amber-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-amber-500 border border-amber-200 px-0.5 animate-pulse">
                           M
                         </span>
                       </span>
@@ -758,7 +758,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         SOLAR{" "}
-                        <span className="text-[8px] text-blue-500 border border-blue-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5 animate-pulse">
                           D
                         </span>
                       </span>
@@ -826,7 +826,7 @@ export function ConsultPanel({
                     <div className="bg-white/70 border border-purple-200 p-2">
                       <div className="text-purple-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理年盤</span>
-                        <span className="text-[7px] text-stone-600">
+                        <span className="text-[9px] text-stone-600">
                           YEAR LAYER
                         </span>
                       </div>
@@ -880,7 +880,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         太陽黄経(立春起点)に基づく真の物理的位相。
                       </div>
                     </div>
@@ -888,7 +888,7 @@ export function ConsultPanel({
                     <div className="bg-white/70 border border-amber-200 p-2">
                       <div className="text-amber-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理月盤</span>
-                        <span className="text-[7px] text-stone-600">
+                        <span className="text-[9px] text-stone-600">
                           MONTH LAYER
                         </span>
                       </div>
@@ -942,7 +942,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         太陽と月の相対位相（月相）モデル。
                       </div>
                     </div>
@@ -950,7 +950,7 @@ export function ConsultPanel({
                     <div className="bg-white/70 border border-blue-200 p-2">
                       <div className="text-blue-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理日盤</span>
-                        <span className="text-[7px] text-stone-600">
+                        <span className="text-[9px] text-stone-600">
                           DAY LAYER
                         </span>
                       </div>
@@ -1004,7 +1004,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         地球の自転(JD)と至点による物理反転モデル。
                       </div>
                     </div>
@@ -1025,7 +1025,7 @@ export function ConsultPanel({
                     <div className="bg-white/80 border border-stone-200 p-2">
                       <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>古典年盤</span>
-                        <span className="text-[7px]">CLASSICAL YEAR</span>
+                        <span className="text-[9px]">CLASSICAL YEAR</span>
                       </div>
                       {classicalYearBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -1077,7 +1077,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         一般的な書籍・暦に基づく盤面。
                       </div>
                     </div>
@@ -1085,7 +1085,7 @@ export function ConsultPanel({
                     <div className="bg-white/80 border border-stone-200 p-2">
                       <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>古典月盤</span>
-                        <span className="text-[7px]">CLASSICAL MONTH</span>
+                        <span className="text-[9px]">CLASSICAL MONTH</span>
                       </div>
                       {classicalMonthBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -1137,7 +1137,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         節気ごとのカレンダー切り替え。
                       </div>
                     </div>
@@ -1145,7 +1145,7 @@ export function ConsultPanel({
                     <div className="bg-white/80 border border-stone-200 p-2">
                       <div className="font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>古典日盤</span>
-                        <span className="text-[7px]">CLASSICAL DAY</span>
+                        <span className="text-[9px]">CLASSICAL DAY</span>
                       </div>
                       {classicalDayBoard && (
                         <div className="grid grid-cols-3 gap-0.5 sm:gap-1 text-center mt-2">
@@ -1197,7 +1197,7 @@ export function ConsultPanel({
                           )}
                         </div>
                       )}
-                      <div className="mt-2 text-[8px] text-stone-600 leading-tight">
+                      <div className="mt-2 text-[10px] text-stone-600 leading-tight">
                         精密日家九星・隠遁陽遁サイクル。
                       </div>
                     </div>
@@ -1212,12 +1212,12 @@ export function ConsultPanel({
             <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
               <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
                 <span>干渉波・位相干渉診断</span>
-                <span className="text-stone-600 text-[8px]">
+                <span className="text-stone-600 text-[10px]">
                   ( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt;
                   🟩 波長共鳴 &gt; 🟦 無干渉(青) )
                 </span>
               </div>
-              <div className="text-[8px] text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
+              <div className="text-[10px] text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
                 <strong className="text-stone-500">判定ロジック:</strong>{" "}
                 長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的な物理アーティファクト（赤）や生体コンフリクト（紫）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
               </div>
@@ -1241,21 +1241,21 @@ export function ConsultPanel({
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Year Layer
                           <br />
-                          <span className="text-[7px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-stone-600 font-sans normal-case leading-tight block mt-1">
                             【長期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Month Layer
                           <br />
-                          <span className="text-[7px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-stone-600 font-sans normal-case leading-tight block mt-1">
                             【中期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Day Layer
                           <br />
-                          <span className="text-[7px] text-stone-600 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-stone-600 font-sans normal-case leading-tight block mt-1">
                             【短期的影響】
                           </span>
                         </th>
@@ -1345,21 +1345,21 @@ export function ConsultPanel({
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Year Layer
                           <br />
-                          <span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
                             【長期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Month Layer
                           <br />
-                          <span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
                             【中期的影響】
                           </span>
                         </th>
                         <th className="pb-2 px-1 font-normal align-bottom">
                           Day Layer
                           <br />
-                          <span className="text-[7px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
+                          <span className="text-[9px] text-zinc-700 font-sans normal-case leading-tight block mt-1">
                             【短期的影響】
                           </span>
                         </th>
@@ -1459,10 +1459,10 @@ export function ConsultPanel({
                     <span className="text-[9px] text-purple-600 font-bold border-l-2 border-purple-500 pl-2 bg-purple-50 py-0.5">
                       YEAR: JUPITER RESONANCE
                     </span>
-                    <p className="text-[8px] text-stone-600 leading-relaxed">
+                    <p className="text-[10px] text-stone-600 leading-relaxed">
                       木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_y = 11 - ((\\lfloor L_j / 30 \\rfloor + 8) \\pmod 9)`}
                       />
@@ -1478,10 +1478,10 @@ export function ConsultPanel({
                     <span className="text-[9px] text-amber-600 font-bold border-l-2 border-amber-500 pl-2 bg-amber-50 py-0.5">
                       MONTH: TIDAL INTERFERENCE
                     </span>
-                    <p className="text-[8px] text-stone-600 leading-relaxed">
+                    <p className="text-[10px] text-stone-600 leading-relaxed">
                       太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_m = 9 - ((T_s \\times 12 + T_l) \\pmod 9)`}
                       />
@@ -1497,10 +1497,10 @@ export function ConsultPanel({
                     <span className="text-[9px] text-blue-600 font-bold border-l-2 border-blue-500 pl-2 bg-blue-50 py-0.5">
                       DAY: ROTATIONAL FLUX
                     </span>
-                    <p className="text-[8px] text-stone-600 leading-relaxed">
+                    <p className="text-[10px] text-stone-600 leading-relaxed">
                       地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
                     </p>
-                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[8px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
+                    <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
                         math={`S_d = \\begin{cases} 9 - (JD \\% 9) & (\\text{陰遁}) \\\\ (JD \\% 9) + 1 & (\\text{陽遁}) \\end{cases}`}
                       />
@@ -1511,7 +1511,7 @@ export function ConsultPanel({
                   </div>
                 </div>
                 <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-1">
-                  <div className="text-[8px] text-stone-600 italic">
+                  <div className="text-[10px] text-stone-600 italic">
                     ※
                     本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
                   </div>
