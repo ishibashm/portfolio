@@ -12,6 +12,7 @@ import {
   calculateTideScore,
   getLunarDistance,
   getCurrentZodiac,
+  getHonmeiStar,
   clashMap,
   checkIsDoyouHazard,
   getCurrentEnvironmentalFrequencies,
@@ -157,11 +158,13 @@ export async function POST(req: Request) {
 
     // Calculate detailed BaZi
     const environmentalBaziData = baziEngine.calculate(today, lon);
-    const personalBaziData = birthDateStr
-      ? baziEngine.calculate(new Date(birthDateStr), lon)
+    // 同じ文字列から Date を 3 回作っていたので 1 つにまとめる。
+    const birthDateObj = birthDateStr ? new Date(birthDateStr) : null;
+    const personalBaziData = birthDateObj
+      ? baziEngine.calculate(birthDateObj, lon)
       : null;
-    const voidZodiacArray = birthDateStr
-      ? getPersonalVoidZodiac(new Date(birthDateStr))
+    const voidZodiacArray = birthDateObj
+      ? getPersonalVoidZodiac(birthDateObj)
       : [];
 
     // Calculate all major aspects using AspectEngine
@@ -292,13 +295,31 @@ export async function POST(req: Request) {
         context: "CURRENT_TIME",
         ...environmentalBaziData,
       },
-      personalBazi: personalBaziData
-        ? {
-            context: "USER_NATAL",
-            ...personalBaziData,
-            voidZodiac: voidZodiacArray.join(""),
-          }
-        : null,
+      // birthDateObj も条件に入れる。personalBaziData だけだと
+      // honmeiStar に渡す日付が null かもしれないと型が言う。
+      personalBazi:
+        personalBaziData && birthDateObj
+          ? {
+              context: "USER_NATAL",
+              ...personalBaziData,
+              voidZodiac: voidZodiacArray.join(""),
+              /*
+                本命星。**エンジンは読んでいるのに、応答に入っていなかった。**
+
+                utils/nbaEngine は ragContext.personalBazi.honmeiStar を読むが、
+                personalBazi は baziEngine.calculate() の戻り値そのままで、
+                そこに honmeiStar は無い。`|| 5` に落ちて**全利用者が五黄**の
+                扱いになっていた。
+
+                提案の点数は変わらない（自己アテンション行列のうち読まれるのは
+                行 2 の日主だけで、本命・月命の行は捨てられている。実測で
+                本命星 1〜9 を振っても qValues の差は 0.0000）。**変わるのは
+                NBA 画面の「自己アテンション行列」の本命・月命の行**で、
+                いままで全員同じ数字が出ていた。
+              */
+              honmeiStar: getHonmeiStar(birthDateObj),
+            }
+          : null,
       westernAstrology: {
         aspects:
           aspectStrings.length > 0

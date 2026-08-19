@@ -8,6 +8,7 @@ import {
   AstroEngine,
   getPersonalVoidZodiac,
   getCurrentZodiac,
+  getHonmeiStar,
   clashMap,
   checkIsDoyouHazard,
   getCurrentEnvironmentalFrequencies,
@@ -216,7 +217,17 @@ export async function POST(req: Request) {
         source: "sim",
         status: "Active",
         classicalRules: environmentalBaziData,
-        personalBazi: personalBaziData,
+        /*
+          本命星。**エンジンは読んでいるのに、応答に入っていなかった。**
+          utils/nbaEngine は ragContext.personalBazi.honmeiStar を読むが、
+          personalBazi は baziEngine.calculate() の戻り値そのままで、そこに
+          honmeiStar は無い。`|| 5` に落ちて**全利用者が五黄**の扱いだった。
+          詳しい経緯は api/nba/route.ts のコメントに書いてある。
+        */
+        personalBazi:
+          personalBaziData && birthDate
+            ? { ...personalBaziData, honmeiStar: getHonmeiStar(birthDate) }
+            : personalBaziData,
       };
 
       const spaceWeatherDefault = {
