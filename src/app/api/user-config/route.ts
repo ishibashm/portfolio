@@ -33,6 +33,75 @@ const NUMERIC_FIELDS = [
   "baseline_gsr_std",
 ] as const;
 
+/**
+ * 設定バーの「表示・判定の好み」を **metaphysical_config（JSONB）に
+ * まとめて入れる。**
+ *
+ * 列を 1 対 1 で足すと、設定が増えるたびに本番 DB への一方向の変更が
+ * 要るため 1 本にしてある（20260819_add_user_config_metaphysical.sql）。
+ *
+ * **target_date は入れない。**「いつの盤を見るか」は端末ごとの一時的な
+ * 状態で、別の端末に持ち込むと「昨日の日付で開く」ことになる。
+ */
+/*
+  Prisma の JSON 欄には**省略可能プロパティを持つ型をそのまま渡せない**
+  （省略可能は undefined を許すが、InputJsonValue は許さない）。値が
+  文字列と真偽値しか無いことを型で示して、入っているキーだけを持つ形にする。
+  キャストは使わない（CLAUDE.md 3 節）。
+*/
+type MetaphysicalConfigJson = Record<string, string | boolean>;
+
+function pickMetaphysical(
+  body: Record<string, unknown>,
+): MetaphysicalConfigJson {
+  const out: MetaphysicalConfigJson = {};
+
+  if (typeof body.use_classical_board === "boolean") {
+    out.use_classical_board = body.use_classical_board;
+  }
+  if (
+    body.physical_month_mode === "coupled" ||
+    body.physical_month_mode === "independent"
+  ) {
+    out.physical_month_mode = body.physical_month_mode;
+  }
+  if (
+    body.direction_filter_mode === "composite" ||
+    body.direction_filter_mode === "personal_kigaku" ||
+    body.direction_filter_mode === "personal_bazi" ||
+    body.direction_filter_mode === "environmental"
+  ) {
+    out.direction_filter_mode = body.direction_filter_mode;
+  }
+  if (
+    body.action_intent === "DEFAULT" ||
+    body.action_intent === "REST" ||
+    body.action_intent === "BUSINESS" ||
+    body.action_intent === "MIGRATION"
+  ) {
+    out.action_intent = body.action_intent;
+  }
+  // 既定は standard。**"solar" 以外は保存しない**（読む側も既定に倒す）。
+  if (
+    body.zodiac_time_basis === "standard" ||
+    body.zodiac_time_basis === "solar"
+  ) {
+    out.zodiac_time_basis = body.zodiac_time_basis;
+  }
+
+  return out;
+}
+
+/**
+ * 保存済みの JSON を読む。**同じ検かめを通す**ので、昔の版が入れた
+ * 知らない値はここで落ちる。
+ */
+function readMetaphysical(value: unknown): MetaphysicalConfigJson {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? pickMetaphysical(value as Record<string, unknown>)
+    : {};
+}
+
 function buildPatch(body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
 
@@ -86,6 +155,12 @@ export async function GET() {
       base_sync_timestamp: row.base_sync_timestamp
         ? row.base_sync_timestamp.toISOString()
         : null,
+      /*
+        表示・判定の好みは JSONB に入っているが、**平らにして返す。**
+        画面側は前から apiData.use_classical_board の形で読んでいる
+        （列が無かったので、これまでは常に undefined だった）。
+      */
+      ...readMetaphysical(row.metaphysical_config),
       // 端末側の控えとどちらが新しいかを判定するために返す。
       updated_at: row.updated_at ? row.updated_at.toISOString() : null,
     });
@@ -111,13 +186,30 @@ export async function POST(req: Request) {
     }
 
     const data = buildPatch(body as Record<string, unknown>);
+    const incoming = pickMetaphysical(body as Record<string, unknown>);
     const updatedAt = new Date();
 
     const existing = await findUserConfig(user);
     if (existing) {
+      /*
+        **丸ごと置き換えない。**送られてきたキーだけを上書きする。
+        画面ごとに送る項目が違うので、置き換えると別画面で選んだ設定を
+        巻き添えで消す（scalar 側が PATCH 相当なのと同じ理由）。
+      */
+      const merged = Object.keys(incoming).length
+        ? {
+            ...readMetaphysical(existing.metaphysical_config),
+            ...incoming,
+          }
+        : undefined;
+
       await prisma.user_configs.update({
         where: { id: existing.id },
-        data: { ...data, updated_at: updatedAt },
+        data: {
+          ...data,
+          ...(merged ? { metaphysical_config: merged } : {}),
+          updated_at: updatedAt,
+        },
       });
     } else {
       await prisma.user_configs.create({
@@ -125,6 +217,9 @@ export async function POST(req: Request) {
           user_id: toUserId(user),
           user_email: user.email,
           ...data,
+          ...(Object.keys(incoming).length
+            ? { metaphysical_config: incoming }
+            : {}),
           // 行の作成＝はじめての保存。登録日として管理ページが数える。
           created_at: updatedAt,
           updated_at: updatedAt,

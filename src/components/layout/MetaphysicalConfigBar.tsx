@@ -162,14 +162,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           const parsed = JSON.parse(localData);
           if (parsed.use_classical_board !== undefined)
             loadedConfig.useClassicalBoard = parsed.use_classical_board;
-          /*
-            時支の時刻基準。**端末にだけ残す。**
-
-            /api/user-config は use_classical_board などと同じくこの欄を
-            受けない（user_configs に列が無く、buildPatch も落とす）。
-            列を足すのは本番 DB への一方向の変更なので、ここでは
-            localStorage だけに寄せている。
-          */
+          // 時支の時刻基準。"solar" 以外は標準時に倒す。
           if (parsed.zodiac_time_basis === "solar")
             loadedConfig.zodiacTimeBasis = "solar";
           if (parsed.physical_month_mode !== undefined)
@@ -204,6 +197,14 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
           const apiData = await res.json();
           if (apiData.use_classical_board !== undefined)
             loadedConfig.useClassicalBoard = apiData.use_classical_board;
+          /*
+            クラウドにも保存するようになった（metaphysical_config、#407）。
+            列が無かった頃はここが常に undefined で、端末にしか残らなかった。
+          */
+          if (apiData.zodiac_time_basis !== undefined)
+            loadedConfig.zodiacTimeBasis = normalizeZodiacTimeBasis(
+              apiData.zodiac_time_basis,
+            );
           if (apiData.physical_month_mode !== undefined)
             loadedConfig.physicalMonthMode = apiData.physical_month_mode;
           if (apiData.direction_filter_mode !== undefined)
