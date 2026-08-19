@@ -29,6 +29,7 @@ import {
   getPersonalVoidZodiac,
   getCurrentZodiac,
   ActionIntent,
+  type ZodiacTimeBasis,
   Direction,
   StarFrequency,
   calculateLunarPhaseCondition,
@@ -630,6 +631,12 @@ export const SolarTimeClock = () => {
   const [playSpeedDays, setPlaySpeedDays] = useState(1);
   const [actionIntent, setActionIntent] = useState<ActionIntent>("DEFAULT");
   const [useClassicalBoard, setUseClassicalBoard] = useState<boolean>(true);
+  /*
+    時支をどの時刻で採るか。既定は標準時（従来の答えのまま）。
+    設定バーで切り替える。詳細は ZodiacTimeBasis（utils/ephemerisEngine）。
+  */
+  const [zodiacTimeBasis, setZodiacTimeBasis] =
+    useState<ZodiacTimeBasis>("standard");
   const [physicalMonthMode, setPhysicalMonthMode] = useState<
     "coupled" | "independent"
   >("independent");
@@ -926,6 +933,10 @@ export const SolarTimeClock = () => {
         // Load unified configurations
         if (data.use_classical_board !== undefined)
           setUseClassicalBoard(data.use_classical_board);
+        // "solar" 以外は標準時に倒す（設定バーの normalizeZodiacTimeBasis と同じ約束）。
+        setZodiacTimeBasis(
+          data.zodiac_time_basis === "solar" ? "solar" : "standard",
+        );
         if (data.physical_month_mode !== undefined)
           setPhysicalMonthMode(data.physical_month_mode);
         if (data.use_true_north !== undefined)
@@ -1289,7 +1300,7 @@ export const SolarTimeClock = () => {
       for (let i = 0; i < MAX_SEARCH_DAYS; i++) {
         const testDate = new Date(baseTime.getTime() + offset * 86400000);
 
-        const cz = getCurrentZodiac(testDate, lon || 139.6917);
+        const cz = getCurrentZodiac(testDate, lon || 139.6917, zodiacTimeBasis);
         if (
           personalVoidZodiac.includes(cz.yearZodiac) ||
           personalVoidZodiac.includes(cz.monthZodiac) ||
@@ -2843,7 +2854,11 @@ export const SolarTimeClock = () => {
           // voidZodiacArray の要素数ぶん繰り返されるので、実測で 30 日分の
           // 構築が 89ms → 45ms になる。1 日 1 回に減らす。
           isVoid: (() => {
-            const z = getCurrentZodiac(testDate, lon || 139.6917);
+            const z = getCurrentZodiac(
+              testDate,
+              lon || 139.6917,
+              zodiacTimeBasis,
+            );
             const zodiacs = [z.yearZodiac, z.monthZodiac, z.dayZodiac];
             return voidZodiacArray.some((v) => zodiacs.includes(v));
           })(),
@@ -2924,7 +2939,11 @@ export const SolarTimeClock = () => {
           rawVectorData: vectorData,
           tendoDir: vectorData.tendoDirection,
           isVoid: (() => {
-            const z = getCurrentZodiac(testDate, lon || 139.6917);
+            const z = getCurrentZodiac(
+              testDate,
+              lon || 139.6917,
+              zodiacTimeBasis,
+            );
             const zodiacs = [z.yearZodiac, z.monthZodiac];
             return voidZodiacArray.some((v) => zodiacs.includes(v));
           })(),
@@ -2949,6 +2968,8 @@ export const SolarTimeClock = () => {
     activeLayerMode,
     physicalMonthMode,
     lon,
+    // 時刻基準を切り替えたら作り直す。入れないと切り替えが反映されない。
+    zodiacTimeBasis,
   ]);
 
   const exportMasterTelemetry = () => {
@@ -3595,7 +3616,11 @@ export const SolarTimeClock = () => {
         : new Date(),
     [baseTime, timeOffsetDays],
   );
-  const currentZodiac = getCurrentZodiac(evalDate, lon || 139.6917);
+  const currentZodiac = getCurrentZodiac(
+    evalDate,
+    lon || 139.6917,
+    zodiacTimeBasis,
+  );
   /**
    * ポータルが読む 2 時間ごとの時間帯。詳細画面（SolarTimeTable）と
    * 同じ関数・同じ引数で出す。別々に出すと、同じ日なのに画面によって
@@ -3961,6 +3986,7 @@ export const SolarTimeClock = () => {
               envData={env}
               personalVoidZodiac={personalVoidZodiac}
               useClassical={useClassicalBoard}
+              zodiacTimeBasis={zodiacTimeBasis}
             />
           </div>
         )}
