@@ -86,14 +86,54 @@ export function scoreTierLabel(score: number): string {
 export function scoreTextColor(score: number): string {
   switch (scoreTier(score)) {
     case "excellent":
-      return "text-emerald-600";
+      // 以前は emerald-600（白地に 3.8:1）。emerald-700 で 5.4:1。
+      return "text-emerald-700";
     case "good":
+      // blue-600 は白地に 5.2:1 で足りている。
       return "text-blue-600";
     case "caution":
-      return "text-yellow-500";
+      // 以前は yellow-500。白地に対して 1.9:1 しか無く、10px の数字が
+      // 読めなかった。yellow-700 で 4.9:1（AA）。
+      return "text-yellow-700";
     default:
-      return "text-red-500";
+      // 以前は red-500（白地に 3.8:1）。red-600 で 4.9:1。
+      return "text-red-600";
   }
+}
+
+/**
+ * 升目の塗り。**地色は必ずスコアの段階を表す。**
+ *
+ * 総合スコアの升目は、トリプル大吉なら緑、位相差警告なら橙で塗って
+ * いた。どちらも凡例が別の意味に割り当てている色（緑＝大吉 ≥ 80、
+ * 橙＝警告 ≥ 30）で、**点が 8 の升目が「警告」の橙に、点が 27 の升目
+ * も同じ橙**になっていた。凡例を読んで色から点を読もうとすると必ず
+ * 外れる。#147 で県塗りを直したのと同じ取り違え。
+ *
+ * 地色は段階だけが決める。トリプル大吉・位相差警告は升目の中の
+ * 🌟 / ⚠️ と、この枠線（ring）で示す。情報は落とさず、色の意味だけを
+ * 1 つに戻す。
+ *
+ * 文字色は地色（*-50）に対して AA（4.5:1）を満たす -700 に揃えた。
+ * 以前の -600 は emerald が 3.6:1、red が 4.4:1 で足りていなかった。
+ */
+const SCORE_CELL_BASE: Record<ScoreTier, string> = {
+  excellent: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  good: "bg-blue-50 text-blue-700 border border-blue-200",
+  caution: "bg-amber-50 text-amber-700 border border-amber-200",
+  bad: "bg-red-50 text-red-700 border border-red-200",
+};
+
+export function scoreCellClass(
+  score: number,
+  marker?: { consensus?: boolean; divergence?: boolean },
+): string {
+  const base = SCORE_CELL_BASE[scoreTier(score)];
+  // ring は場所を取らないので、表の升目がずれない（border を太くすると
+  // 1 行だけ高さが変わる）。
+  if (marker?.consensus) return `${base} ring-2 ring-inset ring-emerald-500`;
+  if (marker?.divergence) return `${base} ring-2 ring-inset ring-amber-500`;
+  return base;
 }
 
 /** 凡例に出す「≥ 80」などの表記。しきい値を凡例に直書きしないため。 */

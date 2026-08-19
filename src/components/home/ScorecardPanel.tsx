@@ -22,8 +22,8 @@ import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import {
   SCORE_TIER_LEGEND,
+  scoreCellClass,
   getStatusScore,
-  scoreTier,
   scoreTierLabel,
   scoreTextColor,
 } from "@/lib/scoreTier";
@@ -177,27 +177,24 @@ const parseBreakdown = (
   return { kigaku, kigakuScore, astro, astroScore, timeGate, timeGateScore };
 };
 
+/*
+  以前はここで、トリプル大吉なら緑・位相差警告なら橙を「先に」返して
+  いた。どちらも凡例が別の意味に割り当てている色なので、点が 8 の升目
+  が「警告（≥ 30）」の橙で出ていた（利用者の画面で実際にそうなって
+  いた）。地色は段階だけが決める形に戻し、印は枠線と 🌟 / ⚠️ で示す。
+  塗り分けの実装は lib/scoreTier に置いた。
+*/
 const getCellBgColor = (
   score: number,
   status: string,
   isConsensus?: boolean,
   isDivergence?: boolean,
 ) => {
-  if (isConsensus)
-    return "bg-emerald-50 text-emerald-600 border border-emerald-200";
-  if (isDivergence) return "bg-amber-50 text-amber-500 border border-amber-200";
-
-  // しきい値は lib/scoreTier に集約した。数値を直接書かない。
-  switch (scoreTier(score)) {
-    case "excellent":
-      return "bg-emerald-50 text-emerald-600 border border-emerald-200";
-    case "good":
-      return "bg-blue-50 text-blue-600 border border-blue-200";
-    case "caution":
-      return "bg-amber-50 text-amber-500 border border-amber-200";
-    default:
-      return "bg-red-50 text-red-600 border border-red-200";
-  }
+  void status;
+  return scoreCellClass(score, {
+    consensus: isConsensus,
+    divergence: isDivergence,
+  });
 };
 
 const getDimensionCellBgColor = (
@@ -221,7 +218,7 @@ const getDimensionCellBgColor = (
   if (dimension === "timeGate") {
     if (score <= -100)
       return "bg-red-50 text-red-600 border border-red-500/35 font-bold";
-    if (score < 0) return "bg-amber-50 text-amber-500 border border-amber-200";
+    if (score < 0) return "bg-amber-50 text-amber-700 border border-amber-200";
     if (score > 0)
       return "bg-emerald-50 text-emerald-600 border border-emerald-200";
     return "text-stone-600 border border-stone-200";
@@ -481,7 +478,7 @@ export default function ScorecardPanel({
                             </span>
                           )}
                           {item.isDivergenceAlert && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                               位相差警告 ⚠️
                             </span>
                           )}
@@ -727,7 +724,7 @@ export default function ScorecardPanel({
                                 </span>
                               )}
                               {item.isDivergenceAlert && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-500 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                   位相差警告 ⚠️
                                 </span>
                               )}
