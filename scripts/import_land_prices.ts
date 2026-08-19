@@ -12,6 +12,7 @@ if (fs.existsSync(localEnvPath)) {
 }
 
 import { PrismaClient } from "@prisma/client";
+import { toLandPricePoint } from "./landPriceParse";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -25,12 +26,21 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter } as any);
 
-// APIキーは環境変数から取得
-const API_KEY = process.env.LIBRARY_API_KEY;
-if (!API_KEY) {
+/*
+  APIキーは環境変数から取得。
+
+  以前は const API_KEY = process.env.LIBRARY_API_KEY のまま fetch へ
+  渡していた。process.exit で抜けているので実行時は必ず入っているが、
+  型の上では string | undefined のままで、fetch の headers に渡すと
+  型が合わない。scripts/ は tsc の対象外なので誰も気付かなかった。
+  受け直して string にする（キャストはしない）。
+*/
+const RAW_API_KEY = process.env.LIBRARY_API_KEY;
+if (!RAW_API_KEY) {
   console.error("Error: LIBRARY_API_KEY environment variable is not set.");
   process.exit(1);
 }
+const API_KEY: string = RAW_API_KEY;
 
 // 緯度経度からタイル座標(z, x, y)を計算する関数 (ズームレベル15固定)
 function latLonToTile(lat: number, lon: number, zoom: number = 15) {
@@ -42,6 +52,13 @@ function latLonToTile(lat: number, lon: number, zoom: number = 15) {
   );
   return { z: zoom, x, y };
 }
+
+/*
+  取得する年。以前は URL に 2023 が直に書いてあり、3 年前のまま
+  動き続けていた。probe（run 32305342276）で 2025 が取れることを
+  確認済み（target_year_name_ja = 「令和7年1月1日」）。
+*/
+const YEAR = process.env.LAND_PRICE_YEAR || "2025";
 
 // タイルのキャッシュ
 const tileCache: Record<string, any> = {};
@@ -60,6 +77,8 @@ async function main() {
   );
 
   let updatedCount = 0;
+  /** 当年価格を読めなかった地点の数。0 で埋めずに数える。 */
+  let skippedPoints = 0;
 
   for (let i = 0; i < municipalities.length; i++) {
     const m = municipalities[i];
@@ -72,7 +91,7 @@ async function main() {
 
     if (!geojsonData) {
       try {
-        const url = `https://www.reinfolib.mlit.go.jp/ex-api/external/XPT002?response_format=geojson&z=${z}&x=${x}&y=${y}&year=2023`;
+        const url = `https://www.reinfolib.mlit.go.jp/ex-api/external/XPT002?response_format=geojson&z=${z}&x=${x}&y=${y}&year=${YEAR}`;
         const res = await fetch(url, {
           headers: {
             "Ocp-Apim-Subscription-Key": API_KEY,
@@ -101,39 +120,31 @@ async function main() {
       }
     }
 
-    // geojsonDataから価格を抽出
+    /*
+      価格を取り出す。**推測はしない。**
+
+      以前はここで price / LandPrice / 地価 / P01 / P01_006 を順に
+      試し、当たらなければ「properties の中で 1000 より大きい数値を
+      何でも 1 つ」拾っていた。probe で実物を見たところ、5 つの
+      項目名は**どれも存在しない**。つまり必ず最後の手段に落ちて
+      おり、キーの並び順から **point_id（地点の整理番号）**が
+      「地価」として保存されていた。詳しくは landPriceParse.ts。
+
+      当年価格は u_current_years_price_ja に "1,970,000(円/㎡)" の
+      形で入る。取れない地点は数えて報告し、別の数字で埋めない。
+    */
     const features = geojsonData.features || [];
     let totalPrice = 0;
     let count = 0;
 
     for (const feature of features) {
-      // API仕様によると、地価は properties.price 等に入っているはずだが、念のためダンプして確認が必要
-      // 国交省APIの一般的なプロパティ名は「price」または「地価」に関連するもの
-      // 今回は柔軟に複数パターンを試す
-      const price =
-        feature.properties?.price ||
-        feature.properties?.LandPrice ||
-        feature.properties?.["地価"] ||
-        feature.properties?.P01 ||
-        parseInt(feature.properties?.P01_006 || "0"); // P01_006 is commonly used for price in some MLIT datasets
-      if (price) {
-        const numPrice = Number(price);
-        if (!isNaN(numPrice)) {
-          totalPrice += numPrice;
-          count++;
-        }
-      } else {
-        // デバッグ用: プロパティのキーを確認
-        // console.log("Available properties:", Object.keys(feature.properties || {}));
-        // 値のパースに努める
-        const anyPrice = Object.values(feature.properties || {}).find(
-          (v) => typeof v === "number" && v > 1000,
-        );
-        if (anyPrice) {
-          totalPrice += anyPrice as number;
-          count++;
-        }
+      const point = toLandPricePoint(feature);
+      if (!point) {
+        skippedPoints++;
+        continue;
       }
+      totalPrice += point.pricePerSqm;
+      count++;
     }
 
     if (count > 0) {
@@ -161,6 +172,12 @@ async function main() {
   console.log(
     `Finished! Updated ${updatedCount} municipalities with land price data.`,
   );
+  console.log(`対象年: ${YEAR}`);
+  if (skippedPoints > 0) {
+    console.log(
+      `当年価格を読めなかった地点: ${skippedPoints} 件（0 で埋めずに除外した）`,
+    );
+  }
 }
 
 main()
