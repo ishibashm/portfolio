@@ -1622,7 +1622,7 @@ export default function RelocationSimulatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 pb-20 relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-white pb-20 relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
       <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -3037,7 +3037,7 @@ export default function RelocationSimulatorPage() {
                             <button
                               key={cand.name}
                               onClick={() => handleApplyDetour(cand)}
-                              className="w-full px-3 py-2 bg-indigo-950/80 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-left text-[10px] text-indigo-700 hover:text-stone-900 transition-all flex items-center justify-between font-bold cursor-pointer"
+                              className="w-full px-3 py-2 bg-indigo-950/80 hover:bg-indigo-600/30 border border-indigo-500/30 rounded-xl text-left text-[10px] text-indigo-700 hover:text-white transition-all flex items-center justify-between font-bold cursor-pointer"
                             >
                               <span>📍 {cand.name}経由で迂回ルートを作成</span>
                               <ChevronRight className="w-3.5 h-3.5" />

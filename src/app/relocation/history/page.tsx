@@ -370,7 +370,7 @@ export default function RelocationHistoryPage() {
   const formatDirectionInfo = directionLabelDetailed;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-stone-800 relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
+    <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 text-white relative pb-20 overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-700">
       {/* Background Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute bottom-10 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
@@ -399,7 +399,7 @@ export default function RelocationHistoryPage() {
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-sm font-bold text-stone-900 transition-all shadow-lg shadow-indigo-600/20 border border-indigo-500/30"
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-sm font-bold text-white transition-all shadow-lg shadow-indigo-600/20 border border-indigo-500/30"
           >
             {showAddForm ? (
               <X className="w-4 h-4" />
@@ -643,7 +643,7 @@ export default function RelocationHistoryPage() {
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-stone-900 transition-all active:scale-95 disabled:opacity-50"
+                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white transition-all active:scale-95 disabled:opacity-50"
                       >
                         {isSubmitting ? "保存中..." : "履歴を保存"}
                       </button>

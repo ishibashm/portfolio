@@ -1624,7 +1624,7 @@ export default function ArbitrageMapInner({
                                 href={prop.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-stone-900 rounded-lg transition-colors shadow-sm"
+                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
                               >
                                 詳細サイトを開く ↗
                               </a>

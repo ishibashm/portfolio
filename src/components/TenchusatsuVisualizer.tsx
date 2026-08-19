@@ -96,10 +96,10 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
               </>
             ) : (
               <>
-                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-emerald-500">
+                <span className="text-xl md:text-2xl font-bold tracking-[0.2em] text-emerald-700">
                   CLEAR PHASE
                 </span>
-                <span className="text-[10px] text-emerald-400/80">
+                <span className="text-[10px] text-emerald-700">
                   今年は天中殺の年ではありません。空間的な年単位の制約はクリアです。
                 </span>
               </>

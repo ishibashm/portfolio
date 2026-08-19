@@ -164,7 +164,7 @@ export function PWAInstallPrompt() {
 
             <button
               onClick={() => setShowIOSModal(false)}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-stone-900 font-medium text-sm rounded-xl transition-colors cursor-pointer"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm rounded-xl transition-colors cursor-pointer"
             >
               了解しました
             </button>

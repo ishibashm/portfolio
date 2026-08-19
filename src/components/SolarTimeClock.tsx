@@ -3698,7 +3698,7 @@ export const SolarTimeClock = () => {
           </p>
           <button
             onClick={() => setShowHowItWorks(!showHowItWorks)}
-            className="text-[10px] text-emerald-600 hover:text-emerald-600 font-mono uppercase tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
+            className="text-[10px] text-emerald-700 hover:text-emerald-800 font-mono uppercase tracking-widest border border-emerald-200 bg-emerald-50 px-4 py-1.5 transition-colors"
           >
             {showHowItWorks
               ? "[-] CLOSE ALGORITHM WORKFLOW"
@@ -4198,7 +4198,7 @@ export const SolarTimeClock = () => {
       <div className="fixed bottom-6 left-6 lg:left-72 z-50 flex flex-col sm:flex-row gap-3">
         <button
           onClick={exportMasterTelemetry}
-          className="px-4 py-3 bg-emerald-600/90 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-200 backdrop-blur-md"
+          className="px-4 py-3 bg-emerald-700 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-200 backdrop-blur-md"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

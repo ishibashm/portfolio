@@ -1313,7 +1313,7 @@ export default function RegionalWealthPage() {
             <button
               onClick={() => fetchData()}
               disabled={loading}
-              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-stone-900 font-medium px-8 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 h-10 shrink-0 shadow-md shadow-indigo-500/20"
+              className="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-8 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 h-10 shrink-0 shadow-md shadow-indigo-500/20"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
