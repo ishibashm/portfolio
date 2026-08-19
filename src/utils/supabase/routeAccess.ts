@@ -53,3 +53,57 @@ export function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return email.toLowerCase() === adminEmail.toLowerCase();
 }
+
+/**
+ * 未ログイン・権限不足のときにどこへ送るか。**この判断はここだけが持つ。**
+ *
+ * middleware に直接書いていたときに、次の噛み合わせで詰まっていた。
+ *
+ *   1. ログイン済みだが ADMIN_EMAIL と違う人が管理者専用ページに来ると
+ *      /login へ送り返していた（**ログイン済みの人をログイン画面へ**）
+ *   2. その /login は「ADMIN_EMAIL と一致する人」しか外へ出さなかった
+ *
+ * 結果、一般の利用者は Google でログインしてもログイン画面に戻され、
+ * そこから抜けられない。画面からは「自分のアカウントは弾かれている」
+ * ようにしか見えず、実際に「特定の人しかログインできないのでは」と
+ * 報告が来た。**ログインは誰でもできていた。**出口が無かっただけ。
+ *
+ * 直したあとの規則は 3 行で言い切れる。
+ *
+ *   - 未ログインで保護ルート → ログイン画面（戻り先を持たせる）
+ *   - ログイン済みで権限が足りない → トップ（ログイン画面へは戻さない）
+ *   - ログイン済みでログイン画面にいる → トップ（権限は問わない）
+ *
+ * 権限が足りないときにページの存在を言い立てないのは意図的。
+ * 「管理者専用です」と出すと、そこに何かがあることを教えてしまう。
+ */
+export type AuthRedirect =
+  | { kind: "login"; next: string }
+  | { kind: "home" }
+  | null;
+
+export function resolveAuthRedirect(params: {
+  /** 実際に描画されるパス（サブドメインの書き換え後）。 */
+  pathname: string;
+  isLoggedIn: boolean;
+  isAdmin: boolean;
+  /** ログイン後に戻す先。pathname + search。 */
+  nextTarget: string;
+}): AuthRedirect {
+  const { pathname, isLoggedIn, isAdmin, nextTarget } = params;
+  const requiresAuthentication = isProtectedRoute(pathname);
+
+  if (!isLoggedIn && requiresAuthentication) {
+    return { kind: "login", next: nextTarget };
+  }
+
+  if (isLoggedIn && !isAdmin && requiresAuthentication) {
+    return { kind: "home" };
+  }
+
+  if (isLoggedIn && pathname === "/login") {
+    return { kind: "home" };
+  }
+
+  return null;
+}
