@@ -835,6 +835,8 @@ export const SolarTimeClock = () => {
         lon,
         targetDate: targetDateStr,
         useClassical: useClassicalBoard,
+        // 時支をどの時刻で採るか。省くとサーバ側は標準時（従来の答え）。
+        zodiacTimeBasis,
       };
       const res = await fetch("/api/nba", {
         method: "POST",
@@ -869,6 +871,8 @@ export const SolarTimeClock = () => {
     baseTime,
     timeOffsetDays,
     useClassicalBoard,
+    // 時刻基準を切り替えたら取り直す。入れないと切り替えが反映されない。
+    zodiacTimeBasis,
   ]);
 
   useEffect(() => {

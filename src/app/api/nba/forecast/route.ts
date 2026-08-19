@@ -9,6 +9,7 @@ import {
   getPersonalVoidZodiac,
   getCurrentZodiac,
   getHonmeiStar,
+  type ZodiacTimeBasis,
   clashMap,
   checkIsDoyouHazard,
   getCurrentEnvironmentalFrequencies,
@@ -36,6 +37,14 @@ export async function POST(req: Request) {
       lon = 139.6917,
       useClassical: clientUseClassical,
     } = clientBody;
+
+    /*
+      時支の時刻基準。**省かれたら標準時**（従来の答え）に倒す。流派で
+      分かれるので既定は変えない（#404）。画面から来る値なので
+      "solar" 以外は信用しない。
+    */
+    const zodiacTimeBasis: ZodiacTimeBasis =
+      clientBody.zodiacTimeBasis === "solar" ? "solar" : "standard";
 
     let birthDateStr: string | null = clientBirthDate || null;
     let useClassical = true;
@@ -100,7 +109,7 @@ export async function POST(req: Request) {
 
       // 2. Calculate Bazi & Void Time
       const environmentalBaziData = baziEngine.calculate(targetDate, lon);
-      const currentZodiac = getCurrentZodiac(targetDate, lon);
+      const currentZodiac = getCurrentZodiac(targetDate, lon, zodiacTimeBasis);
       const isVoidTime =
         voidZodiacArray.includes(currentZodiac.yearZodiac) ||
         voidZodiacArray.includes(currentZodiac.monthZodiac); // checking year/month for long-term forecast

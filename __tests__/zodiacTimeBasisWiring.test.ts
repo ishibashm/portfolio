@@ -21,6 +21,8 @@ const ROOT = process.cwd();
 const WIRED = [
   "src/components/SolarTimeClock.tsx",
   "src/components/SolarTimeTable.tsx",
+  "src/app/api/nba/route.ts",
+  "src/app/api/nba/forecast/route.ts",
 ];
 
 /**
@@ -98,4 +100,29 @@ describe("エンジン側の既定は標準時のまま", () => {
     );
     expect(answers.size).toBe(1);
   });
+});
+
+/**
+ * API 側は**画面から来た値をそのまま信じない。**
+ *
+ * 既定は標準時（従来の答え）で、`"solar"` のときだけ切り替える。
+ * ここが `clientBody.zodiacTimeBasis` の素通しになると、壊れた値や
+ * 古い版の画面から来た値で判定が動く。
+ */
+const API_ROUTES = [
+  "src/app/api/nba/route.ts",
+  "src/app/api/nba/forecast/route.ts",
+];
+
+describe("API が受け取るときの倒し方", () => {
+  for (const file of API_ROUTES) {
+    it(`${file}: "solar" 以外は標準時に倒す`, () => {
+      const source = fs.readFileSync(path.join(ROOT, file), "utf8");
+      const flat = source.replace(/\s+/g, "");
+      expect(
+        flat,
+        "画面から来た値を素通ししている。既定は標準時でなければならない",
+      ).toContain('clientBody.zodiacTimeBasis==="solar"?"solar":"standard"');
+    });
+  }
 });
