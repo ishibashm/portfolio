@@ -19,7 +19,12 @@ import {
 
 /** probe が実際に返した千代田区の 1 地点（使う項目に絞って写した）。 */
 const REAL_FEATURE = {
+  // GeoJSON は [経度, 緯度] の順。
+  geometry: { type: "Point", coordinates: [139.7462, 35.7016] },
   properties: {
+    prefecture_name_ja: "東京都",
+    ward_town_village_name_ja: "千代田区",
+    city_county_name_ja: "",
     front_road_width: 80,
     u_cadastral_ja: "142(㎡)",
     point_id: 7008430,
@@ -95,6 +100,41 @@ describe("1 地点の読み取り", () => {
     expect(p.standardLotNumber).toBe("千代田-4");
     expect(p.landPriceType).toBe(0);
     expect(p.targetYearLabel).toBe("令和7年1月1日");
+    expect(p.pointId).toBe(7008430);
+    expect(p.prefecture).toBe("東京都");
+    expect(p.municipality).toBe("千代田区");
+    expect(p.lon).toBe(139.7462);
+    expect(p.lat).toBe(35.7016);
+  });
+
+  it("座標は [経度, 緯度] の順で読む（入れ替えない）", () => {
+    // 入れ替えると日本の地点がインド洋へ飛ぶ。範囲の検査で捨てる。
+    const swapped = {
+      ...REAL_FEATURE,
+      geometry: { type: "Point", coordinates: [35.7016, 139.7462] },
+    };
+    const p = toLandPricePoint(swapped)!;
+    expect(p.lat).toBeNull();
+    expect(p.lon).toBeNull();
+    // 価格は使えるので行そのものは作る。
+    expect(p.pricePerSqm).toBe(1970000);
+  });
+
+  it("geometry が無くても価格が取れれば行を作る", () => {
+    const p = toLandPricePoint({ properties: REAL_FEATURE.properties })!;
+    expect(p.pricePerSqm).toBe(1970000);
+    expect(p.lat).toBeNull();
+  });
+
+  it("鍵になる項目が欠けた地点は取り込まない", () => {
+    for (const missing of ["point_id", "land_price_type"]) {
+      const props: Record<string, unknown> = { ...REAL_FEATURE.properties };
+      delete props[missing];
+      expect(
+        toLandPricePoint({ ...REAL_FEATURE, properties: props }),
+        `${missing} が無い`,
+      ).toBeNull();
+    }
   });
 
   it("**旧実装は point_id を地価として拾っていた**", () => {

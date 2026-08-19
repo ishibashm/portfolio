@@ -12,7 +12,7 @@ if (fs.existsSync(localEnvPath)) {
 }
 
 import { PrismaClient } from "@prisma/client";
-import { toLandPricePoint } from "./landPriceParse";
+import { toLandPricePoint, type LandPricePoint } from "./landPriceParse";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -63,6 +63,77 @@ const YEAR = process.env.LAND_PRICE_YEAR || "2025";
 // タイルのキャッシュ
 const tileCache: Record<string, any> = {};
 
+/**
+ * 集めた地点を land_price_points へ書く。
+ *
+ * 鍵は (point_id, year, land_price_type)。同じ年を二度取り込んでも
+ * 更新になるだけで行は増えない。値が変わらなければ何も変わらない。
+ *
+ * 1 行ずつ往復すると全国で数万回になるので、配列を渡して
+ * unnest で 1 文にする（成約価格の取り込みと同じ書き方）。
+ */
+async function saveLandPricePoints(points: Map<string, LandPricePoint>) {
+  const rows = [...points.values()];
+  if (rows.length === 0) {
+    console.log("保存する地点が無い。");
+    return;
+  }
+
+  const year = Number(YEAR);
+  if (!Number.isFinite(year)) {
+    console.error(`対象年が数値でない: ${YEAR}。地点は保存しない。`);
+    return;
+  }
+
+  /*
+    書き方は成約価格の取り込みに合わせる（pool.query + unnest）。
+    1 行ずつ往復すると全国で数万回になる。created_at / updated_at は
+    表側の DEFAULT now() に任せるので、列に並べない。
+  */
+  await pool.query(
+    `INSERT INTO land_price_points
+       (point_id, year, land_price_type, price_per_sqm,
+        last_year_price_per_sqm, use_category, location,
+        standard_lot_number, prefecture, municipality, lat, lon)
+     SELECT * FROM unnest(
+       $1::bigint[], $2::int[], $3::int[], $4::bigint[],
+       $5::bigint[], $6::text[], $7::text[],
+       $8::text[], $9::text[], $10::text[], $11::float8[], $12::float8[])
+     ON CONFLICT (point_id, year, land_price_type) DO UPDATE SET
+       price_per_sqm = EXCLUDED.price_per_sqm,
+       last_year_price_per_sqm = EXCLUDED.last_year_price_per_sqm,
+       use_category = EXCLUDED.use_category,
+       location = EXCLUDED.location,
+       standard_lot_number = EXCLUDED.standard_lot_number,
+       prefecture = EXCLUDED.prefecture,
+       municipality = EXCLUDED.municipality,
+       lat = EXCLUDED.lat,
+       lon = EXCLUDED.lon,
+       updated_at = now()`,
+    [
+      rows.map((r) => r.pointId),
+      rows.map(() => year),
+      rows.map((r) => r.landPriceType),
+      rows.map((r) => r.pricePerSqm),
+      rows.map((r) => r.lastYearPricePerSqm),
+      rows.map((r) => r.useCategory),
+      rows.map((r) => r.location),
+      rows.map((r) => r.standardLotNumber),
+      rows.map((r) => r.prefecture),
+      rows.map((r) => r.municipality),
+      rows.map((r) => r.lat),
+      rows.map((r) => r.lon),
+    ],
+  );
+
+  const withCoords = rows.filter(
+    (r) => r.lat !== null && r.lon !== null,
+  ).length;
+  console.log(
+    `地点を保存した: ${rows.length} 件（うち座標つき ${withCoords} 件）年=${year}`,
+  );
+}
+
 // 地価を取得するメイン関数
 async function main() {
   const municipalities = await prisma.municipalityWealth.findMany({
@@ -79,6 +150,11 @@ async function main() {
   let updatedCount = 0;
   /** 当年価格を読めなかった地点の数。0 で埋めずに数える。 */
   let skippedPoints = 0;
+  /**
+   * 見つけた地点。タイルを使い回すので同じ地点が何度も来る。
+   * 鍵で畳んでから、最後にまとめて 1 度だけ書く。
+   */
+  const collectedPoints = new Map<string, LandPricePoint>();
 
   for (let i = 0; i < municipalities.length; i++) {
     const m = municipalities[i];
@@ -145,6 +221,17 @@ async function main() {
       }
       totalPrice += point.pricePerSqm;
       count++;
+
+      /*
+        地点そのものも残す。市区町村ごとの 1 つの数字だけでは
+        「この土地の値段は普通か」に答えられない（その数字自体、
+        代表点が入るタイル 1 枚の平均でしかない）。
+
+        鍵は (point_id, year, land_price_type)。タイルは使い回すので
+        同じ地点が何度も来るが、二度目以降は更新になるだけで
+        行は増えない。
+      */
+      collectedPoints.set(`${point.pointId}_${point.landPriceType}`, point);
     }
 
     if (count > 0) {
@@ -168,6 +255,8 @@ async function main() {
       console.log(`Progress: ${i + 1} / ${municipalities.length} ...`);
     }
   }
+
+  await saveLandPricePoints(collectedPoints);
 
   console.log(
     `Finished! Updated ${updatedCount} municipalities with land price data.`,
