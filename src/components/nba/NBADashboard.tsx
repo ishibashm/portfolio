@@ -48,6 +48,11 @@ import {
 } from "recharts";
 import { CytoscapeNetwork } from "./CytoscapeNetwork";
 import { BaziReport, BaziData } from "./BaziReport";
+import {
+  NBA_ATTENTION_KEYS,
+  NBA_ATTENTION_QUERIES,
+  NBA_ATTENTION_FALLBACK,
+} from "@/lib/nbaAttentionKeys";
 import { VedicReport, VedicData } from "./VedicReport";
 import {
   MetaphysicalConfigBar,
@@ -2480,25 +2485,29 @@ export function NBADashboard({
                   </div>
 
                   <div className="space-y-3">
-                    <div className="grid grid-cols-7 gap-1 text-[8px] font-mono text-stone-400 text-center font-bold">
+                    {/*
+                      見出しは NBA_ATTENTION_KEYS から引く。以前はここに
+                      6 列（年星・月星・日星・月相・宇宙・リスク）を直接
+                      書いていたが、#380 でエンジンの鍵から月相を抜いたとき
+                      ここを直し忘れ、列が 1 つずれて出ていた。
+                    */}
+                    <div className="grid grid-cols-6 gap-1 text-[8px] font-mono text-stone-400 text-center font-bold">
                       <div>Q \ K</div>
-                      <div title="Year Star">年星</div>
-                      <div title="Month Star">月星</div>
-                      <div title="Day Star">日星</div>
-                      <div title="Lunar Phase">月相</div>
-                      <div title="Space Kp">宇宙</div>
-                      <div title="VIX Risk">リスク</div>
+                      {NBA_ATTENTION_KEYS.map((k) => (
+                        <div key={k.short} title={k.title}>
+                          {k.short}
+                        </div>
+                      ))}
                     </div>
 
-                    {["本命", "月命", "日主"].map((queryName, qIdx) => {
-                      const rowWeights = data.nba.actionResult
-                        .attentionMatrix?.[qIdx] || [
-                        0.16, 0.16, 0.16, 0.16, 0.16, 0.17,
-                      ];
+                    {NBA_ATTENTION_QUERIES.map((queryName, qIdx) => {
+                      const rowWeights =
+                        data.nba.actionResult.attentionMatrix?.[qIdx] ??
+                        NBA_ATTENTION_FALLBACK;
                       return (
                         <div
                           key={qIdx}
-                          className="grid grid-cols-7 gap-1 items-center"
+                          className="grid grid-cols-6 gap-1 items-center"
                         >
                           <div className="text-[9px] font-bold text-stone-500 font-mono text-left truncate">
                             {queryName}
@@ -2513,7 +2522,7 @@ export function NBADashboard({
                                 style={{
                                   backgroundColor: `rgba(99, 102, 241, ${opacity})`,
                                 }}
-                                title={`Query: ${queryName}, Key: ${kIdx}, Weight: ${(weight * 100).toFixed(1)}%`}
+                                title={`Query: ${queryName}, Key: ${NBA_ATTENTION_KEYS[kIdx]?.title ?? kIdx}, Weight: ${(weight * 100).toFixed(1)}%`}
                               >
                                 {(weight * 100).toFixed(0)}%
                               </div>
