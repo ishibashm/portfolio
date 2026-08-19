@@ -791,7 +791,7 @@ export default function RegionalWealthPage() {
       "方位スコア",
       "距離(km)",
       "1人あたり平均所得(円)",
-      "平均地価(円/㎡)",
+      "中心部の地価(円/㎡)",
       "コスパ指数",
       "納税義務者数(人)",
     ];
@@ -1541,7 +1541,7 @@ export default function RegionalWealthPage() {
                       </svg>
                     </div>
                     <p className="text-[10px] text-stone-600 leading-tight">
-                      620万件超の不動産取引データ、地価公示情報をベースにした公式統計値を用いています。
+                      国土交通省の不動産取引価格情報と地価公示・都道府県地価調査（いずれも公的統計）を読み込んで集計しています。地価は市区町村の中心部にある公示地点の平均で、市域全体の平均ではありません。
                     </p>
                   </div>
                 </a>
@@ -1575,7 +1575,7 @@ export default function RegionalWealthPage() {
                       </svg>
                     </div>
                     <p className="text-[10px] text-stone-600 leading-tight">
-                      AIによる構造化・賃料推定が可能な商用DBの概念を応用し、「コスパ指数（所得/地価）」を導出しています。
+                      「コスパ指数」は 1人あたり平均所得 ÷ 中心部の地価（円/㎡）です。地価は中心部の公示地点から取っているため、市域が広い自治体ほど実態とずれます。
                     </p>
                   </div>
                 </a>
@@ -1728,7 +1728,14 @@ export default function RegionalWealthPage() {
                     className="px-6 py-4 text-right cursor-pointer hover:bg-gray-100 dark:hover:bg-stone-100 transition-colors group select-none"
                     onClick={(e) => handleSortChange("landPrice", e)}
                   >
-                    平均地価 (㎡) {renderSortIndicator("landPrice")}
+                    {/*
+                        「平均地価」ではない。取っているのは、市区町村の
+                        代表点が入る 1.2km 四方（z=15 のタイル 1 枚）に
+                        含まれる地価公示の地点だけで、probe では 1 タイル
+                        あたり 4〜15 地点しか無かった。市域全体の平均を
+                        名乗ると、郊外の広い市ほど実態から外れる。
+                      */}
+                    中心部の地価 (円/㎡) {renderSortIndicator("landPrice")}
                   </th>
                   <th
                     scope="col"
