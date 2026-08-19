@@ -489,8 +489,10 @@ model land_price_points {
   price_per_sqm           BigInt
   /// 前年の価格（円/㎡）。無い年・無い地点がある。
   last_year_price_per_sqm BigInt?
-  /// 0 = 地価公示 / 1 = 都道府県地価調査。
-  land_price_type         Int?
+  /// 0 = 地価公示（1月1日時点） / 1 = 都道府県地価調査（7月1日時点）。
+  /// 鍵の一部。point_id が制度をまたいで一意である保証が無いため、
+  /// 入れないと片方がもう片方を黙って上書きしうる。
+  land_price_type         Int
   /// 「住宅地」「商業地」など。
   use_category            String?
   location                String?
@@ -502,7 +504,7 @@ model land_price_points {
   created_at              DateTime @default(now()) @db.Timestamptz(6)
   updated_at              DateTime @default(now()) @db.Timestamptz(6)
 
-  @@id([point_id, year])
+  @@id([point_id, year, land_price_type])
   @@index([year, lat, lon])
   @@index([year, prefecture, municipality])
   @@index([year, use_category, price_per_sqm])

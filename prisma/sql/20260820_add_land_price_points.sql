@@ -17,11 +17,20 @@
 -- 対応を書いた）。当年価格は u_current_years_price_ja に
 -- "1,970,000(円/㎡)" の形で入るので、数値に直して price_per_sqm へ。
 --
--- ## 鍵は (point_id, year)
+-- ## 鍵は (point_id, year, land_price_type)
 --
--- point_id は地点の整理番号で、年をまたいで同じ地点を指す。
--- 年ごとに 1 行持ちたいので複合主キーにする。二度取り込んでも
--- ON CONFLICT で更新されるだけで行は増えない。
+-- point_id は地点の整理番号で、年をまたいで同じ地点を指す。年ごとに
+-- 1 行持ちたいので year と組む。
+--
+-- **land_price_type も鍵に入れる。**この API は 2 つの制度を同じ形で
+-- 返す（0 = 地価公示・1月1日時点 / 1 = 都道府県地価調査・7月1日時点）。
+-- point_id が制度をまたいで一意かどうかは公表されておらず、probe で
+-- 見えた 45 地点はすべて 0 だったので確かめようがない。もし制度ごとの
+-- 採番なら、鍵に入れないと**片方がもう片方を黙って上書きする**。
+-- 入れておけば、一意であってもただ列が 1 つ増えるだけで害が無い。
+--
+-- 鍵に入れる以上 NOT NULL。取り込み側は、この項目が無い地点を
+-- 適当な値で埋めずに飛ばして件数を報告する。
 --
 -- ## 既定値を置かない
 --
@@ -45,8 +54,9 @@ CREATE TABLE IF NOT EXISTS "land_price_points" (
   -- 前年の価格（円/㎡）。無い年・無い地点がある。
   "last_year_price_per_sqm" BIGINT,
 
-  -- 0 = 地価公示 / 1 = 都道府県地価調査。
-  "land_price_type" INTEGER,
+  -- 0 = 地価公示（1月1日時点） / 1 = 都道府県地価調査（7月1日時点）。
+  -- 鍵の一部なので NOT NULL。無い地点は取り込まない。
+  "land_price_type" INTEGER NOT NULL,
   -- 「住宅地」「商業地」など。
   "use_category" TEXT,
   -- 「東京都千代田区富士見１丁目８番６」
@@ -68,7 +78,8 @@ CREATE TABLE IF NOT EXISTS "land_price_points" (
   "created_at" timestamptz NOT NULL DEFAULT now(),
   "updated_at" timestamptz NOT NULL DEFAULT now(),
 
-  CONSTRAINT "land_price_points_pkey" PRIMARY KEY ("point_id", "year")
+  CONSTRAINT "land_price_points_pkey"
+    PRIMARY KEY ("point_id", "year", "land_price_type")
 );
 
 -- 「この座標の近く」を矩形で絞ってから距離を測る。成約価格の
