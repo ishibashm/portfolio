@@ -3765,10 +3765,17 @@ export const SolarTimeClock = () => {
           </div>
         )}
 
-        <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap sm:flex-nowrap gap-1">
+        {/*
+            タブは常に折り返す。以前は sm 以上で flex-nowrap にしていたが、
+            7 つの札が 1 行に収まらない幅（タブレット）では札の側が縮み、
+            「ホーム」が「ホ／ー／ム」と 1 文字ずつ縦に割れていた。
+            横スクロールにはしない。流れる帯は「押して選ぶのか分からない」
+            と利用者から指摘された形そのものなので、2 段に積む。
+          */}
+        <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-3xl xl:rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap gap-1">
           <button
             onClick={() => selectTab("portal")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "portal"
                 ? "bg-stone-800 text-white border border-stone-800"
                 : "text-stone-600 hover:text-stone-800"
@@ -3778,7 +3785,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("profile")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "profile"
                 ? "bg-purple-500/10 text-purple-600 border border-purple-200"
                 : "text-stone-600 hover:text-stone-800"
@@ -3788,7 +3795,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("destination")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "destination"
                 ? "bg-emerald-500/10 text-emerald-500 border border-emerald-200"
                 : "text-stone-600 hover:text-stone-800"
@@ -3798,7 +3805,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("timing")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "timing"
                 ? "bg-indigo-500/10 text-indigo-600 border border-indigo-200"
                 : "text-stone-600 hover:text-stone-800"
@@ -3808,7 +3815,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("consult")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "consult"
                 ? "bg-amber-500/10 text-amber-500 border border-amber-200"
                 : "text-stone-600 hover:text-stone-800"
@@ -3818,7 +3825,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("scorecard")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "scorecard"
                 ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
                 : "text-stone-600 hover:text-stone-800"
@@ -3828,7 +3835,7 @@ export const SolarTimeClock = () => {
           </button>
           <button
             onClick={() => selectTab("history")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest transition-all ${
+            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
               activeTab === "history"
                 ? "bg-sky-500/10 text-sky-600 border border-sky-200"
                 : "text-stone-600 hover:text-stone-800"

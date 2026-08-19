@@ -87,6 +87,24 @@ interface Summary {
  * 自分の生年月日と現住地に直せば結果もそのぶん正確になる。
  */
 const DEFAULT_BIRTH_DATE = "2000-01-01";
+/**
+ * 保存済みの座標を入力欄に入れる形にする。
+ *
+ * 端末の GPS から入った値は 136.90539212730098 のように小数 14 桁で
+ * 残る。入力欄は step="0.0001" なので、この値は HTML の検証では
+ * step に合わない不正な値になり、画面にもそのまま 14 桁で出ていた
+ * （利用者の画面で確認）。
+ *
+ * 小数 4 桁は経度で約 9m。方位は出発地から数 km 以上先を測るので、
+ * 45 度の境目がこの差で動くことはない。真太陽時も 0.0001 度は
+ * 0.024 秒で、分単位の表示には出ない。判定の答えは変わらない。
+ */
+function toInputCoord(v: unknown): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  return String(Math.round(n * 10000) / 10000);
+}
+
 const DEFAULT_LAT = "35.6895";
 const DEFAULT_LON = "139.6917";
 
@@ -123,9 +141,9 @@ export function AuspiciousDayFinder() {
       const c = JSON.parse(raw);
       if (typeof c.birth_date === "string") setBirthDate(c.birth_date);
       if (c.base_lon !== undefined && c.base_lon !== null)
-        setLon(String(c.base_lon));
+        setLon(toInputCoord(c.base_lon));
       if (c.base_lat !== undefined && c.base_lat !== null)
-        setLat(String(c.base_lat));
+        setLat(toInputCoord(c.base_lat));
     } catch {
       // 壊れていれば手入力してもらう
     }
