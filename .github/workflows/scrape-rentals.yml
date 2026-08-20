@@ -114,7 +114,27 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        # **上限と再試行を置く。**この 1 行が apt の待ちで固まり、ジョブの
+        # 持ち時間 6 時間を丸ごと溶かした実績がある（2026-08-19 の大阪。
+        # run 32292215100 / job 96195720004）。ログは apt の途中で 5 時間 58 分
+        # 沈黙し、打ち切り時に残っていたのが
+        # `npm exec playwright install --with-deps chromium` だった。
+        # 肝心の取り込みは step ごと skipped で、**1 件も取れていない。**
+        #
+        # 実測は 2 分（同じ run の東京）。8 分で切って 3 回やり直す。
+        # ここで落ちてもその県が 1 つ落ちるだけで、他県は続く。
+        # 何より、固まったジョブが concurrency グループを 6 時間
+        # 抱えたままにならない（DDL の適用がそれで止まった）。
+        timeout-minutes: 30
+        run: |
+          for i in 1 2 3; do
+            if timeout 8m npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::playwright install が 8 分で終わらなかった（${i} 回目）。やり直す。"
+          done
+          echo "::error::playwright install が 3 回とも失敗した。"
+          exit 1
 
       - name: Create .env from Secret
         env:
