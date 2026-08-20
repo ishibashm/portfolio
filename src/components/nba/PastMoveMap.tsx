@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -11,7 +11,7 @@ import {
 import L from "leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import "leaflet/dist/leaflet.css";
-import { Search, Navigation } from "lucide-react";
+import { Search } from "lucide-react";
 
 // Fix Leaflet marker icons in Next.js
 applyLeafletDefaultIcon();
