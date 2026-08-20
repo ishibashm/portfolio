@@ -5,6 +5,7 @@ import {
   getPersonalVoidZodiac,
   Direction,
   AstroEngine,
+  type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { directionFromBearing } from "@/utils/directionGeo";
@@ -131,7 +132,6 @@ export async function GET(request: Request) {
 
     const birthLat = parseFloat(searchParams.get("birthLat") || "NaN");
     const birthLon = parseFloat(searchParams.get("birthLon") || "NaN");
-    const bDate = parseSafeDate(searchParams.get("birthDate") || "");
     const hasBirthLocation = !isNaN(birthLat) && !isNaN(birthLon);
 
     const useClassical = searchParams.get("useClassical") === "true";
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     const directionFilterMode =
       searchParams.get("directionFilterMode") || "composite";
     const actionIntent = (searchParams.get("actionIntent") ||
-      "MIGRATION") as any;
+      "MIGRATION") as ActionIntent;
     const physicalMonthMode = (searchParams.get("physicalMonthMode") ||
       "independent") as "coupled" | "independent";
     const targetDate = parseSafeDate(searchParams.get("targetDate") || "");
@@ -357,7 +357,7 @@ export async function GET(request: Request) {
       magneticDirection: primary.magneticDirection,
       dateScores,
       /** 人ごとの方位と日別スコア。誰がどの日に引っかかるかを画面で出す。 */
-      members: perMember.map((m, index) => ({
+      members: perMember.map((m) => ({
         id: m.member.id,
         name: m.member.name,
         direction: m.direction,
