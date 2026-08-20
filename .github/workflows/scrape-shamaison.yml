@@ -66,7 +66,19 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+        # 上限と再試行。#455（scrape-rentals ほか 3 本）と同じ。この 1 行が
+        # apt の待ちで固まり、ジョブの持ち時間を丸ごと溶かした実績がある
+        # （2026-08-19 の大阪。詳細は scrape-rentals.yml の同じ step の註）。
+        timeout-minutes: 30
+        run: |
+          for i in 1 2 3; do
+            if timeout 8m npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::playwright install が 8 分で終わらなかった（${i} 回目）。やり直す。"
+          done
+          echo "::error::playwright install が 3 回とも失敗した。"
+          exit 1
 
       - name: Create .env from Secret
         env:
