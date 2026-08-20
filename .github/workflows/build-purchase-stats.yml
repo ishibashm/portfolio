@@ -1,0 +1,88 @@
+name: Build purchase stats
+
+# /relocation/purchase の相場を集計して src/data/purchaseStats.json に焼く。
+#
+# 家賃側（marketStats.json）は scrape-rentals.yml の末尾で作っているが、
+# こちらは元データが違う。property_transactions は賃貸の収集とは無関係で、
+# import-property-transactions.yml（手動）が入れる。賃貸の夜間収集に
+# ぶら下げると、**賃貸が失敗した日に購入の集計まで止まる**ので分ける。
+#
+# ## DB の排他が要らない理由
+#
+# この集計は property_transactions と land_price_points を **読むだけ**。
+# 行を書かないので rental-properties-write の concurrency グループには
+# 入れない。入れると、夜間スクレイプ（最長 6 時間）の裏で待たされる。
+#
+# ## 走る頻度
+#
+# 成約価格は四半期ごとの公表で、毎日は変わらない。週 1 回で足りる。
+# 取り込み直後に反映したいときは workflow_dispatch で手動実行する。
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎週月曜 20:10 UTC（火 05:10 JST）。夜間スクレイプ（19:17 UTC 開始）
+    # とは別グループなので重なってよいが、DB の負荷が要らぬ時間に寄る
+    # のを避けて少しずらしてある。
+    - cron: "10 20 * * 1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # push でデプロイまで繋げたいので、DATA_PUSH_KEY があればそれを使う。
+      # 未設定なら GITHUB_TOKEN に落ちる（push は通るがデプロイは次の
+      # push 待ちになる）。scrape-rentals.yml と同じ扱い。
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DATA_PUSH_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE が空。DATABASE_URL / DIRECT_URL が要る。"
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Build purchase stats
+        run: npx -y tsx scripts/build_purchase_stats.ts
+
+      - name: Commit purchase stats if changed
+        run: |
+          if git diff --quiet -- src/data/purchaseStats.json; then
+            echo "購入の相場に変化なし。コミットしない。" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/purchaseStats.json
+          # [skip ci] を付けない。この push で動かしたいのが deploy.yml
+          # そのものだからで、付けると唯一の対象を自分で消すことになる。
+          git commit -m "chore(data): 購入の相場を更新する"
+          # 実行中に master が進んでいることがある。取り込んでから押す。
+          # --autostash は npm ci が追跡下のファイル（yarn.lock）を書き換える
+          # ことがあるため。無いと rebase が unstaged changes で止まる。
+          git pull --rebase --autostash origin master
+          git push origin HEAD:master
+
+          if [ -n "${{ secrets.DATA_PUSH_KEY }}" ]; then
+            echo "購入の相場を master へ push した。deploy.yml が続けて動く。" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::DATA_PUSH_KEY が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番は古いまま。"
+            echo "購入の相場を master へ push した。ただしデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
+          fi
