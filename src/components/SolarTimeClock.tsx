@@ -15,6 +15,7 @@ import type { SpaceWeatherData } from "../utils/spaceWeather";
 import type { SurfacePressureData } from "../utils/surfacePressure";
 import { getGeomagneticData, GeomagneticData } from "../utils/geomagnetism";
 import { Solar } from "lunar-javascript";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 import { ClockDisplay } from "./ClockDisplay";
 import {
@@ -1962,7 +1963,23 @@ export const SolarTimeClock = () => {
 
     for (let i = 0; i < 30; i++) {
       const testDateLocal = new Date(forecastAnchorMs + i * 86400000);
-      const testSolar = Solar.fromDate(testDateLocal);
+      /*
+        暦は**日本時間で**引く（#456・#458 と同じ直し方）。前は
+        Solar.fromDate で、ブラウザの時間帯で年月日を読んでいた。
+        国内の利用者（JST）には差が出ないが、海外から開くと、この
+        30 日予報の天中殺だけがブラウザの日付で判定され、同じ画面の
+        ヒートマップ（getCurrentZodiac 経由 = 日本時間固定）と
+        食い違っていた。判定は日本時間に揃える。
+      */
+      const jstFields = getZonedDateTimeFields(testDateLocal, 9);
+      const testSolar = Solar.fromYmdHms(
+        jstFields.year,
+        jstFields.month,
+        jstFields.day,
+        jstFields.hours,
+        jstFields.minutes,
+        jstFields.seconds,
+      );
       const testLunar = testSolar.getLunar();
 
       const testDate = directionBoardInstant(anchor, 0, lon || 139.6917, i);
