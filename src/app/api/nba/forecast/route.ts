@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { toResponseMessage } from "@/lib/errorMessage";
 import fs from "fs/promises";
 import path from "path";
-import { NBAEngine, NBAParams, ActionType } from "@/utils/nbaEngine";
+import { NBAEngine, NBAParams } from "@/utils/nbaEngine";
 import { AspectEngine } from "@/utils/aspectEngine";
 import {
   AstroEngine,
@@ -25,10 +25,24 @@ import {
 
 export async function POST(req: Request) {
   try {
-    let clientBody: any = {};
+    /*
+      画面から届く上書き。どれも任意で、無ければ設定ファイルか既定値に
+      落ちる。形は兄弟の api/nba/route.ts と同じものを写している
+      （新しい型を作らない。CLAUDE.md 3 節）。
+    */
+    let clientBody: {
+      currentShield?: number;
+      currentAnsLoad?: number;
+      clientBirthDate?: string;
+      lon?: number;
+      useClassical?: boolean;
+      zodiacTimeBasis?: ZodiacTimeBasis;
+    } = {};
     try {
       clientBody = await req.json();
-    } catch (e) {}
+    } catch {
+      // 本文が無い・壊れている場合は既定値のまま進む
+    }
 
     const {
       currentShield = 100,
@@ -64,7 +78,9 @@ export async function POST(req: Request) {
         if (config.use_classical_board !== undefined) {
           useClassical = config.use_classical_board;
         }
-      } catch (e) {}
+      } catch {
+        // 設定ファイルが無ければ既定値のまま進む
+      }
     }
 
     const birthDate = birthDateStr ? new Date(birthDateStr) : null;
