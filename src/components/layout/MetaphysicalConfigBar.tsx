@@ -264,7 +264,25 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     setConfig(updatedConfig);
     setIsSyncing(true);
 
-    const apiBody: any = {
+    /*
+      API へ送る形。項目名が snake_case になるだけで、値の型は
+      MetaphysicalConfig と同じ。新しい型は作らず、そこから引く
+      （CLAUDE.md 3 節）。こうしておくと、config 側に項目が増えた
+      ときに型のほうがずれを教えてくれる。
+    */
+    const apiBody: {
+      use_classical_board: MetaphysicalConfig["useClassicalBoard"];
+      zodiac_time_basis: MetaphysicalConfig["zodiacTimeBasis"];
+      physical_month_mode: NonNullable<MetaphysicalConfig["physicalMonthMode"]>;
+      direction_filter_mode: MetaphysicalConfig["directionFilterMode"];
+      action_intent: MetaphysicalConfig["actionIntent"];
+      target_date: MetaphysicalConfig["targetDate"];
+      birth_date?: MetaphysicalConfig["birthDate"];
+      birth_lat?: MetaphysicalConfig["birthLat"];
+      birth_lon?: MetaphysicalConfig["birthLon"];
+      base_lat?: MetaphysicalConfig["baseLat"];
+      base_lon?: MetaphysicalConfig["baseLon"];
+    } = {
       use_classical_board: updatedConfig.useClassicalBoard,
       zodiac_time_basis: updatedConfig.zodiacTimeBasis,
       physical_month_mode: updatedConfig.physicalMonthMode || "independent",
@@ -289,7 +307,9 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
       if (localData) {
         try {
           currentLocal = JSON.parse(localData);
-        } catch (e) {}
+        } catch {
+          // 壊れていれば無かったことにして、今回の値で作り直す
+        }
       }
       localStorage.setItem(
         "tactical_config_v1",
@@ -326,10 +346,6 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     }
 
     setTimeout(() => setIsSyncing(false), 400);
-  };
-
-  const handleToggleClassical = () => {
-    saveConfig({ ...config, useClassicalBoard: !config.useClassicalBoard });
   };
 
   /*

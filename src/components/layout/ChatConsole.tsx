@@ -167,7 +167,7 @@ export const ChatConsole = ({
           </div>
         )}
 
-        {messages.map((msg, index) => (
+        {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex flex-col ${msg.type === "thought" ? "items-start" : "items-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}
