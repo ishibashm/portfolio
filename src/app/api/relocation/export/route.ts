@@ -19,6 +19,7 @@ import {
   getPhysicalMonthStar,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { getRokuyo } from "@/utils/lunar";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
@@ -438,7 +439,23 @@ export async function GET(request: Request) {
 
       forecast30Days.push({
         date: testDate.toISOString().split("T")[0],
-        rokuyo: getCurrentZodiac(testDate, baseLon).dayZodiac,
+        /*
+          ここには**日支**（子・丑・寅…）が入っていた。名前は rokuyo な
+          のに中身が十二支で、六曜（大安・仏滅…）ではない。
+
+          この書き出しは人と生成 AI が読む JSON なので、読み手は名前を
+          信じる。サイトの他の rokuyo は全て `getRokuyo` の
+          「大安 (Taian)」形式で、`rokuyo.includes("大安")` で判定して
+          いる（arbitrage・auspicious-days・CosmicCalendar・
+          AstroGridCalendar・WeddingDateSelector）。この 1 か所だけが
+          別物を入れていた。同じ鍵で意味が 2 通りある状態。
+
+          六曜は日単位なので経度も時刻基準も関係しない。日支のほうは
+          消さずに dayZodiac として別の鍵に残す（書き出しから読めていた
+          情報を減らさないため）。
+        */
+        rokuyo: getRokuyo(testDate),
+        dayZodiac: getCurrentZodiac(testDate, baseLon).dayZodiac,
         lunarPhase: calculateLunarPhaseCondition(testDate, actionIntent)
           .phaseLabel,
         scores: dayScores,
