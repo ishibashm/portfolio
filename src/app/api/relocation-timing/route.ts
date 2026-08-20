@@ -22,12 +22,11 @@ export async function GET(req: Request) {
 その後、ユーザーの本命星と取得した盤面データをもとに、最適な引越し方位とタイミングを推論・助言してください。
 出力はJSONフォーマット（bestDirection, score, timing, reason）のみとし、ダッシュボードのUIに直接表示するため、緊迫感のある「作戦指令風」のトーンで出力してください。`,
       prompt: `ユーザーの本命星は「${userHonmeiNum}」です。${targetYear}年の引越しにおける最適な吉方位（どこに）と、おすすめの時期（いつ）、およびその作戦理由を分析してください。`,
-      // @ts-ignore
       tools: {
         get_kyusei_board: tool({
           description:
             "指定された年の中宮星の番号から、その年の九星気学の盤面（9方位の星の配置）を取得する",
-          // @ts-ignore
+          // @ts-expect-error Vercel AI SDK の型定義と噛み合わない
           parameters: z.object({
             centerStarNumber: z
               .number()
@@ -53,7 +52,7 @@ export async function GET(req: Request) {
     if (response.toolCalls && response.toolCalls.length > 0) {
       const call = response.toolCalls[0];
       if (call.toolName === "get_kyusei_board") {
-        // @ts-ignore: Next.js + Vercel AI SDK type definition conflict workaround
+        // @ts-expect-error Next.js と Vercel AI SDK の型定義が衝突する
         const args = (call.args || {}) as { centerStarNumber?: number };
 
         // 3. あなたのアプリ側で実際の関数を叩く
@@ -70,6 +69,16 @@ export async function GET(req: Request) {
           "North",
           "North-West",
         ];
+        /*
+          **消さないこと。**未使用だが、これは「作りかけ」のしるし。
+          すぐ下の註のとおり、本来はこの mapping を tool の結果として
+          AI へ投げ直して推論させる。その 2 回目の呼び出しが未実装な
+          ので、いまは誰も読んでいない。
+
+          消すと directions（上の 8 要素の配列）も道連れになり、
+          何を渡すつもりだったのかが分からなくなる。扱いは相談して
+          から決める（CLAUDE.md 4 節の setMapProperties と同じ）。
+        */
         const mapping = board.map((star, idx) => ({
           direction: directions[idx],
           star: star ? star.name : "Unknown",
@@ -91,7 +100,9 @@ export async function GET(req: Request) {
           finalScore = parsed.score || finalScore;
           finalTiming = parsed.timing || finalTiming;
           finalReason = parsed.reason || finalReason;
-        } catch (e) {}
+        } catch {
+          // JSON として読めなければ既定値のまま返す
+        }
       }
     }
 
