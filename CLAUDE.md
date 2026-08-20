@@ -171,7 +171,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 377**（ローカル実測。上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 197**（クラウド実測。上の注意を読むこと）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -194,13 +194,16 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 ### 現状の内訳（`npm run lint` 実行時点）
 
 ```
-239  @typescript-eslint/no-explicit-any
- 86  @typescript-eslint/no-unused-vars
- 21  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
- 10  @typescript-eslint/ban-ts-comment
-  8  @typescript-eslint/no-require-imports
-  8  react-hooks/set-state-in-effect ほか（同上で対象外）
+121  @typescript-eslint/no-explicit-any
+ 38  @typescript-eslint/no-unused-vars
+ 16  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
+  8  react-hooks/set-state-in-effect    ← 同上で対象外
+  5  @typescript-eslint/ban-ts-comment
+  4  @typescript-eslint/no-require-imports
+  5  react-hooks/purity ほか（同上で対象外）
 ```
+
+**対象外が 24 件ある**ので、実際に手を付けられるのは 173 件ぶん。
 
 `catch (e: any)` は **0 件**（#215 で最後の 4 件が片付いた）。
 
@@ -208,17 +211,21 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 | 件数 | ファイル | 内訳 |
 |---|---|---|
-| 39 | `src/components/SolarTimeClock.tsx` | 2 / 32 / 5 |
-| 20 | `src/app/relocation/simulator/page.tsx` | 8 / 8 / 4 |
-| 16 | `src/utils/ephemerisEngine.ts` | 3 / 13 / 0 |
-| 12 | `src/app/relocation/arbitrage/page.tsx` | 0 / 11 / 1 |
-| 12 | `src/components/ArbitrageMapInner.tsx` | 3 / 5 / 4 |
+| 12 | `src/utils/ephemerisEngine.ts` | 0 / 12 / 0 |
 | 12 | `src/utils/nbaEngine.ts` | 0 / 12 / 0 |
-| 10 | `src/components/nba/NBADashboard.tsx` | 0 / 7 / 3 |
 | 10 | `src/utils/baziEngine.ts` | 1 / 9 / 0 |
 |  8 | `src/utils/arbitrageAstro.ts` | 0 / 7 / 1 |
-|  7 | `src/components/MagneticMapInner.tsx` | 2 / 3 / 2 |
-|  7 | `src/components/widgets/OmniPipelineWidget.tsx` | 0 / 7 / 0 |
+|  6 | `scripts/gas_newsletter.js` | 6 / 0 / 0 |
+|  5 | `scripts/shamaison_extractor.ts` | 0 / 5 / 0 |
+|  5 | `src/app/relocation/simulator/page.tsx` | 1 / 0 / 4 |
+|  4 | `scripts/explain_arbitrage_query.ts` | 0 / 4 / 0 |
+|  4 | `scripts/fetch_estat_sample.ts` | 0 / 4 / 0 |
+|  4 | `src/app/api/relocation/export/route.ts` | 0 / 4 / 0 |
+|  4 | `src/components/nba/NBADashboard.tsx` | 0 / 1 / 3 |
+
+**`SolarTimeClock.tsx` は 0 件になった**（かつて 39 件で最大だった）。
+`ArbitrageMapInner`・`MagneticMapInner`・`OmniPipelineWidget`・
+`arbitrage/page.tsx` も表から消えている。
 
 ### catch は片付いた。その過程で分かったこと
 
@@ -255,22 +262,59 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ### 次にやるとよいもの
 
-**`src/components/SolarTimeClock.tsx`（39 件）** が残りの山。8,000 行あって
-現行機能の中核。未使用（#213）と `catch`（#215）は済んでいるので、残りは
-**`any` 32 件**。`solarData` / `NBAData` など応答系は型を切る前にモデル化が要るが、
-**`api/nba` の応答は #212 でモデル化済み**なので、そこから引ける分がある。
+**散らばっている分は、ほぼ拾い切った**（#448〜#453 で 231 → 197）。残りは
+性質の違うものが 3 つに分かれる。
 
-このファイルを触るときは `docs/improvement-backlog.md` の 5 節を先に読むこと。
-**字面での一括置換で 2 回事故った**（同じ字面の使っている変数を消した／
-`const [a, setA]` の警告 2 件で同じ行を二重に消した）。eslint の**行番号**を使い、
-同じ行を指す警告は畳んでから消す。消したら必ず `npx tsc --noEmit` を通す。
+**1. 判定の中核の `any`（33 件）。**`ephemerisEngine`（12）・`nbaEngine`（12）・
+`baziEngine`（9）。ここが最大の山。型を触るだけでも、しきい値や条件式に手が
+滑ると影響が大きい。テストが厚いので `npm test` は効くが、**細切れではなく
+まとまった時間を取って**扱うこと。1 件ずつ潰すと文脈を持てない。
 
-残る `no-unused-vars` 2 件（`setMapProperties` / `setPressureDrop`）は
-**消さないこと。**機能が初期値のまま止まっているしるしで、扱いは相談してから決める。
+**2. `scripts/` の `any`（20 件超）。**外部 JSON に型が無いことから来ている。
+下の「スクレイパーの `any`」のとおり、読む枝だけ写す。`tsc` の対象外なので
+一時 tsconfig が要る（同じく下記）。
 
-`utils/ephemerisEngine.ts`（16 件）と `utils/nbaEngine.ts`（12 件）は**判定の中核**。
-型を触るだけでも、しきい値や条件式に手が滑ると影響が大きい。テストが厚いので
-`npm test` は効くが、慎重に。
+**3. 対象外（24 件）。**`exhaustive-deps`・`set-state-in-effect`・`purity`・
+`immutability`。どれも再レンダリングのタイミングを変える。
+
+`SolarTimeClock.tsx` は**片付いた**（39 → 0）。触るときの注意だけ残す:
+`docs/improvement-backlog.md` の 5 節を先に読むこと。**字面での一括置換で
+2 回事故った**（同じ字面の使っている変数を消した／`const [a, setA]` の警告
+2 件で同じ行を二重に消した）。eslint の**行番号**を使い、同じ行を指す警告は
+畳んでから消す。消したら必ず `npx tsc --noEmit` を通す。
+
+### 消してはいけない「未使用」
+
+未使用に見えても消してはいけないものが、これまでに 5 つ見つかっている。
+**未使用の警告は「要らない」ではなく「繋がっていない」のしるしのことがある。**
+
+| どこ | 何 | なぜ残すか |
+|---|---|---|
+| `SolarTimeClock.tsx` | `setMapProperties` / `setPressureDrop` | 機能が初期値のまま止まっているしるし |
+| `PersonalProfileConfig.tsx` | `setBaseSyncTimestamp` | 同上 |
+| `api/relocation-timing` | `mapping` | 「AI に投げ直す」2 回目の呼び出しが未実装。消すと `directions` も道連れ |
+| `TenchusatsuVisualizer.tsx` | `years` | 見出しが「天中殺**周期**」なのに周期を出す表示が無い。8 年ぶんの VOID / CLEAR は計算済みで、描く先だけが無い |
+| `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる |
+
+逆に、**確かめたうえで消してよかった**例もある。`MetaphysicalConfigBar` の
+`handleToggleClassical` は、511〜536 行に暦基準／木星黄経の**両方向のボタンが
+揃っていて**どちらも `saveConfig` を直に呼んでいた。単独の切り替えだった頃の
+名残で、機能は失われていなかった（#451）。
+
+**「未使用のハンドラ」を見たら、呼び出し側を探してから決めること。**
+
+### `@ts-ignore` は空回りしていることがある
+
+`@ts-expect-error` に置き換えると、tsc が「そこにエラーが無い」と教えてくれる。
+
+```
+src/app/api/relocation-timing/route.ts(25,7):
+error TS2578: Unused '@ts-expect-error' directive.
+```
+
+実際に 1 件、**何も抑えていない `@ts-ignore`** が見つかった（#449）。
+`@ts-ignore` は対象の行が正しくても黙るので、要らなくなっても気付けない。
+置き換えは「規則だから」ではなく、これを見つけるためにやる。
 
 `scripts/` は `tsconfig.json` の `exclude` に入っていて **`npx tsc --noEmit` の
 対象外**。スクリプトの型を触ったら、そのファイルだけを含む一時 tsconfig を
