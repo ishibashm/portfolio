@@ -108,6 +108,21 @@ grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えてい�
 偏角は出発地ごとに `utils/geomagnetism` から引く。**取得できないときは 0（補正なし）**。
 以前は東京の -8.2 度で埋めており、沖縄や北海道の利用者に東京の偏角を当てていた。
 
+### 暦は日本時間で引く（`Solar.fromDate` を使わない）
+
+lunar-javascript の `Solar.fromDate(date)` は**実行環境のタイムゾーン**で
+年月日を読む。本番（Cloud Run）は UTC なので、これを使うと日の境目が
+日本時間の 0 時ではなく**9 時**になり、毎日 0〜9 時は前日の暦で判定が出る。
+実際に古典盤がそうなっていた（#456。日盤の 37.3% がずれていた）。
+
+必ず `getZonedDateTimeFields(date, 9)` を通して `Solar.fromYmdHms` で
+組み立てる（`ephemerisEngine` の `solarInJst` が見本）。#456〜#459 で
+総点検し、**コード上の `Solar.fromDate` は 0 件**にした。増やさないこと。
+
+```bash
+grep -rn "Solar.fromDate(" src/   # コメント（baziEngine の旧実装の記録）以外に出たら直す
+```
+
 ### 型
 
 - `any` を消すときは**実際の型に置き換える**。`unknown` にしてキャストで逃げない
@@ -171,7 +186,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 197**（クラウド実測。上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 196**（クラウド実測。上の注意を読むこと）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -249,7 +264,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 | 形 | どうするか | 例 |
 |---|---|---|
-| 応答にもログにも入れない | 注釈を外すだけ | `music/analyze`・`relocation-timing` |
+| 応答にもログにも入れない | 注釈を外すだけ | `music/analyze` |
 | ログだけ | `toLogMessage` | `site_guardian_daemon`・widget 各種 |
 | 応答に入れる（開発者向け） | 英語の既定を足す | `omni/*`・`timeline` |
 | 応答に入れる（**画面に届く**） | **日本語**の既定 | `api/nba`（`NBADashboard` が赤帯に出す） |
@@ -285,16 +300,20 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ### 消してはいけない「未使用」
 
-未使用に見えても消してはいけないものが、これまでに 5 つ見つかっている。
+未使用に見えても消してはいけないものが見つかっている。
 **未使用の警告は「要らない」ではなく「繋がっていない」のしるしのことがある。**
 
 | どこ | 何 | なぜ残すか |
 |---|---|---|
 | `SolarTimeClock.tsx` | `setMapProperties` / `setPressureDrop` | 機能が初期値のまま止まっているしるし |
 | `PersonalProfileConfig.tsx` | `setBaseSyncTimestamp` | 同上 |
-| `api/relocation-timing` | `mapping` | 「AI に投げ直す」2 回目の呼び出しが未実装。消すと `directions` も道連れ |
 | `TenchusatsuVisualizer.tsx` | `years` | 見出しが「天中殺**周期**」なのに周期を出す表示が無い。8 年ぶんの VOID / CLEAR は計算済みで、描く先だけが無い |
 | `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる |
+
+「作りかけのしるし」も、**親ごと要らないと決まればそこで終わる。**
+`api/relocation-timing` の `mapping` はこの表に載っていたが、route 自体が
+誰からも呼ばれない課金 API だったため、利用者の判断で route ごと消した
+（#457）。しるしとして残すのは「いつか繋ぐかもしれない」あいだだけ。
 
 逆に、**確かめたうえで消してよかった**例もある。`MetaphysicalConfigBar` の
 `handleToggleClassical` は、511〜536 行に暦基準／木星黄経の**両方向のボタンが
@@ -311,6 +330,8 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 src/app/api/relocation-timing/route.ts(25,7):
 error TS2578: Unused '@ts-expect-error' directive.
 ```
+
+（このファイル自体は後に #457 で消えたが、見つけ方の実例として残す。）
 
 実際に 1 件、**何も抑えていない `@ts-ignore`** が見つかった（#449）。
 `@ts-ignore` は対象の行が正しくても黙るので、要らなくなっても気付けない。
