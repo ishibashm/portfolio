@@ -17,7 +17,8 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
       // Calculate for a 12-year window around the current year
       const currentYear = new Date().getFullYear();
       return calculateTenchusatsu(bDate, currentYear);
-    } catch (e) {
+    } catch {
+      // 生年月日が読めない・干支が引けない。何も出さない。
       return null;
     }
   }, [birthDateStr]);
@@ -26,6 +27,18 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
 
   const currentYear = new Date().getFullYear();
   const baseYear = currentYear - 3;
+  /*
+    **消さないこと。**未使用だが、これは「作りかけ」のしるし。
+
+    この部品の見出しは「Tenchusatsu (Void) **Cycle** Diagnostics /
+    天中殺**周期**の解読」だが、実際に描いているのは日干支の欄と
+    今年の状態の 2 枚だけで、**周期を出す表示が無い。**
+    その表示に渡すはずだった 8 年ぶん（VOID / CLEAR）がこれ。
+
+    消すと baseYear も道連れになり、何を出すつもりだったのかが
+    分からなくなる。扱いは相談してから決める
+    （CLAUDE.md 4 節の setMapProperties と同じ）。
+  */
   const years = Array.from({ length: 8 }).map((_, i) => {
     const y = baseYear + i;
     const isVoid =
