@@ -17,6 +17,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { isNoiseStatus } from "@/utils/arbitrageHelpers";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -35,10 +36,33 @@ export function calculateBaziCompatibility(
   targetDate: Date,
 ): number {
   try {
-    const birthSolar = Solar.fromDate(bDate);
-    const userDayGan = birthSolar.getLunar().getEightChar().getDayGan();
-    const targetSolar = Solar.fromDate(targetDate);
-    const targetDayGan = targetSolar.getLunar().getEightChar().getDayGan();
+    /*
+      暦は**日本時間で**引く。Solar.fromDate は実行環境のタイムゾーンで
+      年月日を読むため、本番（UTC。Dockerfile に TZ 指定が無い）では
+      日本時間 0〜9 時の時刻が**前日**として読まれていた。
+
+      対象日（targetDate）は "YYYY-MM-DD" 由来＝09:00 JST 相当なので
+      どちらの読み方でも同じ日になり、答えは変わらない。効くのは
+      **生まれ時刻が 0〜9 時の人の日干**で、そこから出す相性スコアが
+      毎日ずれていた。ephemerisEngine の solarInJst と同じ直し方
+      （#456）。テストは __tests__/baziCompatibilityJst.test.ts。
+    */
+    const inJst = (d: Date) => {
+      const f = getZonedDateTimeFields(d, 9);
+      return Solar.fromYmdHms(
+        f.year,
+        f.month,
+        f.day,
+        f.hours,
+        f.minutes,
+        f.seconds,
+      );
+    };
+    const userDayGan = inJst(bDate).getLunar().getEightChar().getDayGan();
+    const targetDayGan = inJst(targetDate)
+      .getLunar()
+      .getEightChar()
+      .getDayGan();
 
     const GAN_WUXING: Record<string, string> = {
       甲: "木",
