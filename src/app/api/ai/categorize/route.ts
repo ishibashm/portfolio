@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateObject } from "ai";
-import { google } from "@ai-sdk/google";
 import { createClient } from "@/utils/supabase/server";
-import { z } from "zod";
-import { maskPII } from "@/utils/anonymizer";
 
 export const runtime = "edge";
 
