@@ -20,6 +20,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo } from "@/utils/lunar";
+import { toJapanDateString } from "@/utils/japanDate";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
@@ -438,7 +439,25 @@ export async function GET(request: Request) {
       });
 
       forecast30Days.push({
-        date: testDate.toISOString().split("T")[0],
+        /*
+          **日本時間の日付**を書く。ここは `toISOString().split("T")[0]`
+          で UTC の日付を書いていた。
+
+          同じ行の rokuyo・dayZodiac・scores・statuses は全て
+          `getZonedDateTimeFields(date, 9)` を通した**日本時間**で計算
+          している。ところが日付の札だけが UTC だったので、UTC の 15 時
+          以降（＝日本の 0〜9 時）に書き出すと札が 1 日前を指した。
+
+          実測（2026-08-19T22:00:00Z ＝ 日本の 8/20 07:00 に書き出し）:
+
+            date       2026-08-19   ← UTC の日付
+            rokuyo     友引          ← 8/20 の六曜（8/19 は先勝）
+            dayZodiac  寅           ← 8/20 の日支
+
+          30 行すべてが 1 日ずれた札になる。書き出しは人と生成 AI が
+          読む JSON なので、日付が信用できないと 30 日ぶん全部が使えない。
+        */
+        date: toJapanDateString(testDate),
         /*
           ここには**日支**（子・丑・寅…）が入っていた。名前は rokuyo な
           のに中身が十二支で、六曜（大安・仏滅…）ではない。
@@ -746,7 +765,9 @@ export async function GET(request: Request) {
       },
       targetEvaluation, // Destination details if computed
       currentAstrologyState: {
-        date: targetDate.toISOString().split("T")[0],
+        // 30 日予報と同じ理由で日本時間の日付にする。この塊の
+        // environmentalStars は targetDate を日本時間で読んで出している。
+        date: toJapanDateString(targetDate),
         environmentalStars: {
           yearStar: env.yearStar,
           classicalYearStar: env.classicalYearStar,
