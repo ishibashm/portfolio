@@ -110,8 +110,13 @@ export interface ModelPrice {
  *
  * 呼び出し箇所（2/3-b で計測を入れる）
  *   gemini-2.5-flash   api/rentals/webhook      メールから物件を取り込む
- *   gemini-2.5-pro     api/relocation-timing    時期の相談
  *   claude-haiku-4-5   api/rentals/parse-query  スマート検索の解釈
+ *
+ * gemini-2.5-pro の呼び出し元（api/relocation-timing）は消した。サイトの
+ * どこからも呼ばれておらず、成功時も決め打ちの値を返すだけだったため
+ * （利用者の判断。2026-08-20）。**単価の行は残す。**過去の使用実績に
+ * この model の行があると、単価を消した時点で estimateYen が null になり、
+ * totalEstimateYen は null が 1 つでもあると**合計ごと「不明」に落とす**。
  */
 export const MODEL_PRICES: ModelPrice[] = [
   {
