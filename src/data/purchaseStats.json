@@ -1,0 +1,20 @@
+{
+  "generatedAt": null,
+  "source": {
+    "rows": 0,
+    "withCoords": 0,
+    "withBuildingRatio": 0,
+    "yearFrom": null,
+    "yearTo": null
+  },
+  "national": {
+    "byType": [],
+    "unitPriceHist": [],
+    "buildingRatioHist": [],
+    "byAge": [],
+    "byRatioBand": [],
+    "byStructure": []
+  },
+  "prefectures": [],
+  "yearly": []
+}
