@@ -4,12 +4,10 @@ import {
   Folder,
   Settings,
   BarChart2,
-  FileText,
   MessageSquare,
   Hexagon,
   Activity,
   Zap,
-  Play,
 } from "lucide-react";
 
 export const Sidebar = () => {
