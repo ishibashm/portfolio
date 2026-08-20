@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { RelocationHistory } from "@prisma/client";
 import fs from "fs/promises";
 import path from "path";
 import prisma from "@/lib/prisma";
@@ -12,6 +13,7 @@ import {
   getHonmeiStar,
   filterCollisionByMode,
   Direction,
+  type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
@@ -97,8 +99,8 @@ export async function GET(request: Request) {
       | "personal_kigaku"
       | "personal_bazi"
       | "environmental" = "composite";
-    let actionIntent = "DEFAULT";
-    let physicalMonthMode = "independent";
+    let actionIntent: ActionIntent = "DEFAULT";
+    let physicalMonthMode: "coupled" | "independent" = "independent";
 
     try {
       const configContent = await fs.readFile(CONFIG_FILE_PATH, "utf-8");
@@ -118,9 +120,18 @@ export async function GET(request: Request) {
 
     // Override from search params if provided
     if (useClassicalStr !== null) useClassical = useClassicalStr === "true";
+    /*
+      問い合わせ文字列は string なので、いずれも当てはめが要る。
+      **検証は足していない。**範囲外の値がそのままエンジンへ流れる
+      いまの挙動を変えないため（export/route.ts に同じ註がある）。
+      as any をやめて実際の型にしたのは、渡す先が受け取れる値だけを
+      書いたと分かるようにするため。
+    */
     if (directionFilterModeStr !== null)
-      directionFilterMode = directionFilterModeStr as any;
-    if (actionIntentStr !== null) actionIntent = actionIntentStr;
+      directionFilterMode =
+        directionFilterModeStr as typeof directionFilterMode;
+    if (actionIntentStr !== null)
+      actionIntent = actionIntentStr as ActionIntent;
 
     if (!birthDate) {
       return NextResponse.json(
@@ -144,7 +155,14 @@ export async function GET(request: Request) {
     // findMany は既定で全スカラー列を SELECT する。judgment 列の
     // スキーマ反映（prisma db push）より先にデプロイされても一覧が
     // 壊れないよう、列エラーのときは旧列だけで取り直す。
-    let histories;
+    /*
+      2 通りの取り方があり、下の取り直しは select で列を絞る。
+      as any[] で黙らせていたが、**この後で読むのは絞ったほうにも
+      ある列だけ**（departureDate / fromLat / fromLon / toLat /
+      toLon / purpose / datePrecision）なので、狭いほうの形で受ける。
+      judgment と engineVersion は取り直しでは取れないので外してある。
+    */
+    let histories: Omit<RelocationHistory, "judgment" | "engineVersion">[];
     try {
       histories = await prisma.relocationHistory.findMany({
         orderBy: { departureDate: "desc" },
@@ -154,7 +172,7 @@ export async function GET(request: Request) {
       // Error の派生なので、toLogMessage は e.message と同じ文字列になる。
       if (!toLogMessage(e).includes("judgment")) throw e;
       console.warn("judgment column missing; falling back to legacy columns");
-      histories = (await prisma.relocationHistory.findMany({
+      histories = await prisma.relocationHistory.findMany({
         orderBy: { departureDate: "desc" },
         select: {
           id: true,
@@ -172,7 +190,7 @@ export async function GET(request: Request) {
           createdAt: true,
           updatedAt: true,
         },
-      })) as any[];
+      });
     }
 
     const evaluatedHistories = [];
@@ -222,7 +240,7 @@ export async function GET(request: Request) {
       const env = getCurrentEnvironmentalFrequencies(
         depDate,
         item.fromLon,
-        physicalMonthMode as any,
+        physicalMonthMode,
       );
       const yearBoard = generateBoard(
         useClassical ? env.classicalYearStar : env.yearStar,
@@ -248,7 +266,7 @@ export async function GET(request: Request) {
         dayBoard,
         voidZodiacs,
         lunarNode,
-        evalIntent as any,
+        evalIntent,
         depDate,
         item.fromLon,
       );
