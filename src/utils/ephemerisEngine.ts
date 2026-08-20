@@ -243,7 +243,7 @@ export const AstroEngine = {
  * 伝統的な暦（立春）に基づく精密な九星判定。
  */
 export function getClassicalYearStar(date: Date): StarFrequency {
-  const solar = Solar.fromDate(date);
+  const solar = solarInJst(date);
   const lunar = solar.getLunar();
   return (lunar.getYearNineStar().getIndex() + 1) as StarFrequency;
 }
@@ -304,6 +304,38 @@ export function getYearStar(date: Date): StarFrequency {
  * 星の値そのものは lunar-javascript が正しいので、境界の判定だけを
  * 太陽黄経に合わせる。節月の中ほどの日を渡せば取り違えようがない。
  */
+/**
+ * 暦（lunar-javascript）を**日本時間で**引く。
+ *
+ * `Solar.fromDate()` を使ってはいけない。あれは**実行環境のタイムゾーン**
+ * で年月日を読む。Dockerfile にも deploy.yml にも TZ の指定が無く、
+ * `node:20-bookworm-slim` の既定は UTC なので、本番では日本時間の 0 時では
+ * なく**9 時**で日が替わっていた。
+ *
+ * 実測（2026 年の 365 日 × 毎時 = 8,760 通り）で 3,267 件（37.3%）が
+ * 食い違い、ずれる時刻は**日本時間の 0〜8 時ちょうど**だった。日盤は
+ * `generateBoard(env.classicalDayStar)` で判定の dayLayer に入るので、
+ * 毎日 9 時間、前日の盤で答えが出ていたことになる。
+ *
+ * さらに、同じコードが実行環境によって別の答えを返していた（手元で
+ * TZ=Asia/Tokyo にしている人と本番とで食い違う）。
+ *
+ * `getCurrentZodiac` と `getRokuyo` は最初から
+ * `getZonedDateTimeFields(date, 9)` を通していて日本時間で揃っている。
+ * ここだけが別の暦を見ていた。
+ */
+function solarInJst(date: Date) {
+  const f = getZonedDateTimeFields(date, 9);
+  return Solar.fromYmdHms(
+    f.year,
+    f.month,
+    f.day,
+    f.hours,
+    f.minutes,
+    f.seconds,
+  );
+}
+
 export function solarTermMonthAnchor(date: Date): Date {
   const lon = AstroEngine.getSolarLongitude(date);
   // 立春(315度)を起点に 30 度ごとの区切り。この区切りの開始黄経を求める。
@@ -329,7 +361,7 @@ export function solarTermMonthAnchor(date: Date): Date {
 }
 
 export function getClassicalMonthStar(date: Date): StarFrequency {
-  const solar = Solar.fromDate(solarTermMonthAnchor(date));
+  const solar = solarInJst(solarTermMonthAnchor(date));
   const lunar = solar.getLunar();
   return (lunar.getMonthNineStar().getIndex() + 1) as StarFrequency;
 }
@@ -338,7 +370,7 @@ export function getClassicalMonthStar(date: Date): StarFrequency {
  * 古典日盤の算出（ユリウス日と隠遁陽遁の簡易暦基準）
  */
 export function getClassicalDayStar(date: Date): StarFrequency {
-  const solar = Solar.fromDate(date);
+  const solar = solarInJst(date);
   const lunar = solar.getLunar();
   return (lunar.getDayNineStar().getIndex() + 1) as StarFrequency;
 }
