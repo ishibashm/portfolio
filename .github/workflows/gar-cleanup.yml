@@ -68,6 +68,25 @@ jobs:
         with:
           project_id: ${{ env.PROJECT_ID }}
 
+      - name: Show existing cleanup policies
+        run: |
+          set -euo pipefail
+          # 初回の report で「最も古い版が 13 日前」という結果が出た。
+          # 既にポリシーが当たっているのか、単に運用開始が新しいだけなのかで
+          # apply の要否が変わるので、現状を先に出す。
+          gcloud artifacts repositories describe "${{ env.REPOSITORY }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --format="yaml(name, createTime, cleanupPolicies, cleanupPolicyDryRun)" \
+            | tee policies.yaml
+          {
+            echo "## 現在のクリーンアップポリシー"
+            echo
+            echo '```yaml'
+            cat policies.yaml
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Report
         id: report
         run: |
@@ -75,7 +94,7 @@ jobs:
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
           echo "対象: $IMAGE"
 
-          # createTime の新しい順。sizeBytes は圧縮後のマニフェスト単位。
+          # createTime の新しい順。サイズは imageSizeBytes（圧縮後のマニフェスト単位）。
           gcloud artifacts docker images list "$IMAGE" \
             --include-tags \
             --sort-by=~CREATE_TIME \
@@ -86,12 +105,24 @@ jobs:
           rows = json.load(open("images.json"))
           keep = int(os.environ.get("KEEP", "20"))
 
-          def size(r):
-              try:
-                  return int(r.get("sizeBytes") or 0)
-              except (TypeError, ValueError):
-                  return 0
+          # gcloud の JSON は版のサイズを imageSizeBytes（文字列）で返す。
+          # 初回の実行では sizeBytes を見ていて、全件 0 として集計していた。
+          # 環境や版によって名前が違ったときに黙って 0 にならないよう、候補を
+          # 順に見て、**1 件も取れなかったら実際に来ているキーを出す。**
+          SIZE_KEYS = ("imageSizeBytes", "sizeBytes", "size")
 
+          def size(r):
+              for k in SIZE_KEYS:
+                  v = r.get(k)
+                  if v in (None, ""):
+                      continue
+                  try:
+                      return int(v)
+                  except (TypeError, ValueError):
+                      continue
+              return 0
+
+          sized = [r for r in rows if size(r) > 0]
           total = sum(size(r) for r in rows)
           old = rows[keep:]
           old_size = sum(size(r) for r in old)
@@ -100,20 +131,38 @@ jobs:
           print("## Artifact Registry の現状")
           print()
           print(f"- イメージの版数: **{len(rows)}**")
-          print(f"- 合計サイズ: **{gb(total):.2f} GB**")
           if rows:
               print(f"- 最も古い版: {rows[-1].get('createTime', '不明')}")
               print(f"- 最も新しい版: {rows[0].get('createTime', '不明')}")
           print()
-          print(f"## 最新 {keep} 世代を残した場合")
-          print()
-          print(f"- 削除対象: **{len(old)} 版 / {gb(old_size):.2f} GB**")
-          print(f"- 残る量: **{gb(total - old_size):.2f} GB**")
-          print()
-          # 0.5 GB までは無料。超えたぶんが $0.10/GB/月。
-          bill_now = max(0.0, gb(total) - 0.5)
-          bill_after = max(0.0, gb(total - old_size) - 0.5)
-          print(f"- 概算の保管料: 今 **${bill_now * 0.10:.2f}/月** → 削除後 **${bill_after * 0.10:.2f}/月**")
+
+          if not sized:
+              # サイズが 1 件も取れていない。合計 0 GB と書くと「消しても効かない」と
+              # 読めてしまうので、**数字を出さずに取れなかったことを書く。**
+              keys = sorted({k for r in rows[:5] for k in r})
+              print("- 合計サイズ: **取得できず**")
+              print()
+              print(f"gcloud の応答に {' / '.join(SIZE_KEYS)} のいずれも入っていない。")
+              print(f"実際に来ているキー: `{'`, `'.join(keys) or '（応答が空）'}`")
+              print()
+              print(f"## 最新 {keep} 世代を残した場合")
+              print()
+              print(f"- 削除対象: **{len(old)} 版**（容量は不明）")
+          else:
+              if len(sized) < len(rows):
+                  print(f"- サイズが取れた版: {len(sized)} / {len(rows)}（取れない版は 0 と数えている）")
+              print(f"- 合計サイズ: **{gb(total):.2f} GB**")
+              print()
+              print(f"## 最新 {keep} 世代を残した場合")
+              print()
+              print(f"- 削除対象: **{len(old)} 版 / {gb(old_size):.2f} GB**")
+              print(f"- 残る量: **{gb(total - old_size):.2f} GB**")
+              print()
+              # 0.5 GB までは無料。超えたぶんが $0.10/GB/月。
+              bill_now = max(0.0, gb(total) - 0.5)
+              bill_after = max(0.0, gb(total - old_size) - 0.5)
+              print(f"- 概算の保管料: 今 **${bill_now * 0.10:.2f}/月** → 削除後 **${bill_after * 0.10:.2f}/月**")
+
           print()
           print("※ サイズは版ごとの申告値の単純合計。層が共有されている分は")
           print("　 二重に数えているので、**実際の課金対象はこれより小さい**。")
