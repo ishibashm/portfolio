@@ -40,7 +40,8 @@ name: Artifact Registry cleanup
 # ## mode
 #
 #   report  数えるだけ。**何も消さない。**既定
-#   apply   keep_versions で指定した世代より古いものを消す
+#   apply   delete_older_than より古い版を消す（既定 7d）。ただし
+#           keep_versions 世代は日数に関わらず残す（床）
 #
 # **report を先に回すこと。**削除は取り消せない。消したイメージを参照
 # している Cloud Run のリビジョンには、以後ロールバックできなくなる。
@@ -55,8 +56,12 @@ on:
           - report
           - apply
         default: report
+      delete_older_than:
+        description: "これより古い版を消す（7d / 14d / 30d）。apply のときだけ効く"
+        type: string
+        default: "7d"
       keep_versions:
-        description: "残す世代数（新しいほうから）。apply のときだけ効く"
+        description: "日数に関わらず必ず残す世代数（床）。apply のときだけ効く"
         type: string
         default: "20"
 
@@ -179,19 +184,48 @@ jobs:
           # 「具体的に何が入っているのか」を出す。版の一覧だけでは
           # 中身が分からず、消してよいかの判断ができない。
           #
-          #   files list  … 実際に保管されている blob（層）。**ここだけが
-          #                 サイズを持つ。**大きい層が何で、いくつあるか
-          #   revisions   … Cloud Run が参照している版。**これに入って
-          #                 いない版は、誰も使っていない**
+          #   revisions   … Cloud Run が参照している版。**ここに入って
+          #                 いない版は誰も使っていない**
+          #   files list  … 実際に保管されている blob（層）。**サイズを
+          #                 持つのはここだけ**。何が重いのかが分かる
+          #
+          # **重い話（層）を最後に置く。**リビジョンは 300 件を超えて
+          # いてログの尾を埋めてしまい、肝心の層の内訳が読めなかった。
+
           echo "## 直近 10 版" | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
           gcloud artifacts docker images list "$IMAGE" \
             --include-tags --sort-by=~CREATE_TIME --limit=10 \
-            --format="table(version.slice(7:19), tags, createTime.date('%Y-%m-%d %H:%M'))" 2>&1 \
+            --format="table(version, tags, createTime.date('%Y-%m-%d %H:%M'))" 2>&1 \
             | tee -a "$GITHUB_STEP_SUMMARY" || true
           echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
 
-          # 層ごとのサイズ。上位を出せば「何が重いのか」が分かる。
+          # Cloud Run のリビジョン。**数だけ数えて、明細は 10 件に絞る。**
+          # 1 リビジョン 1 行で全部出すと数百行になり、後ろの出力が
+          # ログの尾から溢れる（実際に溢れて読めなかった）。
+          gcloud run revisions list \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --service="${{ env.SERVICE_NAME }}" \
+            --format="value(metadata.name)" > revisions.txt 2>/dev/null || : > revisions.txt
+          REV_COUNT="$(wc -l < revisions.txt | tr -d ' ')"
+          {
+            echo ""
+            echo "## Cloud Run のリビジョン"
+            echo ""
+            echo "- 総数: **${REV_COUNT}**"
+            echo ""
+            echo "**リビジョンは 1 つずつイメージを指している。**古い版を消すと、"
+            echo "そのリビジョンへは以後ロールバックできなくなる。"
+            echo ""
+            echo "新しい順に 10 件:"
+            echo ""
+            echo '```'
+            head -10 revisions.txt
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 層ごとのサイズ。ここがいちばん知りたいので最後に出す。
           gcloud artifacts files list \
             --project="${{ env.PROJECT_ID }}" \
             --location="${{ env.REGION }}" \
@@ -219,31 +253,20 @@ jobs:
               big = sorted(files, key=sz, reverse=True)[:10]
               print(f"- 最大の層: **{mb(sz(big[0])):.0f} MB**")
               print()
+              # 100MB 超がいくつあるかで「毎回作り直されている層」が見える
+              heavy = [f for f in files if sz(f) > 100 * 1024 ** 2]
+              print(f"- 100 MB を超える層: **{len(heavy)} 個 / {mb(sum(sz(f) for f in heavy))/1024:.1f} GB**")
+              print()
+              print("同じ内容の層は 1 度しか保管されない。それでも大きい層が")
+              print("版数ぶん並ぶなら、**毎回の build で中身が変わっている**。")
+              print()
               print("大きい順に 10 件:")
               print()
               print("| サイズ | 作成 |")
               print("|---|---|")
               for f in big:
                   print(f"| {mb(sz(f)):.0f} MB | {f.get('createTime','')[:16]} |")
-              print()
-              # 100MB 超がいくつあるかで「毎回作り直されている層」が見える
-              heavy = [f for f in files if sz(f) > 100 * 1024 ** 2]
-              print(f"100 MB を超える層が **{len(heavy)} 個**、合計 **{mb(sum(sz(f) for f in heavy))/1024:.1f} GB**。")
-              print("同じ内容の層は 1 度しか保管されないので、これだけ数があるのは")
-              print("**毎回の build で中身が変わっている**ということ。")
           PY
-
-          # Cloud Run が実際に参照している版。これ以外は誰も使っていない。
-          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "## Cloud Run が参照している版" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
-          gcloud run revisions list \
-            --project="${{ env.PROJECT_ID }}" \
-            --region="${{ env.REGION }}" \
-            --service="${{ env.SERVICE_NAME }}" \
-            --format="table(metadata.name, metadata.creationTimestamp.date('%Y-%m-%d'), status.imageDigest.slice(7:19))" 2>&1 \
-            | tee -a "$GITHUB_STEP_SUMMARY" || true
-          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Apply cleanup policy
         if: ${{ inputs.mode == 'apply' }}
@@ -252,8 +275,17 @@ jobs:
           # GCP 標準のクリーンアップポリシー。以後は GCP 側が自動で消すので、
           # このワークフローを定期実行する必要は無い。
           #
-          # keep-recent-versions は**タグの有無に関わらず**新しいほうから
-          # 数える。Cloud Run のロールバック先を潰さないよう、既定は 20。
+          # ## 世代数ではなく日数で切る
+          #
+          # 1 日あたり約 28 回デプロイしているので、「20 世代」は**半日**しか
+          # ない。「7 日ぶん残したい」を世代数で言うと約 196 になるが、
+          # デプロイの回数は日によって 3 倍以上ぶれる（1 日で最大 52 回）ので、
+          # 固定の世代数では意図した期間にならない。だから delete 側を
+          # 日数（olderThan）にする。
+          #
+          # keepCount は**床**として残す。デプロイが止まった週に、日数だけの
+          # 条件だと全部消えてしまうため。Keep 規則は Delete 規則より強いので、
+          # 「7 日より古くても、新しいほうから 20 世代は必ず残る」となる。
           cat > policy.json <<EOF
           [
             {
@@ -266,7 +298,7 @@ jobs:
             {
               "name": "delete-old",
               "action": {"type": "Delete"},
-              "condition": {"olderThan": "30d"}
+              "condition": {"olderThan": "${{ inputs.delete_older_than }}"}
             }
           ]
           EOF
