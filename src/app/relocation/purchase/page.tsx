@@ -165,6 +165,27 @@ export default function PurchaseAnalyticsPage() {
             集計日 {generated}。
           </p>
 
+          {/*
+            この頁は全国の相場そのものを扱う。**自分の出発地から見た方位別**の
+            成約価格は物件スキャナーが持っていて、これまでどちらからも
+            互いを指していなかった。同じ成約価格を扱う頁が 2 つあるのに
+            繋がっていないと、片方に辿り着いた人がもう片方を知らないまま終わる。
+          */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/relocation/arbitrage"
+              className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold text-indigo-800 hover:bg-indigo-100"
+            >
+              方位別の成約価格を見る（物件スキャナー）
+            </Link>
+            <Link
+              href="/relocation/market"
+              className="rounded-full border border-gray-200 bg-stone-50 px-3 py-1.5 text-[11px] font-bold text-stone-700 hover:bg-stone-100"
+            >
+              家賃の相場を見る
+            </Link>
+          </div>
+
           <dl className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
             {[
               { label: "集計した成約", value: count(s.rows) },

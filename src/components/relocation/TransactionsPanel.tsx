@@ -297,6 +297,19 @@ export function TransactionsPanel({
               ? `座標整備中の事例が全国に ${data.pendingCoords.toLocaleString()} 件あり、整備が進むとここに加わります。`
               : ""}
           </p>
+
+          {/*
+            ここは出発地の周りだけを方位別に見る口で、母数は半径の中に限られる。
+            全国の水準（種類別・築年数別・都道府県別・地価公示との対比）は
+            /relocation/purchase が持っている。同じ成約価格を扱う頁が 2 つ
+            あるのにどちらからも互いを指していなかったので繋いだ。
+          */}
+          <a
+            href="/relocation/purchase"
+            className="block rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-2 text-[10px] font-bold text-indigo-800 hover:bg-indigo-100"
+          >
+            全国の相場と比べる（種類別・築年数別・都道府県別）→
+          </a>
         </>
       )}
     </div>
