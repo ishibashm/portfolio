@@ -65,6 +65,8 @@ env:
   REGION: ${{ vars.GCP_REGION || 'us-central1' }}
   REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
   IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME || 'portfolio-app' }}
+  # Cloud Run 側の名前。deploy.yml と同じ既定に合わせる。
+  SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
 
 jobs:
   cleanup:
@@ -168,6 +170,80 @@ jobs:
           cat report.md >> "$GITHUB_STEP_SUMMARY"
         env:
           KEEP: ${{ inputs.keep_versions }}
+
+      - name: Inventory
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
+
+          # 「具体的に何が入っているのか」を出す。版の一覧だけでは
+          # 中身が分からず、消してよいかの判断ができない。
+          #
+          #   files list  … 実際に保管されている blob（層）。**ここだけが
+          #                 サイズを持つ。**大きい層が何で、いくつあるか
+          #   revisions   … Cloud Run が参照している版。**これに入って
+          #                 いない版は、誰も使っていない**
+          echo "## 直近 10 版" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          gcloud artifacts docker images list "$IMAGE" \
+            --include-tags --sort-by=~CREATE_TIME --limit=10 \
+            --format="table(version.slice(7:19), tags, createTime.date('%Y-%m-%d %H:%M'))" \
+            >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          # 層ごとのサイズ。上位を出せば「何が重いのか」が分かる。
+          gcloud artifacts files list \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --repository="${{ env.REPOSITORY }}" \
+            --format="json" > files.json 2>/dev/null || echo "[]" > files.json
+
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          files = json.load(open("files.json"))
+          def sz(f):
+              try:
+                  return int(f.get("sizeBytes") or 0)
+              except (TypeError, ValueError):
+                  return 0
+          mb = lambda b: b / 1024 ** 2
+          total = sum(sz(f) for f in files)
+          print()
+          print("## 保管されている層（blob）")
+          print()
+          if not files:
+              print("files list が空だった（権限か、この口が使えない）。")
+          else:
+              print(f"- 層の数: **{len(files)}**")
+              print(f"- 合計: **{mb(total)/1024:.1f} GB**")
+              big = sorted(files, key=sz, reverse=True)[:10]
+              print(f"- 最大の層: **{mb(sz(big[0])):.0f} MB**")
+              print()
+              print("大きい順に 10 件:")
+              print()
+              print("| サイズ | 作成 |")
+              print("|---|---|")
+              for f in big:
+                  print(f"| {mb(sz(f)):.0f} MB | {f.get('createTime','')[:16]} |")
+              print()
+              # 100MB 超がいくつあるかで「毎回作り直されている層」が見える
+              heavy = [f for f in files if sz(f) > 100 * 1024 ** 2]
+              print(f"100 MB を超える層が **{len(heavy)} 個**、合計 **{mb(sum(sz(f) for f in heavy))/1024:.1f} GB**。")
+              print("同じ内容の層は 1 度しか保管されないので、これだけ数があるのは")
+              print("**毎回の build で中身が変わっている**ということ。")
+          PY
+
+          # Cloud Run が実際に参照している版。これ以外は誰も使っていない。
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Cloud Run が参照している版" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          gcloud run revisions list \
+            --project="${{ env.PROJECT_ID }}" \
+            --region="${{ env.REGION }}" \
+            --service="${{ env.SERVICE_NAME }}" \
+            --format="table(metadata.name, metadata.creationTimestamp.date('%Y-%m-%d'), status.imageDigest.slice(7:19))" \
+            >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Apply cleanup policy
         if: ${{ inputs.mode == 'apply' }}
