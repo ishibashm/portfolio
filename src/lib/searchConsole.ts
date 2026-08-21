@@ -317,3 +317,95 @@ export function topicCandidates(
     .sort((a, b) => b.impressions - a.impressions || b.position - a.position)
     .slice(0, limit);
 }
+
+/** 日 × 検索語 × 頁の 1 行。DB の search_console_daily と同じ形。 */
+export interface DailyBreakdownRow {
+  /** YYYY-MM-DD。Search Console のタイムゾーンは太平洋時間。 */
+  date: string;
+  query: string;
+  /** その語で表示された頁の URL。 */
+  page: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+/**
+ * 日 × 検索語 × 頁で実績を取る。**貯めるための口。**
+ *
+ * fetchQueryStats は期間をまとめた 1 行ずつ（dimensions が query だけ）を
+ * 返すので、日をまたいだ比較ができない。こちらは日を次元に入れて、
+ * 1 日 1 語 1 頁で 1 行にする。
+ *
+ * ## 上限に当たったことが分かるようにする
+ *
+ * rowLimit の上限は 25,000。**返ってきた行数が rowLimit と同じなら、
+ * 上限で切られている可能性がある。**黙って一部だけ保存すると「その日は
+ * これしか無かった」と読めてしまうので、呼ぶ側へ truncated を返す。
+ *
+ * ## 3 日前までしか取らない
+ *
+ * Search Console の実績は 2〜3 日遅れて確定する。直近まで詰めると空の
+ * 日を取り込んで「0 回だった日」として残ってしまう。呼ぶ側で余裕を
+ * 持たせること。
+ */
+export async function fetchDailyBreakdown(
+  token: string,
+  opts: { startDate: string; endDate: string; rowLimit?: number },
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ rows: DailyBreakdownRow[]; truncated: boolean }> {
+  const rowLimit = opts.rowLimit ?? 5000;
+
+  const res = await fetchImpl(SEARCH_ANALYTICS_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      startDate: opts.startDate,
+      endDate: opts.endDate,
+      dimensions: ["date", "query", "page"],
+      rowLimit,
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`searchAnalytics ${res.status} ${text.slice(0, 200)}`);
+  }
+
+  const body = (await res.json()) as {
+    rows?: {
+      keys?: string[];
+      clicks?: number;
+      impressions?: number;
+      ctr?: number;
+      position?: number;
+    }[];
+  };
+
+  const raw = body.rows ?? [];
+
+  // keys は dimensions と同じ順（date, query, page）。3 つ揃っていない
+  // 行は鍵を作れないので落とす。**落とした数は呼ぶ側で数えられるよう、
+  // 黙って詰めずに元の件数と比べられる形にしておく。**
+  const rows: DailyBreakdownRow[] = [];
+  for (const r of raw) {
+    const [date, query, page] = r.keys ?? [];
+    if (!date || !query || !page) continue;
+    rows.push({
+      date,
+      query,
+      page,
+      clicks: r.clicks ?? 0,
+      impressions: r.impressions ?? 0,
+      ctr: r.ctr ?? 0,
+      position: r.position ?? 0,
+    });
+  }
+
+  return { rows, truncated: raw.length >= rowLimit };
+}
