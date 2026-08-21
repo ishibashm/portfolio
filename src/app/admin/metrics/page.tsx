@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import {
+  METRICS_OPT_OUT_KEY,
+  isMetricsOptedOut,
+} from "@/components/PageViewBeacon";
 import {
   Loader2,
   Users,
@@ -617,6 +621,103 @@ function FlagBadge({ on, label }: { on: boolean; label: string }) {
   );
 }
 
+/**
+ * この端末を計測から除外する切り替え。
+ *
+ * 運営者自身の閲覧が数に乗る問題への対処のうち、**端末側の半分。**
+ * サーバ側は ADMIN_EMAIL でログインしているかを見るが、ログアウトして
+ * 見ると効かない。この端末に印を置いておけば、ログイン状態に関係なく
+ * 外せる。逆に別の端末では効かないので、2 つ持っている。
+ *
+ * 既に記録された分は変わらない。**これから送る分にだけ効く。**
+ * そう書いておかないと、押した瞬間に過去の数字が減ると誤解される。
+ *
+ * localStorage が読めない環境では、押しても保存されない。黙って
+ * 効いたように見せないよう、その場合は状態を戻す。
+ */
+/**
+ * localStorage の変化を購読する最小の仕組み。
+ *
+ * useEffect の中で setState すると react-hooks/set-state-in-effect に
+ * 掛かる（実際に掛けた）。localStorage は React の外にある状態なので、
+ * **それを購読するための useSyncExternalStore を使うのが素直**で、
+ * サーバ側の値を別に渡せるので hydration のずれも起きない。
+ */
+const optOutListeners = new Set<() => void>();
+
+function subscribeOptOut(onChange: () => void) {
+  optOutListeners.add(onChange);
+  return () => {
+    optOutListeners.delete(onChange);
+  };
+}
+
+function notifyOptOutChanged() {
+  for (const listener of optOutListeners) listener();
+}
+
+function OptOutToggle() {
+  const [unavailable, setUnavailable] = useState(false);
+
+  // 第 3 引数はサーバ側の値。localStorage が無いので「除外していない」
+  // に倒す。第 2 引数（端末側）は毎回 localStorage を読み直す。
+  const optedOut = useSyncExternalStore(
+    subscribeOptOut,
+    isMetricsOptedOut,
+    () => false,
+  );
+
+  const toggle = () => {
+    const next = !optedOut;
+    try {
+      if (next) {
+        localStorage.setItem(METRICS_OPT_OUT_KEY, "1");
+      } else {
+        localStorage.removeItem(METRICS_OPT_OUT_KEY);
+      }
+      // 書けたかどうかは、購読側が読み直したときに分かる。書けたつもりで
+      // 効いていない、を作らない。
+      notifyOptOutChanged();
+      setUnavailable(false);
+    } catch {
+      setUnavailable(true);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-stone-800">
+            この端末を計測から除外する
+          </h2>
+          <p className="text-[11px] leading-relaxed text-stone-600 mt-1">
+            自分の閲覧が数に混ざらないようにします。
+            <strong>これから送る分にだけ効きます</strong>
+            （既に記録された分は変わりません）。ログインしていなくても効きます。かわりに、別の端末やブラウザでは改めて設定が要ります。
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={toggle}
+          className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${
+            optedOut
+              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+              : "border border-stone-300 bg-white hover:bg-stone-50 text-stone-700"
+          }`}
+        >
+          {optedOut ? "除外中（解除する）" : "除外する"}
+        </button>
+      </div>
+      {unavailable && (
+        <p className="text-[11px] text-amber-700">
+          このブラウザでは設定を保存できませんでした（プライベートウィンドウ、または保存を止める設定）。管理者としてログインしている間は、サーバ側の判定で除外されます。
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function AdminMetricsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [users, setUsers] = useState<UserRow[] | null>(null);
@@ -702,6 +803,8 @@ export default function AdminMetricsPage() {
             )}
           </div>
         </header>
+
+        <OptOutToggle />
 
         {error && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
