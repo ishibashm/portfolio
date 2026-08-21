@@ -145,11 +145,59 @@ jobs:
         run: |-
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
+      # ## なぜ buildx と層キャッシュを使うのか
+      #
+      # 素の docker build は、ランナーに層キャッシュが無いので**毎回すべての
+      # 層をゼロから作る。**Dockerfile の base ステージ（apt で
+      # build-essential・python3-pandas/numpy、pip で yfinance）は 186 MB
+      # あり、中身が同じでも生成されるファイルの mtime が変わるため
+      # **層の digest が毎回変わる。**
+      #
+      # 層は内容アドレスなので、digest が同じなら Artifact Registry は
+      # 1 度しか保管しない。digest が変わると別物として毎回保管される。
+      #
+      # 実測（2026-08-21 の gar-cleanup report）:
+      #
+      #   層の数            4352
+      #   合計              124.7 GB
+      #   100 MB 超の層     376 個 / 68.3 GB   ← 186 MB × 376
+      #   版数              368
+      #
+      # 100 MB 超の層の数が版数とほぼ一致している。**同じ 186 MB を
+      # 376 回保管していた。**13 日で 128 GB、1 日あたり約 10 GB。
+      #
+      # buildx + GitHub Actions のキャッシュにすると、base の層は
+      # 再構築されず**キャッシュから元の digest のまま復元される**ので、
+      # push しても既にあるものとして扱われる。増えるのは実際に変わった
+      # 層（アプリのビルド成果物）だけになる。
+      #
+      # mode=min にしてあるのは、最終イメージに入る層だけを対象にすれば
+      # 足りるため。runner ステージは FROM base なので、いちばん重い
+      # base の層は min でも入る。max にすると builder 側の中間層まで
+      # 抱えて GitHub のキャッシュ枠（10 GB）を食い潰し、追い出しが
+      # 起きて逆に効かなくなる。
+      #
+      # 挙動は変えていない。同じ Dockerfile を同じ引数で建てて、同じ
+      # タグで push する。secret の渡し方も id=env のまま。
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and Push Container
-        run: |-
-          DOCKER_TAG="${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          docker build --secret id=env,src=.env -t $DOCKER_TAG .
-          docker push $DOCKER_TAG
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.GAR_LOCATION }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # docker build の --secret id=env,src=.env と同じ。
+          secret-files: |
+            env=.env
+          cache-from: type=gha
+          # ignore-error を付けるのは、**キャッシュの失敗でデプロイを
+          # 落とさない**ため。キャッシュはあくまで保管料を減らすための
+          # ものなので、書き出しに失敗しても建って push できていれば
+          # 目的（本番へ出す）は達している。付けないと、GitHub 側の
+          # キャッシュが一時的に不調なだけでデプロイが止まる。
+          cache-to: type=gha,mode=min,ignore-error=true
 
       # --cpu-boost はコールドスタートの間だけ CPU 割り当てを上げる。
       # min-instances=0 の構成では、最初の 1 リクエストが Node の起動と
