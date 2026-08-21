@@ -741,57 +741,74 @@ export default function TimingAnalyticsPage() {
                   </p>
                 )}
 
-                {monthRows.map(({ month, list }) => (
-                  <div key={month} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0 font-mono text-[10px] text-stone-600">
-                      {month.slice(2)}
-                    </span>
-                    <div className="flex flex-wrap gap-[2px]">
-                      {list.map((d) => {
-                        const t = (
-                          activeDir ? d.tiers[activeDir] : "C"
-                        ) as DayTier;
-                        const past = d.date < todayIso;
-                        const fill = d.blocked
-                          ? BLOCKED_FILL
-                          : (TIER_FILL[t] ?? "#e7e5e4");
-                        const lucky =
-                          d.tags.includes("天赦日") ||
-                          d.tags.includes("一粒万倍日");
-                        // 外れた日もマスは残す。詰めると日付の位置がずれて
-                        // 「何日が残ったか」が読めなくなる。塗りだけ落とす。
-                        const matched = matchesTimingFilter(
-                          d,
-                          activeDir,
-                          tierFilter,
-                          luckyOnly,
-                        );
-                        return (
-                          <button
-                            key={d.date}
-                            onClick={() => setSelectedDate(d.date)}
-                            title={`${d.date}（${WEEKDAY_JP[d.weekday]}）${
-                              TIER_LABELS[t] ?? t
-                            }${d.blocked ? " / 天中殺" : ""}${
-                              d.tags.length ? " / " + d.tags.join("・") : ""
-                            }${matched ? "" : " / 絞り込みから外れています"}`}
-                            className={`h-3.5 w-3.5 rounded-[2px] transition-transform hover:scale-125 ${
-                              selectedDate === d.date
-                                ? "ring-2 ring-indigo-600 ring-offset-1"
-                                : ""
-                            } ${
-                              matched && lucky ? "ring-1 ring-amber-400" : ""
-                            } ${matched ? "" : "border border-dashed border-stone-300"}`}
-                            style={{
-                              background: matched ? fill : "transparent",
-                              opacity: matched ? (past ? 0.28 : 1) : 0.5,
-                            }}
-                          />
-                        );
-                      })}
+                {/*
+                  月の帯を xl 以上で 2 列にする。
+
+                  1 列のままだと、1 マス 14px × 31 日 ＋ 見出しで 550px ほど
+                  しか使わず、**1700px の器の右半分が丸ごと空いていた**
+                  （利用者の指摘）。器を狭めると同じ頁の表や地図まで
+                  巻き添えになるので、中の並べ方を変えて埋める
+                  （CLAUDE.md 3 節）。
+
+                  列を増やすだけでなくマスも 14px → 20px にした。余った幅を
+                  埋めるためと、クリックの的が小さすぎたため。1 列に戻る
+                  幅（lg 以下）でも 31 日 × 22px ＝ 682px で収まる。
+
+                  読む順は列ごとに上から下。前半が左、後半が右になる。
+                */}
+                <div className="grid gap-x-8 gap-y-1.5 xl:grid-cols-2">
+                  {monthRows.map(({ month, list }) => (
+                    <div key={month} className="flex items-center gap-2">
+                      <span className="w-14 shrink-0 font-mono text-[10px] text-stone-600">
+                        {month.slice(2)}
+                      </span>
+                      <div className="flex flex-wrap gap-[2px]">
+                        {list.map((d) => {
+                          const t = (
+                            activeDir ? d.tiers[activeDir] : "C"
+                          ) as DayTier;
+                          const past = d.date < todayIso;
+                          const fill = d.blocked
+                            ? BLOCKED_FILL
+                            : (TIER_FILL[t] ?? "#e7e5e4");
+                          const lucky =
+                            d.tags.includes("天赦日") ||
+                            d.tags.includes("一粒万倍日");
+                          // 外れた日もマスは残す。詰めると日付の位置がずれて
+                          // 「何日が残ったか」が読めなくなる。塗りだけ落とす。
+                          const matched = matchesTimingFilter(
+                            d,
+                            activeDir,
+                            tierFilter,
+                            luckyOnly,
+                          );
+                          return (
+                            <button
+                              key={d.date}
+                              onClick={() => setSelectedDate(d.date)}
+                              title={`${d.date}（${WEEKDAY_JP[d.weekday]}）${
+                                TIER_LABELS[t] ?? t
+                              }${d.blocked ? " / 天中殺" : ""}${
+                                d.tags.length ? " / " + d.tags.join("・") : ""
+                              }${matched ? "" : " / 絞り込みから外れています"}`}
+                              className={`h-5 w-5 rounded-[2px] transition-transform hover:scale-125 ${
+                                selectedDate === d.date
+                                  ? "ring-2 ring-indigo-600 ring-offset-1"
+                                  : ""
+                              } ${
+                                matched && lucky ? "ring-1 ring-amber-400" : ""
+                              } ${matched ? "" : "border border-dashed border-stone-300"}`}
+                              style={{
+                                background: matched ? fill : "transparent",
+                                opacity: matched ? (past ? 0.28 : 1) : 0.5,
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <div className="flex flex-wrap items-center gap-3 pt-2 text-[9px] text-stone-500">
                   {TIERS.map((t) => (
                     <span key={t} className="flex items-center gap-1">
