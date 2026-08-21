@@ -1,0 +1,165 @@
+name: Artifact Registry cleanup
+
+# Artifact Registry に溜まったコンテナイメージを数え、必要なら消す。
+#
+# ## なぜ要るか
+#
+# deploy.yml は master へ push されるたびに `github.sha` をタグにした
+# イメージを push するが、**古いイメージを消す処理がどこにも無い。**
+# 単調に増え続けるので、保管料も増え続ける。
+#
+# 実測（2026-08-20 時点の master のコミット数）:
+#
+#   直近 30 日  256 回
+#   直近  7 日  206 回
+#   1 日で最大   52 回
+#
+# 月 250 枚ペースで積み上がっている。Artifact Registry は
+# $0.10/GB/月（最初の 0.5 GB は無料）。
+#
+# ## 保管先を替える案は採らない
+#
+# **Cloud Run は Artifact Registry（と旧 GCR）からしかイメージを引けない。**
+# Cloudflare など他所へ移す選択肢は無い。増え方を止めるのが正しい。
+#
+# ## mode
+#
+#   report  数えるだけ。**何も消さない。**既定
+#   apply   keep_versions で指定した世代より古いものを消す
+#
+# **report を先に回すこと。**削除は取り消せない。消したイメージを参照
+# している Cloud Run のリビジョンには、以後ロールバックできなくなる。
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "report（数えるだけ） / apply（実際に消す）"
+        type: choice
+        options:
+          - report
+          - apply
+        default: report
+      keep_versions:
+        description: "残す世代数（新しいほうから）。apply のときだけ効く"
+        type: string
+        default: "20"
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
+  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
+  IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME || 'portfolio-app' }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth with GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Report
+        id: report
+        run: |
+          set -euo pipefail
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
+          echo "対象: $IMAGE"
+
+          # createTime の新しい順。sizeBytes は圧縮後のマニフェスト単位。
+          gcloud artifacts docker images list "$IMAGE" \
+            --include-tags \
+            --sort-by=~CREATE_TIME \
+            --format="json" > images.json
+
+          python3 - <<'PY' | tee report.md
+          import json, os
+          rows = json.load(open("images.json"))
+          keep = int(os.environ.get("KEEP", "20"))
+
+          def size(r):
+              try:
+                  return int(r.get("sizeBytes") or 0)
+              except (TypeError, ValueError):
+                  return 0
+
+          total = sum(size(r) for r in rows)
+          old = rows[keep:]
+          old_size = sum(size(r) for r in old)
+          gb = lambda b: b / 1024 ** 3
+
+          print("## Artifact Registry の現状")
+          print()
+          print(f"- イメージの版数: **{len(rows)}**")
+          print(f"- 合計サイズ: **{gb(total):.2f} GB**")
+          if rows:
+              print(f"- 最も古い版: {rows[-1].get('createTime', '不明')}")
+              print(f"- 最も新しい版: {rows[0].get('createTime', '不明')}")
+          print()
+          print(f"## 最新 {keep} 世代を残した場合")
+          print()
+          print(f"- 削除対象: **{len(old)} 版 / {gb(old_size):.2f} GB**")
+          print(f"- 残る量: **{gb(total - old_size):.2f} GB**")
+          print()
+          # 0.5 GB までは無料。超えたぶんが $0.10/GB/月。
+          bill_now = max(0.0, gb(total) - 0.5)
+          bill_after = max(0.0, gb(total - old_size) - 0.5)
+          print(f"- 概算の保管料: 今 **${bill_now * 0.10:.2f}/月** → 削除後 **${bill_after * 0.10:.2f}/月**")
+          print()
+          print("※ サイズは版ごとの申告値の単純合計。層が共有されている分は")
+          print("　 二重に数えているので、**実際の課金対象はこれより小さい**。")
+          print("　 増減の傾向を見る目安として読むこと。")
+          PY
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+        env:
+          KEEP: ${{ inputs.keep_versions }}
+
+      - name: Apply cleanup policy
+        if: ${{ inputs.mode == 'apply' }}
+        run: |
+          set -euo pipefail
+          # GCP 標準のクリーンアップポリシー。以後は GCP 側が自動で消すので、
+          # このワークフローを定期実行する必要は無い。
+          #
+          # keep-recent-versions は**タグの有無に関わらず**新しいほうから
+          # 数える。Cloud Run のロールバック先を潰さないよう、既定は 20。
+          cat > policy.json <<EOF
+          [
+            {
+              "name": "keep-recent",
+              "action": {"type": "Keep"},
+              "mostRecentVersions": {
+                "keepCount": ${{ inputs.keep_versions }}
+              }
+            },
+            {
+              "name": "delete-old",
+              "action": {"type": "Delete"},
+              "condition": {"olderThan": "30d"}
+            }
+          ]
+          EOF
+          echo "適用するポリシー:"
+          cat policy.json
+
+          gcloud artifacts repositories set-cleanup-policies "${{ env.REPOSITORY }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --policy=policy.json
+
+          echo "クリーンアップポリシーを適用した。" >> "$GITHUB_STEP_SUMMARY"
+          echo "以後は GCP 側が自動で古い版を消すので、このワークフローの定期実行は不要。" >> "$GITHUB_STEP_SUMMARY"
+
+          gcloud artifacts repositories describe "${{ env.REPOSITORY }}" \
+            --project="${{ env.PROJECT_ID }}" \
+            --location="${{ env.REGION }}" \
+            --format="yaml(cleanupPolicies)"
