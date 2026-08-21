@@ -510,6 +510,33 @@ model land_price_points {
   @@index([year, use_category, price_per_sqm])
 }
 
+/// Search Console の日次実績。prisma/sql/20260821_add_search_console_daily.sql と揃えること。
+///
+/// その場で叩いて捨てていた実績を貯める表。Search Console の API は
+/// 16 か月ぶんしか返さないので、貯めないと後から追えない。
+model search_console_daily {
+  /// 検索が起きた日（Search Console のタイムゾーンは太平洋時間）。
+  date        DateTime @db.Date
+  /// 検索語。Google 側で集計済みのものだけが返る（個人の識別子は含まない）。
+  query       String
+  /// その語で表示された頁の URL。同じ語で複数の頁が出るので鍵に入れる。
+  page        String
+  /// 実測値。取れなければ行を作らないので必須。
+  clicks      Int
+  impressions Int
+  /// API が返す値をそのまま持つ（自分で割らない）。
+  ctr         Float
+  /// 平均掲載順位。1.0 が 1 位。小さいほど良い。
+  position    Float
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@id([date, query, page])
+  @@index([query, date])
+  @@index([page, date])
+  @@index([date, impressions(sort: Desc)])
+}
+
 model RealEstateTarget {
   id             String   @id @default(cuid())
   title          String
