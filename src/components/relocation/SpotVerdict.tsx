@@ -26,7 +26,7 @@ import { TIER_LABELS, type DayTier } from "@/utils/auspiciousDays";
  */
 
 /** 判定に要る 1 方位ぶん。ページが組む盤の 1 セルと同じ形。 */
-type DirectionCell = {
+export type DirectionCell = {
   direction: string;
   directionLabel: string;
   tier: string;
