@@ -7,6 +7,7 @@ import {
   validatePostInput,
   type PostInput,
 } from "@/lib/blogAdmin";
+import { getBlogPosts as getMarkdownBlogPosts } from "@/lib/blog";
 
 /**
  * 管理画面のブログ記事 CRUD（一覧と新規作成）。
@@ -17,6 +18,22 @@ import {
  *
  * 下書き（published=false）は公開側のクエリ（published: true）に
  * 掛からないので、保存した瞬間に何かが公開されることはない。
+ *
+ * ## 取り込まれていない記事も返す
+ *
+ * 記事の置き場は content/blog/*.md から DB へ移している途中で、**2 つの
+ * 状態が同時に存在する**（blogStore の冒頭に経緯がある）。公開側は
+ * DB が空なら Markdown に落ちるので読者には見えているが、**管理画面は
+ * DB しか見ていなかった。**
+ *
+ * その結果、取り込みを流していない記事は一覧に出ず、編集もできない。
+ * 実測で 14 本が Markdown だけの状態だった（最後の取り込みは 2026-08-14）。
+ * 画面には何の断りも出ないので、「編集が機能していない」ようにしか
+ * 見えない。実際に利用者からそう報告があった。
+ *
+ * **無い理由が分かるほうがよい**ので、Markdown にしか無い記事も
+ * pendingImport として返し、画面で「未取り込み」と出す。編集はできない
+ * （DB に行が無いので id が無い）ことも、そこで伝わる。
  */
 
 export const dynamic = "force-dynamic";
@@ -42,7 +59,30 @@ export async function GET() {
         updatedAt: true,
       },
     });
-    return NextResponse.json({ success: true, data: { posts } });
+    // Markdown にしか無い記事。slug で突き合わせる。
+    //
+    // 読めなかったときは**空にして先へ進む**。一覧そのものは DB から
+    // 取れているので、ここで 500 にすると編集できるはずの記事まで
+    // 出なくなる。
+    let pendingImport: { slug: string; title: string; publishedAt: string }[] =
+      [];
+    try {
+      const inDb = new Set(posts.map((p) => p.slug));
+      pendingImport = getMarkdownBlogPosts()
+        .filter((p) => !inDb.has(p.slug))
+        .map((p) => ({
+          slug: p.slug,
+          title: p.title,
+          publishedAt: p.publishedAt,
+        }));
+    } catch (e) {
+      console.warn("Markdown 側の一覧を読めなかった:", toLogMessage(e));
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: { posts, pendingImport },
+    });
   } catch (e) {
     console.error("記事一覧の取得に失敗:", toLogMessage(e));
     return NextResponse.json(
