@@ -714,10 +714,19 @@ model PageView {
   /// "pc" | "mobile" | "tablet"。UA そのものは保存しない。
   /// 列を足す前の行と判定不能な UA は null（「不明」として集計する）。
   device        String?
+  /// 運営者自身の閲覧か。true なら既定の集計から外す。
+  ///
+  /// **null は「この列ができる前の行」**で、内部か外部か分からないという
+  /// 事実をそのまま残している。DEFAULT false を置くと、当てた日より前の
+  /// 全行が「外部からの閲覧だった」と主張することになるため置いていない。
+  /// 新しい行は必ず true / false を明示して入れる。
+  is_internal   Boolean?
   created_at    DateTime @default(now()) @db.Timestamptz(6)
 
   /// 日別の PV/UV 集計と、ページ別の内訳の両方をこの並びで引く。
   @@index([day, path])
+  /// 既定の集計は「内部を除いた日別 PV/UV」。日で絞ってから内部を外す。
+  @@index([day, is_internal])
   @@map("page_views")
 }
 
