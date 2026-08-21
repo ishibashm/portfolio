@@ -8,14 +8,29 @@ name: Artifact Registry cleanup
 # イメージを push するが、**古いイメージを消す処理がどこにも無い。**
 # 単調に増え続けるので、保管料も増え続ける。
 #
-# 実測（2026-08-20 時点の master のコミット数）:
+# 実測（2026-08-21 に report を回した結果）:
 #
-#   直近 30 日  256 回
-#   直近  7 日  206 回
-#   1 日で最大   52 回
+#   版数              368
+#   リポジトリ全体   約 128 GB（130,935 MB）
+#   リポジトリ作成   2026-08-08（13 日前）
+#   ポリシー         **1 つも無い**
 #
-# 月 250 枚ペースで積み上がっている。Artifact Registry は
-# $0.10/GB/月（最初の 0.5 GB は無料）。
+# **13 日で 128 GB。**1 日あたり約 28 版・約 10 GB。Artifact Registry は
+# $0.10/GB/月（最初の 0.5 GB は無料）なので、現状で月 12〜13 ドル。
+# 頭打ちが無く、1 か月放置すれば 300 GB・月 30 ドルに届く。
+#
+# 最も古い版が 13 日前で止まっているのは、ポリシーが消しているからでは
+# なく**リポジトリ自体が新しい**ため。describe の createTime で確認した。
+#
+# ## サイズをどこから取るか
+#
+# **版ごとのサイズは `docker images list` の JSON に入っていない。**
+# 実測したキーは createTime / metadata / package / tags / updateTime /
+# version の 6 つだけ。最初の実装は sizeBytes を読もうとして全件 0 と
+# 数え、「消しても料金は変わらない」と読める報告を出していた（#467）。
+#
+# 正しくは `repositories describe` の sizeBytes。こちらは層の共有を
+# 重複計上しない**課金対象そのもの**の数字で、版を足し合わせるより正確。
 #
 # ## 保管先を替える案は採らない
 #
@@ -94,39 +109,34 @@ jobs:
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}"
           echo "対象: $IMAGE"
 
-          # createTime の新しい順。サイズは imageSizeBytes（圧縮後のマニフェスト単位）。
+          # 版ごとのサイズは docker images list の JSON に入っていない（実測した
+          # キーは createTime / metadata / package / tags / updateTime / version）。
+          # リポジトリ全体のサイズは describe が sizeBytes で返し、**そちらは層の
+          # 共有を重複計上しない課金対象そのもの**。版を足し合わせるより正確。
+          #
+          # export しないと下の python から os.environ で読めない。
+          # 読めないと「取得できず」に落ちるだけだが、黙って 0 にする経路を
+          # 潰した意味が無くなるので、ここで確実に渡す。
+          export REPO_SIZE_BYTES
+          REPO_SIZE_BYTES="$(gcloud artifacts repositories describe "${{ env.REPOSITORY }}" \
+            --project="${{ env.PROJECT_ID }}" --location="${{ env.REGION }}" \
+            --format="value(sizeBytes)" 2>/dev/null || true)"
+
           gcloud artifacts docker images list "$IMAGE" \
-            --include-tags \
-            --sort-by=~CREATE_TIME \
-            --format="json" > images.json
+            --include-tags --sort-by=~CREATE_TIME --format="json" > images.json
 
           python3 - <<'PY' | tee report.md
           import json, os
           rows = json.load(open("images.json"))
           keep = int(os.environ.get("KEEP", "20"))
+          raw = (os.environ.get("REPO_SIZE_BYTES") or "").strip()
+          try:
+              repo_bytes = int(raw)
+          except ValueError:
+              repo_bytes = None
 
-          # gcloud の JSON は版のサイズを imageSizeBytes（文字列）で返す。
-          # 初回の実行では sizeBytes を見ていて、全件 0 として集計していた。
-          # 環境や版によって名前が違ったときに黙って 0 にならないよう、候補を
-          # 順に見て、**1 件も取れなかったら実際に来ているキーを出す。**
-          SIZE_KEYS = ("imageSizeBytes", "sizeBytes", "size")
-
-          def size(r):
-              for k in SIZE_KEYS:
-                  v = r.get(k)
-                  if v in (None, ""):
-                      continue
-                  try:
-                      return int(v)
-                  except (TypeError, ValueError):
-                      continue
-              return 0
-
-          sized = [r for r in rows if size(r) > 0]
-          total = sum(size(r) for r in rows)
-          old = rows[keep:]
-          old_size = sum(size(r) for r in old)
           gb = lambda b: b / 1024 ** 3
+          old = rows[keep:]
 
           print("## Artifact Registry の現状")
           print()
@@ -134,39 +144,26 @@ jobs:
           if rows:
               print(f"- 最も古い版: {rows[-1].get('createTime', '不明')}")
               print(f"- 最も新しい版: {rows[0].get('createTime', '不明')}")
-          print()
 
-          if not sized:
-              # サイズが 1 件も取れていない。合計 0 GB と書くと「消しても効かない」と
-              # 読めてしまうので、**数字を出さずに取れなかったことを書く。**
-              keys = sorted({k for r in rows[:5] for k in r})
-              print("- 合計サイズ: **取得できず**")
-              print()
-              print(f"gcloud の応答に {' / '.join(SIZE_KEYS)} のいずれも入っていない。")
-              print(f"実際に来ているキー: `{'`, `'.join(keys) or '（応答が空）'}`")
-              print()
-              print(f"## 最新 {keep} 世代を残した場合")
-              print()
-              print(f"- 削除対象: **{len(old)} 版**（容量は不明）")
+          if repo_bytes is None:
+              # 取れなかったときに 0 と書くと「消しても効かない」と読める。
+              # 数字を出さず、取れなかったことを書く。
+              print("- 合計サイズ: **取得できず**（describe が sizeBytes を返さなかった）")
           else:
-              if len(sized) < len(rows):
-                  print(f"- サイズが取れた版: {len(sized)} / {len(rows)}（取れない版は 0 と数えている）")
-              print(f"- 合計サイズ: **{gb(total):.2f} GB**")
-              print()
-              print(f"## 最新 {keep} 世代を残した場合")
-              print()
-              print(f"- 削除対象: **{len(old)} 版 / {gb(old_size):.2f} GB**")
-              print(f"- 残る量: **{gb(total - old_size):.2f} GB**")
-              print()
+              size_gb = gb(repo_bytes)
               # 0.5 GB までは無料。超えたぶんが $0.10/GB/月。
-              bill_now = max(0.0, gb(total) - 0.5)
-              bill_after = max(0.0, gb(total - old_size) - 0.5)
-              print(f"- 概算の保管料: 今 **${bill_now * 0.10:.2f}/月** → 削除後 **${bill_after * 0.10:.2f}/月**")
+              bill = max(0.0, size_gb - 0.5) * 0.10
+              print(f"- 合計サイズ: **{size_gb:.1f} GB**（リポジトリの申告値。層の共有を含まない実量）")
+              print(f"- 概算の保管料: **${bill:.2f}/月**")
 
           print()
-          print("※ サイズは版ごとの申告値の単純合計。層が共有されている分は")
-          print("　 二重に数えているので、**実際の課金対象はこれより小さい**。")
-          print("　 増減の傾向を見る目安として読むこと。")
+          print(f"## 最新 {keep} 世代を残した場合")
+          print()
+          print(f"- 削除対象: **{len(old)} 版**")
+          print()
+          print("**容量の削減見込みは出せない。**版ごとのサイズが応答に無く、層が")
+          print(f"共有されているため「{len(old)} 版消せば何 GB 減る」を事前に計算できない。")
+          print("apply したあと、この report を回し直して合計サイズの変化で確かめること。")
           PY
           cat report.md >> "$GITHUB_STEP_SUMMARY"
         env:
