@@ -1,0 +1,73 @@
+name: Record Search Console daily
+
+# Search Console の実績（日 × 検索語 × 頁）を 1 日 1 回貯める。
+#
+# ## なぜ要るか
+#
+# Search Console は画面も API も **16 か月ぶんしか返さない**。しかも
+# その場で叩いた値は「今どうか」しか答えない。「この記事を出してから
+# 表示回数が伸びたのか」を後から追うには、日次で貯めておくしかない。
+#
+# ## 鍵は要らない
+#
+# 本番（Cloud Run）のサービスアカウントでメタデータサーバーから
+# トークンを取るので、**新しい Secret は要らない。**ここは本番の
+# エンドポイントを CRON_SECRET で叩くだけ（telemetry.yml と同じ形）。
+#
+# ## 走る時刻
+#
+# 実績は 2〜3 日遅れて確定するので、時刻そのものに意味は無い。
+# 夜間のスクレイプ（19:17 UTC 開始）と重ならない時間に置く。
+
+on:
+  schedule:
+    # 毎日 22:30 UTC = 翌 07:30 JST
+    - cron: "30 22 * * *"
+  workflow_dispatch:
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call search console cron endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET secret is not set."
+            exit 1
+          fi
+          code=$(curl -sS -o response.json -w "%{http_code}" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://cloud-palette.com/api/cron/search-console)
+          echo "HTTP $code"
+          cat response.json
+          echo
+
+          # 503 は「Cloud Run 上でない」か「未設定」。ここは本番を
+          # 叩いているので起きないはずだが、起きたら気付けるように落とす。
+          if [ "$code" != "200" ]; then
+            echo "::error::Search Console batch failed with HTTP $code"
+            exit 1
+          fi
+
+          # 取り込んだ件数を要約に出す。**0 件が続いたら気付けるように。**
+          # Search Console は表示が少なすぎる語を落とすので、開設直後は
+          # 本当に 0 件でありうる。落とさずに数だけ見せる。
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("response.json"))
+          print("## Search Console の取り込み")
+          print()
+          print(f"- 期間: {d.get('startDate')} 〜 {d.get('endDate')}")
+          print(f"- 取得: **{d.get('fetched')} 行**")
+          print(f"- 書き込み: **{d.get('written')} 行**（失敗 {d.get('failed')}）")
+          if d.get("truncated"):
+              print()
+              print("⚠️ **上限で切られている可能性がある。**返ってきた行数が")
+              print("　 rowLimit と同じだった。ROW_LIMIT を上げること。")
+          if not d.get("fetched"):
+              print()
+              print("※ 0 行。Search Console は表示回数が少なすぎる語を落とすので、")
+              print("　 検索からの流入がまだ無い間は 0 が続く。異常ではない。")
+          PY
