@@ -29,6 +29,15 @@ type AdminPost = {
   updatedAt: string;
 };
 
+/**
+ * Markdown（content/blog/*.md）にしか無い記事。
+ *
+ * 置き場を DB へ移している途中なので、取り込みを流していない記事は
+ * DB に行が無い。**行が無ければ id も無いので、ここからは編集できない。**
+ * 「無い」ことだけを見せて、次に何をすればよいかを書く。
+ */
+type PendingImport = { slug: string; title: string; publishedAt: string };
+
 /** フォームの中身。API へ送る形と同じにして、詰め替えを持たない。 */
 type Draft = {
   id: string | null;
@@ -59,6 +68,7 @@ const inputClass =
 
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<AdminPost[] | null>(null);
+  const [pendingImport, setPendingImport] = useState<PendingImport[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -71,6 +81,8 @@ export default function AdminBlogPage() {
       const body = await res.json();
       if (!body?.success) throw new Error(body?.error || `HTTP ${res.status}`);
       setPosts(body.data.posts);
+      // 古い応答（この列を返す前の版）でも落ちないよう、無ければ空。
+      setPendingImport(body.data.pendingImport ?? []);
       setListError(null);
     } catch (e) {
       setListError(
@@ -374,6 +386,10 @@ export default function AdminBlogPage() {
                     <th className="px-4 py-2.5 font-bold">カテゴリ</th>
                     <th className="px-4 py-2.5 font-bold">公開日</th>
                     <th className="px-4 py-2.5 font-bold">最終更新</th>
+                    {/* 行そのものも押せるが、押せると分かる目印が
+                        hover の色だけだった。表の行が押せることは
+                        気付けないので、ボタンを明示する。 */}
+                    <th className="px-4 py-2.5 font-bold text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -421,6 +437,20 @@ export default function AdminBlogPage() {
                       <td className="px-4 py-3 font-mono text-stone-500">
                         {p.updatedAt.slice(0, 10)}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            // 行の onClick と二重に走らせない。
+                            e.stopPropagation();
+                            openEdit(p.id);
+                          }}
+                          disabled={busy}
+                          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:bg-stone-300 text-white text-[11px] font-bold whitespace-nowrap"
+                        >
+                          編集
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -428,6 +458,57 @@ export default function AdminBlogPage() {
             </div>
           )}
         </div>
+
+        {/*
+          Markdown にしか無い記事。
+
+          置き場を content/blog/*.md から DB へ移している途中で、取り込みを
+          流していない記事は DB に行が無い。**行が無ければ id も無いので、
+          この画面からは編集できない。**
+
+          これまでは一覧に出ないだけで理由がどこにも出ず、「編集が機能して
+          いない」ようにしか見えなかった。実際にそう報告があった。無いことと、
+          次に何をすればよいかを書く。
+        */}
+        {pendingImport.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 space-y-3">
+            <h2 className="text-sm font-bold text-amber-900">
+              まだ取り込まれていない記事が {pendingImport.length} 本あります
+            </h2>
+            <p className="text-xs leading-relaxed text-amber-800">
+              下の記事は <code className="font-mono">content/blog/*.md</code>{" "}
+              にはありますが、データベースにはまだ入っていません。
+              <strong>読者には表示されています</strong>
+              （公開側はデータベースが空なら Markdown
+              を読むため）が、データベースに行が無いので
+              <strong>この画面からは編集できません</strong>。
+            </p>
+            <p className="text-xs leading-relaxed text-amber-800">
+              編集できるようにするには、GitHub の Actions から
+              <strong>
+                「Import blog articles into the database」を mode: apply
+              </strong>
+              で実行してください。先に mode: dry-run
+              で何が入るかを確認できます。
+            </p>
+            <ul className="space-y-1">
+              {pendingImport.map((p) => (
+                <li
+                  key={p.slug}
+                  className="flex flex-wrap items-baseline gap-x-2 text-xs text-amber-900"
+                >
+                  <span className="font-bold">{p.title}</span>
+                  <code className="font-mono text-[10px] text-amber-700">
+                    {p.slug}
+                  </code>
+                  <span className="font-mono text-[10px] text-amber-700">
+                    {p.publishedAt.slice(0, 10)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
