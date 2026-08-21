@@ -183,13 +183,13 @@ jobs:
           #                 サイズを持つ。**大きい層が何で、いくつあるか
           #   revisions   … Cloud Run が参照している版。**これに入って
           #                 いない版は、誰も使っていない**
-          echo "## 直近 10 版" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "## 直近 10 版" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
           gcloud artifacts docker images list "$IMAGE" \
             --include-tags --sort-by=~CREATE_TIME --limit=10 \
-            --format="table(version.slice(7:19), tags, createTime.date('%Y-%m-%d %H:%M'))" \
-            >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+            --format="table(version.slice(7:19), tags, createTime.date('%Y-%m-%d %H:%M'))" 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
 
           # 層ごとのサイズ。上位を出せば「何が重いのか」が分かる。
           gcloud artifacts files list \
@@ -198,7 +198,7 @@ jobs:
             --repository="${{ env.REPOSITORY }}" \
             --format="json" > files.json 2>/dev/null || echo "[]" > files.json
 
-          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          python3 - <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json
           files = json.load(open("files.json"))
           def sz(f):
@@ -234,16 +234,16 @@ jobs:
           PY
 
           # Cloud Run が実際に参照している版。これ以外は誰も使っていない。
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Cloud Run が参照している版" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "## Cloud Run が参照している版" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
           gcloud run revisions list \
             --project="${{ env.PROJECT_ID }}" \
             --region="${{ env.REGION }}" \
             --service="${{ env.SERVICE_NAME }}" \
-            --format="table(metadata.name, metadata.creationTimestamp.date('%Y-%m-%d'), status.imageDigest.slice(7:19))" \
-            >> "$GITHUB_STEP_SUMMARY" 2>&1 || true
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+            --format="table(metadata.name, metadata.creationTimestamp.date('%Y-%m-%d'), status.imageDigest.slice(7:19))" 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Apply cleanup policy
         if: ${{ inputs.mode == 'apply' }}
