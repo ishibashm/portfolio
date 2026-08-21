@@ -45,6 +45,19 @@ const PAGE = join(
 );
 const src = readFileSync(PAGE, "utf8").split("\r\n").join("\n");
 
+/**
+ * 「引っ越し時期を探す」の節は TimingScanSection へ切り出した。
+ * 無効の理由を出しているのはそちらなので、この 1 件だけ別ファイルを読む。
+ */
+const TIMING_SECTION = join(
+  process.cwd(),
+  "src",
+  "components",
+  "relocation",
+  "TimingScanSection.tsx",
+);
+const timingSrc = readFileSync(TIMING_SECTION, "utf8").split("\r\n").join("\n");
+
 describe("物件スキャナーの既定値", () => {
   it("ページを読めている（空回りしていない）", () => {
     expect(src.length).toBeGreaterThan(10000);
@@ -80,8 +93,9 @@ describe("物件スキャナーの既定値", () => {
   it("走査ボタンが無効な理由に生年月日が入っている", () => {
     // 以前は出発地の分しか無く、生年月日だけ未入力だとボタンが灰色の
     // まま理由が読めなかった（#160 で時期分析を直したのと同じ形）。
-    expect(src).toContain("{(!hasBaseLocation || !birthDate) && (");
-    expect(src).toContain("生年月日が未入力です。");
+    expect(timingSrc.length).toBeGreaterThan(1000);
+    expect(timingSrc).toContain("{(!hasBaseLocation || !birthDate) && (");
+    expect(timingSrc).toContain("生年月日が未入力です。");
   });
 });
 
