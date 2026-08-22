@@ -33,6 +33,7 @@ import {
 
 import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
+import { YearlyForecast } from "@/components/relocation/YearlyForecast";
 import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
 import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 import {
@@ -525,7 +526,8 @@ export default function TimingAnalyticsPage() {
             .canBeAuspicious && (
             <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900">
               <b>
-                このモードでは三盤吉（S）が 0 件になります。めったに無いからではありません。
+                このモードでは三盤吉（S）が 0
+                件になります。めったに無いからではありません。
               </b>
               <span className="ml-1">
                 「{modeInfo(settings?.directionFilterMode ?? "composite").label}
@@ -662,6 +664,16 @@ export default function TimingAnalyticsPage() {
                 </ResponsiveContainer>
               </div>
             </Section>
+
+            {/*
+              これから 12 か月の見通し。
+
+              この予測を出す API は前からあったが、呼んでいた部品が
+              どこにも描画されておらず、**完全に死んでいた**（#513）。
+              日ごとの格子を見る前に「どの月か」を掴めるほうが読みやすい
+              ので、ヒートマップの手前に置く。
+            */}
+            <YearlyForecast />
 
             {/* カレンダーヒートマップ */}
             <Section
