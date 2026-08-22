@@ -66,6 +66,29 @@ const UNIT_PRICE_MIN = 10_000;
 const UNIT_PRICE_MAX = 5_000_000;
 
 /**
+ * 購入側は**中古マンションだけ**に絞る。
+ *
+ * unit_price_sqm は propertyTxParse.ts で trade_price / area_sqm として
+ * 作っている。この area_sqm は国交省 API の面積で、**種別によって指す
+ * ものが違う。**
+ *
+ *   中古マンション等      専有面積        ← 賃貸の㎡と同じ土俵
+ *   宅地(土地)            土地面積
+ *   宅地(土地と建物)      土地面積（延床ではない）
+ *
+ * 戸建の土地は専有面積よりずっと広いので㎡単価が小さく出る。それを
+ * 分母にすると利回りが跳ね上がる。**絞る前の実測（2026-08-22）で
+ * 福井県 39.50% / 富山県 38.94% という値が出た。**実際の表面利回りは
+ * 4〜12% の世界なので、明らかに壊れている。地方が上位に並んだのは
+ * 土地が安いからで、これが種別の混入を示していた。
+ *
+ * 賃貸側は建物の構造で絞れない（rental_properties に構造の列が無い）。
+ * 木造アパートと RC マンションの㎡賃料は違うので、**分子には両方が
+ * 混ざっている。**これは画面に断りとして書く。
+ */
+const MANSION_TYPE = "中古マンション等";
+
+/**
  * 購入側に使う年の幅。最新の年から数えてこの年数ぶん。
  *
  * 分子は「いまの募集賃料」なので、分母だけ 10 年前の成約価格を混ぜると
@@ -104,10 +127,29 @@ async function main() {
   try {
     await pool.query("SET statement_timeout = 0");
 
+    /*
+      種別の一覧を毎回出す。**絞り込みの名前が合っているかを、走らせる
+      たびに目で確かめられるようにする。**取り込み側が名前を変えたら
+      黙って 0 件になるのが一番こわい。
+    */
+    const typeRes = await pool.query<{ type: string | null; n: string }>(
+      `SELECT property_type AS type, count(*) AS n
+         FROM property_transactions GROUP BY 1 ORDER BY 2 DESC`,
+    );
+    console.log("成約の種別:");
+    for (const t of typeRes.rows) {
+      console.log(`  ${t.type ?? "(不明)"}  ${t.n}`);
+    }
+    if (!typeRes.rows.some((t) => t.type === MANSION_TYPE)) {
+      throw new Error(
+        `種別「${MANSION_TYPE}」が 1 件も無い。上の一覧と名前を突き合わせること。`,
+      );
+    }
+
     const yearRes = await pool.query<{ latest: number | null }>(
       `SELECT max(trade_year) AS latest FROM property_transactions
-        WHERE unit_price_sqm BETWEEN $1 AND $2`,
-      [UNIT_PRICE_MIN, UNIT_PRICE_MAX],
+        WHERE unit_price_sqm BETWEEN $1 AND $2 AND property_type = $3`,
+      [UNIT_PRICE_MIN, UNIT_PRICE_MAX, MANSION_TYPE],
     );
     const yearTo = yearRes.rows[0]?.latest ?? null;
     if (yearTo === null) {
@@ -151,6 +193,7 @@ async function main() {
                mode() WITHIN GROUP (ORDER BY prefecture) AS prefecture
         FROM property_transactions
         WHERE lat IS NOT NULL AND lon IS NOT NULL
+          AND property_type = $9
           AND unit_price_sqm BETWEEN $5 AND $6
           AND trade_year BETWEEN $7 AND $8
         GROUP BY 1, 2
@@ -173,6 +216,7 @@ async function main() {
       UNIT_PRICE_MAX,
       yearFrom,
       yearTo,
+      MANSION_TYPE,
     ]);
     console.log(`両側そろった区画: ${res.rowCount}`);
 
@@ -256,9 +300,10 @@ async function main() {
           await pool.query<{ n: string }>(
             `SELECT count(*) AS n FROM property_transactions
               WHERE lat IS NOT NULL AND lon IS NOT NULL
+                AND property_type = $5
                 AND unit_price_sqm BETWEEN $1 AND $2
                 AND trade_year BETWEEN $3 AND $4`,
-            [UNIT_PRICE_MIN, UNIT_PRICE_MAX, yearFrom, yearTo],
+            [UNIT_PRICE_MIN, UNIT_PRICE_MAX, yearFrom, yearTo, MANSION_TYPE],
           )
         ).rows[0]?.n,
       ) || 0;
