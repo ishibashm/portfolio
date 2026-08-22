@@ -445,7 +445,7 @@ export default function DestinationMapPanel({
                     targetVectorStatus.startsWith("NOISE_VOID")
                       ? "bg-stone-50 border-stone-200 text-stone-600 repeating-linear-gradient-45"
                       : targetVectorStatus.startsWith("NOISE_NODE")
-                        ? "bg-yellow-500/10 border-yellow-500/30 text-yellow-400"
+                        ? "bg-amber-50 border-amber-200 text-amber-700"
                         : targetVectorStatus.startsWith("NOISE")
                           ? "bg-red-500/10 border-red-200 text-red-600"
                           : targetVectorStatus === "OPTIMAL" ||
@@ -489,7 +489,7 @@ export default function DestinationMapPanel({
                     {targetDirInfo.trueDirection !==
                       targetDirInfo.magneticDirection && (
                       <span
-                        className="text-[9px] text-amber-500 border border-amber-200 px-1 py-0.5 rounded bg-amber-500/5 animate-pulse cursor-help font-bold font-mono"
+                        className="text-[9px] text-amber-700 border border-amber-200 px-1 py-0.5 rounded bg-amber-50 animate-pulse cursor-help font-bold font-mono"
                         title="【境界線偏角アラート】真北と磁北で判定する方位セクターが異なっています。基準北トグルの切り替えにより方位評価が変化します。"
                       >
                         ⚠️偏角ズレ
@@ -1115,7 +1115,7 @@ export default function DestinationMapPanel({
                   <div className="w-2 h-2 bg-purple-500/80"></div> TYPE II (Bio)
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
-                  <div className="w-2 h-2 bg-yellow-500/80"></div> VOID/NODE
+                  <div className="w-2 h-2 bg-amber-500/80"></div> VOID/NODE
                 </span>
                 <span className="flex items-center gap-1 bg-white/80 px-1.5 py-0.5 rounded border border-stone-200">
                   <div className="w-2 h-2 bg-orange-500/80"></div> WARNING
@@ -1205,7 +1205,7 @@ export default function DestinationMapPanel({
                       <div className="font-bold text-amber-600 flex items-center gap-1.5">
                         <span>✨</span> 天道 (Tendou) 補正が適用されています
                       </div>
-                      <p className="text-[10px] leading-relaxed text-amber-200/90">
+                      <p className="text-[10px] leading-relaxed text-amber-800">
                         この時期、<strong>{selectedTrendCell.dir} 方位</strong>{" "}
                         には暦上の最高吉神「天道」が回座しています。天道の強力な吉パワーにより、本命殺や月命殺等の個人の凶作用が相殺・補正され、総合判定として
                         <strong>大吉（OPTIMAL）</strong>へ昇格評価されています。
@@ -1332,7 +1332,7 @@ export default function DestinationMapPanel({
               onClick={() => setDirectionFilterMode("personal_bazi")}
               className={`px-2 py-0.5 text-[9px] font-mono rounded-xs transition-all border cursor-pointer ${
                 directionFilterMode === "personal_bazi"
-                  ? "bg-yellow-950/40 text-yellow-400 border-yellow-500/50 shadow-[0_0_5px_rgba(234,179,8,0.2)]"
+                  ? "bg-amber-100 text-amber-800 border-amber-300 shadow-[0_0_5px_rgba(180,83,9,0.2)]"
                   : "bg-white/80 text-stone-500 border-transparent hover:border-stone-300"
               }`}
             >
@@ -1417,7 +1417,7 @@ export default function DestinationMapPanel({
               directionFilterMode.includes("kigaku")
                 ? "bg-purple-50 border-purple-200 text-purple-600"
                 : directionFilterMode.includes("bazi")
-                  ? "bg-yellow-950/20 border-yellow-500/30 text-yellow-400"
+                  ? "bg-amber-50 border-amber-200 text-amber-700"
                   : "bg-rose-50 border-rose-200 text-rose-600"
             }`}
           >

@@ -58,8 +58,10 @@ const HUE_BUDGET: Record<string, number> = {
   // yellow を落として 8 → 7（#486）。白地に yellow-400 で 1.53:1 しか
   // 無く、凡例の説明がその色で書かれていて読めなかった。
   "src/components/home/ConsultPanel.tsx": 7,
-  "src/components/home/ScorecardPanel.tsx": 9,
-  "src/components/home/DestinationMapPanel.tsx": 9,
+  // yellow を落として 9 → 8（#486）。
+  "src/components/home/ScorecardPanel.tsx": 8,
+  // yellow を落として 9 → 8（#486）。
+  "src/components/home/DestinationMapPanel.tsx": 8,
   "src/components/home/HomePortal.tsx": 6,
 };
 
@@ -150,15 +152,10 @@ describe("明るい地で読めない文字色を使っていない", () => {
   const KNOWN: Record<string, readonly UnreadableStep[]> = {
     // 判定の色だけが残っている（#486 で yellow と amber を片付けた）。
     "src/components/home/ConsultPanel.tsx": ["emerald-500"],
-    "src/components/home/ScorecardPanel.tsx": [
-      "yellow-400",
-      "amber-500",
-      "emerald-500",
-    ],
+    // どのファイルも**判定の色だけ**が残っている。yellow / amber は
+    // #486 で片付けた。
+    "src/components/home/ScorecardPanel.tsx": ["emerald-500"],
     "src/components/home/DestinationMapPanel.tsx": [
-      "yellow-400",
-      "amber-200",
-      "amber-500",
       "emerald-400",
       "emerald-500",
     ],
