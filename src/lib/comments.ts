@@ -1,3 +1,5 @@
+import { CORE_ROUTES } from "@/lib/siteStructure";
+
 /**
  * 方位・日取りについての投稿の、キーと検証。
  *
@@ -48,6 +50,39 @@ export function areaTopic(code: string): string {
 }
 
 /**
+ * 頁そのものへの投稿の鍵。
+ *
+ * ## なぜ足したか
+ *
+ * 鍵は年 × 本命星・年 × 本命星 × 月・特定の月・地域コードの 4 種類しか
+ * 無かった。**ナビが指す頁がどれにも当てはまらない。**
+ *
+ *   ナビの行き先        /houi        /calendar
+ *   投稿できる頁        /houi/2026/3 /calendar/2026-08
+ *
+ * ナビから入ると必ず投稿欄の無い頁に着く。特定の年 × 本命星や特定の月まで
+ * 掘って初めて出てくるので、**利用者からは「コメント機能が無い」ように
+ * 見えていた。**実際そう報告があった。
+ *
+ * 道具の頁（物件検索・時期分析・査定・利回りなど）にも 1 つも無い。人が
+ * 集まるのはそちらなので、置き場所が逆になっていた。
+ *
+ * ## href から作る
+ *
+ * 頁の一覧は siteStructure の CORE_ROUTES が唯一の定義元なので、そこから
+ * 機械的に導く。**手で文字列を並べない。**並べると、頁を足したときに
+ * 片方だけ古くなる（robots・サイトマップ・llms.txt が 1 か所を読んでいる
+ * のと同じ理由）。
+ *
+ *   /relocation/arbitrage → page:relocation-arbitrage
+ *   /houi                 → page:houi
+ */
+export function pageTopic(href: string): string {
+  const slug = href.replace(/^\/+/, "").replace(/\//g, "-");
+  return `page:${slug || "home"}`;
+}
+
+/**
  * 受け取った topic_key が、こちらが発行しうる形かどうか。
  *
  * 検証しないと、任意の文字列で好きなだけ「話題」を作れてしまい、
@@ -58,10 +93,33 @@ const TOPIC_PATTERNS: RegExp[] = [
   /^houi:\d{4}:[1-9]:(1[0-2]|[1-9])$/,
   /^calendar:\d{4}-(0[1-9]|1[0-2])$/,
   /^area:\d{5}$/,
+  /*
+    頁そのものへの投稿。形だけでなく**実在する頁かどうか**も見る
+    （下の isValidTopicKey）。形だけ通すと page:anything で好きなだけ
+    話題を作れてしまい、索引が効かず行数の見積もりも立たない。
+  */
+  /^page:[a-z0-9-]+$/,
 ];
 
+/**
+ * 投稿できる頁の鍵の一覧。CORE_ROUTES から作る。
+ *
+ * 頁を足せばここも増える。減らせば消える。**手で並べない。**
+ */
+export const PAGE_TOPIC_KEYS: ReadonlySet<string> = new Set(
+  CORE_ROUTES.map((route) => pageTopic(route.href)),
+);
+
 export function isValidTopicKey(key: unknown): key is string {
-  return typeof key === "string" && TOPIC_PATTERNS.some((re) => re.test(key));
+  if (typeof key !== "string") return false;
+  if (!TOPIC_PATTERNS.some((re) => re.test(key))) return false;
+  /*
+    page: の鍵は、形が合っていても**実在する頁でなければ通さない。**
+    消した頁の鍵も通らなくなるので、削除した頁に投稿が積み続ける
+    ことも起きない。
+  */
+  if (key.startsWith("page:")) return PAGE_TOPIC_KEYS.has(key);
+  return true;
 }
 
 export interface CommentInputError {

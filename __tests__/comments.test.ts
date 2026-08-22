@@ -8,8 +8,11 @@ import {
   houiMonthTopic,
   houiYearTopic,
   isValidTopicKey,
+  pageTopic,
   validateCommentInput,
+  PAGE_TOPIC_KEYS,
 } from "@/lib/comments";
+import { CORE_ROUTES } from "@/lib/siteStructure";
 
 describe("投稿の紐づけ先（topicKey）", () => {
   it("ページから機械的に作れる", () => {
@@ -89,7 +92,10 @@ describe("投稿の検証", () => {
   });
 
   it("紐づけ先が不正なら本文を見る前に弾く", () => {
-    const e = validateCommentInput({ topicKey: "でたらめ", body: "十分な長さの本文です" });
+    const e = validateCommentInput({
+      topicKey: "でたらめ",
+      body: "十分な長さの本文です",
+    });
     expect(e?.field).toBe("topicKey");
   });
 });
@@ -112,5 +118,57 @@ describe("表示名", () => {
 
   it("長い名前は切り詰める", () => {
     expect(displayNameFor("あ".repeat(200), "x@example.com").length).toBe(40);
+  });
+});
+
+describe("頁そのものへの投稿（page: の鍵）", () => {
+  /*
+    足す前は、鍵が年 × 本命星 / 年 × 本命星 × 月 / 特定の月 / 地域コードの
+    4 種類しか無く、**ナビが指す頁がどれにも当てはまらなかった。**
+
+      ナビの行き先     /houi        /calendar
+      投稿できる頁     /houi/2026/3 /calendar/2026-08
+
+    ナビから入ると必ず投稿欄の無い頁に着くので、利用者からは
+    「コメント機能が無い」ように見えていた（実際にそう報告があった）。
+  */
+  it("ナビが指す頁の鍵が作れる", () => {
+    expect(pageTopic("/houi")).toBe("page:houi");
+    expect(pageTopic("/calendar")).toBe("page:calendar");
+    expect(pageTopic("/relocation/arbitrage")).toBe(
+      "page:relocation-arbitrage",
+    );
+  });
+
+  it("CORE_ROUTES の頁は全部そのまま通る", () => {
+    for (const route of CORE_ROUTES) {
+      const key = pageTopic(route.href);
+      expect(isValidTopicKey(key), `${route.href} → ${key}`).toBe(true);
+    }
+  });
+
+  it("鍵の一覧は CORE_ROUTES と同じ数（手で並べていない）", () => {
+    expect(PAGE_TOPIC_KEYS.size).toBe(CORE_ROUTES.length);
+  });
+
+  it("形が合っていても、実在しない頁は通さない", () => {
+    /*
+      形だけ通すと page:anything で好きなだけ話題を作れてしまい、
+      索引が効かず行数の見積もりも立たない。
+    */
+    expect(isValidTopicKey("page:not-a-real-page")).toBe(false);
+    expect(isValidTopicKey("page:admin")).toBe(false);
+  });
+
+  it("消した頁の鍵も通らなくなる（投稿が積み続けない）", () => {
+    // かつて存在し、siteStructure から削除された頁
+    expect(isValidTopicKey("page:trends")).toBe(false);
+    expect(isValidTopicKey("page:dashboard")).toBe(false);
+  });
+
+  it("大文字や記号は弾く", () => {
+    expect(isValidTopicKey("page:Houi")).toBe(false);
+    expect(isValidTopicKey("page:houi/2026")).toBe(false);
+    expect(isValidTopicKey("page:")).toBe(false);
   });
 });
