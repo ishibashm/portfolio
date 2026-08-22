@@ -67,6 +67,13 @@ type Summary = {
   sinceDay: string;
   generatedAt: string;
   latestViewAt: string | null;
+  /**
+   * いま何を数えているか。
+   *
+   * excluded は**この応答から外した件数**。since は内部かどうかを
+   * 判別できるようになった最初の日で、それより前は外せない。
+   */
+  internal: { included: boolean; excluded: number; since: string | null };
   registeredUsers: number;
   usersSaved7d: number;
   usersSaved30d: number;
@@ -622,6 +629,94 @@ function FlagBadge({ on, label }: { on: boolean; label: string }) {
 }
 
 /**
+ * 「内部を除く / 全部」の切り替えと、**外した件数**の表示。
+ *
+ * 除外そのものは前からあったが、画面には「除外中」としか出ていなかった。
+ * 切り替えても数字が少し動くだけでは、効いているのか単に人が来なかったのかが
+ * 読み取れない、と利用者から指摘があった。**何件外したかを数字で出す。**
+ *
+ * さかのぼって外せないことも、ここで断る。is_internal は列を足した日
+ * 以降の行にしか入らない。それより前の閲覧は内部だったかどうか分からず、
+ * 「除く」を選んでも残る。黙って残すと数字が合わない理由が分からない。
+ */
+function ScopeSwitch({
+  includeInternal,
+  onChange,
+  internal,
+  pending,
+}: {
+  includeInternal: boolean;
+  onChange: (next: boolean) => void;
+  internal: {
+    included: boolean;
+    excluded: number;
+    since: string | null;
+  } | null;
+  /** 切り替えたが、まだ前の範囲の数字が出ている。 */
+  pending: boolean;
+}) {
+  const options: { value: boolean; label: string }[] = [
+    { value: false, label: "自分を除く" },
+    { value: true, label: "全部" },
+  ];
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div
+        className="inline-flex rounded-lg border border-stone-300 bg-white p-0.5"
+        role="group"
+        aria-label="集計に含める範囲"
+      >
+        {options.map((o) => (
+          <button
+            key={String(o.value)}
+            type="button"
+            onClick={() => onChange(o.value)}
+            aria-pressed={includeInternal === o.value}
+            className={`px-3 py-1 rounded-md text-[11px] font-bold transition-colors ${
+              includeInternal === o.value
+                ? "bg-stone-800 text-white"
+                : "text-stone-600 hover:bg-stone-100"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      {pending && (
+        <span className="text-[11px] text-stone-500">数え直しています…</span>
+      )}
+
+      {internal && !pending && (
+        <span className="text-[11px] text-stone-600">
+          {internal.included ? (
+            <>
+              自分の閲覧
+              <strong className="font-mono mx-1">{internal.excluded}</strong>
+              件を<strong>含めた</strong>数字です。
+            </>
+          ) : (
+            <>
+              自分の閲覧
+              <strong className="font-mono mx-1">{internal.excluded}</strong>
+              件を<strong>外した</strong>数字です。
+            </>
+          )}
+        </span>
+      )}
+
+      {internal?.since && !pending && (
+        <span className="text-[11px] text-stone-500">
+          （見分けられるのは {internal.since}{" "}
+          以降。それより前の閲覧は自分のものでも外せません）
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
  * この端末を計測から除外する切り替え。
  *
  * 運営者自身の閲覧が数に乗る問題への対処のうち、**端末側の半分。**
@@ -723,21 +818,34 @@ export default function AdminMetricsPage() {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /*
+    運営者自身の閲覧を数に入れるか。既定は入れない。
+
+    切り替えたら引き直す。手元で足し引きしないのは、UV が
+    COUNT(DISTINCT) なので**引き算では出せない**ため。内部の閲覧を
+    引いても、同じ人が外部としても来ていれば UV は減らない。
+  */
+  const [includeInternal, setIncludeInternal] = useState(false);
 
   useEffect(() => {
-    fetch("/api/metrics/summary")
+    const query = includeInternal ? "?include=all" : "";
+    fetch(`/api/metrics/summary${query}`)
       .then(async (res) => {
         const body = await res.json();
         if (!res.ok || !body.success) {
           throw new Error(body.error || `HTTP ${res.status}`);
         }
         setSummary(body.data);
+        setError(null);
       })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "読み込みに失敗しました。"),
       );
+  }, [includeInternal]);
+
+  useEffect(() => {
     // ユーザー一覧は別口。集計が読めても一覧が落ちることはあり得るので、
-    // 片方の失敗でもう片方を巻き込まない。
+    // 片方の失敗でもう片方を巻き込まない。内部の切り替えとも無関係。
     fetch("/api/metrics/users")
       .then(async (res) => {
         const body = await res.json();
@@ -756,6 +864,15 @@ export default function AdminMetricsPage() {
   }, []);
 
   const s = summary;
+  /*
+    切り替えた直後は、まだ前の範囲の数字が出ている。
+
+    effect の中で setSummary(null) にすると react-hooks/set-state-in-effect
+    に掛かる（実際に掛けて警告を 1 件増やした）。応答が**自分がどちらを
+    数えたか**を持っているので、いま選んでいる側と食い違うかどうかで
+    見分ける。状態を足さずに済む。
+  */
+  const scopePending = !!s && s.internal.included !== includeInternal;
   const maxHour = Math.max(1, ...(s?.hourly.map((h) => h.pv) ?? []));
 
   /*
@@ -785,6 +902,12 @@ export default function AdminMetricsPage() {
             <p className="text-xs text-stone-500 mt-1">
               直近30日。閲覧の記録は匿名で、日をまたいで同じ人を追えません。クローラは除外済み。管理者だけが見られます。
             </p>
+            <ScopeSwitch
+              includeInternal={includeInternal}
+              onChange={setIncludeInternal}
+              internal={s?.internal ?? null}
+              pending={scopePending}
+            />
           </div>
           <div className="flex items-center gap-3">
             {/* 記事の編集への導線。管理ページはどこからも遷移できない

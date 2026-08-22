@@ -185,7 +185,10 @@ describe("metrics summary の認可", () => {
       .mockResolvedValueOnce([
         { day: "2026-08-13", path: "/blog/old-post", pv: BigInt(7) },
         { day: "2026-08-13", path: "/blog", pv: BigInt(2) },
-      ]);
+      ])
+      // 除外が効いていることを画面で示すための 2 本（配列の末尾）。
+      .mockResolvedValueOnce([{ n: BigInt(4) }])
+      .mockResolvedValueOnce([{ since: "2026-08-21" }]);
     // user_configs.count の呼び順:
     // 総数 → 保存7日 → 保存30日 → 新規今日 → 新規7日 → 新規30日 → 記録開始前
     userConfigCount
@@ -209,6 +212,17 @@ describe("metrics summary の認可", () => {
     // bigint が Number になっている（なっていなければそもそも
     // JSON 化で落ちるが、値も確かめる）
     expect(d.daily[0]).toEqual({ day: "2026-08-13", pv: 3, uv: 2 });
+    /*
+      既定は「自分を除く」。excluded は**外した件数**なので、
+      絞り込みとは独立に内部の行だけを数えた値がそのまま出る。
+      画面はこれを見て「効いているのか、人が来なかっただけなのか」を
+      区別する。
+    */
+    expect(d.internal).toEqual({
+      included: false,
+      excluded: 4,
+      since: "2026-08-21",
+    });
     expect(d.pvPrev30).toBe(5);
     expect(d.hourly[0]).toEqual({ hour: 21, pv: 3 });
     // 今日と昨日の時間別。行はそのまま返し、0 の枠は埋めない。
@@ -326,7 +340,11 @@ describe("metrics summary の認可", () => {
       .mockResolvedValueOnce([{ blog_days: BigInt(0), tool_days: BigInt(0) }])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+      .mockResolvedValueOnce([])
+      // 内部の件数と、見分けられるようになった日。
+      // ここでは 1 件も無く、列を足す前しか記録が無い場合。
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      .mockResolvedValueOnce([{ since: null }]);
     userConfigCount.mockResolvedValue(0);
     favCount.mockResolvedValue(0);
     histCount.mockResolvedValue(0);
@@ -336,6 +354,12 @@ describe("metrics summary の認可", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
+    // 記録がまだ無いときは since が null。画面は断りを出さない。
+    expect(json.data.internal).toEqual({
+      included: false,
+      excluded: 0,
+      since: null,
+    });
     expect(json.data.externalApi).toEqual({
       status: "error",
       message: "api_usage の準備または集計に失敗しました。",
