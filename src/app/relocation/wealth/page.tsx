@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { WealthMap } from "@/components/WealthMap";
+import { TargetDateAdvice } from "@/components/relocation/TargetDateAdvice";
 import dynamic from "next/dynamic";
 import {
   getBaseAstrologyStatus,
@@ -1079,6 +1080,21 @@ export default function RegionalWealthPage() {
               />
             </div>
           </div>
+
+          {/* 目標日を入れられるのに、その日が良い日なのかどこにも
+              出ていなかった（利用者からの指摘）。方位ごとの段階と、
+              近くのより良い日をここで出し、押せば目標日に採れる。
+              全期間の一望は時期分析の画面の役目なので持ち込まない。 */}
+          <TargetDateAdvice
+            targetDate={targetDate.slice(0, 10)}
+            birthDate={birthDate}
+            lon={baseLon ? parseFloat(baseLon) : null}
+            onAdopt={(date) => {
+              setTargetDate(date);
+              setSelectedPresetId("");
+              saveUnifiedConfig({ target_date: date });
+            }}
+          />
 
           <details className="group">
             <summary className="cursor-pointer list-none text-xs font-semibold text-stone-500 hover:text-indigo-600 select-none">
