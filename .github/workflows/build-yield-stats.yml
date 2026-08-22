@@ -67,13 +67,16 @@ jobs:
 
       - name: Commit yield stats if changed
         run: |
-          if git diff --quiet -- src/data/yieldStats.json; then
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # 先に add してから索引と比べる。**git diff は追跡外の新規ファイルを
+          # 見ない**ので、初回は「変化なし」と誤判定して 1 度も commit されない
+          # （実際に初回でそうなった。購入版はファイルが既にあるので露見しない）。
+          git add src/data/yieldStats.json
+          if git diff --cached --quiet -- src/data/yieldStats.json; then
             echo "表面利回りに変化なし。コミットしない。" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/yieldStats.json
           # [skip ci] を付けない。この push で動かしたいのが deploy.yml
           # そのものだからで、付けると唯一の対象を自分で消すことになる。
           git commit -m "chore(data): 表面利回りを更新する"
