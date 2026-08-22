@@ -471,6 +471,27 @@ export default function HomePortal({
               </Link>
             </li>
             <li>
+              {/*
+                買う側の導線。物件を方位で探す（賃貸）の隣に置く。
+                相場の頁ではなく査定を出すのは、ここに来る人は
+                「見ている物件がある」段階だから。
+              */}
+              <Link
+                href="/relocation/appraisal"
+                className="text-indigo-500 hover:underline"
+              >
+                検討中の物件を査定する →
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/relocation/yield"
+                className="text-indigo-500 hover:underline"
+              >
+                表面利回りを地図で見る →
+              </Link>
+            </li>
+            <li>
               <Link href="/houi" className="text-indigo-500 hover:underline">
                 方位の読みもの →
               </Link>
