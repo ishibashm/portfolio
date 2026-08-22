@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import {
+  BASIS_YEAR,
+  INCENTIVE_DISCLAIMER,
+  PROPERTY_TAX_EXTRA_YEARS,
+  acquisitionTaxAdvantage,
+  certifiedAdvantage,
+} from "@/utils/housingIncentive";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import type { Appraisal } from "@/utils/appraisal";
 
@@ -55,6 +62,17 @@ export function AppraisalForm() {
   const [areaSqm, setAreaSqm] = useState("");
   const [builtYear, setBuiltYear] = useState("");
   const [askingMan, setAskingMan] = useState("");
+  /*
+    認定住宅かどうかは**データからは分からない。**国交省の成約価格に認定の
+    列は無く、所管行政庁の認定情報も個別物件では公開されない。販売資料に
+    書いてあるかどうかで判断するしかないので、利用者に聞く。
+
+    新築か中古かで枠が変わる。既定は中古（このサイトの査定は中古マンションの
+    成約と比べているので、そちらに来る人が多いはず）。
+  */
+  const [certified, setCertified] = useState(false);
+  const [isNewBuild, setIsNewBuild] = useState(false);
+  const [childRearing, setChildRearing] = useState(false);
   const [result, setResult] = useState<Response | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -162,6 +180,49 @@ export function AppraisalForm() {
           建築年を入れると、近い世代の建物だけで比べます。売出価格を入れると、その価格が近所の成約のどのあたりかを出します。どちらも空のままで相場だけ見られます。
         </p>
 
+        {/*
+          税制の条件。**相場の入力とは分けて置く。**混ぜると「認定があると
+          相場が安くなる」と読まれるが、そうではない。相場は相場、税は税。
+        */}
+        <fieldset className="rounded-2xl border border-stone-200 bg-stone-50/60 p-4">
+          <legend className="px-1 text-[11px] font-bold text-stone-600">
+            税制の条件（任意）
+          </legend>
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={certified}
+                onChange={(e) => setCertified(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-300"
+              />
+              長期優良住宅・低炭素住宅の認定あり
+            </label>
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={isNewBuild}
+                onChange={(e) => setIsNewBuild(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-300"
+              />
+              新築
+            </label>
+            <label className="flex items-center gap-2 text-sm text-stone-700">
+              <input
+                type="checkbox"
+                checked={childRearing}
+                onChange={(e) => setChildRearing(e.target.checked)}
+                className="h-4 w-4 rounded border-stone-300"
+              />
+              子育て世帯・若者夫婦世帯
+            </label>
+          </div>
+          <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+            <strong>認定されているかは、こちらでは調べられません。</strong>
+            国土交通省の成約価格に認定の欄は無く、所管行政庁の認定情報も個別の物件では公開されていません。販売資料か重要事項説明書をご確認ください。書かれていなければ、まず認定なしと考えて差し支えありません（あれば売る側が必ず書きます）。
+          </p>
+        </fieldset>
+
         <button
           type="button"
           onClick={submit}
@@ -261,6 +322,77 @@ export function AppraisalForm() {
               </p>
             </div>
           </section>
+
+          {/*
+            認定住宅の優遇。**査定の数字とは別の枠に置く。**
+            混ぜると「認定があると相場が安くなる」と読まれるが、相場は
+            相場、税は税で、別の話。
+          */}
+          {certified && (
+            <section className="rounded-2xl border border-stone-200 bg-white p-4">
+              <h2 className="text-sm font-bold text-stone-800">
+                認定住宅の優遇（{BASIS_YEAR} 年入居の場合）
+              </h2>
+              {(() => {
+                const advantage = certifiedAdvantage(
+                  childRearing ? "childRearing" : "general",
+                  isNewBuild,
+                );
+                if (advantage === null) {
+                  return (
+                    <p className="mt-2 text-[12px] text-stone-600">
+                      {BASIS_YEAR}{" "}
+                      年入居ぶんの表しか持っていないため、出せません。
+                    </p>
+                  );
+                }
+                return (
+                  <>
+                    <dl className="mt-2 space-y-1.5 text-[13px] leading-relaxed text-stone-700">
+                      <div>
+                        <dt className="inline font-bold">住宅ローン控除：</dt>
+                        <dd className="inline">
+                          省エネ基準だけの住宅と比べて、控除の上限が最大{" "}
+                          <strong className="font-mono">
+                            {man(advantage)}
+                          </strong>{" "}
+                          多く使えます
+                          {advantage === 0 &&
+                            "（中古は枠が同じなので差が出ません）"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-bold">不動産取得税：</dt>
+                        <dd className="inline">
+                          課税標準から 100 万円多く引けるので、約{" "}
+                          <strong className="font-mono">
+                            {man(acquisitionTaxAdvantage())}
+                          </strong>{" "}
+                          少なくなります（長期優良住宅のみ）
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="inline font-bold">固定資産税：</dt>
+                        <dd className="inline">
+                          減額される期間が {PROPERTY_TAX_EXTRA_YEARS} 年延びます
+                        </dd>
+                      </div>
+                    </dl>
+                    <ul className="mt-3 space-y-1.5 border-t border-stone-200 pt-3">
+                      {INCENTIVE_DISCLAIMER.map((line) => (
+                        <li
+                          key={line}
+                          className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600"
+                        >
+                          ・{line}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                );
+              })()}
+            </section>
+          )}
 
           {/*
             明細。**数字と同じ画面に置く。**折りたたむと、緩めた条件で
