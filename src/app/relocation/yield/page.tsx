@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
+import { YieldMap } from "@/components/relocation/YieldMap";
 import yieldStatsJson from "@/data/yieldStats.json";
 import type { YieldStats } from "@/utils/yieldStats";
 import {
@@ -36,23 +36,6 @@ export const metadata: Metadata = {
   description:
     "成約価格を分母にした中古マンションの表面利回りを、全国の区画ごとに出しています。分子は賃貸の募集賃料です。",
 };
-
-/*
-  地図は react-simple-maps が window を触るので client 側だけで描く。
-  ssr: false にしないと build が落ちる（他の地図と同じ扱い）。
-*/
-const YieldMap = dynamic(
-  () => import("@/components/relocation/YieldMap").then((m) => m.YieldMap),
-  { ssr: false, loading: () => <MapSkeleton /> },
-);
-
-function MapSkeleton() {
-  return (
-    <div className="flex h-[420px] w-full items-center justify-center rounded-2xl border border-stone-200 bg-stone-50">
-      <p className="text-xs text-stone-500">地図を読み込んでいます…</p>
-    </div>
-  );
-}
 
 const stats: YieldStats = yieldStatsJson as YieldStats;
 

@@ -67,3 +67,24 @@ jobs:
       # vitest.config.ts で testTimeout を 30 秒にしてある。
       - name: Test
         run: npm test
+
+      # **本番と同じビルドを通す。**
+      #
+      # これが無かったせいで、tsc は通るがビルドは落ちる誤りを 1 つも
+      # 検出できていなかった。実際に Server Component の中で
+      # `dynamic(..., { ssr: false })` を書いてしまい、CI は success の
+      # まま**デプロイが 8 回連続で失敗していた**（#497〜#506）。
+      #
+      # tsc・lint・test はどれも「型」と「振る舞い」しか見ない。App Router
+      # の規則（どの境界で何が使えるか）は **next build でしか分からない。**
+      #
+      # DB には繋がない。URL は形だけ合っていればよく、ビルド時に接続する
+      # 処理は無い（あれば、それ自体が直すべき設計）。
+      #
+      # next-sitemap は含めない。あれは書き出すだけで、落ちるとしたら
+      # ビルドが先に落ちる。CI を遅くするだけになる。
+      - name: Build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+          DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npx next build --webpack
