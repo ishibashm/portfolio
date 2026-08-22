@@ -64,6 +64,8 @@ type BlogDayRow = { day: string; pv: bigint; uv: bigint };
 type BlogDayPathRow = { day: string; path: string; pv: bigint };
 type BlogFunnelRow = { blog_days: bigint; tool_days: bigint };
 type CountRow = { n: bigint };
+/** 内部の閲覧を判別できるようになった最初の日。列を足す前は NULL。 */
+type InternalSinceRow = { since: string | null };
 type MaxRow = { latest: Date | null };
 type ApiUsageSqlRow = {
   provider: string;
@@ -115,6 +117,19 @@ const TOOL_MATCH = Prisma.join(
   " OR ",
 );
 
+/**
+ * 運営者自身の閲覧を外す条件。
+ *
+ * is_internal は列を足した日以降の行にしか入らない。**それ以前は NULL**で、
+ * 内部だったのかどうか分からない。`IS NOT TRUE` は NULL を通すので、
+ * 判別できない過去の行は「外部」として残る。さかのぼって消せないことは
+ * 画面側に since として出す（黙って減らさない）。
+ */
+const EXCLUDE_INTERNAL = Prisma.sql`is_internal IS NOT TRUE`;
+
+/** 「全部」を選んだときの、何も絞らない条件。 */
+const NO_FILTER = Prisma.sql`TRUE`;
+
 /** JST の今日から n 日前の "YYYY-MM-DD"。day 列と同じ暦で切るための基準。 */
 function jstDayBefore(days: number): string {
   const todayJst = new Date(`${todayInJapan()}T00:00:00+09:00`);
@@ -123,9 +138,19 @@ function jstDayBefore(days: number): string {
     .slice(0, 10);
 }
 
-export async function GET() {
+/**
+ * `?include=all` で内部の閲覧も含める。既定は除く。
+ *
+ * 引数を省略できるようにしてあるのは、テストが GET() を素で呼ぶため。
+ * 省略時は既定（内部を除く）に倒す。
+ */
+export async function GET(request?: Request) {
   const denied = await denyUnlessAdmin();
   if (denied) return denied;
+
+  const includeInternal =
+    !!request && new URL(request.url).searchParams.get("include") === "all";
+  const internalMatch = includeInternal ? NO_FILTER : EXCLUDE_INTERNAL;
 
   try {
     const today = todayInJapan();
@@ -168,31 +193,34 @@ export async function GET() {
       weekdayHourly,
       blogDaily,
       blogDayPaths,
+      internalCount,
+      internalSince,
     ] = await Promise.all([
       prisma.$queryRaw<DailyRow[]>`
         SELECT day, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
-        FROM page_views WHERE day >= ${since30}
+        FROM page_views WHERE day >= ${since30} AND ${internalMatch}
         GROUP BY day ORDER BY day DESC`,
       prisma.$queryRaw<PathRow[]>`
         SELECT path, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
-        FROM page_views WHERE day >= ${since30}
+        FROM page_views WHERE day >= ${since30} AND ${internalMatch}
         GROUP BY path ORDER BY COUNT(*) DESC LIMIT ${TOP_LIMIT}`,
       prisma.$queryRaw<ReferrerRow[]>`
         SELECT referrer_host, COUNT(*) AS pv
-        FROM page_views WHERE day >= ${since30} AND referrer_host IS NOT NULL
+        FROM page_views
+        WHERE day >= ${since30} AND referrer_host IS NOT NULL AND ${internalMatch}
         GROUP BY referrer_host ORDER BY COUNT(*) DESC LIMIT ${TOP_LIMIT}`,
       // device は列を足す前の行が NULL。「不明」として残す（さかのぼって
       // 埋められない。UA を保存していないので）。
       prisma.$queryRaw<DeviceRow[]>`
         SELECT device, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
-        FROM page_views WHERE day >= ${since30}
+        FROM page_views WHERE day >= ${since30} AND ${internalMatch}
         GROUP BY device ORDER BY COUNT(*) DESC`,
       // 時間帯は直近 7 日。30 日にすると曜日のばらつきが均されて
       // 「いつ見られているか」が読みにくくなる。
       prisma.$queryRaw<HourRow[]>`
         SELECT extract(hour from created_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
                COUNT(*) AS pv
-        FROM page_views WHERE day >= ${since7}
+        FROM page_views WHERE day >= ${since7} AND ${internalMatch}
         GROUP BY 1 ORDER BY 1`,
       /*
         今日 1 日の中の動き。上の hourly は 7 日ぶんを重ねた「いつも
@@ -209,13 +237,13 @@ export async function GET() {
                COUNT(*) AS pv,
                COUNT(DISTINCT visitor_hash) AS uv
         FROM page_views
-        WHERE day IN (${today}, ${yesterday})
+        WHERE day IN (${today}, ${yesterday}) AND ${internalMatch}
         GROUP BY 1, 2 ORDER BY 1, 2`,
       prisma.$queryRaw<CountRow[]>`
         SELECT COUNT(*) AS n FROM page_views
-        WHERE day >= ${since60} AND day < ${since30}`,
+        WHERE day >= ${since60} AND day < ${since30} AND ${internalMatch}`,
       prisma.$queryRaw<MaxRow[]>`
-        SELECT max(created_at) AS latest FROM page_views`,
+        SELECT max(created_at) AS latest FROM page_views WHERE ${internalMatch}`,
       loadApiUsage(monthStart),
       loadGcpBillingCost(),
       // 訪問とは別の軸。「設定を保存したことのある人」の数で、
@@ -244,12 +272,13 @@ export async function GET() {
       // 既存の期待値が全部ずれる。
       prisma.$queryRaw<BlogPathRow[]>`
         SELECT path, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
-        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH}
+        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH} AND ${internalMatch}
         GROUP BY path`,
       prisma.$queryRaw<ReferrerRow[]>`
         SELECT referrer_host, COUNT(*) AS pv
         FROM page_views
         WHERE day >= ${since30} AND referrer_host IS NOT NULL AND ${BLOG_MATCH}
+          AND ${internalMatch}
         GROUP BY referrer_host ORDER BY COUNT(*) DESC LIMIT ${TOP_LIMIT}`,
       // ブログを見た人日のうち、同じ日に道具のページも見た人日。
       // visitor_hash は日付を混ぜてあるので、日をまたいだ追跡はできない。
@@ -257,10 +286,10 @@ export async function GET() {
       prisma.$queryRaw<BlogFunnelRow[]>`
         WITH blog AS (
           SELECT DISTINCT day, visitor_hash FROM page_views
-          WHERE day >= ${since30} AND ${BLOG_MATCH}
+          WHERE day >= ${since30} AND ${BLOG_MATCH} AND ${internalMatch}
         ), tool AS (
           SELECT DISTINCT day, visitor_hash FROM page_views
-          WHERE day >= ${since30} AND (${TOOL_MATCH})
+          WHERE day >= ${since30} AND (${TOOL_MATCH}) AND ${internalMatch}
         )
         SELECT COUNT(*) AS blog_days, COUNT(t.visitor_hash) AS tool_days
         FROM blog b
@@ -272,21 +301,39 @@ export async function GET() {
         SELECT extract(dow  from created_at AT TIME ZONE 'Asia/Tokyo')::int AS dow,
                extract(hour from created_at AT TIME ZONE 'Asia/Tokyo')::int AS hour,
                COUNT(*) AS pv
-        FROM page_views WHERE day >= ${since30}
+        FROM page_views WHERE day >= ${since30} AND ${internalMatch}
         GROUP BY 1, 2 ORDER BY 1, 2`,
       // ブログの日別。UV は「その日にブログを見た人数」なので、
       // 記事別の UV を足しても出ない（同じ人が2本読むと2になる）。
       // 日単位で DISTINCT を取り直す。
       prisma.$queryRaw<BlogDayRow[]>`
         SELECT day, COUNT(*) AS pv, COUNT(DISTINCT visitor_hash) AS uv
-        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH}
+        FROM page_views WHERE day >= ${since30} AND ${BLOG_MATCH} AND ${internalMatch}
         GROUP BY day ORDER BY day DESC`,
       // 直近 7 日の日 × 記事。内訳の升目の元。30 日ぶん送ると
       // 応答が日数 × 記事数に膨らむので、窓を絞る。
       prisma.$queryRaw<BlogDayPathRow[]>`
         SELECT day, path, COUNT(*) AS pv
-        FROM page_views WHERE day >= ${since7} AND ${BLOG_MATCH}
+        FROM page_views WHERE day >= ${since7} AND ${BLOG_MATCH} AND ${internalMatch}
         GROUP BY day, path`,
+      /*
+        ここから 2 本は**除外が効いていることを画面で示すため**だけに引く。
+
+        切り替えても数字が少し動くだけでは、効いているのか、単に人が
+        来なかったのかが読み取れない（利用者の指摘）。「何件外したか」を
+        そのまま出す。
+
+        internalMatch は掛けない。「外した件数」なので、絞り込みとは
+        独立に内部の行だけを数える。
+      */
+      prisma.$queryRaw<CountRow[]>`
+        SELECT COUNT(*) AS n FROM page_views
+        WHERE day >= ${since30} AND is_internal IS TRUE`,
+      // 判別できるようになった最初の日。これより前は NULL なので、
+      // 内部だったとしても外せない。画面に断りを出すために持つ。
+      prisma.$queryRaw<InternalSinceRow[]>`
+        SELECT min(day)::text AS since FROM page_views
+        WHERE is_internal IS NOT NULL`,
     ]);
 
     const dailyNum = daily.map((r) => ({
@@ -337,6 +384,21 @@ export async function GET() {
       data: {
         sinceDay: since30,
         generatedAt: new Date().toISOString(),
+        /*
+          いま何を数えているか。画面はこれを見て「除外中」と出す。
+
+          excluded は**この応答から外した件数**。切り替えても数字が
+          少ししか動かないとき、効いていないのか人が来なかったのかを
+          区別できるようにする。
+
+          since より前の行は is_internal が NULL で、内部だったかどうか
+          分からない。さかのぼって外せないので、そのまま断りとして出す。
+        */
+        internal: {
+          included: includeInternal,
+          excluded: Number(internalCount[0]?.n ?? 0),
+          since: internalSince[0]?.since ?? null,
+        },
         latestViewAt: latestView[0]?.latest?.toISOString() ?? null,
         registeredUsers,
         usersSaved7d,
