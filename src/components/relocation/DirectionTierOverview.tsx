@@ -1,7 +1,21 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { TIER_FILL, TIER_JP, BLOCKED_FILL } from "@/utils/tierDisplay";
 import type { DayTier } from "@/utils/auspiciousDays";
+import {
+  FENG_SHUI_SERVER_SNAPSHOT,
+  fengShuiActive,
+  fengShuiSnapshot,
+  parseSnapshot,
+  subscribeFengShui,
+} from "@/lib/fengShuiSettings";
+import {
+  honmeiYearFor,
+  readFengShui,
+  type FengShuiReading,
+} from "@/utils/fengShuiEngine";
+import type { CompassDirection } from "@/utils/directionGeo";
 
 /**
  * 方位ごとに「その日の段階」と「いま表示している物件数」を並べる。
@@ -60,17 +74,59 @@ export function tierLabelFor(row: DirectionTierRow): string {
   return TIER_JP[row.tier as DayTier] ?? row.tier;
 }
 
+/**
+ * 八宅の見立て。切り替えが入っていて、生年月日が読めるときだけ返す。
+ *
+ * 併記であって合算ではない。気学の段階も、並べ替えも、色も変えていない。
+ */
+function fengShuiReadingFor(
+  birthDate: string | undefined,
+  stored: ReturnType<typeof parseSnapshot>,
+): FengShuiReading | null {
+  if (!birthDate || !fengShuiActive(stored)) return null;
+  const d = new Date(birthDate);
+  if (Number.isNaN(d.getTime())) return null;
+  return readFengShui(honmeiYearFor(d), stored.sex);
+}
+
+function youxingFor(reading: FengShuiReading, direction: string) {
+  return reading.directions.find(
+    (d) => d.direction === (direction as CompassDirection),
+  );
+}
+
 export function DirectionTierOverview({
   rows,
   selectedDirection,
   onSelectDirection,
+  birthDate,
 }: {
   rows: DirectionTierRow[];
   /** "ALL" なら絞り込んでいない */
   selectedDirection: string;
   onSelectDirection: (direction: string) => void;
+  /**
+   * 生年月日。風水（八宅）の併記に使う。切り替えが入っていて、
+   * かつ読める日付のときだけ遊星を添える。渡さなければ何も変わらない。
+   */
+  birthDate?: string;
 }) {
+  /*
+    風水の設定は localStorage にある。React の外の状態なので購読する
+    （useEffect の中で setState すると set-state-in-effect に掛かる）。
+    フックは早期 return より前に呼ぶ。
+  */
+  const stored = parseSnapshot(
+    useSyncExternalStore(
+      subscribeFengShui,
+      fengShuiSnapshot,
+      () => FENG_SHUI_SERVER_SNAPSHOT,
+    ),
+  );
+
   if (rows.length === 0) return null;
+
+  const fengShui = fengShuiReadingFor(birthDate, stored);
 
   const sorted = sortDirectionRows(rows);
   const max = Math.max(...sorted.map((r) => r.count), 1);
@@ -87,6 +143,16 @@ export function DirectionTierOverview({
       <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
         棒の長さが物件数、色がその日の段階です。行を押すとその方位だけに絞れます。
       </p>
+
+      {fengShui && (
+        <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+          右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
+          ）。
+          <b>気学の段階とは足し合わせていません。</b>
+          八宅は<b>方位名で</b>
+          引いているため、気学と区切りが違う境目の物件は八宅では隣の方位に入ります。
+        </p>
+      )}
 
       <ul className="mt-3 space-y-1.5">
         {sorted.map((r) => {
@@ -122,6 +188,20 @@ export function DirectionTierOverview({
                 <span className="w-14 shrink-0 text-[10px] text-stone-500">
                   {tierLabelFor(r)}
                 </span>
+
+                {/* 風水（八宅）。切り替えが入っているときだけ。
+                    吉凶は色だけで出さず、遊星の名前をそのまま出す。 */}
+                {fengShui && (
+                  <span
+                    className={`w-12 shrink-0 text-[10px] font-bold ${
+                      youxingFor(fengShui, r.direction)?.auspicious
+                        ? "text-emerald-700"
+                        : "text-rose-700"
+                    }`}
+                  >
+                    {youxingFor(fengShui, r.direction)?.youxing ?? ""}
+                  </span>
+                )}
               </button>
             </li>
           );
