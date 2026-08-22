@@ -34,6 +34,7 @@
     "@types/pg": "^8.18.0",
     "ai": "^6.0.116",
     "astronomy-engine": "^2.1.19",
+    "aws4fetch": "^1.0.20",
     "clsx": "^2.1.1",
     "cytoscape": "^3.33.2",
     "d3-scale": "^4.0.2",

@@ -61,6 +61,17 @@ jobs:
           GCP_BILLING_QUERY_PROJECT_ID: ${{ vars.GCP_BILLING_QUERY_PROJECT_ID }}
           GCP_BILLING_LOCATION: ${{ vars.GCP_BILLING_LOCATION }}
           GCP_BILLING_TIMEOUT_MS: ${{ vars.GCP_BILLING_TIMEOUT_MS }}
+          # 記事に貼る画像の置き場（Cloudflare R2）。ENV_FILE は書き込み専用で
+          # 中身を読めず追記もできないため、CRON_SECRET と同じく単体で渡す。
+          # 未設定なら管理画面の画像アップロードだけが使えなくなる（src/lib/r2.ts
+          # の readR2Config が null を返す）。他の機能には影響しない。
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          # バケット名と公開 URL は画像の URL にそのまま出る公開情報なので
+          # secret ではなく variable。ADSENSE_ID と同じ扱い。
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          IMAGE_BASE_URL: ${{ vars.NEXT_PUBLIC_IMAGE_BASE_URL }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
@@ -91,6 +102,16 @@ jobs:
             echo "GCP_BILLING_QUERY_PROJECT_ID=$GCP_BILLING_QUERY_PROJECT_ID" >> .env
             echo "GCP_BILLING_LOCATION=${GCP_BILLING_LOCATION:-US}" >> .env
             echo "GCP_BILLING_TIMEOUT_MS=${GCP_BILLING_TIMEOUT_MS:-10000}" >> .env
+          fi
+          # R2 は 5 つそろって初めて意味がある。1 つでも欠けた状態で渡すと、
+          # 署名だけ通って保存先が違う、のような分かりにくい失敗になる。
+          # readR2Config も同じ判断（全部そろうか、null か）をしている。
+          if [ -n "$R2_ACCESS_KEY_ID" ]; then
+            echo "R2_ACCOUNT_ID=$R2_ACCOUNT_ID" >> .env
+            echo "R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID" >> .env
+            echo "R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY" >> .env
+            echo "R2_BUCKET=$R2_BUCKET" >> .env
+            echo "NEXT_PUBLIC_IMAGE_BASE_URL=$IMAGE_BASE_URL" >> .env
           fi
           # ここまでで組み上がった .env に ADMIN_EMAIL があることを確かめる。
           # 出どころは問わない（ENV_FILE の中でも、上の追記でもよい）。
