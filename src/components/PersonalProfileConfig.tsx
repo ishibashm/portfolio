@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { PROFILE_FIELDS } from "@/lib/profileFields";
 import {
   Database,
   MapPin,
@@ -434,7 +435,7 @@ export function PersonalProfileConfig({
           */}
           <div className="flex flex-col gap-1">
             <span className="text-[10px] text-stone-600 uppercase">
-              生年月日・出生時間
+              {PROFILE_FIELDS.birthDate.label}
             </span>
             <span className="text-sm text-stone-700 font-bold">
               {birthDate || "未設定"}
@@ -554,7 +555,7 @@ export function PersonalProfileConfig({
           <div className="flex items-center gap-1.5 mb-2 border-b border-stone-200 pb-1">
             <Crosshair size={12} className="text-stone-600" />
             <span className="text-[9px] text-stone-500 tracking-wider">
-              いま住んでいるところ（出発地）
+              {PROFILE_FIELDS.base.label}
             </span>
           </div>
 
@@ -567,7 +568,7 @@ export function PersonalProfileConfig({
               北緯 {baseLat.toFixed(3)} / 東経 {baseLon.toFixed(3)}
             </span>
             <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
-              方位はここから測ります。物件検索・地図・カレンダーと共通の値です。
+              {PROFILE_FIELDS.base.help}
             </span>
           </div>
 
