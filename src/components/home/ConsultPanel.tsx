@@ -288,7 +288,11 @@ export function ConsultPanel({
       if (s.startsWith("NOISE_VOID"))
         return "text-stone-600 bg-white border-stone-300";
       if (s.startsWith("NOISE_NODE"))
-        return "text-yellow-400 font-bold bg-yellow-950/30 border-yellow-900/50";
+        // 以前は文字が yellow-400、地が yellow-950/30 だった。暗い地に
+        // 明るい黄色というダークテーマの組み合わせで、明るい地の
+        // この画面では**白地に乗って 1.53:1** しか無く読めなかった。
+        // amber-700 は 5.02:1（本文に要る 4.5:1 を満たす）。
+        return "text-amber-700 font-bold bg-amber-50 border-amber-200";
       if (s === "OPTIMAL")
         return "text-emerald-600 font-bold bg-emerald-50 border-emerald-200 shadow-[0_0_8px_rgba(16,185,129,0.2)]";
       if (s === "OPTIMAL_REGULAR")
@@ -350,7 +354,8 @@ export function ConsultPanel({
         return "text-[#a855f7] font-bold";
       if (s === "NOISE_VOID")
         return "text-stone-600 font-bold drop-shadow-[0_0_3px_rgba(0,0,0,1)] bg-stone-50 px-1 border border-stone-200";
-      if (s === "NOISE_NODE") return "text-yellow-400 font-bold";
+      // 1.53:1 で読めなかった 黄色 を amber-700（5.02:1）へ。
+      if (s === "NOISE_NODE") return "text-amber-700 font-bold";
       if (s === "NOISE_HA") return "text-rose-600 font-bold";
       if (s === "OPTIMAL")
         return "text-emerald-600 font-bold drop-shadow-[0_0_5px_rgba(16,185,129,0.8)]";
@@ -634,7 +639,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
-                        <span className="text-[10px] text-amber-500 border border-amber-200 px-0.5">
+                        <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5">
                           M
                         </span>
                       </span>
@@ -747,7 +752,7 @@ export function ConsultPanel({
                     <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
-                        <span className="text-[10px] text-amber-500 border border-amber-200 px-0.5 animate-pulse">
+                        <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5 animate-pulse">
                           M
                         </span>
                       </span>
@@ -792,7 +797,7 @@ export function ConsultPanel({
                 <span className="text-red-600 font-bold">赤色(NOISE)</span>{" "}
                 のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。
                 <br />
-                <span className="text-yellow-400 font-bold">
+                <span className="text-amber-700 font-bold">
                   黄色(WARNING)
                 </span>{" "}
                 は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。
@@ -886,7 +891,7 @@ export function ConsultPanel({
                     </div>
 
                     <div className="bg-white/70 border border-amber-200 p-2">
-                      <div className="text-amber-500 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
+                      <div className="text-amber-700 font-bold mb-1 border-b border-stone-200 pb-1 flex justify-between">
                         <span>物理月盤</span>
                         <span className="text-[9px] text-stone-600">
                           MONTH LAYER
