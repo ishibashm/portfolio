@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState } from "react";
+import { PROFILE_FIELDS } from "@/lib/profileFields";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import { readLocalSettings, saveSettings } from "@/lib/userSettings";
 import {
@@ -274,7 +275,7 @@ export function QuickProfileBar() {
             htmlFor="quick-birth-date"
             className="text-sm font-bold text-slate-800"
           >
-            生年月日・出生時間
+            {PROFILE_FIELDS.birthDate.label}
           </label>
           <input
             id="quick-birth-date"
@@ -284,21 +285,20 @@ export function QuickProfileBar() {
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
           />
           <p className="text-xs text-slate-500 leading-relaxed">
-            本命星と天中殺がここから決まります。時間が分からなければ 00:00
-            のままで構いません。
+            {PROFILE_FIELDS.birthDate.help}
           </p>
         </div>
 
         <PlaceInput
           variant="form"
-          label="いま住んでいるところ（出発地）"
+          label={PROFILE_FIELDS.base.label}
           lat={baseLat}
           lon={baseLon}
           onChange={(lat, lon) => {
             setBaseLat(lat);
             setBaseLon(lon);
           }}
-          help="方位はここから測ります。物件検索・地図・カレンダーと共通の値です。"
+          help={PROFILE_FIELDS.base.help}
           onUseCurrentLocation={() => {
             if (!navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition((pos) => {
@@ -310,7 +310,7 @@ export function QuickProfileBar() {
 
         <PlaceInput
           variant="form"
-          label="生まれたところ"
+          label={PROFILE_FIELDS.birthPlace.label}
           lat={birthLat}
           lon={birthLon}
           onChange={(lat, lon) => {
@@ -318,7 +318,7 @@ export function QuickProfileBar() {
             setBirthLon(lon);
           }}
           optional
-          help="天体ライン（補助的な判定）に使います。未入力でも方位の吉凶は出ます。"
+          help={PROFILE_FIELDS.birthPlace.help}
         />
       </div>
 

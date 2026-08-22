@@ -18,6 +18,7 @@ import {
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
+import { PROFILE_FIELDS } from "@/lib/profileFields";
 
 export interface MetaphysicalConfig {
   targetDate: string; // YYYY-MM-DD
@@ -712,11 +713,17 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <span className="text-[9px] text-stone-600 block">
-                  生年月日（本命星と天中殺の基準）
+                  {PROFILE_FIELDS.birthDate.label}
                 </span>
+                {/*
+                  以前は type="date" で、値も slice(0, 10) で日付だけに
+                  切っていた。ホームの入力欄は datetime-local で出生時間まで
+                  受けるので、**この欄を一度触ると出生時間が消えていた。**
+                  時間は四柱推命や太陽時の計算に効くので、同じ形で受ける。
+                */}
                 <input
-                  type="date"
-                  value={config.birthDate?.slice(0, 10) ?? ""}
+                  type="datetime-local"
+                  value={config.birthDate ?? ""}
                   onChange={(e) => {
                     // 空は「消した」ではなく入力途中。保存しない。
                     if (e.target.value)
@@ -732,24 +739,24 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 ようにして、緯度経度は畳んだ（利用者の要望）。
               */}
               <PlaceInput
-                label="現在地＝出発地"
+                label={PROFILE_FIELDS.base.label}
                 lat={config.baseLat ?? null}
                 lon={config.baseLon ?? null}
                 onChange={(lat, lon) =>
                   saveConfig({ ...config, baseLat: lat, baseLon: lon })
                 }
-                help="方位はここから測ります。物件検索・地図・カレンダーと共通の値です。"
+                help={PROFILE_FIELDS.base.help}
                 onUseCurrentLocation={useCurrentLocation}
               />
               <PlaceInput
-                label="生まれたところ"
+                label={PROFILE_FIELDS.birthPlace.label}
                 optional
                 lat={config.birthLat ?? null}
                 lon={config.birthLon ?? null}
                 onChange={(lat, lon) =>
                   saveConfig({ ...config, birthLat: lat, birthLon: lon })
                 }
-                help="天体ライン（補助的な判定）に使います。市区町村までで十分で、未入力でも方位の吉凶は出ます。"
+                help={PROFILE_FIELDS.birthPlace.help}
               />
             </div>
           </div>
