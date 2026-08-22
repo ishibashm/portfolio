@@ -782,3 +782,27 @@ model ApiUsage {
   @@index([day, provider])
   @@map("api_usage")
 }
+
+/// 家賃の変化の記録。変わったときだけ 1 行入る。
+///
+/// rental_properties は rent を 1 個しか持たないため、値下げ追跡には
+/// 履歴を別に貯める必要がある。**当てた日からしか貯まらない**（過去は
+/// 復元できない）。
+///
+/// rental_properties への外部キーは**張らない。**purge が掲載を消しても
+/// 履歴は残したい。「いくらまで下げて、それでも決まらずに消えた」は
+/// 市場の情報そのもので、掲載が生きているあいだだけの話ではない。
+model rental_price_history {
+  id          BigInt   @id @default(autoincrement())
+  property_id String   @db.Uuid
+  observed_at DateTime @default(now()) @db.Timestamptz(6)
+  /// 変化後の家賃（円）
+  rent        Int
+  /// 変化前の家賃（円）
+  prev_rent   Int
+  /// 掲載開始から何日目の変化か。掲載が消えると計算できなくなるので持つ
+  days_listed Int?
+
+  @@index([property_id, observed_at])
+  @@index([observed_at])
+}
