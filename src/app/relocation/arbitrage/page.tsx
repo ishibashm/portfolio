@@ -2578,6 +2578,9 @@ export default function ArbitrageScannerPage() {
                     onSelectDirection={(dir) => {
                       setFilterDirection(dir);
                     }}
+                    /* 風水（八宅）の併記に使う。切り替えは /houi と
+                       引越し先の試算と同じもので、既定では出ない。 */
+                    birthDate={birthDate}
                   />
 
                   {/* Geographic & Calculations Settings */}
