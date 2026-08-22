@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
+import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
 import type { Metadata } from "next";
 import {
   STAR_NAMES,
@@ -127,6 +128,23 @@ export default function Page() {
           >
             エリア別の方位と相場を見る
           </Link>
+        </section>
+
+        {/* 九星気学の次に置く。引き方がそろっている（自分が何かを引いて、
+            その人にとっての 8 方位を読む）ので、続けて読める。
+            **点にして足さない。**別の段として並べる。 */}
+        <section className="mt-10">
+          <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
+            風水（八宅）で見る 8 方位
+          </h2>
+          <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+            九星気学とは<b>別の流派</b>
+            です。既定では判定に使っていません。方位の良し悪しは流派によって違うので、
+            <b>両方が吉の方位もあれば、片方だけの方位もあります</b>。
+          </p>
+          <div className="mt-5">
+            <FengShuiLookup />
+          </div>
         </section>
 
         <section className="mt-10">
