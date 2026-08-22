@@ -1,22 +1,35 @@
 # syntax=docker/dockerfile:1
+# Python も apt も入れない。**素の Node イメージだけ。**
+#
+# ## なぜ外したか
+#
+# ここには以前 apt で python3 / pandas / numpy / lxml / build-essential /
+# python3-dev / libffi-dev / libssl-dev を入れ、pip で yfinance を入れていた。
+# **合わせて 186 MB のレイヤーになる。**
+#
+# GitHub Actions のランナーにはレイヤーキャッシュが無いので、apt の
+# インデックスが毎回変わり、**デプロイのたびに新しいダイジェストの
+# 186 MB が Artifact Registry に積まれていた。**実測で 4,352 レイヤー・
+# 124.7 GB のうち、100 MB 超が 376 レイヤー・68.3 GB を占めていた。
+#
+# ## 消せた理由
+#
+# Python を呼んでいたのは /api/omni/predict と /api/omni/stock の 2 本だけで、
+# **どちらも誰からも呼ばれていなかった**（#505 で削除）。predict に至っては
+# 存在しないスクリプトを指していて、呼ばれても必ず失敗する状態だった。
+#
+# build-essential は pip のビルド用で、**npm 側は要らない。**ネイティブ拡張が
+# 無く（binding.gyp 0 件）、lightningcss は事前ビルド済みバイナリで入る。
+#
+# libssl も要らない。**Prisma 7 は WASM の query compiler を使う**
+# （query_compiler_fast_bg.wasm。libquery_engine のような Rust バイナリは
+# 1 つも無い）。
+#
+# ## 戻すとき
+#
+# Python が要る処理を足すなら、**この base ではなくその段だけに入れること。**
+# base に戻すと runner にも乗り、また同じことになる。
 FROM node:20-bookworm-slim AS base
-
-# Install Python 3, pip, and system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    python3-pandas \
-    python3-numpy \
-    python3-lxml \
-    build-essential \
-    python3-dev \
-    libffi-dev \
-    libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install yfinance and google-antigravity
-# Use --break-system-packages as PEP 668 is active in debian bookworm
-RUN pip3 install --no-cache-dir --break-system-packages yfinance google-antigravity
 
 # Install dependencies only when needed
 FROM base AS deps
