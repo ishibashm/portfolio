@@ -12,6 +12,14 @@ import {
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
+import {
+  DEFAULT_DAY_FILTER,
+  filterDays,
+  isFiltering,
+  monthLabel,
+  monthsOf,
+  type DayFilter,
+} from "@/utils/auspiciousDayFilter";
 
 /**
  * 「年盤・月盤・日盤がすべて吉になる日」を列挙するパネル。
@@ -27,6 +35,14 @@ import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
  */
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+/**
+ * 最初に出す行数。
+ *
+ * 99 行を一度に出すと、次の方位まで画面を延々とめくることになる。
+ * ただし**黙って切らない。**残りの件数をボタンに書いて、押せば全部出す。
+ */
+const INITIAL_ROWS = 20;
 
 const STATUS_LABELS: Record<string, string> = {
   OPTIMAL: "大吉",
@@ -127,6 +143,19 @@ export function AuspiciousDayFinder() {
   const usingDefaults =
     birthDate === DEFAULT_BIRTH_DATE && lon === DEFAULT_LON;
 
+  /*
+    12 ヶ月で走査すると 1 方位で 99 日、8 方位で 500 日を超える表になる
+    （実測）。日付が並んでいるだけでは「いつにするか」を選べない、と
+    利用者から指摘を受けている。
+
+    **既定では 1 件も落とさない。**このパネルは元々「天中殺で落ちる日も
+    消さずに印を付ける」方針で、落とした結果だけを見せると天中殺を勘定に
+    入れるかどうかで何日変わるのかが分からなくなる。減らしたい人が選ぶ。
+  */
+  const [filter, setFilter] = useState<DayFilter>(DEFAULT_DAY_FILTER);
+  /** 方位ごとに、最初は先頭だけ出す。押した方位だけ全部出す。 */
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
   const [summaries, setSummaries] = useState<Summary[] | null>(null);
   const [meta, setMeta] = useState<{ honmeiStar?: number; voidZodiacs?: string[] }>({});
   const [loading, setLoading] = useState(false);
@@ -194,6 +223,21 @@ export function AuspiciousDayFinder() {
     if (lat) q.set("baseLat", lat);
     if (lon) q.set("baseLon", lon);
     return `/relocation/arbitrage?${q.toString()}`;
+  };
+
+  /**
+   * その方位について、絞り込み後に何が出るか。
+   *
+   * JSX の中で 4 か所が同じ値を要る。呼ぶたびに絞り直すが、対象は
+   * 走査上限の 800 日で、絞り込みは 1 日あたり真偽値 4 つの比較。
+   * 覚えを持つほうが、覚えを捨てる条件（絞り込み・展開・再走査）を
+   * 数え落とす危険のほうが大きい。
+   */
+  const view = (s: Summary) => {
+    const matched = filterDays(s.days, filter);
+    const showAll = expanded[s.direction] ?? false;
+    const shown = showAll ? matched : matched.slice(0, INITIAL_ROWS);
+    return { matched, shown, hidden: matched.length - shown.length };
   };
 
   return (
@@ -378,6 +422,90 @@ export function AuspiciousDayFinder() {
             </p>
           )}
 
+          {/* 絞り込み。日を決めるときに実際に効く軸だけ置く。
+              引越し業者の予約は土日に偏る、縁起日を優先したい人がいる、
+              天中殺の日は結局選べない——この 3 つと、月。 */}
+          {summaries.some((s) => s.tripleAuspiciousDays > 0) && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                <span className="text-xs font-bold text-slate-600">
+                  絞り込み
+                </span>
+
+                <label className="flex items-center gap-1.5 text-xs text-slate-700">
+                  曜日
+                  <select
+                    value={filter.weekday}
+                    onChange={(e) =>
+                      setFilter({
+                        ...filter,
+                        weekday: e.target.value as DayFilter["weekday"],
+                      })
+                    }
+                    className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs outline-none cursor-pointer focus:border-rose-400"
+                  >
+                    <option value="all">すべて</option>
+                    <option value="weekend">土日だけ</option>
+                    <option value="weekday">平日だけ</option>
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-1.5 text-xs text-slate-700">
+                  月
+                  <select
+                    value={filter.month}
+                    onChange={(e) =>
+                      setFilter({ ...filter, month: e.target.value })
+                    }
+                    className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs outline-none cursor-pointer focus:border-rose-400"
+                  >
+                    <option value="all">すべて</option>
+                    {/* 候補がある月だけ。無い月を選べると押した瞬間に空になる */}
+                    {monthsOf(summaries.flatMap((s) => s.days)).map((m) => (
+                      <option key={m} value={m}>
+                        {monthLabel(m)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filter.luckyOnly}
+                    onChange={(e) =>
+                      setFilter({ ...filter, luckyOnly: e.target.checked })
+                    }
+                    className="accent-rose-500"
+                  />
+                  縁起日だけ（天赦日・一粒万倍日・大安）
+                </label>
+
+                <label className="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filter.hideBlocked}
+                    onChange={(e) =>
+                      setFilter({ ...filter, hideBlocked: e.target.checked })
+                    }
+                    className="accent-rose-500"
+                  />
+                  天中殺の日を隠す
+                </label>
+
+                {isFiltering(filter) && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter(DEFAULT_DAY_FILTER)}
+                    className="text-xs text-rose-700 underline"
+                  >
+                    絞り込みを外す
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {summaries
             .filter((s) => s.tripleAuspiciousDays > 0)
             .map((s) => (
@@ -393,6 +521,16 @@ export function AuspiciousDayFinder() {
                     <span className="text-sm text-slate-600">
                       三盤吉{" "}
                       <b className="text-rose-600">{s.tripleAuspiciousDays}</b> 日
+                      {isFiltering(filter) && (
+                        <>
+                          {" "}
+                          ／ 絞り込み後{" "}
+                          <b className="text-slate-800">
+                            {view(s).matched.length}
+                          </b>{" "}
+                          日
+                        </>
+                      )}
                       {s.blockedByTenchusatsuDays > 0 && (
                         <>
                           {" "}
@@ -433,7 +571,7 @@ export function AuspiciousDayFinder() {
                       </tr>
                     </thead>
                     <tbody>
-                      {s.days.map((d) => (
+                      {view(s).shown.map((d) => (
                         <tr
                           key={d.date}
                           className={`border-b border-slate-100 ${
@@ -496,6 +634,25 @@ export function AuspiciousDayFinder() {
                     </tbody>
                   </table>
                 </div>
+
+                {/* 黙って切らない。残りの件数を書いて、押せば全部出す。 */}
+                {view(s).hidden > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded({ ...expanded, [s.direction]: true })
+                    }
+                    className="w-full px-4 py-2.5 border-t border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    残り {view(s).hidden} 日を表示
+                  </button>
+                )}
+
+                {view(s).matched.length === 0 && (
+                  <p className="px-4 py-3 text-xs text-slate-600">
+                    この絞り込みに当てはまる日がありません。条件をゆるめてください。
+                  </p>
+                )}
               </div>
             ))}
         </div>
