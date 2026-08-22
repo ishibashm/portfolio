@@ -3788,78 +3788,54 @@ export const SolarTimeClock = () => {
             「ホーム」が「ホ／ー／ム」と 1 文字ずつ縦に割れていた。
             横スクロールにはしない。流れる帯は「押して選ぶのか分からない」
             と利用者から指摘された形そのものなので、2 段に積む。
+
+            ## 配色を揃えた理由（利用者の指摘）
+
+            以前は札ごとに色を変えていたが、次の 3 つが問題だった。
+
+            1. **「2. 目的地/健康」と「5. 総合スコア」がどちらも emerald**
+               だった。text の濃さ（500 と 600）しか違わず、選択中の札が
+               どちらなのか見分けられない
+            2. **段階色と衝突していた。**このサイトは緑＝吉・赤＝凶を
+               判定の意味に使っている。移動の手段でしかないタブに緑や
+               琥珀を割り当てると、「緑のタブ＝良い」と読めてしまう
+            3. 9px は小さすぎた（極小フォントを読める大きさへ、という
+               以前の対応から漏れていた）
+
+            **札の識別は色ではなく番号と語で行う。**選択中だけを濃い地色に
+            して、それ以外は地色を持たない。7 つ並んでも意味が濁らない。
+
+            uppercase も外した。日本語には効かず、英数字（ホーム以外の
+            「1.」など）だけが対象になって揃わない。
           */}
         <div className="w-full max-w-[1700px] flex items-center justify-center p-1 bg-white/80 border border-stone-200 rounded-3xl xl:rounded-full md:backdrop-blur-sm sticky top-4 z-40 flex-wrap gap-1">
-          <button
-            onClick={() => selectTab("portal")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "portal"
-                ? "bg-stone-800 text-white border border-stone-800"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            ホーム
-          </button>
-          <button
-            onClick={() => selectTab("profile")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "profile"
-                ? "bg-purple-500/10 text-purple-600 border border-purple-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            1. プロフィール
-          </button>
-          <button
-            onClick={() => selectTab("destination")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "destination"
-                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            2. 目的地/健康
-          </button>
-          <button
-            onClick={() => selectTab("timing")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "timing"
-                ? "bg-indigo-500/10 text-indigo-600 border border-indigo-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            3. タイミング
-          </button>
-          <button
-            onClick={() => selectTab("consult")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "consult"
-                ? "bg-amber-500/10 text-amber-500 border border-amber-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            4. 環境データ
-          </button>
-          <button
-            onClick={() => selectTab("scorecard")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "scorecard"
-                ? "bg-emerald-500/10 text-emerald-600 border border-emerald-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            5. 総合スコア
-          </button>
-          <button
-            onClick={() => selectTab("history")}
-            className={`px-4 sm:px-6 py-2 rounded-full text-[9px] sm:text-[10px] uppercase font-mono tracking-widest whitespace-nowrap transition-all ${
-              activeTab === "history"
-                ? "bg-sky-500/10 text-sky-600 border border-sky-200"
-                : "text-stone-600 hover:text-stone-800"
-            }`}
-          >
-            6. 履歴
-          </button>
+          {(
+            [
+              { id: "portal", label: "ホーム" },
+              { id: "profile", label: "1. プロフィール" },
+              { id: "destination", label: "2. 目的地/健康" },
+              { id: "timing", label: "3. タイミング" },
+              { id: "consult", label: "4. 環境データ" },
+              { id: "scorecard", label: "5. 総合スコア" },
+              { id: "history", label: "6. 履歴" },
+            ] as const
+          ).map((tab) => {
+            const on = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => selectTab(tab.id)}
+                aria-current={on ? "page" : undefined}
+                className={`px-4 sm:px-6 py-2 rounded-full text-[11px] sm:text-xs font-mono tracking-wide whitespace-nowrap transition-all ${
+                  on
+                    ? "bg-stone-800 text-white border border-stone-800"
+                    : "text-stone-600 border border-transparent hover:bg-stone-100 hover:text-stone-800"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* --- TAB CONTENT: 1. PROFILE --- */}
