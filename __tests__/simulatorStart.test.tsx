@@ -14,6 +14,11 @@ import { SimulatorStart } from "@/components/relocation/SimulatorStart";
  *
  * ここで守るのは「入れていないのに先へ進めないこと」と
  * 「調べた座標をそのまま渡すこと」。
+ *
+ * 聞くのは当初 3 つ（生年月日・出発地・時期）だったが、**押した先に結果が
+ * 出なかった。**行き先を聞いていないので方位が決まらず、3,000 行の画面に
+ * 放り出されるだけになる。利用者から「使い方が本当に分からない」と報告が
+ * あり、行き先を入口に足して 4 つにした。
  */
 
 async function setup() {
@@ -71,12 +76,22 @@ describe("シミュレータの入口", () => {
     vi.clearAllMocks();
   });
 
-  it("聞くのは 3 つだけ", async () => {
+  it("聞くのは 4 つ（行き先を含む）", async () => {
     const { container } = await setup();
-    expect(container.querySelectorAll("input").length).toBe(3);
+    expect(container.querySelectorAll("input").length).toBe(4);
     expect(container.textContent).toContain("生年月日");
     expect(container.textContent).toContain("いま住んでいる場所");
+    expect(container.textContent).toContain("引越し先");
     expect(container.textContent).toContain("動きたい時期");
+  });
+
+  it("行き先が空なら進めない（方位が決まらないため）", async () => {
+    const { onStart, submit, type, container } = await setup();
+    await type("生年月日", "1990-01-01");
+    await type("いま住んでいる場所", "京都市右京区");
+    await submit();
+    expect(onStart).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("引越し先を入れてください");
   });
 
   it("生年月日が空なら進めない", async () => {
@@ -102,26 +117,31 @@ describe("シミュレータの入口", () => {
     const { onStart, submit, type, container } = await setup();
     await type("生年月日", "1990-01-01");
     await type("いま住んでいる場所", "存在しない住所");
+    await type("引越し先", "これも存在しない");
     await submit();
     expect(onStart).not.toHaveBeenCalled();
     expect(container.textContent).toContain("見つかりませんでした");
   });
 
-  it("揃えば、調べた座標をそのまま渡す", async () => {
+  it("揃えば、出発地と行き先の座標をそのまま渡す", async () => {
+    /*
+      出発地と行き先で違う座標を返させる。同じ値を返す作りにすると、
+      片方をもう片方に取り違えていても気付けない。
+    */
     vi.stubGlobal(
       "fetch",
-      vi.fn(async () => ({
+      vi.fn(async (url: string) => ({
         ok: true,
-        json: async () => ({
-          lat: 34.99,
-          lon: 135.72,
-          name: "京都府京都市右京区",
-        }),
+        json: async () =>
+          url.includes(encodeURIComponent("名古屋"))
+            ? { lat: 35.17, lon: 136.9, name: "愛知県名古屋市中区" }
+            : { lat: 34.99, lon: 135.72, name: "京都府京都市右京区" },
       })) as never,
     );
     const { onStart, submit, type } = await setup();
     await type("生年月日", "1990-01-01");
     await type("いま住んでいる場所", "京都市右京区");
+    await type("引越し先", "名古屋市中区");
     await submit();
 
     expect(onStart).toHaveBeenCalledTimes(1);
@@ -129,6 +149,9 @@ describe("シミュレータの入口", () => {
     expect(v.startLat).toBe(34.99);
     expect(v.startLon).toBe(135.72);
     expect(v.startName).toBe("京都府京都市右京区");
+    expect(v.toLat).toBe(35.17);
+    expect(v.toLon).toBe(136.9);
+    expect(v.toName).toBe("愛知県名古屋市中区");
     // 時刻まで聞かないので、正午を補う（本命星は日で決まる）
     expect(v.birthDate).toBe("1990-01-01T12:00");
   });
