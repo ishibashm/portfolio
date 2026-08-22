@@ -1,0 +1,48 @@
+# コミット前の自動チェック。
+#
+# ## なぜ入れたか
+#
+# 手順の踏み忘れが実際に何度も起きている。
+#
+#   - PR に無関係なファイルを混ぜた（git add -A で未追跡の SQL を巻き込んだ）
+#   - 元から prettier 非準拠のファイルを --write して、無関係な整形を
+#     50 行ぶん混ぜた
+#
+# どちらも「気をつける」で防げなかった。**機械に見させる。**
+#
+# ## 触ったファイルだけ見る
+#
+# **全体には掛けない。**リポジトリには元から prettier 非準拠のファイルが
+# 71 個ある（2026-08-22 実測）。全体を検査すると毎回そこにぶつかって、
+# 誰も見なくなる。自分が触ったものにだけ責任を持つ。
+#
+# 同じ理由で `npm run format`（prettier --write .）はここから呼ばない。
+# あれは 71 ファイルを一斉に書き換えるので、コミット前に走らせるものでは
+# ない。
+#
+# ## 型とテストは掛けない
+#
+# tsc も vitest も 1 分以上かかる。コミットのたびに待たされると
+# `--no-verify` で外されるようになり、結局何も守られなくなる。
+# ここは秒で終わるものだけにして、重い検査は CI に任せる。
+#
+# ## 外し方
+#
+#   git commit --no-verify
+#
+# 塞ぐつもりはない。急ぐときに邪魔をしない。
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: prettier
+      # staged なファイルだけ。--check なので書き換えない。
+      # 落ちたら `npx prettier --write <file>` を手で掛ける。
+      glob: "*.{ts,tsx,js,jsx,mjs,json,css,md}"
+      run: npx prettier --check {staged_files}
+
+    - name: eslint
+      # error だけ止める。warning は 198 件あって、減らしている最中。
+      # ここで止めると 1 件も触れなくなる。
+      glob: "*.{ts,tsx,js,jsx,mjs}"
+      run: npx eslint --max-warnings=-1 {staged_files}

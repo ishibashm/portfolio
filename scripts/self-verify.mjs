@@ -5,10 +5,26 @@ import { execSync } from "child_process";
 
 const checks = [
   {
-    name: "Prettier Formatting Check",
-    command: 'npx prettier --check "src/**/*.{ts,tsx,js,json}"',
+    /*
+      **触ったファイルだけ**見る。
+
+      以前は src/** 全体を検査していたが、リポジトリには元から prettier
+      非準拠のファイルが 71 個ある（2026-08-22 実測）。つまりこの段は
+      **構造的に必ず落ちていた。**落ちると後続の ESLint・tsc・Vitest まで
+      止まるので、この統合検査そのものが誰の役にも立っていなかった。
+
+      さらに、そこで案内していた `npm run format` は prettier --write . で、
+      **71 ファイルを一斉に書き換える。**エラーメッセージが、CLAUDE.md が
+      禁じている操作をそのまま勧めていた。
+
+      HEAD との差分だけを見る。自分が触ったものにだけ責任を持つ。
+    */
+    name: "Prettier Formatting Check (changed files)",
+    command:
+      "git diff --name-only --diff-filter=d HEAD -- '*.ts' '*.tsx' '*.js' '*.json'" +
+      " | xargs -r npx prettier --check",
     errMessage:
-      "コードのフォーマットが整っていません。「npm run format」を実行してください。",
+      "変更したファイルの整形が崩れています。「npm run format:staged」で、触ったファイルだけ整えてください（npm run format は全ファイルを書き換えるので使わないこと）。",
   },
   {
     name: "ESLint Code Quality Check",
