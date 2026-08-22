@@ -6,6 +6,7 @@ import {
   WEST_GROUP,
   fengShuiFor,
   honmeiGua,
+  honmeiYearFor,
   readFengShui,
   type Gua,
   type Sex,
@@ -157,3 +158,70 @@ function findYearForGua(gua: Gua): { year: number; sex: Sex } {
   }
   throw new Error(`卦 ${gua} になる年が見つからない`);
 }
+
+/**
+ * 本命卦に使う年は立春で切る。
+ *
+ * 1 月 1 日で切ると 2 月上旬生まれの本命卦がひとつずれる。ここは
+ * **年盤と同じ太陽黄経 315 度**で切っていて、暦の表を別に持たない。
+ * 日付表を持つと年盤とずれた年が出る。
+ *
+ * 下の期待値は実測（`AstroEngine.getSolarLongitude` の値）で、
+ * 2000 年の立春は 2/4 の夜。**同じ 2/4 でも年が変わる**ことを固定する。
+ */
+describe("本命卦に使う年（立春で切る）", () => {
+  /** JST の正午。時刻でずれる境目を踏まないようにする。 */
+  const jstNoon = (y: number, m: number, d: number) =>
+    new Date(Date.UTC(y, m - 1, d, 3, 0, 0));
+
+  it("1 月生まれは前の年になる", () => {
+    expect(honmeiYearFor(jstNoon(1990, 1, 1))).toBe(1989);
+    expect(honmeiYearFor(jstNoon(2026, 1, 31))).toBe(2025);
+  });
+
+  it("立春の前後で切り替わる（1990 年は 2/4）", () => {
+    expect(honmeiYearFor(jstNoon(1990, 2, 3))).toBe(1989);
+    expect(honmeiYearFor(jstNoon(1990, 2, 4))).toBe(1990);
+  });
+
+  it("立春が夜に来る年は、その日の昼はまだ前の年（2000 年）", () => {
+    /*
+      2000 年の立春は 2/4 の 20 時台。暦の日付だけで「2/4 以降」と
+      切ると、この日の昼生まれが 1 年ずれる。
+    */
+    expect(honmeiYearFor(jstNoon(2000, 2, 4))).toBe(1999);
+    expect(honmeiYearFor(jstNoon(2000, 2, 5))).toBe(2000);
+  });
+
+  it("3 月以降と 12 月はその年のまま", () => {
+    expect(honmeiYearFor(jstNoon(2024, 3, 1))).toBe(2024);
+    expect(honmeiYearFor(jstNoon(2024, 12, 31))).toBe(2024);
+  });
+
+  it("同じ日でも時刻で変わる（立春は日ではなく瞬間）", () => {
+    /*
+      1990 年の立春は 2/4 の昼ごろ。日付の表で「2/4 以降」と切る実装だと
+      朝生まれも 1990 になってしまう。太陽黄経で切っているので分かれる。
+
+      ここが落ちたら、実装が日付表に戻っている疑いがある。
+    */
+    const morning = new Date(Date.UTC(1990, 1, 3, 23, 0, 0)); // JST 2/4 08:00
+    const evening = new Date(Date.UTC(1990, 1, 4, 11, 0, 0)); // JST 2/4 20:00
+    expect(honmeiYearFor(morning)).toBe(1989);
+    expect(honmeiYearFor(evening)).toBe(1990);
+  });
+
+  it("年をまたいでも本命卦が飛ばない（1〜12 月で最大 1 回だけ変わる）", () => {
+    for (let y = 1950; y <= 2040; y++) {
+      const changes = [];
+      for (let m = 1; m <= 12; m++) {
+        changes.push(honmeiYearFor(jstNoon(y, m, 15)));
+      }
+      const distinct = new Set(changes);
+      expect(distinct.size).toBeLessThanOrEqual(2);
+      expect(Math.max(...changes) - Math.min(...changes)).toBeLessThanOrEqual(
+        1,
+      );
+    }
+  });
+});
