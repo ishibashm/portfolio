@@ -39,9 +39,23 @@ on:
           - apply
         default: dry-run
 
-# 書き込みを伴う他のワークフローと直列化する。
+# ## 待ち行列を賃貸の収集と分ける
+#
+# 以前は rental-properties-write に入れて、夜間スクレイプと直列化して
+# いた。**ワークフロー単位で直列化しているので、触る表が違っても待つ。**
+#
+# 実際に詰まった（2026-08-22）。BlogPost に列を足すだけの DDL が、
+# 賃貸の収集（19:18 UTC 開始・最長 6 時間）の後ろで 30 分以上待たされた。
+# 賃貸の収集は BlogPost に一切触らないので、この待ちに意味が無い。
+#
+# **直列化は Postgres の錠に任せる。**同じ表を同時に触れば Postgres が
+# 待たせるし、下の lock_timeout で「待たされたら早く諦める」ようにして
+# ある。GitHub 側で粗く止めるより、実際に競合したときだけ止まる。
+#
+# DDL どうしは引き続き直列化する（同じ表に別々の ALTER が重なると、
+# どちらが勝ったのか分からなくなる）。
 concurrency:
-  group: rental-properties-write
+  group: db-apply-sql
   cancel-in-progress: false
 
 jobs:
@@ -146,7 +160,31 @@ jobs:
         if: ${{ inputs.mode == 'apply' }}
         run: |
           set -euo pipefail
-          psql "$PGURL" -v ON_ERROR_STOP=1 --single-transaction -f "$SQL_PATH"
+
+          # ## 錠を待ち続けない
+          #
+          # ALTER TABLE は ACCESS EXCLUSIVE を取る。対象の表を別の処理が
+          # 使っていると待たされ、**待っている間その表への問い合わせが
+          # 後ろに積み上がる**（錠の待ち行列に入る）。本番で数分続けば、
+          # その表を読む画面がすべて止まる。
+          #
+          # lock_timeout を短く置いて、取れなければ**さっさと諦める。**
+          # 失敗すれば「後でやり直す」で済むが、待ち続けると利用者に
+          # 見える形で壊れる。
+          #
+          # statement_timeout は、索引の作成のように時間の掛かる文が
+          # 想定外に伸びたときの歯止め。足すだけの DDL なら本来は一瞬。
+          {
+            echo "SET lock_timeout = '5s';"
+            echo "SET statement_timeout = '10min';"
+            cat "$SQL_PATH"
+          } > /tmp/with-timeouts.sql
+
+          if ! psql "$PGURL" -v ON_ERROR_STOP=1 --single-transaction \
+               -f /tmp/with-timeouts.sql; then
+            echo "::error::適用に失敗した。lock_timeout(5s) で諦めた場合は、対象の表を使っている処理が終わってからやり直すこと。何も当たっていない（--single-transaction なので全部戻る）。"
+            exit 1
+          fi
           echo "適用しました: $SQL_PATH" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: After
