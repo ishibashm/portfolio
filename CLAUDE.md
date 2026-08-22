@@ -108,6 +108,39 @@ grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えてい�
 偏角は出発地ごとに `utils/geomagnetism` から引く。**取得できないときは 0（補正なし）**。
 以前は東京の -8.2 度で埋めており、沖縄や北海道の利用者に東京の偏角を当てていた。
 
+### 本番のスキーマは `schema.prisma` と両方向にずれている
+
+`BlogPost` で実際に起きた（2026-08-22）。**同じ表が両方向にずれていた。**
+
+- スキーマにあって実表に無い → `P2022 ColumnNotFound`
+- 実表にあってスキーマに無い → `P2011 NullConstraintViolation`
+
+どちらも **Prisma は列名を教えてくれない**（`(not available)`）。当てずっぽうで
+`ALTER` を並べる前に、`information_schema.columns` を読んで実列を出すこと
+（`prisma/sql/20260822_probe_blogpost_columns.sql` が見本。SELECT だけ）。
+
+**`db push` で揃えない。**スキーマに無い表・列を消すので、後者のずれがあると
+知らない列ごと消える。適用は一方向で戻らない（6 節）。
+
+### dry-run の通過を根拠にしない
+
+`db-apply-sql` も `blog-import` も、**dry-run は書き込まないので列の不整合を
+検出できない。**`blog-import` の dry-run は「追加 14 件」と出したうえで、
+apply では 1 件も入らずに落ちた。
+
+書き込む処理の確認は、**実際に apply を回してログを読むまで終わっていない。**
+
+### 待ち行列にワークフローを足すときは、触る表を見る
+
+`db-apply-sql` が `rental-properties-write` に入っていて、`BlogPost` に列を
+足すだけの DDL が夜間スクレイプ（最長 6 時間）の後ろで **30 分以上待たされた**。
+賃貸の収集は `BlogPost` に一切触らない。
+
+**ワークフロー単位の直列化は、触る表が違っても待たせる。**直列化は Postgres の
+錠に任せ、`lock_timeout` で「待たされたら早く諦める」ようにするほうが良い
+（#488）。`ALTER TABLE` は `ACCESS EXCLUSIVE` を取るので、待ち続けると
+**その表への問い合わせが後ろに積み上がって画面が止まる。**
+
 ### 暦は日本時間で引く（`Solar.fromDate` を使わない）
 
 lunar-javascript の `Solar.fromDate(date)` は**実行環境のタイムゾーン**で
