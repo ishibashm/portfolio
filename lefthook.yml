@@ -36,10 +36,14 @@ pre-commit:
   parallel: true
   jobs:
     - name: prettier
-      # staged なファイルだけ。--check なので書き換えない。
-      # 落ちたら `npx prettier --write <file>` を手で掛ける。
+      # staged なファイルのうち、**元は準拠していたものだけ**を見る。
+      #
+      # 素の --check にしていたら、元から非準拠の記事を 1 行直しただけで
+      # 止まった（実際に起きた）。そこで出る案内は prettier --write だが、
+      # それをやると無関係な整形が大量に混ざる。**守れない要求をして
+      # 回避を強いる検査**になっていた。判定は scripts/ に出してある。
       glob: "*.{ts,tsx,js,jsx,mjs,json,css,md}"
-      run: npx prettier --check {staged_files}
+      run: bash scripts/prettier-staged-check.sh {staged_files}
 
     - name: eslint
       # error だけ止める。warning は 198 件あって、減らしている最中。
