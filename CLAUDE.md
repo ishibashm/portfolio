@@ -119,6 +119,12 @@ grep -rn "22.5) % 360) / 45" src/      # 45度等分のコピーが増えてい�
 `ALTER` を並べる前に、`information_schema.columns` を読んで実列を出すこと
 （`prisma/sql/20260822_probe_blogpost_columns.sql` が見本。SELECT だけ）。
 
+実際に出したら、犯人は `authorId` だった。schema.prisma は `String?`（任意）
+なのに実表は `NOT NULL`。Prisma は任意だと思って値を入れないので NULL に
+なって落ちる。**列の有無だけでなく、NULL 可かどうかもずれる。**
+
+**ずれは「片方だけ直す」で終わらない。**列を足したら NULL 可も型も突き合わせる。
+
 **`db push` で揃えない。**スキーマに無い表・列を消すので、後者のずれがあると
 知らない列ごと消える。適用は一方向で戻らない（6 節）。
 
