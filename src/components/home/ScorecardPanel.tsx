@@ -106,7 +106,9 @@ const statusBadgeClass = (s: string) => {
   if (s.startsWith("NOISE_VOID"))
     return "text-stone-600 bg-stone-100 border-stone-300";
   if (s.startsWith("NOISE_NODE"))
-    return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
+    // 白地に 1.53:1 しか無く読めなかった（本文には 4.5:1 が要る）。
+    // amber-700 は 5.02:1。ConsultPanel と同じ扱いに揃える。
+    return "text-amber-700 bg-amber-50 border-amber-200";
   return "text-red-600 bg-red-500/10 border-red-200";
 };
 
@@ -331,7 +333,7 @@ export default function ScorecardPanel({
                   3つの計算モデル（古典/物理独立/伝統連動）すべてで吉方位となる最も安全な方位。
                 </span>
                 <span>
-                  <strong className="text-amber-500">⚠️ 位相差警告:</strong>{" "}
+                  <strong className="text-amber-700">⚠️ 位相差警告:</strong>{" "}
                   計算モデル間で吉凶判定が分かれる（一方は吉、他方は凶など）ため、注意が必要な方位。
                 </span>
               </div>
@@ -976,7 +978,7 @@ export default function ScorecardPanel({
               {gridModelView === "consensus" && (
                 <>
                   <span className="text-emerald-600">🌟 = トリプル大吉</span>
-                  <span className="text-amber-500">⚠️ = 位相差警告</span>
+                  <span className="text-amber-700">⚠️ = 位相差警告</span>
                 </>
               )}
             </div>
