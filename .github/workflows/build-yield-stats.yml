@@ -1,0 +1,91 @@
+name: Build yield stats
+
+# 区画ごとの表面利回りを集計して src/data/yieldStats.json に焼く。
+#
+# 分子は rental_properties（募集賃料）、分母は property_transactions
+# （成約価格）。**このサイトは珍しく両方を持っている**ので作れる。
+# ポータルの利回りは売主の希望価格が分母だが、こちらは成約価格が分母。
+#
+# ## DB の排他が要らない理由
+#
+# 2 つの表を **読むだけ**。行を書かないので rental-properties-write の
+# concurrency グループには入れない。入れると夜間スクレイプ（最長 6 時間）
+# の裏で待たされる（#488 と同じ理由）。
+#
+# ## 走る頻度
+#
+# 分母の成約価格は四半期ごとの公表。分子の賃貸は毎晩増えるが、区画の
+# 中央値が 1 日で動くほどではない。週 1 回で足りる。
+#
+# 賃貸の夜間収集にぶら下げないのは build-purchase-stats.yml と同じ理由で、
+# **賃貸が失敗した日に利回りの集計まで止まる**のを避けるため。
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 毎週火曜 20:40 UTC（水 05:40 JST）。
+    #
+    # build-purchase-stats.yml（月曜 20:10 UTC）の**翌日**に置く。同じ 2 表を
+    # 全行読む集計を重ねると DB に無駄な山ができる。曜日をずらすほうが安い。
+    - cron: "40 20 * * 2"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      # push でデプロイまで繋げたいので、DATA_PUSH_KEY があればそれを使う。
+      # 未設定なら GITHUB_TOKEN に落ちる（push は通るがデプロイは次の
+      # push 待ちになる）。scrape-rentals.yml と同じ扱い。
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.DATA_PUSH_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+          DATABASE_URL_OVERRIDE: ${{ secrets.DATABASE_URL_OVERRIDE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE が空。DATABASE_URL / DIRECT_URL が要る。"
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+          bash scripts/apply-db-override.sh
+
+      - name: Build yield stats
+        run: npx -y tsx scripts/build_yield_stats.ts
+
+      - name: Commit yield stats if changed
+        run: |
+          if git diff --quiet -- src/data/yieldStats.json; then
+            echo "表面利回りに変化なし。コミットしない。" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/yieldStats.json
+          # [skip ci] を付けない。この push で動かしたいのが deploy.yml
+          # そのものだからで、付けると唯一の対象を自分で消すことになる。
+          git commit -m "chore(data): 表面利回りを更新する"
+          # 実行中に master が進んでいることがある。取り込んでから押す。
+          # --autostash は npm ci が追跡下のファイル（yarn.lock）を書き換える
+          # ことがあるため。無いと rebase が unstaged changes で止まる。
+          git pull --rebase --autostash origin master
+          git push origin HEAD:master
+
+          if [ -n "${{ secrets.DATA_PUSH_KEY }}" ]; then
+            echo "表面利回りを master へ push した。deploy.yml が続けて動く。" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::DATA_PUSH_KEY が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番は古いまま。"
+            echo "表面利回りを master へ push した。ただしデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
+          fi
