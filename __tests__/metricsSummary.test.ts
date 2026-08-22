@@ -121,7 +121,7 @@ describe("metrics summary の認可", () => {
 
   it("匿名は 401。DB にも触らない", async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: null });
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/api/metrics/summary"));
     expect(res.status).toBe(401);
     expect(queryRaw).not.toHaveBeenCalled();
     expect(userConfigCount).not.toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe("metrics summary の認可", () => {
       data: { user: { id: "x", email: "stranger@example.com" } },
       error: null,
     });
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/api/metrics/summary"));
     expect(res.status).toBe(403);
     expect(queryRaw).not.toHaveBeenCalled();
   });
@@ -203,7 +203,7 @@ describe("metrics summary の認可", () => {
     histCount.mockResolvedValue(4);
     simCount.mockResolvedValue(2);
 
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/api/metrics/summary"));
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
@@ -350,7 +350,7 @@ describe("metrics summary の認可", () => {
     histCount.mockResolvedValue(0);
     simCount.mockResolvedValue(0);
 
-    const res = await GET();
+    const res = await GET(new Request("http://localhost/api/metrics/summary"));
     const json = await res.json();
 
     expect(res.status).toBe(200);

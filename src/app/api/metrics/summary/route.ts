@@ -141,15 +141,17 @@ function jstDayBefore(days: number): string {
 /**
  * `?include=all` で内部の閲覧も含める。既定は除く。
  *
- * 引数を省略できるようにしてあるのは、テストが GET() を素で呼ぶため。
- * 省略時は既定（内部を除く）に倒す。
+ * **引数は省略可能にしない。**Next.js が route ごとに生成する型
+ * （.next/types）が `Request` を必須として検査するので、`request?:` に
+ * すると型が合わない。ただしこの型は**ビルドしないと生成されない**ため、
+ * `tsc --noEmit` だけでは通ってしまう（実際に通していた）。
  */
-export async function GET(request?: Request) {
+export async function GET(request: Request) {
   const denied = await denyUnlessAdmin();
   if (denied) return denied;
 
   const includeInternal =
-    !!request && new URL(request.url).searchParams.get("include") === "all";
+    new URL(request.url).searchParams.get("include") === "all";
   const internalMatch = includeInternal ? NO_FILTER : EXCLUDE_INTERNAL;
 
   try {
