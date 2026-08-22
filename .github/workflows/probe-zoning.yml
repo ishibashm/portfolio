@@ -1,0 +1,41 @@
+name: Probe zoning
+
+# 用途地域（都市計画決定情報）を**実物で確かめるだけ**。
+#
+# 「商業地域などの区分を地図で見たい」という要望に対して、まずどの API が
+# どんな形で返すのかを見る。開発環境からは mlit.go.jp に出られない
+# （egress で 403）ので、ここで確かめる以外に手が無い。
+#
+# **外部 API を読むだけで、DB には一切書かない。**DATABASE_URL も要らない。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Probe
+        run: npx tsx scripts/probe_zoning.ts | tee -a "$GITHUB_STEP_SUMMARY"
