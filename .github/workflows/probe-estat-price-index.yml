@@ -1,0 +1,48 @@
+name: Probe estat price index
+
+# 不動産価格指数が e-Stat のどこにあるかを探す。**読むだけ。**
+#
+# 査定（/relocation/appraisal）は 2023〜2025 年の成約を分母にしていて、
+# 今日の水準ではない。国土交通省の不動産価格指数を掛ければ直せるが、
+#
+#   - 不動産情報ライブラリの API には無い（XIT001/XIT002/XCT001/
+#     XPT001/XPT002/XKT00x を確認済み）
+#   - e-Stat にあるはずだが、統計表 ID が分からない
+#
+# 手元から e-Stat に出られないので、当てずっぽうで ID を書かずにまず探す。
+# #493（利回りが成り立つかを数える）と同じ進め方。
+#
+# ESTAT_APP_ID は ENV_FILE の中にある（fetch_estat_sample.ts と同じ）。
+
+on:
+  # 探すだけなので手動だけ。定期実行する意味が無い。
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Create .env from Secret
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE }}
+        run: |
+          if [ -z "$ENV_FILE_CONTENT" ]; then
+            echo "::error::secrets.ENV_FILE is empty."
+            exit 1
+          fi
+          echo "$ENV_FILE_CONTENT" > .env
+
+      - name: Probe
+        run: npx tsx scripts/probe_estat_price_index.ts | tee -a "$GITHUB_STEP_SUMMARY"
