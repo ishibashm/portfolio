@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
 import {
   AlertTriangle,
   Calendar,
@@ -11,9 +10,13 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import { getClassicalYearStar } from "@/utils/ephemerisEngine";
+import { buildTenChiJinVerdict } from "@/utils/tenChiJinVerdict";
 import { todayInJapan } from "@/utils/japanDate";
 
-function parseSafeDate(dateStr: string | null | undefined, fallback: Date = new Date()): Date {
+function parseSafeDate(
+  dateStr: string | null | undefined,
+  fallback: Date = new Date(),
+): Date {
   if (!dateStr) return fallback;
   const d = new Date(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
@@ -137,7 +140,10 @@ export function TenChiJinEvaluation({
   birthDate = "",
 }: TenChiJinEvaluationProps) {
   // Main User astrological hardware
-  const mainUserBirthDateObj = useMemo(() => parseSafeDate(birthDate), [birthDate]);
+  const mainUserBirthDateObj = useMemo(
+    () => parseSafeDate(birthDate),
+    [birthDate],
+  );
   const mainUserStar = useMemo(
     () => getClassicalYearStar(mainUserBirthDateObj),
     [mainUserBirthDateObj],
@@ -315,63 +321,38 @@ export function TenChiJinEvaluation({
     return finalScore;
   }, [spaceMetrics, timeMetrics]);
 
-  // DYNAMIC ADVICE COMPILER (Problem + Solution Set)
-  const advice = useMemo(() => {
-    // 1. High Risk Scenario (Universal directional clash or severe spatial clash)
-    if (spaceMetrics.hasSevereClash) {
-      return {
-        severity: "high",
-        problem: `移動空間の「地」に強力なノイズ（${spaceMetrics.worstClashType || "方位凶殺"}）が発生しています。このまま移動すると重大な環境ストレスを蓄積する危険性があります。`,
-        solution: onApplyAction
-          ? `移動日の日程を変更するか、中継候補地（敦賀や大津など）を経由する仮吉方ルートを挿入して、磁気方位を吉方向に迂回させてください。`
-          : `日々の判定ダッシュボードから移動シミュレーターに移行し、中継地（仮吉方）を挟む迂回ルートの設計、または日付の調整を行ってください。`,
-        actionLabel: onApplyAction
-          ? "敦賀を経由する迂回ルートを挿入"
-          : "この移動をシミュレーターで詳細調整する",
-        actionType: onApplyAction ? ("DETOUR" as const) : ("NAVIGATE" as const),
-      };
-    }
+  /*
+    帯と文言は tenChiJinVerdict が唯一の決め所。
 
-    // 2. Medium Risk Scenario (Astrological timings or high bodily stress)
-    if (timeMetrics.score < 50 || humanMetrics.score < 50) {
-      const timeIssues = [];
-      if (timeMetrics.riskFactors.length > 0) {
-        timeIssues.push(
-          `宇宙タイミングの乱れ（${timeMetrics.riskFactors.join("・")}）`,
-        );
-      }
-      if (simulatedAns > 60) {
-        timeIssues.push(`自律神経負荷（ANS負荷）の上昇`);
-      }
-
-      const problemText = `空間的な方位は良好ですが、${timeIssues.join("および")}により「天」「人」の適合度が低下しています。`;
-
-      return {
-        severity: "medium",
-        problem: problemText,
-        solution: timeMetrics.bestAlternativeDate
-          ? `タイミングを調整することをお勧めします。最もQ値が高く、天中殺や逆行の影響を受けにくい【${timeMetrics.bestAlternativeDate}】への出発変更が推奨されます。`
-          : `出発前の睡眠容量を十分に確保し、ANS負荷を低下させるための休息期間を設けることで、身体シールド容量を回復させてください。`,
-        actionLabel: timeMetrics.bestAlternativeDate
-          ? `${timeMetrics.bestAlternativeDate} に出発日を変更`
-          : "生体回復アドバイスを表示",
-        actionType: timeMetrics.bestAlternativeDate
-          ? ("DATE" as const)
-          : ("REST" as const),
-        actionData: timeMetrics.bestAlternativeDate,
-      };
-    }
-
-    // 3. Low/No Risk (All green)
-    return {
-      severity: "low",
-      problem: "天・地・人のすべての要素が良好な調和を見せています。",
-      solution:
-        "空間方位、出発タイミング、そしてご自身の心身状態が完全にシンクロしています。安心してそのまま計画を実行してください。",
-      actionLabel: null,
-      actionType: null,
-    };
-  }, [spaceMetrics, timeMetrics, humanMetrics, simulatedAns, onApplyAction]);
+    以前はここに別条件の分岐があり、バッジ（総合 70 超で良好）と
+    食い違っていた。総合 70 の画面に「注意」バッジと緑の「安心して
+    そのまま計画を実行してください」が同居していた（利用者の指摘）。
+    食い違うときは悪いほうに揃える。規則は tenChiJinVerdict.ts に、
+    固定は __tests__/tenChiJinVerdict.test.ts にある。
+  */
+  const verdict = useMemo(
+    () =>
+      buildTenChiJinVerdict({
+        overallScore,
+        hasSevereClash: spaceMetrics.hasSevereClash,
+        worstClashType: spaceMetrics.worstClashType || null,
+        timeScore: timeMetrics.score,
+        humanScore: humanMetrics.score,
+        spaceScore: spaceMetrics.score,
+        timeRiskFactors: timeMetrics.riskFactors,
+        highAnsLoad: simulatedAns > 60,
+        bestAlternativeDate: timeMetrics.bestAlternativeDate ?? null,
+        canApplyAction: Boolean(onApplyAction),
+      }),
+    [
+      overallScore,
+      spaceMetrics,
+      timeMetrics,
+      humanMetrics,
+      simulatedAns,
+      onApplyAction,
+    ],
+  );
 
   // Style helpers based on low-score warnings
   const isTenLow = timeMetrics.score <= 40;
@@ -385,45 +366,42 @@ export function TenChiJinEvaluation({
       <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md shadow-sm">
         <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
           <BrainCircuit size={16} className="text-stone-600" />
-          天地人・統合適合性マトリクス
+          天・地・人の総合評価
         </h3>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
-          生年月日が未入力です。人（Jin）の評価は本命星の相性から決まるため、生年月日が無いと総合シンクロ指数は出せません。
+          生年月日が未入力です。人（心身・相性）の評価は本命星の相性から決まるため、生年月日が無いと総合の点は出せません。
         </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white/80 border border-stone-200 rounded-[2rem] p-6 backdrop-blur-md relative overflow-hidden shadow-2xl">
-      {/* Glow Effects */}
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="bg-white border border-stone-200 rounded-[2rem] p-6 shadow-sm">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-stone-200">
         <div>
-          <span className="text-[10px] font-mono tracking-widest text-stone-600 uppercase block mb-1">
-            [ SYSTEM INTEGRATION EVALUATION ]
-          </span>
-          <h3 className="text-sm font-semibold tracking-wider text-stone-600 flex items-center gap-2">
+          <h3 className="text-sm font-semibold tracking-wider text-stone-700 flex items-center gap-2">
             <BrainCircuit size={16} className="text-indigo-600" />
-            天地人・統合適合性マトリクス
+            天・地・人の総合評価
           </h3>
+          <p className="mt-1 text-[11px] text-stone-500">
+            方位（地）・時期（天）・心身と相性（人）の 3
+            つで、この移動を見ます。
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-[9px] font-mono text-stone-600 uppercase block">
-              総合シンクロ指数
+            <span className="text-[9px] font-mono text-stone-600 block">
+              総合
             </span>
             <div className="flex items-baseline gap-1">
               <span
                 className={`text-2xl font-black font-mono tracking-tighter ${
-                  overallScore > 70
-                    ? "text-emerald-600"
-                    : overallScore > 40
-                      ? "text-amber-600"
-                      : "text-red-600 animate-pulse"
+                  verdict.band === "good"
+                    ? "text-emerald-700"
+                    : verdict.band === "caution"
+                      ? "text-amber-700"
+                      : "text-red-600"
                 }`}
               >
                 {overallScore}
@@ -432,19 +410,15 @@ export function TenChiJinEvaluation({
             </div>
           </div>
           <div
-            className={`px-2.5 py-1 text-[10px] font-bold font-mono tracking-widest uppercase border rounded-md ${
-              overallScore > 70
-                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                : overallScore > 40
-                  ? "bg-amber-50 text-amber-600 border-amber-200"
-                  : "bg-red-50 text-red-600 border-red-200 md:animate-pulse"
+            className={`px-2.5 py-1 text-[10px] font-bold tracking-widest border rounded-md ${
+              verdict.band === "good"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : verdict.band === "caution"
+                  ? "bg-amber-50 text-amber-700 border-amber-200"
+                  : "bg-red-50 text-red-700 border-red-200"
             }`}
           >
-            {overallScore > 70
-              ? "EXCELLENT"
-              : overallScore > 40
-                ? "WARNING"
-                : "CRITICAL"}
+            {verdict.bandLabel}
           </div>
         </div>
       </div>
@@ -455,39 +429,28 @@ export function TenChiJinEvaluation({
         <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
-              <Calendar size={13} className="text-fuchsia-600" />
-              天（時間タイミング）
+              <Calendar size={13} className="text-stone-500" />
+              天（時期）
             </span>
             <div className="flex items-center gap-1">
-              {isTenLow && (
-                <motion.div
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <AlertTriangle size={12} className="text-red-500" />
-                </motion.div>
-              )}
+              {isTenLow && <AlertTriangle size={12} className="text-red-600" />}
               <span
-                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-600" : "text-fuchsia-600"}`}
+                className={`text-sm font-mono font-bold ${isTenLow ? "text-red-600" : "text-stone-800"}`}
               >
                 {timeMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${
-                isTenLow
-                  ? "bg-linear-to-r from-red-600 to-orange-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]"
-                  : "bg-linear-to-r from-fuchsia-500 to-blue-500 shadow-[0_0_10px_rgba(217,70,239,0.4)]"
-              }`}
+              className={`h-full rounded-full transition-all duration-1000 ${isTenLow ? "bg-red-600" : "bg-indigo-600"}`}
               style={{ width: `${timeMetrics.score}%` }}
             />
           </div>
           <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {timeMetrics.riskFactors.length > 0
-              ? `注意: ${timeMetrics.riskFactors.slice(0, 2).join("・")}等による制限`
-              : "宇宙天気、惑星アスペクトともに良好"}
+              ? `${timeMetrics.riskFactors.slice(0, 2).join("・")}の障りがあります`
+              : "土用・逆行などの障りは見当たりません"}
           </span>
         </div>
 
@@ -495,39 +458,28 @@ export function TenChiJinEvaluation({
         <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
-              <Compass size={13} className="text-emerald-600" />
-              地（空間方位ベクトル）
+              <Compass size={13} className="text-stone-500" />
+              地（方位）
             </span>
             <div className="flex items-center gap-1">
-              {isChiLow && (
-                <motion.div
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <AlertTriangle size={12} className="text-red-500" />
-                </motion.div>
-              )}
+              {isChiLow && <AlertTriangle size={12} className="text-red-600" />}
               <span
-                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-600" : "text-emerald-600"}`}
+                className={`text-sm font-mono font-bold ${isChiLow ? "text-red-600" : "text-stone-800"}`}
               >
                 {spaceMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${
-                isChiLow
-                  ? "bg-linear-to-r from-red-600 to-orange-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]"
-                  : "bg-linear-to-r from-emerald-500 to-amber-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
-              }`}
+              className={`h-full rounded-full transition-all duration-1000 ${isChiLow ? "bg-red-600" : "bg-indigo-600"}`}
               style={{ width: `${spaceMetrics.score}%` }}
             />
           </div>
           <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {spaceMetrics.hasSevereClash
-              ? `警戒: 強力な方位凶殺（${spaceMetrics.worstClashType}）を検出`
-              : "移動方向の地磁気エネルギーは安全領域"}
+              ? `${spaceMetrics.worstClashType}に当たっています`
+              : "この方位に大きな凶殺はありません"}
           </span>
         </div>
 
@@ -535,39 +487,28 @@ export function TenChiJinEvaluation({
         <div className="bg-white/70 border border-stone-200 rounded-xl p-4 flex flex-col justify-between">
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs font-bold text-stone-500 flex items-center gap-1.5">
-              <Heart size={13} className="text-teal-600" />
-              人（心身・相性シンクロ）
+              <Heart size={13} className="text-stone-500" />
+              人（心身・相性）
             </span>
             <div className="flex items-center gap-1">
-              {isJinLow && (
-                <motion.div
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ repeat: Infinity, duration: 1.5 }}
-                >
-                  <AlertTriangle size={12} className="text-red-500" />
-                </motion.div>
-              )}
+              {isJinLow && <AlertTriangle size={12} className="text-red-600" />}
               <span
-                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-600" : "text-teal-600"}`}
+                className={`text-sm font-mono font-bold ${isJinLow ? "text-red-600" : "text-stone-800"}`}
               >
                 {humanMetrics.score}%
               </span>
             </div>
           </div>
-          <div className="w-full bg-white h-2 rounded-full overflow-hidden mb-2 relative">
+          <div className="w-full bg-stone-200 h-2 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-1000 ${
-                isJinLow
-                  ? "bg-linear-to-r from-red-600 to-orange-500 shadow-[0_0_10px_rgba(239,68,68,0.4)]"
-                  : "bg-linear-to-r from-teal-400 to-pink-500 shadow-[0_0_10px_rgba(45,212,191,0.4)]"
-              }`}
+              className={`h-full rounded-full transition-all duration-1000 ${isJinLow ? "bg-red-600" : "bg-indigo-600"}`}
               style={{ width: `${humanMetrics.score}%` }}
             />
           </div>
           <span className="text-[10px] text-stone-600 leading-normal font-sans">
             {members.length > 0
               ? `相性: ${humanMetrics.compatibilityScore}% (同伴者 ${members.length} 名)`
-              : "個人コンディションが100%連動中"}
+              : "同伴者なし。本人の状態だけで見ています"}
           </span>
         </div>
       </div>
@@ -575,45 +516,39 @@ export function TenChiJinEvaluation({
       {/* Advisory Text Board (Problem + Solution) */}
       <div
         className={`border p-4 rounded-xl flex gap-3 text-xs leading-relaxed ${
-          advice.severity === "high"
+          verdict.band === "danger"
             ? "bg-red-50 border-red-200 text-red-700"
-            : advice.severity === "medium"
-              ? "bg-amber-50 border-amber-200 text-amber-700"
-              : "bg-emerald-50 border-emerald-200 text-emerald-700"
+            : verdict.band === "caution"
+              ? "bg-amber-50 border-amber-200 text-amber-800"
+              : "bg-emerald-50 border-emerald-200 text-emerald-800"
         }`}
       >
         <div className="mt-0.5 shrink-0">
           <AlertTriangle
             size={16}
             className={
-              advice.severity === "high"
-                ? "text-red-500"
-                : advice.severity === "medium"
-                  ? "text-amber-500"
-                  : "text-emerald-500"
+              verdict.band === "danger"
+                ? "text-red-600"
+                : verdict.band === "caution"
+                  ? "text-amber-700"
+                  : "text-emerald-700"
             }
           />
         </div>
         <div className="flex-1 flex flex-col gap-2">
           <div>
-            <span className="font-bold block mb-1">
-              {advice.severity === "high"
-                ? "【警告】地脈エネルギーの衝突"
-                : advice.severity === "medium"
-                  ? "【調整推奨】天・人の不整合"
-                  : "【調和】完全整合化フェーズ"}
-            </span>
-            <p className="opacity-90">{advice.problem}</p>
-            <p className="mt-1 font-semibold opacity-95">{advice.solution}</p>
+            <span className="font-bold block mb-1">{verdict.title}</span>
+            <p className="opacity-90">{verdict.problem}</p>
+            <p className="mt-1 font-semibold opacity-95">{verdict.solution}</p>
           </div>
 
           {/* Action Trigger Button */}
-          {advice.actionLabel &&
-            (onApplyAction || advice.actionType === "NAVIGATE") && (
+          {verdict.actionLabel &&
+            (onApplyAction || verdict.actionType === "NAVIGATE") && (
               <div className="mt-2 pt-2 border-t border-stone-200">
                 <button
                   onClick={() => {
-                    if (advice.actionType === "NAVIGATE") {
+                    if (verdict.actionType === "NAVIGATE") {
                       // Navigate fallback
                       const step = steps[singleStepIndex];
                       const dateStr = step
@@ -634,17 +569,17 @@ export function TenChiJinEvaluation({
                         queryParams.append("bearing", String(bearing));
                       }
                       window.location.href = `/relocation/simulator?${queryParams.toString()}`;
-                    } else if (onApplyAction) {
-                      onApplyAction(advice.actionType, advice.actionData);
+                    } else if (onApplyAction && verdict.actionType) {
+                      onApplyAction(verdict.actionType, verdict.actionData);
                     }
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold tracking-wide text-[10px] font-mono transition-all duration-300 ${
-                    advice.severity === "high"
-                      ? "bg-red-500 text-white hover:bg-red-600 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:shadow-[0_0_20px_rgba(239,68,68,0.4)]"
-                      : "bg-amber-500 text-black hover:bg-amber-600 shadow-[0_0_15px_rgba(245,158,11,0.2)] hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold tracking-wide text-[11px] transition-colors ${
+                    verdict.band === "danger"
+                      ? "bg-red-600 text-white hover:bg-red-700"
+                      : "bg-stone-800 text-white hover:bg-stone-900"
                   }`}
                 >
-                  {advice.actionLabel}
+                  {verdict.actionLabel}
                   <ChevronRight size={12} />
                 </button>
               </div>
