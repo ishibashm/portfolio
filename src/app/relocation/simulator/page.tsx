@@ -33,6 +33,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { TenChiJinEvaluation } from "@/components/nba/TenChiJinEvaluation";
+import { FengShuiNote } from "@/components/relocation/FengShuiNote";
 import {
   MetaphysicalConfigBar,
   MetaphysicalConfig,
@@ -2587,6 +2588,28 @@ export default function RelocationSimulatorPage() {
                           </span>
                         </div>
                       </div>
+
+                      {/* 風水（八宅）の併記。既定では出ない（押して開く）。
+                          気学の判定はそのままで、同じ方位を別の流派でも
+                          見るだけ。点は足さない。 */}
+                      <FengShuiNote
+                        bearing={getBearing(
+                          step.fromLat,
+                          step.fromLon,
+                          step.toLat,
+                          step.toLon,
+                        )}
+                        birthDate={birthDate}
+                        kigakuDirection={bearingToDirection(
+                          getBearing(
+                            step.fromLat,
+                            step.fromLon,
+                            step.toLat,
+                            step.toLon,
+                          ),
+                          useClassical,
+                        )}
+                      />
 
                       {/* Active Base status alert */}
                       {step.purpose === "MIGRATION" &&
