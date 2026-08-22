@@ -60,7 +60,9 @@ export function writeFengShuiSettings(patch: Partial<FengShuiSettings>): void {
   const next: Record<string, unknown> = {};
   if (patch.sex !== undefined) next[FENG_SHUI_SEX] = patch.sex;
   if (patch.enabled !== undefined) next[FENG_SHUI_ENABLED] = patch.enabled;
-  if (Object.keys(next).length > 0) writeLocalSettings(next);
+  if (Object.keys(next).length === 0) return;
+  writeLocalSettings(next);
+  for (const listener of listeners) listener();
 }
 
 /**
@@ -79,4 +81,40 @@ export function fengShuiActive(settings: FengShuiSettings): settings is {
 /** 同期対象に紛れ込んでいないか。テストと、開発時の取り違え防止に使う。 */
 export function isDeviceOnly(key: string): boolean {
   return !(SYNCED_FIELDS as readonly string[]).includes(key);
+}
+
+/**
+ * localStorage の変化を購読する最小の仕組み。
+ *
+ * `useEffect` の中で `setState` すると `react-hooks/set-state-in-effect` に
+ * 掛かる（実際に掛けた）。localStorage は React の外にある状態なので、
+ * **購読するための `useSyncExternalStore` を使うのが素直**で、サーバ側の
+ * 値を別に渡せるので hydration のずれも起きない。
+ * `admin/metrics` の計測除外の切り替えが同じ形。
+ *
+ * 覚えを返す関数（`getSnapshot`）は**毎回同じ値を返さないと再描画が
+ * 止まらない**ので、オブジェクトではなく文字列を返す。呼ぶ側で
+ * `parseSnapshot` に通す。
+ */
+const listeners = new Set<() => void>();
+
+export function subscribeFengShui(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => {
+    listeners.delete(onChange);
+  };
+}
+
+/** 端末の現在値。同じ内容なら同じ文字列になるので、参照が安定する。 */
+export function fengShuiSnapshot(): string {
+  const s = readFengShuiSettings();
+  return `${s.sex ?? ""}|${s.enabled ? "1" : ""}`;
+}
+
+/** サーバ側。localStorage が無いので「未選択・無効」に倒す。 */
+export const FENG_SHUI_SERVER_SNAPSHOT = "|";
+
+export function parseSnapshot(snapshot: string): FengShuiSettings {
+  const [sex, enabled] = snapshot.split("|");
+  return { sex: parseSex(sex), enabled: enabled === "1" };
 }
