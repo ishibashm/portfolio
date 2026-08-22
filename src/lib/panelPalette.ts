@@ -104,3 +104,59 @@ export function rampColor(ratio: number): string {
   );
   return SEQUENTIAL_RAMP[index];
 }
+
+/**
+ * 明るい地に文字として置くと読めない Tailwind の段。
+ *
+ * 実測（白地に対するコントラスト比。本文には 4.5:1 が要る）。
+ *
+ *   yellow-400  1.53:1   ← 実際に凡例で使われていて読めなかった
+ *   emerald-400 1.92:1
+ *   orange-400  2.26:1
+ *   amber-500   2.15:1
+ *
+ * **ここに挙げた段を text- で使わない。**地色（bg-）としてなら薄い段は
+ * 正しい使い方なので、禁じるのは文字だけ。
+ *
+ * 目で見て「読めるか」を判断しない。明るい黄色や明るい緑は、作っている
+ * 側の画面では見えていることがある（表示の設定や周囲の明るさで変わる）。
+ * **数字で決める。**
+ */
+export const UNREADABLE_TEXT_STEPS = [
+  "yellow-200",
+  "yellow-300",
+  "yellow-400",
+  "yellow-500",
+  "amber-200",
+  "amber-300",
+  "amber-400",
+  "amber-500",
+  "lime-300",
+  "lime-400",
+  "lime-500",
+  "orange-300",
+  "orange-400",
+  "orange-500",
+  "emerald-300",
+  "emerald-400",
+  "emerald-500",
+  "sky-300",
+  "sky-400",
+] as const;
+
+/**
+ * 2 つの体系のどちらから来た数字かを表す色。
+ *
+ * ConsultPanel（環境データ）は、暦・気学の側と天文・物理の側を色で
+ * 分けていた。**装飾ではなく分類**なので残す。ただし判定（緑・赤）とも
+ * 操作（indigo）とも重ならない色相であること。
+ *
+ * 節の見出しで済むところに色を足さないこと。ここは同じ画面の中で
+ * 2 系統が何度も交互に出てくるので、色が要る数少ない場所。
+ */
+export const SYSTEM_HUES = {
+  /** 暦・気学（本命星・月盤・天中殺） */
+  calendar: "purple",
+  /** 天文・物理（黄経・月相・地磁気） */
+  physical: "blue",
+} as const;

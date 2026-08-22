@@ -8,6 +8,8 @@ import {
   NEUTRAL_HUE,
   RESERVED_JUDGEMENT_HUES,
   SEQUENTIAL_RAMP,
+  SYSTEM_HUES,
+  UNREADABLE_TEXT_STEPS,
   WARN_HUE,
   rampColor,
   relativeLuminance,
@@ -53,7 +55,9 @@ function huesIn(relativePath: string): Set<string> {
  * 考えること。たいていは既存の役割で足りる。
  */
 const HUE_BUDGET: Record<string, number> = {
-  "src/components/home/ConsultPanel.tsx": 8,
+  // yellow を落として 8 → 7（#486）。白地に yellow-400 で 1.53:1 しか
+  // 無く、凡例の説明がその色で書かれていて読めなかった。
+  "src/components/home/ConsultPanel.tsx": 7,
   "src/components/home/ScorecardPanel.tsx": 9,
   "src/components/home/DestinationMapPanel.tsx": 9,
   "src/components/home/HomePortal.tsx": 6,
@@ -115,4 +119,101 @@ describe("画面ごとの色相の数", () => {
       ).toBeLessThanOrEqual(budget);
     });
   }
+});
+
+/**
+ * 明るい地に読めない文字色を使っていないか。
+ *
+ * **実際に起きた事故を検知する検査。**「4. 環境データ」の凡例が
+ * text-yellow-400 で書かれていて、白地に対して 1.53:1 しか無く読めなかった
+ * （本文には 4.5:1 が要る）。しかも読めないその色で「黄色(WARNING) は…」と
+ * 説明していたので、何の色の話なのかも伝わらなかった。
+ *
+ * 目で見て判断しない。明るい黄色や明るい緑は、作っている側の画面では
+ * 見えていることがある。数字で決める。
+ */
+describe("明るい地で読めない文字色を使っていない", () => {
+  /**
+   * まだ残っているもの。**増やさない。**
+   *
+   * emerald は**判定の色**（OPTIMAL / OPTIMAL_REGULAR）。白地に対して
+   * emerald-500 が 2.54:1、emerald-400 が 1.92:1 しか無いのは事実だが、
+   * ここを動かすと**判定の見え方が変わる。**CLAUDE.md 3 節の手順
+   * （旧実装をテストに写す・広い入力範囲で固定する・旧挙動に戻すと
+   * 落ちることを確認する）を踏まないと触れない。別に扱う。
+   *
+   * それ以外（yellow / amber）は判定の色ではないので、見つけ次第直して
+   * この表から消す。**残っている数は、まだ手を付けていない画面の数。**
+   */
+  type UnreadableStep = (typeof UNREADABLE_TEXT_STEPS)[number];
+
+  const KNOWN: Record<string, readonly UnreadableStep[]> = {
+    // 判定の色だけが残っている（#486 で yellow と amber を片付けた）。
+    "src/components/home/ConsultPanel.tsx": ["emerald-500"],
+    "src/components/home/ScorecardPanel.tsx": [
+      "yellow-400",
+      "amber-500",
+      "emerald-500",
+    ],
+    "src/components/home/DestinationMapPanel.tsx": [
+      "yellow-400",
+      "amber-200",
+      "amber-500",
+      "emerald-400",
+      "emerald-500",
+    ],
+    "src/components/home/HomePortal.tsx": [],
+  };
+
+  it("対象を読めている（空回りしていない）", () => {
+    for (const f of Object.keys(KNOWN)) {
+      expect(
+        readFileSync(join(process.cwd(), f), "utf8").length,
+        f,
+      ).toBeGreaterThan(1000);
+    }
+  });
+
+  for (const [f, known] of Object.entries(KNOWN)) {
+    it(`${f} に新しい読めない文字色が無い`, () => {
+      const src = readFileSync(join(process.cwd(), f), "utf8");
+      const hits = UNREADABLE_TEXT_STEPS.filter((step) =>
+        src.includes(`text-${step}`),
+      );
+      const added = hits.filter((h) => !known.includes(h));
+      expect(
+        added,
+        `${f} で白地に読めない文字色を新しく使っている: ${added.join(", ")}\n` +
+          "地色（bg-）としてなら薄い段は正しい。禁じているのは文字だけ。" +
+          "濃い段（600〜800）に替えること。",
+      ).toEqual([]);
+
+      // 直したのに表から消し忘れる、を防ぐ。**残っていないものが
+      // 残っていることになっていると、次に読む人が無駄に探す。**
+      const stale = known.filter((k) => !hits.includes(k));
+      expect(
+        stale,
+        `${f} は既に直っている: ${stale.join(", ")}。KNOWN から消すこと。`,
+      ).toEqual([]);
+    });
+  }
+});
+
+describe("2 系統の色", () => {
+  it("判定・操作・注意と重なっていない", () => {
+    // 暦の側と天文の側を色で分けるのは装飾ではなく分類なので残すが、
+    // 判定の緑・赤や操作の indigo と重なると意味が濁る。
+    const taken = new Set<string>([
+      ...RESERVED_JUDGEMENT_HUES,
+      ACCENT_HUE,
+      WARN_HUE,
+      NEUTRAL_HUE,
+    ]);
+    for (const hue of Object.values(SYSTEM_HUES)) {
+      expect(taken.has(hue), `${hue} は他の役割で使われている`).toBe(false);
+    }
+    expect(new Set(Object.values(SYSTEM_HUES)).size).toBe(
+      Object.keys(SYSTEM_HUES).length,
+    );
+  });
 });
