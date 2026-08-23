@@ -10,6 +10,15 @@ name: Probe zoning
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: "upstream = 上流（不動産情報ライブラリ）を直接／relay = 本番の /api/zoning を外から"
+        required: false
+        default: "upstream"
+        type: choice
+        options:
+          - upstream
+          - relay
 
 jobs:
   probe:
@@ -37,5 +46,13 @@ jobs:
           fi
           echo "$ENV_FILE_CONTENT" > .env
 
-      - name: Probe
+      - name: Probe upstream
+        if: ${{ inputs.target != 'relay' }}
         run: npx tsx scripts/probe_zoning.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 本番の中継を外から叩く。鍵は要らない（サーバ側が持っている）。
+      # 「通るはず」で済ませないための確認で、鍵が本番に渡っているかも、
+      # 上流が本番の IP を通すかも、ここでしか分からない。
+      - name: Probe relay
+        if: ${{ inputs.target == 'relay' }}
+        run: npx tsx scripts/probe_zoning_relay.ts | tee -a "$GITHUB_STEP_SUMMARY"
