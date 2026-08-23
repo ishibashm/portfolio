@@ -738,3 +738,60 @@ src/components/SolarTimeClock.tsx(1350, 1697, 1707, 1717, 1727, 1737)
 実データに無い鍵が増え、JSON 書き出し（`api/relocation/export`）の中身が
 変わる。今 `undefined` を掴んでいる箇所は `"SAFE"` を掴むようになるので、
 **画面の答えも変わる。**直すのは型のほうであって、データではない。
+
+## 9. `/api/v1` を呼ぶ画面がまるごと死んでいる（2,829 行）
+
+`MarkdownViewerWidget` の `error` が未使用（`setError` は呼ばれているのに
+**画面に出していない**）のを追ったら、その先が全部死んでいた。
+
+### 何が起きているか
+
+`src/app/api/v1/` は**存在しない。**ところが 7 つの widget がそこを
+呼んでいる。
+
+```
+/api/v1/files/list        MarkdownViewerWidget
+/api/v1/files/read        MarkdownViewerWidget
+/api/v1/files/download    MarkdownViewerWidget
+/api/v1/scraper/*         MediaScraperWidget
+/api/v1/xtrends/search    XTrendsWidget
+/api/v1/youtube/chat      YouTubeChat
+/api/v1/youtube/extract   YouTubeExtractor
+```
+
+`MarkdownViewerWidget` は取得に失敗すると `setError` するが、`error` を
+描いていないので、画面には **「ファイルがありません」** と出る。実際は
+「API が無い」。**失敗が「空」に化けている。**
+
+### 呼び出し元をたどると全部 1 か所に集まる
+
+    DynamicCanvas.tsx ← **どこからも import されていない**
+      ├ DataAnalyzerWidget
+      ├ MarkdownViewerWidget
+      ├ OmniPipelineWidget
+      ├ XTrendsWidget
+      ├ YouTubeChat
+      └ YouTubeExtractor
+    MediaScraperWidget ← どこからも使われていない
+
+`useAgentStream`（hook）と `analyzerResult`（lib）もこの系統。
+合計 **2,829 行**。
+
+CLAUDE.md の `next-sitemap.config.js` に「すでに削除した 9 ページ
+（/dashboard /visualizer /x-viewer /agent-log …）」と書いてある。
+**この widget 群はその頁の残骸**だと思われる。頁は消したが、部品と
+`/api/v1` を呼ぶ配線が残った。
+
+### どうするか（判断待ち）
+
+1. **まとめて消す。**`/api/v1` を作り直す予定が無いなら、これが素直。
+   2,829 行減り、`/api/v1` を呼ぶコードが 0 になる
+2. **残して理由を書く。**作り直す予定があるなら、`DynamicCanvas` の
+   先頭に「`/api/v1` が要る。今は繋がっていない」と書いておく
+
+どちらにせよ **`MarkdownViewerWidget` の「ファイルがありません」は
+直すべき**。失敗を空と区別できないのは、この widget を将来使うときにも
+同じ問題になる。
+
+`VolumetricBioMap`（8 節の下の方に既出）も同じくどこからも使われて
+いない。まとめて判断するとよい。
