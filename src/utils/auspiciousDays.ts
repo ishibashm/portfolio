@@ -18,6 +18,8 @@ import {
   filterCollisionByMode,
   getCurrentZodiac,
   Direction,
+  type DirectionFilterMode,
+  type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { directionBoardInstant } from "@/utils/boardInstant";
@@ -62,8 +64,8 @@ export function isInauspicious(status: string | undefined): boolean {
 }
 
 export interface AuspiciousDayParams {
-  /** 気学の本命星（classical）。 */
-  honmeiStar: number;
+  /** 気学の本命星（classical）。1〜9 の九星。 */
+  honmeiStar: StarFrequency;
   /** 天中殺（空亡）の支。 */
   voidZodiacs: string[];
   /** 現住地の経度。太陽時と盤の基準になる。 */
@@ -75,7 +77,7 @@ export interface AuspiciousDayParams {
   /** 自発的な移動か（吉方位取りは自発なので、通常 false のまま）。 */
   involuntaryMove?: boolean;
   /** 方位の絞り込みモード。既定は composite。 */
-  directionFilterMode?: string;
+  directionFilterMode?: DirectionFilterMode;
 }
 
 export interface DayVerdict {
@@ -148,7 +150,7 @@ function computeDayLayers(
   const dB = generateBoard(env.classicalDayStar);
 
   const raw = calculateVectorCollision(
-    p.honmeiStar as any,
+    p.honmeiStar,
     yB,
     mB,
     dB,
@@ -162,10 +164,10 @@ function computeDayLayers(
   );
   const layers = filterCollisionByMode(
     raw,
-    p.honmeiStar as any,
+    p.honmeiStar,
     null,
     p.voidZodiacs,
-    (p.directionFilterMode ?? "composite") as any,
+    p.directionFilterMode ?? "composite",
     yB,
     mB,
     dB,

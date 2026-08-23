@@ -43,7 +43,12 @@ import {
   gradeVerdict,
   judgeDayAllDirections,
 } from "@/utils/auspiciousDays";
-import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
+import {
+  getHonmeiStar,
+  getPersonalVoidZodiac,
+  parseDirectionFilterMode,
+  type DirectionFilterMode,
+} from "@/utils/ephemerisEngine";
 import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 import {
   expandLayoutSelections,
@@ -321,7 +326,8 @@ export default function ArbitrageScannerPage() {
    */
   const [birthDate, setBirthDate] = useState("");
   const [targetDate, setTargetDate] = useState(getTodayString()); // Default Target Date
-  const [directionFilterMode, setDirectionFilterMode] = useState("composite");
+  const [directionFilterMode, setDirectionFilterMode] =
+    useState<DirectionFilterMode>("composite");
   const [actionIntent, setActionIntent] = useState("MIGRATION");
   const [radiusKm, setRadiusKm] = useState(
     filtersForSearchArea(DEFAULT_SEARCH_AREA).radiusKm,
@@ -769,7 +775,8 @@ export default function ArbitrageScannerPage() {
 
     // Load from unified tactical config
     const tacticalConfig = localStorage.getItem("tactical_config_v1");
-    let filter = "composite";
+    /* ここも設定ファイル由来の素通しだった。知らない値は composite（#540）。 */
+    let filter: DirectionFilterMode = "composite";
     let intent = "MIGRATION";
     if (tacticalConfig) {
       try {
@@ -794,7 +801,7 @@ export default function ArbitrageScannerPage() {
         if (config.layer_mode !== undefined) layer = config.layer_mode;
         if (config.target_date) tDate = config.target_date;
         if (config.direction_filter_mode !== undefined)
-          filter = config.direction_filter_mode;
+          filter = parseDirectionFilterMode(config.direction_filter_mode);
         if (config.action_intent !== undefined) intent = config.action_intent;
         // 旧設定の都道府県指定は維持する。all/all は旧既定値と利用者の
         // 明示選択を区別できないので、下の新しい保存キーが無ければ50kmにする。
@@ -1002,8 +1009,10 @@ export default function ArbitrageScannerPage() {
           detail.useClassicalBoard !== undefined
             ? detail.useClassicalBoard
             : detail.use_classical_board;
-        const newFilterMode =
-          detail.directionFilterMode || detail.direction_filter_mode;
+        /* 保存済みプランの値は素の JSON。知らない値は composite（#540）。 */
+        const newFilterMode = parseDirectionFilterMode(
+          detail.directionFilterMode || detail.direction_filter_mode,
+        );
         const newIntent = detail.actionIntent || detail.action_intent;
         const newBirthDate = detail.birthDate || detail.birth_date;
         const newBirthLat =
@@ -1642,7 +1651,7 @@ export default function ArbitrageScannerPage() {
       const all = judgeDayAllDirections(
         new Date(`${targetDate}T12:00:00+09:00`),
         {
-          honmeiStar: honmei.classical as number,
+          honmeiStar: honmei.classical,
           voidZodiacs: getPersonalVoidZodiac(bd),
           lon: Number(baseLon),
           tenchusatsuMode: tenchusatsuMode as never,
