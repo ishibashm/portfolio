@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState("/");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -29,6 +30,15 @@ export default function LoginPage() {
   }, []);
 
   const handleGoogleLogin = async () => {
+    /*
+      `loading` はボタンの `disabled` に繋がっているのに、**立てる側が
+      無かった。**押しても無効にならず、Google の同意画面へ飛ぶまでの
+      間に何度でも押せる。受け口だけあって配線が無い状態だったので繋ぐ。
+
+      成功したときは戻さない。この後 OAuth の画面へ遷移するので、
+      戻すと一瞬だけ押せる状態に戻ってしまう。
+    */
+    setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -40,6 +50,7 @@ export default function LoginPage() {
     if (error) {
       console.error("Error logging in:", error);
       setAuthError(error.message);
+      setLoading(false);
     }
   };
 
