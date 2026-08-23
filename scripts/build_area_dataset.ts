@@ -20,26 +20,25 @@ import * as dotenv from "dotenv";
 
 import { PREF_JP } from "../src/lib/scrapeTargets";
 import { LIVE_LISTING_SQL } from "../src/lib/rentalListingSql";
+import {
+  mergeAreaDataset,
+  parsePreviousAreas,
+  type AreaEntry,
+} from "../src/utils/areaDatasetMerge";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
   : path.resolve(process.cwd(), "../.env");
 dotenv.config({ path: envPath });
 
-// 掲載が少ない市区町村は相場の平均が当てにならないので落とす
+// 掲載が少ない市区町村は相場の平均が当てにならないので落とす。
+//
+// ただし **一度載せた code は落とさない**（utils/areaDatasetMerge）。
+// この閾値は「新しく載せるかどうか」だけを決める。理由は下の書き出しの所。
 const MIN_ROWS = 30;
 
-interface Area {
-  code: string;
-  pref: string;
-  city: string;
-  full: string;
-  lat: number;
-  lon: number;
-  count: number;
-  sqmRent: number;
-  medianRent: number;
-}
+/** 今回の集計ぶん。`asOf` は書き出す直前に併合で付く。 */
+type Area = Omit<AreaEntry, "asOf">;
 
 async function main() {
   const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
@@ -149,18 +148,47 @@ async function main() {
   }
   const filtered = areas.filter((a) => !hasWard.has(a.full));
 
-  filtered.sort((a, b) => b.count - a.count);
   const outDir = path.join(process.cwd(), "src", "data");
   fs.mkdirSync(outDir, { recursive: true });
   const outPath = path.join(outDir, "areaDirections.json");
+
+  // 前回ぶんと併合してから書き出す。
+  //
+  // /houi/area/[code] は dynamicParams = false なので、**この JSON に
+  // 無い code はビルド後 404 を返す。**掲載は日々増減するから、MIN_ROWS の
+  // 境目にいる市区町村が出たり入ったりして、あった URL が消えては現れる。
+  // 実測では 08-16 に 910 件・08-18 に 1049 件と、収録数が毎日 100 件以上
+  // ぶれていた。07322（福島県安達郡大玉村・掲載 32 件）は 08-17 に載って
+  // 08-18 に消え、Google はその日 404 を踏んでいる。
+  //
+  // 閾値を下げても直らない。**どこに置いても境目はできる。**
+  //
+  // 引き継ぎにも区の除外を掛ける。前回は区が閾値に届かず親の市だけが
+  // 載っていて、今回は区が載った——という順で来ると、親と区が二重に並ぶ。
+  const previous = parsePreviousAreas(
+    fs.existsSync(outPath) ? fs.readFileSync(outPath, "utf-8") : null,
+  ).filter((a) => !hasWard.has(a.full));
+  if (previous.length === 0) {
+    console.log("前回の areaDirections.json が読めなかった（引き継ぎ無し）");
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  const merged = mergeAreaDataset(filtered, previous, today);
+
   fs.writeFileSync(
     outPath,
     JSON.stringify(
-      { generatedAt: new Date().toISOString(), areas: filtered },
+      { generatedAt: new Date().toISOString(), areas: merged.areas },
       null,
       2,
     ),
   );
+  console.log(
+    `今回の集計: ${merged.fresh} 件 / 前回から引き継ぎ: ${merged.carried} 件`,
+  );
+  if (merged.carried > 0) {
+    // 引き継ぎは積み上がる一方なので、増え続けていないか目で見られるように出す。
+    console.log(`引き継いだ code: ${merged.carriedCodes.join(", ")}`);
+  }
 
   // prefTotals は市区町村より先に数えてある（掲載の無い県を飛ばすため）。
   // 以前の俯瞰は「API が返した安い順 500 件」を県名で数えて塗っていた。
@@ -177,14 +205,14 @@ async function main() {
   //
   // generatedAt は入れない。入れると毎晩必ず差分が出て、県の集合が変わって
   // いないのにコミットが積まれる。県が増減したときだけ動く形にしておく。
-  const prefsWithData = [...new Set(filtered.map((a) => a.pref))].sort();
+  const prefsWithData = [...new Set(merged.areas.map((a) => a.pref))].sort();
   const prefsPath = path.join(outDir, "prefecturesWithData.json");
   fs.writeFileSync(
     prefsPath,
     JSON.stringify(
       {
         prefs: prefsWithData,
-        areaCount: filtered.length,
+        areaCount: merged.areas.length,
         // 県名 → 掲載数。地図の俯瞰の色分けと件数ラベルの元。
         listingCounts: prefTotals,
       },
@@ -195,8 +223,8 @@ async function main() {
 
   console.log(`書き出し: ${outPath}`);
   console.log(`書き出し: ${prefsPath}（${prefsWithData.length} 県）`);
-  console.log(`市区町村: ${filtered.length} 件`);
-  console.table(filtered.slice(0, 10));
+  console.log(`市区町村: ${merged.areas.length} 件`);
+  console.table(merged.areas.slice(0, 10));
   await pool.end();
 }
 
