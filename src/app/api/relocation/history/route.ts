@@ -12,6 +12,7 @@ import {
   getPersonalVoidZodiac,
   getHonmeiStar,
   filterCollisionByMode,
+  parseActionIntent,
   parseDirectionFilterMode,
   Direction,
   type ActionIntent,
@@ -113,7 +114,7 @@ export async function GET(request: Request) {
           config.direction_filter_mode,
         );
       if (config.action_intent !== undefined)
-        actionIntent = config.action_intent;
+        actionIntent = parseActionIntent(config.action_intent);
       if (config.physical_month_mode !== undefined)
         physicalMonthMode = config.physical_month_mode;
     } catch {}
@@ -126,13 +127,14 @@ export async function GET(request: Request) {
       composite なのに壊れていると environmental」という筋の通らない挙動に
       なる（#540。__tests__/directionFilterMode に固定してある）。
 
-      actionIntent のほうは**まだ検証していない。**同じ形の問題があるが、
-      範囲外の値の扱いを変えるので別に出す。
+      actionIntent も同じく通す。**こちらは挙動を変えない**——判定は
+      `=== "REST"` / `=== "BUSINESS"` / `=== "MIGRATION"` でしか見ておらず、
+      それ以外は今も暗黙の else（＝DEFAULT）に落ちている（#542）。
     */
     if (directionFilterModeStr !== null)
       directionFilterMode = parseDirectionFilterMode(directionFilterModeStr);
     if (actionIntentStr !== null)
-      actionIntent = actionIntentStr as ActionIntent;
+      actionIntent = parseActionIntent(actionIntentStr);
 
     if (!birthDate) {
       return NextResponse.json(
