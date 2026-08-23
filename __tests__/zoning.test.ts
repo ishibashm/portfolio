@@ -11,8 +11,13 @@ import {
   zoningFill,
   zoningFillFiltered,
   zoningNameOf,
+  isTileCoordinate,
+  isZoningZoom,
+  zoningPropertiesOf,
   MUTED_ZONING_FILL,
   UNKNOWN_ZONING_FILL,
+  ZONING_MAX_ZOOM,
+  ZONING_MIN_ZOOM,
 } from "@/utils/zoning";
 
 /**
@@ -169,5 +174,102 @@ describe("1 区分だけを見る", () => {
 
   it("知らない区分も落とす対象になる", () => {
     expect(zoningFillFiltered(null, "商業地域")).toBe(MUTED_ZONING_FILL);
+  });
+});
+
+describe("中継が使う値の取り出し", () => {
+  /** 実測（東京・z=14）の properties をそのまま写したもの。 */
+  const REAL = {
+    _id: "dZfcjJ8B6FvOHK1G2oX9",
+    _index: "bs001_use_area_202607231142",
+    prefecture: "東京都",
+    use_area_ja: "商業地域",
+    city_code: "13101",
+    notice_number_s: "",
+    decision_date: "",
+    city_name: "千代田区",
+    u_floor_area_ratio_ja: "600.0%",
+    u_building_coverage_ratio_ja: "80.0%",
+    notice_number: "",
+    decision_classification: "",
+    decision_maker: "",
+    first_decision_date: "",
+    youto_id: 10,
+  };
+
+  it("実物から要る値だけを取り出す", () => {
+    expect(zoningPropertiesOf(REAL)).toEqual({
+      name: "商業地域",
+      rawName: "商業地域",
+      coverage: 80,
+      floorArea: 600,
+      city: "千代田区",
+    });
+  });
+
+  it("書式が違っても同じ数になる", () => {
+    const other = { ...REAL, u_building_coverage_ratio_ja: "80%" };
+    expect(zoningPropertiesOf(other).coverage).toBe(80);
+  });
+
+  it("空文字は null にする（空欄をそのまま出さない）", () => {
+    const blank = { ...REAL, city_name: "", u_floor_area_ratio_ja: "" };
+    const p = zoningPropertiesOf(blank);
+    expect(p.city).toBeNull();
+    expect(p.floorArea).toBeNull();
+  });
+
+  it("知らない区分でも、API の名前は捨てない", () => {
+    /*
+      name は null（色は灰色）になるが、rawName は残して画面に出す。
+      「知らない区分」とだけ出すより、名前が見えたほうが調べようがある。
+    */
+    const unknown = { ...REAL, use_area_ja: "新しい区分", youto_id: 99 };
+    const p = zoningPropertiesOf(unknown);
+    expect(p.name).toBeNull();
+    expect(p.rawName).toBe("新しい区分");
+  });
+
+  it("properties が無くても落ちない", () => {
+    expect(zoningPropertiesOf(undefined)).toEqual({
+      name: null,
+      rawName: null,
+      coverage: null,
+      floorArea: null,
+      city: null,
+    });
+  });
+});
+
+describe("出すズームの範囲", () => {
+  it("実測で決めた範囲だけ通す", () => {
+    /*
+      z=13 は 1 タイル 435KB、z=12 は 1.9MB、z=11 は 3.6MB（実測）。
+      画面には十数タイル並ぶので、広域では出さない。
+    */
+    expect(ZONING_MIN_ZOOM).toBe(14);
+    expect(isZoningZoom(13)).toBe(false);
+    expect(isZoningZoom(14)).toBe(true);
+    expect(isZoningZoom(ZONING_MAX_ZOOM)).toBe(true);
+    expect(isZoningZoom(ZONING_MAX_ZOOM + 1)).toBe(false);
+  });
+
+  it("整数でないズームは通さない", () => {
+    expect(isZoningZoom(14.5)).toBe(false);
+    expect(isZoningZoom(NaN)).toBe(false);
+  });
+});
+
+describe("タイル座標", () => {
+  it("そのズームの範囲に収まっているか見る", () => {
+    expect(isTileCoordinate(14, 0, 0)).toBe(true);
+    expect(isTileCoordinate(14, 2 ** 14 - 1, 2 ** 14 - 1)).toBe(true);
+    expect(isTileCoordinate(14, 2 ** 14, 0)).toBe(false);
+    expect(isTileCoordinate(14, -1, 0)).toBe(false);
+  });
+
+  it("整数でない値は通さない", () => {
+    expect(isTileCoordinate(14, 1.5, 0)).toBe(false);
+    expect(isTileCoordinate(14, NaN, 0)).toBe(false);
   });
 });
