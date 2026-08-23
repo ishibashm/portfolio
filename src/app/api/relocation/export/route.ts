@@ -17,6 +17,8 @@ import {
   getClassicalMonthStar,
   filterCollisionByMode,
   getPhysicalMonthStar,
+  parseActionIntent,
+  parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo } from "@/utils/lunar";
@@ -24,6 +26,28 @@ import { toJapanDateString } from "@/utils/japanDate";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * `local_tactical_config.json` のうち、**この route が読む項目だけ。**
+ *
+ * ファイルは手で編集されるので、どれも省略可。文字列の項目は範囲を
+ * 保証しないので `string` のまま受けて、使う直前に
+ * `parseDirectionFilterMode` / `parseActionIntent` を通す。
+ */
+interface TacticalConfig {
+  birth_date?: string;
+  birth_lat?: number;
+  birth_lon?: number;
+  base_lat?: number;
+  base_lon?: number;
+  use_classical_board?: boolean;
+  use_true_north?: boolean;
+  lunar_phase_modifier?: boolean;
+  layer_mode?: string;
+  direction_filter_mode?: string;
+  action_intent?: string;
+  physical_month_mode?: string;
+}
 
 function interpolateKpIndex(logs: any[]): any[] {
   // Sort ascending by targetDate time to do chronological interpolation
@@ -92,14 +116,13 @@ export async function GET(request: Request) {
     // 1. Read user config from local_tactical_config.json
     const configPath = path.join(process.cwd(), "local_tactical_config.json");
     /*
-      この any は残す。項目を型にすると direction_filter_mode が string に
-      なり、filterCollisionByMode の union（composite / personal_kigaku /
-      personal_bazi / environmental）に渡せなくなる。通すには問い合わせ文字列
-      の検証が要るが、いまは範囲外の値がそのままエンジンへ流れて
-      environmental の枝に落ちており、検証を足すと答えが変わる。
-      別途（PR 本文に書いた）。
+      以前はここが `any` だった。「項目を型にすると direction_filter_mode が
+      string になり、filterCollisionByMode の union に渡せなくなる。通すには
+      検証が要るが、足すと答えが変わる」という理由で残してあったもの。
+      #540〜#543 で parseDirectionFilterMode / parseActionIntent を置いた
+      ので、その前提はもう無い。
     */
-    let config: any = {};
+    let config: TacticalConfig = {};
     try {
       const configContent = await fs.readFile(configPath, "utf8");
       config = JSON.parse(configContent);
@@ -149,15 +172,22 @@ export async function GET(request: Request) {
         : true;
     const layerMode =
       url.searchParams.get("layer_mode") || config.layer_mode || "final";
-    const directionFilterMode =
+    /*
+      問い合わせ文字列 → 設定ファイル の順に見て、どちらも無ければ既定。
+      `||` の連鎖はそのまま残す（空文字は「無い」として次へ送る）。
+      知らない値を composite に落とすのは parse の側の仕事（#540）。
+    */
+    const directionFilterMode = parseDirectionFilterMode(
       url.searchParams.get("direction_filter_mode") ||
-      config.direction_filter_mode ||
-      "composite";
+        config.direction_filter_mode,
+    );
 
     // New parameters
-    const actionIntent = (url.searchParams.get("action_intent") ||
-      config.action_intent ||
-      "MIGRATION") as "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
+    /* 上と同じ。知らない値は DEFAULT（挙動は変わらない。#542）。 */
+    const actionIntent = parseActionIntent(
+      url.searchParams.get("action_intent") || config.action_intent,
+      "MIGRATION",
+    );
     const targetLat = url.searchParams.get("target_lat")
       ? parseFloat(url.searchParams.get("target_lat")!)
       : null;
