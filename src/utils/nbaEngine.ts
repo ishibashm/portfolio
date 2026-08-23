@@ -1,3 +1,5 @@
+import type { BaziPillar, BaziResult, LuckCycle } from "./baziEngine";
+
 /**
  * Next Best Action (NBA) Engine
  * Uses Offline Reinforcement Learning (FQI) principles to suggest the optimal action based on current state.
@@ -27,8 +29,97 @@ export interface StateLayers {
   };
 }
 
+/**
+ * 天体の位置。度数を文字列（"123.45°"）で持つ。
+ *
+ * **どこまで埋まるかは呼ぶ route による。**`/api/nba` は八天体すべてを
+ * 入れるが、`/api/nba/forecast` と `/api/relocation/nba-evaluate` は
+ * sun と moon しか入れていない。判定が数として読むのは mars と saturn
+ * だけで、`parseFloat` の後に `isNaN` で弾く作りになっているため、
+ * 欠けていても点数は 0 のまま（`w_ephem` も 0）。
+ *
+ * 全部必須にすると上の 2 つの route が通らない。**実態のほうに型を
+ * 合わせる。**
+ */
+export interface PlanetaryPositions {
+  sun: string;
+  moon: string;
+  mercury?: string;
+  venus?: string;
+  mars?: string;
+  jupiter?: string;
+  saturn?: string;
+  lunarNode?: string;
+}
+
+/**
+ * 四柱推命の命式のうち、**この判定が受け取れる形。**
+ *
+ * 渡ってくるのは `baziEngine.calculate()` の戻り値（`BaziResult`）だが、
+ * それをそのまま要求すると通らない。`/api/nba/forecast` は `solarTime`
+ * を付けたまま渡し、本人の命式には大運・紫微斗数・本命星が足されている。
+ * テストの作る命式は柱の一部しか持たない。
+ *
+ * **枝はどれも省略可**にしてある。実装側も全部 `?.` で読んでいて、無い
+ * ときは点数を 0 にする作りなので、これが実態に合う。柱と要約の形は
+ * `baziEngine` の `BaziPillar` / `BaziResult` から引く。**同じ形を新しく
+ * 書き起こさない**（CLAUDE.md 3 節）。
+ */
+export interface BaziForJudgement {
+  pillars?: {
+    year?: Partial<BaziPillar>;
+    month?: Partial<BaziPillar>;
+    day?: Partial<BaziPillar>;
+    hour?: Partial<BaziPillar>;
+  };
+  summary?: Partial<BaziResult["summary"]>;
+  fiveElements?: Record<string, number>;
+  shenSha?: string[];
+  solarTerms?: Record<string, string>;
+  luckCycles?: LuckCycle[];
+}
+
+/** 環境（その日）の命式。 */
+export type EnvironmentalBazi = BaziForJudgement & { context?: string };
+
+/**
+ * 本人の命式。天中殺の十二支と本命星が付く。
+ *
+ * `voidZodiac` は**文字列**。`/api/nba` が `voidZodiacArray.join("")` で
+ * 繋いで渡す（例: "午未"）。判定は `.includes(支)` で読むので、1 文字ずつ
+ * 見るこの形で正しく当たる。
+ */
+export type PersonalBazi = BaziForJudgement & {
+  context?: string;
+  voidZodiac?: string;
+  honmeiStar?: { physical: number; classical: number };
+};
+
+/**
+ * 判定に足す外部の情報。
+ *
+ * `stateVector` と `targetEphemeris` に**同じ形が 2 回**書いてあり、
+ * どちらも中身が `any` だった。1 つに寄せる。
+ */
+export interface EnrichedStreams {
+  ephemerisData?: {
+    source: string;
+    planetaryPositions: PlanetaryPositions;
+  };
+  astrologyData?: {
+    source: string;
+    transits: string[];
+    retrogrades?: string[];
+  };
+  ragContext?: {
+    source: string;
+    classicalRules: EnvironmentalBazi;
+    personalBazi?: PersonalBazi | null;
+  };
+}
+
 export interface NBAParams {
-  stateVector: {
+  stateVector: EnrichedStreams & {
     // Legacy flat fields for backward compatibility
     ansLoad: number; // 0-100
     shieldCapacity: number; // 0-100
@@ -42,20 +133,6 @@ export interface NBAParams {
     isDoyouHazard?: boolean;
     unifiedRiskScore?: number;
     // --- Enriched Data Streams ---
-    ephemerisData?: {
-      source: string;
-      planetaryPositions: any;
-    };
-    astrologyData?: {
-      source: string;
-      transits: any;
-      retrogrades?: string[];
-    };
-    ragContext?: {
-      source: string;
-      classicalRules: any;
-      personalBazi?: any;
-    };
     vedicAstrology?: {
       nakshatra: string;
       moonProgress?: number;
@@ -115,7 +192,7 @@ export interface NBAParams {
       stressLevel?: number;
       resilience?: string;
     };
-    targetEphemeris?: {
+    targetEphemeris?: EnrichedStreams & {
       date: string;
       solarPhase: number;
       isVoidTime: boolean;
@@ -140,20 +217,6 @@ export interface NBAParams {
         sunProgress?: number;
         tithi: string;
         ayanamsa?: string;
-      };
-      ephemerisData?: {
-        source: string;
-        planetaryPositions: any;
-      };
-      astrologyData?: {
-        source: string;
-        transits: any;
-        retrogrades?: string[];
-      };
-      ragContext?: {
-        source: string;
-        classicalRules: any;
-        personalBazi?: any;
       };
       ichingHexagram?: {
         number: number;
@@ -277,6 +340,23 @@ const PolicyWeights: Record<ActionType, QWeights> = {
     w_personal: -1.0,
     bias: 0.0,
   },
+};
+
+/**
+ * 行動ごとの値を入れる器の初期値。
+ *
+ * 以前は `{} as any` で空の器を作っていた。空だと型が
+ * `Record<ActionType, number>` を名乗れないのでキャストで押し通していた。
+ * ここに並べておけば、**ActionType を増やしたときに書き忘れると tsc が
+ * 落ちる。**並びは PolicyWeights と同じにしてある（器は必ず全行動ぶん
+ * 埋め直されるので、値そのものは表に出ない）。
+ */
+const ZERO_Q: Record<ActionType, number> = {
+  EXECUTE_RELOCATION: 0,
+  EXECUTE_PURGE_RELOCATION: 0,
+  PREPARE_AND_WAIT: 0,
+  GATHER_INTEL: 0,
+  ABORT_AND_SHIELD: 0,
 };
 
 export function sigmoid(x: number, k: number = 10, x0: number = 0.5): number {
@@ -501,8 +581,13 @@ export class NBAEngine {
 
     let f6_ephem = 0;
     if (ephemerisData && ephemerisData.planetaryPositions) {
-      const mars = parseFloat(ephemerisData.planetaryPositions.mars);
-      const saturn = parseFloat(ephemerisData.planetaryPositions.saturn);
+      /*
+        mars / saturn を入れない route がある（PlanetaryPositions の註）。
+        `?? ""` は挙動を変えない——parseFloat(undefined) も parseFloat("")
+        も NaN で、下の isNaN で同じように弾かれる。
+      */
+      const mars = parseFloat(ephemerisData.planetaryPositions.mars ?? "");
+      const saturn = parseFloat(ephemerisData.planetaryPositions.saturn ?? "");
       if (!isNaN(mars) && !isNaN(saturn)) {
         f6_ephem = calculateMarsSaturnAspectScore(mars, saturn);
       }
@@ -784,8 +869,9 @@ export class NBAEngine {
 
     let f6_ephem = 0;
     if (ephemerisData && ephemerisData.planetaryPositions) {
-      const mars = parseFloat(ephemerisData.planetaryPositions.mars);
-      const saturn = parseFloat(ephemerisData.planetaryPositions.saturn);
+      /* 上と同じ理由で `?? ""`。挙動は変わらない。 */
+      const mars = parseFloat(ephemerisData.planetaryPositions.mars ?? "");
+      const saturn = parseFloat(ephemerisData.planetaryPositions.saturn ?? "");
       if (!isNaN(mars) && !isNaN(saturn)) {
         f6_ephem = calculateMarsSaturnAspectScore(mars, saturn);
       }
@@ -1037,7 +1123,7 @@ export class NBAEngine {
       );
     }
 
-    const qValues: Record<ActionType, number> = {} as any;
+    const qValues: Record<ActionType, number> = { ...ZERO_Q };
     const actions = Object.keys(PolicyWeights) as ActionType[];
 
     let maxQ = -Infinity;
@@ -1223,7 +1309,7 @@ export class NBAEngine {
     // Scale Q-value to expected reward (-100 to 100)
     const expectedReward = Math.max(-100, Math.min(100, maxQ * 50));
 
-    const probabilitiesObj: Record<ActionType, number> = {} as any;
+    const probabilitiesObj: Record<ActionType, number> = { ...ZERO_Q };
     actions.forEach((a, idx) => {
       probabilitiesObj[a] = probabilities[idx];
     });

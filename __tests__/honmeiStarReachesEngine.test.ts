@@ -60,7 +60,7 @@ function stateWith(honmeiStar?: {
       source: "test",
       personalBazi: {
         ...(honmeiStar ? { honmeiStar } : {}),
-        voidZodiac: ["午", "未"],
+        voidZodiac: "午未",
       },
       classicalRules: {
         pillars: {

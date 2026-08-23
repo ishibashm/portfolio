@@ -48,7 +48,7 @@ const state: NBAParams["stateVector"] = {
   isDoyouHazard: false,
   ragContext: {
     source: "test",
-    personalBazi: { voidZodiac: ["午", "未"] },
+    personalBazi: { voidZodiac: "午未" },
     classicalRules: {
       pillars: {
         year: { gan: "丙", zhi: "午" },
