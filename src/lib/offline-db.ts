@@ -48,7 +48,7 @@ export const saveToOutbox = async (workspaceId: string, message: string) => {
   if ("serviceWorker" in navigator && "SyncManager" in window) {
     try {
       const swRegistration = await navigator.serviceWorker.ready;
-      // @ts-ignore
+      // @ts-expect-error -- SyncManager は lib.dom の ServiceWorkerRegistration に無い
       await swRegistration.sync.register("sync-chat-outbox");
       console.log("[Background Sync] Registered sync event.");
     } catch (e) {

@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     headers.set("Cache-Control", "public, max-age=31536000, immutable");
 
     // Return as stream
-    // @ts-ignore - Next.js NextResponse can accept readable stream
+    // @ts-expect-error -- NextResponse は ReadableStream を受け取れるが型に無い
     return new NextResponse(fileStream, { headers });
   } catch (error) {
     console.error("Error serving local media:", error);
