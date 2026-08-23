@@ -43,9 +43,12 @@ export const AREA_GENERATED_AT: string = dataset.generatedAt;
  *
  * `asOf` を持たないのは併合を入れる前に書き出された JSON だけなので、
  * そのときだけファイルの日付に落とす。
+ *
+ * `??` ではなく `||` を使う。空文字は「不明」であって「その日付」では
+ * ないのに、`??` だと素通りして `new Date("")` が Invalid Date になる。
  */
 export function areaAsOf(area: Area): string {
-  return area.asOf ?? AREA_GENERATED_AT.slice(0, 10);
+  return area.asOf || AREA_GENERATED_AT.slice(0, 10);
 }
 
 const byCode = new Map(AREAS.map((a) => [a.code, a]));

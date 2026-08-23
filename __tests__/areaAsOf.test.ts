@@ -32,6 +32,14 @@ describe("areaAsOf", () => {
     expect(areaAsOf(legacy)).toBe(AREA_GENERATED_AT.slice(0, 10));
   });
 
+  it("asOf が空文字でもファイルの日付に落とす", () => {
+    // 空文字は「不明」であって「その日付」ではない。素通りさせると
+    // new Date("") が Invalid Date になり、画面に出る。
+    expect(areaAsOf({ ...sample, asOf: "" })).toBe(
+      AREA_GENERATED_AT.slice(0, 10),
+    );
+  });
+
   it("返すのは YYYY-MM-DD。Date に食わせられる形", () => {
     const value = areaAsOf(sample);
     expect(value).toMatch(/^\d{4}-\d{2}-\d{2}$/);
