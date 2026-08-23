@@ -90,7 +90,19 @@ export interface GeoFilters {
  * findMany に渡している whereClause と同じ条件を SQL 化する。
  * 値は必ずプレースホルダで渡す（prefecture はクエリ文字列由来のため）。
  */
-export function buildWhereSql(f: GeoFilters): { sql: string; params: any[] } {
+/**
+ * SQL のプレースホルダ（`$1` など）に渡す値。
+ *
+ * 実際に入るのは日付（最終確認日）・数値（築年数・緯度経度）・
+ * 文字列（都道府県名）だけ。`any[]` だと、渡す側が何を入れてもよいことに
+ * なってしまう。pg は Date をそのまま扱えるので、文字列に直さない。
+ */
+export type SqlParam = string | number | boolean | Date | null;
+
+export function buildWhereSql(f: GeoFilters): {
+  sql: string;
+  params: SqlParam[];
+} {
   const parts = [
     "lat IS NOT NULL",
     "lon IS NOT NULL",
@@ -101,7 +113,7 @@ export function buildWhereSql(f: GeoFilters): { sql: string; params: any[] } {
     // expire_date が未取得（古い行）のものは判定できないので除外しない。
     "(expire_date IS NULL OR expire_date >= now())",
   ];
-  const params: any[] = [];
+  const params: SqlParam[] = [];
   const ph = () => `$${params.length}`;
 
   if (f.maxSeenDays > 0) {

@@ -33,7 +33,9 @@ import {
   selectSql,
   uniqueCountSql,
   type GeoFilters,
+  type SqlParam,
 } from "../src/utils/arbitrageQuery";
+import { toLogMessage } from "../src/lib/errorMessage";
 import { RENT_BUCKET_SQL } from "../src/lib/rentHistogram";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -54,23 +56,29 @@ const MAX_SEEN_DAYS = 30;
 const DEDUPE = true;
 const LIMIT = 500;
 
-async function explain(pool: Pool, label: string, sql: string, params: any[]) {
+async function explain(
+  pool: Pool,
+  label: string,
+  sql: string,
+  params: SqlParam[],
+) {
   const started = Date.now();
   try {
-    const r = await pool.query(
+    /* EXPLAIN の戻りは 1 列（"QUERY PLAN"）だけ。型を書けば cast が要らない。 */
+    const r = await pool.query<{ "QUERY PLAN": string }>(
       `EXPLAIN (ANALYZE, BUFFERS, TIMING, SUMMARY) ${sql}`,
       params,
     );
-    const plan = r.rows.map((row: any) => row["QUERY PLAN"] as string);
+    const plan = r.rows.map((row) => row["QUERY PLAN"]);
     const exec = plan.find((l) => l.startsWith("Execution Time:")) ?? "";
     const top = plan.slice(0, 6).join("\n");
     console.log(`\n===== ${label} =====`);
     console.log(exec || `(実測 ${Date.now() - started} ms)`);
     console.log(top);
-  } catch (e: any) {
+  } catch (e) {
     // タイムアウトそのものが答えになる。落とさずに記録して次へ進む。
     console.log(`\n===== ${label} =====`);
-    console.log(`失敗: ${e.message} （${Date.now() - started} ms 経過）`);
+    console.log(`失敗: ${toLogMessage(e)} （${Date.now() - started} ms 経過）`);
   }
 }
 
@@ -179,8 +187,8 @@ async function main() {
         params,
       );
       console.log(`名寄せ前の対象行: ${r.rows[0].n.toLocaleString()} 行`);
-    } catch (e: any) {
-      console.log(`件数の取得に失敗: ${e.message}`);
+    } catch (e) {
+      console.log(`件数の取得に失敗: ${toLogMessage(e)}`);
     }
 
     await explain(
