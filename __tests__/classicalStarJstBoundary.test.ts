@@ -39,11 +39,15 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
  *
  * ## ここで固定すること
  *
- *   1. 同じ日本時間の 1 日の中では、日盤と年盤が変わらないこと（＝境目が 0 時）
- *   2. 月盤が日の途中で変わるのは、**節入りの基準日が動いた日だけ**であること
- *      （節入りは時刻で起きるので、立春などの日に変わるのは正しい）
+ *   1. 同じ日本時間の 1 日の中では、日盤が変わらないこと（＝境目が 0 時）
+ *   2. 年盤・月盤が日の途中で変わるのは、**節入りの基準日が動いた日だけ**
+ *      であること（節入りは時刻で起きるので、立春などの日に変わるのは正しい）
  *   3. 明示的に日本時間で引いた暦と一致すること
  *   4. 旧実装（`Solar.fromDate`）はこれを満たさないこと
+ *
+ * **2 の年盤は #560 で足した。**それまで年盤は「立春の日の 0 時」で
+ * 切り替わっており、ここでも「1 日の中で変わらない」と固定していた。
+ * 利用者の判断で節入りの時刻に揃えたので、月盤と同じ形にする。
  *
  * 4 つめは**このテストが空回りしていないことの確認**。旧実装を写して
  * あるので、直したつもりで直っていなければ 4 つめが通ってしまう。
@@ -79,6 +83,25 @@ function referenceInJst(date: Date) {
     year: lunar.getYearNineStar().getIndex() + 1,
     day: lunar.getDayNineStar().getIndex() + 1,
   };
+}
+
+/**
+ * 年盤の参照値。**月盤と同じく節入り基準日（anchor）を日本時間で読む。**
+ *
+ * #560 より前は日付をそのまま読んでいた（`referenceInJst().year`）。
+ * 年盤を節入りの時刻で切り替えるようにしたので、参照もそちらに揃える。
+ */
+function referenceYearInJst(date: Date): number {
+  const f = getZonedDateTimeFields(solarTermMonthAnchor(date), 9);
+  const solar = Solar.fromYmdHms(
+    f.year,
+    f.month,
+    f.day,
+    f.hours,
+    f.minutes,
+    f.seconds,
+  );
+  return solar.getLunar().getYearNineStar().getIndex() + 1;
 }
 
 /** 月盤の参照値。節入り基準日（anchor）を日本時間で読む。 */
@@ -127,13 +150,38 @@ describe("古典盤の日の境目は日本時間の 0 時", () => {
     }
   });
 
-  it("同じ日本時間の 1 日の中では年盤も変わらない", () => {
+  /*
+    年盤も**日の途中で変わってよい。**立春は「年の境目」であると同時に
+    「寅月の節入り」でもあり、節入りは時刻で起きる（#560）。月盤と同じ
+    `solarTermMonthAnchor` を見ているので、割れ方も月盤と同じ形になる。
+
+    固定するのは「変わらない」ではなく **「変わるのは節入りの基準日が
+    動いたときだけ」**。TZ のずれで割れていたら、基準日が動いていないのに
+    盤が変わるので、ここで捕まる。
+  */
+  it("年盤が 1 日の中で変わるのは、節入りの基準日が動いた日だけ", () => {
+    let changed = 0;
     for (let i = 0; i < 365; i++) {
       const day0 = new Date(jst(2026, 1, 1, 0).getTime() + i * 86400000);
-      const a = getClassicalYearStar(day0);
-      const b = getClassicalYearStar(new Date(day0.getTime() + 23 * 3600000));
-      expect(a).toBe(b);
+      const day23 = new Date(day0.getTime() + 23 * 3600000);
+      const starMoved =
+        getClassicalYearStar(day0) !== getClassicalYearStar(day23);
+      const anchorMoved =
+        solarTermMonthAnchor(day0).getTime() !==
+        solarTermMonthAnchor(day23).getTime();
+      const label = getZonedDateTimeFields(day0, 9);
+      expect(
+        starMoved && !anchorMoved,
+        `${label.year}-${label.month}-${label.day}: 基準日は動いていないのに年盤が変わった`,
+      ).toBe(false);
+      if (starMoved) changed += 1;
     }
+    /*
+      年に 1 回（立春）だけ。2026 の立春は 2/4 05:01 JST なので 0 時と
+      23 時に挟まれる。**年によっては 0 になる**（2025 の立春は 2/3 23:10
+      JST で 23 時より後）。月盤の 11 回と同じ理由。
+    */
+    expect(changed).toBe(1);
   });
 
   /*
@@ -181,7 +229,7 @@ describe("古典盤の日の境目は日本時間の 0 時", () => {
       const ref = referenceInJst(d);
       expect(getClassicalDayStar(d), `${d.toISOString()} の日盤`).toBe(ref.day);
       expect(getClassicalYearStar(d), `${d.toISOString()} の年盤`).toBe(
-        ref.year,
+        referenceYearInJst(d),
       );
     });
   });
@@ -244,16 +292,38 @@ describe("旧実装はこれを満たさない（テストが空回りしてい�
     expect(offBy).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
   });
 
-  it.runIf(runsInUtc)("年盤・月盤も旧実装とは境目の日でずれる", () => {
+  it.runIf(runsInUtc)("年盤は旧実装とずれる。月盤はずれない", () => {
+    /*
+      **3 時だけを見ていると差が出ない。**#560 で年盤を節入りの時刻に
+      揃えたあとは、立春の日の 3 時（UTC では前日 18 時）で新旧が同じ
+      答えになる。1 日 1 点の抽出では捕まらないので、全時刻を見る。
+
+      直前にこれで落ちた。「差が 0 だから直っていない」ではなく、
+      **見る場所が足りていなかった。**
+    */
     let yearDiff = 0;
     let monthDiff = 0;
     for (let i = 0; i < 365; i++) {
-      const d = new Date(jst(2026, 1, 1, 3).getTime() + i * 86400000); // 3 時
-      if (legacyClassicalYearStar(d) !== getClassicalYearStar(d)) yearDiff += 1;
-      if (legacyClassicalMonthStar(d) !== getClassicalMonthStar(d))
-        monthDiff += 1;
+      for (let h = 0; h < 24; h++) {
+        const d = new Date(
+          jst(2026, 1, 1, 0).getTime() + i * 86400000 + h * 3600000,
+        );
+        if (legacyClassicalYearStar(d) !== getClassicalYearStar(d))
+          yearDiff += 1;
+        if (legacyClassicalMonthStar(d) !== getClassicalMonthStar(d))
+          monthDiff += 1;
+      }
     }
-    // 年は立春、月は節入りの日だけなので件数は少ないが、0 ではない。
-    expect(yearDiff + monthDiff).toBeGreaterThan(0);
+    // 立春の日の数時間だけ。実測 3 件（2026 年 8,760 時点のうち）。
+    expect(yearDiff).toBeGreaterThan(0);
+
+    /*
+      月盤は 0。**旧実装でも TZ に影響されない。**anchor は節入りの
+      15 日後を指すので、UTC で読んでも JST で読んでも必ず同じ節月の中に
+      入る。年盤も同じ anchor を見るようになったが、こちらは「立春の
+      前か後か」を決める境目に近い日が anchor になることは無いものの、
+      **旧実装が anchor を通していなかった**ぶんだけ差が残る。
+    */
+    expect(monthDiff).toBe(0);
   });
 });

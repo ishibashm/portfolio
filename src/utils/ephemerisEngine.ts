@@ -242,8 +242,30 @@ export const AstroEngine = {
  * 固有周波数（本命星）の算出：
  * 伝統的な暦（立春）に基づく精密な九星判定。
  */
+/**
+ * 古典年盤（本命星）の算出。
+ *
+ * **立春の「瞬間」で切り替える。**日単位で丸めない。
+ *
+ * 以前は日付をそのまま lunar-javascript に渡していた。あちらは
+ * **立春の日の 0 時**で年を切り替えるので、月盤（太陽黄経 315 度を越えた
+ * 瞬間で切り替わる）と食い違っていた。立春は「年の境目」であると同時に
+ * 「寅月の節入り」でもあるので、**同じ瞬間に両方が変わるのが正しい。**
+ * ずれは実測で年 4〜24 時間あり、その間だけ「年盤は新年なのに月盤は
+ * まだ丑月」という状態になっていた（#548 で現状を固定した）。
+ *
+ * 月盤と同じ `solarTermMonthAnchor` を通す。節入りの 15 日後を指すので、
+ * **必ずその節月の中**に入り、年の境目をまたがない。年盤と月盤が同じ
+ * anchor を見るので、切り替わる瞬間も必ず一致する。
+ *
+ * 立春の日以外では答えが変わらないことを、1950〜2050 年の 505 日で
+ * 確かめてある（`__tests__/kyuseiSolarTermBoundary.test.ts`）。
+ *
+ * **本命星もこの関数で決まる。**立春の日に生まれた人は、節入りより前
+ * なら前年の星になる。利用者の判断（時刻基準で揃える）に基づく変更。
+ */
 export function getClassicalYearStar(date: Date): StarFrequency {
-  const solar = solarInJst(date);
+  const solar = solarInJst(solarTermMonthAnchor(date));
   const lunar = solar.getLunar();
   return (lunar.getYearNineStar().getIndex() + 1) as StarFrequency;
 }
