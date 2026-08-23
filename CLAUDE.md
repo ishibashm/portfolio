@@ -225,7 +225,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 196**（クラウド実測。上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 122**（クラウド実測。上の注意を読むこと）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -248,38 +248,38 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 ### 現状の内訳（`npm run lint` 実行時点）
 
 ```
-121  @typescript-eslint/no-explicit-any
- 38  @typescript-eslint/no-unused-vars
- 16  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
-  8  react-hooks/set-state-in-effect    ← 同上で対象外
-  5  @typescript-eslint/ban-ts-comment
-  4  @typescript-eslint/no-require-imports
-  5  react-hooks/purity ほか（同上で対象外）
+59  @typescript-eslint/no-explicit-any
+30  @typescript-eslint/no-unused-vars
+16  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
+ 8  react-hooks/set-state-in-effect    ← 同上で対象外
+ 4  @typescript-eslint/no-require-imports
+ 4  react-hooks/purity ほか（同上で対象外）
+ 1  @typescript-eslint/ban-ts-comment
 ```
 
-**対象外が 24 件ある**ので、実際に手を付けられるのは 173 件ぶん。
+**対象外が 28 件ある**ので、実際に手を付けられるのは 94 件ぶん。
 
 `catch (e: any)` は **0 件**（#215 で最後の 4 件が片付いた）。
 
-ファイル別の上位（`unused` / `any` / その他）：
+ファイル別の上位：
 
-| 件数 | ファイル | 内訳 |
-|---|---|---|
-| 12 | `src/utils/ephemerisEngine.ts` | 0 / 12 / 0 |
-| 12 | `src/utils/nbaEngine.ts` | 0 / 12 / 0 |
-| 10 | `src/utils/baziEngine.ts` | 1 / 9 / 0 |
-|  8 | `src/utils/arbitrageAstro.ts` | 0 / 7 / 1 |
-|  6 | `scripts/gas_newsletter.js` | 6 / 0 / 0 |
-|  5 | `scripts/shamaison_extractor.ts` | 0 / 5 / 0 |
-|  5 | `src/app/relocation/simulator/page.tsx` | 1 / 0 / 4 |
-|  4 | `scripts/explain_arbitrage_query.ts` | 0 / 4 / 0 |
-|  4 | `scripts/fetch_estat_sample.ts` | 0 / 4 / 0 |
-|  4 | `src/app/api/relocation/export/route.ts` | 0 / 4 / 0 |
-|  4 | `src/components/nba/NBADashboard.tsx` | 0 / 1 / 3 |
+| 件数 | ファイル |
+|---|---|
+| 6 | `scripts/gas_newsletter.js`（Apps Script の入口 3 つは消せない。下記） |
+| 5 | `src/app/relocation/simulator/page.tsx` |
+| 4 | `src/components/nba/NBADashboard.tsx` |
+| 3 | `src/utils/localAgentEngine.ts` |
+| 3 | `src/types/lunar-javascript.d.ts` |
+| 3 | `src/components/nba/TenChiJinEvaluation.tsx` |
+| 3 | `src/components/SystemTelemetryLog.tsx` |
+| 3 | `src/app/relocation/wealth/page.tsx` |
+| 3 | `src/app/login/page.tsx` |
+| 3 | `src/app/api/relocation/export/route.ts` |
 
-**`SolarTimeClock.tsx` は 0 件になった**（かつて 39 件で最大だった）。
-`ArbitrageMapInner`・`MagneticMapInner`・`OmniPipelineWidget`・
-`arbitrage/page.tsx` も表から消えている。
+**判定の中核は片付いた**（#536〜#538）。`ephemerisEngine` 12 → 2、
+`nbaEngine` 12 → 2、`baziEngine` 9 → **0**。`scripts/` の `any` も
+0 になった（#549〜#551）。`SolarTimeClock.tsx`・`arbitrageAstro.ts`・
+`auspiciousDays.ts` も表から消えている。
 
 ### catch は片付いた。その過程で分かったこと
 
@@ -316,19 +316,20 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ### 次にやるとよいもの
 
-**散らばっている分は、ほぼ拾い切った**（#448〜#453 で 231 → 197）。残りは
-性質の違うものが 3 つに分かれる。
+**判定の中核も `scripts/` も片付いた**（#536〜#552）。残りは 3 つに分かれる。
 
-**1. 判定の中核の `any`（33 件）。**`ephemerisEngine`（12）・`nbaEngine`（12）・
-`baziEngine`（9）。ここが最大の山。型を触るだけでも、しきい値や条件式に手が
-滑ると影響が大きい。テストが厚いので `npm test` は効くが、**細切れではなく
-まとまった時間を取って**扱うこと。1 件ずつ潰すと文脈を持てない。
+**1. 画面の `any`（20 件超）。**`simulator/page.tsx`・`NBADashboard`・
+`TenChiJinEvaluation`・`wealth/page.tsx` など。**API / エンジンの応答を
+抱えている**ものが中心で、型を切るには応答側のモデル化が先になる。
+#537 で `nbaEngine` 側の受け口は型にしたので、画面側から同じ型を引ける
+ようになった分は減らせる。
 
-**2. `scripts/` の `any`（20 件超）。**外部 JSON に型が無いことから来ている。
-下の「スクレイパーの `any`」のとおり、読む枝だけ写す。`tsc` の対象外なので
-一時 tsconfig が要る（同じく下記）。
+**2. 残った 2 件ずつの `any`（判定の中核）。**`ephemerisEngine` と
+`nbaEngine` に 2 件ずつ。どちらも**型のほうが間違っている**ことが分かって
+いて、直すと呼び出し側に波及する。経緯と直す順序は
+`docs/improvement-backlog.md` の 8 節。
 
-**3. 対象外（24 件）。**`exhaustive-deps`・`set-state-in-effect`・`purity`・
+**3. 対象外（28 件）。**`exhaustive-deps`・`set-state-in-effect`・`purity`・
 `immutability`。どれも再レンダリングのタイミングを変える。
 
 `SolarTimeClock.tsx` は**片付いた**（39 → 0）。触るときの注意だけ残す:
@@ -336,6 +337,34 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 2 回事故った**（同じ字面の使っている変数を消した／`const [a, setA]` の警告
 2 件で同じ行を二重に消した）。eslint の**行番号**を使い、同じ行を指す警告は
 畳んでから消す。消したら必ず `npx tsc --noEmit` を通す。
+
+### 字面で探すと取りこぼす。**型で探す**
+
+#540〜#544 で「絞り込みの見方（`directionFilterMode`）を読む所を全部
+検証に通した」と報告したが、**3 か所取りこぼしていた**（#552 で訂正）。
+
+    api/relocation/auspicious-days   searchParams.get が改行を挟んでいた
+    api/relocation/history           同じファイルの別の関数にもう 1 つあった
+    relocation/arbitrage/page.tsx    画面側（localStorage と保存済みプラン）
+
+`grep` で当たらない書き方をされていると見つからない。**型を狭めて tsc に
+出させると全部出る。**同じ事故は方位の集約でも 2 回起きている（3 節）。
+
+**union を受け取る所を `string` のままにしない。**名前を付けて
+（`DirectionFilterMode` / `ActionIntent`）、素の文字列は
+`parseDirectionFilterMode` / `parseActionIntent` を通してから渡す。
+そうすれば「まだ通していない所」は tsc が教えてくれる。
+
+### キャストは「消す」より「なぜ残すか」を書くほうが要ることがある
+
+`DestinationMapPanel` の `e.target.value as ActionIntent` は**残した**
+（#553）。`parseActionIntent` に替えると `ephemerisEngine` を**値として**
+import することになり、判定エンジンが丸ごと client のバンドルに乗る
+（#177〜#179 で重い依存を遅延させた経緯がある）。
+
+**字面で一律に置き換えていたら、表示の速さを黙って落としていた。**
+`import type` だけで済ませてあるファイルを触るときは、値の import を
+増やしていないか必ず見ること。
 
 ### 消してはいけない「未使用」
 
@@ -429,6 +458,13 @@ error TS2578: Unused '@ts-expect-error' directive.
 | #165・#168・#169 | ダークの配色。`dark:` が地色抜きで発火していた件 |
 | #175・#200 | 応答の `error` を誰が読むかで既定の言語が変わる（コード / 日本語 / 英語） |
 | #177〜#179 | 表示が遅い件。使わないタブの重い依存を遅延、外部 API をサーバ経由に |
+| #533〜#535 | 静的生成の入力が日々増減して URL が 404 になる件。実ファイルに当てて初めて出た不具合も |
+| #536 | 同じものを 2 通りの型で書いていたのが `as any` の原因だった例 |
+| #538 | ライブラリの型が無いとき、**呼ぶものだけ**をテンプレートリテラル型で写す |
+| #540 | 壊れた値の扱いを変える PR の出し方（旧実装をテストに写して差を固定する） |
+| #548 | 年盤と月盤で立春の切り替わり時刻が違う件。**直さずに現状を固定した**PR |
+| #552 | 字面で探して 3 か所取りこぼした訂正。型を狭めたら tsc が全部出した |
+| #553 | キャストを消さずに理由を書いた例（`import type` を値の import にしない） |
 
 ---
 
