@@ -706,6 +706,34 @@ export type DirectionFilterMode =
   | "environmental";
 
 /**
+ * 問い合わせ文字列や設定ファイルの値を `ActionIntent` に直す。
+ *
+ * **知らない値は `DEFAULT`。**これは挙動を変えない。判定はどこも
+ * `=== "REST"` / `=== "BUSINESS"` / `=== "MIGRATION"` で見ていて、
+ * それ以外は暗黙の else に落ちる——つまり**知らない文字列は今も
+ * DEFAULT と同じ扱い**になっている。型を付けてそれを明示するだけ。
+ *
+ * 値が無いときの既定は呼ぶ側で違う（一覧は MIGRATION、履歴は DEFAULT）
+ * ので、`whenAbsent` で受ける。**知らない値の落とし先とは別物。**
+ * ここを一緒にすると、壊れた値が MIGRATION に化けて答えが変わる。
+ */
+export function parseActionIntent(
+  raw: string | null | undefined,
+  whenAbsent: ActionIntent = "DEFAULT",
+): ActionIntent {
+  if (raw === null || raw === undefined || raw === "") return whenAbsent;
+  switch (raw) {
+    case "DEFAULT":
+    case "REST":
+    case "BUSINESS":
+    case "MIGRATION":
+      return raw;
+    default:
+      return "DEFAULT";
+  }
+}
+
+/**
  * 問い合わせ文字列や設定ファイルの値を `DirectionFilterMode` に直す。
  *
  * **知らない値は `composite`（絞り込みなし）に落とす。**

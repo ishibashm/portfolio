@@ -103,7 +103,7 @@ describe("天中殺の設定がスコアに届く", () => {
   });
 
   it("移転以外の用途では、厳格でも移転不可の判定を出さない", () => {
-    const r = scoreDateForProperty(voidDay(), ctx({ actionIntent: "TRAVEL" }));
+    const r = scoreDateForProperty(voidDay(), ctx({ actionIntent: "REST" }));
     expect(r.status).not.toBe("NOISE_TENCHU");
   });
 });
