@@ -97,7 +97,7 @@ describe("gradeVerdict の段階", () => {
 
 describe("rankRelocationDays（実エンジンでの走査）", () => {
   const base = {
-    honmeiStar: 5,
+    honmeiStar: 5 as const,
     voidZodiacs: [] as string[],
     lon: 135.5,
     tenchusatsuMode: "strict" as const,
@@ -191,7 +191,7 @@ describe("summarizeWindows（窓の統計）", () => {
 
 describe("rankRelocationDays の firstDate / windows", () => {
   const base = {
-    honmeiStar: 5,
+    honmeiStar: 5 as const,
     voidZodiacs: [] as string[],
     lon: 135.5,
     tenchusatsuMode: "strict" as const,
@@ -220,7 +220,7 @@ describe("rankRelocationDays の firstDate / windows", () => {
 
 describe("topDays と firstDate の整合（8/10 が消えた不具合の回帰テスト）", () => {
   const base = {
-    honmeiStar: 5,
+    honmeiStar: 5 as const,
     voidZodiacs: [] as string[],
     lon: 135.5,
     tenchusatsuMode: "off" as const,

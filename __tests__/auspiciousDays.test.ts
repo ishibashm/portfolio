@@ -20,7 +20,7 @@ const BIRTH = new Date("1997-06-15T04:26:00+09:00");
 const NAGOYA_LON = 136.9008;
 
 const baseParams = {
-  honmeiStar: getHonmeiStar(BIRTH).classical as number,
+  honmeiStar: getHonmeiStar(BIRTH).classical,
   voidZodiacs: getPersonalVoidZodiac(BIRTH),
   lon: NAGOYA_LON,
   tenchusatsuMode: "off" as const,

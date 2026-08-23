@@ -75,12 +75,12 @@ describe("ピンの色は三盤の段階に従う", () => {
 describe("単盤と三盤は実際にずれる（食い違いの再現）", () => {
   // 報告時と同じ条件。本命7・天中殺 子丑・京都あたり。
   const params = {
-    honmeiStar: 7,
+    honmeiStar: 7 as const,
     voidZodiacs: ["子", "丑"],
     lon: 135.75,
     tenchusatsuMode: "strict" as const,
     involuntaryMove: false,
-    directionFilterMode: "composite",
+    directionFilterMode: "composite" as const,
   };
 
   it("年盤が凶でない方位でも、三盤では X になる日がある", () => {

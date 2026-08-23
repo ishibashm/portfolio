@@ -404,7 +404,12 @@ export async function POST(req: Request) {
     try {
       let birthDate: Date | null = null;
       let useClassical = false;
-      let directionFilterMode = "composite";
+      /*
+        **この 3 か所目は #541 で取りこぼしていた。**同じファイルの別の
+        関数にもう 1 つ同じ名前の入口があり、設定ファイルから素通しで
+        読んでいた。知らない値は composite に落とす（#540）。
+      */
+      let directionFilterMode: DirectionFilterMode = "composite";
       try {
         const config = JSON.parse(await fs.readFile(CONFIG_FILE_PATH, "utf-8"));
         if (config.birth_date)
@@ -417,7 +422,9 @@ export async function POST(req: Request) {
         if (config.use_classical_board !== undefined)
           useClassical = config.use_classical_board;
         if (config.direction_filter_mode !== undefined)
-          directionFilterMode = config.direction_filter_mode;
+          directionFilterMode = parseDirectionFilterMode(
+            config.direction_filter_mode,
+          );
       } catch {}
 
       if (!birthDate) {
@@ -437,7 +444,7 @@ export async function POST(req: Request) {
       );
       const direction = bearingToDirection(bearing, useClassical);
       const verdict = judgeDay(new Date(departureDate), {
-        honmeiStar: personalStar as number,
+        honmeiStar: personalStar,
         voidZodiacs,
         lon: parseFloat(fromLon),
         direction,

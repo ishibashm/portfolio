@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   getHonmeiStar,
   getPersonalVoidZodiac,
+  parseDirectionFilterMode,
   Direction,
 } from "@/utils/ephemerisEngine";
 import {
@@ -99,13 +100,20 @@ export async function GET(request: Request) {
     const voidZodiacs = getPersonalVoidZodiac(birthDate);
 
     const base = {
-      honmeiStar: honmeiStar.classical as number,
+      honmeiStar: honmeiStar.classical,
       voidZodiacs,
       lon,
       tenchusatsuMode,
       involuntaryMove: searchParams.get("involuntaryMove") === "true",
-      directionFilterMode:
-        searchParams.get("directionFilterMode") || "composite",
+      /*
+        知らない値は composite（＝指定が無いときと同じ）に落とす。
+        素通しだと filterCollisionByMode の else で environmental になる
+        （#540）。**この route は #540〜#544 で取りこぼしていた。**
+        `searchParams.get` が改行を挟んで書かれていて、探し方から漏れた。
+      */
+      directionFilterMode: parseDirectionFilterMode(
+        searchParams.get("directionFilterMode"),
+      ),
     };
 
     // mode=timeline: 全日 × 全方位の格付けをそのまま返す。専用の分析
