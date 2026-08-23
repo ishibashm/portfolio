@@ -693,6 +693,18 @@ export type VectorStatus =
  * 後から差し込む形なので、型で全方位を約束はしない。finalVectors だけは
  * 呼び出し側が方位で必ず引くので、全方位そろっている前提を型にしてある。
  */
+/**
+ * 判定を「どの見方で絞るか」。
+ *
+ * filterCollisionByMode の引数に直書きされていて、呼ぶ側は文字列から
+ * `as any` で押し込んでいた。名前を付けて、押し込まずに渡せるようにする。
+ */
+export type DirectionFilterMode =
+  | "composite"
+  | "personal_kigaku"
+  | "personal_bazi"
+  | "environmental";
+
 export interface VectorCollision {
   yearLayer: Partial<Record<Direction, VectorStatus>>;
   monthLayer: Partial<Record<Direction, VectorStatus>>;
@@ -1525,11 +1537,7 @@ export function filterCollisionByMode(
   personalStar: StarFrequency,
   getsuMeiStar: StarFrequency | null,
   voidZodiacs: string[],
-  directionFilterMode:
-    | "composite"
-    | "personal_kigaku"
-    | "personal_bazi"
-    | "environmental",
+  directionFilterMode: DirectionFilterMode,
   yBoard: BoardLayout | null,
   mBoard: BoardLayout | null,
   dBoard: BoardLayout | null,

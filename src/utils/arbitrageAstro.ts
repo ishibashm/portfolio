@@ -14,6 +14,9 @@ import {
   calculateLunarPhaseCondition,
   filterCollisionByMode,
   getCurrentZodiac,
+  type ActionIntent,
+  type DirectionFilterMode,
+  type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
@@ -111,11 +114,11 @@ export interface AstroStateParams {
   baseLon: number;
   physicalMonthMode: "coupled" | "independent";
   useClassical: boolean;
-  honmeiStar: { physical: any; classical: any };
+  honmeiStar: { physical: StarFrequency; classical: StarFrequency };
   voidZodiacs: string[];
-  actionIntent: any;
+  actionIntent: ActionIntent;
   nodeMapping: "traditional" | "physical";
-  directionFilterMode: string;
+  directionFilterMode: DirectionFilterMode;
   layerMode: string;
   lunarPhaseModifier: boolean;
   hasBirthLocation: boolean;
@@ -152,7 +155,6 @@ export function buildDailyAstroStates(
     const env_d = getSystemEnvironment(d, p.baseLon, p.physicalMonthMode);
 
     let activeVectors_d: Partial<Record<Direction, string>>;
-    let tendoDir_d: Direction | undefined;
     let isDoyouHazard_d = false;
 
     const star = p.useClassical
@@ -187,7 +189,7 @@ export function buildDailyAstroStates(
       star,
       null,
       p.voidZodiacs,
-      p.directionFilterMode as any,
+      p.directionFilterMode,
       yB,
       mB,
       dB,
@@ -198,7 +200,8 @@ export function buildDailyAstroStates(
     else if (p.layerMode === "day") activeVectors_d = vectorData.dayLayer;
     else activeVectors_d = vectorData.finalVectors;
 
-    tendoDir_d = vectorData.tendoDirection;
+    /* 一度しか入れないので const。宣言をここまで下ろした。 */
+    const tendoDir_d = vectorData.tendoDirection;
     isDoyouHazard_d = vectorData.doyouState?.isDoyouHazard || false;
 
     let lunarPhaseScore_d = 0;
