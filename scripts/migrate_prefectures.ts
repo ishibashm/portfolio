@@ -33,7 +33,11 @@ async function main() {
   const localAdapter = new PrismaPg(localPool);
   const localPrisma = new PrismaClient({ adapter: localAdapter });
 
-  let properties: any[] = [];
+  /* 形は Prisma の戻りから引く。列を書き写すとスキーマとずれる。 */
+  type RentalRow = Awaited<
+    ReturnType<typeof localPrisma.rental_properties.findMany>
+  >[number];
+  let properties: RentalRow[] = [];
   try {
     properties = await localPrisma.rental_properties.findMany({
       where: {

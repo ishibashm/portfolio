@@ -13,6 +13,7 @@ if (fs.existsSync(localEnvPath)) {
 
 import { PrismaClient } from "@prisma/client";
 import { toLandPricePoint, type LandPricePoint } from "./landPriceParse";
+import { toLogMessage } from "../src/lib/errorMessage";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -60,8 +61,19 @@ function latLonToTile(lat: number, lon: number, zoom: number = 15) {
 */
 const YEAR = process.env.LAND_PRICE_YEAR || "2025";
 
+/**
+ * タイル 1 枚ぶんの GeoJSON。
+ *
+ * 地点の形は `toLandPricePoint` が既に宣言しているので、そこから引く。
+ * **同じ形を書き写さない**（CLAUDE.md 3 節）。
+ */
+type LandPriceFeature = Parameters<typeof toLandPricePoint>[0];
+interface LandPriceTile {
+  features?: LandPriceFeature[];
+}
+
 // タイルのキャッシュ
-const tileCache: Record<string, any> = {};
+const tileCache: Record<string, LandPriceTile> = {};
 
 /**
  * 集めた地点を land_price_points へ書く。
@@ -190,8 +202,8 @@ async function main() {
           // Rate limit対策のために1秒待機
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-      } catch (err: any) {
-        console.error(`Fetch failed for tile ${tileKey}: ${err.message}`);
+      } catch (err) {
+        console.error(`Fetch failed for tile ${tileKey}: ${toLogMessage(err)}`);
         continue;
       }
     }
