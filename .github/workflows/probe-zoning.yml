@@ -12,13 +12,14 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "upstream = 上流（不動産情報ライブラリ）を直接／relay = 本番の /api/zoning を外から"
+        description: "upstream = 上流を直接／relay = 本番の /api/zoning を外から／catalog = ex-api に何があるか一覧（路線価を探す）"
         required: false
         default: "upstream"
         type: choice
         options:
           - upstream
           - relay
+          - catalog
 
 jobs:
   probe:
@@ -56,3 +57,9 @@ jobs:
       - name: Probe relay
         if: ${{ inputs.target == 'relay' }}
         run: npx tsx scripts/probe_zoning_relay.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # ex-api に何があるかの一覧。路線価を探すために足した。
+      # 応答の _index が中身を名乗るので、ID を総当たりすれば一覧にできる。
+      - name: Probe catalog
+        if: ${{ inputs.target == 'catalog' }}
+        run: npx tsx scripts/probe_reinfolib_catalog.ts | tee -a "$GITHUB_STEP_SUMMARY"
