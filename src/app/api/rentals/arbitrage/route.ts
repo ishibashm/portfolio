@@ -13,6 +13,7 @@ import {
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
   filterCollisionByMode,
+  parseDirectionFilterMode,
   type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
@@ -153,12 +154,15 @@ export async function GET(request: Request) {
   // 同一部屋の重複掲載をまとめるか。生データを見たい場合だけ false にする。
   const dedupe = searchParams.get("dedupe") !== "false";
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
-  const directionFilterMode = (searchParams.get("directionFilterMode") ||
-    "composite") as
-    | "composite"
-    | "personal_kigaku"
-    | "personal_bazi"
-    | "environmental";
+  /*
+    知らない値は composite（＝指定が無いときと同じ）に落とす。素通しだと
+    filterCollisionByMode の else で environmental になり、「無いときは
+    composite なのに壊れていると environmental」という筋の通らない挙動に
+    なる（#540。__tests__/directionFilterMode に固定してある）。
+  */
+  const directionFilterMode = parseDirectionFilterMode(
+    searchParams.get("directionFilterMode"),
+  );
   const actionIntent = (searchParams.get("actionIntent") ||
     "MIGRATION") as ActionIntent;
   const useTrueNorth = useTrueNorthStr === "true";

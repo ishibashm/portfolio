@@ -13,6 +13,7 @@ import {
   AstroEngine,
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
+  parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { directionFromBearing } from "@/utils/directionGeo";
@@ -87,12 +88,15 @@ export async function GET(request: Request) {
   let birthDateStr = searchParams.get("birthDate");
   const engineType = searchParams.get("engineType") || "physical"; // 'physical' or 'classical'
   const layerMode = searchParams.get("layerMode") || "final"; // 'final', 'year', 'month', 'day'
-  const directionFilterMode = (searchParams.get("directionFilterMode") ||
-    "composite") as
-    | "composite"
-    | "personal_kigaku"
-    | "personal_bazi"
-    | "environmental";
+  /*
+    知らない値は composite（＝指定が無いときと同じ）に落とす。素通しだと
+    filterCollisionByMode の else で environmental になり、「無いときは
+    composite なのに壊れていると environmental」という筋の通らない挙動に
+    なる（#540。__tests__/directionFilterMode に固定してある）。
+  */
+  const directionFilterMode = parseDirectionFilterMode(
+    searchParams.get("directionFilterMode"),
+  );
   /*
     useTrueNorth は**もう読まない。**判定は真北で固定（下の
     targetDirection）、偏角の注意も真北と磁北がずれれば必ず出すので、

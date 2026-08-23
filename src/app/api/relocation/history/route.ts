@@ -12,8 +12,10 @@ import {
   getPersonalVoidZodiac,
   getHonmeiStar,
   filterCollisionByMode,
+  parseDirectionFilterMode,
   Direction,
   type ActionIntent,
+  type DirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
@@ -94,11 +96,7 @@ export async function GET(request: Request) {
     let birthDate: Date | null = null;
     let useTrueNorth = false;
     let useClassical = false;
-    let directionFilterMode:
-      | "composite"
-      | "personal_kigaku"
-      | "personal_bazi"
-      | "environmental" = "composite";
+    let directionFilterMode: DirectionFilterMode = "composite";
     let actionIntent: ActionIntent = "DEFAULT";
     let physicalMonthMode: "coupled" | "independent" = "independent";
 
@@ -111,7 +109,9 @@ export async function GET(request: Request) {
       if (config.use_classical_board !== undefined)
         useClassical = config.use_classical_board;
       if (config.direction_filter_mode !== undefined)
-        directionFilterMode = config.direction_filter_mode;
+        directionFilterMode = parseDirectionFilterMode(
+          config.direction_filter_mode,
+        );
       if (config.action_intent !== undefined)
         actionIntent = config.action_intent;
       if (config.physical_month_mode !== undefined)
@@ -121,15 +121,16 @@ export async function GET(request: Request) {
     // Override from search params if provided
     if (useClassicalStr !== null) useClassical = useClassicalStr === "true";
     /*
-      問い合わせ文字列は string なので、いずれも当てはめが要る。
-      **検証は足していない。**範囲外の値がそのままエンジンへ流れる
-      いまの挙動を変えないため（export/route.ts に同じ註がある）。
-      as any をやめて実際の型にしたのは、渡す先が受け取れる値だけを
-      書いたと分かるようにするため。
+      知らない値は composite（＝指定が無いときと同じ）に落とす。素通しだと
+      filterCollisionByMode の else で environmental になり、「無いときは
+      composite なのに壊れていると environmental」という筋の通らない挙動に
+      なる（#540。__tests__/directionFilterMode に固定してある）。
+
+      actionIntent のほうは**まだ検証していない。**同じ形の問題があるが、
+      範囲外の値の扱いを変えるので別に出す。
     */
     if (directionFilterModeStr !== null)
-      directionFilterMode =
-        directionFilterModeStr as typeof directionFilterMode;
+      directionFilterMode = parseDirectionFilterMode(directionFilterModeStr);
     if (actionIntentStr !== null)
       actionIntent = actionIntentStr as ActionIntent;
 
