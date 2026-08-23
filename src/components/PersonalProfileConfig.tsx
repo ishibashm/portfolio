@@ -11,7 +11,6 @@ import {
   Save,
   Plus,
   Trash2,
-  FolderOpen,
   UserCheck,
 } from "lucide-react";
 import {

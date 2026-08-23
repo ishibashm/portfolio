@@ -3,7 +3,6 @@ import {
   getClassicalYearStar,
   getClassicalMonthStar,
   getClassicalDayStar,
-  getHonmeiStar,
   calculateVectorCollision,
   generateBoard,
   getSolarMonthIndex,
