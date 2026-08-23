@@ -222,6 +222,14 @@ export default function DestinationMapPanel({
               <select
                 value={actionIntent}
                 onChange={(e) =>
+                  /*
+                    ここは cast のまま。下の option が DEFAULT / REST /
+                    BUSINESS / MIGRATION の 4 つだけなので、他の値は来ない。
+                    parseActionIntent に替えると ephemerisEngine を**値として**
+                    import することになり、この client コンポーネントの
+                    バンドルに判定エンジンが丸ごと乗る（#177〜#179 で
+                    重い依存を遅延させた経緯がある）。
+                  */
                   setActionIntent(e.target.value as ActionIntent)
                 }
                 className="bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right"
