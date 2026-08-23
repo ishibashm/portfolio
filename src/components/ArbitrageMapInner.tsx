@@ -31,6 +31,9 @@ import {
   normalizeHazardTab,
   type HazardTabId,
 } from "@/lib/hazardLayers";
+import { ZoningLayer } from "@/components/relocation/ZoningLayer";
+import { ZoningLegend } from "@/components/relocation/ZoningLegend";
+import type { ZoningName } from "@/utils/zoning";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
@@ -362,6 +365,9 @@ function getMunicipality(address: string | null): string {
   return cleanAddr.substring(0, 8);
 }
 
+/** 用途地域を出すかどうかを端末に残す鍵。 */
+const ZONING_STORAGE_KEY = "arb_zoning_on";
+
 export default function ArbitrageMapInner({
   properties,
   baseLat,
@@ -427,6 +433,22 @@ export default function ArbitrageMapInner({
       ? "none"
       : normalizeHazardTab(localStorage.getItem(HAZARD_STORAGE_KEY)),
   );
+  /*
+    用途地域（都市計画法）の重ね描き。既定は消えている。
+
+    参考として重ねるだけで、**方位の吉凶の判定には一切入らない。**
+    選択は端末に残す（ハザードのタブと同じ扱い）。
+  */
+  const [zoningOn, setZoningOn] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(ZONING_STORAGE_KEY) === "on",
+  );
+  /** 1 区分だけを見るときの選択。色だけでは 13 区分を見分けられないため。 */
+  const [zoningPick, setZoningPick] = useState<ZoningName | null>(null);
+  /** 縮尺が足りない・全部は出せていない、などの断り。 */
+  const [zoningNotice, setZoningNotice] = useState<string | null>(null);
+
   // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
     "kigaku",
@@ -1037,6 +1059,13 @@ export default function ArbitrageMapInner({
         {/* ハザードの重ね描き。区域が無い場所はタイル自体が無く透明で返る */}
         <HazardTileOverlay tab={hazardTab} />
 
+        {/* 用途地域。既定は消えている。判定には入らない参考の層。 */}
+        <ZoningLayer
+          enabled={zoningOn}
+          selected={zoningPick}
+          onNotice={setZoningNotice}
+        />
+
         {/* Theme Switcher + フォーカスの明示切り替え。
             「今どこを見ているのか」を手で確定できるようにする */}
         {/* 表示範囲の掲載件数。ズーム・移動に追従して数え直される。
@@ -1096,6 +1125,27 @@ export default function ArbitrageMapInner({
               </button>
             ))}
           </div>
+          {/* 用途地域の切り替え。ハザードのタブと同じ列に置く。
+              どちらも「参考として重ねる層」で、判定には入らない。 */}
+          <button
+            onClick={() => {
+              const next = !zoningOn;
+              setZoningOn(next);
+              localStorage.setItem(ZONING_STORAGE_KEY, next ? "on" : "off");
+              /* 消したら絞り込みも戻す。次に出したとき 1 区分だけ
+                 残っていると、消えているように見える。 */
+              if (!next) setZoningPick(null);
+            }}
+            aria-pressed={zoningOn}
+            title="用途地域（商業地域・住居地域など）を重ねて表示（出典: 不動産情報ライブラリ）"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+              zoningOn
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+            }`}
+          >
+            🏙️ 用途地域
+          </button>
           <button
             onClick={() => {
               const nextTheme = mapTheme === "dark" ? "light" : "dark";
@@ -1107,6 +1157,18 @@ export default function ArbitrageMapInner({
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
+          {/* 凡例。出しているときだけ。押すと 1 区分だけ残る。
+              色だけで 13 区分は見分けられない（実測 ΔE 6.8）ので、
+              名前を並べて絞り込みで読ませる。 */}
+          {zoningOn && (
+            <div className="w-56 max-h-[60vh] overflow-y-auto shadow-lg rounded-2xl">
+              <ZoningLegend
+                selected={zoningPick}
+                onSelect={setZoningPick}
+                notice={zoningNotice}
+              />
+            </div>
+          )}
           {/* 扇形の表示切り替え。出発地が無いとそもそも扇形を描かないので、
               そのときはボタンも出さない（押しても何も起きないボタンを
               置かない）。
