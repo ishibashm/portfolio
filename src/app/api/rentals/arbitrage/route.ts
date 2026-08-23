@@ -13,8 +13,8 @@ import {
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
   filterCollisionByMode,
+  parseActionIntent,
   parseDirectionFilterMode,
-  type ActionIntent,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { directionFromBearing } from "@/utils/directionGeo";
@@ -163,8 +163,17 @@ export async function GET(request: Request) {
   const directionFilterMode = parseDirectionFilterMode(
     searchParams.get("directionFilterMode"),
   );
-  const actionIntent = (searchParams.get("actionIntent") ||
-    "MIGRATION") as ActionIntent;
+  /*
+    知らない値は DEFAULT。これは挙動を変えない——判定は
+    `=== "REST"` / `=== "BUSINESS"` / `=== "MIGRATION"` でしか見ておらず、
+    それ以外は今も暗黙の else（＝DEFAULT）に落ちている（#542）。
+    値が無いときの既定 MIGRATION とは別に渡す。一緒にすると壊れた値が
+    移転扱いに化ける。
+  */
+  const actionIntent = parseActionIntent(
+    searchParams.get("actionIntent"),
+    "MIGRATION",
+  );
   const useTrueNorth = useTrueNorthStr === "true";
   // 掲載終了した物件は一覧から消えるだけなので、DB には残り続ける。
   // 実測では最終確認から 7 日以上経った行の半数が既に 404 だった。
