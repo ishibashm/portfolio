@@ -1,4 +1,4 @@
-import { Lunar, Solar } from "lunar-javascript";
+import { Solar } from "lunar-javascript";
 import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
 
 /**
@@ -41,6 +41,48 @@ export interface BaziResult {
     description: string;
     strength: string;
   };
+}
+
+/** 四柱。lunar-javascript の取り出し名がこの綴り（時柱は Time）。 */
+type PillarType = "Year" | "Month" | "Day" | "Time";
+
+/**
+ * lunar-javascript の `EightChar` のうち、**この engine が呼ぶものだけ。**
+ *
+ * ライブラリの型定義（`src/types/lunar-javascript.d.ts`）は `any` のまま
+ * なので、受け取る側で読む枝を写す（CLAUDE.md 3 節・#149 と同じ方針）。
+ * 柱ごとの取り出しは `get{柱}{項目}` という綴りで並んでいて、テンプレート
+ * リテラル型で書けば `extractPillar` の動的な呼び出しがそのまま通る。
+ */
+type PillarGetters = {
+  [K in `get${PillarType}${
+    | "Gan"
+    | "Zhi"
+    | "ShiShenGan"
+    | "DiShi"
+    | "NaYin"
+    | "WuXing"}`]: () => string;
+} & {
+  [K in `get${PillarType}${"HideGan" | "ShiShenZhi"}`]: () => string[];
+};
+
+/** 大運 1 期ぶん。 */
+interface DaYunLike {
+  getStartYear(): number;
+  getEndYear(): number;
+  getGanZhi(): string;
+}
+
+interface EightCharLike extends PillarGetters {
+  /** 日柱の空亡（天中殺）の十二支。 */
+  getDayXunKong(): string;
+  getYun(gender: number): { getDaYun(): DaYunLike[] };
+}
+
+/** `Lunar` のうち、この engine が呼ぶものだけ。 */
+interface LunarLike {
+  getDayJiShen(): string[];
+  getJieQiTable(): Record<string, { toFullString(): string }>;
 }
 
 export class BaziEngine {
@@ -115,7 +157,10 @@ export class BaziEngine {
     };
   }
 
-  private extractPillar(eightChar: any, type: string): BaziPillar {
+  private extractPillar(
+    eightChar: EightCharLike,
+    type: PillarType,
+  ): BaziPillar {
     const gan = eightChar[`get${type}Gan`]();
     const zhi = eightChar[`get${type}Zhi`]();
     const ganTenGod = eightChar[`get${type}ShiShenGan`]() || "日主";
@@ -153,7 +198,9 @@ export class BaziEngine {
     return map[stem] || "";
   }
 
-  private calculateFiveElements(pillars: any): Record<string, number> {
+  private calculateFiveElements(
+    pillars: BaziResult["pillars"],
+  ): Record<string, number> {
     const balance: Record<string, number> = {
       木: 0,
       火: 0,
@@ -168,7 +215,7 @@ export class BaziEngine {
       }
     };
 
-    const processPillar = (pillar: any) => {
+    const processPillar = (pillar: BaziPillar) => {
       // 1. Celestial Stem (gan) gets weight 1.0
       if (pillar.gan) {
         const stemWuxing = this.getStemWuxing(pillar.gan);
@@ -210,7 +257,10 @@ export class BaziEngine {
     return balance;
   }
 
-  private calculateShenSha(eightChar: any, lunar: any): string[] {
+  private calculateShenSha(
+    eightChar: EightCharLike,
+    lunar: LunarLike,
+  ): string[] {
     const stars: string[] = [];
 
     // Add logic for specific Shen Sha if needed
@@ -236,7 +286,7 @@ export class BaziEngine {
     return Array.from(new Set(stars));
   }
 
-  private getSolarTerms(lunar: any): Record<string, string> {
+  private getSolarTerms(lunar: LunarLike): Record<string, string> {
     const table = lunar.getJieQiTable();
     const terms: Record<string, string> = {};
     for (const key in table) {
@@ -245,10 +295,13 @@ export class BaziEngine {
     return terms;
   }
 
-  private calculateLuckCycles(eightChar: any, gender: number): LuckCycle[] {
+  private calculateLuckCycles(
+    eightChar: EightCharLike,
+    gender: number,
+  ): LuckCycle[] {
     const yun = eightChar.getYun(gender);
     const daYun = yun.getDaYun();
-    return daYun.slice(1, 9).map((dy: any) => ({
+    return daYun.slice(1, 9).map((dy) => ({
       startYear: dy.getStartYear(),
       endYear: dy.getEndYear(),
       ganZhi: dy.getGanZhi(),
@@ -259,7 +312,7 @@ export class BaziEngine {
     dayMaster: string,
     wuxing: string,
     balance: Record<string, number>,
-  ): any {
+  ): BaziResult["summary"] {
     let strength = "中庸";
     if (balance[wuxing] > 3) strength = "極強";
     else if (balance[wuxing] > 2) strength = "身強";
