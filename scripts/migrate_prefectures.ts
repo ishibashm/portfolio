@@ -31,7 +31,7 @@ async function main() {
     max: 1,
   });
   const localAdapter = new PrismaPg(localPool);
-  const localPrisma = new PrismaClient({ adapter: localAdapter } as any);
+  const localPrisma = new PrismaClient({ adapter: localAdapter });
 
   let properties: any[] = [];
   try {
@@ -66,7 +66,7 @@ async function main() {
   console.log("2. 移行先（本番環境）のデータベースへ接続しています...");
   const targetPool = new Pool({ connectionString: targetUrl, max: 1 });
   const targetAdapter = new PrismaPg(targetPool);
-  const targetPrisma = new PrismaClient({ adapter: targetAdapter } as any);
+  const targetPrisma = new PrismaClient({ adapter: targetAdapter });
 
   try {
     console.log(

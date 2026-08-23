@@ -14,13 +14,15 @@
  * 1 ページ目の内容が返る。ページャの is-active が要求したページ番号と
  * 一致しなくなった時点で終了する。
  */
-import { chromium, Page } from "playwright";
+import { chromium, Browser, Page } from "playwright";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
+
+import { toLogMessage } from "../src/lib/errorMessage";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -190,7 +192,7 @@ async function extractPage(
       "";
     const activePage = /^\d+$/.test(activeText) ? parseInt(activeText, 10) : null;
 
-    const rows: any[] = [];
+    const rows: RoomRow[] = [];
     for (const item of Array.from(document.querySelectorAll(`.${B}`))) {
       // 変数に代入した関数を evaluate に持ち込むと、tsx(esbuild) が付ける
       // __name ヘルパーがブラウザ側に無く ReferenceError になる。全て直書きする。
@@ -297,8 +299,8 @@ async function saveToDatabase(prisma: PrismaClient, rows: RoomRow[]) {
         },
       });
       saved++;
-    } catch (e: any) {
-      console.error(`Failed to save ${url}:`, e.message || e);
+    } catch (e) {
+      console.error(`Failed to save ${url}:`, toLogMessage(e));
     }
     await new Promise((res) => setTimeout(res, 40));
   }
@@ -306,7 +308,7 @@ async function saveToDatabase(prisma: PrismaClient, rows: RoomRow[]) {
 }
 
 async function scrapeCity(
-  browser: any,
+  browser: Browser,
   prisma: PrismaClient,
   pref: string,
   city: City,
@@ -375,7 +377,7 @@ async function scrapeCity(
 async function main() {
   const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
   const pool = new Pool({ connectionString, max: 1 });
-  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) } as any);
+  const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
   const browser = await chromium.launch({ headless: true });
 
   try {
@@ -413,8 +415,8 @@ async function main() {
         const startPage = resuming && i === state.cityIndex ? state.page : 1;
         try {
           await scrapeCity(browser, prisma, pref, city, i, startPage);
-        } catch (e: any) {
-          console.error(`Error on ${city.name}:`, e.message);
+        } catch (e) {
+          console.error(`Error on ${city.name}:`, toLogMessage(e));
           await new Promise((res) => setTimeout(res, 8000));
         }
       }
