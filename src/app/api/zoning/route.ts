@@ -62,6 +62,21 @@ interface RawFeature {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  /*
+    先に「有るか」を見る。Number(null) は 0 になるので、指定なしの
+    要求が z=0/x=0/y=0 として通り、縮尺の判定まで進んでしまう。
+    本番で叩いたら「この縮尺では用途地域を出していません」と返ってきた
+    （実測）。指定が無いのは縮尺の問題ではないので、そう言わない。
+  */
+  if (
+    !searchParams.has("z") ||
+    !searchParams.has("x") ||
+    !searchParams.has("y")
+  ) {
+    return NextResponse.json({ error: MESSAGES.BAD_TILE }, { status: 400 });
+  }
+
   const z = Number(searchParams.get("z"));
   const x = Number(searchParams.get("x"));
   const y = Number(searchParams.get("y"));
