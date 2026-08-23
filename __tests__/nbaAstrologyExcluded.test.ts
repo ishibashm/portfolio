@@ -64,7 +64,7 @@ const baseState: NBAParams["stateVector"] = {
       honmeiStar: { physical: 3, classical: 3 },
       // 年支の午に当てて天中殺を成立させ、f9_personal を 0 でなくする。
       // 0 のままだと queries が全部 0 になり、上と同じ理由で試せない。
-      voidZodiac: ["午", "未"],
+      voidZodiac: "午未",
     },
     classicalRules: {
       pillars: {
