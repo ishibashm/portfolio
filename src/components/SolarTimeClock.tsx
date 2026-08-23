@@ -30,6 +30,7 @@ import {
   getPersonalVoidZodiac,
   getCurrentZodiac,
   ActionIntent,
+  parseActionIntent,
   type ZodiacTimeBasis,
   Direction,
   StarFrequency,
@@ -3871,7 +3872,7 @@ export const SolarTimeClock = () => {
                 id="home-action-intent"
                 value={actionIntent}
                 onChange={(e) =>
-                  setActionIntent(e.target.value as ActionIntent)
+                  setActionIntent(parseActionIntent(e.target.value))
                 }
                 className="w-full bg-white/70 border border-stone-300 text-sm text-stone-600 rounded px-3 py-2 outline-none focus:border-emerald-500 transition-colors cursor-pointer"
               >
