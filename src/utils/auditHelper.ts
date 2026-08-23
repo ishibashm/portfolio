@@ -17,7 +17,7 @@ export function getAuditDir(): string {
       fs.accessSync(localDir, fs.constants.W_OK);
     }
     return localDir;
-  } catch (e) {
+  } catch {
     // Fall back to always-writable system temporary directory
     const tempDir = path.join(os.tmpdir(), "audit_reports");
     try {

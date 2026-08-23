@@ -127,7 +127,7 @@ export async function GET(request: Request) {
     if (isNaN(birthLon) && config.birth_lon !== undefined)
       birthLon = config.birth_lon;
     if (!birthDateStr && config.birth_date) birthDateStr = config.birth_date;
-  } catch (e) {
+  } catch {
     // Ignore config read error
   }
 

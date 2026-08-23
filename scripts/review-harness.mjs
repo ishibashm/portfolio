@@ -84,7 +84,7 @@ async function runDiagnostics() {
   if (pkgJsonRaw) {
     try {
       pkg = JSON.parse(pkgJsonRaw);
-    } catch (e) {
+    } catch {
       console.warn("⚠️ package.json のパースに失敗しました。");
     }
   }
