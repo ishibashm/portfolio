@@ -6,6 +6,7 @@
  * 物件そのものの情報は載せない（掲載元の情報をそのまま転載しないため）。
  */
 import raw from "@/data/areaDirections.json";
+import type { AreaEntry } from "@/utils/areaDatasetMerge";
 import { DIRECTION_UNSTABLE_KM } from "@/lib/directionDistance";
 import {
   bearingBetween,
@@ -18,22 +19,34 @@ import {
   type CompassDirection,
 } from "@/lib/kigakuContent";
 
-export interface Area {
-  code: string;
-  pref: string;
-  city: string;
-  full: string;
-  lat: number;
-  lon: number;
-  count: number;
-  sqmRent: number;
-  medianRent: number;
+/**
+ * JSON の 1 行。書き出し側の型（utils/areaDatasetMerge）をそのまま使う。
+ *
+ * `asOf` だけ任意にしてある。併合を入れる前に書き出された JSON には
+ * 無いため。書き出し側では必ず入るので、あちらは必須のままでよい。
+ */
+export interface Area extends Omit<AreaEntry, "asOf"> {
+  asOf?: string;
 }
 
 const dataset = raw as { generatedAt: string; areas: Area[] };
 
 export const AREAS: Area[] = dataset.areas;
 export const AREA_GENERATED_AT: string = dataset.generatedAt;
+
+/**
+ * その市区町村の数字を集計した日（YYYY-MM-DD）。
+ *
+ * ファイル全体の `generatedAt` を使ってはいけない。掲載が閾値に満たない
+ * 市区町村は前回の数字を引き継いでいる（#533）ので、ファイルの日付を
+ * 出すと**更新していない相場に今日の日付が付く。**
+ *
+ * `asOf` を持たないのは併合を入れる前に書き出された JSON だけなので、
+ * そのときだけファイルの日付に落とす。
+ */
+export function areaAsOf(area: Area): string {
+  return area.asOf ?? AREA_GENERATED_AT.slice(0, 10);
+}
 
 const byCode = new Map(AREAS.map((a) => [a.code, a]));
 export function findArea(code: string): Area | undefined {
