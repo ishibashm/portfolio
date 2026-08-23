@@ -24,7 +24,7 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter } as any);
+const prisma = new PrismaClient({ adapter });
 
 /*
   APIキーは環境変数から取得。
