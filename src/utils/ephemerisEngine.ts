@@ -663,6 +663,46 @@ const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
 export type ActionIntent = "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
 
 /**
+ * 方位 1 つの判定結果。
+ *
+ * この一覧は calculateVectorCollision の戻り値に直書きされていて、
+ * 層（yearLayer など）の側は `string` を名乗っていた。同じものを
+ * 2 通りの型で持っていたので、層から取り出した値を finalVectors に
+ * 入れるたびに `as any` が要った。1 つに寄せる。
+ */
+export type VectorStatus =
+  | "OPTIMAL"
+  | "OPTIMAL_REGULAR"
+  | "SAFE"
+  | "WARNING"
+  | "NOISE_GOU"
+  | "NOISE_ANKEN"
+  | "NOISE_HONMEI"
+  | "NOISE_TEKI"
+  | "NOISE_GETSUMEI"
+  | "NOISE_GETSUTEKI"
+  | "NOISE_VOID"
+  | "NOISE_NODE"
+  | "NOISE"
+  | "NOISE_HA";
+
+/**
+ * calculateVectorCollision / filterCollisionByMode の戻り値。
+ *
+ * 層は Partial のまま。processLayer は八方位すべてを埋めるが、歳破などを
+ * 後から差し込む形なので、型で全方位を約束はしない。finalVectors だけは
+ * 呼び出し側が方位で必ず引くので、全方位そろっている前提を型にしてある。
+ */
+export interface VectorCollision {
+  yearLayer: Partial<Record<Direction, VectorStatus>>;
+  monthLayer: Partial<Record<Direction, VectorStatus>>;
+  dayLayer: Partial<Record<Direction, VectorStatus>>;
+  finalVectors: Record<Direction, VectorStatus>;
+  tendoDirection?: Direction;
+  doyouState?: DoyouState;
+}
+
+/**
  * ベクトル衝突計算（吉凶方位の物理的割り出し）
  */
 export function calculateVectorCollision(
@@ -686,30 +726,7 @@ export function calculateVectorCollision(
    * 判定の実装をここ 1 か所に保つため、除外もここで受ける。
    */
   ignoreDayLayer: boolean = false,
-): {
-  yearLayer: Partial<Record<Direction, string>>;
-  monthLayer: Partial<Record<Direction, string>>;
-  dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<
-    Direction,
-    | "OPTIMAL"
-    | "OPTIMAL_REGULAR"
-    | "SAFE"
-    | "WARNING"
-    | "NOISE_GOU"
-    | "NOISE_ANKEN"
-    | "NOISE_HONMEI"
-    | "NOISE_TEKI"
-    | "NOISE_GETSUMEI"
-    | "NOISE_GETSUTEKI"
-    | "NOISE_VOID"
-    | "NOISE_NODE"
-    | "NOISE"
-    | "NOISE_HA"
-  >;
-  tendoDirection?: Direction;
-  doyouState?: DoyouState;
-} {
+): VectorCollision {
   const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
 
   // 天中殺（Void Zodiac）の方位マッピング
@@ -840,7 +857,7 @@ export function calculateVectorCollision(
   }
 
   const processLayer = (board: BoardLayout) => {
-    const res: Partial<Record<Direction, string>> = {};
+    const res: Partial<Record<Direction, VectorStatus>> = {};
     directions.forEach((d) => (res[d] = "SAFE"));
 
     const getOpposite = (dir: Direction): Direction => {
@@ -937,6 +954,12 @@ export function calculateVectorCollision(
     });
   }
 
+  /*
+    ここだけ `any` が残る。型どおり全方位を埋めた器から始めると、実装が
+    触らない CENTER が実データに載ってしまう。**戻り値の型のほうが
+    間違っている**（八方位しか埋めていないのに Record<Direction> を
+    名乗る）が、直すと呼び出し側 6 ファイルに波及するので別に扱う。
+  */
   const finalVectors: any = {};
 
   if (ignoreDayLayer) {
@@ -996,9 +1019,9 @@ export function calculateVectorCollision(
       const dRed = ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(dStatus);
 
       if (yRed) {
-        finalVectors[dir] = yStatus as any; // Year red noise is absolute blocker
+        finalVectors[dir] = yStatus; // Year red noise is absolute blocker
       } else if (mRed) {
-        finalVectors[dir] = mStatus as any; // Month red noise is absolute blocker
+        finalVectors[dir] = mStatus; // Month red noise is absolute blocker
       } else if (dRed) {
         // If Year/Month are safe, but only Day has red noise, downgrade to WARNING
         finalVectors[dir] = "WARNING";
@@ -1498,7 +1521,7 @@ export function checkIsDoyouHazard(date: Date): boolean {
 }
 
 export function filterCollisionByMode(
-  collision: any,
+  collision: VectorCollision,
   personalStar: StarFrequency,
   getsuMeiStar: StarFrequency | null,
   voidZodiacs: string[],
@@ -1507,10 +1530,10 @@ export function filterCollisionByMode(
     | "personal_kigaku"
     | "personal_bazi"
     | "environmental",
-  yBoard: any,
-  mBoard: any,
-  dBoard: any,
-) {
+  yBoard: BoardLayout | null,
+  mBoard: BoardLayout | null,
+  dBoard: BoardLayout | null,
+): VectorCollision {
   if (directionFilterMode === "composite") {
     return collision;
   }
@@ -1596,10 +1619,10 @@ export function filterCollisionByMode(
   };
 
   const filterStatus = (
-    status: string | undefined,
+    status: VectorStatus | undefined,
     dir: Direction,
-    activeBoard: any,
-  ) => {
+    activeBoard: BoardLayout | null,
+  ): VectorStatus => {
     if (!status) return "SAFE";
     if (directionFilterMode === "personal_kigaku") {
       let honmeiD: Direction | null = null;
@@ -1634,9 +1657,10 @@ export function filterCollisionByMode(
     }
   };
 
-  const newYearLayer: any = {};
-  const newMonthLayer: any = {};
-  const newDayLayer: any = {};
+  const newYearLayer: Partial<Record<Direction, VectorStatus>> = {};
+  const newMonthLayer: Partial<Record<Direction, VectorStatus>> = {};
+  const newDayLayer: Partial<Record<Direction, VectorStatus>> = {};
+  /* 上と同じ理由。戻り値の型が直るまでここは any のまま。 */
   const newFinalVectors: any = {};
 
   directions.forEach((d) => {
