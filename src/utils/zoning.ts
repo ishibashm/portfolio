@@ -215,3 +215,74 @@ export const ZONING_DISCLAIMER = [
   "実際の制限は自治体の条例・地区計画で変わります。契約前に必ず自治体の都市計画課で確認してください。",
   "用途地域は方位の吉凶の判定には使っていません。参考として重ねているだけです。",
 ] as const;
+
+/** 中継したあとの、画面が使う 1 区画ぶん。 */
+export interface ZoningProperties {
+  /** 区分名。分からなければ null。 */
+  name: ZoningName | null;
+  /** API がその区画に付けていた名前。知らない区分でもそのまま見せる。 */
+  rawName: string | null;
+  /** 建蔽率（%）。読めなければ null。 */
+  coverage: number | null;
+  /** 容積率（%）。読めなければ null。 */
+  floorArea: number | null;
+  /** 市区町村名。どこの決定かを示す。 */
+  city: string | null;
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+/**
+ * API の properties から、画面が要るものだけ取り出す。
+ *
+ * 中継でこれを通すのは 2 つの理由から。
+ *
+ *   1. **書式をここで揃える。**建蔽率・容積率は "50%" と "50.0%" が
+ *      混ざって来る（実測）。画面ごとに直していると必ずどこかで抜ける
+ *   2. 使わない項目を落とす。`_id` `_index` や、全国どこでも空文字だった
+ *      `decision_date` `notice_number` `decision_maker` などが付いてくる
+ *
+ * **座標には触らない。**多角形を触ると形が変わる。
+ */
+export function zoningPropertiesOf(
+  raw: Record<string, unknown> | undefined | null,
+): ZoningProperties {
+  const props = raw ?? {};
+  return {
+    name: zoningNameOf(props.use_area_ja, props.youto_id),
+    rawName: textOrNull(props.use_area_ja),
+    coverage: parsePercent(props.u_building_coverage_ratio_ja),
+    floorArea: parsePercent(props.u_floor_area_ratio_ja),
+    city: textOrNull(props.city_name),
+  };
+}
+
+/**
+ * 中継できるズーム。**実測で決めた。**
+ *
+ * 東京・千代田区の 1 タイル（`scripts/probe_zoning.ts`）:
+ *
+ *   z=11  1,715 件  3,641,917 バイト
+ *   z=12    776 件  1,887,090 バイト
+ *   z=13    143 件    434,682 バイト
+ *   z=14     60 件    191,779 バイト
+ *   z=15     20 件     57,006 バイト
+ *
+ * z=13 以下は 1 タイルで数百 KB〜数 MB になる。画面には十数タイル並ぶので、
+ * そのまま出すと 1 画面で数十 MB になる。**広域では出さない。**
+ */
+export const ZONING_MIN_ZOOM = 14;
+export const ZONING_MAX_ZOOM = 18;
+
+export function isZoningZoom(z: number): boolean {
+  return Number.isInteger(z) && z >= ZONING_MIN_ZOOM && z <= ZONING_MAX_ZOOM;
+}
+
+/** そのズームでタイル座標として成り立つか。 */
+export function isTileCoordinate(z: number, x: number, y: number): boolean {
+  if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
+  const max = 2 ** z;
+  return x >= 0 && x < max && y >= 0 && y < max;
+}
