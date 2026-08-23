@@ -10,10 +10,25 @@ export interface AgentThemeParams {
   borderRadius: string;
 }
 
-export interface AgentToolCall {
-  name: "set_color_theme" | "write_blog_post" | "get_system_logs";
-  arguments: any;
+/** ブログ投稿の下書き。`site_guardian_daemon` が DB へステージングする。 */
+export interface AgentBlogPostArguments {
+  title: string;
+  content: string;
+  tags: string;
+  excerpt: string;
 }
+
+/**
+ * 実行する道具。**名前ごとに引数の形が違う**ので、判別可能な union にする。
+ *
+ * 以前は `arguments: any` だった。受け取る側（`site_guardian_daemon`）は
+ * `call.name === "set_color_theme"` で分けてから `args.background` などを
+ * 読んでいるので、union にすればその分岐で形が確定する。
+ */
+export type AgentToolCall =
+  | { name: "set_color_theme"; arguments: AgentThemeParams }
+  | { name: "get_system_logs"; arguments: { limit: number } }
+  | { name: "write_blog_post"; arguments: AgentBlogPostArguments };
 
 export interface AgentDecisionResult {
   status: string;
@@ -27,10 +42,32 @@ export interface AgentDecisionResult {
  * Native TypeScript local engine that replaces python runner and Gemini API.
  * Generates spatial/solar alignment themes and reacts to user chat commands deterministically.
  */
+/** 監視から渡ってくるログの 1 行。**読む枝だけ**を写す（CLAUDE.md 3 節）。 */
+export interface AgentLogEntry {
+  timestamp?: string | Date;
+  triggerType?: string;
+  status?: string;
+  details?: string;
+}
+
+/**
+ * 判断の材料。**この関数が実際に読む枝だけ。**
+ *
+ * 呼ぶ側（`site_guardian_daemon`）は「形は決めずに素の JSON として持つ」
+ * 方針なので、どれも省略可。実装も `typeof ... === "number"` で確かめて
+ * から使い、無ければ既定値に落ちる。
+ */
+export interface AgentSignals {
+  systemLogs?: AgentLogEntry[];
+  solarAzimuth?: number;
+  solarElevation?: number;
+  declination?: number;
+}
+
 export function getLocalAgentDecision(
   trigger: string,
   details: string,
-  value: any = {},
+  value: AgentSignals = {},
 ): AgentDecisionResult {
   let actions = "一般的なメンテナンス";
   let thought =
@@ -104,7 +141,7 @@ export function getLocalAgentDecision(
         logsSummary = logs
           .slice(0, 3)
           .map(
-            (log: any) =>
+            (log) =>
               `- [${(log.timestamp || "").toString().slice(0, 19)}] ${log.triggerType}: ${log.status} - ${(log.details || "").slice(0, 30)}`,
           )
           .join("\n");
