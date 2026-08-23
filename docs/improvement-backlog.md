@@ -695,3 +695,46 @@ Lighthouse の A11y は 90。`button-name` は #390 で 0 件にした。残り�
 寸法ごとに作り直して **1,505,061 → 126,933 バイト（-92%）。**
 `__tests__/appIcons.test.ts` が `manifest.json` の側から引いて PNG の IHDR と
 突き合わせるので、拡張子だけ直した状態では通らない。
+
+## 8. `finalVectors` の型が八方位しか埋めていないのに CENTER を約束している
+
+`calculateVectorCollision` / `filterCollisionByMode` の戻り値は
+`finalVectors: Record<Direction, VectorStatus>` を名乗っている。ところが
+`Direction` には盤の中心（`CENTER`）が入っていて、**実装は八方位しか
+埋めていない。**`finalVectors.CENTER` は実行時 `undefined` なのに、型は
+`VectorStatus`（非 undefined）を返すと言っている。**型の嘘。**
+
+#536 で判定の型を整理したとき、`Record<Exclude<Direction, "CENTER">, …>`
+に直そうとしたら、`Direction` で回して添字を引いている呼び出し側が
+一斉に落ちた。**落ちた場所はどれも、実行時に `undefined` を掴みうる
+場所**なので、エラーのほうが正しい。
+
+```
+__tests__/ignoreDayLayer.test.ts(61)
+src/app/api/relocation/export/route.ts(402)
+src/app/api/relocation/history/route.ts(315)
+src/app/relocation/simulator/page.tsx(694, 732, 1021, 1061)
+src/components/SolarTimeClock.tsx(1350, 1697, 1707, 1717, 1727, 1737)
+```
+
+`SolarTimeClock.tsx` の 1697 以降は、**戻り値の形をその場に写した
+ローカルの型**（`{ yearLayer: Partial<Record<Direction, string>>; … }`）
+を引数に持っている。`VectorCollision` に寄せれば一緒に消える。
+
+### なぜ #536 で直さなかったか
+
+1 PR = 1〜3 ファイルに収まらない（6 ファイル）。型だけの整理と、
+呼び出し側の `undefined` の扱いを決める作業は別物でもある。
+
+### 直すときの順序
+
+1. `ephemerisEngine` に `EightDirection = Exclude<Direction, "CENTER">`
+   を出し、`finalVectors` をそれで型付ける
+2. 落ちた呼び出し側を 1 つずつ見て、**`CENTER` を引いているのが
+   意図なのか事故なのか**を決める。事故なら回す配列を八方位に絞る
+3. `SolarTimeClock` のローカルの型を `VectorCollision` に置き換える
+
+**器（`finalVectors`）に `CENTER: "SAFE"` を足して型に合わせてはいけない。**
+実データに無い鍵が増え、JSON 書き出し（`api/relocation/export`）の中身が
+変わる。今 `undefined` を掴んでいる箇所は `"SAFE"` を掴むようになるので、
+**画面の答えも変わる。**直すのは型のほうであって、データではない。
