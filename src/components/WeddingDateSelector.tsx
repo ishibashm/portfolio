@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getRokuyo, isWeddingFriendly, getWeedingScore } from "../utils/lunar";
+import { getRokuyo, getWeedingScore } from "../utils/lunar";
 
 /**
  * Wedding Date Selector Component
