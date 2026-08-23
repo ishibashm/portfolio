@@ -113,6 +113,34 @@ describe("parsePreviousAreas", () => {
     expect(parsePreviousAreas(raw)).toHaveLength(1);
   });
 
+  it("asOf の無い行はファイルの generatedAt で埋める", () => {
+    // 埋めないと引き継いだ行の asOf が空文字になり、画面が
+    // new Date("") を掴んで「Invalid Date」を出す。実ファイル
+    // （1,068 行・asOf ゼロ）で再現した。
+    //
+    // 併合前は全行が同じ日に集計されていたので、ファイルの日付が答え。
+    const raw = JSON.stringify({
+      generatedAt: "2026-08-23T18:04:11.123Z",
+      areas: [{ ...entry("07322", 32), asOf: undefined }],
+    });
+    expect(parsePreviousAreas(raw)[0].asOf).toBe("2026-08-23");
+  });
+
+  it("generatedAt も無ければ空のまま（読める側で落とす）", () => {
+    const raw = JSON.stringify({
+      areas: [{ ...entry("07322", 32), asOf: undefined }],
+    });
+    expect(parsePreviousAreas(raw)[0].asOf).toBe("");
+  });
+
+  it("asOf を持つ行は generatedAt で上書きしない", () => {
+    const raw = JSON.stringify({
+      generatedAt: "2026-08-23T18:04:11.123Z",
+      areas: [entry("07322", 32, "2026-08-12")],
+    });
+    expect(parsePreviousAreas(raw)[0].asOf).toBe("2026-08-12");
+  });
+
   it("asOf を持たない過去の JSON も読める（移行の 1 日目）", () => {
     // 既存の areaDirections.json には asOf が無い。読めずに空を返すと、
     // 移行した日に全件が「引き継ぎ無し」になって元の木阿弥になる。

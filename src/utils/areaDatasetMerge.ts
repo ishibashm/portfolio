@@ -120,11 +120,28 @@ export function isFresh(entry: AreaEntry, today: string): boolean {
 export function parsePreviousAreas(raw: string | null): AreaEntry[] {
   if (!raw) return [];
   try {
-    const parsed = JSON.parse(raw) as { areas?: unknown };
+    const parsed = JSON.parse(raw) as {
+      areas?: unknown;
+      generatedAt?: unknown;
+    };
     if (!Array.isArray(parsed.areas)) return [];
-    return parsed.areas.filter(
-      (a): a is AreaEntry => !!a && typeof (a as AreaEntry).code === "string",
-    );
+    /*
+      併合を入れる前に書き出された JSON には asOf が無い。そのままだと
+      引き継いだ行の asOf が空文字になり、画面が `new Date("")` を
+      掴んで「Invalid Date」を出す（実ファイルで再現した）。
+
+      その行がいつの数字かは、**ファイルの generatedAt が答え**。
+      併合前は全行が同じ日に集計されていたので、これで正しい。
+    */
+    const fileDate =
+      typeof parsed.generatedAt === "string"
+        ? parsed.generatedAt.slice(0, 10)
+        : "";
+    return parsed.areas
+      .filter(
+        (a): a is AreaEntry => !!a && typeof (a as AreaEntry).code === "string",
+      )
+      .map((a) => (a.asOf ? a : { ...a, asOf: fileDate }));
   } catch {
     return [];
   }
