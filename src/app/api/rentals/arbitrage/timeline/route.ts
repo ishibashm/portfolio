@@ -6,7 +6,7 @@ import {
   Direction,
   AstroEngine,
   type ActionIntent,
-  type DirectionFilterMode,
+  parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { directionFromBearing } from "@/utils/directionGeo";
@@ -145,13 +145,14 @@ export async function GET(request: Request) {
     const lunarPhaseModifier =
       searchParams.get("lunarPhaseModifier") !== "false";
     /*
-      問い合わせ文字列をそのまま渡している。**検証していない。**
-      知らない値が来ると filterCollisionByMode の else に落ちて
-      environmental として扱われる（無い値なら composite なのに）。
-      揃えるのは別の PR で——4 つの route が同じ読み方を別々に書いている。
+      知らない値は composite（＝指定が無いときと同じ）に落とす。
+      素通しだと filterCollisionByMode の else に落ちて environmental に
+      なり、「無いときは composite なのに壊れていると environmental」
+      という筋の通らない挙動になっていた（__tests__/directionFilterMode）。
     */
-    const directionFilterMode = (searchParams.get("directionFilterMode") ||
-      "composite") as DirectionFilterMode;
+    const directionFilterMode = parseDirectionFilterMode(
+      searchParams.get("directionFilterMode"),
+    );
     const actionIntent = (searchParams.get("actionIntent") ||
       "MIGRATION") as ActionIntent;
     const physicalMonthMode = (searchParams.get("physicalMonthMode") ||
