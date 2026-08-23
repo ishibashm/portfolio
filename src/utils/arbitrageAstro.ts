@@ -251,7 +251,7 @@ export interface PropertyAstroContext {
   hasVenusLine: boolean;
   hasJupiterLine: boolean;
   hasBirthLocation: boolean;
-  actionIntent: any;
+  actionIntent: ActionIntent;
   /** 天中殺（空亡）の効かせ方。既定は従来どおり年・月・日すべてで禁止。 */
   tenchusatsuMode?: TenchusatsuMode;
   /** 転勤などやむを得ない移動か。立てると天中殺で禁止しない。 */
