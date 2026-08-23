@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import {
   AREAS,
-  AREA_GENERATED_AT,
+  areaAsOf,
   findArea,
   neighboursByDirection,
   siblingAreas,
@@ -109,7 +109,7 @@ export default async function Page({
         name={`${area.full}から見た方位別のエリアと家賃相場`}
         description={`${area.full}を出発地として、北・北東・東・南東・南・南西・西・北西の八方位ごとに、その方角に位置する市区町村の一覧と、掲載中の賃貸物件から集計した専有面積あたりの家賃相場をまとめたデータ。九星気学の吉方位から引越し先を探すときの判断材料に使う。`}
         path={path}
-        dateModified={AREA_GENERATED_AT}
+        dateModified={areaAsOf(area)}
       />
       <BreadcrumbJsonLd
         items={[
@@ -146,8 +146,14 @@ export default async function Page({
             <b>{area.sqmRent.toLocaleString()}円/㎡</b>、家賃（管理費込み）の中央値 <b>{area.medianRent.toLocaleString()}円</b>
             。掲載中の {area.count.toLocaleString()} 件から集計しています。以下の増減率はこの値を基準にした差です。
           </p>
+          {/*
+            日付はファイル全体の generatedAt ではなく、この市区町村の asOf
+            を出す。掲載が閾値に満たない市区町村は前回の数字を引き継いで
+            いる（#533）ので、ファイルの日付だと更新していない相場に
+            今日の日付が付く。
+          */}
           <p className="mt-2 text-[11px] text-slate-500">
-            集計日: {new Date(AREA_GENERATED_AT).toLocaleDateString("ja-JP")}
+            集計日: {new Date(areaAsOf(area)).toLocaleDateString("ja-JP")}
             ／ 掲載中の物件は入れ替わるため、最新の相場とは差が出ることがあります。
           </p>
         </div>
