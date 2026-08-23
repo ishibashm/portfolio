@@ -173,10 +173,26 @@ function computeDayLayers(
     dB,
   );
 
-  const zodiacs = getCurrentZodiac(
-    new Date(instant.toISOString().split("T")[0]),
-    p.lon,
-  );
+  // 天中殺に使う干支は、**盤と同じ時刻**で引く。
+  //
+  // 以前はここだけ `new Date(instant.toISOString().split("T")[0])` と
+  // 日付だけを切り出して渡していた。日付文字列は UTC の 0 時として
+  // 解釈されるので、実際には**日本時間の 9 時**の干支を引いていた。
+  // 盤（`calculateVectorCollision`）は `instant`（日本時間の正午を
+  // 太陽時に直した時刻）の干支を使うので、同じ日の同じ判定の中で
+  // 干支を 2 か所・別々の時刻で計算していたことになる。
+  //
+  // 節入りが 9 時〜正午の間に来る日にずれが出る。1460 日（2026〜
+  // 2029 年）を走査して 8 日が該当し、いずれも月支が 1 つ手前の月の
+  // ままだった（2026-07-07 小暑・2026-12-07 大雪・2027-02-04 立春・
+  // 2027-04-05 清明・2028-03-05 啓蟄・2028-09-07 白露・2029-01-05
+  // 小寒・2029-11-07 立冬）。月天中殺の当たり外れがその日だけ
+  // 前月の支で決まっていた。
+  //
+  // 「その日の代表点は正午」が全体の方針（`boardInstant.ts`）なので、
+  // 9 時側が誤り。`instant` をそのまま渡して 1 か所に寄せる。
+  // getCurrentZodiac の呼び出しが 1 日 2 回から 1 回に減る副次効果もある。
+  const zodiacs = getCurrentZodiac(instant, p.lon);
   const voidScopes: VoidScopes = {
     year: p.voidZodiacs.includes(zodiacs.yearZodiac),
     month: p.voidZodiacs.includes(zodiacs.monthZodiac),
