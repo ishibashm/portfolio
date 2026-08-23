@@ -705,6 +705,35 @@ export type DirectionFilterMode =
   | "personal_bazi"
   | "environmental";
 
+/**
+ * 問い合わせ文字列や設定ファイルの値を `DirectionFilterMode` に直す。
+ *
+ * **知らない値は `composite`（絞り込みなし）に落とす。**
+ *
+ * 直す前は文字列をそのまま流していた。`filterCollisionByMode` は
+ * composite / personal_kigaku / personal_bazi を名前で見て、**残り全部を
+ * environmental として扱う**ので、壊れた値は environmental になっていた。
+ * 値が無いときは composite なのに、壊れた値だと environmental になる、
+ * という筋の通らない状態だった。
+ *
+ * `composite` に寄せるのは、**値が無いときと同じ扱いにするため。**
+ * 読めない指定は「指定されなかった」と同じであるべきで、勝手に別の
+ * 見方（environmental）へ倒すのは利用者の意図と関係がない。
+ */
+export function parseDirectionFilterMode(
+  raw: string | null | undefined,
+): DirectionFilterMode {
+  switch (raw) {
+    case "composite":
+    case "personal_kigaku":
+    case "personal_bazi":
+    case "environmental":
+      return raw;
+    default:
+      return "composite";
+  }
+}
+
 export interface VectorCollision {
   yearLayer: Partial<Record<Direction, VectorStatus>>;
   monthLayer: Partial<Record<Direction, VectorStatus>>;
