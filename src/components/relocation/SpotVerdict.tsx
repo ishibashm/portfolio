@@ -31,6 +31,18 @@ export type DirectionCell = {
   directionLabel: string;
   tier: string;
   blocked: boolean;
+  /**
+   * 土用殺が当たっている方位か。
+   *
+   * 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU
+   * （＝どの画面でも「五黄殺」）にする。三盤とも大吉なのに段階が
+   * X になり、理由が画面から分からない日ができていた。
+   *
+   * 段階だけを出していると「五大凶殺あり」と読めてしまうが、土用殺は
+   * 五大凶殺（五黄殺・暗剣殺・破・本命殺・本命的殺）ではない。
+   * 天中殺と同じく、理由の 1 行として別に出す。
+   */
+  doyouSatsu?: boolean;
 };
 
 export type SpotTarget = { lat: number; lon: number; name: string };
@@ -239,6 +251,14 @@ export function SpotVerdict({
           {cell?.blocked && (
             <p className="text-[10px] text-rose-600">
               天中殺により、この期間の移動は避ける扱いになっています。
+            </p>
+          )}
+
+          {cell?.doyouSatsu && (
+            <p className="text-[10px] text-rose-600">
+              {
+                "土用殺の方位です。土用の期間中はこの方位が塞がります（間日を除く）。年盤・月盤・日盤が吉でも避ける扱いです。"
+              }
             </p>
           )}
 

@@ -1664,6 +1664,7 @@ export default function ArbitrageScannerPage() {
         directionLabel: string;
         tier: string;
         blocked: boolean;
+        doyouSatsu: boolean;
       };
       const byDirection: Record<string, Cell> = {};
       for (const dir of ALL_DIRECTIONS) {
@@ -1674,6 +1675,9 @@ export default function ArbitrageScannerPage() {
           directionLabel: DIRECTION_LABELS[dir] ?? dir,
           tier: gradeVerdict(v),
           blocked: v.blockedByTenchusatsu,
+          // 段階だけだと「五大凶殺あり」に見えるが、土用殺は五大凶殺では
+          // ない。理由を落とさずに渡す（SpotVerdict が 1 行で出す）。
+          doyouSatsu: v.isDoyouSatsu,
         };
       }
       const byPrefecture: Record<string, Cell> = {};
