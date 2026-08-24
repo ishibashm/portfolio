@@ -22,7 +22,8 @@ import {
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
-import { directionBoardInstant } from "@/utils/boardInstant";
+import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { isFatalNoise } from "@/utils/noiseSeverity";
 import {
   TenchusatsuMode,
@@ -265,8 +266,8 @@ function buildVerdict(
     isAuspicious(dayLayer);
 
   return {
-    date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
-    weekday: date.getDay(),
+    date: formatDate(date),
+    weekday: weekdayOf(date),
     yearLayer,
     monthLayer,
     dayLayer,
@@ -310,9 +311,44 @@ export function findYearBoardWindow(
   };
 }
 
-function formatDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * 日付の組み立てを実行環境のタイムゾーンから切り離す。
+ *
+ * ここは全部 `Date` の**ローカル**のゲッター／セッターで書かれていた。
+ * `getFullYear` も `setHours` も実行環境のタイムゾーンで動くので、
+ * 本番（Cloud Run＝UTC）とブラウザ（日本＝JST）で意味が変わる。
+ *
+ * 判定そのものは `forecastAnchorMs` が日本時間の正午に寄せているので
+ * （#563）、**ラベルと走査もそこに合わせる**。同じ日を指す 3 つの表現
+ * （評価する時刻・YYYY-MM-DD・曜日）が 1 か所から出るようにする。
+ *
+ * 実害が出ていたのは `findYearBoardWindow` だった。走査ループは
+ * `setHours(12)` を通していたのに、年盤の窓を探すところだけ生の `from`
+ * を使っていて、`from` が時刻を持つと立春の期限が 1 日早く出た。
+ * 実測で、正しくは 2027-02-03 のところ `from` を JST 深夜にすると
+ * 2027-02-02 になった。いまの画面はどれも `from` を YYYY-MM-DD で
+ * 送るので表には出ていないが、`from` を省いたときのサーバ既定は
+ * `new Date()` なので、日本時間の 0〜9 時に該当する。
+ */
+
+/** その Date が指す「日本時間の日」の正午。盤の代表点そのもの。 */
+function jstNoonOf(d: Date): Date {
+  return new Date(forecastAnchorMs(d));
 }
+
+/** 日本時間基準の YYYY-MM-DD。 */
+function formatDate(d: Date): string {
+  const f = getZonedDateTimeFields(d, 9);
+  return `${f.year}-${String(f.month).padStart(2, "0")}-${String(f.day).padStart(2, "0")}`;
+}
+
+/** 日本時間基準の曜日（0=日曜）。 */
+function weekdayOf(d: Date): number {
+  return new Date(d.getTime() + 9 * 3600000).getUTCDay();
+}
+
+/** 1 日進める。正午に寄せてあるので、ミリ秒を足すだけで日をまたげる。 */
+const nextDayOf = (d: Date) => new Date(d.getTime() + 86400000);
 
 /**
  * 年盤が切り替わる境目そのものを探す。方位には依存しない。
@@ -332,15 +368,17 @@ function findYearBoardBoundary(
       "independent",
     ).classicalYearStar;
 
-  const startStar = yearStarAt(from);
-  const cursor = new Date(from);
+  // ここだけ走査ループの正規化を通していなかった。生の `from` から
+  // 1 日ずつ進めて `formatDate` に渡すので、`from` が時刻を持つと
+  // 期限が 1 日ずれる。走査と同じ「日本時間の正午」から始める。
+  let cursor = jstNoonOf(from);
+  const startStar = yearStarAt(cursor);
   for (let i = 0; i < maxDays; i++) {
-    const next = new Date(cursor);
-    next.setDate(next.getDate() + 1);
+    const next = nextDayOf(cursor);
     if (yearStarAt(next) !== startStar) {
-      return { lastDay: new Date(cursor), nextDay: next };
+      return { lastDay: cursor, nextDay: next };
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = next;
   }
   return null;
 }
@@ -374,10 +412,8 @@ export function findAuspiciousDays(
 ): AuspiciousSummary {
   const days: DayVerdict[] = [];
   let scanned = 0;
-  const cursor = new Date(from);
-  cursor.setHours(12, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(12, 0, 0, 0);
+  let cursor = jstNoonOf(from);
+  const end = jstNoonOf(to);
 
   // 走査上限。範囲指定を誤っても止まらなくならないようにする。
   const MAX = 800;
@@ -385,7 +421,7 @@ export function findAuspiciousDays(
     const verdict = judgeDay(new Date(cursor), p);
     scanned++;
     if (verdict.isTripleAuspicious) days.push(verdict);
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = nextDayOf(cursor);
   }
 
   const blocked = days.filter((d) => d.blockedByTenchusatsu).length;
@@ -418,10 +454,8 @@ export function findAuspiciousDaysAllDirections(
   for (const dir of ALL_DIRECTIONS) perDirection[dir] = [];
 
   let scanned = 0;
-  const cursor = new Date(from);
-  cursor.setHours(12, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(12, 0, 0, 0);
+  let cursor = jstNoonOf(from);
+  const end = jstNoonOf(to);
 
   const MAX = 800;
   while (cursor <= end && scanned < MAX) {
@@ -430,7 +464,7 @@ export function findAuspiciousDaysAllDirections(
     for (const dir of ALL_DIRECTIONS) {
       if (all[dir].isTripleAuspicious) perDirection[dir].push(all[dir]);
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = nextDayOf(cursor);
   }
 
   // 年盤の境目は方位に依存しないので 1 回だけ求め、
@@ -622,10 +656,8 @@ export function rankRelocationDays(
   for (const dir of ALL_DIRECTIONS) perDirection[dir] = [];
 
   let scanned = 0;
-  const cursor = new Date(from);
-  cursor.setHours(12, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(12, 0, 0, 0);
+  let cursor = jstNoonOf(from);
+  const end = jstNoonOf(to);
 
   // 2 年（730 日）を上限に走査する。日ごとに盤 1 回なので走査コストは
   // 線形で、これ以上先は年盤が二度替わって精度より不確かさが勝つ。
@@ -644,7 +676,7 @@ export function rankRelocationDays(
         tags: v.tags,
       });
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursor = nextDayOf(cursor);
   }
 
   const tierRank = (t: DayTier) => TIER_ORDER.indexOf(t);
