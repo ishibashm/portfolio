@@ -99,6 +99,27 @@ export interface DayVerdict {
   blockedByTenchusatsu: boolean;
   /** 天道がこの方位に回座しているか。 */
   hasTendo: boolean;
+  /**
+   * この方位に土用殺が当たっているか。
+   *
+   * 土用殺は年盤・月盤・日盤のどの層にも出ず、**最終だけを NOISE_GOU
+   * （＝画面のどこでも「五黄殺」）に上書きする。**そのため、三盤とも
+   * 大吉なのに段階が X（五大凶殺あり）になり、画面から理由が分からない
+   * 日ができる。実測で本命七赤・子丑空亡の 400 日 × 8 方位のうち 8 通りが
+   * 「三盤とも OPTIMAL なのに最終が NOISE_GOU」だった（秋土用の北西・
+   * 春土用の南東など）。
+   *
+   * 状態そのものを NOISE_GOU から分けると配色と札の対応が全画面に
+   * 波及するので、まずは**理由を持ち回れるようにする**。この値を
+   * 読まなければ従来どおりで、判定は一切変わらない。
+   *
+   * **既定（composite）以外では常に false。**`filterCollisionByMode` は
+   * 絞り込みモードごとに最終を組み直すが、そこで土用殺を当て直して
+   * いないため、environmental などでは土用殺が判定から消える。
+   * ここはその実態に合わせてある（画面が「土用殺なのに印が無い」と
+   * 食い違わないようにするため）。
+   */
+  isDoyouSatsu: boolean;
   rokuyo: string;
   isTensho: boolean;
   isIchiryumanbai: boolean;
@@ -230,6 +251,10 @@ function buildVerdict(
   const dayLayer = (layers.dayLayer[dir] ?? "SAFE") as string;
   const finalStatus = (layers.finalVectors[dir] ?? "SAFE") as string;
   const hasTendo = layers.tendoDirection === dir;
+  // 最終に実際に当たっているときだけ真にする。絞り込みモードによっては
+  // 最終が組み直されて土用殺が消えるので、方位の一致だけでは足りない。
+  const isDoyouSatsu =
+    layers.doyouSatsuDirection === dir && finalStatus === "NOISE_GOU";
 
   const tags: string[] = [];
   if (shared.isTensho) tags.push("天赦日");
@@ -276,6 +301,7 @@ function buildVerdict(
     voidScopes,
     blockedByTenchusatsu: blocked,
     hasTendo,
+    isDoyouSatsu,
     rokuyo,
     isTensho: shared.isTensho,
     isIchiryumanbai: shared.isIchiryumanbai,
