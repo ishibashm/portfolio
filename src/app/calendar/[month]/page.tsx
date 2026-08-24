@@ -3,8 +3,6 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { DirectionComments } from "@/components/comments/DirectionComments";
-import { calendarTopic } from "@/lib/comments";
 import {
   buildMonthlyCalendar,
   calendarMonths,
@@ -296,11 +294,6 @@ export default async function Page({
           </div>
         </section>
 
-        <DirectionComments
-          topicKey={calendarTopic(cal.year, cal.month)}
-          heading={`${cal.year}年${cal.month}月に移った人の記録`}
-          prompt="この月に引越した方は、選んだ日と方位、その後どうだったかを書いてください。日取りを選ぶ人の判断材料になります。"
-        />
 
         <div className="mt-10">
           <AdBanner />
