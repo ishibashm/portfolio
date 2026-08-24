@@ -132,6 +132,17 @@ describe("手元の表を持ち直していない", () => {
     expect(isNoise(undefined)).toBe(false);
   });
 
+  it("物件検索の API は集約先を呼ぶ", () => {
+    const src = read("src/app/api/rentals/arbitrage/route.ts");
+    expect(src).toContain("directionLabelName(astrologyStatus)");
+    // 呼び名の直書きを戻したら落ちる。
+    expect(src).not.toContain('maxAstroFactor = "五黄殺"');
+    expect(src).not.toContain('maxAstroFactor = "月交点ノイズ"');
+    // 運用上の但し書きが付くものは残す（機械的に置き換えない）。
+    expect(src).toContain("天中殺期間 (移転NG)");
+    expect(src).toContain("haLabelForLayer");
+  });
+
   it("破の呼び名は盤で変わる。固定の「歳破」を持ち回らない", () => {
     // 破は年＝歳破・月＝月破・日＝日破。どの盤か分かるところは
     // haLabelForLayer、分からないところは併記（集約先の name）。

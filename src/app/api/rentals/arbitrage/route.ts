@@ -18,7 +18,11 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { directionFromBearing } from "@/utils/directionGeo";
-import { haLabelForLayer, type BoardLayer } from "@/lib/directionLabels";
+import {
+  directionLabelName,
+  haLabelForLayer,
+  type BoardLayer,
+} from "@/lib/directionLabels";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
@@ -852,13 +856,18 @@ export async function GET(request: Request) {
       else if (astrologyStatus === "WARNING") maxAstroFactor = "警告・調整方位";
       else if (astrologyStatus === "NOISE_TENCHU")
         maxAstroFactor = "天中殺期間 (移転NG)";
-      else if (astrologyStatus === "NOISE_GOU") maxAstroFactor = "五黄殺";
-      else if (astrologyStatus === "NOISE_ANKEN") maxAstroFactor = "暗剣殺";
       // 破は盤で呼び名が変わる。月盤で絞っているのに「歳破」と出していた。
       else if (astrologyStatus === "NOISE_HA")
         maxAstroFactor = haLabelForLayer(layerMode as BoardLayer);
-      else if (astrologyStatus === "NOISE_HONMEI") maxAstroFactor = "本命殺";
-      else if (astrologyStatus === "NOISE_TEKI") maxAstroFactor = "本命的殺";
+      // 呼び名は @/lib/directionLabels に集約。ここに文字列を戻さないこと。
+      // 状態は 1 つしか取らないので、順番を保ったまままとめられる。
+      else if (
+        astrologyStatus === "NOISE_GOU" ||
+        astrologyStatus === "NOISE_ANKEN" ||
+        astrologyStatus === "NOISE_HONMEI" ||
+        astrologyStatus === "NOISE_TEKI"
+      )
+        maxAstroFactor = directionLabelName(astrologyStatus);
       else if (targetDay.isUltraLucky) maxAstroFactor = "超ウルトラ吉";
       else if (isTendo) maxAstroFactor = "天道方位";
       else if (targetDay.luckyDays.isTensho) maxAstroFactor = "天赦日";
@@ -870,17 +879,19 @@ export async function GET(request: Request) {
       else if (targetDay.luckyDays.isIchiryumanbai)
         maxAstroFactor = "一粒万倍日";
       else if (targetDetails.doyouPenalty < 0) maxAstroFactor = "土用殺";
-      else if (astrologyStatus === "NOISE_GETSUMEI") maxAstroFactor = "月命殺";
-      else if (astrologyStatus === "NOISE_GETSUTEKI")
-        maxAstroFactor = "月命的殺";
-      else if (astrologyStatus === "NOISE_NODE")
-        maxAstroFactor = "月交点ノイズ";
+      else if (
+        astrologyStatus === "NOISE_GETSUMEI" ||
+        astrologyStatus === "NOISE_GETSUTEKI" ||
+        astrologyStatus === "NOISE_NODE"
+      )
+        maxAstroFactor = directionLabelName(astrologyStatus);
       else if (astroFlags.includes("DECLINATION_WARNING"))
         maxAstroFactor = "偏角境界";
       // SAFE は「凶ではない」であって吉ではない。auspiciousDays.isAuspicious は
       // OPTIMAL 系だけを吉とし、記事ページも「平」と書く。ここだけ「吉方位」に
       // していたため、物件検索で吉と出た方位が記事では吉でない、が起きていた。
-      else if (astrologyStatus === "SAFE") maxAstroFactor = "平穏";
+      else if (astrologyStatus === "SAFE")
+        maxAstroFactor = directionLabelName("SAFE");
 
       const totalRent = (p.rent || 0) + (p.management_fee || 0);
       const sizeSqm = Number(p.size_sqm);
