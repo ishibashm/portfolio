@@ -11,6 +11,8 @@ import {
 } from "@/lib/blog";
 import { loadBlogPost, loadBlogPosts } from "@/lib/blogStore";
 import { pickRelatedPosts } from "@/lib/blogRelated";
+import { blogTopic } from "@/lib/comments";
+import { DirectionComments } from "@/components/comments/DirectionComments";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
 import { extractHeadings } from "@/lib/blogToc";
@@ -212,6 +214,24 @@ export default async function BlogPostPage({
               </nav>
             )}
           </aside>
+        </div>
+
+        {/*
+          投稿欄は**記事だけ**に置く（利用者の指示）。道具の画面や
+          方位・暦の頁には出さない。
+
+          幅は本文と同じ器の中に入れる。ここだけ別の数字にすると、
+          すぐ上の本文と左右の位置がずれる（CLAUDE.md 3 節）。
+
+          鍵は blogTopic で作る。文字列を組み立てて渡すと表記ゆれで
+          別の記事の投稿になる。
+        */}
+        <div className="mt-10">
+          <DirectionComments
+            topicKey={blogTopic(post.slug)}
+            heading="この記事についての投稿"
+            prompt="記事の内容について、自分の場合はどうだったかを書いてください。実際に動いたあとどうだったかまで書けると、同じことで迷っている人の判断材料になります。"
+          />
         </div>
       </main>
     </div>
