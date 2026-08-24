@@ -12,6 +12,7 @@ import {
 import { getClassicalYearStar } from "@/utils/ephemerisEngine";
 import { buildTenChiJinVerdict } from "@/utils/tenChiJinVerdict";
 import { todayInJapan } from "@/utils/japanDate";
+import { directionLabelName } from "@/lib/directionLabels";
 
 function parseSafeDate(
   dateStr: string | null | undefined,
@@ -230,12 +231,11 @@ export function TenChiJinEvaluation({
       if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status)) {
         hasSevereClash = true;
         worstRating = "大凶";
-        worstClashType =
-          status === "NOISE_GOU"
-            ? "五黄殺"
-            : status === "NOISE_ANKEN"
-              ? "暗剣殺"
-              : "歳破";
+        // 呼び名は @/lib/directionLabels に集約。ここに表を戻さないこと。
+        // 手元の三項では NOISE_HA を「歳破」固定にしていたが、破は盤で
+        // 呼び名が変わる（年＝歳破・月＝月破・日＝日破）。どの盤か
+        // 分からないので、集約先の併記（歳破/月破/日破）に合わせる。
+        worstClashType = directionLabelName(status);
       }
 
       // Check accompanying members directions safety
