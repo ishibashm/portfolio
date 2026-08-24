@@ -17,7 +17,10 @@ import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
-import { directionLabelShort } from "@/lib/directionLabels";
+import {
+  directionLabelBadge,
+  directionLabelShort,
+} from "@/lib/directionLabels";
 import {
   COMPASS_DIRECTIONS,
   DIRECTION_BEARINGS,
@@ -354,22 +357,13 @@ export default function MagneticMapInner({
       else labelDistance = 300;
       const labelPos = getDestination(lat, lon, baseBearing, labelDistance);
 
-      const getStatusLabel = (status: string) => {
-        if (status === "NOISE_GOU") return "五黄";
-        if (status === "NOISE_ANKEN") return "暗剣";
-        if (status === "NOISE_HA") return "破";
-        if (status === "NOISE_HONMEI") return "本命";
-        if (status === "NOISE_TEKI") return "的殺";
-        if (status === "NOISE_GETSUMEI") return "月命";
-        if (status === "NOISE_GETSUTEKI") return "月命的";
-        if (status === "NOISE_VOID") return "ボイド";
-        if (status === "NOISE_NODE") return "交点";
-        if (status === "OPTIMAL") return "大吉";
-        if (status === "OPTIMAL_REGULAR") return "吉";
-        return "";
-      };
-
-      const label = getStatusLabel(displayStatus);
+      // 扇形の札も @/lib/directionLabels に集約。ここに表を戻さないこと。
+      //
+      // 手元の表があったので NOISE_VOID だけ「ボイド」というカタカナで、
+      // 他の画面（「天中殺方位」）とも同じファイルのツールチップとも
+      // 系統が違っていた。集約先の badge は長さのために短いだけで、
+      // 呼び名は name と揃えてある。
+      const label = directionLabelBadge(displayStatus);
 
       // Tooltip breakdown
       const y = layers?.yearLayer[d.dir] || "SAFE";

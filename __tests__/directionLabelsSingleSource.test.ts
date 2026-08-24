@@ -92,4 +92,27 @@ describe("手元の表を持ち直していない", () => {
     expect(src).not.toContain("STATUS_LABELS");
     expect(src).not.toContain('NOISE_GOU: "');
   });
+
+  it("地図の扇形の札は集約先を呼ぶ", () => {
+    const src = read("src/components/MagneticMapInner.tsx");
+    expect(src).toContain("directionLabelBadge");
+    // 手元の表（NOISE_VOID を「ボイド」と呼んでいた）を戻したら落ちる。
+    // 経緯を書いたコメントに言葉が出るので、返り値の形で見る。
+    expect(src).not.toContain("getStatusLabel");
+    expect(src).not.toContain('return "ボイド"');
+  });
+
+  it("天地人の凶の呼び名は集約先を呼ぶ", () => {
+    const src = read("src/components/nba/TenChiJinEvaluation.tsx");
+    expect(src).toContain("directionLabelName(status)");
+    // 破を「歳破」固定にしていた三項を戻したら落ちる。
+    expect(src).not.toContain('? "五黄殺"');
+  });
+
+  it("破の呼び名は盤で変わる。固定の「歳破」を持ち回らない", () => {
+    // 破は年＝歳破・月＝月破・日＝日破。どの盤か分かるところは
+    // haLabelForLayer、分からないところは併記（集約先の name）。
+    expect(directionLabelName("NOISE_HA")).toContain("月破");
+    expect(directionLabelName("NOISE_HA")).toContain("日破");
+  });
 });
