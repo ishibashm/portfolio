@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getAuthUser } from "@/lib/userConfig";
 import { createClient } from "@/utils/supabase/server";
+import { loadBlogPost } from "@/lib/blogStore";
 import {
   COMMENTS_PAGE_SIZE,
   COMMENTS_PER_USER_PER_DAY,
@@ -24,12 +25,29 @@ import {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * 記事の鍵が実在する記事を指しているか。
+ *
+ * `isValidTopicKey` は形しか見ていない（`lib/comments` は投稿欄の
+ * client component から import されるので、記事の読み込みを引き込むと
+ * バンドルに乗る）。**実在の確認はここでやる。**
+ *
+ * 通さないと `blog:anything` で好きなだけ話題を作れてしまい、索引が
+ * 効かないうえ行数の見積もりも立たない。`page:` の鍵に同じ検証を
+ * 入れてあるのと同じ理由。
+ */
+async function topicExists(topicKey: string): Promise<boolean> {
+  if (!topicKey.startsWith("blog:")) return true;
+  const slug = topicKey.slice("blog:".length);
+  return Boolean(await loadBlogPost(slug));
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const topicKey = searchParams.get("topicKey");
 
-    if (!isValidTopicKey(topicKey)) {
+    if (!isValidTopicKey(topicKey) || !(await topicExists(topicKey))) {
       return NextResponse.json(
         { success: false, error: "投稿先のページが不正です。" },
         { status: 400 },
@@ -115,6 +133,16 @@ export async function POST(request: Request) {
     if (invalid) {
       return NextResponse.json(
         { success: false, error: invalid.message },
+        { status: 400 },
+      );
+    }
+
+    // 形が通っても、消えた記事や存在しない slug には積ませない。
+    if (
+      !(await topicExists(String((body as Record<string, unknown>).topicKey)))
+    ) {
+      return NextResponse.json(
+        { success: false, error: "投稿先のページが不正です。" },
         { status: 400 },
       );
     }

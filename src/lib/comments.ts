@@ -50,6 +50,22 @@ export function areaTopic(code: string): string {
 }
 
 /**
+ * 記事への投稿の鍵。
+ *
+ * ここだけ**実在するかどうかをこのファイルで見ない。**記事の一覧は
+ * DB（`lib/blog` の `loadBlogPost`）から引くもので、あちらは非同期で
+ * サーバ専用。このファイルは投稿欄（client component）から import
+ * されるので、引き込むと**記事の読み込みごとクライアントのバンドルに
+ * 乗る。**#177〜#179 で重い依存を遅延させた経緯と同じ穴になる。
+ *
+ * 形だけをここで見て、**実在の確認は API 側**（`api/comments`）で行う。
+ * あちらは非同期なので `loadBlogPost` をそのまま呼べる。
+ */
+export function blogTopic(slug: string): string {
+  return `blog:${slug}`;
+}
+
+/**
  * 頁そのものへの投稿の鍵。
  *
  * ## なぜ足したか
@@ -93,6 +109,11 @@ const TOPIC_PATTERNS: RegExp[] = [
   /^houi:\d{4}:[1-9]:(1[0-2]|[1-9])$/,
   /^calendar:\d{4}-(0[1-9]|1[0-2])$/,
   /^area:\d{5}$/,
+  /*
+    記事への投稿。**形しか見ていない。**実在の確認は API 側で行う
+    （上の blogTopic のコメント）。ここで通しただけでは投稿できない。
+  */
+  /^blog:[a-z0-9][a-z0-9-]{2,79}$/,
   /*
     頁そのものへの投稿。形だけでなく**実在する頁かどうか**も見る
     （下の isValidTopicKey）。形だけ通すと page:anything で好きなだけ
