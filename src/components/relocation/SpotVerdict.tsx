@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { MapPin, Loader2 } from "lucide-react";
 import {
   bearingBetween,
@@ -266,7 +267,13 @@ export function SpotVerdict({
               どれだけ当てになるかを添える（lib/directionDistance）。 */}
           {unstableNote && (
             <p className="text-[10px] text-amber-700 leading-relaxed">
-              {unstableNote}
+              {unstableNote}{" "}
+              <Link
+                href="/blog/how-much-does-distance-matter"
+                className="font-semibold underline"
+              >
+                近場の引越しで方位をどう扱うか
+              </Link>
             </p>
           )}
 
