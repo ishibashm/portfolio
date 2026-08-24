@@ -41,7 +41,23 @@ export function directionBoardInstant(
   const local = new Date(
     anchor.getTime() + (timeOffsetDays + dayOffset) * 86400000,
   );
-  return calculateSolarTime(local, lon).solarTime;
+  // 日本標準時（UTC+9、標準子午線 135 度）を明示する。
+  //
+  // `calculateSolarTime` の既定は `Math.round(経度 / 15)` で、経度から
+  // タイムゾーンを推測する。出生地が海外のときはそれでよいが、**日本の
+  // 出発地に当てると端で 60 分ずれる。**推測が 9 になるのは経度
+  // 127.5〜142.5 度のあいだだけで、
+  //
+  //   石垣 124.16 / 宮古島 125.28  → 8 と推測（標準子午線 120 度）
+  //   帯広 143.2 / 釧路 144.38 / 根室 145.58 → 10 と推測（同 150 度）
+  //
+  // となる。どの土地も実際には JST を使っているので、9 が正しい。
+  //
+  // 盤は正午を基準にするので日はまたがないが、**節入りが正午の前後
+  // 60 分に来る日は月星が変わる。**1461 日（2026〜2029 年）を走査して
+  // 石垣で 4 日、帯広・釧路・根室で 3 日が該当した（2026-12-07 大雪・
+  // 2028-06-05 芒種・2028-09-07 白露・2029-11-07 立冬）。
+  return calculateSolarTime(local, lon, JST_OFFSET_HOURS).solarTime;
 }
 
 /**
