@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { DirectionComments } from "@/components/comments/DirectionComments";
 import { PractitionerStrip } from "@/components/practitioners/PractitionerStrip";
-import { houiYearTopic } from "@/lib/comments";
 import { DirectionEffects } from "@/components/houi/DirectionEffects";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -296,11 +294,6 @@ export default async function Page({
 
         <PractitionerStrip />
 
-        <DirectionComments
-          topicKey={houiYearTopic(year, star)}
-          heading={`${name}の方位取りの記録`}
-          prompt={`${name}の方は、いつどの方位へ移って、その後どうだったかを書いてください。同じ本命星の人の判断材料になります。`}
-        />
 
         <div className="mt-10">
           <AdBanner />

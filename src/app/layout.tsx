@@ -92,7 +92,6 @@ export const metadata: Metadata = {
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
-import { PageComments } from "@/components/comments/PageComments";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { unstable_cache } from "next/cache";
@@ -311,13 +310,10 @@ export default async function RootLayout({
         <PageViewBeacon />
         <div className="flex min-h-screen">
           <GlobalSidebar />
-          {/* 投稿欄は中核ページ全部に出す。どの頁に出すかは
-              PageComments が経路から決めるので、ここでは条件を書かない。
-              9 つの頁に 1 つずつ貼ると貼り忘れと文言のばらつきが出る。 */}
-          <main className="flex-1 w-full min-w-0">
-            {children}
-            <PageComments />
-          </main>
+          {/* 投稿欄はここに置かない。記事（/blog/[slug]）だけに出す
+              （利用者の指示）。以前は PageComments を置いて中核 9 頁
+              すべてに出していた。 */}
+          <main className="flex-1 w-full min-w-0">{children}</main>
         </div>
       </body>
     </html>

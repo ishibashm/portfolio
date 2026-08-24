@@ -10,13 +10,30 @@
  * 形だけ通して実在を見ないと `blog:anything` で好きなだけ話題を作れる。
  * **両方あって初めて塞がる**ので、両方をここで固定する。
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { blogTopic, isValidTopicKey } from "@/lib/comments";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
+
+/** src 以下で、その文字列を含むファイルの相対パス。 */
+function grepSrc(needle: string): string[] {
+  const out: string[] = [];
+  const walk = (dir: string) => {
+    for (const e of readdirSync(join(process.cwd(), dir), {
+      withFileTypes: true,
+    })) {
+      const rel = `${dir}/${e.name}`;
+      if (e.isDirectory()) walk(rel);
+      else if (/\.tsx?$/.test(e.name) && read(rel).includes(needle))
+        out.push(rel);
+    }
+  };
+  walk("src");
+  return out.sort();
+}
 
 describe("記事の鍵", () => {
   it("slug から機械的に作る", () => {
@@ -71,6 +88,27 @@ describe("実在の確認は API 側にある", () => {
     const calls = api.match(/topicExists\(/g) ?? [];
     // 定義 1 + GET 1 + POST 1
     expect(calls.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("投稿欄は他の場所に出さない（利用者の指示）", () => {
+  it("レイアウトに全頁共通の投稿欄を置いていない", () => {
+    // 以前は PageComments をここに置いて中核 9 頁すべてに出していた。
+    const src = read("src/app/layout.tsx");
+    expect(src).not.toContain("<PageComments");
+  });
+
+  it.each([
+    ["暦の月別", "src/app/calendar/[month]/page.tsx"],
+    ["方位の年別", "src/app/houi/[year]/[star]/page.tsx"],
+  ])("%s の頁に投稿欄が無い", (_name, file) => {
+    expect(read(file)).not.toContain("DirectionComments");
+  });
+
+  it("投稿欄を出しているのは記事の頁だけ", () => {
+    // 貼り直したときに気付けるようにする。増やすなら、まずここを直す。
+    const hits = grepSrc("<DirectionComments");
+    expect(hits).toEqual(["src/app/blog/[slug]/page.tsx"]);
   });
 });
 
