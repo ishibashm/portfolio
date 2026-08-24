@@ -2,32 +2,50 @@
 
 import React from "react";
 
-// 凶要素の解説辞書
+import { directionLabelName } from "@/lib/directionLabels";
+import { isNoise } from "@/utils/noiseSeverity";
+
+/*
+  凶要素の解説。**鍵は状態コード。**
+
+  以前は日本語名で引いていた（`DISASTER_EXPLANATIONS["歳破"]`）。呼び名は
+  @/lib/directionLabels に集約してあるので、名前で引くとここだけ別の
+  呼び名を持ち続けることになり、集約先を直した瞬間に解説が引けなくなる。
+
+  「歳破」と「日破」を別の項目にしていたのも同じ理由の産物で、破は
+  同じ NOISE_HA。盤で呼び名が変わるだけなので 1 つにまとめた。
+*/
 const DISASTER_EXPLANATIONS: Record<string, string> = {
-  五黄殺:
+  NOISE_GOU:
     "五黄殺（ごおうさつ）：周囲を巻き込み、自滅をもたらす最大凶方位。全ての人に大凶。",
-  暗剣殺:
+  NOISE_ANKEN:
     "暗剣殺（あんけんさつ）：突発的な事故や他者からの災難がもたらされる最大凶方位。全ての人に大凶。",
-  歳破: "歳破（さいは）：時のエネルギーが壊れる方位。契約や引っ越し、旅行が大破する大凶方位。",
-  日破: "日破（にっぱ）：その日の十二支と対極にある方位。交渉事や移動が破綻しやすい凶方位。",
-  本命殺:
+  NOISE_HA:
+    "破（は）：その盤の十二支と対極にある方位。年盤なら歳破、月盤なら月破、日盤なら日破。契約や引っ越し、旅行が破綻しやすい大凶方位。",
+  NOISE_HONMEI:
     "本命殺（ほんめいさつ）：自分自身の身体や判断ミスが元でトラブルが生じる大凶方位（個人影響）。",
-  本命的殺:
+  NOISE_TEKI:
     "本命的殺（ほんめいてきさつ）：目標や目的が妨害され、精神的な苦痛を受ける大凶方位（個人影響）。",
-  月命殺:
+  NOISE_GETSUMEI:
     "月命殺（げつめいさつ）：身体に悪い影響が出やすい凶方位（本命殺より穏やか）。",
-  月命的殺:
+  NOISE_GETSUTEKI:
     "月命的殺（げつめいてきさつ）：仕事や目標が邪魔されやすい凶方位（本命的殺より穏やか）。",
-  天中殺:
+  NOISE_VOID:
     "天中殺（てんちゅうさつ）：運気が停滞し、新しい行動（引っ越し・契約）を慎むべきとされる時期的な凶。",
-  土用殺:
-    "土用（どよう）：季節の変わり目の土用期間中。大地の気が乱れるため、引っ越しや土いじりは非推奨。",
-  月交点ノイズ:
+  NOISE_TENCHU:
+    "天中殺（てんちゅうさつ）：この期間そのものが移転を避ける扱いです。",
+  NOISE_NODE:
     "月交点（ノード）：天体軌道の交点による磁気・空間ノイズが発生しているエリア。",
-  偏角境界:
+  DOYOU_SATSU:
+    "土用（どよう）：季節の変わり目の土用期間中。大地の気が乱れるため、引っ越しや土いじりは非推奨。",
+  /*
+    この項目は**まだどこからも積まれていない。**偏角境界の警告は
+    別の場所で出していて、凶の内訳には入っていない。繋がっていない
+    しるしとして残す（CLAUDE.md 4 節）。
+  */
+  DECLINATION_BOUNDARY:
     "偏角境界：真北と磁北の方位境界線上に位置し、磁気的なブレが生じやすい場所。",
 };
-
 /**
  * 1 日ぶんの吉凶。/api/rentals/arbitrage の dateScores の要素でもある。
  *
@@ -389,18 +407,20 @@ export function AstroGridCalendar({
                   : "";
 
             // 凶要素の解説のリストアップ
+            /*
+              凶の内訳。**状態コードで積む。**日本語名で積んでいたので、
+              呼び名を変えると解説が引けなくなる関係になっていた。
+
+              状態を 1 つずつ書き並べていたため、表に無い凶
+              （NOISE_TENCHU など）が来ると内訳が空のまま「凶」とだけ
+              出ていた。接頭辞で拾って取りこぼさないようにする。
+            */
             const badFactors: string[] = [];
-            if (day.status === "NOISE_GOU") badFactors.push("五黄殺");
-            if (day.status === "NOISE_ANKEN") badFactors.push("暗剣殺");
-            if (day.status === "NOISE_HA") badFactors.push("歳破");
-            if (day.status === "NOISE_HONMEI") badFactors.push("本命殺");
-            if (day.status === "NOISE_TEKI") badFactors.push("本命的殺");
-            if (day.status === "NOISE_GETSUMEI") badFactors.push("月命殺");
-            if (day.status === "NOISE_GETSUTEKI") badFactors.push("月命的殺");
+            if (isNoise(day.status) && day.status !== "NOISE_VOID")
+              badFactors.push(day.status);
             if (day.status === "NOISE_VOID" || details.voidPenalty < 0)
-              badFactors.push("天中殺");
-            if (details.doyouPenalty < 0) badFactors.push("土用殺");
-            if (day.status === "NOISE_NODE") badFactors.push("月交点ノイズ");
+              badFactors.push("NOISE_VOID");
+            if (details.doyouPenalty < 0) badFactors.push("DOYOU_SATSU");
 
             return (
               <div className="space-y-2 border-t border-stone-200 pt-2 mt-2">
@@ -426,7 +446,7 @@ export function AstroGridCalendar({
                         className="text-stone-500 text-[8.5px] leading-relaxed pl-1.5 border-l border-red-200"
                       >
                         {DISASTER_EXPLANATIONS[factor] ||
-                          `${factor}の影響があります。`}
+                          `${directionLabelName(factor)}の影響があります。`}
                       </div>
                     ))}
                   </div>
