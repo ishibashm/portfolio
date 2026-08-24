@@ -325,8 +325,21 @@ jobs:
       # 失敗したら marketStats.json が更新されないだけで、ページは
       # 前回ぶん（初回なら準備中表示）のまま。
       - name: Rebuild market stats
+        id: market_stats
         continue-on-error: true
         run: npx -y tsx scripts/build_market_stats.ts
+
+      # continue-on-error は「エリア相場のコミットを道連れにしない」ために
+      # 付けている。ただしそれだけだとジョブが success のままになり、
+      # **落ちていることが誰にも見えない。**実際 2026-08-13 から 11 日間、
+      # 大阪府でスタックが溢れて毎晩落ちていたのに気付けなかった
+      # （marketStats.json が 11 日間そのまま。画面は古い数字を出していた）。
+      # 続行はそのままに、落ちたことだけは残す。
+      - name: Warn if market stats failed
+        if: steps.market_stats.outcome == 'failure'
+        run: |
+          echo "::warning::Rebuild market stats が失敗した。marketStats.json は前回のまま。相場の画面は古い数字を出す。"
+          echo "⚠️ Rebuild market stats が失敗した。marketStats.json は更新されていない。" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit area dataset if changed
         run: |

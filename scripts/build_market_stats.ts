@@ -103,8 +103,21 @@ async function main() {
 
       const rents = data.map((d) => d.total);
       const sqmRents = data.map((d) => d.total / d.size);
-      nationalRents.push(...rents);
-      nationalSqm.push(...sqmRents);
+      // 全国ぶんへの積み上げ。**スプレッドで push しないこと。**
+      //
+      // `push(...rents)` は配列の要素を 1 つずつ「引数」としてスタックに
+      // 積むので、行数が多い県で `RangeError: Maximum call stack size
+      // exceeded` になる。この環境の実測で 12 万件は通り 13 万件で落ちた。
+      //
+      // 対象の 6 番目が大阪府で、ここが閾値を超えていた。東京・神奈川・
+      // 埼玉・千葉・兵庫まで進んだところで毎晩落ちており、しかも
+      // ワークフロー側が continue-on-error なので**誰も気付かないまま
+      // marketStats.json が 2026-08-13 から 11 日間更新されていなかった。**
+      // 画面は古い数字を出し続けていた。
+      //
+      // 要素数に依らない for..of に変える。結果は同じ。
+      for (const r of rents) nationalRents.push(r);
+      for (const r of sqmRents) nationalSqm.push(r);
 
       // ヘドニック回帰。築年・駅徒歩が欠けている行はモデルからだけ外す
       const acc = new OlsAccumulator(4);
