@@ -136,6 +136,21 @@ export default function MarketAnalyticsPage() {
             株式の定量分析で使う道具（ファクターモデル・分布分析・生存分析）を賃貸市場に当てています。毎晩の巡回データから自動更新。最終更新:{" "}
             {new Date(generated).toLocaleString("ja-JP")}
           </p>
+          {/*
+            読み方の解説への導線。この頁は数字と図だけで、なぜ中央値なのか・
+            残差が何を意味するのかは下の注記まで読まないと分からない。
+            記事のほうは索引に載るので、検索から来た人の入口にもなる。
+          */}
+          <p className="mt-1 text-xs text-stone-500">
+            <Link
+              href="/blog/how-we-analyze-the-rental-market"
+              className="font-semibold text-indigo-600 underline"
+            >
+              この 3 つの分析の読み方
+            </Link>
+            ：平均ではなく中央値を使う理由、駅徒歩 1
+            分の重みが地域で 6 倍違うこと、生存分析の近似について。
+          </p>
         </header>
 
         {/* KPI 行 */}

@@ -156,6 +156,22 @@ export default async function Page({
             集計日: {new Date(areaAsOf(area)).toLocaleDateString("ja-JP")}
             ／ 掲載中の物件は入れ替わるため、最新の相場とは差が出ることがあります。
           </p>
+          {/*
+            この数字がどう作られているかへの導線。
+            「◯◯市 家賃相場」で来た人が最初に見るのがこの札で、
+            中央値なのか平均なのか・何件から出したのかが分からないと
+            読みようがない。この頁は noindex（#379）なので、
+            説明そのものは索引に載る記事の側に置いてある。
+          */}
+          <p className="mt-1 text-[11px] text-slate-500">
+            <Link
+              href="/blog/how-we-analyze-the-rental-market"
+              className="font-semibold text-indigo-700 underline"
+            >
+              相場をどう出しているか
+            </Link>
+            ：平均ではなく中央値を使う理由と、割安度の測り方。
+          </p>
         </div>
 
         <section className="mt-10">
