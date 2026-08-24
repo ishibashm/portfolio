@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Cloud Palette">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff7f3"/>
+      <stop offset="0.45" stop-color="#fdeef2"/>
+      <stop offset="1" stop-color="#eaf5ef"/>
+    </linearGradient>
+    <linearGradient id="petal" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#f7b3bf"/>
+      <stop offset="1" stop-color="#e8798f"/>
+    </linearGradient>
+    <linearGradient id="petalSoft" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ffd9c2"/>
+      <stop offset="1" stop-color="#f6b48c"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.4" cy="0.35" r="0.8">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#ffe9d2"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+
+  <!-- 方位盤の輪。うっすら出すだけ。16px では地の色に溶ける -->
+  <circle cx="256" cy="256" r="186" fill="none" stroke="#f3d9de" stroke-width="7"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#f7e6ea" stroke-width="5"/>
+
+  <!-- 四隅（北東・南東・南西・北西）の小さい花びら。丸みを付けて柔らかく -->
+  <g transform="translate(256 256)">
+    <g fill="url(#petalSoft)">
+      <g transform="rotate(45)">
+        <path d="M0 -150 C 26 -96 26 -60 0 -34 C -26 -60 -26 -96 0 -150 Z"/>
+      </g>
+      <g transform="rotate(135)">
+        <path d="M0 -150 C 26 -96 26 -60 0 -34 C -26 -60 -26 -96 0 -150 Z"/>
+      </g>
+      <g transform="rotate(225)">
+        <path d="M0 -150 C 26 -96 26 -60 0 -34 C -26 -60 -26 -96 0 -150 Z"/>
+      </g>
+      <g transform="rotate(315)">
+        <path d="M0 -150 C 26 -96 26 -60 0 -34 C -26 -60 -26 -96 0 -150 Z"/>
+      </g>
+    </g>
+
+    <!-- 東西南北の花びら。大きくして四方位を主役にする -->
+    <g fill="url(#petal)">
+      <path d="M0 -196 C 42 -124 42 -74 0 -40 C -42 -74 -42 -124 0 -196 Z"/>
+      <g transform="rotate(90)">
+        <path d="M0 -196 C 42 -124 42 -74 0 -40 C -42 -74 -42 -124 0 -196 Z"/>
+      </g>
+      <g transform="rotate(180)">
+        <path d="M0 -196 C 42 -124 42 -74 0 -40 C -42 -74 -42 -124 0 -196 Z"/>
+      </g>
+      <g transform="rotate(270)">
+        <path d="M0 -196 C 42 -124 42 -74 0 -40 C -42 -74 -42 -124 0 -196 Z"/>
+      </g>
+    </g>
+
+    <!-- 中心。白に近い暖色で、花の芯にも方位盤の中宮にも見えるように -->
+    <circle r="44" fill="url(#core)"/>
+    <circle r="44" fill="none" stroke="#f0aebc" stroke-width="6"/>
+    <circle r="13" fill="#f2a07f"/>
+  </g>
+</svg>

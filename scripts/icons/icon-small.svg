@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Cloud Palette">
+  <!--
+    16〜48px 用の簡略版。favicon.ico はこちらから作る。
+
+    大きい版（icon.svg）をそのまま縮めると、方位盤の輪と斜めの花びらが
+    つぶれて**淡い染みにしか見えなくなる**（実測。16px でほぼ判別不能）。
+    小さい図は要素を減らして色を濃くするしかない。
+
+      輪と斜めの花びらを落とす
+      花びらを 4 枚だけ、太く
+      地色を少し濃い blush にして、白いタブでも輪郭が出るようにする
+  -->
+  <defs>
+    <linearGradient id="p" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ef8ba2"/>
+      <stop offset="1" stop-color="#d94f74"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="#fdeaf0"/>
+
+  <g transform="translate(32 32)" fill="url(#p)">
+    <path d="M0 -26 C 8.5 -16 8.5 -8.5 0 -4 C -8.5 -8.5 -8.5 -16 0 -26 Z"/>
+    <g transform="rotate(90)">
+      <path d="M0 -26 C 8.5 -16 8.5 -8.5 0 -4 C -8.5 -8.5 -8.5 -16 0 -26 Z"/>
+    </g>
+    <g transform="rotate(180)">
+      <path d="M0 -26 C 8.5 -16 8.5 -8.5 0 -4 C -8.5 -8.5 -8.5 -16 0 -26 Z"/>
+    </g>
+    <g transform="rotate(270)">
+      <path d="M0 -26 C 8.5 -16 8.5 -8.5 0 -4 C -8.5 -8.5 -8.5 -16 0 -26 Z"/>
+    </g>
+  </g>
+  <circle cx="32" cy="32" r="7.5" fill="#fffaf5"/>
+  <circle cx="32" cy="32" r="4" fill="#f0834f"/>
+</svg>

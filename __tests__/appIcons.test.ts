@@ -1,109 +1,107 @@
-import { describe, expect, it } from "vitest";
-import fs from "fs";
-import path from "path";
-
 /**
- * アプリのアイコンが**名乗りどおりの中身**であることを見張る。
+ * アプリのアイコンが揃っていること。
  *
- * 元は 3 つとも「中身は 1024x1024 の JPEG、拡張子だけ .png」の
- * **バイト単位で同一のファイル**（各 501,687 バイト）だった。
- * manifest.json は
+ * PNG と ICO は `scripts/build_icons.mjs` が `scripts/icons/*.svg` から
+ * 作る。**PNG を直接いじらない。**以前は元データが無く、直したいときに
+ * 作り直す手段が無かった。
  *
- *   icon-192.png        type: image/png, sizes: 192x192
- *   icon-512.png        type: image/png, sizes: 512x512
- *   apple-touch-icon    sizes: 180x180
+ * ここで見るのは 3 つ。
  *
- * と宣言していたので、**型も寸法も全部うそ**だった。Next は拡張子で
- * Content-Type を決めるため、JPEG を image/png として配っていた。
+ *   1. 4 つのファイルが揃っていて、寸法が manifest と合っている
+ *   2. favicon.ico が壊れていない（16/32/48 が PNG で入っている）
+ *   3. 大小で図を分けたままであること
  *
- * 実害は 2 つ。ホーム画面に追加したときのアイコンが 1024px から
- * 縮小されて眠くなること、そして**1 枚 490KB を 3 回**取りに行くこと。
- *
- * `/favicon.ico` は存在しなかった（Lighthouse の測定で 404 を確認）。
- * ブラウザは宣言が無くても必ず取りに行くので、全ページで 404 が 1 件出る。
- *
- * 中身の寸法まで見るのは、**拡張子を直しただけでは同じ事故が再発する**ため。
- * 名乗りと中身が合っていることを、manifest.json の側から引いて確かめる。
+ * 3 を見るのは、**大きい版をそのまま縮めると 16px で判別できなくなる**
+ * ため。方位盤の輪と斜めの花びらがつぶれて淡い染みになる（実測）。
+ * 小さい図を消して 1 枚にまとめる、が起きたら落とす。
  */
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
 
-const PUBLIC = path.join(process.cwd(), "public");
+const root = process.cwd();
+const read = (p: string) => readFileSync(join(root, p));
 
-interface ManifestIcon {
-  src: string;
-  sizes: string;
-  type?: string;
-}
-
-const manifest = JSON.parse(
-  fs.readFileSync(path.join(PUBLIC, "manifest.json"), "utf8"),
-) as { icons: ManifestIcon[]; name: string; description: string };
-
-/** PNG の IHDR から寸法を読む。ライブラリを足さずに済ませる。 */
-function readPng(file: string): { width: number; height: number } {
-  const buf = fs.readFileSync(file);
-  const signature = Buffer.from([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
-  ]);
-  if (!buf.subarray(0, 8).equals(signature)) {
-    // JPEG は FF D8 FF で始まる。取り違えの再発をここで名指しする。
-    const head = buf.subarray(0, 3).toString("hex");
-    throw new Error(`PNG ではない（先頭 ${head}）: ${path.basename(file)}`);
-  }
+/** PNG の IHDR から幅と高さを取る。 */
+function pngSize(buf: Buffer): { width: number; height: number } {
+  expect(buf.subarray(0, 8)).toEqual(
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  );
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-describe("manifest.json のアイコン", () => {
-  for (const icon of manifest.icons) {
-    const [w, h] = icon.sizes.split("x").map(Number);
+describe("アイコンの実体", () => {
+  it.each([
+    ["public/icon-512.png", 512],
+    ["public/icon-192.png", 192],
+    ["public/apple-touch-icon.png", 180],
+  ])("%s は %d 角の PNG", (path, size) => {
+    expect(existsSync(join(root, path))).toBe(true);
+    expect(pngSize(read(path))).toEqual({ width: size, height: size });
+  });
 
-    it(`${icon.src} は宣言どおり ${icon.sizes} の PNG`, () => {
-      const file = path.join(PUBLIC, icon.src.replace(/^\//, ""));
-      expect(fs.existsSync(file), `${icon.src} が無い`).toBe(true);
-      expect(readPng(file)).toEqual({ width: w, height: h });
-    });
-  }
-
-  it("type を名乗るなら image/png であること", () => {
+  it("manifest が指すファイルと寸法が合っている", () => {
+    // 片方だけ直すと、ホーム画面に追加したときだけ古い絵が出る。
+    const manifest = JSON.parse(read("public/manifest.json").toString()) as {
+      icons: { src: string; sizes: string }[];
+    };
     for (const icon of manifest.icons) {
-      if (icon.type) expect(icon.type).toBe("image/png");
+      const path = `public${icon.src}`;
+      expect(existsSync(join(root, path)), icon.src).toBe(true);
+      const { width, height } = pngSize(read(path));
+      expect(`${width}x${height}`, icon.src).toBe(icon.sizes);
     }
-  });
-
-  it("3 つが同じファイルの使い回しになっていない", () => {
-    // 元は 3 つとも md5 が同一だった。寸法別に作り分けること。
-    const bytes = manifest.icons.map((i) =>
-      fs
-        .readFileSync(path.join(PUBLIC, i.src.replace(/^\//, "")))
-        .toString("base64"),
-    );
-    expect(new Set(bytes).size).toBe(manifest.icons.length);
-  });
-
-  it("名乗りはサイトの説明と揃える", () => {
-    // 元は「Real Estate Arbitrage, Katmer Knowledge Base & Meta-Hub Engine」
-    // で、いまの中身（引越しの方位と物件選び）と食い違っていた。
-    expect(manifest.name).toContain("Cloud Palette");
-    expect(manifest.description).toContain("引越し");
-    expect(manifest.description).not.toContain("Katmer");
   });
 });
 
 describe("favicon.ico", () => {
-  it("実在して ICO の器になっている", () => {
-    const buf = fs.readFileSync(path.join(PUBLIC, "favicon.ico"));
-    // ICONDIR: reserved=0, type=1(icon), count>=1
-    expect(buf.readUInt16LE(0)).toBe(0);
-    expect(buf.readUInt16LE(2)).toBe(1);
-    expect(buf.readUInt16LE(4)).toBeGreaterThanOrEqual(1);
+  const ico = read("public/favicon.ico");
+
+  it("ICO の器として壊れていない", () => {
+    expect(ico.readUInt16LE(0)).toBe(0); // reserved
+    expect(ico.readUInt16LE(2)).toBe(1); // type = icon
+    expect(ico.readUInt16LE(4)).toBeGreaterThan(0);
   });
 
-  it("タブ用の 16px を持っている", () => {
-    const buf = fs.readFileSync(path.join(PUBLIC, "favicon.ico"));
-    const count = buf.readUInt16LE(4);
-    const widths = Array.from({ length: count }, (_, i) => {
-      const w = buf.readUInt8(6 + i * 16);
-      return w === 0 ? 256 : w; // 0 は 256 を意味する
-    });
-    expect(widths).toContain(16);
+  it("16 / 32 / 48 が PNG で入っている", () => {
+    const count = ico.readUInt16LE(4);
+    const sizes: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const e = 6 + i * 16;
+      const w = ico.readUInt8(e); // 0 は 256 の意味。ここには入らない
+      const length = ico.readUInt32LE(e + 8);
+      const offset = ico.readUInt32LE(e + 12);
+      const body = ico.subarray(offset, offset + length);
+      expect(body.length, `${w}px の中身`).toBe(length);
+      expect(body.subarray(0, 8), `${w}px は PNG`).toEqual(
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      );
+      sizes.push(w);
+    }
+    expect(sizes).toEqual([16, 32, 48]);
+  });
+});
+
+describe("元の SVG と作り方", () => {
+  it("大小で図が分かれている", () => {
+    // 大きい版をそのまま縮めると 16px で判別できなくなる。
+    expect(existsSync(join(root, "scripts/icons/icon.svg"))).toBe(true);
+    expect(existsSync(join(root, "scripts/icons/icon-small.svg"))).toBe(true);
+  });
+
+  it("小さい版は要素を減らしてある", () => {
+    const large = read("scripts/icons/icon.svg").toString();
+    const small = read("scripts/icons/icon-small.svg").toString();
+    // 方位盤の輪は大きい版だけ。小さい版に足したら、また染みになる。
+    expect(large).toContain("<circle");
+    expect(small).not.toContain('stroke-width="7"');
+    expect(small.length).toBeLessThan(large.length);
+  });
+
+  it("作り直す手順がある", () => {
+    const gen = read("scripts/build_icons.mjs").toString();
+    expect(gen).toContain("icon-512.png");
+    expect(gen).toContain("favicon.ico");
+    expect(gen).toContain("icons/icon.svg".replace("icons/", ""));
   });
 });
