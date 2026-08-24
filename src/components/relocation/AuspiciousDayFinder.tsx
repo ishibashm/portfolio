@@ -12,6 +12,7 @@ import {
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
 import { getAuspiciousDayErrorMessage } from "@/lib/auspiciousDayErrors";
+import { directionLabelName } from "@/lib/directionLabels";
 import {
   DEFAULT_DAY_FILTER,
   filterDays,
@@ -44,24 +45,21 @@ const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
  */
 const INITIAL_ROWS = 20;
 
-const STATUS_LABELS: Record<string, string> = {
-  OPTIMAL: "大吉",
-  OPTIMAL_REGULAR: "吉",
-  SAFE: "平",
-  WARNING: "注意",
-  NOISE_GOU: "五黄殺",
-  NOISE_ANKEN: "暗剣殺",
-  NOISE_HA: "歳破/月破",
-  NOISE_HONMEI: "本命殺",
-  NOISE_TEKI: "本命的殺",
-  NOISE_GETSUMEI: "月命殺",
-  NOISE_GETSUTEKI: "月命的殺",
-  NOISE_VOID: "空亡",
-  NOISE_NODE: "月交点",
-  NOISE_TENCHU: "天中殺",
-};
+/*
+  状態の呼び名は @/lib/directionLabels に集約。**ここに表を戻さないこと。**
 
-const label = (s: string) => STATUS_LABELS[s] ?? s;
+  ここに手元の表があったので、同じ状態が画面をまたぐと別の名前になっていた。
+
+    NOISE_VOID   ここ「空亡」    / 地図・履歴・シミュレータ「天中殺方位」
+    NOISE_NODE   ここ「月交点」  / 同「羅睺・計都軸」
+    NOISE_HA     ここ「歳破/月破」/ 同「歳破/月破/日破」（日盤も並べる表なのに
+                 日破が抜けていた）
+    SAFE         ここ「平」      / 同「平穏」
+
+  さらに未知の状態が来ると `?? s` で NOISE_XXX という内部コードを
+  そのまま画面に出していた。集約先は「判定なし」に落とす。
+*/
+const label = directionLabelName;
 
 function todayString() {
   const d = new Date();
