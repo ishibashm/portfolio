@@ -13,6 +13,7 @@ import {
   judgeDayAllDirections,
   rankRelocationDays,
 } from "@/utils/auspiciousDays";
+import { forecastAnchorMs } from "@/utils/boardInstant";
 import {
   DEFAULT_TENCHUSATSU_MODE,
   TenchusatsuMode,
@@ -130,13 +131,15 @@ export async function GET(request: Request) {
         blocked: boolean;
         tiers: Record<string, string>;
       }[] = [];
-      const cursor = new Date(from);
-      cursor.setHours(12, 0, 0, 0);
-      const end = new Date(to);
-      end.setHours(12, 0, 0, 0);
+      // 走査の起点と終点は日本時間の正午に寄せる。`setHours` は実行環境の
+      // タイムゾーンで動くので、本番（UTC）とブラウザ（JST）で範囲の端が
+      // 1 日ずれることがあった。判定は元から日本時間の正午で出している
+      // （`forecastAnchorMs`）ので、範囲もそこに合わせる。
+      let cursor = new Date(forecastAnchorMs(from));
+      const end = new Date(forecastAnchorMs(to));
       let guard = 0;
       while (cursor <= end && guard < 800) {
-        const all = judgeDayAllDirections(new Date(cursor), base);
+        const all = judgeDayAllDirections(cursor, base);
         guard++;
         const tiers: Record<string, string> = {};
         for (const dir of ALL_DIRECTIONS) tiers[dir] = gradeVerdict(all[dir]);
@@ -149,7 +152,7 @@ export async function GET(request: Request) {
           blocked: any.blockedByTenchusatsu,
           tiers,
         });
-        cursor.setDate(cursor.getDate() + 1);
+        cursor = new Date(cursor.getTime() + 86400000);
       }
       return NextResponse.json({
         honmeiStar: honmeiStar.classical,
