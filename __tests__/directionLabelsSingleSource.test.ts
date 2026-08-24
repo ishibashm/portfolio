@@ -27,7 +27,7 @@ import {
   directionLabelShort,
   isKnownDirectionStatus,
 } from "@/lib/directionLabels";
-import { NOISE_PRIORITY } from "@/utils/noiseSeverity";
+import { NOISE_PRIORITY, isNoise } from "@/utils/noiseSeverity";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
@@ -107,6 +107,29 @@ describe("手元の表を持ち直していない", () => {
     expect(src).toContain("directionLabelName(status)");
     // 破を「歳破」固定にしていた三項を戻したら落ちる。
     expect(src).not.toContain('? "五黄殺"');
+  });
+
+  it("カレンダーの凶の解説は状態コードで引く", () => {
+    const src = read("src/components/realestate/AstroGridCalendar.tsx");
+    // 日本語名を鍵にすると、呼び名を集約先で直した瞬間に引けなくなる。
+    expect(src).toContain("NOISE_GOU:");
+    expect(src).not.toContain("五黄殺:");
+    expect(src).not.toContain('badFactors.push("五黄殺")');
+    // 状態を 1 つずつ書き並べると、表に無い凶を取りこぼす。
+    expect(src).toContain("isNoise(day.status)");
+  });
+
+  it("凶かどうかの判定は noiseSeverity 1 か所", () => {
+    // auspiciousDays は判定エンジンを値として import しているので、
+    // 画面から呼ぶとエンジンがバンドルに乗る（#177〜#179）。
+    // 同じ式を 2 か所に置かず、軽いほうへ寄せる。
+    const light = read("src/utils/noiseSeverity.ts");
+    const heavy = read("src/utils/auspiciousDays.ts");
+    expect(light).toContain('status.startsWith("NOISE")');
+    expect(heavy).toContain("return isNoise(status);");
+    expect(isNoise("NOISE_GOU")).toBe(true);
+    expect(isNoise("SAFE")).toBe(false);
+    expect(isNoise(undefined)).toBe(false);
   });
 
   it("破の呼び名は盤で変わる。固定の「歳破」を持ち回らない", () => {

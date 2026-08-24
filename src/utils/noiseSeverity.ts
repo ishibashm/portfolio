@@ -50,6 +50,20 @@ export const NOISE_PRIORITY: readonly string[] = [
   "NOISE_NODE", // 羅睺・計都（月の交点）
 ];
 
+/**
+ * 凶かどうか。重さは問わない。
+ *
+ * エンジンの状態は接頭辞で凶を表す（NOISE_GOU / NOISE_VOID …）。
+ * この判定は `auspiciousDays.isInauspicious` が持っていたが、あちらは
+ * 判定エンジンを**値として** import しているので、画面から呼ぶと
+ * エンジンが丸ごとクライアントのバンドルに乗る（#177〜#179 で重い依存を
+ * 遅延させた経緯がある）。凶の定義はもともとこのファイルの役目で、
+ * ここは import が 1 つも無い。判定側はこれを呼ぶだけにする。
+ */
+export function isNoise(status: string | undefined): boolean {
+  return !!status && status.startsWith("NOISE");
+}
+
 export function isFatalNoise(status: string | undefined): boolean {
   return !!status && FIVE_FATAL_NOISES.includes(status);
 }

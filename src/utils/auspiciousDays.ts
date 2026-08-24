@@ -24,7 +24,7 @@ import {
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
 import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
-import { isFatalNoise } from "@/utils/noiseSeverity";
+import { isFatalNoise, isNoise } from "@/utils/noiseSeverity";
 import {
   TenchusatsuMode,
   VoidScopes,
@@ -59,9 +59,15 @@ export function isAuspicious(status: string | undefined): boolean {
   return status === "OPTIMAL" || status === "OPTIMAL_REGULAR";
 }
 
-/** 凶。移転を避けるべき判定。 */
+/**
+ * 凶。移転を避けるべき判定。
+ *
+ * 定義そのものは noiseSeverity が持つ。このファイルは判定エンジンを
+ * 値として import しているので、画面から直に呼ぶとエンジンがバンドルに
+ * 乗る。軽いほうを呼びたい画面は `isNoise` を直接使うこと。
+ */
 export function isInauspicious(status: string | undefined): boolean {
-  return !!status && status.startsWith("NOISE");
+  return isNoise(status);
 }
 
 export interface AuspiciousDayParams {
