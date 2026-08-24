@@ -36,6 +36,22 @@ export type BoardLayout = Record<Direction, StarFrequency>;
  * （SolarTimeClock・arbitrageAstro・municipalities-wealth）は any で
  * 受けていた。形は 1 つなので、名前を付けてここから引く。
  */
+/**
+ * 土用殺の方位。土用の期間ごとに 1 方位が塞がる。
+ *
+ * 関数の中に置いていたので、外から「この日はどの方位が土用殺か」を
+ * 引く手段が無かった。値は変えていない。
+ */
+export const DOYOU_SATSU_DIRECTIONS: Record<
+  "SPRING" | "SUMMER" | "AUTUMN" | "WINTER",
+  Direction
+> = {
+  SPRING: "SE",
+  SUMMER: "SW",
+  AUTUMN: "NW",
+  WINTER: "NE",
+};
+
 export type DoyouState = {
   inDoyou: boolean;
   doyouType: "SPRING" | "SUMMER" | "AUTUMN" | "WINTER" | null;
@@ -790,6 +806,18 @@ export interface VectorCollision {
   dayLayer: Partial<Record<Direction, VectorStatus>>;
   finalVectors: Record<Direction, VectorStatus>;
   tendoDirection?: Direction;
+  /**
+   * 土用殺が当たっている方位。当たっていなければ undefined。
+   *
+   * 土用殺は年盤・月盤・日盤のどの層にも出ず、**最終だけを NOISE_GOU に
+   * 上書きする。**NOISE_GOU の見出しは画面のどこでも「五黄殺」なので、
+   * 三盤とも大吉なのに「五黄殺」と出る日ができる。理由が伝わらない。
+   *
+   * 状態そのものを分けると配色と札の対応が全画面に波及するので、まずは
+   * **どの方位が土用殺なのかを呼び出し側が知れるように**する。判定は
+   * 一切変わらない（この値を読まなければ従来どおり）。
+   */
+  doyouSatsuDirection?: Direction;
   doyouState?: DoyouState;
 }
 
@@ -1188,27 +1216,18 @@ export function calculateVectorCollision(
     }
   }
   // Apply 土用殺 (Doyou-satsu) to finalVectors
-  if (doyouState && doyouState.isDoyouHazard) {
-    const doyouSatsuDirections: Record<
-      NonNullable<DoyouState["doyouType"]>,
-      Direction
-    > = {
-      SPRING: "SE",
-      SUMMER: "SW",
-      AUTUMN: "NW",
-      WINTER: "NE",
-    };
-    // doyouType は null を取りうる型だが、ここには null では入れない
-    // （isDoyouHazard = inDoyou && !isMabi、inDoyou = doyouType !== null）。
-    // 以前は doyouSatsuDirections[null] を引いており、JS では obj["null"]
-    // すなわち undefined になって下の if で落ちていた。この三項の偽側も
-    // 同じく undefined を返すので、結果は前と変わらない。
-    const targetDoyouSatsuDir = doyouState.doyouType
-      ? doyouSatsuDirections[doyouState.doyouType]
+  //
+  // doyouType は null を取りうる型だが、ここには null では入れない
+  // （isDoyouHazard = inDoyou && !isMabi、inDoyou = doyouType !== null）。
+  // 以前は DOYOU_SATSU_DIRECTIONS[null] を引いており、JS では obj["null"]
+  // すなわち undefined になって下の if で落ちていた。この三項の偽側も
+  // 同じく undefined を返すので、結果は前と変わらない。
+  const doyouSatsuDirection =
+    doyouState && doyouState.isDoyouHazard && doyouState.doyouType
+      ? DOYOU_SATSU_DIRECTIONS[doyouState.doyouType]
       : undefined;
-    if (targetDoyouSatsuDir) {
-      finalVectors[targetDoyouSatsuDir] = "NOISE_GOU";
-    }
+  if (doyouSatsuDirection) {
+    finalVectors[doyouSatsuDirection] = "NOISE_GOU";
   }
 
   return {
@@ -1217,6 +1236,7 @@ export function calculateVectorCollision(
     dayLayer,
     finalVectors,
     tendoDirection: tendoDir,
+    doyouSatsuDirection,
     doyouState,
   };
 }

@@ -29,6 +29,7 @@ function verdict(
     voidScopes: { year: false, month: false, day: false },
     blockedByTenchusatsu: false,
     hasTendo: false,
+    isDoyouSatsu: false,
     rokuyo: "大安",
     isTensho: false,
     isIchiryumanbai: false,
