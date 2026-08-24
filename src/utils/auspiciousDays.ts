@@ -236,14 +236,33 @@ function buildVerdict(
   if (rokuyo.includes("大安")) tags.push("大安");
   if (hasTendo) tags.push("天道");
 
-  // 三盤吉の条件。最終判定が吉であることに加えて、どの盤にも凶が
-  // 混ざっていないことを求める。最終だけ見ると、天道の補正で凶が
-  // 打ち消された日まで「三盤とも吉」として数えてしまう。
+  // 三盤吉の条件。**三つとも吉であること**を求める。
+  //
+  // 以前は「最終が吉」＋「どの盤にも凶が無い」だけだった。移転の最終判定
+  // （`calculateVectorCollision` の MIGRATION）は `criticalLayers = [年, 月]`
+  // だけを見るので、**年か月のどちらか 1 枚が吉なら最終は吉になる。**
+  // つまり旧条件は「年か月が吉で、どの盤にも凶が無い」と同じ意味で、
+  // 日盤どころか 3 枚のうち 1 枚しか吉でない日まで「三盤吉」と数えていた。
+  //
+  // 本命星 9 × 400 日 × 8 方位で実測すると、S（三盤吉）と出た 2,072 通りの
+  // 内訳は 吉1盤 894 / 吉2盤 900 / **吉3盤 278**。名乗りどおりだったのは
+  // 13.4% しかない。ファイル冒頭の「年盤・月盤・日盤がすべて吉になる日を
+  // 列挙する」という趣旨とも食い違っていた。
+  //
+  // 段階 A（吉2盤・凶なし）が 1 件も出なかったのも同じ原因。吉が 2 枚あれば
+  // 年か月が必ず含まれるので、A に落ちる前に S を取ってしまう。
+  // `__tests__/auspiciousRanking.test.ts` は前から
+  // `gradeVerdict(verdict("OPTIMAL", "OPTIMAL", "SAFE", "SAFE")) === "A"` を
+  // 期待していて、実在しない組み合わせを手で作っていたから通っていた。
+  //
+  // `isAuspicious` は `isInauspicious` を必ず外すので、凶なしの条件は含む。
+  // 最終の判定も残す。土用殺は層に出ず最終だけを NOISE_GOU にするため、
+  // これを外すと土用殺の日が三盤吉に混ざる。
   const isTripleAuspicious =
     isAuspicious(finalStatus) &&
-    !isInauspicious(yearLayer) &&
-    !isInauspicious(monthLayer) &&
-    !isInauspicious(dayLayer);
+    isAuspicious(yearLayer) &&
+    isAuspicious(monthLayer) &&
+    isAuspicious(dayLayer);
 
   return {
     date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
