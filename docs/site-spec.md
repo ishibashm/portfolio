@@ -88,7 +88,22 @@ finalVectors                        3 つを合成した最終判定
 
 ### 3.2 状態コードと日本語
 
-日本語表記は `src/lib/directionLabels.ts` が唯一の対応表。
+日本語表記は `src/lib/directionLabels.ts` が唯一の対応表。**4 つの形を持つ。
+言葉を変えるためではなく、置ける長さが違うために分けてある。**呼び名の系統は
+4 つとも揃える（`short` と `detailed` は `name` で始まる。テストで固定してある）。
+
+```
+name      「五黄殺」        呼び名だけ。重さは別の列や色で出す
+badge     「五黄」          地図の扇形に重ねる 1〜3 文字
+short     「五黄殺 (大凶)」  文中に埋め込む
+detailed  「五黄殺 (大凶 - 自己破壊のエネルギー)」  単独で説明する
+```
+
+以前は日取りパネル・地図の扇形・カレンダー・天地人・物件検索の API が
+それぞれ手元の表を持ち、**同じ状態が画面をまたぐと別の名前**になっていた
+（`NOISE_VOID` を「空亡」「ボイド」「天中殺方位」の 3 通りに呼んでいた）。
+#570〜#573 で寄せた。**手元の表を作らないこと。**
+
 
 | コード | 表記 | 意味 |
 |---|---|---|
@@ -104,6 +119,7 @@ finalVectors                        3 つを合成した最終判定
 | `NOISE_VOID` | 天中殺方位 | |
 | `NOISE_GETSUMEI` / `NOISE_GETSUTEKI` | 月命殺 / 月命的殺 | |
 | `NOISE_NODE` | 羅睺・計都軸 | |
+| `NOISE_TENCHU` | 天中殺 | 方位ではなく**期間**そのもの |
 
 `SAFE` を「吉」と書かないこと。判定の本体（`auspiciousDays.isAuspicious`）は
 `OPTIMAL` 系だけを吉とする。以前は物件検索と資産マップだけ「吉方位」と出して
@@ -122,6 +138,19 @@ finalVectors                        3 つを合成した最終判定
 
 重い順は `NOISE_PRIORITY`。複数の凶が重なった方位を 1 語に畳むときは必ずこの順で
 先勝ちにする。集合を自分のファイルに書き写さないこと（`isFatalNoise` を使う）。
+凶かどうかの判定も `noiseSeverity.isNoise`。`auspiciousDays.isInauspicious` は
+これを呼ぶだけで、**画面から呼ぶときは軽いほう**を使う（`auspiciousDays` は
+判定エンジンを値として import しているので、client component から引くと
+エンジンごとバンドルに乗る）。
+
+**土用殺はこの表に無い。**年盤・月盤・日盤のどの層にも出ず、
+`calculateVectorCollision` の最後で**最終だけを `NOISE_GOU` に上書き**する。
+そのため三盤とも大吉なのに段階 X になる日があり、画面には「五黄殺」としか
+出せなかった。#568 で `VectorCollision.doyouSatsuDirection` と
+`DayVerdict.isDoyouSatsu` を足し、理由を持ち回れるようにしてある
+（判定は変えていない）。**`NOISE_DOYOU` として切り出すのは未了。**
+切り出すと `isFatalNoise` を外れて段階が X → D になるので、
+`noiseSeverity` に「候補にしない集合」を先に置く必要がある。
 
 ### 3.4 段階と語彙
 
@@ -130,9 +159,17 @@ finalVectors                        3 つを合成した最終判定
 | 使う場面 | 段階 | 定義元 |
 |---|---|---|
 | 日付の格付け | S / A / B / C / D / X（三盤吉〜五大凶殺） | `utils/tierDisplay.ts` + `auspiciousDays.gradeVerdict` |
+
 | 方位の評価 | 大吉 / 吉 / 平穏 / 注意 / 凶 / 大凶 | `lib/verdictRating.ts` |
 | 合成した 0〜100 の点 | 大吉 / 吉 / 警告 / 大凶（80 / 50 / 30） | `lib/scoreTier.ts` |
 | 記事の色分け | good / neutral / bad | `lib/kigakuContent.ts` |
+
+**S（三盤吉）は「年・月・日が三つとも吉」。**#566 まではそうではなかった。
+移転の最終判定は `criticalLayers = [年, 月]` しか見ないので、旧条件
+（「最終が吉」＋「どの盤にも凶が無い」）は実質「年か月が吉」と同じ意味で、
+**3 枚のうち 1 枚しか吉でない日まで S に数えていた**（実測で S 309 通りの
+うち三盤とも吉は 14 通り）。同じ理由で A（吉2盤）は構造上 0 件だった。
+`isTripleAuspicious` を三つとも吉に直して、ラベルが実態と一致した。
 
 `verdictRating` は `isFatalNoise` から重さを引く。五大凶殺は必ず「大凶」、
 二次凶は「凶」。以前はシミュレータと履歴が独自の表を持ち、本命殺を「凶」に、
@@ -186,7 +223,31 @@ S と A は実測 ΔE 5.4（下限 15）で、文字ラベルの無い塗り（�
 | 天赦日・一粒万倍日 | `utils/lunar.getLuckyDays` | |
 | 土用 | 太陽黄経で判定（297–315 / 27–45 / 117–135 / 207–225） | 間日は障りなしとする |
 | 天中殺 | `utils/tenchusatsuPolicy` | 方位ではなく期間の禁忌。`NOISE_VOID` はその方位版 |
+| 判定に使う時刻 | `utils/boardInstant.forecastAnchorMs` | **その日の日本時間の正午**が代表点。年・月・日の盤も干支も全部この時刻で引く |
 | 日付 | `utils/japanDate.toJapanDateString` | サーバは UTC。`toISOString().slice(0,10)` は日本時間と 1 日ずれる |
+
+---
+
+### 4.1 時刻はすべて日本時間の正午に寄せる
+
+`Date` のローカルのゲッター／セッター（`getFullYear` / `setHours` / `getDay`）は
+**実行環境のタイムゾーンで動く**。本番（Cloud Run）は UTC、ブラウザは JST なので、
+使うと同じ日が別の意味になる。日取りの経路では次を守る。
+
+```
+評価する時刻   forecastAnchorMs(d)   その日の日本時間の正午
+YYYY-MM-DD     日本時間基準で組む     getFullYear を使わない
+曜日           日本時間基準で組む     getDay を使わない
+1 日進める     ミリ秒を足す           setDate を使わない
+```
+
+実害の記録。`setHours(12)` を使っていたため、サーバ側の判定だけが
+**21 時 JST の盤**を見ていた（#563。立春でいうと 1950〜2050 年の 101 年のうち
+34 年で年盤の星が食い違い、本命星 9 × 8 方位 = 7,272 通りのうち 1,930 通りが
+別の判定になった）。天中殺の干支だけ 9 時 JST で引いていた例もある（#564）。
+
+`Solar.fromDate` は**使わない**（同じ理由。`getZonedDateTimeFields(date, 9)` を
+通して `Solar.fromYmdHms` で組む）。
 
 ---
 
@@ -265,10 +326,21 @@ Supabase Auth（Google ログイン）。NextAuth ではない。
 
 ```
 紐づけ   topic_key（lib/comments.ts の関数で作り、正規表現で検証する）
-           houi:2026:3 / houi:2026:3:9 / calendar:2026-09 / area:23100
-置き場   /houi/{年}/{星} と /calendar/{年-月}
+           blog:{slug} / houi:2026:3 / calendar:2026-09 / area:23100 / page:{頁}
+置き場   /blog/{slug} だけ
 上限     1 人 1 日 10 件、本文 10〜800 字、一覧 50 件
 ```
+
+**投稿欄は記事にしか出さない**（利用者の指示。#578）。以前は
+`layout.tsx` の `PageComments` が中核 9 頁すべてに出し、`/houi/{年}/{星}` と
+`/calendar/{年-月}` にも個別に貼ってあった。**外したのは表示と受付だけで、
+古い鍵のデータは消していない。**API 側では今までどおり通るので、戻すときは
+そのまま出せる。
+
+`blog:` の鍵だけ**実在の確認を `lib/comments` でやらない**。記事の一覧は DB から
+来る非同期の処理で、`lib/comments` は投稿欄（client component）から import
+されている。引き込むと記事の読み込みごとバンドルに乗る。形の検証だけをここに
+置き、実在は `api/comments` の `topicExists` で見る（**読み取りと投稿の両方**）。
 
 表示名はログイン情報から取る（打たせると他人を騙れる）。プロフィール名が
 無ければメールアドレスの手前だけを使い、アドレス自体は出さない。
