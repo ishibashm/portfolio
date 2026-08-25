@@ -9,7 +9,7 @@ import {
   isScheduledOn,
   targetsForDate,
 } from "@/lib/scrapeTargets";
-import { buildPlan } from "../scripts/plan_scrape_matrix";
+import { buildPlan, orderForMatrix } from "../scripts/plan_scrape_matrix";
 
 /** 検査に使う連続した日付 */
 function days(count: number, from = "2026-01-01"): Date[] {
@@ -243,6 +243,89 @@ describe("パージの範囲内判定", () => {
     // 正しい判定はどれも取りこぼさない。
     for (const n of TARGET_PREFECTURE_NAMES) {
       expect(inScope(`${n}どこかの市1-1`)).toBe(true);
+    }
+  });
+});
+
+/**
+ * matrix の並び順。
+ *
+ * GitHub Actions は matrix を先頭から順に投入し、max-parallel で同時実行数を
+ * 絞っている。後ろに置いた県ほど開始が遅く、枠に収まらなければ queued の
+ * まま打ち切られる。
+ *
+ * 実際に起きた。2026-08-24 の run 32767691207 で、25 県のうち愛媛・山形・
+ * 岩手が cancelled になった。3 県ともレジストリの末尾側にある 50 分の県で、
+ * **並びが固定なので翌晩もまた最後尾**という状態だった。
+ */
+describe("matrix の並び順", () => {
+  const g = (prefecture: string, budget: number) => ({ prefecture, budget });
+  const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
+
+  it("分数の長い順に並ぶ（実時間は最長ジョブより短くならない）", () => {
+    for (const d of days(30)) {
+      const budgets = buildPlan(d).entries.map((e) => e.budget);
+      const sorted = [...budgets].sort((a, b) => b - a);
+      expect(budgets, d.toISOString().slice(0, 10)).toEqual(sorted);
+    }
+  });
+
+  it("同じ分数の中は日ごとに回る。最後尾が固定されない", () => {
+    const set = [g("a", 50), g("b", 50), g("c", 50), g("d", 50), g("e", 50)];
+    const last = new Set(
+      days(5, "2026-08-24").map(
+        (d) => orderForMatrix(set, d).at(-1)!.prefecture,
+      ),
+    );
+    // 5 日ぶんで 5 県すべてが 1 度ずつ最後尾に来る。
+    expect(last).toEqual(new Set(["a", "b", "c", "d", "e"]));
+  });
+
+  it("分数が違えば混ざらない。長いものが必ず先", () => {
+    const set = [g("short", 45), g("long", 300), g("mid", 100)];
+    for (const d of days(7, "2026-08-24")) {
+      expect(orderForMatrix(set, d).map((e) => e.prefecture)).toEqual([
+        "long",
+        "mid",
+        "short",
+      ]);
+    }
+  });
+
+  it("同じ日なら何度呼んでも同じ順（再現できる）", () => {
+    const set = [g("a", 50), g("b", 50), g("c", 50)];
+    const d = day("2026-08-24");
+    expect(orderForMatrix(set, d)).toEqual(orderForMatrix(set, d));
+  });
+
+  it("並べ替えるだけで、県を増やしも減らしもしない", () => {
+    for (const d of days(30)) {
+      const before = targetsForDate(d)
+        .map((t) => t.slug)
+        .sort();
+      const after = buildPlan(d)
+        .entries.map((e) => e.prefecture)
+        .sort();
+      expect(after, d.toISOString().slice(0, 10)).toEqual(before);
+    }
+  });
+
+  it("手動指定は並べ替えない", () => {
+    // 落ちた県をその日のうちに回し直す用途なので、指定した順で回す。
+    const plan = buildPlan(day("2026-08-24"), {
+      only: ["kochi", "tokyo"],
+    });
+    expect(plan.entries.map((e) => e.prefecture)).toEqual(["kochi", "tokyo"]);
+  });
+
+  it("見積もりは並べ替えで変わらない", () => {
+    // 合計と最長から出しているので、順序に依らない。ここが変わったら
+    // 見積もりの式に順序が紛れ込んでいる。
+    for (const d of days(14)) {
+      const plan = buildPlan(d);
+      const shuffled = [...plan.entries].reverse();
+      const total = shuffled.reduce((a, e) => a + e.budget, 0);
+      expect(plan.totalMin).toBe(total);
     }
   });
 });
