@@ -4,6 +4,7 @@
  * 数値はすべて src/utils/ephemerisEngine.ts の計算結果をそのまま使う。
  * ここで独自に定数表を持つと、ツール側の判定と食い違う記事ができてしまう。
  */
+import { forecastAnchorMs } from "@/utils/boardInstant";
 import {
   generateBoard,
   getClassicalYearStar,
@@ -262,6 +263,23 @@ export function monthContentYears(): number[] {
 export const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
 /**
+ * 記事の代表点。**日本時間の正午**を返す。
+ *
+ * 判定ツールは盤をその日の正午（JST）で出す（`forecastAnchorMs`）。
+ * ここが `new Date(Date.UTC(y, m - 1, d))` ＝ 00:00 UTC ＝ **09:00 JST**
+ * だったため、節入りが 09:00〜12:00 JST に来る日は「正午にはもう新しい
+ * 月なのに、代表点ではまだ前の月」になり、下の走査が丸ごと 1 日ずれた。
+ *
+ * 記事が「7 月 8 日から」と書き、同じ日をツールに入れると 7 月 7 日から
+ * 新しい月盤が出る、という食い違いが 2026〜2031 年の 72 か月中 10 か月で
+ * 起きていた（`__tests__/kigakuMonthRangeNoon.test.ts`）。
+ * #456 / #564 / #582 と同じ、時刻の基準の取りこぼし。
+ */
+function jstNoonOf(year: number, month: number, day: number): Date {
+  return new Date(forecastAnchorMs(new Date(Date.UTC(year, month - 1, day))));
+}
+
+/**
  * 九星気学の月は暦月ではなく節入りで切り替わる（毎月5〜8日ごろ）。
  * 実際に星が変わる日を走査して求める。おおよその日付を書くより、
  * 「いつからいつまでの話か」を正確に出したほうが記事として使える。
@@ -275,7 +293,7 @@ export function kigakuMonthRange(
     system === "classical" ? getClassicalMonthStar(d) : getMonthStar(d);
 
   // その暦月の 20 日はほぼ確実に節入り後なので、これを代表点にする
-  const anchor = new Date(Date.UTC(year, month - 1, 20));
+  const anchor = jstNoonOf(year, month, 20);
   const centerStar = starOn(anchor);
 
   const start = new Date(anchor);
@@ -305,7 +323,7 @@ export function getMonthDirections(
 } {
   const classical = system === "classical";
   const { start, end, centerStar } = kigakuMonthRange(year, month, system);
-  const d = new Date(Date.UTC(year, month - 1, 20));
+  const d = jstNoonOf(year, month, 20);
 
   const yearBoard = generateBoard(
     classical ? getClassicalYearStar(d) : getYearStar(d),
