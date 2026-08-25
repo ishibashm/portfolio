@@ -125,6 +125,33 @@ jobs:
             echo "::error::ADMIN_EMAIL is not set. Add it to the ENV_FILE secret, or register a separate ADMIN_EMAIL secret. 未設定のまま出すと /admin と /api/metrics/* が誰にも開けなくなる。"
             exit 1
           fi
+          # API_SECRET_KEY は「無くても動いてしまう」ので、止めずに報せる。
+          #
+          # src/utils/encryption.ts は鍵をこう決めている。
+          #
+          #   process.env.API_SECRET_KEY
+          #     || process.env.NEXTAUTH_SECRET
+          #     || "fallback_default_secret_key_123456"
+          #
+          # 3 つ目は**このリポジトリに書いてある文字列**で、リポジトリは公開
+          # 設定。どちらも未設定だと、利用者が保存した Gemini の API キーが
+          # 「誰でも読める鍵」で暗号化される。エラーにならないので気付けない。
+          #
+          # NEXTAUTH_SECRET は NextAuth をやめた時点でどこにも設定されて
+          # いないため、実質 API_SECRET_KEY の 1 本勝負になっている。
+          #
+          # ここで exit 1 にしないのは、未設定だった場合に**デプロイ自体が
+          # 止まって直す手段も無くなる**ため。まず現状を可視化する。
+          # grep -q なので値はログに出ない。
+          if grep -qE '^API_SECRET_KEY=.+' .env; then
+            echo "API_SECRET_KEY: 設定あり" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif grep -qE '^NEXTAUTH_SECRET=.+' .env; then
+            echo "::warning::API_SECRET_KEY is not set; falling back to NEXTAUTH_SECRET. encryption.ts の鍵が NextAuth 時代の値になっている。API_SECRET_KEY を ENV_FILE に入れること。"
+            echo "API_SECRET_KEY: **未設定**（NEXTAUTH_SECRET で代用中）" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::API_SECRET_KEY and NEXTAUTH_SECRET are both unset. encryption.ts はリポジトリに書かれた既定の鍵で暗号化する。保存済みの Gemini API キーが公開の鍵で守られている状態。ENV_FILE に API_SECRET_KEY を入れること。"
+            echo "API_SECRET_KEY: **未設定**（リポジトリ既定の鍵で暗号化中。要対応）" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Convert .env to env.json for Cloud Run
         run: python scripts/convert_env.py
