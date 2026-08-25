@@ -26,6 +26,13 @@ import type { FeatureCollection } from "geojson";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import {
+  BASE_MAPS,
+  BASE_MAP_ORDER,
+  HILLSHADE,
+  parseBaseMapId,
+  type BaseMapId,
+} from "@/lib/baseMapLayers";
+import {
   HAZARD_TABS,
   HAZARD_STORAGE_KEY,
   normalizeHazardTab,
@@ -367,6 +374,8 @@ function getMunicipality(address: string | null): string {
 
 /** 用途地域を出すかどうかを端末に残す鍵。 */
 const ZONING_STORAGE_KEY = "arb_zoning_on";
+/** 下地（ベースマップ）の選択。ハザード・用途地域と同じく端末に残す。 */
+const BASE_MAP_STORAGE_KEY = "arb_base_map";
 
 export default function ArbitrageMapInner({
   properties,
@@ -423,6 +432,18 @@ export default function ArbitrageMapInner({
    * その選択だけを localStorage に覚えさせる（地図のテーマと同じ扱い）。
    */
   const [showSectors, setShowSectors] = useState(true);
+  /*
+    地図の下地。既定は従来どおり CARTO（"carto"）。
+    空中写真と地形（色別標高図）は地理院タイル。選択は端末に残す。
+    ハザードのタブと同じく、effect ではなく遅延初期化で読む。
+  */
+  const [baseMap, setBaseMap] = useState<BaseMapId>(() =>
+    typeof window === "undefined"
+      ? "carto"
+      : parseBaseMapId(localStorage.getItem(BASE_MAP_STORAGE_KEY)),
+  );
+  /* 陰影起伏の重ね描き。下地が写真・地形のときに起伏が読めるようになる。 */
+  const [hillshade, setHillshade] = useState(false);
   /*
     重ねるハザードマップ（国交省）のタブ。"none" で消す。選択は端末に残す。
     effect で読むと set-state-in-effect の警告になるので遅延初期化で読む
@@ -1043,18 +1064,35 @@ export default function ArbitrageMapInner({
           focusKind={focusKind}
         />
 
-        {/* OpenStreetMap / CartoDB Tiles (Theme Switchable) */}
+        {/* 地図の下地。carto のときだけ明暗を切り替える。
+            地理院タイル（淡色・空中写真・地形）に明暗の別は無い。
+
+            maxNativeZoom は種類ごとに違う。配信の無いズームは 404 に
+            なり、Leaflet はそれを透明として扱う（＝画面が真っ白になる）。
+            上限を渡すと、上限のタイルを引き伸ばして描く。 */}
         <TileLayer
-          key={`tile-layer-${mapTheme}`}
+          key={`tile-layer-${baseMap}-${mapTheme}`}
           url={
-            mapTheme === "dark"
+            baseMap === "carto" && mapTheme === "dark"
               ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              : BASE_MAPS[baseMap].url
           }
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={20}
-          maxNativeZoom={19}
+          attribution={BASE_MAPS[baseMap].attribution}
+          maxZoom={BASE_MAPS[baseMap].maxZoom}
+          maxNativeZoom={BASE_MAPS[baseMap].maxNativeZoom}
         />
+
+        {/* 陰影起伏。下地の上に薄く重ねて尾根と谷を出す */}
+        {hillshade && (
+          <TileLayer
+            key="tile-layer-hillshade"
+            url={HILLSHADE.url}
+            attribution={HILLSHADE.attribution}
+            maxZoom={HILLSHADE.maxZoom}
+            maxNativeZoom={HILLSHADE.maxNativeZoom}
+            opacity={0.45}
+          />
+        )}
 
         {/* ハザードの重ね描き。区域が無い場所はタイル自体が無く透明で返る */}
         <HazardTileOverlay tab={hazardTab} />
@@ -1091,6 +1129,40 @@ export default function ArbitrageMapInner({
           </div>
         )}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5">
+          {/* 地図の下地。ハザード・用途地域と同じ列に置く。
+              どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
+          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+            {BASE_MAP_ORDER.map((id) => (
+              <button
+                key={id}
+                onClick={() => {
+                  setBaseMap(id);
+                  localStorage.setItem(BASE_MAP_STORAGE_KEY, id);
+                }}
+                aria-pressed={baseMap === id}
+                title={BASE_MAPS[id].note}
+                className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                  baseMap === id
+                    ? "bg-indigo-600 text-white"
+                    : "text-stone-600 hover:bg-white"
+                }`}
+              >
+                {BASE_MAPS[id].label}
+              </button>
+            ))}
+            <button
+              onClick={() => setHillshade((v) => !v)}
+              aria-pressed={hillshade}
+              title={HILLSHADE.note}
+              className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                hillshade
+                  ? "bg-indigo-600 text-white"
+                  : "text-stone-600 hover:bg-white"
+              }`}
+            >
+              {HILLSHADE.label}
+            </button>
+          </div>
           {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
               「なし」を明示的に置くのは、消す操作を選び直しではなく
               1 押しにするため。選択は端末に残す。 */}
