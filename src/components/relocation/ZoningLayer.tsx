@@ -12,6 +12,7 @@ import {
   type ZoningName,
   type ZoningProperties,
 } from "@/utils/zoning";
+import { latToTileY, lonToTileX } from "@/lib/tileCoords";
 
 /**
  * 用途地域を地図に重ねる層。
@@ -58,19 +59,10 @@ interface ZoningFeatureCollection extends GeoJsonObject {
   }[];
 }
 
+/* 緯度経度 → タイルの変換は lib/tileCoords に寄せてある。ここに写し
+   直さないこと（航空写真の切り出しが同じ計算を使う）。 */
 function tileKey(z: number, x: number, y: number) {
   return `${z}/${x}/${y}`;
-}
-
-function lonToTileX(lon: number, z: number) {
-  return Math.floor(((lon + 180) / 360) * 2 ** z);
-}
-
-function latToTileY(lat: number, z: number) {
-  const r = (lat * Math.PI) / 180;
-  return Math.floor(
-    ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z,
-  );
 }
 
 export interface ZoningLayerProps {

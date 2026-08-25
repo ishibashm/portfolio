@@ -25,6 +25,7 @@ import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
+import { AerialThumb } from "@/components/relocation/AerialThumb";
 import {
   BASE_MAPS,
   BASE_MAP_ORDER,
@@ -1736,6 +1737,13 @@ export default function ArbitrageMapInner({
                               <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-stone-200/70 font-bold shrink-0 ml-1">
                                 {pinColors.label}
                               </span>
+                            </div>
+
+                            {/* その地点の空中写真。掲載元の写真ではなく
+                                周りの様子（川・崖・幹線道路・空き地）を見る。
+                                タイルが無い場所は部品側で「写真なし」に倒れる。 */}
+                            <div className="mt-2">
+                              <AerialThumb lat={prop.lat} lon={prop.lon} />
                             </div>
 
                             {prop.is_new_build && (
