@@ -8,7 +8,6 @@ import {
   useMapEvents,
   useMap,
 } from "react-leaflet";
-import L from "leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import "leaflet/dist/leaflet.css";
 

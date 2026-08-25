@@ -11,6 +11,16 @@ interface ClockDisplayProps {
     note?: string;
   } | null;
   isVoidTime: boolean;
+  /**
+   * 呼び出し側が `calculateSolarTime` で出した太陽時。
+   *
+   * **この部品は受け取るだけで描画には使っていない。**渡された値は
+   * 呼ばれた瞬間の 1 点で止まるので、そのまま出すと秒針が動かない。
+   * 表示は毎秒の `now` に `eot + longOffset` を足して同じ太陽時を
+   * 組み直している（128 行）。
+   *
+   * 受け口は残す。消すと `SolarTimeClock` 側の呼び出しとずれる。
+   */
   solarTime: Date;
   eot: number;
   longOffset: number;
@@ -20,7 +30,6 @@ interface ClockDisplayProps {
 export function ClockDisplay({
   kimon,
   isVoidTime,
-  solarTime,
   eot,
   longOffset,
   targetDate = new Date(),
