@@ -16,8 +16,6 @@ export function KigakuBoard({ centerStar }: KigakuBoardProps) {
   // [E ] [C ] [W ]
   // [NE] [N ] [NW]
 
-  // Directions for tooltips or small labels
-  const directions = ["SE", "S", "SW", "E", "C", "W", "NE", "N", "NW"];
   // Japanese Labels
   const directionsJp = [
     "南東",
