@@ -121,6 +121,46 @@ interface TenChiJinEvaluationProps {
   birthDate?: string; // Main user birthdate
 }
 
+/** 方位の見立て（大吉〜大凶）を点に直す。 */
+export function rateToPoints(rating: string): number {
+  if (rating === "大吉") return 100;
+  if (rating === "吉") return 80;
+  if (rating === "凶") return 20;
+  if (rating === "大凶") return 0;
+  return 60; // SAFE/普通
+}
+
+/**
+ * 地（空間）の点。**歩みごとの方位の見立てだけ**を平均する。
+ *
+ * 以前はここに、同行者 1 人につき一律 60 点を足す仮置きが混ざっていた。
+ * 同行者の本命星を計算しておきながら**結果を捨てていた**ので、誰を
+ * 連れて行っても点は動かず、代わりに**人数のぶんだけ 60 点へ引き寄せ
+ * られる**だけになっていた。しかも仮置きは歩みのループの内側にあり、
+ * 歩み × 人数ぶん入る。
+ *
+ * 1 歩・大吉（100 点）で
+ *
+ *   同行者 0 人 → 100 / 1 人 → 80 / 2 人 → 73 / 4 人 → 68
+ *
+ * 1 歩・大凶（0 点）で
+ *
+ *   同行者 0 人 → 0 / 1 人 → 30 / 2 人 → 40 / 4 人 → 48
+ *
+ * 地の点は総合点の 6 割を占め、40 以下で「地が低い」の注意が出る。
+ * **同行者を 2 人足すと大凶でもその注意が消えていた。**
+ *
+ * 同行者を評価に入れるのは機能として妥当だが、**何も計算していない値で
+ * 点を動かすほうが、入れないより悪い。**実装されるまでは外す。
+ * 同行者の相性は人（Jin）の側で本命星から実際に計算していて、そちらは
+ * 従来どおり出る。
+ */
+export function spaceScoreFromRatings(ratings: string[]): number {
+  if (ratings.length === 0) return 60;
+  const total = ratings.reduce((sum, r) => sum + rateToPoints(r), 0);
+  return Math.round(total / ratings.length);
+}
+
 export function TenChiJinEvaluation({
   mode,
   steps,
@@ -149,15 +189,6 @@ export function TenChiJinEvaluation({
     () => getClassicalYearStar(mainUserBirthDateObj),
     [mainUserBirthDateObj],
   );
-
-  // Directions mapping helper
-  const rateToPoints = (rating: string) => {
-    if (rating === "大吉") return 100;
-    if (rating === "吉") return 80;
-    if (rating === "凶") return 20;
-    if (rating === "大凶") return 0;
-    return 60; // SAFE/普通
-  };
 
   // 1. CALCULATE TEN (TIME) SCORE
   const timeMetrics = useMemo(() => {
@@ -211,8 +242,7 @@ export function TenChiJinEvaluation({
 
   // 2. CALCULATE CHI (SPACE) SCORE
   const spaceMetrics = useMemo(() => {
-    let totalScore = 0;
-    let count = 0;
+    const ratings: string[] = [];
     let hasSevereClash = false;
     let worstRating = "普通";
     let worstClashType = "";
@@ -222,10 +252,7 @@ export function TenChiJinEvaluation({
     stepsToEvaluate.forEach((step) => {
       if (!step || !step.evaluation) return;
 
-      const rating = step.evaluation.rating;
-      const score = rateToPoints(rating);
-      totalScore += score;
-      count++;
+      ratings.push(step.evaluation.rating);
 
       const status = step.evaluation.status || "";
       if (["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"].includes(status)) {
@@ -237,29 +264,15 @@ export function TenChiJinEvaluation({
         // 分からないので、集約先の併記（歳破/月破/日破）に合わせる。
         worstClashType = directionLabelName(status);
       }
-
-      // Check accompanying members directions safety
-      members.forEach((m) => {
-        // We mock Bazi calculations for companions client-side
-        // To maintain architectural consistency, we compute their star and void
-        const mBirth = parseSafeDate(m.birthDate);
-        const mStar = getClassicalYearStar(mBirth);
-        // Simple direction check placeholder simulating calculations inside overall scorer
-        // If a member triggers a conflict in the same direction, it reflects in spaceScore
-        // Just checking if steps contain any evaluation details for now
-        totalScore += 60; // Default safe for companion placeholder inside component mapping
-        count++;
-      });
     });
 
-    const finalScore = count > 0 ? Math.round(totalScore / count) : 60;
     return {
-      score: finalScore,
+      score: spaceScoreFromRatings(ratings),
       hasSevereClash,
       worstRating,
       worstClashType,
     };
-  }, [mode, steps, singleStepIndex, members]);
+  }, [mode, steps, singleStepIndex]);
 
   // 3. CALCULATE JIN (BODY / HUMAN) SCORE
   const humanMetrics = useMemo(() => {
