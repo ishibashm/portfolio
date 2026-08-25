@@ -96,17 +96,16 @@ export function getHourlyKyusei(
   hourJunishiIndex: number,
 ): (typeof KYUSEI)[0] {
   let startStar = 1;
-  const group = dayJunishiIndex % 4; // 0=Ne, 1=Ushi, 2=Tora, 3=U... wait.
-  // Ne(0), U(3), Uma(6), Tori(9) -> Mod 4?
-  // 0%4=0, 3%4=3, 6%4=2 (NO).
 
-  // Let's use Remainder 3 logic on the Index.
-  // Ne(0) -> Group 1.
-  // Ushi(1) -> Group 2.
-  // Tora(2) -> Group 3.
-  // U(3) -> Group 1.
-  // Tatsu(4) -> Group 2.
-  // ...
+  // 日の十二支を 3 で割った余りで 3 組に分ける。
+  //
+  //   余り 0: 子(0) 卯(3) 午(6) 酉(9)    → 子の刻が一白
+  //   余り 1: 丑(1) 辰(4) 未(7) 戌(10)   → 子の刻が四緑
+  //   余り 2: 寅(2) 巳(5) 申(8) 亥(11)   → 子の刻が七赤
+  //
+  // 以前ここに `dayJunishiIndex % 4` を試した跡が残っていて、
+  // 「0%4=0, 3%4=3, 6%4=2 (NO)」と自分で否定したうえで結果を
+  // 使わずに捨てていた。4 では組にならない（上の並びは 3 つおき）。
   const rem = dayJunishiIndex % 3;
   if (rem === 0)
     startStar = 1; // Ne, U, Uma, Tori... Wait. Ne=0. U=3. Uma=6. Tori=9. 0,3,6,9 % 3 == 0. Correct!

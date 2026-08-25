@@ -74,7 +74,9 @@ async function main() {
 
     console.log(`Uploading ${file} to ${storagePath}...`);
 
-    const { data, error: uploadError } = await supabase.storage
+    // upload の data（保存先のパス）は読まない。公開 URL は下で
+    // getPublicUrl から取っているので、こちらは成否だけ見れば足りる。
+    const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(storagePath, fileBuffer, {
         contentType,

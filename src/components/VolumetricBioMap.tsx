@@ -35,8 +35,8 @@ export function VolumetricBioMap({
   // Generate tile coordinates for the background map
   // This is a simplified mockup of a 3D tile layer
   const mapTiles = useMemo(() => {
-    const zoom = 12;
-    // Rough calc for a 3x3 grid around the center
+    // 中心のまわり 3x3 ぶんの相対座標。実際のタイルを引いてはいないので
+    // ズーム段階は要らない（背景の見た目だけを作っている）。
     return [0, 1, 2].map((x) => [0, 1, 2].map((y) => ({ x: x - 1, y: y - 1 })));
   }, []);
 
