@@ -284,8 +284,6 @@ export async function POST(req: Request) {
       if (isConflictDay) riskFactors.push("対沖（干渉衝突日）");
       if (isDoyouHazard) riskFactors.push("土用期間（土公神の障り）");
 
-      const aspectStrings = AspectEngine.formatAspects(allAspects);
-
       const retrogrades: string[] = [];
       for (const p of planetsToCheck) {
         const coords = swissEngine.getPlanetCoordinates(targetDate, p);

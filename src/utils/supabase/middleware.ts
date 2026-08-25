@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import {
   isAdminEmail,
@@ -30,7 +31,11 @@ export async function updateSession(
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          // 受け側の request の cookie には options を渡さない。ここは
+          // 「この処理の続きが読む値」を差し替えるだけで、ブラウザへ
+          // 返すのは下の supabaseResponse のほう。有効期限や SameSite は
+          // そちらに付ける。
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
@@ -66,11 +71,18 @@ export async function updateSession(
   if (process.env.NODE_ENV === "development") {
     const bypassEmail = request.cookies.get("dev_bypass_user")?.value;
     if (bypassEmail) {
+      // 読んでいるのは email と「user がいるか」だけだが、`User` を
+      // 名乗る以上は必須の項目を埋める。`as any` で押し通すと、
+      // 将来この user を別の場所へ渡したときに実行時まで気付けない。
       user = {
         id: "dev-bypass-id",
         email: bypassEmail,
         role: "authenticated",
-      } as any;
+        aud: "authenticated",
+        app_metadata: {},
+        user_metadata: {},
+        created_at: new Date(0).toISOString(),
+      } satisfies User;
     }
   }
 

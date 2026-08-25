@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { title, artist, duration } = await req.json();
+    // artist も受け取るが、いまの解析は曲の長さだけで区切りを作るので読まない。
+    const { title, duration } = await req.json();
 
     if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
