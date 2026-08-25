@@ -44,6 +44,56 @@ const DAY_MIN = 24 * 60;
 /** 実時間がこれを超えたら警告する。取り込み後の geocode ぶんの余裕を残す */
 const WALL_WARN_MIN = 20 * 60;
 
+/**
+ * matrix に並べる順を決める。
+ *
+ * GitHub Actions は matrix を**先頭から順に**投入する。max-parallel で
+ * 同時実行数を絞っているので、後ろに置いた県ほど開始が遅い。ここが
+ * 効いてくるのは 2 か所。
+ *
+ * ## 長いジョブを先に出す
+ *
+ * 実時間は「いちばん長いジョブ」より短くならない。300 分の東京を最後に
+ * 回すと、他が全部終わってから 300 分が始まることになり、そのぶん
+ * まるごと伸びる。分数の長い順に並べる（LPT。makespan を縮める定石）。
+ *
+ * ## 同じ分数の中は日ごとに回す
+ *
+ * 並びを固定すると、**毎晩同じ県が最後尾**になる。枠に収まらなかった夜は
+ * その県だけが打ち切られ、次の夜もまた最後尾なので、永久に古いままに
+ * なりうる。実際に起きた（2026-08-24 の run 32767691207。25 県のうち
+ * 愛媛・山形・岩手が queued のまま cancelled。この 3 県はレジストリの
+ * 末尾側にある 50 分の県）。
+ *
+ * 日付から決めるので、同じ日なら何度実行しても同じ順になる（再現できる）。
+ *
+ * **並列数は触らない。**上げれば詰まりは減るが、相手サーバーへの
+ * リクエスト頻度がそのまま比例して増える（scrapeTargets の
+ * SCRAPE_MAX_PARALLEL のコメント）。順序を変えるだけなら負荷は変わらない。
+ */
+export function orderForMatrix(
+  entries: MatrixEntry[],
+  date: Date,
+): MatrixEntry[] {
+  const dayIndex = Math.floor(date.getTime() / 86_400_000);
+
+  const groups = new Map<number, MatrixEntry[]>();
+  for (const e of entries) {
+    const g = groups.get(e.budget);
+    if (g) g.push(e);
+    else groups.set(e.budget, [e]);
+  }
+
+  const out: MatrixEntry[] = [];
+  for (const budget of [...groups.keys()].sort((a, b) => b - a)) {
+    const group = groups.get(budget)!;
+    // 剰余は負になりうる（1970 年より前の日付）。正に畳んでから使う。
+    const shift = ((dayIndex % group.length) + group.length) % group.length;
+    out.push(...group.slice(shift), ...group.slice(0, shift));
+  }
+  return out;
+}
+
 export function buildPlan(
   date: Date,
   opts: { only?: string[]; budgetOverrideMin?: number } = {},
@@ -67,10 +117,13 @@ export function buildPlan(
     targets = targetsForDate(date);
   }
 
-  const entries = targets.map((t) => ({
+  const raw = targets.map((t) => ({
     prefecture: t.slug,
     budget: opts.budgetOverrideMin ?? t.budgetMin,
   }));
+  // 手動指定はそのままの順で回す。落ちた県をその日のうちに回し直したい、
+  // という使い方が本来の用途なので、並べ替えると意図に反する。
+  const entries = only.length > 0 ? raw : orderForMatrix(raw, date);
 
   const totalMin = entries.reduce((a, e) => a + e.budget, 0);
   const longestMin = entries.reduce((a, e) => Math.max(a, e.budget), 0);
