@@ -1694,12 +1694,16 @@ export default function ArbitrageMapInner({
                   },
                 );
               }
+              /* 方位は県の面積重心で決めている（lib/prefectureDirection）。
+                 兵庫のように広い県は県内で方位が変わるので、その断りを
+                 ポップアップに残す。個々の物件は実座標で判定される。 */
               const kigakuLine = info
                 ? `<div class="mt-1">方位: <b>${info.directionLabel}</b> — ${
                     info.blocked
                       ? '<b class="text-slate-500">天中殺で移転不可</b>'
                       : `<b>${TIER_JP[info.tier as DayTier] ?? info.tier}</b>`
-                  }<span class="text-[9px] text-stone-500">（選択日の判定）</span></div>`
+                  }<span class="text-[9px] text-stone-500">（選択日の判定）</span>
+                  <div class="text-[9px] text-stone-500">県の中心を基準にした方位です。広い県は県内でも方位が変わります（物件は個別に判定）</div></div>`
                 : "";
               layer.bindPopup(
                 `<div class="font-sans text-xs text-gray-900 p-2 min-w-[120px]">

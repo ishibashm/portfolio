@@ -410,6 +410,37 @@ export default function TimingAnalyticsPage() {
     return out;
   }, [selected, settings]);
 
+  /**
+   * 8 方位 → 選択日の段階。地図の扇形と右下の凡例が読む。
+   *
+   * これを渡していなかったため、県塗りは出ているのに右下の凡例が
+   * 「方位の吉凶は出していません（生年月日と出発地を入れると…）」と
+   * 矛盾した案内を出していた（利用者のスクリーンショットで発覚）。
+   */
+  const dirKigakuForMap = useMemo(() => {
+    if (!selected) return undefined;
+    const out: Record<
+      string,
+      {
+        direction: string;
+        directionLabel: string;
+        tier: string;
+        blocked: boolean;
+      }
+    > = {};
+    for (const dir of ALL_DIRECTIONS) {
+      const tier = selected.tiers[dir];
+      if (!tier) continue;
+      out[dir] = {
+        direction: dir,
+        directionLabel: DIRECTION_LABELS[dir] ?? dir,
+        tier,
+        blocked: selected.blocked,
+      };
+    }
+    return out;
+  }, [selected]);
+
   const climatology = useMemo(() => {
     if (!profile) return null;
     /* 読む枝だけの型（#149）。この画面が読むのは
@@ -921,6 +952,12 @@ export default function TimingAnalyticsPage() {
                     prefecture="all"
                     keepWideView
                     prefKigaku={prefKigaku}
+                    dirKigaku={dirKigakuForMap}
+                    targetDate={selected.date}
+                    /* 扇形の区切りを県塗り（prefKigaku の traditional）と
+                       同じにする。渡さないと既定の 45 度等分で描かれ、
+                       境目近くの県で扇形と塗りが別の方位を指す。 */
+                    useClassical
                   />
                 </div>
               </Section>
