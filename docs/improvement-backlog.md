@@ -740,6 +740,27 @@ src/components/SolarTimeClock.tsx(1350, 1697, 1707, 1717, 1727, 1737)
 変わる。今 `undefined` を掴んでいる箇所は `"SAFE"` を掴むようになるので、
 **画面の答えも変わる。**直すのは型のほうであって、データではない。
 
+### 決着 — #635〜#638 で段階的に直した（2026-08-26）
+
+上の「直すときの順序」のとおり、器ではなく型を直した。データの鍵は
+1 つも増減していない。
+
+1. #635: `EightDirection` と `EIGHT_DIRECTIONS` を導入。
+   `ALL_DIRECTIONS` を別名化（手書きの八方位配列は最終的に 6 個あった）
+2. #636: 方位角→方位の根元（`getKigakuSector`）と route 2 つを八方位に。
+   **広げていたのは受け側ではなく変換の戻り値**だった
+3. #637: 画面側（simulator・SolarTimeClock・ConsultPanel）の器と
+   ローカル型を八方位に。`trueDirection as Direction` の cast が外れた
+4. #638: `VectorCollision.finalVectors` 本体を
+   `Record<EightDirection, VectorStatus>` に切り替え。engine の
+   `finalVectors: any` 2 件が 0 になり、tsc が字面で見つからない受け手
+   （`AuspiciousDayParams.direction`・`EvaluationContext.targetDirection`）
+   まで教えてくれた
+
+`ScorecardDirection`（ScorecardPanel）は同じ型の双子だったので
+`EightDirection` の別名にした。`__tests__/ignoreDayLayer.test.ts` は
+`tendoDirection` を八方位に絞ったことで無修正のまま通っている。
+
 ## 9. `/api/v1` を呼ぶ画面がまるごと死んでいる（2,829 行）
 
 `MarkdownViewerWidget` の `error` が未使用（`setError` は呼ばれているのに

@@ -29,6 +29,7 @@ import {
 } from "@/lib/scoreTier";
 import type {
   Direction,
+  EightDirection,
   StarFrequency,
   getHonmeiStar,
 } from "../../utils/ephemerisEngine";
@@ -36,9 +37,11 @@ import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 
 /**
  * 総合スコアが扱う 8 方位（中央を除く）。SolarTimeClock 側の memo も
- * 同じ型を使う（同じ形を 2 か所に書かない）。
+ * 同じ型を使う（同じ形を 2 か所に書かない）。実体は ephemerisEngine の
+ * EightDirection — #635 で全体の語彙になったので、独自に
+ * Exclude<Direction, "CENTER"> を書かず別名にする。
  */
-export type ScorecardDirection = Exclude<Direction, "CENTER">;
+export type ScorecardDirection = EightDirection;
 
 /** 方位 1 つぶんの判定セル。3 モデル比較の升と 30 日予測の升で共通。 */
 export interface ScorecardDirectionCell {
