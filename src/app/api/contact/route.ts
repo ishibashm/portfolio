@@ -12,7 +12,8 @@ import prisma from "@/lib/prisma";
 const MAX = { name: 100, email: 200, body: 4000 };
 
 export async function POST(request: Request) {
-  let payload: any;
+  /* 外から来る素の JSON。読む側は typeof / String() で確かめてから使う。 */
+  let payload: Record<string, unknown>;
   try {
     payload = await request.json();
   } catch {

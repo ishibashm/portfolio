@@ -10,13 +10,20 @@ import { defineConfig } from "prisma/config";
 dotenv.config({ path: ".env.local" });
 dotenv.config({ path: ".env" });
 
+/*
+  directUrl は defineConfig の型定義に無いが、Prisma は実行時に読む。
+  リテラルのまま渡すと余剰プロパティ検査で弾かれる（それが as any の
+  出どころ）。変数に出せば構造的な代入になり、cast なしで通る。
+*/
+const datasource = {
+  url: process.env["DATABASE_URL"],
+  directUrl: process.env["DIRECT_URL"],
+};
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
-  datasource: {
-    url: process.env["DATABASE_URL"],
-    directUrl: process.env["DIRECT_URL"],
-  } as any,
+  datasource,
 });

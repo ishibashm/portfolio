@@ -32,7 +32,9 @@ function acceptedByScanner(url: string) {
   const mode = qs.get("tenchusatsuMode");
   return {
     targetDate: date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null,
-    direction: dir && ALL_DIRECTIONS.includes(dir as any) ? dir : null,
+    /* includes は要素型でしか受けないので、素の文字列は some で照合する
+       （cast しない）。 */
+    direction: dir && ALL_DIRECTIONS.some((d) => d === dir) ? dir : null,
     tenchusatsuMode:
       mode && TENCHUSATSU_MODES.some((m) => m.id === mode) ? mode : null,
     baseLat: qs.get("baseLat"),
