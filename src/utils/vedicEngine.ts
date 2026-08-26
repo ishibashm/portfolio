@@ -191,12 +191,10 @@ export class VedicEngine {
 
     let activeMahadashaIndex = 0;
     let activeMahadashaStartMs = birthDate.getTime();
-    let activeMahadashaEndMs = firstDashaEndMs;
 
     if (evalMs < firstDashaEndMs) {
       activeMahadashaIndex = startLordIndex;
       activeMahadashaStartMs = birthDate.getTime();
-      activeMahadashaEndMs = firstDashaEndMs;
     } else {
       let currentEndMs = firstDashaEndMs;
       let currentLordIndex = (startLordIndex + 1) % 9;
@@ -209,7 +207,6 @@ export class VedicEngine {
         if (evalMs < currentEndMs) {
           activeMahadashaIndex = currentLordIndex;
           activeMahadashaStartMs = startMs;
-          activeMahadashaEndMs = currentEndMs;
           break;
         }
         currentLordIndex = (currentLordIndex + 1) % 9;

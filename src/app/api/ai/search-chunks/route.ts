@@ -27,7 +27,10 @@ export async function POST(req: Request) {
     const vectorLiteral = `[${embedding.join(",")}]`;
     
     // We fetch the chunks and JOIN with the parent document to get the metadata
-    const chunks = await prisma.$queryRaw<any[]>`
+    /* 行の中身はここでは一切読まず、JSON にしてそのまま返すだけ。
+       読まないものに形を主張しない（#149 の「読む枝だけ型にする」で、
+       読む枝がゼロの場合）。読む処理を足すときに、その項目だけ型にする。 */
+    const chunks = await prisma.$queryRaw<unknown[]>`
       SELECT 
         c.id as chunk_id,
         c.content as chunk_content,

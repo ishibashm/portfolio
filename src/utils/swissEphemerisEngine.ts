@@ -248,21 +248,11 @@ export class SwissEphemerisEngine {
   /**
    * Calculate Astrological Houses (Placidus system default)
    */
-  public getHouses(
-    date: Date,
-    latitude: number,
-    longitude: number,
-    system: "P" | "K" | "W" = "P",
-  ): HouseData {
+  public getHouses(date: Date, latitude: number, longitude: number): HouseData {
     // Note: Astronomy Engine does not have native Placidus house calculations.
     // This is a placeholder that calculates the Ascendant/MC roughly using
     // local sidereal time, waiting for true swisseph replacement.
 
-    const lat =
-      typeof latitude === "number" && !isNaN(latitude) ? latitude : 35.6895;
-    const lon =
-      typeof longitude === "number" && !isNaN(longitude) ? longitude : 139.6917;
-    const obs = new Observer(lat, lon, 0);
     const time = new AstroTime(date);
 
     // True Sidereal Time at Greenwich
