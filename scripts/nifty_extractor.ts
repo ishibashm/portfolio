@@ -8,6 +8,10 @@ import * as dotenv from "dotenv";
 
 import { TARGET_PREFECTURE_SLUGS } from "../src/lib/scrapeTargets";
 import { errorCode, toLogMessage } from "../src/lib/errorMessage";
+import {
+  resumeCityMissing,
+  writeSweptState,
+} from "./scraperResume";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -563,6 +567,8 @@ async function main() {
       : loadState();
     let skipPref = !!state.pref;
     let skipCity = !!state.city;
+    /** 実際に走査した市区町村の数。0 のまま終わったら再開位置を疑う。 */
+    let areasCrawled = 0;
 
     if (state.pref || state.city || state.page > 1) {
       console.log(`\n======================================================`);
@@ -588,6 +594,17 @@ async function main() {
       });
 
       const cities = await fetchCitiesForPrefecture(page, pref);
+
+      /* 再開位置の市区町村が一覧から消えていることがある。待ち続けると
+         どれにも一致しないまま全部をスキップし、1 ページも取らずに
+         「成功」する（scraperResume の註）。消えていたら先頭から回す。 */
+      if (skipCity && resumeCityMissing(state.city, cities)) {
+        console.warn(
+          `⚠️ 再開位置の市区町村 (${state.city}) が ${pref} の一覧` +
+            `（${cities.length} 件）に無い。先頭から回す。`,
+        );
+        skipCity = false;
+      }
 
       // 用が済んだら一度閉じてメモリを解放する
       await page.close();
@@ -622,6 +639,7 @@ async function main() {
           const startPage =
             pref === state.pref && city === state.city ? state.page : 1;
           await scrapeArea(browser, prisma, pref, city, startPage);
+          areasCrawled++;
         } catch (error) {
           console.error(
             `Error during extraction for ${city}:`,
@@ -639,11 +657,23 @@ async function main() {
         "⏸️ Stopped on the time budget. The remaining areas will be picked up by the next run.",
       );
     } else {
-      console.log("✅ Scraping completed successfully!");
-      // 完了したらステートファイルを削除して次回は最初から走る（＝全件リフレッシュ）。
+      if (areasCrawled === 0) {
+        /* 1 つも回らずに「完了」するのは、ほぼ再開位置の壊れ。緑のまま
+           0 件が続くと気付けないので、はっきり警告として残す。 */
+        console.warn(
+          "⚠️ 1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
+        );
+      } else {
+        console.log(
+          `✅ Scraping completed successfully! (${areasCrawled} areas)`,
+        );
+      }
+      // 完了したら再開位置を空にして、次回は先頭から走る（＝全件リフレッシュ）。
+      // **消すのではなく空を書く**（scraperResume の註。消すと CI が
+      // キャッシュを保存せず、古い再開位置が翌日も復元される）。
       // 新着スイープは全件スイープの再開位置を持っていないので触らない。
-      if (!NEW_ONLY && fs.existsSync(STATE_FILE)) {
-        fs.unlinkSync(STATE_FILE);
+      if (!NEW_ONLY) {
+        writeSweptState(STATE_FILE);
       }
     }
   } catch (e) {
