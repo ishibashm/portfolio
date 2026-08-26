@@ -23,6 +23,10 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 
 import { toLogMessage } from "../src/lib/errorMessage";
+import {
+  resumeIndexOutOfRange,
+  writeSweptState,
+} from "./scraperResume";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -390,6 +394,8 @@ async function main() {
 
     const state = loadState();
     let skipPref = !!state.pref;
+    /** 実際に走査した市区町村の数。0 のまま終わったら再開位置を疑う。 */
+    let areasCrawled = 0;
 
     for (const pref of prefectures) {
       if (budgetExhausted) break;
@@ -407,7 +413,16 @@ async function main() {
       const cities = loadCities(pref);
       console.log(`${pref}: ${cities.length} cities`);
 
-      const startCity = resuming ? state.cityIndex : 0;
+      /* 一覧が短くなると保存した添字が範囲外になり、1 度も回らずに
+         「成功」する（scraperResume の註）。範囲外なら先頭から。 */
+      let startCity = resuming ? state.cityIndex : 0;
+      if (resuming && resumeIndexOutOfRange(state.cityIndex, cities.length)) {
+        console.warn(
+          `⚠️ 再開位置の添字 (${state.cityIndex}) が ${pref} の一覧` +
+            `（${cities.length} 件）の範囲外。先頭から回す。`,
+        );
+        startCity = 0;
+      }
       for (let i = startCity; i < cities.length; i++) {
         if (budgetExhausted) break;
         const city = cities[i];
@@ -415,6 +430,7 @@ async function main() {
         const startPage = resuming && i === state.cityIndex ? state.page : 1;
         try {
           await scrapeCity(browser, prisma, pref, city, i, startPage);
+          areasCrawled++;
         } catch (e) {
           console.error(`Error on ${city.name}:`, toLogMessage(e));
           await new Promise((res) => setTimeout(res, 8000));
@@ -425,8 +441,16 @@ async function main() {
     if (budgetExhausted) {
       console.log("⏸️ Stopped on the time budget; the next run resumes here.");
     } else {
-      console.log("✅ Completed. Clearing resume state.");
-      if (fs.existsSync(STATE_FILE)) fs.unlinkSync(STATE_FILE);
+      if (areasCrawled === 0) {
+        /* 1 つも回らずに「完了」するのは、ほぼ再開位置の壊れ。 */
+        console.warn(
+          "⚠️ 1 つも市区町村を回らずに終了した。再開位置か市区町村一覧を疑うこと。",
+        );
+      } else {
+        console.log(`✅ Completed. (${areasCrawled} areas)`);
+      }
+      /* 再開位置は**消さずに空を書く**（scraperResume の註）。 */
+      writeSweptState(STATE_FILE);
     }
   } catch (e) {
     console.error(e);

@@ -13,6 +13,18 @@
  *
  * ここは**固定費だけ**を持つ。従量課金の推定（外部 API の呼び出し回数 ×
  * 単価）と、GCP の請求 API から引く実額は別の口から入れて、画面で合算する。
+ *
+ * ## 名前は実態に合わせる
+ *
+ * 「Supabase = DB と認証」と書いてあったが、**DB はとうに別の場所へ
+ * 移っている**（2026-08-26 の実測。db-apply-sql の接続確認が
+ * `connected: portfolio  PostgreSQL 16.15 (Ubuntu ...)` を返す。Supabase なら
+ * DB 名は postgres で、ビルドの表記も違う）。移行のために
+ * `DATABASE_URL_OVERRIDE` という Secret が用意されていて、
+ * scripts/apply-db-override.sh が .env の接続先を差し替えている。
+ *
+ * この表を読んだ人が経費の見積もりを誤る（実際に誤った）ので、
+ * **項目名が指すものが変わったら、額より先に名前を直すこと。**
  */
 
 export interface CostItem {
@@ -39,10 +51,16 @@ export const FIXED_COSTS: CostItem[] = [
     note: "本番のホスティング。deploy.yml は無料枠向けに組んである（最小インスタンス 0）。超えた月だけ課金される",
   },
   {
+    key: "database",
+    label: "DB（Oracle Cloud の PostgreSQL）",
+    monthlyYen: null,
+    note: "本番データの置き場。自前構築の PostgreSQL 16（Ubuntu）で、Oracle Cloud の枠で動かしている。容量が枠を超えた月だけ課金される",
+  },
+  {
     key: "supabase",
     label: "Supabase",
     monthlyYen: null,
-    note: "DB と認証。無料プランには行数と帯域の上限がある",
+    note: "**認証だけ**。データの読み書きは上の DB（Prisma / DATABASE_URL）で、Supabase は middleware とログインの経路にしか出てこない",
   },
   {
     key: "domain",
