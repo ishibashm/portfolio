@@ -14,7 +14,8 @@ import {
   directionFromBearing,
   type CompassDirection,
 } from "@/utils/directionGeo";
-import { fengShuiFor, honmeiYearFor, type Sex } from "@/utils/fengShuiEngine";
+import { fengShuiFor, type Sex } from "@/utils/fengShuiEngine";
+import { honmeiYearFor } from "@/utils/honmeiYear";
 
 /**
  * その移動の方位を、風水（八宅）でも見る。**併記であって合算ではない。**

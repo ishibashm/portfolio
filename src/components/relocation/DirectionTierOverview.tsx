@@ -10,11 +10,8 @@ import {
   parseSnapshot,
   subscribeFengShui,
 } from "@/lib/fengShuiSettings";
-import {
-  honmeiYearFor,
-  readFengShui,
-  type FengShuiReading,
-} from "@/utils/fengShuiEngine";
+import { readFengShui, type FengShuiReading } from "@/utils/fengShuiEngine";
+import { honmeiYearFor } from "@/utils/honmeiYear";
 import type { CompassDirection } from "@/utils/directionGeo";
 
 /**
