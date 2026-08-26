@@ -18,7 +18,9 @@ import {
   filterCollisionByMode,
   getCurrentZodiac,
   Direction,
+  EIGHT_DIRECTIONS,
   type DirectionFilterMode,
+  type EightDirection,
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
@@ -32,16 +34,12 @@ import {
   evaluateTenchusatsu,
 } from "@/utils/tenchusatsuPolicy";
 
-export const ALL_DIRECTIONS: Direction[] = [
-  "N",
-  "NE",
-  "E",
-  "SE",
-  "S",
-  "SW",
-  "W",
-  "NW",
-];
+/**
+ * 八方位の一覧。実体は ephemerisEngine の EIGHT_DIRECTIONS（同じ配列を
+ * 2 か所に書かない）。型も Direction[] ではなく EightDirection[] で、
+ * この配列に CENTER が入っていない事実を型に写している。
+ */
+export const ALL_DIRECTIONS: EightDirection[] = EIGHT_DIRECTIONS;
 
 /*
   ラベルの表は `utils/directionGeo` が正（#610 で 1 か所に寄せた）。

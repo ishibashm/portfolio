@@ -26,6 +26,28 @@ export type Direction =
   | "NW"
   | "CENTER";
 
+/**
+ * 盤の中心（CENTER）を除いた八方位。
+ *
+ * finalVectors などの「方位ごとの判定」は実装が八方位しか埋めておらず、
+ * Record<Direction, …> を名乗ると CENTER で実行時 undefined を掴む
+ * 型の嘘になる（docs/improvement-backlog.md の 8 節）。方位で回す・
+ * 方位で引く所はこちらを使う。
+ */
+export type EightDirection = Exclude<Direction, "CENTER">;
+
+/** 八方位の一覧。方位で回すときはこれを使い、同じ配列を増やさない。 */
+export const EIGHT_DIRECTIONS: EightDirection[] = [
+  "N",
+  "NE",
+  "E",
+  "SE",
+  "S",
+  "SW",
+  "W",
+  "NW",
+];
+
 // 盤面（Board）の型: 各方向にどの星が配置されているか
 export type BoardLayout = Record<Direction, StarFrequency>;
 
@@ -846,7 +868,7 @@ export function calculateVectorCollision(
    */
   ignoreDayLayer: boolean = false,
 ): VectorCollision {
-  const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const directions: Direction[] = EIGHT_DIRECTIONS;
 
   // 天中殺（Void Zodiac）の方位マッピング
   const z2d: Record<string, Direction[]> = {
@@ -1645,7 +1667,7 @@ export function filterCollisionByMode(
     return collision;
   }
 
-  const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const directions: Direction[] = EIGHT_DIRECTIONS;
 
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
     switch (star) {
