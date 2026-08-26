@@ -13,8 +13,14 @@ import {
   Activity,
 } from "lucide-react";
 
+import type { NBAData } from "./NBADashboard";
+
 export interface CytoscapeNetworkProps {
-  nbaData: any;
+  /* 呼び出し側（NBADashboard）は data.nba をそのまま渡す。読むのは
+     stateVector の 4 値と actionResult の qValues / suggestedAction
+     だけだが、型は呼び出し側の宣言を引く（新しく似た型を作らない）。
+     import type なので実行時の依存は増えない。 */
+  nbaData: NBAData["nba"];
 }
 
 export const CytoscapeNetwork: React.FC<CytoscapeNetworkProps> = ({

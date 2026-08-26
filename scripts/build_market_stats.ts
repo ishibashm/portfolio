@@ -14,6 +14,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as dotenv from "dotenv";
 
+import { toLogMessage } from "../src/lib/errorMessage";
 import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
 import {
   MarketStats,
@@ -309,10 +310,10 @@ async function main() {
         medianSqmRent: Number(r.msr),
       }));
       console.log(`家賃指数: ${rentIndexSeries.length} 日ぶん蓄積済み`);
-    } catch (e: any) {
+    } catch (e) {
       console.warn(
         "MarketDailySummary への蓄積をスキップ（テーブル未作成？ run-seed を実行すること）:",
-        e?.message,
+        toLogMessage(e),
       );
     }
 
