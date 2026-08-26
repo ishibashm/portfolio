@@ -104,6 +104,23 @@ describe("帯のしきい値（元の実装の値のまま）", () => {
     expect(v.problem).toContain("暗剣殺");
   });
 
+  /**
+   * 迂回の契約: **DETOUR の verdict は actionData を持たない。**
+   * 中継地は受け側（simulator）が自分の候補から選ぶ。受け側が
+   * `data` の有無で弾くと、危険帯の「迂回ルートを挿入」ボタンが
+   * 何もしなくなる（実際に起きていた）。この契約が変わったら、
+   * simulator の onApplyAction の分岐も一緒に見直すこと。
+   */
+  it("危険帯 + 操作可なら DETOUR で、actionData は付かない", () => {
+    const v = buildTenChiJinVerdict(
+      input({ hasSevereClash: true, canApplyAction: true }),
+    );
+    expect(v.actionType).toBe("DETOUR");
+    expect(v.actionData).toBeUndefined();
+    // 地名は名乗らない。挿入される中継地は受け側の採点で決まる
+    expect(v.actionLabel).not.toContain("敦賀");
+  });
+
   it("バッジは日本語（EXCELLENT などの英語をやめた）", () => {
     expect(buildTenChiJinVerdict(input()).bandLabel).toBe("良好");
     expect(buildTenChiJinVerdict(input({ overallScore: 50 })).bandLabel).toBe(

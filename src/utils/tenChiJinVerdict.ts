@@ -103,8 +103,14 @@ export function buildTenChiJinVerdict(input: VerdictInput): Verdict {
       solution: input.canApplyAction
         ? "中継地（仮吉方）を挟んで方位を変えるか、出発日を変えてください。下のボタンで迂回ルートを挿入できます。"
         : "移動シミュレーターで、中継地（仮吉方）を挟む迂回ルートの設計か、日付の調整を行ってください。",
+      /*
+        中継地の名前をここに書かない。以前は「敦賀を経由する〜」と
+        決め打ちだったが、実際に挿入される中継地は受け側（simulator）が
+        候補を採点して選ぶので、敦賀とは限らない。名乗った地名と違う
+        場所が挿入されるボタンになっていた。
+      */
       actionLabel: input.canApplyAction
-        ? "敦賀を経由する迂回ルートを挿入"
+        ? "最良の中継地で迂回ルートを挿入"
         : "この移動をシミュレーターで詳細調整する",
       actionType: input.canApplyAction ? "DETOUR" : "NAVIGATE",
     };

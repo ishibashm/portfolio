@@ -125,9 +125,16 @@ interface TenChiJinEvaluationProps {
   nbaEvaluations?: Record<string, NbaEvaluationLike>;
   simulatedAns?: number;
   simulatedShield?: number;
+  /*
+    data に渡るのは verdict.actionData（string | undefined）だけ。
+    付くのは DATE（代替日の文字列）のみで、**DETOUR には付かない**。
+    迂回の中継地は受け側が自分の候補（detourCandidates）から選ぶ。
+    以前 any だった頃、受け側が DETOUR で data（＝常に undefined）を
+    要求していて、ボタンが空振りしていた（#613 で発見）。
+  */
   onApplyAction?: (
     actionType: "DETOUR" | "DATE" | "NAVIGATE" | "REST",
-    data?: any,
+    data?: string,
   ) => void;
   // Optional parameters for direct step mode rendering
   singleStepIndex?: number;
