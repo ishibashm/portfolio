@@ -45,7 +45,8 @@ const STALE_DAYS = parseInt(process.env.PURGE_STALE_DAYS || "90", 10);
 
 async function main() {
   const pool = new Pool({ connectionString, max: 1 });
-  const q = async (sql: string, params: any[] = []) =>
+  /* 素の SQL の行なので中身は Record で受け、読む側で絞る。 */
+  const q = async (sql: string, params: unknown[] = []) =>
     (await pool.query(sql, params)).rows;
 
   try {
@@ -95,7 +96,8 @@ async function main() {
     )[0].rows;
 
     const outOfScopeTotal = outOfScope.reduce(
-      (a: number, r: any) => a + Number(r.rows),
+      /* count(*) の列。pg は bigint を文字列で返すので Number を通す。 */
+      (a: number, r: { rows: string | number }) => a + Number(r.rows),
       0,
     );
 

@@ -12,6 +12,7 @@
  * ここで見る /{県}/area/{市区町村コード}/search/ は対象外。
  */
 import { Browser, chromium, Page } from "playwright";
+import { toLogMessage } from "../src/lib/errorMessage";
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -294,8 +295,8 @@ async function saveToDatabase(prisma: PrismaClient, rows: ExtractedRoom[]) {
         },
       });
       saved++;
-    } catch (e: any) {
-      console.error(`Failed to save ${url}:`, e.message || e);
+    } catch (e) {
+      console.error(`Failed to save ${url}:`, toLogMessage(e));
     }
     await new Promise((res) => setTimeout(res, 40));
   }
@@ -406,8 +407,8 @@ async function main() {
         const startPage = resuming && i === state.cityIndex ? state.page : 1;
         try {
           await scrapeCity(browser, prisma, pref, city, i, startPage);
-        } catch (e: any) {
-          console.error(`Error on ${city.name}:`, e.message);
+        } catch (e) {
+          console.error(`Error on ${city.name}:`, toLogMessage(e));
           await new Promise((res) => setTimeout(res, 8000));
         }
       }

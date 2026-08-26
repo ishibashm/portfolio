@@ -115,7 +115,13 @@ type CellRow = {
 function toPriceSummary(values: number[]): PriceSummary | null {
   const s = summarizeDistribution(values);
   if (!s) return null;
-  const { skewness: _skew, kurtosis: _kurt, ...rest } = s;
+  /* 分割代入で捨てると、捨てた側の変数が no-unused-vars に数えられる。
+     写しから 2 項目を消す形にする。 */
+  const rest: PriceSummary & { skewness?: number; kurtosis?: number } = {
+    ...s,
+  };
+  delete rest.skewness;
+  delete rest.kurtosis;
   return rest;
 }
 
