@@ -6,11 +6,11 @@ import {
   WEST_GROUP,
   fengShuiFor,
   honmeiGua,
-  honmeiYearFor,
   readFengShui,
   type Gua,
   type Sex,
 } from "@/utils/fengShuiEngine";
+import { honmeiYearFor } from "@/utils/honmeiYear";
 
 /**
  * 八宅の表を固定する。

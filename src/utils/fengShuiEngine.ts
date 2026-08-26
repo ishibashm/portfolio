@@ -1,6 +1,4 @@
 import type { CompassDirection } from "@/utils/directionGeo";
-import { AstroEngine } from "@/utils/ephemerisEngine";
-import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 /**
  * 風水（八宅）の判定。**九星気学とは独立した層。**
@@ -27,10 +25,14 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
  * 八宅は生年と性別で本命卦が決まる。**性別はクラウドに送らない。**
  * 端末にだけ置く（userSettings の SYNCED_FIELDS に入れない）。
  * 集めてしまった個人情報は消せないので、集めない側に倒す。
+ *
+ * ## 暦計算はここに置かない
+ *
+ * この判定は表引きだけで、暦の計算を使わない。生年月日 → 節年の変換
+ * （`honmeiYearFor`）は `utils/honmeiYear` に分けてある。あちらは
+ * lunar-javascript（約 300KB）を値として引くので、同じファイルに置くと
+ * 早見表しか出さない画面（`/houi`）のバンドルにまで暦が乗る。
  */
-
-/** 立春の太陽黄経。節年の始まり。 */
-const LICHUN_LONGITUDE = 315;
 
 /** 八卦。数字は洛書の定位（五は本命卦にならない）。 */
 export type Gua = 1 | 2 | 3 | 4 | 6 | 7 | 8 | 9;
@@ -271,29 +273,4 @@ export function fengShuiFor(
   /* ORDER が 8 方位を網羅しているので、ここには来ない。 */
   if (!found) throw new Error(`方位が不正: ${direction}`);
   return found;
-}
-
-/**
- * 生年月日から本命卦に使う年を出す。**立春で切る。**
- *
- * 1 月 1 日で切ると、2 月上旬までに生まれた人の本命卦がひとつずれる。
- * 「よく年を間違える」の実体はこれで、暦の年ではなく節年で数える。
- *
- * 立春の判定は**太陽黄経 315 度**で行う。日付表を別に持たない。
- * 年盤の切り替わりも `ephemerisEngine` の太陽黄経から出ているので、
- * ここだけ別の暦を見ると、同じ人の年盤と本命卦が食い違う年が出る。
- *
- * 日本時間で読む。`Solar.fromDate` と同じ罠（実行環境のタイムゾーンで
- * 日付が変わる）を踏まないよう、`getZonedDateTimeFields(date, 9)` を通す。
- *
- * 1〜2 月の太陽黄経は 280〜333 度の範囲にしか来ないので、315 度との
- * 大小だけで立春の前後が決まる（黄経の折り返しをまたがない）。
- * 3〜12 月は必ず立春を過ぎているので、その年をそのまま使う。
- */
-export function honmeiYearFor(birthDate: Date): number {
-  const f = getZonedDateTimeFields(birthDate, 9);
-  if (f.month > 2) return f.year;
-  return AstroEngine.getSolarLongitude(birthDate) < LICHUN_LONGITUDE
-    ? f.year - 1
-    : f.year;
 }
