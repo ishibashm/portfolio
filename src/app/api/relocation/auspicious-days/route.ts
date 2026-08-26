@@ -180,7 +180,11 @@ export async function GET(request: Request) {
 
     const directionParam = searchParams.get("direction");
     if (directionParam && directionParam !== "all") {
-      if (!ALL_DIRECTIONS.includes(directionParam as Direction)) {
+      /* 挙動は includes と同じ（"CENTER" は元から一覧に無いので通らない）。
+         要素型が EightDirection に狭まって includes(x as Direction) が
+         通らなくなったので、cast をやめて素の文字列のまま照合する
+         （#627 と同じ形）。 */
+      if (!ALL_DIRECTIONS.some((d) => d === directionParam)) {
         return NextResponse.json(
           { error: "INVALID_DIRECTION" },
           { status: 400 },
