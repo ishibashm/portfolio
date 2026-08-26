@@ -378,6 +378,43 @@ const ZONING_STORAGE_KEY = "arb_zoning_on";
 /** 下地（ベースマップ）の選択。ハザード・用途地域と同じく端末に残す。 */
 const BASE_MAP_STORAGE_KEY = "arb_base_map";
 
+/**
+ * レイヤーの目的プリセット。
+ *
+ * 重ねられる層が 10 あり、1 つずつ切り替えると目的の画面にするまで
+ * 4〜5 押し掛かる（#34）。実際の使い方は「方位で物件を選ぶ」と
+ * 「決めた場所の土地を調べる」の 2 通りに割れているので、その 2 通りを
+ * 1 押しにする。**個別の切り替えは下にそのまま残す**（プリセットは
+ * 出発点で、そこから微調整できる）。
+ *
+ * プリセットの選択は保存しない。個別の層の選択が既に端末に残るので、
+ * プリセットも「個別の層をまとめて切り替えるボタン」でしかない。
+ * どれが点灯するかは**今の層の組み合わせから引く**（近景⇄全国と同じ。
+ * 状態変数を持つと、個別に触ったときに表示と実態が食い違う）。
+ */
+const LAYER_PRESETS = {
+  property: {
+    label: "🏠 物件を選ぶ",
+    note: "地図と方位だけにする（ハザード・用途地域・地形を消す）",
+    baseMap: "carto" as BaseMapId,
+    hillshade: false,
+    hazardTab: "none" as HazardTabId,
+    zoningOn: false,
+    showSectors: true,
+  },
+  land: {
+    label: "⛰️ 土地を調べる",
+    note: "洪水ハザード・用途地域・陰影を淡色の地図に重ねる（方位の扇形は消す）",
+    baseMap: "pale" as BaseMapId,
+    hillshade: true,
+    hazardTab: "flood" as HazardTabId,
+    zoningOn: true,
+    showSectors: false,
+  },
+} as const;
+type LayerPresetId = keyof typeof LAYER_PRESETS;
+const LAYER_PRESET_ORDER: LayerPresetId[] = ["property", "land"];
+
 export default function ArbitrageMapInner({
   properties,
   baseLat,
@@ -487,6 +524,39 @@ export default function ArbitrageMapInner({
   const [zoningPick, setZoningPick] = useState<ZoningName | null>(null);
   /** 縮尺が足りない・全部は出せていない、などの断り。 */
   const [zoningNotice, setZoningNotice] = useState<string | null>(null);
+
+  /**
+   * 今の層の組み合わせが一致するプリセット。個別に触ると外れる
+   * （どちらも点灯しない）。それでよい——プリセットは出発点であって、
+   * 微調整を禁じるものではない。
+   */
+  const activeLayerPreset = LAYER_PRESET_ORDER.find((id) => {
+    const p = LAYER_PRESETS[id];
+    return (
+      baseMap === p.baseMap &&
+      hillshade === p.hillshade &&
+      hazardTab === p.hazardTab &&
+      zoningOn === p.zoningOn &&
+      showSectors === p.showSectors
+    );
+  });
+
+  /** 個別ボタンと同じ書き込み先（localStorage 含む）をまとめて叩く。 */
+  const applyLayerPreset = (id: LayerPresetId) => {
+    const p = LAYER_PRESETS[id];
+    setBaseMap(p.baseMap);
+    localStorage.setItem(BASE_MAP_STORAGE_KEY, p.baseMap);
+    setHillshade(p.hillshade);
+    setHazardTab(p.hazardTab);
+    localStorage.setItem(HAZARD_STORAGE_KEY, p.hazardTab);
+    setZoningOn(p.zoningOn);
+    localStorage.setItem(ZONING_STORAGE_KEY, p.zoningOn ? "on" : "off");
+    /* 消すときは絞り込みも戻す。個別ボタンと同じ理由（次に出したとき
+       1 区分だけ残っていると、消えているように見える）。 */
+    if (!p.zoningOn) setZoningPick(null);
+    setShowSectors(p.showSectors);
+    localStorage.setItem(SECTORS_STORAGE_KEY, p.showSectors ? "1" : "0");
+  };
 
   // 俯瞰の塗り分け。方位の吉凶（意思決定）か、掲載件数（データの厚み）か。
   const [overviewTint, setOverviewTint] = useState<"kigaku" | "count">(
@@ -1197,6 +1267,25 @@ export default function ArbitrageMapInner({
           {/* 以下はたためる。狭い画面では既定で閉じている。 */}
           {controlsOpen && (
             <>
+              {/* 目的のプリセット。個別の切り替え（下）の前に置く。
+              どちらも見え方だけの変更で、判定にも絞り込みにも入らない。 */}
+              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
+                {LAYER_PRESET_ORDER.map((id) => (
+                  <button
+                    key={id}
+                    onClick={() => applyLayerPreset(id)}
+                    aria-pressed={activeLayerPreset === id}
+                    title={LAYER_PRESETS[id].note}
+                    className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                      activeLayerPreset === id
+                        ? "bg-stone-700 text-white"
+                        : "text-stone-600 hover:bg-white"
+                    }`}
+                  >
+                    {LAYER_PRESETS[id].label}
+                  </button>
+                ))}
+              </div>
               {/* 地図の下地。ハザード・用途地域と同じ列に置く。
               どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
               <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
