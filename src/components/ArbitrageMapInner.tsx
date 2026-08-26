@@ -447,6 +447,24 @@ export default function ArbitrageMapInner({
   /* 陰影起伏の重ね描き。下地が写真・地形のときに起伏が読めるようになる。 */
   const [hillshade, setHillshade] = useState(false);
   /*
+    地図を画面いっぱいに出すか。
+
+    スマホで**地図がほとんど見えない**という指摘があった（利用者の実機）。
+    右上の操作が縦に 6 つ積まれ、そこに用途地域の凡例（13 区分）が加わって
+    画面幅の半分以上を覆っていた。器の高さを増やすのがいちばん効く。
+  */
+  const [fullscreen, setFullscreen] = useState(false);
+  /*
+    右上の操作をたたむか。**狭い画面では既定で閉じる。**
+
+    広い画面では出したままのほうが早い（押す手間が 1 つ減る）が、
+    狭い画面では出したままだと地図が見えない。lg の境（1024px）で分ける。
+    effect ではなく遅延初期化で読む（set-state-in-effect を避ける）。
+  */
+  const [controlsOpen, setControlsOpen] = useState(() =>
+    typeof window === "undefined" ? true : window.innerWidth >= 1024,
+  );
+  /*
     重ねるハザードマップ（国交省）のタブ。"none" で消す。選択は端末に残す。
     effect で読むと set-state-in-effect の警告になるので遅延初期化で読む
     （この部品は ssr:false で読まれるが、念のため window の有無は見る）。
@@ -1035,7 +1053,13 @@ export default function ArbitrageMapInner({
   }
 
   return (
-    <div className="w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200">
+    <div
+      className={
+        fullscreen
+          ? "fixed inset-0 z-[2000] bg-white"
+          : "w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200"
+      }
+    >
       <MapContainer
         center={center}
         zoom={zoom}
@@ -1113,7 +1137,10 @@ export default function ArbitrageMapInner({
             走査後に見出しへ出る「条件に一致 N 件」（名寄せ後）とは
             別の数字で、混ぜると桁が合わない */}
         {viewportListingCount !== null && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-full shadow-lg border border-stone-200 px-3.5 py-1.5 text-center">
+          /* 位置は画面幅で変える。上に置くと**右上の操作列と必ず重なる**
+             （実機のスマホで確認。横画面でも重なっていた）。狭い画面では
+             下端へ逃がし、広い画面では従来どおり上に置く。 */
+          <div className="absolute bottom-4 lg:bottom-auto lg:top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-full shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[min(90%,22rem)]">
             <div className="text-[10px] text-stone-600">
               この範囲に掲載
               <b className="mx-1 font-mono text-sm text-indigo-700">
@@ -1130,120 +1157,165 @@ export default function ArbitrageMapInner({
             </div>
           </div>
         )}
-        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5">
-          {/* 地図の下地。ハザード・用途地域と同じ列に置く。
-              どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
-            {BASE_MAP_ORDER.map((id) => (
-              <button
-                key={id}
-                onClick={() => {
-                  setBaseMap(id);
-                  localStorage.setItem(BASE_MAP_STORAGE_KEY, id);
-                }}
-                aria-pressed={baseMap === id}
-                title={BASE_MAPS[id].note}
-                className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
-                  baseMap === id
-                    ? "bg-indigo-600 text-white"
-                    : "text-stone-600 hover:bg-white"
-                }`}
-              >
-                {BASE_MAPS[id].label}
-              </button>
-            ))}
+        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 max-h-[calc(100%-2rem)] overflow-y-auto">
+          {/* 器の大きさと、操作をたたむかどうか。**この 2 つは常に出す。**
+              たたんだときに開き直せなくなるのを避ける。 */}
+          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
             <button
-              onClick={() => setHillshade((v) => !v)}
-              aria-pressed={hillshade}
-              title={HILLSHADE.note}
+              onClick={() => {
+                setFullscreen((v) => !v);
+                /* Leaflet は器の大きさを覚えているので、器を変えたら
+                   測り直させる。しないと地図が元の大きさのまま描かれ、
+                   余白が灰色になる。描画の後に呼ぶ必要があるため
+                   requestAnimationFrame を挟む。 */
+                requestAnimationFrame(() =>
+                  requestAnimationFrame(() => mapRef.current?.invalidateSize()),
+                );
+              }}
+              aria-pressed={fullscreen}
+              title={
+                fullscreen
+                  ? "画面いっぱいの表示をやめる"
+                  : "地図を画面いっぱいに広げる"
+              }
+              className="px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold text-stone-700 hover:bg-white transition-colors active:scale-95 cursor-pointer"
+            >
+              {fullscreen ? "⤡ 戻す" : "⛶ 全画面"}
+            </button>
+            <button
+              onClick={() => setControlsOpen((v) => !v)}
+              aria-expanded={controlsOpen}
+              title={
+                controlsOpen
+                  ? "地図の設定をたたむ"
+                  : "地図の設定（下地・ハザード・用途地域）を開く"
+              }
               className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
-                hillshade
-                  ? "bg-indigo-600 text-white"
-                  : "text-stone-600 hover:bg-white"
+                controlsOpen
+                  ? "bg-stone-700 text-white"
+                  : "text-stone-700 hover:bg-white"
               }`}
             >
-              {HILLSHADE.label}
+              {controlsOpen ? "✕ 設定" : "⚙ 設定"}
             </button>
           </div>
-          {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
+
+          {/* 以下はたためる。狭い画面では既定で閉じている。 */}
+          {controlsOpen && (
+            <>
+              {/* 地図の下地。ハザード・用途地域と同じ列に置く。
+              どれも「見え方だけ」で、判定にも絞り込みにも入らない。 */}
+              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+                {BASE_MAP_ORDER.map((id) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setBaseMap(id);
+                      localStorage.setItem(BASE_MAP_STORAGE_KEY, id);
+                    }}
+                    aria-pressed={baseMap === id}
+                    title={BASE_MAPS[id].note}
+                    className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                      baseMap === id
+                        ? "bg-indigo-600 text-white"
+                        : "text-stone-600 hover:bg-white"
+                    }`}
+                  >
+                    {BASE_MAPS[id].label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setHillshade((v) => !v)}
+                  aria-pressed={hillshade}
+                  title={HILLSHADE.note}
+                  className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    hillshade
+                      ? "bg-indigo-600 text-white"
+                      : "text-stone-600 hover:bg-white"
+                  }`}
+                >
+                  {HILLSHADE.label}
+                </button>
+              </div>
+              {/* ハザードマップ（国交省「重ねるハザードマップ」）のタブ。
               「なし」を明示的に置くのは、消す操作を選び直しではなく
               1 押しにするため。選択は端末に残す。 */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
-            {(
-              [
-                ["none", "なし"],
-                ...Object.entries(HAZARD_TABS).map(
-                  ([id, def]) => [id, def.label] as const,
-                ),
-              ] as const
-            ).map(([id, label]) => (
+              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+                {(
+                  [
+                    ["none", "なし"],
+                    ...Object.entries(HAZARD_TABS).map(
+                      ([id, def]) => [id, def.label] as const,
+                    ),
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setHazardTab(id as HazardTabId);
+                      localStorage.setItem(HAZARD_STORAGE_KEY, id);
+                    }}
+                    aria-pressed={hazardTab === id}
+                    title={
+                      id === "none"
+                        ? "ハザードの重ね描きを消す"
+                        : `${label}の想定区域を重ねて表示（出典: ハザードマップポータルサイト）`
+                    }
+                    className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                      hazardTab === id
+                        ? "bg-rose-600 text-white"
+                        : "text-stone-600 hover:bg-white"
+                    }`}
+                  >
+                    {id === "none" ? "⚠️ なし" : label}
+                  </button>
+                ))}
+              </div>
+              {/* 用途地域の切り替え。ハザードのタブと同じ列に置く。
+              どちらも「参考として重ねる層」で、判定には入らない。 */}
               <button
-                key={id}
                 onClick={() => {
-                  setHazardTab(id as HazardTabId);
-                  localStorage.setItem(HAZARD_STORAGE_KEY, id);
+                  const next = !zoningOn;
+                  setZoningOn(next);
+                  localStorage.setItem(ZONING_STORAGE_KEY, next ? "on" : "off");
+                  /* 消したら絞り込みも戻す。次に出したとき 1 区分だけ
+                 残っていると、消えているように見える。 */
+                  if (!next) setZoningPick(null);
                 }}
-                aria-pressed={hazardTab === id}
-                title={
-                  id === "none"
-                    ? "ハザードの重ね描きを消す"
-                    : `${label}の想定区域を重ねて表示（出典: ハザードマップポータルサイト）`
-                }
-                className={`px-2.5 py-1.5 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
-                  hazardTab === id
-                    ? "bg-rose-600 text-white"
-                    : "text-stone-600 hover:bg-white"
+                aria-pressed={zoningOn}
+                title="用途地域（商業地域・住居地域など）を重ねて表示（出典: 不動産情報ライブラリ）"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  zoningOn
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
                 }`}
               >
-                {id === "none" ? "⚠️ なし" : label}
+                🏙️ 用途地域
               </button>
-            ))}
-          </div>
-          {/* 用途地域の切り替え。ハザードのタブと同じ列に置く。
-              どちらも「参考として重ねる層」で、判定には入らない。 */}
-          <button
-            onClick={() => {
-              const next = !zoningOn;
-              setZoningOn(next);
-              localStorage.setItem(ZONING_STORAGE_KEY, next ? "on" : "off");
-              /* 消したら絞り込みも戻す。次に出したとき 1 区分だけ
-                 残っていると、消えているように見える。 */
-              if (!next) setZoningPick(null);
-            }}
-            aria-pressed={zoningOn}
-            title="用途地域（商業地域・住居地域など）を重ねて表示（出典: 不動産情報ライブラリ）"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
-              zoningOn
-                ? "bg-indigo-600 text-white border-indigo-600"
-                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
-            }`}
-          >
-            🏙️ 用途地域
-          </button>
-          <button
-            onClick={() => {
-              const nextTheme = mapTheme === "dark" ? "light" : "dark";
-              setMapTheme(nextTheme);
-              localStorage.setItem("map_theme", nextTheme);
-              window.dispatchEvent(new Event("mapThemeChanged"));
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
-          >
-            {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
-          </button>
-          {/* 凡例。出しているときだけ。押すと 1 区分だけ残る。
+              <button
+                onClick={() => {
+                  const nextTheme = mapTheme === "dark" ? "light" : "dark";
+                  setMapTheme(nextTheme);
+                  localStorage.setItem("map_theme", nextTheme);
+                  window.dispatchEvent(new Event("mapThemeChanged"));
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
+              >
+                {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
+              </button>
+              {/* 凡例。出しているときだけ。押すと 1 区分だけ残る。
               色だけで 13 区分は見分けられない（実測 ΔE 6.8）ので、
               名前を並べて絞り込みで読ませる。 */}
-          {zoningOn && (
-            <div className="w-56 max-h-[60vh] overflow-y-auto shadow-lg rounded-2xl">
-              <ZoningLegend
-                selected={zoningPick}
-                onSelect={setZoningPick}
-                notice={zoningNotice}
-              />
-            </div>
-          )}
-          {/* 扇形の表示切り替え。出発地が無いとそもそも扇形を描かないので、
+              {zoningOn && (
+                <div className="w-56 max-h-[60vh] overflow-y-auto shadow-lg rounded-2xl">
+                  <ZoningLegend
+                    selected={zoningPick}
+                    onSelect={setZoningPick}
+                    notice={zoningNotice}
+                  />
+                </div>
+              )}
+              {/* 扇形の表示切り替え。出発地が無いとそもそも扇形を描かないので、
               そのときはボタンも出さない（押しても何も起きないボタンを
               置かない）。
 
@@ -1251,67 +1323,69 @@ export default function ArbitrageMapInner({
               書く。押すと文言が入れ替わる形にすると、消したあとに「非表示に
               する」と書いてあるボタンが残り、押したのに効いていないように
               見える。理由の説明は title に置く。 */}
-          {hasBase && (
-            <button
-              onClick={() => {
-                const next = !showSectors;
-                setShowSectors(next);
-                localStorage.setItem(SECTORS_STORAGE_KEY, next ? "1" : "0");
-              }}
-              title={
-                showSectors
-                  ? "方位の扇形を消して地図だけにする"
-                  : "方位の扇形を表示する"
-              }
-              aria-pressed={showSectors}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
-                showSectors
-                  ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
-                  : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
-              }`}
-            >
-              🧭 方位 {showSectors ? "表示中" : "非表示"}
-            </button>
-          )}
-          {/* 近景 ⇄ 全国の切り替え。
+              {hasBase && (
+                <button
+                  onClick={() => {
+                    const next = !showSectors;
+                    setShowSectors(next);
+                    localStorage.setItem(SECTORS_STORAGE_KEY, next ? "1" : "0");
+                  }}
+                  title={
+                    showSectors
+                      ? "方位の扇形を消して地図だけにする"
+                      : "方位の扇形を表示する"
+                  }
+                  aria-pressed={showSectors}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                    showSectors
+                      ? "bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700"
+                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                  }`}
+                >
+                  🧭 方位 {showSectors ? "表示中" : "非表示"}
+                </button>
+              )}
+              {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
               操作が要った。今どちらを見ているのかも画面に出ていない。
               2 つを並べて現在地を反転表示にすると、切り替えられること
               自体が見える。押した側が実際のズームと食い違わないよう、
               選択状態は状態変数ではなく現在のズームから引く。 */}
-          <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
-            {hasBase && (
-              <button
-                onClick={() =>
-                  mapRef.current?.setView(
-                    [baseLat, baseLon],
-                    zoomForRadius(radiusKm),
-                  )
-                }
-                title="出発地を中心に、検索半径が収まるズームへ"
-                className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
-                  isOverview
-                    ? "text-stone-500 hover:bg-stone-100"
-                    : "bg-indigo-600 text-white"
-                }`}
-              >
-                📍 近景
-              </button>
-            )}
-            <button
-              onClick={() =>
-                mapRef.current?.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM)
-              }
-              title="全国を俯瞰して県ごとの方位の吉凶を見る"
-              className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
-                isOverview
-                  ? "bg-indigo-600 text-white"
-                  : "text-stone-500 hover:bg-stone-100"
-              }`}
-            >
-              🗾 全国
-            </button>
-          </div>
+              <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/80 border border-stone-200 shadow-lg">
+                {hasBase && (
+                  <button
+                    onClick={() =>
+                      mapRef.current?.setView(
+                        [baseLat, baseLon],
+                        zoomForRadius(radiusKm),
+                      )
+                    }
+                    title="出発地を中心に、検索半径が収まるズームへ"
+                    className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                      isOverview
+                        ? "text-stone-500 hover:bg-stone-100"
+                        : "bg-indigo-600 text-white"
+                    }`}
+                  >
+                    📍 近景
+                  </button>
+                )}
+                <button
+                  onClick={() =>
+                    mapRef.current?.setView(OVERVIEW_CENTER, OVERVIEW_ZOOM)
+                  }
+                  title="全国を俯瞰して県ごとの方位の吉凶を見る"
+                  className={`px-2.5 py-1 rounded-md font-mono text-[9px] font-bold transition-colors active:scale-95 cursor-pointer ${
+                    isOverview
+                      ? "bg-indigo-600 text-white"
+                      : "text-stone-500 hover:bg-stone-100"
+                  }`}
+                >
+                  🗾 全国
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* 俯瞰の塗り分け切り替え + 凡例。方位モードは
