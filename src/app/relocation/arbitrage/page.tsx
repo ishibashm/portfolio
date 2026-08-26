@@ -1998,47 +1998,12 @@ export default function ArbitrageScannerPage() {
     };
   }, [rentHistogramQuery]);
 
-  /**
-   * 地図の表示範囲に入る掲載件数。null なら出さない。
-   *
-   * ズームや移動のたびに軽い口（viewport-count）で数え直す。走査の
-   * 結果（数秒遅れ）とは別に、件数だけが指の動きに追従する。
-   * 数えるのは掲載件数（名寄せ前）なので、画面は必ず「掲載」と
-   * 単位を書き、「条件に一致 N 件」（名寄せ後）と区別する。
-   */
-  const [viewportCount, setViewportCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!mapBounds) {
-      setViewportCount(null);
-      return;
-    }
-    let cancelled = false;
-    // 地図を掴んでいる間は bounds が連続で変わる。離してから 1 回だけ。
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams(countableFilterQuery);
-      params.set("minLat", String(mapBounds.minLat));
-      params.set("maxLat", String(mapBounds.maxLat));
-      params.set("minLon", String(mapBounds.minLon));
-      params.set("maxLon", String(mapBounds.maxLon));
-      fetch(`/api/rentals/arbitrage/viewport-count?${params.toString()}`)
-        .then((res) => res.json())
-        .then((body) => {
-          if (cancelled) return;
-          // 数えられなかった回は非表示に倒す。前の範囲の数字を出した
-          // ままにすると、地図と数字が食い違ったまま並ぶ。
-          setViewportCount(body?.success ? Number(body.data.count) : null);
-        })
-        .catch(() => {
-          if (!cancelled) setViewportCount(null);
-        });
-    }, 400);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [mapBounds, countableFilterQuery]);
-
+  /*
+    「この範囲に掲載 N 件」（名寄せ前を viewport-count で数え直す）は
+    廃止した。一覧の「候補のうち範囲内」（名寄せ後）と数え方が違い、
+    同じ範囲で 2 つの数字が並んで断り書きで埋めていた。地図側が
+    候補（名寄せ後）をその場で数えるようになったので、口も要らない。
+  */
   useEffect(() => {
     // 絞り込みが空なら静的な値に戻す。同じ数字を数え直す意味が無い。
     if (!countableFilterQuery) {
@@ -2467,7 +2432,7 @@ export default function ArbitrageScannerPage() {
                 </span>
                 <span
                   className="text-[11px] font-semibold text-stone-600 dark:text-stone-500 cursor-help"
-                  title="走査で取得した候補（名寄せ・絞り込み後、上限500件）のうち、地図の表示範囲に入る数。地図の「この範囲に掲載 N 件」は名寄せ前の掲載数なので、同じ範囲でも数字は一致しません。"
+                  title="走査で取得した候補（名寄せ・絞り込み後、上限500件）のうち、地図の表示範囲に入る数。地図に出る「この範囲の候補」と同じ数え方です。"
                 >
                   候補のうち範囲内:{" "}
                   <b className="text-gray-900 dark:text-stone-900 font-mono text-xs">
@@ -3962,7 +3927,6 @@ export default function ArbitrageScannerPage() {
               kigakuUnavailableReason={kigakuUnavailableReason}
               prefCounts={livePrefCounts ?? undefined}
               prefCountsFiltered={livePrefCounts !== null}
-              viewportListingCount={viewportCount}
               onInspectSpot={(lat, lon) =>
                 setSpotRequest((prev) => ({
                   lat,
