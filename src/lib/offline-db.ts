@@ -14,7 +14,9 @@ export interface WidgetEntity {
   id: string;
   workspaceId: string;
   type: string;
-  data: any;
+  /* widget ごとに形が違う。実装（Dexie 化）はまだ下書きのままで
+     読む側もいないので、形を決めずに unknown で置く。 */
+  data: unknown;
 }
 
 /* 
