@@ -133,8 +133,12 @@ export interface DailyAstroState {
   lunarPhaseScore: number;
   tendoDir: Direction | undefined;
   rokuyo: string;
-  luckyDays: any;
-  holiday: any;
+  /*
+    型は作っている関数（utils/lunar）から引く。ここに形を写すと、
+    向こうに項目が増えたときに黙ってずれる。
+  */
+  luckyDays: ReturnType<typeof getLuckyDays>;
+  holiday: ReturnType<typeof isJapaneseHoliday>;
   weekday: number;
   isVoidTime: boolean;
   /**
