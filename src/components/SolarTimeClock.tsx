@@ -3576,9 +3576,7 @@ export const SolarTimeClock = () => {
       磁北を渡していたときは、同じ目的地でもホームの地図と時期の提案が
       別の方位を見ていることがあった。
     */
-    const targetDirection = dirInfo
-      ? (dirInfo.trueDirection as Direction)
-      : undefined;
+    const targetDirection = dirInfo ? dirInfo.trueDirection : undefined;
 
     const result = optimizer.evaluate({
       targetDate,
