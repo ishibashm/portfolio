@@ -34,8 +34,7 @@ import {
 import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { YearlyForecast } from "@/components/relocation/YearlyForecast";
-import { SCRAPE_TARGETS } from "@/lib/scrapeTargets";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import { prefectureDirections } from "@/lib/prefectureDirection";
 import {
   ALL_DIRECTIONS,
   DIRECTION_LABELS,
@@ -395,14 +394,13 @@ export default function TimingAnalyticsPage() {
         blocked: boolean;
       }
     > = {};
-    for (const t of SCRAPE_TARGETS) {
-      const dir = directionFromBearing(
-        bearingBetween(lat, lon, t.lat, t.lon),
-        "traditional",
-      );
+    /* 県の代表点は面積重心（lib/prefectureDirection）。arbitrage の
+       県塗りと同じ割り当て関数を使う（利用者報告 2026-08-27）。 */
+    const prefDirs = prefectureDirections(lat, lon, "traditional");
+    for (const [name, dir] of Object.entries(prefDirs)) {
       const tier = selected.tiers[dir];
       if (!tier) continue;
-      out[t.name] = {
+      out[name] = {
         direction: dir,
         directionLabel: DIRECTION_LABELS[dir] ?? dir,
         tier,
