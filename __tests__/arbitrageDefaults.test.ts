@@ -46,17 +46,19 @@ const PAGE = join(
 const src = readFileSync(PAGE, "utf8").split("\r\n").join("\n");
 
 /**
- * 「引っ越し時期を探す」の節は TimingScanSection へ切り出した。
- * 無効の理由を出しているのはそちらなので、この 1 件だけ別ファイルを読む。
+ * 「引っ越し時期を探す」は /relocation/timing へ移管した（#603）。
+ * 走査が無効な理由（生年月日の未入力）を出すのはそちらになったので、
+ * この 1 件だけ時期分析の頁を読む。
  */
-const TIMING_SECTION = join(
+const TIMING_PAGE = join(
   process.cwd(),
   "src",
-  "components",
+  "app",
   "relocation",
-  "TimingScanSection.tsx",
+  "timing",
+  "page.tsx",
 );
-const timingSrc = readFileSync(TIMING_SECTION, "utf8").split("\r\n").join("\n");
+const timingSrc = readFileSync(TIMING_PAGE, "utf8").split("\r\n").join("\n");
 
 describe("物件スキャナーの既定値", () => {
   it("ページを読めている（空回りしていない）", () => {
@@ -90,12 +92,15 @@ describe("物件スキャナーの既定値", () => {
     expect(src).toContain('if (!birthDate) missing.push("生年月日");');
   });
 
-  it("走査ボタンが無効な理由に生年月日が入っている", () => {
+  it("走査が無効な理由に生年月日が入っている（移管先の時期分析）", () => {
     // 以前は出発地の分しか無く、生年月日だけ未入力だとボタンが灰色の
-    // まま理由が読めなかった（#160 で時期分析を直したのと同じ形）。
+    // まま理由が読めなかった（#160）。移管後は時期分析の頁が
+    // canScan と missingLabel で同じ役割を持つ。
     expect(timingSrc.length).toBeGreaterThan(1000);
-    expect(timingSrc).toContain("{(!hasBaseLocation || !birthDate) && (");
-    expect(timingSrc).toContain("生年月日が未入力です。");
+    expect(timingSrc).toContain(
+      "Boolean(settings?.baseLon && settings?.birthDate)",
+    );
+    expect(timingSrc).toContain('settings?.birthDate ? null : "生年月日"');
   });
 });
 
