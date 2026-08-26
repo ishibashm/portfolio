@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Lunar } from "lunar-javascript";
+import { Solar } from "lunar-javascript";
+import { getZonedDateTimeFields } from "@/utils/solarTime";
 
 interface ClockDisplayProps {
   kimon: {
@@ -58,7 +59,21 @@ export function ClockDisplay({
     now.getMilliseconds(),
   );
 
-  const lunarDate = Lunar.fromDate(displayDate);
+  /*
+    暦は**日本時間で**引く。Lunar.fromDate(date) は実行環境のタイムゾーンで
+    年月日を読むため、海外の端末では日本と違う旧暦・六曜・月相が出ていた
+    （#456 の Solar.fromDate と同じ罠。総点検が Solar の字面だけを
+    探していて、Lunar 側のこの 1 件が網から漏れていた）。
+  */
+  const jst = getZonedDateTimeFields(displayDate, 9);
+  const lunarDate = Solar.fromYmdHms(
+    jst.year,
+    jst.month,
+    jst.day,
+    jst.hours,
+    jst.minutes,
+    jst.seconds,
+  ).getLunar();
   const ROKUYO_MAP = [
     "大安 (Taian)",
     "赤口 (Shakku)",

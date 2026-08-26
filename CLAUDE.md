@@ -159,7 +159,9 @@ lunar-javascript の `Solar.fromDate(date)` は**実行環境のタイムゾー�
 総点検し、**コード上の `Solar.fromDate` は 0 件**にした。増やさないこと。
 
 ```bash
-grep -rn "Solar.fromDate(" src/   # コメント（baziEngine の旧実装の記録）以外に出たら直す
+grep -rn "\.fromDate(" src/   # コメント（baziEngine の旧実装の記録）以外に出たら直す
+# Solar だけでなく Lunar.fromDate も同じ罠。Solar の字面だけ探していて
+# ClockDisplay の Lunar.fromDate を 1 件取りこぼした（#623 で訂正）
 ```
 
 ### 型
