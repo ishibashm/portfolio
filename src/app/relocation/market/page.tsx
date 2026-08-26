@@ -19,6 +19,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -26,6 +27,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+import { GRID_STROKE, SERIES } from "@/lib/chartPalette";
 
 import marketStats from "@/data/marketStats.json";
 import calendarClimatology from "@/data/calendarClimatology.json";
@@ -199,7 +202,7 @@ export default function MarketAnalyticsPage() {
                     sqm: p.medianSqmRent,
                   }))}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10 }}
@@ -215,7 +218,7 @@ export default function MarketAnalyticsPage() {
                   <Line
                     dataKey="sqm"
                     name="㎡単価中央値"
-                    stroke="#0f766e"
+                    stroke={SERIES.primary}
                     dot={false}
                     strokeWidth={2}
                   />
@@ -237,21 +240,21 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={dailySeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                 <XAxis dataKey="date" tick={{ fontSize: 10 }} minTickGap={24} />
                 <YAxis tick={{ fontSize: 10 }} width={44} />
                 <Tooltip />
                 <Line
                   dataKey="count"
                   name="新規掲載"
-                  stroke="#a8a29e"
+                  stroke={SERIES.neutral}
                   dot={false}
                   strokeWidth={1}
                 />
                 <Line
                   dataKey="ma7"
                   name="7日平均"
-                  stroke="#4f46e5"
+                  stroke={SERIES.primary}
                   dot={false}
                   strokeWidth={2}
                 />
@@ -280,7 +283,7 @@ export default function MarketAnalyticsPage() {
                   />
                   <YAxis tick={{ fontSize: 9 }} width={44} />
                   <Tooltip />
-                  <Bar dataKey="count" name="件数" fill="#6366f1" />
+                  <Bar dataKey="count" name="件数" fill={SERIES.secondary} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -300,7 +303,17 @@ export default function MarketAnalyticsPage() {
                   />
                   <YAxis tick={{ fontSize: 9 }} width={44} />
                   <Tooltip />
-                  <Bar dataKey="count" name="件数" fill="#10b981" />
+                  {/* 左裾（割安側）だけ青、割高側は灰。副題の「左裾を
+                      拾っている」を色でも示す。isCheap は元から計算して
+                      いたのに塗り分けに使われていなかった。 */}
+                  <Bar dataKey="count" name="件数">
+                    {residualHist.map((b) => (
+                      <Cell
+                        key={b.label}
+                        fill={b.isCheap ? SERIES.secondary : SERIES.neutral}
+                      />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -315,7 +328,7 @@ export default function MarketAnalyticsPage() {
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={survivalSeries}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
+                <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} />
                 <XAxis
                   dataKey="day"
                   tick={{ fontSize: 10 }}
@@ -336,7 +349,7 @@ export default function MarketAnalyticsPage() {
                 <Line
                   dataKey="pct"
                   name="残存率"
-                  stroke="#e11d48"
+                  stroke={SERIES.primary}
                   dot={false}
                   strokeWidth={2}
                   type="stepAfter"
