@@ -487,9 +487,20 @@ export default function MarketAnalyticsPage() {
           subtitle="こちらは市場データではなく、九星の暦そのものの統計。年盤・月盤・日盤がすべて吉になる日が「どこかの方位で」何日あるかを、本命星ごとに 9 年窓（年盤の一巡）で数えたもの。星によって 2 倍以上の差があり、また同じ星でも年による当たり外れがある。天中殺は考慮していない（個人の設定に依るため）。"
         >
           {(() => {
-            const clim = calendarClimatology as any;
-            const profiles = clim?.profiles ?? {};
-            const from = clim?.meta?.from
+            /*
+              生成物の JSON（scripts が書き出す）を、読む枝だけの形で
+              受ける。as any だと下の走査ごと型が消え、[string, any] の
+              cast まで連れてきていた。
+            */
+            const clim: {
+              meta?: { from?: string };
+              profiles?: Record<
+                string,
+                { anySPerWindow?: number[]; avgAnySPerYear?: number }
+              >;
+            } = calendarClimatology;
+            const profiles = clim.profiles ?? {};
+            const from = clim.meta?.from
               ? new Date(`${clim.meta.from}T12:00:00+09:00`)
               : null;
             if (!from || Object.keys(profiles).length === 0) {
@@ -506,8 +517,10 @@ export default function MarketAnalyticsPage() {
               (star) => {
                 const entries = Object.entries(profiles).filter(([k]) =>
                   k.startsWith(`${star}|`),
-                ) as [string, any][];
-                const avg = (f: (p: any) => number) =>
+                );
+                const avg = (
+                  f: (p: (typeof entries)[number][1]) => number,
+                ) =>
                   entries.length
                     ? entries.reduce((a, [, p]) => a + f(p), 0) / entries.length
                     : 0;

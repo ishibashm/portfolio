@@ -75,6 +75,38 @@ type DirectionBand =
       max: number;
     };
 
+/**
+ * 応答の metadata のうち、この画面が読む項目だけ。全体を型にしない
+ * （#149 と同じ方針）。座標は数値で返り、入力欄に入れるときに
+ * toString() する。
+ */
+interface WealthMetadata {
+  baseLat?: number;
+  baseLon?: number;
+  birthLat?: number;
+  birthLon?: number;
+  birthDate?: string;
+}
+
+/**
+ * fetchData の一部だけを上書きする引数。読む項目だけを持つ。
+ * 値の型は対応する state と同じ（この頁の state は素の string /
+ * boolean のまま。union に絞る作業は別件）。
+ */
+interface FetchOverrides {
+  targetDate?: string;
+  birthDate?: string;
+  birthLat?: string;
+  birthLon?: string;
+  baseLat?: string;
+  baseLon?: string;
+  engineType?: string;
+  layerMode?: string;
+  directionFilterMode?: string;
+  useTrueNorth?: boolean;
+  lunarPhaseModifier?: boolean;
+}
+
 const normalizeDateTimeLocal = (dateStr: string): string => {
   if (!dateStr) return "";
   try {
@@ -97,7 +129,7 @@ const normalizeDateTimeLocal = (dateStr: string): string => {
 export default function RegionalWealthPage() {
   const fetchRequestIdRef = useRef(0);
   const [data, setData] = useState<MunicipalityWealthItem[]>([]);
-  const [metadata, setMetadata] = useState<any>(null);
+  const [metadata, setMetadata] = useState<WealthMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -222,7 +254,7 @@ export default function RegionalWealthPage() {
   };
 
   const fetchData = async (
-    overrideParams?: any,
+    overrideParams?: FetchOverrides,
     shouldDispatchEvent = true,
   ) => {
     const requestId = ++fetchRequestIdRef.current;
