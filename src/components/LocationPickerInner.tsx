@@ -9,6 +9,7 @@ import {
   useMap,
 } from "react-leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
+import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 
 // Fix typical Leaflet icon issue
@@ -100,14 +101,14 @@ export default function LocationPickerInner({
       >
         <TileLayer
           key={`tile-layer-${mapTheme}`}
-          url={
-            mapTheme === "dark"
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          }
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={20}
-          maxNativeZoom={19}
+          url={BASE_MAPS.std.url}
+          /* ダークは CSS の反転で作る。CARTO の dark_all は鍵なしの
+             ラスタ配信に「API key required」の透かしが入るようになった
+             （lib/baseMapLayers の経緯を見ること）。 */
+          className={mapTheme === "dark" ? DARK_TILE_CLASS : undefined}
+          attribution={BASE_MAPS.std.attribution}
+          maxZoom={BASE_MAPS.std.maxZoom}
+          maxNativeZoom={BASE_MAPS.std.maxNativeZoom}
         />
         <SyncMapCenter markerPos={markerPos} />
         <MapEvents onSelect={handleSelect} />

@@ -14,6 +14,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
+import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
@@ -581,16 +582,14 @@ export default function MagneticMapInner({
         />
         <TileLayer
           key={`tile-layer-${mapTheme}`}
-          url={
-            mapTheme === "dark"
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-          }
-          // CARTO のタイルは OpenStreetMap のデータから作られているため、
-          // 明暗どちらでも両方の帰属表示が要る。
-          attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={20}
-          maxNativeZoom={19}
+          url={BASE_MAPS.std.url}
+          /* ダークは CSS の反転で作る。CARTO の dark_all は鍵なしの
+             ラスタ配信に「API key required」の透かしが入るようになった
+             （lib/baseMapLayers の経緯を見ること）。 */
+          className={mapTheme === "dark" ? DARK_TILE_CLASS : undefined}
+          attribution={BASE_MAPS.std.attribution}
+          maxZoom={BASE_MAPS.std.maxZoom}
+          maxNativeZoom={BASE_MAPS.std.maxNativeZoom}
         />
 
         {/* Theme Switcher Button */}
