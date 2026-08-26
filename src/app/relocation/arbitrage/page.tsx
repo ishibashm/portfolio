@@ -12,10 +12,6 @@ import {
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
-import {
-  TimingScanSection,
-  type TimingDirectionRank,
-} from "@/components/relocation/TimingScanSection";
 import { TransactionsPanel } from "@/components/relocation/TransactionsPanel";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
@@ -566,31 +562,15 @@ export default function ArbitrageScannerPage() {
   );
   const [involuntaryMove, setInvoluntaryMove] = useState(false);
 
-  /**
-   * 引っ越し時期のスクリーニング。
-   *
-   * 日付を先に固定して物件を探すと、天中殺や八方塞がりの期間は
-   * 何もヒットせず、そこで行き止まりになる。順序を逆にして
-   * 「いつ・どの方位なら動けるか」を先に走査し、日付を選ぶと
-   * スキャン日付と方位フィルターがそこへ飛ぶようにする。
-   *
-   * 三盤吉（S）だけを合格にすると年天中殺・八方塞がりの年に 0 件で
-   * 行き止まるため、mode=ranked で全日を 6 段階（S〜X）に格付けし、
-   * 完璧な日が無くても「その期間で統計的に最もマシな日」を出す。
-   * 五大凶殺（五黄殺・暗剣殺・破・本命殺・的殺）の X だけは決して勧めない。
-   * 走査は /api/relocation/auspicious-days（純計算・外部課金なし）。
-   */
-  const [timingBusy, setTimingBusy] = useState(false);
-  const [timingError, setTimingError] = useState<string | null>(null);
-  const [timingRangeDays, setTimingRangeDays] = useState<365 | 730>(365);
-  const [timingProfile, setTimingProfile] = useState<{
-    honmeiStar: number;
-    voidZodiacs: string[];
-  } | null>(null);
-  const [timingRanked, setTimingRanked] = useState<
-    TimingDirectionRank[] | null
-  >(null);
-  const [timingOpenDir, setTimingOpenDir] = useState<string | null>(null);
+  /*
+    引っ越し時期のスクリーニングは /relocation/timing へ移管した。
+
+    同じ走査（/api/relocation/auspicious-days の ranked）がこの画面と
+    /relocation/timing の両方に実装されていて、二重保守になっていた。
+    受け渡しは前からある URL（?targetDate=…&view=overview&direction=…）を
+    使う。時期の頁で日を選ぶとこの画面がその日付・方位で開くので、
+    「いつ動けるかを先に見る → その日の物件を見る」の流れは変わらない。
+  */
 
   /**
    * 同行者。合流する親族のように、別の出発地から同じ移転先へ動く人。
@@ -1266,51 +1246,6 @@ export default function ArbitrageScannerPage() {
     window.dispatchEvent(event);
   };
 
-  /** 選んだ期間の全日を段階評価で走査する。ボタンから明示的に呼ぶ */
-  const runTimingScan = async (rangeDays: 365 | 730 = timingRangeDays) => {
-    if (!hasBaseLocation || !birthDate) return;
-    setTimingBusy(true);
-    setTimingError(null);
-    try {
-      const params = new URLSearchParams({
-        birthDate,
-        lon: String(baseLon),
-        tenchusatsuMode,
-        involuntaryMove: String(involuntaryMove),
-        directionFilterMode,
-        mode: "ranked",
-        days: String(rangeDays),
-      });
-      const res = await fetch(`/api/relocation/auspicious-days?${params}`);
-      if (!res.ok) throw new Error(`walk failed (${res.status})`);
-      const json = await res.json();
-      if (!Array.isArray(json?.ranked)) throw new Error("empty result");
-      setTimingRanked(json.ranked);
-      setTimingProfile(
-        typeof json?.honmeiStar === "number" && Array.isArray(json?.voidZodiacs)
-          ? { honmeiStar: json.honmeiStar, voidZodiacs: json.voidZodiacs }
-          : null,
-      );
-      setTimingOpenDir(null);
-    } catch {
-      setTimingError(
-        "走査に失敗しました。出発地と生年月日を確認して、もう一度お試しください。",
-      );
-    } finally {
-      setTimingBusy(false);
-    }
-  };
-
-  /**
-   * 吉日を 1 つ選んだら、スキャン日付と方位フィルターをそこへ飛ばす。
-   * 地図・リスト・TOP5 はすべて targetDate に追従しているので、
-   * これだけで「その日に動ける物件」の表示に切り替わる。
-   */
-  const applyTimingChoice = (dateStr: string, dir: string) => {
-    setLocalDateChange(dateStr);
-    setFilterDirection(dir);
-  };
-
   // Re-fetch data whenever params change
   useEffect(() => {
     if (!initialLoaded) return;
@@ -1725,22 +1660,6 @@ export default function ArbitrageScannerPage() {
       count: directionPropertyCounts[cell.direction] ?? 0,
     }));
   }, [dayKigaku, directionPropertyCounts]);
-
-  /** 方位別の総家賃の中央値。時期パネルで「その方位の相場感」を添える */
-  const directionRentMedians = useMemo(() => {
-    const by: Record<string, number[]> = {};
-    for (const d of safeData) {
-      if (d.direction && d.totalRent > 0) {
-        (by[d.direction] ??= []).push(d.totalRent);
-      }
-    }
-    const out: Record<string, number> = {};
-    for (const [k, v] of Object.entries(by)) {
-      v.sort((a, b) => a - b);
-      out[k] = v[Math.floor(v.length / 2)];
-    }
-    return out;
-  }, [safeData]);
 
   // お気に入りは開いたときに一度だけ読む。物件の再スキャンでは変わらない。
   useEffect(() => {
@@ -3634,28 +3553,27 @@ export default function ArbitrageScannerPage() {
                     </label>
                   </ArbitrageSidebarSection>
 
-                  {/* 引っ越し時期のスクリーニング。走査そのものと結果の状態は
-                      スキャンの日付・方位フィルターと同じものを触るのでここに
-                      残し、描画だけ TimingScanSection へ切り出した。 */}
-                  <TimingScanSection
-                    timingRanked={timingRanked}
-                    timingBusy={timingBusy}
-                    timingError={timingError}
-                    timingRangeDays={timingRangeDays}
-                    setTimingRangeDays={setTimingRangeDays}
-                    runTimingScan={() => runTimingScan()}
-                    timingProfile={timingProfile}
-                    timingOpenDir={timingOpenDir}
-                    setTimingOpenDir={setTimingOpenDir}
-                    hasBaseLocation={hasBaseLocation}
-                    birthDate={birthDate}
-                    applyTimingChoice={applyTimingChoice}
-                    directionPropertyCounts={directionPropertyCounts}
-                    directionRentMedians={directionRentMedians}
-                    dayKigaku={dayKigaku}
-                    targetDate={targetDate}
-                    filterDirection={filterDirection}
-                  />
+                  {/* 引っ越し時期のスクリーニングは /relocation/timing へ移管。
+                      同じ走査が両方にあって二重保守だった。日を選ぶと
+                      ?targetDate=…&direction=… でこの画面に戻ってくる。 */}
+                  <a
+                    href="/relocation/timing"
+                    className="block rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 hover:bg-indigo-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-bold text-indigo-900">
+                          引っ越し時期を探す
+                        </div>
+                        <div className="mt-1 text-xs leading-relaxed text-indigo-900/70">
+                          日付を先に決めると天中殺・八方塞がりの期間で行き止まりになります。先に「いつ・どの方位なら動けるか」を走査して、選んだ日でこの画面に戻ります。
+                        </div>
+                      </div>
+                      <span aria-hidden className="text-indigo-400 shrink-0">
+                        →
+                      </span>
+                    </div>
+                  </a>
 
                   {/* TOP 5 アコーディオン。
                       「アービトラージ」という呼び名は売買の裁定取引を連想させ、
