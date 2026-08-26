@@ -9,6 +9,7 @@ import {
   toleranceForZoom,
   type SimplifyStats,
 } from "../src/lib/simplifyGeo";
+import { zoningPropertiesOf } from "../src/utils/zoning";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
   ? path.resolve(process.cwd(), ".env")
@@ -33,9 +34,17 @@ dotenv.config({ path: envPath });
  *
  * z12 / z13 のタイルを取り、次の 3 通りで大きさを比べる。
  *
- *   1. そのまま
- *   2. 頂点を間引く（許容量 = そのズームの 1 / 2 画素ぶん）
- *   3. 2 に加えて、1 画素にも満たない区画を落とす
+ *   1. 上流そのまま
+ *   2. **中継後**（/api/zoning と同じく zoningPropertiesOf で 5 項目に絞る）
+ *   3. 2 に加えて頂点を間引く（許容量 = そのズームの 1 / 2 画素ぶん）
+ *   4. 3 に加えて、1 画素にも満たない区画を落とす
+ *
+ * ## 2 を測るのがいちばん大事
+ *
+ * `ZONING_MIN_ZOOM = 14` の根拠に書いてある数字（z13 で 435KB、z12 で
+ * 1.9MB）は**上流のサイズ**。ところが `/api/zoning` は上流をそのまま
+ * 返しておらず、`zoningPropertiesOf` で 5 項目に絞っている。
+ * **判断すべきはブラウザが受け取る側なのに、そこは誰も測っていない。**
  *
  * 出すのは**バイト数・件数・頂点数**。減り方が分かれば、z を下げられるか
  * どうかを数で決められる。
@@ -109,9 +118,9 @@ async function main() {
     "許容量はそのズームの **0.5 画素**ぶん、落とす区画は **1 画素四方**に満たないもの。\n",
   );
   console.log(
-    "| 場所 | z | 件数 | そのまま | 間引き | 間引き+小区画を落とす | 残った件数 | 頂点 |",
+    "| 場所 | z | 件数 | 上流 | 中継後 | +間引き | +小区画を落とす | 残った件数 | 頂点 |",
   );
-  console.log("|---|---|---|---|---|---|---|---|");
+  console.log("|---|---|---|---|---|---|---|---|---|");
 
   for (const spot of SPOTS) {
     for (const z of ZOOMS) {
@@ -128,11 +137,27 @@ async function main() {
       const rawBytes = bytesOf(fc);
       const rawVerts = countVertices(fc);
 
+      /* 中継（/api/zoning）と同じ絞り込み。ブラウザが受け取るのはこれ。 */
+      const relayed: FeatureCollection = {
+        type: "FeatureCollection",
+        features: fc.features
+          .filter((f) => f.geometry)
+          .map((f) => ({
+            type: "Feature",
+            geometry: f.geometry,
+            properties: zoningPropertiesOf(f.properties) as unknown as Record<
+              string,
+              unknown
+            >,
+          })),
+      };
+      const relayBytes = bytesOf(relayed);
+
       const tol = toleranceForZoom(z, 0.5);
       const stats: SimplifyStats = { before: 0, after: 0, dropped: 0 };
       const simplified: FeatureCollection = {
-        ...fc,
-        features: fc.features.map((f) => ({
+        ...relayed,
+        features: relayed.features.map((f) => ({
           ...f,
           geometry: simplifyGeometry(f.geometry, tol, stats) as {
             type: string;
@@ -158,6 +183,7 @@ async function main() {
       console.log(
         `| ${spot.name} | ${z} | ${fc.features.length} | ` +
           `${rawBytes.toLocaleString()} | ` +
+          `${relayBytes.toLocaleString()} (${pct(relayBytes)}) | ` +
           `${simpBytes.toLocaleString()} (${pct(simpBytes)}) | ` +
           `${prunedBytes.toLocaleString()} (${pct(prunedBytes)}) | ` +
           `${pruned.features.length} | ${rawVerts.toLocaleString()} → ${stats.after.toLocaleString()} |`,
@@ -168,8 +194,8 @@ async function main() {
   console.log("\n## 読み方\n");
   console.log(
     "- 画面には十数タイル並ぶ。**1 タイルの大きさ × 15 くらい**が 1 画面ぶん\n" +
-      "- いまの下限は z14（1 タイル 192KB ＝ 1 画面 3MB 前後）\n" +
-      "- z13 / z12 の「間引き+小区画を落とす」がこれに近ければ、下げられる\n" +
+      "- **比べるのは「中継後」の列どうし。**ブラウザが受け取るのはこれ\n" +
+      "- いまの下限 z14 の中継後が基準。z13 / z12 がこれに近ければ下げられる\n" +
       "- **落ちた件数も見ること。**軽くても区画が消えていたら意味が無い",
   );
 }
