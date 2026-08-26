@@ -30,6 +30,7 @@ import { clusterByTile, shouldCluster } from "@/lib/mapClusters";
 import {
   BASE_MAPS,
   BASE_MAP_ORDER,
+  DARK_TILE_CLASS,
   HILLSHADE,
   parseBaseMapId,
   type BaseMapId,
@@ -396,7 +397,7 @@ const LAYER_PRESETS = {
   property: {
     label: "🏠 物件を選ぶ",
     note: "地図と方位だけにする（ハザード・用途地域・地形を消す）",
-    baseMap: "carto" as BaseMapId,
+    baseMap: "std" as BaseMapId,
     hillshade: false,
     hazardTab: "none" as HazardTabId,
     zoningOn: false,
@@ -470,13 +471,13 @@ export default function ArbitrageMapInner({
    */
   const [showSectors, setShowSectors] = useState(true);
   /*
-    地図の下地。既定は従来どおり CARTO（"carto"）。
-    空中写真と地形（色別標高図）は地理院タイル。選択は端末に残す。
-    ハザードのタブと同じく、effect ではなく遅延初期化で読む。
+    地図の下地。既定は標準地図（"std"）。全部が地理院タイル。
+    選択は端末に残す。ハザードのタブと同じく、effect ではなく
+    遅延初期化で読む。
   */
   const [baseMap, setBaseMap] = useState<BaseMapId>(() =>
     typeof window === "undefined"
-      ? "carto"
+      ? "std"
       : parseBaseMapId(localStorage.getItem(BASE_MAP_STORAGE_KEY)),
   );
   /* 陰影起伏の重ね描き。下地が写真・地形のときに起伏が読めるようになる。 */
@@ -1166,14 +1167,18 @@ export default function ArbitrageMapInner({
             上限を渡すと、上限のタイルを引き伸ばして描く。 */}
         <TileLayer
           key={`tile-layer-${baseMap}-${mapTheme}`}
-          url={
-            baseMap === "carto" && mapTheme === "dark"
-              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              : BASE_MAPS[baseMap].url
-          }
+          url={BASE_MAPS[baseMap].url}
           attribution={BASE_MAPS[baseMap].attribution}
           maxZoom={BASE_MAPS[baseMap].maxZoom}
           maxNativeZoom={BASE_MAPS[baseMap].maxNativeZoom}
+          /* ダークは配信元に無いので、標準・淡色を CSS で反転して作る。
+             以前の CARTO dark_all は鍵なしだと透かしが入るようになった。
+             写真・地形は反転すると意味が壊れるので、そのまま出す。 */
+          className={
+            mapTheme === "dark" && (baseMap === "std" || baseMap === "pale")
+              ? DARK_TILE_CLASS
+              : undefined
+          }
         />
 
         {/* 陰影起伏。下地の上に薄く重ねて尾根と谷を出す */}

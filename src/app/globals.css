@@ -273,3 +273,13 @@ body {
 .pref-count-label::before {
   display: none;
 }
+
+/* ダークマップ。配信元（地理院タイル）に暗色の地図が無いので、
+   明るいタイルを反転して作る。hue-rotate(180deg) を挟むのは、
+   単純な反転だと色相まで補色に振れて水色の川がオレンジになるため。
+   以前は CARTO の dark_all を使っていたが、鍵なしのラスタ配信に
+   「API key required」の透かしが入るようになり使えなくなった。 */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)
+    saturate(0.5);
+}
