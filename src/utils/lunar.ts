@@ -91,35 +91,6 @@ function getLunarDate(date: Date): { month: number; day: number } {
   };
 }
 
-export function isWeddingFriendly(rokuyo: string): boolean {
-  return rokuyo.includes("大安") || rokuyo.includes("友引");
-}
-
-export function getWeedingScore(date: Date, rokuyo: string): number {
-  let score = 0;
-
-  // Rokuyo Score
-  if (rokuyo.includes("大安")) score += 5;
-  else if (rokuyo.includes("友引")) score += 4;
-  else if (rokuyo.includes("先勝"))
-    score += 2; // Morning wedding ok
-  else if (rokuyo.includes("先負"))
-    score += 2; // Afternoon wedding ok
-  else if (rokuyo.includes("赤口"))
-    score += 1; // Only noon
-  else if (rokuyo.includes("仏滅")) score += 0;
-
-  // Weekend Score
-  const day = date.getDay();
-  if (day === 0) score += 3; // Sunday
-  if (day === 6) score += 3; // Saturday
-
-  // '2' day Score (Two people) - Just a fun logic
-  if (date.getDate() === 22) score += 1; // Good couple day
-
-  return score;
-}
-
 // 一粒万倍日の地支対応表
 const ICHIRYUMANBAI_MAP: Record<string, string[]> = {
   寅: ["丑", "午"], // 正月
