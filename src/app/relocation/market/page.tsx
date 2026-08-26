@@ -177,14 +177,30 @@ export default function MarketAnalyticsPage() {
               hint="広さ・築年・駅徒歩だけで家賃の分散をどれだけ説明できるか"
             />
           )}
+          {/*
+            中央値が 1 日以下のときは数字を出さない。2026-08-26 の実測
+            （prisma/sql/20260826_probe_survival_oneshot.sql）で、掲載の
+            53% が一度しか観測されないまま「7 日見かけない＝終了」に
+            落ちていた。原因は巡回の網羅漏れ（例: 北海道は 1 回の巡回で
+            在庫の 1 割弱しか再訪できず、91% が偽の終了扱い）。この状態の
+            「中央 0 日」は市場の消化速度ではなく巡回の穴の写像なので、
+            断定を出さず「計測不能」と言う。
+          */}
           <KpiCard
             label="掲載の中央存続期間"
             value={
-              stats.survival.medianDays !== null
-                ? `${stats.survival.medianDays}日`
-                : "計測中"
+              stats.survival.medianDays === null
+                ? "計測中"
+                : stats.survival.medianDays <= 1
+                  ? "計測不能"
+                  : `${stats.survival.medianDays}日`
             }
-            hint="Kaplan-Meier 推定。半分の掲載がこの日数で消える＝市場の消化速度"
+            hint={
+              stats.survival.medianDays !== null &&
+              stats.survival.medianDays <= 1
+                ? "巡回が在庫全体を回りきれておらず、生きている掲載まで終了扱いになるため、いまは信頼できる中央値を出せません"
+                : "Kaplan-Meier 推定。半分の掲載がこの日数で消える＝市場の消化速度"
+            }
           />
         </div>
 
@@ -323,7 +339,7 @@ export default function MarketAnalyticsPage() {
         {/* 生存分析 */}
         <Section
           title="掲載の生存曲線（流動性）"
-          subtitle={`掲載されてから t 日後も市場に残っている確率。急落するほど回転が速い＝人気の市場。巡回で7日以上見かけなくなった掲載を「終了」、掲載中のものは打ち切りとして Kaplan-Meier で推定（n=${stats.survival.n.toLocaleString()}）。パージ運用のため長期側は近似。`}
+          subtitle={`掲載されてから t 日後も市場に残っている確率（n=${stats.survival.n.toLocaleString()}）。【注意】いまの曲線は実態より速く落ちる方向に歪んでいます。「巡回で 7 日以上見かけない＝終了」と数えていますが、実測（2026-08-26）では巡回が在庫全体を回りきれておらず、生きている掲載の多く（全体の約半分）が一度観測されただけで終了扱いになっています。初日の急落はその写像です。巡回の網羅が直るまで、短期側は読まないでください。`}
         >
           <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
