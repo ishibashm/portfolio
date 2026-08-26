@@ -244,11 +244,13 @@ describe("中継が使う値の取り出し", () => {
 describe("出すズームの範囲", () => {
   it("実測で決めた範囲だけ通す", () => {
     /*
-      z=13 は 1 タイル 435KB、z=12 は 1.9MB、z=11 は 3.6MB（実測）。
-      画面には十数タイル並ぶので、広域では出さない。
+      下限は**ブラウザが受け取る側**の実測で決める（utils/zoning に表）。
+      絞り込み＋間引き後でも z=12 は 1 画面 6.5MB になるので出さない。
+      z=13 は 1.6MB で、間引き前の z=14（1.1MB）と同じ桁に収まる。
     */
-    expect(ZONING_MIN_ZOOM).toBe(14);
-    expect(isZoningZoom(13)).toBe(false);
+    expect(ZONING_MIN_ZOOM).toBe(13);
+    expect(isZoningZoom(12)).toBe(false);
+    expect(isZoningZoom(13)).toBe(true);
     expect(isZoningZoom(14)).toBe(true);
     expect(isZoningZoom(ZONING_MAX_ZOOM)).toBe(true);
     expect(isZoningZoom(ZONING_MAX_ZOOM + 1)).toBe(false);

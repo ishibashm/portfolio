@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { toLogMessage } from "@/lib/errorMessage";
 import {
+  isTinyGeometry,
+  simplifyGeometry,
+  toleranceForZoom,
+  type SimplifyStats,
+} from "@/lib/simplifyGeo";
+import {
   isTileCoordinate,
   isZoningZoom,
   zoningPropertiesOf,
@@ -29,10 +35,14 @@ import {
  *
  * 取り込まないので、DDL も夜間の取り込みも要らず、常に最新が出る。
  *
- * ## 広域では出さない
+ * ## 広域では出さない・頂点は間引く
  *
- * z=13 以下は 1 タイルで 435KB〜3.6MB（実測）。画面には十数タイル並ぶので
- * そのまま出すと 1 画面で数十 MB になる。`ZONING_MIN_ZOOM` で弾く。
+ * 下限は `ZONING_MIN_ZOOM`（z13。受け取る側で測った根拠は
+ * `utils/zoning`）。返す前に、そのズームの 0.5 画素に満たない折れ点を
+ * 間引き、1 画素四方に満たない区画を落とす（`lib/simplifyGeo`）。
+ * 見た目は 1 画素未満しか変わらず、いちばん重い千代田区で 1 タイルが
+ * 3 割強小さくなる（実測は `scripts/probe_zoning_simplify.ts`）。
+ * z=12 は間引いても 1 画面 6.5MB になるので出さない。
  */
 
 /**
@@ -56,7 +66,9 @@ const MESSAGES = {
 
 interface RawFeature {
   type?: string;
-  geometry?: unknown;
+  /* 上流は Polygon / MultiPolygon しか返さない（probe_zoning.ts の実測）。
+     知らない型が来ても simplifyGeometry はそのまま返すだけで、落とさない。 */
+  geometry?: { type: string; coordinates: unknown };
   properties?: Record<string, unknown>;
 }
 
@@ -140,17 +152,42 @@ export async function GET(request: Request) {
   }
 
   /*
-    要る項目だけに絞る。**座標には触らない。**多角形を触ると形が変わる。
-    落としているのは _id・_index と、全国どこでも空文字だった
-    decision_date・notice_number・decision_maker など（実測）。
-  */
-  const features = (body.features ?? [])
-    .filter((f) => f.geometry)
-    .map((f) => ({
-      type: "Feature" as const,
-      geometry: f.geometry,
-      properties: zoningPropertiesOf(f.properties),
-    }));
+    要る項目だけに絞る。落としているのは _id・_index と、全国どこでも
+    空文字だった decision_date・notice_number・decision_maker など（実測）。
 
-  return NextResponse.json({ type: "FeatureCollection", features });
+    座標は**間引くだけ**で、位置は動かさない。許容量はそのズームの
+    0.5 画素ぶんなので、消えるのは描いても見えない折れ点だけ。輪が
+    4 点を下回るなら元の輪をそのまま返す（区画が線に潰れて消えるのは
+    重いより悪い。lib/simplifyGeo）。1 画素四方に満たない区画も落とす
+    （z13 で最大 3/135 件、z14 では 0 件——実測）。
+  */
+  const tolerance = toleranceForZoom(z, 0.5);
+  const minArea = toleranceForZoom(z, 1) ** 2;
+  const stats: SimplifyStats = { before: 0, after: 0, dropped: 0 };
+  const features = (body.features ?? []).flatMap((f) => {
+    if (!f.geometry) return [];
+    const geometry = simplifyGeometry(f.geometry, tolerance, stats);
+    if (isTinyGeometry(geometry, minArea)) {
+      stats.dropped += 1;
+      return [];
+    }
+    return [
+      {
+        type: "Feature" as const,
+        geometry,
+        properties: zoningPropertiesOf(f.properties),
+      },
+    ];
+  });
+
+  /*
+    dropped は「小さすぎて落とした区画の数」。**黙って減らさない**ための
+    しるしで、GeoJSON の foreign member として載せる（読む側は無視して
+    よい。ZoningLayer は features しか読まない）。
+  */
+  return NextResponse.json({
+    type: "FeatureCollection",
+    features,
+    dropped: stats.dropped,
+  });
 }
