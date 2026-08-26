@@ -30,6 +30,7 @@ import {
   filterCollisionByMode,
   getClassicalYearStar,
   Direction,
+  type EightDirection,
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { TenChiJinEvaluation } from "@/components/nba/TenChiJinEvaluation";
@@ -195,7 +196,9 @@ function getBearing(
 function bearingToDirection(
   bearing: number,
   useClassical: boolean = false,
-): Direction {
+  /* 方位角から出るのは八方位（getKigakuSector の型のとおり）。ここで
+     Direction に広げ直さない（api/relocation/history と同じ理由）。 */
+): EightDirection {
   return getKigakuSector(bearing, useClassical);
 }
 
