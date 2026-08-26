@@ -4,7 +4,10 @@ import { toResponseMessage } from "@/lib/errorMessage";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
-import { directionFromBearing } from "@/utils/directionGeo";
+import {
+  directionFromBearing,
+  type CompassDirection,
+} from "@/utils/directionGeo";
 import {
   getHonmeiStar,
   getCurrentEnvironmentalFrequencies,
@@ -49,7 +52,36 @@ interface TacticalConfig {
   physical_month_mode?: string;
 }
 
-function interpolateKpIndex(logs: any[]): any[] {
+/**
+ * 目的地の座標を渡されたときだけ作る評価。応答の `targetEvaluation` に
+ * そのまま入る（書き出しを読む側が見る形。any だったのを実際の代入形に
+ * 合わせて写した）。判定は真北（trueDirection）で行い、磁北は
+ * 「方位磁針で測るとどう見えるか」の注記としてだけ残す。
+ */
+interface TargetEvaluation {
+  targetCoordinates: { lat: number; lon: number; elevation: number | null };
+  heading: {
+    trueDirection: CompassDirection;
+    magneticDirection: CompassDirection;
+    trueBearing: number;
+    magneticBearing: number;
+    declination: number;
+  };
+  targetStatuses: {
+    classical: string;
+    physicalIndependent: string;
+    physicalCoupled: string;
+  };
+}
+
+/*
+  読むのは targetDate と kpIndex だけ。行そのもの（Prisma の
+  MetaphysicalStateLog）は T のまま通して、他の列に触らないことを
+  型で保証する。
+*/
+function interpolateKpIndex<
+  T extends { targetDate: Date; kpIndex: number | null },
+>(logs: T[]): T[] {
   // Sort ascending by targetDate time to do chronological interpolation
   const sorted = [...logs].sort(
     (a, b) => a.targetDate.getTime() - b.targetDate.getTime(),
@@ -82,7 +114,12 @@ function interpolateKpIndex(logs: any[]): any[] {
         const t_j = sorted[j].targetDate.getTime();
         const v_i = sorted[i].kpIndex;
         const v_j = sorted[j].kpIndex;
-        if (t_j !== t_i) {
+        /*
+          v_i / v_j の null 判定は上の while が保証しているので常に真。
+          any を外すと tsc が算術の行だけ null の可能性を指摘するため、
+          不変条件を条件式にそのまま書く（挙動は変わらない）。
+        */
+        if (v_i !== null && v_j !== null && t_j !== t_i) {
           sorted[k].kpIndex = v_i + (v_j - v_i) * ((t_k - t_i) / (t_j - t_i));
         } else {
           sorted[k].kpIndex = v_i;
@@ -513,7 +550,7 @@ export async function GET(request: Request) {
     }
 
     // 3. Optional Destination Evaluation if target coordinates are provided
-    let targetEvaluation: any = null;
+    let targetEvaluation: TargetEvaluation | null = null;
     if (targetLat !== null && targetLon !== null) {
       const toRad = (val: number) => (val * Math.PI) / 180;
       const toDeg = (val: number) => (val * 180) / Math.PI;
