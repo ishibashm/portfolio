@@ -30,7 +30,8 @@ const APPLY = process.env.MIGRATE_APPLY === "true";
 
 async function main() {
   const pool = new Pool({ connectionString, max: 1 });
-  const q = async (sql: string, params: any[] = []) =>
+  /* 素の SQL の行。purge_rental_properties と同じ受け方。 */
+  const q = async (sql: string, params: unknown[] = []) =>
     (await pool.query(sql, params)).rows;
 
   try {
