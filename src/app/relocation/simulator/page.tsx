@@ -1867,9 +1867,20 @@ export default function RelocationSimulatorPage() {
               simulatedShield={simulatedShield}
               birthDate={birthDate}
               onApplyAction={(actionType, data) => {
-                if (actionType === "DETOUR" && data) {
-                  handleApplyDetour(data);
-                } else if (actionType === "DATE" && typeof data === "string") {
+                /*
+                  DETOUR の verdict は data を持たない（中継地はこちらの
+                  候補から選ぶ）。以前は `&& data` で弾いていたため、
+                  危険帯の「迂回ルートを挿入」ボタンが何もしなかった。
+                */
+                if (actionType === "DETOUR") {
+                  if (detourCandidates.length > 0) {
+                    handleApplyDetour(detourCandidates[0]);
+                  } else {
+                    alert(
+                      "行きも帰りも安全になる中継地が見つかりませんでした。出発日の変更を検討してください。",
+                    );
+                  }
+                } else if (actionType === "DATE" && data) {
                   if (activeStepIndex !== null) {
                     handleUpdateStep(activeStepIndex, { departureDate: data });
                   }
@@ -2651,12 +2662,20 @@ export default function RelocationSimulatorPage() {
                             simulatedShield={simulatedShield}
                             birthDate={birthDate}
                             onApplyAction={(actionType, data) => {
-                              if (actionType === "DETOUR" && data) {
-                                handleApplyDetour(data);
-                              } else if (
-                                actionType === "DATE" &&
-                                typeof data === "string"
-                              ) {
+                              /*
+                                上（計画全体のパネル）と同じ。この欄は
+                                isSelected のときだけ出るので、
+                                detourCandidates はこの歩みのもの。
+                              */
+                              if (actionType === "DETOUR") {
+                                if (detourCandidates.length > 0) {
+                                  handleApplyDetour(detourCandidates[0]);
+                                } else {
+                                  alert(
+                                    "行きも帰りも安全になる中継地が見つかりませんでした。出発日の変更を検討してください。",
+                                  );
+                                }
+                              } else if (actionType === "DATE" && data) {
                                 handleUpdateStep(idx, { departureDate: data });
                               }
                             }}
