@@ -26,6 +26,7 @@ import type { FeatureCollection } from "geojson";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import { AerialThumb } from "@/components/relocation/AerialThumb";
+import { clusterByTile, shouldCluster } from "@/lib/mapClusters";
 import {
   BASE_MAPS,
   BASE_MAP_ORDER,
@@ -1662,200 +1663,233 @@ export default function ArbitrageMapInner({
                   );
                 })
               : // 3. 詳細表示：個別物件ピン
-                (() => {
-                  const sortedProperties = [...pinProperties].sort((a, b) => {
-                    const getPriority = (p: ScoredProperty) => {
-                      const targetDay = p.dateScores?.[3];
-                      const isUltra = targetDay?.isUltraLucky;
-                      const isHeavyBad = [
-                        "NOISE_GOU",
-                        "NOISE_ANKEN",
-                        "NOISE_HA",
-                        "NOISE_HONMEI",
-                        "NOISE_TEKI",
-                      ].includes(p.astrologyStatus);
-                      if (isUltra || isHeavyBad) return 3;
-
-                      const details = targetDay?.scoreDetails;
-                      const hasLightBad =
-                        (details &&
-                          (details.doyouPenalty < 0 ||
-                            details.voidPenalty < 0)) ||
-                        [
-                          "NOISE_VOID",
-                          "NOISE_NODE",
-                          "NOISE_GETSUMEI",
-                          "NOISE_GETSUTEKI",
+                //
+                //    ただし多すぎるときは升目にまとめる。zoom >= 12 では
+                //    showHeatmap が強制的に false になるため、都市部を
+                //    zoom 12〜14 で見ると**表示域の全物件がここに落ちて
+                //    いた**（上限も間引きも無し）。
+                //
+                //    上の距離クラスターは O(n²) で 100 件までが前提なので
+                //    使えない。lib/mapClusters の升目（O(n)）で落とす。
+                shouldCluster(pinProperties.length)
+                ? clusterByTile(pinProperties, zoom).map((cluster) => (
+                    <Marker
+                      key={`grid-${cluster.lat.toFixed(5)}-${cluster.lon.toFixed(5)}`}
+                      position={[cluster.lat, cluster.lon]}
+                      icon={L.divIcon({
+                        className: "custom-cluster-icon",
+                        html: `<div class="w-9 h-9 rounded-full bg-white border-2 border-indigo-500 shadow-[0_2.5px_8px_rgba(79,70,229,0.35)] text-indigo-600 font-extrabold text-[11px] flex items-center justify-center pointer-events-auto">${cluster.count}</div>`,
+                        iconSize: [36, 36],
+                        iconAnchor: [18, 18],
+                      })}
+                      eventHandlers={{
+                        click: (e) => {
+                          const map = e.target._map;
+                          map.setView(
+                            [cluster.lat, cluster.lon],
+                            Math.min(18, map.getZoom() + 2),
+                          );
+                        },
+                      }}
+                    />
+                  ))
+                : (() => {
+                    const sortedProperties = [...pinProperties].sort((a, b) => {
+                      const getPriority = (p: ScoredProperty) => {
+                        const targetDay = p.dateScores?.[3];
+                        const isUltra = targetDay?.isUltraLucky;
+                        const isHeavyBad = [
+                          "NOISE_GOU",
+                          "NOISE_ANKEN",
+                          "NOISE_HA",
+                          "NOISE_HONMEI",
+                          "NOISE_TEKI",
                         ].includes(p.astrologyStatus);
-                      const hasLucky =
-                        p.isTendo ||
-                        ["OPTIMAL", "SAFE"].includes(p.astrologyStatus) ||
-                        p.astroFlags?.some((f: string) => f.endsWith("_LINE"));
+                        if (isUltra || isHeavyBad) return 3;
 
-                      if (hasLucky && !hasLightBad) return 2;
-                      return 1;
-                    };
-                    return getPriority(a) - getPriority(b);
-                  });
+                        const details = targetDay?.scoreDetails;
+                        const hasLightBad =
+                          (details &&
+                            (details.doyouPenalty < 0 ||
+                              details.voidPenalty < 0)) ||
+                          [
+                            "NOISE_VOID",
+                            "NOISE_NODE",
+                            "NOISE_GETSUMEI",
+                            "NOISE_GETSUTEKI",
+                          ].includes(p.astrologyStatus);
+                        const hasLucky =
+                          p.isTendo ||
+                          ["OPTIMAL", "SAFE"].includes(p.astrologyStatus) ||
+                          p.astroFlags?.some((f: string) =>
+                            f.endsWith("_LINE"),
+                          );
 
-                  return sortedProperties.map((prop) => {
-                    if (!prop.lat || !prop.lon) return null;
+                        if (hasLucky && !hasLightBad) return 2;
+                        return 1;
+                      };
+                      return getPriority(a) - getPriority(b);
+                    });
 
-                    // 扇形と同じ段階を渡す。盤の切り替えで単盤が吉でも、
-                    // 三盤で凶ならピンも凶側に寄せる。
-                    const k = prop.direction
-                      ? dirKigaku?.[prop.direction]
-                      : undefined;
-                    const pinColors = getPropertyPinColors(
-                      prop,
-                      k?.tier,
-                      k?.blocked,
-                    );
-                    const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
+                    return sortedProperties.map((prop) => {
+                      if (!prop.lat || !prop.lon) return null;
 
-                    return (
-                      <CircleMarker
-                        key={prop.id}
-                        center={[prop.lat, prop.lon]}
-                        radius={isTodayUltra ? 8 : 6}
-                        pathOptions={{
-                          color: pinColors.borderColor,
-                          fillColor: pinColors.fillColor,
-                          fillOpacity: isTransitioningDate ? 0.3 : 0.9,
-                          weight: isTodayUltra ? 2.5 : 1.5,
-                        }}
-                        className={isTransitioningDate ? "animate-pulse" : ""}
-                      >
-                        <Popup className="arbitrage-property-popup">
-                          <div className="font-sans text-xs text-gray-900 p-2 min-w-[220px] max-w-[280px]">
-                            <div
-                              className={`font-bold text-xs leading-tight p-2 -mx-2 -mt-2 rounded-t-lg border-b ${pinColors.bgClass} ${pinColors.textClass} flex justify-between items-center`}
-                            >
-                              <span className="line-clamp-1">
-                                {prop.property_name}
-                              </span>
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-stone-200/70 font-bold shrink-0 ml-1">
-                                {pinColors.label}
-                              </span>
-                            </div>
+                      // 扇形と同じ段階を渡す。盤の切り替えで単盤が吉でも、
+                      // 三盤で凶ならピンも凶側に寄せる。
+                      const k = prop.direction
+                        ? dirKigaku?.[prop.direction]
+                        : undefined;
+                      const pinColors = getPropertyPinColors(
+                        prop,
+                        k?.tier,
+                        k?.blocked,
+                      );
+                      const isTodayUltra = prop.dateScores?.[3]?.isUltraLucky;
 
-                            {/* その地点の空中写真。掲載元の写真ではなく
+                      return (
+                        <CircleMarker
+                          key={prop.id}
+                          center={[prop.lat, prop.lon]}
+                          radius={isTodayUltra ? 8 : 6}
+                          pathOptions={{
+                            color: pinColors.borderColor,
+                            fillColor: pinColors.fillColor,
+                            fillOpacity: isTransitioningDate ? 0.3 : 0.9,
+                            weight: isTodayUltra ? 2.5 : 1.5,
+                          }}
+                          className={isTransitioningDate ? "animate-pulse" : ""}
+                        >
+                          <Popup className="arbitrage-property-popup">
+                            <div className="font-sans text-xs text-gray-900 p-2 min-w-[220px] max-w-[280px]">
+                              <div
+                                className={`font-bold text-xs leading-tight p-2 -mx-2 -mt-2 rounded-t-lg border-b ${pinColors.bgClass} ${pinColors.textClass} flex justify-between items-center`}
+                              >
+                                <span className="line-clamp-1">
+                                  {prop.property_name}
+                                </span>
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 dark:bg-stone-200/70 font-bold shrink-0 ml-1">
+                                  {pinColors.label}
+                                </span>
+                              </div>
+
+                              {/* その地点の空中写真。掲載元の写真ではなく
                                 周りの様子（川・崖・幹線道路・空き地）を見る。
                                 タイルが無い場所は部品側で「写真なし」に倒れる。 */}
-                            <div className="mt-2">
-                              <AerialThumb lat={prop.lat} lon={prop.lon} />
-                            </div>
+                              <div className="mt-2">
+                                <AerialThumb lat={prop.lat} lon={prop.lon} />
+                              </div>
 
-                            {prop.is_new_build && (
-                              <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded mt-2 mr-1">
-                                新築
-                              </span>
-                            )}
-                            {prop.floor && (
-                              <span className="inline-block bg-gray-100 text-gray-800 text-[9px] font-medium px-1.5 py-0.5 rounded mt-2">
-                                {prop.floor}
-                              </span>
-                            )}
+                              {prop.is_new_build && (
+                                <span className="inline-block bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.5 rounded mt-2 mr-1">
+                                  新築
+                                </span>
+                              )}
+                              {prop.floor && (
+                                <span className="inline-block bg-gray-100 text-gray-800 text-[9px] font-medium px-1.5 py-0.5 rounded mt-2">
+                                  {prop.floor}
+                                </span>
+                              )}
 
-                            <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-600 text-[11px]">
-                              <div className="flex justify-between">
-                                <span>総賃料:</span>
-                                <span className="font-bold text-gray-900">
-                                  {prop.totalRent
-                                    ? `${(prop.totalRent / 10000).toFixed(1)}万円`
-                                    : "不明"}
-                                  {prop.management_fee
-                                    ? ` (管:${(prop.management_fee / 1000).toFixed(0)}k)`
-                                    : ""}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>広さ / 間取り:</span>
-                                <span className="font-medium text-gray-900">
-                                  {prop.size_sqm}㎡ / {prop.layout || "不明"}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>築年 / 駅徒歩:</span>
-                                <span className="font-medium text-gray-900">
-                                  築{prop.building_age || 0}年 /{" "}
-                                  {prop.minutes_to_station || "不明"}分
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span>方位・吉凶:</span>
-                                <span
-                                  className={`font-semibold ${pinColors.textClass}`}
-                                >
-                                  {prop.direction
-                                    ? `${prop.direction} (${prop.maxAstroFactor})`
-                                    : "不明"}
-                                </span>
-                              </div>
-                              {/* 三盤の段階。扇形・時期パネルと同じ値。
-                                  上の行は選択中の盤（単盤）の内訳なので
-                                  一致しないことがある */}
-                              {k && (
-                                <div className="flex justify-between items-center">
-                                  <span>三盤の判定:</span>
-                                  <span
-                                    className="font-semibold"
-                                    style={{
-                                      color: k.blocked
-                                        ? "#64748b"
-                                        : (TIER_FILL[k.tier as DayTier] ??
-                                          "#64748b"),
-                                    }}
-                                  >
-                                    {k.blocked
-                                      ? "天中殺"
-                                      : `${k.tier} ${TIER_JP[k.tier as DayTier] ?? ""}`}
+                              <div className="mt-2.5 border-t border-gray-100 pt-2 space-y-1 text-stone-600 text-[11px]">
+                                <div className="flex justify-between">
+                                  <span>総賃料:</span>
+                                  <span className="font-bold text-gray-900">
+                                    {prop.totalRent
+                                      ? `${(prop.totalRent / 10000).toFixed(1)}万円`
+                                      : "不明"}
+                                    {prop.management_fee
+                                      ? ` (管:${(prop.management_fee / 1000).toFixed(0)}k)`
+                                      : ""}
                                   </span>
                                 </div>
-                              )}
-                              <div
-                                className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-100 p-0.5 rounded transition-colors group"
-                                onClick={() =>
-                                  copyCoordinates(
-                                    prop.lat!,
-                                    prop.lon!,
-                                    prop.property_name,
-                                  )
-                                }
-                                title="クリックで座標をコピー"
-                              >
-                                <span>緯度経度:</span>
-                                <span className="font-mono text-[9px] text-stone-500 flex items-center gap-1 group-hover:text-stone-600">
-                                  {prop.lat!.toFixed(5)}, {prop.lon!.toFixed(5)}
-                                  <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
-                                </span>
+                                <div className="flex justify-between">
+                                  <span>広さ / 間取り:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {prop.size_sqm}㎡ / {prop.layout || "不明"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>築年 / 駅徒歩:</span>
+                                  <span className="font-medium text-gray-900">
+                                    築{prop.building_age || 0}年 /{" "}
+                                    {prop.minutes_to_station || "不明"}分
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span>方位・吉凶:</span>
+                                  <span
+                                    className={`font-semibold ${pinColors.textClass}`}
+                                  >
+                                    {prop.direction
+                                      ? `${prop.direction} (${prop.maxAstroFactor})`
+                                      : "不明"}
+                                  </span>
+                                </div>
+                                {/* 三盤の段階。扇形・時期パネルと同じ値。
+                                  上の行は選択中の盤（単盤）の内訳なので
+                                  一致しないことがある */}
+                                {k && (
+                                  <div className="flex justify-between items-center">
+                                    <span>三盤の判定:</span>
+                                    <span
+                                      className="font-semibold"
+                                      style={{
+                                        color: k.blocked
+                                          ? "#64748b"
+                                          : (TIER_FILL[k.tier as DayTier] ??
+                                            "#64748b"),
+                                      }}
+                                    >
+                                      {k.blocked
+                                        ? "天中殺"
+                                        : `${k.tier} ${TIER_JP[k.tier as DayTier] ?? ""}`}
+                                    </span>
+                                  </div>
+                                )}
+                                <div
+                                  className="flex justify-between items-center mt-1 cursor-pointer hover:bg-gray-100 p-0.5 rounded transition-colors group"
+                                  onClick={() =>
+                                    copyCoordinates(
+                                      prop.lat!,
+                                      prop.lon!,
+                                      prop.property_name,
+                                    )
+                                  }
+                                  title="クリックで座標をコピー"
+                                >
+                                  <span>緯度経度:</span>
+                                  <span className="font-mono text-[9px] text-stone-500 flex items-center gap-1 group-hover:text-stone-600">
+                                    {prop.lat!.toFixed(5)},{" "}
+                                    {prop.lon!.toFixed(5)}
+                                    <Copy className="w-2.5 h-2.5 opacity-40 group-hover:opacity-100" />
+                                  </span>
+                                </div>
                               </div>
-                            </div>
 
-                            <div className="mt-3">
-                              <AstroGridCalendar
-                                dateScores={prop.dateScores}
-                                onDateChange={onDateChange}
-                                isTransitioning={isTransitioningDate}
-                              />
-                            </div>
+                              <div className="mt-3">
+                                <AstroGridCalendar
+                                  dateScores={prop.dateScores}
+                                  onDateChange={onDateChange}
+                                  isTransitioning={isTransitioningDate}
+                                />
+                              </div>
 
-                            {prop.url && (
-                              <a
-                                href={prop.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
-                              >
-                                詳細サイトを開く ↗
-                              </a>
-                            )}
-                          </div>
-                        </Popup>
-                      </CircleMarker>
-                    );
-                  });
-                })())}
+                              {prop.url && (
+                                <a
+                                  href={prop.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-3 block w-full py-1.5 text-center text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors shadow-sm"
+                                >
+                                  詳細サイトを開く ↗
+                                </a>
+                              )}
+                            </div>
+                          </Popup>
+                        </CircleMarker>
+                      );
+                    });
+                  })())}
       </MapContainer>
 
       {/* 件数の温度計。数を色で塗っている画面（俯瞰の件数モード、
