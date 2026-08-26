@@ -180,7 +180,6 @@ interface ArbitrageMapInnerProps {
    */
   prefCountsFiltered?: boolean;
   /** 地図の表示範囲に入る掲載件数（名寄せ前）。null なら出さない */
-  viewportListingCount?: number | null;
   /**
    * 地図の空きを押したときに、その地点を判定へ送る。
    *
@@ -394,7 +393,6 @@ export default function ArbitrageMapInner({
   kigakuUnavailableReason,
   prefCounts: prefCountsProp,
   prefCountsFiltered = false,
-  viewportListingCount = null,
   onInspectSpot,
   targetDate,
   hasBase = false,
@@ -1132,28 +1130,24 @@ export default function ArbitrageMapInner({
 
         {/* Theme Switcher + フォーカスの明示切り替え。
             「今どこを見ているのか」を手で確定できるようにする */}
-        {/* 表示範囲の掲載件数。ズーム・移動に追従して数え直される。
-            数えているのは掲載件数（名寄せ前）なので必ず「掲載」と書く。
-            走査後に見出しへ出る「条件に一致 N 件」（名寄せ後）とは
-            別の数字で、混ぜると桁が合わない */}
-        {viewportListingCount !== null && (
-          /* 位置は画面幅で変える。上に置くと**右上の操作列と必ず重なる**
-             （実機のスマホで確認。横画面でも重なっていた）。狭い画面では
-             下端へ逃がし、広い画面では従来どおり上に置く。 */
+        {/* 表示範囲の候補数。
+            以前ここは「この範囲に掲載 N 件」で、名寄せ前の生の掲載数を
+            専用 API（viewport-count）で数え直していた。一覧の
+            「候補のうち範囲内」（名寄せ後）と数え方が違うため、同じ範囲でも
+            数字が食い違い、「重複を含む掲載数。一覧の候補数とは数え方が
+            違います」という断り書きで埋めていた。
+
+            **断りで埋めずに、数え方を一覧と同じにする。**一覧と同じ
+            候補（名寄せ・絞り込み後、上限500件）を同じ矩形で数えるので、
+            一覧の「候補のうち範囲内」と必ず一致する。通信も減る。 */}
+        {hasBase && zoom >= 10 && (
           <div className="absolute bottom-4 lg:bottom-auto lg:top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-full shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[min(90%,22rem)]">
             <div className="text-[10px] text-stone-600">
-              この範囲に掲載
+              この範囲の候補
               <b className="mx-1 font-mono text-sm text-indigo-700">
-                {viewportListingCount.toLocaleString()}
+                {visibleCount.toLocaleString()}
               </b>
               件
-            </div>
-            {/* 一覧側の「候補のうち範囲内」と同じ数にはならない。こちらは
-                同じ部屋の別掲載も別々に数えた生の掲載数で、一覧は名寄せ・
-                絞り込み後の候補（上限500件）。断らずに並べると、どちらかが
-                壊れているように見える（利用者の指摘） */}
-            <div className="text-[10px] leading-tight text-stone-600">
-              重複を含む掲載数。一覧の候補数とは数え方が違います
             </div>
           </div>
         )}
