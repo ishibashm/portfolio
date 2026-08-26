@@ -27,8 +27,9 @@ describe("下地の定義", () => {
     expect([...BASE_MAP_ORDER].sort()).toEqual(
       (Object.keys(BASE_MAPS) as BaseMapId[]).sort(),
     );
-    // 既定は先頭。従来と同じ見え方から始める。
-    expect(BASE_MAP_ORDER[0]).toBe("carto");
+    // 既定は先頭。CARTO が鍵なしラスタに透かしを入れたため、
+    // 既定を地理院の標準地図（std）に替えた。
+    expect(BASE_MAP_ORDER[0]).toBe("std");
   });
 
   /**
@@ -40,10 +41,10 @@ describe("下地の定義", () => {
       (id) => `${id}=${BASE_MAPS[id].maxNativeZoom}`,
     );
     expect(limits.sort()).toEqual([
-      "carto=19",
       "pale=18",
       "photo=18",
       "relief=15",
+      "std=18",
     ]);
     expect(HILLSHADE.maxNativeZoom).toBe(16);
   });
@@ -90,12 +91,14 @@ describe("下地の定義", () => {
   it("保存された値が壊れていても既定へ倒れる", () => {
     expect(parseBaseMapId("photo")).toBe("photo");
     expect(parseBaseMapId("relief")).toBe("relief");
-    expect(parseBaseMapId(null)).toBe("carto");
-    expect(parseBaseMapId(undefined)).toBe("carto");
-    expect(parseBaseMapId("")).toBe("carto");
-    expect(parseBaseMapId("知らない値")).toBe("carto");
+    expect(parseBaseMapId(null)).toBe("std");
+    expect(parseBaseMapId(undefined)).toBe("std");
+    expect(parseBaseMapId("")).toBe("std");
+    expect(parseBaseMapId("知らない値")).toBe("std");
+    // 旧 id（CARTO 時代の保存値）も既定へ倒れる
+    expect(parseBaseMapId("carto")).toBe("std");
     // Object.prototype のキーを拾わない
-    expect(parseBaseMapId("toString")).toBe("carto");
-    expect(parseBaseMapId("constructor")).toBe("carto");
+    expect(parseBaseMapId("toString")).toBe("std");
+    expect(parseBaseMapId("constructor")).toBe("std");
   });
 });

@@ -25,7 +25,7 @@
  * 入れるなら CLAUDE.md 3 節の手順（旧挙動をテストに固定してから）。
  */
 
-export type BaseMapId = "carto" | "pale" | "photo" | "relief";
+export type BaseMapId = "std" | "pale" | "photo" | "relief";
 
 export interface BaseMapDef {
   /** 画面のボタンに出す名前。 */
@@ -51,21 +51,22 @@ const GSI = "https://cyberjapandata.gsi.go.jp/xyz";
 export const GSI_ATTRIBUTION =
   '出典: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noreferrer">地理院タイル</a>（国土地理院）';
 
-const CARTO_ATTRIBUTION =
-  '&copy; <a href="https://carto.com/">CARTO</a> &copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors';
-
 /**
- * 選べる下地。**既定は carto**（従来と同じ）。
+ * 選べる下地。**既定は std（地理院の標準地図）。**
+ *
+ * 以前の既定は CARTO のラスタ地図だった。CARTO は 2026 年に鍵なしの
+ * ラスタ配信へ「API key required」の透かしを重ねるようになり
+ * （ラスタ自体が廃止予定）、全ページの地図に透かしが出た。地理院タイルは
+ * 鍵も課金も要らず出典表示だけで使えるので、下地を全部こちらへ寄せた。
  *
  * 下地を替えても物件の絞り込みも判定も変わらない。見え方だけ。
  */
 export const BASE_MAPS: Record<BaseMapId, BaseMapDef> = {
-  carto: {
+  std: {
     label: "標準",
-    // 明暗は呼び出し側が差し替える。ここは明るいほうを既定に置く。
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution: CARTO_ATTRIBUTION,
-    maxNativeZoom: 19,
+    url: `${GSI}/std/{z}/{x}/{y}.png`,
+    attribution: GSI_ATTRIBUTION,
+    maxNativeZoom: 18,
     maxZoom: 20,
     note: "道路と地名が読みやすい既定の地図",
   },
@@ -98,11 +99,18 @@ export const BASE_MAPS: Record<BaseMapId, BaseMapDef> = {
 
 /** 画面に並べる順。既定を先頭に置く。 */
 export const BASE_MAP_ORDER: readonly BaseMapId[] = [
-  "carto",
+  "std",
   "pale",
   "photo",
   "relief",
 ];
+
+/**
+ * ダークマップは配信元に無いので、明るいタイルを CSS で反転して作る。
+ * このクラスを `TileLayer` の className に渡す（globals.css に定義）。
+ * 以前は CARTO の dark_all を使っていたが、透かしの件で使えなくなった。
+ */
+export const DARK_TILE_CLASS = "map-tiles-dark";
 
 /**
  * 陰影起伏図。**下地ではなく重ね描き。**
@@ -131,5 +139,7 @@ export function parseBaseMapId(value: string | null | undefined): BaseMapId {
   if (value && Object.prototype.hasOwnProperty.call(BASE_MAPS, value)) {
     return value as BaseMapId;
   }
-  return "carto";
+  /* 旧 id の "carto" もここに落ちて既定（std）になる。見た目の系統は
+     同じ「標準の地図」なので、移行の書き換えまではしない。 */
+  return "std";
 }
