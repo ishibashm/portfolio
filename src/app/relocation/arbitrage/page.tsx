@@ -395,6 +395,7 @@ export default function ArbitrageScannerPage() {
     horizonDays: 30,
     tenchusatsuMode: DEFAULT_TENCHUSATSU_MODE as string,
     involuntaryMove: false,
+    targetDate,
     mapBounds,
   });
 
@@ -1141,8 +1142,19 @@ export default function ArbitrageScannerPage() {
     ],
   );
 
+  /**
+   * 走らせたスキャンの通し番号。**最新でない応答は捨てる。**
+   *
+   * スキャンは本番で数秒かかる。地図を続けて動かすと要求が重なり、
+   * 遅い古い応答が新しい結果を上書きして「動かしたのに前の結果に
+   * 戻る」が起きる（順序の保証が無かった）。wealth の
+   * fetchRequestIdRef と同じ形。
+   */
+  const fetchSeqRef = useRef(0);
+
   const fetchData = async (isDateChange = false) => {
     if (!initialLoaded) return;
+    const seq = ++fetchSeqRef.current;
     // 出発地が無いまま走らせると、方位が決まらないので順位が㎡単価だけになる。
     // 黙って結果を出すより、設定を促して止めるほうが正しい。
     if (!hasBaseLocation) {
@@ -1212,11 +1224,20 @@ export default function ArbitrageScannerPage() {
       params.append("involuntaryMove", String(involuntaryMove));
 
       setSearchError(null);
+      lastFetchedBoundsRef.current = mapBounds;
       const res = await fetch(`/api/rentals/arbitrage?${params.toString()}`);
+      /* この応答より新しいスキャンが既に走っているなら、ここで捨てる。
+         読み込み表示も新しい方が管理しているので触らない。 */
+      if (seq !== fetchSeqRef.current) return;
       if (res.ok) {
         const json = await res.json();
+        if (seq !== fetchSeqRef.current) return;
         setData(json.properties || []);
         setMetadata(json.metadata || null);
+        lastTotalCountRef.current =
+          typeof json.metadata?.totalCount === "number"
+            ? json.metadata.totalCount
+            : null;
       } else {
         setData([]);
         setMetadata(null);
@@ -1225,6 +1246,7 @@ export default function ArbitrageScannerPage() {
         );
       }
     } catch (err) {
+      if (seq !== fetchSeqRef.current) return;
       console.error(err);
       setData([]);
       setMetadata(null);
@@ -1232,8 +1254,10 @@ export default function ArbitrageScannerPage() {
         "通信エラーで物件を取得できませんでした。接続を確認して、もう一度スキャンしてください。",
       );
     } finally {
-      setLoading(false);
-      setIsTransitioningDate(false);
+      if (seq === fetchSeqRef.current) {
+        setLoading(false);
+        setIsTransitioningDate(false);
+      }
     }
   };
 
@@ -1260,6 +1284,32 @@ export default function ArbitrageScannerPage() {
   };
 
   // Re-fetch data whenever params change
+  /** 地図の移動だけの取り直しを 1 回にまとめる待ち時間。 */
+  const boundsFetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /**
+   * 最後にスキャンを投げたときの表示範囲と、その応答の総件数。
+   *
+   * 表示範囲は**追加の絞り込み**としてサーバに送るだけなので、
+   * 前回の範囲に今の範囲が収まっていて、かつ前回が上限（limit）に
+   * 当たっていなければ、手元のデータで足りている——取り直しは要らない。
+   * 上限に当たっていた場合は、狭めるほど濃い標本が取れるので取り直す。
+   */
+  const lastFetchedBoundsRef = useRef<typeof mapBounds>(null);
+  const lastTotalCountRef = useRef<number | null>(null);
+  /**
+   * 一度でもスキャンを出したか。値が何も変わらないまま effect が
+   * 走り直したときの**同一パラメータの重複要求**を止める
+   * （初期表示で同じ要求が 200ms 差で 2 回出ていた。実測）。
+   * 初回だけは「何も変わっていない」状態から出す必要があるので分ける。
+   */
+  const hasFetchedOnceRef = useRef(false);
+  useEffect(
+    () => () => {
+      if (boundsFetchTimer.current) clearTimeout(boundsFetchTimer.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!initialLoaded) return;
 
@@ -1283,8 +1333,10 @@ export default function ArbitrageScannerPage() {
       prev.partyPolicy !== partyPolicy ||
       prev.horizonDays !== horizonDays ||
       prev.tenchusatsuMode !== tenchusatsuMode ||
-      prev.involuntaryMove !== involuntaryMove ||
+      prev.involuntaryMove !== involuntaryMove;
+    const boundsChanged =
       JSON.stringify(prev.mapBounds) !== JSON.stringify(mapBounds);
+    const targetDateChanged = prev.targetDate !== targetDate;
 
     prevParamsRef.current = {
       baseLat,
@@ -1306,10 +1358,67 @@ export default function ArbitrageScannerPage() {
       horizonDays,
       tenchusatsuMode,
       involuntaryMove,
+      targetDate,
       mapBounds,
     };
 
-    fetchData(!isOtherChanged);
+    /*
+      地図の表示範囲**だけ**が変わった取り直しは 500ms 待って 1 回に
+      まとめる。moveend / zoomend のたびに即スキャンを投げていたため、
+      連続パンやホイールズームで要求が数珠つなぎになり、さらに全画面
+      切り替え（#600）とスマホのタブ切り替え（#605）は invalidateSize が
+      moveend を出すので**押すたびにスキャンが走っていた**。スキャンは
+      本番で数秒かかるので、これがそのまま「地図が遅い」になる
+      （実測: 30 秒の操作でスキャン 8 回 → まとめて 5 回）。
+      条件や日付が変わったときは今までどおり即時。
+    */
+    if (boundsChanged && !isOtherChanged && !targetDateChanged) {
+      /*
+        今の範囲が前回スキャンした範囲に収まっていて、前回が上限に
+        当たっていなければ、手元のデータで足りている。小さなパンや
+        ズームイン、全画面の戻しで毎回スキャンし直さない。
+      */
+      const last = lastFetchedBoundsRef.current;
+      const lastTotal = lastTotalCountRef.current;
+      if (
+        last &&
+        mapBounds &&
+        lastTotal !== null &&
+        lastTotal <= dataLimit &&
+        mapBounds.zoom >= 10 === last.zoom >= 10 &&
+        mapBounds.minLat >= last.minLat &&
+        mapBounds.maxLat <= last.maxLat &&
+        mapBounds.minLon >= last.minLon &&
+        mapBounds.maxLon <= last.maxLon
+      ) {
+        return;
+      }
+      if (boundsFetchTimer.current) clearTimeout(boundsFetchTimer.current);
+      hasFetchedOnceRef.current = true;
+      boundsFetchTimer.current = setTimeout(() => fetchData(true), 500);
+      return;
+    }
+    /* 値が 1 つも変わっていないのに effect が走り直しただけなら出さない
+       （state の参照だけが入れ替わる再実行がある）。初回だけは出す。 */
+    if (
+      !isOtherChanged &&
+      !targetDateChanged &&
+      !boundsChanged &&
+      hasFetchedOnceRef.current
+    ) {
+      return;
+    }
+    /*
+      条件の変更も 100ms だけ待ってまとめる。初期化は複数の effect が
+      連鎖して条件を順に確定させるため、即時に出すと**途中の条件での
+      スキャンが挟まる**（実測: actionIntent が MIGRATION → DEFAULT と
+      変わる 70ms の間に同じ範囲へ 2 回投げていた）。100ms は人には
+      知覚されず、確定後の条件 1 回だけが出る。
+    */
+    if (boundsFetchTimer.current) clearTimeout(boundsFetchTimer.current);
+    hasFetchedOnceRef.current = true;
+    const isDateChange = !isOtherChanged;
+    boundsFetchTimer.current = setTimeout(() => fetchData(isDateChange), 100);
   }, [
     baseLat,
     baseLon,
