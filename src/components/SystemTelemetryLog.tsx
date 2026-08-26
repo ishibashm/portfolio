@@ -7,7 +7,11 @@ interface TelemetryProps {
   lon: number | null;
   solarTime: Date | null;
   declination: number | null;
-  env: any;
+  /**
+   * 盤の判定結果。**この部品は有無しか見ない**（接続ランプの色）。
+   * 中身を読まないので unknown で受ける（キャストは無い）。
+   */
+  env: unknown;
 }
 
 interface LogEntry {
@@ -50,11 +54,12 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
     if (!lat || !lon) return;
 
     setLogs([]); // Reset on major change
-    const step = 0;
 
     addLog(`INITIALIZING TELEMETRY STREAM...`, "INFO");
 
-    const sequence = [
+    /* type を LogEntry の union で固定する。素の string に推論させると
+       addLog へ渡すのに cast が要り、綴りを間違えても気付けない。 */
+    const sequence: { delay: number; msg: string; type: LogEntry["type"] }[] = [
       {
         delay: 400,
         msg: `GPS Lock Acquired: [${lat.toFixed(4)}°, ${lon.toFixed(4)}°]`,
@@ -97,7 +102,7 @@ export const SystemTelemetryLog: React.FC<TelemetryProps> = ({
 
     sequence.forEach((item) => {
       const t = setTimeout(() => {
-        addLog(item.msg, item.type as any);
+        addLog(item.msg, item.type);
       }, item.delay);
       timeouts.push(t);
     });

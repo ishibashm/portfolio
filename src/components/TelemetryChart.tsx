@@ -16,7 +16,9 @@ import {
 type Phase = "loading" | "ready" | "empty" | "error";
 
 export default function TelemetryChart() {
-  const [data, setData] = useState<any[]>([]);
+  /* API の行。読むのは recharts の dataKey（date / sunLon など）と
+     CSV 書き出しの Object.keys/values だけなので Record で受ける。 */
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [phase, setPhase] = useState<Phase>("loading");
 
   useEffect(() => {
