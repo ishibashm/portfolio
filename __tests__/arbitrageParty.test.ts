@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   DEFAULT_PARTY_POLICY,
+  type JointOutcome,
   MemberOutcome,
   combineOutcomes,
   isPartyPolicy,
@@ -324,9 +325,12 @@ describe("summarizeTiming", () => {
   });
 
   describe("全期間が塞がっている理由", () => {
+    /* 戻りを実物の JointOutcome で注釈する。推論に任せると members が
+       「direction: string」に狭まり、移動しない人（null）を足すのに
+       as any が要るように見えてしまう（実際に 3 つ紛れ込んでいた）。 */
     const blockedJoint = (
       memberStates: { name: string; isAvoid: boolean; status: string }[],
-    ) => ({
+    ): JointOutcome => ({
       score: 0,
       policy: DEFAULT_PARTY_POLICY,
       everyoneSafe: memberStates.every((m) => !m.isAvoid),
@@ -408,9 +412,11 @@ describe("summarizeTiming", () => {
       joint.members.push({
         memberId: "祖母",
         name: "祖母",
-        direction: null as any,
-        magneticDirection: null as any,
-        distanceKm: null as any,
+        /* MemberOutcome は「移動しない人は null」を型で許している。
+           以前の as any は要らない cast だった。 */
+        direction: null,
+        magneticDirection: null,
+        distanceKm: null,
         score: 0,
         status: "UNKNOWN",
         isAvoid: true,
