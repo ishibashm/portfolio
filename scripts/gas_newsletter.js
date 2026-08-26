@@ -68,7 +68,7 @@ function doPost(e) {
         if (payload && payload.email) {
           email = payload.email;
         }
-      } catch (jsonError) {
+      } catch {
         // パースエラー時は何もしない（フォールバック処理に任せる）
       }
     }
@@ -143,7 +143,9 @@ function doPost(e) {
 // 2. Web App: doGet (JSONエンドポイントサーブ)
 // ==========================================
 
-function doGet(e) {
+// GAS はイベント引数つきで呼ぶが、この doGet は読まない（受け口だけの引数を
+// 置くと no-unused-vars に数えられる。省いても実行は変わらない）。
+function doGet() {
   try {
     const cache = CacheService.getScriptCache();
     const cacheKey = "tech_digest_articles_json";
@@ -463,7 +465,7 @@ function getSpreadsheet() {
   } else {
     try {
       return SpreadsheetApp.getActiveSpreadsheet();
-    } catch (e) {
+    } catch {
       throw new Error(
         "スプレッドシートにコンテナバインドされていないか、指定されたIDが不正です。",
       );

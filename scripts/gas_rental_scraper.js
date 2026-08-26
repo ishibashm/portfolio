@@ -1,5 +1,9 @@
-// @ts-nocheck
 /* eslint-disable */
+/*
+  以前は @ts-nocheck も付いていたが、scripts/ は tsconfig の exclude で
+  tsc の対象外なので何も抑えていなかった（ban-ts-comment の警告だけが
+  残る）。GAS 側に貼って使うファイルで、lint は上の disable で外してある。
+*/
 // Google Apps Script for fetching Real Estate Emails and sending to Next.js Webhook
 
 // ==============================
