@@ -14,7 +14,6 @@ import {
   generateBoard,
   calculateVectorCollision,
   getPersonalVoidZodiac,
-  Direction,
   calculateLunarPhaseCondition,
   getCurrentZodiac,
   getClassicalMonthStar,
@@ -22,6 +21,7 @@ import {
   getPhysicalMonthStar,
   parseActionIntent,
   parseDirectionFilterMode,
+  EIGHT_DIRECTIONS,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo } from "@/utils/lunar";
@@ -404,16 +404,10 @@ export async function GET(request: Request) {
 
     // Compute 30-day forecast matrix using aligned actionIntent
     const forecast30Days = [];
-    const directions: Direction[] = [
-      "N",
-      "NE",
-      "E",
-      "SE",
-      "S",
-      "SW",
-      "W",
-      "NW",
-    ];
+    /* 同じ八方位の配列を書き写さない（実体は ephemerisEngine）。
+       要素型が EightDirection なので、下の forEach で finalVectors を
+       引くときに CENTER の可能性が型から消える。 */
+    const directions = EIGHT_DIRECTIONS;
 
     for (let i = 0; i < 30; i++) {
       const testDate = new Date(targetDate.getTime() + i * 86400000);
