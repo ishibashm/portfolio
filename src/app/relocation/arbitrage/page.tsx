@@ -283,6 +283,19 @@ export default function ArbitrageScannerPage() {
 
   // Sidebar & Layout views states
   const [showListView, setShowListView] = useState(false);
+  /*
+    スマホの表示切り替え（地図 / 一覧・条件）。**lg 未満だけで効く。**
+
+    スマホでは絞り込み・設定・一覧の入った列が地図の上に積まれ、
+    **長くスクロールしないと地図に着かなかった**（利用者の実機）。
+    TERIYAKI Archive の「店舗 / 地図」タブと同じ形で、1 度に 1 つだけ
+    出す。既定は地図（この頁の主役）。
+
+    lg 以上は従来どおり 2 列を同時に出す。横並びは「余った幅がそのまま
+    地図の描画面積になる」ためにこの頁を 2560px にしている理由そのもの
+    なので（CLAUDE.md 3 節）、崩さない。
+  */
+  const [mobilePane, setMobilePane] = useState<"map" | "list">("map");
   const [showTableView, setShowTableView] = useState(false);
 
   // Relocation & Fortune Settings States
@@ -2394,6 +2407,44 @@ export default function ArbitrageScannerPage() {
           </div>
         )}
 
+        {/* スマホのタブ。lg 以上では出さない（2 列が常に見えている） */}
+        <div className="lg:hidden sticky top-0 z-40 -mx-1 mb-3 flex gap-1 rounded-xl border border-stone-200 bg-white/95 p-1 backdrop-blur">
+          <button
+            onClick={() => {
+              setMobilePane("map");
+              /* Leaflet は display:none の間の大きさの変化を知らない。
+                 タブで地図に戻ったとき、描画のあとに resize を流して
+                 測り直させる（Leaflet は window の resize を聞いている）。
+                 流さないと、隠れている間に向きを変えた端末で地図が
+                 元の大きさのまま描かれ、余白が灰色になる。 */
+              requestAnimationFrame(() =>
+                requestAnimationFrame(() =>
+                  window.dispatchEvent(new Event("resize")),
+                ),
+              );
+            }}
+            aria-pressed={mobilePane === "map"}
+            className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+              mobilePane === "map"
+                ? "bg-indigo-600 text-white"
+                : "text-stone-600"
+            }`}
+          >
+            🗺 地図
+          </button>
+          <button
+            onClick={() => setMobilePane("list")}
+            aria-pressed={mobilePane === "list"}
+            className={`flex-1 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+              mobilePane === "list"
+                ? "bg-indigo-600 text-white"
+                : "text-stone-600"
+            }`}
+          >
+            📋 一覧・条件 ({propertiesInBounds.length})
+          </button>
+        </div>
+
         <div className="flex flex-col lg:flex-row gap-5 items-stretch relative">
           {/* Left Column: Sidebar (expands from 30% to 50% in Table Mode)
               高さは地図に合わせて固定せず、中身に合わせて縮む。絞り込み
@@ -2406,7 +2457,9 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[30%]"
-            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm lg:overflow-hidden flex flex-col lg:self-start lg:max-h-[calc(100vh-220px)] relative z-10`}
+            } ${
+              mobilePane === "list" ? "flex" : "hidden lg:flex"
+            } bg-gray-50 dark:bg-stone-50 rounded-3xl border border-gray-200 dark:border-stone-200 shadow-sm lg:overflow-hidden flex-col lg:self-start lg:max-h-[calc(100vh-220px)] relative z-10`}
           >
             {/*
                 上に貼り付く見出し。**スマホでは貼り付いていなかった。**
@@ -3910,6 +3963,8 @@ export default function ArbitrageScannerPage() {
               showTableView && showListView
                 ? "w-full lg:w-[50%]"
                 : "w-full lg:w-[70%]"
+            } ${
+              mobilePane === "map" ? "block" : "hidden lg:block"
             } h-[calc(100vh-220px)] min-h-[600px] rounded-3xl overflow-hidden shadow-lg border border-gray-200 dark:border-stone-200 relative bg-gray-50 dark:bg-white shrink-0`}
           >
             <ArbitrageMap
