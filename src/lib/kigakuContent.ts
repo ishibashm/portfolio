@@ -5,6 +5,7 @@
  * ここで独自に定数表を持つと、ツール側の判定と食い違う記事ができてしまう。
  */
 import { forecastAnchorMs } from "@/utils/boardInstant";
+import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import {
   generateBoard,
   getClassicalYearStar,
@@ -52,17 +53,13 @@ export const DIRECTIONS = [
 
 export type CompassDirection = (typeof DIRECTIONS)[number];
 
-// Direction には CENTER（中宮）が含まれるが、方位としては扱わないので除く
-export const DIRECTION_LABELS: Record<CompassDirection, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
-};
+/*
+  方位の日本語ラベルは `utils/directionGeo` に移した（あちらは暦計算を
+  引かない葉なので、ラベルだけ要る client 部品にこのファイル経由で
+  lunar-javascript が乗らない）。このファイル自身も使うので import して
+  再輸出する。既存の import 先はそのまま動く。
+*/
+export { DIRECTION_LABELS };
 
 export const STAR_NAMES: Record<number, string> = {
   1: "一白水星",

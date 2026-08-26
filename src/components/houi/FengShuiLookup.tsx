@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { DIRECTION_LABELS } from "@/lib/kigakuContent";
+/* kigakuContent からではなく葉の directionGeo から引く。kigakuContent は
+   ephemerisEngine（→ lunar-javascript）を値として引くので、ラベルの
+   ためだけに /houi のバンドルへ暦が乗る。 */
+import { DIRECTION_LABELS } from "@/utils/directionGeo";
 import {
   FENG_SHUI_SERVER_SNAPSHOT,
   fengShuiSnapshot,

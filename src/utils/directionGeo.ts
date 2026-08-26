@@ -40,6 +40,27 @@ export const DIRECTION_BEARINGS: Record<CompassDirection, number> = {
   NW: 315,
 };
 
+/**
+ * 方位の日本語ラベル。
+ *
+ * 置き場所がここなのは、**このファイルが暦計算を引かない葉だから。**
+ * 元は `lib/kigakuContent` にあったが、あちらは `ephemerisEngine`
+ * （→ lunar-javascript、約 300KB）を値として引くので、ラベルを 1 つ
+ * 使いたいだけの client 部品までバンドルに暦が乗っていた（`/houi` で
+ * 実測）。`kigakuContent` からは再輸出しているので、既存の import は
+ * そのまま動く。
+ */
+export const DIRECTION_LABELS: Record<CompassDirection, string> = {
+  N: "北",
+  NE: "北東",
+  E: "東",
+  SE: "南東",
+  S: "南",
+  SW: "南西",
+  W: "西",
+  NW: "北西",
+};
+
 const EARTH_RADIUS_KM = 6371;
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 const toDeg = (rad: number) => (rad * 180) / Math.PI;
