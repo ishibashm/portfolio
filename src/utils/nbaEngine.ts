@@ -199,6 +199,19 @@ export interface NBAParams {
       isConflictDay: boolean;
       isDoyouHazard: boolean;
       environmentalRisk?: number;
+      /* evaluateStateStatic と encodeStateLayers は
+         target（= targetEphemeris ?? stateVector）からこの 3 つも読む。
+         入れ子で渡す呼び出しが無ければ undefined のまま既定に落ちる
+         （挙動は従来どおり）。実装が読む枝を型に写した。 */
+      unifiedRiskScore?: number;
+      tendoDirection?: string;
+      spaceWeather?: {
+        kpIndex: number | null;
+        xrayFlux: string | null;
+        solarWindSpeed: number | null;
+        timestamp: string | null;
+        riskScore: number;
+      };
       nineStarKi?: {
         yearStar: number;
         monthStar: number;
@@ -431,7 +444,7 @@ export class NBAEngine {
    * with custom normalization, scaling, and trigonometric/cyclical mapping.
    * Leverages temporal anchoring nested scopes when provided.
    */
-  public encodeStateLayers(state: any): StateLayers {
+  public encodeStateLayers(state: NBAParams["stateVector"]): StateLayers {
     const current = state.currentEphemeris ?? state;
     const target = state.targetEphemeris ?? state;
 
@@ -539,7 +552,7 @@ export class NBAEngine {
    * Incorporates Action-Type Weighting, Sigmoid Gates, Attention adjustments, and HRL constraints.
    */
   private evaluateStateStatic(
-    state: any,
+    state: NBAParams["stateVector"],
     action: ActionType,
     attentionRiskAdjustment: number = 0,
     encodedLayers: StateLayers,
