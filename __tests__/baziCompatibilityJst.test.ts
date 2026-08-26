@@ -28,9 +28,26 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
  *   3. 旧実装（TZ 依存の読み方）は 1 を満たさないこと（空回りの防止）
  */
 
-/** 旧実装と同じ読み方で日干を出す。比較のために写してある。 */
+/**
+ * 旧実装と同じ読み方で日干を出す。比較のために写してある。
+ *
+ * 旧実装の `Solar.fromDate(date)` は **実行環境のタイムゾーン**の
+ * 年月日で組む（ライブラリの実体はローカルの getFullYear 系）。
+ * fromDate は再発防止のため型宣言から外した（#624）ので、写しも
+ * 同値のローカル読みで書く。
+ */
 function legacyDayGan(date: Date): string {
-  return Solar.fromDate(date).getLunar().getEightChar().getDayGan();
+  return Solar.fromYmdHms(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+  )
+    .getLunar()
+    .getEightChar()
+    .getDayGan();
 }
 
 /** 日本時間の (y, m, d, h) を指す Date。 */

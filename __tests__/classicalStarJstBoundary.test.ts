@@ -53,18 +53,36 @@ import { getZonedDateTimeFields } from "@/utils/solarTime";
  * あるので、直したつもりで直っていなければ 4 つめが通ってしまう。
  */
 
-/** 旧実装。**実行環境の TZ で日付を読む。**比較のために写してある。 */
+/**
+ * 旧実装。**実行環境の TZ で日付を読む。**比較のために写してある。
+ *
+ * 旧実装の `Solar.fromDate(date)` の実体はローカルの getFullYear 系で
+ * 組むこと。fromDate は再発防止のため型宣言から外した（#624）ので、
+ * 写しも同値のローカル読みで書く。
+ */
+function legacySolarOf(date: Date) {
+  return Solar.fromYmdHms(
+    date.getFullYear(),
+    date.getMonth() + 1,
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+  );
+}
 function legacyClassicalDayStar(date: Date): number {
-  const solar = Solar.fromDate(date);
-  return solar.getLunar().getDayNineStar().getIndex() + 1;
+  return legacySolarOf(date).getLunar().getDayNineStar().getIndex() + 1;
 }
 function legacyClassicalYearStar(date: Date): number {
-  const solar = Solar.fromDate(date);
-  return solar.getLunar().getYearNineStar().getIndex() + 1;
+  return legacySolarOf(date).getLunar().getYearNineStar().getIndex() + 1;
 }
 function legacyClassicalMonthStar(date: Date): number {
-  const solar = Solar.fromDate(solarTermMonthAnchor(date));
-  return solar.getLunar().getMonthNineStar().getIndex() + 1;
+  return (
+    legacySolarOf(solarTermMonthAnchor(date))
+      .getLunar()
+      .getMonthNineStar()
+      .getIndex() + 1
+  );
 }
 
 /** 明示的に日本時間で暦を引いた参照値。 */
