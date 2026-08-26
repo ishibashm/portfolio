@@ -1,6 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useId, useState, useSyncExternalStore } from "react";
+import { ChevronRight } from "lucide-react";
 import { TIER_FILL, TIER_JP, BLOCKED_FILL } from "@/utils/tierDisplay";
 import type { DayTier } from "@/utils/auspiciousDays";
 import {
@@ -120,6 +121,9 @@ export function DirectionTierOverview({
       () => FENG_SHUI_SERVER_SNAPSHOT,
     ),
   );
+  /* 開閉。全体像が主役のカードなので既定は開。 */
+  const [open, setOpen] = useState(true);
+  const contentId = useId();
 
   if (rows.length === 0) return null;
 
@@ -131,88 +135,114 @@ export function DirectionTierOverview({
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4">
-      <div className="flex items-baseline justify-between gap-2">
+      {/*
+        見出しで開閉できるようにする（利用者の要望）。下に並ぶ
+        「スキャン地域と計算方式」などの ArbitrageSidebarSection と
+        同じ作法で、件数の要約は閉じても見える。このカードは
+        「どっちへ動くか」の全体像なので**既定は開**。中身は hidden で
+        DOM に残す（開き直したときに描き直さない）。
+      */}
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={contentId}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full cursor-pointer items-baseline justify-between gap-2 text-left select-none"
+      >
         <h3 className="text-xs font-bold text-stone-700">方位ごとの内訳</h3>
-        <span className="text-[10px] text-stone-600">
-          表示中 {total.toLocaleString()} 件
+        <span className="flex items-center gap-1.5">
+          <span className="text-[10px] text-stone-600">
+            表示中 {total.toLocaleString()} 件
+          </span>
+          <ChevronRight
+            aria-hidden="true"
+            className={`h-4 w-4 shrink-0 self-center text-stone-500 transition-transform duration-200 ${
+              open ? "rotate-90" : ""
+            }`}
+          />
         </span>
-      </div>
-      <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
-        棒の長さが物件数、色がその日の段階です。行を押すとその方位だけに絞れます。
-      </p>
-
-      {fengShui && (
+      </button>
+      <div id={contentId} hidden={!open}>
         <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
-          右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
-          ）。
-          <b>気学の段階とは足し合わせていません。</b>
-          八宅は<b>方位名で</b>
-          引いているため、気学と区切りが違う境目の物件は八宅では隣の方位に入ります。
+          棒の長さが物件数、色がその日の段階です。行を押すとその方位だけに絞れます。
         </p>
-      )}
 
-      <ul className="mt-3 space-y-1.5">
-        {sorted.map((r) => {
-          const active = selectedDirection === r.direction;
-          const width = r.count === 0 ? 0 : Math.max(3, (r.count / max) * 100);
-          return (
-            <li key={r.direction}>
-              <button
-                onClick={() => onSelectDirection(active ? "ALL" : r.direction)}
-                aria-pressed={active}
-                className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
-                  active ? "bg-indigo-50" : "hover:bg-stone-50"
-                }`}
-              >
-                <span className="w-6 shrink-0 text-[11px] font-bold text-stone-600">
-                  {r.directionLabel}
-                </span>
+        {fengShui && (
+          <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+            右端は風水（八宅）の遊星です（{fengShui.guaName}命・{fengShui.group}
+            ）。
+            <b>気学の段階とは足し合わせていません。</b>
+            八宅は<b>方位名で</b>
+            引いているため、気学と区切りが違う境目の物件は八宅では隣の方位に入ります。
+          </p>
+        )}
 
-                {/* 棒。角は 24px 上限より十分細いので 4px の丸めのみ */}
-                <span className="relative h-3 min-w-0 flex-1 rounded-[2px] bg-stone-100">
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-r-[4px]"
-                    style={{ width: `${width}%`, background: fillFor(r) }}
-                  />
-                </span>
-
-                {/* 値は棒の外。中に置くと 0 件や短い棒で溢れる */}
-                <span className="w-10 shrink-0 text-right font-mono text-[11px] text-stone-600">
-                  {r.count.toLocaleString()}
-                </span>
-
-                {/* 段階は必ず文字でも出す。色だけだと S と A を見分けられない */}
-                <span className="w-14 shrink-0 text-[10px] text-stone-500">
-                  {tierLabelFor(r)}
-                </span>
-
-                {/* 風水（八宅）。切り替えが入っているときだけ。
-                    吉凶は色だけで出さず、遊星の名前をそのまま出す。 */}
-                {fengShui && (
-                  <span
-                    className={`w-12 shrink-0 text-[10px] font-bold ${
-                      youxingFor(fengShui, r.direction)?.auspicious
-                        ? "text-emerald-700"
-                        : "text-rose-700"
-                    }`}
-                  >
-                    {youxingFor(fengShui, r.direction)?.youxing ?? ""}
+        <ul className="mt-3 space-y-1.5">
+          {sorted.map((r) => {
+            const active = selectedDirection === r.direction;
+            const width =
+              r.count === 0 ? 0 : Math.max(3, (r.count / max) * 100);
+            return (
+              <li key={r.direction}>
+                <button
+                  onClick={() =>
+                    onSelectDirection(active ? "ALL" : r.direction)
+                  }
+                  aria-pressed={active}
+                  className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
+                    active ? "bg-indigo-50" : "hover:bg-stone-50"
+                  }`}
+                >
+                  <span className="w-6 shrink-0 text-[11px] font-bold text-stone-600">
+                    {r.directionLabel}
                   </span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
 
-      {selectedDirection !== "ALL" && (
-        <button
-          onClick={() => onSelectDirection("ALL")}
-          className="mt-2 text-[10px] text-indigo-600 underline"
-        >
-          方位の絞り込みを外す
-        </button>
-      )}
+                  {/* 棒。角は 24px 上限より十分細いので 4px の丸めのみ */}
+                  <span className="relative h-3 min-w-0 flex-1 rounded-[2px] bg-stone-100">
+                    <span
+                      className="absolute inset-y-0 left-0 rounded-r-[4px]"
+                      style={{ width: `${width}%`, background: fillFor(r) }}
+                    />
+                  </span>
+
+                  {/* 値は棒の外。中に置くと 0 件や短い棒で溢れる */}
+                  <span className="w-10 shrink-0 text-right font-mono text-[11px] text-stone-600">
+                    {r.count.toLocaleString()}
+                  </span>
+
+                  {/* 段階は必ず文字でも出す。色だけだと S と A を見分けられない */}
+                  <span className="w-14 shrink-0 text-[10px] text-stone-500">
+                    {tierLabelFor(r)}
+                  </span>
+
+                  {/* 風水（八宅）。切り替えが入っているときだけ。
+                    吉凶は色だけで出さず、遊星の名前をそのまま出す。 */}
+                  {fengShui && (
+                    <span
+                      className={`w-12 shrink-0 text-[10px] font-bold ${
+                        youxingFor(fengShui, r.direction)?.auspicious
+                          ? "text-emerald-700"
+                          : "text-rose-700"
+                      }`}
+                    >
+                      {youxingFor(fengShui, r.direction)?.youxing ?? ""}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {selectedDirection !== "ALL" && (
+          <button
+            onClick={() => onSelectDirection("ALL")}
+            className="mt-2 text-[10px] text-indigo-600 underline"
+          >
+            方位の絞り込みを外す
+          </button>
+        )}
+      </div>
     </div>
   );
 }
