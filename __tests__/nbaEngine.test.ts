@@ -113,6 +113,12 @@ describe("NBAEngine Enhancements", () => {
     expect(
       negativeResult.closedLoopRewardFeedback.adjustedTemperature,
     ).toBeGreaterThan(0.2);
+    // 温度が上がれば確率分布は平らになり、確信度は基準より上がらない。
+    // baseResult は元から計算だけされて比較に使われていなかった
+    // （positive 側のテストには対になる比較がある）。繋ぐ。
+    expect(negativeResult.confidence).toBeLessThanOrEqual(
+      baseResult.confidence,
+    );
     // Relocation action Q-values should be penalized
     expect(
       negativeResult.closedLoopRewardFeedback.actionAdjustments
