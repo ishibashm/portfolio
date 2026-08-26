@@ -1,4 +1,4 @@
-import { Direction } from "./ephemerisEngine";
+import { EightDirection } from "./ephemerisEngine";
 import { directionFromBearing } from "./directionGeo";
 
 /**
@@ -21,7 +21,10 @@ import { directionFromBearing } from "./directionGeo";
 export function getKigakuSector(
   bearing: number,
   useClassical: boolean = false,
-): Direction {
+  /* 方位角から出る方位は必ず八方位で、CENTER にはなり得ない。以前は
+     Direction（CENTER 込み）を名乗っており、受け側が finalVectors を
+     引くときに CENTER の可能性を型で否定できなかった。 */
+): EightDirection {
   // NaN のときは北に倒す。directionFromBearing は比較がすべて偽になって
   // NW を返すので、ここで先に受ける。緯度経度が未入力のまま方位を引く
   // 経路があり、そこで「北西」と出ると入力漏れだと気付けない。

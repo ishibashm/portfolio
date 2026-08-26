@@ -17,6 +17,7 @@ import {
   Direction,
   type ActionIntent,
   type DirectionFilterMode,
+  type EightDirection,
 } from "@/utils/ephemerisEngine";
 import { getKigakuSector } from "@/utils/kigakuUtils";
 import { getGeomagneticData } from "@/utils/geomagnetism";
@@ -50,7 +51,10 @@ function getBearing(
 function bearingToDirection(
   bearing: number,
   useClassical: boolean = false,
-): Direction {
+  /* 方位角から出るのは八方位（getKigakuSector の型のとおり）。ここで
+     Direction に広げ直すと finalVectors を引くときに CENTER の可能性が
+     復活してしまうので、狭いまま返す。 */
+): EightDirection {
   return getKigakuSector(bearing, useClassical);
 }
 
