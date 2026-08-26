@@ -120,6 +120,17 @@ export function GlobalSidebar() {
   const closeSidebar = () => setIsOpen(false);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
+  /*
+    「畳み」はデスクトップ（lg 以上）だけの概念。ラベルの表示を
+    `{!isCollapsed && …}` の JS 分岐で消すと、**広い画面で畳んだまま
+    狭い画面の開閉メニューを開いたとき**に、幅は全開（w-64）なのに
+    文字が出ずアイコンだけになる（実際に起きていた。畳みの state は
+    画面幅を見ていない）。表示の有無は CSS のレスポンシブで決める:
+    狭い画面では常に出し、lg 以上でだけ畳みが効く。
+  */
+  const hideWhenCollapsed = isCollapsed ? "lg:hidden" : "";
+  const centerWhenCollapsed = isCollapsed ? "lg:justify-center" : "";
+
   const handleLogout = async () => {
     const supabase = await loadSupabase();
     await supabase.auth.signOut();
@@ -150,7 +161,7 @@ export function GlobalSidebar() {
               ? "bg-rose-500 text-white shadow-md shadow-rose-200"
               : "text-stone-600 hover:bg-rose-50 hover:text-stone-900"
           }
-          ${isCollapsed ? "justify-center" : ""}
+          ${centerWhenCollapsed}
         `}
       >
         <div className="flex items-center gap-3">
@@ -158,12 +169,15 @@ export function GlobalSidebar() {
             size={18}
             className={`shrink-0 ${isActive ? "text-white" : "text-stone-600 group-hover:text-rose-500 transition-colors"}`}
           />
-          {!isCollapsed && (
-            <span className="whitespace-nowrap">{item.label}</span>
-          )}
+          <span className={`whitespace-nowrap ${hideWhenCollapsed}`}>
+            {item.label}
+          </span>
         </div>
-        {!isCollapsed && isActive && (
-          <ChevronRight size={16} className="text-white/70 shrink-0" />
+        {isActive && (
+          <ChevronRight
+            size={16}
+            className={`text-white/70 shrink-0 ${hideWhenCollapsed}`}
+          />
         )}
       </Link>
     );
@@ -207,17 +221,17 @@ export function GlobalSidebar() {
       >
         {/* Logo Area */}
         <div
-          className={`h-20 flex items-center border-b border-rose-100/60 transition-all duration-300 ${isCollapsed ? "justify-center px-0" : "px-6"}`}
+          className={`h-20 flex items-center border-b border-rose-100/60 transition-all duration-300 px-6 ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
         >
           <div className="flex items-center gap-3 text-stone-900">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200">
               <Compass className="w-5 h-5" />
             </div>
-            {!isCollapsed && (
-              <span className="font-serif font-bold text-lg tracking-tight text-stone-900 whitespace-nowrap overflow-hidden transition-all">
-                Cloud Palette
-              </span>
-            )}
+            <span
+              className={`font-serif font-bold text-lg tracking-tight text-stone-900 whitespace-nowrap overflow-hidden transition-all ${hideWhenCollapsed}`}
+            >
+              Cloud Palette
+            </span>
           </div>
         </div>
 
@@ -229,23 +243,25 @@ export function GlobalSidebar() {
               匿名で開けるようにしたので "Secure" は事実と違い、ログインが
               要るように見えてしまう。日本語の見出しに合わせる。 */}
           <div className="my-4 border-t border-rose-100/60" />
-          {!isCollapsed && (
-            <div className="px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600">
-              引越しを決める
-            </div>
-          )}
+          <div
+            className={`px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600 ${hideWhenCollapsed}`}
+          >
+            引越しを決める
+          </div>
           {PROTECTED_ITEMS.map(renderNavItem)}
         </nav>
 
         {/* Footer Area */}
         <div className="p-4 border-t border-rose-100/60 bg-white/60 z-10 shrink-0 flex flex-col gap-2">
           {/* PWA App Install Widget */}
-          {!isCollapsed && <PWAInstallPrompt />}
+          <div className={hideWhenCollapsed}>
+            <PWAInstallPrompt />
+          </div>
 
           {/* 誰でログインしているのか（していないのか）を必ず出す */}
-          {email && !isCollapsed && (
+          {email && (
             <div
-              className="px-2 text-[10px] font-mono text-stone-500 truncate"
+              className={`px-2 text-[10px] font-mono text-stone-500 truncate ${hideWhenCollapsed}`}
               title={email}
             >
               {email}
@@ -255,29 +271,29 @@ export function GlobalSidebar() {
           {email === undefined ? null : email ? (
             <button
               onClick={handleLogout}
-              className={`flex items-center text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+              className={`flex items-center justify-start gap-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title={email}
             >
               <LogOut size={18} />
-              {!isCollapsed && (
-                <span className="text-sm font-medium whitespace-nowrap">
-                  ログアウト
-                </span>
-              )}
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${hideWhenCollapsed}`}
+              >
+                ログアウト
+              </span>
             </button>
           ) : (
             <Link
               href={`/login?next=${encodeURIComponent(pathname || "/")}`}
               onClick={closeSidebar}
-              className={`flex items-center text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${isCollapsed ? "justify-center" : "justify-start gap-3"}`}
+              className={`flex items-center justify-start gap-3 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title="ログイン"
             >
               <LogIn size={18} />
-              {!isCollapsed && (
-                <span className="text-sm font-medium whitespace-nowrap">
-                  ログイン
-                </span>
-              )}
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${hideWhenCollapsed}`}
+              >
+                ログイン
+              </span>
             </Link>
           )}
 
@@ -311,43 +327,41 @@ export function GlobalSidebar() {
 
           {/* Status */}
           <div
-            className={`px-3 py-3 rounded-xl bg-emerald-50/80 border border-emerald-100 flex items-center ${isCollapsed ? "justify-center" : "gap-3"}`}
+            className={`px-3 py-3 rounded-xl bg-emerald-50/80 border border-emerald-100 flex items-center gap-3 ${centerWhenCollapsed}`}
             title="システム稼働中"
           >
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            {!isCollapsed && (
-              <span className="text-[10px] text-emerald-700 font-medium tracking-widest uppercase whitespace-nowrap">
-                システム稼働中
-              </span>
-            )}
+            <span
+              className={`text-[10px] text-emerald-700 font-medium tracking-widest uppercase whitespace-nowrap ${hideWhenCollapsed}`}
+            >
+              システム稼働中
+            </span>
           </div>
 
           {/* 引越しとは別サービスへの導線。中核ナビから外してここに置いている。 */}
-          {!isCollapsed && (
-            <a
-              href={EXTERNAL_ITEM.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={closeSidebar}
-              className="flex items-center justify-center gap-1.5 text-[10px] text-stone-600 hover:text-stone-800 transition-colors"
-            >
-              {EXTERNAL_ITEM.label}
-              <ExternalLink size={10} className="shrink-0" />
-            </a>
-          )}
+          <a
+            href={EXTERNAL_ITEM.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeSidebar}
+            className={`flex items-center justify-center gap-1.5 text-[10px] text-stone-600 hover:text-stone-800 transition-colors ${hideWhenCollapsed}`}
+          >
+            {EXTERNAL_ITEM.label}
+            <ExternalLink size={10} className="shrink-0" />
+          </a>
 
           {/* Creator Signature */}
-          {!isCollapsed && (
-            <div className="text-[9px] text-stone-600 font-mono text-center tracking-wider mt-1 select-none">
-              {/* 署名は略記にする。運営者としての正式な表記は /about の
-                  「運営」に置いてあり、そちらは短くしない（誰が運営して
-                  いるかを確かめに来る人が読む欄なので）。 */}
-              Engineered by{" "}
-              <span className="text-stone-500 font-medium hover:text-rose-500 transition-colors">
-                M. Ishi
-              </span>
-            </div>
-          )}
+          <div
+            className={`text-[9px] text-stone-600 font-mono text-center tracking-wider mt-1 select-none ${hideWhenCollapsed}`}
+          >
+            {/* 署名は略記にする。運営者としての正式な表記は /about の
+                「運営」に置いてあり、そちらは短くしない（誰が運営して
+                いるかを確かめに来る人が読む欄なので）。 */}
+            Engineered by{" "}
+            <span className="text-stone-500 font-medium hover:text-rose-500 transition-colors">
+              M. Ishi
+            </span>
+          </div>
         </div>
       </aside>
 
