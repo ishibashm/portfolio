@@ -50,11 +50,14 @@ describe("一巡の完了は「消す」ではなく「空を書く」", () => {
     expect(JSON.parse(fs.readFileSync(file, "utf-8"))).toEqual(RESET_STATE);
   });
 
-  it("空の状態は「先頭から」を意味する", () => {
+  it("空の状態は、名前で再開する側（nifty）にも添字の側（eheya）にも効く", () => {
     // 読み side（loadState）は pref/city が falsy なら再開しない。
     expect(RESET_STATE.pref).toBeNull();
     expect(RESET_STATE.city).toBeNull();
     expect(RESET_STATE.page).toBe(1);
+    // eheya は市区町村を添字で持つ。0 が「先頭から」。
+    expect(RESET_STATE.cityIndex).toBe(0);
+    expect(resumeIndexOutOfRange(RESET_STATE.cityIndex, 10)).toBe(false);
   });
 });
 

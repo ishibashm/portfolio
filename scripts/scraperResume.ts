@@ -25,8 +25,19 @@
  */
 import * as fs from "fs";
 
-/** 再開位置なし（＝先頭から）を表す中身。 */
-export const RESET_STATE = { pref: null, city: null, page: 1 } as const;
+/**
+ * 再開位置なし（＝先頭から）を表す中身。
+ *
+ * nifty は市区町村を名前（city）で、eheya は添字（cityIndex）で持つ。
+ * どちらの loadState も `parsed.X || 既定` で読むので、両方の鍵を
+ * 入れておけば片方が余分でも害はなく、1 つの関数で両方を賄える。
+ */
+export const RESET_STATE = {
+  pref: null,
+  city: null,
+  cityIndex: 0,
+  page: 1,
+} as const;
 
 /**
  * 一巡の完了を記録する。**unlink しないこと。**
