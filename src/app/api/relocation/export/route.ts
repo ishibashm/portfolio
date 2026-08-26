@@ -533,7 +533,7 @@ export async function GET(request: Request) {
           信じる。サイトの他の rokuyo は全て `getRokuyo` の
           「大安 (Taian)」形式で、`rokuyo.includes("大安")` で判定して
           いる（arbitrage・auspicious-days・CosmicCalendar・
-          AstroGridCalendar・WeddingDateSelector）。この 1 か所だけが
+          AstroGridCalendar）。この 1 か所だけが
           別物を入れていた。同じ鍵で意味が 2 通りある状態。
 
           六曜は日単位なので経度も時刻基準も関係しない。日支のほうは
