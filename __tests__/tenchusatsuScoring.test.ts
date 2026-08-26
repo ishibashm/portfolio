@@ -25,8 +25,9 @@ function voidDay(
     lunarPhaseScore: 0,
     tendoDir: undefined,
     rokuyo: "大安",
-    luckyDays: { isTensho: false, isIchiryumanbai: false },
-    holiday: null,
+    luckyDays: { isTensho: false, isIchiryumanbai: false, labels: [] },
+    /* 実物（isJapaneseHoliday）は null を返さない。非祝日はこの形。 */
+    holiday: { isHoliday: false, name: "" },
     weekday: 1,
     isVoidTime: scopes.year || scopes.month || scopes.day,
     voidScopes: scopes,

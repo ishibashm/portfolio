@@ -55,13 +55,14 @@ function makeState(): DailyAstroState {
     lunarPhaseScore: 0,
     tendoDir: undefined,
     rokuyo: "大安",
-    luckyDays: { isTensho: false, isIchiryumanbai: false },
-    holiday: null,
+    luckyDays: { isTensho: false, isIchiryumanbai: false, labels: [] },
+    /* 実物（isJapaneseHoliday）は null を返さない。非祝日はこの形。 */
+    holiday: { isHoliday: false, name: "" },
     weekday: 1,
     isVoidTime: false,
     voidScopes: { year: false, month: false, day: false },
     baziScore: 50,
-  } as DailyAstroState;
+  };
 }
 
 function score(
