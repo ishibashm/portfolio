@@ -1,5 +1,6 @@
 // Real Estate Arbitrage astrology and pin color helper functions
 
+import type { ScoredProperty } from "@/lib/scoredProperty";
 import { isFatalNoise } from "@/utils/noiseSeverity";
 import { tierPinColors } from "@/utils/tierDisplay";
 
@@ -73,7 +74,22 @@ export function getRecommendationStarCount(
  * astrologyStatus からの推定に落ちる。
  */
 export const getPropertyPinColors = (
-  prop: any,
+  /* 読む項目だけを受ける。呼び出し側（地図・一覧）は ScoredProperty を
+     そのまま渡すが、ここでは全体を要求しない（#149 の方針）。
+     dateScores は対象日（index 3）の isUltraLucky と scoreDetails の
+     ペナルティ 2 つしか読まず、走査していない日は null で埋まっている
+     ことがある（テストの fixture がその形）ので、要素は部分形＋null で
+     受ける。 */
+  prop: Pick<ScoredProperty, "astroFlags" | "isTendo"> & {
+    /* 生年月日が未入力のとき API は astrologyStatus を返さない（#205）。
+       その「判定なし」への落ち方をこの関数が担っているので、
+       ScoredProperty の宣言（必須の string）より緩く受ける。 */
+    astrologyStatus?: string | null;
+    dateScores?: ({
+      isUltraLucky?: boolean;
+      scoreDetails?: { doyouPenalty: number; voidPenalty: number };
+    } | null)[];
+  },
   tier?: string,
   blocked?: boolean,
 ) => {
@@ -101,10 +117,19 @@ export const getPropertyPinColors = (
     };
   }
 
+  /*
+    無い判定は空文字に寄せる。null / undefined は下の集合照合
+    （isFatalNoise / includes）でどの分岐にも入らない値で、"" も同じ。
+    tier だけ渡って来て tierPinColors が未対応の段階を返したときに
+    ここへ落ちる経路があるため、上の「判定なし」guard の後でも
+    null のまま届くことがある。
+  */
+  const astrologyStatus = prop.astrologyStatus ?? "";
+
   const targetDay = prop.dateScores?.[3];
   const isUltra = targetDay?.isUltraLucky;
 
-  if (prop.astrologyStatus === "OPTIMAL_BOOST") {
+  if (astrologyStatus === "OPTIMAL_BOOST") {
     // 🌟 ゴールド（超大吉）
     return {
       fillColor: "#fbbf24",
@@ -117,7 +142,7 @@ export const getPropertyPinColors = (
     };
   }
 
-  if (prop.astrologyStatus === "WARNING") {
+  if (astrologyStatus === "WARNING") {
     // 🟧 オレンジ（警告・調整）
     return {
       fillColor: "#f97316",
@@ -129,7 +154,7 @@ export const getPropertyPinColors = (
   }
 
   // 五大凶殺。定義は noiseSeverity.ts（時期スクリーニングの X と同じ集合）
-  const isHeavyBad = isFatalNoise(prop.astrologyStatus);
+  const isHeavyBad = isFatalNoise(astrologyStatus);
 
   if (isHeavyBad) {
     // 🟥 赤（警告）
@@ -146,7 +171,7 @@ export const getPropertyPinColors = (
   const hasLightBad =
     (details && (details.doyouPenalty < 0 || details.voidPenalty < 0)) ||
     ["NOISE_VOID", "NOISE_NODE", "NOISE_GETSUMEI", "NOISE_GETSUTEKI"].includes(
-      prop.astrologyStatus,
+      astrologyStatus,
     );
   // SAFE を吉に数えていた。SAFE は「凶方位ではない」であって吉ではなく、
   // 判定の本体（auspiciousDays.isAuspicious）は OPTIMAL 系だけを吉とする。
@@ -154,9 +179,7 @@ export const getPropertyPinColors = (
   // 同じ方位が記事では「平」と出ていた。落として既定（平穏）に流す。
   const hasLucky =
     prop.isTendo ||
-    ["OPTIMAL", "OPTIMAL_REGULAR", "OPTIMAL_BOOST"].includes(
-      prop.astrologyStatus,
-    ) ||
+    ["OPTIMAL", "OPTIMAL_REGULAR", "OPTIMAL_BOOST"].includes(astrologyStatus) ||
     prop.astroFlags?.some((f: string) => f.endsWith("_LINE"));
 
   if (isUltra) {

@@ -29,7 +29,10 @@ describe("ピンの色は三盤の段階に従う", () => {
     astrologyStatus: "SAFE",
     isTendo: true,
     direction: "S",
-    dateScores: [null, null, null, { scoreDetails: {} }],
+    /* 対象日（index 3）に走査済みの行があるという形。実装が読むのは
+       isUltraLucky だけ（getPropertyPinColors の受け口を絞ったのに
+       合わせて、fixture も読まれる項目で書く）。 */
+    dateScores: [null, null, null, { isUltraLucky: false }],
   };
 
   it("段階を渡さなければ従来どおり単盤の status で決まる", () => {

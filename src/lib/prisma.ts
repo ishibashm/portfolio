@@ -40,7 +40,7 @@ const prismaClientSingleton = () => {
   // connectionString defaults to process.env.DATABASE_URL
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaPg(pool);
-  return new PrismaClient({ adapter } as any);
+  return new PrismaClient({ adapter });
 };
 
 declare global {
