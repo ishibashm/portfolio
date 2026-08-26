@@ -33,7 +33,7 @@ function legacyLatToTileY(lat: number, z: number) {
   );
 }
 
-/** 日本のあちこち。用途地域は z14〜18 で引く。 */
+/** 日本のあちこち。用途地域は z13〜18 で引く（#607 で下限を 13 に下げた）。 */
 const PLACES: [string, number, number][] = [
   ["東京駅", 35.6812, 139.7671],
   ["札幌駅", 43.0686, 141.3508],
