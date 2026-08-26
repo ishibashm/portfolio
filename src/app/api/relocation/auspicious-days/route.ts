@@ -3,7 +3,6 @@ import {
   getHonmeiStar,
   getPersonalVoidZodiac,
   parseDirectionFilterMode,
-  Direction,
 } from "@/utils/ephemerisEngine";
 import {
   ALL_DIRECTIONS,
@@ -180,11 +179,11 @@ export async function GET(request: Request) {
 
     const directionParam = searchParams.get("direction");
     if (directionParam && directionParam !== "all") {
-      /* 挙動は includes と同じ（"CENTER" は元から一覧に無いので通らない）。
-         要素型が EightDirection に狭まって includes(x as Direction) が
-         通らなくなったので、cast をやめて素の文字列のまま照合する
-         （#627 と同じ形）。 */
-      if (!ALL_DIRECTIONS.some((d) => d === directionParam)) {
+      /* 一覧から引き当てて、見つかった値（EightDirection）をそのまま
+         渡す。挙動は includes + cast と同じ（"CENTER" は元から一覧に
+         無いので通らない）だが、cast なしで型が狭まる。 */
+      const direction = ALL_DIRECTIONS.find((d) => d === directionParam);
+      if (!direction) {
         return NextResponse.json(
           { error: "INVALID_DIRECTION" },
           { status: 400 },
@@ -192,7 +191,7 @@ export async function GET(request: Request) {
       }
       const summary = findAuspiciousDays(from, to, {
         ...base,
-        direction: directionParam as Direction,
+        direction,
       });
       return NextResponse.json({
         honmeiStar: honmeiStar.classical,

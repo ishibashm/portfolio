@@ -66,7 +66,7 @@ export type BoardLayout = Record<Direction, StarFrequency>;
  */
 export const DOYOU_SATSU_DIRECTIONS: Record<
   "SPRING" | "SUMMER" | "AUTUMN" | "WINTER",
-  Direction
+  EightDirection
 > = {
   SPRING: "SE",
   SUMMER: "SW",
@@ -826,8 +826,14 @@ export interface VectorCollision {
   yearLayer: Partial<Record<Direction, VectorStatus>>;
   monthLayer: Partial<Record<Direction, VectorStatus>>;
   dayLayer: Partial<Record<Direction, VectorStatus>>;
-  finalVectors: Record<Direction, VectorStatus>;
-  tendoDirection?: Direction;
+  /**
+   * 方位ごとの最終判定。実装は八方位しか埋めない（盤の中心に「動く」は
+   * 無い）ので、CENTER を約束しない型にしてある。以前は
+   * Record<Direction, …> を名乗っており、finalVectors.CENTER が
+   * 実行時 undefined なのに型は値があると言っていた（backlog 8 節）。
+   */
+  finalVectors: Record<EightDirection, VectorStatus>;
+  tendoDirection?: EightDirection;
   /**
    * 土用殺が当たっている方位。当たっていなければ undefined。
    *
@@ -839,7 +845,7 @@ export interface VectorCollision {
    * **どの方位が土用殺なのかを呼び出し側が知れるように**する。判定は
    * 一切変わらない（この値を読まなければ従来どおり）。
    */
-  doyouSatsuDirection?: Direction;
+  doyouSatsuDirection?: EightDirection;
   doyouState?: DoyouState;
 }
 
@@ -868,7 +874,7 @@ export function calculateVectorCollision(
    */
   ignoreDayLayer: boolean = false,
 ): VectorCollision {
-  const directions: Direction[] = EIGHT_DIRECTIONS;
+  const directions = EIGHT_DIRECTIONS;
 
   // 天中殺（Void Zodiac）の方位マッピング
   const z2d: Record<string, Direction[]> = {
@@ -948,7 +954,7 @@ export function calculateVectorCollision(
   const zodiacs = targetDate ? getCurrentZodiac(targetDate, lon) : null;
 
   // 天道 (Tendo)
-  const monthlyTendoMap: Record<string, Direction> = {
+  const monthlyTendoMap: Record<string, EightDirection> = {
     寅: "S",
     卯: "SW",
     辰: "N",
@@ -1096,12 +1102,11 @@ export function calculateVectorCollision(
   }
 
   /*
-    ここだけ `any` が残る。型どおり全方位を埋めた器から始めると、実装が
-    触らない CENTER が実データに載ってしまう。**戻り値の型のほうが
-    間違っている**（八方位しか埋めていないのに Record<Direction> を
-    名乗る）が、直すと呼び出し側 6 ファイルに波及するので別に扱う。
+    八方位ぶんを直後のループで必ず埋める受け皿。CENTER 込みの器から
+    始めると実装が触らない CENTER が実データに載ってしまうため、
+    Record<EightDirection, …> で受ける（型の側を直した。backlog 8 節）。
   */
-  const finalVectors: any = {};
+  const finalVectors = {} as Record<EightDirection, VectorStatus>;
 
   if (ignoreDayLayer) {
     for (const dir of directions) {
@@ -1667,7 +1672,7 @@ export function filterCollisionByMode(
     return collision;
   }
 
-  const directions: Direction[] = EIGHT_DIRECTIONS;
+  const directions = EIGHT_DIRECTIONS;
 
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
     switch (star) {
@@ -1789,8 +1794,8 @@ export function filterCollisionByMode(
   const newYearLayer: Partial<Record<Direction, VectorStatus>> = {};
   const newMonthLayer: Partial<Record<Direction, VectorStatus>> = {};
   const newDayLayer: Partial<Record<Direction, VectorStatus>> = {};
-  /* 上と同じ理由。戻り値の型が直るまでここは any のまま。 */
-  const newFinalVectors: any = {};
+  /* calculateVectorCollision の受け皿と同じ形。ループで八方位を必ず埋める。 */
+  const newFinalVectors = {} as Record<EightDirection, VectorStatus>;
 
   directions.forEach((d) => {
     newYearLayer[d] = filterStatus(collision.yearLayer[d], d, yBoard);

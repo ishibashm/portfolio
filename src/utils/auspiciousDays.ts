@@ -74,8 +74,8 @@ export interface AuspiciousDayParams {
   voidZodiacs: string[];
   /** 現住地の経度。太陽時と盤の基準になる。 */
   lon: number;
-  /** 判定する方位。 */
-  direction: Direction;
+  /** 判定する方位。動く先なので八方位（CENTER は「動かない」で対象外）。 */
+  direction: EightDirection;
   /** 天中殺の効かせ方。 */
   tenchusatsuMode: TenchusatsuMode;
   /** 自発的な移動か（吉方位取りは自発なので、通常 false のまま）。 */
@@ -245,7 +245,7 @@ function computeDayLayers(
 /** 共有した盤から、ある方位ぶんの判定を切り出す。 */
 function buildVerdict(
   date: Date,
-  dir: Direction,
+  dir: EightDirection,
   shared: DayLayers,
 ): DayVerdict {
   const { layers, voidScopes, blocked, rokuyo } = shared;

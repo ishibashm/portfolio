@@ -1,4 +1,4 @@
-import { Direction, ActionIntent } from "../ephemerisEngine";
+import { EightDirection, ActionIntent } from "../ephemerisEngine";
 
 export interface EvaluationContext {
   targetDate: Date; // 評価対象の日時
@@ -9,7 +9,7 @@ export interface EvaluationContext {
   latitude?: number; // ユーザーの緯度（太陽時間などに必要）
   longitude?: number; // ユーザーの経度
   useClassical?: boolean; // 暦基準モデルか
-  targetDirection?: Direction; // 移動先の目標方位
+  targetDirection?: EightDirection; // 移動先の目標方位（方位角から出るので八方位）
   actionIntent?: ActionIntent; // アクションの意図
 }
 
