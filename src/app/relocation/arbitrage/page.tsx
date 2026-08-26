@@ -45,7 +45,7 @@ import {
   parseDirectionFilterMode,
   type DirectionFilterMode,
 } from "@/utils/ephemerisEngine";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import { prefectureDirections } from "@/lib/prefectureDirection";
 import {
   expandLayoutSelections,
   matchesLayoutSelection,
@@ -1737,15 +1737,20 @@ export default function ArbitrageScannerPage() {
           doyouSatsu: v.isDoyouSatsu,
         };
       }
+      /* 県の代表点は巡回起点（概ね県庁所在地）ではなく面積重心
+         （lib/prefectureDirection）。県庁は県の端にあることが多く、
+         兵庫（神戸=南東端）が京都から「南西」に塗られていた
+         （利用者報告 2026-08-27。__tests__/prefectureDirection で固定）。 */
+      const prefDirs = prefectureDirections(
+        Number(baseLat),
+        Number(baseLon),
+        useClassical ? "traditional" : "physical",
+      );
       const byPrefecture: Record<string, Cell> = {};
-      for (const t of SCRAPE_TARGETS) {
-        const dir = directionFromBearing(
-          bearingBetween(Number(baseLat), Number(baseLon), t.lat, t.lon),
-          useClassical ? "traditional" : "physical",
-        );
+      for (const [name, dir] of Object.entries(prefDirs)) {
         const cell = byDirection[dir];
         if (!cell) continue;
-        byPrefecture[t.name] = cell;
+        byPrefecture[name] = cell;
       }
       return { byDirection, byPrefecture };
     } catch {
