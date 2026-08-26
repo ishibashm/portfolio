@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "upstream = 上流を直接／relay = 本番の /api/zoning を外から／catalog = ex-api に何があるか一覧（路線価を探す）"
+        description: "upstream = 上流を直接／relay = 本番の /api/zoning を外から／catalog = ex-api に何があるか一覧（路線価を探す）／simplify = 間引いたらどこまで軽くなるか"
         required: false
         default: "upstream"
         type: choice
@@ -20,6 +20,7 @@ on:
           - upstream
           - relay
           - catalog
+          - simplify
 
 jobs:
   probe:
@@ -47,8 +48,10 @@ jobs:
           fi
           echo "$ENV_FILE_CONTENT" > .env
 
+      # `!= 'relay'` と書いてあったので **catalog を選んでも upstream が
+      # 走っていた。**選んだものだけが走るように直す。
       - name: Probe upstream
-        if: ${{ inputs.target != 'relay' }}
+        if: ${{ inputs.target == 'upstream' || inputs.target == '' }}
         run: npx tsx scripts/probe_zoning.ts | tee -a "$GITHUB_STEP_SUMMARY"
 
       # 本番の中継を外から叩く。鍵は要らない（サーバ側が持っている）。
@@ -63,3 +66,10 @@ jobs:
       - name: Probe catalog
         if: ${{ inputs.target == 'catalog' }}
         run: npx tsx scripts/probe_reinfolib_catalog.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 用途地域は z14 より広くは出していない（1 タイルが z13 で 435KB、
+      # z12 で 1.9MB。画面には十数タイル並ぶ）。広い縮尺ほど頂点は要らない
+      # はずなので、間引いてどこまで減るかを測る。**推測で実装を書かない。**
+      - name: Probe simplify
+        if: ${{ inputs.target == 'simplify' }}
+        run: npx tsx scripts/probe_zoning_simplify.ts | tee -a "$GITHUB_STEP_SUMMARY"
