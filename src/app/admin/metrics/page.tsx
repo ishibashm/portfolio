@@ -225,7 +225,7 @@ function Sparkline({ values }: { values: number[] }) {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="text-emerald-400/80"
+        className="text-blue-800/70"
         vectorEffect="non-scaling-stroke"
       />
     </svg>
@@ -292,7 +292,7 @@ function BarRow({
       </span>
       <div className="flex-1 h-3 bg-stone-100 rounded overflow-hidden">
         <div
-          className="h-full bg-emerald-400/70"
+          className="h-full bg-blue-500/70"
           style={{ width: `${(value / Math.max(1, max)) * 100}%` }}
         />
       </div>
@@ -350,12 +350,15 @@ function DailyChart({
       <div className="flex items-center justify-between text-[10px] font-mono text-stone-600">
         <span>{max} PV</span>
         <span className="flex items-center gap-3">
+          {/* 系列色は lib/chartPalette の決めごとに合わせる（#37）。
+              線＝blue-800（primary）、塗り＝blue-500（secondary）。
+              UV は色だけでなく破線でも区別する。 */}
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-1.5 rounded-sm bg-emerald-400/70" />
+            <span className="inline-block w-3 h-1.5 rounded-sm bg-blue-800/70" />
             PV
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-[2px] bg-sky-500" />
+            <span className="inline-block w-3 h-[2px] bg-blue-500" />
             UV
           </span>
         </span>
@@ -382,14 +385,14 @@ function DailyChart({
         ))}
         <path
           d={`${pvLine} L${W},${H} L0,${H} Z`}
-          className="fill-emerald-400/25"
+          className="fill-blue-500/20"
         />
         <path
           d={pvLine}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
-          className="text-emerald-500"
+          className="text-blue-800"
           vectorEffect="non-scaling-stroke"
         />
         <path
@@ -398,7 +401,7 @@ function DailyChart({
           stroke="currentColor"
           strokeWidth="2"
           strokeDasharray="3 2"
-          className="text-sky-500"
+          className="text-blue-500"
           vectorEffect="non-scaling-stroke"
         />
         {/* 値を読むための当たり判定。線ではなく面で拾う。 */}
@@ -511,10 +514,11 @@ function IntradayChart({
                   className="absolute bottom-0 left-0 right-0 bg-stone-200"
                   style={{ height: `${(prev / max) * 100}%` }}
                 />
-                {/* 今日（濃い棒・手前）。まだ来ていない時刻は描かない。 */}
+                {/* 今日（濃い棒・手前）。まだ来ていない時刻は描かない。
+                    塗りは secondary（blue-500）、昨日は参照なので stone のまま。 */}
                 {!future && (
                   <div
-                    className="absolute bottom-0 left-1/4 right-1/4 bg-emerald-500"
+                    className="absolute bottom-0 left-1/4 right-1/4 bg-blue-500"
                     style={{ height: `${(r.pv / max) * 100}%` }}
                   />
                 )}
@@ -1493,7 +1497,7 @@ export default function AdminMetricsPage() {
                           </span>
                           <div className="flex-1 h-3 bg-stone-100 rounded overflow-hidden">
                             <div
-                              className="h-full bg-emerald-400/70"
+                              className="h-full bg-blue-500/70"
                               style={{
                                 width: `${(post.pv / Math.max(1, s.blog.posts[0].pv)) * 100}%`,
                               }}
