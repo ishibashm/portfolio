@@ -105,11 +105,24 @@ export interface SimulatorStep {
   };
 }
 
+/**
+ * 日付ごとの評価から**この部品が読む 2 項目だけ**の形。
+ *
+ * 渡す側は他の項目も持っている（simulator の NbaDateEvaluation、
+ * ScorecardPanel が組む qValue / suggestedAction / riskFactors）。
+ * 全体を型にせず、読む枝だけを写す（#149 と同じ方針）。
+ */
+interface NbaEvaluationLike {
+  /** FQI の期待報酬（-100〜+100）。天の点に写像する。 */
+  qValue: number;
+  riskFactors?: string[];
+}
+
 interface TenChiJinEvaluationProps {
   mode: "plan" | "step";
   steps: SimulatorStep[];
   members?: AccompanyingMember[];
-  nbaEvaluations?: Record<string, any>;
+  nbaEvaluations?: Record<string, NbaEvaluationLike>;
   simulatedAns?: number;
   simulatedShield?: number;
   onApplyAction?: (
