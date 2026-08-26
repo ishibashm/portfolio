@@ -33,6 +33,8 @@ import {
   parseActionIntent,
   type ZodiacTimeBasis,
   Direction,
+  type EightDirection,
+  EIGHT_DIRECTIONS,
   StarFrequency,
   calculateLunarPhaseCondition,
   getPhysicalMonthStar,
@@ -205,8 +207,8 @@ const TelemetryChart = dynamic(() => import("./TelemetryChart"), {
 export interface HeatmapColumn {
   /** 升目の見出し。30 日は "8/13"、12 ヶ月は "2026-08"。 */
   label: string;
-  /** 方位ごとの畳んだ判定。色はこれで決まる。 */
-  vectors: Record<Direction, string>;
+  /** 方位ごとの畳んだ判定。色はこれで決まる。実データは八方位のみ。 */
+  vectors: Record<EightDirection, string>;
   /** 畳む前の層。押したときに年盤・月盤・日盤の内訳を出すのに使う。 */
   rawVectorData: ReturnType<typeof calculateVectorCollision>;
   /** 天道が回座している方位。無い日もある。 */
@@ -235,7 +237,10 @@ const filterLayerData = (
     yearLayer: Partial<Record<Direction, string>>;
     monthLayer: Partial<Record<Direction, string>>;
     dayLayer: Partial<Record<Direction, string>>;
-    finalVectors: Record<Direction, string>;
+    /* 実データは八方位しか無い（backlog 8 節）。CENTER 込みの
+       Record<Direction, …> を要求すると、VectorCollision 側の型を
+       事実に合わせたときにここが受け取れなくなる。 */
+    finalVectors: Record<EightDirection, string>;
     tendoDirection?: Direction;
     doyouState?: DoyouState;
   },
@@ -274,7 +279,7 @@ const filterLayerData = (
     return layer;
   }
 
-  const directions: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  const directions = EIGHT_DIRECTIONS;
 
   const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
     switch (star) {
@@ -417,10 +422,10 @@ const filterLayerData = (
 
   // 8 方位ぶんを直後のループで必ず埋める。同じ形の受け皿が下の
   // filterVectors にもあり（out）、そちらの書き方に合わせている。
-  const newYearLayer = {} as Record<Direction, string>;
-  const newMonthLayer = {} as Record<Direction, string>;
-  const newDayLayer = {} as Record<Direction, string>;
-  const newFinalVectors = {} as Record<Direction, string>;
+  const newYearLayer = {} as Record<EightDirection, string>;
+  const newMonthLayer = {} as Record<EightDirection, string>;
+  const newDayLayer = {} as Record<EightDirection, string>;
+  const newFinalVectors = {} as Record<EightDirection, string>;
 
   directions.forEach((d) => {
     newYearLayer[d] = filterStatus(layer.yearLayer[d], d, yBoard);
@@ -445,7 +450,8 @@ const filterVectors = (
     yearLayer: Partial<Record<Direction, string>>;
     monthLayer: Partial<Record<Direction, string>>;
     dayLayer: Partial<Record<Direction, string>>;
-    finalVectors: Record<Direction, string>;
+    /* filterLayerData と同じ理由で八方位。 */
+    finalVectors: Record<EightDirection, string>;
   },
   personalStar: StarFrequency,
   voidZodiacs: string[],
@@ -456,7 +462,7 @@ const filterVectors = (
   mode: string,
   getsuMeiStar: StarFrequency | null = null,
   activeLayerMode: string = "final",
-): Record<Direction, string> => {
+): Record<EightDirection, string> => {
   const filtered = filterLayerData(
     vectorData,
     personalStar,
@@ -471,9 +477,8 @@ const filterVectors = (
   // 年+月 / 月+日 / 年+日 は地図側だけが合成しており、ここでは素通しして
   // 全統合（finalVectors）を返していた。同じボタンで選んでいるのに地図と
   // ヒートマップで違う判定が出るため、畳み方を共通の関数に寄せる。
-  const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  const out = {} as Record<Direction, string>;
-  for (const d of dirs) {
+  const out = {} as Record<EightDirection, string>;
+  for (const d of EIGHT_DIRECTIONS) {
     out[d] = statusForLayerMode(filtered, d, activeLayerMode);
   }
   return out;
@@ -1189,7 +1194,10 @@ export const SolarTimeClock = () => {
       const declination = geoData?.declination ?? 0;
       const magBrng = (trueBrng - declination + 360) % 360;
 
-      const getDir = (bearing: number): Direction =>
+      /* 方位角から出るのは八方位。Direction（CENTER 込み）に広げると
+         finalVectors を引く所（下の targetDirInfo.trueDirection）に
+         cast が要る嘘の型になる。 */
+      const getDir = (bearing: number): EightDirection =>
         directionFromBearing(
           bearing,
           useClassicalBoard ? "traditional" : "physical",
@@ -1348,7 +1356,7 @@ export const SolarTimeClock = () => {
         if (targetDirInfo) {
           // 判定は真北（上の targetDirection の注記と同じ理由）。
           const s =
-            vectorData.finalVectors[targetDirInfo.trueDirection as Direction];
+            vectorData.finalVectors[targetDirInfo.trueDirection];
           if (s === "SAFE" || s === "OPTIMAL") {
             foundOffset = offset;
             break;
@@ -2406,7 +2414,7 @@ export const SolarTimeClock = () => {
   ]);
 
   const scorecardSummary = React.useMemo(() => {
-    const dirs: Direction[] = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    const dirs = EIGHT_DIRECTIONS;
     const dirMapJa: Record<Direction, string> = {
       N: "北",
       NE: "北東",

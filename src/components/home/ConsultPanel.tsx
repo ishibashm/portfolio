@@ -16,6 +16,7 @@ import { directionFromBearing } from "../../utils/directionGeo";
 import type {
   BoardLayout,
   Direction,
+  EightDirection,
   StarFrequency,
 } from "../../utils/ephemerisEngine";
 import type {
@@ -49,7 +50,9 @@ export type Layers = {
   yearLayer: Partial<Record<Direction, string>>;
   monthLayer: Partial<Record<Direction, string>>;
   dayLayer: Partial<Record<Direction, string>>;
-  finalVectors: Record<Direction, string>;
+  /* 実データは八方位しか無い（backlog 8 節）。CENTER 込みを要求すると
+     計算元（SolarTimeClock の filterLayerData）から受け取れなくなる。 */
+  finalVectors: Record<EightDirection, string>;
   /** 天道の方位。無い日は undefined。 */
   tendoDirection?: Direction | null;
 };
