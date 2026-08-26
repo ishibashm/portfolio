@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import fs from "fs/promises";
 import path from "path";
@@ -246,7 +247,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const whereClause: any = {};
+    const whereClause: Prisma.MunicipalityWealthWhereInput = {};
     if (prefecture && prefecture !== "all") {
       if (/^\d+$/.test(prefecture)) {
         whereClause.areaCode = { startsWith: prefecture };

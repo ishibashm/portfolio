@@ -414,7 +414,16 @@ export default function TimingAnalyticsPage() {
 
   const climatology = useMemo(() => {
     if (!profile) return null;
-    const profiles = (calendarClimatology as any).profiles ?? {};
+    /* 読む枝だけの型（#149）。この画面が読むのは
+       directions[方位].perYear[段階] だけ。JSON import のリテラル型は
+       「1|子丑」のような具体キーしか持たず、テンプレート文字列で
+       引けないので、索引で引ける形に広げて受ける（構造的に代入できる
+       のでキャストは要らない）。 */
+    const profiles: Record<
+      string,
+      | { directions?: Record<string, { perYear?: Record<string, number> }> }
+      | undefined
+    > = calendarClimatology.profiles;
     const joined = profile.voidZodiacs.join("");
     return (
       profiles[`${profile.honmeiStar}|${joined}`] ??
