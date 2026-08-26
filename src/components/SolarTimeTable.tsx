@@ -32,7 +32,30 @@ interface SolarTimeTableProps {
   honmeiStar?: { physical: number; classical: number } | null;
   envData?: EnvironmentalFrequencies | null;
   personalVoidZodiac?: string[];
-  nbaData?: any;
+  /* 呼び出し側（SolarTimeClock）が一度も渡していない実質デッドの prop
+     （既知の問題。全参照が ?. 経由で常に "N/A" になる）。期待する形は
+     NBADashboard の NBAData とも一致しない（micro.readiness などは
+     実物に無い）ので、既存の型は引けない。ここで読む枝だけを書く。
+     繋ぐときは、渡す側の実際の形とこの期待の食い違いから直すこと。 */
+  nbaData?: {
+    nba?: {
+      actionResult?: { suggestedAction?: string; confidence?: number };
+      stateVector?: {
+        ephemerisData?: { source?: string; planetaryPositions?: string };
+        astrologyData?: { source?: string; transits?: string };
+        ragContext?: { source?: string; classicalRules?: string };
+        environmentalRisk?: number;
+        solarPhase?: number;
+      };
+    };
+    micro?: {
+      readiness?: number;
+      sleep?: number;
+      stress?: number;
+      resilience?: number;
+    };
+    macro?: { environmentalNoise?: string };
+  } | null;
   useClassical?: boolean;
   /** 時支をどの時刻で採るか。省くと標準時（従来の答え）。 */
   zodiacTimeBasis?: ZodiacTimeBasis;
