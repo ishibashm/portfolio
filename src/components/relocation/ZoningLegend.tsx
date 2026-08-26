@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   ZONING_DISCLAIMER,
   ZONING_FILL,
@@ -34,10 +36,35 @@ export function ZoningLegend({
   onSelect,
   notice,
 }: ZoningLegendProps) {
+  /*
+    13 区分の一覧と説明をたためるようにする。**狭い画面では既定で閉じる。**
+
+    スマホの実機で、この凡例だけで画面幅の半分・高さの 3 分の 2 を覆って
+    いた（利用者の指摘）。区分を選んでいるあいだは開いたままにしたいので、
+    選択中は閉じられても見出しに残す。
+  */
+  const [open, setOpen] = useState(() =>
+    typeof window === "undefined" ? true : window.innerWidth >= 1024,
+  );
+
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-xs font-bold text-stone-700">用途地域</h3>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          className="flex items-baseline gap-1.5 text-xs font-bold text-stone-700"
+        >
+          <span aria-hidden>{open ? "▾" : "▸"}</span>
+          <span>用途地域</span>
+          {/* たたんでいても、いま何で絞っているかは見えるようにする */}
+          {!open && selected && (
+            <span className="text-[10px] font-normal text-indigo-700">
+              {selected}
+            </span>
+          )}
+        </button>
         {selected && (
           <button
             type="button"
@@ -49,57 +76,64 @@ export function ZoningLegend({
         )}
       </div>
 
-      <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
-        押すとその区分だけ残ります。区画を押すと建蔽率・容積率が出ます。
-      </p>
-
-      {notice && (
-        <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] leading-relaxed text-amber-900">
-          {notice}
-        </p>
-      )}
-
-      <ul className="mt-2 space-y-0.5">
-        {ZONING_ORDER.map((name) => {
-          const active = selected === name;
-          return (
-            <li key={name}>
-              <button
-                type="button"
-                onClick={() => onSelect(active ? null : name)}
-                aria-pressed={active}
-                title={ZONING_SUMMARY[name]}
-                className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
-                  active ? "bg-indigo-50" : "hover:bg-stone-50"
-                }`}
-              >
-                {/* 色の札。名前が必ず隣にあるので、色だけで読ませない */}
-                <span
-                  className="h-3 w-3 shrink-0 rounded-[2px] border border-stone-300"
-                  style={{ background: ZONING_FILL[name] }}
-                />
-                <span className="min-w-0 flex-1 truncate text-[11px] text-stone-700">
-                  {name}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
-      {selected && (
-        <p className="mt-2 border-t border-stone-100 pt-2 text-[10px] leading-relaxed text-stone-600">
-          {ZONING_SUMMARY[selected]}
-        </p>
-      )}
-
-      <div className="mt-2 border-t border-stone-100 pt-2">
-        {ZONING_DISCLAIMER.map((line) => (
-          <p key={line} className="text-[10px] leading-relaxed text-stone-500">
-            {line}
+      {!open ? null : (
+        <>
+          <p className="mt-1 text-[10px] leading-relaxed text-stone-500">
+            押すとその区分だけ残ります。区画を押すと建蔽率・容積率が出ます。
           </p>
-        ))}
-      </div>
+
+          {notice && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] leading-relaxed text-amber-900">
+              {notice}
+            </p>
+          )}
+
+          <ul className="mt-2 space-y-0.5">
+            {ZONING_ORDER.map((name) => {
+              const active = selected === name;
+              return (
+                <li key={name}>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(active ? null : name)}
+                    aria-pressed={active}
+                    title={ZONING_SUMMARY[name]}
+                    className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left transition-colors ${
+                      active ? "bg-indigo-50" : "hover:bg-stone-50"
+                    }`}
+                  >
+                    {/* 色の札。名前が必ず隣にあるので、色だけで読ませない */}
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-[2px] border border-stone-300"
+                      style={{ background: ZONING_FILL[name] }}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-[11px] text-stone-700">
+                      {name}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+
+          {selected && (
+            <p className="mt-2 border-t border-stone-100 pt-2 text-[10px] leading-relaxed text-stone-600">
+              {ZONING_SUMMARY[selected]}
+            </p>
+          )}
+
+          <div className="mt-2 border-t border-stone-100 pt-2">
+            {ZONING_DISCLAIMER.map((line) => (
+              <p
+                key={line}
+                className="text-[10px] leading-relaxed text-stone-500"
+              >
+                {line}
+              </p>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
