@@ -22,6 +22,7 @@ import {
   type StarFrequency,
 } from "@/utils/ephemerisEngine";
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
+import { DIRECTION_LABELS as GEO_DIRECTION_LABELS } from "@/utils/directionGeo";
 import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { isFatalNoise, isNoise } from "@/utils/noiseSeverity";
@@ -42,16 +43,14 @@ export const ALL_DIRECTIONS: Direction[] = [
   "NW",
 ];
 
-// Direction には CENTER（中宮）も含まれるが、移転の方位としては使わない。
+/*
+  ラベルの表は `utils/directionGeo` が正（#610 で 1 か所に寄せた）。
+  ここでは `Direction`（CENTER を含む型）で索引する箇所があるため、
+  緩い索引型に写して再輸出する。CENTER を引くと undefined になるのは
+  元の表と同じ挙動（移転の方位としては使わないので引かれない）。
+*/
 export const DIRECTION_LABELS: Record<string, string> = {
-  N: "北",
-  NE: "北東",
-  E: "東",
-  SE: "南東",
-  S: "南",
-  SW: "南西",
-  W: "西",
-  NW: "北西",
+  ...GEO_DIRECTION_LABELS,
 };
 
 /** 吉と見なす判定。OPTIMAL 系のみを吉とし、SAFE（平）は含めない。 */
