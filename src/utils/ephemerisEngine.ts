@@ -116,6 +116,7 @@ import {
 import { Solar } from "lunar-javascript";
 import { calculateSolarTime, getZonedDateTimeFields } from "./solarTime";
 import { directionFromBearing } from "./directionGeo";
+import { worstNoise } from "./noiseSeverity";
 
 /**
  * Astronomical Engine: Validated Physical Orbital Coordinates
@@ -1071,35 +1072,34 @@ export function calculateVectorCollision(
     return res;
   };
 
-  const yearLayer = processLayer(yearBoard);
-  // Apply 歳破 (Saiha)
-  if (zodiacs?.yearZodiac) {
-    const clashZodiac = clashMap[zodiacs.yearZodiac];
-    const clashDirs = z2d[clashZodiac] || [];
+  /*
+    破（歳破・月破・日破）を層に当てる。以前は無条件の上書きで、同じ枡に
+    重なった五黄殺・暗剣殺（NOISE_PRIORITY で破より重い）が破のラベルに
+    隠れていた。実例: 2026 年の北は暗剣殺と歳破の重なりだが「歳破」に、
+    日盤では日破が五黄殺を隠す日があった（2026-01-15 の南西など）。
+    重さの順序はサイト全体で noiseSeverity がただ一つの定義なので、
+    そこで畳む。破しか無い枡はこれまでどおり破になる。
+  */
+  const applyHa = (
+    layer: Partial<Record<Direction, VectorStatus>>,
+    zodiac: string | undefined,
+  ) => {
+    if (!zodiac) return;
+    const clashDirs = z2d[clashMap[zodiac]] || [];
     clashDirs.forEach((d) => {
-      yearLayer[d] = "NOISE_HA";
+      layer[d] = (worstNoise([layer[d], "NOISE_HA"]) ??
+        "NOISE_HA") as VectorStatus;
     });
-  }
+  };
+
+  const yearLayer = processLayer(yearBoard);
+  applyHa(yearLayer, zodiacs?.yearZodiac); // 歳破 (Saiha)
 
   const monthLayer = processLayer(monthBoard);
-  // Apply 月破 (Geppa)
-  if (zodiacs?.monthZodiac) {
-    const clashZodiac = clashMap[zodiacs.monthZodiac];
-    const clashDirs = z2d[clashZodiac] || [];
-    clashDirs.forEach((d) => {
-      monthLayer[d] = "NOISE_HA";
-    });
-  }
+  applyHa(monthLayer, zodiacs?.monthZodiac); // 月破 (Geppa)
 
   const dayLayer = processLayer(dayBoard);
-  // Apply 日破 (Nippa)
-  if (zodiacs?.dayZodiac) {
-    const clashZodiac = clashMap[zodiacs.dayZodiac];
-    const clashDirs = z2d[clashZodiac] || [];
-    clashDirs.forEach((d) => {
-      dayLayer[d] = "NOISE_HA";
-    });
-  }
+  applyHa(dayLayer, zodiacs?.dayZodiac); // 日破 (Nippa)
 
   /*
     八方位ぶんを直後のループで必ず埋める受け皿。CENTER 込みの器から
@@ -1378,27 +1378,28 @@ export function getCurrentZodiac(
   dayZodiac: string;
   hourZodiac: string;
 } {
-  // 年の干支: 木星黄経ベース（物理モデル）
-  // 木星の黄経（0〜360度）を12分割し、実際の天体位置から「年の干支」を算出する。
-  // 黄道0度(春分点)付近を卯とし、30度ごとに進む。
-  // (例: 2026年4月頃の木星黄経は約106度 -> インデックス3 -> 「午」となる)
-  const jupiterLon = AstroEngine.getJupiterLongitude(date);
-  const yearIndex = Math.floor(jupiterLon / 30);
-  const ZODIACS_JUPITER = [
-    "卯",
-    "辰",
-    "巳",
-    "午",
-    "未",
-    "申",
-    "酉",
-    "戌",
-    "亥",
-    "子",
-    "丑",
-    "寅",
-  ];
-  const yearZodiac = ZODIACS_JUPITER[yearIndex];
+  /*
+    年の十二支: 立春（の瞬間）で切り替わる古典の年支。
+
+    以前は木星黄経を 12 分割して出していた（2026 年 4 月の約 106 度 → 午、
+    という対応は合う）。しかし木星が区画を跨ぐのは立春ではなく**年の途中**
+    で、2026 年は夏に 午 → 未 に変わっていた。年支を読むのは歳破の方位と
+    天中殺の「年」判定で、どちらもサイトが公開している定義（/houi の
+    用語説明・記事）は「その年＝立春区切り」。実害として、
+
+      - 歳破が年の途中で 北 → 北東 へ動き、/houi の年別頁（6 月 1 日を
+        代表点に生成）とツールの表示が食い違っていた
+      - 二黒土星では、古典の歳破方位（北）がツールで「吉方位」と出ていた
+
+    盤の物理モデル（木星黄経で**九星**を出す getYearStar）とは別の値で、
+    そちらは変えていない。年支は暦の量として古典で引く。
+    （__tests__/classicalYearZodiacSaiha.test.ts が新旧の差を固定している）
+
+    立春の瞬間は lunar-javascript の Exact 系（八字の年柱と同じ境界）。
+    timeBasis が "solar" でも年支は動かさない（経度に依らない量。
+    __tests__/zodiacTimeBasis.test.ts の不変条件）。
+  */
+  const yearZodiac = solarInJst(date).getLunar().getYearZhiExact();
 
   // 月の干支: 太陽黄経ベース（立春(315度)から寅月が始まる）
   // 315〜345:寅(3), 345〜15:卯(4), 15〜45:辰(5)...
