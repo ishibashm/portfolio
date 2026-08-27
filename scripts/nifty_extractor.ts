@@ -9,6 +9,9 @@ import * as dotenv from "dotenv";
 import { TARGET_PREFECTURE_SLUGS } from "../src/lib/scrapeTargets";
 import { errorCode, toLogMessage } from "../src/lib/errorMessage";
 import {
+  cityListLooksPartial,
+  readKnownCityCount,
+  rememberCityCount,
   resumeCityMissing,
   writeSweptState,
 } from "./scraperResume";
@@ -399,7 +402,11 @@ const CITY_LIST_ATTEMPTS = 3;
 async function fetchCitiesForPrefecture(
   page: Page,
   prefAlpha: string,
+  /* 前に見えた市区町村の数。0 なら比べる相手がいない（初回）。
+     取得が部分的だったときに取り直すためだけに使う。 */
+  knownCityCount: number = 0,
 ): Promise<string[]> {
+  let best: string[] = [];
   const url = `https://myhome.nifty.com/rent/${prefAlpha}/`;
 
   for (let attempt = 1; attempt <= CITY_LIST_ATTEMPTS; attempt++) {
@@ -432,7 +439,20 @@ async function fetchCitiesForPrefecture(
       );
 
       console.log(`Found ${cities.length} cities in ${prefAlpha}.`);
-      if (cities.length > 0) return cities;
+      if (cities.length > best.length) best = cities;
+
+      /* 部分取得を「成功」として受け入れない。一覧は動的に描かれる部分が
+         あり、domcontentloaded から 2 秒では取り切れないことがある。
+         2026-08-25 の北海道は 10 件しか取れていなかったが、DB は同じ道で
+         125 市区町村を知っている。既にある再試行の仕組みに乗せるだけで、
+         リクエストの間隔も回数の上限（CITY_LIST_ATTEMPTS）も変えない。 */
+      if (cities.length > 0) {
+        if (!cityListLooksPartial(cities.length, knownCityCount)) return cities;
+        console.warn(
+          `⚠️ ${prefAlpha} の市区町村一覧が ${cities.length} 件しか取れていない` +
+            `（前は ${knownCityCount} 件）。取り直す。`,
+        );
+      }
     } catch (error) {
       console.error(
         `City list fetch failed for ${prefAlpha}: ${toLogMessage(error)}`,
@@ -444,6 +464,17 @@ async function fetchCitiesForPrefecture(
       console.log(`Retrying the city list in ${waitMs / 1000}s...`);
       await new Promise((res) => setTimeout(res, waitMs));
     }
+  }
+
+  if (best.length > 0) {
+    /* 取り直しても増えなかった。掲載が本当に減った可能性もあるので
+       止めはしないが、その日の巡回はこの範囲しか回れないと分かる形で残す。 */
+    console.warn(
+      `⚠️ ${prefAlpha} の市区町村一覧は ${CITY_LIST_ATTEMPTS} 回とも ` +
+        `${best.length} 件どまりだった（前は ${knownCityCount} 件）。` +
+        `この範囲だけを回る。`,
+    );
+    return best;
   }
 
   throw new Error(
@@ -593,7 +624,12 @@ async function main() {
         Object.defineProperty(navigator, "webdriver", { get: () => undefined });
       });
 
-      const cities = await fetchCitiesForPrefecture(page, pref);
+      const cities = await fetchCitiesForPrefecture(
+        page,
+        pref,
+        readKnownCityCount(STATE_FILE, pref),
+      );
+      rememberCityCount(STATE_FILE, pref, cities.length);
 
       /* 再開位置の市区町村が一覧から消えていることがある。待ち続けると
          どれにも一致しないまま全部をスキップし、1 ページも取らずに

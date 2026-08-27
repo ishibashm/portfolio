@@ -6,6 +6,9 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   RESET_STATE,
+  cityListLooksPartial,
+  readKnownCityCount,
+  rememberCityCount,
   resumeCityMissing,
   resumeIndexOutOfRange,
   writeSweptState,
@@ -103,5 +106,72 @@ describe("添字で再開する側（eheya）の範囲外", () => {
   it("壊れた値は先頭から", () => {
     expect(resumeIndexOutOfRange(-1, 10)).toBe(true);
     expect(resumeIndexOutOfRange(NaN, 10)).toBe(true);
+  });
+});
+
+describe("市区町村一覧の部分取得", () => {
+  const tmpState = () => {
+    const f = path.join(
+      fs.mkdtempSync(path.join(os.tmpdir(), "resume-")),
+      "state.json",
+    );
+    tmpFiles.push(f);
+    return f;
+  };
+
+  it("報告の再現: 北海道は 125 件を知っているのに 10 件しか取れなかった", () => {
+    expect(cityListLooksPartial(10, 125)).toBe(true);
+  });
+
+  it("初回（比べる相手が無い）ときは部分とみなさない", () => {
+    expect(cityListLooksPartial(10, 0)).toBe(false);
+  });
+
+  it("日々の増減くらいでは疑わない", () => {
+    // 掲載の増減で市区町村が数件変わるのは普通。半分を下回ったときだけ。
+    expect(cityListLooksPartial(120, 125)).toBe(false);
+    expect(cityListLooksPartial(63, 125)).toBe(false);
+    expect(cityListLooksPartial(62, 125)).toBe(true);
+  });
+
+  it("見えた数は県ごとに覚える。減る方向には更新しない", () => {
+    const f = tmpState();
+    rememberCityCount(f, "hokkaido", 125);
+    rememberCityCount(f, "tokyo", 53);
+    expect(readKnownCityCount(f, "hokkaido")).toBe(125);
+    expect(readKnownCityCount(f, "tokyo")).toBe(53);
+
+    // 部分取得を受け入れた日に上書きすると、翌日の基準がその小さい値に
+    // なって検出できなくなる。最大値で持つ。
+    rememberCityCount(f, "hokkaido", 10);
+    expect(readKnownCityCount(f, "hokkaido")).toBe(125);
+  });
+
+  it("一巡が終わっても覚えた数は消えない（再開位置だけ空に戻る）", () => {
+    const f = tmpState();
+    rememberCityCount(f, "hokkaido", 125);
+    fs.writeFileSync(
+      f,
+      JSON.stringify({
+        ...JSON.parse(fs.readFileSync(f, "utf-8")),
+        pref: "hokkaido",
+        city: "fukagawashi",
+        page: 2,
+      }),
+    );
+
+    writeSweptState(f);
+
+    const after = JSON.parse(fs.readFileSync(f, "utf-8"));
+    expect(after.pref).toBeNull();
+    expect(after.city).toBeNull();
+    expect(after.page).toBe(1);
+    // ここが消えると、翌日の部分取得を検出できない。
+    expect(readKnownCityCount(f, "hokkaido")).toBe(125);
+  });
+
+  it("覚えた数が無い県は 0（未知）を返す", () => {
+    const f = tmpState();
+    expect(readKnownCityCount(f, "aichi")).toBe(0);
   });
 });
