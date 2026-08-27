@@ -64,6 +64,8 @@ declare module "lunar-javascript" {
     getMonthNineStar(): NineStar;
     getDayNineStar(): NineStar;
     getYearZhi(): string;
+    /** 年支（立春の**瞬間**で切り替わる Exact 系。八字の年柱と同じ境界）。 */
+    getYearZhiExact(): string;
     getMonthZhi(): string;
     getDayZhi(): string;
     getDayInGanZhi(): string;
