@@ -39,16 +39,98 @@ export const RESET_STATE = {
   page: 1,
 } as const;
 
+/** ステートファイルを読む。壊れていても落とさず空を返す。 */
+function readStateFile(stateFile: string): Record<string, unknown> {
+  try {
+    if (fs.existsSync(stateFile)) {
+      const parsed = JSON.parse(fs.readFileSync(stateFile, "utf-8"));
+      if (parsed && typeof parsed === "object") {
+        return parsed as Record<string, unknown>;
+      }
+    }
+  } catch {
+    console.warn("再開位置のファイルが読めなかった。空として扱う。");
+  }
+  return {};
+}
+
 /**
  * 一巡の完了を記録する。**unlink しないこと。**
  * ファイルが無いと CI がキャッシュを保存せず、古い再開位置が残る。
+ *
+ * 再開位置だけを空に戻し、**それ以外の鍵は残す**（knownCityCounts は
+ * 一巡をまたいで覚えていないと、部分取得の検出ができない）。
  */
 export function writeSweptState(stateFile: string): void {
   try {
-    fs.writeFileSync(stateFile, JSON.stringify(RESET_STATE, null, 2));
+    const kept = readStateFile(stateFile);
+    delete kept.pref;
+    delete kept.city;
+    delete kept.cityIndex;
+    delete kept.page;
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ ...kept, ...RESET_STATE }, null, 2),
+    );
   } catch (e) {
     console.error("Failed to reset resume state:", e);
   }
+}
+
+/**
+ * 前に見えた市区町村の数。県ごとに覚える。
+ *
+ * 一覧は都道府県トップページのリンクから作っており、**取得が
+ * 部分的になることがある。**2026-08-25 の北海道は 10 件しか取れて
+ * いなかったが、DB は同じ道で 125 市区町村を知っている（2026-08-26 の
+ * 実測）。`cities.length > 0` なら受け入れる作りなので、部分的な一覧の
+ * まま「成功」し、その日はその範囲しか回らない。
+ */
+export function readKnownCityCount(stateFile: string, pref: string): number {
+  const counts = readStateFile(stateFile).knownCityCounts;
+  if (!counts || typeof counts !== "object") return 0;
+  const n = (counts as Record<string, unknown>)[pref];
+  return typeof n === "number" && Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+/** 見えた数を覚える。**減る方向には更新しない**（下の註）。 */
+export function rememberCityCount(
+  stateFile: string,
+  pref: string,
+  count: number,
+): void {
+  if (!Number.isFinite(count) || count <= 0) return;
+  try {
+    const state = readStateFile(stateFile);
+    const counts =
+      state.knownCityCounts && typeof state.knownCityCounts === "object"
+        ? ({ ...state.knownCityCounts } as Record<string, number>)
+        : {};
+    /* 最大値で持つ。部分取得を受け入れた日に上書きすると、翌日の
+       比較基準がその小さい値になって検出できなくなる。掲載が本当に
+       減った県は毎晩警告が出続けるが、**気付けないより警告が出るほうが
+       良い**（気付いたら基準を手で直せばよい）。 */
+    counts[pref] = Math.max(counts[pref] ?? 0, Math.floor(count));
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ ...state, knownCityCounts: counts }, null, 2),
+    );
+  } catch (e) {
+    console.error("Failed to remember the city count:", e);
+  }
+}
+
+/**
+ * 一覧の取得が部分的か。前に見えた数の半分を下回ったら疑う。
+ *
+ * 半分にしたのは、掲載が日々増減する幅（実測で数%）よりずっと大きく、
+ * かつ「10 対 125」のような明らかな取りこぼしは必ず捕まえるため。
+ */
+export const PARTIAL_CITY_LIST_RATIO = 0.5;
+
+export function cityListLooksPartial(count: number, known: number): boolean {
+  if (known <= 0) return false; // 初回は比べる相手がいない
+  return count < known * PARTIAL_CITY_LIST_RATIO;
 }
 
 /**
