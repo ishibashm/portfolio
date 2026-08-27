@@ -82,9 +82,18 @@ jobs:
             fi
             sleep 0.3
           done
-          # llms.txt がテーマの一文を持っているか（生成の空振り検知）
-          if ! curl -sf "$BASE/llms.txt" | grep -q "Cloud Palette"; then
+          # llms.txt がテーマの一文を持っているか（生成の空振り検知）。
+          # 落ちたときに「何が返っていたか」が無いと調べられないので、
+          # 失敗時は応答ヘッダと冒頭を必ずダンプする（初回実行がまさに
+          # これで、200 なのに中身が違う、までしか分からなかった）。
+          BODY=$(curl -s --compressed "$BASE/llms.txt")
+          if ! echo "$BODY" | grep -q "Cloud Palette"; then
             echo "::error::llms.txt にサイト名が無い。生成が壊れている可能性" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "--- llms.txt の応答ヘッダ ---" | tee -a "$GITHUB_STEP_SUMMARY"
+            curl -sI "$BASE/llms.txt" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "--- llms.txt の冒頭 800 バイト ---" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$BODY" | head -c 800 | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "FAIL=1" >> "$GITHUB_ENV"
           fi
 
