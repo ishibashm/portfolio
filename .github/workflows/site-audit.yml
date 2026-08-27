@@ -1,0 +1,112 @@
+name: Nightly site audit (URL health / SEO / LLMO)
+
+# 本番サイトの健全性を毎晩たしかめる。
+#
+# 動機: Search Console のカバレッジに 404 が 12 件たまっていた（8/21 時点）。
+# GSC は 3〜5 日遅れでしか教えてくれず、気付くのはクロールの後になる。
+# sitemap に載せた URL が生きているかは自分で毎晩見るほうが早い。
+#
+# 見るもの:
+#   1. sitemap.xml の全 URL が 200 を返すこと（3xx も NG。sitemap には
+#      最終 URL だけを載せる。リダイレクトが混ざると索引が遅れる）
+#   2. robots.txt / llms.txt / llms-full.txt / blog/feed.xml が 200
+#   3. 中核ページに構造化データ（application/ld+json）が入っていること
+#
+# 対象は自分のサイトだけ。0.3 秒間隔の直列 HEAD なので負荷は毎晩
+# 100 リクエスト強。外部サイトには一切触らない。
+
+on:
+  schedule:
+    - cron: "0 21 * * *" # 06:00 JST
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Fetch sitemap and check every URL
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          FAIL=0
+
+          echo "## sitemap の URL 健全性" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # sitemap index → 子 sitemap → loc の順にたどる
+          mapfile -t SITEMAPS < <(curl -sf "$BASE/sitemap.xml" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g' | grep '\.xml$' || true)
+          if [ "${#SITEMAPS[@]}" -eq 0 ]; then SITEMAPS=("$BASE/sitemap.xml"); fi
+
+          URLS=$(for sm in "${SITEMAPS[@]}"; do
+            curl -sf "$sm" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g' | grep -v '\.xml$'
+          done | sort -u)
+
+          COUNT=$(echo "$URLS" | grep -c . || true)
+          echo "sitemap の URL: $COUNT 件" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$COUNT" -lt 50 ]; then
+            echo "::error::sitemap の URL が $COUNT 件しかない。生成が壊れている可能性" | tee -a "$GITHUB_STEP_SUMMARY"
+            FAIL=1
+          fi
+
+          BAD=""
+          while IFS= read -r url; do
+            [ -z "$url" ] && continue
+            code=$(curl -s -o /dev/null -w "%{http_code}" -A "cloud-palette-site-audit" "$url")
+            if [ "$code" != "200" ]; then
+              BAD="$BAD$code $url"$'\n'
+            fi
+            sleep 0.3
+          done <<< "$URLS"
+
+          if [ -n "$BAD" ]; then
+            echo "::error::200 以外を返した URL:" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "$BAD" | tee -a "$GITHUB_STEP_SUMMARY"
+            FAIL=1
+          else
+            echo "全 URL が 200" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "FAIL=$FAIL" >> "$GITHUB_ENV"
+
+      - name: Check robots / llms / feed endpoints
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## 配信ファイル" | tee -a "$GITHUB_STEP_SUMMARY"
+          for path in /robots.txt /llms.txt /llms-full.txt /blog/feed.xml /sitemap.xml; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE$path")
+            echo "$code $path" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$code" != "200" ]; then
+              echo "::error::$path が $code" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+            sleep 0.3
+          done
+          # llms.txt がテーマの一文を持っているか（生成の空振り検知）
+          if ! curl -sf "$BASE/llms.txt" | grep -q "Cloud Palette"; then
+            echo "::error::llms.txt にサイト名が無い。生成が壊れている可能性" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Check structured data on core pages
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## 構造化データ（application/ld+json）" | tee -a "$GITHUB_STEP_SUMMARY"
+          for path in / /houi /guide /blog/honmeisatsu-year-board-next-move; do
+            n=$(curl -sf "$BASE$path" | grep -c 'application/ld+json' || true)
+            echo "$path: $n 個" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ "$n" -eq 0 ]; then
+              echo "::error::$path に JSON-LD が無い" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+            sleep 0.3
+          done
+
+      - name: Result
+        run: |
+          if [ "${FAIL:-0}" = "1" ]; then
+            echo "監査に失敗した項目がある。上のサマリを見ること。"
+            exit 1
+          fi
+          echo "すべて通過"
