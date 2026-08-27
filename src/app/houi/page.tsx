@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
+import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
 import type { Metadata } from "next";
 import {
   STAR_NAMES,
@@ -68,6 +69,14 @@ export default function Page() {
           <p className="text-xs text-slate-600 mt-3 leading-relaxed">
             九星気学の一年は<b>立春</b>で切り替わります（2月3日〜4日ごろ）。切り替わるのは<b>その日の 0 時ではなく、立春の瞬間</b>です。時刻は年ごとに違います（2026年は2月4日 5時1分ごろ、2027年は2月4日 10時46分ごろ）。
             1月1日から立春前までに生まれた方は、<b>前年</b>の本命星になります。<b>立春の日に生まれた方は、生まれた時刻で分かれます。</b>
+          </p>
+          {/* 生年月日で引く早見。立春前の生まれの繰り下げを自動で行うので、
+              上の断りを読み飛ばしても 1 年ずれない。星の名前と行き先の年は
+              props で渡す（client 側に kigakuContent → ephemerisEngine を
+              値として乗せないため）。 */}
+          <HonmeiLookup starNames={STAR_NAMES} linkYear={years[0]} />
+          <p className="mt-8 text-xs font-bold text-slate-700">
+            生まれ年から表で引く場合
           </p>
           {/* 9 枚。1 列のままだと器を広げても札が伸びるだけなので、
               広い画面では折り返す。 */}
