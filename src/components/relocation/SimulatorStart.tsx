@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toUserMessage } from "@/lib/errorMessage";
+import { loadSettings } from "@/lib/userSettings";
 import { todayInJapan } from "@/utils/japanDate";
 
 /**
@@ -61,6 +62,44 @@ export function SimulatorStart({
   const [departureDate, setDepartureDate] = useState(todayInJapan());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  /*
+    保存済みのものは自動で埋める。「設定するところが多すぎる」という
+    利用者の指摘への対応。生年月日はスキャナーの保存値（arb_birthDate）を
+    土台に、共有設定（ログイン中はクラウド同期）があれば上書き —
+    timing・/houi と同じ読み方。場所はこの画面の下書きの出発地名。
+    埋めるだけで保存はしない。空欄のときだけ埋め、打ちかけは消さない。
+  */
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let draftName = "";
+      let storedBirth = "";
+      try {
+        const raw = localStorage.getItem("relocation_simulator_draft");
+        if (raw) {
+          const draft = JSON.parse(raw);
+          if (typeof draft.startName === "string") draftName = draft.startName;
+        }
+        storedBirth = localStorage.getItem("arb_birthDate") || "";
+      } catch {
+        /* プライベートモード等。共有設定だけで続行 */
+      }
+      const { settings } = await loadSettings();
+      if (cancelled) return;
+      const fromConfig =
+        typeof settings.birth_date === "string" ? settings.birth_date : "";
+      // 共有設定は "T12:00" 付きのことがある。date 入力は日付だけ受ける。
+      const birth = (fromConfig || storedBirth).slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(birth)) {
+        setBirthDate((prev) => prev || birth);
+      }
+      if (draftName) setPlace((prev) => prev || draftName);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /** 住所を 1 つ引く。見つからなければ null。 */
   async function lookup(
@@ -154,7 +193,7 @@ export function SimulatorStart({
             className="w-full rounded-xl border border-stone-300 p-2.5 text-sm"
           />
           <span className="mt-1 block text-[11px] text-stone-600">
-            本命星と天中殺を出すのに使います。保存はされません。
+            本命星と天中殺を出すのに使います。ここでは保存しません。プロフィールに保存済みなら自動で入ります。
           </span>
         </label>
 
