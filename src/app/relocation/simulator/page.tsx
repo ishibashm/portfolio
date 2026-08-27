@@ -1744,6 +1744,29 @@ export default function RelocationSimulatorPage() {
                   {voidZodiacs.join("")}
                 </strong>
               </p>
+              {/* 引越し日はステップの札の奥（出発日）と設定バーの展開の中に
+                  しか無く、「どこで変えるのか」と指摘があった。判定の起点に
+                  なる日なので、結果の先頭で直接変えられるようにする。
+                  値はステップ 1 の出発日そのもの（判定が実際に読む値）。 */}
+              {steps.length > 0 && (
+                <label className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  <span className="font-bold text-stone-600">引越し日:</span>
+                  <input
+                    type="date"
+                    value={steps[0].departureDate}
+                    onChange={(e) =>
+                      handleUpdateStep(0, { departureDate: e.target.value })
+                    }
+                    className="rounded-xl border border-stone-200 bg-white/80 px-3 py-1.5 font-mono text-xs text-stone-900 focus:outline-none focus:border-indigo-500/30 shadow-inner"
+                  />
+                  {steps.length > 1 && (
+                    <span className="text-[10px] text-stone-500">
+                      （1 段目の出発日。2
+                      段目以降は下の各ステップで変えられます）
+                    </span>
+                  )}
+                </label>
+              )}
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
