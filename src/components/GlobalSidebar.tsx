@@ -32,7 +32,7 @@ import {
   Newspaper,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CORE_ROUTES } from "@/lib/siteStructure";
+import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
 
 // 使い方ガイドは引越しを決める道具そのものではないので、
 // 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
@@ -62,11 +62,22 @@ interface NavItem {
   label: string;
 }
 
-const PROTECTED_ITEMS: NavItem[] = CORE_ROUTES.map((r) => ({
-  href: r.href,
-  icon: CORE_ICONS[r.href] ?? Compass,
-  label: r.label,
-}));
+/*
+  10 本をフラットに並べると、似た名前（「引越し時期を分析する」と
+  「引越しの日取りを選ぶ」など）の区別が付かない。意思決定の 3 つの
+  問い（どこへ・いつ・いくら）で群にする。群は siteStructure が唯一の
+  定義元で、ホームの札も同じ群で並ぶ。
+*/
+const GROUPED_ITEMS: { heading: string; items: NavItem[] }[] = ROUTE_GROUPS.map(
+  (g) => ({
+    heading: g.label,
+    items: CORE_ROUTES.filter((r) => r.group === g.key).map((r) => ({
+      href: r.href,
+      icon: CORE_ICONS[r.href] ?? Compass,
+      label: r.label,
+    })),
+  }),
+);
 
 // Katmer Cloud は別サブドメインで運用している別のサービスで、引越しとは関係がない。
 // 中核ナビに同列で並べると、何をするサイトなのかが読み取りにくくなる。
@@ -242,13 +253,17 @@ export function GlobalSidebar() {
           {/* 見出しは "Public Space" / "Secure Engines" だった。中核ページは
               匿名で開けるようにしたので "Secure" は事実と違い、ログインが
               要るように見えてしまう。日本語の見出しに合わせる。 */}
-          <div className="my-4 border-t border-rose-100/60" />
-          <div
-            className={`px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600 ${hideWhenCollapsed}`}
-          >
-            引越しを決める
-          </div>
-          {PROTECTED_ITEMS.map(renderNavItem)}
+          {GROUPED_ITEMS.map((g) => (
+            <div key={g.heading}>
+              <div className="my-4 border-t border-rose-100/60" />
+              <div
+                className={`px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600 ${hideWhenCollapsed}`}
+              >
+                {g.heading}
+              </div>
+              {g.items.map(renderNavItem)}
+            </div>
+          ))}
         </nav>
 
         {/* Footer Area */}

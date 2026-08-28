@@ -9,6 +9,7 @@ import { QuickProfileBar } from "@/components/home/QuickProfileBar";
 import { LazyMount } from "@/components/LazyMount";
 import {
   CORE_ROUTES,
+  ROUTE_GROUPS,
   SITE_NAME,
   SITE_TAGLINE,
   SITE_DESCRIPTION,
@@ -105,25 +106,40 @@ export default function Home() {
       <QuickProfileBar />
 
       {/* 中核ページへの導線。siteStructure の定義がそのまま並ぶので、
-          ナビ・メタデータ・llms.txt と説明がずれない。 */}
-      {/* 幅を広げたぶん、2 列のままだと 1 枚が 800px を超えて説明文が
-          2 行しかない札が間延びする。広い画面では列を増やして、札の
-          縦横比を今までの見え方に近づける。 */}
-      <div className="w-full max-w-[1700px] grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {CORE_ROUTES.map((r) => (
-          <Link
-            key={r.href}
-            href={r.href}
-            className="group bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-rose-300 transition-all"
-          >
-            <h2 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
-              {r.label}
-              <ArrowRight className="w-4 h-4 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          ナビ・メタデータ・llms.txt と説明がずれない。
+
+          10 枚をフラットに並べると、似た名前の道具（時期を分析する／
+          日取りを選ぶ など）の区別が付かない。意思決定の 3 つの問い
+          （どこへ・いつ・いくら）で群にして、見出しを立てる。群の定義は
+          siteStructure（サイドバーと同じもの）。 */}
+      <div className="w-full max-w-[1700px] space-y-8">
+        {ROUTE_GROUPS.map((g) => (
+          <section key={g.key}>
+            <h2 className="text-lg font-bold text-slate-900 font-serif">
+              {g.label}
             </h2>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              {r.summary}
-            </p>
-          </Link>
+            <p className="text-xs text-slate-600 mt-1">{g.note}</p>
+            {/* 幅を広げたぶん、2 列のままだと 1 枚が 800px を超えて説明文が
+                2 行しかない札が間延びする。広い画面では列を増やして、札の
+                縦横比を今までの見え方に近づける。 */}
+            <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              {CORE_ROUTES.filter((r) => r.group === g.key).map((r) => (
+                <Link
+                  key={r.href}
+                  href={r.href}
+                  className="group bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 shadow-sm hover:shadow-lg hover:border-rose-300 transition-all"
+                >
+                  <h3 className="text-base font-bold text-slate-900 font-serif flex items-center gap-2">
+                    {r.label}
+                    <ArrowRight className="w-4 h-4 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+                    {r.summary}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
         ))}
       </div>
 
