@@ -649,7 +649,31 @@ async function main() {
       // ランダムに待機して負荷分散
       await new Promise((res) => setTimeout(res, 1500 + Math.random() * 1500));
 
-      for (const city of cities) {
+      /* 再開位置から末尾まで回ったあと、**先頭に戻って続ける。**
+
+         以前は末尾で終わっていた。再開位置が一覧の後ろのほうにあると、
+         残りが数件しか無いのに予算を丸ごと残して「成功」で終わる。
+         実測（2026-08-28 の長崎）で、予算 50 分に対し **1.3 分・1 件**で
+         終わっていた。次の晩は再開位置が先頭に戻るので回復はするが、
+         その晩ぶんの巡回は丸ごと無駄になる。
+
+         一巡させれば予算を使い切れる。**1 回の実行で同じ市区町村を
+         2 度は回らない**（順番を並べ替えるだけで、request の数も間隔も
+         変わらない）。相手側への 1 分あたりの負荷は同じ。 */
+      const startAt = skipCity && state.city ? cities.indexOf(state.city) : 0;
+      const ordered =
+        startAt > 0
+          ? [...cities.slice(startAt), ...cities.slice(0, startAt)]
+          : cities;
+      if (startAt > 0) {
+        skipCity = false; // 並べ替えで先頭に持ってきたので、読み飛ばしは不要
+        console.log(
+          `Reached resume target city: ${state.city}（ここから一巡する。` +
+            `末尾まで行ったら先頭 ${cities[0]} に戻って続ける）`,
+        );
+      }
+
+      for (const city of ordered) {
         if (budgetExhausted) break;
         if (skipCity) {
           if (city === state.city) {
