@@ -66,6 +66,20 @@ export default function CalendarPage() {
               <p className="text-stone-600 mt-3 max-w-2xl text-sm md:text-base leading-relaxed">
                 契約・搬出入・入居の日を決めるためのカレンダーです。六曜、天赦日、一粒万倍日、月相を日ごとに突き合わせて表示します。
               </p>
+              {/* 「時期を選ぶ」道具は 2 本ある。役割の違いを両方の冒頭に
+                  書かないと、どちらを開けばいいか初見で分からない
+                  （/relocation/timing 側にも対になる案内がある）。 */}
+              <p className="text-stone-500 mt-2 max-w-2xl text-xs leading-relaxed">
+                ここは<b>暦注で日を確かめる</b>
+                画面です。方位ごとの吉凶の段階評価で先に候補日を絞るときは
+                <Link
+                  href="/relocation/timing"
+                  className="mx-1 font-semibold text-indigo-600 underline"
+                >
+                  引越し時期の分析
+                </Link>
+                を使ってください。
+              </p>
             </div>
           </div>
         </header>

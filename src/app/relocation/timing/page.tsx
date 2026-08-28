@@ -494,6 +494,20 @@ export default function TimingAnalyticsPage() {
             </Link>
             の設定（生年月日・出発地・天中殺の扱い）をそのまま使います。
           </p>
+          {/* 「時期を選ぶ」道具は 2 本ある。役割の違いを両方の冒頭に
+              書かないと、どちらを開けばいいか初見で分からない（導線の
+              棚卸しで判明。/calendar 側にも対になる案内がある）。 */}
+          <p className="mt-2 text-xs leading-relaxed text-stone-500">
+            ここは<b>方位ごとの段階評価で候補日を絞る</b>
+            画面です。絞った日を六曜・天赦日・一粒万倍日などの暦注で確かめるときは
+            <Link
+              href="/calendar"
+              className="mx-1 font-semibold text-indigo-600 underline"
+            >
+              日取りカレンダー
+            </Link>
+            を使ってください。
+          </p>
         </header>
 
         {/* 走査範囲 */}
