@@ -269,7 +269,7 @@ export function QuickProfileBar() {
         伸びて幅が何も買わない（CLAUDE.md 3 節「器を広げるときは、中の
         並べ方も一緒に見る」）。
       */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
         <div className="flex min-w-0 flex-col gap-2">
           <label
             htmlFor="quick-birth-date"

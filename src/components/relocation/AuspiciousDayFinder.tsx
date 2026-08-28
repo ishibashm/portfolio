@@ -248,7 +248,7 @@ export function AuspiciousDayFinder() {
         年盤・月盤・日盤のどれにも凶が入らない日だけを日付として並べます。年盤は立春で切り替わるため、その方位が吉でいられる期限も併せて出します。
       </p>
 
-      <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <div className="min-w-0 space-y-1">
           <label
             htmlFor="ad-birth"
