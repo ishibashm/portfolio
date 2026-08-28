@@ -212,9 +212,18 @@ export function PlaceInput({
   const hasCoords = lat !== null && lon !== null;
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <label className={s.label}>
+    /* この部品自体が grid の項目になる（ホームの 3 列など）。既定の
+       min-width: auto だと、中の入力欄の既定幅（size 属性ぶん）より
+       枠を狭くできず、隣の列へはみ出す。min-w-0 で縮めるようにする。 */
+    <div className="flex min-w-0 flex-col gap-1.5">
+      {/* ラベルが長い県・欄では、ボタンが幅を取ってラベルが不自然な位置で
+          折り返す（「いま住んでいると／ころ（出発地）」。利用者の報告
+          2026-08-28）。**折り返しを許して、狭いときはボタンを次の行へ
+          落とす。**広い画面ではこれまでどおり同じ行に並ぶ。
+          縦は items-baseline にして、2 行になってもボタンが行間に
+          浮かないようにする。 */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+        <label className={`${s.label} min-w-0`}>
           {label}
           {optional && <span className={s.optionalBadge}>（任意）</span>}
         </label>
@@ -236,7 +245,11 @@ export function PlaceInput({
           setQuery(e.target.value);
           setNotice(null);
         }}
-        placeholder="市区町村・住所・郵便番号（例: 京都市南区 / 6018001）"
+        /* 何を入れる欄かはラベルが言っている。placeholder は**書き方の例**
+           だけにする。以前は「市区町村・住所・郵便番号（例: …）」と説明を
+           繰り返していて、3 列に並べたときに欄の幅を超えて途中で切れていた
+           （利用者の報告 2026-08-28）。 */
+        placeholder="例: 京都市南区 / 6018001"
         className={s.input}
       />
 

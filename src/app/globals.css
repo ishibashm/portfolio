@@ -283,3 +283,27 @@ body {
   filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9)
     saturate(0.5);
 }
+
+/* 日付・時刻の入力に最小幅の縛りを付けない。
+ *
+ * `input[type="datetime-local"]` などは**中身から決まる既定の最小幅**を
+ * 持つ。grid / flex の項目は既定が `min-width: auto` なので、枠がその
+ * 最小幅より狭いと**縮まずにはみ出し、隣の列の入力欄に重なる**。
+ *
+ * **Chromium では再現しなかった**（1024〜1700px の 10 通りで /（ホーム）と
+ * /calendar を走査し、重なり 0 件）。利用者の報告は端末側の画面で、
+ * Safari（iPad）は datetime-local の既定幅が Chromium より広いため、
+ * 同じ枠でもはみ出しうる。こちらで再現できていない以上「直した」とは
+ * 言えないが、**幅は各画面が w-full などで与えており、この 1 行が
+ * 減らすのは最小幅の縛りだけ**なので、予防として入れておく。
+ *
+ * この形の入力は 6 ファイルに散っている。各所に min-w-0 を書くと必ず
+ * 書き漏らすので 1 か所に決める（同じことを 2 か所に書かない）。
+ */
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="month"],
+input[type="week"] {
+  min-width: 0;
+}
