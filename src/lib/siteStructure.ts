@@ -142,17 +142,6 @@ export const CORE_ROUTES: CoreRoute[] = [
       "検討中のマンションの場所・専有面積・築年・売出価格を入力すると、近所の成約価格の分布のどこに位置するかを出す。分母は売り出し価格ではなく実際に成立した額。使った成約の件数と、どこまで条件を緩めたかも併せて示す。",
     group: "market",
   },
-  {
-    /*
-      利回りは購入と賃貸の**両方**を持っていないと作れない。相場を見る
-      頁とは別に置く。地図が主役なので、一覧に埋めずに独立させた。
-    */
-    href: "/relocation/yield",
-    label: "表面利回りを地図で見る",
-    summary:
-      "全国を約 5km 四方の区画に切り、中古マンションの成約価格と賃貸の募集賃料から表面利回りを出して地図に描く。分母は売り出し価格ではなく成約価格。区画ごとに片側 5 件以上そろったところだけを出す。",
-    group: "market",
-  },
 ];
 
 /**
@@ -170,11 +159,21 @@ import nonCore from "./nonCoreRoutes.json";
 export const NON_CORE_ROUTES: string[] = nonCore.routes;
 
 /**
+ * テーマ外だが道具として残すルート。ナビ・sitemap・robots から外す。
+ * NON_CORE と違い**ログインは要らない**（routeAccess はこちらを読まない）。
+ * /relocation/yield（投資家向けの利回り地図）が該当。引越しの意思決定
+ * ではなく投資の道具で、「何のサイトか」の一点集中を薄めるため露出だけ
+ * 絞った（2026-08-28。AdSense の有用性指摘への対応の一環）。URL を知って
+ * いれば従来どおり使える。
+ */
+export const OFF_THEME_ROUTES: string[] = nonCore.offTheme;
+
+/**
  * robots.ts の Disallow 値。末尾にスラッシュを付けないこと。
  * "/foo/" と書くと配下しか塞がず "/foo" 本体が素通りする。
  * スラッシュ無しなら前方一致で本体と配下の両方が対象になる。
  */
-export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES];
+export const NON_CORE_DISALLOW = [...NON_CORE_ROUTES, ...OFF_THEME_ROUTES];
 
 export const SITE_NAME = "Cloud Palette";
 export const SITE_TAGLINE = "引越しの方位とタイミングを決める";

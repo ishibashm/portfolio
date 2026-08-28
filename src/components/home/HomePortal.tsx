@@ -483,14 +483,9 @@ export default function HomePortal({
                 検討中の物件を査定する →
               </Link>
             </li>
-            <li>
-              <Link
-                href="/relocation/yield"
-                className="text-indigo-500 hover:underline"
-              >
-                表面利回りを地図で見る →
-              </Link>
-            </li>
+            {/* 表面利回り（/relocation/yield）はテーマ外の道具として
+                ナビから外した（OFF_THEME。siteStructure の註を参照）。
+                URL 直打ちでは従来どおり使える。 */}
             <li>
               <Link href="/houi" className="text-indigo-500 hover:underline">
                 方位の読みもの →
