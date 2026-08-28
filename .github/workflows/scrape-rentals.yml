@@ -24,7 +24,10 @@ name: Refresh Rental Listings (Nifty)
 on:
   schedule:
     # 毎日 19:00 UTC = 翌 04:00 JST
-    - cron: "0 19 * * *"
+    # 毎時 0 分は GitHub の schedule が最も混む時刻で、実測で 3.4 時間
+    # 遅延した（2026-08-27 の 19:00Z 予定が 8/28 02:22Z 発火。遅れたぶん
+    # 翌日の cron と近接し、直列化の待ちが延びる）。混まない分にずらす。
+    - cron: "17 19 * * *"
   workflow_dispatch:
     inputs:
       prefectures:
