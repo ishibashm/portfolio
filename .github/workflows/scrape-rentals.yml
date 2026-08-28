@@ -355,18 +355,52 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/areaDirections.json src/data/prefecturesWithData.json src/data/marketStats.json
+
           # [skip ci] を付けない。この push で動かしたいのが deploy.yml
           # そのものだからで、付けると唯一の対象を自分で消すことになる。
           # push で動くワークフローは deploy.yml だけなので、余計な実行は
           # 増えない（deploy.yml は push しないので再帰もしない）。
-          git commit -m "chore(data): エリア別の家賃相場を更新する"
+          #
           # 実行中に master が進んでいることがあるので、取り込んでから押す。
-          # --autostash が要る: npm ci や prisma generate が追跡下のファイルを
-          # 書き換えることがあり、そのままだと rebase が
-          # 「You have unstaged changes」で止まって push まで届かない。
-          git pull --rebase --autostash origin master
-          git push origin HEAD:master
+          # **rebase では取り込めない。**この 3 つは毎晩まるごと作り直す
+          # 生成物なので、master 側にも別の生成コミットが載っていると
+          # 必ず内容衝突する。実際 2026-08-28 の run はここで
+          # 「CONFLICT (content): src/data/areaDirections.json」で止まり、
+          # 一晩ぶんの収集結果が本番に届かなかった。
+          #
+          # 生成物に「両方を混ぜた正解」は無い。今この run が作り直した
+          # ものが最新なので、master 側の同ファイルは捨ててよい。
+          # origin/master に合わせ直してから作り直した中身を載せる。
+          for attempt in 1 2 3; do
+            git fetch origin master
+            # reset --hard の前に退避する。npm ci などが書き換えた
+            # 追跡下のファイルごと戻すので、生成物も巻き添えになる。
+            mkdir -p /tmp/area-dataset
+            cp src/data/areaDirections.json src/data/prefecturesWithData.json \
+               src/data/marketStats.json /tmp/area-dataset/
+            git reset --hard origin/master
+            cp /tmp/area-dataset/areaDirections.json \
+               /tmp/area-dataset/prefecturesWithData.json \
+               /tmp/area-dataset/marketStats.json src/data/
+            if git diff --quiet -- src/data/areaDirections.json \
+                 src/data/prefecturesWithData.json src/data/marketStats.json; then
+              echo "master 側が既に同じ内容だった。押すものが無い。"
+              exit 0
+            fi
+            git add src/data/areaDirections.json src/data/prefecturesWithData.json \
+                    src/data/marketStats.json
+            git commit -m "chore(data): エリア別の家賃相場を更新する"
+            if git push origin HEAD:master; then
+              break
+            fi
+            # 押す直前に master が進んだ場合だけここに来る。作り直しては
+            # いないので、同じ中身をもう一度 origin/master の上に載せ直す。
+            echo "::warning::push が弾かれた（$attempt 回目）。origin/master を取り直して押し直す。"
+            if [ "$attempt" = "3" ]; then
+              echo "::error::3 回とも push が弾かれた。エリア相場は本番に届いていない。"
+              exit 1
+            fi
+          done
 
           # デプロイまで届いたかは、この push が何の資格情報で行われたかで
           # 決まる。判断材料をサマリーに残す。
