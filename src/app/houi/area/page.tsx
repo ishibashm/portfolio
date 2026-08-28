@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import type { Metadata } from "next";
 import { areasByPref } from "@/lib/areaContent";
+import { prefCodeByName } from "@/lib/prefContent";
+import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { AdBanner } from "@/components/ads/AdBanner";
 
 export const metadata: Metadata = {
@@ -36,27 +38,43 @@ export default function Page() {
         </p>
 
         <div className="mt-8 space-y-6">
-          {[...byPref.entries()].map(([pref, list]) => (
-            <section key={pref}>
-              <h2 className="text-base font-bold font-serif border-b border-slate-300 pb-2">
-                {pref}
-                <span className="ml-2 text-xs font-normal text-slate-500">
-                  {list.length}エリア
-                </span>
-              </h2>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {list.map((a) => (
-                  <Link prefetch={false}
-                    key={a.code}
-                    href={`/houi/area/${a.code}`}
-                    className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-                  >
-                    {a.city}
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))}
+          {[...byPref.entries()].map(([pref, list]) => {
+            /* 県のまとめ頁（/houi/pref）は固有文章を書いた県だけ公開
+               している。公開済みの県は見出しから直接入れるようにする。 */
+            const code = prefCodeByName(pref);
+            const hasPrefPage = code !== undefined && code in PREF_EDITORIAL;
+            return (
+              <section key={pref}>
+                <h2 className="text-base font-bold font-serif border-b border-slate-300 pb-2">
+                  {pref}
+                  <span className="ml-2 text-xs font-normal text-slate-500">
+                    {list.length}エリア
+                  </span>
+                  {hasPrefPage && (
+                    <Link
+                      prefetch={false}
+                      href={`/houi/pref/${code}`}
+                      className="ml-3 text-xs font-bold text-rose-600 hover:underline"
+                    >
+                      {pref}の相場と方位のまとめ →
+                    </Link>
+                  )}
+                </h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {list.map((a) => (
+                    <Link
+                      prefetch={false}
+                      key={a.code}
+                      href={`/houi/area/${a.code}`}
+                      className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                    >
+                      {a.city}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
 
         <div className="mt-10">
