@@ -270,7 +270,7 @@ export function QuickProfileBar() {
         並べ方も一緒に見る」）。
       */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        <div className="flex flex-col gap-2">
+        <div className="flex min-w-0 flex-col gap-2">
           <label
             htmlFor="quick-birth-date"
             className="text-sm font-bold text-slate-800"

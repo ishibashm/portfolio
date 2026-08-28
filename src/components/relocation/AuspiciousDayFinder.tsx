@@ -249,7 +249,7 @@ export function AuspiciousDayFinder() {
       </p>
 
       <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             htmlFor="ad-birth"
             className="text-xs font-semibold text-slate-500 block"
@@ -264,7 +264,7 @@ export function AuspiciousDayFinder() {
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400"
           />
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
             htmlFor="ad-lon"
@@ -282,7 +282,7 @@ export function AuspiciousDayFinder() {
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
           />
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
             htmlFor="ad-lat"
@@ -300,7 +300,7 @@ export function AuspiciousDayFinder() {
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400 font-mono"
           />
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             htmlFor="ad-direction"
             className="text-xs font-semibold text-slate-500 block"
@@ -321,7 +321,7 @@ export function AuspiciousDayFinder() {
             ))}
           </select>
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             htmlFor="ad-from"
             className="text-xs font-semibold text-slate-500 block"
@@ -336,7 +336,7 @@ export function AuspiciousDayFinder() {
             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-sm outline-none focus:border-rose-400"
           />
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             htmlFor="ad-months"
             className="text-xs font-semibold text-slate-500 block"
@@ -355,7 +355,7 @@ export function AuspiciousDayFinder() {
             <option value={24}>24ヶ月</option>
           </select>
         </div>
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1">
           <label
             className="text-xs font-semibold text-slate-500 block cursor-help"
             htmlFor="ad-tenchusatsu"
