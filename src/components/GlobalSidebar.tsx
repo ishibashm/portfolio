@@ -166,7 +166,7 @@ export function GlobalSidebar() {
         onClick={closeSidebar}
         title={isCollapsed ? item.label : undefined}
         className={`
-          flex items-center justify-between px-3.5 py-3 rounded-2xl transition-all group font-medium text-xs
+          flex items-center justify-between px-3.5 py-2.5 rounded-2xl transition-all group font-medium text-xs
           ${
             isActive
               ? "bg-rose-500 text-white shadow-md shadow-rose-200"
@@ -226,13 +226,13 @@ export function GlobalSidebar() {
           fixed top-0 left-0 h-full z-40
           bg-white/95 backdrop-blur-2xl border-r border-rose-100/80 shadow-2xl shadow-rose-100/40
           w-64 ${sidebarWidth} transition-all duration-300 ease-in-out
-          flex flex-col
+          flex flex-col overflow-y-auto
           ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
       >
         {/* Logo Area */}
         <div
-          className={`h-20 flex items-center border-b border-rose-100/60 transition-all duration-300 px-6 ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
+          className={`h-20 shrink-0 flex items-center border-b border-rose-100/60 transition-all duration-300 px-6 ${isCollapsed ? "lg:justify-center lg:px-0" : ""}`}
         >
           <div className="flex items-center gap-3 text-stone-900">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-pink-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-rose-200">
@@ -247,7 +247,7 @@ export function GlobalSidebar() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto overflow-x-hidden">
+        <nav className="shrink-0 py-4 px-3 space-y-1 overflow-x-hidden">
           {PUBLIC_ITEMS.map(renderNavItem)}
 
           {/* 見出しは "Public Space" / "Secure Engines" だった。中核ページは
@@ -255,9 +255,9 @@ export function GlobalSidebar() {
               要るように見えてしまう。日本語の見出しに合わせる。 */}
           {GROUPED_ITEMS.map((g) => (
             <div key={g.heading}>
-              <div className="my-4 border-t border-rose-100/60" />
+              <div className="my-3 border-t border-rose-100/60" />
               <div
-                className={`px-3 mb-2 text-[10px] font-semibold tracking-wider text-stone-600 ${hideWhenCollapsed}`}
+                className={`px-3 mb-1 text-[10px] font-semibold tracking-wider text-stone-600 ${hideWhenCollapsed}`}
               >
                 {g.heading}
               </div>
@@ -267,7 +267,7 @@ export function GlobalSidebar() {
         </nav>
 
         {/* Footer Area */}
-        <div className="p-4 border-t border-rose-100/60 bg-white/60 z-10 shrink-0 flex flex-col gap-2">
+        <div className="mt-auto p-3 border-t border-rose-100/60 bg-white/95 z-10 shrink-0 flex flex-col gap-1.5">
           {/* PWA App Install Widget */}
           <div className={hideWhenCollapsed}>
             <PWAInstallPrompt />
