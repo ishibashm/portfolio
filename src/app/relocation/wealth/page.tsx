@@ -1080,7 +1080,7 @@ export default function RegionalWealthPage() {
               既定のまま使う人がほとんどなので詳細設定に畳む。
               <details> なので畳んだままでも値は保持される（#247 と同じ）。 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-semibold text-stone-600 mb-1">
                 目標日
               </label>
@@ -1095,7 +1095,7 @@ export default function RegionalWealthPage() {
                 className="w-full bg-gray-50 dark:bg-stone-50 border border-gray-300 dark:border-stone-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-xs font-semibold text-stone-600 mb-1">
                 生年月日 (出生チャート)
               </label>

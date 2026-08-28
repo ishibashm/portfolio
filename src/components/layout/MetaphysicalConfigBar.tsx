@@ -508,7 +508,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
         <div className="border-t border-stone-200 bg-white/80 p-5 space-y-5 animate-slideDown">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {/* Target Date */}
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-indigo-600" /> 目標年月日
               </label>
@@ -521,7 +521,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
 
             {/* Board Standard */}
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 方位盤基準
               </label>
@@ -599,7 +599,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
             </div>
 
             {/* 時支の時刻基準 */}
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <Sliders className="w-3.5 h-3.5 text-indigo-600" /> 時支の時刻
               </label>
@@ -763,7 +763,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-3 border-t border-stone-200">
             {/* Action Intent Weighting */}
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <label className="text-[10px] uppercase font-bold text-stone-600 tracking-wider flex items-center gap-1">
                 <PlayCircle className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 アクション目的 (重みづけ)

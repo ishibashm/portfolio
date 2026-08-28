@@ -221,9 +221,14 @@ export function PlaceInput({
           2026-08-28）。**折り返しを許して、狭いときはボタンを次の行へ
           落とす。**広い画面ではこれまでどおり同じ行に並ぶ。
           縦は items-baseline にして、2 行になってもボタンが行間に
-          浮かないようにする。 */}
+          浮かないようにする。
+
+          ラベルは min-w-fit。min-w-0 だと「ボタンを次の行へ落とす」より
+          「ラベルを縮めて 2 行にする」が選ばれることがあり、直したはずの
+          見え方に戻る（縮め方の判断はブラウザで差が出る）。縮まない
+          下限を与えて、**先にボタンが落ちる**ようにする。 */}
       <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-        <label className={`${s.label} min-w-0`}>
+        <label className={`${s.label} min-w-fit`}>
           {label}
           {optional && <span className={s.optionalBadge}>（任意）</span>}
         </label>
