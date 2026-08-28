@@ -10,7 +10,11 @@
  * next-sitemap は CommonJS で TypeScript を読めないので、実体を JSON に
  * 置いて両方から読む。__tests__/nonCoreRoutes.test.ts が一致を見張る。
  */
-const NON_CORE = require("./src/lib/nonCoreRoutes.json").routes;
+// offTheme はテーマ外だが道具として残すルート（ログイン不要）。sitemap からは外す。
+const {
+  routes: NON_CORE,
+  offTheme: OFF_THEME,
+} = require("./src/lib/nonCoreRoutes.json");
 
 // ルートハンドラ（robots.txt / ads.txt / llms.txt など）まで
 // サイトマップに載ってしまうため除外する。ログイン画面も索引する意味がない。
@@ -60,6 +64,8 @@ module.exports = {
     "/api/*",
     ...NON_CORE,
     ...NON_CORE.map((p) => `${p}/*`),
+    ...OFF_THEME,
+    ...OFF_THEME.map((p) => `${p}/*`),
     ...NOT_A_PAGE,
     ...THIN_GENERATED,
   ],
