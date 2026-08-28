@@ -181,17 +181,26 @@ export default async function Page({
             <p className="mt-4 text-sm leading-relaxed text-slate-700">
               引越しの方位は、年盤と月盤の両方が吉であることを条件にする考え方が一般的です。月ごとの判定は次から確認できます。
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {MONTHS.map((m) => (
-                <Link prefetch={false}
-                  key={m}
-                  href={`/houi/${year}/${star}/${m}`}
-                  className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
-                >
-                  {m}月
-                </Link>
-              ))}
-            </div>
+            {/* 12 か月 × 9 星 × 2 年 = 216 頁は同じ雛形の展開（noindex）。
+                開いたまま並べると、回遊するほどテンプレ頁に当たり続ける。
+                導線としては残し、初期表示では畳む（AdSense の導線指摘への
+                対応。2026-08-28）。 */}
+            <details className="mt-4">
+              <summary className="cursor-pointer select-none text-xs font-bold text-slate-600 hover:text-slate-900">
+                月を選んで開く（1月〜12月）
+              </summary>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {MONTHS.map((m) => (
+                  <Link prefetch={false}
+                    key={m}
+                    href={`/houi/${year}/${star}/${m}`}
+                    className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
+                  >
+                    {m}月
+                  </Link>
+                ))}
+              </div>
+            </details>
           </section>
         )}
 
