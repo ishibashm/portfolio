@@ -15,6 +15,7 @@ import * as path from "path";
 import * as dotenv from "dotenv";
 
 import { toLogMessage } from "../src/lib/errorMessage";
+import { addressPrefixClause } from "../src/lib/jisCityAlias";
 import { TARGET_PREFECTURE_NAMES } from "../src/lib/scrapeTargets";
 import {
   MarketStats,
@@ -216,14 +217,18 @@ async function main() {
         if (!pref) continue;
         for (const c of cities) {
           if (c.code.endsWith("00")) continue;
+          // 「ケ / ヶ」の表記ゆれぶんも数える。lib/jisCityAlias を見ること。
+          const city = addressPrefixClause(pref + c.name);
+          const nextArg = city.params.length + 1;
           const { rows } = await pool.query<{ sqm: string }>(
             `SELECT ((rent + coalesce(management_fee,0)) / size_sqm)::float8 AS sqm
                FROM rental_properties
-              WHERE address LIKE $1 || '%'
-                AND rent BETWEEN $2 AND $3 AND size_sqm > 8 AND size_sqm < 300
+              WHERE ${city.sql}
+                AND rent BETWEEN $${nextArg} AND $${nextArg + 1}
+                AND size_sqm > 8 AND size_sqm < 300
                 AND last_seen_at > now() - interval '30 days'
                 AND (expire_date IS NULL OR expire_date >= now())`,
-            [pref + c.name, RENT_MIN, RENT_MAX],
+            [...city.params, RENT_MIN, RENT_MAX],
           );
           if (rows.length < MIN_MUNI_ROWS) continue;
           const s = summarizeDistribution(rows.map((r) => Number(r.sqm)));

@@ -20,6 +20,7 @@ import * as dotenv from "dotenv";
 
 import { PREF_JP } from "../src/lib/scrapeTargets";
 import { LIVE_LISTING_SQL } from "../src/lib/rentalListingSql";
+import { addressPrefixClause } from "../src/lib/jisCityAlias";
 import {
   mergeAreaDataset,
   parsePreviousAreas,
@@ -113,6 +114,10 @@ async function main() {
 
   const areas: Area[] = [];
   for (const c of scannable) {
+    // 綴りは 1 通りとは限らない。「ケ / ヶ」の表記ゆれで、正式名だけを
+    // 見ていると住所がもう一方で書かれた行が丸ごと落ちる（横浜市
+    // 保土ケ谷区で 474 件が消えていた）。lib/jisCityAlias を見ること。
+    const city = addressPrefixClause(c.full);
     const { rows } = await pool.query(
       `SELECT count(*)::int AS n,
               avg(lat) AS lat, avg(lon) AS lon,
@@ -120,9 +125,9 @@ async function main() {
               percentile_cont(0.5) WITHIN GROUP (
                 ORDER BY rent + coalesce(management_fee,0)) AS median_rent
          FROM rental_properties
-        WHERE address LIKE $1 || '%'
+        WHERE ${city.sql}
           AND ${LIVE_LISTING_SQL}`,
-      [c.full],
+      city.params,
     );
     const r = rows[0];
     if (!r || r.n < MIN_ROWS) continue;
