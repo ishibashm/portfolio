@@ -1,6 +1,6 @@
 {
   "comment": "検索・サイトマップから外すルート。src/lib/siteStructure.ts と next-sitemap.config.js の両方がここを読む。以前は同じ一覧を2か所で持ち『片方を変えたらもう片方も直すこと』と書いてあったが、実際には食い違い、削除済みの9ページ（/dashboard /metaphysical /trends /rentals /visualizer /x-viewer /research /extract /agent-log /ceremonial-sample）が next-sitemap 側に残っていた。JSON なら TypeScript からも CommonJS からも読めるので、持ち場を1つにする。",
   "routes": ["/relocation/history", "/admin"],
-  "commentOffTheme": "offTheme はテーマ（引越しの方位とタイミング）から外れるが、道具として残すルート。ナビ・sitemap・robots から外すだけで、ログインは要らない（routes と違い routeAccess は読まない）。2026-08-28 の導線棚卸しで /relocation/yield（投資家向けの利回り地図）をこちらへ移した。",
-  "offTheme": ["/relocation/yield"]
+  "commentOffTheme": "offTheme はテーマ（引越しの方位とタイミング）から外れるが、道具として残すルート。ナビ・sitemap・robots から外すだけで、ログインは要らない（routes と違い routeAccess は読まない）。2026-08-28 の導線棚卸しで /relocation/yield（投資家向けの利回り地図）をこちらへ移した。 /debug は重なりの測定を入れっぱなしにするための一時的な入口で、検索に載せない（原因が分かったら頁ごと消す）。",
+  "offTheme": ["/relocation/yield", "/debug"]
 }

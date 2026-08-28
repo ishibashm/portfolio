@@ -16,10 +16,21 @@
  *
  * ## 出し方
  *
- * URL に `?debug=overlap` を付けたときだけ動く。付いていなければ
- * `useEffect` の中で即座に降りるので、通常の利用者には何も起きない。
+ * 次のどちらかが立っているときだけ動く。どちらも無ければ何も描かない。
  *
- *     https://cloud-palette.com/?debug=overlap
+ * - URL に `?debug=overlap` が付いている
+ * - `localStorage` に `debug_overlap` が入っている（/debug/overlap で入れる）
+ *
+ * **URL の合図だけにしない。**画面内のリンクを踏むと query は落ちるので、
+ * 「合図付きで開いた頁から、重なって見える頁へ移動する」と消えてしまう。
+ * 実際、利用者の iPad で「付けたけど変わらない」となった（2026-08-28）。
+ * localStorage なら移動しても残る。
+ *
+ * ## 置き場所を下にしない
+ *
+ * iOS の Safari は `position: fixed; bottom: 0` を**ブラウザの下の帯の
+ * 裏**に置くことがある。出しても見えない可能性があるので上に出す。
+ * `env(safe-area-inset-top)` ぶんだけ下げる。
  *
  * ## 測り方の決め事
  *
@@ -197,17 +208,42 @@ function asText(r: Report): string {
   return lines.join("\n");
 }
 
-/** URL の合図を読む。サーバ側では必ず false（描かない）。 */
-const subscribeNothing = () => () => {};
-const readFlag = () =>
-  new URLSearchParams(location.search).get("debug") === "overlap";
+export const OVERLAP_FLAG_KEY = "debug_overlap";
+
+/**
+ * 合図を読む。サーバ側では必ず false（描かない）。
+ *
+ * 購読を空にしない。空だと、点いたあとに再描画する機会が無い。
+ */
+function subscribeFlag(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener("popstate", onChange);
+  window.addEventListener("overlap-probe-change", onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener("popstate", onChange);
+    window.removeEventListener("overlap-probe-change", onChange);
+  };
+}
+
+const readFlag = () => {
+  if (new URLSearchParams(location.search).get("debug") === "overlap") {
+    return true;
+  }
+  try {
+    return localStorage.getItem(OVERLAP_FLAG_KEY) === "1";
+  } catch {
+    // プライベートブラウズなどで読めないことがある。URL の合図だけで動く。
+    return false;
+  }
+};
 const flagOnServer = () => false;
 
 export function OverlapProbe() {
   // useEffect + setState にしない。効果の中で状態を変えると
   // react-hooks/set-state-in-effect の警告が増える（4 節の総数を守る）。
   // 読むだけの外部の値なので useSyncExternalStore が素直。
-  const on = useSyncExternalStore(subscribeNothing, readFlag, flagOnServer);
+  const on = useSyncExternalStore(subscribeFlag, readFlag, flagOnServer);
   const [report, setReport] = useState<Report | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -221,8 +257,13 @@ export function OverlapProbe() {
   return (
     <div
       data-overlap-probe
-      className="fixed inset-x-0 bottom-0 z-[9999] font-sans"
-      style={{ pointerEvents: "none" }}
+      /* iOS は fixed bottom:0 をブラウザの下の帯の裏に置くことがあるので
+         上に出す。ノッチ・ステータスバーぶんは safe-area で下げる。 */
+      className="fixed inset-x-0 top-0 z-[9999] font-sans"
+      style={{
+        pointerEvents: "none",
+        paddingTop: "env(safe-area-inset-top, 0px)",
+      }}
     >
       {report === null ? (
         <div
