@@ -17,7 +17,12 @@ name: Nightly site audit (URL health / SEO / LLMO)
 
 on:
   schedule:
-    - cron: "0 21 * * *" # 06:00 JST
+    # 毎時 0 分を避ける。GitHub の schedule は 0 分が最も混み、巡回では
+    # 実測で 3.4 時間遅延した（#667 で scrape-rentals を 17 分にずらした）。
+    # ここは telemetry.yml とも同じ "0 21" で、二重に混んでいた。
+    # 実際、この監査は定時では**一度も発火していない**（8/27 に master へ
+    # 載って以降、走ったのは手動実行の 2 件だけ）。
+    - cron: "23 21 * * *" # 06:23 JST
   workflow_dispatch:
 
 jobs:
