@@ -12,6 +12,8 @@ import {
   starForBirthYear,
 } from "@/lib/kigakuContent";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { prefNameByCode } from "@/lib/prefContent";
+import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 
 /**
  * 方位コンテンツの入口。
@@ -129,14 +131,32 @@ export default function Page() {
             吉方位が分かったら、その方位に何があるか
           </h2>
           <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
+            方位の吉凶だけでは引越し先は決まりません。いま住んでいる市区町村を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。県単位のまとめ（相場の傾きと方位の対応）も、県ごとに順次公開しています。
           </p>
-          <Link
-            href="/houi/area"
-            className="mt-4 inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
-          >
-            エリア別の方位と相場を見る
-          </Link>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/houi/area"
+              className="inline-flex px-5 py-2.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors"
+            >
+              エリア別の方位と相場を見る
+            </Link>
+            {/* 県のまとめは固有文章を書いた県だけ公開（prefEditorial）。
+                公開済みの県をここに直接並べる。 */}
+            {Object.keys(PREF_EDITORIAL).map((code) => {
+              const name = prefNameByCode(code);
+              if (!name) return null;
+              return (
+                <Link
+                  prefetch={false}
+                  key={code}
+                  href={`/houi/pref/${code}`}
+                  className="inline-flex px-4 py-2.5 rounded-full border border-slate-400 bg-white hover:bg-slate-50 text-slate-800 font-bold text-xs transition-colors"
+                >
+                  {name}
+                </Link>
+              );
+            })}
+          </div>
         </section>
 
         {/* 九星気学の次に置く。引き方がそろっている（自分が何かを引いて、
