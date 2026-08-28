@@ -1135,7 +1135,7 @@ export default function RegionalWealthPage() {
               </span>{" "}
               詳細設定（計算方式・北の基準・月相補正）
             </summary>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-stone-600 mb-1">
                 方位計算エンジン
