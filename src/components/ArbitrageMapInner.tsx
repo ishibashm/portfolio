@@ -1121,12 +1121,22 @@ export default function ArbitrageMapInner({
     );
   }
 
+  /*
+    非全画面のときの isolate（isolation: isolate）を外さないこと。
+    地図の中身は Leaflet の枠（.leaflet-pane が 400、コントロールが 1000）と、
+    その上に重ねている凡例・全画面ボタン・吉凶の札（z-[1000]）でできている。
+    器が relative だけだと z-index の入れ物（重ね合わせ文脈）にならないので、
+    これらが器をすり抜けて頁全体と背比べし、メニュー（z-40）や見出しの帯より
+    前に出る。Android の実機で、開いたメニューの上に地図が乗っていた。
+    全画面のときは fixed + z-[2000] が自分で入れ物を作るので付けない。
+    付けると頁の帯より後ろに落ちて、全画面が全画面でなくなる。
+  */
   return (
     <div
       className={
         fullscreen
           ? "fixed inset-0 z-[2000] bg-white"
-          : "w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200"
+          : "isolate w-full h-full relative rounded-2xl overflow-hidden border border-gray-200 dark:border-stone-200"
       }
     >
       <MapContainer
