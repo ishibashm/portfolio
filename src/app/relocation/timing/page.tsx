@@ -34,6 +34,7 @@ import {
 import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { YearlyForecast } from "@/components/relocation/YearlyForecast";
+import { toPercentStack } from "@/utils/percentStack";
 import { prefectureDirections } from "@/lib/prefectureDirection";
 import {
   ALL_DIRECTIONS,
@@ -344,15 +345,20 @@ export default function TimingAnalyticsPage() {
     });
   }, [days, todayIso]);
 
-  /** 積み上げ棒グラフ用（構成比） */
+  /**
+   * 積み上げ棒グラフ用（構成比）。
+   *
+   * 以前は段階ごとに toFixed(1) してから積み上げていたので、6 段階ぶんの
+   * 丸め誤差が足し合わさって合計が 100.1 になり、Recharts が横軸を
+   * そこまで伸ばして `100.100000000000019%` と表示していた（利用者報告）。
+   * 丸めてから足すのをやめ、合計がちょうど 100 になる整数に配り直す。
+   */
   const stackData = useMemo(
     () =>
       perDirection.map((p) => {
-        const total = TIERS.reduce((a, t) => a + p.counts[t], 0) || 1;
+        const percent = toPercentStack(p.counts, TIERS);
         const row: Record<string, string | number> = { name: p.label };
-        for (const t of TIERS) {
-          row[t] = Number(((p.counts[t] / total) * 100).toFixed(1));
-        }
+        for (const t of TIERS) row[t] = percent[t];
         return row;
       }),
     [perDirection],
