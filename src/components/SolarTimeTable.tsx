@@ -343,7 +343,7 @@ export function SolarTimeTableComponent({
       {/* Global & Daily Phase Status */}
       <div className="grid grid-cols-3 gap-2 mt-1 mb-2 font-mono text-[9px] sm:text-[10px]">
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
+          className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isYearVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>YEAR PHASE</span>
@@ -371,7 +371,7 @@ export function SolarTimeTableComponent({
         </div>
 
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
+          className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isMonthVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <span>MONTH PHASE</span>
@@ -399,7 +399,7 @@ export function SolarTimeTableComponent({
         </div>
 
         <div
-          className={`p-2 sm:p-3 border rounded-sm flex flex-col gap-1 transition-colors ${isDayVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
+          className={`p-2 sm:p-3 border rounded-xl flex flex-col gap-1 transition-colors ${isDayVoid ? "border-red-200 bg-red-50 shadow-inner" : "border-stone-200 bg-white/80"}`}
         >
           <div className="flex justify-between items-center text-stone-600 tracking-widest">
             <div className="flex items-center gap-1">
@@ -477,7 +477,7 @@ export function SolarTimeTableComponent({
           <span className="group-open:rotate-180 transition-transform">▼</span>
         </summary>
         <div className="p-3 border-t border-stone-200 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 bg-white/70 text-[10px] leading-relaxed font-sans">
-          <div className="p-2 border border-purple-200 rounded-sm">
+          <div className="p-2 border border-purple-200 rounded-xl">
             <strong className="text-purple-600 block mb-1 font-mono text-[9px]">
               ◆ 1. 陰陽五行・四柱推命
             </strong>
@@ -485,7 +485,7 @@ export function SolarTimeTableComponent({
               「木・火・土・金・水」の五行に分け、互いに生み出す「相生」、打ち消し合う「相剋」という関係の決まりで計算します。干支暦（四柱推命）の組み合わせを併せて見ます。エネルギーを測っているのではなく、伝統的に決まっている規則をそのまま計算に写したものです。
             </p>
           </div>
-          <div className="p-2 border border-blue-200 rounded-sm">
+          <div className="p-2 border border-blue-200 rounded-xl">
             <strong className="text-blue-600 block mb-1 font-mono text-[9px]">
               ◆ 2. 九星気学・環境方位
             </strong>
@@ -493,7 +493,7 @@ export function SolarTimeTableComponent({
               均時差を補正した「真太陽時」でその日の境目を決め、その日・その場所の九星と八門の配置を出します。五行の相生・相剋と合わせて、あなたの本命星と相性のよい方位を判定します。
             </p>
           </div>
-          <div className="p-2 border border-red-200 rounded-sm">
+          <div className="p-2 border border-red-200 rounded-xl">
             <strong className="text-red-600 block mb-1 font-mono text-[9px]">
               ◆ 3. VOID TIME（天中殺）
             </strong>
@@ -501,7 +501,7 @@ export function SolarTimeTableComponent({
               天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
             </p>
           </div>
-          <div className="p-2 border border-emerald-200 rounded-sm">
+          <div className="p-2 border border-emerald-200 rounded-xl">
             <strong className="text-emerald-600 block mb-1 font-mono text-[9px]">
               ◆ 4. OPTIMAL TIME（吉門・相生）
             </strong>
@@ -529,7 +529,7 @@ export function SolarTimeTableComponent({
           return (
             <div
               key={index}
-              className={`flex flex-col border ${cardClass} p-2 sm:p-3 rounded-md relative overflow-hidden group`}
+              className={`flex flex-col border ${cardClass} p-2 sm:p-3 rounded-xl relative overflow-hidden group`}
             >
               {/* Background Flavor text */}
               <div className="absolute right-[-5%] top-[-10%] text-[60px] sm:text-[80px] font-bold text-black/20 select-none z-0 tracking-tighter mix-blend-overlay pointer-events-none">
@@ -635,7 +635,7 @@ export function SolarTimeTableComponent({
 
               {/* Expanded Details */}
               {isExpanded && (
-                <div className="mt-3 pt-3 border-t border-stone-200 relative z-10 flex flex-col md:flex-row gap-4 bg-white/70 p-2 rounded-sm animate-fade-in">
+                <div className="mt-3 pt-3 border-t border-stone-200 relative z-10 flex flex-col md:flex-row gap-4 bg-white/70 p-2 rounded-xl animate-fade-in">
                   {/* Explain Phase */}
                   <div className="flex-1 flex flex-col gap-2 text-[10px] text-stone-500 leading-relaxed">
                     {isVoid ? (
@@ -716,7 +716,7 @@ export function SolarTimeTableComponent({
                   </div>
 
                   {/* Compass Matrix */}
-                  <div className="bg-white/70 p-2 border border-stone-200 rounded-sm flex flex-col items-center justify-center min-w-[200px]">
+                  <div className="bg-white/70 p-2 border border-stone-200 rounded-xl flex flex-col items-center justify-center min-w-[200px]">
                     <div className="text-[9px] text-stone-600 uppercase tracking-widest mb-2 font-bold">
                       Kigaku Compass Matrix
                     </div>

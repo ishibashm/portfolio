@@ -310,7 +310,7 @@ export function ConsultPanel({
 
     return (
       <div
-        className={`p-1 flex flex-col items-center justify-center border rounded-sm transition-all ${baseClass} ${colorClass}`}
+        className={`p-1 flex flex-col items-center justify-center border rounded-xl transition-all ${baseClass} ${colorClass}`}
       >
         <span className="text-[9px] text-stone-600 uppercase tracking-widest">
           {dir}
@@ -445,7 +445,7 @@ export function ConsultPanel({
         >
           {label}
         </span>
-        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-stone-50 border border-stone-300 text-stone-600 text-[9px] shadow-2xl z-50 rounded-sm font-sans normal-case leading-relaxed pointer-events-none">
+        <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-stone-50 border border-stone-300 text-stone-600 text-[9px] shadow-2xl z-50 rounded-xl font-sans normal-case leading-relaxed pointer-events-none">
           <div
             className={`font-bold mb-1 border-b border-stone-200 pb-1 ${getColor(status)}`}
           >
@@ -547,7 +547,7 @@ export function ConsultPanel({
               </div>
 
               <div className="flex flex-col gap-3 z-10">
-                <div className="bg-white/70 border border-purple-200 p-3 flex flex-col w-full rounded-sm">
+                <div className="bg-white/70 border border-purple-200 p-3 flex flex-col w-full rounded-xl">
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-[10px] text-stone-500 uppercase tracking-widest font-bold">
                       Honmei Star
@@ -578,7 +578,7 @@ export function ConsultPanel({
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Year
                     </span>
@@ -595,7 +595,7 @@ export function ConsultPanel({
                       Phys / Class
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Month
                     </span>
@@ -606,7 +606,7 @@ export function ConsultPanel({
                       Physical
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-2 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Day
                     </span>
@@ -628,7 +628,7 @@ export function ConsultPanel({
                     <div className="h-px bg-stone-100 grow"></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         JUPITER{" "}
                         <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5">
@@ -639,7 +639,7 @@ export function ConsultPanel({
                         {birthEnv.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5">
@@ -650,7 +650,7 @@ export function ConsultPanel({
                         {birthEnv.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         SOLAR{" "}
                         <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5">
@@ -677,7 +677,7 @@ export function ConsultPanel({
                     <span className="text-emerald-500">▶</span>{" "}
                     リアルタイム環境計測
                   </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-200 rounded-sm px-2 py-0.5">
+                  <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-200 rounded-xl px-2 py-0.5">
                     <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                     <span className="text-[10px] text-emerald-600 font-mono tracking-widest">
                       TRACKING
@@ -691,7 +691,7 @@ export function ConsultPanel({
 
               <div className="flex flex-col gap-3 z-10">
                 <div className="grid grid-cols-3 gap-2 mt-1">
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Current Year
                     </span>
@@ -708,7 +708,7 @@ export function ConsultPanel({
                       Phys / Class
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Current Month
                     </span>
@@ -719,7 +719,7 @@ export function ConsultPanel({
                       Physical
                     </span>
                   </div>
-                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-sm">
+                  <div className="bg-white/70 border border-stone-200 p-3 flex flex-col rounded-xl">
                     <span className="text-[9px] text-stone-500 uppercase tracking-widest mb-1">
                       Current Day
                     </span>
@@ -741,7 +741,7 @@ export function ConsultPanel({
                     <div className="h-px bg-stone-100 grow"></div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-purple-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         JUPITER{" "}
                         <span className="text-[10px] text-purple-500 border border-purple-200 px-0.5 animate-pulse">
@@ -752,7 +752,7 @@ export function ConsultPanel({
                         {env.raw.jupiterLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-amber-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         LUNAR{" "}
                         <span className="text-[10px] text-amber-700 border border-amber-200 px-0.5 animate-pulse">
@@ -763,7 +763,7 @@ export function ConsultPanel({
                         {env.raw.moonLon.toFixed(2)}°
                       </span>
                     </div>
-                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-sm">
+                    <div className="bg-stone-50 border border-blue-200 p-2 flex flex-col rounded-xl">
                       <span className="text-[9px] text-stone-500 uppercase tracking-widest flex items-center justify-between">
                         SOLAR{" "}
                         <span className="text-[10px] text-blue-500 border border-blue-200 px-0.5 animate-pulse">
