@@ -30,6 +30,7 @@ import {
   ExternalLink,
   BookOpen,
   Newspaper,
+  Rss,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
@@ -40,6 +41,7 @@ const PUBLIC_ITEMS = [
   { href: "/", icon: Clock, label: "ホーム" },
   { href: "/guide", icon: BookOpen, label: "使い方ガイド" },
   { href: "/blog", icon: Newspaper, label: "引越しの読みもの" },
+  { href: "/news", icon: Rss, label: "不動産・建築の情報" },
 ];
 
 // ナビは src/lib/siteStructure.ts の中核ルートに合わせる。
