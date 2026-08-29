@@ -24,11 +24,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * 見出しの取得はサーバ側で 6 時間キャッシュされる（fetchNews）。
- * 頁自体は動的に描く。ビルド時に焼くと、外に出られない CI で
- * 全フィードが空のまま HTML に固まるため。
+ * ISR。sitemap（next-sitemap）は prerender された頁しか拾わないので、
+ * force-dynamic にすると索引から消える。ビルド時（CI は外に出られない）の
+ * 取得は fetchNews が 5 秒で諦めて空を返すため、初回だけ見出し無しの
+ * HTML になるが、本番で再生成された時点で埋まる。
+ *
+ * 値は 60 だが、見出しの取得はそれと独立に fetch キャッシュ 6 時間
+ * （fetchNews の revalidate）で守られる。頁の再生成は手元のキャッシュを
+ * 読み直すだけで、配信元へは行かない。60 より大きくしても、ルート
+ * レイアウトの revalidate 60 に切り下げられる（/blog の注記と同じ）。
  */
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 /** 見出しの日付。日本の媒体なので日本時間で丸める。 */
 function jstDate(iso: string | null): string | null {
