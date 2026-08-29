@@ -198,6 +198,17 @@ export function GlobalSidebar() {
     <>
       {/* Mobile Toggle Button */}
       {/*
+        重なり順（この 3 つは 45 / 46 / 47 で 1 組）。
+        頁の中の帯（arbitrage の「地図 / 一覧・条件」、ホームのタブ）が
+        sticky z-40 で、メニューも z-40 だった。同じ数なら後に書いたほうが
+        前に出るので、頁のほうが勝ってメニューが帯の下に隠れていた
+        （Android の実機報告）。帯より上、モーダル（z-50）より下に置く。
+        モーダルより下なのは意図で、全画面の覆いが出ているあいだは
+        メニューの開閉ボタンも隠れるのが正しい。
+        地図の中身が z-[1000] で頁全体に出てくる件は、地図の器の側を
+        入れ物にして塞いである（ArbitrageMapInner の isolate）。
+      */}
+      {/*
         中身が図形だけのボタンには名前を付ける。Lighthouse の
         「Buttons do not have an accessible name」がこれ。読み上げでは
         「ボタン」としか読まれず、何をするのか分からない。
@@ -207,7 +218,7 @@ export function GlobalSidebar() {
         onClick={toggleSidebar}
         aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
         aria-expanded={isOpen}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 shadow-md shadow-rose-100/40"
+        className="lg:hidden fixed top-4 left-4 z-[47] p-2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 shadow-md shadow-rose-100/40"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -215,7 +226,7 @@ export function GlobalSidebar() {
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-[45]"
           onClick={closeSidebar}
         />
       )}
@@ -223,7 +234,7 @@ export function GlobalSidebar() {
       {/* Sidebar Container */}
       <aside
         className={`
-          fixed top-0 left-0 h-full z-40
+          fixed top-0 left-0 h-full z-[46]
           bg-white/95 backdrop-blur-2xl border-r border-rose-100/80 shadow-2xl shadow-rose-100/40
           w-64 ${sidebarWidth} transition-all duration-300 ease-in-out
           flex flex-col overflow-y-auto

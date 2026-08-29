@@ -4126,13 +4126,13 @@ export default function ArbitrageScannerPage() {
               }}
             />
             {loading && data.length === 0 ? (
-              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-[1000] flex flex-col items-center justify-center font-mono text-xs text-stone-600">
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-20 flex flex-col items-center justify-center font-mono text-xs text-stone-600">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
                 データベースから割安物件を走査中...
               </div>
             ) : null}
             {loading && data.length > 0 && (
-              <div className="absolute top-4 right-4 bg-white/70 border border-indigo-200 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-[1001] shadow-lg">
+              <div className="absolute top-4 right-4 bg-white/70 border border-indigo-200 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-30 shadow-lg">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 SCANNING...
               </div>
