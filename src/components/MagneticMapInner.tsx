@@ -560,8 +560,14 @@ export default function MagneticMapInner({
     );
   }
 
+  /*
+    isolate を外さないこと。`relative` は z-index が auto なので重ね合わせ
+    文脈を作らず、Leaflet の枠（.leaflet-pane 400・コントロール 1000）と
+    この器に重ねている札（z-[1000]）が頁全体まですり抜ける。メニューは
+    z-[46] なので地図が前に出て、開いたメニューを覆う（#694 の Android 報告）。
+  */
   return (
-    <div className="w-full h-full relative rounded-sm overflow-hidden border border-stone-200">
+    <div className="isolate w-full h-full relative rounded-sm overflow-hidden border border-stone-200">
       <MapContainer
         key="magnetic-map-container"
         center={center}
