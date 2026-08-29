@@ -139,10 +139,6 @@ const PersonalProfileConfig = dynamic(
     import("./PersonalProfileConfig").then((mod) => mod.PersonalProfileConfig),
   { ssr: false },
 );
-const SystemTelemetryLog = dynamic(
-  () => import("./SystemTelemetryLog").then((mod) => mod.SystemTelemetryLog),
-  { ssr: false },
-);
 const TenchusatsuVisualizer = dynamic(
   () =>
     import("./TenchusatsuVisualizer").then((mod) => mod.TenchusatsuVisualizer),
@@ -4186,19 +4182,14 @@ export const SolarTimeClock = () => {
           </Link>
         </div>
       </div>
-      {/* Telemetry and Audit Log */}
-      <SystemTelemetryLog
-        lat={lat}
-        lon={lon}
-        solarTime={solarData?.solarTime}
-        declination={geoData?.declination || null}
-        env={env}
-      />
-
-      <div className="fixed bottom-6 left-6 lg:left-72 z-50 flex flex-col sm:flex-row gap-3">
+      {/* いま画面に出ている判定・環境値をまとめて書き出す。以前は
+          fixed bottom-6 で常に浮いていて、内容の上に重なって見えていた
+          （利用者の指摘）。頁の流れの最後に置き、サイト共通の副ボタンに
+          揃える。 */}
+      <div className="w-full max-w-[1700px] flex justify-center pb-6">
         <button
           onClick={exportMasterTelemetry}
-          className="px-4 py-3 bg-emerald-700 text-white font-bold font-mono text-[10px] tracking-widest rounded-full shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:bg-emerald-500 hover:scale-105 transition-all flex items-center gap-2 border border-emerald-200 backdrop-blur-md"
+          className="px-6 py-3 rounded-full border border-slate-300 bg-white text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -4215,7 +4206,7 @@ export const SolarTimeClock = () => {
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          マスター状態を出力 (CSV/JSON)
+          いまの判定と環境値を書き出す（CSV/JSON）
         </button>
       </div>
     </div>
