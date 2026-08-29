@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
+import { hasRenderedBox } from "@/utils/mapViewport";
 
 /**
  * 地図の描画サイズをコンテナに追従させる。
@@ -40,6 +41,17 @@ export function InvalidateMapSize() {
       frame = requestAnimationFrame(() => {
         // アンマウント直後に呼ぶと内部の _panes が無く例外になる
         try {
+          /*
+            隠れているあいだは測り直さない。スマホで一覧へ切り替えると
+            器が display:none になり、下の ResizeObserver がそれを
+            0×0 の寸法変化として拾う。そこで invalidateSize を呼ぶと
+            Leaflet は寸法が変わったとみなして moveend を発火し、
+            0×0 の地図の**一点に潰れた**表示範囲が絞り込みに流れて
+            「範囲内 0 件」になっていた（利用者報告。utils/mapViewport）。
+            見えたときに ResizeObserver がもう一度飛んでくるので、
+            ここで飛ばしても測り直しは取りこぼさない。
+          */
+          if (!hasRenderedBox(map.getSize())) return;
           map.invalidateSize({ animate: false });
         } catch {
           /* noop */
