@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -109,5 +109,50 @@ describe("メニューの層", () => {
     // パネルが覆いに沈むと灰色越しに見える。開閉ボタンが沈むと閉じられない
     expect(OVERLAY).toBeLessThan(PANEL);
     expect(PANEL).toBeLessThan(TOGGLE);
+  });
+});
+
+/**
+ * 地図を積む部品は全部同じ穴を持っていた。#694 では報告のあった
+ * ArbitrageMapInner だけを塞いだので、残り 4 つをここで総当たりにする。
+ *
+ * TacticalMagneticMap は `relative z-0` で先に塞がっていた（z-0 は
+ * auto と違って重ね合わせ文脈を作る）。数え方を変えると取りこぼすので、
+ * 「MapContainer を描いているファイル」を実際に歩いて集める。
+ * 字面で探して取りこぼした事故が過去に 2 回ある（CLAUDE.md 3 節・4 節）。
+ */
+function leafletComponents(): string[] {
+  const found: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) {
+        walk(path);
+        continue;
+      }
+      if (!entry.endsWith(".tsx")) continue;
+      if (readFileSync(path, "utf8").includes("<MapContainer")) {
+        found.push(path.replace(`${process.cwd()}/`, ""));
+      }
+    }
+  };
+  walk(join(process.cwd(), "src"));
+  return found.sort();
+}
+
+const LEAFLET_COMPONENTS = leafletComponents();
+
+describe("Leaflet を積む部品はすべて器を入れ物にしている", () => {
+  it("部品を集められている（この検査自体が空回りしていない）", () => {
+    expect(LEAFLET_COMPONENTS.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it.each(LEAFLET_COMPONENTS)("%s の器が入れ物になっている", (file) => {
+    // `isolate` と `relative` が同じ className に並んでいること。
+    // relative だけだと z-index が auto で入れ物にならず、中の
+    // z-[1000] の札と Leaflet の枠が頁全体まですり抜ける
+    expect(readFileSync(join(process.cwd(), file), "utf8")).toMatch(
+      /"isolate\b[^"]*\brelative\b/,
+    );
   });
 });

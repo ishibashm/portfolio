@@ -183,8 +183,14 @@ export default function SimulatorMap({
     );
   }
 
+  /*
+    isolate を外さないこと。`relative` は z-index が auto なので重ね合わせ
+    文脈を作らず、Leaflet の枠（.leaflet-pane 400・コントロール 1000）と
+    この器に重ねている札（z-[1000]）が頁全体まですり抜ける。メニューは
+    z-[46] なので地図が前に出て、開いたメニューを覆う（#694 の Android 報告）。
+  */
   return (
-    <div className="w-full h-full min-h-[400px] flex flex-col gap-4 relative">
+    <div className="isolate w-full h-full min-h-[400px] flex flex-col gap-4 relative">
       {/* Geocoding search HUD overlay */}
       <div className="absolute top-4 left-4 right-4 z-[1000] max-w-md pointer-events-auto">
         <div className="relative shadow-2xl">
