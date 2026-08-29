@@ -1539,12 +1539,14 @@ export default function DestinationMapPanel({
                     PHYSICAL MODEL (天体位相・物理基準)
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
-                    宇宙のリアルタイムな物理データ（NASA/Swiss
-                    Ephemeris）を使用。木星の正確な黄経や、太陽・月のリアルな重力・磁場位相からダイレクトに空間の周波数を割り出します。
+                    天体の実際の位置（Swiss
+                    Ephemeris）から方位を割り当てます。木星の黄経や太陽・月の位置を使うため、暦の区切りではなく天体の動きに沿って変わります。
                     <br />
                     <br />
-                    <span className="text-stone-600">推奨用途:</span>{" "}
-                    今日の体調管理、集中力の最大化、リアルな環境干渉（自律神経への影響）の回避など。
+                    <span className="text-stone-600">
+                      向いている使い方:
+                    </span>{" "}
+                    日ごとの細かい変化を追いたいとき。暦の区切りで見る古典の盤と見比べたいとき。
                   </p>
                 </div>
                 <div className="bg-white/80 p-3 border-l-2 border-zinc-500">
