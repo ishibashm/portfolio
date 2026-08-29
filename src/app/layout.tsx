@@ -92,7 +92,6 @@ export const metadata: Metadata = {
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
-import { OverlapProbe } from "@/components/debug/OverlapProbe";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
 import { unstable_cache } from "next/cache";
@@ -309,9 +308,6 @@ export default async function RootLayout({
       >
         <ChunkLoadRecovery />
         <PageViewBeacon />
-        {/* ?debug=overlap のときだけ動く一時的な測定具。原因が分かったら
-            消す。通常の利用者には何も起きない（合図が無ければ即座に降りる）。 */}
-        <OverlapProbe />
         <div className="flex min-h-screen">
           <GlobalSidebar />
           {/* 投稿欄はここに置かない。記事（/blog/[slug]）だけに出す
