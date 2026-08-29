@@ -182,8 +182,13 @@ function measure(): Report {
         r.right > pr.right + 1 &&
         getComputedStyle(n).overflowX === "visible"
       ) {
+        /* はみ出しの原因を切り分けるため、ブラウザが実際に計算した値も
+           出す。CSS が届いていないのか、届いたうえで無視されているのかが
+           これで分かる（iPad で box-sizing を当てても直らなかったため）。 */
+        const cs = getComputedStyle(el);
         overflow.push(
           `${Math.round(r.right - pr.right)}px はみ出し: ${describe(el)} (幅 ${Math.round(r.width)} / 枠 ${Math.round(pr.width)})`,
+          `      box-sizing=${cs.boxSizing} width=${cs.width} padding=${cs.paddingLeft}/${cs.paddingRight} border=${cs.borderLeftWidth}/${cs.borderRightWidth} appearance=${cs.webkitAppearance || cs.appearance}`,
         );
         break;
       }
