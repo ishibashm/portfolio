@@ -198,22 +198,19 @@ export default function DestinationMapPanel({
           <div className="flex items-center gap-2 mb-1 border-b border-stone-200 pb-2">
             <span className="text-emerald-500 animate-pulse">▶</span>
             <h3 className="text-xs text-stone-600 font-bold uppercase tracking-widest">
-              Spatial Targeting{" "}
-              <span className="text-[9px] text-stone-600 font-normal ml-1">
-                / 空間・目的の捕捉
-              </span>
+              目的地の方位を評価する
             </h3>
           </div>
           <p className="text-[10px] text-stone-600 mb-4 h-8 mt-1">
-            目的地の方位に潜むノイズと、あなたの行動目的（戦闘か回復か）を照合・評価します。
+            目的地の方位の吉凶を、行動の目的（引越し・療養など）に合わせて評価します。
           </p>
           <div className="flex flex-col gap-3 mt-auto">
             {/* 狭い画面では select が幅を取り、左の説明文が 1 文字ずつに
                       折り返される（375px の実測で幅 42px）。縦に積む。 */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-xl">
               <div className="flex flex-col min-w-0">
-                <label className="text-[10px] text-stone-600 uppercase tracking-widest">
-                  Action Intent
+                <label className="text-[10px] font-bold text-stone-700">
+                  行動の目的
                 </label>
                 <span className="text-[10px] text-stone-600">
                   行動の性質により吉凶の計算結果が変わります
@@ -243,8 +240,8 @@ export default function DestinationMapPanel({
 
             <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
               <div className="flex flex-col">
-                <label className="text-[10px] text-stone-600 uppercase tracking-widest">
-                  Target Date
+                <label className="text-[10px] font-bold text-stone-700">
+                  目標日
                 </label>
                 <span className="text-[10px] text-stone-600">
                   評価する目標日を指定します
@@ -526,13 +523,13 @@ export default function DestinationMapPanel({
             </div>
             <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-xl border border-stone-200 shadow-inner">
               <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
-                <span>BASE GEO (基準地)</span>
+                <span>基準地</span>
                 <span className="text-stone-600 font-bold">
                   {lat?.toFixed(4)}N, {lon?.toFixed(4)}E
                 </span>
               </div>
               <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
-                <span>TARGET DATE (目標日)</span>
+                <span>目標日</span>
                 <span className="text-emerald-600 font-bold">
                   {evalDate.toLocaleDateString()}{" "}
                   <span className="text-stone-600 font-normal ml-1">
@@ -543,7 +540,7 @@ export default function DestinationMapPanel({
                 </span>
               </div>
               <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center">
-                <span>SUBJECT (対象波長)</span>
+                <span>本命星</span>
                 <span className="text-purple-600 font-bold">
                   {honmeiStar
                     ? `本命星 ${useClassicalBoard ? honmeiStar.classical : honmeiStar.physical}`
@@ -656,20 +653,20 @@ export default function DestinationMapPanel({
 
                 return (() => {
                   let physVectors, classVectors;
-                  let titleSuffix = "FINAL LAYER (統合)";
+                  let titleSuffix = "統合（年・月・日）";
 
                   if (activeLayerMode === "year") {
                     physVectors = physicalLayers?.yearLayer;
                     classVectors = classicalLayers?.yearLayer;
-                    titleSuffix = "YEAR LAYER (年盤)";
+                    titleSuffix = "年盤";
                   } else if (activeLayerMode === "month") {
                     physVectors = physicalLayers?.monthLayer;
                     classVectors = classicalLayers?.monthLayer;
-                    titleSuffix = "MONTH LAYER (月盤)";
+                    titleSuffix = "月盤";
                   } else if (activeLayerMode === "day") {
                     physVectors = physicalLayers?.dayLayer;
                     classVectors = classicalLayers?.dayLayer;
-                    titleSuffix = "DAY LAYER (日盤)";
+                    titleSuffix = "日盤";
                   } else {
                     physVectors = physicalLayers?.finalVectors;
                     classVectors = classicalLayers?.finalVectors;
@@ -682,7 +679,7 @@ export default function DestinationMapPanel({
                       >
                         {renderZone(
                           physVectors,
-                          `PHYSICAL - ${titleSuffix}`,
+                          `天体位相 — ${titleSuffix}`,
                           "(天体位相・物理基準)",
                           "text-emerald-500",
                         )}
@@ -693,7 +690,7 @@ export default function DestinationMapPanel({
                       >
                         {renderZone(
                           classVectors,
-                          `CLASSICAL - ${titleSuffix}`,
+                          `暦基準 — ${titleSuffix}`,
                           "(節切り・暦基準)",
                           "text-stone-500",
                         )}
@@ -712,7 +709,7 @@ export default function DestinationMapPanel({
             <div className="flex items-center gap-2">
               <span className="text-rose-500 font-bold text-base">◆</span>
               <h3 className="text-base font-bold font-serif text-stone-900 flex flex-wrap items-center gap-2">
-                TREND ANALYTICS
+                時期の傾向
                 <span className="text-[10px] bg-amber-500/10 text-amber-600 border border-amber-300 px-2.5 py-0.5 rounded-full font-sans font-semibold whitespace-nowrap">
                   ✨ 天道・時空補正可視化済
                 </span>
@@ -730,7 +727,7 @@ export default function DestinationMapPanel({
                       : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
-                  30 DAYS
+                  30日
                 </button>
                 <button
                   onClick={() => toggleHeatmapMode("12months")}
@@ -740,7 +737,7 @@ export default function DestinationMapPanel({
                       : "text-stone-600 hover:text-stone-900"
                   }`}
                 >
-                  12 MONTHS
+                  12ヶ月
                 </button>
               </div>
 
