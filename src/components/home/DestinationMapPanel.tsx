@@ -210,7 +210,7 @@ export default function DestinationMapPanel({
           <div className="flex flex-col gap-3 mt-auto">
             {/* 狭い画面では select が幅を取り、左の説明文が 1 文字ずつに
                       折り返される（375px の実測で幅 42px）。縦に積む。 */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-sm">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-white/70 p-2 border border-stone-200 rounded-xl">
               <div className="flex flex-col min-w-0">
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Action Intent
@@ -241,7 +241,7 @@ export default function DestinationMapPanel({
               </select>
             </div>
 
-            <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
+            <div className="flex justify-between items-center bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
               <div className="flex flex-col">
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest">
                   Target Date
@@ -254,7 +254,7 @@ export default function DestinationMapPanel({
                 <button
                   onClick={handleAutoSearch}
                   disabled={isAutoSearching}
-                  className="text-[9px] text-emerald-600 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-sm hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
+                  className="text-[9px] text-emerald-600 border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-xl hover:bg-emerald-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest shadow-[0_0_10px_rgba(16,185,129,0.1)]"
                 >
                   {isAutoSearching ? "検索中..." : "自動検索"}
                 </button>
@@ -279,10 +279,10 @@ export default function DestinationMapPanel({
             </div>
 
             <div className="flex justify-between items-center mt-1 gap-2 flex-wrap">
-              <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-sm">
+              <div className="flex items-center gap-1 bg-white/70 p-0.5 border border-stone-200 rounded-xl">
                 <button
                   onClick={() => setIsPlaying(!isPlaying)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${isPlaying ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${isPlaying ? "bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-50 shadow-[0_0_8px_rgba(245,158,11,0.2)]" : "bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-50 shadow-[0_0_8px_rgba(59,130,246,0.2)]"}`}
                 >
                   {isPlaying ? "⏸ 一時停止" : "▶ 再生"}
                 </button>
@@ -301,14 +301,14 @@ export default function DestinationMapPanel({
               <div className="flex justify-end gap-1 flex-wrap items-center">
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev - 1)}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Previous Day"
                 >
                   ◀
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays((prev) => prev + 1)}
-                  className="text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
+                  className="text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"
                   title="Next Day"
                 >
                   ▶
@@ -316,38 +316,38 @@ export default function DestinationMapPanel({
                 <div className="w-px h-3 bg-stone-100 my-auto mx-0.5"></div>
                 <button
                   onClick={() => setTimeOffsetDays(0)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 0 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   TODAY
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(30)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 30 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +30D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(90)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 90 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +90D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(180)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 180 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +180D
                 </button>
                 <button
                   onClick={() => setTimeOffsetDays(365)}
-                  className={`text-[10px] font-mono px-2 py-0.5 rounded-sm transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded-xl transition-colors border ${timeOffsetDays === 365 ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-white/80 text-stone-600 border-stone-200 hover:border-emerald-200 hover:text-emerald-600"}`}
                 >
                   +1Y
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 bg-white/70 p-2 border border-stone-200 rounded-sm mt-1">
+            <div className="flex flex-col gap-1.5 bg-white/70 p-2 border border-stone-200 rounded-xl mt-1">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] text-stone-600 uppercase tracking-widest flex items-center gap-1">
                   目的地座標{" "}
@@ -376,7 +376,7 @@ export default function DestinationMapPanel({
                 <input
                   type="text"
                   placeholder="座標またはGoogleマップのURLを貼り付け... (例: 35.68, 139.76)"
-                  className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-sm outline-none transition-colors"
+                  className="flex-1 bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-xs px-2 py-1.5 rounded-xl outline-none transition-colors"
                   onChange={(e) => {
                     const val = e.target.value;
                     // Google Mapsの "@lat,lon" と、コピーした単なる "lat,lon" の両方に対応
@@ -399,7 +399,7 @@ export default function DestinationMapPanel({
                   onChange={(e) =>
                     setTargetLat(e.target.value ? Number(e.target.value) : null)
                   }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                 />
                 <input
                   type="number"
@@ -408,7 +408,7 @@ export default function DestinationMapPanel({
                   onChange={(e) =>
                     setTargetLon(e.target.value ? Number(e.target.value) : null)
                   }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                 />
                 <input
                   type="number"
@@ -419,7 +419,7 @@ export default function DestinationMapPanel({
                       e.target.value ? Number(e.target.value) : null,
                     )
                   }
-                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-sm outline-none w-1/3 transition-colors font-mono"
+                  className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                 />
               </div>
               {targetLat !== null && targetLon !== null && (
@@ -433,7 +433,7 @@ export default function DestinationMapPanel({
                         "座標をコピーしました: " + `${targetLat},${targetLon}`,
                       );
                     }}
-                    className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors"
+                    className="flex-1 bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-stone-900 border border-stone-300 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors"
                   >
                     📋 座標をコピー
                   </button>
@@ -441,7 +441,7 @@ export default function DestinationMapPanel({
                     href={`https://www.google.com/maps/search/?api=1&query=${targetLat},${targetLon}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-sm transition-colors text-center block"
+                    className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-800/50 border border-blue-800/50 text-[9px] uppercase tracking-widest px-2 py-1.5 rounded-xl transition-colors text-center block"
                   >
                     🗺️ Googleマップで開く
                   </a>
@@ -449,7 +449,7 @@ export default function DestinationMapPanel({
               )}{" "}
               {targetDirInfo && targetVectorStatus && (
                 <div
-                  className={`mt-1 text-[10px] font-mono p-1 border rounded-sm flex items-center justify-between gap-2 ${
+                  className={`mt-1 text-[10px] font-mono p-1 border rounded-xl flex items-center justify-between gap-2 ${
                     targetVectorStatus.startsWith("NOISE_VOID")
                       ? "bg-stone-50 border-stone-200 text-stone-600 repeating-linear-gradient-45"
                       : targetVectorStatus.startsWith("NOISE_NODE")
@@ -524,7 +524,7 @@ export default function DestinationMapPanel({
                 </span>
               </h3>
             </div>
-            <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-sm border border-stone-200 shadow-inner">
+            <div className="flex flex-col gap-1.5 mb-2 bg-white/70 p-2.5 rounded-xl border border-stone-200 shadow-inner">
               <div className="text-[9px] text-stone-600 font-mono flex justify-between items-center border-b border-stone-200 pb-1">
                 <span>BASE GEO (基準地)</span>
                 <span className="text-stone-600 font-bold">
@@ -724,7 +724,7 @@ export default function DestinationMapPanel({
               <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/80 text-xs font-semibold">
                 <button
                   onClick={() => toggleHeatmapMode("30days")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
                     heatmapMode === "30days"
                       ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
                       : "text-stone-600 hover:text-stone-900"
@@ -734,7 +734,7 @@ export default function DestinationMapPanel({
                 </button>
                 <button
                   onClick={() => toggleHeatmapMode("12months")}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl transition-all cursor-pointer ${
                     heatmapMode === "12months"
                       ? "bg-rose-500 text-stone-900 shadow-xs font-bold"
                       : "text-stone-600 hover:text-stone-900"
@@ -752,7 +752,7 @@ export default function DestinationMapPanel({
                       prev === "optimal_only" ? "composite" : "optimal_only",
                     );
                   }}
-                  className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                     directionFilterMode === "optimal_only"
                       ? "bg-gradient-to-r from-amber-400 via-amber-500 to-rose-400 text-stone-900 font-bold shadow-md shadow-amber-200 scale-105"
                       : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
@@ -767,7 +767,7 @@ export default function DestinationMapPanel({
                       prev === "exclude_noise" ? "composite" : "exclude_noise",
                     );
                   }}
-                  className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                  className={`px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
                     directionFilterMode === "exclude_noise"
                       ? "bg-stone-800 text-stone-900 font-bold shadow-xs"
                       : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200/80"
@@ -794,7 +794,7 @@ export default function DestinationMapPanel({
                         setIsPlaying(true);
                       }
                     }}
-                    className={`px-3 py-1.5 rounded-lg font-bold transition-all border cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all border cursor-pointer ${
                       isPlaying && playSpeedDays === 30
                         ? "bg-rose-500 text-stone-900 border-rose-600 shadow-md shadow-rose-200 animate-pulse"
                         : "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
@@ -807,21 +807,21 @@ export default function DestinationMapPanel({
 
                   <button
                     onClick={() => setTimeOffsetDays((prev) => prev - 30)}
-                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-lg cursor-pointer"
+                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-xl cursor-pointer"
                     title="1ヶ月巻き戻し"
                   >
                     ◀ 前月
                   </button>
                   <button
                     onClick={() => setTimeOffsetDays((prev) => prev + 30)}
-                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-lg cursor-pointer"
+                    className="px-2.5 py-1.5 bg-white text-stone-700 border border-stone-200 hover:bg-stone-50 rounded-xl cursor-pointer"
                     title="1ヶ月コマ送り"
                   >
                     次月 ▶
                   </button>
                   <button
                     onClick={() => setTimeOffsetDays(0)}
-                    className="px-2.5 py-1.5 bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 rounded-lg cursor-pointer font-bold"
+                    className="px-2.5 py-1.5 bg-stone-100 text-stone-600 border border-stone-200 hover:bg-stone-200 rounded-xl cursor-pointer font-bold"
                     title="現在月へリセット"
                   >
                     RESET
@@ -829,7 +829,7 @@ export default function DestinationMapPanel({
                 </div>
 
                 {/* Live Snapshot Header */}
-                <div className="flex items-center gap-2 text-stone-600 bg-white px-3 py-1.5 rounded-lg border border-stone-200 font-medium">
+                <div className="flex items-center gap-2 text-stone-600 bg-white px-3 py-1.5 rounded-xl border border-stone-200 font-medium">
                   <span>
                     📅 表示中:{" "}
                     <strong className="text-rose-600 font-bold">
@@ -885,7 +885,7 @@ export default function DestinationMapPanel({
                 {focusedDirection && (
                   <button
                     onClick={() => setFocusedDirection(null)}
-                    className="px-2 py-1 rounded-lg border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors"
+                    className="px-2 py-1 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition-colors"
                     title="地図の強調表示を目的地の方位に戻す"
                   >
                     {focusedDirection} を強調中 — 解除
@@ -1190,7 +1190,7 @@ export default function DestinationMapPanel({
                       onClick={() =>
                         moveTargetToDirection(selectedTrendCell.dir)
                       }
-                      className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                       title={
                         targetLat !== null && targetLon !== null
                           ? "現在の目的地までの距離を保ったまま、この方位へ向きだけ変えます"
@@ -1282,7 +1282,7 @@ export default function DestinationMapPanel({
       <div className="w-full max-w-[1700px] mt-0">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-2 w-full gap-2">
           {/* Cyberpunk Filter Selector */}
-          <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-sm flex-wrap">
+          <div className="flex items-center gap-1.5 bg-stone-50 p-1 border border-stone-200 rounded-xl flex-wrap">
             <span className="text-[10px] font-mono text-stone-600 uppercase tracking-wider px-1">
               観点Filter:
             </span>
@@ -1520,7 +1520,7 @@ export default function DestinationMapPanel({
 
       {/* System Manual / Documentation */}
       <div className="w-full max-w-[1700px] mt-4">
-        <details className="bg-white/80 border border-stone-200 rounded-md p-4 group cursor-pointer">
+        <details className="bg-white/80 border border-stone-200 rounded-xl p-4 group cursor-pointer">
           <summary className="text-[10px] sm:text-xs font-mono text-stone-500 uppercase tracking-widest flex items-center gap-2 outline-none">
             <span className="text-emerald-500 group-open:rotate-90 transition-transform">
               ▶
