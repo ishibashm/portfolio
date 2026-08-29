@@ -3944,7 +3944,8 @@ export const SolarTimeClock = () => {
         {/* --- TAB CONTENT: 2. DESTINATION --- */}
         {activeTab === "destination" && (
           <div className="w-full flex flex-col items-center space-y-8">
-            {/* BioMagnetic Dashboard (Load Prediction) */}
+            {/* 外部環境の実測値（KP 指数・X 線・気圧・地磁気）。
+                生体側の札は畳んだ（#684）。理由はそちらの本文に書いた。 */}
             <div className="w-full max-w-[1700px]">
               <BioMagneticDashboard
                 kpIndex={spaceWeather?.kpIndex || null}
@@ -3953,14 +3954,6 @@ export const SolarTimeClock = () => {
                 magneticD={geoData?.declination || null}
                 magneticI={geoData?.inclination || null}
                 eot={solarData.equationOfTime}
-                hrv={hrv}
-                setHrv={setHrv}
-                gsr={gsr}
-                setGsr={setGsr}
-                baseSyncDays={baseSyncDays}
-                setBaseSyncDays={setBaseSyncDays}
-                ansLoad={ansLoad}
-                shieldCapacity={shieldCapacity}
                 pressure={pressureData}
                 timingDetails={timingOptimization?.details}
                 timingRecommendation={timingOptimization?.recommendationText}
