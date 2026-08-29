@@ -20,6 +20,7 @@ import {
   GeoJSON,
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
+import { readMapViewport, type MapViewport } from "@/utils/mapViewport";
 import type { DayTier } from "@/utils/auspiciousDays";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import type { FeatureCollection } from "geojson";
@@ -319,37 +320,25 @@ function MapRefGrabber({ onMap }: { onMap: (m: L.Map) => void }) {
 function BoundsListener({
   onBoundsChange,
 }: {
-  onBoundsChange?: (bounds: {
-    minLat: number;
-    maxLat: number;
-    minLon: number;
-    maxLon: number;
-    zoom: number;
-  }) => void;
+  onBoundsChange?: (bounds: MapViewport) => void;
 }) {
-  const map = useMapEvents({
-    moveend() {
-      if (!onBoundsChange) return;
-      const bounds = map.getBounds();
-      onBoundsChange({
-        minLat: bounds.getSouthWest().lat,
-        maxLat: bounds.getNorthEast().lat,
-        minLon: bounds.getSouthWest().lng,
-        maxLon: bounds.getNorthEast().lng,
-        zoom: map.getZoom(),
-      });
-    },
-    zoomend() {
-      if (!onBoundsChange) return;
-      const bounds = map.getBounds();
-      onBoundsChange({
-        minLat: bounds.getSouthWest().lat,
-        maxLat: bounds.getNorthEast().lat,
-        minLon: bounds.getSouthWest().lng,
-        maxLon: bounds.getNorthEast().lng,
-        zoom: map.getZoom(),
-      });
-    },
+  /*
+    読めないときは黙る。スマホで一覧へ切り替えると器が display:none に
+    なり、その寸法変化で invalidateSize → moveend が飛ぶ。そのとき
+    getBounds() は**一点に潰れた範囲**を返すので、そのまま流すと
+    「範囲内 0 件」になる（利用者報告）。readMapViewport が null を
+    返すあいだは前の範囲を保つ。詳しい経緯は utils/mapViewport。
+  */
+  const map = useMap();
+  const publish = () => {
+    if (!onBoundsChange) return;
+    const viewport = readMapViewport(map);
+    if (!viewport) return;
+    onBoundsChange(viewport);
+  };
+  useMapEvents({
+    moveend: publish,
+    zoomend: publish,
   });
 
   return null;
