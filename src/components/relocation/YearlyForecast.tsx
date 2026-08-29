@@ -1,201 +1,188 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { rampColor } from "@/lib/panelPalette";
-import { toUserMessage } from "@/lib/errorMessage";
-import { SETTINGS_KEY } from "@/lib/userSettings";
+import { useMemo } from "react";
+import type { DayTier } from "@/utils/auspiciousDays";
+import { TIER_LABELS } from "@/utils/auspiciousDays";
+import { TIER_FILL, BLOCKED_FILL } from "@/utils/tierDisplay";
+import {
+  bestOutlookMonth,
+  monthlyOutlook,
+  OPEN_TIERS,
+} from "@/utils/monthlyOutlook";
+import type { FilterableDay } from "@/lib/timingFilter";
 
 /**
- * これから 12 か月の見通し。
+ * 月ごとの見通し。
  *
- * ## 死んでいたものを出し直す
+ * ## Q 値をやめた
  *
- * この予測を出す API（/api/nba/forecast）は前からあったが、**呼んでいたのは
- * NBADashboard だけで、その部品はどこにも描画されていなかった**（型だけが
- * import type で参照されていた）。つまり 2,831 行の部品ごと誰にも見られて
- * いない状態で、**12 か月予測は完全に死んでいた。**利用者の指摘で気付いた。
+ * ここには nbaEngine の Q 値（`actionResult.expectedReward`）が出ていた。
+ * 利用者の指摘——「1 月の根拠が他の分析や評価では確認できなかった。
+ * サイトでの一貫性のある評価基準がなくどれを信じていいのか分からない」
+ * ——を追ったところ、指標の意味と説明文がずれていた。
  *
- * 部品をそのまま復活させると、シミュレータと同じ「情報過多で使い方が
- * 分からない」になる。**12 か月予測だけを切り出す。**
+ * Q 値は「その月の質」ではなく**「その月に取るべき最善手の期待値」**で、
+ * 最善手が「撤退」「待機」でも高く出る。実際 3 月は Q=62 で「撤退」、
+ * 8 月は Q=41 で「浄化移住」と出ていて、「濃いほど条件が良い月です」
+ * という説明と噛み合っていなかった。しかも方位を見ておらず、根拠を
+ * 追える画面がサイトのどこにも無かった。
  *
- * ## 色は大きさに使う
+ * **利用者の判断で、サイト共通の段階評価に置き換えた。**
  *
- * Q 値は「その月の質」で、良い／悪いの 2 値ではなく大きさ。順序尺度
- * （単一色相の薄→濃）を使う（lib/panelPalette の SEQUENTIAL_RAMP）。
- * 判定の緑・赤は使わない。使うと「吉方位」の緑と混ざる。
+ * ## 数えるだけ。判定しない
  *
- * 天中殺だけは別扱いにする。大きさではなく**当たっているかどうか**なので、
- * 枠で示して色の目盛りから外す。
+ * 段階は親から渡される `days` に入っているものをそのまま読む。数え方は
+ * `utils/monthlyOutlook` が持ち、その中身は**カレンダーヒートマップが
+ * 1 マスを塗るのに使うのと同じ `dayCategory`**。だから「動ける日が n 日」
+ * と「下のカレンダーで緑のマスが n 個」は必ず一致する。
+ *
+ * API も呼ばない。同じページが既に持っている走査結果を使うので、
+ * 上の表・下のカレンダーと数字がずれようがない。
  */
 
-/** /api/nba/forecast が返す 1 か月ぶん。 */
-interface ForecastPoint {
-  name: string;
-  date: string;
-  qValue: number;
-  isVoidTime: boolean;
-  action: string;
+interface Props {
+  /** 走査結果。timing ページが持っているものをそのまま受け取る。 */
+  days: (FilterableDay & { date: string })[] | null;
+  /** いま選んでいる方位。未選択なら null（平として数える）。 */
+  direction: string | null;
+  /** 見出しに出す方位の名前。 */
+  directionLabel: string;
+  /** この日以降を見通しとして数える。YYYY-MM-DD。 */
+  fromIso: string;
 }
 
-/** Q 値の目盛り。0〜100 を想定し、外れても端に寄せる。 */
-function qRatio(q: number): number {
-  if (!Number.isFinite(q)) return 0;
-  return Math.min(1, Math.max(0, q / 100));
+/** 「2026-11」→「2026年11月」。年をまたぐので年も出す。 */
+function monthLabel(year: number, monthOfYear: number): string {
+  return `${year}年${monthOfYear}月`;
 }
 
-/** 端末に入っている生年月日。無ければ undefined。 */
-function readBirthDate(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (!raw) return undefined;
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed && typeof parsed === "object" && "birth_date" in parsed) {
-      const value = (parsed as { birth_date?: unknown }).birth_date;
-      return typeof value === "string" ? value : undefined;
-    }
-  } catch {
-    /* 読めない端末（プライベートウィンドウ等）では省略して進む。 */
-  }
-  return undefined;
-}
+export function YearlyForecast({
+  days,
+  direction,
+  directionLabel,
+  fromIso,
+}: Props) {
+  const months = useMemo(
+    () => monthlyOutlook(days ?? [], direction, fromIso),
+    [days, direction, fromIso],
+  );
+  const best = useMemo(() => bestOutlookMonth(months), [months]);
 
-export function YearlyForecast() {
-  const [points, setPoints] = useState<ForecastPoint[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const load = useCallback(async () => {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/nba/forecast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        /*
-          体調の初期値は API 側の既定（shield 100 / ansLoad 20）に任せる。
-          ここは「時期そのものの質」を見る画面なので、体調で上下させると
-          月どうしを比べられなくなる。
-        */
-        body: JSON.stringify({ clientBirthDate: readBirthDate() }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || `HTTP ${res.status}`);
-      }
-      setPoints(json.data);
-      setError(null);
-    } catch (e) {
-      setError(toUserMessage(e, "12 か月の見通しを取得できませんでした。"));
-    } finally {
-      setBusy(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  /* いちばん質の高い月。天中殺の月は勧めない。 */
-  const best =
-    points && points.length > 0
-      ? points
-          .filter((p) => !p.isVoidTime)
-          .reduce<ForecastPoint | null>(
-            (top, p) => (!top || p.qValue > top.qValue ? p : top),
-            null,
-          )
-      : null;
+  if (!days || months.length === 0) return null;
 
   return (
     <section className="rounded-2xl border border-stone-200 bg-white p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-bold text-stone-800">
-          これから 12 か月の見通し
+          月ごとの見通し（{directionLabel}）
         </h2>
         <p className="text-[11px] text-stone-500">
-          月ごとの質（Q 値）。濃いほど条件が良い月です。
+          走査した日を月ごとに数えたものです。下のカレンダーと同じ判定です。
         </p>
       </div>
 
-      {busy && !points && (
-        <p className="mt-3 text-xs text-stone-500">読み込んでいます…</p>
-      )}
+      {/* 結論を先に置く。数字はすべて下のカレンダーで数え直せる */}
+      <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-stone-700">
+        {best ? (
+          <>
+            この範囲で{directionLabel}へ動ける日がいちばん多いのは
+            <strong className="mx-1 font-bold">
+              {monthLabel(best.year, best.monthOfYear)}
+            </strong>
+            です（{best.total} 日のうち <strong>{best.open} 日</strong>
+            {"。いちばん良い段階は"}
+            {best.bestTier ? TIER_LABELS[best.bestTier] : "—"}）。
+          </>
+        ) : (
+          <>
+            この範囲に{directionLabel}
+            へ動ける日はありません（三盤吉・吉2盤・吉1盤のいずれも 0
+            日）。方位を変えるか、走査する期間を延ばしてください。
+          </>
+        )}
+      </p>
 
-      {error && (
-        <p className="mt-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">
-          {error}
-        </p>
-      )}
-
-      {points && points.length > 0 && (
-        <>
-          {/* 結論を先に置く */}
-          {best && (
-            <p className="mt-3 max-w-[70ch] text-sm leading-relaxed text-stone-700">
-              この 1 年でいちばん条件が良いのは
-              <strong className="mx-1 font-bold">{best.name}</strong>
-              です（Q 値 {Math.round(best.qValue)}）。
-            </p>
-          )}
-
-          {/* 根拠：12 か月ぶんを並べる */}
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-            {points.map((p) => (
-              <div
-                key={p.date}
-                className={`rounded-xl border p-2.5 ${
-                  p.isVoidTime
-                    ? "border-amber-300 bg-amber-50/50"
-                    : "border-stone-200"
-                }`}
-              >
-                <div className="flex items-baseline justify-between gap-1">
-                  <span className="text-[11px] font-bold text-stone-700">
-                    {p.name}
-                  </span>
-                  <span className="font-mono text-sm font-bold tabular-nums text-stone-900">
-                    {Math.round(p.qValue)}
-                  </span>
-                </div>
-                <span
-                  className="mt-1.5 block h-2 rounded-full"
-                  style={{ backgroundColor: rampColor(qRatio(p.qValue)) }}
-                  aria-hidden
-                />
-                {p.isVoidTime && (
-                  <span className="mt-1.5 block text-[10px] font-bold text-amber-800">
-                    天中殺の期間
-                  </span>
-                )}
-                <span className="mt-1 block text-[10px] leading-snug text-stone-600">
-                  {p.action}
+      {/* 根拠：月ごとの内訳 */}
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {months.map((m) => {
+          const isBest = best?.month === m.month;
+          return (
+            <div
+              key={m.month}
+              className={`rounded-xl border p-2.5 ${
+                isBest
+                  ? "border-emerald-400 bg-emerald-50/40"
+                  : "border-stone-200"
+              }`}
+            >
+              <div className="flex items-baseline justify-between gap-1">
+                <span className="text-[11px] font-bold text-stone-700">
+                  {monthLabel(m.year, m.monthOfYear)}
+                </span>
+                <span className="font-mono text-sm font-bold tabular-nums text-stone-900">
+                  {m.open}
                 </span>
               </div>
-            ))}
-          </div>
 
-          {/* 明細：畳まない */}
-          <ul className="mt-4 space-y-1.5 border-t border-stone-200 pt-3">
-            <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
-              ・Q 値は<strong>時期そのものの質</strong>
-              で、方位は見ていません。どこへ動くかは別の画面で確かめてください。
-            </li>
-            <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
-              ・体調は既定値で計算しています。実際の体調を入れると上下します。
-            </li>
-            <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
-              ・<strong>天中殺の月は、質が高くても勧めていません。</strong>
-              枠を付けて色の目盛りから外しています。
-            </li>
-          </ul>
-        </>
-      )}
+              {/* 段階の内訳。塗りはサイト共通の TIER_FILL */}
+              <span
+                className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-stone-100"
+                aria-hidden
+              >
+                {(["S", "A", "B", "C", "D", "X"] as DayTier[]).map((t) =>
+                  m.counts[t] > 0 ? (
+                    <span
+                      key={t}
+                      style={{
+                        backgroundColor: TIER_FILL[t],
+                        width: `${(m.counts[t] / m.total) * 100}%`,
+                      }}
+                    />
+                  ) : null,
+                )}
+                {m.counts.BLOCKED > 0 ? (
+                  <span
+                    style={{
+                      backgroundColor: BLOCKED_FILL,
+                      width: `${(m.counts.BLOCKED / m.total) * 100}%`,
+                    }}
+                  />
+                ) : null}
+              </span>
 
-      {points && points.length === 0 && (
-        <p className="mt-3 text-xs text-stone-500">
-          見通しを出せませんでした。生年月日を入れると精度が上がります。
-        </p>
-      )}
+              <span className="mt-1.5 block text-[10px] leading-snug text-stone-600">
+                {m.total} 日のうち動ける日 {m.open} 日
+              </span>
+              {m.counts.BLOCKED > 0 && (
+                <span className="mt-0.5 block text-[10px] font-bold text-amber-800">
+                  天中殺 {m.counts.BLOCKED} 日
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <ul className="mt-4 space-y-1.5 border-t border-stone-200 pt-3">
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+          ・「動ける日」は
+          {OPEN_TIERS.map((t) => TIER_LABELS[t]).join("・")}
+          {
+            "の日です。数字は下のカレンダーのマスを数えたものと同じで、月を見てから日を選べます。"
+          }
+        </li>
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+          ・<strong>天中殺の日は動ける日に入れていません。</strong>
+          段階が良くても、日そのものが塞がっているものとして数えています。
+        </li>
+        <li className="max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+          {
+            "・方位ごとに変わります。上の表で方位を選び直すと、この見通しも切り替わります。"
+          }
+        </li>
+      </ul>
     </section>
   );
 }
+
+export default YearlyForecast;
