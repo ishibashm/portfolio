@@ -306,4 +306,25 @@ input[type="time"],
 input[type="month"],
 input[type="week"] {
   min-width: 0;
+
+  /*
+   * iOS の Safari は、この形の入力に `width: 100%` を与えると
+   * **padding と border をその上に足す**（content-box の振る舞い）。
+   * Tailwind の preflight が `*` に border-box を当てているのに効かない。
+   *
+   * 利用者の iPad mini（iPadOS 18.7 / Safari 26.6）で実測した結果、
+   * 3 つの頁すべてで**ちょうど 26px** はみ出していた。
+   * 26px = px-3 の左右（12 × 2）＋ 枠線（1 × 2）。
+   *
+   *     /                  幅 326 / 枠 300   #quick-birth-date
+   *     /calendar          幅 336 / 枠 310   #ad-birth・#ad-from
+   *     /relocation/wealth 幅 500 / 枠 474
+   *
+   * **枠の幅が違っても差は常に 26px。**だから列幅の問題ではなく、
+   * 箱の数え方の問題だと分かった（#677 で列を減らしても直らなかった）。
+   * はみ出した先が隣の入力欄で、それが「入力欄が重なる」の正体。
+   *
+   * 要素＋属性の選択子（詳細度 0,1,1）なので preflight の `*` に勝つ。
+   */
+  box-sizing: border-box;
 }
