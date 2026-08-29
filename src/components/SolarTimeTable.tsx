@@ -482,7 +482,7 @@ export function SolarTimeTableComponent({
               ◆ 1. 陰陽五行・四柱推命
             </strong>
             <p className="text-stone-500 text-justify">
-              宇宙のエネルギーを「木・火・土・金・水」の5つの属性（周波数）に分類し、互いに生み出す「相生」、打ち消し合う「相剋」の物理的相互作用として計算します。これに干支暦（四柱推命）の天体位相を組み合わせています。
+              「木・火・土・金・水」の五行に分け、互いに生み出す「相生」、打ち消し合う「相剋」という関係の決まりで計算します。干支暦（四柱推命）の組み合わせを併せて見ます。エネルギーを測っているのではなく、伝統的に決まっている規則をそのまま計算に写したものです。
             </p>
           </div>
           <div className="p-2 border border-blue-200 rounded-sm">
@@ -490,7 +490,7 @@ export function SolarTimeTableComponent({
               ◆ 2. 九星気学・環境方位
             </strong>
             <p className="text-stone-500 text-justify">
-              均時差を補正した「真太陽時」に基づき、その場所・時間に流れる磁気エネルギー（九星・八門）をリアルタイム算出します。五行理論と組み合わせ、あなたの「本命星」の周波数と共鳴する空間ベクトルを特定します。
+              均時差を補正した「真太陽時」でその日の境目を決め、その日・その場所の九星と八門の配置を出します。五行の相生・相剋と合わせて、あなたの本命星と相性のよい方位を判定します。
             </p>
           </div>
           <div className="p-2 border border-red-200 rounded-sm">
@@ -498,7 +498,7 @@ export function SolarTimeTableComponent({
               ◆ 3. VOID TIME（天中殺）
             </strong>
             <p className="text-stone-500 text-justify">
-              天中殺（空亡）は地球の磁気シールドと生体リズムが同調外れを起こす時間帯です。四柱推命の干支の組み合わせにおける「空白の位相」であり、この時間帯での物理的移動や決断は自律神経エラーを招くため避けるべきです。
+              天中殺（空亡）は、四柱推命で干支の組み合わせが欠ける期間を指す考え方です。伝統的に、この期間の移動や大きな決断は避けるとされます。体調や自律神経への影響を示すものではありません。
             </p>
           </div>
           <div className="p-2 border border-emerald-200 rounded-sm">
@@ -506,7 +506,7 @@ export function SolarTimeTableComponent({
               ◆ 4. OPTIMAL TIME（吉門・相生）
             </strong>
             <p className="text-stone-500 text-justify">
-              緑色ハイライトは、空間の「八門（生/休/開）」が開き、かつ九星の属性とあなたの属性が「相生（または相比）」関係にある完全同期状態です。肉体と環境の周波数が同調し、パフォーマンスが最大化されます。
+              緑は、八門（生・休・開）が開き、かつ九星の属性とあなたの属性が「相生（または相比）」にあたる日です。九星気学で条件が最もそろう組み合わせとして扱っています。
             </p>
           </div>
         </div>
