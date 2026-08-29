@@ -732,14 +732,25 @@ export default function TimingAnalyticsPage() {
             </Section>
 
             {/*
-              これから 12 か月の見通し。
+              月ごとの見通し。
 
-              この予測を出す API は前からあったが、呼んでいた部品が
-              どこにも描画されておらず、**完全に死んでいた**（#513）。
-              日ごとの格子を見る前に「どの月か」を掴めるほうが読みやすい
-              ので、ヒートマップの手前に置く。
+              ここは Q 値（nbaEngine の期待値）を出していたが、指標の意味と
+              説明文がずれていた（「その月の質」ではなく「その月に取るべき
+              最善手の期待値」で、最善手が撤退でも高く出る）。しかも根拠を
+              追える画面がサイトのどこにも無かった。利用者の判断で、
+              サイト共通の段階評価に置き換えた。
+
+              走査結果をそのまま渡す。同じ days・同じ方位を使うので、
+              下のカレンダーと数字がずれようがない。
             */}
-            <YearlyForecast />
+            <YearlyForecast
+              days={days}
+              direction={activeDir}
+              directionLabel={
+                activeDir ? DIRECTION_LABELS[activeDir] : "選択中の方位"
+              }
+              fromIso={todayIso}
+            />
 
             {/* カレンダーヒートマップ */}
             <Section
