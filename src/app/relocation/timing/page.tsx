@@ -35,6 +35,7 @@ import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { YearlyForecast } from "@/components/relocation/YearlyForecast";
 import { toPercentStack } from "@/utils/percentStack";
+import { saveWorkingDate } from "@/lib/workingDate";
 import { prefectureDirections } from "@/lib/prefectureDirection";
 import {
   ALL_DIRECTIONS,
@@ -874,7 +875,14 @@ export default function TimingAnalyticsPage() {
                           return (
                             <button
                               key={d.date}
-                              onClick={() => setSelectedDate(d.date)}
+                              onClick={() => {
+                                setSelectedDate(d.date);
+                                /* 選んだ時点で残す。以前はスキャナーへの
+                                   リンクを踏んだときだけ残っていたので、
+                                   手引きの手順やサイドバーから入ると
+                                   今日に戻っていた（利用者報告）。 */
+                                saveWorkingDate(d.date);
+                              }}
                               title={`${d.date}（${WEEKDAY_JP[d.weekday]}）${
                                 TIER_LABELS[t] ?? t
                               }${d.blocked ? " / 天中殺" : ""}${
