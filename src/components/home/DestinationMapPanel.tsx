@@ -273,7 +273,7 @@ export default function DestinationMapPanel({
                     );
                     setTimeOffsetDays(diffDays);
                   }}
-                  className="bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
+                  className="w-24 bg-transparent text-emerald-600 font-bold text-[10px] outline-none cursor-pointer text-right [color-scheme:dark]"
                 />
               </div>
             </div>

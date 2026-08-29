@@ -1757,7 +1757,7 @@ export default function RelocationSimulatorPage() {
                     onChange={(e) =>
                       handleUpdateStep(0, { departureDate: e.target.value })
                     }
-                    className="rounded-xl border border-stone-200 bg-white/80 px-3 py-1.5 font-mono text-xs text-stone-900 focus:outline-none focus:border-indigo-500/30 shadow-inner"
+                    className="w-40 rounded-xl border border-stone-200 bg-white/80 px-3 py-1.5 font-mono text-xs text-stone-900 focus:outline-none focus:border-indigo-500/30 shadow-inner"
                   />
                   {steps.length > 1 && (
                     <span className="text-[10px] text-stone-500">
