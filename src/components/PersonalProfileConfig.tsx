@@ -274,7 +274,7 @@ export function PersonalProfileConfig({
       1700px にしても効かず、画面の両端に余白が残っていた（利用者の指摘）。
       置かれる側（プロフィールのタブ）が列で幅を決める。
     */
-    <div className="w-full h-full mt-4 bg-white/80 border border-stone-200 p-4 rounded-sm shadow-2xl md:backdrop-blur-md relative overflow-hidden group">
+    <div className="w-full h-full mt-4 bg-white/80 border border-stone-200 p-5 rounded-2xl shadow-lg md:backdrop-blur-md relative overflow-hidden group">
       <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
         <Database size={120} className="text-stone-600" />
       </div>
@@ -311,7 +311,7 @@ export function PersonalProfileConfig({
       </div>
 
       {/* Profile Presets Manager Card */}
-      <div className="mb-6 p-3 bg-white/80 border border-purple-200 rounded-sm relative z-10 font-mono text-xs">
+      <div className="mb-6 p-3 bg-white/80 border border-purple-200 rounded-xl relative z-10 font-mono text-xs">
         <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <UserCheck size={14} className="text-purple-600" />
@@ -341,7 +341,7 @@ export function PersonalProfileConfig({
 
         {/* 9px のバッジだけでは気付けない。空リストの理由をその場に書く。 */}
         {needsLogin && (
-          <div className="mb-2 flex items-center gap-2 rounded-sm border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <div className="mb-2 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
             <span>
               未ログインのため、保存済みプロフィールを読み込めていません。ここでの保存はこの端末だけに残ります。
             </span>
@@ -361,7 +361,7 @@ export function PersonalProfileConfig({
               aria-label="保存済みプロフィールの選択"
               value={selectedPresetId}
               onChange={(e) => handleLoadPreset(e.target.value)}
-              className="w-full bg-stone-50 border border-purple-200 text-purple-600 px-3 py-1.5 rounded-sm outline-none focus:border-purple-400 text-xs font-mono"
+              className="w-full bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-xl outline-none focus:border-rose-400 text-xs"
             >
               <option value="">-- 保存済みプロフィールを選択 --</option>
               {presets.map((p) => (
@@ -379,7 +379,7 @@ export function PersonalProfileConfig({
               value={newPresetName}
               onChange={(e) => setNewPresetName(e.target.value)}
               placeholder="プロフィール名を入力..."
-              className="w-full bg-stone-50 border border-stone-300 text-stone-700 px-3 py-1.5 rounded-sm outline-none focus:border-purple-400 text-xs font-mono"
+              className="w-full bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-xl outline-none focus:border-rose-400 text-xs"
             />
           </div>
 
@@ -387,7 +387,7 @@ export function PersonalProfileConfig({
           <div className="flex gap-2 w-full md:w-auto shrink-0 flex-wrap sm:flex-nowrap">
             <button
               onClick={handleSaveNewPreset}
-              className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm bg-purple-600 hover:bg-purple-500 text-white text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1 px-4 py-2 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
               title="現在の設定を新規プロフィールとして追加保存"
             >
               <Plus size={12} />
@@ -397,7 +397,7 @@ export function PersonalProfileConfig({
               <>
                 <button
                   onClick={handleUpdateSelectedPreset}
-                  className="flex items-center justify-center gap-1 px-3 py-1.5 rounded-sm bg-blue-600 hover:bg-blue-500 text-white text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
                   title="選択中プロフィールの内容を上書き更新"
                 >
                   <Save size={12} />
@@ -405,7 +405,7 @@ export function PersonalProfileConfig({
                 </button>
                 <button
                   onClick={handleDeletePreset}
-                  className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-sm bg-rose-50 hover:bg-rose-900 border border-rose-200 text-rose-600 text-[10px] uppercase font-mono tracking-wider transition-all cursor-pointer"
+                  className="flex items-center justify-center gap-1 px-4 py-2 rounded-full border border-rose-300 bg-white text-xs font-bold text-rose-600 transition-colors hover:bg-rose-50 cursor-pointer"
                   title="選択中のプロフィールを削除"
                 >
                   <Trash2 size={12} />
@@ -447,7 +447,7 @@ export function PersonalProfileConfig({
           </div>
 
           {/* Derived Identity Summary Box */}
-          <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-sm mt-2">
+          <div className="bg-blue-50 border border-blue-200 p-2.5 rounded-xl mt-2">
             <div className="flex items-center gap-1.5 mb-1.5">
               <Fingerprint size={12} className="text-blue-600" />
               <span className="text-[10px] text-blue-600 font-bold uppercase tracking-widest">
@@ -495,7 +495,7 @@ export function PersonalProfileConfig({
                 id="profile-void"
                 value={voidZodiacOverride || ""}
                 onChange={(e) => setVoidZodiacOverride?.(e.target.value)}
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full uppercase"
+                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full uppercase"
               >
                 <option value="">生年月日から自動計算</option>
                 <option value="戌亥">戌亥 (Inui)</option>
@@ -539,7 +539,7 @@ export function PersonalProfileConfig({
                 value={geminiKey || ""}
                 onChange={(e) => setGeminiKey?.(e.target.value)}
                 placeholder="AI_..."
-                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full font-mono text-[10px]"
+                className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full font-mono text-[10px]"
               />
               <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
                 AI
@@ -571,7 +571,7 @@ export function PersonalProfileConfig({
             </span>
           </div>
 
-          <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-sm">
+          <div className="mt-4 p-2 bg-blue-50 border border-blue-200 rounded-xl">
             <div className="flex gap-2 items-start">
               <MapPin size={10} className="text-blue-600 mt-0.5 min-w-[10px]" />
               <p className="text-[10px] text-stone-600 leading-relaxed text-justify">
@@ -616,7 +616,7 @@ export function PersonalProfileConfig({
                     onChange={(e) =>
                       setBaselineHrvMean?.(Number(e.target.value))
                     }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -634,7 +634,7 @@ export function PersonalProfileConfig({
                     onChange={(e) =>
                       setBaselineHrvStd?.(Number(e.target.value))
                     }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -652,7 +652,7 @@ export function PersonalProfileConfig({
                     onChange={(e) =>
                       setBaselineGsrMean?.(Number(e.target.value))
                     }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -670,7 +670,7 @@ export function PersonalProfileConfig({
                     onChange={(e) =>
                       setBaselineGsrStd?.(Number(e.target.value))
                     }
-                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-sm outline-none focus:border-blue-500 transition-colors w-full text-center"
+                    className="bg-white border border-stone-300 text-stone-600 px-2 py-1.5 rounded-xl outline-none focus:border-rose-400 transition-colors w-full text-center"
                   />
                 </div>
               </div>
@@ -709,7 +709,7 @@ export function PersonalProfileConfig({
                         setUsePsychologyScorer?.(e.target.checked)
                       }
                     />
-                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-slate-900"></div>
                   </label>
                 </div>
 
@@ -730,7 +730,7 @@ export function PersonalProfileConfig({
                       checked={useKigakuScorer ?? true}
                       onChange={(e) => setUseKigakuScorer?.(e.target.checked)}
                     />
-                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-slate-900"></div>
                   </label>
                 </div>
 
@@ -753,7 +753,7 @@ export function PersonalProfileConfig({
                         setUseAstrologyScorer?.(e.target.checked)
                       }
                     />
-                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-purple-600"></div>
+                    <div className="w-7 h-4 bg-stone-100 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-zinc-400 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-slate-900"></div>
                   </label>
                 </div>
               </div>
@@ -768,7 +768,7 @@ export function PersonalProfileConfig({
             type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
             aria-expanded={showAdvanced}
-            className="w-full px-4 py-2 rounded-sm font-mono text-[10px] border border-stone-300 text-stone-500 hover:bg-stone-100 transition-colors cursor-pointer text-left"
+            className="w-full px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer text-left"
           >
             {showAdvanced
               ? "▲ 詳細設定を閉じる"
@@ -776,27 +776,32 @@ export function PersonalProfileConfig({
           </button>
         </div>
 
-        <div className="md:col-span-2 pt-4 flex justify-between gap-2 border-t border-stone-200 mt-2 flex-wrap">
-          <div className="flex gap-2 flex-wrap">
+        {/* ボタンの見た目はサイト共通の 2 種類だけにする。以前は括弧書きの
+            ラベル（[ ... ]）に等幅・大文字・角丸 sm で、色も緑・紫・青が
+            並んでいた。同じ頁の他の場所（丸いボタン、slate の主ボタン）と
+            揃わず「浮いて見える」と指摘があった。
+            主＝slate-900 の丸ボタン、副＝白地に slate の枠、の 2 段。 */}
+        <div className="md:col-span-2 pt-4 flex justify-between gap-3 border-t border-stone-200 mt-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             <button
               onClick={onGetGPS}
-              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-emerald-200 text-emerald-600 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
             >
-              [ デバイスのGPSを取得 ]
+              デバイスの GPS を取得
             </button>
             <button
               onClick={onLoad}
-              className="px-4 py-2 rounded-sm font-mono text-[10px] uppercase border border-purple-200 text-purple-600 hover:bg-purple-500/10 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
             >
-              [ 画面設定を再読込 ]
+              画面設定を再読込
             </button>
             {presets.length > 0 && (
               <select
                 value={selectedPresetId}
-                className="bg-white border border-purple-200 text-purple-600 px-2 py-2 rounded-sm outline-none focus:border-purple-500 transition-colors text-[10px] font-mono cursor-pointer uppercase tracking-wider"
+                className="px-3 py-2 rounded-full border border-slate-300 bg-white text-xs font-bold text-slate-700 outline-none focus:border-rose-400 transition-colors cursor-pointer"
                 onChange={(e) => handleLoadPreset(e.target.value)}
               >
-                <option value="">[ プリセットを選択... ]</option>
+                <option value="">保存済みから選ぶ</option>
                 {presets.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -812,20 +817,15 @@ export function PersonalProfileConfig({
             <button
               onClick={onSave}
               disabled={isSaving}
-              className={`px-8 py-2 rounded-sm font-mono text-[10px] uppercase tracking-[0.2em] transition-all relative overflow-hidden group cursor-pointer ${
-                isSaving
-                  ? "bg-stone-100 text-stone-600 cursor-wait"
-                  : "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] active:scale-95"
-              }`}
+              className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-sm transition-all shadow-md active:scale-95 disabled:cursor-wait cursor-pointer"
             >
               {isSaving
-                ? "[ 保存中... ]"
+                ? "保存中..."
                 : needsLogin
-                  ? "[ この端末に保存 ]"
-                  : "[ 設定を保存（クラウド同期） ]"}
-              <div className="absolute inset-0 bg-stone-200/70 -translate-x-full group-hover:translate-x-full transition-transform duration-500 skew-x-[-20deg]"></div>
+                  ? "この端末に保存"
+                  : "設定を保存（クラウド同期）"}
             </button>
-            <span className="text-[9px] text-stone-600">
+            <span className="text-[11px] text-slate-500">
               {needsLogin
                 ? "この端末にのみ保存されます"
                 : "他の端末でも同じ設定が使えます"}
