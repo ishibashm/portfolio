@@ -107,7 +107,7 @@ export function HonmeiLookup({ starNames, linkYear }: Props) {
             min={`${MIN_BIRTH_YEAR}-01-01`}
             max={`${MAX_BIRTH_YEAR}-12-31`}
             onChange={(e) => void applyDate(e.target.value)}
-            className="mt-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="mt-1.5 w-44 rounded-lg border border-slate-300 px-3 py-2 text-sm"
           />
         </label>
         <button
