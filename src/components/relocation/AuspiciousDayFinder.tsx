@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Loader2, CalendarCheck, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { saveWorkingDate } from "@/lib/workingDate";
 import {
   ALL_DIRECTIONS,
   DIRECTION_LABELS,
@@ -618,8 +619,12 @@ export function AuspiciousDayFinder() {
                             {/* この日・この方位のまま物件一覧へ渡す。
                                 日と方位が決まってから物件を選ぶのが実際の順序で、
                                 条件を入れ直させると前提がずれる。 */}
+                            {/* 押した時点で残す。クエリでも渡しているが、
+                                戻ってから別の経路でスキャナーへ入っても
+                                同じ日で始められるようにする（利用者報告）。 */}
                             <Link
                               href={scannerHref(d.date, s.direction)}
+                              onClick={() => saveWorkingDate(d.date)}
                               className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 font-semibold hover:bg-rose-100 transition-colors"
                               title={`${d.date} に ${s.directionLabel} へ移る前提で物件を探す`}
                             >

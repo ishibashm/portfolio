@@ -46,6 +46,7 @@ import {
   type DirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { prefectureDirections } from "@/lib/prefectureDirection";
+import { saveWorkingDate } from "@/lib/workingDate";
 import {
   expandLayoutSelections,
   matchesLayoutSelection,
@@ -895,15 +896,9 @@ export default function ArbitrageScannerPage() {
         // 保存済みの設定で metaphysical-config-updated を投げるため、
         // ここで state に入れるだけだと直後に上書きされて元の日付に戻る。
         // baseLat/baseLon を同じ理由で保存しているのと同じ扱いにする。
-        localStorage.setItem("arb_targetDate", qDate);
-        try {
-          const raw = localStorage.getItem("tactical_config_v1");
-          const cfg = raw ? JSON.parse(raw) : {};
-          cfg.target_date = qDate;
-          localStorage.setItem("tactical_config_v1", JSON.stringify(cfg));
-        } catch {
-          /* 保存済み設定が壊れていても URL の日付は使う */
-        }
+        // 書き方は lib/workingDate に寄せた。旧キーと新しい設定の
+        // 両方に書く必要があり、手書きが増えると片方を忘れる。
+        saveWorkingDate(qDate);
       }
       // 時期分析（/relocation/timing）からの受け渡し。
       //
