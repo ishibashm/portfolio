@@ -71,7 +71,7 @@ describe("ヒートマップと地図の時間軸連動", () => {
     // 出るまで待つ。上限を超えたら下の toBeDefined が実態を報告する。
     for (let i = 0; i < 40; i++) {
       const found = Array.from(container.querySelectorAll("button")).some(
-        (candidate) => candidate.textContent?.trim() === "12 MONTHS",
+        (candidate) => candidate.textContent?.trim() === "12ヶ月",
       );
       if (found) break;
       await act(async () => {
@@ -86,20 +86,18 @@ describe("ヒートマップと地図の時間軸連動", () => {
     const mapLayerMode = () =>
       container.querySelector('[data-testid="map-layer-mode"]')?.textContent;
 
-    expect(button("12 MONTHS")).toBeDefined();
+    expect(button("12ヶ月")).toBeDefined();
     expect(mapLayerMode()).toBe("final");
 
     await act(async () => {
-      button("12 MONTHS")?.dispatchEvent(
+      button("12ヶ月")?.dispatchEvent(
         new MouseEvent("click", { bubbles: true }),
       );
     });
     expect(mapLayerMode()).toBe("year_month");
 
     await act(async () => {
-      button("30 DAYS")?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true }),
-      );
+      button("30日")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     expect(mapLayerMode()).toBe("final");
 
