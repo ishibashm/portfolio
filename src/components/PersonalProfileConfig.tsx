@@ -720,7 +720,7 @@ export function PersonalProfileConfig({
                       九星気学（五行と本命星）
                     </span>
                     <span className="text-[9px] text-stone-600">
-                      東洋気学の五行（相生・相剋）と本命星からエネルギーの吉凶を判定します
+                      五行の相性（相生・相剋）と本命星から方位の吉凶を判定します
                     </span>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
