@@ -328,7 +328,9 @@ export default function ScorecardPanel({
                 5. 総合スコア / 8方位統合評価マトリクス
               </h2>
               <p className="text-stone-500 text-[10px] sm:text-xs leading-relaxed max-w-xl">
-                直近30日の時空波動予測、各方位における富裕エリア所得、および賃貸相場に対する割安度の偏差値指標を統合した意思決定コックピットです。
+                直近 30
+                日の吉凶の見通し、各方位の富裕エリア所得、賃貸相場に対する割安度を
+                1 か所で見比べる画面です。
               </p>
               <div className="mt-2 text-stone-600 text-[9px] leading-relaxed flex flex-wrap gap-x-4 gap-y-1">
                 <span>
