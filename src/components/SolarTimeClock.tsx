@@ -44,7 +44,7 @@ import {
   createPersonalizedOptimizer,
   OptimizationResult,
 } from "../utils/timing-optimizer";
-import type { NBAData } from "./nba/NBADashboard";
+import type { NBAData } from "@/types/nbaData";
 import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import {
   loadSettings,

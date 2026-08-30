@@ -17,7 +17,7 @@
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { TenChiJinEvaluation } from "../nba/TenChiJinEvaluation";
-import type { NBAData } from "../nba/NBADashboard";
+import type { NBAData } from "@/types/nbaData";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import {

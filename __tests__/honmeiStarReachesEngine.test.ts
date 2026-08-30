@@ -127,7 +127,6 @@ describe("本命星と提案の点数", () => {
  */
 const ROUTES = [
   "src/app/api/nba/route.ts",
-  "src/app/api/nba/forecast/route.ts",
   "src/app/api/relocation/nba-evaluate/route.ts",
 ];
 

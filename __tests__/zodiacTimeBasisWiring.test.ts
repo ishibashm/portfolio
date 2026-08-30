@@ -22,7 +22,6 @@ const WIRED = [
   "src/components/SolarTimeClock.tsx",
   "src/components/SolarTimeTable.tsx",
   "src/app/api/nba/route.ts",
-  "src/app/api/nba/forecast/route.ts",
 ];
 
 /**
@@ -109,10 +108,7 @@ describe("エンジン側の既定は標準時のまま", () => {
  * ここが `clientBody.zodiacTimeBasis` の素通しになると、壊れた値や
  * 古い版の画面から来た値で判定が動く。
  */
-const API_ROUTES = [
-  "src/app/api/nba/route.ts",
-  "src/app/api/nba/forecast/route.ts",
-];
+const API_ROUTES = ["src/app/api/nba/route.ts"];
 
 describe("API が受け取るときの倒し方", () => {
   for (const file of API_ROUTES) {
