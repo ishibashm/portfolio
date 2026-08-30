@@ -33,12 +33,13 @@ export interface StateLayers {
  * 天体の位置。度数を文字列（"123.45°"）で持つ。
  *
  * **どこまで埋まるかは呼ぶ route による。**`/api/nba` は八天体すべてを
- * 入れるが、`/api/nba/forecast` と `/api/relocation/nba-evaluate` は
- * sun と moon しか入れていない。判定が数として読むのは mars と saturn
- * だけで、`parseFloat` の後に `isNaN` で弾く作りになっているため、
- * 欠けていても点数は 0 のまま（`w_ephem` も 0）。
+ * 入れるが、`/api/relocation/nba-evaluate` は sun と moon しか入れて
+ * いない。判定が数として読むのは mars と saturn だけで、`parseFloat` の
+ * 後に `isNaN` で弾く作りになっているため、欠けていても点数は 0 のまま
+ * （`w_ephem` も 0）。（/api/nba/forecast も同様だったが、12 か月の
+ * 見通しを段階評価へ置き換えた際に route ごと削除した。#698）
  *
- * 全部必須にすると上の 2 つの route が通らない。**実態のほうに型を
+ * 全部必須にすると nba-evaluate が通らない。**実態のほうに型を
  * 合わせる。**
  */
 export interface PlanetaryPositions {
@@ -56,8 +57,8 @@ export interface PlanetaryPositions {
  * 四柱推命の命式のうち、**この判定が受け取れる形。**
  *
  * 渡ってくるのは `baziEngine.calculate()` の戻り値（`BaziResult`）だが、
- * それをそのまま要求すると通らない。`/api/nba/forecast` は `solarTime`
- * を付けたまま渡し、本人の命式には大運・紫微斗数・本命星が足されている。
+ * それをそのまま要求すると通らない。呼ぶ側は `solarTime` を付けたまま
+ * 渡すことがあり、本人の命式には大運・紫微斗数・本命星が足されている。
  * テストの作る命式は柱の一部しか持たない。
  *
  * **枝はどれも省略可**にしてある。実装側も全部 `?.` で読んでいて、無い
