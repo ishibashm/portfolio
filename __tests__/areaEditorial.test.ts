@@ -45,6 +45,20 @@ describe("AREA_EDITORIAL", () => {
     expect(bad).toEqual([]);
   });
 
+  it("本文に英単語が紛れ込んでいない（km だけ許す）", () => {
+    /* 日本語の文章に英字が残ると、そこだけ読めない。実際に
+       「山陽side」と書いてしまった（#760 で除去） */
+    const bad: string[] = [];
+    for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      for (const paragraph of editorial.intro) {
+        for (const word of paragraph.match(/[A-Za-z]+/g) ?? []) {
+          if (word !== "km") bad.push(`${code}: ${word}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   it("各項目に本文がある", () => {
     for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
       expect(editorial.intro.length, code).toBeGreaterThan(0);
