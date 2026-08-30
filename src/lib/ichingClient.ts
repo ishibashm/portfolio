@@ -18,7 +18,7 @@ const HEXAGRAM_DATA: Record<number, Hexagram> = {
     character: "乾",
     riskModifier: -10,
     confidenceBoost: 0.15,
-    actionAdvice: "高強度の活動に最適。創造的なエネルギーが満ちています。",
+    actionAdvice: "易経では、積極的な活動や創造的な取り組みに向くとされます。",
   },
   2: {
     number: 2,
