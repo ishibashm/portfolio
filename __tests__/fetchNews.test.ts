@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchAllFeeds } from "@/lib/fetchNews";
+import { fetchAllFeeds, mergeLatest, type FeedResult } from "@/lib/fetchNews";
 import { NEWS_FEEDS } from "@/data/newsSources";
 
 /**
@@ -82,5 +82,124 @@ describe("fetchAllFeeds", () => {
     const other = results.find((r) => r.source.id !== withAlt!.id)!;
     expect(other.ok).toBe(false);
     expect(other.usedUrl).toBeNull();
+  });
+});
+
+describe("mergeLatest", () => {
+  const src = (id: string) => ({
+    id,
+    name: id,
+    feedUrl: `https://example.com/${id}`,
+    siteUrl: `https://example.com/${id}/`,
+    note: "",
+  });
+
+  const item = (link: string, publishedAt: string | null) => ({
+    title: link,
+    link,
+    publishedAt,
+    summary: null,
+  });
+
+  it("配信元をまたいで新しい順に並べる", () => {
+    const feeds: FeedResult[] = [
+      {
+        source: src("a"),
+        ok: true,
+        usedUrl: "u",
+        items: [item("/a1", "2026-08-28T00:00:00+09:00")],
+      },
+      {
+        source: src("b"),
+        ok: true,
+        usedUrl: "u",
+        items: [
+          item("/b1", "2026-08-30T00:00:00+09:00"),
+          item("/b2", "2026-08-29T00:00:00+09:00"),
+        ],
+      },
+    ];
+
+    expect(mergeLatest(feeds, 10).map((m) => m.item.link)).toEqual([
+      "/b1",
+      "/b2",
+      "/a1",
+    ]);
+  });
+
+  it("取得できなかった配信元は混ぜない", () => {
+    const feeds: FeedResult[] = [
+      {
+        source: src("dead"),
+        ok: false,
+        usedUrl: null,
+        items: [item("/x", "2026-08-30T00:00:00+09:00")],
+      },
+      {
+        source: src("live"),
+        ok: true,
+        usedUrl: "u",
+        items: [item("/y", "2026-08-01T00:00:00+09:00")],
+      },
+    ];
+
+    expect(mergeLatest(feeds, 10).map((m) => m.item.link)).toEqual(["/y"]);
+  });
+
+  it("日付の読めない見出しは最後に回す（消さない）", () => {
+    const feeds: FeedResult[] = [
+      {
+        source: src("a"),
+        ok: true,
+        usedUrl: "u",
+        items: [
+          item("/none", null),
+          item("/dated", "2026-08-20T00:00:00+09:00"),
+        ],
+      },
+    ];
+
+    expect(mergeLatest(feeds, 10).map((m) => m.item.link)).toEqual([
+      "/dated",
+      "/none",
+    ]);
+  });
+
+  it("同じ URL は 1 回だけ（先に載っている配信元が勝つ）", () => {
+    const feeds: FeedResult[] = [
+      {
+        source: src("first"),
+        ok: true,
+        usedUrl: "u",
+        items: [item("/same", "2026-08-30T00:00:00+09:00")],
+      },
+      {
+        source: src("second"),
+        ok: true,
+        usedUrl: "u",
+        items: [item("/same", "2026-08-30T00:00:00+09:00")],
+      },
+    ];
+
+    const merged = mergeLatest(feeds, 10);
+    expect(merged).toHaveLength(1);
+    expect(merged[0].source.id).toBe("first");
+  });
+
+  it("limit で打ち切る", () => {
+    const feeds: FeedResult[] = [
+      {
+        source: src("a"),
+        ok: true,
+        usedUrl: "u",
+        items: [
+          item("/1", "2026-08-30T00:00:00+09:00"),
+          item("/2", "2026-08-29T00:00:00+09:00"),
+          item("/3", "2026-08-28T00:00:00+09:00"),
+        ],
+      },
+    ];
+
+    expect(mergeLatest(feeds, 2).map((m) => m.item.link)).toEqual(["/1", "/2"]);
   });
 });

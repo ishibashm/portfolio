@@ -89,3 +89,53 @@ async function fetchOne(source: FeedSource): Promise<FeedResult> {
 export async function fetchAllFeeds(): Promise<FeedResult[]> {
   return Promise.all(NEWS_FEEDS.map(fetchOne));
 }
+
+/** 新着一覧の 1 行。どの配信元から来たかを持ち歩く。 */
+export interface MergedNewsItem {
+  item: NewsItem;
+  source: FeedSource;
+}
+
+/**
+ * 取得できた配信元の見出しを 1 本の新着順にまとめる。
+ *
+ * 配信元が 8 つになって、媒体ごとの札を上から順に見ていくと
+ * 「今日は何が動いたか」が分からなくなった。まず全媒体の新着を
+ * 日付順で見せ、媒体ごとの並びはその下に残す。
+ *
+ * - 日付が読めない見出しは**最後**に回す（台帳の順のまま）
+ * - 同じ URL は 1 回だけ（配信元をまたいだ重複を畳む。先に載って
+ *   いる配信元が勝つ＝台帳の順）
+ */
+export function mergeLatest(
+  feeds: readonly FeedResult[],
+  limit: number,
+): MergedNewsItem[] {
+  const seen = new Set<string>();
+  const merged: MergedNewsItem[] = [];
+
+  for (const feed of feeds) {
+    if (!feed.ok) continue;
+    for (const item of feed.items) {
+      if (seen.has(item.link)) continue;
+      seen.add(item.link);
+      merged.push({ item, source: feed.source });
+    }
+  }
+
+  /* 日付の無いものを最後へ。あるものどうしは新しい順。
+     Array.prototype.sort は安定なので、日付が同じ／両方無いときは
+     台帳の順が残る */
+  merged.sort((a, b) => {
+    const ta = a.item.publishedAt ? Date.parse(a.item.publishedAt) : NaN;
+    const tb = b.item.publishedAt ? Date.parse(b.item.publishedAt) : NaN;
+    const va = Number.isNaN(ta);
+    const vb = Number.isNaN(tb);
+    if (va && vb) return 0;
+    if (va) return 1;
+    if (vb) return -1;
+    return tb - ta;
+  });
+
+  return merged.slice(0, limit);
+}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Newspaper, ExternalLink, Library } from "lucide-react";
-import { fetchAllFeeds } from "@/lib/fetchNews";
+import { fetchAllFeeds, mergeLatest } from "@/lib/fetchNews";
 import { NEWS_LINKS } from "@/data/newsSources";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -36,6 +36,9 @@ export const metadata: Metadata = {
  */
 export const revalidate = 60;
 
+/** 新着一覧に出す件数。媒体ごとの札は別に全部出るので、ここは頭出し。 */
+const LATEST_COUNT = 24;
+
 /** 見出しの日付。日本の媒体なので日本時間で丸める。 */
 function jstDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -52,6 +55,8 @@ export default async function Page() {
   const feeds = await fetchAllFeeds();
   const alive = feeds.filter((f) => f.ok);
   const down = feeds.filter((f) => !f.ok);
+  /* 全配信元の新着をまとめた一覧。媒体ごとの札より上に置く */
+  const latest = mergeLatest(feeds, LATEST_COUNT);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
@@ -72,7 +77,53 @@ export default async function Page() {
           </p>
         </header>
 
-        {/* 新着見出し。取得できた配信元だけ出す */}
+        {/* 全配信元の新着。媒体をまたいで日付順に見たいのが最初の
+            要求（「1 ページで情報密度を高く」）なので、媒体ごとの
+            札より前に置く */}
+        {latest.length > 0 && (
+          <section className="rounded-2xl border border-stone-200 bg-white p-4">
+            <h2 className="text-sm font-bold text-stone-800">
+              新着（全{alive.length}媒体）
+            </h2>
+            <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+              {
+                "取得できた配信元の見出しを日付順にまとめたものです。媒体ごとに読むなら下の一覧へ。"
+              }
+            </p>
+            <ul className="mt-3 grid gap-x-6 gap-y-1.5 border-t border-stone-100 pt-3 lg:grid-cols-2 xl:grid-cols-3">
+              {latest.map(({ item, source }) => {
+                const date = jstDate(item.publishedAt);
+                return (
+                  <li
+                    key={`${source.id}:${item.link}`}
+                    className="flex gap-2 text-xs"
+                  >
+                    <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-stone-400">
+                      {date ?? ""}
+                    </span>
+                    <span className="min-w-0">
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium leading-snug text-stone-700 hover:text-rose-600 hover:underline"
+                      >
+                        {item.title}
+                      </a>
+                      {/* 出典は必ず添える。どこの記事か分からないまま
+                          並べない */}
+                      <span className="ml-1 whitespace-nowrap text-[10px] text-stone-400">
+                        {source.name}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {/* 配信元ごとの見出し。取得できた配信元だけ出す */}
         {alive.length > 0 ? (
           <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {alive.map((feed) => (
