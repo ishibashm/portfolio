@@ -48,6 +48,7 @@ import type { ZoningName } from "@/utils/zoning";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
+import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
 import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
 import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
@@ -459,6 +460,21 @@ export default function ArbitrageMapInner({
    * その選択だけを localStorage に覚えさせる（地図のテーマと同じ扱い）。
    */
   const [showSectors, setShowSectors] = useState(true);
+  /*
+    現在地。**押されるまで購読しない。**開いた瞬間に位置情報の許可を
+    聞く画面は嫌われるので、既定は消えている（useWatchedPosition の註）。
+
+    follow は「地図を現在地に追わせるか」。Google マップと同じで、
+    地図を手で動かしたら切れる（引き戻されると操作できないため）。
+  */
+  const [locateOn, setLocateOn] = useState(false);
+  const [locateFollow, setLocateFollow] = useState(false);
+  const [locateMessage, setLocateMessage] = useState<string | null>(null);
+  /* 子から毎レンダリング新しい関数を渡すと effect が回り直すので、
+     ここで固定する。 */
+  const handleLocateFollowBroken = useCallback(() => {
+    setLocateFollow(false);
+  }, []);
   /*
     地図の下地。既定は標準地図（"std"）。全部が地理院タイル。
     選択は端末に残す。ハザードのタブと同じく、effect ではなく
@@ -1192,6 +1208,15 @@ export default function ArbitrageMapInner({
           />
         )}
 
+        {/* 現在地。表示だけで、方位の判定には入らない（判定は出発地から）。
+            歩いただけで画面の吉凶が変わってしまわないようにするため。 */}
+        <CurrentLocationLayer
+          enabled={locateOn}
+          follow={locateFollow}
+          onFollowBroken={handleLocateFollowBroken}
+          onMessage={setLocateMessage}
+        />
+
         {/* ハザードの重ね描き。区域が無い場所はタイル自体が無く透明で返る */}
         <HazardTileOverlay tab={hazardTab} />
 
@@ -1400,6 +1425,50 @@ export default function ArbitrageMapInner({
                     onSelect={setZoningPick}
                     notice={zoningNotice}
                   />
+                </div>
+              )}
+              {/* 現在地。3 状態を 1 つのボタンで回す（消 → 表示 → 追従）。
+              Google マップの現在地ボタンと同じ考え方で、押すたびに
+              「出す」「追う」「やめる」が切り替わる。ラベルは今どう
+              なっているかを書く（方位ボタンと同じ約束）。 */}
+              <button
+                onClick={() => {
+                  if (!locateOn) {
+                    setLocateOn(true);
+                    setLocateFollow(true);
+                    return;
+                  }
+                  if (locateFollow) {
+                    setLocateFollow(false);
+                    return;
+                  }
+                  setLocateOn(false);
+                  setLocateMessage(null);
+                }}
+                title={
+                  !locateOn
+                    ? "現在地を表示して追従する（位置情報の許可が要ります）"
+                    : locateFollow
+                      ? "追従をやめる（現在地の表示は残す）"
+                      : "現在地の表示を消す"
+                }
+                aria-pressed={locateOn}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  locateFollow
+                    ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700"
+                    : locateOn
+                      ? "bg-white text-blue-600 border-blue-300 hover:bg-blue-50"
+                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                }`}
+              >
+                ◎ 現在地{" "}
+                {locateFollow ? "追従中" : locateOn ? "表示中" : "非表示"}
+              </button>
+              {/* 位置情報が取れないときの 1 行。黙って消えると、押したのに
+              何も起きないように見える。 */}
+              {locateOn && locateMessage && (
+                <div className="max-w-56 rounded-lg border border-amber-200 bg-amber-50/95 px-3 py-1.5 text-[9px] leading-relaxed text-amber-800 shadow-lg">
+                  {locateMessage}
                 </div>
               )}
               {/* 扇形の表示切り替え。出発地が無いとそもそも扇形を描かないので、
