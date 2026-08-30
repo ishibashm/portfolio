@@ -49,6 +49,9 @@ import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
 import {
   loadSettings,
   saveSettings,
+  settingBoolean,
+  settingNumber,
+  settingString,
   SETTINGS_KEY,
 } from "@/lib/userSettings";
 import type { MunicipalityWealthItem } from "@/lib/municipalityWealth";
@@ -74,7 +77,11 @@ import {
   directionBoardInstant,
   forecastAnchorMs as toForecastAnchorMs,
 } from "@/utils/boardInstant";
-import { statusForLayerMode, type LayerMode } from "@/utils/directionStatus";
+import {
+  parseLayerMode,
+  statusForLayerMode,
+  type LayerMode,
+} from "@/utils/directionStatus";
 
 /**
  * 書き出し用の 1 セル。オブジェクトや配列を "[object Object]" に
@@ -908,51 +915,55 @@ export const SolarTimeClock = () => {
 
     if (Object.keys(data).length > 0) {
       try {
-        if (data.birth_date) setBirthDate(data.birth_date);
-        if (data.birth_lat !== undefined) setBirthLat(data.birth_lat);
-        if (data.birth_lon !== undefined) setBirthLon(data.birth_lon);
-        if (data.base_lat !== undefined) setLat(data.base_lat);
-        if (data.base_lon !== undefined) setLon(data.base_lon);
-        if (data.void_zodiac_override !== undefined)
-          setVoidZodiacOverride(data.void_zodiac_override);
+        // 型が合う値だけ state に入れる。以前は any 経由でそのまま入れて
+        // いたので、壊れた保存値（数値のはずが文字列など）が数値の state に
+        // 入り得た。型が合わない値は「保存されていない」扱いで飛ばす。
+        const applyStr = (key: string, set: (v: string) => void) => {
+          const v = settingString(data, key);
+          if (v !== undefined) set(v);
+        };
+        const applyNum = (key: string, set: (v: number) => void) => {
+          const v = settingNumber(data, key);
+          if (v !== undefined) set(v);
+        };
+        const applyBool = (key: string, set: (v: boolean) => void) => {
+          const v = settingBoolean(data, key);
+          if (v !== undefined) set(v);
+        };
+        const birth = settingString(data, "birth_date");
+        if (birth) setBirthDate(birth);
+        applyNum("birth_lat", setBirthLat);
+        applyNum("birth_lon", setBirthLon);
+        applyNum("base_lat", setLat);
+        applyNum("base_lon", setLon);
+        applyStr("void_zodiac_override", setVoidZodiacOverride);
         if (data.gemini_key_exists) setGeminiKey("********");
-        if (data.baseline_hrv_mean !== undefined)
-          setBaselineHrvMean(data.baseline_hrv_mean);
-        if (data.baseline_hrv_std !== undefined)
-          setBaselineHrvStd(data.baseline_hrv_std);
-        if (data.baseline_gsr_mean !== undefined)
-          setBaselineGsrMean(data.baseline_gsr_mean);
-        if (data.baseline_gsr_std !== undefined)
-          setBaselineGsrStd(data.baseline_gsr_std);
-        if (data.base_sync_timestamp !== undefined)
-          setBaseSyncTimestamp(data.base_sync_timestamp);
-        if (data.use_psychology_scorer !== undefined)
-          setUsePsychologyScorer(data.use_psychology_scorer);
-        if (data.use_kigaku_scorer !== undefined)
-          setUseKigakuScorer(data.use_kigaku_scorer);
-        if (data.use_astrology_scorer !== undefined)
-          setUseAstrologyScorer(data.use_astrology_scorer);
-        if (data.hrv !== undefined) setHrv(data.hrv);
-        if (data.gsr !== undefined) setGsr(data.gsr);
-        if (data.ansLoad !== undefined) setAnsLoad(data.ansLoad);
-        if (data.shieldCapacity !== undefined)
-          setShieldCapacity(data.shieldCapacity);
+        applyNum("baseline_hrv_mean", setBaselineHrvMean);
+        applyNum("baseline_hrv_std", setBaselineHrvStd);
+        applyNum("baseline_gsr_mean", setBaselineGsrMean);
+        applyNum("baseline_gsr_std", setBaselineGsrStd);
+        applyStr("base_sync_timestamp", setBaseSyncTimestamp);
+        applyBool("use_psychology_scorer", setUsePsychologyScorer);
+        applyBool("use_kigaku_scorer", setUseKigakuScorer);
+        applyBool("use_astrology_scorer", setUseAstrologyScorer);
+        applyNum("hrv", setHrv);
+        applyNum("gsr", setGsr);
+        applyNum("ansLoad", setAnsLoad);
+        applyNum("shieldCapacity", setShieldCapacity);
         // Load unified configurations
-        if (data.use_classical_board !== undefined)
-          setUseClassicalBoard(data.use_classical_board);
+        applyBool("use_classical_board", setUseClassicalBoard);
         // "solar" 以外は標準時に倒す（設定バーの normalizeZodiacTimeBasis と同じ約束）。
         setZodiacTimeBasis(
           data.zodiac_time_basis === "solar" ? "solar" : "standard",
         );
-        if (data.physical_month_mode !== undefined)
-          setPhysicalMonthMode(data.physical_month_mode);
-        if (data.use_true_north !== undefined)
-          setUseTrueNorth(data.use_true_north);
-        if (data.lunar_phase_modifier !== undefined)
-          setLunarPhaseModifier(data.lunar_phase_modifier);
-        if (data.layer_mode !== undefined) setActiveLayerMode(data.layer_mode);
-        if (data.direction_filter_mode !== undefined)
-          setDirectionFilterMode(data.direction_filter_mode);
+        const monthMode = settingString(data, "physical_month_mode");
+        if (monthMode === "coupled" || monthMode === "independent")
+          setPhysicalMonthMode(monthMode);
+        applyBool("use_true_north", setUseTrueNorth);
+        applyBool("lunar_phase_modifier", setLunarPhaseModifier);
+        if (data.layer_mode !== undefined)
+          setActiveLayerMode(parseLayerMode(settingString(data, "layer_mode")));
+        applyStr("direction_filter_mode", setDirectionFilterMode);
         isLoaded = true;
       } catch (e) {
         console.error("Settings apply error", e);

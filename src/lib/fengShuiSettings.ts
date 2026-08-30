@@ -2,6 +2,7 @@ import {
   readLocalSettings,
   writeLocalSettings,
   SYNCED_FIELDS,
+  type Settings,
 } from "@/lib/userSettings";
 import type { Sex } from "@/utils/fengShuiEngine";
 
@@ -57,7 +58,7 @@ export function readFengShuiSettings(): FengShuiSettings {
  * 生年月日や出発地を巻き添えで消す（`writeLocalSettings` が差分書き）。
  */
 export function writeFengShuiSettings(patch: Partial<FengShuiSettings>): void {
-  const next: Record<string, unknown> = {};
+  const next: Settings = {};
   if (patch.sex !== undefined) next[FENG_SHUI_SEX] = patch.sex;
   if (patch.enabled !== undefined) next[FENG_SHUI_ENABLED] = patch.enabled;
   if (Object.keys(next).length === 0) return;

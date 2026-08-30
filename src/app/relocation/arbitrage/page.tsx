@@ -16,7 +16,12 @@ import { TransactionsPanel } from "@/components/relocation/TransactionsPanel";
 import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
-import { loadSettings, type Settings } from "@/lib/userSettings";
+import {
+  loadSettings,
+  settingNumber,
+  settingString,
+  type Settings,
+} from "@/lib/userSettings";
 import type { ScoredProperty } from "@/lib/scoredProperty";
 import { AstroGridCalendar } from "@/components/realestate/AstroGridCalendar";
 import {
@@ -971,8 +976,13 @@ export default function ArbitrageScannerPage() {
       (async () => {
         try {
           const { settings: cfg } = await loadSettings();
-          const lat = parseFloat(cfg?.base_lat);
-          const lon = parseFloat(cfg?.base_lon);
+          // 保存値は数値が正だが、古い端末に文字列で残っていても読めるようにする。
+          const lat =
+            settingNumber(cfg, "base_lat") ??
+            parseFloat(settingString(cfg, "base_lat") ?? "");
+          const lon =
+            settingNumber(cfg, "base_lon") ??
+            parseFloat(settingString(cfg, "base_lon") ?? "");
           if (isNaN(lat) || isNaN(lon)) return;
           setBaseLat(String(lat));
           setLocalLat(String(lat));
