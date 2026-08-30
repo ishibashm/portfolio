@@ -39,6 +39,7 @@ import {
   cleanPropertyName,
   selectSql,
   uniqueCountSql,
+  type ArbitrageRow,
 } from "@/utils/arbitrageQuery";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -454,7 +455,7 @@ export async function GET(request: Request) {
     const dbStartedAt = Date.now();
     const [rawProperties, totalCount, freshness, beforeFreshnessCount] =
       await Promise.all([
-        prisma.$queryRawUnsafe<any[]>(
+        prisma.$queryRawUnsafe<ArbitrageRow[]>(
           selectSql(whereSql, dedupe, params.length + 1, candidateStrategy),
           ...params,
           limit,
@@ -623,14 +624,17 @@ export async function GET(request: Request) {
 
     // 3. 物件ごとにスコアリング
     const scoredProperties = properties.map((p) => {
-      const hasCoordinates = !!(p.lat && p.lon);
+      // 0 や null は「座標なし」。束ねて置くと、下で使うときに tsc が
+      // null で無いことを追える（真偽フラグだけだと追えない）。
+      const coords = p.lat && p.lon ? { lat: p.lat, lon: p.lon } : null;
+      const hasCoordinates = coords !== null;
 
       /**
        * 人ごとの判定。出発地が違えば同じ物件でも方位が違うため、
        * 距離・方位・天体ラインをそれぞれの起点と出生データで計算する。
        */
       const perMember = memberContexts.map((ctx) => {
-        if (ctx.member.stationary || !hasCoordinates) {
+        if (ctx.member.stationary || !coords) {
           return {
             ctx,
             direction: null as Direction | null,
@@ -646,14 +650,14 @@ export async function GET(request: Request) {
         const distanceKm = getDistance(
           ctx.member.baseLat,
           ctx.member.baseLon,
-          p.lat,
-          p.lon,
+          coords.lat,
+          coords.lon,
         );
         const trueBearing = getBearing(
           ctx.member.baseLat,
           ctx.member.baseLon,
-          p.lat,
-          p.lon,
+          coords.lat,
+          coords.lon,
         );
         const direction = directionFromBearing(trueBearing, nodeMapping);
         const magneticDirection = directionFromBearing(
@@ -668,13 +672,13 @@ export async function GET(request: Request) {
         if (ctx.hasBirthLocation) {
           const relocatedASC = AstroEngine.getAscendant(
             ctx.bDate,
-            p.lat,
-            p.lon,
+            coords.lat,
+            coords.lon,
             ctx.birthGst,
           );
           const relocatedMC = AstroEngine.getMidheaven(
             ctx.bDate,
-            p.lon,
+            coords.lon,
             ctx.birthGst,
           );
           hasSunLine =
