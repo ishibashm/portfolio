@@ -86,6 +86,12 @@ interface WealthMetadata {
   birthLat?: number;
   birthLon?: number;
   birthDate?: string;
+  /**
+   * 土用殺の方位（最終判定の表示のときだけ入る。単盤は null）。
+   * 土用殺は最終を NOISE_GOU で上書きするので、これを照合しないと
+   * 「五黄殺」と表示してしまう（実際にそうなっていた）。
+   */
+  doyouSatsuDirection?: string | null;
 }
 
 /**
@@ -1500,7 +1506,12 @@ export default function RegionalWealthPage() {
                           isNoise ? "text-rose-500" : "text-emerald-600"
                         }`}
                       >
-                        {directionLabelShort(b.status)}
+                        {directionLabelShort(
+                          b.status === "NOISE_GOU" &&
+                            b.dir === metadata?.doyouSatsuDirection
+                            ? "NOISE_DOYOU"
+                            : b.status,
+                        )}
                       </span>
                       <div
                         className="relative flex-1 h-3 rounded-full bg-stone-100"
