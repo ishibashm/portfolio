@@ -13,6 +13,7 @@ import L from "leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
+import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 
 // Fix Leaflet marker icons in Next.js
 applyLeafletDefaultIcon();
@@ -250,6 +251,9 @@ export default function SimulatorMap({
 
           {/* Fit map view dynamically */}
           <FitBounds positions={allPositions} />
+          {/* 現在地。地点をドラッグで置くときの目印になる。
+              表示だけで、判定には入らない。 */}
+          <CurrentLocationControl corner="bottomright" />
 
           {/* Start Location Marker (Gold) */}
           <Marker
