@@ -4,15 +4,11 @@ import type { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import {
   getHonmeiStar,
-  getCurrentEnvironmentalFrequencies as getSystemEnvironment,
-  generateBoard,
-  calculateVectorCollision,
   getPersonalVoidZodiac,
   Direction,
   AstroEngine,
   getUpcomingDoyouPeriod,
   calculateLunarPhaseCondition,
-  filterCollisionByMode,
   parseActionIntent,
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
@@ -256,11 +252,6 @@ export async function GET(request: Request) {
     lunarPhaseLabel = lpCond.phaseLabel;
   }
 
-  // 1. 環境・運気エンジンの初期化
-  const env = getSystemEnvironment(targetDate, baseLon, physicalMonthMode);
-
-  const bDate = parseSafeDate(birthDateStr);
-
   /**
    * 判定に関わる人の一覧。先頭は必ず本人。
    *
@@ -285,40 +276,12 @@ export async function GET(request: Request) {
   ];
   const memberWeights = partyWeights(party);
 
-  // 九星気学のベクトル計算（本人ぶん。盤の表示など既存の応答項目に使う）
-  const honmeiStar = getHonmeiStar(bDate);
-  const voidZodiacs = getPersonalVoidZodiac(bDate);
-
-  const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
-  const mB = generateBoard(
-    useClassical ? env.classicalMonthStar : env.monthStar,
-  );
-  const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
-
-  const baseCollision = calculateVectorCollision(
-    useClassical ? honmeiStar.classical : honmeiStar.physical,
-    yB,
-    mB,
-    dB,
-    voidZodiacs,
-    env.raw.lunarNode,
-    actionIntent,
-    targetDate,
-    baseLon,
-    undefined,
-    nodeMapping,
-  );
-
-  const vectorData = filterCollisionByMode(
-    baseCollision,
-    useClassical ? honmeiStar.classical : honmeiStar.physical,
-    null,
-    voidZodiacs,
-    directionFilterMode,
-    yB,
-    mB,
-    dB,
-  );
+  // 本人ぶんの盤・衝突計算（getSystemEnvironment → getHonmeiStar →
+  // generateBoard ×3 → calculateVectorCollision → filterCollisionByMode）が
+  // ここにあったが、結果の vectorData はどこからも読まれていなかった。
+  // 人ごとの判定は下の memberContexts が buildDailyAstroStates で改めて
+  // 計算しており、ここの一式はリクエストごとの空回りだったので消した。
+  // 旧コメントの「盤の表示など既存の応答項目に使う」は実態と違った。
 
   // 動的偏角の取得。出発地ごとに違うので人ごとに引く。
   const declinations = await Promise.all(

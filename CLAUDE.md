@@ -447,8 +447,9 @@ error TS2578: Unused '@ts-expect-error' directive.
 - ~~`SolarTimeTable` の `nbaData` prop~~ — **#738 で削除済み**。呼び出し側が
   一度も渡しておらず、書き出しに実在しない出典名（DS Oura/Tavily/RAG）が
   常時 "N/A" で入っていた
-- `api/rentals/arbitrage/route.ts` の `vectorData` が未使用。消すと九星気学の計算
-  チェーン約 35 行に連鎖する。280 行のコメントは「盤の表示に使う」と書いてあるが実態と違う
+- ~~`api/rentals/arbitrage/route.ts` の `vectorData` が未使用~~ — **#739 で
+  チェーンごと削除済み**。互いにしか使われない死に計算（環境・盤 ×3・衝突・
+  フィルタ）をリクエストごとに回していた
 
 ---
 
