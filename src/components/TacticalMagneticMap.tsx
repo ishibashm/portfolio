@@ -199,23 +199,23 @@ export function TacticalMagneticMapComponent({
                 <button
                   onClick={() => toggleLayer?.("terrain")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.terrain ? "text-blue-600 bg-blue-500/10" : "text-stone-600"}`}
-                  title="TER (地形・磁場ベース)"
+                  title="地形の陰影を重ねる"
                 >
-                  TER [基盤帯]
+                  TER [地形]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("weather")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono border-r border-stone-200 transition-colors ${hudLayers.weather ? "text-amber-600 bg-amber-500/10" : "text-stone-600"}`}
-                  title="WTH (宇宙天気・磁気嵐)"
+                  title="宇宙天気（Kp 指数）の注意帯を重ねる"
                 >
-                  WTH [変動波]
+                  WTH [宇宙天気]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("bio")}
                   className={`px-1.5 py-0.5 text-[9px] font-mono transition-colors ${hudLayers.bio ? "text-purple-600 bg-purple-500/10" : "text-stone-600"}`}
-                  title="BIO (生体共鳴・固有波長)"
+                  title="本命星から見た個人の吉凶の線を重ねる"
                 >
-                  BIO [生体波]
+                  BIO [本命星]
                 </button>
                 <button
                   onClick={() => toggleLayer?.("hazard")}
@@ -344,7 +344,7 @@ export function TacticalMagneticMapComponent({
               地図上の
               <strong className="text-red-500 font-bold">赤い破線</strong>や
               <strong className="text-fuchsia-500 font-bold">紫の複破線</strong>
-              は、宇宙天気や地球磁場の乱れ、またはあなたの固有波長（本命星）と強干渉を起こす危険方位（五黄殺・本命殺など）です。引越しや長期滞在先としては絶対に避けるべきルートです。
+              は、凶方位（五黄殺・暗剣殺などの環境の凶と、本命殺などあなたの本命星から見た凶）です。九星気学では引越しや長期滞在で避けるべき方位とされます。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-yellow-900/30 rounded-sm">
@@ -353,7 +353,7 @@ export function TacticalMagneticMapComponent({
             </strong>
             <p className="text-stone-500 text-justify mt-1">
               <strong className="text-yellow-500 font-bold">黄色の点線</strong>
-              は、個人の運気の空白（ボイド）である「天中殺（空亡）」の方向です。この方位への移動は、主観的な見通しの狂いやトラブルを招きやすいため、重要な決断は保留を推奨します。
+              は、あなたの天中殺（空亡）の十二支に当たる方向です。伝統的に、この期間・方位での大きな決断は避けるとされるため、当サイトでは保留を勧める表示にしています。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-amber-200 rounded-sm">
@@ -364,7 +364,7 @@ export function TacticalMagneticMapComponent({
               <strong className="text-amber-500 font-bold">
                 オレンジの破線
               </strong>
-              は、軌道の交点である「羅睺・計都軸（月交点）」の方向です。日食・月食の起点であり、地磁気・太陽風の物理的特異方位であるため、精神面への影響（宿命的磁気ストレス）に注意してください（※全方位に適用される「月相」とは異なり、空間的な偏りを持つ要因です）。
+              は、月の軌道と黄道の交点「羅睺・計都軸（月交点）」の方向です。日食・月食が起こる軸で、インド占星術で避けるとされるため、当サイトでは凶として扱います（※全方位に効く「月相」と違い、方位の偏りを持つ要因です）。
             </p>
           </div>
           <div className="p-2 sm:p-3 border border-emerald-200 rounded-sm">
@@ -373,7 +373,7 @@ export function TacticalMagneticMapComponent({
             </strong>
             <p className="text-stone-500 text-justify mt-1">
               <strong className="text-emerald-500 font-bold">緑の実線</strong>
-              は、すべてのノイズレイヤーをクリアし、かつあなたの目的（引越し・療養など）と完全に共鳴する「大吉方位」です。この方位へ移動することで、環境ストレスが最小化され、生体リズムが整います。
+              は、年・月・日のどの盤でも凶が無く、あなたの本命星と相生・比和になる「大吉方位」です。九星気学で最も良いとされる組み合わせで、条件が厳しいため表示されない日も多くあります。
             </p>
           </div>
         </div>
