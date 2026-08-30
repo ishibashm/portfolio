@@ -710,7 +710,7 @@ export function SolarTimeTableComponent({
                         {getGateDescription(item.hachimon.japanese)}
                       </span>
                       <p className="mt-1 text-[9px] opacity-80 text-justify">
-                        特定の時間帯におけるエネルギーの「出口」や「傾向」を表すフィルターです。吉門であれば物事がスムーズに運び、凶門であれば予期せぬトラブルが生じやすくなります。
+                        奇門遁甲の八門による、時間帯ごとの吉凶の区分です。伝統的に、吉門は物事が運びやすく、凶門はトラブルが生じやすいとされます。
                       </p>
                     </div>
                   </div>

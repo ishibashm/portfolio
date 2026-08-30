@@ -105,7 +105,7 @@ export const TenchusatsuVisualizer: React.FC<TenchusatsuVisualizerProps> = ({
           </dl>
           <div className="mt-3 text-[9px] text-stone-600 leading-tight">
             *
-            算出された日干支から、あなたの人生におけるエネルギー欠落周期（天中殺）を特定しました。
+            算出された日干支から、四柱推命でいう天中殺（空亡）の周期を求めています。伝統的に、大きな決断や移動を控えるのが良いとされる期間です。
           </div>
         </div>
 
