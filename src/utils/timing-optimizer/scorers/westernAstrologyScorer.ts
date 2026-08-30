@@ -8,35 +8,31 @@ export class WesternAstrologyScorer implements TimingScorer {
     const details: string[] = [];
     let phenomenonName = "Standard Transit";
 
-    // ムーンボイドタイムの判定 (暫定モック: 後日AstroEngineのアスペクト計算に置換可能)
-    const isVoidOfCourse = this.checkMoonVoidOfCourse(ctx.targetDate);
-    if (isVoidOfCourse) {
-      phenomenonName = "Moon Void of Course (月のボイドタイム)";
-      details.push(
-        "月が次の星座に移動するまで、他の惑星とメジャーアスペクトを形成しない空白の時間帯です。重要な決定の延期が推奨されます。",
-      );
-    }
+    // 月のボイドタイムは表示しない。以前は「他の惑星とアスペクトを形成しない
+    // 空白の時間帯」と天文計算を装いながら、実装は「土曜の 14〜16 時」を返す
+    // だけのモックだった。偽の天文情報を出すくらいなら出さない。
+    // 実装するなら、月が現在の星座を出るまでの全惑星とのアスペクト計算が要る。
 
-    // 正確な天体物理モデリングに基づく現在の月星座
+    // 天文計算に基づく現在の月星座
     const moonLon = AstroEngine.getLunarLongitude(ctx.targetDate);
     const currentMoonSign = this.getSignFromLongitude(moonLon);
     details.push(`月の現在地: ${this.translateSign(currentMoonSign)}。`);
 
     if (["Gemini", "Libra", "Aquarius"].includes(currentMoonSign)) {
       details.push(
-        "風のエレメントを通過中。情報流通とコミュニケーションが活性化するフェーズです。",
+        "風のエレメントを通過中。西洋占星術では、情報のやり取りや対話に向くとされます。",
       );
     } else if (["Pisces", "Cancer", "Scorpio"].includes(currentMoonSign)) {
       details.push(
-        "水のエレメントを通過中。直感力や共感性が高まる感情的なフェーズです。",
+        "水のエレメントを通過中。西洋占星術では、直感や共感が働きやすいとされます。",
       );
     } else if (["Taurus", "Virgo", "Capricorn"].includes(currentMoonSign)) {
       details.push(
-        "地のエレメントを通過中。物質的・現実的な基盤固めや実務的な処理に適したフェーズです。",
+        "地のエレメントを通過中。西洋占星術では、実務や基盤固めに向くとされます。",
       );
     } else if (["Aries", "Leo", "Sagittarius"].includes(currentMoonSign)) {
       details.push(
-        "火のエレメントを通過中。情熱と自己表現、行動力がブーストされるフェーズです。",
+        "火のエレメントを通過中。西洋占星術では、行動や自己表現に向くとされます。",
       );
     }
 
@@ -57,17 +53,11 @@ export class WesternAstrologyScorer implements TimingScorer {
       }
     }
 
-    if (details.length === 1 && !isVoidOfCourse) {
-      details.push("特筆すべき強いアスペクトは観測されませんでした。");
+    if (details.length === 1) {
+      details.push("特筆すべき強いアスペクトはありません。");
     }
 
     return { phenomenon: phenomenonName, detail: details.join(" ") };
-  }
-
-  private checkMoonVoidOfCourse(date: Date): boolean {
-    return (
-      date.getDay() === 6 && date.getHours() >= 14 && date.getHours() <= 16
-    );
   }
 
   private getSignFromLongitude(lon: number): string {
