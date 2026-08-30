@@ -67,6 +67,34 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     siteUrl: "https://suumo.jp/journal/",
     note: "住まいと暮らしの編集部メディア。市場調査や住み替えの読み物",
   },
+  {
+    id: "kensetsunews",
+    name: "建設通信新聞Digital（web刊）",
+    feedUrl: "https://www.kensetsunews.com/web-kan/feed",
+    siteUrl: "https://www.kensetsunews.com/web-kan",
+    note: "業界三大紙の一つ。大型開発・受注・入札など建設業界の実務ニュース",
+  },
+  {
+    id: "decn",
+    name: "日刊建設工業新聞",
+    feedUrl: "https://www.decn.co.jp/?feed=rss2",
+    siteUrl: "https://www.decn.co.jp/",
+    note: "業界三大紙の一つ。公共事業・技術開発・災害復旧の動き",
+  },
+  {
+    id: "s-housing",
+    name: "新建ハウジング",
+    feedUrl: "https://www.s-housing.jp/feed",
+    siteUrl: "https://www.s-housing.jp/",
+    note: "工務店・住宅実務者向けの業界メディア。制度改正や工法の動き",
+  },
+  {
+    id: "itmedia-built",
+    name: "BUILT（ITmedia）",
+    feedUrl: "https://rss.itmedia.co.jp/rss/2.0/built.xml",
+    siteUrl: "https://built.itmedia.co.jp/",
+    note: "建設 DX・BIM・建設テックの専門メディア",
+  },
 ] as const;
 
 /** フィードの無い媒体・データベース。リンク集として載せる。 */
@@ -110,5 +138,15 @@ export const NEWS_LINKS: readonly LinkSource[] = [
     name: "住宅金融支援機構",
     url: "https://www.jhf.go.jp/",
     note: "フラット35 の金利動向と住宅ローンの統計",
+  },
+  {
+    name: "建通新聞 電子版",
+    url: "https://digital.kentsu.co.jp/",
+    note: "公共工事の入札・発注情報に強い専門紙。詳細は会員向け",
+  },
+  {
+    name: "日本建設業連合会",
+    url: "https://www.nikkenren.com/",
+    note: "ゼネコン業界団体。受注実績の統計と業界の提言・トピックス",
   },
 ] as const;
