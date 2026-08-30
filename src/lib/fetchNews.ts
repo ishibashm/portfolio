@@ -27,6 +27,8 @@ export interface FeedResult {
   /** 取得できたか。false のときも items は空配列で返る。 */
   ok: boolean;
   items: NewsItem[];
+  /** 実際に読めた URL。全滅なら null。どの候補で通ったかの記録。 */
+  usedUrl: string | null;
 }
 
 /** 1 フィードあたりの取得上限（表示側でさらに絞ってよい）。 */
@@ -36,9 +38,10 @@ const TIMEOUT_MS = 5000;
 /** キャッシュの寿命。1 日 4 回まで。 */
 export const REVALIDATE_SECONDS = 21600;
 
-async function fetchOne(source: FeedSource): Promise<FeedResult> {
+/** 1 本の URL を読んでみる。読めなければ空配列。 */
+async function fetchUrl(url: string): Promise<NewsItem[]> {
   try {
-    const res = await fetch(source.feedUrl, {
+    const res = await fetch(url, {
       headers: {
         /* 誰が取りに来ているかを名乗る。行儀と、先方が絞りたく
            なったときに識別できるようにする目的 */
@@ -50,7 +53,7 @@ async function fetchOne(source: FeedSource): Promise<FeedResult> {
       next: { revalidate: REVALIDATE_SECONDS },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    if (!res.ok) return { source, ok: false, items: [] };
+    if (!res.ok) return [];
     /*
       res.text() は使わない。常に UTF-8 として読むので、Shift_JIS /
       EUC-JP の配信（官公庁系に残っている）が文字化けする。実際に
@@ -60,13 +63,26 @@ async function fetchOne(source: FeedSource): Promise<FeedResult> {
       await res.arrayBuffer(),
       res.headers.get("content-type"),
     );
-    const items = parseFeed(xml, ITEMS_PER_FEED);
     /* 200 でも中身がフィードでない（メンテ画面など）ことはある。
-       0 件は「取得失敗」として扱い、出典の行ごと隠す */
-    return { source, ok: items.length > 0, items };
+       0 件は「取得失敗」として扱う */
+    return parseFeed(xml, ITEMS_PER_FEED);
   } catch {
-    return { source, ok: false, items: [] };
+    return [];
   }
+}
+
+/**
+ * 1 つの情報源を取る。**成功したらそこで打ち切る**ので、平常時は
+ * 1 情報源につき 1 リクエストしか出ない（予備 URL を書いても
+ * 相手への頻度は増えない）。予備へ行くのは失敗したときだけ。
+ */
+async function fetchOne(source: FeedSource): Promise<FeedResult> {
+  const candidates = [source.feedUrl, ...(source.altFeedUrls ?? [])];
+  for (const url of candidates) {
+    const items = await fetchUrl(url);
+    if (items.length > 0) return { source, ok: true, items, usedUrl: url };
+  }
+  return { source, ok: false, items: [], usedUrl: null };
 }
 
 /** 台帳の全フィードを並行に取得する。順序は台帳のまま。 */
