@@ -227,8 +227,8 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 33**（クラウド実測 2026-08-30。
-上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 27**（クラウド実測 2026-08-30。
+上の注意を読むこと）。`no-explicit-any` は **0**。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -248,37 +248,33 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 - テストを消す・skip する
 - 減らせないファイルを無理に触る（飛ばして報告する）
 
-### 現状の内訳（2026-08-30 実測。総数 33）
+### 現状の内訳（2026-08-30 実測。総数 27）
 
 ```
 11  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
  7  react-hooks/set-state-in-effect    ← 同上で対象外
- 7  @typescript-eslint/no-unused-vars  ← うち 4 件は「消してはいけない未使用」（下の表）
- 5  @typescript-eslint/no-explicit-any ← 全部「応答側のモデル化が先」の類（下記）
- 2  react-hooks/purity                 ← 対象外
+ 7  @typescript-eslint/no-unused-vars  ← 大半が「消してはいけない未使用」（下の表と vectorData）
+ 1  react-hooks/purity                 ← 対象外
  1  @typescript-eslint/no-require-imports
 ```
 
-**手を付けられるものはほぼ残っていない。**残る any 5 件は
-`userSettings.Settings`（設定の袋。型を切ると全画面に波及）、
-`omniStore` の widget data と zustand migrate、`api/rentals/arbitrage` の
-`$queryRawUnsafe` 行型、`TimesFMChart`。いずれも応答・保存形のモデル化が
-先で、無理に触ると `unknown`+キャストで逃げる形になる。
+**`no-explicit-any` は 0 件**（645 → 0。#729〜#732 で完了）。
+`catch (e: any)` も **0 件**（#215 で最後の 4 件が片付いた）。
 
-`catch (e: any)` は **0 件**（#215 で最後の 4 件が片付いた）。
+**残り 27 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
+未使用 7 + require-imports 1。ここが lint の底。
 
-ファイル別の上位（NBADashboard・SystemTelemetryLog・
-TacticalActionCommand は #689・#715・#716 で削除され表から消えた）：
-
-| 件数 | ファイル |
-|---|---|
-| 5 | `src/app/relocation/simulator/page.tsx`（hooks 対象外 4 + 未使用 1） |
-| 3 | `src/store/omniStore.ts` |
-| 3 | `scripts/gas_newsletter.js`（Apps Script の入口。消せない。下記） |
-
-**判定の中核は片付いた**（#536〜#538）。`ephemerisEngine` 12 → 2、
-`nbaEngine` 12 → 2、`baziEngine` 9 → **0**。`scripts/` の `any` も
-0 になった（#549〜#551）。
+any の最後の 5 件の片付き方は参考になる:
+- `userSettings.Settings` → 実際の値（JSON スカラー）の union に狭めたら、
+  tsc が SolarTimeClock の読み込み 24 項目の穴（null・文字列が数値 state に
+  入り得る）を出した。型付き取り出し settingString/Number/Boolean で
+  塞いだ（#729）
+- `omniStore` の 2 件と `TimesFMChart` → **型を切ろうと使用箇所を辿ったら
+  誰も使っていなかった。**omni ターミナルの残骸ごと削除（#730・#731 で
+  計 8 ファイル・約 1,400 行）。モデル化の前に、まず読み手がいるか数える
+- `$queryRawUnsafe` の行型 → SQL の持ち主（arbitrageQuery）に
+  `ArbitrageRow` を置いた。`SELECT *` は Prisma の生成型 + extraCols で
+  写せる（#732）
 
 ### catch は片付いた。その過程で分かったこと
 
@@ -315,8 +311,8 @@ TacticalActionCommand は #689・#715・#716 で削除され表から消えた�
 
 ### 次にやるとよいもの
 
-**lint はほぼ底に着いた**（645 → 33。残りは対象外 20 + モデル化待ちの
-any 5 + 消してはいけない未使用）。ここから先は lint ではなく、次を進める。
+**lint は底に着いた**（645 → 27。any は 0。残りは全部、対象外か
+消してはいけない未使用）。ここから先は lint ではなく、次を進める。
 
 **1. サイトの言葉と評価の一貫性。**評価はサイト全体で段階評価
 （S 三盤吉〜X 五大凶殺・天中殺）の 1 系統だけにした（#698 で 12 か月の
@@ -339,10 +335,11 @@ any 5 + 消してはいけない未使用）。ここから先は lint ではな
 #713（定時 run の計画日付を cron の日に固定）で一因を塞いだ。巡回設計
 そのもの（予算・周期）は利用者の判断が要る。
 
-**3. モデル化待ちの `any` 5 件と、`ephemerisEngine`・`nbaEngine` の
-2 件ずつ。**経緯と直す順序は `docs/improvement-backlog.md` の 8 節。
+**3. `ephemerisEngine`・`nbaEngine` に残る「型の嘘」。**lint には出ないが
+型のほうが間違っていると分かっているもの。経緯と直す順序は
+`docs/improvement-backlog.md` の 8 節。
 
-**4. 対象外（20 件）。**`exhaustive-deps`・`set-state-in-effect`・
+**4. 対象外（19 件）。**`exhaustive-deps`・`set-state-in-effect`・
 `purity`。どれも再レンダリングのタイミングを変える。
 
 `SolarTimeClock.tsx` は**片付いた**（39 → 0）。触るときの注意だけ残す:
