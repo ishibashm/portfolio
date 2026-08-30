@@ -1,6 +1,7 @@
 import { readdirSync, statSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { GUIDE_PAGES } from "@/lib/guideContent";
 
 /**
  * サイト内のリンクが、実在する宛先を指していること。
@@ -19,6 +20,7 @@ import { describe, expect, it } from "vitest";
 const APP = join(process.cwd(), "src", "app");
 const SRC = join(process.cwd(), "src");
 const PUBLIC = join(process.cwd(), "public");
+const BLOG_DIR = join(process.cwd(), "content", "blog");
 
 /** app ディレクトリから実在する経路を集める。 */
 function collectRoutes(): string[] {
@@ -104,5 +106,48 @@ describe("サイト内のリンク", () => {
   it("無い頁を指すと気付ける（検査が効いていることの確認）", () => {
     expect(resolves("/relocation/auspicious-days")).toBe(false);
     expect(resolves("/calendar")).toBe(true);
+  });
+});
+
+/**
+ * 上の検査は経路の形しか見ない。/blog/[slug] と /guide/[slug] は
+ * **どんな綴りでも形は合う**ので、記事名を間違えても素通りする。
+ * 記事側の一覧と突き合わせる。
+ *
+ * ブログの原稿は content/blog（DB への取り込み元）。DB で下書きに
+ * 戻した記事までは分からないが、**原稿ごと無い綴りは確実に事故**。
+ */
+const BLOG_SLUGS = new Set(
+  existsSync(BLOG_DIR)
+    ? readdirSync(BLOG_DIR)
+        .filter((f) => f.endsWith(".md"))
+        .map((f) => f.replace(/\.md$/, ""))
+    : [],
+);
+const GUIDE_SLUGS = new Set(GUIDE_PAGES.map((g) => g.slug));
+
+describe("記事へのリンクの綴り", () => {
+  it("原稿の一覧を拾えている（空回りしていない）", () => {
+    expect(BLOG_SLUGS.size).toBeGreaterThan(10);
+    expect(GUIDE_SLUGS.size).toBeGreaterThan(3);
+  });
+
+  it("実在する記事だけを指している", () => {
+    const broken: string[] = [];
+
+    for (const [href, files] of LINKS) {
+      const blog = href.match(/^\/blog\/([^/]+)$/);
+      if (blog && !blog[1].includes(".") && !BLOG_SLUGS.has(blog[1])) {
+        broken.push(
+          `${href}（content/blog に原稿が無い）  ←  ${files.join(", ")}`,
+        );
+      }
+      const guide = href.match(/^\/guide\/([^/]+)$/);
+      if (guide && !GUIDE_SLUGS.has(guide[1])) {
+        broken.push(`${href}（GUIDE_PAGES に無い）  ←  ${files.join(", ")}`);
+      }
+    }
+
+    expect(broken).toEqual([]);
   });
 });
