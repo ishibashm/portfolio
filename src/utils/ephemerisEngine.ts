@@ -532,66 +532,62 @@ export function calculateLunarPhaseCondition(
   let phaseLabel = "Waning Moon (欠けていく月)";
   let scoreModifier = 0;
   let adviceText =
-    "月相のバイオリズムは標準的です。通常の行動計画に支障はありません。";
+    "月の満ち欠けに特筆すべき節目はありません。通常どおり計画できます。";
 
   if (relativePhase >= 345 || relativePhase < 15) {
     phaseLabel = "New Moon (新月)";
     if (actionIntent === "REST") {
       scoreModifier = 10;
       adviceText =
-        "新月です。浄化とリセット、休息に最適なタイミングです。エネルギーを充電してください。";
+        "新月です。伝統的に、浄化やリセット、休息に良いとされる時期です。";
     } else if (actionIntent === "BUSINESS" || actionIntent === "MIGRATION") {
       scoreModifier = -10;
       adviceText =
-        "新月です。新しいプロジェクトの本格始動や大きな移動には、エネルギー不足を伴う可能性があります。";
+        "新月です。伝統的に、大きな始動や移動は月が満ちていく時期まで待つのが良いとされます。";
     } else {
       scoreModifier = -5;
       adviceText =
-        "新月です。内省や計画立案に適した静かなフェーズです。大きな対外活動は控えめが吉。";
+        "新月です。伝統的に、内省や計画立案に向く静かな時期とされます。";
     }
   } else if (relativePhase >= 15 && relativePhase < 75) {
     phaseLabel = "Waxing Crescent (満ちていく月)";
     scoreModifier = 5;
     adviceText =
-      "満ちていく月です。新たな目標に向けて行動を少しずつ進めるのに適しています。";
+      "満ちていく月です。伝統的に、新たな目標へ少しずつ行動を進めるのに良いとされます。";
   } else if (relativePhase >= 75 && relativePhase < 105) {
     phaseLabel = "First Quarter (上弦の月)";
     scoreModifier = 8;
-    adviceText =
-      "上弦 of the Moon. 成長と発展のエネルギーが高まっています。決断と実行の好機です。";
+    adviceText = "上弦の月です。伝統的に、決断と実行に良いとされる時期です。";
   } else if (relativePhase >= 105 && relativePhase < 165) {
     phaseLabel = "Waxing Gibbous (満月へ向かう月)";
     scoreModifier = 5;
     adviceText =
-      "満月に近づく月です。これまでの努力が形になり始める活動的なフェーズです。";
+      "満月に近づく月です。伝統的に、これまでの努力が形になり始める時期とされます。";
   } else if (relativePhase >= 165 && relativePhase < 195) {
     phaseLabel = "Full Moon (満月)";
     if (actionIntent === "REST") {
       scoreModifier = -10;
       adviceText =
-        "満月です。エネルギーが最大化し感情や自律神経が昂ぶりやすいため、深いリラックスは困難です。";
+        "満月です。伝統的に、気持ちが昂ぶりやすく落ち着いた休息には向かない時期とされます。";
     } else if (actionIntent === "BUSINESS" || actionIntent === "MIGRATION") {
       scoreModifier = 10;
-      adviceText =
-        "満月です。引き寄せの力が最大化し、契約や門出に大吉のタイミングです。自信を持って行動を。";
+      adviceText = "満月です。伝統的に、契約や門出に良いとされる節目です。";
     } else {
       scoreModifier = 10;
-      adviceText =
-        "満月です。エネルギーがピークに達しています。社交的な集まりや決断に非常に適しています。";
+      adviceText = "満月です。伝統的に、社交的な集まりや決断に良いとされます。";
     }
   } else if (relativePhase >= 195 && relativePhase < 255) {
     phaseLabel = "Waning Gibbous (下弦へ向かう月)";
     scoreModifier = 0;
     adviceText =
-      "欠けていく月です。物事の整理や、不要な習慣の手放し、整理整頓に適しています。";
+      "欠けていく月です。伝統的に、物事の整理や不要な習慣の手放しに良いとされます。";
   } else if (relativePhase >= 255 && relativePhase < 285) {
     phaseLabel = "Last Quarter (下弦の月)";
     scoreModifier = -5;
     if (actionIntent === "REST") {
       scoreModifier = 5;
     }
-    adviceText =
-      "下弦の月です。デトックスや心身の整理に適したクールダウン期です。";
+    adviceText = "下弦の月です。伝統的に、身の回りの整理に向く時期とされます。";
   }
 
   return { scoreModifier, phaseLabel, adviceText };

@@ -385,7 +385,7 @@ export default function RelocationHistoryPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-stone-200/60 pb-8">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 text-xs font-semibold border border-indigo-500/20 mb-3">
-              <History className="w-3.5 h-3.5" /> 物理・古典鑑定の歴史的統合
+              <History className="w-3.5 h-3.5" /> 過去の移動の記録と振り返り
             </div>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight text-stone-900">
               過去の移動履歴{" "}
@@ -394,7 +394,7 @@ export default function RelocationHistoryPage() {
               </span>
             </h1>
             <p className="text-sm text-stone-500 mt-2">
-              過去の引越しや長期旅行の日時と場所を記録し、そのタイミングにおける九星気学・地磁気の吉凶方位を分析します。
+              過去の引越しや長期旅行の日時と場所を記録し、そのタイミングにおける九星気学の吉凶方位を振り返ります。磁北で見る場合は当時の地磁気偏角で補正します。
             </p>
           </div>
           <button
@@ -1000,7 +1000,7 @@ export default function RelocationHistoryPage() {
                   <div className="text-[10px] text-stone-600 leading-relaxed font-normal flex items-start gap-1.5 border-t border-stone-200/60 pt-4">
                     <Info className="w-3.5 h-3.5 text-stone-500 shrink-0 mt-0.5" />
                     <span>
-                      気学における方位の吉凶は、出発時における天体の電磁的干渉に基づきます。吉方位はあなたのハードウェア周波数を整え、大凶方位は自律神経負荷を高めトラブルの原因になり得ます。
+                      方位の吉凶は、出発した時点の九星の配置（年盤・月盤・日盤）に基づく伝統的な暦の解釈です。吉方位への移動は運気を後押しするとされ、五大凶殺の方位は避けるべきとされますが、効果を保証するものではありません。
                     </span>
                   </div>
                 </motion.div>
