@@ -366,7 +366,7 @@ export function SolarTimeTableComponent({
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
-            長期的なベースとなる年の波長と干支
+            年盤の九星と、その年の干支
           </div>
         </div>
 
@@ -394,7 +394,7 @@ export function SolarTimeTableComponent({
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
-            潮汐力による中期の波長と月の干支
+            月盤の九星と、その月の干支
           </div>
         </div>
 
@@ -431,7 +431,7 @@ export function SolarTimeTableComponent({
             )}
           </div>
           <div className="text-[10px] text-stone-600 mt-auto pt-1 border-t border-stone-200 leading-tight">
-            地球自転による短期の波長と日の干支。
+            日盤の九星と、その日の干支。
             {envData?.isYinPhase !== undefined && (
               <span className="block mt-0.5">
                 ※現在は
@@ -454,7 +454,7 @@ export function SolarTimeTableComponent({
             [ ACTION WINDOW ] 実行推奨帯
           </div>
           <p className="text-stone-500 text-[9px] md:text-[10px] leading-relaxed font-sans text-justify">
-            生体磁気と空間位相が最適化されるゴールデンタイム。重要な決断、交渉の開始、新しいプロジェクトの着手、および長距離移動（出発）に最も適した時間帯です。
+            暦の上で吉が重なる時間帯です。伝統的に、重要な決断・交渉の開始・新しいことの着手・長距離移動（出発）に良いとされます。
           </p>
         </div>
         <div className="bg-red-50 border-l-2 border-red-500 p-2 md:p-3 shadow-inner">
@@ -696,7 +696,7 @@ export function SolarTimeTableComponent({
                               </span>
                             </div>
                             <p className="mt-1 text-[9px] opacity-80 text-justify">
-                              陰陽五行説（木火土金水）と九星気学の数理モデルによる解析です。あなたの固有波長（本命星）と現在の空間波長（九星）の相性を計算しています。相生（生み出す関係）や相比（同じ属性）であれば、空間エネルギーを味方に付けやすくなります。
+                              陰陽五行説（木火土金水）に基づく、あなたの本命星といまの九星の相性です。相生（生み出す関係）や比和（同じ属性）であれば、良い組み合わせとされます。
                             </p>
                           </div>
                         )}
@@ -748,7 +748,7 @@ export function SolarTimeTableComponent({
             </div>
 
             <p className="text-stone-500 text-xs font-mono mb-4 text-justify leading-relaxed">
-              以下のデータは現在の生体・環境・メタフィジカル計算式をすべて統合したフル・テレメトリーデータです。本命星・現在地・推命ベクトルのすべてが含まれます。内容を精査し、問題がなければアーカイブ用としてエクスポートしてください。
+              以下は、いまの判定に使っている値の一覧です。本命星・現在地・盤の状態がすべて含まれます。内容を確かめて、手元に残す場合は書き出してください。
             </p>
 
             <div className="flex-grow overflow-auto border border-stone-200 bg-white/70 p-4 mb-4">
