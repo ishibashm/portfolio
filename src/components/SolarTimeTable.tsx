@@ -438,8 +438,8 @@ export function SolarTimeTableComponent({
                 {envData.isYinPhase
                   ? "夏至〜冬至の「陰」"
                   : "冬至〜夏至の「陽」"}
-                のサイクル（エネルギーの
-                {envData.isYinPhase ? "収束期" : "拡散期"}）です。
+                のサイクル（日盤の九星の巡りは
+                {envData.isYinPhase ? "陰遁" : "陽遁"}）です。
               </span>
             )}
           </div>
