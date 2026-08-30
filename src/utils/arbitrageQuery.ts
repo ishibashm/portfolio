@@ -8,6 +8,20 @@
  * HTTP ハンドラ以外を export できないため、テストから触れるようにここへ移した。
  */
 import { CandidateStrategy } from "@/utils/arbitrageScoring";
+import type { rental_properties } from "@prisma/client";
+
+/**
+ * innerSql / selectSql が返す 1 行。`SELECT *` なので rental_properties の
+ * 全列に、extraCols の 3 列が乗る。列を足したらここも揃えること。
+ */
+export type ArbitrageRow = rental_properties & {
+  /** SQM_RENT_SQL。::float8 に落としているので number で返る。 */
+  sqm_rent: number | null;
+  /** municipality_key の別名。 */
+  municipality: string | null;
+  /** 名寄せでまとめた掲載数。dedupe しないときは 1。 */
+  listing_count: number;
+};
 
 // 物件名から不要な階数や築年数表現を除去するクレンジング関数
 export function cleanPropertyName(name: string): string {
