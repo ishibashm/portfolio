@@ -556,7 +556,17 @@ export const TIER_LABELS: Record<DayTier, string> = {
   X: "五大凶殺あり",
 };
 
-export function gradeVerdict(v: DayVerdict): DayTier {
+/**
+ * gradeVerdict が実際に読む 5 項目。シミュレータはステップの判定
+ * （finalStatus と 3 盤の層）から日付欄を持たずに段階を出したいので、
+ * 受け口を読む項目だけに絞ってある。判定の中身は変えていない。
+ */
+export type GradableVerdict = Pick<
+  DayVerdict,
+  "yearLayer" | "monthLayer" | "dayLayer" | "finalStatus" | "isTripleAuspicious"
+>;
+
+export function gradeVerdict(v: GradableVerdict): DayTier {
   const layers = [v.yearLayer, v.monthLayer, v.dayLayer];
   const noises = layers.filter(isInauspicious);
   if (noises.some(isFatalNoise) || isFatalNoise(v.finalStatus)) {
