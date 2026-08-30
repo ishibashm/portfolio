@@ -4,7 +4,12 @@ import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
 import { ArticleJsonLd, DatasetJsonLd } from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
-import { getPrefStats, prefNameByCode } from "@/lib/prefContent";
+import {
+  getPrefStats,
+  prefNameByCode,
+  PREF_REGION,
+  regionSiblings,
+} from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 
 /**
@@ -58,6 +63,8 @@ export default async function Page({
   if (!pref || !editorial) notFound();
   const stats = getPrefStats(pref);
   if (!stats) notFound();
+  /* 同じ地方で、固有文章を書いて公開している県だけ並べる */
+  const siblings = regionSiblings(code).filter((s) => PREF_EDITORIAL[s.code]);
 
   const cheapest = stats.municipalities.slice(0, 5);
   const priciest = stats.municipalities.slice(-5).reverse();
@@ -244,6 +251,33 @@ export default async function Page({
             </Link>
           </div>
         </section>
+
+        {/* 県ページ同士の導線。ここが無く、複数県を見比べるには
+            一度 /houi へ戻るしかなかった */}
+        {siblings.length > 0 && (
+          <nav className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
+            <h2 className="text-base font-bold font-serif">
+              {PREF_REGION[code]}のほかの県
+            </h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-700">
+              {
+                "引越し先の候補が複数の県にまたがるときは、同じ見方で並べたこちらも合わせてどうぞ。"
+              }
+            </p>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {siblings.map((s) => (
+                <li key={s.code}>
+                  <Link
+                    href={`/houi/pref/${s.code}`}
+                    className="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50"
+                  >
+                    {s.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )}
 
         <p className="mt-8 max-w-[70ch] text-[11px] leading-relaxed text-slate-500">
           相場は当サイトが収集している賃貸掲載から集計した参考値で、毎晩更新されます。市区町村によって収集の網羅度に差があり、掲載件数の少ない街の数字は振れやすい点に注意してください。
