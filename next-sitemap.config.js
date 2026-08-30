@@ -68,17 +68,23 @@ const THIN_GENERATED = ["/houi/area/*", "/houi/*/*/*"];
  * AREA_EDITORIAL の鍵と 1 件ずつ突き合わせて落とす。
  */
 const AREA_EDITORIAL_PATHS = [
+  "/houi/area/01101",
   "/houi/area/04101",
+  "/houi/area/13103",
   "/houi/area/13104",
   "/houi/area/13111",
   "/houi/area/13112",
   "/houi/area/22138",
   "/houi/area/23106",
+  "/houi/area/24202",
   "/houi/area/27127",
   "/houi/area/27227",
   "/houi/area/28110",
   "/houi/area/28201",
+  "/houi/area/28204",
+  "/houi/area/33101",
   "/houi/area/34101",
+  "/houi/area/34207",
   "/houi/area/42201",
 ];
 
