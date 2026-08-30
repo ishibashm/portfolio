@@ -182,6 +182,40 @@ function isConnectionLimitError(err: unknown): boolean {
 }
 
 /**
+ * **1 ページあたりの最低間隔。**取得を始めてからここまでは、次のページへ
+ * 行かない。
+ *
+ * ## なぜ「待つ」と書くようになったか（2026-08-30 の事故）
+ *
+ * 以前の待機は「polite delay 2〜4 秒」だけだった。ところが**保存が
+ * 1 件ずつで 15〜30 秒かかっており、それが実質のスロットルとして
+ * 働いていた。**#767 で保存をまとめたら 1 ページの間隔が 34.3 秒 →
+ * 6.0 秒（中央値）になり、相手への要求レートが 3〜5 倍になった。
+ * 8 ジョブ並列なので全体ではさらに効く。
+ *
+ * その晩の巡回は、再開した大都市を抜けた直後から**ほぼ全ての市区町村で
+ * 「0 件」**を返すようになった（江東区・品川区が 0 件ということはない）。
+ * 8/26 の富山（間隔 14.5 秒）は 14 市町村すべてで取れていたので、
+ * レートを上げたことが原因とみている。
+ *
+ * **速さを保存待ちの副作用に頼らない。**必要な間隔はここに数字で書く。
+ * 事故前の実測（14.5〜34.3 秒）の下寄りに置いた。**短くしないこと。**
+ */
+const MIN_PAGE_INTERVAL_MS = 20000;
+
+/** 取得開始から MIN_PAGE_INTERVAL_MS 経つまで待つ。既に過ぎていれば待たない。 */
+async function waitForMinimumPageInterval(startedAt: number): Promise<void> {
+  /* 一定間隔だと相手から見て機械的すぎるので、以前と同じ幅で散らす */
+  const jitter = Math.floor(Math.random() * 2000);
+  const waitMs = MIN_PAGE_INTERVAL_MS + jitter - (Date.now() - startedAt);
+  if (waitMs <= 0) return;
+  console.log(
+    `Polite delay: Waiting for ${Math.round(waitMs / 1000)} seconds...`,
+  );
+  await new Promise((res) => setTimeout(res, waitMs));
+}
+
+/**
  * 1 文にまとめる件数。
  *
  * 1 ページ 50 件を 2 文で書く。もっと大きくしてもよいが、
@@ -341,6 +375,8 @@ async function scrapeArea(
         saveState(prefAlpha, cityAlpha, currentPage);
       }
 
+      /* このページを取り始めた時刻。下の「1 ページの最低間隔」で使う */
+      const pageStartedAt = Date.now();
       await page.goto(url, { waitUntil: "domcontentloaded" });
 
       const isConditionPage = await page.$(".btn-search-submit");
@@ -360,6 +396,11 @@ async function scrapeArea(
 
       if (props.length === 0) {
         console.log("No more properties found. Pagination complete.");
+        /* **待ってから抜ける。**以前は break で polite delay を通らず、
+           掲載の無い市区町村を 1.7 秒間隔で連打していた（2026-08-30 の
+           実測）。空振りこそ次の市へすぐ移るので、ここが最も速く連打
+           される経路になる */
+        await waitForMinimumPageInterval(pageStartedAt);
         break;
       }
 
@@ -376,6 +417,7 @@ async function scrapeArea(
         console.log(
           "No new properties found on this page. Stopping to prevent infinite loop.",
         );
+        await waitForMinimumPageInterval(pageStartedAt);
         break;
       }
 
@@ -385,12 +427,7 @@ async function scrapeArea(
       await saveToDatabase(prisma, props);
 
       // [重要: サーバーに負荷をかけないためのマナー（Polite Scraping）]
-      // 相手サーバーへの負荷を考慮しつつ、待機時間を少し短縮（2〜4秒）
-      const delayMs = 2000 + Math.floor(Math.random() * 2000);
-      console.log(
-        `Polite delay: Waiting for ${Math.round(delayMs / 1000)} seconds...`,
-      );
-      await new Promise((res) => setTimeout(res, delayMs));
+      await waitForMinimumPageInterval(pageStartedAt);
 
       currentPage++;
     }
@@ -629,6 +666,8 @@ async function main() {
     let skipCity = !!state.city;
     /** 実際に走査した市区町村の数。0 のまま終わったら再開位置を疑う。 */
     let areasCrawled = 0;
+    /** そのうち 1 件も取れなかった数。多すぎたら弾かれている疑い（下の註）。 */
+    let emptyAreas = 0;
 
     if (state.pref || state.city || state.page > 1) {
       console.log(`\n======================================================`);
@@ -727,8 +766,9 @@ async function main() {
           // 目的の市に到達したばかりなら保存されているページ数から、それ以降は1ページ目から開始
           const startPage =
             pref === state.pref && city === state.city ? state.page : 1;
-          await scrapeArea(browser, prisma, pref, city, startPage);
+          const found = await scrapeArea(browser, prisma, pref, city, startPage);
           areasCrawled++;
+          if (found.length === 0) emptyAreas++;
         } catch (error) {
           console.error(
             `Error during extraction for ${city}:`,
@@ -754,8 +794,25 @@ async function main() {
         );
       } else {
         console.log(
-          `✅ Scraping completed successfully! (${areasCrawled} areas)`,
+          `✅ Scraping completed successfully! (${areasCrawled} areas, ${emptyAreas} empty)`,
         );
+        /*
+          「回ったが取れなかった」市区町村が多すぎるときの網。
+
+          2026-08-30 の巡回は、要求レートを上げすぎたせいで大都市を
+          抜けた直後からほぼ全部が 0 件になったのに、**緑で完了して
+          再開位置まで消していた。**既存の網は areasCrawled === 0 しか
+          見ておらず、「67 areas 回った」形は素通りする。
+
+          掲載の無い町村は現実にあるので、割合で見る。半分を超えたら
+          相手に弾かれている疑いのほうが強い。
+        */
+        if (areasCrawled >= 4 && emptyAreas > areasCrawled / 2) {
+          console.warn(
+            `⚠️ ${areasCrawled} 件中 ${emptyAreas} 件で 1 件も取れていない。` +
+              `取得間隔（MIN_PAGE_INTERVAL_MS）と、相手に弾かれていないかを疑うこと。`,
+          );
+        }
       }
       // 完了したら再開位置を空にして、次回は先頭から走る（＝全件リフレッシュ）。
       // **消すのではなく空を書く**（scraperResume の註。消すと CI が
