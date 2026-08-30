@@ -73,12 +73,14 @@ describe("getKigakuSector（directionGeo への集約）", () => {
     }
   });
 
-  it("NaN は北に倒す（directionGeo に直接渡すと NW になる）", () => {
+  it("NaN は北に倒す（#740 で directionGeo 側も同じ規則になった）", () => {
     expect(getKigakuSector(NaN, true)).toBe("N");
     expect(getKigakuSector(NaN, false)).toBe("N");
-    // 寄せ先をそのまま呼ぶと NW になる。この差を吸収するために
-    // getKigakuSector 側でガードしている。
-    expect(directionFromBearing(NaN, "traditional")).toBe("NW");
+    // 以前は寄せ先をそのまま呼ぶと NW（traditional）/ undefined（physical）
+    // で、この差を吸収するために getKigakuSector 側でガードしていた。
+    // #740 で寄せ先も「NaN は北」に揃えたので、どちらを呼んでも同じ。
+    expect(directionFromBearing(NaN, "traditional")).toBe("N");
+    expect(directionFromBearing(NaN, "physical")).toBe("N");
   });
 
   it("useClassical を省くと 45 度の等分（既定は directionGeo と逆）", () => {

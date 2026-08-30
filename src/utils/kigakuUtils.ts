@@ -25,9 +25,10 @@ export function getKigakuSector(
      Direction（CENTER 込み）を名乗っており、受け側が finalVectors を
      引くときに CENTER の可能性を型で否定できなかった。 */
 ): EightDirection {
-  // NaN のときは北に倒す。directionFromBearing は比較がすべて偽になって
-  // NW を返すので、ここで先に受ける。緯度経度が未入力のまま方位を引く
-  // 経路があり、そこで「北西」と出ると入力漏れだと気付けない。
+  // NaN のときは北に倒す。directionFromBearing 自身も同じガードを持つように
+  // なった（#740）が、規則がここ発祥であることと、二重でも答えが変わらない
+  // ことから、入口の明示として残す。緯度経度が未入力のまま方位を引く経路が
+  // あり、そこで「北西」と出ると入力漏れだと気付けない。
   if (isNaN(bearing)) return "N";
 
   return directionFromBearing(
