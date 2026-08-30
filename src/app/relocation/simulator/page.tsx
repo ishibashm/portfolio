@@ -2925,6 +2925,11 @@ export default function RelocationSimulatorPage() {
                               占術インサイト (Metaphysical Insights)
                             </h4>
                           </div>
+                          <p className="text-[9px] text-stone-500 leading-relaxed">
+                            {
+                              "いずれも伝統的な占術の読みで、効果や結果を保証するものではありません。参考情報としてお使いください。"
+                            }
+                          </p>
 
                           <div className="grid grid-cols-1 gap-3.5">
                             {/* 奇門遁甲 (Qi Men Dun Jia) */}
