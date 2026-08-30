@@ -183,32 +183,32 @@ export class KigakuScorer implements TimingScorer {
     if (isDoyouHazard) {
       mainPhenomenon = `土用殺 (Doyou Hazard)`;
     } else if (targetClashStatus) {
-      mainPhenomenon = `警告・方位凶殺衝突`;
+      mainPhenomenon = `警告・方位に凶殺`;
     } else if (isDayWarning) {
-      mainPhenomenon = `一時的干渉・引越当日注意`;
+      mainPhenomenon = `引越当日の注意（日盤のみ凶）`;
     } else if (overallGood) {
-      mainPhenomenon = `完全共鳴 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
+      mainPhenomenon = `三盤とも吉 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     } else {
-      mainPhenomenon = `混在干渉 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
+      mainPhenomenon = `吉凶混在 (Year:${yPhase}/Month:${mPhase}/Day:${dPhase})`;
     }
 
     let doyouDetail = isDoyouHazard
-      ? `【大凶・土用殺 (${doyouType === "SPRING" ? "春土用" : doyouType === "SUMMER" ? "夏土用" : doyouType === "AUTUMN" ? "秋土用" : "冬土用"})】土地の契約、引越しなどの基礎に関わる活動は避けてください。 `
+      ? `【大凶・土用殺 (${doyouType === "SPRING" ? "春土用" : doyouType === "SUMMER" ? "夏土用" : doyouType === "AUTUMN" ? "秋土用" : "冬土用"})】伝統的に、土地の契約や引越しなど基礎に関わる活動は避けるべきとされます。 `
       : "";
 
     if (targetClashStatus) {
       // 以前は表に無い凶（月命殺など）が来ると内部コードのまま文中に出ていた。
       const clashName = directionLabelShort(targetClashStatus);
-      doyouDetail += `【警告・方位凶殺衝突】目的地（${ctx.targetDirection}方位）に凶殺「${clashName}」が検出されています。年月日の時間的波長が「相生」や「比和」であっても、この方位への移動は物理的・精神的なノイズとなるため推奨されません。 `;
+      doyouDetail += `【警告・方位に凶殺】目的地（${ctx.targetDirection}方位）に凶殺「${clashName}」が出ています。年・月・日の巡りが「相生」や「比和」であっても、伝統的にこの方位への移動は避けるべきとされるため推奨しません。 `;
     } else if (isDayWarning) {
-      doyouDetail += `【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。当日の荷物の紛失、配送遅延、または軽微なケガや体調管理に普段より注意を払い、時間に余裕を持って行動してください。移住後の長期的な生活への悪影響はありません。 `;
+      doyouDetail += `【注意・引越当日】年盤・月盤は吉ですが、引越し当日の日盤にだけ凶が重なっています。伝統的に、こうした日は予定に余裕を持って慎重に動くのが良いとされます。引越しなど長期の滞在の吉凶は、主に年盤・月盤で見ます。 `;
     }
 
     return {
       phenomenon: mainPhenomenon,
       detail:
         doyouDetail +
-        `[目的地${ctx.targetDirection}方位の年星:${activeYearStar}(${yPhase})] [月星:${activeMonthStar}(${mPhase})] [日星:${activeDailyStar}(${dPhase})] - 年月日の多層的な波長の重なりを評価しています。引越し等の長期滞在ではYear/Monthの相生・比和が極めて重要です。`,
+        `[目的地${ctx.targetDirection}方位の年星:${activeYearStar}(${yPhase})] [月星:${activeMonthStar}(${mPhase})] [日星:${activeDailyStar}(${dPhase})] - 年・月・日の盤の重なりを評価しています。引越し等の長期滞在では年盤・月盤の相生・比和を重く見ます。`,
     };
   }
 }

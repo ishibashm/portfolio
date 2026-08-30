@@ -52,7 +52,7 @@ export class WesternAstrologyScorer implements TimingScorer {
       if (isLuckyAspect) {
         phenomenonName = "Jupiter Harmonious Transit (木星の吉相)";
         details.push(
-          `トランジットの木星があなたの太陽星座(${this.translateSign(ctx.userSunSign)})と調和的なアスペクトを形成しており、社会的拡張や発展のエネルギーが注がれています。`,
+          `トランジットの木星があなたの太陽星座(${this.translateSign(ctx.userSunSign)})と調和的なアスペクトを形成しています。西洋占星術では、社会的な拡張や発展に良いとされる配置です。`,
         );
       }
     }

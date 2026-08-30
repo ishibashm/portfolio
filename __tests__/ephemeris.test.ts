@@ -67,9 +67,9 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
 
       const result = scorer.observe(ctx);
       expect(result).not.toBeNull();
-      expect(result!.phenomenon).toBe("警告・方位凶殺衝突");
+      expect(result!.phenomenon).toBe("警告・方位に凶殺");
       expect(result!.detail).toContain(
-        "【警告・方位凶殺衝突】目的地（E方位）に凶殺「暗剣殺 (大凶)」が検出されています。",
+        "【警告・方位に凶殺】目的地（E方位）に凶殺「暗剣殺 (大凶)」が出ています。",
       );
     });
 
@@ -113,9 +113,9 @@ describe("Kyusei Kigaku High-Precision Calculations", () => {
 
       const result = scorer.observe(ctx);
       expect(result).not.toBeNull();
-      expect(result!.phenomenon).toBe("一時的干渉・引越当日注意");
+      expect(result!.phenomenon).toBe("引越当日の注意（日盤のみ凶）");
       expect(result!.detail).toContain(
-        "【注意・引越当日ノイズ】年盤・月盤の長期的な方位エネルギーは極めて安全（吉）ですが、引越し当日（日盤）に一時的なノイズが重なっています。",
+        "【注意・引越当日】年盤・月盤は吉ですが、引越し当日の日盤にだけ凶が重なっています。",
       );
     });
 
