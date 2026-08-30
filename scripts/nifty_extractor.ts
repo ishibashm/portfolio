@@ -19,6 +19,9 @@ import {
   rememberCityCount,
   resumeCityMissing,
   writeSweptState,
+  hydrateStateFromDb,
+  persistStateToDb,
+  resumeStateKey,
 } from "./scraperResume";
 
 const envPath = fs.existsSync(path.resolve(process.cwd(), ".env"))
@@ -507,6 +510,9 @@ const STATE_FILE =
   process.env.SCRAPER_STATE_FILE ||
   path.join(process.cwd(), "scripts", "scraper_state.json");
 
+/** DB 側の鍵。県ごとに別のファイルを使っているので、その名前で分ける。 */
+const RESUME_KEY = resumeStateKey("nifty", STATE_FILE);
+
 function loadState(): {
   pref: string | null;
   city: string | null;
@@ -610,6 +616,12 @@ async function main() {
 
     // 進行状況の読み込み。新着スイープは毎回すべての市区町村を頭から回るので再開しない。
     console.log(`Mode: ${NEW_ONLY ? "new arrivals only" : "full sweep"}`);
+    /* cache が復元できなかった回は、DB に置いた再開位置で受ける
+       （2026-08-24 の okayama が実際にこれで先頭へ戻っていた）。
+       ファイルがあればそちらが勝つ。 */
+    if (!NEW_ONLY) {
+      await hydrateStateFromDb(prisma, RESUME_KEY, STATE_FILE);
+    }
     const state = NEW_ONLY
       ? { pref: null, city: null, page: 1 }
       : loadState();
@@ -752,6 +764,13 @@ async function main() {
       if (!NEW_ONLY) {
         writeSweptState(STATE_FILE);
       }
+    }
+
+    /* 予算切れで止まった場合も、一巡が終わった場合も、いまのファイルを
+       DB に写す。cache が引けなかった次回はここから復元する。
+       失敗しても巡回の成否には影響させない（警告だけ）。 */
+    if (!NEW_ONLY) {
+      await persistStateToDb(prisma, RESUME_KEY, STATE_FILE);
     }
   } catch (e) {
     // 握り潰して 0 で終わると、CI は緑のまま取り込み 0 件になる。
