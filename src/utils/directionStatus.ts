@@ -26,6 +26,25 @@ export type LayerMode =
   | "month_day"
   | "year_day";
 
+/**
+ * 素の文字列を LayerMode に落とす。列挙外の値（壊れた保存値など）は
+ * 既定の "final" に倒す。parseDirectionFilterMode と同じ約束。
+ */
+export function parseLayerMode(raw: string | null | undefined): LayerMode {
+  switch (raw) {
+    case "final":
+    case "year":
+    case "month":
+    case "day":
+    case "year_month":
+    case "month_day":
+    case "year_day":
+      return raw;
+    default:
+      return "final";
+  }
+}
+
 type Layer = { [dir: string]: string | undefined };
 
 export interface DirectionLayers {

@@ -25,7 +25,11 @@
 import React, { useEffect, useState } from "react";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
-import { readLocalSettings, saveSettings } from "@/lib/userSettings";
+import {
+  readLocalSettings,
+  saveSettings,
+  type Settings,
+} from "@/lib/userSettings";
 import {
   loadProfilePresets,
   saveProfilePresets,
@@ -86,7 +90,7 @@ export function QuickProfileBar() {
 
   /** いま画面に入っている 3 つを設定として書く。 */
   const persist = async () => {
-    const patch: Record<string, unknown> = {};
+    const patch: Settings = {};
     if (birthDate) patch.birth_date = birthDate;
     if (baseLat !== null) patch.base_lat = baseLat;
     if (baseLon !== null) patch.base_lon = baseLon;

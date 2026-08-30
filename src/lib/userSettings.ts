@@ -30,10 +30,36 @@ export const SYNCED_FIELDS = [
 ] as const;
 
 export type SyncedField = (typeof SYNCED_FIELDS)[number];
-export type Settings = Record<string, any>;
+
+/**
+ * 設定の 1 項目に入る値。localStorage の JSON に入るスカラーだけを許す。
+ * オブジェクトや配列を入れたくなったら、それは別のキーに分けるべき状態。
+ */
+export type SettingValue = string | number | boolean | null | undefined;
+export type Settings = Record<string, SettingValue>;
 
 /** 端末側の最終保存時刻。クラウドとどちらが新しいかの判定に使う。 */
 const SAVED_AT = "_savedAt";
+
+/**
+ * 型が合う値だけ返す取り出し。壊れた保存値（数値のはずが文字列、null など）は
+ * 「無かった」ことにする。以前は any 経由でそのまま画面の state に入っており、
+ * 数値の state に文字列が入り得た。
+ */
+export function settingString(s: Settings, key: string): string | undefined {
+  const v = s[key];
+  return typeof v === "string" ? v : undefined;
+}
+
+export function settingNumber(s: Settings, key: string): number | undefined {
+  const v = s[key];
+  return typeof v === "number" && Number.isFinite(v) ? v : undefined;
+}
+
+export function settingBoolean(s: Settings, key: string): boolean | undefined {
+  const v = s[key];
+  return typeof v === "boolean" ? v : undefined;
+}
 
 export function readLocalSettings(): Settings {
   if (typeof window === "undefined") return {};
@@ -94,7 +120,8 @@ export async function loadSettings(): Promise<LoadResult> {
     if (!res.ok) return { settings: local, synced: false }; // 401 = 未ログイン
     const remote = await res.json();
 
-    const localAt = local[SAVED_AT] ? Date.parse(local[SAVED_AT]) : 0;
+    const savedAt = settingString(local, SAVED_AT);
+    const localAt = savedAt ? Date.parse(savedAt) : 0;
     const remoteAt = remote.updated_at ? Date.parse(remote.updated_at) : 0;
 
     const remoteFields: Settings = {};
@@ -105,9 +132,10 @@ export async function loadSettings(): Promise<LoadResult> {
     }
 
     // クラウドが新しければ上書き、そうでなければ欠けている項目だけ補完する。
-    const settings = remoteAt > localAt
-      ? { ...local, ...remoteFields }
-      : { ...remoteFields, ...local };
+    const settings =
+      remoteAt > localAt
+        ? { ...local, ...remoteFields }
+        : { ...remoteFields, ...local };
 
     return { settings, synced: true };
   } catch {
