@@ -33,6 +33,18 @@ describe("AREA_EDITORIAL", () => {
     expect(codes.length).toBeLessThan(AREAS.length / 2);
   });
 
+  it("本文に markdown の記法が混ざっていない", () => {
+    /* 文章はそのまま <p> に入る。**強調** を書くとアスタリスクが
+       画面にそのまま出る。実際に 1 度書いてしまった（#754 で除去） */
+    const bad: string[] = [];
+    for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      for (const paragraph of editorial.intro) {
+        if (/\*\*|\[.+\]\(.+\)|^#|^- /m.test(paragraph)) bad.push(code);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
   it("各項目に本文がある", () => {
     for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
       expect(editorial.intro.length, code).toBeGreaterThan(0);
