@@ -159,3 +159,107 @@ export function resumeCityMissing(
 export function resumeIndexOutOfRange(index: number, length: number): boolean {
   return !Number.isInteger(index) || index < 0 || index >= length;
 }
+
+/**
+ * ここから下は「再開位置を DB にも置く」ぶん。
+ *
+ * ## なぜ要るか（2026-08-30 の実測）
+ *
+ * 再開位置は GitHub Actions の cache に置いている。ところが okayama の
+ * 巡回ログで、**復元できない回がある**と分かった。
+ *
+ *   2026-08-21  Cache restored ... {"city":"okayamashikitaku","page":132}
+ *   2026-08-24  Cache not found for input keys: nifty-scraper-state-okayama-
+ *               State file does not exist.
+ *
+ * 保存は成功しているのに 3 日後に restore-keys で引けない（県ごと×毎晩で
+ * エントリが増えるので退避と思われる）。復元できないと**先頭の市から
+ * 回り直す**ので、予算を大きい市で使い切る県は、その先へ永久に進まない。
+ *
+ * DB は退避されない。**cache を置き換えるのではなく、落ちたときの
+ * 受け皿にする**（cache のほうが速いので、あればそちらを使う）。
+ */
+
+/** 最低限これだけあれば動く。PrismaClient がそのまま入る。 */
+export interface RawSqlDb {
+  $queryRawUnsafe<T = unknown>(sql: string, ...values: unknown[]): Promise<T>;
+  $executeRawUnsafe(sql: string, ...values: unknown[]): Promise<number>;
+}
+
+/** DB 上の鍵。ジョブごとに 1 つ（県ごとに別ファイルを使っているので、その名前で分ける）。 */
+export function resumeStateKey(scraper: string, stateFile: string): string {
+  return `${scraper}:${stateFile.split(/[/\\]/).pop()}`;
+}
+
+/** 再開位置がファイルに入っているか（空の一巡完了は「無い」と見なす）。 */
+function hasResumePosition(state: Record<string, unknown>): boolean {
+  const page = typeof state.page === "number" ? state.page : 1;
+  const cityIndex = typeof state.cityIndex === "number" ? state.cityIndex : 0;
+  return Boolean(state.pref || state.city) || page > 1 || cityIndex > 0;
+}
+
+/**
+ * ファイルが無い／再開位置が空なら、DB から書き戻す。
+ *
+ * **ファイルが勝つ。**cache が復元できた回はそちらのほうが新しい
+ * （同じ run の中で書いたもの）。戻したときだけ true を返す。
+ */
+export async function hydrateStateFromDb(
+  db: RawSqlDb,
+  key: string,
+  stateFile: string,
+): Promise<boolean> {
+  try {
+    const onDisk = readStateFile(stateFile);
+    if (hasResumePosition(onDisk)) return false;
+
+    const rows = await db.$queryRawUnsafe<Array<{ state: unknown }>>(
+      "SELECT state FROM scraper_state WHERE key = $1::text",
+      key,
+    );
+    const stored = rows?.[0]?.state;
+    if (!stored || typeof stored !== "object") return false;
+    if (!hasResumePosition(stored as Record<string, unknown>)) return false;
+
+    fs.writeFileSync(
+      stateFile,
+      JSON.stringify({ ...onDisk, ...(stored as object) }, null, 2),
+    );
+    console.log(
+      `♻️ DB から再開位置を戻した (${key}): ${JSON.stringify(stored)}`,
+    );
+    return true;
+  } catch (e) {
+    console.warn(
+      "DB からの再開位置の読み出しに失敗した（無視して先頭から）:",
+      e,
+    );
+    return false;
+  }
+}
+
+/**
+ * いまのファイルの中身を DB に写す。**巡回の成否には影響させない**
+ * （失敗しても警告だけ。cache が生きていれば次回はそちらで足りる）。
+ */
+export async function persistStateToDb(
+  db: RawSqlDb,
+  key: string,
+  stateFile: string,
+): Promise<void> {
+  try {
+    const state = readStateFile(stateFile);
+    await db.$executeRawUnsafe(
+      `INSERT INTO scraper_state (key, state, updated_at)
+       VALUES ($1::text, $2::jsonb, $3::timestamptz)
+       ON CONFLICT (key) DO UPDATE SET
+         state = EXCLUDED.state,
+         updated_at = EXCLUDED.updated_at`,
+      key,
+      JSON.stringify(state),
+      new Date(),
+    );
+  } catch (e) {
+    console.warn("DB への再開位置の保存に失敗した（cache 側は残る）:", e);
+  }
+}

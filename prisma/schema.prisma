@@ -561,6 +561,15 @@ model ScrapeTask {
   updated_at  DateTime @updatedAt
 }
 
+/// 巡回の再開位置。GitHub Actions の cache が復元できない回があるため、
+/// 落ちたときの受け皿として DB にも置く（scripts/scraperResume）。
+/// 入るのは県名・市区町村名・ページ番号だけで、個人情報は入らない。
+model scraper_state {
+  key        String   @id
+  state      Json
+  updated_at DateTime @db.Timestamptz(6)
+}
+
 model MunicipalityWealth {
   id                       String   @id @default(cuid())
   areaCode                 String   @unique
