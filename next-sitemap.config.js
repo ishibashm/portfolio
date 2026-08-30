@@ -55,6 +55,27 @@ const NOT_A_PAGE = [
  */
 const THIN_GENERATED = ["/houi/area/*", "/houi/*/*/*"];
 
+/**
+ * 市区町村ページのうち、**固有の文章を書いて索引に戻した**もの
+ * （src/lib/areaEditorial.ts の AREA_EDITORIAL）。
+ *
+ * 上の THIN_GENERATED が /houi/area/* を丸ごと外すので、書いた頁だけ
+ * additionalPaths で戻す。**index にした頁とサイトマップに載せる頁が
+ * 食い違うと指示が矛盾する**（noindex なのに載っている、の逆）。
+ *
+ * ここに書き写しているのは、この設定が JS で TS の表を読めないから。
+ * ずれると意味が無いので、__tests__/sitemapThinPages.test.ts が
+ * AREA_EDITORIAL の鍵と 1 件ずつ突き合わせて落とす。
+ */
+const AREA_EDITORIAL_PATHS = [
+  "/houi/area/04101",
+  "/houi/area/13112",
+  "/houi/area/23106",
+  "/houi/area/27127",
+  "/houi/area/28110",
+  "/houi/area/34101",
+];
+
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
   siteUrl: process.env.NEXT_PUBLIC_BASE_URL || "https://cloud-palette.com",
@@ -70,4 +91,14 @@ module.exports = {
     ...NOT_A_PAGE,
     ...THIN_GENERATED,
   ],
+  /* 戻す一覧そのもの。検査（sitemapThinPages）が AREA_EDITORIAL と
+     突き合わせるために読む。next-sitemap は知らない鍵を無視する */
+  additionalPathsSource: AREA_EDITORIAL_PATHS,
+  /* exclude で外した市区町村ページのうち、文章を書いた頁だけ戻す。
+     additionalPaths は exclude の後に足されるので、除外を緩めずに
+     数頁だけ載せられる */
+  additionalPaths: async (config) =>
+    Promise.all(
+      AREA_EDITORIAL_PATHS.map((loc) => config.transform(config, loc)),
+    ),
 };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRequire } from "module";
 import path from "path";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 
 /**
  * 雛形を展開しただけのページを、サイトマップから外したことの固定。
@@ -118,5 +119,31 @@ describe("雛形展開ページのサイトマップ除外", () => {
     expect(segments("/houi/2026/1/8")).toBe(segments("/houi/*/*/*"));
     // 年別は段数が足りないので、どちらの解釈でも当たらない。
     expect(segments("/houi/2026/1")).toBeLessThan(segments("/houi/*/*/*"));
+  });
+});
+
+/**
+ * 索引に戻した市区町村ページ（固有の文章を書いたもの）は、
+ * **サイトマップにも載せる**。片方だけだと指示が食い違う。
+ *
+ * 設定は JS なので TS の表を読めず、パスを書き写している。
+ * ずれたらここで落とす。
+ */
+describe("固有の文章を書いた市区町村ページ", () => {
+  const paths: string[] = sitemapConfig.additionalPathsSource ?? [];
+
+  it("サイトマップに戻す一覧が、文章を書いた市区町村と一致する", () => {
+    const fromEditorial = Object.keys(AREA_EDITORIAL)
+      .map((code) => `/houi/area/${code}`)
+      .sort();
+    expect([...paths].sort()).toEqual(fromEditorial);
+  });
+
+  it("その一覧は exclude に当たっている（戻す前提が生きている）", () => {
+    /* THIN_GENERATED が効いていないなら additionalPaths は要らない。
+       前提が変わったことに気付けるようにする */
+    for (const p of paths) {
+      expect(isExcluded(p), `${p} が exclude に当たっていない`).toBe(true);
+    }
   });
 });
