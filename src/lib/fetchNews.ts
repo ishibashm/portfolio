@@ -1,4 +1,4 @@
-import { parseFeed, type NewsItem } from "@/lib/rssParse";
+import { decodeFeedBytes, parseFeed, type NewsItem } from "@/lib/rssParse";
 import { NEWS_FEEDS, type FeedSource } from "@/data/newsSources";
 
 /**
@@ -30,7 +30,7 @@ export interface FeedResult {
 }
 
 /** 1 フィードあたりの取得上限（表示側でさらに絞ってよい）。 */
-const ITEMS_PER_FEED = 12;
+const ITEMS_PER_FEED = 20;
 /** 取得を諦めるまでの時間。 */
 const TIMEOUT_MS = 5000;
 /** キャッシュの寿命。1 日 4 回まで。 */
@@ -51,7 +51,15 @@ async function fetchOne(source: FeedSource): Promise<FeedResult> {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) return { source, ok: false, items: [] };
-    const xml = await res.text();
+    /*
+      res.text() は使わない。常に UTF-8 として読むので、Shift_JIS /
+      EUC-JP の配信（官公庁系に残っている）が文字化けする。実際に
+      /news で化けた（利用者報告）。バイト列で受けて宣言から復号する。
+    */
+    const xml = decodeFeedBytes(
+      await res.arrayBuffer(),
+      res.headers.get("content-type"),
+    );
     const items = parseFeed(xml, ITEMS_PER_FEED);
     /* 200 でも中身がフィードでない（メンテ画面など）ことはある。
        0 件は「取得失敗」として扱い、出典の行ごと隠す */
