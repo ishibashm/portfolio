@@ -13,6 +13,7 @@ import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import { Search } from "lucide-react";
+import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 
 // Fix Leaflet marker icons in Next.js
 applyLeafletDefaultIcon();
@@ -241,6 +242,9 @@ export default function PastMoveMap({
           />
           {/* Fit map view to show both coordinates dynamically */}
           <FitBounds fromPos={fromPos} toPos={toPos} />
+          {/* 現在地。地点をドラッグで置くときの目印になる。
+              表示だけで、判定には入らない。 */}
+          <CurrentLocationControl corner="bottomright" />
 
           {/* Draggable From Marker (Blue) */}
           <Marker
