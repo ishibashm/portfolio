@@ -60,6 +60,13 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     siteUrl: "https://www.retpc.jp/",
     note: "宅建実務・流通統計。不動産業の制度側の動き",
   },
+  {
+    id: "suumo-journal",
+    name: "SUUMO ジャーナル",
+    feedUrl: "https://suumo.jp/journal/feed/",
+    siteUrl: "https://suumo.jp/journal/",
+    note: "住まいと暮らしの編集部メディア。市場調査や住み替えの読み物",
+  },
 ] as const;
 
 /** フィードの無い媒体・データベース。リンク集として載せる。 */
