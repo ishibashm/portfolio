@@ -111,6 +111,13 @@ export function directionFromBearing(
   bearing: number,
   nodeMapping: "traditional" | "physical" = "traditional",
 ): CompassDirection {
+  // 有限でない入力（NaN・±Infinity）は「方位を出せない」。kigakuUtils の
+  // getKigakuSector が持つガードと同じ規則で北に倒す。以前は traditional で
+  // "NW"（比較がすべて偽になり最後の枝に落ちる）、physical で undefined
+  // （添字が NaN になる。CompassDirection を名乗る型の嘘）と、同じ壊れた
+  // 入力でも入口とモードで答えが割れていた。
+  if (!Number.isFinite(bearing)) return "N";
+
   const b = normalizeBearing(bearing);
   if (nodeMapping === "physical") {
     return COMPASS_DIRECTIONS[Math.floor(((b + 22.5) % 360) / 45)];

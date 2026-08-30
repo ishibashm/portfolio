@@ -442,8 +442,9 @@ error TS2578: Unused '@ts-expect-error' directive.
 ### 既知の問題（別途）
 
 - `directionFromBearing(NaN, "physical")` が `undefined` を返す。戻り値の型は
-  `CompassDirection` を名乗っているので**型の嘘**。直すなら呼び出し側の入力検証とセット
-  （`__tests__/directionGeo.test.ts` に現状の挙動として固定してある）
+  `CompassDirection` を名乗っているので**型の嘘**。~~直すなら呼び出し側の入力検証と
+  セット~~ — **#740 で解消**。kigakuUtils が先に持っていた「NaN は北に倒す」の規則に
+  揃えた（それまで同じ壊れた入力で入口とモードにより N / NW / undefined と割れていた）
 - ~~`SolarTimeTable` の `nbaData` prop~~ — **#738 で削除済み**。呼び出し側が
   一度も渡しておらず、書き出しに実在しない出典名（DS Oura/Tavily/RAG）が
   常時 "N/A" で入っていた

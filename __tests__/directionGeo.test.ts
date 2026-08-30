@@ -482,20 +482,20 @@ describe("directionFromBearing（API ルートの実装からの集約）", () =
     }
   });
 
-  it("有限でない入力でも寄せる前と同じ結果になる", () => {
-    // traditional は比較がすべて偽になって NW に落ちる。physical は
-    // 添字が NaN になり undefined が返る。型は Direction を名乗って
-    // いるので undefined は嘘だが、ここは寄せる前と同じ挙動を保つ。
-    // 直すなら呼び出し側の入力検証とセットで別途。
+  it("有限でない入力は両モードとも北に倒す（#740 で型の嘘を直した）", () => {
+    // 旧実装は traditional で "NW"（比較がすべて偽になり最後の枝に落ちる）、
+    // physical で undefined（添字が NaN。CompassDirection を名乗る型の嘘）
+    // だった。kigakuUtils の getKigakuSector が先に持っていた「NaN は北」
+    // の規則に揃え、入口とモードで答えが割れないようにした。
+    // 旧実装に戻すと、ここの "N" の期待と下の不一致の確認が両方落ちる。
     for (const b of [NaN, Infinity, -Infinity]) {
       for (const mapping of MAPPINGS) {
-        expect(directionFromBearing(b, mapping)).toBe(
-          legacyGetDirectionFromBearing(b, mapping),
-        );
+        expect(directionFromBearing(b, mapping)).toBe("N");
       }
     }
-    expect(directionFromBearing(NaN, "traditional")).toBe("NW");
-    expect(directionFromBearing(NaN, "physical")).toBeUndefined();
+    // 旧実装とは違う答えであること（空回りするテストを避ける）。
+    expect(legacyGetDirectionFromBearing(NaN, "traditional")).toBe("NW");
+    expect(legacyGetDirectionFromBearing(NaN, "physical")).toBeUndefined();
   });
 });
 
