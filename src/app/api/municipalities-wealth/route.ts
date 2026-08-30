@@ -225,6 +225,14 @@ export async function GET(request: Request) {
   else if (layerMode === "day") activeVectors = vectorData.dayLayer;
   else activeVectors = vectorData.finalVectors;
 
+  // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU で
+  // 上書きする。画面が「五黄殺」ではなく「土用殺」と書けるように、
+  // どの方位が土用殺かを添える。単盤の表示では意味を持たないので null。
+  const doyouSatsuDirection =
+    activeVectors === vectorData.finalVectors
+      ? (vectorData.doyouSatsuDirection ?? null)
+      : null;
+
   const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
 
   // 動的偏角の取得
@@ -460,6 +468,7 @@ export async function GET(request: Request) {
           lunarPhaseModifier,
         },
         vectors: activeVectors,
+        doyouSatsuDirection,
       },
     });
   } catch (error) {

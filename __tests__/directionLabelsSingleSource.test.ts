@@ -33,6 +33,8 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
 
 const ALL = [
   ...NOISE_PRIORITY,
+  // 語彙だけの鍵（エンジンの状態ではない。directionLabels のコメント参照）
+  "NOISE_DOYOU",
   "NOISE_TENCHU",
   "WARNING",
   "OPTIMAL",
