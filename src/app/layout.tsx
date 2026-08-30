@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { getAdsenseIds } from "@/lib/adsense";
 import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
 import "./globals.css";
@@ -55,7 +55,6 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   manifest: "/manifest.json",
-  themeColor: "#faf7f3",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -89,6 +88,14 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
+};
+
+/*
+  themeColor は Next 15 で metadata から viewport へ移った。metadata に
+  置いたままだと全頁のビルドで警告が出る（1,447 行）。値は変えていない。
+*/
+export const viewport: Viewport = {
+  themeColor: "#faf7f3",
 };
 
 import { GlobalSidebar } from "@/components/GlobalSidebar";
