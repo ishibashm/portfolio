@@ -46,6 +46,9 @@ import { distanceKmBetween } from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { FavoritePicker } from "@/components/relocation/FavoritePicker";
 import { ratingForStatus } from "@/lib/verdictRating";
+import { stepDayTier } from "@/lib/stepTier";
+import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/auspiciousDays";
+import { TIER_FILL } from "@/utils/tierDisplay";
 import { isValidIsoDate } from "@/utils/dateValidation";
 import { toJapanDateString } from "@/utils/japanDate";
 import type { MetaphysicalData } from "@/utils/metaphysicalApis";
@@ -925,34 +928,102 @@ export default function RelocationSimulatorPage() {
     }
   };
 
-  // Compute timing recommendations (Time avoidance)
+  /*
+    出発日の変更候補。以前は nbaEngine の Q 値で比べていたが、Q 値は
+    他のどの画面にも出てこない孤立した指標だった（#698 の方針で廃止）。
+    いまは**同じ移動を日付だけ変えて判定し直し**、サイト共通の段階
+    （S〜X）が良くなる日を出す。呼ぶ関数は evaluatedSteps の計算と
+    同一で、判定を新しく書いていない。
+  */
   const timingRecommendations = useMemo(() => {
-    if (activeStepIndex === null || activeStepIndex >= steps.length) return [];
-    const activeStep = steps[activeStepIndex];
-    const currentEval = nbaEvaluations[activeStep.departureDate];
-    if (!currentEval) return [];
+    if (activeStepIndex === null || activeStepIndex >= evaluatedSteps.length)
+      return [];
+    const active = evaluatedSteps[activeStepIndex];
+    if (!active?.evaluation) return [];
 
-    const baseDate = parseSafeDate(activeStep.departureDate);
-    const list = [];
+    const currentRank = TIER_ORDER.indexOf(stepDayTier(active.evaluation));
+    const baseDate = parseSafeDate(active.departureDate);
+    const list: { date: string; tier: DayTier; diffDays: number }[] = [];
 
     for (let i = 1; i <= 7; i++) {
       const d = new Date(baseDate);
       d.setDate(baseDate.getDate() + i * 7);
       const dateStr = toJapanDateString(d);
-      const ev = nbaEvaluations[dateStr];
 
-      if (ev && ev.qValue > currentEval.qValue) {
-        list.push({
-          date: dateStr,
-          qValue: ev.qValue,
-          riskFactors: ev.riskFactors,
-          diffDays: i * 7,
-        });
+      const rawBearing = getBearing(
+        active.fromLat,
+        active.fromLon,
+        active.toLat,
+        active.toLon,
+      );
+      const direction = bearingToDirection(rawBearing, useClassical);
+      const env = getCurrentEnvironmentalFrequencies(
+        d,
+        active.fromLon,
+        physicalMonthMode,
+      );
+      const yearBoard = generateBoard(
+        useClassical ? env.classicalYearStar : env.yearStar,
+      );
+      const monthBoard = generateBoard(
+        useClassical ? env.classicalMonthStar : env.monthStar,
+      );
+      const dayBoard = generateBoard(
+        useClassical ? env.classicalDayStar : env.dayStar,
+      );
+      const evalIntent =
+        actionIntent !== "DEFAULT"
+          ? actionIntent
+          : active.purpose === "MIGRATION"
+            ? "MIGRATION"
+            : "DEFAULT";
+      const collision = calculateVectorCollision(
+        personalStar,
+        yearBoard,
+        monthBoard,
+        dayBoard,
+        voidZodiacs,
+        env.raw.lunarNode,
+        evalIntent,
+        d,
+        active.fromLon,
+      );
+      const filtered = filterCollisionByMode(
+        collision,
+        personalStar,
+        null,
+        voidZodiacs,
+        directionFilterMode,
+        yearBoard,
+        monthBoard,
+        dayBoard,
+      );
+      const tier = stepDayTier({
+        status: filtered.finalVectors[direction] || "SAFE",
+        details: {
+          yearLayer: filtered.yearLayer[direction] || "SAFE",
+          monthLayer: filtered.monthLayer[direction] || "SAFE",
+          dayLayer: filtered.dayLayer[direction] || "SAFE",
+        },
+      });
+      if (TIER_ORDER.indexOf(tier) < currentRank) {
+        list.push({ date: dateStr, tier, diffDays: i * 7 });
       }
     }
 
-    return list.sort((a, b) => b.qValue - a.qValue).slice(0, 3);
-  }, [activeStepIndex, steps, nbaEvaluations]);
+    return list
+      .sort((a, b) => TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier))
+      .slice(0, 3);
+  }, [
+    activeStepIndex,
+    evaluatedSteps,
+    personalStar,
+    voidZodiacs,
+    useClassical,
+    physicalMonthMode,
+    actionIntent,
+    directionFilterMode,
+  ]);
 
   // Compute Spatial Detour Recommendations
   const detourCandidates = useMemo(() => {
@@ -2045,7 +2116,7 @@ export default function RelocationSimulatorPage() {
                       当日の体調・宇宙天気を仮定する（任意）
                     </h3>
                     <p className="text-[10px] text-stone-600 mt-1">
-                      移動当日の生体状況と宇宙天気のノイズ負荷を擬似設定します。ポータルのリアルタイムデータと同期することも可能です。
+                      移動当日の体調（心拍変動など）と宇宙天気の仮定値を設定します。ホームで表示している現在値を取り込むこともできます。
                     </p>
                   </div>
                   <button
@@ -2275,9 +2346,6 @@ export default function RelocationSimulatorPage() {
                     NOISE_HA: "歳破/月破/日破",
                   };
                   const hasUniversalClash = clashingMembers.length > 0;
-
-                  // Grab Timing evaluations for this date
-                  const timingEval = nbaEvaluations[step.departureDate];
 
                   return (
                     <motion.div
@@ -2614,18 +2682,20 @@ export default function RelocationSimulatorPage() {
                               °)
                             </span>
                           </div>
-                          {timingEval &&
-                            typeof timingEval.qValue === "number" &&
-                            !isNaN(timingEval.qValue) && (
-                              <div className="flex items-center gap-1.5 border-l border-stone-200 pl-4">
-                                <span>Q値:</span>
-                                <span
-                                  className={`font-black ${timingEval.qValue < 0 ? "text-red-700" : "text-emerald-700"}`}
-                                >
-                                  {timingEval.qValue.toFixed(1)}
-                                </span>
-                              </div>
-                            )}
+                          {step.evaluation && (
+                            <div className="flex items-center gap-1.5 border-l border-stone-200 pl-4">
+                              <span>出発日の段階:</span>
+                              <span
+                                className="font-black"
+                                style={{
+                                  color:
+                                    TIER_FILL[stepDayTier(step.evaluation)],
+                                }}
+                              >
+                                {TIER_LABELS[stepDayTier(step.evaluation)]}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div>
                           滞在期間:{" "}
@@ -2788,46 +2858,33 @@ export default function RelocationSimulatorPage() {
 
                     {/* Timing Q-Value Overlay */}
                     {(() => {
+                      /*
+                        以前ここは nbaEngine の Q 値と「推奨行動」を出して
+                        いた。Q 値は他のどの画面にも出てこない孤立した指標
+                        だった（#698 で廃止した方針の残り）。いまは
+                        カレンダー・時期分析と同じ段階（S〜X）を出す。
+                      */
                       const step = evaluatedSteps[activeStepIndex];
-                      const ev = nbaEvaluations[step.departureDate];
-                      if (!ev) return null;
-
+                      if (!step?.evaluation) return null;
+                      const tier = stepDayTier(step.evaluation);
                       return (
                         <div className="p-4 rounded-2xl bg-white/80 border border-stone-200 flex items-center justify-between gap-3 text-xs font-mono shadow-inner">
                           <div className="flex flex-col gap-1">
                             <span className="text-[10px] text-stone-600 font-bold uppercase leading-none">
-                              時間適合度 (Q値)
+                              出発日の段階
                             </span>
                             <span className="text-stone-500">
-                              推奨行動:{" "}
-                              <strong
-                                className={
-                                  ev.suggestedAction === "EXECUTE_RELOCATION"
-                                    ? "text-emerald-700"
-                                    : "text-amber-800"
-                                }
-                              >
-                                {ev.suggestedAction === "EXECUTE_RELOCATION"
-                                  ? "実行前進"
-                                  : ev.suggestedAction ===
-                                      "EXECUTE_PURGE_RELOCATION"
-                                    ? "浄化移住"
-                                    : ev.suggestedAction === "ABORT_AND_SHIELD"
-                                      ? "撤退"
-                                      : ev.suggestedAction === "GATHER_INTEL"
-                                        ? "情報収集"
-                                        : "警戒待機"}
-                              </strong>
+                              {
+                                "この方位×この日の判定。カレンダー・時期分析と同じ 6 段階です"
+                              }
                             </span>
                           </div>
                           <div className="text-right">
                             <span
-                              className={`text-2xl font-black ${typeof ev.qValue === "number" && ev.qValue < 0 ? "text-red-700" : "text-emerald-700"}`}
+                              className="text-2xl font-black"
+                              style={{ color: TIER_FILL[tier] }}
                             >
-                              {typeof ev.qValue === "number" &&
-                              !isNaN(ev.qValue)
-                                ? ev.qValue.toFixed(1)
-                                : "---"}
+                              {TIER_LABELS[tier]}
                             </span>
                           </div>
                         </div>
@@ -3116,7 +3173,9 @@ export default function RelocationSimulatorPage() {
                             出発日程の最適化推奨（時間的回避）
                           </strong>
                           <p className="text-[9px] text-stone-600 leading-normal">
-                            出発日を以下に変更すると、宇宙潮汐や自律神経（シミュレート値）との適合度が改善し、Q値が向上します。
+                            {
+                              "出発日を以下に変更すると、この移動の段階が良くなります。判定はカレンダー・時期分析と同じです。"
+                            }
                           </p>
                           <div className="flex flex-col gap-1.5 pt-1">
                             {timingRecommendations.map((rec) => (
@@ -3135,12 +3194,11 @@ export default function RelocationSimulatorPage() {
                                     ({rec.diffDays}日後)
                                   </span>
                                 </span>
-                                <span className="font-bold text-emerald-700 font-mono">
-                                  Q:{" "}
-                                  {typeof rec.qValue === "number" &&
-                                  !isNaN(rec.qValue)
-                                    ? rec.qValue.toFixed(1)
-                                    : "---"}
+                                <span
+                                  className="font-bold font-mono"
+                                  style={{ color: TIER_FILL[rec.tier] }}
+                                >
+                                  {TIER_LABELS[rec.tier]}
                                 </span>
                               </button>
                             ))}
