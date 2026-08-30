@@ -13,6 +13,7 @@
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
 import { directionFromBearing } from "../../utils/directionGeo";
+import { directionLabelName } from "@/lib/directionLabels";
 import type {
   BoardLayout,
   Direction,
@@ -368,71 +369,65 @@ export function ConsultPanel({
       return "text-blue-600";
     };
 
-    const formatLabel = (s: string) => {
-      if (s === "NOISE_GOU" || s === "NOISE_ANKEN") return "TYPE_I_NOISE";
-      if (
-        s === "NOISE_HONMEI" ||
-        s === "NOISE_TEKI" ||
-        s === "NOISE_GETSUMEI" ||
-        s === "NOISE_GETSUTEKI"
-      )
-        return "TYPE_II_NOISE";
-      if (s === "NOISE_VOID") return "VOID_ZONE";
-      if (s === "NOISE_NODE") return "LUNAR_NODE";
-      if (s === "NOISE_HA") return "CLASH_HA";
-      if (s === "OPTIMAL_REGULAR") return "LUCKY_ZONE";
-      if (s === "WARNING") return "WARNING_ZONE";
-      return s;
-    };
-
-    const label = formatLabel(status);
+    /*
+      呼び名は lib/directionLabels の対応表に寄せる。以前はここだけ
+      TYPE_I_NOISE / VOID_ZONE という独自の英字造語で、五黄殺と暗剣殺の
+      区別も潰れていた。同じ状態は画面をまたいで同じ名前で呼ぶ（#46）。
+    */
+    const label = directionLabelName(status);
     if (!honmeiStar) return <span>{label}</span>;
-    let title = "🟦 通常ゾーン (SAFE)";
-    let desc =
-      "致命的な定在波やノイズは観測されていません。標準ベースラインです。";
+    /*
+      説明は九星気学の枠の中の言葉で書く。以前は「共鳴過負荷」「精神や
+      自律神経に異常干渉」など、判定を物理現象や健康への影響として断定
+      する文言だった。計測を装う演出は使わない（#684〜#690 の方針）。
+      伝承としての意味付けは「〜とされる」で書く。
+    */
+    let title = `🟦 ${label}`;
+    let desc = "この盤では凶方位に当たっていません。";
     if (status === "NOISE_GOU") {
-      title = "🟥 非推奨ベクトル (TYPE I)";
-      desc = "強力な環境ノイズ帯。重大な行動阻害リスクが観測されています。";
+      title = `🟥 ${label}`;
+      desc = "五黄土星が回っている方位。九星気学で最も重い凶方位とされます。";
     } else if (status === "NOISE_ANKEN") {
-      title = "🟥 非推奨ベクトル (TYPE I)";
-      desc = "外部からの突発的干渉ノイズが観測される行動阻害エリアです。";
+      title = `🟥 ${label}`;
+      desc =
+        "五黄殺の正反対の方位。外から来るトラブルに結び付けて語られる凶方位です。";
     } else if (status === "NOISE_HONMEI") {
-      title = "🟥 非推奨ベクトル (TYPE II)";
+      title = `🟥 ${label}`;
       desc =
-        "あなたの固有波長との共鳴過負荷(オーバーヒート)が起きる干渉帯です。";
+        "あなたの本命星が回っている方位。九星気学では体調面の注意とされる凶方位です。";
     } else if (status === "NOISE_TEKI") {
-      title = "🟥 非推奨ベクトル (TYPE II)";
-      desc = "目標・方向性に対するダイレクトな干渉ノイズが発生するエリアです。";
+      title = `🟥 ${label}`;
+      desc = "本命星の正反対の方位。目的や計画の妨げとされる凶方位です。";
     } else if (status === "NOISE_GETSUMEI") {
-      title = "🟪 月命殺 (GETSUMEI)";
+      title = `🟪 ${label}`;
       desc =
-        "あなたの月命星との共鳴干渉エリアです。身体や精神に微細な不協和音を招きやすいノイズ帯です。";
+        "あなたの月命星が回っている方位。気持ちの面の注意とされる凶方位です。";
     } else if (status === "NOISE_GETSUTEKI") {
-      title = "🟪 月的殺 (GETSUTEKI)";
-      desc =
-        "あなたの月命星の対向位置にあたる干渉エリアです。目標設定や契約に微妙な混乱を招きやすいノイズ帯です。";
+      title = `🟪 ${label}`;
+      desc = "月命星の正反対の方位。対人や契約ごとの注意とされる凶方位です。";
     } else if (status === "NOISE_VOID") {
-      title = "⬛ 虚無・ボイド空間 (VOID ZONE)";
+      title = `⬛ ${label}`;
       desc =
-        "あなたの天中殺（空亡）に該当する構造的エラー領域です。空間の吉凶に関わらず行動がリセットされます。";
+        "あなたの天中殺（空亡）の十二支に当たる方位。盤の吉凶に関わらず避ける扱いにしています。";
     } else if (status === "NOISE_NODE") {
-      title = "🟨 月交点 (LUNAR NODE)";
+      title = `🟨 ${label}`;
       desc =
-        "日食・月食ラインの特異点。精神や自律神経に異常干渉を起こしやすいエリアです。";
+        "月の軌道と黄道の交点（羅睺・計都）に当たる方位。インド占星術で避けるとされる軸で、当サイトでは凶として扱います。";
     } else if (status === "NOISE_HA") {
-      title = "🟥 破壊ノイズ・破 (CLASH HA)";
+      title = `🟥 ${label}`;
       desc =
-        "十二支の対衝（対向）位置による強力な不整合波。「歳破」「月破」「日破」のいずれかに該当し、行動や進捗を破壊・頓挫させる極めて危険なユニバーサルノイズです。";
+        "その年・月・日の十二支の正反対に当たる方位（歳破・月破・日破のいずれか）。計画の頓挫に結び付けて語られる重い凶方位です。";
     } else if (status === "OPTIMAL") {
-      title = "🌟 最大吉方位 (MAX OPTIMAL)";
-      desc = "本命星と月命星の双方が相生・比和する最強の開運方位です。";
-    } else if (status === "OPTIMAL_REGULAR") {
-      title = "🟢 吉方位 (LUCKY)";
-      desc = "あなたの本命星と相生・比和する、運気を高める良好な方位です。";
-    } else if (status === "WARNING") {
-      title = "🟧 警告・調整ゾーン (WARNING)";
+      title = `🌟 ${label}`;
       desc =
-        "環境ノイズ（五黄殺等）が観測されていますが、天道効果により部分的に相殺・緩和されています。注意して選択してください。";
+        "本命星と月命星の双方に対して相生・比和になる方位。この盤で最も条件の良い方位です。";
+    } else if (status === "OPTIMAL_REGULAR") {
+      title = `🟢 ${label}`;
+      desc = "あなたの本命星と相生・比和の関係にある吉方位です。";
+    } else if (status === "WARNING") {
+      title = `🟧 ${label}`;
+      desc =
+        "五黄殺などの凶に当たりますが、同じ方位に天道（その月の吉方）が重なっています。凶が緩和されるとする流派の扱いを反映した、注意したうえで選ぶ段階です。";
     }
 
     const isTendoDir =
@@ -454,8 +449,9 @@ export function ConsultPanel({
           <div className="text-stone-500 mb-1 leading-tight">{desc}</div>
           {isTendoDir && (
             <div className="text-[10px] text-emerald-600 font-bold mb-1 bg-emerald-50 p-1 border border-emerald-200 rounded-xs">
-              ✨ 天道波動重畳中
-              (吉殺効果により本命殺・的殺等の個人的凶殺を無害化)
+              {
+                "✨ 天道（その月の吉方）と重なっています（本命殺・的殺などの個人の凶が打ち消されるとする流派の扱いを適用）"
+              }
             </div>
           )}
           {(() => {
@@ -488,7 +484,7 @@ export function ConsultPanel({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>【生体相性】:</span>{" "}
+                  <span>【本命星との相性】:</span>{" "}
                   <span
                     className={
                       br.personal.includes("通常")
@@ -542,7 +538,7 @@ export function ConsultPanel({
                   </span>
                 </div>
                 <div className="text-[9px] text-stone-600 font-sans leading-tight">
-                  生年月日から算出されたあなた固有のベース波長（初期設定）
+                  生年月日から求めた、あなたの本命星・月命星・天中殺
                 </div>
               </div>
 
@@ -685,7 +681,7 @@ export function ConsultPanel({
                   </div>
                 </div>
                 <div className="text-[9px] text-stone-600 font-sans leading-tight">
-                  現在この空間を飛び交っている環境波長・リアルタイム天体座標
+                  いまの方位盤（年・月・日）と、現在の天体の位置
                 </div>
               </div>
 
@@ -783,8 +779,8 @@ export function ConsultPanel({
           <details className="mt-4 mb-4 border border-stone-200 bg-white/80 group">
             <summary className="p-3 text-[10px] text-stone-600 font-mono uppercase tracking-widest cursor-pointer hover:bg-white/80 flex items-center justify-between list-none">
               <div className="flex items-center gap-2">
-                <span className="text-purple-500 animate-pulse">◆</span> [
-                DECRYPT MATRICES ] 生体空間マトリクスの展開
+                <span className="text-purple-500 animate-pulse">◆</span>
+                方位盤の内訳を開く（年・月・日の盤と本命星の重ね合わせ）
               </div>
               <span className="group-open:rotate-180 transition-transform">
                 ▼
@@ -793,29 +789,25 @@ export function ConsultPanel({
 
             <div className="p-3 border-t border-stone-200 bg-white/70">
               <div className="mb-4 p-2 bg-white/80 border border-stone-200 text-[9px] sm:text-[10px] text-stone-500 font-mono leading-relaxed">
-                <strong>[ 進入可能方位とノイズの解読法則 ]</strong>
+                <strong>[ 色の読み方 ]</strong>
                 <br />
-                気学の理論と引力モデルに基づき、盤面と本命星を重ね合わせます。
+                年・月・日の方位盤に、あなたの本命星・月命星を重ねた結果です。
                 <br />
-                <span className="text-red-600 font-bold">赤色(NOISE)</span>{" "}
-                のマスはその空間ベクトルに凶殺的ベクトル（五黄殺・暗剣殺・本命殺・的殺など）が発生していることを示し、進入が非推奨です。
+                <span className="text-red-600 font-bold">赤</span>{" "}
+                は凶方位（五黄殺・暗剣殺・破・本命殺・的殺など）に当たっているマスです。
                 <br />
-                <span className="text-amber-700 font-bold">
-                  黄色(WARNING)
-                </span>{" "}
-                は天中殺や月交点といった「構造的なバグ・特異点」です。極端に不安定になるため長時間の留まりは非推奨です。
+                <span className="text-amber-700 font-bold">黄</span>{" "}
+                は天中殺や月交点（羅睺・計都軸）に当たるマスで、当サイトでは避ける扱いにしています。
                 <br />
-                <span className="text-emerald-600 font-bold">
-                  緑色(OPTIMAL)
-                </span>{" "}
-                は生体波長と完全にシンクロし能力が増幅されるゾーン、
-                <span className="text-blue-600 font-bold">青(SAFE)</span>{" "}
-                は異常干渉のない安定ゾーンです。
+                <span className="text-emerald-600 font-bold">緑</span>{" "}
+                は本命星と相生・比和になる吉方位、
+                <span className="text-blue-600 font-bold">青</span>{" "}
+                はどの凶方位にも当たっていないマスです。
                 <br />
                 <em>
-                  ※FINALマップでは、以下の年・月・日のいずれかのレイヤーで赤・黄色があると優先してブロック（警告色）が表示されます。
+                  ※統合（FINAL）の盤では、年・月・日のどれかの盤で赤・黄があれば、その色を優先して出します。
                   <br />
-                  ※緑(OPTIMAL)は、全レイヤーがクリアでかつ目的とあなたの波長が完全一致した場合のみ出現します（条件が厳しいため表示されないことも多々あります）。
+                  ※緑は年・月・日の全部の盤で凶が無く、かつ相生・比和が成立した場合だけ出ます。条件が厳しいため表示されないことも多くあります。
                 </em>
               </div>
 
@@ -1219,15 +1211,18 @@ export function ConsultPanel({
           {env && layers && (
             <div className="mt-4 bg-white/70 border border-stone-200 p-3 w-full">
               <div className="text-emerald-500 font-bold mb-1 border-b border-stone-200 pb-1 text-[10px] tracking-widest uppercase flex items-center gap-2">
-                <span>干渉波・位相干渉診断</span>
+                <span>年・月・日の盤の重ね合わせ</span>
                 <span className="text-stone-600 text-[10px]">
-                  ( 優先度: 🟥 物理干渉 &gt; 🟪 生体干渉 &gt; 🟨 バグ警告 &gt;
-                  🟩 波長共鳴 &gt; 🟦 無干渉(青) )
+                  {
+                    "（優先順: 🟥 環境の凶 > 🟪 個人の凶 > 🟨 天中殺・交点 > 🟩 吉 > 🟦 平）"
+                  }
                 </span>
               </div>
               <div className="text-[10px] text-stone-600 mb-2 leading-relaxed text-justify pr-2 font-sans">
-                <strong className="text-stone-500">判定ロジック:</strong>{" "}
-                長期波・中期波・短期波の各算術ベクトルを重ね合わせ最終結果を導出します。いずれか1つのレイヤーでも致死的な物理アーティファクト（赤）や生体コンフリクト（紫）が含まれている場合、他が同期ベクトル（緑）であっても最終結果は干渉（NOISE）に強制上書きされます。（細胞へのダメージ蓄積を防ぐフェイルセーフ）
+                <strong className="text-stone-500">判定の決まり:</strong>{" "}
+                {
+                  "年盤・月盤・日盤の判定を重ねて最終結果を出します。どれか 1 つの盤でも凶（赤・紫）があれば、他の盤が吉（緑）でも最終結果は凶になります。凶を 1 つでも含む方位は勧めない、という九星気学の一般的な扱いをそのまま実装したものです。"
+                }
               </div>
               <div className="overflow-visible w-full mt-4 flex flex-col gap-6">
                 {/* Physical Model Table */}
@@ -1487,7 +1482,7 @@ export function ConsultPanel({
                       MONTH: TIDAL INTERFERENCE
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
-                      太陽黄経と月相の相対位相差から算出。潮汐変動が生体に与えるノイズを抽出します。
+                      月盤の星を、太陽黄経と月相の組み合わせから決めています。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
