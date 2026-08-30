@@ -51,6 +51,7 @@ function jstDate(iso: string | null): string | null {
 export default async function Page() {
   const feeds = await fetchAllFeeds();
   const alive = feeds.filter((f) => f.ok);
+  const down = feeds.filter((f) => !f.ok);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
@@ -130,6 +131,32 @@ export default async function Page() {
         ) : (
           <section className="rounded-2xl border border-stone-200 bg-white p-6 text-xs text-stone-500">
             いま新着見出しを取得できていません。時間をおいて開き直すか、下の情報源へ直接どうぞ。
+          </section>
+        )}
+
+        {/* 取れなかった配信元。以前は黙って消していたので、載せた
+            はずの媒体が出ないとき、URL が違うのか一時的な失敗なのか
+            画面から分からなかった（BUILT が出ない、と実際に報告が
+            来た）。名前だけは必ず出す */}
+        {down.length > 0 && alive.length > 0 && (
+          <section className="rounded-2xl border border-dashed border-stone-300 bg-white/60 p-3 text-[10px] leading-relaxed text-stone-500">
+            {"いま見出しを取得できていない配信元: "}
+            {down.map((feed, i) => (
+              <span key={feed.source.id}>
+                {i > 0 && "、"}
+                <a
+                  href={feed.source.siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-stone-600 underline"
+                >
+                  {feed.source.name}
+                </a>
+              </span>
+            ))}
+            {
+              "。配信の一時的な停止か、配信元が RSS をやめた可能性があります。リンクから直接どうぞ。"
+            }
           </section>
         )}
 

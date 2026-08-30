@@ -25,6 +25,14 @@ export interface FeedSource {
   name: string;
   /** フィードの URL。 */
   feedUrl: string;
+  /**
+   * 予備のフィード URL。**feedUrl が失敗したときだけ**順に試す。
+   *
+   * 台帳の URL は本番でしか生存確認できない（開発環境は外に出られない）
+   * ので、配信の形が複数あり得る媒体では候補を書いておく。成功した
+   * ときは 1 本しか取りに行かないので、平常時の負荷は増えない。
+   */
+  altFeedUrls?: readonly string[];
   /** 出典として貼る、人が読む側の URL。 */
   siteUrl: string;
   /** 何の情報源か。1 行で。 */
@@ -92,6 +100,10 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     id: "itmedia-built",
     name: "BUILT（ITmedia）",
     feedUrl: "https://rss.itmedia.co.jp/rss/2.0/built.xml",
+    /* ITmedia は媒体ごとに 2.0 と 1.0（RDF）の両方を配信している
+       （スマートジャパンは 1.0 のみが見つかる）。2.0 が無い媒体が
+       あるので 1.0 を予備に置く */
+    altFeedUrls: ["https://rss.itmedia.co.jp/rss/1.0/built.xml"],
     siteUrl: "https://built.itmedia.co.jp/",
     note: "建設 DX・BIM・建設テックの専門メディア",
   },
