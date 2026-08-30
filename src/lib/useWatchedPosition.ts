@@ -101,72 +101,96 @@ export function isFatalWatchError(code: number): boolean {
   return code === 1;
 }
 
+/** 購読の内部状態。外向きの status はここから組み立てる（下の註）。 */
+type WatchPhase = "none" | "denied" | "error";
+
 export function useWatchedPosition(
   enabled: boolean,
   /** テスト用。省略時は navigator.geolocation。 */
   geolocation?: GeolocationLike | null,
 ): WatchedPositionState {
-  const [position, setPosition] = useState<WatchedPosition | null>(null);
-  const [status, setStatus] = useState<WatchStatus>("idle");
-  const [message, setMessage] = useState<string | null>(null);
+  const [inner, setInner] = useState<{
+    position: WatchedPosition | null;
+    phase: WatchPhase;
+    message: string | null;
+  }>({ position: null, phase: "none", message: null });
   /* 拒否されたあとは、enabled が立て直されても購読しない。
      押すたびに許可ダイアログを出すのは迷惑なので。 */
   const deniedRef = useRef(false);
 
+  /* navigator.geolocation は同じ参照が返るので、依存に置いても
+     購読は張り直されない。 */
+  const api =
+    geolocation ??
+    (typeof navigator !== "undefined" ? navigator.geolocation : null);
+
   useEffect(() => {
-    if (!enabled) {
-      setStatus("idle");
-      return;
-    }
-    if (deniedRef.current) return;
-
-    const api =
-      geolocation ??
-      (typeof navigator !== "undefined" ? navigator.geolocation : null);
-    if (!api) {
-      setStatus("unavailable");
-      setMessage("このブラウザは位置情報に対応していません。");
-      return;
-    }
-
-    setStatus("locating");
-    setMessage(null);
+    if (!enabled || !api || deniedRef.current) return;
 
     const id = api.watchPosition(
       (p) => {
-        setPosition({
-          lat: p.coords.latitude,
-          lon: p.coords.longitude,
-          accuracyM: p.coords.accuracy,
-          /* heading は止まっているとき NaN や null で来る。
-             矢印の向きに使うので、数でなければ持たない。 */
-          headingDeg:
-            typeof p.coords.heading === "number" &&
-            Number.isFinite(p.coords.heading)
-              ? p.coords.heading
-              : null,
-          at: p.timestamp,
+        setInner({
+          position: {
+            lat: p.coords.latitude,
+            lon: p.coords.longitude,
+            accuracyM: p.coords.accuracy,
+            /* heading は止まっているとき NaN や null で来る。
+               矢印の向きに使うので、数でなければ持たない。 */
+            headingDeg:
+              typeof p.coords.heading === "number" &&
+              Number.isFinite(p.coords.heading)
+                ? p.coords.heading
+                : null,
+            at: p.timestamp,
+          },
+          phase: "none",
+          message: null,
         });
-        setStatus("watching");
-        setMessage(null);
       },
       (e) => {
-        setMessage(watchErrorMessage(e.code));
+        const message = watchErrorMessage(e.code);
         if (isFatalWatchError(e.code)) {
           deniedRef.current = true;
-          setStatus("denied");
+          setInner((prev) => ({ ...prev, phase: "denied", message }));
           api.clearWatch(id);
           return;
         }
         /* 一時的な失敗。既に測れていたなら、その位置は残したまま
            購読を続ける（トンネルを抜ければ戻る）。 */
-        setStatus((prev) => (prev === "watching" ? "watching" : "error"));
+        setInner((prev) => ({ ...prev, phase: "error", message }));
       },
       WATCH_OPTIONS,
     );
 
     return () => api.clearWatch(id);
-  }, [enabled, geolocation]);
+  }, [enabled, api]);
 
-  return { position, status, message };
+  /*
+    status は**組み立てる**。効果の中で setState して作らない。
+
+    「購読していない＝idle」「購読したがまだ測れていない＝locating」は
+    どちらも enabled と position から分かるので、状態として持つ必要が
+    ない。効果の中で同期的に setState すると再レンダリングが連鎖し、
+    lint（react-hooks/set-state-in-effect）にも出る。
+  */
+  const status: WatchStatus = !enabled
+    ? "idle"
+    : !api
+      ? "unavailable"
+      : inner.phase === "denied"
+        ? "denied"
+        : inner.position
+          ? "watching"
+          : inner.phase === "error"
+            ? "error"
+            : "locating";
+
+  const message =
+    enabled && !api
+      ? "このブラウザは位置情報に対応していません。"
+      : enabled
+        ? inner.message
+        : null;
+
+  return { position: inner.position, status, message };
 }
