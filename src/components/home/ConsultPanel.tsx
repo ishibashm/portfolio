@@ -1501,7 +1501,7 @@ export function ConsultPanel({
                       DAY: ROTATIONAL FLUX
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
-                      地球の自転(JD)をベースに、至点（Solstice）での位相反転を厳密に定義します。夏至・冬至の「物理的な至点」で厳密に数理モデルが反転し、エネルギーの増幅/減衰を表現します。
+                      日盤はユリウス日（JD）を基に数え、太陽黄経から求めた夏至・冬至を境に九星の巡り（陽遁/陰遁）を反転させます。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
@@ -1516,7 +1516,7 @@ export function ConsultPanel({
                 <div className="mt-3 pt-2 border-t border-stone-200 flex flex-col gap-1">
                   <div className="text-[10px] text-stone-600 italic">
                     ※
-                    本エンジンは「占い」ではなく、天体位置から導き出される物理的ポテンシャルを計算しています。古典暦（Classical）との乖離は、天体運動の歳差や摂動を考慮した「物理的リアリティ」の差です。
+                    天文モードは、九星の切り替わり時刻を実際の天体位置（歳差・摂動を考慮した太陽黄経）から求める計算方法です。古典暦（Classical）との乖離はこの求め方の差で、判定がより当たることを示すものではありません。
                   </div>
                 </div>
               </div>

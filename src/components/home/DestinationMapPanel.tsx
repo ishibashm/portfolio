@@ -1573,11 +1573,11 @@ export default function DestinationMapPanel({
                     [ GO ] 推奨方位 (OPTIMAL)
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
-                    有害なノイズ（凶殺）が一切存在しないことに加え、ユーザーの「本命星」とその方位の星が『相生（互いにエネルギーを与え合う関係）』になっています。
+                    凶殺が存在しないことに加え、あなたの「本命星」とその方位の星が『相生（互いを生かし合うとされる関係）』になっています。
                     <br />
                     <br />
                     <span className="text-stone-600">意味:</span>{" "}
-                    リスクがないだけでなく、行くことで「エネルギー的なバフ（運気・活力の向上）」が得られる、システムが最も推奨するベストな方位です。
+                    凶殺がないだけでなく、伝統的に運気を後押しするとされる、この判定でいちばんの推奨方位です。
                   </p>
                 </div>
                 <div className="bg-white/80 p-3 border-l-2 border-blue-500">
@@ -1586,11 +1586,11 @@ export default function DestinationMapPanel({
                     SAFE ] 進入可能方位
                   </div>
                   <p className="text-stone-500 text-[10px] sm:text-xs">
-                    五黄殺、暗剣殺、天中殺といったあらゆる有害なノイズが一切存在しない方位です。
+                    五黄殺、暗剣殺、天中殺といった凶殺が存在しない方位です。
                     <br />
                     <br />
                     <span className="text-stone-600">意味:</span>{" "}
-                    行ってもマイナス（ペナルティ）を受けることはありませんが、特別なボーナスも得られない「無害なニュートラルゾーン（安全地帯）」です。
+                    暦の上で避けるべき凶殺に当たらない方位です。伝統的に、特に吉とも凶ともされない中立の方位とされます。
                   </p>
                 </div>
               </div>
