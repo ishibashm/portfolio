@@ -444,8 +444,9 @@ error TS2578: Unused '@ts-expect-error' directive.
 - `directionFromBearing(NaN, "physical")` が `undefined` を返す。戻り値の型は
   `CompassDirection` を名乗っているので**型の嘘**。直すなら呼び出し側の入力検証とセット
   （`__tests__/directionGeo.test.ts` に現状の挙動として固定してある）
-- `SolarTimeTable` の `nbaData` prop は**呼び出し側が一度も渡していない**。
-  全参照が `?.` 経由なので常に "N/A"。実質デッド
+- ~~`SolarTimeTable` の `nbaData` prop~~ — **#738 で削除済み**。呼び出し側が
+  一度も渡しておらず、書き出しに実在しない出典名（DS Oura/Tavily/RAG）が
+  常時 "N/A" で入っていた
 - `api/rentals/arbitrage/route.ts` の `vectorData` が未使用。消すと九星気学の計算
   チェーン約 35 行に連鎖する。280 行のコメントは「盤の表示に使う」と書いてあるが実態と違う
 

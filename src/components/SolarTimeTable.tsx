@@ -32,30 +32,6 @@ interface SolarTimeTableProps {
   honmeiStar?: { physical: number; classical: number } | null;
   envData?: EnvironmentalFrequencies | null;
   personalVoidZodiac?: string[];
-  /* 呼び出し側（SolarTimeClock）が一度も渡していない実質デッドの prop
-     （既知の問題。全参照が ?. 経由で常に "N/A" になる）。期待する形は
-     NBADashboard の NBAData とも一致しない（micro.readiness などは
-     実物に無い）ので、既存の型は引けない。ここで読む枝だけを書く。
-     繋ぐときは、渡す側の実際の形とこの期待の食い違いから直すこと。 */
-  nbaData?: {
-    nba?: {
-      actionResult?: { suggestedAction?: string; confidence?: number };
-      stateVector?: {
-        ephemerisData?: { source?: string; planetaryPositions?: string };
-        astrologyData?: { source?: string; transits?: string };
-        ragContext?: { source?: string; classicalRules?: string };
-        environmentalRisk?: number;
-        solarPhase?: number;
-      };
-    };
-    micro?: {
-      readiness?: number;
-      sleep?: number;
-      stress?: number;
-      resilience?: number;
-    };
-    macro?: { environmentalNoise?: string };
-  } | null;
   useClassical?: boolean;
   /** 時支をどの時刻で採るか。省くと標準時（従来の答え）。 */
   zodiacTimeBasis?: ZodiacTimeBasis;
@@ -74,7 +50,6 @@ export function SolarTimeTableComponent({
   honmeiStar,
   envData,
   personalVoidZodiac,
-  nbaData,
   useClassical,
   zodiacTimeBasis = "standard",
 }: SolarTimeTableProps) {
@@ -196,38 +171,6 @@ export function SolarTimeTableComponent({
       envData?.raw?.moonLon?.toFixed(2) || "N/A",
       "Solar Lon",
       envData?.raw?.sunLon?.toFixed(2) || "N/A",
-      "---",
-      "---",
-      "NBA Suggested Action",
-      nbaData?.nba?.actionResult?.suggestedAction || "N/A",
-      "NBA Confidence",
-      nbaData?.nba?.actionResult?.confidence?.toFixed(4) || "N/A",
-      "DS Ephemeris Source",
-      nbaData?.nba?.stateVector?.ephemerisData?.source || "N/A",
-      "DS Ephemeris Detail",
-      nbaData?.nba?.stateVector?.ephemerisData?.planetaryPositions || "N/A",
-      "DS Astrology Source",
-      nbaData?.nba?.stateVector?.astrologyData?.source || "N/A",
-      "DS Astrology Detail",
-      nbaData?.nba?.stateVector?.astrologyData?.transits || "N/A",
-      "DS RAG Source",
-      nbaData?.nba?.stateVector?.ragContext?.source || "N/A",
-      "DS RAG Detail",
-      nbaData?.nba?.stateVector?.ragContext?.classicalRules || "N/A",
-      "DS Oura Readiness",
-      nbaData?.micro?.readiness?.toString() || "N/A",
-      "DS Oura Sleep",
-      nbaData?.micro?.sleep?.toString() || "N/A",
-      "DS Oura Stress",
-      nbaData?.micro?.stress?.toString() || "N/A",
-      "DS Oura Resilience",
-      nbaData?.micro?.resilience?.toString() || "N/A",
-      "DS Tavily Noise",
-      nbaData?.macro?.environmentalNoise || "N/A",
-      "NBA Env Risk",
-      nbaData?.nba?.stateVector?.environmentalRisk?.toString() || "N/A",
-      "NBA Solar Phase",
-      nbaData?.nba?.stateVector?.solarPhase?.toString() || "N/A",
       "---",
       "---",
       "STS Method",
