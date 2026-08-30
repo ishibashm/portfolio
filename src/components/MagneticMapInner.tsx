@@ -14,6 +14,7 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
+import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -604,6 +605,9 @@ export default function MagneticMapInner({
       >
         <SyncMapCenter lat={lat} lon={lon} />
         <InvalidateMapSize />
+        {/* 現在地。表示だけで、方位の判定には入らない（判定は出発地から）。
+            1 行で挿せるよう、ボタンごと部品にしてある。 */}
+        <CurrentLocationControl corner="bottomright" />
         <ZoomListener onChangeZoom={setZoom} />
         <ClickEvents
           onMapClick={(lat, lng) => {

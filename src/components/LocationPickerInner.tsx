@@ -11,6 +11,7 @@ import {
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
+import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 
 // Fix typical Leaflet icon issue
 applyLeafletDefaultIcon();
@@ -118,6 +119,10 @@ export default function LocationPickerInner({
         />
         <SyncMapCenter markerPos={markerPos} />
         <MapEvents onSelect={handleSelect} />
+        {/* 現在地。**自動では座標を入れない。**入れてしまうと、測位の
+            たびに利用者が選んだ地点が上書きされる。今どこに居るかを
+            見て、そこを地図で指してもらう。 */}
+        <CurrentLocationControl corner="bottomright" />
         {markerPos && <Marker position={markerPos} />}
       </MapContainer>
       <div className="absolute top-2 left-2 z-[1000] pointer-events-none p-1 bg-white/70 border border-stone-200 text-[9px] font-mono text-emerald-600 backdrop-blur-sm">
