@@ -9,6 +9,11 @@ import * as dotenv from "dotenv";
 import { TARGET_PREFECTURE_SLUGS } from "../src/lib/scrapeTargets";
 import { errorCode, toLogMessage } from "../src/lib/errorMessage";
 import {
+  buildRentalUpsert,
+  dedupeByUrl,
+  type RentalUpsertRow,
+} from "../src/lib/rentalUpsert";
+import {
   cityListLooksPartial,
   readKnownCityCount,
   rememberCityCount,
@@ -173,15 +178,58 @@ function isConnectionLimitError(err: unknown): boolean {
   );
 }
 
+/**
+ * 1 文にまとめる件数。
+ *
+ * 1 ページ 50 件を 2 文で書く。もっと大きくしてもよいが、
+ * placeholder が増えるほど 1 文の失敗で巻き戻る量も増える。
+ */
+const UPSERT_CHUNK = 25;
+
 async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
-  let savedCount = 0;
+  /*
+    以前は 1 件ずつ upsert して、さらに 1 件ごとに 50ms 眠っていた。
+    遠隔の Postgres への往復 50 回 + 2.5 秒の待機がページごとに乗り、
+    1 ページに 20〜35 秒かかっていた。50 分の予算がそれで尽きて、
+    岡山県は岡山市から一歩も出られていなかった（2026-08-30 の実測）。
+
+    **取得の間隔も回数も変えずに、保存だけをまとめる。**相手サイトへの
+    要求は 1 回も増えない。
+  */
+  const rows: RentalUpsertRow[] = [];
   for (const prop of properties) {
     if (!prop.url) continue;
-
     // Nifty URLs might be relative, ensure absolute
     const absoluteUrl = prop.url.startsWith("http")
       ? prop.url
       : `https://myhome.nifty.com${prop.url}`;
+    // update は last_seen_at と rent しか触っていなかったため、初回取得時の
+    // 築年数・面積・間取りが未来永劫そのまま残っていた（年が変わっても築年数が増えない）。
+    // 再取得したなら全項目を今の値に合わせる。
+    rows.push({
+      url: absoluteUrl,
+      property_name: prop.title || "Unknown",
+      address: prop.address || "",
+      rent: parseRent(prop.rent),
+      management_fee: parseManagementFee(prop.manageCost),
+      layout: prop.layout || "",
+      size_sqm: parseSize(prop.floorArea),
+      building_age: parseAge(prop.buildAge),
+      minutes_to_station: parseWalkMinutes(prop.access),
+      floor: prop.floor || "",
+      is_new_build: prop.buildAge === "新築",
+      expire_date: parseExpireDate(prop.expireDate),
+      source_scraper: "nifty_playwright",
+    });
+  }
+
+  const unique = dedupeByUrl(rows);
+  let savedCount = 0;
+
+  for (let i = 0; i < unique.length; i += UPSERT_CHUNK) {
+    const chunk = unique.slice(i, i + UPSERT_CHUNK);
+    const statement = buildRentalUpsert(chunk, new Date());
+    if (!statement) continue;
 
     let retries = 3;
     let success = false;
@@ -189,50 +237,22 @@ async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
 
     while (!success && retries > 0) {
       try {
-        // update は last_seen_at と rent しか触っていなかったため、初回取得時の
-        // 築年数・面積・間取りが未来永劫そのまま残っていた（年が変わっても築年数が増えない）。
-        // 再取得したなら全項目を今の値に合わせる。
-        const attributes = {
-          property_name: prop.title || "Unknown",
-          address: prop.address || "",
-          rent: parseRent(prop.rent),
-          management_fee: parseManagementFee(prop.manageCost),
-          layout: prop.layout || "",
-          size_sqm: parseSize(prop.floorArea),
-          building_age: parseAge(prop.buildAge),
-          minutes_to_station: parseWalkMinutes(prop.access),
-          floor: prop.floor || "",
-          is_new_build: prop.buildAge === "新築",
-          expire_date: parseExpireDate(prop.expireDate),
-        };
-
-        await prisma.rental_properties.upsert({
-          where: { url: absoluteUrl },
-          update: {
-            ...attributes,
-            last_seen_at: new Date(),
-          },
-          create: {
-            ...attributes,
-            url: absoluteUrl,
-            source_scraper: "nifty_playwright",
-            first_seen_at: new Date(),
-            last_seen_at: new Date(),
-          },
-        });
-        savedCount++;
+        await prisma.$executeRawUnsafe(statement.sql, ...statement.params);
+        savedCount += chunk.length;
         success = true;
       } catch (e) {
         lastError = e;
         if (isConnectionLimitError(e)) {
           console.warn(
-            `⏳ Connection limit reached for ${absoluteUrl}. Retrying in 3s... (${retries} attempts left)`,
+            `⏳ Connection limit reached. Retrying ${chunk.length} rows in 3s... (${retries} attempts left)`,
           );
           await new Promise((res) => setTimeout(res, 3000));
           retries--;
         } else {
-          // メッセージが空の Error のときは、これまで通り値そのものを出す。
-          console.error(`Failed to save ${absoluteUrl}:`, toLogMessage(e) || e);
+          console.error(
+            `Failed to save ${chunk.length} rows:`,
+            toLogMessage(e) || e,
+          );
           break;
         }
       }
@@ -240,12 +260,9 @@ async function saveToDatabase(prisma: PrismaClient, properties: NiftyBukken[]) {
 
     if (!success && lastError && isConnectionLimitError(lastError)) {
       console.error(
-        `❌ Failed to save ${absoluteUrl} after all retries due to connection limits.`,
+        `❌ Failed to save ${chunk.length} rows after all retries due to connection limits.`,
       );
     }
-
-    // Add a slight delay to yield the database connection back to the pool
-    await new Promise((res) => setTimeout(res, 50));
   }
   console.log(`Upserted ${savedCount} records to database.`);
 }
