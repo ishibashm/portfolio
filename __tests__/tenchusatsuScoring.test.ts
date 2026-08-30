@@ -22,6 +22,7 @@ function voidDay(
     dateStr: "2026-06-15",
     activeVectors: {},
     isDoyouHazard: false,
+    doyouSatsuDirection: undefined,
     lunarPhaseScore: 0,
     tendoDir: undefined,
     rokuyo: "大安",

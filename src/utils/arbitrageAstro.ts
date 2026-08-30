@@ -130,6 +130,12 @@ export interface DailyAstroState {
   dateStr: string;
   activeVectors: Partial<Record<Direction, string>>;
   isDoyouHazard: boolean;
+  /**
+   * 土用殺の方位。最終判定の表示のときだけ入る（土用殺は単盤に出ない）。
+   * 語を「土用殺」に差し替えるためだけに使い、判定には使わない
+   * （backlog 12 節）。
+   */
+  doyouSatsuDirection: Direction | undefined;
   lunarPhaseScore: number;
   tendoDir: Direction | undefined;
   rokuyo: string;
@@ -207,6 +213,10 @@ export function buildDailyAstroStates(
     /* 一度しか入れないので const。宣言をここまで下ろした。 */
     const tendoDir_d = vectorData.tendoDirection;
     isDoyouHazard_d = vectorData.doyouState?.isDoyouHazard || false;
+    const doyouSatsuDirection_d =
+      activeVectors_d === vectorData.finalVectors
+        ? vectorData.doyouSatsuDirection
+        : undefined;
 
     let lunarPhaseScore_d = 0;
     if (p.lunarPhaseModifier) {
@@ -231,6 +241,7 @@ export function buildDailyAstroStates(
       dateStr,
       activeVectors: activeVectors_d,
       isDoyouHazard: isDoyouHazard_d,
+      doyouSatsuDirection: doyouSatsuDirection_d,
       lunarPhaseScore: lunarPhaseScore_d,
       tendoDir: tendoDir_d,
       rokuyo: getRokuyo(d),
@@ -442,6 +453,12 @@ export function scoreDateForProperty(
       ],
     },
     isUltraLucky,
+    /**
+     * 判定方位が土用殺に当たっているか。語を「土用殺」に差し替える
+     * ためだけの旗で、status・score には影響しない。
+     */
+    isDoyouSatsu:
+      ctx.direction !== null && state.doyouSatsuDirection === ctx.direction,
     weekday: state.weekday,
     holiday: state.holiday,
     scoreDetails: {

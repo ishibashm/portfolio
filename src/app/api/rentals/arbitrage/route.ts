@@ -863,6 +863,10 @@ export async function GET(request: Request) {
       // 破は盤で呼び名が変わる。月盤で絞っているのに「歳破」と出していた。
       else if (astrologyStatus === "NOISE_HA")
         maxAstroFactor = haLabelForLayer(layerMode as BoardLayer);
+      // 土用殺は最終判定を NOISE_GOU で上書きする（backlog 12 節）。
+      // 方位が土用殺に一致するときだけ、語を「土用殺」に差し替える。
+      else if (astrologyStatus === "NOISE_GOU" && targetDay.isDoyouSatsu)
+        maxAstroFactor = directionLabelName("NOISE_DOYOU");
       // 呼び名は @/lib/directionLabels に集約。ここに文字列を戻さないこと。
       // 状態は 1 つしか取らないので、順番を保ったまままとめられる。
       else if (
@@ -882,7 +886,10 @@ export async function GET(request: Request) {
       else if (targetDay.rokuyo.includes("大安")) maxAstroFactor = "大安";
       else if (targetDay.luckyDays.isIchiryumanbai)
         maxAstroFactor = "一粒万倍日";
-      else if (targetDetails.doyouPenalty < 0) maxAstroFactor = "土用殺";
+      // doyouPenalty は「その日が土用の期間か」の日付の減点で、方位を見ない。
+      // 以前ここを「土用殺」と書いていたが、土用殺は方位の凶（上の分岐）で、
+      // 期間そのものとは別物。方位が塞がっていない物件にも出るので期間の語に。
+      else if (targetDetails.doyouPenalty < 0) maxAstroFactor = "土用の期間";
       else if (
         astrologyStatus === "NOISE_GETSUMEI" ||
         astrologyStatus === "NOISE_GETSUTEKI" ||
