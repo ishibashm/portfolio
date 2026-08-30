@@ -29,12 +29,15 @@ interface MapProps {
     monthLayer: Partial<Record<string, string>>;
     dayLayer: Partial<Record<string, string>>;
     finalVectors: Record<string, string>;
+    /** 土用殺の方位。札の語を「土用殺」に差し替えるためだけに使う。 */
+    doyouSatsuDirection?: string | null;
   } | null;
   classicalLayers?: {
     yearLayer: Partial<Record<string, string>>;
     monthLayer: Partial<Record<string, string>>;
     dayLayer: Partial<Record<string, string>>;
     finalVectors: Record<string, string>;
+    doyouSatsuDirection?: string | null;
   } | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
@@ -296,6 +299,7 @@ export function TacticalMagneticMapComponent({
                 : classicalLayers?.finalVectors
             }
             layers={isPhysical ? physicalLayers : classicalLayers}
+            doyouSatsuDirection={activeLayers?.doyouSatsuDirection ?? null}
             honmeiStar={honmeiStar}
             kpIndex={kpIndex}
             ansLoad={ansLoad}

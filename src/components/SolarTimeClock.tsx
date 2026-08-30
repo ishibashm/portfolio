@@ -245,6 +245,8 @@ const filterLayerData = (
        事実に合わせたときにここが受け取れなくなる。 */
     finalVectors: Record<EightDirection, string>;
     tendoDirection?: Direction;
+    /** 土用殺の方位。両方の return が spread で素通しする（語の差し替え用）。 */
+    doyouSatsuDirection?: EightDirection;
     doyouState?: DoyouState;
   },
   personalStar: StarFrequency,

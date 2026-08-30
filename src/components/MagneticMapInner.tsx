@@ -46,6 +46,12 @@ interface MapInnerProps {
     dayLayer: Partial<Record<string, string>>;
     finalVectors: Record<string, string>;
   } | null;
+  /**
+   * 土用殺の方位。土用殺は最終判定だけを NOISE_GOU で上書きするので、
+   * 扇形の札とツールチップの語を「土用殺」に差し替えるために照合する
+   * （backlog 12 節）。色・分岐・段階は NOISE_GOU のまま変えない。
+   */
+  doyouSatsuDirection?: string | null;
   honmeiStar?: { physical: number; classical: number } | null;
   kpIndex?: number | null;
   ansLoad?: number;
@@ -149,6 +155,7 @@ export default function MagneticMapInner({
   // （CLAUDE.md 3 節。BioMagneticDashboard が見本）。
   vectors,
   layers,
+  doyouSatsuDirection = null,
   honmeiStar,
   kpIndex,
   // ansLoad も同じく受け口だけ残す。
@@ -358,13 +365,23 @@ export default function MagneticMapInner({
       else labelDistance = 300;
       const labelPos = getDestination(lat, lon, baseBearing, labelDistance);
 
+      // 土用殺は最終判定だけを NOISE_GOU で上書きする（backlog 12 節）。
+      // 語だけ「土用殺」に差し替える。色・分岐・段階は NOISE_GOU のまま。
+      // 単盤の表示（year/month/day）では照合しない。土用殺は単盤に出ないので、
+      // 単盤の本物の五黄殺を「土用殺」と誤表示してしまう。
+      const isDoyouSatsu =
+        displayStatus === "NOISE_GOU" &&
+        d.dir === doyouSatsuDirection &&
+        activeLayerMode === "final";
+      const labelStatus = isDoyouSatsu ? "NOISE_DOYOU" : displayStatus;
+
       // 扇形の札も @/lib/directionLabels に集約。ここに表を戻さないこと。
       //
       // 手元の表があったので NOISE_VOID だけ「ボイド」というカタカナで、
       // 他の画面（「天中殺方位」）とも同じファイルのツールチップとも
       // 系統が違っていた。集約先の badge は長さのために短いだけで、
       // 呼び名は name と揃えてある。
-      const label = directionLabelBadge(displayStatus);
+      const label = directionLabelBadge(labelStatus);
 
       // Tooltip breakdown
       const y = layers?.yearLayer[d.dir] || "SAFE";
@@ -375,6 +392,8 @@ export default function MagneticMapInner({
       const formatLayer = directionLabelShort;
 
       const getActionSuggest = (status: string) => {
+        if (status === "NOISE_DOYOU")
+          return "【退避】土用殺: 土用の期間はこの方位を避けるとされます（間日を除く）";
         if (status.startsWith("NOISE_GOU"))
           return "【退避】五黄殺: 伝統的に万事に凶とされる方位です";
         if (status.startsWith("NOISE_ANKEN"))
@@ -468,7 +487,7 @@ export default function MagneticMapInner({
                   </div>
                   <div className="mt-1 pt-1 border-t border-stone-200 text-[9px] flex flex-col gap-1">
                     <div className="flex gap-2">
-                      <span className="text-stone-500">STATUS: </span>
+                      <span className="text-stone-500">判定: </span>
                       <span
                         className={
                           color.includes("10b981") || color.includes("34d399")
@@ -485,11 +504,15 @@ export default function MagneticMapInner({
                                   : "text-blue-500"
                         }
                       >
-                        {d.status}
+                        {directionLabelShort(
+                          isDoyouSatsu ? "NOISE_DOYOU" : d.status,
+                        )}
                       </span>
                     </div>
                     <div className="text-stone-600 font-bold bg-white/80 p-1 border-l-2 border-zinc-600 mt-1">
-                      {getActionSuggest(d.status)}
+                      {getActionSuggest(
+                        isDoyouSatsu ? "NOISE_DOYOU" : d.status,
+                      )}
                     </div>
                   </div>
                 </div>
@@ -518,6 +541,8 @@ export default function MagneticMapInner({
     lat,
     lon,
     layers,
+    // 語の差し替えに読んでいるので、土用入り/明けで描き直すために要る。
+    doyouSatsuDirection,
     hudLayers,
     activeLayerMode,
     zoom,
