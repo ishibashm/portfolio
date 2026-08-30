@@ -56,6 +56,12 @@ export type Layers = {
   finalVectors: Record<EightDirection, string>;
   /** 天道の方位。無い日は undefined。 */
   tendoDirection?: Direction | null;
+  /**
+   * 土用殺の方位（土用の期間外は undefined）。土用殺は最終判定だけを
+   * NOISE_GOU で上書きするので、語を「土用殺」に差し替えるために照合する
+   * （backlog 12 節）。状態の分岐には使わない。
+   */
+  doyouSatsuDirection?: Direction | null;
 };
 
 const getVectorBreakdown = (
