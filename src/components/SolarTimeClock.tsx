@@ -2777,9 +2777,9 @@ export const SolarTimeClock = () => {
           isDayVoid,
           isGlobalVoid,
         },
-        prompt_suggestion: `あなたは超科学・生体磁気学・東洋占星術（九星気学、四柱推命）を融合したメタフィジカル意思決定のアドバイザーです。
-以下のJSONデータをもとに、目標日（${evalDate.toLocaleDateString()}）の判定、および現在時刻の生体磁気状態や将来のバイオリズムを総合的に解釈し、行動方針のアドバイスを日本語で論理的に解説してください。
-特に、生体センサーデータ（HRV、GSR、ANS Overload）と環境磁場、九星の衝突配置、マルチインテントマトリクス（DEFAULT, MIGRATION, BUSINESS, RESTの差）、天中殺やドラゴニックノードの干渉などを関連付けて説明し、実用的なアドバイスを提供してください。`,
+        prompt_suggestion: `あなたは九星気学・四柱推命に詳しいアドバイザーです。
+以下のJSONデータをもとに、目標日（${evalDate.toLocaleDateString()}）の判定を日本語で分かりやすく解説してください。
+九星の配置、目的（DEFAULT, MIGRATION, BUSINESS, REST）による判定の違い、天中殺や月交点の扱いを関連付けて説明してください。判定は伝統的な暦の解釈であり、健康や結果を保証するものではない、という前提で書いてください。`,
       };
 
       const jsonStr = JSON.stringify(unifiedPayload, null, 2);
@@ -3739,29 +3739,26 @@ export const SolarTimeClock = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    STEP 1: ゼロポイント（現在地）と波長の特定
+                    STEP 1: 出発地とあなたの星を決める
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    「Profile」タブにて、あなたの生年月日と現在の拠点（緯度・経度）を入力します。生年月日からはあなたのベースとなる「本命星（固有周波数帯）」と、行動がエラーを起こしやすい「天中殺（VOID
-                    TIME）」が算出されます。現在地はすべての方位を割り出すための「原点（ゼロポイント）」となります。
+                    プロフィールのタブで、生年月日と現在の拠点（緯度・経度）を入力します。生年月日からあなたの「本命星」と、伝統的に大きな決断を避けるとされる「天中殺」の期間が決まります。現在地は、すべての方位を測る原点になります。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    STEP 2: 干渉ノイズの排除（長・中・短期の合成）
+                    STEP 2: 凶方位を除外する（年・月・日の重ね合わせ）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    「Destination」タブにおいて、現在地から見た全方位の空間ベクトルを評価します。このダッシュボードでは、東洋暦（年盤・月盤・日盤）の3つのレイヤーを同時に重ね合わせ（Phase
-                    Interference
-                    Diagnosis）、五黄殺（致命的な環境ノイズ）や本命殺（あなたとの波長不一致）が1つでも含まれる方向をレッドゾーン（進入非推奨）として除外します。
+                    目的地のタブで、現在地から見た八方位を評価します。年盤・月盤・日盤の 3 つを同時に重ね、五黄殺や本命殺などの凶方位が 1 つでも含まれる方向を赤（勧めない）として除外します。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
                   <strong className="text-stone-700 bg-white px-2 py-1 border border-stone-200 text-[10px] sm:text-[11px] font-mono">
-                    STEP 3: 相生（共鳴）する目的地・方位の決定
+                    STEP 3: 相性の良い方位から目的地を決める
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    ノイズの無いブルーゾーン（SAFE）の中から、さらに引越し先の空間周波数（九星）とあなたの本命星が「木火土金水」の陰陽五行理論で「相生（エネルギーを生み出す）」または「相比（同調する）」関係にある方向（OPTIMAL）を導き出し、目的地を確定させます。
+                    凶の無い方位（青）の中から、さらに引越し先の九星とあなたの本命星が陰陽五行（木火土金水）で「相生」または「比和」の関係にある方位（緑）を探し、目的地を決めます。
                   </p>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -3769,7 +3766,7 @@ export const SolarTimeClock = () => {
                     STEP 4: 最終出発日時の確定（真太陽時と吉門）
                   </strong>
                   <p className="text-[10px] sm:text-xs">
-                    「Timing」タブでタイムラインを展開します。目的地が決まったら、今度は「その方位がOPTIMALになる日」を探します。そしてその日のリストの中から、「天中殺（VOID）」の時間帯を避け、かつ「八門（生・休・開）」のフィルターがオンになっている2時間を「家を出発する・契約印を押す」ためのゴールデンタイムとして確定します。
+                    時期のタブで日ごとの一覧を開きます。目的地が決まったら「その方位が吉になる日」を探し、その日の中から天中殺の時間帯を避け、八門（生・休・開）に当たる 2 時間を「家を出る・契約印を押す」時間として選びます。
                   </p>
                 </div>
               </div>
@@ -3778,8 +3775,7 @@ export const SolarTimeClock = () => {
                 <strong className="text-emerald-600 font-bold mb-1 block">
                   なぜこの統合計算が必要なのか？
                 </strong>
-                引越しなどの長距離・長期間の空間移動は、新しい土地の地球磁場とあなたの生体磁気が順応（シンクロ）するまでに膨大な自律神経のエネルギー（ANS
-                Load）を消費します。空間（ノイズのない方位）と時間（天中殺ではない時間）を天文学的に一致させることで、この順応コストを最小限に抑え、新しい環境でのパフォーマンスを最大化することが本システムの目的です。
+                九星気学は伝統的に、引越しを「方位」と「時期」の両方で選びます。方位だけ良くても日が悪い、日だけ良くても方位が悪い、という片落ちを避けるため、方位（凶の無い向き）と時間（天中殺でない日・時間帯）を同じ画面で突き合わせられるようにしたのがこの道具です。効果を保証するものではなく、伝統的な選び方を計算で再現しています。
               </div>
             </div>
           </div>
