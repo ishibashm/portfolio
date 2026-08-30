@@ -376,25 +376,25 @@ export default function MagneticMapInner({
 
       const getActionSuggest = (status: string) => {
         if (status.startsWith("NOISE_GOU"))
-          return "【退避】五黄殺: 自滅や深刻なトラブルを招く致命的な環境エラー域です";
+          return "【退避】五黄殺: 伝統的に万事に凶とされる方位です";
         if (status.startsWith("NOISE_ANKEN"))
-          return "【退避】暗剣殺: 予期せぬ他動的なトラブルを被る致命的な環境エラー域です";
+          return "【退避】暗剣殺: 不意のトラブルを招くとされる方位です";
         if (status.startsWith("NOISE_HA"))
-          return "【退避】破れ: 計画が破綻しやすい環境エラー域です";
+          return "【退避】破: 破れ・破談を招くとされる方位です";
         if (
           status.startsWith("NOISE_HONMEI") ||
           status.startsWith("NOISE_TEKI")
         )
-          return "【警戒】健康被害や目的阻害など、主観的エラーが頻発する帯域です";
+          return "【警戒】本命殺・的殺: 健康面や目的に凶とされる方位です";
         if (status.includes("VOID"))
-          return "【警告】天中殺: 基盤が崩れやすい空間。重大な決断は保留してください";
+          return "【警告】天中殺: 物事が定まらないとされる方位。大きな決断は控えるのが良いとされます";
         if (status.includes("NODE"))
-          return "【警告】交点軸: 宿命的な磁気ストレスがあります。重大な決断は保留してください";
+          return "【警告】羅睺・計都軸: インド占星術で凶とされる軸です";
         if (status === "OPTIMAL")
-          return "【推奨】大吉方位。環境と生体波長が完全に一致した最適化ゾーンです";
+          return "【推奨】大吉方位。伝統的に運気を後押しするとされる方位です";
         if (status === "OPTIMAL_REGULAR")
-          return "【推奨】吉方位。運気を後押しする良好なゾーンです";
-        return "【中立】干渉のない平穏な環境です";
+          return "【推奨】吉方位。伝統的に良いとされる方位です";
+        return "【中立】特に吉凶のない平穏な方位です";
       };
 
       const isHighlighted = highlightDirection === d.dir;
