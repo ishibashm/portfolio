@@ -88,7 +88,21 @@ jobs:
         env:
           PLAN_PREFECTURES: ${{ inputs.prefectures }}
           PLAN_BUDGET_MIN: ${{ inputs.scraper_budget_min }}
-        run: npx -y tsx scripts/plan_scrape_matrix.ts
+        # 定時起動では「cron が指した日」で計画する。GitHub の混雑で run の
+        # 起動が数時間遅れることがあり（実測: 8/28 19:17 の cron が 8/29
+        # 02:09 起動）、起動時刻の日付で計画すると UTC の日付をまたいだ
+        # 瞬間に別の日の予定になる。3 日周期の県はその日の巡回機会を丸ごと
+        # 失う（長崎が 16 日間触られなかった一因）。cron は 19:17 UTC
+        # なので、now - 12 時間 の日付は、定刻なら同日 07:17、遅延が
+        # 16 時間 43 分までなら同日のまま。手動実行は今までどおり現在時刻
+        # （その場で回したいのだから、ずらす理由が無い）。
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            PLAN_DATE=$(date -u -d '12 hours ago' +%F)
+            export PLAN_DATE
+            echo "定時起動: 計画日付を $PLAN_DATE に固定する（cron 19:17 UTC の遅延対策）"
+          fi
+          npx -y tsx scripts/plan_scrape_matrix.ts
 
   scrape:
     needs: plan
