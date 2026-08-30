@@ -11,10 +11,11 @@
  * 置いて両方から読む。__tests__/nonCoreRoutes.test.ts が一致を見張る。
  */
 // offTheme はテーマ外だが道具として残すルート（ログイン不要）。sitemap からは外す。
-const {
-  routes: NON_CORE,
-  offTheme: OFF_THEME,
-} = require("./src/lib/nonCoreRoutes.json");
+// next-sitemap がこの設定を CommonJS として読む（上の説明）ので、ここだけは
+// require 以外に書きようがない。import に書き換えると sitemap 生成が落ちる。
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const nonCoreRoutes = require("./src/lib/nonCoreRoutes.json");
+const { routes: NON_CORE, offTheme: OFF_THEME } = nonCoreRoutes;
 
 // ルートハンドラ（robots.txt / ads.txt / llms.txt など）まで
 // サイトマップに載ってしまうため除外する。ログイン画面も索引する意味がない。
