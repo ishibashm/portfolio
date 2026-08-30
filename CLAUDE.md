@@ -227,7 +227,8 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 122**（クラウド実測。上の注意を読むこと）。
+`npm run lint` の警告を減らしている。**645 → 33**（クラウド実測 2026-08-30。
+上の注意を読むこと）。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
 
@@ -247,41 +248,37 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 - テストを消す・skip する
 - 減らせないファイルを無理に触る（飛ばして報告する）
 
-### 現状の内訳（`npm run lint` 実行時点）
+### 現状の内訳（2026-08-30 実測。総数 33）
 
 ```
-59  @typescript-eslint/no-explicit-any
-30  @typescript-eslint/no-unused-vars
-16  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
- 8  react-hooks/set-state-in-effect    ← 同上で対象外
- 4  @typescript-eslint/no-require-imports
- 4  react-hooks/purity ほか（同上で対象外）
- 1  @typescript-eslint/ban-ts-comment
+11  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
+ 7  react-hooks/set-state-in-effect    ← 同上で対象外
+ 7  @typescript-eslint/no-unused-vars  ← うち 4 件は「消してはいけない未使用」（下の表）
+ 5  @typescript-eslint/no-explicit-any ← 全部「応答側のモデル化が先」の類（下記）
+ 2  react-hooks/purity                 ← 対象外
+ 1  @typescript-eslint/no-require-imports
 ```
 
-**対象外が 28 件ある**ので、実際に手を付けられるのは 94 件ぶん。
+**手を付けられるものはほぼ残っていない。**残る any 5 件は
+`userSettings.Settings`（設定の袋。型を切ると全画面に波及）、
+`omniStore` の widget data と zustand migrate、`api/rentals/arbitrage` の
+`$queryRawUnsafe` 行型、`TimesFMChart`。いずれも応答・保存形のモデル化が
+先で、無理に触ると `unknown`+キャストで逃げる形になる。
 
 `catch (e: any)` は **0 件**（#215 で最後の 4 件が片付いた）。
 
-ファイル別の上位：
+ファイル別の上位（NBADashboard・SystemTelemetryLog・
+TacticalActionCommand は #689・#715・#716 で削除され表から消えた）：
 
 | 件数 | ファイル |
 |---|---|
-| 6 | `scripts/gas_newsletter.js`（Apps Script の入口 3 つは消せない。下記） |
-| 5 | `src/app/relocation/simulator/page.tsx` |
-| 4 | `src/components/nba/NBADashboard.tsx` |
-| 3 | `src/utils/localAgentEngine.ts` |
-| 3 | `src/types/lunar-javascript.d.ts` |
-| 3 | `src/components/nba/TenChiJinEvaluation.tsx` |
-| 3 | `src/components/SystemTelemetryLog.tsx` |
-| 3 | `src/app/relocation/wealth/page.tsx` |
-| 3 | `src/app/login/page.tsx` |
-| 3 | `src/app/api/relocation/export/route.ts` |
+| 5 | `src/app/relocation/simulator/page.tsx`（hooks 対象外 4 + 未使用 1） |
+| 3 | `src/store/omniStore.ts` |
+| 3 | `scripts/gas_newsletter.js`（Apps Script の入口。消せない。下記） |
 
 **判定の中核は片付いた**（#536〜#538）。`ephemerisEngine` 12 → 2、
 `nbaEngine` 12 → 2、`baziEngine` 9 → **0**。`scripts/` の `any` も
-0 になった（#549〜#551）。`SolarTimeClock.tsx`・`arbitrageAstro.ts`・
-`auspiciousDays.ts` も表から消えている。
+0 になった（#549〜#551）。
 
 ### catch は片付いた。その過程で分かったこと
 
@@ -318,21 +315,24 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ### 次にやるとよいもの
 
-**判定の中核も `scripts/` も片付いた**（#536〜#552）。残りは 3 つに分かれる。
+**lint はほぼ底に着いた**（645 → 33。残りは対象外 20 + モデル化待ちの
+any 5 + 消してはいけない未使用）。ここから先は lint ではなく、次を進める。
 
-**1. 画面の `any`（20 件超）。**`simulator/page.tsx`・`NBADashboard`・
-`TenChiJinEvaluation`・`wealth/page.tsx` など。**API / エンジンの応答を
-抱えている**ものが中心で、型を切るには応答側のモデル化が先になる。
-#537 で `nbaEngine` 側の受け口は型にしたので、画面側から同じ型を引ける
-ようになった分は減らせる。
+**1. サイトの言葉と評価の一貫性。**評価はサイト全体で段階評価
+（S 三盤吉〜X 五大凶殺・天中殺）の 1 系統だけにした（#698 で 12 か月の
+見通し、#712 でシミュレータの Q 値を廃止）。疑似物理・健康断定の文言も
+#710〜#711・#716 で一掃した。**新しい画面・文言でこの 2 つを崩さない**
+ことが以後の決め事。効果や健康への影響は断定せず「〜とされる」で書く。
 
-**2. 残った 2 件ずつの `any`（判定の中核）。**`ephemerisEngine` と
-`nbaEngine` に 2 件ずつ。どちらも**型のほうが間違っている**ことが分かって
-いて、直すと呼び出し側に波及する。経緯と直す順序は
-`docs/improvement-backlog.md` の 8 節。
+**2. 巡回の安定（#47 と一体）。**長崎が 16 日間止まっていた件は
+#713（定時 run の計画日付を cron の日に固定）で一因を塞いだ。巡回設計
+そのもの（予算・周期）は利用者の判断が要る。
 
-**3. 対象外（28 件）。**`exhaustive-deps`・`set-state-in-effect`・`purity`・
-`immutability`。どれも再レンダリングのタイミングを変える。
+**3. モデル化待ちの `any` 5 件と、`ephemerisEngine`・`nbaEngine` の
+2 件ずつ。**経緯と直す順序は `docs/improvement-backlog.md` の 8 節。
+
+**4. 対象外（20 件）。**`exhaustive-deps`・`set-state-in-effect`・
+`purity`。どれも再レンダリングのタイミングを変える。
 
 `SolarTimeClock.tsx` は**片付いた**（39 → 0）。触るときの注意だけ残す:
 `docs/improvement-backlog.md` の 5 節を先に読むこと。**字面での一括置換で
