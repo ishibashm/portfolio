@@ -26,6 +26,48 @@ export interface NewsItem {
   link: string;
   /** ISO 8601。日付が読めなければ null（並べ替えで最後に回る）。 */
   publishedAt: string | null;
+  /**
+   * 記事の要約。description（RSS）/ summary・content（Atom）から
+   * タグを剥がして先頭だけ。**引用の範囲に収める**ため上限あり。
+   * 全文を写さないのは転載になるから。読むのはリンク先。
+   */
+  summary: string | null;
+}
+
+/** 要約の上限。引用の範囲に収める（全文を写すと転載になる）。 */
+const SUMMARY_MAX = 120;
+
+/**
+ * フィードのバイト列を文字列にする。
+ *
+ * res.text() は常に UTF-8 として読むので、Shift_JIS / EUC-JP の配信
+ * （官公庁系に残っている）が文字化けする。実際に /news で化けた。
+ *
+ * 文字コードは 2 か所から探す。HTTP の Content-Type の charset が先
+ * （転送時の宣言のほうが新しい）、無ければ XML 宣言の encoding。
+ * どちらも無ければ UTF-8。知らない名前も UTF-8 に落とす（TextDecoder が
+ * 投げて 1 フィード全部を失うより、化けて見えるほうが調べられる）。
+ */
+export function decodeFeedBytes(
+  bytes: ArrayBuffer | Uint8Array,
+  contentType?: string | null,
+): string {
+  const buf = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let charset =
+    contentType?.match(/charset=["']?([\w-]+)/i)?.[1]?.toLowerCase() ?? null;
+  if (!charset) {
+    /* XML 宣言は ASCII 互換の範囲にあるので、先頭を latin1 で覗いてよい */
+    const head = new TextDecoder("latin1").decode(buf.subarray(0, 256));
+    charset =
+      head.match(/<\?xml[^>]*encoding=["']([\w-]+)["']/i)?.[1]?.toLowerCase() ??
+      null;
+  }
+  if (!charset || charset === "utf8") charset = "utf-8";
+  try {
+    return new TextDecoder(charset).decode(buf);
+  } catch {
+    return new TextDecoder("utf-8").decode(buf);
+  }
 }
 
 function decodeEntities(s: string): string {
@@ -107,7 +149,21 @@ function readItem(block: string, kind: "rss" | "atom"): NewsItem | null {
   }
   if (!link || !/^https?:\/\//.test(link)) return null;
 
-  return { title, link, publishedAt: toIso(date) };
+  const rawSummary =
+    kind === "atom"
+      ? (tagContent(block, "summary") ?? tagContent(block, "content"))
+      : (tagContent(block, "description") ??
+        tagContent(block, "content:encoded"));
+  let summary: string | null = rawSummary ? cleanText(rawSummary) : null;
+  if (summary) {
+    /* 見出しの繰り返しだけの description は情報が無いので出さない */
+    if (summary === title) summary = null;
+    else if (summary.length > SUMMARY_MAX) {
+      summary = `${summary.slice(0, SUMMARY_MAX)}…`;
+    }
+  }
+
+  return { title, link, publishedAt: toIso(date), summary };
 }
 
 /**

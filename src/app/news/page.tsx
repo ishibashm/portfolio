@@ -62,9 +62,9 @@ export default async function Page() {
           </h1>
           <p className="mt-1 max-w-[70ch] text-xs leading-relaxed text-stone-500">
             {
-              "不動産と建築の動きを追うための入り口です。見出しは配信元の RSS から 6 時間ごとに取得し、"
+              "不動産と建築の動きを追うための入り口です。見出しと要約の冒頭は配信元の RSS から 6 時間ごとに取得し、"
             }
-            <b>リンク先（配信元）で読む</b>
+            <b>続きはリンク先（配信元）で読む</b>
             {
               "形にしています。本文の転載はしません。並びは新着順のみで、当サイトの評価や吉凶とは無関係です。"
             }
@@ -95,7 +95,7 @@ export default async function Page() {
                 <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
                   {feed.source.note}
                 </p>
-                <ul className="mt-2 space-y-1.5 border-t border-stone-100 pt-2">
+                <ul className="mt-2 space-y-2 border-t border-stone-100 pt-2">
                   {feed.items.map((item) => {
                     const date = jstDate(item.publishedAt);
                     return (
@@ -103,14 +103,23 @@ export default async function Page() {
                         <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-stone-400">
                           {date ?? ""}
                         </span>
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="leading-snug text-stone-700 hover:text-rose-600 hover:underline"
-                        >
-                          {item.title}
-                        </a>
+                        <div className="min-w-0">
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-medium leading-snug text-stone-700 hover:text-rose-600 hover:underline"
+                          >
+                            {item.title}
+                          </a>
+                          {/* 要約は配信元の description の先頭 120 字。
+                              引用の範囲に収め、続きはリンク先で読む */}
+                          {item.summary && (
+                            <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
+                              {item.summary}
+                            </p>
+                          )}
+                        </div>
                       </li>
                     );
                   })}
