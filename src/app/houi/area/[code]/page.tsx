@@ -18,6 +18,7 @@ import {
   getYearDirections,
 } from "@/lib/kigakuContent";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -66,8 +67,13 @@ export async function generateMetadata({
       吉方位からエリアを引く導線としては有用なので、リンクも中身も
       そのまま残す。索引に戻すなら、市区町村ごとではなく都道府県ごとに
       まとめて、各ページに固有の文章を書くのが先（docs 参照）。
+
+      **その「固有の文章を書いた頁」から 1 つずつ索引に戻す。**
+      areaEditorial に文章のある市区町村だけ index にする。雛形のまま
+      一括で戻すのではないので、上の「スケーリングされたコンテンツ」に
+      当たらない。表に無い市区町村は今までどおり noindex のまま。
     */
-    robots: { index: false, follow: true },
+    robots: { index: Boolean(AREA_EDITORIAL[area.code]), follow: true },
     openGraph: {
       images: ["/ogp.png"], title, description, type: "article" },
   };
@@ -83,6 +89,8 @@ export default async function Page({
 
   const groups = neighboursByDirection(area);
   const year = contentYears()[0];
+  /* 固有の文章がある市区町村だけ。無ければ雛形のまま（noindex） */
+  const editorial = AREA_EDITORIAL[area.code];
 
   // その年に各本命星がどの方位を吉とするか。方位別の一覧と突き合わせられるようにする。
   const goodByStar = STARS.map((s) => ({
@@ -139,6 +147,21 @@ export default async function Page({
         <p className="mt-5 text-sm leading-relaxed text-slate-700">
           吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。{area.full}を出発地として、八方位それぞれにある市区町村と家賃相場をまとめました。
         </p>
+
+        {/* 固有の文章。書いた市区町村だけが索引に載る（AREA_EDITORIAL）。
+            数字は下の札とデータ側が持ち、ここは地理の構造だけを書く */}
+        {editorial && (
+          <div className="mt-5 space-y-3">
+            {editorial.intro.map((paragraph, i) => (
+              <p
+                key={i}
+                className="max-w-[70ch] text-sm leading-relaxed text-slate-700"
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        )}
 
         <div className="mt-5 rounded-2xl border border-slate-300 bg-white/90 p-4">
           <p className="text-xs text-slate-700 leading-relaxed">
