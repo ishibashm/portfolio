@@ -12,6 +12,7 @@ import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
+import { useMapTheme } from "@/lib/useMapTheme";
 
 // Fix typical Leaflet icon issue
 applyLeafletDefaultIcon();
@@ -54,20 +55,12 @@ export default function LocationPickerInner({
   const [markerPos, setMarkerPos] = useState<[number, number] | null>(
     initialLat !== 0 || initialLon !== 0 ? [initialLat, initialLon] : null,
   );
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
+  const { mapTheme, toggleMapTheme } = useMapTheme();
 
+  /* 明暗の読み出しと購読は useMapTheme に寄せた（5 か所に同じ 15 行が
+     写されていた）。ここに残るのは「描画に入ったか」だけ。 */
   useEffect(() => {
     setIsMounted(true);
-    const saved = localStorage.getItem("map_theme") as "dark" | "light";
-    if (saved) setMapTheme(saved);
-
-    const handleThemeChange = () => {
-      const current = localStorage.getItem("map_theme") as "dark" | "light";
-      if (current) setMapTheme(current);
-    };
-    window.addEventListener("mapThemeChanged", handleThemeChange);
-    return () =>
-      window.removeEventListener("mapThemeChanged", handleThemeChange);
   }, []);
 
   const handleSelect = (lat: number, lng: number) => {
@@ -131,10 +124,7 @@ export default function LocationPickerInner({
       <div className="absolute top-2 right-2 z-[1000] pointer-events-auto">
         <button
           onClick={() => {
-            const nextTheme = mapTheme === "dark" ? "light" : "dark";
-            setMapTheme(nextTheme);
-            localStorage.setItem("map_theme", nextTheme);
-            window.dispatchEvent(new Event("mapThemeChanged"));
+            toggleMapTheme();
           }}
           className="flex items-center gap-1 px-1.5 py-1 rounded bg-white/70 text-stone-600 border border-stone-200 hover:bg-white transition-colors shadow-lg text-[9px] font-mono font-bold cursor-pointer"
         >
