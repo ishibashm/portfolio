@@ -11,7 +11,7 @@
  *   name      「五黄殺」        呼び名だけ。重さは別の列や色で出す
  *   badge     「五黄」          地図の扇形に重ねる 1〜3 文字
  *   short     「五黄殺 (大凶)」  文中に埋め込む
- *   detailed  「五黄殺 (大凶 - 自己破壊のエネルギー)」  単独で説明する
+ *   detailed  「五黄殺 (大凶 - 万事に凶とされる)」  単独で説明する
  *
  * ステータスの畳み方は @/utils/directionStatus、その日本語表記はここ、と役割を分ける。
  * 段階（S〜X）の見せ方は @/utils/tierDisplay。
@@ -49,55 +49,55 @@ const DIRECTION_LABELS: Record<string, DirectionLabel> = {
     name: "五黄殺",
     badge: "五黄",
     short: "五黄殺 (大凶)",
-    detailed: "五黄殺 (大凶 - 自己破壊のエネルギー)",
+    detailed: "五黄殺 (大凶 - 万事に凶とされる)",
   },
   NOISE_ANKEN: {
     name: "暗剣殺",
     badge: "暗剣",
     short: "暗剣殺 (大凶)",
-    detailed: "暗剣殺 (大凶 - 他動的なトラブル)",
+    detailed: "暗剣殺 (大凶 - 不意のトラブルを招くとされる)",
   },
   NOISE_HA: {
     name: "歳破/月破/日破",
     badge: "破",
     short: "歳破/月破/日破 (大凶)",
-    detailed: "歳破/月破/日破 (大凶 - 破れのエネルギー)",
+    detailed: "歳破/月破/日破 (大凶 - 破れ・破談を招くとされる)",
   },
   NOISE_VOID: {
     name: "天中殺方位",
     badge: "天中殺",
     short: "天中殺方位 (大凶)",
-    detailed: "天中殺方位 (大凶 - 土台の崩壊)",
+    detailed: "天中殺方位 (大凶 - 物事が定まらないとされる)",
   },
   NOISE_HONMEI: {
     name: "本命殺",
     badge: "本命",
     short: "本命殺 (凶)",
-    detailed: "本命殺 (凶 - 健康運の低下)",
+    detailed: "本命殺 (凶 - 健康面に凶とされる)",
   },
   NOISE_TEKI: {
     name: "本命的殺",
     badge: "的殺",
     short: "本命的殺 (凶)",
-    detailed: "本命的殺 (凶 - 目的の阻害)",
+    detailed: "本命的殺 (凶 - 目的が阻まれるとされる)",
   },
   NOISE_GETSUMEI: {
     name: "月命殺",
     badge: "月命",
     short: "月命殺 (凶)",
-    detailed: "月命殺 (凶 - 精神の疲弊)",
+    detailed: "月命殺 (凶 - 精神面に凶とされる)",
   },
   NOISE_GETSUTEKI: {
     name: "月命的殺",
     badge: "月命的",
     short: "月命的殺 (凶)",
-    detailed: "月命的殺 (凶 - 人間関係の停滞)",
+    detailed: "月命的殺 (凶 - 人間関係に凶とされる)",
   },
   NOISE_NODE: {
     name: "羅睺・計都軸",
     badge: "交点",
     short: "羅睺・計都軸 (凶)",
-    detailed: "羅睺・計都軸 (凶 - 宿命的なストレス)",
+    detailed: "羅睺・計都軸 (凶 - インド占星術で凶とされる軸)",
   },
   WARNING: {
     name: "注意",
@@ -168,7 +168,7 @@ export function directionLabelShort(status: string): string {
   return lookup(status).short;
 }
 
-/** 「五黄殺 (大凶 - 自己破壊のエネルギー)」。判定の説明として単独で出すとき用。 */
+/** 「五黄殺 (大凶 - 万事に凶とされる)」。判定の説明として単独で出すとき用。 */
 export function directionLabelDetailed(status: string): string {
   return lookup(status).detailed;
 }
