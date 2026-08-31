@@ -4,8 +4,8 @@ import { emptyDirections, findArea } from "@/lib/areaContent";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 
 /**
- * 手書きの文章が「市区町村がありません」と言う方位は、**本当に 1 つも
- * 無い**か。
+ * 手書きの文章が「この一覧の候補がありません」と言う方位は、**本当に
+ * どの距離にも 1 つも入らない**か。
  *
  * ## なぜ要るか（2026-08-31 に実際に起きた）
  *
@@ -17,11 +17,35 @@ import { DIRECTION_LABELS } from "@/lib/kigakuContent";
  * 同じ頁で自動表示（#790）は「150km 以内に市区町村が無い方位: 南西」と
  * 出すので、**同じ画面の中で 2 つの記述が食い違っていた。**
  *
+ * ## 言い方も検査する（2026-08-31 に足した）
+ *
+ * 上の直しでも足りていなかった。この一覧の母集団は
+ * areaDirections.json に載っている市区町村で、**全国 1,917 のうち
+ * 1,119**。掲載を集計できた分しか無いので、「この一覧に無い」は
+ * 「そこに街が無い」を意味しない。
+ *
+ * それなのに文章は「海や山で行き止まり」と断定していた。**山でも海でも
+ * 成り立たなかった。**
+ *
+ *     札幌市豊平区の西「支笏洞爺の山地で行き止まり」… 喜茂別町・京極町・
+ *                                                     真狩村・ニセコ町がある
+ *     長崎市の西「東シナ海で行き止まり」            … 五島市・新上五島町・
+ *                                                     小値賀町がある
+ *     福岡市中央区の北西「玄界灘で行き止まり」      … 壱岐市・対馬市がある
+ *     浦添市の西「東シナ海で行き止まり」            … 渡嘉敷村・座間味村・
+ *                                                     久米島町がある
+ *
+ * どれも JIS の一覧（scripts/jis_city_codes.json）にあり、
+ * areaDirections.json に無いだけ。**「行き止まり」と言い切れるように
+ * なるのは、全 1,917 市区町村の座標を持ってからで、いまは持っていない**
+ * （docs/improvement-backlog.md 16 節）。だから断定そのものを禁じる。
+ *
  * ## この検査の範囲
  *
- * 「〜には市区町村がありません」「〜には市区町村が 1 つもありません」と
- * 断定している方位だけを見る。「薄い」「数えるほど」のような程度の
- * 表現は数えない（そこまで機械で判定しない）。
+ * 1. 「〜にはこの一覧の候補がありません」と断定している方位が、実際に
+ *    どの距離にも入らないか
+ * 2. 断定の言い方（「行き止まりです」「街に当たりません」）が文章に
+ *    混ざっていないか。**否定形（「行き止まりではなく」）は通す**
  */
 
 /** 「◯・◯には市区町村がありません」の形から方位を取り出す。 */
@@ -30,7 +54,7 @@ function assertedEmptyDirections(text: string): string[] {
   /* 「西と南」「西・南西・南」「西、南」のどれでも拾う。区切りを
      1 つしか見ていなかったせいで、下の自己検査が空振りを検出した。 */
   const pattern =
-    /([北南東西・、と]+)には市区町村が(?:\s*1\s*つも)?ありません/g;
+    /([北南東西・、と]+)にはこの一覧の候補が(?:\s*1\s*つも)?ありません/g;
   for (const m of text.matchAll(pattern)) {
     for (const jp of m[1].split(/[・、と]/)) {
       const dir = (
@@ -70,10 +94,51 @@ describe("手書きの「市区町村がありません」は実測と合って�
 
   it("取り出しの規則が働いている（空振りしていない）", () => {
     expect(
-      assertedEmptyDirections("西と南には市区町村が 1 つもありません。"),
+      assertedEmptyDirections("西と南にはこの一覧の候補が 1 つもありません。"),
     ).toEqual(expect.arrayContaining(["W", "S"]));
     expect(
-      assertedEmptyDirections("西・南西・南には市区町村がありません。"),
+      assertedEmptyDirections("西・南西・南にはこの一覧の候補がありません。"),
     ).toEqual(expect.arrayContaining(["W", "SW", "S"]));
+  });
+
+  it("拾う相手が実在する（言い方を変えたときに空回りしない）", () => {
+    /* 上の 1 件目は「断定が実測と合っているか」を見る検査で、文章の
+       言い方を変えると 0 件マッチのまま緑になる。**何件拾ったか**を
+       ここで固定しておく。#832 で言い方を変えたときに実際に危なかった */
+    let hits = 0;
+    for (const editorial of Object.values(AREA_EDITORIAL)) {
+      for (const paragraph of editorial.intro) {
+        hits += assertedEmptyDirections(paragraph).length;
+      }
+    }
+    expect(hits).toBeGreaterThan(40);
+  });
+
+  it("「行き止まり」と断定した文章が残っていない", () => {
+    /* この一覧が答えられるのは「掲載を集計できた市区町村がそこに無い」
+       だけ。地形の話に読める言い方は、山でも海でも実際に外れていた
+       （上の註）。否定形（「行き止まりではなく」）は残してよい */
+    const banned = [
+      /行き止まり(?!ではなく)/,
+      /街に当たらない/,
+      /街に当たりません/,
+    ];
+    const bad: string[] = [];
+    for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      for (const paragraph of editorial.intro) {
+        for (const re of banned) {
+          const m = paragraph.match(re);
+          if (m) bad.push(`${code}: ${m[0]}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("禁じた言い方の検出そのものが働いている", () => {
+    expect(/行き止まり(?!ではなく)/.test("南は海で行き止まりです")).toBe(true);
+    expect(/行き止まり(?!ではなく)/.test("行き止まりではなく遠いだけ")).toBe(
+      false,
+    );
   });
 });
