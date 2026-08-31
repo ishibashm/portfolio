@@ -16,6 +16,7 @@ import {
 } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
+import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 
 /**
  * 都道府県の家賃相場×方位ページ。
@@ -48,7 +49,10 @@ export async function generateMetadata({
   const pref = prefNameByCode(code);
   if (!pref || !PREF_EDITORIAL[code]) return {};
   const title = `${pref}の家賃相場と方位別の市区町村`;
-  const description = `${pref}の市区町村ごとの家賃相場（実際の掲載から毎晩集計）と、県の中心から見た八方位ごとの市区町村を一覧にしました。吉方位から引越し先を選ぶときの比較に。`;
+  const description = metaDescriptionFromIntro(
+    PREF_EDITORIAL[code]?.intro,
+    `${pref}の市区町村ごとの家賃相場（実際の掲載から毎晩集計）と、県の中心から見た八方位ごとの市区町村を一覧にしました。吉方位から引越し先を選ぶときの比較に。`,
+  );
   return {
     title,
     description,
