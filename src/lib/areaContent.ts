@@ -142,7 +142,24 @@ export interface EmptyDirection {
    * 母集団は lib/municipalityCoords の ALL_MUNICIPALITIES（1,894 件）。
    */
   hasAnyMunicipality: boolean;
+  /**
+   * その方位に実在する市区町村のうち、近い順に数件。
+   *
+   * `hasAnyMunicipality` が true のときだけ入る（行き止まりなら空）。
+   * **「街はあるが掲載が無い」で終えると、読む側は次に何もできない。**
+   * 名前と距離まで出せば、掲載の外を自分で当たれる。長崎市の西なら
+   * 五島市、福岡市中央区の北西なら壱岐市・対馬市。
+   *
+   * **一覧と同じ 150km で切る。**切らないと釧路町の南に小笠原村
+   * （1,959km）が出る。方位としては正しいが引越し先の案内にならず、
+   * 「街はある」の説得力をかえって落とす。切った結果ここが空になる
+   * 方位はあるが、そのときは名前を出さないだけで文言は成り立つ。
+   */
+  nearestUnlisted: { city: string; pref: string; distanceKm: number }[];
 }
+
+/** 上の `nearestUnlisted` に載せる件数。 */
+const UNLISTED_SAMPLE = 3;
 
 /**
  * 候補が 1 件も無い方位。
@@ -199,12 +216,42 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
   }
 
   /* 掲載と切り離した母集団。距離では切らない。「その方位に街があるか」を
-     見るだけなので、150km の内外は問わない */
+     見るだけなので、150km の内外は問わない。
+
+     名前も拾う。**「街はあるが掲載が無い」だけでは読む側が次に進めない**
+     ので、近い順に数件を添えて返す（下の nearestUnlisted） */
+  const unlisted = new Map<CompassDirection, EmptyDirection["nearestUnlisted"]>();
+  for (const d of DIRECTIONS) unlisted.set(d, []);
+  const listed = new Set(AREAS.map((a) => a.code));
+  for (const m of allMunicipalities()) {
+    if (m.code === origin.code) continue;
+    const distanceKm = distanceKmBetween(origin.lat, origin.lon, m.lat, m.lon);
+    /* 近すぎる相手は方位が定まらないので外す。上の一覧と同じ規則 */
+    if (distanceKm < MIN_KM) continue;
+    const d = directionFromBearing(
+      bearingBetween(origin.lat, origin.lon, m.lat, m.lon),
+      "traditional",
+    );
+    const list = unlisted.get(d);
+    if (!list) continue; // CENTER は返らないが型のため
+    /* 掲載のある市区町村は名前を挙げない。挙げると「掲載をまだ集計
+       できていない」という説明と食い違う。**この方位が空なのは
+       150km より遠いからで、掲載が無いからではない** */
+    if (listed.has(m.code)) continue;
+    /* 名前を挙げるのは一覧と同じ 150km まで（上の註） */
+    if (distanceKm > MAX_KM) continue;
+    list.push({
+      city: m.city,
+      pref: m.pref,
+      distanceKm: Math.round(distanceKm),
+    });
+  }
+
+  /* 「その方位に街があるか」は掲載の有無に依らない集合で見る */
   const anyMunicipality = new Set<CompassDirection>();
   for (const m of allMunicipalities()) {
     if (m.code === origin.code) continue;
     const km = distanceKmBetween(origin.lat, origin.lon, m.lat, m.lon);
-    /* 近すぎる相手は方位が定まらないので外す。上の一覧と同じ規則 */
     if (km < MIN_KM) continue;
     anyMunicipality.add(
       directionFromBearing(
@@ -218,6 +265,9 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
     direction: d,
     hasBeyondRange: beyond.has(d),
     hasAnyMunicipality: anyMunicipality.has(d),
+    nearestUnlisted: (unlisted.get(d) ?? [])
+      .sort((x, y) => x.distanceKm - y.distanceKm)
+      .slice(0, UNLISTED_SAMPLE),
   }));
 }
 

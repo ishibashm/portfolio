@@ -247,21 +247,21 @@ export default async function Page({
           </p>
 
           {/* 候補の入らない方位。吉方位が出ても引越し先が無いので、
-              候補の一覧より先に置く。
+              候補の一覧より先に置く。**3 通りある。**
 
-              **「遠いだけ」と分ける。**空の方位のうち一定数は、150km
-              より先に市区町村がある（函館市の南西など）。そこを
-              「無い」と書くと嘘になる。
+              1. 行き止まり … 海や山で陸が尽きている（227 方位）
+              2. 掲載漏れ … 街はあるが掲載を集計できていない（368）
+              3. 遠いだけ … 150km より先には掲載がある（114）
 
-              **「行き止まり」とは書かない。**この一覧の母集団は
-              areaDirections.json に載っている市区町村で、全国 1,917 の
-              うち 1,119（2026-08-31 実測）。掲載を集計できた分だけで、
-              巡回の届いていない町村は入らない。北海道は 57 / 194 しか
-              無く、釧路町の東は「1 つも無い」と出るが、そこには
-              厚岸町・浜中町・根室市が実在する。**海や山で本当に
-              行き止まりの場合と、掲載が無いだけの場合を、この計算では
-              区別できない。**県ページ（#800）には先にこの区別を書いた
-              のに、こちらは強い言い切りのまま残っていた。 */}
+              **1 と 2 を混ぜない。**混ざっていたのが #832〜#834 の
+              不具合で、「行き止まり」と断定していた 595 のうち正しかった
+              のは 227 だけだった（長崎市の西に五島市、釧路町の東に
+              厚岸町）。掲載側の母集団（areaDirections、1,119 件）だけを
+              見ていたのが原因で、#835 で全国 1,894 市区町村の代表点を
+              入れて分けられるようになった。
+
+              2 は**名前まで出す**（#841）。「街はあるが掲載が無い」で
+              終えると読む側が次に進めない。 */}
           {deadEnd.length > 0 && (
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
               <b>
@@ -274,15 +274,38 @@ export default async function Page({
             </p>
           )}
           {notListed.length > 0 && (
-            <p className="mt-2 rounded-xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs leading-relaxed text-sky-900">
-              <b>
-                街はあるが、この一覧に候補が入らない方位:{" "}
-                {notListed.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
-              </b>
-              。市区町村は実在しますが、その賃貸の掲載をまだ集計できていません。
-              <b>行き止まりではありません。</b>
-              吉方位がこの方位に出た年は、この一覧の外も含めて探してください。
-            </p>
+            <div className="mt-2 rounded-xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs leading-relaxed text-sky-900">
+              <p>
+                <b>
+                  街はあるが、この一覧に候補が入らない方位:{" "}
+                  {notListed
+                    .map((e) => DIRECTION_LABELS[e.direction])
+                    .join("・")}
+                </b>
+                。市区町村は実在しますが、その賃貸の掲載をまだ集計できていません。
+                <b>行き止まりではありません。</b>
+                吉方位がこの方位に出た年は、この一覧の外も含めて探してください。
+              </p>
+              {/* 実在する街の名前まで出す。「街はある」で終えると読む側は
+                  次に何もできない。名前と距離があれば掲載の外を自分で
+                  当たれる。150km より遠い相手は挙げない（areaContent の
+                  註。切った結果ここが空になる方位もあるが、上の文だけで
+                  意味は通る） */}
+              {notListed.some((e) => e.nearestUnlisted.length > 0) && (
+                <ul className="mt-1.5 space-y-0.5">
+                  {notListed
+                    .filter((e) => e.nearestUnlisted.length > 0)
+                    .map((e) => (
+                      <li key={e.direction}>
+                        <b>{DIRECTION_LABELS[e.direction]}</b>：
+                        {e.nearestUnlisted
+                          .map((u) => `${u.city}（${u.distanceKm}km）`)
+                          .join("、")}
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
           )}
           {farOnly.length > 0 && (
             <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
