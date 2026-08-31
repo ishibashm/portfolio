@@ -17,7 +17,11 @@ import {
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import {
+  bearingBetween,
+  directionFromBearing,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
 
 export const dynamic = "force-dynamic";
 
@@ -37,26 +41,6 @@ function parseSafeDate(dateStr: string | null | undefined): Date {
 function getAngleDiff(a: number, b: number): number {
   const diff = Math.abs(a - b) % 360;
   return diff > 180 ? 360 - diff : diff;
-}
-
-function getDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const R = 6371; // Radius of the earth in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in km
-  return d;
 }
 
 export async function GET(request: Request) {
@@ -401,7 +385,7 @@ export async function GET(request: Request) {
 
       let distanceKm: number | null = null;
       if (m.lat && m.lon && !isNaN(baseLat) && !isNaN(baseLon)) {
-        distanceKm = getDistance(baseLat, baseLon, m.lat, m.lon);
+        distanceKm = distanceKmBetween(baseLat, baseLon, m.lat, m.lon);
       }
 
       return {
