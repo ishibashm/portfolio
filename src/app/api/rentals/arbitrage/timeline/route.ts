@@ -9,7 +9,7 @@ import {
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
-import { directionFromBearing } from "@/utils/directionGeo";
+import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 import {
   buildDailyAstroStates,
   scoreDateForProperty,
@@ -52,21 +52,6 @@ function parseSafeDate(dateStr: string | null | undefined): Date {
     return new Date(dateStr + "+09:00");
   }
   return new Date(dateStr);
-}
-
-function getBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const dLon = (lon2 - lon1) * (Math.PI / 180);
-  const l1 = lat1 * (Math.PI / 180);
-  const l2 = lat2 * (Math.PI / 180);
-  const y = Math.sin(dLon) * Math.cos(l2);
-  const x =
-    Math.cos(l1) * Math.sin(l2) - Math.sin(l1) * Math.cos(l2) * Math.cos(dLon);
-  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
 }
 
 /**
@@ -244,7 +229,7 @@ export async function GET(request: Request) {
         };
       }
 
-      const bearing = getBearing(
+      const bearing = bearingBetween(
         member.baseLat,
         member.baseLon,
         propLat,

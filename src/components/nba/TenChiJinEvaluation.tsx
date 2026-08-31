@@ -13,6 +13,7 @@ import { getClassicalYearStar } from "@/utils/ephemerisEngine";
 import { buildTenChiJinVerdict } from "@/utils/tenChiJinVerdict";
 import { todayInJapan } from "@/utils/japanDate";
 import { directionLabelName } from "@/lib/directionLabels";
+import { bearingBetween } from "@/utils/directionGeo";
 
 function parseSafeDate(
   dateStr: string | null | undefined,
@@ -593,7 +594,7 @@ export function TenChiJinEvaluation({
                       });
                       // Try to guess destination direction index if exists
                       if (step) {
-                        const bearing = getBearing(
+                        const bearing = bearingBetween(
                           step.fromLat,
                           step.fromLon,
                           step.toLat,
@@ -624,21 +625,3 @@ export function TenChiJinEvaluation({
 }
 
 // Geometry helper to calculate bearing
-function getBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-  const y = Math.sin(deltaLambda) * Math.cos(phi2);
-  const x =
-    Math.cos(phi1) * Math.sin(phi2) -
-    Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
-  const theta = Math.atan2(y, x);
-  const bearing = (theta * 180) / Math.PI;
-  return (bearing + 360) % 360;
-}

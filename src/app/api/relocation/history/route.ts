@@ -25,28 +25,11 @@ import { toLogMessage } from "@/lib/errorMessage";
 import { gradeVerdict, judgeDay } from "@/utils/auspiciousDays";
 import { JUDGMENT_ENGINE_VERSION } from "@/utils/engineVersion";
 import { DEFAULT_TENCHUSATSU_MODE } from "@/utils/tenchusatsuPolicy";
+import { bearingBetween } from "@/utils/directionGeo";
 
 const CONFIG_FILE_PATH = path.join(process.cwd(), "local_tactical_config.json");
 
 // Calculate great-circle initial bearing between two coordinates
-function getBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-  const y = Math.sin(deltaLambda) * Math.cos(phi2);
-  const x =
-    Math.cos(phi1) * Math.sin(phi2) -
-    Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
-  const theta = Math.atan2(y, x);
-  const bearing = (theta * 180) / Math.PI;
-  return (bearing + 360) % 360;
-}
 
 function bearingToDirection(
   bearing: number,
@@ -207,7 +190,7 @@ export async function GET(request: Request) {
       const depDate = new Date(item.departureDate);
 
       // Calculate Geometrical Bearing
-      const rawBearing = getBearing(
+      const rawBearing = bearingBetween(
         item.fromLat,
         item.fromLon,
         item.toLat,
@@ -440,7 +423,7 @@ export async function POST(req: Request) {
       const honmei = getHonmeiStar(birthDate);
       const personalStar = useClassical ? honmei.classical : honmei.physical;
       const voidZodiacs = getPersonalVoidZodiac(birthDate);
-      const bearing = getBearing(
+      const bearing = bearingBetween(
         parseFloat(fromLat),
         parseFloat(fromLon),
         parseFloat(toLat),
