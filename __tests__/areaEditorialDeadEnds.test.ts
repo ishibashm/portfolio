@@ -115,25 +115,47 @@ describe("手書きの「市区町村がありません」は実測と合って�
     expect(hits).toBeGreaterThan(40);
   });
 
-  it("「行き止まり」と断定した文章が残っていない", () => {
-    /* この一覧が答えられるのは「掲載を集計できた市区町村がそこに無い」
-       だけ。地形の話に読める言い方は、山でも海でも実際に外れていた
-       （上の註）。否定形（「行き止まりではなく」）は残してよい */
-    const banned = [
-      /行き止まり(?!ではなく)/,
-      /街に当たらない/,
-      /街に当たりません/,
-    ];
+  it("「行き止まり」と書いてよいのは、本当に行き止まりの頁だけ", () => {
+    /* #835・#836 で全国 1,894 市区町村の代表点を持ったので、**禁じる
+       のをやめて確かめる**ようにした。断定してよいのは、その頁に
+       「どの距離にも市区町村が無い方位」が実在するときだけ。
+
+       方位まで文から取り出すのは当てにならない（理由を書いた文に方位が
+       出てこない。「駿河湾がそのまま太平洋に続くためです」）ので、
+       **頁の単位**で見る。行き止まりが 1 つも無い頁が断定していたら
+       落とす。#832〜#834 で外した誤りは全部これで拾える（長崎市・
+       札幌市豊平区・橿原市・福岡市中央区・浦添市はどれも行き止まりが
+       0 件だった）。 */
     const bad: string[] = [];
     for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      const area = findArea(code);
+      if (!area) continue;
+      const hasDeadEnd = emptyDirections(area).some(
+        (e) => !e.hasBeyondRange && !e.hasAnyMunicipality,
+      );
       for (const paragraph of editorial.intro) {
-        for (const re of banned) {
-          const m = paragraph.match(re);
-          if (m) bad.push(`${code}: ${m[0]}`);
-        }
+        const m = paragraph.match(
+          /行き止まり(?!ではなく)|街に当たらない|街に当たりません/,
+        );
+        if (m && !hasDeadEnd) bad.push(`${code} ${area.full}: ${m[0]}`);
       }
     }
     expect(bad).toEqual([]);
+  });
+
+  it("この検査が働いている（行き止まりの無い頁で断定したら落ちる）", () => {
+    /* 断定を許す方向へ緩めたので、**緩めすぎていないこと**を示す。
+       平塚市は空の南が掲載漏れ（茅ヶ崎の南に街がある）で、行き止まりは
+       0 件。ここで断定したら拾えなければならない */
+    const hiratsuka = findArea("14203")!;
+    expect(
+      emptyDirections(hiratsuka).some(
+        (e) => !e.hasBeyondRange && !e.hasAnyMunicipality,
+      ),
+    ).toBe(false);
+    expect(/行き止まり(?!ではなく)/.test("南は相模湾で行き止まりです")).toBe(
+      true,
+    );
   });
 
   it("頁と llms.txt の側にも同じ言い切りが残っていない", () => {
