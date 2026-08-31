@@ -21,6 +21,7 @@ import {
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { prefCodeByName } from "@/lib/prefContent";
+import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -47,7 +48,12 @@ export async function generateMetadata({
   const area = findArea((await params).code);
   if (!area) return {};
   const title = `${area.full}から見た方位別のエリアと家賃相場`;
-  const description = `${area.full}を出発地としたとき、北・北東・東・南東・南・南西・西・北西それぞれにどの市区町村があり、家賃相場がいくらかをまとめています。引越しの方位を決めるときの比較に。`;
+  /* 文章のある頁は、その 1 段落目から作る。既定の 1 文は地名しか
+     変わらず、索引に戻した頁どうしで description が同じになる */
+  const description = metaDescriptionFromIntro(
+    AREA_EDITORIAL[area.code]?.intro,
+    `${area.full}を出発地としたとき、北・北東・東・南東・南・南西・西・北西それぞれにどの市区町村があり、家賃相場がいくらかをまとめています。引越しの方位を決めるときの比較に。`,
+  );
   return {
     title,
     description,
