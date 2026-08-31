@@ -113,7 +113,14 @@ export default async function Page({
      忘れている」のか読む側に分からない**（lib/areaContent の註）。
      行き止まりなのか、遠いだけなのかも分けて出す。 */
   const empty = emptyDirections(area);
-  const deadEnd = empty.filter((e) => !e.hasBeyondRange);
+  /* 3 通りに分かれる。取り違えると「街が無い」と嘘をつく（#832〜#835）。
+     実測では空の 709 方位が 遠いだけ 114 / 掲載漏れ 368 / 行き止まり 227 */
+  const deadEnd = empty.filter(
+    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality,
+  );
+  const notListed = empty.filter(
+    (e) => !e.hasBeyondRange && e.hasAnyMunicipality,
+  );
   const farOnly = empty.filter((e) => e.hasBeyondRange);
   const siblings = siblingAreas(area);
   /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
@@ -258,11 +265,22 @@ export default async function Page({
           {deadEnd.length > 0 && (
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
               <b>
-                この一覧に候補が入らない方位:{" "}
+                市区町村が 1 つも無い方位:{" "}
                 {deadEnd.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
               </b>
-              。海や山で本当に行き止まりの場合もあれば、その方位の街の掲載をまだ集計できていないだけの場合もあります。
-              <b>「その方位に街が無い」とは限りません。</b>
+              。海や山で陸が尽きています。掲載の有無ではなく
+              <b>全国 1,894 市区町村の位置で確かめた</b>
+              結果なので、暦の上でこの方位が吉に出ても引越し先はありません。別の方位で探すことになります。
+            </p>
+          )}
+          {notListed.length > 0 && (
+            <p className="mt-2 rounded-xl border border-sky-200 bg-sky-50/80 px-3 py-2 text-xs leading-relaxed text-sky-900">
+              <b>
+                街はあるが、この一覧に候補が入らない方位:{" "}
+                {notListed.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
+              </b>
+              。市区町村は実在しますが、その賃貸の掲載をまだ集計できていません。
+              <b>行き止まりではありません。</b>
               吉方位がこの方位に出た年は、この一覧の外も含めて探してください。
             </p>
           )}
