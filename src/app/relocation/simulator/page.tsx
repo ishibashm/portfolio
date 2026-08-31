@@ -44,6 +44,7 @@ import { directionLabelDetailed } from "@/lib/directionLabels";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import {
   COMPASS_DIRECTIONS,
+  bearingBetween,
   directionAngleRange,
   distanceKmBetween,
 } from "@/utils/directionGeo";
@@ -163,41 +164,6 @@ function parseSafeDate(
     return d;
   }
   return fallback;
-}
-
-function getBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  if (
-    isNaN(lat1) ||
-    isNaN(lon1) ||
-    isNaN(lat2) ||
-    isNaN(lon2) ||
-    lat1 === null ||
-    lon1 === null ||
-    lat2 === null ||
-    lon2 === null ||
-    lat1 === undefined ||
-    lon1 === undefined ||
-    lat2 === undefined ||
-    lon2 === undefined
-  ) {
-    return 0;
-  }
-  const phi1 = (lat1 * Math.PI) / 180;
-  const phi2 = (lat2 * Math.PI) / 180;
-  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-  const y = Math.sin(deltaLambda) * Math.cos(phi2);
-  const x =
-    Math.cos(phi1) * Math.sin(phi2) -
-    Math.sin(phi1) * Math.cos(phi2) * Math.cos(deltaLambda);
-  const theta = Math.atan2(y, x);
-  const bearing = (theta * 180) / Math.PI;
-  return (bearing + 360) % 360;
 }
 
 function bearingToDirection(
@@ -609,7 +575,7 @@ export default function RelocationSimulatorPage() {
           ? EXAMPLE_START.lon
           : step.toLon;
 
-      const rawBearing = getBearing(
+      const rawBearing = bearingBetween(
         currentBaseLat,
         currentBaseLon,
         targetLat,
@@ -926,7 +892,7 @@ export default function RelocationSimulatorPage() {
       d.setDate(baseDate.getDate() + i * 7);
       const dateStr = toJapanDateString(d);
 
-      const rawBearing = getBearing(
+      const rawBearing = bearingBetween(
         active.fromLat,
         active.fromLon,
         active.toLat,
@@ -1025,11 +991,11 @@ export default function RelocationSimulatorPage() {
 
     candidates.forEach((cand) => {
       // 1. Check A -> C direction
-      const rawBearingC = getBearing(latA, lonA, cand.lat, cand.lon);
+      const rawBearingC = bearingBetween(latA, lonA, cand.lat, cand.lon);
       const dirC = bearingToDirection(rawBearingC, useClassical);
 
       // 2. Check C -> B direction
-      const rawBearingB = getBearing(cand.lat, cand.lon, latB, lonB);
+      const rawBearingB = bearingBetween(cand.lat, cand.lon, latB, lonB);
       const dirB = bearingToDirection(rawBearingB, useClassical);
 
       const envA = getCurrentEnvironmentalFrequencies(
@@ -1265,10 +1231,10 @@ export default function RelocationSimulatorPage() {
           polygons.push(validPoints);
 
           candidates.forEach((cand) => {
-            const bearingFromA = getBearing(latA, lonA, cand.lat, cand.lon);
+            const bearingFromA = bearingBetween(latA, lonA, cand.lat, cand.lon);
             const dirFromA = bearingToDirection(bearingFromA, useClassical);
 
-            const bearingToB = getBearing(cand.lat, cand.lon, latB, lonB);
+            const bearingToB = bearingBetween(cand.lat, cand.lon, latB, lonB);
             const dirToB = bearingToDirection(bearingToB, useClassical);
 
             if (dirFromA === d1 && dirToB === d2) {
@@ -2644,7 +2610,7 @@ export default function RelocationSimulatorPage() {
                             <span>方位角:</span>
                             <span className="text-indigo-700 font-bold">
                               {bearingToDirection(
-                                getBearing(
+                                bearingBetween(
                                   step.fromLat,
                                   step.fromLon,
                                   step.toLat,
@@ -2654,7 +2620,7 @@ export default function RelocationSimulatorPage() {
                               )}{" "}
                               (
                               {Math.round(
-                                getBearing(
+                                bearingBetween(
                                   step.fromLat,
                                   step.fromLon,
                                   step.toLat,
@@ -2693,7 +2659,7 @@ export default function RelocationSimulatorPage() {
                           気学の判定はそのままで、同じ方位を別の流派でも
                           見るだけ。点は足さない。 */}
                       <FengShuiNote
-                        bearing={getBearing(
+                        bearing={bearingBetween(
                           step.fromLat,
                           step.fromLon,
                           step.toLat,
@@ -2701,7 +2667,7 @@ export default function RelocationSimulatorPage() {
                         )}
                         birthDate={birthDate}
                         kigakuDirection={bearingToDirection(
-                          getBearing(
+                          bearingBetween(
                             step.fromLat,
                             step.fromLon,
                             step.toLat,

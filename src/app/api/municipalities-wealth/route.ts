@@ -17,7 +17,7 @@ import {
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
-import { directionFromBearing } from "@/utils/directionGeo";
+import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 
 export const dynamic = "force-dynamic";
 
@@ -31,23 +31,6 @@ function parseSafeDate(dateStr: string | null | undefined): Date {
     return new Date(dateStr + "+09:00");
   }
   return new Date(dateStr);
-}
-
-function getBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
-  const toRad = (val: number) => (val * Math.PI) / 180;
-  const toDeg = (val: number) => (val * 180) / Math.PI;
-  const dLon = toRad(lon2 - lon1);
-  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-  const x =
-    Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-    Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-  const brng = toDeg(Math.atan2(y, x));
-  return (brng + 360) % 360;
 }
 
 // 角度の差を計算する関数（円弧上の最短距離）
@@ -279,7 +262,7 @@ export async function GET(request: Request) {
       const astroFlags: string[] = [];
 
       if (m.lat && m.lon) {
-        trueBearing = getBearing(baseLat, baseLon, m.lat, m.lon);
+        trueBearing = bearingBetween(baseLat, baseLon, m.lat, m.lon);
         direction = directionFromBearing(trueBearing, nodeMapping); // True direction (地図上の方位)
 
         // 偏角の補正 (動的に取得した値を使用)
