@@ -5,10 +5,16 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // @ts-expect-error -- 下の行に本当にエラーがあるか tsc に確かめさせる
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  /*
+    lint の設定はここに置かない（キー名を書き出しにすると、ESLint が
+    行内設定と読んで parse error になる。実際に落ちた）。
+
+    Next 16 で `next lint` ごと無くなり、next.config のそのキーは
+    **読まれずに警告になる**（`Unrecognized key(s) in object: 'eslint'` と
+    `Invalid next.config.ts options detected`）。ビルドのたびに 2 行出て
+    いた。lint は npm run lint（と pre-commit の lefthook）で見ている
+    ので、ここに書く必要がない。
+  */
   // www is mapped to this same Cloud Run service, so the canonical-host
   // redirect is issued here rather than at the edge.
   async redirects() {
@@ -90,16 +96,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: process.env.NEXT_PUBLIC_API_URL
-          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
-          : "http://127.0.0.1:8000/api/v1/:path*",
-      },
-    ];
-  },
+  /*
+    /api/v1 への書き換えは外した。
+
+    この転送先（別プロセスの API）を呼ぶ画面は **#559 で全部消えている**
+    （docs/improvement-backlog.md 9 節。widget 群・DynamicCanvas ごと
+    2,829 行）。`grep -rn "/api/v1" src/` は 0 件。
+
+    残しておくと、誰かが /api/v1/… を叩いたときに 127.0.0.1:8000 へ
+    転送しようとして**繋がらないまま待たされる**。実在しない経路は
+    404 を返すほうが正しい。
+  */
 };
 
 export default nextConfig;
