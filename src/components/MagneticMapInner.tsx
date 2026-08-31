@@ -3,7 +3,6 @@
 import React, { useEffect } from "react";
 import {
   MapContainer,
-  TileLayer,
   Marker,
   Polyline,
   Polygon,
@@ -16,7 +15,6 @@ import {
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { useMapTheme } from "@/lib/useMapTheme";
-import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { statusForLayerMode } from "@/utils/directionStatus";
@@ -33,6 +31,7 @@ import {
 import type { MapProperty } from "@/lib/mapProperty";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
+import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -626,17 +625,7 @@ export default function MagneticMapInner({
             onSelectTarget?.(lat, lng);
           }}
         />
-        <TileLayer
-          key={`tile-layer-${mapTheme}`}
-          url={BASE_MAPS.std.url}
-          /* ダークは CSS の反転で作る。CARTO の dark_all は鍵なしの
-             ラスタ配信に「API key required」の透かしが入るようになった
-             （lib/baseMapLayers の経緯を見ること）。 */
-          className={mapTheme === "dark" ? DARK_TILE_CLASS : undefined}
-          attribution={BASE_MAPS.std.attribution}
-          maxZoom={BASE_MAPS.std.maxZoom}
-          maxNativeZoom={BASE_MAPS.std.maxNativeZoom}
-        />
+        <StandardBaseTile />
 
         {/* Theme Switcher Button */}
         <div className="absolute top-4 left-4 z-[1000] pointer-events-auto">

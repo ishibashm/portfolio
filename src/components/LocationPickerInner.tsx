@@ -1,18 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  useMapEvents,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
-import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { useMapTheme } from "@/lib/useMapTheme";
+import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 
 // Fix typical Leaflet icon issue
 applyLeafletDefaultIcon();
@@ -99,17 +93,7 @@ export default function LocationPickerInner({
           zIndex: 0,
         }}
       >
-        <TileLayer
-          key={`tile-layer-${mapTheme}`}
-          url={BASE_MAPS.std.url}
-          /* ダークは CSS の反転で作る。CARTO の dark_all は鍵なしの
-             ラスタ配信に「API key required」の透かしが入るようになった
-             （lib/baseMapLayers の経緯を見ること）。 */
-          className={mapTheme === "dark" ? DARK_TILE_CLASS : undefined}
-          attribution={BASE_MAPS.std.attribution}
-          maxZoom={BASE_MAPS.std.maxZoom}
-          maxNativeZoom={BASE_MAPS.std.maxNativeZoom}
-        />
+        <StandardBaseTile />
         <SyncMapCenter markerPos={markerPos} />
         <MapEvents onSelect={handleSelect} />
         {/* 現在地。**自動では座標を入れない。**入れてしまうと、測位の
