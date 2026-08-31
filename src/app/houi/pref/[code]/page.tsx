@@ -17,6 +17,46 @@ import {
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+
+/**
+ * 市区町村への 1 行。**解説を書いた頁に印を付ける。**
+ *
+ * この頁からは県内の全市区町村へ同じ札で並べていたが、そのうち
+ * 固有の文章を書いて索引に戻したのは一部（src/lib/areaEditorial.ts）で、
+ * 残りは雛形のままの noindex。読み手には「方位ごとに何があるか」まで
+ * 書いてある頁のほうが役に立つのに、どれがそれか見分けが付かなかった。
+ *
+ * 一覧ページ（/houi/area）は同じ印を先に付けてある。**同じ意味の印を
+ * 2 通りの見た目にしない**ため、丸の大きさと色をそちらに合わせる。
+ */
+function AreaLink({
+  code,
+  city,
+  medianRent,
+}: {
+  code: string;
+  city: string;
+  medianRent: number;
+}) {
+  return (
+    <li className="flex justify-between gap-2">
+      <Link
+        prefetch={false}
+        href={`/houi/area/${code}`}
+        className="text-slate-700 hover:text-rose-600 hover:underline"
+      >
+        {code in AREA_EDITORIAL && (
+          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+        )}
+        {city}
+      </Link>
+      <span className="font-mono text-slate-600">
+        {medianRent.toLocaleString()}円
+      </span>
+    </li>
+  );
+}
 
 /**
  * 都道府県の家賃相場×方位ページ。
@@ -154,18 +194,12 @@ export default async function Page({
               </h3>
               <ul className="mt-2 space-y-1 text-xs">
                 {cheapest.map((a) => (
-                  <li key={a.code} className="flex justify-between gap-2">
-                    <Link
-                      prefetch={false}
-                      href={`/houi/area/${a.code}`}
-                      className="text-slate-700 hover:text-rose-600 hover:underline"
-                    >
-                      {a.city}
-                    </Link>
-                    <span className="font-mono text-slate-600">
-                      {a.medianRent.toLocaleString()}円
-                    </span>
-                  </li>
+                  <AreaLink
+                    key={a.code}
+                    code={a.code}
+                    city={a.city}
+                    medianRent={a.medianRent}
+                  />
                 ))}
               </ul>
             </div>
@@ -175,18 +209,12 @@ export default async function Page({
               </h3>
               <ul className="mt-2 space-y-1 text-xs">
                 {priciest.map((a) => (
-                  <li key={a.code} className="flex justify-between gap-2">
-                    <Link
-                      prefetch={false}
-                      href={`/houi/area/${a.code}`}
-                      className="text-slate-700 hover:text-rose-600 hover:underline"
-                    >
-                      {a.city}
-                    </Link>
-                    <span className="font-mono text-slate-600">
-                      {a.medianRent.toLocaleString()}円
-                    </span>
-                  </li>
+                  <AreaLink
+                    key={a.code}
+                    code={a.code}
+                    city={a.city}
+                    medianRent={a.medianRent}
+                  />
                 ))}
               </ul>
             </div>
@@ -203,6 +231,12 @@ export default async function Page({
             度）です。広い県では県内でも方位が変わるため、実際の引越しでは
             <b>いま住んでいる場所</b>
             から見た方位で判定してください（各市区町村のページと方位スキャナーがその計算をします）。
+          </p>
+          {/* 印の意味。印だけ付けて説明が無いと、色の違いが相場の
+              高低や吉凶と読まれかねない。/houi/area の説明と同じ文言。 */}
+          <p className="mt-2 text-xs text-slate-500">
+            <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+            が付いている市区町村には、方位ごとの街の並びを書いた解説があります。
           </p>
           {stats.emptyDirections.length > 0 && (
             <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
@@ -227,18 +261,12 @@ export default async function Page({
                 <h3 className="font-serif text-base font-bold">{g.jp}</h3>
                 <ul className="mt-2 space-y-1 text-xs">
                   {g.areas.slice(0, 8).map((a) => (
-                    <li key={a.code} className="flex justify-between gap-2">
-                      <Link
-                        prefetch={false}
-                        href={`/houi/area/${a.code}`}
-                        className="text-slate-700 hover:text-rose-600 hover:underline"
-                      >
-                        {a.city}
-                      </Link>
-                      <span className="font-mono text-slate-600">
-                        {a.medianRent.toLocaleString()}円
-                      </span>
-                    </li>
+                    <AreaLink
+                      key={a.code}
+                      code={a.code}
+                      city={a.city}
+                      medianRent={a.medianRent}
+                    />
                   ))}
                 </ul>
                 {g.areas.length > 8 && (
@@ -248,18 +276,12 @@ export default async function Page({
                     </summary>
                     <ul className="mt-2 space-y-1 text-xs">
                       {g.areas.slice(8).map((a) => (
-                        <li key={a.code} className="flex justify-between gap-2">
-                          <Link
-                            prefetch={false}
-                            href={`/houi/area/${a.code}`}
-                            className="text-slate-700 hover:text-rose-600 hover:underline"
-                          >
-                            {a.city}
-                          </Link>
-                          <span className="font-mono text-slate-600">
-                            {a.medianRent.toLocaleString()}円
-                          </span>
-                        </li>
+                        <AreaLink
+                          key={a.code}
+                          code={a.code}
+                          city={a.city}
+                          medianRent={a.medianRent}
+                        />
                       ))}
                     </ul>
                   </details>
