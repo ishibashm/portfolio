@@ -2,7 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { ArticleJsonLd, DatasetJsonLd } from "@/components/JsonLd";
+import {
+  ArticleJsonLd,
+  BreadcrumbJsonLd,
+  DatasetJsonLd,
+} from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
 import {
   getPrefStats,
@@ -85,7 +89,28 @@ export default async function Page({
         path={path}
         dateModified={stats.asOf ?? new Date().toISOString().slice(0, 10)}
       />
+      {/* 市区町村ページ（/houi/area/[code]）と同じ並びにする。
+          方位の早見表 → エリア別 → 県 → 市区町村 で 1 本に繋がる。 */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "方位の早見表", path: "/houi" },
+          { name: "エリア別", path: "/houi/area" },
+          { name: pref, path },
+        ]}
+      />
       <article className="max-w-[1700px] mx-auto px-5 py-12">
+        <nav className="text-xs text-slate-500 mb-6">
+          <Link href="/houi" className="hover:text-rose-600">
+            方位の早見表
+          </Link>
+          <span className="mx-2">/</span>
+          <Link href="/houi/area" className="hover:text-rose-600">
+            エリア別
+          </Link>
+          <span className="mx-2">/</span>
+          <span>{pref}</span>
+        </nav>
+
         <h1 className="text-3xl md:text-4xl font-bold font-serif tracking-tight leading-snug">
           {pref}の家賃相場と方位別の市区町村
         </h1>
