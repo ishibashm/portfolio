@@ -104,6 +104,26 @@ export function neighboursByDirection(
   return out;
 }
 
+/**
+ * 候補が 1 件も無い方位。
+ *
+ * **ここがこの頁でいちばん効く情報。**海や山で行き止まりになる方位は、
+ * 暦の上で吉方位が出ても引越し先が無い。長崎市の西・南西・南、
+ * 浜松市中央区の南東・南のように、地形がそのまま出る。
+ *
+ * 頁は長らく候補のある方位だけを並べていた（populated）。空の方位は
+ * **黙って消えていた**ので、読む側は「その方位に街が無い」のか
+ * 「頁が出し忘れている」のかを区別できなかった。
+ *
+ * 文章を書いた市区町村（AREA_EDITORIAL）では冒頭に人の言葉で書いて
+ * いるが、それは 1,022 頁のうち 100 頁ほど。残りにも同じ事実が要る。
+ */
+export function directionsWithoutAreas(
+  groups: Record<CompassDirection, NeighbourArea[]>,
+): CompassDirection[] {
+  return DIRECTIONS.filter((d) => groups[d].length === 0);
+}
+
 export function directionLabel(d: CompassDirection): string {
   return DIRECTION_LABELS[d];
 }

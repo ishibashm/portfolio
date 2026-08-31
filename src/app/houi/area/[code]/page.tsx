@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import {
   AREAS,
   areaAsOf,
+  directionsWithoutAreas,
   findArea,
   neighboursByDirection,
   siblingAreas,
@@ -101,6 +102,9 @@ export default async function Page({
   }));
 
   const populated = DIRECTIONS.filter((d) => groups[d].length > 0);
+  /* 候補が無い方位。**これを出さないと「街が無い」のか「頁が出し
+     忘れている」のか読む側に分からない**（lib/areaContent の註）。 */
+  const empty = directionsWithoutAreas(groups);
   const siblings = siblingAreas(area);
 
   const path = `/houi/area/${area.code}`;
@@ -204,6 +208,18 @@ export default async function Page({
           <p className="text-xs text-slate-600 mt-3">
             {area.full}の中心から 5〜150km の範囲。距離が近い順に並べています。
           </p>
+
+          {/* 街が無い方位。吉方位が出ても引越し先が無いので、
+              候補の一覧より先に置く。 */}
+          {empty.length > 0 && (
+            <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
+              <b>
+                この範囲に市区町村が無い方位:{" "}
+                {empty.map((d) => DIRECTION_LABELS[d]).join("・")}
+              </b>
+              。海や山で行き止まりになるため、暦の上でこの方位が吉に出ても引越し先の候補がありません。範囲を広げるか、別の方位で探すことになります。
+            </p>
+          )}
 
           <div className="mt-6 space-y-6">
             {populated.map((d) => (
