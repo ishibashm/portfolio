@@ -5,6 +5,8 @@ import { areasByPref } from "@/lib/areaContent";
 import { prefCodeByName } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { AdBanner } from "@/components/ads/AdBanner";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import { BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/houi/area" },
@@ -19,6 +21,14 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900 font-sans">
+      {/* 市区町村ページ・県ページの両方にパンくずがあるのに、その親の
+          この頁だけ構造化データが無かった（画面のパンくずはあった）。 */}
+      <BreadcrumbJsonLd
+        items={[
+          { name: "方位の早見表", path: "/houi" },
+          { name: "エリア別", path: "/houi/area" },
+        ]}
+      />
       {/* 都道府県ごとのリンク一覧。読み物ではないので /houi と揃える。 */}
       <article className="max-w-[1700px] mx-auto px-5 py-12">
         <nav className="text-xs text-slate-500 mb-6">
@@ -35,6 +45,15 @@ export default function Page() {
         <p className="mt-5 max-w-[70ch] text-sm leading-relaxed text-slate-700">
           吉方位が分かっても、その方位に実際どんな街があっていくらなのかが分からないと引越し先は決められません。
           <b>いま住んでいる市区町村</b>を選ぶと、そこから見た八方位それぞれのエリアと家賃相場を確認できます。
+        </p>
+        {/* 固有の文章を書いた頁だけ索引に載せている（#750〜）。一覧では
+            どれがそれか分からず、全部同じ札に見えていた。読み手にとっては
+            「その方位に街が無い」まで書いてある頁のほうが役に立つ。 */}
+        <p className="mt-3 text-xs text-slate-500">
+          <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+          が付いている市区町村には、方位ごとの街の並びを書いた解説があります（
+          {Object.keys(AREA_EDITORIAL).length}
+          エリア）。
         </p>
 
         <div className="mt-8 space-y-6">
@@ -68,6 +87,9 @@ export default function Page() {
                       href={`/houi/area/${a.code}`}
                       className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
                     >
+                      {a.code in AREA_EDITORIAL && (
+                        <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                      )}
                       {a.city}
                     </Link>
                   ))}
