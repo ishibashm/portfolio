@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  directionsWithoutAreas,
-  findArea,
-  neighboursByDirection,
-} from "@/lib/areaContent";
+import { emptyDirections, findArea } from "@/lib/areaContent";
 import { DIRECTIONS } from "@/lib/kigakuContent";
 
 /**
@@ -13,50 +9,69 @@ import { DIRECTIONS } from "@/lib/kigakuContent";
  *
  * 頁は長らく候補のある方位だけを並べていて、**空の方位は黙って消えて
  * いた。**読む側は「その方位に街が無い」のか「頁が出し忘れている」のか
- * を区別できない。
+ * を区別できない。海や山で行き止まりになる方位は、暦の上で吉方位が
+ * 出ても引越し先が無いので、**この頁でいちばん効く情報**。
  *
- * 海や山で行き止まりになる方位は、暦の上で吉方位が出ても引越し先が
- * 無いので、**この頁でいちばん効く情報**（CLAUDE.md 4 節 2-b）。
- * 文章を書いた市区町村では冒頭に人の言葉で書いているが、それは
- * 1,022 頁のうち 100 頁ほどしかない。
+ * ## 理由を取り違えないこと
  *
- * ここでは実データ（areaDirections.json）で 2 つを固定する。
- *
- * 1. 地形どおりに空の方位が出る（長崎・浜松）
- * 2. 内陸で八方位が埋まる街では 1 つも出ない（誤検出しない）
+ * 一覧は 5〜150km で切っている。**空の 709 方位のうち 114 は、150km
+ * より先には市区町村がある**（2026-08-31 の実測）。そこを「行き止まり」
+ * と書くと嘘になる。最初の実装はそう書いていたので、ここで分ける。
  */
 
-function emptyOf(code: string): string[] {
+function empty(code: string) {
   const area = findArea(code);
   expect(area, `${code} が areaDirections.json に無い`).toBeDefined();
-  return directionsWithoutAreas(neighboursByDirection(area!));
+  return emptyDirections(area!);
 }
 
-describe("directionsWithoutAreas", () => {
+function deadEnds(code: string): string[] {
+  return empty(code)
+    .filter((e) => !e.hasBeyondRange)
+    .map((e) => e.direction);
+}
+
+function farOnly(code: string): string[] {
+  return empty(code)
+    .filter((e) => e.hasBeyondRange)
+    .map((e) => e.direction);
+}
+
+describe("emptyDirections", () => {
   it("長崎市は西・南西・南が空く（東シナ海と半島の先端）", () => {
-    const empty = emptyOf("42201");
-    expect(empty).toContain("W");
-    expect(empty).toContain("SW");
-    expect(empty).toContain("S");
+    const all = empty("42201").map((e) => e.direction);
+    expect(all).toContain("W");
+    expect(all).toContain("SW");
+    expect(all).toContain("S");
     /* 北東（諫早・大村から佐賀へ）は県内で最も厚い方位なので空かない */
-    expect(empty).not.toContain("NE");
+    expect(all).not.toContain("NE");
+  });
+
+  it("長崎市の南西は「行き止まり」ではなく「遠いだけ」", () => {
+    /* 実測: 150km より先に 17 の市区町村がある。ここを行き止まりと
+       書いていたのが最初の実装の誤り。 */
+    expect(farOnly("42201")).toContain("SW");
+    expect(deadEnds("42201")).not.toContain("SW");
   });
 
   it("浜松市中央区は南東・南が空く（遠州灘）", () => {
-    const empty = emptyOf("22138");
-    expect(empty).toContain("SE");
-    expect(empty).toContain("S");
-    /* 北西（新城・豊川から三河へ）は最も厚い */
-    expect(empty).not.toContain("NW");
+    const all = empty("22138").map((e) => e.direction);
+    expect(all).toContain("SE");
+    expect(all).toContain("S");
+    expect(all).not.toContain("NW");
+  });
+
+  it("函館市の南西は「遠いだけ」（本州が 150km より先にある）", () => {
+    expect(farOnly("01202")).toContain("SW");
+    expect(deadEnds("01202")).not.toContain("SW");
   });
 
   it("大阪市中央区は八方位すべてに候補がある（誤検出しない）", () => {
-    expect(emptyOf("27128")).toEqual([]);
+    expect(empty("27128")).toEqual([]);
   });
 
   it("返すのは八方位の並び順のまま（表示の順が崩れない）", () => {
-    const empty = emptyOf("42201");
-    const order = DIRECTIONS.filter((d) => empty.includes(d));
-    expect(empty).toEqual(order);
+    const all = empty("42201").map((e) => e.direction);
+    expect(all).toEqual(DIRECTIONS.filter((d) => all.includes(d)));
   });
 });
