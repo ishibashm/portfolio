@@ -42,7 +42,11 @@ import {
 import { formatShortStayBaseMessage } from "@/lib/relocationPresentation";
 import { directionLabelDetailed } from "@/lib/directionLabels";
 import { directionUnstableNote } from "@/lib/directionDistance";
-import { distanceKmBetween } from "@/utils/directionGeo";
+import {
+  COMPASS_DIRECTIONS,
+  directionAngleRange,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
 import { SimulatorStart } from "@/components/relocation/SimulatorStart";
 import { FavoritePicker } from "@/components/relocation/FavoritePicker";
 import { ratingForStatus } from "@/lib/verdictRating";
@@ -215,34 +219,6 @@ const dirOpposites: Record<string, string> = {
   NW: "SE",
   SE: "NW",
 };
-
-function getDirAngleRanges(
-  useClassical: boolean = false,
-): Record<string, [number, number]> {
-  if (useClassical) {
-    return {
-      N: [345, 15],
-      NE: [15, 75],
-      E: [75, 105],
-      SE: [105, 165],
-      S: [165, 195],
-      SW: [195, 255],
-      W: [255, 285],
-      NW: [285, 345],
-    };
-  } else {
-    return {
-      N: [337.5, 22.5],
-      NE: [22.5, 67.5],
-      E: [67.5, 112.5],
-      SE: [112.5, 157.5],
-      S: [157.5, 202.5],
-      SW: [202.5, 247.5],
-      W: [247.5, 292.5],
-      NW: [292.5, 337.5],
-    };
-  }
-}
 
 function intersectRays(
   lat1: number,
@@ -1245,7 +1221,13 @@ export default function RelocationSimulatorPage() {
     const latB = currentStep.toLat;
     const lonB = currentStep.toLon;
 
-    const angleRanges = getDirAngleRanges(useClassical);
+    /* 境目は utils/directionGeo から引く。以前はここに
+       N: [345, 15] … の表を写しており、区切りの定義が 2 か所に
+       あった（#776 の扇形と同じ事故が起きうる形）。 */
+    const nodeMapping = useClassical ? "traditional" : "physical";
+    const angleRanges = Object.fromEntries(
+      COMPASS_DIRECTIONS.map((d) => [d, directionAngleRange(d, nodeMapping)]),
+    ) as Record<string, [number, number]>;
 
     safeDirs.forEach((d1) => {
       const rangeA = angleRanges[d1];
