@@ -15,6 +15,7 @@ import {
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
+import { useMapTheme } from "@/lib/useMapTheme";
 import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -176,21 +177,12 @@ export default function MagneticMapInner({
     null,
   );
   const [zoom, setZoom] = React.useState(13);
-  const [mapTheme, setMapTheme] = React.useState<"dark" | "light">("light");
+  const { mapTheme, toggleMapTheme } = useMapTheme();
 
+  /* 明暗の読み出しと購読は useMapTheme に寄せた（#774）。
+     ここに残るのは「描画に入ったか」だけ。 */
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("map_theme") as "dark" | "light";
-    if (saved) setMapTheme(saved);
-
-    const handleThemeChange = () => {
-      const current = localStorage.getItem("map_theme") as "dark" | "light";
-      if (current) setMapTheme(current);
-    };
-
-    window.addEventListener("mapThemeChanged", handleThemeChange);
-    return () =>
-      window.removeEventListener("mapThemeChanged", handleThemeChange);
   }, []);
 
   // Sync clickedPos with targetLat/targetLon from props
@@ -630,12 +622,7 @@ export default function MagneticMapInner({
         {/* Theme Switcher Button */}
         <div className="absolute top-4 left-4 z-[1000] pointer-events-auto">
           <button
-            onClick={() => {
-              const nextTheme = mapTheme === "dark" ? "light" : "dark";
-              setMapTheme(nextTheme);
-              localStorage.setItem("map_theme", nextTheme);
-              window.dispatchEvent(new Event("mapThemeChanged"));
-            }}
+            onClick={toggleMapTheme}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
