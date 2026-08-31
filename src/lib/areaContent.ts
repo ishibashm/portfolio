@@ -18,6 +18,7 @@ import {
   DIRECTION_LABELS,
   type CompassDirection,
 } from "@/lib/kigakuContent";
+import { mergeWithListed } from "@/lib/municipalityCoords";
 
 /**
  * JSON の 1 行。書き出し側の型（utils/areaDatasetMerge）をそのまま使う。
@@ -104,6 +105,18 @@ export function neighboursByDirection(
   return out;
 }
 
+/**
+ * 全国の市区町村（掲載の有無と無関係）。**1 度だけ組んで使い回す。**
+ *
+ * emptyDirections は 1 ページに 1 回呼ばれ、その中で 1,894 件を回る。
+ * 毎回組み直すと静的生成の 1,022 頁ぶんが積み上がる。
+ */
+let allMunicipalitiesCache: ReturnType<typeof mergeWithListed> | null = null;
+function allMunicipalities() {
+  allMunicipalitiesCache ??= mergeWithListed(AREAS);
+  return allMunicipalitiesCache;
+}
+
 /** 候補が無い方位と、その理由。 */
 export interface EmptyDirection {
   direction: CompassDirection;
@@ -118,6 +131,17 @@ export interface EmptyDirection {
    * **false を「行き止まり」と読まないこと。**下の註を見ること。
    */
   hasBeyondRange: boolean;
+  /**
+   * 掲載の有無と無関係に、その方位に市区町村があるか。
+   *
+   * **false ならここが本当の行き止まり。**海や山で陸が尽きている
+   * （静岡市駿河区の南、仙台市若林区の東、秋田市の西）。true は
+   * 「街はあるが、その掲載をまだ集計できていない」で、行き止まりでは
+   * ない（長崎市の西の五島市、釧路町の東の厚岸町・根室市）。
+   *
+   * 母集団は lib/municipalityCoords の ALL_MUNICIPALITIES（1,894 件）。
+   */
+  hasAnyMunicipality: boolean;
 }
 
 /**
@@ -136,20 +160,26 @@ export interface EmptyDirection {
  * 150km より先には市区町村がある**（2026-08-31 の実測）。そこを
  * 「無い」と書くと嘘になるので、両者を分けて返す。
  *
- * ## **これは「行き止まりか」を答える関数ではない**
+ * ## 「行き止まり」と「掲載漏れ」を分ける
  *
- * 母集団は AREAS＝areaDirections.json に載っている市区町村で、
- * **全国 1,917 のうち 1,119**（scripts/jis_city_codes.json と突き合わせた
- * 2026-08-31 の実測）。掲載を集計できた分だけなので、巡回の届いて
- * いない町村は最初から入っていない。北海道は 57 / 194 しか無い。
+ * 一覧の母集団は AREAS＝areaDirections.json に載っている市区町村で、
+ * **全国 1,917 のうち 1,119**。掲載を集計できた分だけなので、巡回の
+ * 届いていない町村は最初から入っていない。北海道は 57 / 194 しか無い。
  *
- * その結果、**実在する街が「空」に見える**。釧路町の東は
- * `hasBeyondRange: false` を返すが、そこには厚岸町・浜中町・根室市が
- * ある。海や山で本当に行き止まりなのか、掲載が無いだけなのかを、
- * この計算は区別できない。**画面の文言でも区別しないこと。**
+ * その結果、**実在する街が「空」に見えていた**。釧路町の東は候補が
+ * 0 だが、そこには厚岸町・浜中町・根室市がある。長崎市の西には
+ * 五島市がある。**それを「海や山で行き止まり」と書いていたのが
+ * #832〜#834 で直した不具合。**
  *
- * 区別できるようにするには全 1,917 市区町村の座標が要る
- * （docs/improvement-backlog.md 16 節）。
+ * 掲載と切り離した母集団（lib/municipalityCoords、1,894 件）を当てると
+ * 3 通りに分かれる。**2026-08-31 の実測で、空の 709 方位のうち**
+ *
+ *     遠いだけ（hasBeyondRange）              114
+ *     掲載漏れ（街はあるが掲載が無い）        368
+ *     真の行き止まり                          227
+ *
+ * つまり「行き止まり」と書いていた 595 のうち**正しかったのは 227 だけ**
+ * だった。3 つを取り違えないこと。
  */
 export function emptyDirections(origin: Area): EmptyDirection[] {
   const withinRange = neighboursByDirection(origin);
@@ -168,9 +198,26 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
     );
   }
 
+  /* 掲載と切り離した母集団。距離では切らない。「その方位に街があるか」を
+     見るだけなので、150km の内外は問わない */
+  const anyMunicipality = new Set<CompassDirection>();
+  for (const m of allMunicipalities()) {
+    if (m.code === origin.code) continue;
+    const km = distanceKmBetween(origin.lat, origin.lon, m.lat, m.lon);
+    /* 近すぎる相手は方位が定まらないので外す。上の一覧と同じ規則 */
+    if (km < MIN_KM) continue;
+    anyMunicipality.add(
+      directionFromBearing(
+        bearingBetween(origin.lat, origin.lon, m.lat, m.lon),
+        "traditional",
+      ),
+    );
+  }
+
   return DIRECTIONS.filter((d) => withinRange[d].length === 0).map((d) => ({
     direction: d,
     hasBeyondRange: beyond.has(d),
+    hasAnyMunicipality: anyMunicipality.has(d),
   }));
 }
 

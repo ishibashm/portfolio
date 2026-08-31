@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ALL_MUNICIPALITIES } from "@/lib/municipalityCoords";
+import { mergeWithListed } from "@/lib/municipalityCoords";
 import { AREAS } from "@/lib/areaContent";
+
+const ALL_MUNICIPALITIES = mergeWithListed(AREAS);
 import jis from "../scripts/jis_city_codes.json";
 
 /**

@@ -33,7 +33,6 @@
  *   合流させている
  */
 import raw from "@/data/municipalityCoords.json";
-import { AREAS } from "@/lib/areaContent";
 
 export interface MunicipalityPoint {
   code: string;
@@ -51,17 +50,34 @@ const dataset = raw as {
 
 export const MUNICIPALITY_COORDS_SOURCE: string = dataset.source;
 
+/** 出典そのまま（1,894 件）。合流前なので、ふつうは下の関数を使う。 */
+export const MUNICIPALITY_POINTS: MunicipalityPoint[] = dataset.areas;
+
 /**
- * 全国の市区町村。出典に無いものは areaDirections 側で補う。
+ * 掲載のある市区町村に、出典の側から**足りない分だけ**を加えて返す。
  *
- * 補いが要るのは浜松市の 3 区（2024 年の再編）だけだが、出典が古く
- * なったときに黙って落ちないよう、**合流そのものを規則にしてある。**
+ * **掲載側の座標を優先する。**出典の側で上書きしてはいけない。頁の
+ * 一覧は掲載側の座標（掲載物件の平均）で方位を決めているので、同じ
+ * 市区町村を別の点で数えると**同じ画面の中で方位が食い違う。**
+ *
+ * 実際に踏んだ: 石狩市は掲載側の点だと札幌市北区の**北西**（掲載が
+ * 花川に固まっている）だが、出典側の点だと**北**（旧厚田・浜益を含む
+ * 海岸線ぜんぶの平均なので北へ伸びる）。出典側を優先すると、一覧に
+ * 北西として出ている街を根拠に「北にも街がある」と言うことになる。
+ *
+ * 加わるのは掲載の無い町村（実測 793 件）と、出典に無い浜松市の 3 区
+ * （2024 年の再編）。
+ *
+ * **AREAS をここから import しない。**areaContent がこの module を
+ * 読むので、逆向きに読むと循環参照になる（実際に
+ * `AREAS is not iterable` で落ちた。module の評価順で、合流を実行する
+ * 時点の AREAS がまだ undefined だった）。呼ぶ側から渡す。
  */
-export const ALL_MUNICIPALITIES: MunicipalityPoint[] = (() => {
+export function mergeWithListed(
+  listed: readonly MunicipalityPoint[],
+): MunicipalityPoint[] {
   const byCode = new Map<string, MunicipalityPoint>();
-  for (const a of dataset.areas) byCode.set(a.code, a);
-  for (const a of AREAS) {
-    if (byCode.has(a.code)) continue;
+  for (const a of listed) {
     byCode.set(a.code, {
       code: a.code,
       pref: a.pref,
@@ -70,5 +86,9 @@ export const ALL_MUNICIPALITIES: MunicipalityPoint[] = (() => {
       lon: a.lon,
     });
   }
+  for (const a of dataset.areas) {
+    if (byCode.has(a.code)) continue;
+    byCode.set(a.code, a);
+  }
   return [...byCode.values()].sort((x, y) => x.code.localeCompare(y.code));
-})();
+}
