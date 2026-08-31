@@ -140,6 +140,20 @@ export interface PrefStats {
   medianOfMedians: number;
   /** 県の重心から見た八方位ごとの市区町村（各方位で安い順）。 */
   byDirection: { dir: CompassDirection; jp: string; areas: Area[] }[];
+  /**
+   * 掲載のある市区町村が 1 つも入らない方位。
+   *
+   * **黙って消さない。**頁は長らく候補のある方位だけを並べていたので、
+   * 読む側は「その方位に街が無い」のか「頁が出し忘れている」のかを
+   * 区別できなかった（市区町村ページで同じ問題を #789 で直した）。
+   *
+   * 意味は市区町村ページの空とは違う。ここは**県内で掲載を集計できて
+   * いる市区町村**の話で、地理の行き止まりとは限らない。巡回が届いて
+   * いない市町村はそもそも数に入らないため、掲載の薄い県では
+   * 「県がその方位に伸びていない」ではなく「まだ取れていない」が
+   * 理由になりうる。頁の文言でそこを断定しないこと。
+   */
+  emptyDirections: CompassDirection[];
   asOf?: string;
 }
 
@@ -166,6 +180,12 @@ export function getPrefStats(pref: string): PrefStats | undefined {
     byDir.get(dir)!.push(a);
   }
 
+  const byDirection = DIRECTIONS.map((dir) => ({
+    dir,
+    jp: DIRECTION_LABELS[dir],
+    areas: (byDir.get(dir) ?? []).sort((a, b) => a.medianRent - b.medianRent),
+  }));
+
   return {
     pref,
     code: PREF_CODE_BY_NAME.get(pref)!,
@@ -173,11 +193,10 @@ export function getPrefStats(pref: string): PrefStats | undefined {
     municipalities: sorted,
     totalCount: ms.reduce((s, a) => s + a.count, 0),
     medianOfMedians,
-    byDirection: DIRECTIONS.map((dir) => ({
-      dir,
-      jp: DIRECTION_LABELS[dir],
-      areas: (byDir.get(dir) ?? []).sort((a, b) => a.medianRent - b.medianRent),
-    })).filter((g) => g.areas.length > 0),
+    byDirection: byDirection.filter((g) => g.areas.length > 0),
+    emptyDirections: byDirection
+      .filter((g) => g.areas.length === 0)
+      .map((g) => g.dir),
     asOf: ms[0]?.asOf,
   };
 }
