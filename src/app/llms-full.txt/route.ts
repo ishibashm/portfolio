@@ -6,6 +6,9 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
 import { loadBlogPosts } from "@/lib/blogStore";
+import { PREF_REGION, prefNameByCode } from "@/lib/prefContent";
+import { PREF_EDITORIAL } from "@/lib/prefEditorial";
+import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 
 export const runtime = "nodejs";
 export const revalidate = 86400; // 24 hours cache
@@ -29,6 +32,22 @@ export async function GET() {
   // 倒れる（blogStore の既定の挙動）。
   const blogPosts = (await loadBlogPosts())
     .map((post) => `- [${post.title}](${baseUrl}/blog/${post.slug})`)
+    .join("\n");
+
+  /* 都道府県ページは 47 県ぶん手で文章を書いてある。Search Console の
+     実測では表示の付くクエリのほぼ全部が「地名 家賃相場」なのに、
+     llms.txt にも llms-full.txt にも 1 つも載っていなかった。
+     地方ごとにまとめて出す（呼び名は PREF_REGION に合わせる）。 */
+  const prefsByRegion = new Map<string, string[]>();
+  for (const code of Object.keys(PREF_EDITORIAL).sort()) {
+    const name = prefNameByCode(code);
+    const region = PREF_REGION[code];
+    if (!name || !region) continue;
+    if (!prefsByRegion.has(region)) prefsByRegion.set(region, []);
+    prefsByRegion.get(region)!.push(`[${name}](${baseUrl}/houi/pref/${code})`);
+  }
+  const prefLines = [...prefsByRegion]
+    .map(([region, links]) => `- ${region}: ${links.join(" / ")}`)
     .join("\n");
 
   const content = `# ${SITE_NAME} — ${SITE_TAGLINE}
@@ -57,6 +76,27 @@ ${services}
 
 - [引越しの読みもの](${baseUrl}/blog): 計算規則と流派による解釈を区別して解説します。
 ${blogPosts}
+
+---
+
+## 地域ごとのページ
+
+都道府県ごとに、その県の市区町村の家賃相場と、県の面積重心から見た八方位ごとの
+市区町村の一覧を出しています。**方位は出発地から見た向きで決まる**ので、県ページの
+方位は「県全体を大づかみに見るための目安」です。個別の判断は市区町村ページか
+方位スキャナーを使ってください。
+
+${prefLines}
+
+市区町村ごとのページ（${baseUrl}/houi/area/[市区町村コード]）は ${Object.keys(AREA_EDITORIAL).length} 市区町村ぶん公開しています。
+一覧は ${baseUrl}/houi/area にあります。各ページには「その方位に市区町村が 1 つも
+無い」ことも書いてあります（海や山で行き止まりになる方位は、暦の上で吉方位が
+出ても引越し先がありません）。
+
+## 業界の情報源
+
+- [不動産・建築の情報を集める](${baseUrl}/news): 専門メディアと官公庁の新着見出しを
+  配信元の RSS から 6 時間ごとに取得してまとめています。本文の転載はしていません。
 
 ---
 
