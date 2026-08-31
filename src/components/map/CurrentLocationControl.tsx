@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import L from "leaflet";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
 import type { WatchedPosition } from "@/lib/useWatchedPosition";
 
@@ -46,6 +47,31 @@ export function CurrentLocationControl({
 
   const handleFollowBroken = useCallback(() => setFollow(false), []);
 
+  /*
+    **ボタンの上のクリックを地図に渡さない。**
+
+    このボタンは MapContainer の中（Leaflet の control 枠）に置いて
+    いるので、押した click はそのまま地図の DOM を上っていき、
+    地図の click として拾われる。座標をクリックで選ぶ地図
+    （LocationPicker・ホームの目的地タブ）では、**現在地ボタンを
+    押しただけで、ボタンの真下の座標が選ばれてしまう。**
+
+    React の stopPropagation では止まらない。Leaflet は地図の器に
+    直接 addEventListener していて、そちらが先に走るため。Leaflet が
+    自前の control のために用意している止め方を使う。
+
+    物件の地図は click の中で .leaflet-control を除いていたので
+    無事だった。**同じことを 3 通りに書いていたせいで、守りがある所と
+    無い所ができていた。**
+  */
+  const controlRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = controlRef.current;
+    if (!el) return;
+    L.DomEvent.disableClickPropagation(el);
+    L.DomEvent.disableScrollPropagation(el);
+  }, []);
+
   return (
     <>
       <CurrentLocationLayer
@@ -56,7 +82,10 @@ export function CurrentLocationControl({
         onMessage={setMessage}
       />
       <div className={CORNER_CLASS[corner]}>
-        <div className="leaflet-control flex flex-col items-end gap-1">
+        <div
+          ref={controlRef}
+          className="leaflet-control flex flex-col items-end gap-1"
+        >
           <button
             type="button"
             onClick={() => {
