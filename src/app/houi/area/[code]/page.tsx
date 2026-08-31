@@ -119,6 +119,9 @@ export default async function Page({
   /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
      市区町村ページからは今まで上へ辿れず、県 → 市区町村の片道だった。 */
   const prefCode = prefCodeByName(area.pref);
+  /* siblingAreas は掲載の多い順に 24 件で切る。県によっては 60 件以上
+     あるので、切っていることを黙っていると「これで全部」に見える。 */
+  const prefAreaCount = AREAS.filter((a) => a.pref === area.pref).length - 1;
 
   const path = `/houi/area/${area.code}`;
 
@@ -420,6 +423,18 @@ export default async function Page({
             </h2>
             <p className="mt-3 text-xs text-slate-600">
               出発地が変われば方位も変わります。近くにお住まいの場合はこちらから。
+              {siblings.length < prefAreaCount && (
+                <>
+                  掲載の多い順に{siblings.length}件（{area.pref}の
+                  {prefAreaCount}件中）を出しています。
+                </>
+              )}
+            </p>
+            {/* 解説を書いた頁には印を付ける。一覧（/houi/area）と同じ規約。
+                雛形のままの頁と、方位ごとの街の並びまで書いた頁は中身が違う */}
+            <p className="mt-1 text-[11px] text-slate-500">
+              <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+              が付いているエリアには解説があります。
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {siblings.map((s) => (
@@ -428,6 +443,9 @@ export default async function Page({
                   href={`/houi/area/${s.code}`}
                   className="px-3 py-1.5 rounded-full border border-slate-300 bg-white text-xs font-semibold hover:border-rose-400 transition-colors"
                 >
+                  {s.code in AREA_EDITORIAL && (
+                    <span className="mr-1.5 inline-block h-2 w-2 rounded-full bg-rose-500 align-middle" />
+                  )}
                   {s.city}
                 </Link>
               ))}
