@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import {
   AREAS,
   areaAsOf,
-  directionsWithoutAreas,
+  emptyDirections,
   findArea,
   neighboursByDirection,
   siblingAreas,
@@ -103,8 +103,11 @@ export default async function Page({
 
   const populated = DIRECTIONS.filter((d) => groups[d].length > 0);
   /* 候補が無い方位。**これを出さないと「街が無い」のか「頁が出し
-     忘れている」のか読む側に分からない**（lib/areaContent の註）。 */
-  const empty = directionsWithoutAreas(groups);
+     忘れている」のか読む側に分からない**（lib/areaContent の註）。
+     行き止まりなのか、遠いだけなのかも分けて出す。 */
+  const empty = emptyDirections(area);
+  const deadEnd = empty.filter((e) => !e.hasBeyondRange);
+  const farOnly = empty.filter((e) => e.hasBeyondRange);
   const siblings = siblingAreas(area);
 
   const path = `/houi/area/${area.code}`;
@@ -210,14 +213,27 @@ export default async function Page({
           </p>
 
           {/* 街が無い方位。吉方位が出ても引越し先が無いので、
-              候補の一覧より先に置く。 */}
-          {empty.length > 0 && (
+              候補の一覧より先に置く。
+
+              **行き止まりと「遠いだけ」を分ける。**空の方位のうち
+              一定数は、150km より先に市区町村がある（函館市の南西など）。
+              そこを「行き止まり」と書くと嘘になる。 */}
+          {deadEnd.length > 0 && (
             <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 px-3 py-2 text-xs leading-relaxed text-amber-900">
               <b>
-                この範囲に市区町村が無い方位:{" "}
-                {empty.map((d) => DIRECTION_LABELS[d]).join("・")}
+                市区町村が 1 つも無い方位:{" "}
+                {deadEnd.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
               </b>
-              。海や山で行き止まりになるため、暦の上でこの方位が吉に出ても引越し先の候補がありません。範囲を広げるか、別の方位で探すことになります。
+              。海や山で行き止まりになるため、暦の上でこの方位が吉に出ても引越し先の候補がありません。別の方位で探すことになります。
+            </p>
+          )}
+          {farOnly.length > 0 && (
+            <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
+              <b>
+                150km 以内に市区町村が無い方位:{" "}
+                {farOnly.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
+              </b>
+              。行き止まりではなく、いちばん近い街でもこの一覧の範囲より遠い、という意味です。
             </p>
           )}
 

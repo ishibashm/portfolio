@@ -104,24 +104,57 @@ export function neighboursByDirection(
   return out;
 }
 
+/** 候補が無い方位と、その理由。 */
+export interface EmptyDirection {
+  direction: CompassDirection;
+  /**
+   * 一覧の範囲（150km）より遠くには市区町村があるか。
+   *
+   * **true と false で意味がまったく違う。**false は海や山で行き止まり
+   * （長崎市の西・南西・南、浜松市中央区の南東・南）。true は
+   * 「近くに無いだけ」で、範囲を広げれば候補がある（函館市の南西には
+   * 677 の市区町村があるが、いちばん近いものでも 150km より先）。
+   */
+  hasBeyondRange: boolean;
+}
+
 /**
  * 候補が 1 件も無い方位。
  *
  * **ここがこの頁でいちばん効く情報。**海や山で行き止まりになる方位は、
- * 暦の上で吉方位が出ても引越し先が無い。長崎市の西・南西・南、
- * 浜松市中央区の南東・南のように、地形がそのまま出る。
+ * 暦の上で吉方位が出ても引越し先が無い。
  *
- * 頁は長らく候補のある方位だけを並べていた（populated）。空の方位は
- * **黙って消えていた**ので、読む側は「その方位に街が無い」のか
- * 「頁が出し忘れている」のかを区別できなかった。
+ * 頁は長らく候補のある方位だけを並べていた。空の方位は**黙って消えて
+ * いた**ので、読む側は「その方位に街が無い」のか「頁が出し忘れている」
+ * のかを区別できなかった。
  *
- * 文章を書いた市区町村（AREA_EDITORIAL）では冒頭に人の言葉で書いて
- * いるが、それは 1,022 頁のうち 100 頁ほど。残りにも同じ事実が要る。
+ * ## 理由を取り違えないこと
+ *
+ * 一覧は 5〜150km で切っている。**空の 709 方位のうち 114 は、
+ * 150km より先には市区町村がある**（2026-08-31 の実測）。そこを
+ * 「行き止まり」と書くと嘘になるので、両者を分けて返す。
  */
-export function directionsWithoutAreas(
-  groups: Record<CompassDirection, NeighbourArea[]>,
-): CompassDirection[] {
-  return DIRECTIONS.filter((d) => groups[d].length === 0);
+export function emptyDirections(origin: Area): EmptyDirection[] {
+  const withinRange = neighboursByDirection(origin);
+  const beyond = new Set<CompassDirection>();
+
+  for (const a of AREAS) {
+    if (a.code === origin.code) continue;
+    const km = distanceKmBetween(origin.lat, origin.lon, a.lat, a.lon);
+    /* 近すぎる相手は方位が定まらないので、遠い側だけを見る */
+    if (km <= MAX_KM) continue;
+    beyond.add(
+      directionFromBearing(
+        bearingBetween(origin.lat, origin.lon, a.lat, a.lon),
+        "traditional",
+      ),
+    );
+  }
+
+  return DIRECTIONS.filter((d) => withinRange[d].length === 0).map((d) => ({
+    direction: d,
+    hasBeyondRange: beyond.has(d),
+  }));
 }
 
 export function directionLabel(d: CompassDirection): string {
