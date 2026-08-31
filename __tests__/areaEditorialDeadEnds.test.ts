@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { emptyDirections, findArea } from "@/lib/areaContent";
@@ -130,6 +131,35 @@ describe("手書きの「市区町村がありません」は実測と合って�
           const m = paragraph.match(re);
           if (m) bad.push(`${code}: ${m[0]}`);
         }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("頁と llms.txt の側にも同じ言い切りが残っていない", () => {
+    /* AREA_EDITORIAL だけ直しても、**同じ主張が別のところに写って
+       いる**。llms-full.txt は「海や山で行き止まりになる方位は、暦の
+       上で吉方位が出ても引越し先がありません」と、AI クローラ向けに
+       そのまま断定していた（#832 で頁を直したときに見落とした）。
+
+       文言そのものではなく、断定に使っていた言い回しを禁じる。
+       「本当に行き止まりの場合もあれば」のような留保つきは通る。 */
+    const files = [
+      "src/app/llms-full.txt/route.ts",
+      "src/app/llms.txt/route.ts",
+      "src/app/houi/area/[code]/page.tsx",
+      "src/app/houi/pref/[code]/page.tsx",
+    ];
+    const banned = [
+      "行き止まりになる方位",
+      "街に当たらない",
+      "街に当たりません",
+    ];
+    const bad: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      for (const phrase of banned) {
+        if (text.includes(phrase)) bad.push(`${file}: ${phrase}`);
       }
     }
     expect(bad).toEqual([]);
