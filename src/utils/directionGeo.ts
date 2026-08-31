@@ -218,6 +218,32 @@ export function directionWedgeHalfWidth(
   return direction.length === 2 ? 30 : 15;
 }
 
+/**
+ * 方位の境目（始まりと終わりの方位角）。**表に書き写さない。**
+ *
+ * 中心方位角（DIRECTION_BEARINGS）と半幅（directionWedgeHalfWidth）から
+ * 出す。以前はシミュレータが
+ *
+ *     N: [345, 15], NE: [15, 75], E: [75, 105], ...
+ *
+ * という表を自前で持っていて、推奨ゾーンの多角形をそこから描いていた。
+ * 区切りの定義が 2 か所にある状態で、**片方だけ動かせば「ゾーンの中に
+ * あるのに別の方位と判定される」帯ができる。**扇形で実際に起きた
+ * （#776。描画と判定の基準がずれ、境目から 24km がずれていた）。
+ *
+ * 返すのは [始まり, 終わり]。北のように 345 → 15 と 0 度をまたぐ場合が
+ * あるので、**始まりのほうが大きいことがある。**使う側はそれを見込むこと
+ * （区間に入るかを見るなら directionFromBearing を使うほうが安全）。
+ */
+export function directionAngleRange(
+  direction: CompassDirection,
+  nodeMapping: "traditional" | "physical" = "traditional",
+): [number, number] {
+  const half = directionWedgeHalfWidth(direction, nodeMapping);
+  const center = DIRECTION_BEARINGS[direction];
+  return [normalizeBearing(center - half), normalizeBearing(center + half)];
+}
+
 export interface WedgeViewBounds {
   minLat: number;
   maxLat: number;
