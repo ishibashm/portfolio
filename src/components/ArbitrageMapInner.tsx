@@ -49,6 +49,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { Copy, Check } from "lucide-react";
 import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
+import { useMapTheme } from "@/lib/useMapTheme";
 import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
 import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
@@ -447,7 +448,7 @@ export default function ArbitrageMapInner({
   const isOverview = zoom < OVERVIEW_ZOOM_MAX;
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
-  const [mapTheme, setMapTheme] = useState<"dark" | "light">("light");
+  const { mapTheme, toggleMapTheme } = useMapTheme();
   /**
    * 扇形を描くか。
    *
@@ -604,21 +605,15 @@ export default function ArbitrageMapInner({
     [showToast],
   );
 
+  /* 明暗の読み出しと購読は useMapTheme に寄せた（#774）。
+     ここに残るのは、この地図だけが持つ 3 つ。 */
   useEffect(() => {
     setMounted(true);
-    const saved = localStorage.getItem("map_theme") as "dark" | "light";
-    if (saved) setMapTheme(saved);
 
     // 既定は表示。"0" が入っているときだけ消す。未設定と「消した」を
     // 取り違えないよう、真偽値の文字列ではなく明示の "0" だけを見る。
     if (localStorage.getItem(SECTORS_STORAGE_KEY) === "0")
       setShowSectors(false);
-
-    const handleThemeChange = () => {
-      const current = localStorage.getItem("map_theme") as "dark" | "light";
-      if (current) setMapTheme(current);
-    };
-    window.addEventListener("mapThemeChanged", handleThemeChange);
 
     fetch("/prefectures.geojson")
       .then((res) => {
@@ -627,9 +622,6 @@ export default function ArbitrageMapInner({
       })
       .then((data) => setGeoData(data))
       .catch((err) => console.error("Error loading prefectures.geojson:", err));
-
-    return () =>
-      window.removeEventListener("mapThemeChanged", handleThemeChange);
   }, []);
 
   // 県別の色分けと件数ラベルの元。
@@ -1405,12 +1397,7 @@ export default function ArbitrageMapInner({
                 🏙️ 用途地域
               </button>
               <button
-                onClick={() => {
-                  const nextTheme = mapTheme === "dark" ? "light" : "dark";
-                  setMapTheme(nextTheme);
-                  localStorage.setItem("map_theme", nextTheme);
-                  window.dispatchEvent(new Event("mapThemeChanged"));
-                }}
+                onClick={toggleMapTheme}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
               >
                 {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
