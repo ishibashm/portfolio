@@ -1,20 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Polyline,
-  useMap,
-} from "react-leaflet";
+import { MapContainer, Marker, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
-import { BASE_MAPS, DARK_TILE_CLASS } from "@/lib/baseMapLayers";
 import "leaflet/dist/leaflet.css";
 import { Search } from "lucide-react";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { useMapTheme } from "@/lib/useMapTheme";
+import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 
 // Fix Leaflet marker icons in Next.js
 applyLeafletDefaultIcon();
@@ -222,17 +216,7 @@ export default function PastMoveMap({
             zIndex: 0,
           }}
         >
-          <TileLayer
-            key={`tile-layer-${mapTheme}`}
-            url={BASE_MAPS.std.url}
-            /* ダークは CSS の反転で作る。CARTO の dark_all は鍵なしの
-               ラスタ配信に「API key required」の透かしが入るようになった
-               （lib/baseMapLayers の経緯を見ること）。 */
-            className={mapTheme === "dark" ? DARK_TILE_CLASS : undefined}
-            attribution={BASE_MAPS.std.attribution}
-            maxZoom={BASE_MAPS.std.maxZoom}
-            maxNativeZoom={BASE_MAPS.std.maxNativeZoom}
-          />
+          <StandardBaseTile />
           {/* Fit map view to show both coordinates dynamically */}
           <FitBounds fromPos={fromPos} toPos={toPos} />
           {/* 現在地。地点をドラッグで置くときの目印になる。
