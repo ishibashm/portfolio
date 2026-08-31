@@ -28,6 +28,7 @@ import {
   COMPASS_DIRECTIONS,
   DIRECTION_BEARINGS,
   directionWedgeHalfWidth,
+  directionWedgePoints,
 } from "@/utils/directionGeo";
 import type { MapProperty } from "@/lib/mapProperty";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
@@ -342,11 +343,27 @@ export default function MagneticMapInner({
       // 真北基準。判定と同じ向きで描く（上の magNorthBearing の注記）。
       const baseBearing = d.deg;
 
-      const points: [number, number][] = [center];
+      /*
+        扇形の頂点は共通の directionWedgePoints から引く。
+
+        以前はここで「中心＋弧」だけを並べていた。中心から弧の端までは
+        地図上の**直線**で結ばれるが、方位の境目は大圏（曲線）なので、
+        直線で結ぶと縁が内側へ食い込む。実測（半径 1000km、稚内あたり）
+        で最大 2.71 度・横に 24km ずれており、境目から 24km 以内の街は
+        吉方位の中にあるのに扇形の外に描かれていた（#134 と同じ類）。
+
+        物件の地図は前からこの共通関数を使っていた。**同じ扇形を
+        2 通りに書いていたせいで、片方だけ直っていなかった。**
+        検証は __tests__/magneticWedgeEdges.test.ts。
+      */
       const halfWidth = directionWedgeHalfWidth(d.dir, nodeMapping);
-      for (let offset = -halfWidth; offset <= halfWidth; offset += 5) {
-        points.push(getDestination(lat, lon, baseBearing + offset, 1000));
-      }
+      const points = directionWedgePoints(
+        lat,
+        lon,
+        baseBearing,
+        halfWidth,
+        1000,
+      );
 
       // Calculate label position dynamically based on zoom level
       let labelDistance = 15;
@@ -530,7 +547,9 @@ export default function MagneticMapInner({
   }, [
     sectors,
     getStyleForVector,
-    center,
+    /* center は扇形の頂点を共通関数に寄せたことで本文から消えた。
+       中身は [lat, lon] そのもので、その 2 つは下に残っているので、
+       依存から外しても再計算のきっかけは変わらない。 */
     lat,
     lon,
     layers,
