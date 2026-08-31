@@ -68,6 +68,7 @@ import {
   BLOCKED_FILL,
 } from "@/utils/tierDisplay";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
+import { MapClickPicker } from "@/components/map/MapClickPicker";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -106,28 +107,6 @@ function zoomForRadius(radiusKm?: string): number {
  * 直接送る（onPick）。座標を写したいときは、起点や物件のカードに
  * 「座標をコピー」のボタンが別にある。
  */
-function MapClickHandler({
-  onPick,
-}: {
-  onPick: (lat: number, lon: number) => void;
-}) {
-  useMapEvents({
-    click(e) {
-      const target = e.originalEvent.target as HTMLElement;
-      // Don't trigger if clicking on a control, popup, or marker
-      if (
-        target.closest(".leaflet-control") ||
-        target.closest(".leaflet-popup") ||
-        target.closest(".leaflet-marker-icon")
-      ) {
-        return;
-      }
-      onPick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
 interface ArbitrageMapInnerProps {
   properties: ScoredProperty[];
   baseLat: number;
@@ -1144,7 +1123,7 @@ export default function ArbitrageMapInner({
         zoomControl={false}
       >
         <BoundsListener onBoundsChange={handleBoundsChange} />
-        <MapClickHandler
+        <MapClickPicker
           onPick={(lat, lon) => {
             if (onInspectSpot) {
               onInspectSpot(lat, lon);

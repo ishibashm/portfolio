@@ -10,7 +10,6 @@ import {
   CircleMarker,
   useMap,
   Tooltip,
-  useMapEvents,
 } from "react-leaflet";
 import { InvalidateMapSize } from "@/components/map/InvalidateMapSize";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
@@ -32,6 +31,7 @@ import type { MapProperty } from "@/lib/mapProperty";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
+import { MapClickPicker } from "@/components/map/MapClickPicker";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -133,19 +133,6 @@ function ZoomListener({
     };
   }, [map, onChangeZoom]);
 
-  return null;
-}
-
-function ClickEvents({
-  onMapClick,
-}: {
-  onMapClick: (lat: number, lng: number) => void;
-}) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
   return null;
 }
 
@@ -619,8 +606,8 @@ export default function MagneticMapInner({
             1 行で挿せるよう、ボタンごと部品にしてある。 */}
         <CurrentLocationControl corner="bottomright" />
         <ZoomListener onChangeZoom={setZoom} />
-        <ClickEvents
-          onMapClick={(lat, lng) => {
+        <MapClickPicker
+          onPick={(lat, lng) => {
             setClickedPos([lat, lng]);
             onSelectTarget?.(lat, lng);
           }}

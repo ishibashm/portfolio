@@ -1,28 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MapContainer, Marker, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, Marker, useMap } from "react-leaflet";
 import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import "leaflet/dist/leaflet.css";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { useMapTheme } from "@/lib/useMapTheme";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
+import { MapClickPicker } from "@/components/map/MapClickPicker";
 
 // Fix typical Leaflet icon issue
 applyLeafletDefaultIcon();
-
-function MapEvents({
-  onSelect,
-}: {
-  onSelect: (lat: number, lng: number) => void;
-}) {
-  useMapEvents({
-    click(e) {
-      onSelect(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
 
 function SyncMapCenter({ markerPos }: { markerPos: [number, number] | null }) {
   const map = useMap();
@@ -95,7 +83,7 @@ export default function LocationPickerInner({
       >
         <StandardBaseTile />
         <SyncMapCenter markerPos={markerPos} />
-        <MapEvents onSelect={handleSelect} />
+        <MapClickPicker onPick={handleSelect} />
         {/* 現在地。**自動では座標を入れない。**入れてしまうと、測位の
             たびに利用者が選んだ地点が上書きされる。今どこに居るかを
             見て、そこを地図で指してもらう。 */}
