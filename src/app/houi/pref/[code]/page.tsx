@@ -11,6 +11,7 @@ import {
   regionSiblings,
 } from "@/lib/prefContent";
 import { PREF_EDITORIAL } from "@/lib/prefEditorial";
+import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 
 /**
  * 都道府県の家賃相場×方位ページ。
@@ -174,6 +175,20 @@ export default async function Page({
             <b>いま住んでいる場所</b>
             から見た方位で判定してください（各市区町村のページと方位スキャナーがその計算をします）。
           </p>
+          {stats.emptyDirections.length > 0 && (
+            <p className="mt-4 max-w-[70ch] rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs leading-relaxed text-amber-900">
+              <b>
+                掲載のある市区町村が入らない方位:{" "}
+                {stats.emptyDirections
+                  .map((d) => DIRECTION_LABELS[d])
+                  .join("・")}
+              </b>
+              。この一覧は<b>掲載を集計できている市区町村だけ</b>
+              を並べています。県がその方位に伸びていない場合もあれば、巡回がまだ届いていないだけの場合もあります。
+              <b>「その方位に街が無い」とは限りません。</b>
+              吉方位がこの方位に出た年は、隣の県も含めて探してください。
+            </p>
+          )}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {stats.byDirection.map((g) => (
               <div
