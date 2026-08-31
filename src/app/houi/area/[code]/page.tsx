@@ -20,6 +20,7 @@ import {
 } from "@/lib/kigakuContent";
 import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import { prefCodeByName } from "@/lib/prefContent";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -109,6 +110,9 @@ export default async function Page({
   const deadEnd = empty.filter((e) => !e.hasBeyondRange);
   const farOnly = empty.filter((e) => e.hasBeyondRange);
   const siblings = siblingAreas(area);
+  /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
+     市区町村ページからは今まで上へ辿れず、県 → 市区町村の片道だった。 */
+  const prefCode = prefCodeByName(area.pref);
 
   const path = `/houi/area/${area.code}`;
 
@@ -130,6 +134,9 @@ export default async function Page({
         items={[
           { name: "方位の早見表", path: "/houi" },
           { name: "エリア別", path: "/houi/area" },
+          ...(prefCode
+            ? [{ name: area.pref, path: `/houi/pref/${prefCode}` }]
+            : []),
           { name: area.full, path },
         ]}
       />
@@ -144,6 +151,17 @@ export default async function Page({
             エリア別
           </Link>
           <span className="mx-2">/</span>
+          {prefCode && (
+            <>
+              <Link
+                href={`/houi/pref/${prefCode}`}
+                className="hover:text-rose-600"
+              >
+                {area.pref}
+              </Link>
+              <span className="mx-2">/</span>
+            </>
+          )}
           <span>{area.full}</span>
         </nav>
 
@@ -408,12 +426,22 @@ export default async function Page({
                 </Link>
               ))}
             </div>
-            <Link
-              href="/houi/area"
-              className="mt-4 inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
-            >
-              すべての市区町村から選ぶ（{AREAS.length}エリア）
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+              {prefCode && (
+                <Link
+                  href={`/houi/pref/${prefCode}`}
+                  className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+                >
+                  {area.pref}全体の相場と方位を見る
+                </Link>
+              )}
+              <Link
+                href="/houi/area"
+                className="inline-flex text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+              >
+                すべての市区町村から選ぶ（{AREAS.length}エリア）
+              </Link>
+            </div>
           </section>
         )}
 
