@@ -70,13 +70,34 @@ export function normalizeBearing(bearing: number): number {
   return ((bearing % 360) + 360) % 360;
 }
 
-/** 2 地点間の方位角（真北基準、度）。 */
+/**
+ * 2 地点間の方位角（真北基準、度）。
+ *
+ * **座標が数でないときは 0（北）を返す。**サイトの規則
+ * 「NaN は北に倒す」（kigakuUtils の getKigakuSector、#740 で
+ * directionFromBearing も揃えた）に合わせる。
+ *
+ * 揃えた理由は、同じ計算が 6 か所に写されていて**守りが 1 か所に
+ * しか無かった**こと。シミュレータの写しだけが NaN を 0 に倒し、
+ * 残り 5 か所（api/rentals/arbitrage・municipalities-wealth・
+ * relocation/history・arbitrage/timeline・TenChiJinEvaluation）は
+ * NaN をそのまま返していた。**方位そのものはどちらも「北」に
+ * なるが、方位角を数字で出す画面では「NaN 度」になる。**
+ */
 export function bearingBetween(
   lat1: number,
   lon1: number,
   lat2: number,
   lon2: number,
 ): number {
+  if (
+    !Number.isFinite(lat1) ||
+    !Number.isFinite(lon1) ||
+    !Number.isFinite(lat2) ||
+    !Number.isFinite(lon2)
+  ) {
+    return 0;
+  }
   const dLon = toRad(lon2 - lon1);
   const y = Math.sin(dLon) * Math.cos(toRad(lat2));
   const x =
