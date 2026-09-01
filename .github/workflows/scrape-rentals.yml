@@ -424,3 +424,53 @@ jobs:
             echo "::warning::DATA_PUSH_KEY が未設定。GITHUB_TOKEN で push したため deploy.yml は起動しない。次に master へ push されるまで本番のデータは古いまま。"
             echo "データを master へ push した。ただし DATA_PUSH_KEY が無いためデプロイは走っていない。" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # ここまでで新しいデータは master に入り、deploy.yml が本番へ出す。
+      # **そのデータで検査が通るかは、まだ誰も見ていない。**
+      #
+      # 2026-09-01 に実際に起きた。巡回で掲載の分布が変わると
+      # areaDirections.json の代表点（掲載物件の緯度経度の平均）が動き、
+      # 方位の区分をまたぐことがある。手で書いた市区町村ページの文章が
+      # 3 か所ずれ、頁の一覧と食い違ったまま本番に出た。
+      #
+      #     長岡市 → 小千谷市: 文章=南西  頁の一覧=南
+      #
+      # ci.yml は master への push でも走るので**赤にはなっていた**が、
+      # deploy.yml とは独立していて誰も止めない。気付いたのは偶然で、
+      # その間 1 時間ほど食い違ったまま公開されていた。
+      #
+      # ## 押すのを止めない
+      #
+      # 検査を push の前に置いて止める案も考えたが、採らない。壊れるのは
+      # **データではなく、それを読む側の文章**で、止めると相場が一晩ぶん
+      # 古いままになる。相場が古いほうが利用者には害が大きい。
+      #
+      # **押したうえで、赤くする。**この run が赤くなれば GitHub の通知が
+      # 飛び、翌朝の監査で拾える。
+      #
+      # 検査の一覧はここに書かない。データを読むテストは 16 ファイルあり、
+      # 書き写すとその一覧のほうが古くなる（このリポジトリで何度も起きた
+      # 型）。全部回す。geocode は既に 1 時間以上かかっており、2〜3 分の
+      # 追加は問題にならない。
+      - name: Verify the pushed dataset against the test suite
+        id: verify_data
+        continue-on-error: true
+        run: npx vitest run
+
+      - name: Report if the pushed dataset broke the suite
+        if: steps.verify_data.outcome == 'failure'
+        run: |
+          {
+            echo "## 新しいデータで検査が落ちた"
+            echo
+            echo "**データは既に master に入り、本番に出ている。**壊れたのは"
+            echo "それを読む側（市区町村ページの文章など）で、データではない。"
+            echo
+            echo "巡回で代表点が動いて、手書きの文章の方位が実測とずれた"
+            echo "可能性が高い。上の \`Verify the pushed dataset\` のログで"
+            echo "落ちた検査を見て、\`src/lib/areaEditorial.ts\` を直す。"
+            echo
+            echo "経緯は docs/improvement-backlog.md の 18 節。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::新しいデータで検査が落ちた。文章が実測とずれている可能性が高い。"
+          exit 1
