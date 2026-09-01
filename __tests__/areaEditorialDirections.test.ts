@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { AREAS, findArea, neighboursByDirection } from "@/lib/areaContent";
-import { directionFromBearing } from "@/utils/directionGeo";
+import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
 
 /**
  * 市区町村ページの文章が「この方位には何がある」と書いたところを、
@@ -57,6 +57,31 @@ const SECTOR_EDGES = [15, 75, 105, 165, 195, 255, 285, 345];
  * 2 つの方位のどちらとも読めるので、**その 2 つだけ**を許す。
  */
 const BOUNDARY_MARGIN_DEG = 3;
+
+/**
+ * **この角度より境目に近い相手は、文章で方位に縛らない。**
+ *
+ * 上の 3 度は「落とさない」ための許容幅で、**読み手の実害とは別の話。**
+ * 許容幅の中にいても、実際にひっくり返るかどうかは振れ幅で決まる。
+ *
+ *     方位角の振れ（実測）  中央 0.025°  95% 0.220°  99.9% 1.487°
+ *
+ * **ふつうの夜の揺れ（95% で 0.220°）で反転する相手**は、文章と頁の
+ * 一覧が半々で食い違う。読み手には見える。0.25 度をその線に置く。
+ *
+ * 3 度以内は 161 件（13.5%）あるが、0.25 度以内は **10 件だけ**だった
+ * （2026-09-01 実測。1,189 件の地名を照合）。全部、方位に縛らない
+ * 書き方に直した。
+ *
+ *     南相馬市の本宮 0.004°   沼津市の天竜 0.074°   由利本荘市の弘前 0.077°
+ *     市川市の荒川 0.088°     熊本市東区の日田 0.095°  甲斐市の飯田 0.098°
+ *     久留米市の上峰 0.168°   博多区の早良 0.169°    大田区の目黒 0.194°
+ *     八戸市の花巻 0.243°
+ *
+ * 近くて目立つ 3 つ（日田・早良・目黒）は消さずに、**どの方位の
+ * 境目にあるか**を書いた。消すと読み手が失うものが大きい。
+ */
+const UNSTABLE_TO_NAME_DEG = 0.25;
 
 /** 境目までの角度（度）。0 なら境目の真上。 */
 function degreesFromNearestEdge(bearing: number): number {
@@ -193,6 +218,66 @@ describe("AREA_EDITORIAL の方位が頁の一覧と合っている", () => {
     const komae = groups.W.find((a) => a.city === "狛江市");
     expect(komae).toBeDefined();
     expect(groups.NW.some((a) => a.city === "狛江市")).toBe(false);
+  });
+});
+
+describe("境目のすぐ近くにある地名を、方位に縛っていない", () => {
+  /*
+    ここが「本筋」の側。上の margin は CI を無駄に赤くしないための
+    もので、**読み手の実害はそれでは消えない。**頁の一覧はその日の
+    掲載で決まるので、境目のすぐ近くにいる相手は文章と半々で食い違う。
+
+    書く側の決め事にする。0.25 度より境目に近い相手は、
+    「◯方位は A・B・C」の並びに入れない。
+  */
+  it("0.25 度より境目に近い相手を、方位の並びに入れていない", () => {
+    const bad: string[] = [];
+    for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      const origin = findArea(code);
+      if (!origin) continue;
+      const groups = neighboursByDirection(origin);
+      const listed = new Map<string, (typeof groups)["N"][number]>();
+      for (const list of Object.values(groups)) {
+        for (const a of list) listed.set(a.code, a);
+      }
+      for (const paragraph of editorial.intro) {
+        for (const m of paragraph.matchAll(SEG)) {
+          const before = paragraph.slice(Math.max(0, m.index - 2), m.index);
+          if (/から$|と$|〜$/.test(before)) continue;
+          for (const name of m[2].split("・")) {
+            const cands = AREAS.filter((a) => matchesName(a.city, name));
+            if (cands.length !== 1) continue;
+            const target = listed.get(cands[0].code);
+            if (!target) continue;
+            /* 丸めた bearing ではなく実際の方位角で測る。丸めると
+               0.5 度ぶんの誤差が入り、境目の真上と区別が付かない */
+            const exact = bearingBetween(
+              origin.lat,
+              origin.lon,
+              cands[0].lat,
+              cands[0].lon,
+            );
+            const d = degreesFromNearestEdge(exact);
+            if (d < UNSTABLE_TO_NAME_DEG) {
+              bad.push(
+                `${origin.pref}${origin.city}(${code}) 「${m[1]}は…${name}…」 境目まで ${d.toFixed(3)}°`,
+              );
+            }
+          }
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it("検出そのものが働いている（境目の真上を拾う）", () => {
+    /* 実際に直した 10 件のうちの 1 つ。境目から 0.004 度だった */
+    const o = findArea("07212")!;
+    const t = AREAS.find((a) => a.city === "本宮市")!;
+    const d = degreesFromNearestEdge(
+      bearingBetween(o.lat, o.lon, t.lat, t.lon),
+    );
+    expect(d).toBeLessThan(UNSTABLE_TO_NAME_DEG);
   });
 });
 
