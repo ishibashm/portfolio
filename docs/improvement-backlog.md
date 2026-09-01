@@ -1195,3 +1195,71 @@ geolonia/japanese-addresses の同じ CSV を引いていて、リポジトリ�
 
 **368 の掲載漏れは巡回の網羅漏れそのもの。**方位の側から測った #47 の
 材料になる（北海道は掲載 57 / 実在 194）。巡回設計は 13 節と #47。
+
+## 17. 物件検索が重いのは暦エンジンが client に乗るため（2026-09-01 実測）
+
+利用者から「物件表示までに 20 秒かかっているのか」という問いがあった。
+**20 秒は夜間巡回の取得間隔**（`MIN_PAGE_INTERVAL_MS`）で、Web アプリ
+とは無関係（`src/` 配下に 0 件、`scripts/nifty_extractor.ts` だけ）。
+ただし「物件検索が重い」ほうは事実だったので測った。
+
+### 実測 — 本番ビルドの出力から、頁ごとに実際に読む JS
+
+本番へは到達できない（プロキシが 403。11 節と同じ）ので、LCP は測れて
+いない。代わりに #392 で決め手になった指標を測った。`.next/server/app/
+<route>.html` の `<script src>` を集めて gzip したもの。
+
+| 頁                      | JS（gzip） | 本数 |
+| ----------------------- | ---------- | ---- |
+| `/relocation/wealth`    | **361 KB** | 19   |
+| `/relocation/arbitrage` | **346 KB** | 21   |
+| `/`（ホーム）           | 180 KB     | 13   |
+| `/houi`                 | 174 KB     | 11   |
+
+**物件検索はホームの約 2 倍。**ホームが 143 KB で LCP 5.3〜5.7 秒
+（11 節）なので、そこに地図と API 往復が乗る物件検索はそれより遅いと
+見てよい。**数字そのものは未測定。**
+
+### 中身 — 97 KB は lunar-javascript
+
+arbitrage だけが読む 175 KB のうち最大の 1 本（97 KB、`428ccf76`）を
+文字列で確かめたら `Lunar` 42 回・`Solar` 48 回で、暦エンジンだった。
+
+### 「配慮が効いていなかった」わけではない（自分の見立ての訂正）
+
+最初は `arbitrage/page.tsx:52` が `ephemerisEngine` を値として import
+しているのが原因、#553 の配慮（`import type` に留めてエンジンを client
+に乗せない）が効いていない、と書いた。**これは誤り。**依存を辿ると
+
+    auspiciousDays.ts → utils/lunar.ts → lunar-javascript
+
+で、`judgeDayAllDirections` / `gradeVerdict` を使う時点でエンジンが
+乗る。`ephemerisEngine` の 3 つ（`getHonmeiStar` /
+`getPersonalVoidZodiac` / `parseDirectionFilterMode`）を外しても
+**1 バイトも減らない。**
+
+`auspiciousDays` を読む client 頁は 4 つ（`wealth` `arbitrage`
+`simulator` `timing`）。**上位 2 つが重い理由がこれで説明できる。**
+つまり取りこぼしではなく、**ブラウザで吉凶を判定するという作りの
+帰結**。
+
+### 直すとしたら（未着手・判断待ち）
+
+どれも**画面に出る判定の出方**に関わるので、3 節の手順が要る。
+
+1. **判定をサーバーへ寄せる。**`api/rentals/arbitrage` は既に
+   `maxAstroFactor` を計算している。client の再計算が本当に要るのは
+   「日付・本命星を変えたときに往復せず出す」ためで、そこを許容できる
+   なら一番効く
+2. **動的 import に落とす。**初期表示から外し、判定を出す段で読む。
+   出方（ちらつき）が変わる
+3. **何もしない。**判定が主役の道具なので、エンジンが乗るのは妥当とも
+   言える。その場合は**この節を根拠として残す**（次に測った人が同じ
+   調査を繰り返さないため）
+
+**測り方を再現する:**
+
+```bash
+npx next build --webpack
+node -e "…"   # .next/server/app/<route>.html の script src を gzip 集計
+```
