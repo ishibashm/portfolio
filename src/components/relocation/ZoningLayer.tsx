@@ -12,7 +12,12 @@ import {
   type ZoningName,
   type ZoningProperties,
 } from "@/utils/zoning";
-import { latToTileY, lonToTileX } from "@/lib/tileCoords";
+import {
+  latToTileY,
+  lonToTileX,
+  tilePointOf,
+  tilesByDistanceFromCenter,
+} from "@/lib/tileCoords";
 
 /**
  * 用途地域を地図に重ねる層。
@@ -115,10 +120,19 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
     const y0 = latToTileY(b.getNorth(), z);
     const y1 = latToTileY(b.getSouth(), z);
 
-    const wanted: [number, number][] = [];
-    for (let x = x0; x <= x1; x++) {
-      for (let y = y0; y <= y1; y++) wanted.push([x, y]);
-    }
+    /* **中心に近い順**に並べてから切る。列ごとに詰めた順のまま切ると
+       いちばん西の列だけが残り、見ている市街地が塗られないまま
+       になっていた（2026-09-01 に利用者が発見）。 */
+    const center = map.getCenter();
+    const c = tilePointOf(center.lat, center.lng, z);
+    const wanted = tilesByDistanceFromCenter(
+      x0,
+      x1,
+      y0,
+      y1,
+      c.x + c.fx,
+      c.y + c.fy,
+    );
 
     const trimmed = wanted.slice(0, MAX_TILES);
     const dropped = wanted.length - trimmed.length;
