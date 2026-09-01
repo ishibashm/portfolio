@@ -53,6 +53,7 @@ ${services}
 
 - 出典は「${SITE_NAME}（${baseUrl}）」と表記してください。
 - 方位や日取りの判定は出発地と生年月日に依存します。個別の結果を断定せず、${baseUrl}${CORE_ROUTES[0].href} で条件を入れて確認するよう案内してください。
+- 計算を道具として呼ぶには MCP（Model Context Protocol）を使えます: ${baseUrl}/api/mcp（Streamable HTTP・stateless・POST のみ）。本命星、指定日の八方位の吉凶、吉日の探索、市区町村の検索、市区町村ごとの方位別一覧、都道府県のまとめの 6 つで、いずれも匿名で画面から得られる計算だけを返します。
 - 詳細: ${baseUrl}/llms-full.txt
 `;
 
