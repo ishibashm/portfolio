@@ -1378,3 +1378,67 @@ margin は「CI を無駄に赤くしない」ための措置で、**読み手�
 - **deploy.yml が CI を見ない**のは直していない。ただし上の 2 つで
   「毎晩ぶれて赤くなる」経路は塞いだので、**これからの赤は本物**に
   なる。しばらく運用して赤が出ないことを確かめてから決めればよい
+
+## 19. 俯瞰にすると物件検索が遅い（診断のみ。2026-09-01）
+
+利用者の報告。「俯瞰にしたら出なくなるというより遅い」。本番は測れないので
+実装から経路を追った。
+
+### 走る条件
+
+`page.tsx` は **県も半径も無し × zoom < 10** のときだけ走査を止める
+（全国 45 万行の名寄せ。実測 18.4 秒、#217）。それ以外の俯瞰——
+z=10〜12 の広い bbox、あるいは県か半径を指定した状態——は毎回走査する。
+
+しかも前回の一致件数が上限 500 を超えていると（写真は 11,457 件）、
+`lastTotal <= dataLimit` が偽になり**範囲を動かすたびに再走査**になる。
+これは正しい（上限に当たった窓は広い範囲の上位 500 なので、狭めた範囲の
+上位 500 とは限らない）。
+
+### 遅い理由は SQL の形
+
+    innerSql:  SELECT DISTINCT ON (name_key, floor, layout, size_sqm, rent) …
+               ORDER BY <名寄せ鍵>, <代表行の選び方>
+    selectSql: … ORDER BY percent_rank() OVER (ORDER BY sqm_rent) * 0.4 + …
+               LIMIT 500
+
+`DISTINCT ON` と `percent_rank() OVER` は、**bbox 内の全行を実体化して
+ソートしてからでないと LIMIT を掛けられない。**俯瞰で bbox が広がるほど
+行数に比例して遅くなる。並行して同じ行を `uniqueCountSql` が GROUP BY で
+もう 1 回数える。work_mem を広げても速くならなかった（#296。律速は CPU）。
+
+描画側は原因ではない。ピンは画面内だけ（`pinProperties`）、まとまりも
+`visibleCount <= 100` のときだけ作る。
+
+### 直すなら（判断待ち）
+
+1. **bbox の面積で止める。**いまは県／半径の有無で判定しているが、
+   遅さは面積で決まる。一定以上の面積では走査せず、県別・表示範囲の
+   件数（`prefecture-counts` / `viewport-count`。どちらも索引の範囲引きで
+   軽い）だけを出す。**「遅い」が「出ない」に変わる**ので利用者の判断が要る
+2. **並び順の窓関数を LIMIT の後に回す**（先に sqm_rent だけで上位 N を
+   取り、その中で 4 軸の percent_rank を出す）。答えが少し変わる
+   （3 節の手順が要る）
+3. 本番の EXPLAIN を取る。`db-explain.yml` が `prefecture=all` の最悪
+   ケースを流せる。**本番 DB に数十秒の負荷を掛ける操作**なので投入は
+   聞いてから
+
+## 20. MCP の口を足した（2026-09-01）
+
+`/api/mcp`。Streamable HTTP、stateless、POST のみ、SSE 無し。中身は
+`lib/mcpServer`、検査は `__tests__/mcpServer.test.ts`（in-memory transport
+で道具を直接呼び、**画面と同じ関数を同じ入力で呼んだ結果と突き合わせる**）。
+
+道具は 6 つ。全部 in-process の計算と静的 JSON で、DB に触らない。
+
+    get_honmei_star       本命星と天中殺の干支
+    judge_directions      指定日の八方位の段階（S〜X）と状態
+    find_auspicious_days  期間内の吉日を方位ごとに集計
+    search_municipality   名前から市区町村コードを引く
+    area_directions       市区町村ページと同じ方位別一覧（空の方位は 3 分類）
+    prefecture_summary    県ページと同じまとめ
+
+**公開範囲は広げていない。**返すのは匿名で画面から得られるものだけ。
+物件の走査（数秒・DB）は載せず、案内だけ返す。
+
+依存は `@modelcontextprotocol/sdk` 1.30.0（zod v4 と互換）。
