@@ -107,3 +107,40 @@ export function aerialPhotoUrl(lat: number, lon: number, z: number): string {
   const { x, y } = tilePointOf(lat, lon, zoom);
   return `https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/${zoom}/${x}/${y}.jpg`;
 }
+
+/**
+ * 画面に入るタイルを、**中心に近い順**に並べて返す。
+ *
+ * 上限を掛けて間引くとき、並べた順のまま切ると**端だけが残る。**
+ * 用途地域の重ね描きが実際にそうなっていた（列ごとに詰めてから
+ * 先頭 12 枚で切っていたので、いちばん西の列だけが塗られ、見ている
+ * 市街地が真っ白のままだった。2026-09-01 に利用者が発見）。
+ *
+ * 上限があること自体は妥当（1 枚ずつ API を叩くので、広い画面で
+ * 全部取ると遅い）。**間引くなら、見ている場所から遠いものを捨てる。**
+ *
+ * 距離はタイルの中心どうしのユークリッド距離。同距離のときは x → y の
+ * 順で決める（並びが実行ごとに変わらないように）。
+ */
+export function tilesByDistanceFromCenter(
+  x0: number,
+  x1: number,
+  y0: number,
+  y1: number,
+  centerX: number,
+  centerY: number,
+): [number, number][] {
+  const tiles: [number, number][] = [];
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) tiles.push([x, y]);
+  }
+  /* タイルの中心で測る。左上の角で測ると、中心のタイルが 1 枚ぶん
+     ずれて隣に負ける */
+  const d2 = ([x, y]: [number, number]) =>
+    (x + 0.5 - centerX) ** 2 + (y + 0.5 - centerY) ** 2;
+  return tiles.sort((a, b) => {
+    const diff = d2(a) - d2(b);
+    if (diff !== 0) return diff;
+    return a[0] !== b[0] ? a[0] - b[0] : a[1] - b[1];
+  });
+}
