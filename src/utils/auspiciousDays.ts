@@ -32,6 +32,7 @@ import {
   TenchusatsuMode,
   VoidScopes,
   evaluateTenchusatsu,
+  filterModeUsesTenchusatsu,
 } from "@/utils/tenchusatsuPolicy";
 
 /**
@@ -223,9 +224,20 @@ function computeDayLayers(
     month: p.voidZodiacs.includes(zodiacs.monthZodiac),
     day: p.voidZodiacs.includes(zodiacs.dayZodiac),
   };
+  /*
+    絞り込みモードが天中殺を含まないなら、期間の禁忌も効かせない。
+    方位のほうは filterCollisionByMode が既にモードごとに組み直して
+    いて、本命星のみ・環境要因のみでは天中殺方位が出ない。**期間だけ
+    tenchusatsuMode を直に見ていたため、「本命星のみ」でも天中殺の日が
+    除外され続けていた**（月ごとの見通しとヒートマップ。利用者報告）。
+    voidScopes は事実としてそのまま返すので、画面は「空亡には当たって
+    いるが、この見方では使っていない」と書ける。
+  */
   const verdict = evaluateTenchusatsu(
     voidScopes,
-    p.tenchusatsuMode,
+    filterModeUsesTenchusatsu(p.directionFilterMode ?? "composite")
+      ? p.tenchusatsuMode
+      : "off",
     p.involuntaryMove ?? false,
   );
 

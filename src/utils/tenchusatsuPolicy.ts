@@ -83,6 +83,31 @@ export const TENCHUSATSU_MODES: {
   },
 ];
 
+/**
+ * その絞り込みモードが、天中殺（空亡）を判定に含むか。
+ *
+ * 天中殺には**方位の禁忌**（空亡の支に当たる方位）と**期間の禁忌**
+ * （空亡の年・月・日は動かない）の 2 つの効き方がある。方位のほうは
+ * `filterCollisionByMode` がモードごとに組み直していて、本命星のみ・
+ * 環境要因のみでは最初から出ない。**ところが期間のほうは
+ * `tenchusatsuMode` だけを見ていて、絞り込みモードを見ていなかった。**
+ *
+ * そのため「本命星のみ」を選んでも、月ごとの見通しとヒートマップでは
+ * 天中殺の日が除外され続けていた（利用者からの報告）。方位では外して
+ * 期間では効かせる、という筋の通らない状態だったので、**同じ設定は
+ * 同じ意味になる**ようにここで揃える。
+ *
+ * - composite … 全部を見るモードなので含む
+ * - personal_bazi … 天中殺だけを見るモードなので当然含む
+ * - personal_kigaku … 本命星との相生・本命殺・的殺だけ。含まない
+ * - environmental … 五黄殺・暗剣殺・破だけ。含まない
+ */
+export function filterModeUsesTenchusatsu(
+  mode: "composite" | "personal_kigaku" | "personal_bazi" | "environmental",
+): boolean {
+  return mode === "composite" || mode === "personal_bazi";
+}
+
 export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "strict";
 
 export function isTenchusatsuMode(value: string): value is TenchusatsuMode {
