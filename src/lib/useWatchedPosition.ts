@@ -49,6 +49,14 @@ export type WatchStatus =
   | "denied"
   /** この環境に位置情報が無い（対応していない・安全でない文脈）。 */
   | "unavailable"
+  /**
+   * ブラウザ側で既に拒否されている。**押しても許可の確認は出ない。**
+   *
+   * denied と分けてある。あちらは「この操作で拒否された」で、こちらは
+   * 「押す前から拒否されていた」。利用者から見ると**何も起きない**ので、
+   * 出す案内が違う（設定から戻す手順が要る）。
+   */
+  | "blocked"
   /** 一時的な失敗（圏外・タイムアウト）。購読は続いている。 */
   | "error";
 
@@ -104,10 +112,34 @@ export function isFatalWatchError(code: number): boolean {
 /** 購読の内部状態。外向きの status はここから組み立てる（下の註）。 */
 type WatchPhase = "none" | "denied" | "error";
 
+/**
+ * 安全な文脈（HTTPS か localhost）か。
+ *
+ * **ここが false だと、ブラウザは許可の確認すら出さない。**利用者からは
+ * 「ボタンを押しても何も起きない」に見える。実際にその報告があった。
+ * 押す前に分かるので、押す前に言う。
+ */
+export function isSecureForGeolocation(
+  ctx: { isSecureContext?: boolean } | undefined = typeof window !== "undefined"
+    ? window
+    : undefined,
+): boolean {
+  /* window が無い（サーバ側）ときは判定しない。描画は client で行う。 */
+  if (!ctx) return true;
+  return ctx.isSecureContext !== false;
+}
+
+/** 位置情報の許可を、要求せずに読むための最小の口。 */
+export interface PermissionsLike {
+  query(descriptor: { name: "geolocation" }): Promise<{ state: string }>;
+}
+
 export function useWatchedPosition(
   enabled: boolean,
   /** テスト用。省略時は navigator.geolocation。 */
   geolocation?: GeolocationLike | null,
+  /** テスト用。省略時は navigator.permissions。 */
+  permissions?: PermissionsLike | null,
 ): WatchedPositionState {
   const [inner, setInner] = useState<{
     position: WatchedPosition | null;
@@ -117,12 +149,43 @@ export function useWatchedPosition(
   /* 拒否されたあとは、enabled が立て直されても購読しない。
      押すたびに許可ダイアログを出すのは迷惑なので。 */
   const deniedRef = useRef(false);
+  /* 押す前から拒否されているか。Permissions API があるときだけ分かる。 */
+  const [preBlocked, setPreBlocked] = useState(false);
 
   /* navigator.geolocation は同じ参照が返るので、依存に置いても
      購読は張り直されない。 */
   const api =
     geolocation ??
     (typeof navigator !== "undefined" ? navigator.geolocation : null);
+
+  const perms =
+    permissions ??
+    (typeof navigator !== "undefined"
+      ? ((navigator as Navigator & { permissions?: PermissionsLike })
+          .permissions ?? null)
+      : null);
+
+  /*
+    **要求せずに、いまの許可を読む。**Permissions API は許可の確認を
+    出さないので、これを見てから watchPosition を呼べば「押しても何も
+    起きない」を避けられる。対応していないブラウザでは何もしない
+    （従来どおり watchPosition の失敗で分かる）。
+  */
+  useEffect(() => {
+    if (!enabled || !perms) return;
+    let alive = true;
+    perms
+      .query({ name: "geolocation" })
+      .then((s) => {
+        if (alive && s.state === "denied") setPreBlocked(true);
+      })
+      .catch(() => {
+        /* 対応していない・引けない。従来の経路に任せる。 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [enabled, perms]);
 
   useEffect(() => {
     if (!enabled || !api || deniedRef.current) return;
@@ -175,22 +238,36 @@ export function useWatchedPosition(
   */
   const status: WatchStatus = !enabled
     ? "idle"
-    : !api
+    : !api || !isSecureForGeolocation()
       ? "unavailable"
-      : inner.phase === "denied"
-        ? "denied"
-        : inner.position
-          ? "watching"
-          : inner.phase === "error"
-            ? "error"
-            : "locating";
+      : preBlocked
+        ? "blocked"
+        : inner.phase === "denied"
+          ? "denied"
+          : inner.position
+            ? "watching"
+            : inner.phase === "error"
+              ? "error"
+              : "locating";
 
-  const message =
-    enabled && !api
+  /*
+    案内は status から組み立てる。**「何も起きない」を黙って返さない。**
+
+    押しても許可の確認が出ない経路が 2 つある。どちらも利用者からは
+    同じに見えるので、原因ごとに戻し方を書く。
+
+      安全でない文脈  … ブラウザが機能ごと止める。確認は出ない
+      既に拒否済み    … 一度断ると以後は聞かれない。設定から戻す
+  */
+  const message = !enabled
+    ? null
+    : !api
       ? "このブラウザは位置情報に対応していません。"
-      : enabled
-        ? inner.message
-        : null;
+      : !isSecureForGeolocation()
+        ? "安全な接続（https）でないため、位置情報を使えません。確認の表示も出ません。"
+        : status === "blocked"
+          ? "このサイトの位置情報が拒否されています。確認は表示されないので、ブラウザの設定（アドレスバーの鍵や ⓘ から「位置情報」）で許可に戻してください。iPhone・iPad では 設定 → プライバシーとセキュリティ → 位置情報サービス も確認してください。"
+          : inner.message;
 
   return { position: inner.position, status, message };
 }

@@ -2,9 +2,11 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   isFatalWatchError,
+  isSecureForGeolocation,
   useWatchedPosition,
   watchErrorMessage,
   type GeolocationLike,
+  type PermissionsLike,
 } from "@/lib/useWatchedPosition";
 
 /**
@@ -160,5 +162,66 @@ describe("watchErrorMessage / isFatalWatchError", () => {
     expect(watchErrorMessage(2)).toContain("測定できません");
     expect(watchErrorMessage(3)).toContain("時間がかかっています");
     expect(watchErrorMessage(99)).toContain("取得できませんでした");
+  });
+});
+
+/**
+ * 「押しても何も起きない」経路の検査。
+ *
+ * 利用者の報告「現在地を追従させようとして、ブラウザの許可のポップアップ
+ * が出ないからか、できない」。**確認が出ない経路が 2 つある。**
+ *
+ *   安全でない接続（http）… ブラウザが機能ごと止める。確認は出ない
+ *   既に拒否済み          … 一度断ると以後は聞かれない
+ *
+ * どちらも watchPosition の失敗コールバックが**呼ばれないことがある**
+ * ので、失敗を待つ作りでは黙ったままになる。押す前に分かる形にした。
+ */
+describe("確認が出ない経路", () => {
+  it("安全でない接続では、押す前から使えないと分かる", () => {
+    expect(isSecureForGeolocation({ isSecureContext: false })).toBe(false);
+    expect(isSecureForGeolocation({ isSecureContext: true })).toBe(true);
+    /* 判定できない（サーバ側など）ときは止めない。 */
+    expect(isSecureForGeolocation(undefined)).toBe(true);
+  });
+
+  it("既に拒否されていれば blocked になり、戻し方を案内する", async () => {
+    const { api } = fakeGeolocation();
+    const permissions: PermissionsLike = {
+      query: () => Promise.resolve({ state: "denied" }),
+    };
+    const { result } = renderHook(() =>
+      useWatchedPosition(true, api, permissions),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.status).toBe("blocked");
+    expect(result.current.message).toContain("設定");
+  });
+
+  it("許可されていれば blocked にならない（空回りしていない）", async () => {
+    const { api } = fakeGeolocation();
+    const permissions: PermissionsLike = {
+      query: () => Promise.resolve({ state: "granted" }),
+    };
+    const { result } = renderHook(() =>
+      useWatchedPosition(true, api, permissions),
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.status).toBe("locating");
+  });
+
+  it("Permissions API が無いブラウザでは従来どおり", async () => {
+    const { api, state } = fakeGeolocation();
+    const { result } = renderHook(() => useWatchedPosition(true, api, null));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.status).toBe("locating");
+    /* 購読は始まっている。失敗の経路で分かる、という従来の作り。 */
+    expect(state.watchCalls).toBe(1);
   });
 });
