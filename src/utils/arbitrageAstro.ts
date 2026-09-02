@@ -27,6 +27,7 @@ import {
   TenchusatsuMode,
   VoidScopes,
   evaluateTenchusatsu,
+  filterModeUsesTenchusatsu,
 } from "@/utils/tenchusatsuPolicy";
 
 // 吉凶ステータスの判定は文字列を見るだけの純粋な処理で、天体暦エンジンも
@@ -269,6 +270,14 @@ export interface PropertyAstroContext {
   actionIntent: ActionIntent;
   /** 天中殺（空亡）の効かせ方。既定は従来どおり年・月・日すべてで禁止。 */
   tenchusatsuMode?: TenchusatsuMode;
+  /**
+   * 方位の絞り込みモード。**天中殺を効かせるかどうかの判断に要る。**
+   *
+   * 方位のほうは buildDailyAstroStates が filterCollisionByMode を通して
+   * いるのでモードごとに組み直されるが、期間の禁忌（下の evaluateTenchusatsu）
+   * はここを見ないと分からない。渡さなければ composite（＝従来どおり）。
+   */
+  directionFilterMode?: DirectionFilterMode;
   /** 転勤などやむを得ない移動か。立てると天中殺で禁止しない。 */
   involuntaryMove?: boolean;
 }
@@ -291,9 +300,15 @@ export function scoreDateForProperty(
   let voidPenalty = 0;
   // 移転（MIGRATION）以外の用途でも「弱める」設定は効かせたいので、
   // 意図に関係なくここで一度だけ求める。
+  // 絞り込みモードが天中殺を含まないなら、期間の禁忌も弱めも効かせない。
+  // 規則は tenchusatsuPolicy に 1 つ置いてあり、auspiciousDays（時期の
+  // 分析）と同じものを使う。**片方だけ直すと、同じ設定で物件検索と
+  // 時期分析の答えが割れる。**
   const tenchusatsu = evaluateTenchusatsu(
     state.voidScopes,
-    ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE,
+    filterModeUsesTenchusatsu(ctx.directionFilterMode ?? "composite")
+      ? (ctx.tenchusatsuMode ?? DEFAULT_TENCHUSATSU_MODE)
+      : "off",
     ctx.involuntaryMove ?? false,
   );
 
