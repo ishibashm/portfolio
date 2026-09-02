@@ -1448,3 +1448,70 @@ z=10〜12 の広い bbox、あるいは県か半径を指定した状態——�
 物件の走査（数秒・DB）は載せず、案内だけ返す。
 
 依存は `@modelcontextprotocol/sdk` 1.30.0（zod v4 と互換）。
+
+---
+
+## 21. 旧ポータルのサブドメインを 4 本畳んだ（2026-09-02）
+
+利用者から「`katmer.cloud-palette.com` を SEO の観点でどうするか」と
+相談があり、調べたら**旧ポータルの残骸が DNS に 4 本生きていた。**
+
+    brain.cloud-palette.com     CNAME ghs.googlehosted.com
+    fortune.cloud-palette.com   CNAME ghs.googlehosted.com
+    katmer.cloud-palette.com    CNAME ghs.googlehosted.com
+    tech.cloud-palette.com      CNAME ghs.googlehosted.com
+
+`src/app/page.tsx` のコメントに残っている「以前は『知性と感性をかさねる
+ポータル』で、3 つのサブドメイン（占い・株トレンド・ナレッジベース）への
+ランチャーになっていた」が、そのままの形。fortune が占い、tech が株
+トレンド、brain と katmer がナレッジベース。
+
+### 何が問題だったか
+
+**索引されていたのは katmer のルート 1 枚だけ**（`site:` で実測）。
+ただしその 1 枚の説明文が
+
+> 自分らしく、心地よく。知性と感性をかさねる場所. AIタロットによる
+> 毎日の気づき、アイディアを育てるノート、そして最新のトレンドインサイト。
+
+で、**サイトが名乗るのをやめた立ち位置**を同じドメイン配下で名乗り続けて
+いた。cloud-palette.com は AdSense に「有用性の低いコンテンツ」でサイト
+全体の配信を止められた履歴があるので、これは持っていたくない。
+
+Search Console は**ドメインプロパティ**（`cloud-palette.com`）なので、
+サブドメインの URL も同じレポートに混ざる。市区町村ページを索引に戻す
+判断（#750〜）の材料が濁っていた。
+
+### 直し方の判断
+
+- **パスに寄せない。**「サブドメインよりサブディレクトリのほうが評価が
+  集まる」は関連する内容ならの話で、無関係な道具を寄せると主題が濁る。
+  #379 と llms.txt の書き直しでずっと絞ってきた方向と逆
+- **robots.txt の Disallow では足りない。**サイドバーから全ページで
+  リンクしていたので、クロールを止めると本文を読めないまま URL だけが
+  索引される。「クロールは許す + noindex」が正しい組み合わせ
+- 最終的に**畳む**と決まったので、DNS を消した。マッピングがどの
+  リージョンにあっても名前解決が止まる
+
+### 実際にやったこと
+
+    #873  katmer-defuddle/knowledge-base に noindex（metadata + ヘッダ）
+    #874  GlobalSidebar から Katmer への導線を削除
+    #875  QA 手順書 3 ファイルから記述を削除（ついでに 5 項目 → 3 群 10 本）
+    手作業 Cloudflare の DNS から 4 本削除（18 → 15 レコード）
+
+**#873 は索引されていた頁を覆っていない。**リポジトリの
+`knowledge-base`（英語で "Your second brain…"）と、katmer のルートに
+出ていた旧ランディング（日本語）は別物だった。noindex を入れた先が
+違うと気付かないまま報告し、あとで訂正している。**ホスト名から
+リポジトリの中身を推測しない。**
+
+### 残り（手作業。急がない）
+
+- Search Console → ドメインプロパティ → 削除 → プレフィックス
+  `https://katmer.cloud-palette.com/`（**索引されていたのは katmer だけ**）
+- Cloud Run の後片付け。ドメインマッピングは**リージョンごと**で、
+  コンソールの一覧は 1 リージョンぶんしか出ない。4 本のマッピングは
+  us-central1 にあるはず（`knowledge-base-app` が居るリージョン）
+- us-central1 の `portfolio-app` も残骸（本番は asia-northeast1。
+  最終デプロイ 2026-08-08・0 req/s で ¥84 出ている）。課金なので判断待ち
