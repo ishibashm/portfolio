@@ -15,8 +15,10 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { DIRECTION_LABELS } from "@/lib/kigakuContent";
-import type { CompassDirection } from "@/lib/kigakuContent";
+/* ラベルと方位の型は directionGeo（暦エンジンを引かない葉）から。
+   kigakuContent 経由だと、この部品を載せる頁の初回読み込みに
+   lunar-javascript 一式が乗る（backlog 17 節）。中身は同じ表。 */
+import { DIRECTION_LABELS, type CompassDirection } from "@/utils/directionGeo";
 
 interface TxRow {
   id: string;

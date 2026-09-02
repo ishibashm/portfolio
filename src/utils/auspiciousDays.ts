@@ -28,6 +28,7 @@ import { DIRECTION_LABELS as GEO_DIRECTION_LABELS } from "@/utils/directionGeo";
 import { directionBoardInstant, forecastAnchorMs } from "@/utils/boardInstant";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { isFatalNoise, isNoise } from "@/utils/noiseSeverity";
+import { TIER_ORDER, TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import {
   TenchusatsuMode,
   VoidScopes,
@@ -555,18 +556,11 @@ export function findAuspiciousDaysAllDirections(
  * 対象にならない扱いなので、候補から常に除外する。集合の定義は
  * noiseSeverity.ts が唯一の情報源で、地図の「大凶」の色分けと同じ。
  */
-export type DayTier = "S" | "A" | "B" | "C" | "D" | "X";
-
-export const TIER_ORDER: readonly DayTier[] = ["S", "A", "B", "C", "D", "X"];
-
-export const TIER_LABELS: Record<DayTier, string> = {
-  S: "三盤吉",
-  A: "吉2盤・凶なし",
-  B: "吉1盤・凶なし",
-  C: "凶なし（平）",
-  D: "軽い凶のみ",
-  X: "五大凶殺あり",
-};
+/* 型と表示名は utils/dayTier（暦エンジンを引かない葉）に置き、ここから
+   再輸出する。段階の名前だけ要る client 部品がこのファイルを値で
+   import すると、暦エンジン一式が初回読み込みに乗るため。 */
+export { TIER_ORDER, TIER_LABELS };
+export type { DayTier };
 
 /**
  * gradeVerdict が実際に読む 5 項目。シミュレータはステップの判定

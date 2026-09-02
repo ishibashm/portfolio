@@ -49,6 +49,10 @@ describe("土用殺の日が実在する", () => {
 describe("画面まで配線されている", () => {
   const spot = read("src/components/relocation/SpotVerdict.tsx");
   const arbitrage = read("src/app/relocation/arbitrage/page.tsx");
+  /* 判定を組む本体は page.tsx から lib/dayKigakuClient に切り出した
+     （初回読み込みから暦エンジンを外すため。import() で遅延して呼ぶ）。
+     配線の検査は「組む側」と「載せる側」の両方を見る。 */
+  const dayKigaku = read("src/lib/dayKigakuClient.ts");
 
   it("SpotVerdict の DirectionCell が土用殺を受け取る", () => {
     expect(spot).toContain("doyouSatsu?: boolean;");
@@ -61,8 +65,11 @@ describe("画面まで配線されている", () => {
   });
 
   it("arbitrage が判定の値をセルに載せている", () => {
-    // ここが抜けると SpotVerdict の分岐は永久に偽になる。
-    expect(arbitrage).toContain("doyouSatsu: v.isDoyouSatsu,");
+    // 組む側: 土用殺の印を段階と一緒にセルへ入れている
+    expect(dayKigaku).toContain("doyouSatsu: v.isDoyouSatsu,");
+    // 載せる側: page.tsx はその結果を遅延して受け取り、SpotVerdict に渡す
+    expect(arbitrage).toContain('import("@/lib/dayKigakuClient")');
+    expect(arbitrage).toContain("dirKigaku={dayKigaku?.byDirection}");
   });
 
   it("天中殺の理由も残っている（置き換えではなく追加）", () => {

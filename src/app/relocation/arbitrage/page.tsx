@@ -14,7 +14,15 @@ import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
 import { TransactionsPanel } from "@/components/relocation/TransactionsPanel";
-import { DirectionTierOverview } from "@/components/relocation/DirectionTierOverview";
+/* 方位別の段階の一覧は本命卦（立春基準の年）を引くのでエンジンを
+   読む。初回の描画に要らないので、判定と同じく遅延して読む。 */
+const DirectionTierOverview = dynamic(
+  () =>
+    import("@/components/relocation/DirectionTierOverview").then(
+      (m) => m.DirectionTierOverview,
+    ),
+  { ssr: false },
+);
 import { FavoriteButton } from "@/components/relocation/FavoriteButton";
 import { SpotVerdict } from "@/components/relocation/SpotVerdict";
 import {
@@ -39,19 +47,25 @@ import {
   TENCHUSATSU_MODES,
 } from "@/utils/tenchusatsuPolicy";
 import type { ProfilePreset } from "@/lib/profilePresetSync";
+/*
+  暦エンジンをこのファイルから値で import しない。
+
+  auspiciousDays / ephemerisEngine を値で読むと lunar-javascript と
+  astronomy-engine（gzip 約 135 KB、この頁の JS の 4 割）が初回の
+  読み込みに乗る（backlog 17 節）。方位の一覧とラベルは directionGeo
+  （葉）から、絞り込みの見方の parser は directionFilterMode（葉）から
+  取り、判定そのものは lib/dayKigakuClient を import() で遅延して呼ぶ。
+  値は同じ（ALL_DIRECTIONS は同じ 8 方位・同じ順、ラベルは同じ表）。
+*/
 import {
-  ALL_DIRECTIONS,
+  COMPASS_DIRECTIONS as ALL_DIRECTIONS,
   DIRECTION_LABELS,
-  gradeVerdict,
-  judgeDayAllDirections,
-} from "@/utils/auspiciousDays";
+} from "@/utils/directionGeo";
 import {
-  getHonmeiStar,
-  getPersonalVoidZodiac,
   parseDirectionFilterMode,
   type DirectionFilterMode,
-} from "@/utils/ephemerisEngine";
-import { prefectureDirections } from "@/lib/prefectureDirection";
+} from "@/utils/directionFilterMode";
+import type { DayKigaku } from "@/lib/dayKigakuClient";
 import { saveWorkingDate } from "@/lib/workingDate";
 import {
   expandLayoutSelections,
@@ -1703,67 +1717,54 @@ export default function ArbitrageScannerPage() {
    * 日付チップを選んだ瞬間に地図が塗り替わる。
    * 本命星は時期スクリーニングと同じく classical を使う。
    */
-  const dayKigaku = useMemo(() => {
-    if (!canJudgeDirections) return undefined;
-    try {
-      const bd = new Date(
-        birthDate.includes("T") ? birthDate : `${birthDate}T12:00:00+09:00`,
-      );
-      if (isNaN(bd.getTime())) return undefined;
-      const honmei = getHonmeiStar(bd);
-      const all = judgeDayAllDirections(
-        new Date(`${targetDate}T12:00:00+09:00`),
-        {
-          honmeiStar: honmei.classical,
-          voidZodiacs: getPersonalVoidZodiac(bd),
-          lon: Number(baseLon),
-          tenchusatsuMode: tenchusatsuMode as never,
+  /*
+    判定に要る入力を 1 つの鍵にまとめ、状態は「どの鍵で出した答えか」と
+    一緒に持つ。鍵が変わった瞬間に古い答えを出さない（派生で undefined に
+    落ちる）ので、effect の中で同期的に setState する必要が無い。
+  */
+  const dayKigakuKey = canJudgeDirections
+    ? JSON.stringify([
+        birthDate,
+        targetDate,
+        baseLat,
+        baseLon,
+        tenchusatsuMode,
+        involuntaryMove,
+        directionFilterMode,
+        useClassical,
+      ])
+    : "";
+  const [dayKigakuState, setDayKigakuState] = useState<{
+    key: string;
+    value: DayKigaku | undefined;
+  }>({ key: "", value: undefined });
+  useEffect(() => {
+    if (!dayKigakuKey) return;
+    let alive = true;
+    /* 暦エンジンはここで初めて読む。判定に要る値が揃った人にだけ、
+       揃った時点で読み込む。計算は lib/dayKigakuClient（旧 useMemo の
+       本体そのもの）。 */
+    import("@/lib/dayKigakuClient").then(({ computeDayKigaku }) => {
+      if (!alive) return;
+      setDayKigakuState({
+        key: dayKigakuKey,
+        value: computeDayKigaku({
+          birthDate,
+          targetDate,
+          baseLat,
+          baseLon,
+          tenchusatsuMode,
           involuntaryMove,
           directionFilterMode,
-        },
-      );
-      type Cell = {
-        direction: string;
-        directionLabel: string;
-        tier: string;
-        blocked: boolean;
-        doyouSatsu: boolean;
-      };
-      const byDirection: Record<string, Cell> = {};
-      for (const dir of ALL_DIRECTIONS) {
-        const v = all[dir];
-        if (!v) continue;
-        byDirection[dir] = {
-          direction: dir,
-          directionLabel: DIRECTION_LABELS[dir] ?? dir,
-          tier: gradeVerdict(v),
-          blocked: v.blockedByTenchusatsu,
-          // 段階だけだと「五大凶殺あり」に見えるが、土用殺は五大凶殺では
-          // ない。理由を落とさずに渡す（SpotVerdict が 1 行で出す）。
-          doyouSatsu: v.isDoyouSatsu,
-        };
-      }
-      /* 県の代表点は巡回起点（概ね県庁所在地）ではなく面積重心
-         （lib/prefectureDirection）。県庁は県の端にあることが多く、
-         兵庫（神戸=南東端）が京都から「南西」に塗られていた
-         （利用者報告 2026-08-27。__tests__/prefectureDirection で固定）。 */
-      const prefDirs = prefectureDirections(
-        Number(baseLat),
-        Number(baseLon),
-        useClassical ? "traditional" : "physical",
-      );
-      const byPrefecture: Record<string, Cell> = {};
-      for (const [name, dir] of Object.entries(prefDirs)) {
-        const cell = byDirection[dir];
-        if (!cell) continue;
-        byPrefecture[name] = cell;
-      }
-      return { byDirection, byPrefecture };
-    } catch {
-      return undefined;
-    }
+          useClassical,
+        }),
+      });
+    });
+    return () => {
+      alive = false;
+    };
   }, [
-    canJudgeDirections,
+    dayKigakuKey,
     birthDate,
     targetDate,
     baseLat,
@@ -1773,6 +1774,10 @@ export default function ArbitrageScannerPage() {
     directionFilterMode,
     useClassical,
   ]);
+  const dayKigaku =
+    dayKigakuKey !== "" && dayKigakuState.key === dayKigakuKey
+      ? dayKigakuState.value
+      : undefined;
 
   /**
    * 方位ごとの「その日の段階」と「いま出ている物件数」。

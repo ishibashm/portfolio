@@ -10,7 +10,9 @@ import {
 } from "@/utils/directionGeo";
 import { directionUnstableNote } from "@/lib/directionDistance";
 import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
-import { TIER_LABELS, type DayTier } from "@/utils/auspiciousDays";
+/* 段階の名前は dayTier（暦エンジンを引かない葉）から。auspiciousDays を
+   値で import すると、この部品を載せる頁にエンジン一式が乗る。 */
+import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 
 /**
  * 指定した1地点の吉凶を、そのまま画面で見る。
