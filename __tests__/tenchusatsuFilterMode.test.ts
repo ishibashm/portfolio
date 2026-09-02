@@ -96,8 +96,8 @@ describe("絞り込みモードと天中殺（期間）の対応", () => {
     const rows = scan("personal_kigaku", "strict");
     const blockedByOld = rows.filter((r) => r.reference).length;
     /* ここが 0 なら、下の「常に false」は何も検証していない。
-       1988-11-25 生まれ（戌亥空亡）は 2026〜2027 に年天中殺が入るので、
-       strict では 400 日のうち大半が禁止側になる。 */
+       1988-11-25 生まれは午未空亡で、2026（丙午）・2027（丁未）が
+       年天中殺に当たる。strict では 400 日のうち大半が禁止側になる。 */
     expect(blockedByOld).toBeGreaterThan(100);
   });
 
