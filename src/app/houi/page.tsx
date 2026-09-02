@@ -22,12 +22,22 @@ import { PREF_EDITORIAL } from "@/lib/prefEditorial";
  * 生まれ年から引ける表を最初に置く。値は ephemerisEngine の計算結果。
  */
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/houi" },
-  title: "九星気学の本命星と吉方位の早見表",
-  description:
-    "生まれ年から本命星を調べ、その年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。",
-};
+/*
+  title に年を入れる。Search Console の実測（2026-08-14〜31）で、この頁は
+  90 表示・11.6 位・クリック 1（CTR 1.1%）だった。1 ページ目の縁で、
+  検索語の大半は「◯年 吉方位」のように年を含む。年の無い title は
+  並んだ結果の中で「今年のことか分からない」ので、押されにくい。
+  ISR（revalidate 60）なので年越しで自動的に更新される。h1 は変えない
+  （docs/qa/05-houi.md が見出しの文言を固定している）。
+*/
+export function generateMetadata(): Metadata {
+  const year = currentYearInJapan();
+  return {
+    alternates: { canonical: "/houi" },
+    title: `${year}年の吉方位と本命星の早見表（九星気学）`,
+    description: `生まれ年から本命星を調べ、${year}年の吉方位・五黄殺・暗剣殺・歳破・本命殺がどの方位に当たるかを一覧で確認できます。引越しの方位を決める前の確認に。`,
+  };
+}
 
 export const revalidate = 60;
 
