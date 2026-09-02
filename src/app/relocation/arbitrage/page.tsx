@@ -9,6 +9,7 @@ import {
   Search,
   RefreshCw,
 } from "lucide-react";
+import Link from "next/link";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { MetaphysicalConfigBar } from "@/components/layout/MetaphysicalConfigBar";
 import { ArbitrageSidebarSection } from "@/components/relocation/ArbitrageSidebarSection";
@@ -2384,6 +2385,19 @@ export default function ArbitrageScannerPage() {
             <p className="text-stone-600 mt-1 text-xs max-w-2xl font-normal">
               今住んでいる場所から見た方位の吉凶と、同じ地域の家賃相場からの割安度をあわせて並べます。凶方位の物件は下に送ります。
             </p>
+
+            {/* 市区町村ページ（/houi/area/*）には「この街を出発地にして
+                探す」でこちらへ来る導線があるのに、**戻る側が無い片道**
+                だった。県 → 市区町村で同じことが起きていて #799 で直して
+                いる。物件が出てこない方位を見たとき、その方位に街が
+                あるのか（掲載が無いだけなのか）はあちらでしか分からない。 */}
+            <Link
+              href="/houi/area"
+              prefetch={false}
+              className="inline-flex mt-2 text-xs font-semibold text-rose-600 underline hover:text-rose-700"
+            >
+              方位ごとにどの街があるかから調べる →
+            </Link>
 
             {/* 走査の件数。「何件見つかって、そのうち何件を評価したか」。
                 今まではどこにも出ておらず、全国で走査しても一覧の見出しは
