@@ -40,8 +40,15 @@ import {
 import { getHonmeiStar, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { forecastAnchorMs } from "@/utils/boardInstant";
 
-/* 実在の設定に近い値で回す。京都（東経 135.77）・1988-11-25 生まれ。 */
-const BIRTH = new Date("1988-11-25T12:00:00+09:00");
+/*
+  午未空亡になる生年月日を 1 つ選ぶ。2026（丙午）・2027（丁未）が年天中殺に
+  当たるので、strict では禁止側の日が大量に出て、検査が空回りしない。
+
+  **運営者の生年月日は使わない。**このリポジトリは公開されていて、
+  __tests__/personalDataLeak.test.ts が追跡ファイル全部を見張っている
+  （実際にここで引っかかった）。経度は京都市の値。
+*/
+const BIRTH = new Date("1990-01-19T12:00:00+09:00");
 const LON = 135.768;
 const DAYS = 400;
 const START = new Date(Date.UTC(2026, 0, 1));
@@ -96,8 +103,8 @@ describe("絞り込みモードと天中殺（期間）の対応", () => {
     const rows = scan("personal_kigaku", "strict");
     const blockedByOld = rows.filter((r) => r.reference).length;
     /* ここが 0 なら、下の「常に false」は何も検証していない。
-       1988-11-25 生まれは午未空亡で、2026（丙午）・2027（丁未）が
-       年天中殺に当たる。strict では 400 日のうち大半が禁止側になる。 */
+       この生年月日は午未空亡で、2026（丙午）・2027（丁未）が年天中殺に
+       当たる。strict では 400 日のうち大半が禁止側になる。 */
     expect(blockedByOld).toBeGreaterThan(100);
   });
 
