@@ -67,7 +67,9 @@ on:
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
-  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  # 既定は deploy.yml と揃える（asia-northeast1）。ずれると、実際に
+  # 溜まっているのと別のレジストリを掃除して「0 件でした」で緑になる。
+  REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
   REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
   IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME || 'portfolio-app' }}
   # Cloud Run 側の名前。deploy.yml と同じ既定に合わせる。

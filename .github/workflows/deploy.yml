@@ -10,9 +10,15 @@ on:
 
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'blog-471319' }}
-  REGION: ${{ vars.GCP_REGION || 'us-central1' }}
+  # 既定は本番と同じ asia-northeast1。以前は us-central1 で、変数
+  # GCP_REGION が消えると**別リージョンに黙って出す**作りだった。
+  # cloud-palette.com のドメインマッピングは asia-northeast1 の
+  # portfolio-app を指しているので、そうなると本番は古いまま、
+  # 誰も見ないサービスだけが増える。実際に us-central1 に置き去りの
+  # portfolio-app が 1 つでき、0 req/s のまま課金されていた（2026-09-02 に削除）。
+  REGION: ${{ vars.GCP_REGION || 'asia-northeast1' }}
   SERVICE_NAME: ${{ vars.GCP_SERVICE_NAME || 'portfolio-app' }}
-  GAR_LOCATION: ${{ vars.GCP_REGION || 'us-central1' }}-docker.pkg.dev
+  GAR_LOCATION: ${{ vars.GCP_REGION || 'asia-northeast1' }}-docker.pkg.dev
   REPOSITORY: ${{ vars.GCP_REPOSITORY || 'portfolio-repo' }}
   IMAGE_NAME: ${{ vars.GCP_IMAGE_NAME || 'portfolio-app' }}
 
