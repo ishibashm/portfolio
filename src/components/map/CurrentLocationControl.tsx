@@ -3,7 +3,7 @@
 import L from "leaflet";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
-import type { WatchedPosition } from "@/lib/useWatchedPosition";
+import type { WatchedPosition, WatchStatus } from "@/lib/useWatchedPosition";
 
 /**
  * 現在地の「層＋ボタン」を 1 つにまとめたもの。**地図に 1 行挿すだけで使える。**
@@ -44,6 +44,8 @@ export function CurrentLocationControl({
   const [on, setOn] = useState(false);
   const [follow, setFollow] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /* 実際に測れているか。**押した操作ではなく、購読の状態を映す。** */
+  const [status, setStatus] = useState<WatchStatus>("idle");
 
   const handleFollowBroken = useCallback(() => setFollow(false), []);
 
@@ -72,6 +74,21 @@ export function CurrentLocationControl({
     L.DomEvent.disableScrollPropagation(el);
   }, []);
 
+  /*
+    札は**購読の状態**から作る。押した直後に「追従中」と出していたが、
+    許可の確認が出ない環境（安全でない接続・既に拒否済み）では測位が
+    始まらず、**「追従中」のまま何も起きない**ように見えていた。
+  */
+  const label = !on
+    ? "非表示"
+    : status === "unavailable" || status === "blocked" || status === "denied"
+      ? "使えません"
+      : status === "locating"
+        ? "測位中…"
+        : follow
+          ? "追従中"
+          : "表示中";
+
   return (
     <>
       <CurrentLocationLayer
@@ -80,6 +97,7 @@ export function CurrentLocationControl({
         onFollowBroken={handleFollowBroken}
         onPosition={onPosition}
         onMessage={setMessage}
+        onStatus={setStatus}
       />
       <div className={CORNER_CLASS[corner]}>
         <div
@@ -110,14 +128,19 @@ export function CurrentLocationControl({
             }
             aria-pressed={on}
             className={`rounded-lg border px-3 py-1.5 font-mono text-[9px] font-bold shadow-lg transition-colors active:scale-95 ${
-              follow
-                ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
-                : on
-                  ? "border-blue-300 bg-white text-blue-600 hover:bg-blue-50"
-                  : "border-stone-200 bg-white/80 text-stone-500 hover:bg-white"
+              on &&
+              (status === "unavailable" ||
+                status === "blocked" ||
+                status === "denied")
+                ? "border-amber-300 bg-amber-50 text-amber-800"
+                : follow
+                  ? "border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+                  : on
+                    ? "border-blue-300 bg-white text-blue-600 hover:bg-blue-50"
+                    : "border-stone-200 bg-white/80 text-stone-500 hover:bg-white"
             }`}
           >
-            ◎ 現在地 {follow ? "追従中" : on ? "表示中" : "非表示"}
+            ◎ 現在地 {label}
           </button>
           {/* 取れないときの 1 行。黙って消えると、押したのに何も起きて
               いないように見える。 */}

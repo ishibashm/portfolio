@@ -11,6 +11,7 @@ import {
 import {
   useWatchedPosition,
   type WatchedPosition,
+  type WatchStatus,
 } from "@/lib/useWatchedPosition";
 
 /**
@@ -47,6 +48,15 @@ export interface CurrentLocationLayerProps {
   onPosition?: (position: WatchedPosition) => void;
   /** 失敗の 1 行を親へ渡す。null は失敗していない。 */
   onMessage?: (message: string | null) => void;
+  /**
+   * いまの購読の状態を親へ渡す。**ボタンの札に使う。**
+   *
+   * ボタンは押した直後に「追従中」と出していたが、それは利用者の
+   * 操作を映しているだけで、実際に測れているかは見ていなかった。
+   * 許可の確認が出ない環境（安全でない接続・既に拒否済み）では
+   * **「追従中」と出たまま何も起きない。**実際にその報告があった。
+   */
+  onStatus?: (status: WatchStatus) => void;
 }
 
 /** 追従でどこまで寄るか。街区が見える程度。 */
@@ -68,9 +78,10 @@ export function CurrentLocationLayer({
   onFollowBroken,
   onPosition,
   onMessage,
+  onStatus,
 }: CurrentLocationLayerProps) {
   const map = useMap();
-  const { position, message } = useWatchedPosition(enabled);
+  const { position, message, status } = useWatchedPosition(enabled);
   /* 追従で地図を動かしたぶんは「手で動かした」に数えない。
      setView も dragend/zoomend と同じ道で moveend を出すため。 */
   const movingByFollowRef = useRef(false);
@@ -93,6 +104,10 @@ export function CurrentLocationLayer({
   useEffect(() => {
     onMessage?.(message);
   }, [message, onMessage]);
+
+  useEffect(() => {
+    onStatus?.(status);
+  }, [status, onStatus]);
 
   useEffect(() => {
     if (!follow || !position) return;
