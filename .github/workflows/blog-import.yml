@@ -34,6 +34,10 @@ on:
         description: "overwrite のときだけ必要。実行するなら OVERWRITE と入力"
         required: false
         default: ""
+      only:
+        description: "対象の slug（カンマ区切り）。空なら全記事"
+        required: false
+        default: ""
 
 jobs:
   import:
@@ -43,6 +47,10 @@ jobs:
     steps:
       # 上書きは、管理画面で直した記事をファイルの内容で戻す操作。
       # 取り込み直しのつもりで押して編集を失う事故を防ぐ。
+      #
+      # **上書きは既定で全記事に及ぶ。**公開済みの記事を 1 本だけ直したい
+      # 場面が実際にあり（9 星の表に書き替えた逸話の記事）、そのために
+      # 全記事を戻すのは割に合わない。only に slug を書けば対象を絞れる。
       - name: Guard
         if: ${{ inputs.overwrite && inputs.confirm != 'OVERWRITE' }}
         run: |
@@ -78,4 +86,5 @@ jobs:
         env:
           IMPORT_DRY_RUN: ${{ inputs.mode == 'dry-run' }}
           IMPORT_OVERWRITE: ${{ inputs.overwrite }}
+          IMPORT_ONLY: ${{ inputs.only }}
         run: npx -y tsx scripts/import_blog_markdown.ts
