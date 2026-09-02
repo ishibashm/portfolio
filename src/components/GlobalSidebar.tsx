@@ -31,6 +31,7 @@ import {
   BookOpen,
   Newspaper,
   Rss,
+  MapPin,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
@@ -55,6 +56,7 @@ const CORE_ICONS: Record<string, LucideIcon> = {
   "/relocation/simulator": Route,
   "/relocation/wealth": Map,
   "/houi": Compass,
+  "/houi/area": MapPin,
   "/calendar": Calendar,
 };
 
