@@ -21,8 +21,16 @@ import { getBlogPost, getBlogPosts } from "../src/lib/blog";
  * 場合による。既定では**上書きしない**（slug が同じ行があれば飛ばす）。
  * 上書きしたいときだけ IMPORT_OVERWRITE=true を付ける。
  *
+ * **上書きは全記事に及ぶ。**公開済みの記事を 1 本直したいだけでも、
+ * 管理画面で手を入れた別の記事までファイルの内容に戻る。実際に必要なのは
+ * 「この slug だけ」であることが多いので、IMPORT_ONLY で対象を絞れる
+ * ようにしてある（カンマ区切り）。指定した slug が Markdown に無ければ
+ * 何も書き込まずに落とす（打ち間違いに気付かず「0 件でした」で終わる
+ * のを防ぐ）。
+ *
  *   npx -y tsx scripts/import_blog_markdown.ts              # 入っていないものだけ
  *   IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
+ *   IMPORT_ONLY=my-slug IMPORT_OVERWRITE=true npx -y tsx scripts/import_blog_markdown.ts
  *   IMPORT_DRY_RUN=true npx -y tsx scripts/import_blog_markdown.ts   # 何もしない
  *
  * 取り込んだあとも Markdown のファイルは消さない。DB が空のときは
@@ -57,12 +65,33 @@ const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
 const OVERWRITE = process.env.IMPORT_OVERWRITE === "true";
 const DRY_RUN = process.env.IMPORT_DRY_RUN === "true";
+const ONLY = (process.env.IMPORT_ONLY ?? "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter((s) => s.length > 0);
 
 async function main() {
-  const summaries = getBlogPosts();
-  console.log(`Markdown の公開記事: ${summaries.length} 本`);
+  const all = getBlogPosts();
+  console.log(`Markdown の公開記事: ${all.length} 本`);
+
+  if (ONLY.length > 0) {
+    // 指定した slug が 1 つでも無ければ止める。存在しない slug を
+    // 黙って読み飛ばすと「対象 0 本、成功」で終わり、直したつもりの
+    // 記事が本番に出ないまま気付けない。
+    const known = new Set(all.map((s) => s.slug));
+    const missing = ONLY.filter((slug) => !known.has(slug));
+    if (missing.length > 0) {
+      throw new Error(
+        `IMPORT_ONLY に Markdown へ無い slug がある: ${missing.join(", ")}`,
+      );
+    }
+  }
+
+  const summaries =
+    ONLY.length > 0 ? all.filter((s) => ONLY.includes(s.slug)) : all;
   console.log(
-    `モード: ${DRY_RUN ? "DRY RUN（書き込まない）" : OVERWRITE ? "APPLY（既存も上書き）" : "APPLY（入っていないものだけ）"}`,
+    `モード: ${DRY_RUN ? "DRY RUN（書き込まない）" : OVERWRITE ? "APPLY（既存も上書き）" : "APPLY（入っていないものだけ）"}` +
+      (ONLY.length > 0 ? ` / 対象を ${summaries.length} 本に絞る` : ""),
   );
 
   let created = 0;
