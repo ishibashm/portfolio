@@ -27,7 +27,6 @@ import {
   Calendar,
   CalendarRange,
   BarChart3,
-  ExternalLink,
   BookOpen,
   Newspaper,
   Rss,
@@ -82,14 +81,6 @@ const GROUPED_ITEMS: { heading: string; items: NavItem[] }[] = ROUTE_GROUPS.map(
     })),
   }),
 );
-
-// Katmer Cloud は別サブドメインで運用している別のサービスで、引越しとは関係がない。
-// 中核ナビに同列で並べると、何をするサイトなのかが読み取りにくくなる。
-// リンク自体は残したいので、下部の控えめな位置に移した。
-const EXTERNAL_ITEM = {
-  href: "https://katmer.cloud-palette.com",
-  label: "Katmer Cloud",
-};
 
 export function GlobalSidebar() {
   const pathname = usePathname();
@@ -367,18 +358,6 @@ export function GlobalSidebar() {
               システム稼働中
             </span>
           </div>
-
-          {/* 引越しとは別サービスへの導線。中核ナビから外してここに置いている。 */}
-          <a
-            href={EXTERNAL_ITEM.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={closeSidebar}
-            className={`flex items-center justify-center gap-1.5 text-[10px] text-stone-600 hover:text-stone-800 transition-colors ${hideWhenCollapsed}`}
-          >
-            {EXTERNAL_ITEM.label}
-            <ExternalLink size={10} className="shrink-0" />
-          </a>
 
           {/* Creator Signature */}
           <div
