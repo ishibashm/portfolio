@@ -540,6 +540,7 @@ export async function GET(request: Request) {
           hasBirthLocation: ctx.hasBirthLocation,
           actionIntent,
           tenchusatsuMode,
+          directionFilterMode,
           involuntaryMove,
         });
         return {
@@ -635,6 +636,7 @@ export async function GET(request: Request) {
             hasBirthLocation: ctx.hasBirthLocation,
             actionIntent,
             tenchusatsuMode,
+            directionFilterMode,
             involuntaryMove,
           }),
         );

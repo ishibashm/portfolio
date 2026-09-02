@@ -303,6 +303,7 @@ export async function GET(request: Request) {
             hasBirthLocation: memberHasBirth,
             actionIntent,
             tenchusatsuMode,
+            directionFilterMode,
             involuntaryMove,
           }),
         ),
