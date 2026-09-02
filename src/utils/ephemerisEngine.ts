@@ -717,7 +717,22 @@ const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
 /**
  * アクション目的に応じた最適化フラグ
  */
-export type ActionIntent = "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
+/* ActionIntent / DirectionFilterMode と、その素の文字列を落とす関数は
+   utils/directionFilterMode（暦エンジンを引かない葉）に置き、ここから
+   再輸出する。値で import するだけでエンジン一式が client に乗るのを
+   避けるため（#553 のキャストの理由がこれ）。定義は 1 か所のまま。 */
+export {
+  parseActionIntent,
+  parseDirectionFilterMode,
+} from "@/utils/directionFilterMode";
+export type {
+  ActionIntent,
+  DirectionFilterMode,
+} from "@/utils/directionFilterMode";
+import type {
+  ActionIntent,
+  DirectionFilterMode,
+} from "@/utils/directionFilterMode";
 
 /**
  * 方位 1 つの判定結果。
@@ -750,75 +765,6 @@ export type VectorStatus =
  * 後から差し込む形なので、型で全方位を約束はしない。finalVectors だけは
  * 呼び出し側が方位で必ず引くので、全方位そろっている前提を型にしてある。
  */
-/**
- * 判定を「どの見方で絞るか」。
- *
- * filterCollisionByMode の引数に直書きされていて、呼ぶ側は文字列から
- * `as any` で押し込んでいた。名前を付けて、押し込まずに渡せるようにする。
- */
-export type DirectionFilterMode =
-  | "composite"
-  | "personal_kigaku"
-  | "personal_bazi"
-  | "environmental";
-
-/**
- * 問い合わせ文字列や設定ファイルの値を `ActionIntent` に直す。
- *
- * **知らない値は `DEFAULT`。**これは挙動を変えない。判定はどこも
- * `=== "REST"` / `=== "BUSINESS"` / `=== "MIGRATION"` で見ていて、
- * それ以外は暗黙の else に落ちる——つまり**知らない文字列は今も
- * DEFAULT と同じ扱い**になっている。型を付けてそれを明示するだけ。
- *
- * 値が無いときの既定は呼ぶ側で違う（一覧は MIGRATION、履歴は DEFAULT）
- * ので、`whenAbsent` で受ける。**知らない値の落とし先とは別物。**
- * ここを一緒にすると、壊れた値が MIGRATION に化けて答えが変わる。
- */
-export function parseActionIntent(
-  raw: string | null | undefined,
-  whenAbsent: ActionIntent = "DEFAULT",
-): ActionIntent {
-  if (raw === null || raw === undefined || raw === "") return whenAbsent;
-  switch (raw) {
-    case "DEFAULT":
-    case "REST":
-    case "BUSINESS":
-    case "MIGRATION":
-      return raw;
-    default:
-      return "DEFAULT";
-  }
-}
-
-/**
- * 問い合わせ文字列や設定ファイルの値を `DirectionFilterMode` に直す。
- *
- * **知らない値は `composite`（絞り込みなし）に落とす。**
- *
- * 直す前は文字列をそのまま流していた。`filterCollisionByMode` は
- * composite / personal_kigaku / personal_bazi を名前で見て、**残り全部を
- * environmental として扱う**ので、壊れた値は environmental になっていた。
- * 値が無いときは composite なのに、壊れた値だと environmental になる、
- * という筋の通らない状態だった。
- *
- * `composite` に寄せるのは、**値が無いときと同じ扱いにするため。**
- * 読めない指定は「指定されなかった」と同じであるべきで、勝手に別の
- * 見方（environmental）へ倒すのは利用者の意図と関係がない。
- */
-export function parseDirectionFilterMode(
-  raw: string | null | undefined,
-): DirectionFilterMode {
-  switch (raw) {
-    case "composite":
-    case "personal_kigaku":
-    case "personal_bazi":
-    case "environmental":
-      return raw;
-    default:
-      return "composite";
-  }
-}
-
 export interface VectorCollision {
   yearLayer: Partial<Record<Direction, VectorStatus>>;
   monthLayer: Partial<Record<Direction, VectorStatus>>;
