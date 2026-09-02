@@ -83,19 +83,29 @@ flowchart TD
 ```mermaid
 flowchart LR
     SIDE["サイドバー"] --> H["ホーム<br/>/"]
-    SIDE --> G1["物件を方位で探す<br/>/relocation/arbitrage"]
-    SIDE --> G2["引越し先を試算する<br/>/relocation/simulator"]
-    SIDE --> G3["移住先の地域を比べる<br/>/relocation/wealth"]
-    SIDE --> G4["本命星と吉方位を調べる<br/>/houi"]
-    SIDE --> G5["引越しの日取りを選ぶ<br/>/calendar"]
+    SIDE --> D["どこへ — 方位で選ぶ"]
+    D --> D1["物件を方位で探す<br/>/relocation/arbitrage"]
+    D --> D2["引越し先を試算する<br/>/relocation/simulator"]
+    D --> D3["移住先の地域を比べる<br/>/relocation/wealth"]
+    D --> D4["本命星と吉方位を調べる<br/>/houi"]
+    D --> D5["吉方位にある街を調べる<br/>/houi/area"]
+    SIDE --> T["いつ — 時期を選ぶ"]
+    T --> T1["引越し時期を分析する<br/>/relocation/timing"]
+    T --> T2["引越しの日取りを選ぶ<br/>/calendar"]
+    SIDE --> M["いくら — 相場を知る"]
+    M --> M1["家賃相場を分析する<br/>/relocation/market"]
+    M --> M2["購入の相場を分析する<br/>/relocation/purchase"]
+    M --> M3["検討中の物件を査定する<br/>/relocation/appraisal"]
     SIDE --> LOGIN["ログイン<br/>/login"]
-    SIDE --> EXT["Katmer Cloud<br/>外部サイト・別タブ"]
 
     style SIDE fill:#fde7ef,stroke:#f43f5e,color:#111
 ```
 
-> **サイドバーには、この8つしか出ません。**
-> `/dashboard` や `/rentals` など、他の画面へのリンクはサイドバーにありません。
+> **サイドバーには、ホームと 10 本の道具、ログインしか出ません。**
+> 道具は 3 つの群（どこへ / いつ / いくら）に分かれていて、群の見出しは
+> 文字だけで押せません。`/rentals` など中核から外した画面へのリンクは
+> サイドバーにありません。並びの正は `src/lib/siteStructure.ts` の
+> `CORE_ROUTES`。
 
 ### 2-3. ログインが要るかどうかの分かれ道
 

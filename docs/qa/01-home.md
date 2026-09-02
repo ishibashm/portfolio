@@ -332,11 +332,9 @@
 
 | リンク | 飛び先 |
 |---|---|
-| 「Second Brain」 | `https://katmer.cloud-palette.com/brain`（外部） |
 | 「Decision Engine」 | `/metaphysical` |
 | カード「Fortune & Healing」 | `/metaphysical` |
 | カード「Tech & Trends」 | `/trends` |
-| カード「Katmer Brain & Real Estate」 | `https://katmer.cloud-palette.com/brain`（外部） |
 | 世の中の動きの見出し（最大3件） | 外部ニュースサイト（**別タブ**） |
 | 地域の所得タイルの右上「↗」 | `/relocation/wealth` |
 
