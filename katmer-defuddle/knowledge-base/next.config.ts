@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   basePath: "/kb",
+  // メタタグは HTML にしか付かない。API の応答や添付ファイルまで含めて
+  // 索引から外すため、ヘッダでも同じことを言う（layout.tsx の説明を参照）。
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
