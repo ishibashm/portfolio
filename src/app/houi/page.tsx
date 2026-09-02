@@ -108,24 +108,11 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
-          <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
-          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
-            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
-            <b>独自モデル</b>も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
-            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
-          </p>
-          <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
-            例: 1980年生まれは一般的な九星気学で
-            {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
-            になります。
-          </p>
-        </section>
-
-        <div className="mt-10">
-          <AdBanner />
-        </div>
-
+        {/* 本命星の表のすぐ後ろに置く。**以前は算出方法の註と広告の
+            後ろにあり、261 行の頁の中ほどでスクロールしないと見えなかった。**
+            市区町村ページ（1,022 頁）へのサイト内の入口が実質ここだけ
+            だったので、読む順序（吉方位を引く → その方位に何があるか）
+            どおりの位置に上げる。註は読み終えた人が見ればよい。 */}
         <section className="mt-10 rounded-2xl border border-slate-300 bg-white/90 p-5">
           <h2 className="text-base font-bold font-serif">
             吉方位が分かったら、その方位に何があるか
@@ -157,6 +144,24 @@ export default function Page() {
               );
             })}
           </div>
+        </section>
+
+        <div className="mt-10">
+          <AdBanner />
+        </div>
+
+        <section className="mt-8 rounded-2xl border border-slate-300 bg-white/90 p-5">
+          <h2 className="text-sm font-bold">算出方法が2種類あります</h2>
+          <p className="mt-3 text-xs text-slate-700 leading-relaxed">
+            上の表は<b>一般的な九星気学</b>（9年周期）によるものです。このサイトのスキャナーには、木星の黄経から星を求める
+            <b>独自モデル</b>も用意しており、設定で切り替えられます。独自モデルでは木星の公転周期（約11.86年）にもとづくため
+            9年周期にならず、{differing.length}件の生まれ年で本命星が変わります。一般的な資料と照らし合わせる場合は上の表を使ってください。
+          </p>
+          <p className="mt-2 text-[11px] text-slate-500 leading-relaxed">
+            例: 1980年生まれは一般的な九星気学で
+            {STAR_NAMES[starForBirthYear(1980, "classical")]}、独自モデルでは{STAR_NAMES[starForBirthYear(1980, "physical")]}
+            になります。
+          </p>
         </section>
 
         {/* 九星気学の次に置く。引き方がそろっている（自分が何かを引いて、
