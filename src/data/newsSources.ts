@@ -51,6 +51,14 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     id: "constnews",
     name: "建設ニュース",
     feedUrl: "https://www.constnews.com/?feed=rss2",
+    /* 2026-09-03 の site-audit で取得できていなかった。一時的な停止か
+       配信の形が変わったのか、外からは見分けられないので、よくある形を
+       予備に置く（本命が落ちたときだけ試すので平常時の負荷は増えない）。
+       続くようならリンク集へ移す。 */
+    altFeedUrls: [
+      "https://www.constnews.com/feed/",
+      "https://www.constnews.com/feed",
+    ],
     siteUrl: "https://www.constnews.com/",
     note: "不動産・建設の専門メディア。建築計画や解体の独自取材が中心",
   },
@@ -85,28 +93,6 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     feedUrl: "https://suumo.jp/journal/feed/",
     siteUrl: "https://suumo.jp/journal/",
     note: "住まいと暮らしの編集部メディア。市場調査や住み替えの読み物",
-  },
-  {
-    id: "homes-press",
-    name: "LIFULL HOME'S PRESS",
-    /*
-      利用者の依頼（2026-09-03）。SUUMO ジャーナルと並ぶ位置づけの
-      媒体として置く。
-
-      **フィードの URL は確かめられていない。**開発環境から
-      www.homes.co.jp へは出られない（プロキシの許可リスト外）ので、
-      よくある配信の形を候補として並べてある。全部外れたときは
-      /news の「いま見出しを取得できていない配信元」に名前が出るので、
-      そこを見て直す。相手への頻度は増えない（成功した時点で
-      打ち切るので、平常時は 1 本しか取りに行かない）。
-    */
-    feedUrl: "https://www.homes.co.jp/cont/press/feed/",
-    altFeedUrls: [
-      "https://www.homes.co.jp/cont/press/rss.xml",
-      "https://www.homes.co.jp/cont/press/index.xml",
-    ],
-    siteUrl: "https://www.homes.co.jp/cont/press/",
-    note: "住まいの編集部メディア。制度・費用・住み替えの解説記事",
   },
   {
     id: "kensetsunews",
@@ -153,6 +139,11 @@ export const NEWS_LINKS: readonly LinkSource[] = [
     name: "BIT 不動産競売物件情報",
     url: "https://www.bit.courts.go.jp/",
     note: "裁判所の競売物件。入札期間・物件明細書・評価書が読める",
+  },
+  {
+    name: "LIFULL HOME'S PRESS",
+    url: "https://www.homes.co.jp/cont/press/",
+    note: "住まいの編集部メディア。制度・費用・住み替えの解説記事",
   },
   {
     name: "新建築",

@@ -55,6 +55,18 @@ describe("/news の台帳", () => {
     }
   });
 
+  it("HOME'S はリンク集（確かめられたフィードの URL が無い）", () => {
+    /*
+      2026-09-03 の site-audit で、推測して置いた 3 つの URL が全部
+      外れていた（homes-press が「取得できていない配信元」に出た）。
+      台帳の決まりは「RSS の無い媒体は links に置く。勝手にスクレイプ
+      してフィード化しない」。**確かめた URL が手に入るまでフィードに
+      戻さない。**
+    */
+    expect(NEWS_FEEDS.some((f) => f.id === "homes-press")).toBe(false);
+    expect(NEWS_LINKS.some((l) => l.url.includes("homes.co.jp"))).toBe(true);
+  });
+
   it("UR はフィードとして載っている", () => {
     /* 利用者から URL の指定があったもの。リンク集へ戻すと
        新着の並びに出なくなる */
