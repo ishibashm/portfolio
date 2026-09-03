@@ -1172,7 +1172,7 @@ export default function ArbitrageScannerPage() {
    */
   const fetchSeqRef = useRef(0);
 
-  const fetchData = async (isDateChange = false) => {
+  const fetchData = async (isDateChange = false, force = false) => {
     if (!initialLoaded) return;
     const seq = ++fetchSeqRef.current;
     // 出発地が無いまま走らせると、方位が決まらないので順位が㎡単価だけになる。
@@ -1189,7 +1189,13 @@ export default function ArbitrageScannerPage() {
     // 物件 500 件を取っても使い道が無い。物件はズームインしたときに、
     // そのとき見えている範囲だけを検索して出す。
     // 県が選ばれていれば母数が県に収まるので、ズームに関係なく検索する。
+    //
+    // force のときは通す。**利用者が「それでもこの範囲で検索する」を
+    // 押したとき**で、待つと決めたのは本人なので、こちらで止めない
+    // （利用者の報告：俯瞰から拡大していくと 0 件のままで、なぜ出ないのか
+    // 分からない）。
     if (
+      !force &&
       prefecture === "all" &&
       radiusKm === "all" &&
       mapBounds !== null &&
@@ -1533,6 +1539,23 @@ export default function ArbitrageScannerPage() {
    * 動かしているので、そこを見て区別する。既定のまま出発地を中心にしている
    * 場合は俯瞰ではなく、物件へズームしたままでよい。
    */
+  /**
+   * いま物件の検索を止めているか。**fetchData の早期 return と同じ条件。**
+   *
+   * 県も半径も未指定でズーム 10 未満のとき、fetchData は投げずに戻る
+   * （全国 45 万行の名寄せを避けるため）。**その事実が画面のどこにも
+   * 出ていなかった**ので、俯瞰から段階的に拡大していくと、ズーム 10 を
+   * 越えるまで「物件 0 件」に見えていた（利用者の報告）。
+   *
+   * 0 件なのではなく検索していない、と書くために出す。state は増やさない
+   * （増やすと fetchData 側の条件と二重管理になる）。
+   */
+  const scanPaused =
+    prefecture === "all" &&
+    radiusKm === "all" &&
+    mapBounds !== null &&
+    mapBounds.zoom < 10;
+
   const isNationwideOverview =
     prefecture === "all" &&
     radiusKm === "all" &&
@@ -4156,6 +4179,29 @@ export default function ArbitrageScannerPage() {
                 });
               }}
             />
+            {/* 検索を止めている理由と、それでも検索する口。
+                「0 件」に見えるのを止めるためのもので、判定は変えない。 */}
+            {scanPaused && !loading && (
+              <div className="absolute bottom-4 left-1/2 z-30 w-[min(92%,26rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50/95 p-3 text-[11px] leading-relaxed text-amber-900 shadow-lg">
+                <p className="font-bold">この倍率では物件を検索していません</p>
+                <p className="mt-1">
+                  {
+                    "日本全体を対象にすると 45 万件の照合になり、応答が返るまで数十秒かかります。"
+                  }
+                </p>
+                <p className="mt-1">
+                  {
+                    "もう少し拡大するか、左の「スキャン地域と計算方式」で都道府県か半径を選ぶと出ます。"
+                  }
+                </p>
+                <button
+                  onClick={() => fetchData(false, true)}
+                  className="mt-2 rounded-xl bg-amber-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-amber-700"
+                >
+                  それでもこの範囲で検索する
+                </button>
+              </div>
+            )}
             {loading && data.length === 0 ? (
               <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-20 flex flex-col items-center justify-center font-mono text-xs text-stone-600">
                 <Loader2 className="w-8 h-8 text-indigo-500 animate-spin mb-2" />
