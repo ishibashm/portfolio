@@ -12,6 +12,11 @@ name: Probe news feeds
 
 on:
   workflow_dispatch:
+    inputs:
+      list:
+        description: "配信一覧ページの URL（空なら台帳の配信元を確かめる）"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -30,4 +35,12 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Probe feeds
+        if: ${{ inputs.list == '' }}
         run: npx tsx scripts/probe_news_feeds.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # 配信一覧のページから、並んでいるフィードを全部拾って叩く。
+      # UR 都市機構のように複数を配信している相手を、台帳に入れる前に
+      # 確かめるため。**何が何本あるかを推測で書かない。**
+      - name: List feeds on a page
+        if: ${{ inputs.list != '' }}
+        run: npx tsx scripts/probe_news_feeds.ts --list "${{ inputs.list }}" | tee -a "$GITHUB_STEP_SUMMARY"

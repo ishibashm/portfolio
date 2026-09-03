@@ -46,6 +46,12 @@ import { decodeFeedBytes, parseFeed } from "../src/lib/rssParse";
  * ## 使い方
  *
  *   npx tsx scripts/probe_news_feeds.ts
+ *   npx tsx scripts/probe_news_feeds.ts --list https://例/rss.html
+ *
+ * `--list` は**配信一覧のページから、そこに並んでいるフィードを全部
+ * 拾って 1 本ずつ叩く。**UR 都市機構のように「新着」「入札」「記者
+ * 発表」と複数を配信している相手を、台帳に入れる前に確かめるため。
+ * 何が何本あるかを推測で書かない。
  *
  * 開発環境からは外へ出られないので、`.github/workflows/probe-news-feeds.yml`
  * から回す。DB にも本番にも触らない（読むだけ）。
@@ -136,7 +142,105 @@ async function declaredFeeds(siteUrl: string): Promise<string[]> {
   return [...new Set(out)];
 }
 
+/**
+ * 配信一覧のページから、フィードらしい URL を全部拾う。
+ *
+ * `<link rel="alternate">` だけでなく、本文の `<a href>` も見る。
+ * 一覧ページは「新着情報の RSS はこちら」と本文でリンクしている
+ * ことが多く、宣言だけ見ると 1 本も拾えない。
+ */
+async function listFeedsOnPage(pageUrl: string): Promise<string[]> {
+  let html = "";
+  try {
+    const res = await fetch(pageUrl, {
+      headers: { "User-Agent": UA, Accept: "text/html" },
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      console.log(`一覧ページが ${res.status} ${res.statusText}`);
+      return [];
+    }
+    html = await res.text();
+  } catch (e) {
+    console.log(`一覧ページを取得できない: ${String(e)}`);
+    return [];
+  }
+
+  const out = new Set<string>();
+  for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
+    const href = m[1];
+    /* 拡張子か、経路に rss / feed を含むもの。画像や css は落とす */
+    if (!/\.(xml|rdf)(\?|$)|\/(rss|feed)\b/i.test(href)) continue;
+    if (/\.(css|js|png|jpg|jpeg|gif|svg|ico)(\?|$)/i.test(href)) continue;
+    try {
+      out.add(new URL(href, pageUrl).toString());
+    } catch {
+      /* 読めない href は捨てる */
+    }
+  }
+  /* 一覧ページ自身（.html）は拾わない */
+  return [...out].filter((u) => !u.endsWith(pageUrl));
+}
+
+async function listMode(pageUrl: string) {
+  console.log(`## 配信一覧: ${pageUrl}\n`);
+  const urls = await listFeedsOnPage(pageUrl);
+  await wait();
+  if (urls.length === 0) {
+    console.log("フィードらしい URL が 1 本も見つからなかった。");
+    return;
+  }
+  console.log(`候補 ${urls.length} 本\n`);
+  console.log("| URL | status | 件数 | バイト | 先頭の見出し |");
+  console.log("|---|---|---|---|---|");
+  const ok: string[] = [];
+  for (const url of urls) {
+    const t = await tryFeed(url);
+    let head = t.note;
+    if (t.status === 200 && t.items > 0) {
+      ok.push(url);
+      head = (await firstTitle(url)) ?? "";
+    }
+    console.log(
+      `| ${t.url} | ${t.status} | ${t.items} | ${t.bytes.toLocaleString()} | ${head} |`,
+    );
+    await wait();
+  }
+  console.log(`\n中身のあるフィード: ${ok.length} 本\n`);
+  for (const u of ok) console.log(`- ${u}`);
+}
+
+/** 先頭の見出し。何のフィードかを人が判断するための手がかり。 */
+async function firstTitle(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, Accept: ACCEPT },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+    const xml = decodeFeedBytes(
+      await res.arrayBuffer(),
+      res.headers.get("content-type"),
+    );
+    return parseFeed(xml, 1)[0]?.title ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
+  const args = process.argv.slice(2);
+  const listAt = args.indexOf("--list");
+  if (listAt >= 0) {
+    const pageUrl = args[listAt + 1];
+    if (!pageUrl) {
+      console.error("--list には一覧ページの URL が要る");
+      process.exit(1);
+    }
+    await listMode(pageUrl);
+    return;
+  }
+
   const alive: string[] = [];
   const dead: string[] = [];
   const rows: string[] = [];
