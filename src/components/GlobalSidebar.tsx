@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 // Supabase クライアントは静的に import しない。サイドバーは全ページに出るため、
@@ -39,6 +39,12 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
+import {
+  MENU_SERVER_SNAPSHOT,
+  closeMenu,
+  menuIsOpen,
+  subscribeMenu,
+} from "@/lib/menuOpenState";
 
 // 使い方ガイドは引越しを決める道具そのものではないので、
 // 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
@@ -90,7 +96,17 @@ const GROUPED_ITEMS: { heading: string; items: NavItem[] }[] = ROUTE_GROUPS.map(
 export function GlobalSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  /*
+    開いているかは `<html data-menu>` が持つ。React の state にすると、
+    hydration が終わるまでボタンが効かない（実測で 4.6〜8.7 秒、押しても
+    何も起きなかった）。切り替えは layout.tsx の素のスクリプトがやり、
+    ここは読むだけ。詳しくは lib/menuOpenState。
+  */
+  const isOpen = useSyncExternalStore(
+    subscribeMenu,
+    menuIsOpen,
+    () => MENU_SERVER_SNAPSHOT,
+  );
   const [isCollapsed, setIsCollapsed] = useState(false); // For desktop
 
   // ログイン状態は表示しないと分からない。トップページ("/")は保護対象外なので、
@@ -136,8 +152,7 @@ export function GlobalSidebar() {
     };
   }, []);
 
-  const toggleSidebar = () => setIsOpen(!isOpen);
-  const closeSidebar = () => setIsOpen(false);
+  const closeSidebar = closeMenu;
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   /*
@@ -228,31 +243,63 @@ export function GlobalSidebar() {
         「ボタン」としか読まれず、何をするのか分からない。
         開いているかどうかも aria-expanded で伝える。
       */}
+      {/*
+        押したときの切り替えは data-menu-toggle を見る素のスクリプト
+        （layout.tsx）がやる。ここに onClick を置くと二重に切り替わる。
+        名前は開閉で変えない（変えると、hydration の前後で読み上げが
+        食い違う）。開いているかは aria-expanded で伝える。
+        アイコンも両方描いて CSS で切り替える。React で出し分けると、
+        hydration 前に開いたときに三本線のままになる。
+      */}
       <button
-        onClick={toggleSidebar}
-        aria-label={isOpen ? "メニューを閉じる" : "メニューを開く"}
+        type="button"
+        data-menu-toggle
+        aria-label="メニュー"
         aria-expanded={isOpen}
-        className="lg:hidden fixed top-4 left-4 z-[47] p-2 bg-white/90 backdrop-blur-xl border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 shadow-md shadow-rose-100/40"
+        aria-controls="global-sidebar"
+        className="lg:hidden fixed top-4 left-4 z-[47] p-2.5 bg-white border border-rose-100 rounded-xl text-stone-500 hover:text-rose-500 active:bg-rose-50 active:scale-95 transition-transform shadow-md shadow-rose-100/40"
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+        <span data-menu-icon="open" className="block">
+          <Menu size={24} />
+        </span>
+        <span data-menu-icon="close" className="block">
+          <X size={24} />
+        </span>
       </button>
 
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-[45]"
-          onClick={closeSidebar}
-        />
-      )}
+      {/* Mobile Overlay。開いていないときは CSS で消す（React の分岐に
+          すると hydration 前に開いても出ない）。 */}
+      <div
+        data-menu-overlay
+        data-menu-close
+        aria-hidden="true"
+        className="lg:hidden fixed inset-0 bg-stone-900/30 z-[45]"
+      />
 
       {/* Sidebar Container */}
+      {/*
+        出ている位置は `<html data-menu>` を見た globals.css が決める。
+        React の分岐（`isOpen ? …`）にすると hydration まで動かない。
+
+        transition は transform と width だけに絞る。`transition-all` は
+        backdrop-filter まで動かす対象にしていて、開くたびに背景を毎フレーム
+        ぼかし直していた（実測 30fps。カク付きの実体）。
+
+        ぼかしは外して、地色を不透明にした。`bg-white/95` はぼかしと
+        組で成り立っていて、ぼかしだけ外すと**後ろの文字がそのまま
+        透けて読めなくなる**（実機の写しで確認した）。5% の透けは
+        ぼかしが無いと見た目の得が無いので、不透明にするほうが速くて
+        読みやすい。
+      */}
       <aside
+        id="global-sidebar"
+        data-menu-panel
         className={`
           fixed top-0 left-0 h-full z-[46]
-          bg-white/95 backdrop-blur-2xl border-r border-rose-100/80 shadow-2xl shadow-rose-100/40
-          w-64 ${sidebarWidth} transition-all duration-300 ease-in-out
+          bg-white border-r border-rose-100/80 shadow-2xl shadow-rose-100/40
+          w-64 ${sidebarWidth} transition-[transform,width] duration-300 ease-in-out
           flex flex-col overflow-y-auto
-          ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          -translate-x-full lg:translate-x-0
         `}
       >
         {/* Logo Area */}

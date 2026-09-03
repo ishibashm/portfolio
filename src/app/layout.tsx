@@ -240,6 +240,49 @@ export default async function RootLayout({
           </>
         )}
 
+        {/*
+          左上のメニューを、React が繋がる前から開けるようにする。
+
+          ボタンは HTML には最初から出ているのに、onClick が付くのは
+          hydration のあと。実測で、押しても何も起きない時間が物件検索で
+          4.6 秒（良い回線）・8.7 秒（遅い回線）あった。利用者からの
+          「反応が悪い」はこれ。
+
+          開閉は <html data-menu> だけが持ち、見た目は globals.css が
+          その属性を見て描く。React（GlobalSidebar）は読むだけで、
+          切り替えはここ 1 か所。二重に切り替わらない。
+
+          head に素で置く。next/script の afterInteractive では、
+          結局 hydration と同じころまで待たされて意味が無い。
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('click', function (e) {
+                var el = e.target && e.target.closest
+                  ? e.target.closest('[data-menu-toggle],[data-menu-close]')
+                  : null;
+                if (!el) return;
+                var root = document.documentElement;
+                var open = root.getAttribute('data-menu') === 'open';
+                var next = el.hasAttribute('data-menu-close')
+                  ? 'closed'
+                  : (open ? 'closed' : 'open');
+                root.setAttribute('data-menu', next);
+                var btn = document.querySelector('[data-menu-toggle]');
+                if (btn) btn.setAttribute('aria-expanded', next === 'open');
+              });
+              document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape') return;
+                if (document.documentElement.getAttribute('data-menu') !== 'open') return;
+                document.documentElement.setAttribute('data-menu', 'closed');
+                var btn = document.querySelector('[data-menu-toggle]');
+                if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.focus(); }
+              });
+            `,
+          }}
+        />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `

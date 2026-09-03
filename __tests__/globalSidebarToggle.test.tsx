@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeAll, describe, expect, it, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 // jsdom は matchMedia を持たない。PWAInstallPrompt が
 // display-mode: standalone を見るので、口だけ生やす。
@@ -47,25 +47,42 @@ import { GlobalSidebar } from "@/components/GlobalSidebar";
  * 該当は 1 件だけだった）。中身が lucide の図形しか無いので、読み上げでは
  * 「ボタン」としか読まれず、何をするものか分からなかった。
  *
- * 名前は状態で変える。閉じているときに「メニューを閉じる」と読ませても
- * 意味が通らない。開いているかどうかは aria-expanded でも伝える
- * （名前だけだと、読み上げの種類によっては状態が落ちる）。
+ * ## 名前は状態で変えない（#886 で変えた）
+ *
+ * 以前は「メニューを開く」「メニューを閉じる」と出し分けていた。開閉が
+ * React の state から `<html data-menu>` に移り、**hydration の前から
+ * 押せる**ようになったので、名前を React で出し分けると hydration の
+ * 前後で読み上げが食い違う（開いているのに「メニューを開く」のまま）。
+ * 名前は「メニュー」で固定し、状態は aria-expanded だけで伝える。
+ * こちらは素のスクリプトも React も同じ値に揃える。
  */
 describe("GlobalSidebar の開閉ボタン", () => {
-  it("閉じているときは「メニューを開く」と読める", () => {
-    render(<GlobalSidebar />);
-
-    const button = screen.getByRole("button", { name: "メニューを開く" });
-    expect(button).toHaveAttribute("aria-expanded", "false");
+  afterEach(() => {
+    document.documentElement.removeAttribute("data-menu");
   });
 
-  it("押すと名前と aria-expanded が入れ替わる", () => {
+  it("名前は「メニュー」で、閉じているときは aria-expanded が false", () => {
     render(<GlobalSidebar />);
 
-    fireEvent.click(screen.getByRole("button", { name: "メニューを開く" }));
+    const button = screen.getByRole("button", { name: "メニュー" });
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    /* 開くのは素のスクリプトの担当。React 側に onClick は無い */
+    expect(button).toHaveAttribute("data-menu-toggle");
+  });
 
-    const button = screen.getByRole("button", { name: "メニューを閉じる" });
-    expect(button).toHaveAttribute("aria-expanded", "true");
+  it("<html data-menu> が open になると aria-expanded が追う", async () => {
+    render(<GlobalSidebar />);
+
+    await act(async () => {
+      document.documentElement.setAttribute("data-menu", "open");
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "メニュー" })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      ),
+    );
   });
 
   it("名前の無いボタンが残っていない", () => {
