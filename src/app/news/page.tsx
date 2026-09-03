@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { Newspaper, ExternalLink, Library } from "lucide-react";
 import { fetchAllFeeds, mergeLatest } from "@/lib/fetchNews";
+import { groupFeeds } from "@/lib/newsGrouping";
 import { NEWS_LINKS } from "@/data/newsSources";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -38,6 +39,13 @@ export const revalidate = 60;
 
 /** 新着一覧に出す件数。媒体ごとの札は別に全部出るので、ここは頭出し。 */
 const LATEST_COUNT = 24;
+/**
+ * まとめた札で、1 区分に出す見出しの件数。
+ *
+ * UR の入札は 10 本のフィードから来るので、全部並べると 1 枚の札が
+ * 200 行になる。頭出しにして、続きは配信元で読む形にする。
+ */
+const PER_SECTION_COUNT = 6;
 
 /** 見出しの日付。日本の媒体なので日本時間で丸める。 */
 function jstDate(iso: string | null): string | null {
@@ -57,6 +65,14 @@ export default async function Page() {
   const down = feeds.filter((f) => !f.ok);
   /* 全配信元の新着をまとめた一覧。媒体ごとの札より上に置く */
   const latest = mergeLatest(feeds, LATEST_COUNT);
+  /*
+    札は「フィード 1 本 = 1 枚」ではなく「発信元 1 つ = 1 枚」。
+    配信を何本にも分けている発信元（UR 都市機構は 12 本）が札を
+    占めて、他の媒体を押し出さないようにする。
+  */
+  const layout = groupFeeds(feeds, PER_SECTION_COUNT);
+  /* 数えるのは発信元。フィードの本数ではない */
+  const sourceCount = layout.groups.length + layout.singles.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
@@ -83,7 +99,7 @@ export default async function Page() {
         {latest.length > 0 && (
           <section className="rounded-2xl border border-stone-200 bg-white p-4">
             <h2 className="text-sm font-bold text-stone-800">
-              新着（全{alive.length}媒体）
+              新着（全{sourceCount}媒体）
             </h2>
             <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
               {
@@ -123,10 +139,98 @@ export default async function Page() {
           </section>
         )}
 
+        {/* まとめた札。配信を何本にも分けている発信元は、区分ごとに
+            1 枚へたたむ。フィードの本数ぶん札を並べると、他の媒体が
+            画面から押し出される（UR 都市機構は配信が 12 本） */}
+        {layout.groups.map((card) => {
+          /* 束に入っているフィードのうち、見出しが取れたもの。
+             site-audit がこの印を数えるので、たたんでも 1 本ずつ
+             外から見えるようにしておく */
+          const members = alive.filter((f) => f.source.group === card.group.id);
+          return (
+            <section
+              key={card.group.id}
+              className="rounded-2xl border border-indigo-200 bg-white p-4"
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 className="text-sm font-bold text-stone-800">
+                  {card.group.name}
+                  <span className="ml-2 text-[10px] font-normal text-stone-400">
+                    {card.feedCount}
+                    {"本の配信をまとめています"}
+                  </span>
+                </h2>
+                <a
+                  href={card.group.siteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 text-[10px] font-semibold text-indigo-600 underline"
+                >
+                  配信元を開く
+                </a>
+              </div>
+              <p className="mt-0.5 max-w-[70ch] text-[10px] leading-relaxed text-stone-500">
+                {card.group.note}
+              </p>
+              {members.map((f) => (
+                <span key={f.source.id} hidden data-feed-source={f.source.id} />
+              ))}
+              <div className="mt-2 grid gap-4 border-t border-stone-100 pt-3 lg:grid-cols-2 xl:grid-cols-3">
+                {card.sections.map((section) => (
+                  <div key={section.name}>
+                    <h3 className="text-xs font-bold text-indigo-900">
+                      {section.name}
+                      {section.feedCount > 1 && (
+                        <span className="ml-1 text-[10px] font-normal text-stone-400">
+                          {"（"}
+                          {section.feedCount}
+                          {"本ぶんを日付順）"}
+                        </span>
+                      )}
+                    </h3>
+                    <ul className="mt-1.5 space-y-1.5">
+                      {section.items.map(({ item, source }) => {
+                        const date = jstDate(item.publishedAt);
+                        return (
+                          <li
+                            key={`${source.id}:${item.link}`}
+                            className="flex gap-2 text-xs"
+                          >
+                            <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-stone-400">
+                              {date ?? ""}
+                            </span>
+                            <span className="min-w-0">
+                              <a
+                                href={item.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-medium leading-snug text-stone-700 hover:text-rose-600 hover:underline"
+                              >
+                                {item.title}
+                              </a>
+                              {/* どの配信から来たかは消さない。区分に
+                                  複数の配信が混ざっているときだけ添える */}
+                              {section.feedCount > 1 && (
+                                <span className="ml-1 whitespace-nowrap text-[10px] text-stone-400">
+                                  {source.name}
+                                </span>
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
+
         {/* 配信元ごとの見出し。取得できた配信元だけ出す */}
-        {alive.length > 0 ? (
+        {layout.singles.length > 0 ? (
           <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {alive.map((feed) => (
+            {layout.singles.map((feed) => (
               <div
                 key={feed.source.id}
                 /* 毎朝の site-audit がこの印を数えて、いくつの配信元から
@@ -183,7 +287,11 @@ export default async function Page() {
               </div>
             ))}
           </section>
-        ) : (
+        ) : null}
+
+        {/* 全滅したときだけ出す。まとめた札が出ていれば「取得できて
+            いない」ではない（束のぶんを数え落とさないこと） */}
+        {alive.length === 0 && (
           <section className="rounded-2xl border border-stone-200 bg-white p-6 text-xs text-stone-500">
             いま新着見出しを取得できていません。時間をおいて開き直すか、下の情報源へ直接どうぞ。
           </section>
