@@ -8,7 +8,7 @@ import { SITE_URL } from "@/lib/siteUrl";
 
 const TITLE = "不動産・建築の情報を集める";
 const DESCRIPTION =
-  "不動産と建築の動きを追うための情報収集ページ。専門メディアと官公庁の新着見出しに、建築雑誌・競売・URなど一次情報への入り口をまとめました。";
+  "不動産と建築の動きを追うための情報収集ページ。専門メディア・官公庁・UR 都市機構の新着見出しに、建築雑誌・競売・統計など一次情報への入り口をまとめました。";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -218,7 +218,9 @@ export default async function Page() {
             一次情報への入り口
           </h2>
           <p className="mt-0.5 max-w-[70ch] text-[10px] leading-relaxed text-stone-500">
-            {"新着配信の無い媒体とデータベースです。競売・UR・雑誌はここから。"}
+            {
+              "新着配信の無い媒体とデータベースです。競売・統計・雑誌はここから。"
+            }
           </p>
           <ul className="mt-3 grid gap-x-6 gap-y-2 sm:grid-cols-2 xl:grid-cols-4">
             {NEWS_LINKS.map((link) => (
