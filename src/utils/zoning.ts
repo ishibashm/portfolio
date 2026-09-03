@@ -290,6 +290,39 @@ export function isZoningZoom(z: number): boolean {
   return Number.isInteger(z) && z >= ZONING_MIN_ZOOM && z <= ZONING_MAX_ZOOM;
 }
 
+/**
+ * 画像タイル（PNG）で配るズーム。**GeoJSON の下限より広い側。**
+ *
+ * 「俯瞰でも用途地域を見たい、ただし速度は落とさない」（利用者の要望）
+ * に対して、多角形を軽くする方向では届かない（上の表）。z11〜12 は
+ * サーバーで塗った絵を配る（`/api/zoning/raster`。1 タイル数 KB〜20KB、
+ * ブラウザ側の描画コスト無し）。GeoJSON の下限 z13 とは重ねない。
+ *
+ * 下限が z11 なのは上流への往復の数で決めた。上流に投げるのは実測で
+ * 確かめてある z12 以上だけで（`ZONING_UPSTREAM_MIN_ZOOM`）、z11 は
+ * 子 4 枚から組む。z10 は子 16 枚で、冷えた状態で 1 画面ぶん開くと
+ * 300 回超の往復になるので出さない。上流が z11 を直接返すと確かめ
+ * られたら `ZONING_UPSTREAM_MIN_ZOOM` を 11 に下げれば z10 が 4 枚で済む。
+ */
+export const ZONING_RASTER_MIN_ZOOM = 11;
+export const ZONING_RASTER_MAX_ZOOM = ZONING_MIN_ZOOM - 1;
+
+/**
+ * 上流（XKT002）に直接投げてよい最小ズーム。実測で確かめた範囲
+ * （z12〜。`scripts/probe_zoning.ts`）。これより広い縮尺は子タイルから
+ * 組む——上流が非対応のときの応答が 404 で、「区画が無い」と見分けが
+ * 付かないため（`lib/zoningUpstream`）。
+ */
+export const ZONING_UPSTREAM_MIN_ZOOM = 12;
+
+export function isZoningRasterZoom(z: number): boolean {
+  return (
+    Number.isInteger(z) &&
+    z >= ZONING_RASTER_MIN_ZOOM &&
+    z <= ZONING_RASTER_MAX_ZOOM
+  );
+}
+
 /** そのズームでタイル座標として成り立つか。 */
 export function isTileCoordinate(z: number, x: number, y: number): boolean {
   if (!Number.isInteger(x) || !Number.isInteger(y)) return false;
