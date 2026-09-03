@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { getAdsenseIds } from "@/lib/adsense";
-import { Geist, Geist_Mono, Shippori_Mincho } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import prisma from "@/lib/prisma";
 import {
@@ -10,34 +10,32 @@ import {
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
 
+/*
+  Geist は preload しない。既定では 2 書体ぶん（gzip 52 KB）が
+  `<link rel="preload">` で最優先に落ちてきて、描画を止める CSS と
+  hydration に要る JS の帯域を先に食う（遅い回線 400 kbps の実測で
+  1 秒ぶん）。日本語の本文は端末のフォントで描くので、Geist が要る
+  のは英数字だけ。文字が出てから届いても差し支えない（display は
+  next/font の既定 swap）。
+*/
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const shipporiMincho = Shippori_Mincho({
-  // 日本語フォントは 1 ウェイトあたりの実体が大きく、5 種類読むと
-  // CSS だけで 464KB になっていた（全ページで転送 156KB）。
-  // 実際に font-serif と併用されているのは font-bold(700) と
-  // font-extrabold(800) だけで、800 は 2 箇所のみ。
-  // 本文にセリフ体を選べるテーマがあるので 400 は残す。
-  weight: ["400", "700"],
-  variable: "--font-shippori-mincho",
-  subsets: ["latin"],
-  display: "swap",
-  // 日本語フォントは Google 側で 100 以上の部分集合に分割されている。
-  // next/font は既定でその全てに <link rel="preload"> を出すため、
-  // 実測では 1 ページあたり 124 個のフォントを先読みしていた
-  // （リクエスト 200 件超のうち大半がこれ）。
-  // preload を切ると、@font-face の unicode-range により、その
-  // ページに実際に出る文字の部分集合だけが読まれる。
   preload: false,
 });
+
+/*
+  明朝体（Shippori Mincho）はここで呼ばない。next/font を layout で
+  呼ぶと、その @font-face（2 ウェイトで gzip 62 KB）が全頁の描画を
+  止める stylesheet に入る。`lib/serifFont` に置いて、hydration 後に
+  `SerifFontLoader` が読む。それまでは下の :root の既定（端末の明朝体）。
+*/
 
 // サイトの説明は src/lib/siteStructure.ts に集約している。
 // 以前は「メタハブ／真太陽時クロック＋Katmerナレッジエンジン」と名乗っており、
@@ -101,6 +99,7 @@ export const viewport: Viewport = {
 import { GlobalSidebar } from "@/components/GlobalSidebar";
 import { PageViewBeacon } from "@/components/PageViewBeacon";
 import { ChunkLoadRecovery } from "@/components/ChunkLoadRecovery";
+import { SerifFontLoader } from "@/components/SerifFontLoader";
 import { unstable_cache } from "next/cache";
 
 const getActiveTheme = unstable_cache(
@@ -186,9 +185,8 @@ export default async function RootLayout({
     theme?.noiseOpacity !== undefined ? theme.noiseOpacity : 0.03;
   const borderRadius = theme?.borderRadius || "12px";
 
-  // Dynamic font-family binding
-  const fontStyleClass =
-    fontTheme === "serif" ? shipporiMincho.variable : geistSans.variable;
+  // Dynamic font-family binding。セリフ体テーマの変数クラスは
+  // SerifFontLoader が届いた時点で body に付ける。
   const fontVarName =
     fontTheme === "serif" ? "var(--font-serif)" : "var(--font-sans)";
 
@@ -268,6 +266,9 @@ export default async function RootLayout({
             --noise-opacity: ${noiseOpacity} !important;
             --border-radius: ${borderRadius} !important;
             --font-family: ${fontVarName} !important;
+            /* 明朝体が届くまでの既定。届くと next/font の変数クラスが
+               body で上書きする（SerifFontLoader）。 */
+            --font-shippori-mincho: "Hiragino Mincho ProN", "Yu Mincho", YuMincho, serif;
           }
           
           body {
@@ -311,8 +312,9 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${shipporiMincho.variable} ${fontStyleClass} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SerifFontLoader />
         <ChunkLoadRecovery />
         <PageViewBeacon />
         <div className="flex min-h-screen">
