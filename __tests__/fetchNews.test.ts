@@ -12,6 +12,14 @@ import { NEWS_FEEDS } from "@/data/newsSources";
  *
  * 予備の口を入れた動機は、BUILT（ITmedia）の見出しが本番で出なかった
  * こと。ITmedia は媒体により RSS 2.0 と 1.0 のどちらかしか無い。
+ *
+ * ## 仕組みは台帳の中身に依存させない（2026-09-03 に直した）
+ *
+ * 以前は「台帳から予備を持つ配信元を探す」形で、**台帳から予備が
+ * 無くなった時点で 3 件とも落ちた。**予備は「確かめた URL が見つかる
+ * までの繋ぎ」で、確かめられたら消えるもの（BUILT がそうなった）。
+ * 仕組みの検査は作った台帳で行い、本物の台帳には「1 配信元 1 回」
+ * だけを当てる。
  */
 
 const RSS = `<?xml version="1.0" encoding="UTF-8"?>
@@ -33,16 +41,63 @@ function xmlResponse(body: string) {
 
 const notFound = { ok: false, headers: { get: () => null } };
 
-/** 予備 URL を持つ情報源（台帳から引く。無くなったら気付けるように） */
-const withAlt = NEWS_FEEDS.find((f) => (f.altFeedUrls?.length ?? 0) > 0);
+/** 仕組みを確かめるための台帳。本物の中身に左右されない。 */
+const MAIN = "https://alt.example/main.xml";
+const ALT = "https://alt.example/alt.xml";
+const PLAIN = "https://plain.example/main.xml";
+const FIXTURE = [
+  {
+    id: "with-alt",
+    name: "予備あり",
+    feedUrl: MAIN,
+    altFeedUrls: [ALT],
+    siteUrl: "https://alt.example/",
+    note: "検査用",
+  },
+  {
+    id: "no-alt",
+    name: "予備なし",
+    feedUrl: PLAIN,
+    siteUrl: "https://plain.example/",
+    note: "検査用",
+  },
+];
+
+/** 作った台帳で fetchAllFeeds を読み込む。 */
+async function withFixture() {
+  vi.doMock("@/data/newsSources", () => ({
+    NEWS_FEEDS: FIXTURE,
+    NEWS_LINKS: [],
+  }));
+  return await import("@/lib/fetchNews");
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.resetModules();
+  vi.doUnmock("@/data/newsSources");
 });
 
 describe("fetchAllFeeds", () => {
-  it("台帳に予備 URL を持つ情報源がある（この検証の前提）", () => {
-    expect(withAlt).toBeDefined();
+  it("本物の台帳でも、1 配信元につき 1 回しか行かない", () => {
+    /* 相手サーバーの負荷を上げない、の担保。予備を持つ配信元が
+       台帳に無くても成り立つ形にしてある */
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        calls.push(url);
+        return xmlResponse(RSS);
+      }),
+    );
+
+    return fetchAllFeeds().then(() => {
+      expect(NEWS_FEEDS.length).toBeGreaterThan(0);
+      expect(calls).toHaveLength(NEWS_FEEDS.length);
+      /* 呼んだのは本命だけ */
+      const mains = NEWS_FEEDS.map((f) => f.feedUrl);
+      expect([...calls].sort()).toEqual([...mains].sort());
+    });
   });
 
   it("本命が読めたら予備は取りに行かない（相手への頻度を上げない）", async () => {
@@ -55,31 +110,29 @@ describe("fetchAllFeeds", () => {
       }),
     );
 
-    await fetchAllFeeds();
+    const mod = await withFixture();
+    await mod.fetchAllFeeds();
 
-    /* 情報源の数だけ。予備の URL は 1 つも呼ばれていない */
-    expect(calls).toHaveLength(NEWS_FEEDS.length);
-    for (const alt of withAlt!.altFeedUrls!) {
-      expect(calls).not.toContain(alt);
-    }
+    expect(calls).toEqual([MAIN, PLAIN]);
+    expect(calls).not.toContain(ALT);
   });
 
   it("本命が落ちたときだけ予備を試し、読めれば ok になる", async () => {
-    const alt = withAlt!.altFeedUrls![0];
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: string) => (url === alt ? xmlResponse(RSS) : notFound)),
+      vi.fn(async (url: string) => (url === ALT ? xmlResponse(RSS) : notFound)),
     );
 
-    const results = await fetchAllFeeds();
-    const target = results.find((r) => r.source.id === withAlt!.id)!;
+    const mod = await withFixture();
+    const results = await mod.fetchAllFeeds();
+    const target = results.find((r) => r.source.id === "with-alt")!;
 
     expect(target.ok).toBe(true);
-    expect(target.usedUrl).toBe(alt);
+    expect(target.usedUrl).toBe(ALT);
     expect(target.items).toHaveLength(1);
 
     /* 予備を持たない情報源は落ちたまま。usedUrl は null */
-    const other = results.find((r) => r.source.id !== withAlt!.id)!;
+    const other = results.find((r) => r.source.id === "no-alt")!;
     expect(other.ok).toBe(false);
     expect(other.usedUrl).toBeNull();
   });

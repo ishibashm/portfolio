@@ -48,21 +48,6 @@ export interface LinkSource {
 /** RSS / Atom を配信している情報源。 */
 export const NEWS_FEEDS: readonly FeedSource[] = [
   {
-    id: "constnews",
-    name: "建設ニュース",
-    feedUrl: "https://www.constnews.com/?feed=rss2",
-    /* 2026-09-03 の site-audit で取得できていなかった。一時的な停止か
-       配信の形が変わったのか、外からは見分けられないので、よくある形を
-       予備に置く（本命が落ちたときだけ試すので平常時の負荷は増えない）。
-       続くようならリンク集へ移す。 */
-    altFeedUrls: [
-      "https://www.constnews.com/feed/",
-      "https://www.constnews.com/feed",
-    ],
-    siteUrl: "https://www.constnews.com/",
-    note: "不動産・建設の専門メディア。建築計画や解体の独自取材が中心",
-  },
-  {
     id: "mlit-press",
     name: "国土交通省 報道発表",
     feedUrl: "https://www.mlit.go.jp/pressrelease.rdf",
@@ -118,11 +103,14 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
   {
     id: "itmedia-built",
     name: "BUILT（ITmedia）",
-    feedUrl: "https://rss.itmedia.co.jp/rss/2.0/built.xml",
-    /* ITmedia は媒体ごとに 2.0 と 1.0（RDF）の両方を配信している
-       （スマートジャパンは 1.0 のみが見つかる）。2.0 が無い媒体が
-       あるので 1.0 を予備に置く */
-    altFeedUrls: ["https://rss.itmedia.co.jp/rss/1.0/built.xml"],
+    /*
+      2026-09-03、`built.xml` が落ちた（1.0 の予備も一緒に）。**推測で
+      もう 1 つ足さず**、サイトの HTML が宣言しているフィードを読んだら
+      `sj_built.xml` に変わっていた（probe_news_feeds、run 33812067626。
+      200 / 20 件 / 17.8KB）。落ちた URL は残さない——生き返る見込みが
+      無いものを毎回 1 回叩くだけになる。
+    */
+    feedUrl: "https://rss.itmedia.co.jp/rss/2.0/sj_built.xml",
     siteUrl: "https://built.itmedia.co.jp/",
     note: "建設 DX・BIM・建設テックの専門メディア",
   },
@@ -139,6 +127,11 @@ export const NEWS_LINKS: readonly LinkSource[] = [
     name: "BIT 不動産競売物件情報",
     url: "https://www.bit.courts.go.jp/",
     note: "裁判所の競売物件。入札期間・物件明細書・評価書が読める",
+  },
+  {
+    name: "建設ニュース",
+    url: "https://www.constnews.com/",
+    note: "不動産・建設の専門メディア。建築計画や解体の独自取材が中心",
   },
   {
     name: "LIFULL HOME'S PRESS",
