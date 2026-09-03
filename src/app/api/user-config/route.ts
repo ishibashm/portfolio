@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { DIRECTION_FILTER_MODES } from "@/utils/directionFilterMode";
 import prisma from "@/lib/prisma";
 import { findUserConfig, getAuthUser, toUserId } from "@/lib/userConfig";
 import { toResponseMessage } from "@/lib/errorMessage";
@@ -65,11 +66,13 @@ function pickMetaphysical(
   ) {
     out.physical_month_mode = body.physical_month_mode;
   }
+  /* 見方は 3 層の組み合わせなので、名前を並べずに台帳で照合する。
+     組み合わせを足すたびにここが取りこぼすのを避ける。 */
   if (
-    body.direction_filter_mode === "composite" ||
-    body.direction_filter_mode === "personal_kigaku" ||
-    body.direction_filter_mode === "personal_bazi" ||
-    body.direction_filter_mode === "environmental"
+    typeof body.direction_filter_mode === "string" &&
+    (DIRECTION_FILTER_MODES as readonly string[]).includes(
+      body.direction_filter_mode,
+    )
   ) {
     out.direction_filter_mode = body.direction_filter_mode;
   }

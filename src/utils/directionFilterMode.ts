@@ -20,11 +20,86 @@
  */
 export type ActionIntent = "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
 
+/**
+ * 絞り込みの見方。
+ *
+ * ## 3 つの層の組み合わせで表す
+ *
+ * 中身は独立した 3 つの層で、id はその**組み合わせの名前**でしかない。
+ *
+ * - `kigaku` … 本命星（本命殺・本命的殺・本命星との相生）
+ * - `env`    … 環境方位（五黄殺・暗剣殺・破・ノード）
+ * - `bazi`   … 天中殺（空亡。方位の禁忌と期間の禁忌の両方）
+ *
+ * 以前は 4 つの排他モードしか無く、**本命星と環境方位を一緒に見ることが
+ * できなかった**（利用者の報告）。組み合わせを足して、どの 2 つでも
+ * 併用できるようにした。3 つ全部は `composite`（総合判定）と同じもの
+ * なので、そちらに寄せてある。
+ *
+ * ## id の付け方
+ *
+ * `kigaku` / `env` / `bazi` を**部分文字列として含める**。
+ * `SolarTimeClock` が `directionFilterMode.includes("kigaku")` の形で
+ * 層を判定しているので、この規則を崩すとあちらが黙って外れる。
+ */
 export type DirectionFilterMode =
   | "composite"
   | "personal_kigaku"
   | "personal_bazi"
-  | "environmental";
+  | "environmental"
+  | "personal_kigaku_environmental"
+  | "personal_kigaku_bazi"
+  | "environmental_bazi";
+
+/** どの層を見るか。3 つとも true は composite と同じ意味。 */
+export interface DirectionFilterLayers {
+  /** 本命星（本命殺・本命的殺・相生） */
+  honmei: boolean;
+  /** 環境方位（五黄殺・暗剣殺・破・ノード） */
+  environmental: boolean;
+  /** 天中殺（空亡） */
+  tenchusatsu: boolean;
+}
+
+const LAYERS: Record<DirectionFilterMode, DirectionFilterLayers> = {
+  composite: { honmei: true, environmental: true, tenchusatsu: true },
+  personal_kigaku: { honmei: true, environmental: false, tenchusatsu: false },
+  environmental: { honmei: false, environmental: true, tenchusatsu: false },
+  personal_bazi: { honmei: false, environmental: false, tenchusatsu: true },
+  personal_kigaku_environmental: {
+    honmei: true,
+    environmental: true,
+    tenchusatsu: false,
+  },
+  personal_kigaku_bazi: {
+    honmei: true,
+    environmental: false,
+    tenchusatsu: true,
+  },
+  environmental_bazi: {
+    honmei: false,
+    environmental: true,
+    tenchusatsu: true,
+  },
+};
+
+/** その見方が、どの層を見るか。 */
+export function filterLayersOf(
+  mode: DirectionFilterMode,
+): DirectionFilterLayers {
+  return LAYERS[mode] ?? LAYERS.composite;
+}
+
+/** 見方の一覧（画面の並び順）。 */
+export const DIRECTION_FILTER_MODES: readonly DirectionFilterMode[] = [
+  "composite",
+  "personal_kigaku",
+  "environmental",
+  "personal_bazi",
+  "personal_kigaku_environmental",
+  "personal_kigaku_bazi",
+  "environmental_bazi",
+] as const;
 
 /**
  * 素の文字列を ActionIntent に落とす。
@@ -70,6 +145,9 @@ export function parseDirectionFilterMode(
     case "personal_kigaku":
     case "personal_bazi":
     case "environmental":
+    case "personal_kigaku_environmental":
+    case "personal_kigaku_bazi":
+    case "environmental_bazi":
       return raw;
     default:
       return "composite";

@@ -70,11 +70,24 @@ describe("parseDirectionFilterMode", () => {
   });
 });
 
-describe("知らない値が environmental として扱われていたこと", () => {
+describe("知らない値の扱いが、受け取り口とエンジンで揃っている", () => {
   /*
-    上の「筋が通らない」が言葉だけにならないよう、エンジンの側でも
-    固定しておく。壊れた文字列をそのまま渡すと、composite（素通し）
-    ではなく environmental の枝に落ちる。
+    ## 以前
+
+    `parseDirectionFilterMode` は知らない値を composite に落とすのに、
+    **エンジンの側は environmental の枝に落としていた。**名前で 3 分岐
+    して「残り全部」を environmental にしていたためで、受け取り口を
+    通さずに文字列が届くと、値が無いときと壊れているときで別の答えに
+    なるという筋の通らない状態だった。
+
+    ## いま
+
+    エンジンは名前ではなく**層**（本命星・環境方位・天中殺）で分岐し、
+    知らない値は 3 層すべて＝ composite（素通し）に落ちる。受け取り口と
+    同じ規則になったので、どちらを通っても答えが一致する。
+
+    実際の経路はすべて parseDirectionFilterMode を通るので、ここは
+    「万一素の文字列が届いても筋が通る」ことの固定。
   */
   const date = new Date("2026-08-23T12:00:00+09:00");
   /* 盤は中央星から決まる。年・月・日で別の盤を使う。 */
@@ -106,12 +119,12 @@ describe("知らない値が environmental として扱われていたこと", (
     ).finalVectors;
   }
 
-  it("壊れた値をそのまま渡すと environmental と同じ答えになる", () => {
-    expect(finalFor("xyz")).toEqual(finalFor("environmental"));
+  it("壊れた値は composite と同じ答えになる（受け取り口と揃う）", () => {
+    expect(finalFor("xyz")).toEqual(finalFor("composite"));
   });
 
-  it("composite とは別の答えになる（＝素通しではない）", () => {
-    // composite は絞り込まずに元の判定をそのまま返す。
-    expect(finalFor("xyz")).not.toEqual(finalFor("composite"));
+  it("environmental とは別の答えになる（勝手に凶だけの見方へ倒さない）", () => {
+    /* ここが旧挙動との違い。倒していたころは一致していた */
+    expect(finalFor("xyz")).not.toEqual(finalFor("environmental"));
   });
 });

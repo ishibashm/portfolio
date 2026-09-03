@@ -22,6 +22,11 @@
  * 既定は従来どおり strict（挙動を変えない）。
  */
 
+import {
+  filterLayersOf,
+  type DirectionFilterMode,
+} from "@/utils/directionFilterMode";
+
 export type TenchusatsuScope = "year" | "month" | "day";
 
 export type TenchusatsuMode =
@@ -101,11 +106,14 @@ export const TENCHUSATSU_MODES: {
  * - personal_bazi … 天中殺だけを見るモードなので当然含む
  * - personal_kigaku … 本命星との相生・本命殺・的殺だけ。含まない
  * - environmental … 五黄殺・暗剣殺・破だけ。含まない
+ *
+ * 組み合わせ（本命星＋環境方位など）が増えたので、名前を並べるのを
+ * やめて**層から引く**。天中殺の層を見ている見方なら期間も見る、で
+ * 一貫する。名前で分岐したままだと、組み合わせを足すたびにここが
+ * 取りこぼす（実際に tsc が 2 か所を指した）。
  */
-export function filterModeUsesTenchusatsu(
-  mode: "composite" | "personal_kigaku" | "personal_bazi" | "environmental",
-): boolean {
-  return mode === "composite" || mode === "personal_bazi";
+export function filterModeUsesTenchusatsu(mode: DirectionFilterMode): boolean {
+  return filterLayersOf(mode).tenchusatsu;
 }
 
 export const DEFAULT_TENCHUSATSU_MODE: TenchusatsuMode = "strict";
