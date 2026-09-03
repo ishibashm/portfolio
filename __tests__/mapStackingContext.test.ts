@@ -46,9 +46,7 @@ function layer(pattern: RegExp): number {
   return Number(m[1]);
 }
 
-const OVERLAY = layer(
-  /fixed inset-0 bg-stone-900\/30 backdrop-blur-sm z-\[(\d+)\]/,
-);
+const OVERLAY = layer(/fixed inset-0 bg-stone-900\/30 z-\[(\d+)\]/);
 const PANEL = layer(/fixed top-0 left-0 h-full z-\[(\d+)\]/);
 const TOGGLE = layer(/lg:hidden fixed top-4 left-4 z-\[(\d+)\]/);
 

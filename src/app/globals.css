@@ -343,3 +343,34 @@ input[type="week"] {
   -webkit-appearance: none;
   appearance: none;
 }
+
+/*
+ * 左上のメニューの開閉。**JS が繋がる前から効く。**
+ *
+ * ボタンは HTML には最初から出ているのに、React の onClick が付くのは
+ * hydration のあと。実測で、押しても何も起きない時間が物件検索で
+ * 4.6 秒（良い回線）・8.7 秒（遅い回線）あった。利用者からの
+ * 「反応が悪い」はこれだった。
+ *
+ * 開いているかは `<html data-menu>` が持つ（layout.tsx の素のスクリプトが
+ * 切り替える）。ここはその属性を見て描くだけなので、JS の読み込みを待たない。
+ * React 側（GlobalSidebar）は同じ属性を読んで aria を合わせる。
+ *
+ * translate は Tailwind v4 が `--tw-translate-x` 経由で当てているので、
+ * 変数のほうを上書きする（`translate:` を直に書くと、同じ要素に付いている
+ * `-translate-x-full` と競合して順序で決まってしまう）。
+ */
+html[data-menu="open"] [data-menu-panel] {
+  --tw-translate-x: 0;
+}
+
+/* 覆いは開いているときだけ。React の分岐にすると hydration 前に出ない。 */
+html:not([data-menu="open"]) [data-menu-overlay] {
+  display: none;
+}
+
+/* 三本線と × は両方描いておき、ここで出し分ける。 */
+html[data-menu="open"] [data-menu-icon="open"],
+html:not([data-menu="open"]) [data-menu-icon="close"] {
+  display: none;
+}

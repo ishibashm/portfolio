@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
-import { emptyDirections, findArea } from "@/lib/areaContent";
+import {
+  emptyDirections,
+  findArea,
+  neighboursByDirection,
+} from "@/lib/areaContent";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 
 /**
@@ -86,6 +90,36 @@ describe("手書きの「市区町村がありません」は実測と合って�
           if (farOnly.has(dir as never)) {
             wrong.push(`${code} ${area.full}: ${dir}`);
           }
+        }
+      }
+    }
+
+    expect(wrong).toEqual([]);
+  });
+
+  /*
+    上の検査は `hasBeyondRange`（遠くにはある）だけを見ていて、
+    **「空だと書いた方位に、頁の一覧がその場で出している」**を見ていな
+    かった。実際に見落としていた（2026-09-03）。南相馬市の文章は
+    「東と南東にはこの一覧の候補が 1 つもありません」だったが、毎晩の
+    巡回で代表点が動き、浪江町（16km）が南東に入った。頁は南東に
+    浪江町を出しながら、本文は「1 つもありません」と言っていた。
+
+    `emptyDirections` はその方位を「空」として挙げないので、上の検査は
+    素通りする。**空でない方位の断定**は、こちらで拾う。
+  */
+  it("断定している方位を、頁の一覧がその場で出していない", () => {
+    const wrong: string[] = [];
+
+    for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
+      const area = findArea(code);
+      if (!area) continue;
+      const groups = neighboursByDirection(area) as Record<string, unknown[]>;
+
+      for (const paragraph of editorial.intro) {
+        for (const dir of assertedEmptyDirections(paragraph)) {
+          const n = groups[dir]?.length ?? 0;
+          if (n > 0) wrong.push(`${code} ${area.full}: ${dir} に ${n} 件`);
         }
       }
     }
