@@ -197,7 +197,8 @@ export default async function Page() {
           <section className="rounded-2xl border border-dashed border-stone-300 bg-white/60 p-3 text-[10px] leading-relaxed text-stone-500">
             {"いま見出しを取得できていない配信元: "}
             {down.map((feed, i) => (
-              <span key={feed.source.id}>
+              /* 毎朝の site-audit がこの印で「どれが落ちているか」を拾う */
+              <span key={feed.source.id} data-feed-down={feed.source.id}>
                 {i > 0 && "、"}
                 <a
                   href={feed.source.siteUrl}

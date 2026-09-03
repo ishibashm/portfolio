@@ -137,14 +137,15 @@ jobs:
             echo "::error::/news を取得できない" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "FAIL=1" >> "$GITHUB_ENV"
           else
-            # 見出しの札は配信元ごとに 1 つ。取得できた数の目安になる。
-            ALIVE=$(echo "$BODY" | grep -c 'data-feed-source' || true)
-            echo "見出しを出せている配信元: $ALIVE" | tee -a "$GITHUB_STEP_SUMMARY"
-            if echo "$BODY" | grep -q '取得できていない配信元'; then
-              DOWN=$(echo "$BODY" \
-                | sed -n 's/.*取得できていない配信元: \(.*\)。配信の一時的な停止.*/\1/p' \
-                | sed 's/<[^>]*>//g' | head -c 400)
-              echo "取得できていない: $DOWN" | tee -a "$GITHUB_STEP_SUMMARY"
+            # **id の異なり数**で数える。grep -c は行数なので、HTML が
+            # 1 行で来ると常に 1 になる（実際にそうなった）。RSC の
+            # ペイロードにも同じ属性が載るので、重複も畳む必要がある。
+            ids() { echo "$BODY" | grep -o "$1=\"[^\"]*\"" | sed "s/.*=\"//;s/\"//" | sort -u; }
+            ALIVE=$(ids data-feed-source | tr '\n' ' ')
+            DOWN=$(ids data-feed-down | tr '\n' ' ')
+            echo "見出しを出せている: $(echo $ALIVE | wc -w) 件 — $ALIVE" | tee -a "$GITHUB_STEP_SUMMARY"
+            if [ -n "$(echo $DOWN | tr -d ' ')" ]; then
+              echo "取得できていない: $(echo $DOWN | wc -w) 件 — $DOWN" | tee -a "$GITHUB_STEP_SUMMARY"
             else
               echo "全部の配信元から見出しが出ている" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
