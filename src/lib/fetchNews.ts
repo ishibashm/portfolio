@@ -20,6 +20,18 @@ import { NEWS_FEEDS, type FeedSource } from "@/data/newsSources";
  * - 5 秒で諦める。遅い 1 本にページ全体を待たせない
  * - CI のビルドにも外へ出る経路は無いが、そこでも同じ道
  *   （全滅 → 空で描画）を通るだけで、ビルドは落ちない
+ *
+ * ## 同じ相手に一度に投げない
+ *
+ * 台帳のフィードを素直に Promise.all すると、**1 つの発信元が配信を
+ * 12 本に分けている場合、そのサーバへ 12 本を同時に投げる**（UR 都市
+ * 機構がそう。報道発表・賃貸・入札が別フィード）。1 日 4 回という
+ * 総量は変わらないが、瞬間のレートは 12 倍になる。
+ *
+ * だから**ホストごとに同時数を絞る**（PER_HOST_CONCURRENCY）。
+ * ホストをまたぐぶんは今までどおり並行。「速さは待つと書いて決める。
+ * 副作用に頼らない」（CLAUDE.md 3 節）と同じ考え方で、レートを
+ * 実装の都合で決めない。
  */
 
 export interface FeedResult {
@@ -37,6 +49,21 @@ const ITEMS_PER_FEED = 20;
 const TIMEOUT_MS = 5000;
 /** キャッシュの寿命。1 日 4 回まで。 */
 export const REVALIDATE_SECONDS = 21600;
+/**
+ * 同じホストへ同時に投げる本数の上限。
+ *
+ * 1 本ずつにすると、12 本ぶんの待ちが直列に積まれて最悪 60 秒
+ * （12 × TIMEOUT_MS）ページの再生成が止まる。4 なら最悪 15 秒で、
+ * 相手には常に 4 本までしか当たらない。**この数字を大きくしない。**
+ */
+const PER_HOST_CONCURRENCY = 4;
+/**
+ * 新着一覧で 1 つの発信元（束）が取れる件数の上限。
+ *
+ * 一覧は 24 件で、発信元は 9 つ（8 媒体 + UR）。4 なら全部の発信元が
+ * 出たうえで枠が余り、日付の新しいものから埋まる。
+ */
+const PER_GROUP_LIMIT = 4;
 
 /** 1 本の URL を読んでみる。読めなければ空配列。 */
 async function fetchUrl(url: string): Promise<NewsItem[]> {
@@ -85,9 +112,41 @@ async function fetchOne(source: FeedSource): Promise<FeedResult> {
   return { source, ok: false, items: [], usedUrl: null };
 }
 
-/** 台帳の全フィードを並行に取得する。順序は台帳のまま。 */
+/** フィード URL のホスト。読めない URL は 1 つの束に落として絞る。 */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * 台帳の全フィードを取得する。**ホストごとに同時 PER_HOST_CONCURRENCY
+ * 本まで**で、ホストをまたぐぶんは並行。順序は台帳のまま。
+ */
 export async function fetchAllFeeds(): Promise<FeedResult[]> {
-  return Promise.all(NEWS_FEEDS.map(fetchOne));
+  const byHost = new Map<string, FeedSource[]>();
+  for (const source of NEWS_FEEDS) {
+    const host = hostOf(source.feedUrl);
+    const list = byHost.get(host);
+    if (list) list.push(source);
+    else byHost.set(host, [source]);
+  }
+
+  const results = new Map<FeedSource, FeedResult>();
+  await Promise.all(
+    [...byHost.values()].map(async (sources) => {
+      for (let i = 0; i < sources.length; i += PER_HOST_CONCURRENCY) {
+        const batch = sources.slice(i, i + PER_HOST_CONCURRENCY);
+        const got = await Promise.all(batch.map(fetchOne));
+        got.forEach((r, k) => results.set(batch[k], r));
+      }
+    }),
+  );
+
+  /* 台帳の順に戻す。画面の並びが取得の速さで揺れないように */
+  return NEWS_FEEDS.map((source) => results.get(source)!);
 }
 
 /** 新着一覧の 1 行。どの配信元から来たかを持ち歩く。 */
@@ -106,6 +165,17 @@ export interface MergedNewsItem {
  * - 日付が読めない見出しは**最後**に回す（台帳の順のまま）
  * - 同じ URL は 1 回だけ（配信元をまたいだ重複を畳む。先に載って
  *   いる配信元が勝つ＝台帳の順）
+ * - **1 つの発信元の取り分は PER_GROUP_LIMIT 件まで**（下記）
+ *
+ * ## 取り分を束ごとに数える
+ *
+ * 配信を 12 本に分けている発信元（UR 都市機構）を台帳へ入れると、
+ * 発信元は 1 つなのに一覧の枠を 12 本ぶん取り合うことになる。24 枠の
+ * うち大半が同じ発信元で埋まり、他の 8 媒体が押し出される。
+ *
+ * だから**束（FeedSource.group）ごとに上限を掛ける**。束の無い配信元
+ * は自分だけの束として数える。日付順に並べてから数えるので、残るのは
+ * その束の**新しいほうから** PER_GROUP_LIMIT 件。
  */
 export function mergeLatest(
   feeds: readonly FeedResult[],
@@ -137,5 +207,17 @@ export function mergeLatest(
     return tb - ta;
   });
 
-  return merged.slice(0, limit);
+  /* 束ごとの取り分を数えて絞る。並べ替えたあとに数えるので、
+     残るのは各束の新しいほうから */
+  const taken = new Map<string, number>();
+  const out: MergedNewsItem[] = [];
+  for (const m of merged) {
+    if (out.length >= limit) break;
+    const key = m.source.group ?? m.source.id;
+    const n = taken.get(key) ?? 0;
+    if (n >= PER_GROUP_LIMIT) continue;
+    taken.set(key, n + 1);
+    out.push(m);
+  }
+  return out;
 }
