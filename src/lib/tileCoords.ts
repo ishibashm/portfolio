@@ -71,13 +71,48 @@ export function latToTileY(lat: number, z: number): number {
   );
 }
 
+/**
+ * 緯度経度 → タイル単位の**連続した**座標（丸めない）。
+ *
+ * 整数部が何枚目か、小数部がタイルの中のどこか。`tilePointOf` はこれを
+ * 丸めたもので、用途地域の塗り絵（`lib/rasterTile`）は丸めずに
+ * 「そのタイルの左上から何画素か」を出すのに使う。**Web メルカトルの
+ * 式はここ 1 つ**にしておく（丸める側と丸めない側で式を写し分けると
+ * 必ずどちらかがずれる）。
+ */
+export function tileUnitsOf(
+  lat: number,
+  lon: number,
+  z: number,
+): { x: number; y: number } {
+  const n = 2 ** z;
+  const x = ((clampLon(lon) + 180) / 360) * n;
+  const r = (clampLat(lat) * Math.PI) / 180;
+  const y = ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
+  return { x, y };
+}
+
+/**
+ * `tileUnitsOf` の逆。タイル単位の座標 → 緯度経度。
+ *
+ * 塗り絵の検査で「タイルの西半分を覆う多角形」を作るのに使う。
+ * 画面の描画には使っていない。
+ */
+export function lonLatOfTileUnits(
+  x: number,
+  y: number,
+  z: number,
+): { lat: number; lon: number } {
+  const n = 2 ** z;
+  const lon = (x / n) * 360 - 180;
+  const lat =
+    (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI;
+  return { lat, lon };
+}
+
 /** 緯度経度 → タイル座標＋タイル内の位置。 */
 export function tilePointOf(lat: number, lon: number, z: number): TilePoint {
-  const n = 2 ** z;
-  const rawX = ((clampLon(lon) + 180) / 360) * n;
-  const r = (clampLat(lat) * Math.PI) / 180;
-  const rawY =
-    ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * n;
+  const { x: rawX, y: rawY } = tileUnitsOf(lat, lon, z);
   const x = clampIndex(Math.floor(rawX), z);
   const y = clampIndex(Math.floor(rawY), z);
   // 位置は丸めたタイルの中で測り直す。丸めた側とずれると印が枠外に出る。

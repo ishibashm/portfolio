@@ -42,7 +42,15 @@ import {
  * 間引き、1 画素四方に満たない区画を落とす（`lib/simplifyGeo`）。
  * 見た目は 1 画素未満しか変わらず、いちばん重い千代田区で 1 タイルが
  * 3 割強小さくなる（実測は `scripts/probe_zoning_simplify.ts`）。
- * z=12 は間引いても 1 画面 6.5MB になるので出さない。
+ * z=12 は間引いても 1 画面 6.5MB になるので多角形では出さず、
+ * 塗り絵（`/api/zoning/raster`）に切り替える。
+ *
+ * ## いちばん細かい z15 は間引かない
+ *
+ * 上流の対応は z11〜15 で、表示側は z16〜18 でも z15 のタイルを使い回す
+ * （`utils/zoning` の `ZONING_MAX_ZOOM`）。z15 の 0.5 画素は z18 では
+ * 4 画素になるので、使い回す最上段だけは頂点を触らない。z15 のタイルは
+ * 1〜2 区分しか入らないほど小さく、間引かなくても軽い。
  */
 
 /**
@@ -161,8 +169,9 @@ export async function GET(request: Request) {
     重いより悪い。lib/simplifyGeo）。1 画素四方に満たない区画も落とす
     （z13 で最大 3/135 件、z14 では 0 件——実測）。
   */
-  const tolerance = toleranceForZoom(z, 0.5);
-  const minArea = toleranceForZoom(z, 1) ** 2;
+  const finest = z >= ZONING_MAX_ZOOM;
+  const tolerance = finest ? 0 : toleranceForZoom(z, 0.5);
+  const minArea = finest ? 0 : toleranceForZoom(z, 1) ** 2;
   const stats: SimplifyStats = { before: 0, after: 0, dropped: 0 };
   const features = (body.features ?? []).flatMap((f) => {
     if (!f.geometry) return [];
@@ -185,9 +194,23 @@ export async function GET(request: Request) {
     しるしで、GeoJSON の foreign member として載せる（読む側は無視して
     よい。ZoningLayer は features しか読まない）。
   */
-  return NextResponse.json({
-    type: "FeatureCollection",
-    features,
-    dropped: stats.dropped,
-  });
+  return NextResponse.json(
+    {
+      type: "FeatureCollection",
+      features,
+      dropped: stats.dropped,
+    },
+    {
+      /*
+        ブラウザにも 1 日持たせる。以前は付けておらず、頁を開き直すたびに
+        同じタイルを取り直していた（中継側の 30 日キャッシュに当たるので
+        速いが、往復そのものは残る）。失敗の応答（上の 4xx/5xx）には
+        付けない——失敗を 1 日覚えられると、直っても出ないままになる。
+      */
+      headers: {
+        "Cache-Control":
+          "public, max-age=86400, s-maxage=2592000, stale-while-revalidate=86400",
+      },
+    },
+  );
 }

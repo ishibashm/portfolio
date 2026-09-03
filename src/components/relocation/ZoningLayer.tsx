@@ -1,14 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GeoJSON, useMap, useMapEvents } from "react-leaflet";
+import { GeoJSON, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import { toLogMessage } from "@/lib/errorMessage";
 import {
   formatPercent,
+  isZoningRasterZoom,
   zoningFillFiltered,
   ZONING_MAX_ZOOM,
   ZONING_MIN_ZOOM,
+  ZONING_OVERLAY_OPACITY,
+  ZONING_RASTER_MAX_ZOOM,
+  ZONING_RASTER_MIN_ZOOM,
   type ZoningName,
   type ZoningProperties,
 } from "@/utils/zoning";
@@ -25,12 +29,26 @@ import {
  * 中継（`/api/zoning`）から 1 タイルずつ取って描く。**判定には入らない。**
  * 方位の吉凶とは無関係な、参考として重ねるだけの層。
  *
- * ## 広域では出さない
+ * ## 縮尺で描き方を切り替える
  *
- * 下限は `ZONING_MIN_ZOOM`（z13。中継が項目を絞り頂点を間引いた後の、
- * ブラウザが受け取る大きさの実測で決めた——`utils/zoning` に表）。
- * それでも z12 は 1 画面 6.5MB になるので出さない。
- * `ZONING_MIN_ZOOM` 未満では取りに行かず、「拡大してください」とだけ出す。
+ *   z13 以上 … 多角形（GeoJSON）。区画を押すと建蔽率・容積率が出て、
+ *              凡例の絞り込みは色の引き直しで済む
+ *   z11〜12  … **塗り絵（PNG タイル）**。`/api/zoning/raster` がサーバで
+ *              塗った絵を画像タイルとして重ねる。多角形だと 1 画面 6.5MB
+ *              になる縮尺（`utils/zoning` の実測表）で、ブラウザが数千の
+ *              SVG パスを描かずに済む。区画を押しても詳細は出ない
+ *              （地図のクリックは地点の吉凶を出すのに使っている）
+ *   z10 以下 … 出さない。上流の下限 z11 を束ねないと作れず、冷えた
+ *              1 画面で上流を 100 回近く叩くことになる
+ *
+ * 多角形の下限（`ZONING_MIN_ZOOM`）は、中継が項目を絞り頂点を間引いた
+ * 後の、ブラウザが受け取る大きさの実測で決めた。
+ *
+ * ## 多角形は上流の最上段（z15）を使い回す
+ *
+ * 取りに行くのは `Math.min(zoom, ZONING_MAX_ZOOM)`。z16〜18 では z15 の
+ * タイルをそのまま使う。以前は上限が 18 で、上流に無いズームを投げて
+ * いたうえ、1 段拡大するたびに同じ場所を取り直していた。
  *
  * ## 取ったタイルは捨てない
  *
@@ -55,6 +73,21 @@ const MAX_TILES = 12;
 const SETTLE_MS = 250;
 /** 同時に投げる数。上流にも中継にも一気に投げない。 */
 const CONCURRENCY = 4;
+
+/** 塗り絵のタイル URL。絞り込みは問い合わせで渡す（サーバ側で灰色にする）。 */
+function rasterUrl(selected: ZoningName | null): string {
+  const base = "/api/zoning/raster/{z}/{x}/{y}";
+  return selected ? `${base}?pick=${encodeURIComponent(selected)}` : base;
+}
+
+/** 縮尺に応じた断り。null は「言うことが無い」。 */
+function noticeForZoom(zoom: number): string | null {
+  if (zoom >= ZONING_MIN_ZOOM) return null;
+  if (isZoningRasterZoom(zoom)) {
+    return "俯瞰では色だけ出しています。区画を押して建蔽率・容積率を見るには、もう少し拡大してください。";
+  }
+  return "用途地域は拡大すると出ます。";
+}
 
 interface ZoningFeatureCollection extends GeoJsonObject {
   type: "FeatureCollection";
@@ -89,6 +122,11 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
     {},
   );
   /*
+    いまの縮尺。塗り絵の層を出すかどうかをこれで決める。moveend/zoomend
+    の後の refresh で更新する（描き直しはそこで 1 回にまとまる）。
+  */
+  const [zoom, setZoom] = useState(() => Math.round(map.getZoom()));
+  /*
     取得済み・取得中の鍵。state に入れると取得のたびに描き直しが走るので、
     ref で持つ。描くのに要るのは中身（tiles）だけ。
   */
@@ -109,8 +147,9 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
       return;
     }
     const zoom = Math.round(map.getZoom());
+    setZoom(zoom);
     if (zoom < ZONING_MIN_ZOOM) {
-      notify("用途地域は拡大すると出ます。");
+      notify(noticeForZoom(zoom));
       return;
     }
     const z = Math.min(zoom, ZONING_MAX_ZOOM);
@@ -211,6 +250,30 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
 
   if (!enabled) return null;
 
+  if (isZoningRasterZoom(zoom)) {
+    /*
+      key に URL を混ぜて、絞り込みが変わったら別の層として置き直す
+      （HazardTileOverlay と同じ）。zIndex は多角形の層と同じく
+      ハザードのタイル（既定 1）より上。
+    */
+    const url = rasterUrl(selected);
+    return (
+      <TileLayer
+        key={url}
+        url={url}
+        opacity={ZONING_OVERLAY_OPACITY}
+        minNativeZoom={ZONING_RASTER_MIN_ZOOM}
+        maxNativeZoom={ZONING_RASTER_MAX_ZOOM}
+        zIndex={2}
+        eventHandlers={{
+          /* 取れなかった枚は透明のまま。黙って足りない絵を出さない */
+          tileerror: () => notify("用途地域の一部を取得できませんでした。"),
+        }}
+      />
+    );
+  }
+  if (zoom < ZONING_MIN_ZOOM) return null;
+
   return (
     <>
       {Object.entries(tiles).map(([key, data]) => (
@@ -225,7 +288,7 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
             const props = feature?.properties as ZoningProperties | undefined;
             return {
               fillColor: zoningFillFiltered(props?.name ?? null, selected),
-              fillOpacity: 0.45,
+              fillOpacity: ZONING_OVERLAY_OPACITY,
               /* 細い白縁。区画の境目が地図の道路と混ざらないように */
               color: "#ffffff",
               weight: 0.6,

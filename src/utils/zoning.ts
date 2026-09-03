@@ -260,7 +260,7 @@ export function zoningPropertiesOf(
 }
 
 /**
- * 中継できるズーム。**実測で決めた。**
+ * 多角形のまま中継するズーム。**下限は実測で決めた。**
  *
  * 当初の下限は z14 で、根拠は**上流** 1 タイルの大きさだった（千代田区で
  * z13 435KB・z12 1.9MB。`scripts/probe_zoning.ts`）。だがブラウザが
@@ -278,13 +278,63 @@ export function zoningPropertiesOf(
  * 画面には十数タイル並ぶ。いちばん重い千代田で 1 画面（× 15）にすると
  * z14 0.7MB / z13 1.6MB / z12 6.5MB。z13 は間引き前の z14
  * （71KB/タイル ≒ 1.1MB/画面）と同じ桁に収まるので、**下限を 13 に
- * 下げた**。z12 は間引いても 1 画面 6.5MB あるので出さない。
+ * 下げた**。z12 は間引いても 1 画面 6.5MB あるので多角形では出さず、
+ * 下の塗り絵（`ZONING_RASTER_*`）に切り替える。
  *
  * 間引きで消える区画は z13 で最大 3 件（札幌 135 → 132。1 画素四方に
  * 満たないものだけ）。z14 では 4 か所とも 0 件。
+ *
+ * ## 上限は上流の対応範囲
+ *
+ * 不動産情報ライブラリのタイル API（XKT002）が受けるのは **z11〜15**
+ * （API 仕様。`probe_zoning.ts` も 11〜15 しか叩いていない）。以前は
+ * ここが 18 で、z16 以上では上流に無いズームをそのまま投げていた。
+ * 表示側は `Math.min(zoom, ZONING_MAX_ZOOM)` で取りに行くので、z16〜18
+ * では z15 のタイルを使い回す。**拡大するたびに取り直さなくなる**うえ、
+ * z15 のタイルは 1〜2 区分しか入らないほど小さい。
  */
 export const ZONING_MIN_ZOOM = 13;
-export const ZONING_MAX_ZOOM = 18;
+export const ZONING_MAX_ZOOM = 15;
+
+/**
+ * 塗り絵（PNG タイル）で出すズーム。多角形の下限のすぐ下から。
+ *
+ * z11〜12 は上流 1 タイルを 1 枚の絵にできる（`/api/zoning/raster`）。
+ * z10 以下は上流の下限（z11）を 4 枚・16 枚と束ねないと作れず、
+ * 冷えた状態の 1 画面で上流を 100 回近く叩くことになるので出さない。
+ * 俯瞰の 1 画面（z11・1400×900）は東京 23 区がほぼ収まる広さ。
+ */
+export const ZONING_RASTER_MIN_ZOOM = 11;
+export const ZONING_RASTER_MAX_ZOOM = 12;
+
+/** 塗り絵・多角形とも同じ濃さで重ねる。切り替わりで濃さが変わらないように。 */
+export const ZONING_OVERLAY_OPACITY = 0.45;
+
+export function isZoningRasterZoom(z: number): boolean {
+  return (
+    Number.isInteger(z) &&
+    z >= ZONING_RASTER_MIN_ZOOM &&
+    z <= ZONING_RASTER_MAX_ZOOM
+  );
+}
+
+/**
+ * 上流の 1 区画をどの色で塗るか。塗り絵（俯瞰）用。
+ *
+ * 多角形の層が画面で `zoningFillFiltered` を引いているのと同じ答えを
+ * サーバで出す。絞り込み（`selected`）も同じ規則で、選んだ区分だけ
+ * 元の色、他は灰色に落とす。
+ */
+export function zoningRasterFill(
+  raw: Record<string, unknown> | undefined | null,
+  selected: ZoningName | null,
+): string {
+  const props = raw ?? {};
+  return zoningFillFiltered(
+    zoningNameOf(props.use_area_ja, props.youto_id),
+    selected,
+  );
+}
 
 export function isZoningZoom(z: number): boolean {
   return Number.isInteger(z) && z >= ZONING_MIN_ZOOM && z <= ZONING_MAX_ZOOM;

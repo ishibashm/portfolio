@@ -18,6 +18,10 @@ import {
   UNKNOWN_ZONING_FILL,
   ZONING_MAX_ZOOM,
   ZONING_MIN_ZOOM,
+  ZONING_RASTER_MAX_ZOOM,
+  ZONING_RASTER_MIN_ZOOM,
+  isZoningRasterZoom,
+  zoningRasterFill,
 } from "@/utils/zoning";
 
 /**
@@ -256,9 +260,61 @@ describe("出すズームの範囲", () => {
     expect(isZoningZoom(ZONING_MAX_ZOOM + 1)).toBe(false);
   });
 
+  it("上限は上流（XKT002）が受ける z15。z16 以上を上流に投げない", () => {
+    /*
+      以前は 18 だった。上流に無いズームを投げていたうえ、表示側は
+      Math.min(zoom, ZONING_MAX_ZOOM) で取りに行くので、1 段拡大する
+      たびに同じ場所を取り直していた。z16〜18 は z15 のタイルを使い回す。
+    */
+    expect(ZONING_MAX_ZOOM).toBe(15);
+    expect(isZoningZoom(16)).toBe(false);
+  });
+
   it("整数でないズームは通さない", () => {
     expect(isZoningZoom(14.5)).toBe(false);
     expect(isZoningZoom(NaN)).toBe(false);
+  });
+});
+
+describe("塗り絵（俯瞰）のズーム", () => {
+  it("多角形の下限のすぐ下から、上流の下限（z11）まで", () => {
+    /*
+      z11〜12 は上流 1 タイルを 1 枚の絵にできる。z10 以下は上流の
+      z11 を 4 枚・16 枚と束ねないと作れないので出さない。
+    */
+    expect(ZONING_RASTER_MAX_ZOOM).toBe(ZONING_MIN_ZOOM - 1);
+    expect(ZONING_RASTER_MIN_ZOOM).toBe(11);
+    expect(isZoningRasterZoom(10)).toBe(false);
+    expect(isZoningRasterZoom(11)).toBe(true);
+    expect(isZoningRasterZoom(12)).toBe(true);
+    expect(isZoningRasterZoom(13)).toBe(false);
+    expect(isZoningRasterZoom(11.5)).toBe(false);
+  });
+
+  it("塗り絵と多角形で同じ縮尺を二重に受けない・隙間も無い", () => {
+    for (let z = 0; z <= 20; z++) {
+      expect(isZoningRasterZoom(z) && isZoningZoom(z), `z${z}`).toBe(false);
+    }
+    for (let z = ZONING_RASTER_MIN_ZOOM; z <= ZONING_MAX_ZOOM; z++) {
+      expect(isZoningRasterZoom(z) || isZoningZoom(z), `z${z}`).toBe(true);
+    }
+  });
+
+  it("塗る色は画面の多角形と同じ規則（絞り込みも同じ）", () => {
+    const commercial = { use_area_ja: "商業地域", youto_id: 10 };
+    expect(zoningRasterFill(commercial, null)).toBe(ZONING_FILL["商業地域"]);
+    expect(zoningRasterFill(commercial, "商業地域")).toBe(
+      ZONING_FILL["商業地域"],
+    );
+    expect(zoningRasterFill(commercial, "工業地域")).toBe(MUTED_ZONING_FILL);
+    /* 知らない区分は灰色。番号だけなら番号で引く */
+    expect(zoningRasterFill({ use_area_ja: "謎の地域" }, null)).toBe(
+      UNKNOWN_ZONING_FILL,
+    );
+    expect(zoningRasterFill({ youto_id: 1 }, null)).toBe(
+      ZONING_FILL["第１種低層住居専用地域"],
+    );
+    expect(zoningRasterFill(undefined, null)).toBe(UNKNOWN_ZONING_FILL);
   });
 });
 
