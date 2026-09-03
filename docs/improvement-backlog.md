@@ -1325,12 +1325,63 @@ Chromium（CPU 4 倍・fast 3G 相当）で `next start` を開いた実測は
 触っていない。止めるなら `prefetch={false}` をサイドバーに置くだけ
 だが、道具の間の移動が 1 回ぶん遅くなる。
 
+### 遅い回線で開かない、の実測と対処（#884）
+
+利用者から「他の競合よりとても遅い。ネットワークが遅いところだったら
+開きもしない」と指示があり、遅い回線（400 kbps・RTT 400 ms・CPU 4 倍。
+Chrome の Slow 3G 相当）で全要求を記録した。**描画を止めていたのは
+HTML でも JS でもなく、フォントだった。**
+
+| 何が                              | 大きさ（gzip） | どう効いていたか                                        |
+| --------------------------------- | -------------- | ------------------------------------------------------- |
+| 明朝体の @font-face（2 ウェイト） | 62 KB          | 全頁の stylesheet に入り、描画を止める（1.3 秒）        |
+| Geist 2 書体の preload            | 52 KB          | 最優先で落ちて CSS と JS の帯域を先に食う（1 秒）       |
+| 明朝体の実体（見出しの文字ぶん）  | 104 KB         | 描画直後に最優先で落ちて hydration の JS と競合（2 秒） |
+| サイドバーの Link の prefetch     | 500 KB 前後    | 15 頁ぶんの JS を裏で取りに行く                         |
+| supabase（ログイン表示のため）    | 60 KB          | ログインしていない端末でも読む                          |
+| framer-motion（通知 1 つのため）  | 39 KB          | 地図の塊に乗る                                          |
+| 県の輪郭 geojson                  | 141 KB         | 俯瞰でしか描かないのに開いた時点で読む                  |
+
+明朝体は `lib/serifFont` に移して hydration 後に `SerifFontLoader` が
+読む（届くまでは端末の明朝体）。Geist は preload を切った。Link は
+`prefetch={false}`。supabase は `sb-<ref>-auth-token` の cookie が
+無ければ読まない。framer-motion は CSS の keyframe に、geojson は
+俯瞰に入ってから。
+
+|                                | 前      | 後          |
+| ------------------------------ | ------- | ----------- |
+| 物件検索: 最初の描画（FCP）    | 5.85 秒 | **2.08 秒** |
+| 物件検索: 操作できる（DCL）    | 6.28 秒 | **2.03 秒** |
+| 物件検索: load                 | 11.6 秒 | **7.2 秒**  |
+| 物件検索: 地図タイルの要求開始 | 16.6 秒 | **8.0 秒**  |
+| ホーム: FCP                    | 4.61 秒 | **2.22 秒** |
+| ホーム: load                   | 13.6 秒 | **6.3 秒**  |
+
+最初の HTML が読む CSS は 89 KB → 27 KB。**全頁に効く。**
+
+**測り方を再現する:** `next start` を立てて Playwright の Chromium で
+開き、CDP の `Network.emulateNetworkConditions`（400 kbps / 400 ms）と
+`Emulation.setCPUThrottlingRate`（4）を掛け、`Network.requestWillBeSent`
+と `loadingFinished` で全要求の大きさと時刻を取る。FCP は
+`performance.getEntriesByName("first-contentful-paint")`。
+
 ### 残っていること
 
 - **API の走査時間は別の話。**`/api/rentals/arbitrage` の応答に掛かる
   時間は本番でしか測れず、Cloud Run のログをこの環境から読む手段が
   無い（`check-logs.yml` は VM の PM2 用）。19 節の `db-explain.yml`
-  は本番 DB に負荷を掛けるので利用者の判断が要る
+  は本番 DB に負荷を掛けるので利用者の判断が要る。画面の「走査時間
+  DB / 判定」の表示から読める
+- **AdSense のスクリプト**（`<head>` の async）。この環境では鍵が無く
+  測れていない。本番では adsbygoogle.js とその後続が最初から落ちて
+  くる。**収益に関わる**ので触っていない。読み始めを load 後まで
+  遅らせれば遅い回線の操作可能までは縮むはずだが、表示回数への影響は
+  測らないと分からない
+- **Geist そのもの**（52 KB）。preload を切っても、文字が出た直後に
+  最優先で落ちてきて JS と 3 秒ほど競合する。端末のフォントにすれば
+  消えるが、見た目の判断
+- **JS の底**（react-dom 61 KB・router 50 KB・頁 27 KB ≒ 190 KB）。
+  これ以上は頁の分割か、判定以外を SSR に寄せるかで、別の話
 
 ## 18. 夜間のデータ更新が検査を壊しても、誰も気づかなかった（2026-09-01）
 
