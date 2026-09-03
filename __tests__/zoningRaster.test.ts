@@ -17,6 +17,7 @@ import {
   MUTED_ZONING_FILL,
   ZONING_FILL,
   ZONING_MIN_ZOOM,
+  ZONING_RASTER_DISPLAY_MIN_ZOOM,
   ZONING_RASTER_MAX_ZOOM,
   ZONING_RASTER_MIN_ZOOM,
   ZONING_UPSTREAM_MIN_ZOOM,
@@ -41,16 +42,25 @@ describe("画像タイルのズーム範囲", () => {
     expect(isZoningRasterZoom(ZONING_RASTER_MAX_ZOOM)).toBe(true);
   });
 
-  it("下限は z11。z10 は出さない（子タイル 16 枚で往復が増える）", () => {
+  it("焼くのは z11 から。z10 は口としては断る", () => {
+    /* z10 は Leaflet が z11 のタイルを縮めて描く（minNativeZoom）。
+       サーバーに z10 の要求は来ない */
     expect(ZONING_RASTER_MIN_ZOOM).toBe(11);
     expect(isZoningRasterZoom(11)).toBe(true);
     expect(isZoningRasterZoom(10)).toBe(false);
     expect(isZoningRasterZoom(11.5)).toBe(false);
   });
 
-  it("上流へ直接投げるのは実測で確かめた z12 以上", () => {
-    /* 下げるなら scripts/probe_zoning.ts で上流の応答を確かめてから */
-    expect(ZONING_UPSTREAM_MIN_ZOOM).toBe(12);
+  it("画面に出す下限は、焼く下限より 1 段だけ広い", () => {
+    /* 1 段ごとに上流から取るタイルが 4 倍になる。z9 まで下げない */
+    expect(ZONING_RASTER_DISPLAY_MIN_ZOOM).toBe(ZONING_RASTER_MIN_ZOOM - 1);
+    expect(ZONING_RASTER_DISPLAY_MIN_ZOOM).toBe(10);
+  });
+
+  it("上流へ直接投げるのは実測で確かめた z11 以上", () => {
+    /* probe（run 33806982160）で z11 が 1,715 件・3.6MB で返ることを確認。
+       下げるなら scripts/probe_zoning.ts で上流の応答を確かめてから */
+    expect(ZONING_UPSTREAM_MIN_ZOOM).toBe(11);
   });
 });
 
@@ -60,7 +70,13 @@ describe("子タイルの一覧", () => {
     expect(sourceTilesFor(14, 1, 2, 12)).toEqual([[14, 1, 2]]);
   });
 
-  it("z11 は z12 の子 4 枚（2×2）", () => {
+  it("上流の下限が z11 なので、z11 もそのまま 1 枚", () => {
+    expect(sourceTilesFor(11, 1819, 806, ZONING_UPSTREAM_MIN_ZOOM)).toEqual([
+      [11, 1819, 806],
+    ]);
+  });
+
+  it("下限が z12 だったころは子 4 枚に割れていた（組み立ては働く）", () => {
     const tiles = sourceTilesFor(11, 1819, 806, 12);
     expect(tiles).toHaveLength(4);
     expect(tiles).toEqual(
@@ -416,7 +432,7 @@ describe("/api/zoning/raster", () => {
     return await import("@/app/api/zoning/raster/route");
   }
 
-  it("z11 は z12 の子 4 枚を上流に取りに行き、PNG を返す", async () => {
+  it("z11 は上流に 1 回だけ取りに行き、PNG を返す", async () => {
     vi.stubEnv("LIBRARY_API_KEY", "test");
     const asked: string[] = [];
     vi.stubGlobal(
@@ -424,17 +440,18 @@ describe("/api/zoning/raster", () => {
       vi.fn(async (url: string) => {
         asked.push(url);
         const u = new URL(url);
+        const sz = Number(u.searchParams.get("z"));
         const sx = Number(u.searchParams.get("x"));
         const sy = Number(u.searchParams.get("y"));
-        /* 右下の子だけ区画を返す。他は 404（決定が無い） */
-        if (sx === 3639 && sy === 1613) {
+        /* 右下の 4 分の 1 だけ区画がある。上流は z11 をそのまま返す */
+        if (sz === 11 && sx === 1819 && sy === 806) {
           return new Response(
             JSON.stringify({
               type: "FeatureCollection",
               features: [
                 feature(
                   "商業地域",
-                  ringOfPixels(12, 3639, 1613, 0, 0, 256, 256),
+                  ringOfPixels(11, 1819, 806, 128, 128, 256, 256),
                 ),
               ],
             }),
@@ -450,8 +467,8 @@ describe("/api/zoning/raster", () => {
     );
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
-    expect(asked).toHaveLength(4);
-    for (const u of asked) expect(u).toContain("z=12");
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toContain("z=11");
 
     const png = Buffer.from(await res.arrayBuffer());
     expect(png.subarray(1, 4).toString("ascii")).toBe("PNG");

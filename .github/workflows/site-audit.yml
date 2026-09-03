@@ -117,6 +117,39 @@ jobs:
             sleep 0.3
           done
 
+      # /news の配信元。ページは取得できなかった配信元の名前を出すので、
+      # それを読んで「どれが死んでいるか」を毎朝つかむ。
+      #
+      # 台帳（src/data/newsSources.ts）の URL は**本番でしか生存確認
+      # できない**（開発環境から外へ出られない）。落ちたフィードは黙って
+      # 飛ばす作りなので、見に行かないと気付けない。
+      #
+      # **落ちていても監査は失敗させない。**配信元の一時的な停止はこちらで
+      # 直せるものではなく、赤くすると「赤いのが常態」になる（18 節）。
+      # 数だけ出して、続くようなら台帳を直す。
+      - name: Check /news feeds
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## /news の配信元" | tee -a "$GITHUB_STEP_SUMMARY"
+          BODY=$(curl -sf --compressed "$BASE/news" || true)
+          if [ -z "$BODY" ]; then
+            echo "::error::/news を取得できない" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          else
+            # 見出しの札は配信元ごとに 1 つ。取得できた数の目安になる。
+            ALIVE=$(echo "$BODY" | grep -c 'data-feed-source' || true)
+            echo "見出しを出せている配信元: $ALIVE" | tee -a "$GITHUB_STEP_SUMMARY"
+            if echo "$BODY" | grep -q '取得できていない配信元'; then
+              DOWN=$(echo "$BODY" \
+                | sed -n 's/.*取得できていない配信元: \(.*\)。配信の一時的な停止.*/\1/p' \
+                | sed 's/<[^>]*>//g' | head -c 400)
+              echo "取得できていない: $DOWN" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "全部の配信元から見出しが出ている" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
       - name: Result
         run: |
           if [ "${FAIL:-0}" = "1" ]; then

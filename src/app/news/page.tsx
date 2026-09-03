@@ -129,6 +129,10 @@ export default async function Page() {
             {alive.map((feed) => (
               <div
                 key={feed.source.id}
+                /* 毎朝の site-audit がこの印を数えて、いくつの配信元から
+                   見出しが出ているかを見る。台帳の URL は本番でしか
+                   生存確認できないので、外から数えられるようにしておく。 */
+                data-feed-source={feed.source.id}
                 className="rounded-2xl border border-stone-200 bg-white p-4"
               >
                 <div className="flex items-baseline justify-between gap-2">
