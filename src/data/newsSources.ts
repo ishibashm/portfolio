@@ -45,6 +45,15 @@ export interface FeedSource {
    * PER_GROUP_LIMIT）。付けないと、配信の多い発信元が一覧を占める。
    */
   group?: string;
+  /**
+   * 束の札の中の見出し。同じ区分のフィードは 1 本に混ぜて日付順に
+   * 並べる（`lib/newsGrouping`）。
+   *
+   * UR の入札は本部ごとに 10 本あるが、本部ごとに見出しを 10 個
+   * 立てても読めない。**「入札・発注」1 つにまとめ、どの本部から
+   * 来たかは行の末尾に添える。**束を持たない配信元では使わない。
+   */
+  section?: string;
 }
 
 export interface LinkSource {
