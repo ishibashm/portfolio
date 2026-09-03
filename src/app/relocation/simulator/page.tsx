@@ -1,5 +1,6 @@
 "use client";
 
+import type { DirectionFilterMode } from "@/utils/directionFilterMode";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
@@ -319,9 +320,8 @@ export default function RelocationSimulatorPage() {
   const [physicalMonthMode, setPhysicalMonthMode] = useState<
     "coupled" | "independent"
   >("independent");
-  const [directionFilterMode, setDirectionFilterMode] = useState<
-    "composite" | "personal_kigaku" | "personal_bazi" | "environmental"
-  >("composite");
+  const [directionFilterMode, setDirectionFilterMode] =
+    useState<DirectionFilterMode>("composite");
   const [actionIntent, setActionIntent] = useState<
     "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION"
   >("DEFAULT");

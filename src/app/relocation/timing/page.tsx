@@ -119,6 +119,26 @@ const FILTER_MODES: {
     canBeAuspicious: false,
     hint: "五黄殺・暗剣殺・破など、誰にとっても凶となる要因だけを見る。個人の吉方位を判定しないため三盤吉は出ない。",
   },
+  /* 組み合わせ。吉を出すのは本命星の層を含むものだけ（吉の判定は
+     本命星との相生でしか行わないため）。 */
+  {
+    id: "personal_kigaku_environmental",
+    label: "本命星 ＋ 環境方位",
+    canBeAuspicious: true,
+    hint: "本命星の吉凶に、五黄殺・暗剣殺・破を重ねて見る。天中殺は期間・方位とも判定に入れない。",
+  },
+  {
+    id: "personal_kigaku_bazi",
+    label: "本命星 ＋ 天中殺",
+    canBeAuspicious: true,
+    hint: "本命星の吉凶に、空亡の方位と期間を重ねて見る。環境要因（五黄殺など）は入れない。",
+  },
+  {
+    id: "environmental_bazi",
+    label: "環境方位 ＋ 天中殺",
+    canBeAuspicious: false,
+    hint: "五黄殺・暗剣殺・破に、空亡の方位と期間を重ねて見る。個人の吉方位を判定しないため三盤吉は出ない。",
+  },
 ];
 
 function modeInfo(id: string) {

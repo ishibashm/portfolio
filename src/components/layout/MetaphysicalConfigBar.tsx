@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { todayInJapan } from "@/utils/japanDate";
 import type { ZodiacTimeBasis } from "@/utils/ephemerisEngine";
+/* 絞り込みの見方は葉から取る。ephemerisEngine から値で取ると、
+   暦エンジン一式が client のバンドルに乗る（backlog 17 節）。 */
+import {
+  DIRECTION_FILTER_MODES,
+  type DirectionFilterMode,
+} from "@/utils/directionFilterMode";
 import {
   loadProfilePresets,
   type ProfilePreset,
@@ -34,11 +40,7 @@ export interface MetaphysicalConfig {
    */
   zodiacTimeBasis: ZodiacTimeBasis;
   physicalMonthMode?: "coupled" | "independent";
-  directionFilterMode:
-    | "composite"
-    | "personal_kigaku"
-    | "personal_bazi"
-    | "environmental";
+  directionFilterMode: DirectionFilterMode;
   actionIntent: "DEFAULT" | "REST" | "BUSINESS" | "MIGRATION";
   birthDate?: string;
   birthLat?: number;
@@ -49,10 +51,24 @@ export interface MetaphysicalConfig {
 
 const FILTER_LABELS = {
   composite: "総合判定 (Composite)",
-  personal_kigaku: "個人吉凶のみ (Nine Star Ki)",
-  personal_bazi: "個人天中殺のみ (Void Zodiac)",
+  personal_kigaku: "本命星のみ (Nine Star Ki)",
+  personal_bazi: "天中殺のみ (Void Zodiac)",
   environmental: "環境方位のみ (Environmental)",
+  personal_kigaku_environmental: "本命星 ＋ 環境方位",
+  personal_kigaku_bazi: "本命星 ＋ 天中殺",
+  environmental_bazi: "環境方位 ＋ 天中殺",
 } satisfies Record<MetaphysicalConfig["directionFilterMode"], string>;
+
+/** ボタンに出す短い名前。 */
+const FILTER_SHORT_LABELS: Record<DirectionFilterMode, string> = {
+  composite: "総合 (ALL)",
+  personal_kigaku: "本命星",
+  environmental: "環境",
+  personal_bazi: "天中殺",
+  personal_kigaku_environmental: "本命星＋環境",
+  personal_kigaku_bazi: "本命星＋天中殺",
+  environmental_bazi: "環境＋天中殺",
+};
 
 const INTENT_LABELS = {
   DEFAULT: "標準 (Default)",
@@ -646,32 +662,23 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 <Compass className="w-3.5 h-3.5 text-indigo-600" />{" "}
                 吉凶方位フィルター
               </label>
+              {/* 3 つの層（本命星・環境方位・天中殺）の組み合わせ。
+                  以前は 4 つが排他で、本命星と環境方位を一緒に見る手段が
+                  無かった（利用者の報告）。並びは「単独 → 組み合わせ」。 */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-white rounded-xl border border-stone-200">
-                {(
-                  [
-                    "composite",
-                    "personal_kigaku",
-                    "personal_bazi",
-                    "environmental",
-                  ] as const
-                ).map((mode) => (
+                {DIRECTION_FILTER_MODES.map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => handleFilterChange(mode)}
+                    title={FILTER_LABELS[mode]}
                     className={`py-1.5 rounded-lg text-[9px] font-bold transition-all border ${
                       config.directionFilterMode === mode
                         ? "bg-stone-100 text-stone-900 border-stone-300 shadow-sm"
                         : "bg-transparent text-stone-600 border-transparent hover:text-stone-800"
                     }`}
                   >
-                    {mode === "composite"
-                      ? "総合 (ALL)"
-                      : mode === "personal_kigaku"
-                        ? "個人吉凶"
-                        : mode === "personal_bazi"
-                          ? "天中殺のみ"
-                          : "環境のみ"}
+                    {FILTER_SHORT_LABELS[mode]}
                   </button>
                 ))}
               </div>

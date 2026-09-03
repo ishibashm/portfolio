@@ -724,11 +724,15 @@ const getCompatibleStars = (star: StarFrequency): StarFrequency[] => {
 export {
   parseActionIntent,
   parseDirectionFilterMode,
+  filterLayersOf,
+  DIRECTION_FILTER_MODES,
 } from "@/utils/directionFilterMode";
 export type {
   ActionIntent,
   DirectionFilterMode,
+  DirectionFilterLayers,
 } from "@/utils/directionFilterMode";
+import { filterLayersOf } from "@/utils/directionFilterMode";
 import type {
   ActionIntent,
   DirectionFilterMode,
@@ -1611,7 +1615,10 @@ export function filterCollisionByMode(
   mBoard: BoardLayout | null,
   dBoard: BoardLayout | null,
 ): VectorCollision {
-  if (directionFilterMode === "composite") {
+  const layers = filterLayersOf(directionFilterMode);
+  /* 3 層とも見るなら、判定を組み直す意味が無い（＝総合判定）。
+     従来の composite と同じく、元の collision をそのまま返す。 */
+  if (layers.honmei && layers.environmental && layers.tenchusatsu) {
     return collision;
   }
 
@@ -1695,43 +1702,89 @@ export function filterCollisionByMode(
     return opposites[d];
   };
 
-  const filterStatus = (
-    status: VectorStatus | undefined,
+  /*
+    層ごとの評価器。**中身は組み合わせに対応する前の 3 分岐そのまま。**
+    1 層だけ有効なときは、下の統合が恒等になるので答えは変わらない
+    （__tests__/directionFilterLayers が旧実装と突き合わせて固定する）。
+  */
+  const honmeiStatus = (
     dir: Direction,
     activeBoard: BoardLayout | null,
   ): VectorStatus => {
-    if (!status) return "SAFE";
-    if (directionFilterMode === "personal_kigaku") {
-      let honmeiD: Direction | null = null;
+    let honmeiD: Direction | null = null;
+    directions.forEach((d) => {
+      if (activeBoard && activeBoard[d] === personalStar) {
+        honmeiD = d;
+      }
+    });
+    if (dir === honmeiD) return "NOISE_HONMEI";
+    if (honmeiD && dir === getOpposite(honmeiD)) return "NOISE_TEKI";
+    return getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
+  };
+
+  const baziStatus = (dir: Direction): VectorStatus =>
+    voidDirs.has(dir) ? "NOISE_VOID" : "SAFE";
+
+  const envStatus = (
+    status: VectorStatus,
+    dir: Direction,
+    activeBoard: BoardLayout | null,
+  ): VectorStatus => {
+    let isGou = false;
+    let isAnken = false;
+    if (activeBoard) {
       directions.forEach((d) => {
-        if (activeBoard && activeBoard[d] === personalStar) {
-          honmeiD = d;
+        if (activeBoard[d] === 5) {
+          if (d === dir) isGou = true;
+          if (getOpposite(d) === dir) isAnken = true;
         }
       });
-      if (dir === honmeiD) return "NOISE_HONMEI";
-      if (honmeiD && dir === getOpposite(honmeiD)) return "NOISE_TEKI";
-      const optStatus = getOptimalStatus(activeBoard ? activeBoard[dir] : 1);
-      return optStatus;
-    } else if (directionFilterMode === "personal_bazi") {
-      if (voidDirs.has(dir)) return "NOISE_VOID";
-      return "SAFE";
-    } else {
-      let isGou = false;
-      let isAnken = false;
-      if (activeBoard) {
-        directions.forEach((d) => {
-          if (activeBoard[d] === 5) {
-            if (d === dir) isGou = true;
-            if (getOpposite(d) === dir) isAnken = true;
-          }
-        });
-      }
-      if (isGou) return "NOISE_GOU";
-      if (isAnken) return "NOISE_ANKEN";
-      if (status === "NOISE_HA") return "NOISE_HA";
-      if (status === "NOISE_NODE") return "NOISE_NODE";
-      return "SAFE";
     }
+    if (isGou) return "NOISE_GOU";
+    if (isAnken) return "NOISE_ANKEN";
+    if (status === "NOISE_HA") return "NOISE_HA";
+    if (status === "NOISE_NODE") return "NOISE_NODE";
+    return "SAFE";
+  };
+
+  /*
+    併用したときの統合。**凶がひとつでもあれば凶**で、どれも凶でなければ
+    吉のうち良いほうを採る。層を 1 つしか見ていないときは要素が 1 つなので
+    そのまま返る（＝従来の答え）。
+
+    凶どうしの順序は**どの名前で出すか**だけを決める。凶であることは
+    変わらない。五大凶殺 → 本命系 → 天中殺 → ノード、の順に置いた。
+  */
+  const SEVERITY: VectorStatus[] = [
+    "NOISE_GOU",
+    "NOISE_ANKEN",
+    "NOISE_HA",
+    "NOISE_HONMEI",
+    "NOISE_TEKI",
+    "NOISE_VOID",
+    "NOISE_NODE",
+  ];
+  const merge = (candidates: VectorStatus[]): VectorStatus => {
+    for (const bad of SEVERITY) {
+      if (candidates.includes(bad)) return bad;
+    }
+    if (candidates.includes("OPTIMAL")) return "OPTIMAL";
+    if (candidates.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
+    return "SAFE";
+  };
+
+  /** 有効な層それぞれの、その盤・その方位での状態。 */
+  const perLayerStatus = (
+    status: VectorStatus | undefined,
+    dir: Direction,
+    activeBoard: BoardLayout | null,
+  ): VectorStatus[] => {
+    if (!status) return ["SAFE"];
+    const out: VectorStatus[] = [];
+    if (layers.honmei) out.push(honmeiStatus(dir, activeBoard));
+    if (layers.environmental) out.push(envStatus(status, dir, activeBoard));
+    if (layers.tenchusatsu) out.push(baziStatus(dir));
+    return out.length > 0 ? out : ["SAFE"];
   };
 
   const newYearLayer: Partial<Record<Direction, VectorStatus>> = {};
@@ -1740,48 +1793,59 @@ export function filterCollisionByMode(
   /* calculateVectorCollision の受け皿と同じ形。ループで八方位を必ず埋める。 */
   const newFinalVectors = {} as Record<EightDirection, VectorStatus>;
 
+  /*
+    層ごとの「年・月・日をまとめた結論」。**中身は組み合わせに対応する
+    前の 3 分岐そのまま。**層をまたぐときだけ、最後に merge で束ねる。
+  */
+  const honmeiFinal = (list: VectorStatus[]): VectorStatus => {
+    const hasPurple = list.find(
+      (s) => s === "NOISE_HONMEI" || s === "NOISE_TEKI",
+    );
+    if (hasPurple) return hasPurple;
+    if (list.includes("OPTIMAL")) return "OPTIMAL";
+    if (list.includes("OPTIMAL_REGULAR")) return "OPTIMAL_REGULAR";
+    return "SAFE";
+  };
+  const baziFinal = (list: VectorStatus[]): VectorStatus =>
+    list.includes("NOISE_VOID") ? "NOISE_VOID" : "SAFE";
+  const envFinal = (list: VectorStatus[]): VectorStatus => {
+    const hasRed = list.find(
+      (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
+    );
+    if (hasRed) return hasRed;
+    if (list.includes("NOISE_NODE")) return "NOISE_NODE";
+    return "SAFE";
+  };
+
   directions.forEach((d) => {
-    newYearLayer[d] = filterStatus(collision.yearLayer[d], d, yBoard);
-    newMonthLayer[d] = filterStatus(collision.monthLayer[d], d, mBoard);
-    newDayLayer[d] = filterStatus(collision.dayLayer[d], d, dBoard);
+    /* 盤ごとに、有効な層それぞれの状態を出しておく。表示用の層
+       （yearLayer など）は束ねたもの、結論は層ごとに束ねてから束ねる。 */
+    const yList = perLayerStatus(collision.yearLayer[d], d, yBoard);
+    const mList = perLayerStatus(collision.monthLayer[d], d, mBoard);
+    const dList = perLayerStatus(collision.dayLayer[d], d, dBoard);
 
-    if (directionFilterMode === "personal_kigaku") {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasPurple = list.find(
-        (s) => s === "NOISE_HONMEI" || s === "NOISE_TEKI",
-      );
-      const hasOpt = list.find((s) => s === "OPTIMAL");
-      const hasOptReg = list.find((s) => s === "OPTIMAL_REGULAR");
+    newYearLayer[d] = merge(yList);
+    newMonthLayer[d] = merge(mList);
+    newDayLayer[d] = merge(dList);
 
-      if (hasPurple) newFinalVectors[d] = hasPurple;
-      else if (hasOpt) newFinalVectors[d] = "OPTIMAL";
-      else if (hasOptReg) newFinalVectors[d] = "OPTIMAL_REGULAR";
-      else newFinalVectors[d] = "SAFE";
-    } else if (directionFilterMode === "personal_bazi") {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasVoid = list.find((s) => s === "NOISE_VOID");
-      if (hasVoid) newFinalVectors[d] = "NOISE_VOID";
-      else newFinalVectors[d] = "SAFE";
-    } else {
-      const y = newYearLayer[d];
-      const m = newMonthLayer[d];
-      const dStatus = newDayLayer[d];
-      const list = [y, m, dStatus];
-      const hasRed = list.find(
-        (s) => s === "NOISE_GOU" || s === "NOISE_ANKEN" || s === "NOISE_HA",
-      );
-      const hasNode = list.find((s) => s === "NOISE_NODE");
-
-      if (hasRed) newFinalVectors[d] = hasRed;
-      else if (hasNode) newFinalVectors[d] = "NOISE_NODE";
-      else newFinalVectors[d] = "SAFE";
+    /* perLayerStatus は有効な層の順（honmei → env → bazi）で詰めるので、
+       同じ添字が同じ層に対応する。層ごとに年・月・日を束ねてから、
+       層をまたいで束ねる。 */
+    const finals: VectorStatus[] = [];
+    let i = 0;
+    if (layers.honmei) {
+      finals.push(honmeiFinal([yList[i], mList[i], dList[i]]));
+      i += 1;
     }
+    if (layers.environmental) {
+      finals.push(envFinal([yList[i], mList[i], dList[i]]));
+      i += 1;
+    }
+    if (layers.tenchusatsu) {
+      finals.push(baziFinal([yList[i], mList[i], dList[i]]));
+      i += 1;
+    }
+    newFinalVectors[d] = merge(finals);
   });
 
   return {
