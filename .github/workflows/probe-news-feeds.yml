@@ -1,0 +1,33 @@
+name: Probe news feeds
+
+# /news の配信元を**外から実際に叩いて**確かめる。
+#
+# 台帳（src/data/newsSources.ts）の URL は本番でしか生存確認できない
+# （開発環境から外へ出られない）。毎朝の site-audit は「どれが落ちて
+# いるか」までは出すが、**なぜ落ちたのか・正しい URL は何か**は分から
+# ないので、落ちたときにこれを回して確かめる。
+#
+# **読むだけ。**DB にも本番にも書かない。鍵も要らない。
+# 落ちている配信元にしか追加の要求を出さない（平常時は 1 配信元 1 回）。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Probe feeds
+        run: npx tsx scripts/probe_news_feeds.ts | tee -a "$GITHUB_STEP_SUMMARY"
