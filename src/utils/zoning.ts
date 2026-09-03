@@ -298,22 +298,42 @@ export function isZoningZoom(z: number): boolean {
  * サーバーで塗った絵を配る（`/api/zoning/raster`。1 タイル数 KB〜20KB、
  * ブラウザ側の描画コスト無し）。GeoJSON の下限 z13 とは重ねない。
  *
- * 下限が z11 なのは上流への往復の数で決めた。上流に投げるのは実測で
- * 確かめてある z12 以上だけで（`ZONING_UPSTREAM_MIN_ZOOM`）、z11 は
- * 子 4 枚から組む。z10 は子 16 枚で、冷えた状態で 1 画面ぶん開くと
- * 300 回超の往復になるので出さない。上流が z11 を直接返すと確かめ
- * られたら `ZONING_UPSTREAM_MIN_ZOOM` を 11 に下げれば z10 が 4 枚で済む。
+ * 下限が z11 なのは**上流が返す最小のズーム**だから。probe を回して
+ * 確かめた（run 33806982160、2026-09-03。千代田区）:
+ *
+ *   z   件数   上流のバイト
+ *   11  1,715  3,641,917
+ *   12    776  1,887,090
+ *   13    143    434,682
+ *   14     60    191,779
+ *   15     20     57,006
+ *
+ * 当初は「上流は z12 から」と見て z11 を子 4 枚から組んでいた。z11 が
+ * 直接取れるので、**1 枚で済み、バイト数も半分**（7.5MB → 3.6MB）。
  */
 export const ZONING_RASTER_MIN_ZOOM = 11;
 export const ZONING_RASTER_MAX_ZOOM = ZONING_MIN_ZOOM - 1;
 
 /**
- * 上流（XKT002）に直接投げてよい最小ズーム。実測で確かめた範囲
- * （z12〜。`scripts/probe_zoning.ts`）。これより広い縮尺は子タイルから
- * 組む——上流が非対応のときの応答が 404 で、「区画が無い」と見分けが
- * 付かないため（`lib/zoningUpstream`）。
+ * 画像タイルを**画面に出す**最小ズーム。取りに行く下限より 1 段広い。
+ *
+ * z10 では Leaflet が `minNativeZoom` を見て**z11 のタイルを取って
+ * 縮めて描く**。サーバーは新しい仕事をせず、既に焼いてある z11 の PNG を
+ * そのまま配る。ブラウザは小さな PNG を 4 倍の枚数もらうだけ。
+ *
+ * z9 まで下げない。1 段ごとに上流から取るタイルが 4 倍になり（冷えた
+ * 1 画面で z10 が約 48 枚、z9 は約 190 枚）、1 画素が 600m を超えて
+ * 区画が潰れる。**「できる限り」の線はここ。**
  */
-export const ZONING_UPSTREAM_MIN_ZOOM = 12;
+export const ZONING_RASTER_DISPLAY_MIN_ZOOM = ZONING_RASTER_MIN_ZOOM - 1;
+
+/**
+ * 上流（XKT002）に直接投げてよい最小ズーム。**実測で確かめた範囲**
+ * （z11〜。上の表）。これより広い縮尺は子タイルから組む——上流が
+ * 非対応のときの応答が 404 で、「区画が無い」と見分けが付かないため
+ * （`lib/zoningUpstream`）。いまは下限が一致するので組み立ては働かない。
+ */
+export const ZONING_UPSTREAM_MIN_ZOOM = 11;
 
 export function isZoningRasterZoom(z: number): boolean {
   return (

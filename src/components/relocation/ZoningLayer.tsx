@@ -9,6 +9,7 @@ import {
   zoningFillFiltered,
   ZONING_MAX_ZOOM,
   ZONING_MIN_ZOOM,
+  ZONING_RASTER_DISPLAY_MIN_ZOOM,
   ZONING_RASTER_MAX_ZOOM,
   ZONING_RASTER_MIN_ZOOM,
   type ZoningName,
@@ -116,10 +117,8 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
       return;
     }
     const zoom = Math.round(map.getZoom());
-    if (zoom < ZONING_RASTER_MIN_ZOOM) {
-      notify(
-        `用途地域はもう少し拡大すると出ます（${ZONING_RASTER_MIN_ZOOM} 段階目から）。`,
-      );
+    if (zoom < ZONING_RASTER_DISPLAY_MIN_ZOOM) {
+      notify("用途地域はもう少し拡大すると出ます。");
       return;
     }
     if (zoom < ZONING_MIN_ZOOM) {
@@ -238,7 +237,10 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
         url={`/api/zoning/raster?z={z}&x={x}&y={y}${
           selected ? `&only=${encodeURIComponent(selected)}` : ""
         }`}
-        minZoom={ZONING_RASTER_MIN_ZOOM}
+        minZoom={ZONING_RASTER_DISPLAY_MIN_ZOOM}
+        /* z10 は z11 のタイルを取って縮めて描く（サーバーは新しい仕事を
+           しない。既に焼いてある PNG をそのまま配る） */
+        minNativeZoom={ZONING_RASTER_MIN_ZOOM}
         maxZoom={ZONING_RASTER_MAX_ZOOM}
         /* 多角形の fillOpacity と同じ。縮尺をまたいでも濃さが変わらない */
         opacity={0.45}
