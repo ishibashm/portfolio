@@ -50,7 +50,6 @@ import L from "leaflet";
 import { Copy, Check } from "lucide-react";
 import { CurrentLocationLayer } from "@/components/map/CurrentLocationLayer";
 import { useMapTheme } from "@/lib/useMapTheme";
-import { motion, AnimatePresence } from "framer-motion";
 import { AstroGridCalendar } from "./realestate/AstroGridCalendar";
 import { getPropertyPinColors } from "@/utils/arbitrageHelpers";
 import { OVERVIEW_CENTER, OVERVIEW_ZOOM } from "@/utils/arbitrageSearchArea";
@@ -593,15 +592,30 @@ export default function ArbitrageMapInner({
     // 取り違えないよう、真偽値の文字列ではなく明示の "0" だけを見る。
     if (localStorage.getItem(SECTORS_STORAGE_KEY) === "0")
       setShowSectors(false);
+  }, []);
 
+  /*
+    県の輪郭（141 KB）は俯瞰（zoom < 10）でしか描かない。以前は開いた
+    時点で必ず取りに行っていて、出発地の周りを見るだけの利用者にも
+    141 KB を最優先で落としていた（遅い回線の実測で、その間タイルが
+    後回しになる）。俯瞰に入って初めて読み、一度読んだら持ち続ける。
+  */
+  useEffect(() => {
+    if (zoom >= 10 || geoData) return;
+    let alive = true;
     fetch("/prefectures.geojson")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load prefectures.geojson");
         return res.json();
       })
-      .then((data) => setGeoData(data))
+      .then((data) => {
+        if (alive) setGeoData(data);
+      })
       .catch((err) => console.error("Error loading prefectures.geojson:", err));
-  }, []);
+    return () => {
+      alive = false;
+    };
+  }, [zoom, geoData]);
 
   // 県別の色分けと件数ラベルの元。
   //
@@ -2224,28 +2238,28 @@ export default function ArbitrageMapInner({
         </div>
       )}
 
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: -20, x: "-50%" }}
-            className="absolute top-20 left-1/2 z-[2000]"
-          >
-            <div className="bg-white/80 text-stone-800 px-4 py-2 rounded-full border border-stone-300 shadow-2xl flex items-center gap-2 backdrop-blur-md">
-              {toast.type === "success" ? (
-                <Check className="w-4 h-4 text-emerald-600" />
-              ) : (
-                <Copy className="w-4 h-4 text-indigo-600" />
-              )}
-              <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
-                {toast.message}
-              </span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Toast Notification。framer-motion（gzip 39 KB）をこの 1 か所の
+          ためだけに地図の塊へ乗せていたので、globals.css の fade-in-up に
+          替えた。消えるときの動きは無くなる（2 秒で消える通知なので
+          気にならない）。横の中央寄せは translate（-translate-x-1/2）、
+          出る動きは transform のアニメーションで、互いに干渉しない。 */}
+      {toast && (
+        <div
+          className="absolute top-20 left-1/2 -translate-x-1/2 z-[2000]"
+          style={{ animation: "fade-in-up 0.25s ease-out both" }}
+        >
+          <div className="bg-white/80 text-stone-800 px-4 py-2 rounded-full border border-stone-300 shadow-2xl flex items-center gap-2 backdrop-blur-md">
+            {toast.type === "success" ? (
+              <Check className="w-4 h-4 text-emerald-600" />
+            ) : (
+              <Copy className="w-4 h-4 text-indigo-600" />
+            )}
+            <span className="text-[11px] font-medium tracking-tight whitespace-nowrap">
+              {toast.message}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
