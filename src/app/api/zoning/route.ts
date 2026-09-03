@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { toLogMessage } from "@/lib/errorMessage";
+import { fetchZoningUpstream } from "@/lib/zoningUpstream";
 import {
   isTinyGeometry,
   simplifyGeometry,
@@ -48,10 +48,10 @@ import {
 /**
  * 30 日。用途地域の変更は年に数回で、決定から施行まで数か月かかる。
  * 1 日で捨てると、変わらないものを毎日取りに行くことになる。
+ * 上流の URL と取り方は `lib/zoningUpstream`（画像タイルの
+ * `/api/zoning/raster` と共有）。
  */
 export const revalidate = 2592000;
-
-const ENDPOINT = "https://www.reinfolib.mlit.go.jp/ex-api/external/XKT002";
 
 /*
   この error は地図の帯にそのまま出る（利用者が読む）ので**日本語**。
@@ -63,14 +63,6 @@ const MESSAGES = {
   NO_KEY: "用途地域の取得が設定されていません。",
   UPSTREAM: "用途地域を取得できませんでした。時間をおいてお試しください。",
 } as const;
-
-interface RawFeature {
-  type?: string;
-  /* 上流は Polygon / MultiPolygon しか返さない（probe_zoning.ts の実測）。
-     知らない型が来ても simplifyGeometry はそのまま返すだけで、落とさない。 */
-  geometry?: { type: string; coordinates: unknown };
-  properties?: Record<string, unknown>;
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -107,49 +99,18 @@ export async function GET(request: Request) {
     );
   }
 
-  const apiKey = process.env.LIBRARY_API_KEY;
-  if (!apiKey) {
+  const upstream = await fetchZoningUpstream(z, x, y);
+  if (!upstream.ok) {
     /*
       鍵が無いのは環境の設定漏れで、利用者には直せない。500 ではなく
       503 にして「いまは出せない」と分かる形にする。
     */
-    console.error("用途地域: LIBRARY_API_KEY が未設定");
-    return NextResponse.json({ error: MESSAGES.NO_KEY }, { status: 503 });
+    return upstream.reason === "no_key"
+      ? NextResponse.json({ error: MESSAGES.NO_KEY }, { status: 503 })
+      : NextResponse.json({ error: MESSAGES.UPSTREAM }, { status: 502 });
   }
-
-  const url = `${ENDPOINT}?response_format=geojson&z=${z}&x=${x}&y=${y}`;
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { "Ocp-Apim-Subscription-Key": apiKey, Accept: "*/*" },
-      next: { revalidate },
-    });
-  } catch (e) {
-    console.error("用途地域の取得に失敗:", toLogMessage(e));
-    return NextResponse.json({ error: MESSAGES.UPSTREAM }, { status: 502 });
-  }
-
-  if (res.status === 404) {
-    /*
-      そのタイルに都市計画の決定が無い（都市計画区域の外など）。
-      失敗ではないので、空のまま返す。エラーにすると海や山を見るたびに
-      赤い帯が出る。
-    */
-    return NextResponse.json({ type: "FeatureCollection", features: [] });
-  }
-  if (!res.ok) {
-    console.error(`用途地域: 上流が ${res.status} ${res.statusText}`);
-    return NextResponse.json({ error: MESSAGES.UPSTREAM }, { status: 502 });
-  }
-
-  let body: { features?: RawFeature[] };
-  try {
-    body = await res.json();
-  } catch (e) {
-    console.error("用途地域: JSON として読めない:", toLogMessage(e));
-    return NextResponse.json({ error: MESSAGES.UPSTREAM }, { status: 502 });
-  }
+  /* 404（そのタイルに都市計画の決定が無い）は空の配列で返ってくる。
+     失敗ではないので、そのまま空の FeatureCollection になる。 */
 
   /*
     要る項目だけに絞る。落としているのは _id・_index と、全国どこでも
@@ -164,7 +125,7 @@ export async function GET(request: Request) {
   const tolerance = toleranceForZoom(z, 0.5);
   const minArea = toleranceForZoom(z, 1) ** 2;
   const stats: SimplifyStats = { before: 0, after: 0, dropped: 0 };
-  const features = (body.features ?? []).flatMap((f) => {
+  const features = upstream.features.flatMap((f) => {
     if (!f.geometry) return [];
     const geometry = simplifyGeometry(f.geometry, tolerance, stats);
     if (isTinyGeometry(geometry, minArea)) {

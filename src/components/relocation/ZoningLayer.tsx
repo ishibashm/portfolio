@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GeoJSON, useMap, useMapEvents } from "react-leaflet";
+import { GeoJSON, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import type { GeoJsonObject } from "geojson";
 import { toLogMessage } from "@/lib/errorMessage";
 import {
@@ -9,6 +9,8 @@ import {
   zoningFillFiltered,
   ZONING_MAX_ZOOM,
   ZONING_MIN_ZOOM,
+  ZONING_RASTER_MAX_ZOOM,
+  ZONING_RASTER_MIN_ZOOM,
   type ZoningName,
   type ZoningProperties,
 } from "@/utils/zoning";
@@ -25,12 +27,17 @@ import {
  * 中継（`/api/zoning`）から 1 タイルずつ取って描く。**判定には入らない。**
  * 方位の吉凶とは無関係な、参考として重ねるだけの層。
  *
- * ## 広域では出さない
+ * ## 広域は画像で出す
  *
- * 下限は `ZONING_MIN_ZOOM`（z13。中継が項目を絞り頂点を間引いた後の、
- * ブラウザが受け取る大きさの実測で決めた——`utils/zoning` に表）。
- * それでも z12 は 1 画面 6.5MB になるので出さない。
- * `ZONING_MIN_ZOOM` 未満では取りに行かず、「拡大してください」とだけ出す。
+ * 多角形（GeoJSON）の下限は `ZONING_MIN_ZOOM`（z13。中継が項目を絞り
+ * 頂点を間引いた後の、ブラウザが受け取る大きさの実測で決めた——
+ * `utils/zoning` に表）。z12 は 1 画面 6.5MB になるので多角形では出さない。
+ *
+ * その代わり z11〜12（`ZONING_RASTER_*`）は**サーバーで塗った PNG**を
+ * TileLayer で貼る（`/api/zoning/raster`）。1 タイル数 KB〜20KB で、
+ * ブラウザ側の描画コストは無い。区画を押しての建蔽率・容積率は
+ * 多角形の層でしか出ないので、その旨を通知に出す。
+ * z11 未満は取りに行かず、「拡大してください」とだけ出す。
  *
  * ## 取ったタイルは捨てない
  *
@@ -109,8 +116,17 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
       return;
     }
     const zoom = Math.round(map.getZoom());
+    if (zoom < ZONING_RASTER_MIN_ZOOM) {
+      notify(
+        `用途地域はもう少し拡大すると出ます（${ZONING_RASTER_MIN_ZOOM} 段階目から）。`,
+      );
+      return;
+    }
     if (zoom < ZONING_MIN_ZOOM) {
-      notify("用途地域は拡大すると出ます。");
+      /* 画像タイル（TileLayer）が描いている。多角形は取りに行かない */
+      notify(
+        "広域表示です。区画を押して建蔽率・容積率を見るには、もう少し拡大してください。",
+      );
       return;
     }
     const z = Math.min(zoom, ZONING_MAX_ZOOM);
@@ -213,6 +229,21 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
 
   return (
     <>
+      {/* 広域（z11〜12）は塗った絵。Leaflet が minZoom/maxZoom の外では
+          このレイヤーを描かないので、z13 以上では多角形だけになる。
+          選択（1 区分だけ残す）はサーバー側で塗り分けるので URL に入れ、
+          key も変えて別レイヤーとして貼り直す。 */}
+      <TileLayer
+        key={`zoning-raster-${selected ?? "all"}`}
+        url={`/api/zoning/raster?z={z}&x={x}&y={y}${
+          selected ? `&only=${encodeURIComponent(selected)}` : ""
+        }`}
+        minZoom={ZONING_RASTER_MIN_ZOOM}
+        maxZoom={ZONING_RASTER_MAX_ZOOM}
+        /* 多角形の fillOpacity と同じ。縮尺をまたいでも濃さが変わらない */
+        opacity={0.45}
+        attribution="用途地域: 国土交通省 不動産情報ライブラリ"
+      />
       {Object.entries(tiles).map(([key, data]) => (
         <GeoJSON
           /*
