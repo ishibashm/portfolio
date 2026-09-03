@@ -37,12 +37,51 @@ export interface FeedSource {
   siteUrl: string;
   /** 何の情報源か。1 行で。 */
   note: string;
+  /**
+   * 束（FeedGroup）の id。同じ発信元が配信を複数に分けているとき、
+   * 画面で 1 枚の札にまとめるために付ける。
+   *
+   * 新着一覧の取り分も**束ごと**に数える（`lib/fetchNews` の
+   * PER_GROUP_LIMIT）。付けないと、配信の多い発信元が一覧を占める。
+   */
+  group?: string;
 }
 
 export interface LinkSource {
   name: string;
   url: string;
   note: string;
+}
+
+/**
+ * 1 つの発信元が配信を複数に分けているときの束。
+ *
+ * UR 都市機構がそうで、報道発表・賃貸の募集・入札の公示が別々の
+ * フィードに分かれている（実測で 12 本。`scripts/probe_news_feeds.ts`
+ * の `--list`、run 33816205060）。台帳へはフィード 1 本ずつ載せるが、
+ * **画面では 1 つの発信元としてまとめる**。12 枚の札が並ぶと、他の
+ * 8 媒体が押し出されて読めなくなるため。
+ */
+export interface FeedGroup {
+  /** FeedSource.group から参照する鍵。 */
+  id: string;
+  /** 束の名前。札の見出しになる。 */
+  name: string;
+  /** 発信元の入口。 */
+  siteUrl: string;
+  /** 何の発信元か。1 行で。 */
+  note: string;
+}
+
+/**
+ * 束の一覧。ここに無い id を FeedSource.group に書くと検査で落ちる。
+ */
+export const FEED_GROUPS: readonly FeedGroup[] = [] as const;
+
+/** 束を id で引く。無ければ null。 */
+export function feedGroupOf(id: string | undefined): FeedGroup | null {
+  if (!id) return null;
+  return FEED_GROUPS.find((g) => g.id === id) ?? null;
 }
 
 /** RSS / Atom を配信している情報源。 */

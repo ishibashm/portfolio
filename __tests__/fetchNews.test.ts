@@ -64,12 +64,24 @@ const FIXTURE = [
 ];
 
 /** 作った台帳で fetchAllFeeds を読み込む。 */
-async function withFixture() {
+async function withFixture(registry: readonly unknown[] = FIXTURE) {
   vi.doMock("@/data/newsSources", () => ({
-    NEWS_FEEDS: FIXTURE,
+    NEWS_FEEDS: registry,
     NEWS_LINKS: [],
   }));
   return await import("@/lib/fetchNews");
+}
+
+/** 同じホストに N 本ぶら下がる台帳。同時数の上限を見るため。 */
+function sameHostRegistry(n: number) {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `many-${i}`,
+    name: `多い-${i}`,
+    feedUrl: `https://many.example/${i}.xml`,
+    siteUrl: "https://many.example/",
+    note: "検査用",
+    group: "many",
+  }));
 }
 
 afterEach(() => {
@@ -115,6 +127,88 @@ describe("fetchAllFeeds", () => {
 
     expect(calls).toEqual([MAIN, PLAIN]);
     expect(calls).not.toContain(ALT);
+  });
+
+  it("同じホストへ一度に投げるのは 4 本まで（相手への瞬間のレート）", async () => {
+    /*
+      UR 都市機構のように配信を 12 本に分けている発信元を台帳へ
+      入れると、素の Promise.all では 12 本が同時にそのサーバへ
+      当たる。1 日 4 回という総量は変わらないが、瞬間のレートは
+      12 倍。**上限を外すとこの検査が落ちる。**
+    */
+    let inFlight = 0;
+    let peak = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        inFlight--;
+        return xmlResponse(RSS);
+      }),
+    );
+
+    const mod = await withFixture(sameHostRegistry(12));
+    const results = await mod.fetchAllFeeds();
+
+    expect(results).toHaveLength(12);
+    expect(peak).toBeLessThanOrEqual(4);
+    /* 絞っても全部は取る。取りこぼしていないこと */
+    expect(results.every((r) => r.ok)).toBe(true);
+  });
+
+  it("ホストが違えば並行に投げる（絞りすぎていない）", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise((r) => setTimeout(r, 1));
+        inFlight--;
+        return xmlResponse(RSS);
+      }),
+    );
+
+    const registry = Array.from({ length: 8 }, (_, i) => ({
+      id: `host-${i}`,
+      name: `別ホスト-${i}`,
+      feedUrl: `https://h${i}.example/feed.xml`,
+      siteUrl: `https://h${i}.example/`,
+      note: "検査用",
+    }));
+    const mod = await withFixture(registry);
+    await mod.fetchAllFeeds();
+
+    expect(peak).toBe(8);
+  });
+
+  it("並びは取得の速さでなく台帳の順", async () => {
+    /* ホストごとに束ねて取るので、返ってくる順は取得の速さで
+       変わりうる。画面の札の並びが日替わりにならないよう戻す */
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        /* 後ろのものほど速く返す */
+        const n = Number(/(\d+)\.xml$/.exec(url)?.[1] ?? 0);
+        await new Promise((r) => setTimeout(r, (12 - n) * 2));
+        return xmlResponse(RSS);
+      }),
+    );
+
+    const mod = await withFixture(sameHostRegistry(6));
+    const results = await mod.fetchAllFeeds();
+
+    expect(results.map((r) => r.source.id)).toEqual([
+      "many-0",
+      "many-1",
+      "many-2",
+      "many-3",
+      "many-4",
+      "many-5",
+    ]);
   });
 
   it("本命が落ちたときだけ予備を試し、読めれば ok になる", async () => {
@@ -254,5 +348,53 @@ describe("mergeLatest", () => {
     ];
 
     expect(mergeLatest(feeds, 2).map((m) => m.item.link)).toEqual(["/1", "/2"]);
+  });
+
+  it("1 つの束の取り分は 4 件まで（他の発信元を押し出さない）", () => {
+    /*
+      UR 都市機構は配信が 12 本ある。束で数えないと、発信元は 1 つ
+      なのに 24 枠のうち 12 枠以上を取り、他の媒体が一覧から消える。
+      **束の上限を外すとこの検査が落ちる**（12 件すべてが並ぶ）。
+    */
+    const grouped = (i: number) => ({
+      ...src(`ur-${i}`),
+      group: "ur",
+    });
+    const feeds: FeedResult[] = [
+      ...Array.from({ length: 12 }, (_, i) => ({
+        source: grouped(i),
+        ok: true,
+        usedUrl: "u",
+        /* どれも「他の媒体」より新しい */
+        items: [item(`/ur${i}`, "2026-08-30T00:00:00+09:00")],
+      })),
+      {
+        source: src("other"),
+        ok: true,
+        usedUrl: "u",
+        items: [item("/other", "2026-08-01T00:00:00+09:00")],
+      },
+    ];
+
+    const merged = mergeLatest(feeds, 24);
+    const fromGroup = merged.filter((m) => m.source.group === "ur");
+    expect(fromGroup).toHaveLength(4);
+    /* 押し出されずに残っている */
+    expect(merged.some((m) => m.source.id === "other")).toBe(true);
+  });
+
+  it("束を持たない配信元は自分だけの束として数える", () => {
+    /* 束の無い配信元 1 つで 6 件出しても、上限は自分にだけ掛かる */
+    const feeds: FeedResult[] = [
+      {
+        source: src("solo"),
+        ok: true,
+        usedUrl: "u",
+        items: Array.from({ length: 6 }, (_, i) =>
+          item(`/s${i}`, `2026-08-2${i}T00:00:00+09:00`),
+        ),
+      },
+    ];
+    expect(mergeLatest(feeds, 24)).toHaveLength(4);
   });
 });
