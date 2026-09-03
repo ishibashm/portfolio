@@ -2658,18 +2658,25 @@ export default function ArbitrageScannerPage() {
                 <>
                   {/* どの方位が動ける方位で、そこに物件がどれだけあるか。
                       一覧は吉凶と家賃の順なので、この全体像が
-                      どこにも出ていなかった。判定を出せないときは
-                      行が空になるのでコンポーネント側で何も描かない。 */}
-                  <DirectionTierOverview
-                    rows={directionTierRows}
-                    selectedDirection={filterDirection}
-                    onSelectDirection={(dir) => {
-                      setFilterDirection(dir);
-                    }}
-                    /* 風水（八宅）の併記に使う。切り替えは /houi と
-                       引越し先の試算と同じもので、既定では出ない。 */
-                    birthDate={birthDate}
-                  />
+                      どこにも出ていなかった。
+
+                      行が空（判定を出せない）のときは置かない。
+                      コンポーネント側も空なら null を返すが、置くだけで
+                      その塊（honmeiYear → 暦エンジン）を取りに行く。
+                      生年月日も出発地も無い利用者に、描かないものの
+                      ために 100 KB 超を読ませない。 */}
+                  {directionTierRows.length > 0 && (
+                    <DirectionTierOverview
+                      rows={directionTierRows}
+                      selectedDirection={filterDirection}
+                      onSelectDirection={(dir) => {
+                        setFilterDirection(dir);
+                      }}
+                      /* 風水（八宅）の併記に使う。切り替えは /houi と
+                         引越し先の試算と同じもので、既定では出ない。 */
+                      birthDate={birthDate}
+                    />
+                  )}
 
                   {/* Geographic & Calculations Settings */}
                   <ArbitrageSidebarSection

@@ -1270,6 +1270,68 @@ npx next build --webpack
 node -e "…"   # .next/server/app/<route>.html の script src を gzip 集計
 ```
 
+### 決着 — #882 で 2 案（動的 import）を採った（2026-09-03）
+
+利用者から「初回読み込みが遅い。何をしてもいい」と指示があり、
+上の 2 案で直した。**判定の答えは変えていない。**
+
+- 判定（`getHonmeiStar` → `judgeDayAllDirections` → `gradeVerdict` →
+  `prefectureDirections`）を `lib/dayKigakuClient.ts` に**そのまま**
+  写し、page.tsx は `import()` で遅延して呼ぶ。生年月日と出発地が
+  そろって初めて読む
+- 型と定数で暦エンジンに繋がっていた 4 本を葉に切り出した
+  （`utils/dayTier`・`utils/directionFilterMode`。`DIRECTION_LABELS` は
+  `directionGeo` にある）。**ラベル 1 つを `kigakuContent` から取った
+  だけで 97 KB が戻る**ので、`__tests__/arbitrageBundleLeaf.test.ts`
+  が page.tsx から値 import を辿って lunar / astronomy に届かないことを
+  固定する（字面の grep は #552 の轍を踏むので、import を辿る）
+- 旧 `useMemo` の中身を `__tests__/dayKigakuClient.test.ts` に写し、
+  864 通り（生年月日 3 × 出発地 3 × 日付 4 × 見方 4 × 天中殺 3 ×
+  盤 2）で一致を固定した
+
+**実測（同じ環境の前後。`.next/server/app/relocation/arbitrage.html` の
+script を gzip 集計）**
+
+|     | JS（gzip） | 本数 |
+| --- | ---------- | ---- |
+| 前  | 347 KB     | 21   |
+| 後  | **217 KB** | 19   |
+
+Chromium（CPU 4 倍・fast 3G 相当）で `next start` を開いた実測は
+`load` 4.9 秒 → **2.9 秒**、Leaflet の器が出るまで 6.1 秒 → **4.2 秒**。
+ホーム（180 KB）とほぼ同じ重さになった。
+
+### hydration 後にも取りに行っていた（#883）
+
+上の数字は最初の HTML の script だけ。開いてから 10 秒待って取りに
+行った塊を全部並べると、**設定の無い利用者でも暦エンジンの塊を
+取りに行っていた。**`DirectionTierOverview` を無条件に置いていた
+ためで、行が空なら `null` を返すが、置いた時点で `honmeiYear`（→
+`AstroEngine` → lunar）ごと読む。行が空のときは置かないようにした。
+
+実測（`next start` を Chromium で開き、12 秒待って要求した JS を全部
+数える）。**「置くだけで読む」ぶんは消えた。**
+
+| 設定              | 経路の prefetch を止めた状態              | 暦エンジンの塊           |
+| ----------------- | ----------------------------------------- | ------------------------ |
+| 無し              | 24 本（初回 16 + 地図の遅延 8）           | **取りに行かない**       |
+| 生年月日 + 出発地 | 初回 16 の直後に `dayKigakuClient` が読む | 取りに行く（判定に要る） |
+
+ただし**何もしなくても 10 秒で 48 本・762 KB を取りに行っている。**
+サイドバーの `Link` が画面内の経路（暦・時期・資産・シミュレータ…）
+を prefetch するためで、そちらが lunar（97 KB）と recharts（95 KB）
+を含む。優先度は全部 `Low`、しかもモバイルではサイドバーが閉じて
+いて画面内に無いので発火しない。**この頁の遅さの原因ではない**ので
+触っていない。止めるなら `prefetch={false}` をサイドバーに置くだけ
+だが、道具の間の移動が 1 回ぶん遅くなる。
+
+### 残っていること
+
+- **API の走査時間は別の話。**`/api/rentals/arbitrage` の応答に掛かる
+  時間は本番でしか測れず、Cloud Run のログをこの環境から読む手段が
+  無い（`check-logs.yml` は VM の PM2 用）。19 節の `db-explain.yml`
+  は本番 DB に負荷を掛けるので利用者の判断が要る
+
 ## 18. 夜間のデータ更新が検査を壊しても、誰も気づかなかった（2026-09-01）
 
 巡回のあと `areaDirections.json` が更新されると、**それを読む側が

@@ -91,6 +91,20 @@ describe("物件検索の初回読み込みに暦エンジンが乗らない", (
     });
   }
 
+  /*
+    静的な経路が無くても、置くだけでエンジンを読む部品がある。
+    DirectionTierOverview は行が空なら null を返すが、置いた時点で
+    その塊（honmeiYear → AstroEngine → lunar）を取りに行く。設定の無い
+    利用者は判定を出せず行が空なので、描かないもののために 100 KB 超を
+    読ませない（#883）。字面の検査だが、外れると再び黙って戻る。
+  */
+  it("DirectionTierOverview は行があるときだけ置く", () => {
+    const text = readFileSync(PAGE, "utf8");
+    expect(text).toMatch(
+      /directionTierRows\.length > 0 && \(\s*<DirectionTierOverview/,
+    );
+  });
+
   it("この検査は経路を見つけられる（空回りしていない）", () => {
     /* 判定本体は当然エンジンに届く。ここが null なら辿り方が壊れている */
     const found = pathTo(
