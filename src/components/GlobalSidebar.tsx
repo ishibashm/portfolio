@@ -10,6 +10,11 @@ import { usePathname, useRouter } from "next/navigation";
 // 用途はログイン状態の表示とログアウトだけなので、必要になった時点で読み込む。
 const loadSupabase = () =>
   import("@/utils/supabase/client").then((m) => m.createClient());
+
+/** ログイン済みの手がかり。開発時は疑似ログイン（client.ts）があるので常に真。 */
+const hasAuthCookie = () =>
+  process.env.NODE_ENV === "development" ||
+  /(?:^|;\s*)sb-[^=;]*-auth-token(?:\.\d+)?=/.test(document.cookie);
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   Clock,
@@ -97,6 +102,15 @@ export function GlobalSidebar() {
     let active = true;
     let unsubscribe: (() => void) | undefined;
 
+    /*
+      ログインしていない端末では supabase を読まない。@supabase/ssr の
+      ブラウザ側はセッションを `sb-<ref>-auth-token` の cookie に持つ
+      （分割されると `.0` `.1` が付く）。それが無ければ getUser() は
+      必ず null で、gzip 60 KB を読む意味が無い。ログインすると
+      /login から戻ってきて layout ごと描き直るので、ここも走り直す。
+    */
+    if (!hasAuthCookie()) return;
+
     loadSupabase().then((supabase) => {
       // 読み込みが終わる前にアンマウントされていたら購読しない。
       if (!active) return;
@@ -158,6 +172,11 @@ export function GlobalSidebar() {
       <Link
         key={item.href}
         href={item.href}
+        /* 画面内の経路を先読みしない。既定だと開いた直後に道具 15 頁ぶんの
+           JS（暦エンジン・グラフを含めて gzip 500 KB 前後）を裏で取りに
+           行き、遅い回線ではいま見ている頁の地図と判定の帯域を奪う
+           （backlog 17 節に実測）。移動は押した時に読む。 */
+        prefetch={false}
         onClick={closeSidebar}
         title={isCollapsed ? item.label : undefined}
         className={`
@@ -305,6 +324,7 @@ export function GlobalSidebar() {
           ) : (
             <Link
               href={`/login?next=${encodeURIComponent(pathname || "/")}`}
+              prefetch={false}
               onClick={closeSidebar}
               className={`flex items-center justify-start gap-3 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
               title="ログイン"
