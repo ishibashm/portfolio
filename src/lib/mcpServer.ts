@@ -376,12 +376,17 @@ export function createMcpServer(): McpServer {
       const cap = perDirection ?? 8;
       const groups = neighboursByDirection(origin);
       const empties = emptyDirections(origin);
+      /* too_close を dead_end より先に見る。**順番を入れ替えると、
+         すぐ隣に街のある方位が行き止まりとして出る**（areaContent の
+         hasNearMunicipality の註）。 */
       const kind = (e: (typeof empties)[number]) =>
         e.hasBeyondRange
           ? "far_only"
           : e.hasAnyMunicipality
             ? "no_listings"
-            : "dead_end";
+            : e.hasNearMunicipality
+              ? "too_close"
+              : "dead_end";
       return text({
         origin: {
           code: origin.code,

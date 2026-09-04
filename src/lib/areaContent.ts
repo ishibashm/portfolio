@@ -156,6 +156,37 @@ export interface EmptyDirection {
    * 方位はあるが、そのときは名前を出さないだけで文言は成り立つ。
    */
   nearestUnlisted: { city: string; pref: string; distanceKm: number }[];
+  /**
+   * その方位に市区町村はあるが、**近すぎて一覧から外れている**か。
+   *
+   * ## なぜ要るか（2026-09-04 に見つけた）
+   *
+   * `hasAnyMunicipality` は「その方位に街があるか」を数えるのに、
+   * **5km 未満を除いた母集団**で数えていた。MIN_KM は「近すぎる相手は
+   * 方位が定まらない」という一覧の規則で、**街の有無とは関係が無い。**
+   * 同じふるいを通していたので、**すぐ隣に街がある方位が「行き止まり」
+   * に化けていた。**
+   *
+   * 全国 226 の行き止まりのうち 6 方位（6 頁）がこれだった。
+   *
+   *     長生村   南東 … 一宮町   4.9km
+   *     日高町   南   … 美浜町   2.9km
+   *     宜野湾市 南東 … 中城村   2.7km
+   *     豊見城市 南   … 糸満市   4.1km
+   *     南風原町 南東 … 南城市   4.7km
+   *     与那原町 南   … 南城市   3.7km
+   *
+   * 頁は「市区町村が 1 つも無い方位。海や山で陸が尽きています」と
+   * 出していた。**すぐ隣に街があるのだから嘘。**#832〜#834 で外した
+   * 595 件の断定と原因は違う（あちらは掲載側の母集団だけを見ていた）
+   * が、出る嘘は同じ。
+   *
+   * true のときは行き止まりではない。**距離の下限で外れているだけ**で、
+   * 方位を八つに割ると意味を失うほど近い、という別の事情。
+   */
+  hasNearMunicipality: boolean;
+  /** 近すぎて外れている相手（`hasNearMunicipality` が true のときだけ）。 */
+  nearestTooClose: { city: string; pref: string; distanceKm: number }[];
 }
 
 /** 上の `nearestUnlisted` に載せる件数。 */
@@ -249,16 +280,33 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
 
   /* 「その方位に街があるか」は掲載の有無に依らない集合で見る */
   const anyMunicipality = new Set<CompassDirection>();
+  /* **MIN_KM で外れているだけの相手を、別に取っておく。**ここを
+     anyMunicipality に混ぜず、かといって捨てもしない。混ぜると
+     「掲載が無いだけ」に見え、捨てると「街が無い」に見える。
+     どちらも違う（上の hasNearMunicipality の註）。 */
+  const nearTooClose = new Map<
+    CompassDirection,
+    EmptyDirection["nearestTooClose"]
+  >();
+  for (const d of DIRECTIONS) nearTooClose.set(d, []);
   for (const m of allMunicipalities()) {
     if (m.code === origin.code) continue;
     const km = distanceKmBetween(origin.lat, origin.lon, m.lat, m.lon);
-    if (km < MIN_KM) continue;
-    anyMunicipality.add(
-      directionFromBearing(
-        bearingBetween(origin.lat, origin.lon, m.lat, m.lon),
-        "traditional",
-      ),
+    const d = directionFromBearing(
+      bearingBetween(origin.lat, origin.lon, m.lat, m.lon),
+      "traditional",
     );
+    if (km < MIN_KM) {
+      nearTooClose.get(d)?.push({
+        city: m.city,
+        pref: m.pref,
+        /* 5km 未満なので整数に丸めると 0km や 3km と 4km の差が
+           潰れる。ここだけ小数第 1 位まで残す */
+        distanceKm: Math.round(km * 10) / 10,
+      });
+      continue;
+    }
+    anyMunicipality.add(d);
   }
 
   return DIRECTIONS.filter((d) => withinRange[d].length === 0).map((d) => ({
@@ -266,6 +314,10 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
     hasBeyondRange: beyond.has(d),
     hasAnyMunicipality: anyMunicipality.has(d),
     nearestUnlisted: (unlisted.get(d) ?? [])
+      .sort((x, y) => x.distanceKm - y.distanceKm)
+      .slice(0, UNLISTED_SAMPLE),
+    hasNearMunicipality: (nearTooClose.get(d) ?? []).length > 0,
+    nearestTooClose: (nearTooClose.get(d) ?? [])
       .sort((x, y) => x.distanceKm - y.distanceKm)
       .slice(0, UNLISTED_SAMPLE),
   }));
