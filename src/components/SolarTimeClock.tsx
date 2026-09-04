@@ -4175,11 +4175,20 @@ export const SolarTimeClock = () => {
           にする。**表示の分だけホームが軽くなる。**
         */}
         <div className="w-full max-w-[1700px] px-4">
+          {/*
+            狭い画面では縦に積む。横並びのままだと、説明が 2 行に折り返した
+            とき「開く →」が上下中央に来て、**文の途中に差し込まれたように
+            見える**（利用者の指摘。「…方位の吉凶を月ごと ［開く →］ に
+            見ます。」と読めていた）。
+
+            説明側に min-w-0 が要る。flex の子は既定で自分の中身より
+            狭くならないので、無いと折り返す位置が読めない。
+          */}
           <Link
             href="/calendar"
-            className="flex items-center justify-between gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors"
+            className="flex flex-col gap-1 bg-white border border-stone-200 rounded-xl px-4 py-3 hover:border-indigo-300 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           >
-            <span className="flex flex-col">
+            <span className="flex min-w-0 flex-col">
               <span className="text-xs font-bold text-stone-700">
                 引越しの日取りを選ぶ（暦カレンダー）
               </span>
@@ -4187,7 +4196,9 @@ export const SolarTimeClock = () => {
                 天赦日・一粒万倍日・天中殺と、方位の吉凶を月ごとに見ます。
               </span>
             </span>
-            <span className="text-indigo-500 text-xs shrink-0">開く →</span>
+            <span className="self-end text-indigo-500 text-xs shrink-0 sm:self-auto">
+              開く →
+            </span>
           </Link>
         </div>
       </div>
