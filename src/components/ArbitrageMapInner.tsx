@@ -73,6 +73,7 @@ import {
   parseMunicipalityListings,
   type MunicipalityListing,
 } from "@/utils/areaDatasetMerge";
+import { aggregateToGrid, cellDegreesForZoom } from "@/lib/listingGrid";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -888,6 +889,33 @@ export default function ArbitrageMapInner({
         m.lon <= currentBounds.maxLon + lonPad,
     );
   }, [baseDistribution, currentBounds, zoom]);
+
+  /**
+   * 俯瞰の升目。**引くほど数が大きく、印が少なくなる。**
+   *
+   * 市区町村のまま引くと全国で 1,127 個の丸になり、数が細かすぎて読めず
+   * 画面も埋まる（利用者の要望：広いときは大きめの数で集約したい）。
+   *
+   * **県の塗りが「掲載件数」のときは出さない。**同じ画面で件数を 2 通りに
+   * 色分けすることになり、「この色は件数？」の取り違えになる。方位の
+   * 吉凶を塗っているときだけ、件数の印を重ねる。
+   */
+  const overviewCells = useMemo(() => {
+    if (!baseDistribution || zoom >= 10) return [];
+    if (effectiveTint !== "kigaku") return [];
+    if (!currentBounds) return [];
+    const deg = cellDegreesForZoom(zoom);
+    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
+    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
+    const inView = baseDistribution.filter(
+      (m) =>
+        m.lat >= currentBounds.minLat - latPad &&
+        m.lat <= currentBounds.maxLat + latPad &&
+        m.lon >= currentBounds.minLon - lonPad &&
+        m.lon <= currentBounds.maxLon + lonPad,
+    );
+    return aggregateToGrid(inView, deg);
+  }, [baseDistribution, currentBounds, zoom, effectiveTint]);
 
   const maxPrefOrBubbleCount = useMemo(() => {
     let max = 0;
@@ -1743,6 +1771,24 @@ export default function ArbitrageMapInner({
                 </span>
               </div>
             )}
+            {/* 灰色の丸を黙って足さない。方位モードのときは「掲載件数」の
+                凡例が出ないので、こちらに書く。 */}
+            {overviewCells.length > 0 && (
+              <div className="flex items-start gap-1.5 border-t border-stone-200 pt-1.5">
+                <span
+                  className="mt-0.5 inline-block w-2.5 h-2.5 shrink-0 rounded-full border"
+                  style={{
+                    backgroundColor: "rgba(100,116,139,0.2)",
+                    borderColor: "rgba(71,85,105,0.45)",
+                  }}
+                />
+                <span className="text-[8px] leading-tight text-stone-600">
+                  {
+                    "灰色の丸はそのあたりの掲載数（毎晩の集計）。吉凶ではありません"
+                  }
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -1911,6 +1957,62 @@ export default function ArbitrageMapInner({
             地形も駅名も隠れるため、方位を決めたあと「その辺に何があるか」を
             見る段では邪魔になる。俯瞰でも近景でも同じボタンで効く */}
         {hasBase && showSectors && sectorLayers}
+
+        {/* 俯瞰の升目。県の塗りだけでは 47 個しか無く、どこに掲載が
+            あるのかが読めなかった。市区町村のまま出すと今度は 1,127 個に
+            なるので、ズームに応じた升目にまとめる（利用者の要望：広いと
+            きは大きめの数で集約したい）。
+
+            県の塗りが「掲載件数」のときは出さない。件数を 2 通りに色分け
+            することになる（overviewCells の註）。 */}
+        {overviewCells.map((c) => {
+          const r = Math.max(5, Math.min(26, 3 + Math.log2(c.count) * 1.6));
+          return (
+            <React.Fragment key={`cell-${c.key}`}>
+              <CircleMarker
+                center={[c.lat, c.lon]}
+                radius={r}
+                pathOptions={{
+                  color: "#475569",
+                  fillColor: "#64748b",
+                  fillOpacity: 0.2,
+                  weight: 1,
+                  opacity: 0.45,
+                }}
+              >
+                <Popup>
+                  <div className="font-sans text-xs text-gray-900 p-2 min-w-[160px]">
+                    <div className="flex justify-between gap-3">
+                      <span className="text-stone-600">このあたりの掲載:</span>
+                      <span className="font-bold text-gray-900">
+                        {c.count.toLocaleString()}件
+                      </span>
+                    </div>
+                    <div className="flex justify-between gap-3 mt-0.5">
+                      <span className="text-stone-600">市区町村:</span>
+                      <span className="text-gray-900">{c.areas}</span>
+                    </div>
+                    <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+                      {
+                        "毎晩の集計をまとめた数です。ズームすると市区町村ごとに分かれます。"
+                      }
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+              <Marker
+                position={[c.lat, c.lon]}
+                icon={L.divIcon({
+                  className: "custom-div-icon",
+                  html: `<div class="font-mono text-[10px] font-bold text-white text-center leading-none pointer-events-none" style="text-shadow: 0 0 3px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.95);">${c.count.toLocaleString()}</div>`,
+                  iconSize: [64, 12],
+                  iconAnchor: [32, 6],
+                })}
+                interactive={false}
+              />
+            </React.Fragment>
+          );
+        })}
 
         {/* 地の分布。候補より先に描いて下に敷く。
 
