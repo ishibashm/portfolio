@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { AREAS, findArea, neighboursByDirection } from "@/lib/areaContent";
-import { bearingBetween, directionFromBearing } from "@/utils/directionGeo";
+import {
+  bearingBetween,
+  directionFromBearing,
+  distanceKmBetween,
+} from "@/utils/directionGeo";
 
 /**
  * 市区町村ページの文章が「この方位には何がある」と書いたところを、
@@ -93,6 +97,47 @@ const BOUNDARY_MARGIN_DEG = 3;
  * 境目にあるか**を書いた。消すと読み手が失うものが大きい。
  */
 const UNSTABLE_TO_NAME_DEG = 0.25;
+
+/**
+ * 距離帯ごとの、一晩の方位角の振れ（95 パーセンタイル。度）。
+ *
+ * ## 一律 0.25 度では足りなかった
+ *
+ * 上の 0.25 度は 5〜150km を**まとめた**分布から置いた値だが、
+ * 件数の 8 割が 40km より遠いペアなので、**近い側が平均に埋もれて
+ * いた。**距離帯で割り直すと桁が違う（2026-09-04 実測。前夜との
+ * 差分、246,502 ペア）。
+ *
+ *     距離帯      n        中央    95%     99.9%   最大
+ *      5-10km    4,210    0.101   1.077   3.879   4.632
+ *     10-20km   12,202    0.056   0.608   2.422   5.640
+ *     20-40km   33,882    0.034   0.360   1.313   3.334
+ *     40-80km   71,056    0.019   0.202   0.765   1.821
+ *     80-150km 125,152    0.010   0.109   0.533   0.938
+ *
+ * **一晩で 5.640 度動いたペアがある。**「3 度を超えた振れは 1 件も
+ * 無い」と書いた前回の実測は、遠いペアに引きずられていた。
+ *
+ * ## 95% を下限に採る理由
+ *
+ * ここは「読み手が食い違いを見るか」の線なので、**ふつうの夜**で
+ * 反転するかどうかで決める。95% は 20 晩に 1 晩。それより内側に
+ * ある地名は、文章と頁の一覧が目に見えて食い違う。
+ *
+ * 99.9% を採ると 137 件を書き直すことになり、近い街の名前が頁から
+ * ほとんど消える。読み手が失うもののほうが大きい。95% なら 17 件。
+ */
+const DRIFT_P95: { maxKm: number; deg: number }[] = [
+  { maxKm: 10, deg: 1.077 },
+  { maxKm: 20, deg: 0.608 },
+  { maxKm: 40, deg: 0.36 },
+  { maxKm: Infinity, deg: UNSTABLE_TO_NAME_DEG },
+];
+
+/** その距離では、境目からこれだけ離れていないと方位に縛れない。 */
+function unstableToNameDeg(km: number): number {
+  return DRIFT_P95.find((b) => km < b.maxKm)!.deg;
+}
 
 /** 境目までの角度（度）。0 なら境目の真上。 */
 function degreesFromNearestEdge(bearing: number): number {
@@ -238,10 +283,12 @@ describe("境目のすぐ近くにある地名を、方位に縛っていない"
     もので、**読み手の実害はそれでは消えない。**頁の一覧はその日の
     掲載で決まるので、境目のすぐ近くにいる相手は文章と半々で食い違う。
 
-    書く側の決め事にする。0.25 度より境目に近い相手は、
-    「◯方位は A・B・C」の並びに入れない。
+    書く側の決め事にする。境目に近すぎる相手は「◯方位は A・B・C」の
+    並びに入れない。**近さの線は距離で変わる**（下の DRIFT_P95）。
+    同じ 0.5 度でも、8km の相手はふつうの夜に反転し、100km の相手は
+    まず動かない。
   */
-  it("0.25 度より境目に近い相手を、方位の並びに入れていない", () => {
+  it("境目に近すぎる相手を、方位の並びに入れていない（下限は距離で決まる）", () => {
     const bad: string[] = [];
     for (const [code, editorial] of Object.entries(AREA_EDITORIAL)) {
       const origin = findArea(code);
@@ -269,9 +316,19 @@ describe("境目のすぐ近くにある地名を、方位に縛っていない"
               cands[0].lon,
             );
             const d = degreesFromNearestEdge(exact);
-            if (d < UNSTABLE_TO_NAME_DEG) {
+            /* 下限は距離で変わる。近い相手ほど、代表点の同じ動きで
+               方位角が大きく振れる（上の実測） */
+            const floor = unstableToNameDeg(
+              distanceKmBetween(
+                origin.lat,
+                origin.lon,
+                cands[0].lat,
+                cands[0].lon,
+              ),
+            );
+            if (d < floor) {
               bad.push(
-                `${origin.pref}${origin.city}(${code}) 「${m[1]}は…${name}…」 境目まで ${d.toFixed(3)}°`,
+                `${origin.pref}${origin.city}(${code}) 「${m[1]}は…${name}…」 境目まで ${d.toFixed(3)}° 下限 ${floor}°`,
               );
             }
           }
