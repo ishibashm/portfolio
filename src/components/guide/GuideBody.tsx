@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { GuideBlock } from "@/lib/guideContent";
+import { GUIDE_INLINE, type GuideBlock } from "@/lib/guideContent";
 
 /**
  * ガイド本文の描画。
@@ -8,9 +8,10 @@ import type { GuideBlock } from "@/lib/guideContent";
  * 本文は src/lib/guideContent.ts に構造化して持たせ、ここは見た目だけを持つ。
  * 強調とリンクだけは文中に置きたいので、その2つに限った記法を解釈する。
  * HTML をそのまま流し込む形にはしない（本文が増えたときに崩れ方が読めなくなる）。
+ *
+ * 記法そのもの（GUIDE_INLINE）は本文と同じ guideContent.ts に置いてある。
+ * 構造化データ用の平文化が同じ規則を要るので、写しを作らない。
  */
-
-const INLINE = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
 
 function inline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -18,8 +19,8 @@ function inline(text: string): ReactNode[] {
   let n = 0;
   let m: RegExpExecArray | null;
 
-  INLINE.lastIndex = 0;
-  while ((m = INLINE.exec(text)) !== null) {
+  GUIDE_INLINE.lastIndex = 0;
+  while ((m = GUIDE_INLINE.exec(text)) !== null) {
     if (m.index > last) nodes.push(text.slice(last, m.index));
     if (m[1] !== undefined) {
       nodes.push(

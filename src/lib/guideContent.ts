@@ -827,3 +827,72 @@ export const GUIDE_PAGES: GuidePage[] = [
 export function findGuidePage(slug: string): GuidePage | undefined {
   return GUIDE_PAGES.find((p) => p.slug === slug);
 }
+
+/**
+ * 本文で使える記法。強調 `**...**` と内部リンク `[文言](/href)` の 2 つだけ。
+ *
+ * **描画（GuideBody）と平文化（下の `plainText`）で同じ 1 つを使う。**
+ * 別々に持つと、片方だけ記法が増えたときに構造化データへ
+ * アスタリスクがそのまま漏れる。用語辞典の「意味」には実際に
+ * `**方位ではなく期間の話**` のような強調が入っている。
+ */
+export const GUIDE_INLINE = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
+
+/** 記法を落として素の文にする。markdown を解釈しない出力（JSON-LD など）用。 */
+export function plainText(text: string): string {
+  return text.replace(GUIDE_INLINE, (_m, bold, label) => bold ?? label);
+}
+
+/** 用語辞典の 1 行。 */
+export interface GlossaryTerm {
+  /** 見出し語。「年盤・月盤・日盤」のように 1 行が複数語のこともある */
+  name: string;
+  /** 読み。物件の表には読みの列が無いので、その節では付かない */
+  reading?: string;
+  /** 意味。記法を落とした平文 */
+  description: string;
+  /** どの節にあるか（「方位にまつわる言葉」など） */
+  section: string;
+}
+
+/**
+ * 用語辞典（`/guide/glossary`）の表を、行の並びのまま取り出す。
+ *
+ * 頁に出ている文言をそのまま使う。ここで語を足したり言い換えたりしない
+ * （構造化データ用に書き下ろすと、頁と食い違う）。列の並びは節ごとに
+ * 違う（物件の節だけ「読み」が無い）ので、見出しの位置で引く。
+ */
+export function glossaryTerms(): GlossaryTerm[] {
+  const page = findGuidePage("glossary");
+  if (!page) return [];
+
+  const out: GlossaryTerm[] = [];
+  let section = page.title;
+
+  for (const b of page.blocks) {
+    if (b.k === "h") {
+      section = b.t;
+      continue;
+    }
+    if (b.k !== "table") continue;
+
+    const nameAt = b.head.indexOf("言葉");
+    const descAt = b.head.indexOf("意味");
+    const readingAt = b.head.indexOf("読み");
+    if (nameAt < 0 || descAt < 0) continue;
+
+    for (const row of b.rows) {
+      const name = row[nameAt];
+      const description = row[descAt];
+      if (!name || !description) continue;
+      const reading = readingAt >= 0 ? row[readingAt] : undefined;
+      out.push({
+        name: plainText(name),
+        description: plainText(description),
+        section,
+        ...(reading ? { reading: plainText(reading) } : {}),
+      });
+    }
+  }
+  return out;
+}

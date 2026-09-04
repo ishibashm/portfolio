@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { GUIDE_PAGES, findGuidePage } from "@/lib/guideContent";
+import {
+  GUIDE_PAGES,
+  findGuidePage,
+  glossaryTerms,
+  plainText,
+} from "@/lib/guideContent";
 import { isProtectedRoute } from "@/utils/supabase/routeAccess";
 
 /**
@@ -115,5 +120,59 @@ describe("使い方ガイドの本文", () => {
   it("findGuidePage が定義済みの slug だけを返す", () => {
     expect(findGuidePage("basics")?.slug).toBe("basics");
     expect(findGuidePage("does-not-exist")).toBeUndefined();
+  });
+});
+
+/**
+ * 用語辞典の行は構造化データ（DefinedTermSet）として書き出す。
+ * 表の列が増減したり、意味に記法が入ったりすると、頁は正しいのに
+ * 書き出しだけが壊れる。目視では気づけないので固定する。
+ */
+describe("用語辞典の取り出し", () => {
+  const terms = glossaryTerms();
+
+  it("表の行を 1 つも落とさない", () => {
+    const page = findGuidePage("glossary")!;
+    const rows = page.blocks
+      .filter((b) => b.k === "table")
+      .reduce((n, b) => n + (b as { rows: string[][] }).rows.length, 0);
+    expect(rows).toBeGreaterThan(20);
+    expect(terms.length).toBe(rows);
+  });
+
+  it("記法が平文になっている", () => {
+    // 「**方位ではなく期間の話**」が実際に入っている。JSON へそのまま
+    // 入れるとアスタリスクが検索結果に出る。
+    for (const t of terms) {
+      expect(t.name).not.toMatch(/[*[\]]/);
+      expect(t.description, t.name).not.toMatch(/\*\*|\]\(/);
+      expect(t.description.length).toBeGreaterThan(0);
+    }
+    expect(terms.find((t) => t.name === "天中殺")?.description).toContain(
+      "方位ではなく期間の話",
+    );
+  });
+
+  it("節と読みが行についてくる", () => {
+    // 列の並びは節ごとに違う。物件の節だけ「読み」が無い。
+    const honmei = terms.find((t) => t.name === "本命星");
+    expect(honmei?.reading).toBe("ほんめいせい");
+    expect(honmei?.section).toBe("自分にまつわる言葉");
+    const sqm = terms.find((t) => t.name === "㎡単価");
+    expect(sqm?.reading).toBeUndefined();
+    expect(sqm?.section).toBe("物件探しで出てくる言葉");
+  });
+
+  it("見出し語が重複しない", () => {
+    const names = terms.map((t) => t.name);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("plainText はリンクの文言だけを残す", () => {
+    expect(plainText("先に[日取り](/calendar)を決める")).toBe(
+      "先に日取りを決める",
+    );
+    expect(plainText("**強調**は外す")).toBe("強調は外す");
+    expect(plainText("記法が無い文はそのまま")).toBe("記法が無い文はそのまま");
   });
 });
