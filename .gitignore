@@ -118,9 +118,15 @@ public/robots.txt
 # どちらもファイルは手元に残す。消したいときは各自で消す。
 docs/clippings/
 docs/sessions/
+# 上の *.txt は、**名前が .txt で終わるディレクトリごと**無視する。
+# App Router では URL の綴りがそのままディレクトリ名になるので、
+# /llms.txt のようなルートは中の route.ts ごと消える。
+# `git add -A` が黙って飛ばし、手元では tsc が通るので気付けない
+# （実際に 4 回踏んでいる）。.txt で終わるルートを足したらここへ。
 !src/app/ads.txt/
 !src/app/llms.txt/
 !src/app/llms-full.txt/
+!src/app/indexnow-key.txt/
 
 
 # Data and Logs
