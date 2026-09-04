@@ -75,6 +75,66 @@ function board(hit, caption) {
 const FIGURES = [
   {
     /*
+      ここは方位を塗ってよい数少ない例。八宅の吉方位は本命卦が決まった
+      時点で 4 方位に固定され、年ごとに動かない（記事の主旨）。
+      九星気学のように日や人で変わるものではない。
+    */
+    slug: "feng-shui-and-kigaku-side-by-side",
+    kicker: "引越しの考え方",
+    title: "八宅の吉方位は、<br>4 方位で固定",
+    sub: "本命卦が決まった時点で決まり、年ごとに動きません。ここが九星気学と最も違います。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
+        ${board(["北", "東", "南東", "南"], "東四命（坎・震・巽・離）")}
+        ${board(["北東", "南西", "西", "北西"], "西四命（坤・乾・兌・艮）")}
+        <div class="note" style="max-width:290px">
+          この 2 組しかありません。<b>同じ方位で九星気学と答えが割れるのは普通に起きます。</b>
+          どちらかが間違っているのではなく、見ている規則が違います。
+        </div>
+      </div>`,
+  },
+  {
+    slug: "who-decided-the-prohibitions",
+    kicker: "引越しの考え方",
+    title: "外れたことを、<br>確認しにくい形をしている",
+    sub: "誰か一人が作ったと示す史料はありません。広まり方は、主張の形で説明できます。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:14px;padding:22px 26px;width:400px">
+          <div style="font-size:17px;color:#64748b;font-weight:700">1979 年の天中殺ブーム</div>
+          <div style="margin-top:10px;font-size:38px;font-weight:800;color:#e11d48">300 万部超</div>
+          <div style="margin-top:8px;font-size:17px;color:#475569">
+            関連書 2 冊で。その年のベストセラー 1 位と 2 位
+          </div>
+        </div>
+        <div class="note" style="max-width:330px">
+          <b>「してはいけない」は、守れば何も起きず、破って何も起きなくても「軽く済んだ」と読めます。</b>
+          誰の思惑かという話より、この性質のほうが広まり方をよく説明します。
+        </div>
+      </div>`,
+  },
+  {
+    slug: "why-directions-were-thought-lucky",
+    kicker: "引越しの考え方",
+    title: "当時の条件では、<br>筋の通った推論だった",
+    sub: "方角に良し悪しがあるという発想は、思いつきで生まれたものではありません。",
+    body: `<div style="display:flex;flex-direction:column;gap:11px">
+        ${[
+          "方角は、季節と時刻を測る唯一の物差しだった",
+          "地形と季節風で、方角によって住み心地が実際に違った",
+          "都と屋敷の設計そのものが方位で決まっていた",
+          "説明のつかない不運に、理由を与える枠組みが要った",
+        ]
+          .map(
+            (t, i) => `<div style="display:flex;align-items:center;gap:16px">
+            <div style="width:38px;height:38px;border-radius:50%;background:#e11d48;color:#fff;flex:none;
+                 display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800">${i + 1}</div>
+            <div style="font-size:21px;color:#0f172a">${t}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    /*
       75 日で変わるのは起点だけ。前の移動の判定を消したり足し引きしたり
       する処理は無い、というのが記事の主旨。#950 の「層をまたいだ相殺」
       とは別の話（あちらは年月日の層、こちらは起点）。
