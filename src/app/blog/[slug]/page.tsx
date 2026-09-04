@@ -19,6 +19,7 @@ import { pickRelatedPosts } from "@/lib/blogRelated";
 import { blogTopic } from "@/lib/comments";
 import { DirectionComments } from "@/components/comments/DirectionComments";
 import { SITE_NAME } from "@/lib/siteStructure";
+import { blogImagePath } from "@/lib/blogImage";
 import { SITE_URL } from "@/lib/siteUrl";
 import { extractHeadings } from "@/lib/blogToc";
 
@@ -70,7 +71,7 @@ export async function generateMetadata({
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt,
       tags: post.tags,
-      images: ["/ogp.png"],
+      images: [blogImagePath(post.slug)],
     },
   };
 }
@@ -106,6 +107,7 @@ export default async function BlogPostPage({
         keywords={post.tags}
         datePublished={post.publishedAt}
         dateModified={post.updatedAt}
+        image={blogImagePath(post.slug)}
       />
       <BreadcrumbJsonLd
         items={[
