@@ -21,9 +21,23 @@ declare module "lunar-javascript" {
     getIndex(): number;
   }
 
-  /** 節気表の 1 項目。 */
+  /**
+   * 節気表の 1 項目（中身は Solar）。
+   *
+   * **返る時刻は中国標準時（UTC+8）。**日本時間として読むと 1 時間ずれる
+   * （`__tests__/solarTermTimezone.test.ts` が固定している）。
+   *
+   * 呼ぶものだけ写す（#538 の方針）。年月日時分は、時刻帯の食い違いを
+   * 検査するために要る。
+   */
   export interface JieQiEntry {
     toFullString(): string;
+    getYear(): number;
+    /** 1〜12。JavaScript の Date と違って 0 始まりではない */
+    getMonth(): number;
+    getDay(): number;
+    getHour(): number;
+    getMinute(): number;
   }
 
   /** 大運 1 期ぶん。 */
