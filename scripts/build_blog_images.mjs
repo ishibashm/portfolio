@@ -74,6 +74,94 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 洛書。縦・横・斜めのどれを足しても 15 になる。記事の並びそのまま。 */
+    slug: "why-nine-stars-and-that-order",
+    kicker: "引越しの考え方",
+    title: "九星の並びは、<br>三行三列の魔方陣",
+    sub: "縦・横・斜めのどの列を足しても 15。この配置に方位が乗っています。",
+    body: `<div style="display:flex;gap:36px;align-items:center">
+        <div style="display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(3,64px);gap:6px">
+          ${[4, 9, 2, 3, 5, 7, 8, 1, 6]
+            .map(
+              (
+                n,
+              ) => `<div style="background:#fff;border:1px solid #e2d9d1;border-radius:9px;
+                 display:flex;align-items:center;justify-content:center;
+                 font-size:30px;font-weight:800;color:${n === 5 ? "#e11d48" : "#0f172a"}">${n}</div>`,
+            )
+            .join("")}
+        </div>
+        <div class="note" style="max-width:400px">
+          4+9+2、3+5+7、8+1+6。縦も斜めも同じく <b>15</b>。<br>
+          中国ではこの並びを<b>洛書</b>、方位を割り当てたものを<b>九宮</b>と呼びました。
+          「一白は北」「五黄は中央」は、<b>先に数の配置があって、あとから意味が乗った</b>順序です。
+        </div>
+      </div>`,
+  },
+  {
+    slug: "where-kigaku-and-houi-came-from",
+    kicker: "引越しの考え方",
+    title: "「気学」という名前は<br>大正 13 年から",
+    sub: "古代から途切れずに伝わった一つの体系ではありません。",
+    body: `<div style="display:flex;flex-direction:column;gap:10px">
+        ${[
+          [
+            "律令国家〜平安",
+            "陰陽寮（国の役所）が暦と方角の吉凶を決めた",
+            false,
+          ],
+          ["江戸", "民間の方鑑家が九星の方位判断を広めた", false],
+          ["明治 3〜5 年", "政府が陰陽寮を廃止し、陰陽道を禁じた", false],
+          ["大正 13 年", "園田真次郎が整理して「気学」と名づけた", true],
+          ["昭和後期以降", "出版と放送で一般に広まった", false],
+        ]
+          .map(
+            ([
+              era,
+              what,
+              hit,
+            ]) => `<div style="display:flex;align-items:center;gap:16px">
+            <div style="width:150px;font-size:17px;font-weight:800;text-align:right;
+                 color:${hit ? "#e11d48" : "#64748b"}">${era}</div>
+            <div style="width:10px;height:10px;border-radius:50%;background:${hit ? "#e11d48" : "#cbd5e1"}"></div>
+            <div style="font-size:17px;color:${hit ? "#0f172a" : "#475569"};font-weight:${hit ? 800 : 400}">${what}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    slug: "is-there-statistical-evidence-for-houi",
+    kicker: "データの見方",
+    title: "「確かめられていない」と<br>「効果が無い」は違う",
+    sub: "九星気学の方位判断を対象にした査読付きの検証研究は、確認できた範囲では見当たりません。",
+    body: `<div style="display:flex;gap:20px;align-items:stretch">
+        ${[
+          [
+            "統計学が要求する作法",
+            "母集団を決める／対照群を置く／手続きを先に決める／外れた場合も記録する",
+          ],
+          ["九星気学の成り立ち", "この作法で作られたものではない"],
+          [
+            "言えること",
+            "効果が無いと証明されたのではなく、確かめられていない",
+          ],
+        ]
+          .map(
+            (
+              [head, note],
+              i,
+            ) => `<div style="width:236px;background:#fff;border:1px solid ${
+              i === 2 ? "#e11d48" : "#e2d9d1"
+            };border-radius:14px;padding:18px 20px">
+            <div style="font-size:18px;font-weight:800;color:${i === 2 ? "#e11d48" : "#0f172a"}">${head}</div>
+            <div style="margin-top:8px;font-size:15px;line-height:1.65;color:#475569">${note}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
     /* 9 と 60 の最小公倍数が 180。記事の検算をそのまま帯の長さにする。 */
     slug: "does-bad-direction-last-60-years",
     kicker: "引越しの考え方",
