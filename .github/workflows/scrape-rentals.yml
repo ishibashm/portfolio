@@ -359,6 +359,7 @@ jobs:
           echo "⚠️ Rebuild market stats が失敗した。marketStats.json は更新されていない。" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit area dataset if changed
+        id: commit_area
         run: |
           # prefecturesWithData.json はスキャナーの県プリセットの元になる。
           # 取り込みが進んで新しい県のページが立つと、ここが増えて初めて
@@ -405,6 +406,8 @@ jobs:
                     src/data/marketStats.json
             git commit -m "chore(data): エリア別の家賃相場を更新する"
             if git push origin HEAD:master; then
+              # 押せた晩だけ、後の step（IndexNow）が動く
+              echo "pushed=true" >> "$GITHUB_OUTPUT"
               break
             fi
             # 押す直前に master が進んだ場合だけここに来る。作り直しては
@@ -452,6 +455,17 @@ jobs:
       # 書き写すとその一覧のほうが古くなる（このリポジトリで何度も起きた
       # 型）。全部回す。geocode は既に 1 時間以上かかっており、2〜3 分の
       # 追加は問題にならない。
+      # 集計を押した晩だけ、数字が動いた頁を IndexNow（Bing 系）へ知らせる。
+      # push の後に走らせる（前に送ると古い頁を読みに来る）。比べる相手は
+      # HEAD~1 ＝ 押す前の集計。コミットしなかった晩は pushed が立たないので
+      # 走らない（HEAD~1 が別の変更になり、動いていない頁を送ってしまう）。
+      # 鍵が無い環境では候補を出して終わるだけで、巡回は落とさない。
+      - name: Notify IndexNow of changed pages
+        if: steps.commit_area.outputs.pushed == 'true'
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: npx -y tsx scripts/submit_indexnow.ts --base HEAD~1 --apply
+
       - name: Verify the pushed dataset against the test suite
         id: verify_data
         continue-on-error: true
