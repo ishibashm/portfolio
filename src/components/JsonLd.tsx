@@ -29,6 +29,7 @@ export function ArticleJsonLd({
   keywords,
   datePublished,
   dateModified,
+  image = "/ogp.png",
 }: {
   type?: "Article" | "BlogPosting";
   headline: string;
@@ -37,6 +38,8 @@ export function ArticleJsonLd({
   keywords?: string[];
   datePublished?: string;
   dateModified?: string;
+  /** 記事の代表画像。サイト内の絶対パスで渡す（`/ogp.png` など） */
+  image?: string;
 }) {
   return (
     <Script
@@ -48,6 +51,15 @@ export function ArticleJsonLd({
         inLanguage: "ja",
         url: `${BASE}${path}`,
         mainEntityOfPage: { "@type": "WebPage", "@id": `${BASE}${path}` },
+        /*
+          代表画像。Article に image が無いと、Google は記事に紐づく画像を
+          持たない。og:image は共有カード用の別の口なので、そちらだけでは
+          構造化データ側は空のままになる。
+
+          既定は全頁共通の /ogp.png（1200×630）。**記事ごとに違う画像を
+          持たせるまでは、Discover でこの記事を他と区別する材料が無い。**
+        */
+        image: `${BASE}${image}`,
         publisher: { "@id": `${BASE}/#organization` },
         author: { "@id": `${BASE}/#organization` },
         isAccessibleForFree: true,

@@ -83,6 +83,26 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: ["/ogp.png"],
   },
+  /*
+    画像プレビューの上限。**指定が無いときの既定は standard**（小さな
+    サムネイル）で、Google Discover は large を条件に挙げている。
+    Discover は画像で読ませる面なので、この 1 行が無いと内容と関係なく
+    載らない。
+
+    noindex を出している頁（市区町村の未執筆分・ログイン後の画面など）は
+    頁側の robots が優先されるので、ここで index を名乗っても戻らない。
+  */
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,
   },
