@@ -68,6 +68,7 @@ import {
 } from "@/utils/tierDisplay";
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
+import { truncationNotice } from "@/lib/arbitrageCounts";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -161,7 +162,23 @@ interface ArbitrageMapInnerProps {
    * 断りを出すためのフラグとして受け取る。
    */
   prefCountsFiltered?: boolean;
-  /** 地図の表示範囲に入る掲載件数（名寄せ前）。null なら出さない */
+  /**
+   * この検索範囲にある候補の総数（名寄せ後）。DB が数えた実数で、
+   * 地図が持っている 500 件の窓とは別。null なら出さない。
+   */
+  rangeUniqueCount?: number | null;
+  /** その総数のうち、実際に評価できた件数（窓の大きさ） */
+  rangeAnalyzedCount?: number | null;
+  /**
+   * 窓に当たって打ち切られたか。
+   *
+   * **true のとき、地図は範囲の一部しか描いていない。**候補の切り出しは
+   * 面積あたり家賃の安い順（既定の "value"）なので、広い範囲を映すほど
+   * 窓はその中でいちばん安い一角に埋まる。地図の大半が空に見えるのは
+   * そのためで、「そこに物件が無い」からではない。**その区別が画面に
+   * 出ていないと、利用者は空白を「無い」と読む**（利用者の報告）。
+   */
+  rangeTruncated?: boolean;
   /**
    * 地図の空きを押したときに、その地点を判定へ送る。
    *
@@ -400,6 +417,9 @@ export default function ArbitrageMapInner({
   kigakuUnavailableReason,
   prefCounts: prefCountsProp,
   prefCountsFiltered = false,
+  rangeUniqueCount = null,
+  rangeAnalyzedCount = null,
+  rangeTruncated = false,
   onInspectSpot,
   targetDate,
   hasBase = false,
@@ -673,6 +693,21 @@ export default function ArbitrageMapInner({
   }, [properties, currentBounds]);
 
   const visibleCount = visibleProperties.length;
+
+  /* 窓に当たっているかの判定は lib に 1 つだけ置く（同じ条件を画面と
+     検査の 2 か所に書かない）。 */
+  const truncation = useMemo(
+    () =>
+      truncationNotice({
+        matched: rangeUniqueCount,
+        analyzed: rangeAnalyzedCount ?? 0,
+        truncated: rangeTruncated,
+        duplicatesHidden: 0,
+        staleHidden: 0,
+        staleDays: null,
+      }),
+    [rangeUniqueCount, rangeAnalyzedCount, rangeTruncated],
+  );
 
   /*
     個別ピンを描く対象。**画面の外の物件までピンを作っていた。**
@@ -1225,7 +1260,11 @@ export default function ArbitrageMapInner({
             候補（名寄せ・絞り込み後、上限500件）を同じ矩形で数えるので、
             一覧の「候補のうち範囲内」と必ず一致する。通信も減る。 */}
         {hasBase && zoom >= 10 && (
-          <div className="absolute bottom-4 lg:bottom-auto lg:top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur rounded-full shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[min(90%,22rem)]">
+          <div
+            className={`absolute bottom-4 lg:bottom-auto lg:top-4 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none bg-white/85 backdrop-blur shadow-lg border border-stone-200 px-3.5 py-1.5 text-center max-w-[min(90%,22rem)] ${
+              truncation ? "rounded-2xl" : "rounded-full"
+            }`}
+          >
             <div className="text-[10px] text-stone-600">
               この範囲の候補
               <b className="mx-1 font-mono text-sm text-indigo-700">
@@ -1233,6 +1272,27 @@ export default function ArbitrageMapInner({
               </b>
               件
             </div>
+            {/* 窓に当たっているときは、地図が範囲の一部しか描いていない。
+                黙って空に見せると「そこに物件が無い」と読まれる（空の
+                方位を理由つきで出すのと同じ考え方）。 */}
+            {truncation && (
+              <div className="text-[9px] leading-snug text-stone-500 mt-0.5">
+                {truncation.rangeTotal !== null && (
+                  <>
+                    {"この範囲には "}
+                    <b className="font-mono text-stone-700">
+                      {truncation.rangeTotal.toLocaleString()}
+                    </b>
+                    {" 件あります。"}
+                  </>
+                )}
+                {"安い順に "}
+                {truncation.analyzed.toLocaleString()}
+                {
+                  " 件だけを見ているので、地図の空白は「物件が無い」ではありません。"
+                }
+              </div>
+            )}
           </div>
         )}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 max-h-[calc(100%-2rem)] overflow-y-auto">

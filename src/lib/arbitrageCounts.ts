@@ -79,3 +79,40 @@ export function buildScanCounts(
     staleDays: nonNegative(metadata?.maxSeenDays) || null,
   };
 }
+
+/**
+ * 地図に「窓に当たっている」断りを出すか。出すなら何を書くか。
+ *
+ * ## なぜ要るか（利用者の報告、2026-09-04）
+ *
+ * 「物件が俯瞰で見ると数が出てこない」。地図には現在地の横に小さな
+ * 塊が出るだけで、あとは一面の空白だった。
+ *
+ * 空白の理由は「そこに物件が無い」ではない。候補を DB から切り出す
+ * 窓は**面積あたり家賃の安い順**（既定の "value" ＝ `sqm_rent ASC`）で
+ * 上限 500 件なので、広い範囲を映すほど窓はその中でいちばん安い一角に
+ * 埋まる。残りの地域は、物件が無いのではなく**見ていない**。
+ *
+ * 画面に出ていたのは「この範囲の候補 N 件」だけで、
+ *
+ *   ・その範囲に実際は何件あるのか
+ *   ・窓に当たっているのか
+ *
+ * のどちらも無かった。**区別が付かないまま空白を見せると「無い」と
+ * 読まれる。**市区町村ページで空の方位を理由つきで出すのと同じ考え方で、
+ * 理由のほうを出す。
+ *
+ * 打ち切られていないときは何も出さない。そのときの N は全部なので、
+ * 断りを足すとかえって読み手を迷わせる。
+ */
+export interface TruncationNotice {
+  /** その範囲にある候補の総数（名寄せ後）。分からなければ null。 */
+  rangeTotal: number | null;
+  /** そのうち実際に評価した件数（窓の大きさ）。 */
+  analyzed: number;
+}
+
+export function truncationNotice(counts: ScanCounts): TruncationNotice | null {
+  if (!counts.truncated) return null;
+  return { rangeTotal: counts.matched, analyzed: counts.analyzed };
+}

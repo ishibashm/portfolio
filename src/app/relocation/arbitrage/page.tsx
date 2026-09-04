@@ -4150,6 +4150,12 @@ export default function ArbitrageScannerPage() {
               kigakuUnavailableReason={kigakuUnavailableReason}
               prefCounts={livePrefCounts ?? undefined}
               prefCountsFiltered={livePrefCounts !== null}
+              /* 窓（上限 500 件）に当たっているかどうかを地図にも渡す。
+                 一覧の側だけが知っていて、地図は空白の理由を出せて
+                 いなかった（利用者の報告：俯瞰で物件の数が出てこない）。 */
+              rangeUniqueCount={scanCounts.matched}
+              rangeAnalyzedCount={scanCounts.analyzed}
+              rangeTruncated={scanCounts.truncated}
               onInspectSpot={(lat, lon) =>
                 setSpotRequest((prev) => ({
                   lat,
