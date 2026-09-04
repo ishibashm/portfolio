@@ -56,12 +56,13 @@ figure{text-align:center}
 figcaption{font-size:18px;color:#475569;margin-top:9px;font-weight:700}
 `;
 
-/** 八方位の盤。hit に入れた方位だけ塗る。 */
+/** 八方位の盤。hit に入れた方位だけ塗る（1 つでも複数でもよい）。 */
 function board(hit, caption) {
+  const hits = Array.isArray(hit) ? hit : [hit];
   const cells = ["北西", "北", "北東", "西", "中", "東", "南西", "南", "南東"]
     .map((d) => {
       if (d === "中") return `<div class="c mid">中</div>`;
-      return `<div class="c${d === hit ? " hit" : ""}">${d}</div>`;
+      return `<div class="c${hits.includes(d) ? " hit" : ""}">${d}</div>`;
     })
     .join("");
   return `<figure><div class="g">${cells}</div><figcaption>${caption}</figcaption></figure>`;
@@ -72,6 +73,85 @@ function board(hit, caption) {
  * 画像のために新しい主張を作らない（記事と食い違う）。
  */
 const FIGURES = [
+  {
+    /*
+      数字は記事の表と `lib/directionDistance.ts` の実測から。距離 ×
+      tan(22.5 度) がそのまま「隣の方位に変わるまでの横ずれ」になる。
+    */
+    slug: "how-much-does-distance-matter",
+    kicker: "データの見方",
+    title: "近いほど、方位は<br>ピンの置き方で決まる",
+    sub: "方位は角度なので、短い移動ほど境目までの余裕が小さくなります。",
+    body: `<div style="display:flex;flex-direction:column;gap:9px">
+        ${[
+          ["0.5km", "207m", 6],
+          ["1km", "414m", 12],
+          ["5km", "2,071m", 60],
+          ["30km", "12.4km", 300],
+        ]
+          .map(
+            ([
+              km,
+              shift,
+              w,
+            ]) => `<div style="display:flex;align-items:center;gap:14px">
+            <div style="width:62px;font-size:19px;font-weight:800;color:#334155;text-align:right">${km}</div>
+            <div style="width:${w}px;height:26px;border-radius:5px;background:#e11d48"></div>
+            <div style="font-size:19px;color:#475569">${shift}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note"><b>住所から出す座標の誤差は数百 m。</b>1〜2km 以下では、移動そのものより誤差のほうが方位を決めます。</div>`,
+  },
+  {
+    slug: "year-board-blocks-a-whole-year",
+    kicker: "引越しの考え方",
+    title: "年盤が塞ぐ方位は、<br>1 年動かない",
+    sub: "月や日をどう選んでも、年盤の判定は変わりません。",
+    body: `<div>
+        <div style="display:flex;gap:4px">
+          ${Array.from({ length: 12 })
+            .map(
+              (_, i) => `<div style="width:44px">
+              <div style="height:44px;border-radius:6px;background:#e11d48"></div>
+              <div style="margin-top:6px;font-size:14px;color:#64748b;text-align:center">${i + 1}月</div>
+            </div>`,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="note" style="max-width:280px"><b>引き渡し日と入居日は別です。</b>方位が効くのは生活の拠点を移す移動なので、入居をずらせる場合があります。</div>`,
+  },
+  {
+    slug: "doyou-and-doyousatsu",
+    kicker: "引越しの考え方",
+    title: "土用は期間、土用殺は方位",
+    sub: "名前は似ていますが、効き方が違います。",
+    body: `<div style="display:flex;gap:44px;align-items:flex-start">
+        <div>
+          <div style="font-size:19px;font-weight:800;color:#334155;margin-bottom:10px">土用（期間）</div>
+          <div style="display:flex;gap:3px">
+            ${Array.from({ length: 24 })
+              .map(
+                (_, i) =>
+                  `<div style="width:11px;height:56px;border-radius:3px;background:${
+                    i % 6 === 1 ? "#e11d48" : "#e7ded6"
+                  }"></div>`,
+              )
+              .join("")}
+          </div>
+          <div style="margin-top:12px;font-size:17px;color:#64748b">年 4 回・各 18 日ほど。<br>合わせて 1 年の約 2 割</div>
+        </div>
+        <div>
+          <div style="font-size:19px;font-weight:800;color:#334155;margin-bottom:10px">土用殺（方位）</div>
+          ${board(
+            ["南東", "南西", "北西", "北東"],
+            "季節ごとに四隅を 1 つずつ",
+          )}
+        </div>
+      </div>`,
+  },
   {
     slug: "can-you-recover-from-honmei-teki",
     kicker: "引越しの考え方",
