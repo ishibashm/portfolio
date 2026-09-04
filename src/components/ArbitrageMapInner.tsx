@@ -69,6 +69,10 @@ import {
 import prefecturesWithData from "@/data/prefecturesWithData.json";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
 import { truncationNotice } from "@/lib/arbitrageCounts";
+import {
+  parseMunicipalityListings,
+  type MunicipalityListing,
+} from "@/utils/areaDatasetMerge";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
@@ -446,6 +450,17 @@ export default function ArbitrageMapInner({
   const isOverview = zoom < OVERVIEW_ZOOM_MAX;
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [geoData, setGeoData] = useState<FeatureCollection | null>(null);
+  /**
+   * 地の分布。毎晩の集計＝その日の掲載を全部数えた値（#935）。
+   *
+   * **候補（安い順 500 件の窓）とは別物。**窓は広い範囲を映すほど
+   * いちばん安い一角に埋まるので、それだけを描くと残りが空白になり
+   * 「物件が無い」と読まれる（利用者の報告）。こちらは絞り込みとも
+   * 窓とも無関係なので、視界の全域が埋まる。
+   */
+  const [baseDistribution, setBaseDistribution] = useState<
+    MunicipalityListing[] | null
+  >(null);
   const { mapTheme, toggleMapTheme } = useMapTheme();
   /**
    * 扇形を描くか。
@@ -637,6 +652,32 @@ export default function ArbitrageMapInner({
     };
   }, [zoom, geoData]);
 
+  /*
+    地の分布（34.8 KB）はバブルの帯（zoom < 12）でしか要らない。県の輪郭
+    （141 KB）と同じく、そこに入って初めて読み、一度読んだら持ち続ける。
+    開いた時点で落とすと、出発地の周りを見るだけの利用者にも払わせる。
+  */
+  useEffect(() => {
+    if (zoom >= 12 || baseDistribution) return;
+    let alive = true;
+    fetch("/municipalityListings.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("municipalityListings.json を読めない");
+        return res.json();
+      })
+      .then((data) => {
+        if (alive) setBaseDistribution(parseMunicipalityListings(data));
+      })
+      .catch((err) => {
+        // 読めなくても地図は壊さない。地の分布が出ないだけ。
+        console.error("地の分布を読めなかった:", err);
+        if (alive) setBaseDistribution([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [zoom, baseDistribution]);
+
   // 県別の色分けと件数ラベルの元。
   //
   // 以前は API が返した properties（安い順・最大 500 件）を県名で数えて
@@ -825,6 +866,28 @@ export default function ArbitrageMapInner({
       properties: g.properties,
     }));
   }, [properties, zoom]);
+
+  /**
+   * 画面に入る地の分布。バブルの帯（zoom 10〜11）でだけ描く。
+   *
+   * ズーム 12 以上は物件のピンが出るので、地の分布は要らない（下に
+   * 敷くと、どの丸が物件なのか読めなくなる）。10 未満は県の塗り分けに
+   * 変わるので、こちらも要らない。
+   */
+  const visibleBaseDistribution = useMemo(() => {
+    if (!baseDistribution || zoom < 10 || zoom >= 12) return [];
+    if (!currentBounds) return [];
+    const latPad = (currentBounds.maxLat - currentBounds.minLat) * 0.25;
+    const lonPad = (currentBounds.maxLon - currentBounds.minLon) * 0.25;
+    return baseDistribution.filter(
+      (m) =>
+        m.count > 0 &&
+        m.lat >= currentBounds.minLat - latPad &&
+        m.lat <= currentBounds.maxLat + latPad &&
+        m.lon >= currentBounds.minLon - lonPad &&
+        m.lon <= currentBounds.maxLon + lonPad,
+    );
+  }, [baseDistribution, currentBounds, zoom]);
 
   const maxPrefOrBubbleCount = useMemo(() => {
     let max = 0;
@@ -1849,6 +1912,54 @@ export default function ArbitrageMapInner({
             見る段では邪魔になる。俯瞰でも近景でも同じボタンで効く */}
         {hasBase && showSectors && sectorLayers}
 
+        {/* 地の分布。候補より先に描いて下に敷く。
+
+            **候補（安い順 500 件の窓）だけを描くと、広い範囲では
+            いちばん安い一角にしか丸が出ず、残りが空白になる。**空白は
+            「物件が無い」ではなく「見ていない」なのに、画面からは区別が
+            付かなかった（利用者の報告：物件が俯瞰で見ると数が出てこない）。
+
+            こちらは毎晩の集計＝その日の掲載を全部数えた値なので、絞り込みと
+            窓のどちらとも無関係に、掲載のある市区町村が全部出る。
+
+            **色は付けない。**この地図には既に 2 つの色の意味（方位の吉凶、
+            候補の件数）が乗っている。3 つ目を足すと「この色は何？」に
+            なるので、灰色で厚みだけを見せる。 */}
+        {visibleBaseDistribution.map((m) => {
+          // 実数は 20,099 件まで開くので対数で潰す。
+          const r = Math.max(3, Math.min(20, 2 + Math.log2(m.count) * 1.8));
+          return (
+            <CircleMarker
+              key={`base-${m.code}`}
+              center={[m.lat, m.lon]}
+              radius={r}
+              pathOptions={{
+                color: "#64748b",
+                fillColor: "#64748b",
+                fillOpacity: 0.14,
+                weight: 1,
+                opacity: 0.35,
+              }}
+            >
+              <Popup>
+                <div className="font-sans text-xs text-gray-900 p-2 min-w-[150px]">
+                  <div className="flex justify-between gap-3">
+                    <span className="text-stone-600">この市区町村の掲載:</span>
+                    <span className="font-bold text-gray-900">
+                      {m.count.toLocaleString()}件
+                    </span>
+                  </div>
+                  <div className="text-[9px] text-stone-500 mt-2 leading-snug">
+                    {
+                      "毎晩の集計です。いまの絞り込みや、地図が出している候補とは別の数字になります。"
+                    }
+                  </div>
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
+
         {/* Viewport content based on Zoom and Heatmap/Cluster/Pin State */}
         {zoom >= 10 &&
           (showHeatmap && visibleCount > 100
@@ -2217,6 +2328,24 @@ export default function ArbitrageMapInner({
               <span>0</span>
             </div>
           </div>
+          {/* 新しい印を黙って足さない。灰色の丸が何なのかを書く。
+              空の方位を理由つきで出すのと同じ考え方。 */}
+          {visibleBaseDistribution.length > 0 && (
+            <div className="flex items-start gap-1.5 border-t border-stone-200 pt-1.5 w-full">
+              <span
+                className="mt-0.5 inline-block w-2.5 h-2.5 shrink-0 rounded-full border"
+                style={{
+                  backgroundColor: "rgba(100,116,139,0.14)",
+                  borderColor: "rgba(100,116,139,0.35)",
+                }}
+              />
+              <span className="text-[7.5px] leading-tight text-stone-600">
+                {
+                  "灰色の丸は、その市区町村の掲載（毎晩の集計）。色の丸とは別の数字です"
+                }
+              </span>
+            </div>
+          )}
         </div>
       )}
 
