@@ -25,6 +25,8 @@
  *   src/components/nba  … ホーム(SolarTimeClock)とシミュレータが使っている
  */
 
+import type { Metadata } from "next";
+
 /**
  * 中核ルートの群。引越しの意思決定は「どこへ・いつ・いくら」の 3 つの
  * 問いでできているので、ナビもホームもこの 3 群で見せる。
@@ -256,3 +258,36 @@ export function activeNavHref(
   }
   return best;
 }
+
+/**
+ * 索引に載せる頁の robots。
+ *
+ * **頁側で robots を宣言すると、layout.tsx の設定は丸ごと上書きされる。**
+ * `max-image-preview: large` もそこで消える。実際に、市区町村ページのうち
+ * 文章を書いて索引に戻した 225 頁が、頁側の
+ * `robots: { index: ..., follow: true }` によって large を落としていた
+ * （生成した HTML で確認。/blog は large が付き、/houi/area/47362 は
+ * `index, follow` だけだった）。
+ *
+ * Search Console の実測ではクリックが付いた頁の半分が市区町村頁なので、
+ * いちばん効く場所が抜けていたことになる。index を名乗る頁は必ずこれを使う。
+ *
+ * 索引に載せない頁は preview の指定に意味が無いので、follow だけを持たせる。
+ */
+export const INDEXED_ROBOTS: Metadata["robots"] = {
+  index: true,
+  follow: true,
+  googleBot: {
+    index: true,
+    follow: true,
+    "max-image-preview": "large",
+    "max-snippet": -1,
+    "max-video-preview": -1,
+  },
+};
+
+/** 索引に載せない頁の robots。リンクは辿らせる。 */
+export const NOINDEX_ROBOTS: Metadata["robots"] = {
+  index: false,
+  follow: true,
+};

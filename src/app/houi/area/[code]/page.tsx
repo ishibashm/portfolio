@@ -23,6 +23,7 @@ import { DatasetJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
 import { prefCodeByName } from "@/lib/prefContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
+import { INDEXED_ROBOTS, NOINDEX_ROBOTS } from "@/lib/siteStructure";
 
 /**
  * 「○○市から見た方位別のエリアと相場」。
@@ -82,7 +83,13 @@ export async function generateMetadata({
       一括で戻すのではないので、上の「スケーリングされたコンテンツ」に
       当たらない。表に無い市区町村は今までどおり noindex のまま。
     */
-    robots: { index: Boolean(AREA_EDITORIAL[area.code]), follow: true },
+    /*
+      **頁側で robots を宣言すると layout.tsx の設定は丸ごと上書きされる。**
+      以前ここは `{ index: ..., follow: true }` を直に書いていたため、
+      索引に戻した頁が `max-image-preview: large` を落としていた。
+      定義は siteStructure に 1 つだけ置いてある。
+    */
+    robots: AREA_EDITORIAL[area.code] ? INDEXED_ROBOTS : NOINDEX_ROBOTS,
     openGraph: {
       images: ["/ogp.png"], title, description, type: "article" },
   };
