@@ -140,12 +140,25 @@ jobs:
             # **id の異なり数**で数える。grep -c は行数なので、HTML が
             # 1 行で来ると常に 1 になる（実際にそうなった）。RSC の
             # ペイロードにも同じ属性が載るので、重複も畳む必要がある。
-            ids() { echo "$BODY" | grep -o "$1=\"[^\"]*\"" | sed "s/.*=\"//;s/\"//" | sort -u; }
+            #
+            # 1 件も無いとき grep は 1 で終わる。`bash -e` と pipefail の
+            # 下では、それだけで**このステップが exit 1 で落ちる**。
+            # 実際に落ちた（2026-09-04、デプロイ直後）。上のコメントに
+            # 「落ちていても監査は失敗させない」と書いてあるのに、
+            # 0 件という一番知りたい状態でだけ、理由も出さずに赤くなる。
+            # grep の 1 は「無かった」であって失敗ではないので飲む。
+            ids() { { echo "$BODY" | grep -o "$1=\"[^\"]*\"" || true; } | sed "s/.*=\"//;s/\"//" | sort -u; }
             ALIVE=$(ids data-feed-source | tr '\n' ' ')
             DOWN=$(ids data-feed-down | tr '\n' ' ')
-            echo "見出しを出せている: $(echo $ALIVE | wc -w) 件 — $ALIVE" | tee -a "$GITHUB_STEP_SUMMARY"
+            N_ALIVE=$(echo $ALIVE | wc -w)
+            echo "見出しを出せている: $N_ALIVE 件 — $ALIVE" | tee -a "$GITHUB_STEP_SUMMARY"
             if [ -n "$(echo $DOWN | tr -d ' ')" ]; then
               echo "取得できていない: $(echo $DOWN | wc -w) 件 — $DOWN" | tee -a "$GITHUB_STEP_SUMMARY"
+            elif [ "$N_ALIVE" -eq 0 ]; then
+              # デプロイ直後はこうなる。ビルド時（CI は外に出られない）に
+              # 焼いた静的 HTML が出ていて、まだ再生成されていない状態。
+              # 数分で埋まるので、ここも失敗にはしない。
+              echo "配信元の印が 1 つも無い。デプロイ直後で再生成前か、取得が全滅している" | tee -a "$GITHUB_STEP_SUMMARY"
             else
               echo "全部の配信元から見出しが出ている" | tee -a "$GITHUB_STEP_SUMMARY"
             fi
