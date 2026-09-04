@@ -269,13 +269,6 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     note: "業界三大紙の一つ。公共事業・技術開発・災害復旧の動き",
   },
   {
-    id: "s-housing",
-    name: "新建ハウジング",
-    feedUrl: "https://www.s-housing.jp/feed",
-    siteUrl: "https://www.s-housing.jp/",
-    note: "工務店・住宅実務者向けの業界メディア。制度改正や工法の動き",
-  },
-  {
     id: "itmedia-built",
     name: "BUILT（ITmedia）",
     /*
@@ -293,6 +286,18 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
 
 /** フィードの無い媒体・データベース。リンク集として載せる。 */
 export const NEWS_LINKS: readonly LinkSource[] = [
+  /*
+    2026-09-04、フィードから移した。`/feed` が 403 を返すようになり、
+    `probe_news_feeds` で `/feed/` `/rss.xml` `/index.xml` `/atom.xml`
+    `?feed=rss2` を当たったが**全部 403**、サイトの HTML もフィードを
+    宣言していない（run 33926673112）。相手が断っているので、
+    **名乗りを変えて通そうとはしない。**読める入口だけ残す。
+  */
+  {
+    name: "新建ハウジング",
+    url: "https://www.s-housing.jp/",
+    note: "工務店・住宅実務者向けの業界メディア。制度改正や工法の動き",
+  },
   {
     name: "不動産情報ライブラリ（国土交通省）",
     url: "https://www.reinfolib.mlit.go.jp/",

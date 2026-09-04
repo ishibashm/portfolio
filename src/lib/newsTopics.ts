@@ -167,7 +167,6 @@ export const SOURCE_TOPICS: Record<string, NewsTopic> = {
   "suumo-journal": "rent",
   kensetsunews: "building",
   decn: "building",
-  "s-housing": "building",
   "itmedia-built": "building",
 };
 

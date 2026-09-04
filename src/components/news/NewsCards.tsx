@@ -63,7 +63,6 @@ const SOURCE_TONES: Record<string, string> = {
   "suumo-journal": "bg-emerald-500",
   kensetsunews: "bg-emerald-600",
   decn: "bg-emerald-600",
-  "s-housing": "bg-emerald-500",
   "itmedia-built": "bg-teal-500",
 };
 
