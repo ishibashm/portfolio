@@ -3,7 +3,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Clock3 } from "lucide-react";
 import { BlogArticleBody } from "@/components/blog/BlogArticleBody";
-import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import {
+  ArticleJsonLd,
+  BreadcrumbJsonLd,
+  FaqJsonLd,
+} from "@/components/JsonLd";
+import { extractFaq, hasEnoughFaq } from "@/lib/articleFaq";
 import { AdBanner } from "@/components/ads/AdBanner";
 import {
   getBlogPosts as getMarkdownBlogPosts,
@@ -84,6 +89,12 @@ export default async function BlogPostPage({
   // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
   const related = pickRelatedPosts(post, await loadBlogPosts());
   const headings = extractHeadings(post.body);
+  /*
+    問いの形の見出しと直後の段落を組にして FAQPage に出す。**本文から
+    取るだけ**で、構造化データのために書き足さない（lib/articleFaq）。
+    2 組そろわない記事では出さない。
+  */
+  const faq = extractFaq(post.body);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#faf7f5] via-[#f5efe9] to-[#f0e9e1] text-slate-900">
@@ -102,6 +113,7 @@ export default async function BlogPostPage({
           { name: post.title, path },
         ]}
       />
+      {hasEnoughFaq(faq) && <FaqJsonLd items={faq} />}
 
       <main className="mx-auto max-w-[1700px] px-5 py-10 md:py-14">
         <nav className="text-xs text-slate-500">
