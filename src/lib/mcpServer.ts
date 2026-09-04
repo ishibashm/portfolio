@@ -376,12 +376,17 @@ export function createMcpServer(): McpServer {
       const cap = perDirection ?? 8;
       const groups = neighboursByDirection(origin);
       const empties = emptyDirections(origin);
+      /* too_close を dead_end より先に見る。**順番を入れ替えると、
+         すぐ隣に街のある方位が行き止まりとして出る**（areaContent の
+         hasNearMunicipality の註）。 */
       const kind = (e: (typeof empties)[number]) =>
         e.hasBeyondRange
           ? "far_only"
           : e.hasAnyMunicipality
             ? "no_listings"
-            : "dead_end";
+            : e.hasNearMunicipality
+              ? "too_close"
+              : "dead_end";
       return text({
         origin: {
           code: origin.code,
@@ -415,8 +420,11 @@ export function createMcpServer(): McpServer {
               ? "全国 1,894 市区町村の位置で確かめて、どの距離にも市区町村が無い（海や山で陸が尽きる）"
               : kind(e) === "no_listings"
                 ? "市区町村は実在するが、賃貸の掲載をまだ集計できていない。行き止まりではない"
-                : "150km より先には掲載のある市区町村がある",
+                : kind(e) === "too_close"
+                  ? "市区町村は実在するが 5km 未満で、方位が定まらないため一覧から外れている。行き止まりではない"
+                  : "150km より先には掲載のある市区町村がある",
           nearestUnlisted: e.nearestUnlisted,
+          nearestTooClose: e.nearestTooClose,
         })),
       });
     },

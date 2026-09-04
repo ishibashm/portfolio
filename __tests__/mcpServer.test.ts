@@ -130,6 +130,32 @@ describe("MCP サーバー", () => {
     );
   });
 
+  it("近すぎて外れている方位を too_close として返す", async () => {
+    /* 2026-09-04。kind は直したのに meaning の分岐を足し忘れ、
+       too_close が far_only の文言（「150km より先には掲載のある市区
+       町村がある」）で出ていた。**分岐を 1 つ足すたびに、同じ値で
+       分岐している所を全部見る。**
+
+       与那原町の南は南城市が 3.7km 先にある。5km 未満なので一覧から
+       外れるが、行き止まりではない。 */
+    const c = await connect();
+    const a = parse(
+      await c.callTool({
+        name: "area_directions",
+        arguments: { code: "47348" },
+      }),
+    );
+    const south = a.emptyDirections.find(
+      (e: { direction: string }) => e.direction === "S",
+    );
+    expect(south.kind).toBe("too_close");
+    expect(south.meaning).toContain("行き止まりではない");
+    expect(south.meaning).not.toContain("150km より先");
+    expect(
+      south.nearestTooClose.map((u: { city: string }) => u.city),
+    ).toContain("南城市");
+  });
+
   it("prefecture_summary はコードでも県名でも引ける", async () => {
     const c = await connect();
     const byCode = parse(

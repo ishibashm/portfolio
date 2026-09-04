@@ -123,8 +123,14 @@ export default async function Page({
   const empty = emptyDirections(area);
   /* 3 通りに分かれる。取り違えると「街が無い」と嘘をつく（#832〜#835）。
      実測では空の 709 方位が 遠いだけ 114 / 掲載漏れ 368 / 行き止まり 227 */
+  /* **4 通りある。**2026-09-04 まで 3 通りで分けており、4 つ目
+     （近すぎて外れているだけ）を行き止まりに混ぜていた。すぐ隣に街の
+     ある 6 方位に「海や山で陸が尽きています」と出していた。 */
+  const tooClose = empty.filter(
+    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality && e.hasNearMunicipality,
+  );
   const deadEnd = empty.filter(
-    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality,
+    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality && !e.hasNearMunicipality,
   );
   const notListed = empty.filter(
     (e) => !e.hasBeyondRange && e.hasAnyMunicipality,
@@ -279,6 +285,28 @@ export default async function Page({
               。海や山で陸が尽きています。掲載の有無ではなく
               <b>全国 1,894 市区町村の位置で確かめた</b>
               結果なので、暦の上でこの方位が吉に出ても引越し先はありません。別の方位で探すことになります。
+            </p>
+          )}
+          {tooClose.length > 0 && (
+            <p className="mt-2 rounded-xl border border-violet-200 bg-violet-50/80 px-3 py-2 text-xs leading-relaxed text-violet-900">
+              <b>
+                近すぎて一覧から外れている方位:{" "}
+                {tooClose.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
+              </b>
+              。
+              {tooClose
+                .map(
+                  (e) =>
+                    `${DIRECTION_LABELS[e.direction]}は${e.nearestTooClose
+                      .map((n) => `${n.city}（${n.distanceKm}km）`)
+                      .join("、")}`,
+                )
+                .join("、")}
+              があります。
+              <b>行き止まりではありません。</b>
+              {
+                "この一覧は 5km 未満を外しています。距離が近いほど八方位のどこに当たるかが代表点のわずかな差で変わるためで、街が無いという意味ではありません。"
+              }
             </p>
           )}
           {notListed.length > 0 && (
