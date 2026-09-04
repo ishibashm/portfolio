@@ -389,6 +389,8 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/47212",
   "/houi/area/47213",
   "/houi/area/47215",
+  "/houi/area/47327",
+  "/houi/area/47350",
 ];
 
 /** @type {import('next-sitemap').IConfig} */
