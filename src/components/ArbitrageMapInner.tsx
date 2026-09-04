@@ -1906,6 +1906,27 @@ export default function ArbitrageMapInner({
                         </div>
                       </Popup>
                     </CircleMarker>
+                    {/* 件数を丸の上に書く。**押さないと数が出なかった。**
+                        すぐ下のクラスター表示は白丸に数字を出しているのに、
+                        広域のバブルだけ色しか無く、数は Popup の中だった
+                        （利用者の報告：物件が俯瞰で見ると数が出てこない）。
+
+                        interactive を false にして、クリックは下の
+                        CircleMarker へ通す。ここを押せるようにすると
+                        Popup が開かなくなる。 */}
+                    <Marker
+                      position={[muni.lat, muni.lon]}
+                      icon={L.divIcon({
+                        className: "custom-div-icon",
+                        // 空中写真の上でも読めるよう、白抜きに濃い影を敷く。
+                        // 大きさは 10px（極小フォントを読める大きさへ
+                        // 引き上げた #218〜 の方針に合わせる）。
+                        html: `<div class="font-mono text-[10px] font-bold text-white text-center leading-none pointer-events-none" style="text-shadow: 0 0 3px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.95);">${muni.count.toLocaleString()}</div>`,
+                        iconSize: [56, 12],
+                        iconAnchor: [28, 6],
+                      })}
+                      interactive={false}
+                    />
                   </React.Fragment>
                 );
               })
