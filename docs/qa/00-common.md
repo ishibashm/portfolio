@@ -152,18 +152,18 @@
 
 | URL | 画面 |
 |---|---|
-| `/dashboard` | 全機能ランチャー |
-| `/metaphysical` | 次の行動の提案ダッシュボード |
-| `/trends` | 株価・技術トレンド |
-| `/rentals` | 旧・物件一覧 |
 | `/relocation/history` | 過去の判定履歴 |
-| `/visualizer` | ビジュアライザ |
-| `/x-viewer` | X（旧Twitter）閲覧 |
-| `/research` | レポート生成 |
-| `/extract` | 記事抽出 |
-| `/agent-log` | 実行ログ |
-| `/ceremonial-sample` | 冠婚葬祭の試作 |
+| `/admin` | 管理画面（さらに管理者のメールでの照合あり） |
 | `/omni` | ※画面は無く、API名として残っているだけ |
+
+**画面は 2 つだけです。**以前ここには `/dashboard`・`/metaphysical`・`/trends`・
+`/rentals`・`/visualizer`・`/x-viewer`・`/research`・`/extract`・`/agent-log`・
+`/ceremonial-sample` も並んでいましたが、どれも 2026-08-07 に削除されて 404 です
+（[README 3-5](./README.md#3-5-削除された画面2026-08-07)）。
+
+保護対象は `src/utils/supabase/routeAccess.ts` の `PROTECTED_ROUTE_PREFIXES`
+（＝ `src/lib/siteStructure.ts` の非中核ルート ＋ `/omni`）です。**画面を増減
+させたらここも直してください。**
 
 > **判定は「前方一致」です。**
 > `/relocation/history` は保護対象ですが、`/relocation/arbitrage` は対象外です。
@@ -175,7 +175,7 @@
 |---|---|
 | 未ログインで保護画面を開いた | `/login?next=（開こうとしたURL＋検索条件）` |
 | ログイン済みだが許可されていないメール | `/login?error=Unauthorized%20access.&next=（開こうとしたURL）` |
-| ログイン済みで `/login` を開いた | `/dashboard` へ自動で移動 |
+| ログイン済みで `/login` を開いた | **どこへも移動しません。**ログイン画面のまま |
 | サイドバーの「ログイン」を押した | `/login?next=（今いるURL）` |
 
 「許可されたメール」は運用側の設定で1つだけ決まっています。設定が空の場合は、
@@ -222,8 +222,10 @@
 サイト全体で共通のエラー画面・読み込み画面は用意されていません。
 **画面ごとに個別に作られています**。専用のものが用意されているのは以下だけです。
 
-- `/dashboard` … 読み込み中の表示と、エラー時の表示の両方あり
-- それ以外 … 各画面の中で個別に処理（詳細は各画面の仕様書を参照）
+- 各画面の中で個別に処理（詳細は各画面の仕様書を参照）
+
+以前はここに「`/dashboard` は読み込み中とエラーの表示の両方あり」と書いて
+いましたが、その画面は削除済みです。
 
 ---
 
