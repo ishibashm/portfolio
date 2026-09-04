@@ -18,7 +18,7 @@
  * mode=timeline（全日 × 全方位の格付け）を 1 回叩くだけ。外部課金なし。
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Bar,
@@ -34,6 +34,7 @@ import {
 import calendarClimatology from "@/data/calendarClimatology.json";
 import { ArbitrageMap } from "@/components/ArbitrageMap";
 import { YearlyForecast } from "@/components/relocation/YearlyForecast";
+import { DayCellPopover } from "@/components/relocation/DayCellPopover";
 import { toPercentStack } from "@/utils/percentStack";
 import { saveWorkingDate } from "@/lib/workingDate";
 import { prefectureDirections } from "@/lib/prefectureDirection";
@@ -182,6 +183,18 @@ export default function TimingAnalyticsPage() {
   const [pastMonths, setPastMonths] = useState(6);
   const [futureMonths, setFutureMonths] = useState(18);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  /*
+    押したマスの位置。詳細はヒートマップの下にも出るが、見通しは 21 か月
+    ぶんあるので、上のほうのマスを押すと画面外までスクロールしないと
+    見えなかった（利用者報告）。押した場所に吹き出しを出す。
+  */
+  const [cellPopover, setCellPopover] = useState<{
+    x: number;
+    y: number;
+    below: boolean;
+    width: number;
+  } | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [focusDir, setFocusDir] = useState<string | null>(null);
   // ヒートマップの絞り込み。既定は全選択＝絞り込み前と同じ見た目。
   // 段階と暦注は軸が違うので別々に持ち、AND で重ねる。
@@ -778,7 +791,7 @@ export default function TimingAnalyticsPage() {
               title={`カレンダーヒートマップ（${
                 activeDir ? DIRECTION_LABELS[activeDir] : ""
               }）`}
-              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。今日より前は薄く表示。マスをクリックするとその日の詳細が下に出ます。"
+              subtitle="1 マスが 1 日。上の表で方位を選ぶと切り替わります。今日より前は薄く表示。マスを押すとその場に判定が出ます（全方位の一覧と地図はこの下）。"
             >
               <div className="space-y-2">
                 {/* 段階の絞り込み。段階は既に計算済みなので、ここでやるのは
@@ -866,7 +879,10 @@ export default function TimingAnalyticsPage() {
 
                   読む順は列ごとに上から下。前半が左、後半が右になる。
                 */}
-                <div className="grid gap-x-8 gap-y-1.5 xl:grid-cols-2">
+                <div
+                  ref={gridRef}
+                  className="relative grid gap-x-8 gap-y-1.5 xl:grid-cols-2"
+                >
                   {monthRows.map(({ month, list }) => (
                     <div key={month} className="flex items-center gap-2">
                       <span className="w-14 shrink-0 font-mono text-[10px] text-stone-600">
@@ -895,13 +911,28 @@ export default function TimingAnalyticsPage() {
                           return (
                             <button
                               key={d.date}
-                              onClick={() => {
+                              onClick={(e) => {
                                 setSelectedDate(d.date);
                                 /* 選んだ時点で残す。以前はスキャナーへの
                                    リンクを踏んだときだけ残っていたので、
                                    手引きの手順やサイドバーから入ると
                                    今日に戻っていた（利用者報告）。 */
                                 saveWorkingDate(d.date);
+                                const box = gridRef.current;
+                                if (!box) return;
+                                const cell =
+                                  e.currentTarget.getBoundingClientRect();
+                                const outer = box.getBoundingClientRect();
+                                const top = cell.top - outer.top;
+                                setCellPopover({
+                                  x: cell.left - outer.left + cell.width / 2,
+                                  y: top,
+                                  /* 上に置くと器からはみ出す最初の数行だけ
+                                     下に出す。吹き出しの高さは中身で変わる
+                                     ので、余裕を見て 150px で切る。 */
+                                  below: top < 150,
+                                  width: outer.width,
+                                });
                               }}
                               title={`${d.date}（${WEEKDAY_JP[d.weekday]}）${
                                 TIER_LABELS[t] ?? t
@@ -925,6 +956,36 @@ export default function TimingAnalyticsPage() {
                       </div>
                     </div>
                   ))}
+                  {cellPopover && selected && (
+                    <DayCellPopover
+                      day={selected}
+                      tier={
+                        (activeDir ? selected.tiers[activeDir] : "C") as DayTier
+                      }
+                      directionLabel={
+                        activeDir ? DIRECTION_LABELS[activeDir] : null
+                      }
+                      filteredOut={
+                        !matchesTimingFilter(
+                          selected,
+                          activeDir,
+                          tierFilter,
+                          luckyOnly,
+                        )
+                      }
+                      x={cellPopover.x}
+                      y={cellPopover.y}
+                      below={cellPopover.below}
+                      containerWidth={cellPopover.width}
+                      onClose={() => setCellPopover(null)}
+                      onShowAll={() => {
+                        setCellPopover(null);
+                        document
+                          .getElementById("day-detail")
+                          ?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                    />
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-3 pt-2 text-[9px] text-stone-500">
                   {TIERS.map((t) => (
@@ -951,46 +1012,48 @@ export default function TimingAnalyticsPage() {
               </div>
             </Section>
 
-            {/* 選択日の詳細（全方位） */}
+            {/* 選択日の詳細（全方位）。吹き出しの「全方位を見る」の行き先 */}
             {selected && (
-              <Section
-                title={`${selected.date}（${WEEKDAY_JP[selected.weekday]}）の全方位`}
-                subtitle={`${selected.rokuyo}${
-                  selected.tags.length ? " / " + selected.tags.join("・") : ""
-                }${selected.blocked ? " / この日は天中殺で移転不可の設定です" : ""}`}
-              >
-                <div className="flex flex-wrap gap-2">
-                  {ALL_DIRECTIONS.map((dir) => {
-                    const t = selected.tiers[dir] as DayTier;
-                    return (
-                      <div
-                        key={dir}
-                        className="flex min-w-20 flex-col items-center rounded-xl border border-gray-200 p-2"
-                      >
-                        <span className="text-xs font-bold">
-                          {DIRECTION_LABELS[dir]}
-                        </span>
-                        <span
-                          className="mt-1 rounded px-1.5 py-0.5 text-[9px] font-bold text-white"
-                          style={{
-                            background: selected.blocked
-                              ? BLOCKED_FILL
-                              : TIER_FILL[t],
-                          }}
-                        >
-                          {selected.blocked ? "天中殺" : TIER_LABELS[t]}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <Link
-                  href={`/relocation/arbitrage?targetDate=${selected.date}&view=overview`}
-                  className="mt-3 inline-block text-[11px] font-semibold text-indigo-600 underline"
+              <div id="day-detail" className="scroll-mt-4">
+                <Section
+                  title={`${selected.date}（${WEEKDAY_JP[selected.weekday]}）の全方位`}
+                  subtitle={`${selected.rokuyo}${
+                    selected.tags.length ? " / " + selected.tags.join("・") : ""
+                  }${selected.blocked ? " / この日は天中殺で移転不可の設定です" : ""}`}
                 >
-                  この日で物件スキャナーを開く（物件も一緒に見る）
-                </Link>
-              </Section>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_DIRECTIONS.map((dir) => {
+                      const t = selected.tiers[dir] as DayTier;
+                      return (
+                        <div
+                          key={dir}
+                          className="flex min-w-20 flex-col items-center rounded-xl border border-gray-200 p-2"
+                        >
+                          <span className="text-xs font-bold">
+                            {DIRECTION_LABELS[dir]}
+                          </span>
+                          <span
+                            className="mt-1 rounded px-1.5 py-0.5 text-[9px] font-bold text-white"
+                            style={{
+                              background: selected.blocked
+                                ? BLOCKED_FILL
+                                : TIER_FILL[t],
+                            }}
+                          >
+                            {selected.blocked ? "天中殺" : TIER_LABELS[t]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Link
+                    href={`/relocation/arbitrage?targetDate=${selected.date}&view=overview`}
+                    className="mt-3 inline-block text-[11px] font-semibold text-indigo-600 underline"
+                  >
+                    この日で物件スキャナーを開く（物件も一緒に見る）
+                  </Link>
+                </Section>
+              </div>
             )}
 
             {/* 選択日の地図。どの県へなら動けるかを色で見る */}
