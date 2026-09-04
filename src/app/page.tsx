@@ -195,6 +195,15 @@ export default function Home() {
             鑑定士の掲載
           </Link>
           <span>•</span>
+          {/* 物件を貸したい・売りたい人の入口。鑑定士と同じで、ここに
+              置いておかないと辿り着く道が無い（記事側の導線が無い）。 */}
+          <Link
+            href="/owners"
+            className="hover:text-rose-600 transition-colors"
+          >
+            オーナーの方へ
+          </Link>
+          <span>•</span>
           <Link href="/about" className="hover:text-rose-600 transition-colors">
             このサイトについて
           </Link>
