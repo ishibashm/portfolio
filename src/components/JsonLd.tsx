@@ -150,3 +150,56 @@ export function FaqJsonLd({
     />
   );
 }
+
+/**
+ * 用語辞典（DefinedTermSet / DefinedTerm）。
+ *
+ * `/guide/glossary` の表に出ている語と説明を、語単位で取り出せる形にする。
+ * 検索側だけでなく、生成 AI が「このサイトが本命殺をどう定義しているか」を
+ * 段落から切り出さずに読めるようにするのが狙い。
+ *
+ * **頁に出ている文言だけを渡すこと。**書き出し用に言い換えると頁と食い違う。
+ * 材料は `guideContent` の `glossaryTerms()` が表からそのまま組む。
+ */
+export function DefinedTermSetJsonLd({
+  name,
+  description,
+  path,
+  terms,
+}: {
+  name: string;
+  description: string;
+  path: string;
+  terms: readonly {
+    name: string;
+    reading?: string;
+    description: string;
+  }[];
+}) {
+  if (terms.length === 0) return null;
+  const setId = `${BASE}${path}#glossary`;
+  return (
+    <Script
+      data={{
+        "@context": "https://schema.org",
+        "@type": "DefinedTermSet",
+        "@id": setId,
+        name,
+        description,
+        inLanguage: "ja",
+        url: `${BASE}${path}`,
+        publisher: { "@id": `${BASE}/#organization` },
+        hasDefinedTerm: terms.map((t) => ({
+          "@type": "DefinedTerm",
+          // 語ごとに URL を持たせる。頁は 1 つなので素片で分ける。
+          "@id": `${BASE}${path}#${encodeURIComponent(t.name)}`,
+          name: t.name,
+          description: t.description,
+          inDefinedTermSet: { "@id": setId },
+          // 読みは別名として渡す。物件の節には読みの列が無い。
+          ...(t.reading ? { alternateName: t.reading } : {}),
+        })),
+      }}
+    />
+  );
+}

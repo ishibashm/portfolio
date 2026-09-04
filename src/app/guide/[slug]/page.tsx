@@ -1,10 +1,19 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+import {
+  ArticleJsonLd,
+  BreadcrumbJsonLd,
+  DefinedTermSetJsonLd,
+} from "@/components/JsonLd";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { GuideBody } from "@/components/guide/GuideBody";
-import { GUIDE_INDEX, GUIDE_PAGES, findGuidePage } from "@/lib/guideContent";
+import {
+  GUIDE_INDEX,
+  GUIDE_PAGES,
+  findGuidePage,
+  glossaryTerms,
+} from "@/lib/guideContent";
 import { SITE_NAME } from "@/lib/siteStructure";
 
 /**
@@ -74,6 +83,15 @@ export default async function Page({
           { name: page.nav, path },
         ]}
       />
+      {/* 用語辞典だけは語ごとに取り出せる形でも出す。頁の表と同じ文言。 */}
+      {page.slug === "glossary" && (
+        <DefinedTermSetJsonLd
+          name={page.title}
+          description={page.description}
+          path={path}
+          terms={glossaryTerms()}
+        />
+      )}
 
       {/* 本文の頁も含めて、幅は全画面で 1700px に揃える方針（利用者の
           指示）。以前は読み幅（820px）で止めていたが、索引だけ広げた
