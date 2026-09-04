@@ -74,6 +74,98 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /*
+      75 日で変わるのは起点だけ。前の移動の判定を消したり足し引きしたり
+      する処理は無い、というのが記事の主旨。#950 の「層をまたいだ相殺」
+      とは別の話（あちらは年月日の層、こちらは起点）。
+    */
+    slug: "does-a-lucky-move-cancel-an-unlucky-move",
+    kicker: "引越しの考え方",
+    title: "75 日で変わるのは、<br>次をどこから測るか",
+    sub: "前の移動の判定を消したり、後の吉と足し引きしたりはしません。",
+    body: `<div style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:52px;height:52px;border-radius:50%;background:#0f172a;color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">A</div>
+          <div style="width:150px;height:4px;background:#e11d48"></div>
+          <div style="font-size:18px;font-weight:800;color:#e11d48">凶方位</div>
+          <div style="width:60px;height:4px;background:#e11d48"></div>
+          <div style="width:52px;height:52px;border-radius:50%;background:#0f172a;color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">B</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:52px;font-size:15px;color:#94a3b8;text-align:center">75 日</div>
+          <div style="font-size:18px;color:#475569">住むと、起点が <b style="color:#0f172a">A から B へ移る</b></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:52px;height:52px;border-radius:50%;background:#e2d9d1;color:#78716c;
+               display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">A</div>
+          <div style="width:52px"></div>
+          <div style="width:52px;height:52px;border-radius:50%;background:#0f172a;color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">B</div>
+          <div style="width:150px;height:4px;background:#94a3b8"></div>
+          <div style="width:52px;height:52px;border-radius:50%;background:#0f172a;color:#fff;
+               display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800">C</div>
+        </div>
+      </div>
+      <div class="note" style="max-width:270px"><b>B→C の判定は B から測ります。</b>A→B の判定はそのまま残ります。</div>`,
+  },
+  {
+    slug: "why-time-was-thought-lucky",
+    kicker: "引越しの考え方",
+    title: "日の吉凶は、<br>ぜんぶ「数え方」",
+    sub: "先に数え方の構造があって、意味はあとから乗りました。",
+    body: `<div style="display:flex;gap:16px">
+        ${[
+          ["天中殺", "六十干支から余る 2 支"],
+          ["六曜", "旧暦の月と日の足し算"],
+          ["一粒万倍日", "季節と干支の照合"],
+        ]
+          .map(
+            ([
+              name,
+              how,
+            ]) => `<div style="width:200px;background:#fff;border:1px solid #e2d9d1;
+               border-radius:14px;padding:20px 22px;text-align:center">
+            <div style="font-size:22px;font-weight:800;color:#0f172a">${name}</div>
+            <div style="margin-top:10px;font-size:16px;line-height:1.6;color:#64748b">${how}</div>
+          </div>`,
+          )
+          .join("")}
+        <div class="note" style="max-width:250px">「悪いことが起きる日を観察して集めた」のではありません。<b>どれも機械的に決まります。</b></div>
+      </div>`,
+  },
+  {
+    slug: "tenchusatsu-names-and-schools",
+    kicker: "引越しの考え方",
+    title: "呼び名は違っても、<br>算出は同じ",
+    sub: "大殺界だけが別の系統です。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+        <div>
+          <div style="display:flex;gap:10px">
+            ${["空亡", "天中殺", "天冲殺"]
+              .map(
+                (
+                  n,
+                ) => `<div style="width:118px;background:#fff;border:1px solid #e2d9d1;border-radius:12px;
+                 padding:16px 0;text-align:center;font-size:21px;font-weight:800;color:#0f172a">${n}</div>`,
+              )
+              .join("")}
+          </div>
+          <div style="margin-top:12px;font-size:17px;color:#475569;text-align:center">
+            六十干支から余る 2 支。呼び名と読み方が体系ごとに違うだけ
+          </div>
+        </div>
+        <div>
+          <div style="width:150px;background:#fff;border:2px solid #e11d48;border-radius:12px;
+               padding:16px 0;text-align:center;font-size:21px;font-weight:800;color:#e11d48">大殺界</div>
+          <div style="margin-top:12px;font-size:17px;color:#475569;text-align:center;width:180px">
+            12 年周期から出る別系統。長さも違う（3 年）
+          </div>
+        </div>
+      </div>`,
+  },
+  {
     /* 数字は記事の「先に結論」から。2026 年 8 月時点の集計。 */
     slug: "how-we-analyze-the-rental-market",
     kicker: "データの見方",
