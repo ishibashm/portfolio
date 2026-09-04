@@ -36,6 +36,8 @@ import {
   Newspaper,
   Rss,
   MapPin,
+  UserRound,
+  Home,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
@@ -50,6 +52,14 @@ import {
 // 「引越しを決める」の並びには入れず、ホームと同じ上段に置く。
 const PUBLIC_ITEMS = [
   { href: "/", icon: Clock, label: "ホーム" },
+  /*
+    生年月日と場所の登録。**道具より先に来る。**どの道具も出発地と
+    生年月日が入っていないと何も出ないのに、入れる場所がホームの
+    設定バーの中だけで、ナビからは辿れなかった（利用者の指摘、
+    2026-09-04）。風水（/houi/fengshui）で踏んだのと同じ失敗なので、
+    作った頁にナビの行を与える。
+  */
+  { href: "/profile", icon: UserRound, label: "生年月日と場所を登録" },
   { href: "/guide", icon: BookOpen, label: "使い方ガイド" },
   { href: "/blog", icon: Newspaper, label: "引越しの読みもの" },
   { href: "/news", icon: Rss, label: "不動産・建築の情報" },
@@ -66,6 +76,7 @@ const CORE_ICONS: Record<string, LucideIcon> = {
   "/relocation/simulator": Route,
   "/relocation/wealth": Map,
   "/houi": Compass,
+  "/houi/fengshui": Home,
   "/houi/area": MapPin,
   "/calendar": Calendar,
 };

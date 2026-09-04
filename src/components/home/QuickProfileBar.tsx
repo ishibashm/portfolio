@@ -23,6 +23,7 @@
  */
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import {
@@ -207,6 +208,14 @@ export function QuickProfileBar() {
       <p className="text-sm text-slate-600 mb-6 leading-relaxed max-w-[70ch]">
         方位も日取りも、この 3
         つから決まります。入れておくと、下のダッシュボードと物件検索・地図・カレンダーが同じ設定で動きます。
+        {/* 落ち着いて入れたい人の行き先。/profile は同じ値を書くので、
+            どちらから入れても結果は同じ（利用者の依頼、2026-09-04） */}
+        <Link
+          href="/profile"
+          className="ml-1 font-semibold text-indigo-600 underline"
+        >
+          引越し先の候補も含めてまとめて登録する
+        </Link>
       </p>
 
       {needsBirthDate && (
