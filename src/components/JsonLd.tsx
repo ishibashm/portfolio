@@ -118,3 +118,35 @@ export function BreadcrumbJsonLd({
 }
 
 export const SITE = SITE_NAME;
+
+/**
+ * よくある問いと答え（FAQPage）。
+ *
+ * **頁に出ている文言だけを渡すこと。**検索エンジン向けに問答をこしらえて
+ * ここにだけ入れるのは Google の構造化データの規定に反する。材料は
+ * `lib/articleFaq` が本文から取り出したものを使う。
+ *
+ * 組が足りないときは呼ぶ側で出さない（`hasEnoughFaq`）。1 組だけの
+ * FAQPage は体裁を作っただけになる。
+ */
+export function FaqJsonLd({
+  items,
+}: {
+  items: readonly { question: string; answer: string }[];
+}) {
+  if (items.length === 0) return null;
+  return (
+    <Script
+      data={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        inLanguage: "ja",
+        mainEntity: items.map((f) => ({
+          "@type": "Question",
+          name: f.question,
+          acceptedAnswer: { "@type": "Answer", text: f.answer },
+        })),
+      }}
+    />
+  );
+}
