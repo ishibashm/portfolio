@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ContentDisclaimer } from "@/components/houi/ContentDisclaimer";
-import { FengShuiLookup } from "@/components/houi/FengShuiLookup";
 import { HonmeiLookup } from "@/components/houi/HonmeiLookup";
 import type { Metadata } from "next";
 import {
@@ -174,9 +173,12 @@ export default function Page() {
           </p>
         </section>
 
-        {/* 九星気学の次に置く。引き方がそろっている（自分が何かを引いて、
-            その人にとっての 8 方位を読む）ので、続けて読める。
-            **点にして足さない。**別の段として並べる。 */}
+        {/*
+          八宅の道具そのものは /houi/fengshui へ移した。ここに埋めたままだと
+          専用の URL が無く、ナビにも「風水」の語が出ないので、**サイトの中
+          から辿れなかった**（利用者の指摘、2026-09-04）。この頁からは行き先
+          として案内する。引き方がそろっているので、続けて読める並びは残す。
+        */}
         <section className="mt-10">
           <h2 className="text-xl font-bold font-serif border-b border-slate-300 pb-2">
             風水（八宅）で見る 8 方位
@@ -186,9 +188,12 @@ export default function Page() {
             です。既定では判定に使っていません。方位の良し悪しは流派によって違うので、
             <b>両方が吉の方位もあれば、片方だけの方位もあります</b>。
           </p>
-          <div className="mt-5">
-            <FengShuiLookup />
-          </div>
+          <Link
+            href="/houi/fengshui"
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-5 py-2.5 text-xs font-bold text-indigo-700 transition-colors hover:bg-indigo-50"
+          >
+            風水（八宅）で自分の吉方位を調べる →
+          </Link>
         </section>
 
         <section className="mt-10">
