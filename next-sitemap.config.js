@@ -123,6 +123,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/08202",
   "/houi/area/08212",
   "/houi/area/08214",
+  "/houi/area/08215",
   "/houi/area/08220",
   "/houi/area/08221",
   "/houi/area/08222",
@@ -242,6 +243,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/26202",
   "/houi/area/26205",
   "/houi/area/26212",
+  "/houi/area/26465",
   "/houi/area/27102",
   "/houi/area/27103",
   "/houi/area/27106",
@@ -333,6 +335,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/40203",
   "/houi/area/40204",
   "/houi/area/40210",
+  "/houi/area/40215",
   "/houi/area/40220",
   "/houi/area/40223",
   "/houi/area/40224",
@@ -367,6 +370,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/47211",
   "/houi/area/47212",
   "/houi/area/47213",
+  "/houi/area/47215",
 ];
 
 /** @type {import('next-sitemap').IConfig} */
