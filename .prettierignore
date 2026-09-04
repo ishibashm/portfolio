@@ -1,0 +1,15 @@
+# 機械が書く配布物。**整形しない。**
+#
+# 人が読むファイルではなく、client が毎回落とすファイル。prettier を
+# 掛けると中身は同じまま嵩だけ増える（municipalityListings.json は
+# 34.8KB → 90KB）。遅い回線ほど効くので、ここは詰めたまま置く。
+#
+# 置いてある理由は、pre-commit の prettier が**新規ファイルは必ず
+# 検査する**ため（scripts/prettier-staged-check.sh）。その検査自体は
+# 正しくて、除外の宣言が無かっただけ。
+public/municipalityListings.json
+public/prefectures.geojson
+
+# prettier はこのファイル自体を整形できない（対応する parser が無く、
+# --check が失敗する）。自分自身も除く。
+.prettierignore

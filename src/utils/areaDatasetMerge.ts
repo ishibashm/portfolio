@@ -146,3 +146,99 @@ export function parsePreviousAreas(raw: string | null): AreaEntry[] {
     return [];
   }
 }
+
+/**
+ * 地図の広域表示が読む、軽い市区町村の一覧。
+ *
+ * ## なぜ本体を読ませないか
+ *
+ * `areaDirections.json` は 314KB ある。client コンポーネントに読ませると
+ * そのままバンドルに乗る。県名だけの小さな配列を別に吐いて UI はそちらを
+ * 読む、という同じ手を `prefecturesWithData.json`（2KB）で既に取っている。
+ *
+ * ## なぜ要るか（利用者の報告、2026-09-04）
+ *
+ * 「物件が俯瞰で見ると数が出てこない」。広域のバブルは**安い順 500 件の
+ * 窓**を市区町村でまとめたものなので、広い範囲を映すほど窓はいちばん安い
+ * 一角に埋まり、残りは空白になる。物件が無いのではなく見ていない。
+ *
+ * 毎晩の集計は**その日の掲載を全部**数えている（実測 1,127 市区町村・
+ * 合計 1,484,584 件）。窓とも絞り込みとも無関係なので、これを地の分布と
+ * して描けば視界の全域が埋まる。
+ *
+ * ## 形
+ *
+ * 組（tuple）で持つ。項目名を毎行くり返すと 64KB になるが、組なら 32KB
+ * で済む。**読む側は必ず `MunicipalityListing` に直してから使う**こと
+ * （添字を直接読むと、順序を変えたときに黙って壊れる）。
+ *
+ * 座標は小数 4 桁に丸める。約 11m の精度で、バブルを置くには十分。
+ * 丸めないと 1 件あたり 10 バイト増える。
+ */
+export type MunicipalityListingTuple = [
+  code: string,
+  lat: number,
+  lon: number,
+  count: number,
+];
+
+export interface MunicipalityListing {
+  code: string;
+  lat: number;
+  lon: number;
+  /** その日の掲載件数。絞り込み前・窓の外も含む全部。 */
+  count: number;
+}
+
+/** 座標の丸め桁。約 11m。 */
+const COORD_DIGITS = 4;
+
+export function buildMunicipalityListings(
+  areas: readonly AreaEntry[],
+): MunicipalityListingTuple[] {
+  return areas
+    .filter((a) => Number.isFinite(a.lat) && Number.isFinite(a.lon))
+    .map((a) => [
+      a.code,
+      Number(a.lat.toFixed(COORD_DIGITS)),
+      Number(a.lon.toFixed(COORD_DIGITS)),
+      a.count,
+    ]);
+}
+
+/** 組を名前つきに直す。読む側は必ずこれを通す。 */
+export function toMunicipalityListing(
+  t: MunicipalityListingTuple,
+): MunicipalityListing {
+  return { code: t[0], lat: t[1], lon: t[2], count: t[3] };
+}
+
+/**
+ * 取ってきた JSON を名前つきの一覧に直す。
+ *
+ * **地図はこれを通してから使う。**組の添字を直接読むと、並びを変えた
+ * ときに黙って壊れる（緯度と経度が入れ替わっても型は通る）。
+ *
+ * 壊れた行は落として、残りは返す。ファイルが古い・欠けている・形が
+ * 違うといった理由で**地図そのものを落とさない。**広域の地の分布が
+ * 出ないだけで、物件のピンと方位の判定は今までどおり動く。
+ */
+export function parseMunicipalityListings(
+  json: unknown,
+): MunicipalityListing[] {
+  const areas = (json as { areas?: unknown })?.areas;
+  if (!Array.isArray(areas)) return [];
+  const out: MunicipalityListing[] = [];
+  for (const row of areas) {
+    if (!Array.isArray(row) || row.length < 4) continue;
+    const [code, lat, lon, count] = row;
+    if (typeof code !== "string" || code === "") continue;
+    if (typeof lat !== "number" || !Number.isFinite(lat)) continue;
+    if (typeof lon !== "number" || !Number.isFinite(lon)) continue;
+    if (typeof count !== "number" || !Number.isFinite(count) || count < 0) {
+      continue;
+    }
+    out.push({ code, lat, lon, count });
+  }
+  return out;
+}

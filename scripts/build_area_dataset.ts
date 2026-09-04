@@ -22,6 +22,7 @@ import { PREF_JP } from "../src/lib/scrapeTargets";
 import { LIVE_LISTING_SQL } from "../src/lib/rentalListingSql";
 import { addressPrefixClause } from "../src/lib/jisCityAlias";
 import {
+  buildMunicipalityListings,
   mergeAreaDataset,
   parsePreviousAreas,
   type AreaEntry,
@@ -226,8 +227,31 @@ async function main() {
     ) + "\n",
   );
 
+  // 地図の広域表示が読む軽い版。中身の理由は areaDatasetMerge の
+  // buildMunicipalityListings に書いてある。
+  //
+  // **整形しない。**`null, 2` を掛けると 32KB が 90KB になる。ここは
+  // 人が読むファイルではなく、client が毎回落とすファイル。
+  //
+  // **public に置く。**src/data に置くと import した時点でバンドルに
+  // 乗るが、これが要るのは地図を広く引いたときだけ。prefectures.geojson
+  // （141KB）と同じく、そのときに取りに行く形にする。
+  const listingsPath = path.join(
+    process.cwd(),
+    "public",
+    "municipalityListings.json",
+  );
+  fs.writeFileSync(
+    listingsPath,
+    JSON.stringify({
+      asOf: today,
+      areas: buildMunicipalityListings(merged.areas),
+    }) + "\n",
+  );
+
   console.log(`書き出し: ${outPath}`);
   console.log(`書き出し: ${prefsPath}（${prefsWithData.length} 県）`);
+  console.log(`書き出し: ${listingsPath}（${merged.areas.length} 市区町村）`);
   console.log(`市区町村: ${merged.areas.length} 件`);
   console.table(merged.areas.slice(0, 10));
   await pool.end();
