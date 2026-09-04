@@ -25,6 +25,12 @@ const SOURCE = readFileSync(
   join(process.cwd(), "src/app/news/page.tsx"),
   "utf-8",
 );
+/* 新着の見出しは NewsCards（カードと一覧の切り替え）へ移った。数えるのは
+   引き続き page.tsx で、部品には数だけ渡す */
+const CARDS = readFileSync(
+  join(process.cwd(), "src/components/news/NewsCards.tsx"),
+  "utf-8",
+);
 
 describe("/news の札", () => {
   it("groupFeeds を通している", () => {
@@ -56,7 +62,8 @@ describe("/news の札", () => {
 
   it("媒体の数は発信元で数える", () => {
     expect(SOURCE).toContain("layout.groups.length + layout.singles.length");
-    expect(SOURCE).toContain("新着（全{sourceCount}媒体）");
+    expect(SOURCE).toContain("sourceCount={sourceCount}");
+    expect(CARDS).toContain("新着（全{sourceCount}媒体）");
   });
 
   it("区分に複数の配信が混ざるときは出典を添える", () => {
