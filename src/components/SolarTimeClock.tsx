@@ -4205,8 +4205,14 @@ export const SolarTimeClock = () => {
       {/* いま画面に出ている判定・環境値をまとめて書き出す。以前は
           fixed bottom-6 で常に浮いていて、内容の上に重なって見えていた
           （利用者の指摘）。頁の流れの最後に置き、サイト共通の副ボタンに
-          揃える。 */}
-      <div className="w-full max-w-[1700px] flex justify-center pb-6">
+          揃える。
+
+          **上の余白を自分で持つ。**この画面のルートは
+          `flex flex-col items-center` で gap を持たないので、器が余白を
+          持たないと直前の札に貼り付く。実際に暦カレンダーの札と接して
+          「重なっている」と見えていた（利用者の指摘）。横の px-4 も
+          同じ理由で、狭い画面でボタンが端に付かないように持たせる。 */}
+      <div className="w-full max-w-[1700px] flex justify-center px-4 mt-6 pb-6">
         <button
           onClick={exportMasterTelemetry}
           className="px-6 py-3 rounded-full border border-slate-300 bg-white text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
