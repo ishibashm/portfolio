@@ -74,6 +74,95 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 数字は記事の「先に結論」から。2026 年 8 月時点の集計。 */
+    slug: "how-we-analyze-the-rental-market",
+    kicker: "データの見方",
+    title: "平均で相場を語ると、<br>2 万円以上高く見える",
+    sub: "家賃の分布は右に大きく歪んでいます。相場を 1 つの数字で言うなら中央値です。",
+    body: `<div style="display:flex;gap:26px;align-items:flex-end">
+        ${[
+          ["平均", "81,991 円", 300, "#cbd5e1", "#475569"],
+          ["中央値", "66,000 円", 242, "#e11d48", "#0f172a"],
+        ]
+          .map(
+            ([name, yen, w, bg, fg]) => `<div>
+            <div style="font-size:18px;font-weight:800;color:#334155;margin-bottom:8px">${name}</div>
+            <div style="width:${w}px;height:44px;border-radius:6px;background:${bg}"></div>
+            <div style="margin-top:10px;font-size:26px;font-weight:800;color:${fg}">${yen}</div>
+          </div>`,
+          )
+          .join("")}
+        <div class="note" style="max-width:270px">駅徒歩 1 分の重みも地域で違います。<b>東京都 -2.05%/分、広島県 -0.34%/分</b>。同じ「駅近」でも意味が違います。</div>
+      </div>`,
+  },
+  {
+    slug: "how-to-choose-land",
+    kicker: "データの見方",
+    title: "土地の値段は、<br>自分で確かめられる",
+    sub: "専門家に相談する前に、公的な資料で分かることがあります。",
+    body: `<div style="display:flex;gap:16px">
+        ${[
+          [
+            "値段の基準は 2 つ",
+            "地価公示（国の鑑定による標準地の価格）と成約価格（実際に売買が成立した額）。役割が違うので両方見る",
+          ],
+          [
+            "値段の差は制度で説明できる",
+            "同じ広さで違う理由の大半は用途地域（何が建てられるか）と接道（道路にどう接するか）",
+          ],
+          [
+            "災害リスクは印象で決めない",
+            "国のハザードマップで確かめる。確認は無料",
+          ],
+        ]
+          .map(
+            ([
+              head,
+              note,
+            ]) => `<div style="width:196px;background:#fff;border:1px solid #e2d9d1;
+               border-radius:14px;padding:18px 20px">
+            <div style="font-size:19px;font-weight:800;color:#0f172a;line-height:1.4">${head}</div>
+            <div style="margin-top:9px;font-size:15px;line-height:1.65;color:#64748b">${note}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    /*
+      「バランス帯」は 0.4〜0.6（土地と建物がほぼ半々）。記事の定義。
+      割合は 2021 年以降の成約からの当サイトの推計。
+    */
+    slug: "where-land-and-building-balance",
+    kicker: "データの見方",
+    title: "半々の配分は、<br>どこでも少数派",
+    sub: "総額に占める建物代が 0.4〜0.6 に入る取引の割合。県単位で最も高くても 3 割です。",
+    body: `<div style="display:flex;flex-direction:column;gap:9px">
+        ${[
+          ["大分", 31.5],
+          ["愛知", 31.4],
+          ["大阪", 19.0],
+          ["京都", 13.2],
+          ["神奈川", 9.6],
+          ["東京", 3.9],
+        ]
+          .map(
+            ([
+              name,
+              pct,
+            ]) => `<div style="display:flex;align-items:center;gap:14px">
+            <div style="width:78px;font-size:18px;font-weight:800;color:#334155;text-align:right">${name}</div>
+            <div style="width:${Math.round(pct * 13)}px;height:24px;border-radius:4px;background:${
+              pct < 10 ? "#e11d48" : "#94a3b8"
+            }"></div>
+            <div style="font-size:18px;color:#475569">${pct.toFixed(1)}%</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note" style="max-width:270px">港区の建物比率は中央値 <b>0.034</b>。価格のほぼ全部が土地です。<br><span style="font-size:16px">建物比率は成約データの内訳ではなく当サイトの推計です。</span></div>`,
+  },
+  {
     /*
       記事 141〜144 行の実測。東京から真東へ 100km 動いたあと、直角方向へ
       何 km で扇形を出るか。四正は幅 30 度で 27km、四隅は 60 度で 58km。
