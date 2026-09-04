@@ -85,7 +85,14 @@ export interface FeedGroup {
 /**
  * 束の一覧。ここに無い id を FeedSource.group に書くと検査で落ちる。
  */
-export const FEED_GROUPS: readonly FeedGroup[] = [] as const;
+export const FEED_GROUPS: readonly FeedGroup[] = [
+  {
+    id: "ur",
+    name: "UR 都市機構",
+    siteUrl: "https://www.ur-net.go.jp/",
+    note: "礼金・仲介手数料・更新料なしの公的賃貸と、都市再生事業の発注。報道発表・賃貸の募集・入札の公示が別々に配信されている",
+  },
+] as const;
 
 /** 束を id で引く。無ければ null。 */
 export function feedGroupOf(id: string | undefined): FeedGroup | null {
@@ -102,6 +109,18 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     siteUrl: "https://www.mlit.go.jp/report/",
     note: "地価・住宅施策・統計の一次情報。当サイトの成約データもここの所管",
   },
+  /*
+    UR 都市機構は配信を 12 本に分けている。利用者が示した一覧
+    （https://www.ur-net.go.jp/site/rss.html）を probe-news-feeds の
+    --list に当てた実測（run 33816205060）で、13 本の候補のうち
+    12 本に中身があった。
+
+    **地方名は各フィードの URL のまま**にしてある（/orders/east/、
+    /orders/chiba/ など）。見出しの本文から確かめられた組織名は
+    本社・東北本部・東日本賃貸住宅本部・中部支社・西日本支社の
+    5 つだけで、残りは URL の綴りしか根拠が無い。組織の呼び方を
+    推測で書くより、配信の出どころをそのまま名乗るほうが正しい。
+  */
   {
     id: "ur-release",
     name: "UR 都市機構 報道発表",
@@ -112,7 +131,115 @@ export const NEWS_FEEDS: readonly FeedSource[] = [
     feedUrl: "https://www.ur-net.go.jp/news/ur_release.xml",
     siteUrl: "https://www.ur-net.go.jp/news/",
     note: "UR 賃貸と都市再生事業の発表。礼金・仲介手数料・更新料なしの公的賃貸",
+    group: "ur",
+    section: "報道発表",
   },
+  {
+    id: "ur-chintai",
+    name: "UR 賃貸住宅",
+    feedUrl: "https://www.ur-net.go.jp/chintai/rss.xml",
+    siteUrl: "https://www.ur-net.go.jp/chintai/",
+    note: "団地ごとの募集開始と抽選結果。空室の出方が地域ごとに分かる",
+    group: "ur",
+    section: "賃貸の募集・抽選",
+  },
+  {
+    id: "ur-orders-honsha",
+    name: "UR 本社",
+    feedUrl: "https://www.ur-net.go.jp/orders/honsha/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "本社の建設コンサルタント業務・物品役務の公示",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-tohoku",
+    name: "UR 東北本部",
+    feedUrl: "https://www.ur-net.go.jp/orders/f-reconstruction/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "東北本部の発注案件。震災復興の事業がここに出る",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-toshin",
+    name: "UR 都心",
+    feedUrl: "https://www.ur-net.go.jp/orders/toshin/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "都心の発注案件。工事・物品役務の公示",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-east",
+    name: "UR 東日本",
+    feedUrl: "https://www.ur-net.go.jp/orders/east/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "東日本賃貸住宅本部の工事発注。団地の改修が読める",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-chiba",
+    name: "UR 千葉",
+    feedUrl: "https://www.ur-net.go.jp/orders/chiba/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "千葉の発注案件と、年度の工事発注見通し",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-kanagawa",
+    name: "UR 神奈川",
+    feedUrl: "https://www.ur-net.go.jp/orders/kanagawa/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "神奈川の発注案件と、年度の工事発注見通し",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-saitama",
+    name: "UR 埼玉",
+    feedUrl: "https://www.ur-net.go.jp/orders/saitama/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "埼玉の発注案件。物品・役務の公示",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-central",
+    name: "UR 中部支社",
+    feedUrl: "https://www.ur-net.go.jp/orders/central/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "中部支社の建設コンサルタント業務・工事の発注案件",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-west",
+    name: "UR 西日本支社",
+    feedUrl: "https://www.ur-net.go.jp/orders/west/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "西日本支社の発注予定情報・入札公告",
+    group: "ur",
+    section: "入札・発注",
+  },
+  {
+    id: "ur-orders-kyushu",
+    name: "UR 九州",
+    feedUrl: "https://www.ur-net.go.jp/orders/kyushu/order.xml",
+    siteUrl: "https://www.ur-net.go.jp/orders/",
+    note: "九州の発注案件。団地の活用（キッチンカーなど）の募集も流れる",
+    group: "ur",
+    section: "入札・発注",
+  },
+  /*
+    載せていない 13 本目: /orders/im-reconstruction/order.xml。
+    200 で返るが**中身が 0 件**（844 バイト）。fetchNews は 0 件を
+    取得失敗として扱うので、載せると「取得できていない配信元」に
+    毎日出続けて、本当に落ちたフィードと見分けが付かなくなる。
+    案件が載った時点で足す。
+  */
   {
     id: "retpc",
     name: "不動産流通推進センター",
