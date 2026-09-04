@@ -161,6 +161,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/12235",
   "/houi/area/12237",
   "/houi/area/12238",
+  "/houi/area/12410",
   "/houi/area/12421",
   "/houi/area/12424",
   "/houi/area/13102",
@@ -391,6 +392,7 @@ const AREA_EDITORIAL_PATHS = [
   "/houi/area/47215",
   "/houi/area/47326",
   "/houi/area/47327",
+  "/houi/area/47329",
   "/houi/area/47350",
   "/houi/area/47362",
 ];
