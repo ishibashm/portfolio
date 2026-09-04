@@ -1,0 +1,175 @@
+/**
+ * 記事の代表画像を作る。
+ *
+ * Google Discover は画像で読ませる面なので、画像の無い記事は内容と関係なく
+ * 対象外になる。共有カード（og:image）も、27 記事すべてが同じ /ogp.png を
+ * 指していた。
+ *
+ * **写真ではなく図にする。**記事の中身が「本命的殺の方位は毎年動く」の
+ * ような計算の話なので、街の写真はサムネイルと中身が一致しない。判定の
+ * 内容そのものを図にすれば、他所に同じ画像が無い。
+ *
+ * 図は HTML で書いて Chromium で撮る。日本語のフォントはシステムのものが
+ * そのまま使えるので、フォントファイルを同梱する必要がない。
+ *
+ *   node scripts/build_blog_images.mjs
+ *
+ * Chromium が playwright の既定の場所に無い環境では、実行ファイルの場所を
+ * CHROMIUM_PATH で渡す（`npx playwright install` を打てない環境向け）。
+ *
+ * 出力は public/blog/<slug>.png。**リポジトリに入れる**（毎回の生成に
+ * Chromium が要り、本番のビルドで動かすと重い）。記事を足したら手で回す。
+ */
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { chromium } from "playwright";
+
+const OUT_DIR = path.join(process.cwd(), "public", "blog");
+
+/** 画像の大きさ。Discover は幅 1200px 以上を条件に挙げている。 */
+const WIDTH = 1200;
+const HEIGHT = 630;
+const SCALE = 1.5;
+
+/** サイトの配色に合わせる。地色・強調・本文の 3 つだけ使う。 */
+const BASE_CSS = `
+*{margin:0;padding:0;box-sizing:border-box}
+/* 地色は単色。グラデーションにすると PNG がほとんど圧縮されず、
+   1 枚 500KB になる（単色なら 60KB 前後）。記事のぶんだけ増えるので、
+   リポジトリに入れる以上ここは効く。 */
+body{width:${WIDTH}px;height:${HEIGHT}px;overflow:hidden;background:#f7f2ec;
+     font-family:"Noto Sans CJK JP","Hiragino Sans",sans-serif;color:#0f172a;
+     display:flex;flex-direction:column;padding:52px 60px 44px}
+.kicker{font-size:19px;letter-spacing:.14em;color:#e11d48;font-weight:700}
+h1{font-size:50px;line-height:1.26;margin-top:14px;font-weight:800;letter-spacing:-.01em}
+.sub{margin-top:16px;font-size:21px;line-height:1.55;color:#475569}
+.body{flex:1;display:flex;align-items:center;gap:40px;margin-top:26px}
+.note{font-size:20px;color:#475569;line-height:1.65;max-width:340px}
+.note b{color:#0f172a}
+.brand{font-size:18px;color:#64748b;border-top:1px solid #d6cec6;padding-top:13px}
+.g{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,54px);gap:5px}
+.c{background:#fff;border:1px solid #e2d9d1;border-radius:7px;display:flex;
+   align-items:center;justify-content:center;font-size:16px;color:#94a3b8;font-weight:700}
+.c.hit{background:#e11d48;border-color:#be123c;color:#fff}
+.c.mid{background:#efe7e0;color:#b6ada5}
+figure{text-align:center}
+figcaption{font-size:18px;color:#475569;margin-top:9px;font-weight:700}
+`;
+
+/** 八方位の盤。hit に入れた方位だけ塗る。 */
+function board(hit, caption) {
+  const cells = ["北西", "北", "北東", "西", "中", "東", "南西", "南", "南東"]
+    .map((d) => {
+      if (d === "中") return `<div class="c mid">中</div>`;
+      return `<div class="c${d === hit ? " hit" : ""}">${d}</div>`;
+    })
+    .join("");
+  return `<figure><div class="g">${cells}</div><figcaption>${caption}</figcaption></figure>`;
+}
+
+/**
+ * 記事ごとの図。**中身は記事に書いてあることだけ。**
+ * 画像のために新しい主張を作らない（記事と食い違う）。
+ */
+const FIGURES = [
+  {
+    slug: "can-you-recover-from-honmei-teki",
+    kicker: "引越しの考え方",
+    title: "本命的殺の方位は、毎年動く",
+    sub: "七赤金星の場合。移ってしまった方位が、翌年も同じとは限りません。",
+    body: `<div style="display:flex;gap:22px">
+        ${board("北東", "2026年")}${board("西", "2027年")}${board("北西", "2028年")}
+      </div>
+      <div class="note">本命星が中宮に入る年には、盤上から消えます（七赤金星なら 2029 年）。</div>`,
+  },
+  {
+    slug: "can-good-outweigh-a-bad-move",
+    kicker: "引越しの考え方",
+    title: "層をまたいだ相殺は、しない",
+    sub: "このサイトの判定は、年盤・月盤・日盤それぞれで出します。合計点は出しません。",
+    body: `<div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:74px;font-size:21px;font-weight:800;color:#334155">年盤</div>
+          <div style="width:300px;height:52px;border-radius:9px;display:flex;align-items:center;
+               justify-content:center;font-size:20px;font-weight:800;border:1px solid;
+               background:#e11d48;border-color:#be123c;color:#fff">凶</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:74px;font-size:21px;font-weight:800;color:#334155">月盤</div>
+          <div style="width:300px;height:52px;border-radius:9px;display:flex;align-items:center;
+               justify-content:center;font-size:20px;font-weight:800;border:1px solid #cbd5e1;
+               background:#fff;color:#64748b">吉</div>
+          <div style="font-size:19px;color:#e11d48;font-weight:800">相殺しない</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px">
+          <div style="width:74px;font-size:21px;font-weight:800;color:#334155">日盤</div>
+          <div style="width:300px;height:52px;border-radius:9px;display:flex;align-items:center;
+               justify-content:center;font-size:20px;font-weight:800;border:1px solid #cbd5e1;
+               background:#fff;color:#64748b">吉</div>
+          <div style="font-size:19px;color:#e11d48;font-weight:800">相殺しない</div>
+        </div>
+      </div>
+      <div class="note"><b>年盤で凶なら、日盤が吉でも年盤の凶は消えません。</b>点数の足し引きで「上回る」計算はありません。</div>`,
+  },
+  {
+    /*
+      方位角は実際に計算した値。大圏方位角を伝統区分（四正 30 度・
+      四隅 60 度）で切っている。境目から遠い組み合わせを選んであるので、
+      どちらも安定して同じ区分に入る。
+    */
+    slug: "direction-seen-from-the-original-home",
+    kicker: "引越しの考え方",
+    title: "同じ物件でも、方位は人によって違う",
+    sub: "方位は「いま住んでいる場所から見た向き」で決まります。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
+        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:14px;padding:22px 26px;width:330px">
+          <div style="font-size:17px;color:#64748b;font-weight:700">東京駅のあたりに住む人から</div>
+          <div style="font-size:23px;font-weight:800;margin-top:4px">大宮の物件は</div>
+          <div style="margin-top:14px;font-size:40px;font-weight:800;color:#e11d48">北西</div>
+          <div style="font-size:18px;color:#64748b;margin-top:6px">方位角 332.7度／28km</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:14px;padding:22px 26px;width:330px">
+          <div style="font-size:17px;color:#64748b;font-weight:700">立川駅のあたりに住む人から</div>
+          <div style="font-size:23px;font-weight:800;margin-top:4px">同じ物件が</div>
+          <div style="margin-top:14px;font-size:40px;font-weight:800;color:#e11d48">北東</div>
+          <div style="font-size:18px;color:#64748b;margin-top:6px">方位角 39.3度／30km</div>
+        </div>
+      </div>
+      <div class="note"><b>吉方位も凶方位も、出発地ごとに変わります。</b></div>`,
+  },
+];
+
+function html(fig) {
+  return `<!doctype html><meta charset="utf-8"><style>${BASE_CSS}</style>
+<div class="kicker">${fig.kicker}</div>
+<h1>${fig.title}</h1>
+<div class="sub">${fig.sub}</div>
+<div class="body">${fig.body}</div>
+<div class="brand">cloud-palette.com ／ 九星気学の方位と日取り</div>`;
+}
+
+async function main() {
+  await mkdir(OUT_DIR, { recursive: true });
+  const browser = await chromium.launch(
+    process.env.CHROMIUM_PATH
+      ? { executablePath: process.env.CHROMIUM_PATH }
+      : {},
+  );
+  for (const fig of FIGURES) {
+    const page = await browser.newPage({
+      viewport: { width: WIDTH, height: HEIGHT },
+      deviceScaleFactor: SCALE,
+    });
+    await page.setContent(html(fig), { waitUntil: "load" });
+    const out = path.join(OUT_DIR, `${fig.slug}.png`);
+    await writeFile(out, await page.screenshot());
+    await page.close();
+    console.log(`${fig.slug}.png (${WIDTH * SCALE}x${HEIGHT * SCALE})`);
+  }
+  await browser.close();
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
