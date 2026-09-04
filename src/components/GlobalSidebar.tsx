@@ -40,7 +40,7 @@ import {
   Home,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
+import { activeNavHref, CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
 import {
   MENU_SERVER_SNAPSHOT,
   closeMenu,
@@ -186,12 +186,27 @@ export function GlobalSidebar() {
 
   const sidebarWidth = isCollapsed ? "lg:w-20" : "lg:w-64";
 
+  /*
+    点灯させる 1 つを、ナビ全体の中から先に決める。
+
+    **以前は項目ごとに前方一致で見ていて、2 つ点いていた**（利用者の
+    報告：タブが 2 つ選ばれてるのはバグ？）。/houi/fengshui は /houi で
+    始まるので、「本命星と吉方位を調べる」と「風水（八宅）で吉方位を
+    調べる」が両方赤くなる。/houi/area/13101 でも同じことが起きていた。
+
+    項目を 1 つずつ見ている限り「自分より長く一致する項目が他にあるか」は
+    分からないので、判定はナビ全体を見る側へ寄せる（siteStructure の
+    activeNavHref）。
+  */
+  const activeHref = activeNavHref(pathname, [
+    ...PUBLIC_ITEMS.map((i) => i.href),
+    ...GROUPED_ITEMS.flatMap((g) => g.items.map((i) => i.href)),
+  ]);
+
   // ここが扱うのはサイト内のリンクだけ。外部リンクは中核ナビから外し、
   // 下部で個別に描いている。
   const renderNavItem = (item: NavItem) => {
-    const isActive =
-      pathname === item.href ||
-      (item.href !== "/" && !!pathname?.startsWith(item.href));
+    const isActive = item.href === activeHref;
     const Icon = item.icon;
 
     return (

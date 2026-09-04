@@ -210,3 +210,49 @@ export const SITE_NAME = "Cloud Palette";
 export const SITE_TAGLINE = "引越しの方位とタイミングを決める";
 export const SITE_DESCRIPTION =
   "今住んでいる場所から見た方位と、移転に適した時期をもとに、引越し先と日取りを決めるためのサービス。九星気学の方位盤と賃貸物件のデータを同じ基準で突き合わせます。";
+
+/**
+ * いま開いている頁に対して、ナビで点灯させる 1 つを選ぶ。
+ *
+ * ## なぜ要るか（利用者の報告、2026-09-04）
+ *
+ * 「タブが 2 つ選ばれてるのはバグ？」。サイドバーで
+ *
+ *     本命星と吉方位を調べる    /houi
+ *     風水（八宅）で吉方位を調べる  /houi/fengshui
+ *
+ * の両方が赤く点灯していた。判定が素の前方一致だったため。
+ *
+ *     pathname === item.href || pathname.startsWith(item.href)
+ *
+ * `/houi/fengshui` は `/houi` で始まるので、両方が真になる。`/houi` の
+ * 下に別の項目が無かったあいだは表に出ず、`/houi/fengshui` を足した
+ * ときに現れた。**同じことが `/houi/area/13101`（市区町村ページ
+ * 1,022 枚）でも起きていた**（`/houi` と `/houi/area` が点灯）。
+ *
+ * ## どう決めるか
+ *
+ * **いちばん長く一致したものだけ**を点ける。`/houi/area/13101` なら
+ * `/houi/area`、`/houi` そのものなら `/houi`。どこにいても点くのは 1 つ。
+ *
+ * 前方一致は**区切りで見る。**`pathname.startsWith(href)` だけだと
+ * `/houika` が `/houi` に一致してしまう。`href + "/"` で始まるか、
+ * まるごと同じか、のどちらかにする。
+ *
+ * ホーム（`/`）は例外で、まるごと同じときだけ。前方一致を許すと
+ * すべての頁で点く。
+ */
+export function activeNavHref(
+  pathname: string | null | undefined,
+  hrefs: readonly string[],
+): string | null {
+  if (!pathname) return null;
+  let best: string | null = null;
+  for (const href of hrefs) {
+    if (pathname === href) return href; // 完全一致がいちばん強い
+    if (href === "/") continue;
+    if (!pathname.startsWith(`${href}/`)) continue;
+    if (best === null || href.length > best.length) best = href;
+  }
+  return best;
+}
