@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { TOPICS, topicMeta, type NewsTopic } from "@/lib/newsTopics";
+import { STEP, bump, orderByAffinity, parseAffinity } from "@/lib/newsAffinity";
 
 /**
  * /news の新着を、Discover 風のカードと今までの密な一覧で切り替えて出す。
@@ -49,6 +50,7 @@ type View = "cards" | "list";
 
 const STORAGE_VIEW = "news:view";
 const STORAGE_TOPIC = "news:topic";
+const STORAGE_AFFINITY = "news:affinity";
 
 /**
  * 発信元の色。官公庁・団体は藍、UR は橙、業界紙・メディアは緑。
@@ -171,7 +173,19 @@ export function NewsCards({
   for (const e of entries) {
     if (e.topic) counts.set(e.topic, (counts.get(e.topic) ?? 0) + 1);
   }
-  const shown = topic ? entries.filter((e) => e.topic === topic) : entries;
+  /*
+    よく開く話題を前へ寄せる。記録はこの端末の localStorage だけで、
+    サーバーへは送らない。一覧（list）は新着順のまま。並べ替えるのは
+    カードだけで、密な一覧まで動かすと「何日に何が出たか」が読めなくなる。
+  */
+  const affinity = parseAffinity(useStoredValue(STORAGE_AFFINITY));
+  const filtered = topic ? entries.filter((e) => e.topic === topic) : entries;
+  const shown =
+    view === "cards" ? orderByAffinity(filtered, affinity) : filtered;
+  const noteInterest = (t: NewsTopic | null, delta: number) => {
+    if (!t) return;
+    writeStorage(STORAGE_AFFINITY, JSON.stringify(bump(affinity, t, delta)));
+  };
 
   const switchView = (next: View) => writeStorage(STORAGE_VIEW, next);
   const switchTopic = (next: NewsTopic | null) =>
@@ -273,6 +287,7 @@ export function NewsCards({
                   href={e.link}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => noteInterest(e.topic, STEP)}
                   className="line-clamp-2 text-sm font-bold leading-snug text-stone-800 hover:text-rose-600 hover:underline"
                 >
                   {e.title}
@@ -282,10 +297,21 @@ export function NewsCards({
                     {e.summary}
                   </p>
                 )}
-                <div className="mt-auto pt-1 text-[10px] tabular-nums text-stone-400">
-                  {now === null
-                    ? (e.dateLabel ?? "")
-                    : relativeTime(e.publishedAt, now)}
+                <div className="mt-auto flex items-center justify-between pt-1 text-[10px] tabular-nums text-stone-400">
+                  <span>
+                    {now === null
+                      ? (e.dateLabel ?? "")
+                      : relativeTime(e.publishedAt, now)}
+                  </span>
+                  {e.topic && (
+                    <button
+                      onClick={() => noteInterest(e.topic, -STEP)}
+                      title={`「${topicMeta(e.topic).label}」を後ろへ回す`}
+                      className="rounded px-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                    >
+                      減らす
+                    </button>
+                  )}
                 </div>
               </div>
             </li>
