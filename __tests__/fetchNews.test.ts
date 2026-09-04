@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchAllFeeds, mergeLatest, type FeedResult } from "@/lib/fetchNews";
+import {
+  TIMEOUT_MS,
+  fetchAllFeeds,
+  mergeLatest,
+  type FeedResult,
+} from "@/lib/fetchNews";
 import { NEWS_FEEDS } from "@/data/newsSources";
 
 /**
@@ -88,6 +93,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetModules();
   vi.doUnmock("@/data/newsSources");
+});
+
+describe("諦めるまでの時間", () => {
+  it("実測でいちばん遅かった応答より長い", () => {
+    /*
+      UR 都市機構は 3 本に 1 本くらいの割合で応答が 6.4 秒かかる
+      （probe-news-feeds、run 33816205060 の実測。ほとんどは 0.33 秒）。
+      5 秒だったころは毎回 2〜3 本が落ち、しかも**落ちる本が毎回
+      入れ替わっていた**。ここを実測より短くすると、また画面に
+      「取得できていない配信元」が並ぶ。
+    */
+    expect(TIMEOUT_MS).toBeGreaterThan(6400);
+  });
 });
 
 describe("fetchAllFeeds", () => {
