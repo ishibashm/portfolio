@@ -420,8 +420,11 @@ export function createMcpServer(): McpServer {
               ? "全国 1,894 市区町村の位置で確かめて、どの距離にも市区町村が無い（海や山で陸が尽きる）"
               : kind(e) === "no_listings"
                 ? "市区町村は実在するが、賃貸の掲載をまだ集計できていない。行き止まりではない"
-                : "150km より先には掲載のある市区町村がある",
+                : kind(e) === "too_close"
+                  ? "市区町村は実在するが 5km 未満で、方位が定まらないため一覧から外れている。行き止まりではない"
+                  : "150km より先には掲載のある市区町村がある",
           nearestUnlisted: e.nearestUnlisted,
+          nearestTooClose: e.nearestTooClose,
         })),
       });
     },
