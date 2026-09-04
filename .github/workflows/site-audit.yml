@@ -164,6 +164,39 @@ jobs:
             fi
           fi
 
+      # その地域のニュース（/api/news/local）。地名で絞る仕組みなので、
+      # **本番でしか何件出るか分からない**。0 件が普通の市区町村もあるが、
+      # どこも 0 件なら絞り込みが効きすぎているしるしになる。
+      #
+      # **落ちても監査は失敗させない。**配信元の内容次第で 0 件はありうる。
+      # 数だけ出して、続くようなら拾う範囲を見直す。
+      - name: Check /api/news/local
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## その地域のニュース" | tee -a "$GITHUB_STEP_SUMMARY"
+          TOTAL=0
+          # 掲載の多い市区町村と、県を 1 つ。UR の入札は本部ごとに地名が
+          # 入るので、政令市と県庁所在地では拾えるはず。
+          for q in "area=13106" "area=27106" "area=40137" "area=15102" "pref=13"; do
+            BODY=$(curl -sf --compressed "$BASE/api/news/local?$q" || true)
+            if [ -z "$BODY" ]; then
+              echo "$q: 取得できない" | tee -a "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            # data 配列の要素数。"title" の数で数える（jq を入れない）。
+            # 0 件のとき grep は 1 で終わる。bash -e と pipefail の下では
+            # それだけでステップが落ちるので飲む（同じ罠を /news の欄で
+            # 一度踏んでいる）。
+            N=$({ echo "$BODY" | grep -o '"title"' || true; } | wc -l)
+            TOTAL=$((TOTAL + N))
+            echo "$q: $N 件" | tee -a "$GITHUB_STEP_SUMMARY"
+            sleep 0.3
+          done
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "どこも 0 件。絞り込みが効きすぎているか、配信元に地名が出ていない" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Result
         run: |
           if [ "${FAIL:-0}" = "1" ]; then
