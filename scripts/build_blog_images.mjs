@@ -74,6 +74,87 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 9 と 60 の最小公倍数が 180。記事の検算をそのまま帯の長さにする。 */
+    slug: "does-bad-direction-last-60-years",
+    kicker: "引越しの考え方",
+    title: "60 年は、年盤から<br>出てくる数字ではない",
+    sub: "九星の一巡と干支の一巡は、周期が違います。",
+    body: `<div style="display:flex;flex-direction:column;gap:13px">
+        ${[
+          ["九星の年盤", "9 年で一巡", 30, "#e11d48"],
+          ["干支", "60 年で一巡", 200, "#94a3b8"],
+          ["両方そろう", "180 年", 600, "#0f172a"],
+        ]
+          .map(
+            ([
+              name,
+              note,
+              w,
+              color,
+            ]) => `<div style="display:flex;align-items:center;gap:14px">
+            <div style="width:118px;font-size:18px;font-weight:800;color:#334155;text-align:right">${name}</div>
+            <div style="width:${w}px;height:26px;border-radius:5px;background:${color}"></div>
+            <div style="font-size:18px;color:#475569;white-space:nowrap">${note}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    slug: "how-many-schools-are-there",
+    kicker: "引越しの考え方",
+    title: "流派の数は、<br>誰にも数えられない",
+    sub: "数そのものより「流派が違うとどこの答えが変わるか」を押さえます。",
+    body: `<div style="display:flex;gap:14px">
+        ${[
+          ["登録制度がない", "名乗るのに免許が要らない"],
+          ["分派が続いている", "数えた瞬間に増える"],
+          ["境界が曖昧", "同じ名前で規則が違うことがある"],
+        ]
+          .map(
+            ([
+              head,
+              note,
+            ]) => `<div style="width:196px;background:#fff;border:1px solid #e2d9d1;
+               border-radius:14px;padding:18px 20px">
+            <div style="font-size:20px;font-weight:800;color:#0f172a">${head}</div>
+            <div style="margin-top:8px;font-size:16px;line-height:1.6;color:#64748b">${note}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    /*
+      「方位」と「期間」は別の系統（九星気学と算命学）から来ている、
+      という記事の主旨をそのまま軸にする。重ねているのはこのサイトの
+      作りであって、すべての流派に共通する作法ではない。
+    */
+    slug: "tenchusatsu-and-lucky-directions",
+    kicker: "引越しの考え方",
+    title: "吉方位は「どちらへ」、<br>天中殺は「いつ」",
+    sub: "反対語ではありません。同じ引越しに、方位の判定と期間の判定が同時にあります。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:104px;font-size:19px;font-weight:800;color:#0f172a;text-align:right">吉方位</div>
+            <div style="font-size:17px;color:#475569">どちらへ移るか（九星気学）</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:104px;font-size:19px;font-weight:800;color:#0f172a;text-align:right">天中殺</div>
+            <div style="font-size:17px;color:#475569">いつ動くか（算命学）</div>
+          </div>
+          <div style="margin-top:6px;padding:14px 18px;background:#fff;border:1px solid #e2d9d1;border-radius:14px;
+               font-size:17px;line-height:1.6;color:#475569;width:420px">
+            両方を 1 つの画面で見られるように重ねています。これは<b style="color:#0f172a">このサイトの作り</b>で、
+            すべての流派に共通する作法ではありません。
+          </div>
+        </div>
+        ${/* どの方位が吉かは人と日で変わるので、ここでは 1 つも塗らない */ ""}
+        ${board([], "「どちらへ」＝八方位のどれか")}
+      </div>`,
+  },
+  {
     /*
       数字は記事の表と `lib/directionDistance.ts` の実測から。距離 ×
       tan(22.5 度) がそのまま「隣の方位に変わるまでの横ずれ」になる。
