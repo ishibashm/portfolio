@@ -9,8 +9,24 @@
  * ような計算の話なので、街の写真はサムネイルと中身が一致しない。判定の
  * 内容そのものを図にすれば、他所に同じ画像が無い。
  *
- * 図は HTML で書いて Chromium で撮る。日本語のフォントはシステムのものが
- * そのまま使えるので、フォントファイルを同梱する必要がない。
+ * 図は HTML で書いて Chromium で撮る。
+ *
+ * ## フォントは名指しして、無ければ止める
+ *
+ * 最初は `"Noto Sans CJK JP","Hiragino Sans",sans-serif` と書いていたが、
+ * **どれも入っていない環境では中国語のフォントに黙って落ちる。**実際に
+ * 27 枚すべてが WenQuanYi Zen Hei（文泉驛正黑）で描かれていた。漢字の
+ * 字形が中国のものになる字があり（毎／每 など）、日本語話者はそこに
+ * 違和感を覚える。**画像は出来上がるので、見比べるまで気付けない。**
+ *
+ * 見出しは明朝（Noto Serif CJK JP ＝ 源ノ明朝）、説明と数字はゴシック
+ * （Noto Sans CJK JP ＝ 源ノ角ゴシック）。日本のエディトリアルでは定番の
+ * 組み合わせで、記事ページの見出しが serif なのとも揃う。
+ *
+ * 入っていなければ下の checkFonts が止める。足りないときは
+ *
+ *   apt-get install fonts-noto-cjk
+ *
  *
  *   node scripts/build_blog_images.mjs
  *
@@ -20,6 +36,7 @@
  * 出力は public/blog/<slug>.png。**リポジトリに入れる**（毎回の生成に
  * Chromium が要り、本番のビルドで動かすと重い）。記事を足したら手で回す。
  */
+import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
@@ -31,6 +48,34 @@ const WIDTH = 1200;
 const HEIGHT = 630;
 const SCALE = 1.5;
 
+/** 見出しの明朝と、本文のゴシック。fc-match で実在を確かめてから使う。 */
+const MINCHO = "Noto Serif CJK JP";
+const GOTHIC = "Noto Sans CJK JP";
+
+/**
+ * 名指ししたフォントが本当にそれで解決されるか。
+ *
+ * fontconfig は**要求した名前が無くても代わりを返す**ので、指定しただけ
+ * では確かめたことにならない。返ってきた家族名が一致しなければ止める。
+ */
+function checkFonts() {
+  for (const family of [MINCHO, GOTHIC]) {
+    const got = execFileSync(
+      "fc-match",
+      ["-f", "%{family}", `${family}:lang=ja`],
+      {
+        encoding: "utf-8",
+      },
+    );
+    if (!got.split(",").includes(family)) {
+      throw new Error(
+        `フォント「${family}」が無い（${got} に落ちる）。` +
+          `apt-get install fonts-noto-cjk を先に。`,
+      );
+    }
+  }
+}
+
 /** サイトの配色に合わせる。地色・強調・本文の 3 つだけ使う。 */
 const BASE_CSS = `
 *{margin:0;padding:0;box-sizing:border-box}
@@ -38,10 +83,12 @@ const BASE_CSS = `
    1 枚 500KB になる（単色なら 60KB 前後）。記事のぶんだけ増えるので、
    リポジトリに入れる以上ここは効く。 */
 body{width:${WIDTH}px;height:${HEIGHT}px;overflow:hidden;background:#f7f2ec;
-     font-family:"Noto Sans CJK JP","Hiragino Sans",sans-serif;color:#0f172a;
+     font-family:"${GOTHIC}";color:#0f172a;
      display:flex;flex-direction:column;padding:52px 60px 44px}
 .kicker{font-size:19px;letter-spacing:.14em;color:#e11d48;font-weight:700}
-h1{font-size:50px;line-height:1.26;margin-top:14px;font-weight:800;letter-spacing:-.01em}
+/* 見出しだけ明朝。字間を少し詰めると、同じ内容でも読み物の顔になる */
+h1{font-family:"${MINCHO}";font-size:50px;line-height:1.3;margin-top:16px;
+   font-weight:700;letter-spacing:.01em}
 .sub{margin-top:16px;font-size:21px;line-height:1.55;color:#475569}
 .body{flex:1;display:flex;align-items:center;gap:40px;margin-top:26px}
 .note{font-size:20px;color:#475569;line-height:1.65;max-width:340px}
@@ -800,6 +847,7 @@ function html(fig) {
 }
 
 async function main() {
+  checkFonts();
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch(
     process.env.CHROMIUM_PATH
