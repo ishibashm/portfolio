@@ -55,10 +55,14 @@ interface ArbitrageMapProps {
   /** 上が絞り込みを反映した値か。凡例の断り書きに使う */
   prefCountsFiltered?: boolean;
   /**
-   * 地図の表示範囲に入る掲載件数（名寄せ前）。ページ側が軽い口で
-   * 数え直して渡す。null なら出さない。
+   * この検索範囲にある候補の総数（名寄せ後）。地図が持っている
+   * 500 件の窓ではなく、DB が数えた実数。null なら出さない。
    */
-  viewportListingCount?: number | null;
+  rangeUniqueCount?: number | null;
+  /** その総数のうち、実際に評価できた件数（窓の大きさ） */
+  rangeAnalyzedCount?: number | null;
+  /** 窓に当たって打ち切られたか。true のとき地図は一部しか描けていない */
+  rangeTruncated?: boolean;
   /** 地図の空きを押したとき、その地点を判定へ送る */
   onInspectSpot?: (lat: number, lon: number) => void;
   /** 扇形が「いつの」判定かを示すための選択日 YYYY-MM-DD */

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildScanCounts } from "../src/lib/arbitrageCounts";
+import {
+  buildScanCounts,
+  truncationNotice,
+  type ScanCounts,
+} from "../src/lib/arbitrageCounts";
 
 /**
  * 走査の件数表示の組み立て。
@@ -115,5 +119,48 @@ describe("buildScanCounts", () => {
     expect(c.truncated).toBe(false);
     // 0 件でも「鮮度で 12 件除いた」は出す。減った理由が分かる。
     expect(c.staleHidden).toBe(12);
+  });
+});
+
+describe("窓に当たったときの断り", () => {
+  const counts = (over: Partial<ScanCounts>): ScanCounts => ({
+    matched: null,
+    analyzed: 0,
+    truncated: false,
+    duplicatesHidden: 0,
+    staleHidden: 0,
+    staleDays: null,
+    ...over,
+  });
+
+  it("打ち切られていないなら出さない", () => {
+    /* その N は全部なので、断りを足すとかえって迷わせる */
+    expect(
+      truncationNotice(counts({ matched: 201, analyzed: 201 })),
+    ).toBeNull();
+  });
+
+  it("打ち切られていたら、範囲の総数と窓の大きさを渡す", () => {
+    const n = truncationNotice(
+      counts({ matched: 12345, analyzed: 500, truncated: true }),
+    );
+    expect(n).toEqual({ rangeTotal: 12345, analyzed: 500 });
+  });
+
+  it("総数が分からなくても、窓に当たったことは出す", () => {
+    /* 数を言えないからといって黙ると、空白が「無い」と読まれる。
+       そこが今回の実害だった */
+    const n = truncationNotice(counts({ analyzed: 500, truncated: true }));
+    expect(n).not.toBeNull();
+    expect(n?.rangeTotal).toBeNull();
+    expect(n?.analyzed).toBe(500);
+  });
+
+  it("窓の大きさを 500 で決め打ちしていない", () => {
+    /* limit は API の引数で変わる。画面に 500 と書くと嘘になる */
+    const n = truncationNotice(
+      counts({ matched: 900, analyzed: 200, truncated: true }),
+    );
+    expect(n?.analyzed).toBe(200);
   });
 });
