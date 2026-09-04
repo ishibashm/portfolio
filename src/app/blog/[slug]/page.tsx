@@ -19,7 +19,7 @@ import { pickRelatedPosts } from "@/lib/blogRelated";
 import { blogTopic } from "@/lib/comments";
 import { DirectionComments } from "@/components/comments/DirectionComments";
 import { SITE_NAME } from "@/lib/siteStructure";
-import { blogImagePath } from "@/lib/blogImage";
+import { DEFAULT_SOCIAL_IMAGE, blogImagePath } from "@/lib/blogImage";
 import { SITE_URL } from "@/lib/siteUrl";
 import { extractHeadings } from "@/lib/blogToc";
 
@@ -86,6 +86,10 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   const path = `/blog/${post.slug}`;
+  /* 記事ごとの図。共通の画像に落ちているときは本文に出さない
+     （og:image と構造化データには引き続き使う）。 */
+  const socialImage = blogImagePath(post.slug);
+  const heroImage = socialImage === DEFAULT_SOCIAL_IMAGE ? null : socialImage;
   // 自分以外を全部出していた。3 本の頃は 2 件で済んでいたが、23 本に
   // なった時点で全記事の脇に 22 件が並んでいた（lib/blogRelated）。
   const related = pickRelatedPosts(post, await loadBlogPosts());
@@ -107,7 +111,7 @@ export default async function BlogPostPage({
         keywords={post.tags}
         datePublished={post.publishedAt}
         dateModified={post.updatedAt}
-        image={blogImagePath(post.slug)}
+        image={socialImage}
       />
       <BreadcrumbJsonLd
         items={[
@@ -151,6 +155,33 @@ export default async function BlogPostPage({
             <p className="mt-5 border-l-4 border-rose-300 pl-4 text-sm leading-7 text-slate-600">
               {post.description}
             </p>
+
+            {/*
+              記事の図。`public/blog/<slug>.png` があるときだけ出す。
+              共通の /ogp.png はサイトの顔であって記事の中身ではないので、
+              本文の頭に置くと「どの記事も同じ絵」になる。
+
+              置き場所は説明文の直後。図の中身は記事の主張そのもの
+              （「本命的殺の方位は毎年動く」など）なので、見出しと説明を
+              読んだ直後がいちばん効く。
+
+              大きさを属性で持たせて、読み込み前に場所を取らせる。無いと
+              本文が読み込みのたびに下へ飛ぶ。
+            */}
+            {heroImage && (
+              <figure className="mt-8 m-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={heroImage}
+                  alt={`${post.title} — 記事の要点を図にしたもの`}
+                  width={1800}
+                  height={945}
+                  fetchPriority="high"
+                  decoding="async"
+                  className="w-full h-auto rounded-xl border border-stone-200"
+                />
+              </figure>
+            )}
 
             <div className="mt-8">
               <BlogArticleBody body={post.body} />
