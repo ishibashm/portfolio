@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Newspaper, ExternalLink, Library } from "lucide-react";
 import { fetchAllFeeds, mergeLatest } from "@/lib/fetchNews";
 import { groupFeeds } from "@/lib/newsGrouping";
+import { topicOf } from "@/lib/newsTopics";
+import { NewsCards, type NewsCardEntry } from "@/components/news/NewsCards";
 import { NEWS_LINKS } from "@/data/newsSources";
 import { SITE_NAME } from "@/lib/siteStructure";
 import { SITE_URL } from "@/lib/siteUrl";
@@ -73,6 +75,21 @@ export default async function Page() {
   const layout = groupFeeds(feeds, PER_SECTION_COUNT);
   /* 数えるのは発信元。フィードの本数ではない */
   const sourceCount = layout.groups.length + layout.singles.length;
+  /*
+    カードに渡すのは素の値だけ。FeedSource をそのまま渡すと台帳の全項目が
+    クライアントへ流れる。色分けの鍵は束があれば束（UR の 12 本を 1 色に）。
+  */
+  const cardEntries: NewsCardEntry[] = latest.map((entry) => ({
+    title: entry.item.title,
+    link: entry.item.link,
+    publishedAt: entry.item.publishedAt,
+    dateLabel: jstDate(entry.item.publishedAt),
+    summary: entry.item.summary,
+    sourceId: entry.source.id,
+    sourceName: entry.source.name,
+    sourceKey: entry.source.group ?? entry.source.id,
+    topic: topicOf(entry),
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-50/80 via-stone-50 to-amber-50/50 p-4 font-sans text-stone-800 md:p-8">
@@ -95,48 +112,9 @@ export default async function Page() {
 
         {/* 全配信元の新着。媒体をまたいで日付順に見たいのが最初の
             要求（「1 ページで情報密度を高く」）なので、媒体ごとの
-            札より前に置く */}
-        {latest.length > 0 && (
-          <section className="rounded-2xl border border-stone-200 bg-white p-4">
-            <h2 className="text-sm font-bold text-stone-800">
-              新着（全{sourceCount}媒体）
-            </h2>
-            <p className="mt-0.5 text-[10px] leading-relaxed text-stone-500">
-              {
-                "取得できた配信元の見出しを日付順にまとめたものです。媒体ごとに読むなら下の一覧へ。"
-              }
-            </p>
-            <ul className="mt-3 grid gap-x-6 gap-y-1.5 border-t border-stone-100 pt-3 lg:grid-cols-2 xl:grid-cols-3">
-              {latest.map(({ item, source }) => {
-                const date = jstDate(item.publishedAt);
-                return (
-                  <li
-                    key={`${source.id}:${item.link}`}
-                    className="flex gap-2 text-xs"
-                  >
-                    <span className="w-9 shrink-0 font-mono text-[10px] tabular-nums text-stone-400">
-                      {date ?? ""}
-                    </span>
-                    <span className="min-w-0">
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium leading-snug text-stone-700 hover:text-rose-600 hover:underline"
-                      >
-                        {item.title}
-                      </a>
-                      {/* 出典は必ず添える。どこの記事か分からないまま
-                          並べない */}
-                      <span className="ml-1 whitespace-nowrap text-[10px] text-stone-400">
-                        {source.name}
-                      </span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
+            札より前に置く。カードと一覧の切り替えは NewsCards 側 */}
+        {cardEntries.length > 0 && (
+          <NewsCards entries={cardEntries} sourceCount={sourceCount} />
         )}
 
         {/* まとめた札。配信を何本にも分けている発信元は、区分ごとに
