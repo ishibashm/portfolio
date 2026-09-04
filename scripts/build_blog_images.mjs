@@ -74,6 +74,86 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /*
+      記事 141〜144 行の実測。東京から真東へ 100km 動いたあと、直角方向へ
+      何 km で扇形を出るか。四正は幅 30 度で 27km、四隅は 60 度で 58km。
+    */
+    slug: "honmeisatsu-year-board-next-move",
+    kicker: "引越しの考え方",
+    title: "扇形から出るのに<br>要る距離",
+    sub: "1 回目に 100km 動いたあと、直角方向へどれだけ進めば方位が変わるか。",
+    body: `<div style="display:flex;flex-direction:column;gap:16px">
+        ${[
+          ["東（四正）", "幅 30 度", "27km", 135],
+          ["南東（四隅）", "幅 60 度", "58km", 290],
+        ]
+          .map(
+            ([
+              name,
+              width,
+              km,
+              w,
+            ]) => `<div style="display:flex;align-items:center;gap:16px">
+            <div style="width:150px;font-size:19px;font-weight:800;color:#334155;text-align:right">${name}</div>
+            <div style="width:96px;font-size:17px;color:#64748b">${width}</div>
+            <div style="width:${w}px;height:28px;border-radius:5px;background:#e11d48"></div>
+            <div style="font-size:19px;font-weight:800;color:#0f172a;white-space:nowrap">${km}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>
+      <div class="note" style="max-width:300px"><b>同じ向きへ足しても、どれだけ進んでも扇形からは出ません。</b>幅が倍あると、要る距離も倍になります。</div>`,
+  },
+  {
+    /* 記事の実測。9 星ぶん 2026-01-01 から 730 日を数えたもの。 */
+    slug: "what-is-honmei-teki-satsu",
+    kicker: "引越しの考え方",
+    title: "日盤なら 730 日中 60〜81 日。<br>年盤なら丸 1 年",
+    sub: "本命的殺は本命殺の真向かいで、必ず対で生じます。",
+    body: `<div style="display:flex;flex-direction:column;gap:20px">
+        <div>
+          <div style="font-size:18px;font-weight:800;color:#334155;margin-bottom:8px">日盤（730 日のうち）</div>
+          <div style="display:flex;width:560px;height:34px;border-radius:6px;overflow:hidden;border:1px solid #e2d9d1">
+            <div style="width:8.2%;background:#e11d48"></div>
+            <div style="width:2.9%;background:#f5a3b7"></div>
+            <div style="flex:1;background:#fff"></div>
+          </div>
+          <div style="margin-top:8px;font-size:16px;color:#64748b">60〜81 日（本命星によって違う）</div>
+        </div>
+        <div>
+          <div style="font-size:18px;font-weight:800;color:#334155;margin-bottom:8px">年盤で当たった年</div>
+          <div style="width:560px;height:34px;border-radius:6px;background:#e11d48;border:1px solid #be123c"></div>
+          <div style="margin-top:8px;font-size:16px;color:#64748b">その年は毎日（365 日）</div>
+        </div>
+      </div>`,
+  },
+  {
+    /*
+      「やむを得ない場合は軽い」という言い方に対して、計算の入力に
+      動機の欄が無いという事実を出す。記事の主旨そのまま。
+    */
+    slug: "moved-to-an-unlucky-direction",
+    kicker: "引越しの考え方",
+    title: "計算に「事情」を<br>入れる欄はない",
+    sub: "「やむを得ない場合は影響が軽い」の線引きを決める計算はありません。",
+    body: `<div style="display:flex;gap:34px;align-items:center">
+        <div style="background:#fff;border:1px solid #e2d9d1;border-radius:14px;padding:20px 24px;width:330px">
+          <div style="font-size:17px;font-weight:800;color:#64748b;margin-bottom:12px">判定が使う入力</div>
+          ${["生年月日", "出発地", "目的地", "移動する日"]
+            .map(
+              (x) =>
+                `<div style="font-size:19px;font-weight:700;color:#0f172a;margin-top:7px">${x}</div>`,
+            )
+            .join("")}
+          <div style="margin-top:14px;padding-top:12px;border-top:1px dashed #d6cec6;
+               font-size:19px;font-weight:700;color:#c0b8b0;text-decoration:line-through">事情・動機</div>
+        </div>
+        <div class="note" style="max-width:330px">
+          取り消す計算もありません。<b>過去の移動を無かったことにする規則は、どの流派にもありません。</b>
+        </div>
+      </div>`,
+  },
+  {
     /* 洛書。縦・横・斜めのどれを足しても 15 になる。記事の並びそのまま。 */
     slug: "why-nine-stars-and-that-order",
     kicker: "引越しの考え方",
