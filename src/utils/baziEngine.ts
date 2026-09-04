@@ -286,6 +286,20 @@ export class BaziEngine {
     return Array.from(new Set(stars));
   }
 
+  /**
+   * 節気の一覧。**返る時刻は中国標準時（UTC+8）。**
+   *
+   * lunar-javascript は中国のライブラリで、節気表もそちらの時刻帯で返る。
+   * 実測（2026-09-04）では、太陽黄経 315 度を解いた立春の瞬間を日本時間で
+   * 出したものより、ちょうど 1 時間早い（2026 年なら 4:02 と 5:01）。
+   *
+   * **この値をそのまま日本時間として画面に出さないこと。**いまは
+   * `BaziResult.solarTerms` に入るだけで、画面にも API 応答にも出ていない。
+   * 出すときは +1 時間するか、`solarTermMonthAnchor` と同じく黄経から
+   * 解き直す。判定はもともと後者を使っていて、時刻帯に依存しない。
+   *
+   * 関係は `__tests__/solarTermTimezone.test.ts` が固定している。
+   */
   private getSolarTerms(lunar: LunarLike): Record<string, string> {
     const table = lunar.getJieQiTable();
     const terms: Record<string, string> = {};
