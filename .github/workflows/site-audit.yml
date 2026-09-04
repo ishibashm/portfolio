@@ -11,9 +11,13 @@ name: Nightly site audit (URL health / SEO / LLMO)
 #      最終 URL だけを載せる。リダイレクトが混ざると索引が遅れる）
 #   2. robots.txt / llms.txt / llms-full.txt / blog/feed.xml が 200
 #   3. 中核ページに構造化データ（application/ld+json）が入っていること
+#   4. 記事の図が配信されていて、記事の HTML にも出ていること
+#      （Discover は 1200px 以上の画像を要求する。図が出ていなければ
+#      条件を満たさない。利用者から「画像がどのページも表示されて
+#      いない」と報告を受けたのに、この監査は画像を見ていなかった）
 #
 # 対象は自分のサイトだけ。0.3 秒間隔の直列 HEAD なので負荷は毎晩
-# 100 リクエスト強。外部サイトには一切触らない。
+# 100 リクエスト強、4 を足して 130 強。外部サイトには一切触らない。
 
 on:
   schedule:
@@ -116,6 +120,69 @@ jobs:
             fi
             sleep 0.3
           done
+
+      # 記事の図（Discover の画像要件）。
+      #
+      # 利用者から「画像がどのページも表示されていない」と報告を受けた
+      # のに、**この監査は画像を一度も見ていなかった**。開発環境から
+      # 本番へ出られないので、手元で確かめようとすると毎回 403 になる。
+      # 見ていないものは「直った」と言えない。ここで毎朝測る。
+      #
+      # 記事の一覧は sitemap から引く（このジョブは checkout しない）。
+      # 図の有無は記事ごとに違ってよいので、**1 件も無いときだけ**
+      # 失敗にする。それは配信そのものが落ちている状態。
+      - name: Check article figures are served
+        run: |
+          set -uo pipefail
+          BASE="https://cloud-palette.com"
+          echo "## 記事の図" | tee -a "$GITHUB_STEP_SUMMARY"
+
+          # 子 sitemap をたどって /blog/<slug> だけを拾う。一覧や feed は除く。
+          SLUGS=$(for sm in $(curl -sf "$BASE/sitemap.xml" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g' | grep '\.xml$' || true); do
+            curl -sf "$sm" | grep -o '<loc>[^<]*</loc>' | sed 's/<[^>]*>//g'
+            sleep 0.3
+          done | { grep -o '/blog/[a-z0-9-]*$' || true; } | sed 's|/blog/||' | sort -u)
+
+          TOTAL=$(echo "$SLUGS" | grep -c . || true)
+          WITH=0
+          MISSING=""
+          SAMPLE=""
+          for slug in $SLUGS; do
+            [ -z "$slug" ] && continue
+            code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/blog/$slug.png")
+            if [ "$code" = "200" ]; then
+              WITH=$((WITH + 1))
+              [ -z "$SAMPLE" ] && SAMPLE="$slug"
+            else
+              MISSING="$MISSING$slug($code) "
+            fi
+            sleep 0.3
+          done
+          echo "図が配信されている記事: $WITH / $TOTAL 件" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -n "$MISSING" ]; then
+            echo "図が無い記事: $MISSING" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$TOTAL" -gt 0 ] && [ "$WITH" -eq 0 ]; then
+            echo "::error::記事の図が 1 件も配信されていない" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "FAIL=1" >> "$GITHUB_ENV"
+          fi
+
+          # 配信されているだけでは足りない。**記事の HTML に img が出て
+          # いるか**を 1 件で確かめる（利用者が見えないと言ったのは
+          # ここ）。ファイルはあるのに頁に出ていない、を区別する。
+          #
+          # 見本は**図があると分かっている記事**から採る。一覧の先頭を
+          # 使うと、図を用意していない記事が先頭に来た日にここが赤くなる。
+          # 図の有無は記事ごとに違ってよい、と上で決めたばかりなので、
+          # それで失敗にするのは筋が通らない。
+          if [ -n "$SAMPLE" ]; then
+            if curl -sf "$BASE/blog/$SAMPLE" | grep -q "/blog/$SAMPLE.png"; then
+              echo "記事の本文に図が出ている（$SAMPLE で確認）" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::error::$SAMPLE の HTML に図が出ていない（ファイルはあるのに頁に出ていない）" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "FAIL=1" >> "$GITHUB_ENV"
+            fi
+          fi
 
       # /news の配信元。ページは取得できなかった配信元の名前を出すので、
       # それを読んで「どれが死んでいるか」を毎朝つかむ。
