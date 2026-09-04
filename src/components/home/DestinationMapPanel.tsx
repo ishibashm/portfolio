@@ -189,6 +189,20 @@ export default function DestinationMapPanel({
   hudLayers,
   setHudLayers,
 }: DestinationMapPanelProps) {
+  /*
+    升目の詳細を Esc で閉じる。画面ぜんぶを覆うモーダルなので、閉じ方が
+    × だけだと逃げ場が無い。timing のヒートマップの吹き出しと同じ閉じ方に
+    そろえる（外側を押す側は覆いの onClick で受ける）。
+  */
+  React.useEffect(() => {
+    if (!selectedTrendCell) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedTrendCell(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selectedTrendCell, setSelectedTrendCell]);
+
   return (
     <div className="w-full flex flex-col items-center space-y-8 mt-8">
       <div className="w-full max-w-[1700px] mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -1142,8 +1156,27 @@ export default function DestinationMapPanel({
 
           {/* Trend Cell Detail Breakdown Modal */}
           {selectedTrendCell && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md animate-in fade-in duration-150">
-              <div className="relative w-full max-w-sm bg-white border border-stone-300 rounded-2xl p-5 text-stone-900 shadow-2xl space-y-3.5">
+            /*
+              画面ぜんぶを覆うので、閉じ方を × だけにしない。外側を押すか
+              Esc で閉じる。timing のヒートマップの吹き出しと**同じ閉じ方**に
+              そろえる（同じ「升目を押す」操作なのに、片方は Esc で閉じて
+              片方は閉じない、という食い違いだった）。
+
+              形は寄せない。ここは層ごとの根拠まで入るのでモーダルが要り、
+              timing は日付と段階だけなので押した升目のそばに出るほうが
+              読みやすい。中身の量が違う。
+            */
+            <div
+              role="dialog"
+              aria-modal="true"
+              onClick={() => setSelectedTrendCell(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/70 backdrop-blur-md animate-in fade-in duration-150"
+            >
+              <div
+                /* 中身を押しても閉じない。押した先が中身か外かで分ける */
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-sm bg-white border border-stone-300 rounded-2xl p-5 text-stone-900 shadow-2xl space-y-3.5"
+              >
                 <button
                   onClick={() => setSelectedTrendCell(null)}
                   className="absolute top-3.5 right-3.5 text-stone-500 hover:text-stone-900 p-1 text-sm font-bold"

@@ -240,6 +240,43 @@ interface の受け口は残し、分割代入からだけ外す（`BioMagneticD
 `docs/site-spec.md` の方針。実装を寄せるときは、**寄せ先が既にあるか先に探す**。
 `lib/geoDirection.ts` は「集約するために作られたモジュール」が二重に存在していた例。
 
+### 黙って別のものに落ちる 2 つ
+
+どちらも**画面は出来上がる**ので、見比べるまで気付けない。
+
+**1. `.gitignore` の `*.txt` は、名前が `.txt` で終わるディレクトリごと消す。**
+App Router では URL の綴りがそのままディレクトリ名になるので、`/llms.txt` の
+ようなルートは中の `route.ts` まで巻き添えになる。`git add -A` は黙って
+飛ばし、**手元では tsc が通る**（ファイルは存在する）。CI で初めて
+`Cannot find module` として出た。除外を足す場所は `.gitignore` の
+
+```
+!src/app/ads.txt/
+!src/app/llms.txt/
+!src/app/llms-full.txt/
+!src/app/indexnow-key.txt/
+```
+
+**4 回踏んでいる。**`.txt` で終わるルートを足したら、必ずここへ 1 行足す。
+
+**2. フォントは名指ししても、無ければ fontconfig が代わりを返す。**
+記事の図を作る `scripts/build_blog_images.mjs` は
+`"Noto Sans CJK JP","Hiragino Sans",sans-serif` と指定していたが、どれも
+入っていない環境では **WenQuanYi Zen Hei（中国語）** に落ちる。27 枚すべてが
+それで描かれていた。漢字の字形が中国のものになる字があり（毎／每 など）、
+日本語話者はそこに違和感を覚える。
+
+指定しただけでは確かめたことにならない。**`fc-match` の返り値を突き合わせ、
+一致しなければ止める**（同スクリプトの `checkFonts`）。
+
+```bash
+fc-match -f "%{family}" "Noto Sans CJK JP:lang=ja"   # 一致するか見る
+apt-get install fonts-noto-cjk                        # 足りないとき
+```
+
+図の書体は**見出しが源ノ明朝・本文が源ノ角ゴシック**。記事ページの見出しが
+`font-serif` なのと揃えてある。
+
 ### 頁の横幅
 
 **値は 2 つだけ。**新しい数字を増やさない。以前は道具の頁だけで
@@ -284,7 +321,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 27**（クラウド実測 2026-08-30。
+`npm run lint` の警告を減らしている。**645 → 25**（クラウド実測 2026-09-04。
 上の注意を読むこと）。`no-explicit-any` は **0**。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
@@ -305,21 +342,25 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 - テストを消す・skip する
 - 減らせないファイルを無理に触る（飛ばして報告する）
 
-### 現状の内訳（2026-08-30 実測。総数 27）
+### 現状の内訳（2026-09-04 実測。総数 25）
 
 ```
 11  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
  7  react-hooks/set-state-in-effect    ← 同上で対象外
- 7  @typescript-eslint/no-unused-vars  ← 大半が「消してはいけない未使用」（下の表と vectorData）
+ 6  @typescript-eslint/no-unused-vars  ← 大半が「消してはいけない未使用」（下の表）
  1  react-hooks/purity                 ← 対象外
- 1  @typescript-eslint/no-require-imports
 ```
+
+**新しく書くコードで set-state-in-effect を増やさない。**localStorage の値を
+「効果の中で読んで setState する」形は必ずこれに当たる。`useSyncExternalStore`
+を使えばサーバーでは既定値・クライアントでは保存値を読めて、水和のずれも
+React が面倒を見る（#962 の `NewsCards` が見本）。
 
 **`no-explicit-any` は 0 件**（645 → 0。#729〜#732 で完了）。
 `catch (e: any)` も **0 件**（#215 で最後の 4 件が片付いた）。
 
-**残り 27 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
-未使用 7 + require-imports 1。ここが lint の底。
+**残り 25 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
+未使用 6。ここが lint の底。
 
 any の最後の 5 件の片付き方は参考になる:
 - `userSettings.Settings` → 実際の値（JSON スカラー）の union に狭めたら、
@@ -368,7 +409,7 @@ any の最後の 5 件の片付き方は参考になる:
 
 ### 次にやるとよいもの
 
-**lint は底に着いた**（645 → 27。any は 0。残りは全部、対象外か
+**lint は底に着いた**（645 → 25。any は 0。残りは全部、対象外か
 消してはいけない未使用）。ここから先は lint ではなく、次を進める。
 
 **1. サイトの言葉と評価の一貫性。**評価はサイト全体で段階評価
@@ -398,8 +439,11 @@ any の最後の 5 件の片付き方は参考になる:
 #379 で 1,022 頁を全部 noindex にしたが、Search Console の実測では
 **クリックが付いた頁の半分がその市区町村頁**だった。#750 から
 `src/lib/areaEditorial.ts` に文章を書いた頁だけを index に戻している
-（#750〜#853 で **221 頁**。2026-09-01 時点。真の行き止まりがある
-未着手の頁は残り 91）。県ページ（`prefEditorial`）は
+（#750〜#963 で **327 頁**。2026-09-04 時点。真の行き止まりがある
+未着手の頁は**残り 3**＝沖縄の中城村・与那原町、千葉の長生村）。
+**残数は必ず実測してから言う。**「残り 91」と書いてあった数字を
+そのまま報告して間違えた（9/1 の値で、9/4 までに別の作業で 82 頁ぶん
+書かれていた）。県ページ（`prefEditorial`）は
 47 県ぶん全部そろっている。
 
 **選ぶ順序は 4 回変えた。**最初は掲載の多い順、次に書いた頁の少ない県から、
