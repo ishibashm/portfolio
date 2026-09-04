@@ -74,6 +74,87 @@ function board(hit, caption) {
  */
 const FIGURES = [
   {
+    /* 記事の表をそのまま。入力と、答える問いが体系ごとに違う。 */
+    slug: "other-systems-beyond-kigaku",
+    kicker: "引越しの考え方",
+    title: "体系ごとに、<br>答える問いが違う",
+    sub: "同じ引越しを見ていても、入力も出力も同じではありません。",
+    body: `<div style="display:flex;flex-direction:column;gap:7px">
+        ${[
+          ["九星気学", "生年月日・方位・時期", "どの方位へ動くと良いか", true],
+          ["四柱推命", "生年月日時", "いつが良いか、運の巡り", false],
+          ["算命学", "生年月日", "時期（天中殺はここから）", false],
+          ["風水", "土地・建物の形と向き", "どの場所・間取りが良いか", false],
+          ["奇門遁甲", "時刻・方位", "いつどちらへ短期で動くか", false],
+        ]
+          .map(
+            ([
+              name,
+              input,
+              answer,
+              hit,
+            ]) => `<div style="display:flex;align-items:center;gap:12px;
+               background:${hit ? "#fff" : "transparent"};border:1px solid ${hit ? "#e11d48" : "transparent"};
+               border-radius:10px;padding:9px 12px">
+            <div style="width:118px;font-size:19px;font-weight:800;color:${hit ? "#e11d48" : "#334155"}">${name}</div>
+            <div style="width:230px;font-size:16px;color:#64748b">${input}</div>
+            <div style="font-size:17px;color:#0f172a">${answer}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    /*
+      呼び名の来歴。#21（tenchusatsu-names-and-schools）は「算出が同じ・
+      大殺界は別系統」で、こちらは「誰がいつ言い換えたか」。図を分ける。
+    */
+    slug: "tenchusatsu-origin-and-what-not-to-do",
+    kicker: "引越しの考え方",
+    title: "呼び名は新しく、<br>算出だけが古い",
+    sub: "天中殺は、古い占術書に出てくる言葉ではありません。",
+    body: `<div style="display:flex;align-items:center;gap:18px">
+        ${[
+          ["空亡", "六十干支の仕組みから<br>素直に出てくる", true],
+          ["天中殺", "高尾義政が高尾流算命学を<br>創始した際の言い換え", false],
+          ["天冲殺", "弟子の神煕玲が<br>さらに字を変えた", false],
+        ]
+          .map(
+            ([name, note, old], i) => `${
+              i > 0
+                ? '<div style="font-size:26px;color:#cbd5e1;font-weight:800">→</div>'
+                : ""
+            }<div style="width:216px;background:#fff;border:${old ? "2px solid #e11d48" : "1px solid #e2d9d1"};
+               border-radius:14px;padding:18px 20px;text-align:center">
+            <div style="font-size:24px;font-weight:800;color:${old ? "#e11d48" : "#0f172a"}">${name}</div>
+            <div style="margin-top:9px;font-size:15px;line-height:1.6;color:#64748b">${note}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
+  {
+    slug: "honmeisatsu-anecdotes-and-life-impact",
+    kicker: "引越しの考え方",
+    title: "引越し直後の不調には、<br>別の説明が大量にある",
+    sub: "「一生が決まる」と書いている古典はありません。年数も流派によってばらばらです。",
+    body: `<div style="display:flex;gap:30px;align-items:center">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${["眠れていない", "通勤が変わった", "人間関係が入れ替わった"]
+            .map(
+              (
+                t,
+              ) => `<div style="background:#fff;border:1px solid #e2d9d1;border-radius:12px;
+                 padding:14px 22px;font-size:21px;font-weight:700;color:#0f172a;width:330px">${t}</div>`,
+            )
+            .join("")}
+        </div>
+        <div class="note" style="max-width:320px">
+          <b>そちらのほうが手を打てます。</b>逸話は名前も日付も伏せられた形が大半で、確かめる手立てがありません。
+        </div>
+      </div>`,
+  },
+  {
     /*
       ここは方位を塗ってよい数少ない例。八宅の吉方位は本命卦が決まった
       時点で 4 方位に固定され、年ごとに動かない（記事の主旨）。
