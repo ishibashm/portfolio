@@ -19,6 +19,12 @@ const { routes: NON_CORE, offTheme: OFF_THEME } = nonCoreRoutes;
 
 // ルートハンドラ（robots.txt / ads.txt / llms.txt など）まで
 // サイトマップに載ってしまうため除外する。ログイン画面も索引する意味がない。
+//
+// **入力するだけの頁もここ。**/profile は metadata で
+// `robots: { index: false }` にしてあるのに、この一覧に入っておらず
+// サイトマップには載っていた。noindex とサイトマップの両方に載せると
+// 指示が食い違う（このファイルの下でも同じことを書いている）。
+// 索引しない頁を足したら、ここにも 1 行足すこと。
 const NOT_A_PAGE = [
   "/robots.txt",
   "/ads.txt",
@@ -26,6 +32,7 @@ const NOT_A_PAGE = [
   "/llms-full.txt",
   "/blog/feed.xml",
   "/login",
+  "/profile",
 ];
 
 /**
