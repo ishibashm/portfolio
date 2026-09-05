@@ -1,0 +1,66 @@
+# 国土数値情報 N02（鉄道）の駅を src/data/stations.json に焼く。
+#
+# 手で回す（workflow_dispatch）。鉄道の年版は年 1 回しか変わらないので
+# 定時では走らせない。zip（14.9MB）を 1 本取るだけで、上流への要求は
+# 1 回。無償。出典の明示が要る（地図の帰属表示に載せる）。
+#
+# 作業環境からは nlftp.mlit.go.jp に届かない（経路の方針で 403）ので、
+# Actions で回す。取り込みの作法は import-spots と同じ:
+#   - 成果物は prettier に通してから add する（lefthook が弾く）
+#   - `git diff --quiet <path>` で判定しない（未追跡を見落とす）
+name: Import stations
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Download N02-25 (measured URL, run 33951095464)
+        run: |
+          set -euo pipefail
+          curl -sS -L -A "cloud-palette-station-import/1.0 (https://cloud-palette.com; contact via site)" \
+            -o /tmp/n02.zip "https://nlftp.mlit.go.jp/ksj/gml/data/N02/N02-25/N02-25_GML.zip"
+          ls -l /tmp/n02.zip
+          mkdir -p /tmp/n02 && unzip -q -o /tmp/n02.zip -d /tmp/n02
+          GJ=$(find /tmp/n02 -name 'N02-25_Station.geojson' | head -1)
+          test -n "$GJ" || { echo "::error::Station.geojson が無い"; exit 1; }
+          echo "GJ=$GJ" >> "$GITHUB_ENV"
+          # 利用条件を記録に残す（メタデータの制約の項）
+          META=$(find /tmp/n02 -name 'KS-META-*.xml' | head -1)
+          echo "## メタデータの利用制約（$META）" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -iE "useLimitation|otherConstraints|accessConstraints|useConstraints" -A 3 "$META" | head -60 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Import
+        run: npx -y tsx scripts/import_stations.ts --geojson "$GJ" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          npx prettier --write src/data/stations.json
+          git add src/data/stations.json
+          if git diff --cached --quiet; then
+            echo "変化なし。コミットしない。"
+            exit 0
+          fi
+          git commit -m "chore(data): 駅の一覧を国土数値情報 N02 から取り込む"
+          git push origin HEAD:master
