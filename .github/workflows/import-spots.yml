@@ -1,0 +1,66 @@
+name: Import spots
+
+# 一宮の一覧を Wikidata から取り込んで src/data/powerSpots.json に焼く。
+#
+# **手で回すだけ。**定時では走らせない。一宮の指定は千年単位で変わらない
+# ので、毎晩取りに行く理由が無い。上流（Wikidata）への要求も 1 回で済む。
+#
+# 開発環境からは外へ出られない（egress で 403）ので、ここで焼く以外に
+# 手が無い。取得元と繋がり方は probe-spots で実測してある
+# （QID Q1656379 / プロパティ P13723 / 108 社）。
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Import
+        run: npx -y tsx scripts/import_spots.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # **2 回回して同じものが出ることを確かめる。**座標が複数ある社が
+      # あり（鹽竈神社・天津神社）、決め方が甘いと実行のたびにピンが動く。
+      # 動けば地図の点が勝手にずれるので、ここで止める。
+      - name: Check the output is stable
+        run: |
+          cp src/data/powerSpots.json /tmp/first.json
+          npx -y tsx scripts/import_spots.ts > /dev/null
+          # generatedAt は日付なので、比べる前に落とす
+          python3 - <<'PY'
+          import json, sys
+          a = json.load(open("/tmp/first.json"))
+          b = json.load(open("src/data/powerSpots.json"))
+          a.pop("generatedAt", None); b.pop("generatedAt", None)
+          if a != b:
+              print("::error::2 回回して中身が変わった。並びか座標の決め方が不安定")
+              sys.exit(1)
+          print(f"2 回とも同じ内容（{len(b['spots'])} 件）")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet src/data/powerSpots.json; then
+            echo "変化なし。コミットしない。"
+            exit 0
+          fi
+          git add src/data/powerSpots.json
+          git commit -m "chore(data): 一宮の一覧を Wikidata から取り込む"
+          git push origin HEAD:master
