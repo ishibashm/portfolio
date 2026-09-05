@@ -13,8 +13,12 @@ name: Probe KSJ
 on:
   workflow_dispatch:
     inputs:
+      dataset:
+        description: "見るデータ（A29 = 用途地域 / N02 = 鉄道）"
+        required: false
+        default: "A29"
       inspect_pref:
-        description: "中身を見る県コード（2 桁。空なら見ない）。小さい県を指定する"
+        description: "中身を見る（A29 は県コード 2 桁。全国 1 本のデータは何か入れる。空なら見ない）。A29 は小さい県を指定する"
         required: false
         default: ""
 
@@ -35,16 +39,22 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Probe
-        run: npx tsx scripts/probe_ksj.ts | tee -a "$GITHUB_STEP_SUMMARY"
-
-      - name: Inspect one prefecture
-        if: ${{ inputs.inspect_pref != '' }}
         env:
-          PREF: ${{ inputs.inspect_pref }}
+          DATASET: ${{ inputs.dataset || 'A29' }}
+          INSPECT_PREF: ${{ inputs.inspect_pref }}
+          INSPECT_URL_FILE: /tmp/ksj_inspect_url.txt
+        run: npx tsx scripts/probe_ksj.ts --dataset "$DATASET" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Inspect one archive
+        if: ${{ inputs.inspect_pref != '' }}
         run: |
           set -euo pipefail
-          URL="https://nlftp.mlit.go.jp/ksj/gml/data/A29/A29-19/A29-19_${PREF}_GML.zip"
-          echo "## 4. 1 県の中身（A29-19_${PREF}）" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ ! -s /tmp/ksj_inspect_url.txt ]; then
+            echo "probe が中身を見る 1 本を選べなかった。終わる。" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          URL="$(cat /tmp/ksj_inspect_url.txt)"
+          echo "## 4. 1 本の中身（$URL）" | tee -a "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           curl -sS -L -A "cloud-palette-ksj-probe/1.0 (https://cloud-palette.com; contact via site)" \
             -o /tmp/a29.zip "$URL"
@@ -53,8 +63,11 @@ jobs:
           unzip -l /tmp/a29.zip | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           mkdir -p /tmp/a29 && unzip -q -o /tmp/a29.zip -d /tmp/a29
-          GJ=$(find /tmp/a29 -iname '*.geojson' | head -1 || true)
-          if [ -n "$GJ" ]; then
+          # GeoJSON は複数あり得る（N02 は路線と駅）。先頭 4 本まで見る
+          FOUND=0
+          while IFS= read -r GJ; do
+            [ -n "$GJ" ] || continue
+            FOUND=1
             echo "GeoJSON: $GJ ($(stat -c %s "$GJ") bytes)" | tee -a "$GITHUB_STEP_SUMMARY"
             echo '```json' >> "$GITHUB_STEP_SUMMARY"
             # 1 件目の属性と座標の先頭だけ。ファイル全体は出さない
@@ -63,11 +76,13 @@ jobs:
               console.log("features:", j.features.length, "crs:", JSON.stringify(j.crs ?? null));
               const f=j.features[0];
               console.log("properties:", JSON.stringify(f.properties));
-              console.log("geometry.type:", f.geometry.type, "first coord:", JSON.stringify(f.geometry.coordinates[0][0]));
+              const c=f.geometry.coordinates; const first=Array.isArray(c[0])?(Array.isArray(c[0][0])?c[0][0]:c[0]):c;
+              console.log("geometry.type:", f.geometry.type, "first coord:", JSON.stringify(first));
               const keys=new Map(); for (const g of j.features) for (const [k,v] of Object.entries(g.properties)) { const s=keys.get(k)??new Set(); if (s.size<6) s.add(String(v)); keys.set(k,s); }
               for (const [k,s] of keys) console.log(k, "=>", [...s].join(" | "));
             ' "$GJ" | tee -a "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
+          done < <(find /tmp/a29 -iname '*.geojson' | sort | head -4)
+          if [ "$FOUND" = 0 ]; then
             echo "GeoJSON は無い（shp / xml だけ）" | tee -a "$GITHUB_STEP_SUMMARY"
           fi

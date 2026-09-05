@@ -1,6 +1,7 @@
 /**
- * 国土数値情報「用途地域」（A29）の一括ファイルが、どの年版で・どの
- * 大きさで配られているかを見る。**ダウンロードはしない。**
+ * 国土数値情報の一括ファイル（既定は「用途地域」A29。`--dataset N02` で
+ * 鉄道）が、どの年版で・どの大きさで配られているかを見る。
+ * **ダウンロードはしない。**
  *
  * ## なぜ
  *
@@ -24,10 +25,50 @@
  * 要求は 1 + 3 × 年版の数（数回〜十数回）。1 秒間隔。
  */
 
-const DATALIST =
-  "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A29-v2_1.html";
+/**
+ * どのデータを見るか。`--dataset N02` のように指定する。既定は A29。
+ *
+ *   A29 … 用途地域（県ごとの zip。実測済み: 2 年版・47 県）
+ *   N02 … 鉄道（路線・駅。全国 1 本の zip の見込み）。駅・路線の層の
+ *         入手経路として。「駅・路線は最後に、測ってから」（利用者の
+ *         要望の順）
+ *
+ * 一覧ページは版番号なしの `KsjTmplt-<id>.html`（A29 の版付きページから
+ * `../datalist/KsjTmplt-A29.html` へのリンクがあった）。無ければ A29 で
+ * 実測した版付きに落ちる。
+ */
+import { writeFileSync } from "node:fs";
+
+const DATASET = (() => {
+  const i = process.argv.indexOf("--dataset");
+  const v = i >= 0 ? process.argv[i + 1] : undefined;
+  return v && /^[A-Z][0-9]{2}$/.test(v) ? v : "A29";
+})();
+const DATALIST_CANDIDATES = [
+  `https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-${DATASET}.html`,
+  ...(DATASET === "A29"
+    ? ["https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A29-v2_1.html"]
+    : []),
+];
 const TERMS = "https://nlftp.mlit.go.jp/ksj/other/agreement.html";
+/** 帰属表示に書く名前。国土数値情報は「（〇〇データ）（国土交通省）」の形。 */
+const DATASET_NAMES: Record<string, string> = { A29: "用途地域", N02: "鉄道" };
+/**
+ * 中身を見る指定（環境変数 INSPECT_PREF）。A29 は県コード 2 桁、全国 1 本の
+ * データは何か入っていればよい。選んだ zip の URL を INSPECT_URL_FILE に
+ * 書き、ワークフローの次のステップがそれを 1 本だけ取る。**推測で URL を
+ * 組まない**ために、一覧から拾ったものをそのまま渡す。
+ */
+const INSPECT_PREF = process.env.INSPECT_PREF ?? "";
+const INSPECT_URL_FILE = process.env.INSPECT_URL_FILE ?? "";
+/** 版番号なしのページが無いとき、一覧ページへのリンクを探す索引。 */
+const INDEX_PAGES = [
+  "https://nlftp.mlit.go.jp/ksj/",
+  "https://nlftp.mlit.go.jp/ksj/gml/gml_datalist.html",
+];
 const SAMPLE_PREFS = ["01", "13", "27"];
+/** 県分けでない（全国 1 本）年版で HEAD する上限。 */
+const MAX_NATIONAL_HEADS = 4;
 const WAIT_MS = 1000;
 const wait = () => new Promise((r) => setTimeout(r, WAIT_MS));
 const UA =
@@ -54,31 +95,83 @@ async function head(
 }
 
 async function main() {
-  console.log("## 1. 一覧ページにある A29 の zip\n");
-  const res = await fetch(DATALIST, { headers: { "User-Agent": UA } });
-  console.log(`datalist: HTTP ${res.status}`);
-  if (!res.ok) {
+  console.log(`## 1. 一覧ページにある ${DATASET} の zip\n`);
+  let html = "";
+  let DATALIST = "";
+  for (const url of DATALIST_CANDIDATES) {
+    const res = await fetch(url, { headers: { "User-Agent": UA } });
+    console.log(`datalist: ${url} → HTTP ${res.status}`);
+    if (res.ok) {
+      html = await res.text();
+      DATALIST = url;
+      break;
+    }
+    await wait();
+  }
+  if (!DATALIST) {
+    /* 版番号なしのページは N02 で 404 だった（run 33950977649）。版番号は
+       推測しない。**索引ページから** KsjTmplt-<id>-…html へのリンクを
+       拾って、そこを読む。索引は 2 か所を順に試す。 */
+    for (const index of INDEX_PAGES) {
+      await wait();
+      const res = await fetch(index, { headers: { "User-Agent": UA } });
+      console.log(`index: ${index} → HTTP ${res.status}`);
+      if (!res.ok) continue;
+      const page = await res.text();
+      const found = [
+        ...new Set(
+          [
+            ...page.matchAll(
+              new RegExp(
+                `[^"'\\s<>]*KsjTmplt-${DATASET}[^"'\\s<>]*\\.html`,
+                "g",
+              ),
+            ),
+          ].map((m) => m[0]),
+        ),
+      ];
+      console.log(`  ${DATASET} の一覧ページへのリンク: ${found.length} 本`);
+      for (const f of found) console.log(`    ${f}`);
+      for (const f of found) {
+        const abs = new URL(f, index).toString();
+        await wait();
+        const r2 = await fetch(abs, { headers: { "User-Agent": UA } });
+        console.log(`datalist: ${abs} → HTTP ${r2.status}`);
+        if (r2.ok) {
+          html = await r2.text();
+          DATALIST = abs;
+          break;
+        }
+      }
+      if (DATALIST) break;
+    }
+  }
+  if (!DATALIST) {
     console.log("一覧が取れない。ここで終わる（推測で URL を組まない）。");
     return;
   }
-  const html = await res.text();
   /* リンクは datalist からの相対パス（../data/A29/A29-19/A29-19_13_GML.zip）。
      1 回目（run 33947688471）は絶対パスだけを探して 0 本だった
      （run 33948048061 で中身を出して分かった。年版は A29-11 と A29-19）。
      絶対に直して持つ。 */
   const urls = new Set<string>();
-  for (const m of html.matchAll(
-    /(?:\.\.\/|\/ksj\/gml\/)(data\/A29\/[^'"\s<>]+\.zip)/g,
-  )) {
+  const zipRe = new RegExp(
+    `(?:\\.\\./|/ksj/gml/)(data/${DATASET}/[^'"\\s<>]+\\.zip)`,
+    "g",
+  );
+  for (const m of html.matchAll(zipRe)) {
     urls.add(`/ksj/gml/${m[1]}`);
   }
-  /** 年版（A29-19 など）→ 県コード → URL */
+  /** 年版（A29-19 など）→ 県コード（全国 1 本なら "all"）→ URL */
   const byVersion = new Map<string, Map<string, string>>();
+  const verRe = new RegExp(
+    `/(${DATASET}-[0-9]+[a-z]?)/[^/]*?(?:_([0-9]{2}))?_GML\\.zip$`,
+  );
   for (const u of urls) {
-    const m = u.match(/\/(A29-[0-9]+)\/(?:A29-[0-9]+_)?([0-9]{2})_GML\.zip$/);
+    const m = u.match(verRe);
     if (!m) continue;
     const ver = m[1];
-    const pref = m[2];
+    const pref = m[2] ?? "all";
     const set = byVersion.get(ver) ?? new Map<string, string>();
     set.set(pref, u);
     byVersion.set(ver, set);
@@ -91,10 +184,12 @@ async function main() {
     console.log(`\nHTML は ${html.length} 文字。手がかりを出す:`);
     const a29 = [
       ...new Set(
-        [...html.matchAll(/[^"'\s<>]*A29[^"'\s<>]*/g)].map((m) => m[0]),
+        [
+          ...html.matchAll(new RegExp(`[^"'\\s<>]*${DATASET}[^"'\\s<>]*`, "g")),
+        ].map((m) => m[0]),
       ),
     ];
-    console.log(`  "A29" を含む語: ${a29.length} 種`);
+    console.log(`  "${DATASET}" を含む語: ${a29.length} 種`);
     for (const t of a29.slice(0, 20)) console.log(`    ${t}`);
     const zips = [
       ...new Set(
@@ -127,8 +222,17 @@ async function main() {
   console.log("\n## 2. 年版ごとの大きさ（3 県だけ HEAD）\n");
   console.log("| 年版 | 県 | HTTP | バイト | 種類 |");
   console.log("|---|---|---|---|---|");
-  for (const [ver, prefs] of [...byVersion.entries()].sort()) {
-    for (const pref of SAMPLE_PREFS) {
+  let nationalHeads = 0;
+  for (const [ver, prefs] of [...byVersion.entries()].sort().reverse()) {
+    /* 県分けなら 3 県、全国 1 本ならその 1 本（年版は新しい順に上限まで）。 */
+    if (prefs.has("all") && nationalHeads++ >= MAX_NATIONAL_HEADS) {
+      console.log(
+        `| ${ver} | all | — | — | 上限（${MAX_NATIONAL_HEADS} 年版）で省略 |`,
+      );
+      continue;
+    }
+    const keys = prefs.has("all") ? ["all"] : SAMPLE_PREFS;
+    for (const pref of keys) {
       const path = prefs.get(pref);
       if (!path) {
         console.log(`| ${ver} | ${pref} | — | — | 一覧に無い |`);
@@ -142,11 +246,24 @@ async function main() {
     }
   }
 
+  /* 中身を見る 1 本を選んで、次のステップへ渡す（最新の年版）。 */
+  if (INSPECT_PREF && INSPECT_URL_FILE) {
+    const newest = [...byVersion.entries()].sort().reverse()[0];
+    const path = newest?.[1].get("all") ?? newest?.[1].get(INSPECT_PREF);
+    if (newest && path) {
+      const abs = `https://nlftp.mlit.go.jp${path}`;
+      writeFileSync(INSPECT_URL_FILE, `${abs}\n`, "utf8");
+      console.log(`\n中身を見る 1 本: ${newest[0]} → ${abs}`);
+    } else {
+      console.log(`\n中身を見る 1 本が選べない（${INSPECT_PREF}）。`);
+    }
+  }
+
   console.log("\n## 3. 取り込む前に読むもの\n");
   console.log(`- 利用規約: ${TERMS}`);
   console.log(`- 一覧（形式・座標系・年版の説明）: ${DATALIST}`);
   console.log(
-    "\n国土数値情報は出典の明示が要る。取り込むなら地図の帰属表示に「国土数値情報（用途地域データ）（国土交通省）」を足すこと。",
+    `\n国土数値情報は出典の明示が要る。取り込むなら地図の帰属表示に「国土数値情報（${DATASET_NAMES[DATASET] ?? DATASET}データ）（国土交通省）」を足すこと。`,
   );
 }
 
