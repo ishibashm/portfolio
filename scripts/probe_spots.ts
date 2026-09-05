@@ -18,8 +18,12 @@
  *    いるかを検索して、候補の QID と説明を出す。**QID を推測で
  *    書かない**ため。ここが分からないまま SPARQL を書くと、0 件が
  *    返ったときに「無い」のか「間違えた」のか区別が付かない
- * 2. `sparql` … `--qid` で渡した QID を使って件数と見本を出す。
- *    座標（P625）が入っている割合も見る。**座標が無ければ使えない**
+ * 2. `props` … その QID を**何が指しているか**をプロパティ別に数える。
+ *    QID を実測しても、繋がり方を推測すると同じ穴に落ちる。実際に
+ *    落ちた——一宮（Q1656379）を P31 と P1435 で引いて **0 件**。
+ *    どちらでもなかった。**推測でプロパティを並べず、数えさせる**
+ * 3. `sparql` … `--qid` と `--prop` で件数と見本を出す。座標（P625）が
+ *    入っている割合も見る。**座標が無ければ地図に出せない**
  *
  * ## 相手への負荷
  *
@@ -110,15 +114,53 @@ async function runSearch() {
   }
 }
 
-async function runSparql(qid: string) {
-  console.log(`## 2. ${qid} で引ける件数と座標の有無\n`);
+/** その QID を指しているプロパティを数える。 */
+async function runProps(qid: string) {
+  console.log(`## ${qid} を指しているプロパティ\n`);
+  console.log(
+    "**推測でプロパティを並べない。**一宮を P31 / P1435 で引いて 0 件" +
+      "だった（2026-09-05）。QID を実測しても、繋がり方を推測すれば" +
+      "同じ穴に落ちる。\n",
+  );
 
-  /* P31（分類）と P1435（文化財の指定）の両方を見る。どちらに
-     入っているかは分類ごとに違い、**推測で片方だけ見ると 0 件を
-     「無い」と読み違える。** */
+  const query = `
+SELECT ?p (COUNT(*) AS ?n) WHERE {
+  ?item ?p wd:${qid}.
+}
+GROUP BY ?p
+ORDER BY DESC(?n)
+LIMIT 30`;
+
+  const rows = await sparql(query);
+  if (rows === null) return;
+  if (rows.length === 0) {
+    console.log("**何も指していない。**この QID は繋がりの先ではない。");
+    return;
+  }
+
+  console.log("| プロパティ | 件数 |");
+  console.log("|---|---|");
+  for (const r of rows) {
+    /* 返るのは完全 URI。末尾が P番号 なのでそこだけ出す。
+       prop/direct/ と prop/ の両方が出るので、URI をそのまま見せて
+       どちらか分かるようにする。 */
+    const uri = r.p?.value ?? "—";
+    console.log(`| ${uri} | ${r.n?.value ?? "—"} |`);
+  }
+  console.log(
+    "\n`prop/direct/P…`（wdt:）が使える形。次は " +
+      "`--target sparql --qid " +
+      qid +
+      " --prop P…` で件数と座標を見る。",
+  );
+}
+
+async function runSparql(qid: string, prop: string) {
+  console.log(`## ${qid} を ${prop} で引いた件数と座標の有無\n`);
+
   const query = `
 SELECT ?item ?itemLabel ?coord ?prefLabel WHERE {
-  { ?item wdt:P31 wd:${qid}. } UNION { ?item wdt:P1435 wd:${qid}. }
+  ?item wdt:${prop} wd:${qid}.
   OPTIONAL { ?item wdt:P625 ?coord. }
   OPTIONAL { ?item wdt:P131 ?pref. }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja,en". }
@@ -158,14 +200,29 @@ async function main() {
     await runSearch();
     return;
   }
-  if (target === "sparql") {
-    const qid = arg("--qid");
+  const qid = arg("--qid");
+  if (target === "props" || target === "sparql") {
     if (!qid || !/^Q\d+$/.test(qid)) {
       console.log("`--qid Q12345` が要る。まず --target search で探すこと。");
       process.exitCode = 1;
       return;
     }
-    await runSparql(qid);
+  }
+  if (target === "props") {
+    await runProps(qid!);
+    return;
+  }
+  if (target === "sparql") {
+    const prop = arg("--prop");
+    if (!prop || !/^P\d+$/.test(prop)) {
+      console.log(
+        "`--prop P123` が要る。まず --target props で、何がその QID を" +
+          "指しているかを数えること。**推測で並べない。**",
+      );
+      process.exitCode = 1;
+      return;
+    }
+    await runSparql(qid!, prop);
     return;
   }
   console.log(`知らない --target: ${target}`);
