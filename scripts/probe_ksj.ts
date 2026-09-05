@@ -37,6 +37,8 @@
  * `../datalist/KsjTmplt-A29.html` へのリンクがあった）。無ければ A29 で
  * 実測した版付きに落ちる。
  */
+import { writeFileSync } from "node:fs";
+
 const DATASET = (() => {
   const i = process.argv.indexOf("--dataset");
   const v = i >= 0 ? process.argv[i + 1] : undefined;
@@ -49,6 +51,16 @@ const DATALIST_CANDIDATES = [
     : []),
 ];
 const TERMS = "https://nlftp.mlit.go.jp/ksj/other/agreement.html";
+/** 帰属表示に書く名前。国土数値情報は「（〇〇データ）（国土交通省）」の形。 */
+const DATASET_NAMES: Record<string, string> = { A29: "用途地域", N02: "鉄道" };
+/**
+ * 中身を見る指定（環境変数 INSPECT_PREF）。A29 は県コード 2 桁、全国 1 本の
+ * データは何か入っていればよい。選んだ zip の URL を INSPECT_URL_FILE に
+ * 書き、ワークフローの次のステップがそれを 1 本だけ取る。**推測で URL を
+ * 組まない**ために、一覧から拾ったものをそのまま渡す。
+ */
+const INSPECT_PREF = process.env.INSPECT_PREF ?? "";
+const INSPECT_URL_FILE = process.env.INSPECT_URL_FILE ?? "";
 /** 版番号なしのページが無いとき、一覧ページへのリンクを探す索引。 */
 const INDEX_PAGES = [
   "https://nlftp.mlit.go.jp/ksj/",
@@ -234,11 +246,24 @@ async function main() {
     }
   }
 
+  /* 中身を見る 1 本を選んで、次のステップへ渡す（最新の年版）。 */
+  if (INSPECT_PREF && INSPECT_URL_FILE) {
+    const newest = [...byVersion.entries()].sort().reverse()[0];
+    const path = newest?.[1].get("all") ?? newest?.[1].get(INSPECT_PREF);
+    if (newest && path) {
+      const abs = `https://nlftp.mlit.go.jp${path}`;
+      writeFileSync(INSPECT_URL_FILE, `${abs}\n`, "utf8");
+      console.log(`\n中身を見る 1 本: ${newest[0]} → ${abs}`);
+    } else {
+      console.log(`\n中身を見る 1 本が選べない（${INSPECT_PREF}）。`);
+    }
+  }
+
   console.log("\n## 3. 取り込む前に読むもの\n");
   console.log(`- 利用規約: ${TERMS}`);
   console.log(`- 一覧（形式・座標系・年版の説明）: ${DATALIST}`);
   console.log(
-    "\n国土数値情報は出典の明示が要る。取り込むなら地図の帰属表示に「国土数値情報（用途地域データ）（国土交通省）」を足すこと。",
+    `\n国土数値情報は出典の明示が要る。取り込むなら地図の帰属表示に「国土数値情報（${DATASET_NAMES[DATASET] ?? DATASET}データ）（国土交通省）」を足すこと。`,
   );
 }
 
