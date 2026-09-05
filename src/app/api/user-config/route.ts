@@ -243,3 +243,44 @@ export async function POST(req: Request) {
     );
   }
 }
+
+/**
+ * 登録した内容を消す（利用者本人の操作）。
+ *
+ * **行ごと消す。**列を null で埋める形にすると、`created_at`（はじめて
+ * 保存した日）や `user_email` が残り、「消したのに記録が残っている」に
+ * なる。行が無い状態は「まだ一度も保存していない人」と同じで、
+ * `findUserConfig` も `GET` もその形を既に扱える。
+ *
+ * 消えるのは **user_configs の 1 行だけ**。Supabase の認証アカウント、
+ * 問い合わせ（contact）、閲覧の記録は別の表で、ここでは触らない。
+ * 画面にもそう書いてある。
+ *
+ * 行が無ければ 204。すでに消えている＝目的は達しているので、
+ * 押し直しても失敗にしない。
+ */
+export async function DELETE() {
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const existing = await findUserConfig(user);
+    if (!existing) {
+      return new NextResponse(null, { status: 204 });
+    }
+
+    /* id で消す。findUserConfig は本人の行しか返さないので、
+       ここで他人の行に当たることはない。 */
+    await prisma.user_configs.delete({ where: { id: existing.id } });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Config Delete Error:", error);
+    return NextResponse.json(
+      { error: toResponseMessage(error, "Failed to delete config") },
+      { status: 500 },
+    );
+  }
+}

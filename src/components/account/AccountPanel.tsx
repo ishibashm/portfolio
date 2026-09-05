@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { LogOut, Loader2, UserRound } from "lucide-react";
+import { AlertTriangle, LogOut, Loader2, UserRound } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { loadSettings } from "@/lib/userSettings";
 import { profileCompletion } from "@/lib/profileCompletion";
@@ -11,6 +11,7 @@ import {
   loadProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
+import { deleteAccountData } from "@/lib/accountData";
 
 /**
  * マイページ。**いま何が登録されていて、どこで変えられるか**を 1 枚にする。
@@ -35,6 +36,10 @@ export function AccountPanel() {
   const [presets, setPresets] = React.useState<ProfilePreset[]>([]);
   const [cloudSynced, setCloudSynced] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
+  /* 消す操作は 2 段。誤って押しただけでは消えないようにする */
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteMessage, setDeleteMessage] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let alive = true;
@@ -183,6 +188,82 @@ export function AccountPanel() {
             ? "アカウントに保存されています（ほかの端末でも同じ一覧になります）。"
             : "この端末にだけ保存されています。ログインすると、ほかの端末でも同じ一覧になります。"}
         </p>
+      </section>
+
+      {/* 4. 登録した内容を消す ----------------------------------- */}
+      <section className="rounded-2xl border border-rose-200 bg-rose-50/40 p-5">
+        <h2 className="flex items-center gap-2 text-sm font-bold text-rose-800">
+          <AlertTriangle className="h-4 w-4" aria-hidden />
+          登録した内容を消す
+        </h2>
+        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+          {
+            "生年月日・出生地・いま住んでいる場所・目的地・保存済みプロフィール・設定バーの好みを、アカウントからもこの端末からも消します。元に戻せません。"
+          }
+        </p>
+        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-600">
+          {
+            "Google のアカウントそのものは消えません。消したあとも同じアカウントでログインでき、何も登録していない状態から使い直せます。"
+          }
+        </p>
+
+        {deleteMessage ? (
+          <p
+            role="status"
+            className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-[11px] leading-relaxed text-emerald-800"
+          >
+            {deleteMessage}
+          </p>
+        ) : confirmingDelete ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={async () => {
+                setDeleting(true);
+                const result = await deleteAccountData(
+                  fetch,
+                  window.localStorage,
+                );
+                /* 消えた後の見え方に合わせる。読み直しはしない
+                   （消した直後にクラウドを引くと 404 待ちになる） */
+                setCompletion(profileCompletion({}));
+                setPresets([]);
+                setDeleting(false);
+                setConfirmingDelete(false);
+                setDeleteMessage(
+                  result.cloudCleared
+                    ? "消しました。アカウントとこの端末の両方から消えています。"
+                    : result.unauthenticated
+                      ? "この端末から消しました。ログインしていないので、アカウント側には元から何もありません。"
+                      : "この端末から消しました。アカウント側は消せていません（通信の状態を確かめて、もう一度お試しください）。",
+                );
+              }}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-full bg-rose-600 px-6 py-2 text-xs font-bold text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+            >
+              {deleting && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              )}
+              本当に消す
+            </button>
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => setConfirmingDelete(false)}
+              className="cursor-pointer text-xs font-semibold text-stone-600 underline disabled:opacity-50"
+            >
+              やめる
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingDelete(true)}
+            className="mt-4 inline-flex cursor-pointer items-center rounded-full border border-rose-300 px-6 py-2 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+          >
+            登録した内容を消す
+          </button>
+        )}
       </section>
     </div>
   );
