@@ -24,27 +24,28 @@ const hasAuthCookie = () =>
 const subscribeAuthCookie = () => () => {};
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
-  Clock,
-  Map,
-  Compass,
-  Menu,
-  X,
-  ChevronRight,
-  PanelLeftClose,
-  PanelLeftOpen,
-  TrendingUp,
-  LogOut,
-  LogIn,
-  Route,
-  Calendar,
-  CalendarRange,
   BarChart3,
   BookOpen,
-  Newspaper,
-  Rss,
-  MapPin,
-  UserRound,
+  Calendar,
+  CalendarRange,
+  ChevronRight,
+  CircleUser,
+  Clock,
+  Compass,
   Home,
+  LogIn,
+  LogOut,
+  Map,
+  MapPin,
+  Menu,
+  Newspaper,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Route,
+  Rss,
+  TrendingUp,
+  UserRound,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { activeNavHref, CORE_ROUTES, ROUTE_GROUPS } from "@/lib/siteStructure";
@@ -67,6 +68,11 @@ const PUBLIC_ITEMS = [
     作った頁にナビの行を与える。
   */
   { href: "/profile", icon: UserRound, label: "生年月日と場所を登録" },
+  /*
+    登録した内容とログイン状態を見るところ。/profile は入力、こちらは
+    確認と一覧（保存済みプロフィール・ログアウト）で役割を分けてある。
+  */
+  { href: "/account", icon: CircleUser, label: "アカウント" },
   { href: "/guide", icon: BookOpen, label: "使い方ガイド" },
   { href: "/blog", icon: Newspaper, label: "引越しの読みもの" },
   { href: "/news", icon: Rss, label: "不動産・建築の情報" },
