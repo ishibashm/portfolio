@@ -9,6 +9,7 @@ import { CurrentLocationControl } from "@/components/map/CurrentLocationControl"
 import { useMapTheme } from "@/lib/useMapTheme";
 import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
 import { UserSpotLayer } from "@/components/map/UserSpotLayer";
+import { StationLayer } from "@/components/map/StationLayer";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 
 // Fix Leaflet marker icons in Next.js
@@ -79,6 +80,8 @@ interface SimulatorStep {
 
 /* 名所の表示を覚えておく先。地図ごとに別。 */
 const SPOTS_STORAGE_KEY = "simulator_show_spots";
+/* 駅（国土数値情報 N02）。既定は消えている。 */
+const STATIONS_STORAGE_KEY = "simulator_show_stations";
 
 interface SimulatorMapProps {
   startLat: number;
@@ -118,6 +121,11 @@ export default function SimulatorMap({
     () =>
       typeof window !== "undefined" &&
       localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
+  );
+  const [showStations, setShowStations] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(STATIONS_STORAGE_KEY) === "1",
   );
   /* 名所・登録地点の「この地点を判定へ」。地名検索と同じ振り分け——
      ステップを選んでいればその目的地、無ければ出発地。 */
@@ -257,6 +265,28 @@ export default function SimulatorMap({
         >
           ⛩ 名所 {showSpots ? "表示中" : "非表示"}
         </button>
+        {/* 駅（国土数値情報 N02）。他の地図と同じ共有部品。 */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !showStations;
+            setShowStations(next);
+            localStorage.setItem(STATIONS_STORAGE_KEY, next ? "1" : "0");
+          }}
+          aria-pressed={showStations}
+          title={
+            showStations
+              ? "駅を消す"
+              : "駅を出す。吹き出しの「この地点を判定へ」で目的地に入れられます（国土数値情報 N02）"
+          }
+          className={`self-start px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all active:scale-95 ${
+            showStations
+              ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
+              : "bg-white/70 text-stone-600 border-stone-200 hover:bg-white"
+          }`}
+        >
+          🚉 駅 {showStations ? "表示中" : "非表示"}
+        </button>
       </div>
 
       <div className="w-full flex-1 min-h-[400px] border border-stone-200 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
@@ -291,6 +321,14 @@ export default function SimulatorMap({
             noBoardNote={null}
           />
           <UserSpotLayer
+            baseLat={startPos[0]}
+            baseLon={startPos[1]}
+            useClassical={useClassical}
+            onInspect={pickSpot}
+            noBoardNote={null}
+          />
+          <StationLayer
+            enabled={showStations}
             baseLat={startPos[0]}
             baseLon={startPos[1]}
             useClassical={useClassical}
