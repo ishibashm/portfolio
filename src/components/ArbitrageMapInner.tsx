@@ -226,6 +226,13 @@ interface ArbitrageMapInnerProps {
   /** 詳細パネルで開いている物件。リングで強調する */
   selectedPropertyId?: string | null;
   isTransitioningDate?: boolean;
+  /**
+   * 頁が物件を取りに行っている最中か。地図を動かすと 0.5 秒待って
+   * から取りに行き、返るまで数秒かかる。その間、範囲の候補数が古い
+   * 値のまま静かに残るので「この範囲には無い」に見えていた（利用者の
+   * 指摘）。数字の横に「更新中」を出して、待てば変わると分かるように。
+   */
+  isLoading?: boolean;
   showListView?: boolean;
   useClassical?: boolean;
   onDateChange?: (date: string) => void;
@@ -442,6 +449,7 @@ export default function ArbitrageMapInner({
   focusKind = "area",
   selectedPropertyId = null,
   isTransitioningDate = false,
+  isLoading = false,
   showListView = false,
   useClassical = false,
   onDateChange,
@@ -1398,10 +1406,19 @@ export default function ArbitrageMapInner({
           >
             <div className="text-[10px] text-stone-600">
               この範囲の候補
-              <b className="mx-1 font-mono text-sm text-indigo-700">
+              <b
+                className={`mx-1 font-mono text-sm text-indigo-700 ${
+                  isLoading ? "opacity-50" : ""
+                }`}
+              >
                 {visibleCount.toLocaleString()}
               </b>
               件
+              {isLoading && (
+                <span className="ml-1.5 text-[10px] font-bold text-indigo-600 animate-pulse">
+                  更新中…
+                </span>
+              )}
             </div>
             {/* 窓に当たっているときは、地図が範囲の一部しか描いていない。
                 黙って空に見せると「そこに物件が無い」と読まれる（空の
@@ -1424,6 +1441,17 @@ export default function ArbitrageMapInner({
                 }
               </div>
             )}
+          </div>
+        )}
+        {/* 取りに行っている最中の札。候補数の札のすぐ下（狭い画面は
+            すぐ上）。頁側の右上に置いていたときは操作の列の下に隠れて
+            見えず、地図を動かしてから数秒なにも出ないので「この範囲には
+            無い」に見えていた（利用者の指摘）。器の中（isolate）の
+            z-[1000] で、操作の列とは重ならない位置に出す。 */}
+        {isLoading && (
+          <div className="absolute bottom-14 lg:bottom-auto lg:top-14 left-1/2 -translate-x-1/2 z-[1000] pointer-events-none flex items-center gap-2 rounded-full border border-indigo-200 bg-white/90 px-3 py-1 text-[11px] font-bold text-indigo-700 shadow-lg">
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+            この範囲の物件を読み込み中…
           </div>
         )}
         <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 max-h-[calc(100%-2rem)] overflow-y-auto">
@@ -1586,18 +1614,6 @@ export default function ArbitrageMapInner({
               >
                 {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
               </button>
-              {/* 凡例。出しているときだけ。押すと 1 区分だけ残る。
-              色だけで 13 区分は見分けられない（実測 ΔE 6.8）ので、
-              名前を並べて絞り込みで読ませる。 */}
-              {zoningOn && (
-                <div className="w-56 max-h-[60vh] overflow-y-auto shadow-lg rounded-2xl">
-                  <ZoningLegend
-                    selected={zoningPick}
-                    onSelect={setZoningPick}
-                    notice={zoningNotice}
-                  />
-                </div>
-              )}
               {/* 現在地。3 状態を 1 つのボタンで回す（消 → 表示 → 追従）。
               Google マップの現在地ボタンと同じ考え方で、押すたびに
               「出す」「追う」「やめる」が切り替わる。ラベルは今どう
@@ -1779,6 +1795,24 @@ export default function ArbitrageMapInner({
                   🗾 全国
                 </button>
               </div>
+              {/* 凡例。出しているときだけ。押すと 1 区分だけ残る。
+              色だけで 13 区分は見分けられない（実測 ΔE 6.8）ので、
+              名前を並べて絞り込みで読ませる。
+
+              **列のいちばん下に置く。**以前はダークマップの直下にあり、
+              13 区分を開くと下の切り替え（現在地・方位・距離・名所・駅・
+              近景/全国）が押し出されて見えなくなった（利用者の指摘）。
+              列は縦にスクロールできるが、そうと分からない。凡例は
+              最後にして、切り替えは常に手の届く所に残す。 */}
+              {zoningOn && (
+                <div className="w-56 max-h-[45vh] overflow-y-auto shadow-lg rounded-2xl">
+                  <ZoningLegend
+                    selected={zoningPick}
+                    onSelect={setZoningPick}
+                    notice={zoningNotice}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

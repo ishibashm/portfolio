@@ -4168,6 +4168,7 @@ export default function ArbitrageScannerPage() {
               focusKind={mapFocusKind}
               selectedPropertyId={selectedId}
               isTransitioningDate={isTransitioningDate}
+              isLoading={loading}
               showListView={showListView}
               useClassical={useClassical}
               onDateChange={handleDateChange}
@@ -4214,12 +4215,10 @@ export default function ArbitrageScannerPage() {
                 データベースから割安物件を走査中...
               </div>
             ) : null}
-            {loading && data.length > 0 && (
-              <div className="absolute top-4 right-4 bg-white/70 border border-indigo-200 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-mono flex items-center gap-2 z-30 shadow-lg">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                SCANNING...
-              </div>
-            )}
+            {/* 取得中の札（旧 SCANNING...）は地図の中（ArbitrageMapInner の
+                isLoading）へ移した。ここ（右上）に置くと地図の操作の列の
+                下に隠れて見えなかった。頁側に千の位の z を置かない決め事
+                （mapStackingContext.test）にも合う。 */}
           </div>
         </div>
       </div>

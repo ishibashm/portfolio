@@ -75,6 +75,8 @@ interface ArbitrageMapProps {
   selectedPropertyId?: string | null;
   prefecture?: string;
   isTransitioningDate?: boolean;
+  /** 頁が物件を取りに行っている最中か（候補数の札に「更新中」を出す） */
+  isLoading?: boolean;
   showListView?: boolean;
   useClassical?: boolean;
   onDateChange?: (date: string) => void;

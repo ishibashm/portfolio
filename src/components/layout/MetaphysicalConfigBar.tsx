@@ -21,6 +21,7 @@ import {
 } from "@/utils/directionFilterMode";
 import {
   loadProfilePresets,
+  saveProfilePresets,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
@@ -151,6 +152,15 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
    * マウント時に読むと開きもしないページで毎回 API を叩くことになる。
    */
   const [presets, setPresets] = useState<ProfilePreset[] | null>(null);
+  /*
+    いまの設定を保存済みプロフィールに足す。呼び出す口はあったのに
+    登録する口がホーム（QuickProfileBar）とダッシュボードのタブにしか
+    無く、物件検索の頁からは「登録できる所が無い」に見えていた
+    （利用者の指摘）。保存先は既存の 1 か所（lib/profilePresetSync）。
+    書くのは判定の基準（生年月日・出生地・現在地）だけ。
+  */
+  const [presetName, setPresetName] = useState("");
+  const [presetNote, setPresetNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isExpanded || presets !== null) return;
@@ -388,6 +398,47 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
       baseLat: preset.baseLat,
       baseLon: preset.baseLon,
     });
+  };
+
+  const canSavePreset =
+    presetName.trim() !== "" &&
+    !!config.birthDate &&
+    typeof config.baseLat === "number" &&
+    typeof config.baseLon === "number";
+
+  const savePresetFromConfig = async () => {
+    const name = presetName.trim();
+    if (
+      !name ||
+      !config.birthDate ||
+      typeof config.baseLat !== "number" ||
+      typeof config.baseLon !== "number"
+    )
+      return;
+    const next: ProfilePreset[] = [
+      ...(presets ?? []),
+      {
+        id:
+          typeof crypto !== "undefined" && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `preset_${Date.now()}`,
+        name,
+        birthDate: config.birthDate,
+        birthLat: config.birthLat ?? config.baseLat,
+        birthLon: config.birthLon ?? config.baseLon,
+        baseLat: config.baseLat,
+        baseLon: config.baseLon,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+    setPresets(next);
+    setPresetName("");
+    const result = await saveProfilePresets(next, fetch, localStorage);
+    setPresetNote(
+      result.cloudSynced
+        ? `「${name}」を保存しました（他の端末でも呼び出せます）`
+        : `「${name}」をこの端末に保存しました（他の端末で使うにはログイン）`,
+    );
   };
 
   /**
@@ -700,23 +751,57 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
               {/* 保存済みプロフィールの呼び出し。ホームで保存したもの
                   （本人・家族など）をどのページからでも切り替えられる。
                   選ぶと生年月日と座標が入れ替わり、判定が引き直される */}
-              {presets !== null && presets.length > 0 && (
-                <select
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) applyPreset(e.target.value);
+              <div className="flex flex-wrap items-center gap-1.5">
+                {presets !== null && presets.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) applyPreset(e.target.value);
+                    }}
+                    className="px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-600 outline-none focus:border-indigo-200 cursor-pointer"
+                  >
+                    <option value="">保存済みプロフィールを呼び出す...</option>
+                    {presets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {/* いまの設定を名前を付けて保存する。生年月日と現在地が
+                    入っているときだけ押せる（空のプロフィールを作らない） */}
+                <input
+                  type="text"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && canSavePreset) {
+                      e.preventDefault();
+                      void savePresetFromConfig();
+                    }
                   }}
-                  className="px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-600 outline-none focus:border-indigo-200 cursor-pointer"
+                  placeholder="名前を付けて保存（本人・家族など）"
+                  aria-label="保存するプロフィールの名前"
+                  className="w-44 px-2 py-1.5 bg-white border border-stone-200 rounded-lg text-[10px] text-stone-700 outline-none focus:border-indigo-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => void savePresetFromConfig()}
+                  disabled={!canSavePreset}
+                  title={
+                    canSavePreset
+                      ? "いまの生年月日・出生地・現在地を保存済みプロフィールに足す"
+                      : "名前と、生年月日・現在地が要ります"
+                  }
+                  className="px-2.5 py-1.5 rounded-lg text-[10px] font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <option value="">保存済みプロフィールを呼び出す...</option>
-                  {presets.map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.name}
-                    </option>
-                  ))}
-                </select>
-              )}
+                  保存
+                </button>
+              </div>
             </div>
+            {presetNote && (
+              <p className="text-[10px] text-emerald-700">{presetNote}</p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <div className="space-y-1">
                 <span className="text-[9px] text-stone-600 block">
