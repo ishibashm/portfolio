@@ -67,10 +67,18 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Bake
+        env:
+          PREFS: ${{ inputs.prefs }}
         run: |
+          # pipefail が無いと tee が tsx の失敗（枚数の下限）を隠す。
+          # 1 回目（run 33955644570）は ::error を出しながら緑だった
+          set -euo pipefail
           rm -rf public/zoning-overview
-          NODE_OPTIONS=--max-old-space-size=6144 npx -y tsx scripts/bake_zoning_overview.ts --dir /tmp/a29 | tee -a "$GITHUB_STEP_SUMMARY"
+          MIN=100
+          if [ -n "$PREFS" ]; then MIN=1; fi
+          NODE_OPTIONS=--max-old-space-size=6144 npx -y tsx scripts/bake_zoning_overview.ts --dir /tmp/a29 --min-tiles "$MIN" | tee -a "$GITHUB_STEP_SUMMARY"
           du -sh public/zoning-overview | tee -a "$GITHUB_STEP_SUMMARY"
+          find public/zoning-overview -name '*.png' | wc -l | xargs -I{} echo "PNG: {} 枚" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Commit
         if: ${{ inputs.prefs == '' }}

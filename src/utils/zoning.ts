@@ -328,6 +328,22 @@ export const ZONING_RASTER_MAX_ZOOM = ZONING_MIN_ZOOM - 1;
 export const ZONING_RASTER_DISPLAY_MIN_ZOOM = ZONING_RASTER_MIN_ZOOM - 1;
 
 /**
+ * 全国の俯瞰（z5〜z9）は**一度だけ焼いた静的タイル**
+ * （`public/zoning-overview/{z}/{x}/{y}.png`。`scripts/bake_zoning_overview.ts`）。
+ *
+ * 上流の API は z11 までしか受け付けない（probe run 33946832674。
+ * z5〜10 は HTTP 400）ので、ここは国土数値情報 A29（2019 年版、無償、
+ * 出典の明示が条件）から焼く。**API の画像タイルと同じ塗り**
+ * （`lib/zoningRaster` の `paintZoningInto`）なので色は揃うが、年版は
+ * 違う（API の年版は未確認）。1 区分だけ残す絞り込みは俯瞰には効かない
+ * （13 区分ぶんを焼かない）。
+ */
+export const ZONING_OVERVIEW_MIN_ZOOM = 5;
+export const ZONING_OVERVIEW_MAX_ZOOM = ZONING_RASTER_DISPLAY_MIN_ZOOM - 1;
+export const ZONING_OVERVIEW_ATTRIBUTION =
+  '用途地域（俯瞰）: <a href="https://nlftp.mlit.go.jp/ksj/" target="_blank" rel="noopener">国土数値情報（用途地域データ）（国土交通省）</a>';
+
+/**
  * 上流（XKT002）に直接投げてよい最小ズーム。**実測で確かめた範囲**
  * （z11〜。上の表）。これより広い縮尺は子タイルから組む——上流が
  * 非対応のときの応答が 404 で、「区画が無い」と見分けが付かないため
