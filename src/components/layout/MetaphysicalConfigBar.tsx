@@ -434,6 +434,8 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
     setPresets(next);
     setPresetName("");
     const result = await saveProfilePresets(next, fetch, localStorage);
+    // 足す・上書きだけで他所の分は残る。返ってきた最新で差し替える
+    setPresets(result.presets);
     setPresetNote(
       result.cloudSynced
         ? `「${name}」を保存しました（他の端末でも呼び出せます）`

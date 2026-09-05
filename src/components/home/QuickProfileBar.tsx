@@ -166,10 +166,12 @@ export function QuickProfileBar() {
       ? [
           ...presets,
           {
+            // 連番で埋めると別の端末で作ったものと id が衝突して、
+            // 同期のときに互いを上書きする。時刻で一意にする
             id:
               typeof crypto !== "undefined" && crypto.randomUUID
                 ? crypto.randomUUID()
-                : String(presets.length + 1),
+                : `preset_${Date.now()}`,
             name,
             ...values,
             createdAt: new Date().toISOString(),
@@ -180,7 +182,10 @@ export function QuickProfileBar() {
     setIsSaving(true);
     try {
       setPresets(next);
-      await saveProfilePresets(next, fetch, localStorage);
+      // 保存は足す・上書きだけで、他所で足したものは残る。返ってきた
+      // 最新の一覧で差し替える（この部品の一覧は古いことがある）
+      const result = await saveProfilePresets(next, fetch, localStorage);
+      setPresets(result.presets);
       await persist();
       setNewName("");
     } finally {
