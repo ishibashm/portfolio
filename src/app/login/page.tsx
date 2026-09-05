@@ -3,12 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import Link from "next/link";
 import {
   createLoginNonce,
   googleClientId,
   loadGoogleIdentity,
   safeNextPath,
 } from "@/lib/googleIdentity";
+import { isProfileReady } from "@/lib/profileCompletion";
+import { loadSettings } from "@/lib/userSettings";
 
 /**
  * Google Identity Services のボタン。ID トークンを cloud-palette.com の
@@ -111,6 +114,29 @@ export default function LoginPage() {
   }, []);
 
   /**
+   * ログインしたあとの行き先。
+   *
+   * 戻り先が明示されている（保護されたページから飛ばされてきた）なら
+   * そこへ戻す。そうでない＝自分からログインしに来た場合は、**登録が
+   * 済んでいるかで分ける。**初めての人をホームに落とすと、何を入れれば
+   * 道具が動くのか分からないまま放り出される（よくある新規登録なら、
+   * ここで入力へ案内する）。
+   *
+   * 済んでいるかはログイン後の `loadSettings()` で見る。クラウドの値も
+   * 読むので、別の端末で登録済みの人はホームへ行く。読めないとき
+   * （通信の失敗）はホーム。入力を強いるより、いつもの画面を出す。
+   */
+  const destinationAfterLogin = async (explicitNext: string) => {
+    if (explicitNext !== "/") return explicitNext;
+    try {
+      const { settings } = await loadSettings();
+      return isProfileReady(settings) ? "/" : "/profile?welcome=1";
+    } catch {
+      return "/";
+    }
+  };
+
+  /**
    * GIS から受け取った ID トークンで Supabase のセッションを作る。
    * ブラウザ側クライアント（@supabase/ssr）は cookie に保存するので、
    * 遷移先のサーバー側でもそのままログイン済みとして見える。
@@ -133,7 +159,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
-    window.location.assign(nextUrl);
+    window.location.assign(await destinationAfterLogin(nextUrl));
   };
 
   const handleGoogleLogin = async () => {
@@ -150,7 +176,9 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          await destinationAfterLogin(nextUrl),
+        )}`,
       },
     });
 
@@ -257,6 +285,33 @@ export default function LoginPage() {
             Googleでログイン
           </button>
         )}
+
+        {/* よくある新規登録と同じく、押す前に規約の在り処を示す。
+            チェックボックスは置かない（Google のボタンは押した時点で
+            認証が始まるので、押させない状態を作るとボタンが死ぬ）。 */}
+        <p className="mt-4 text-center text-[10px] leading-relaxed text-stone-500">
+          ログインすると、
+          <Link
+            href="/terms"
+            className="underline hover:text-stone-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            利用規約
+          </Link>
+          と
+          <Link
+            href="/privacy"
+            className="underline hover:text-stone-700"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            プライバシーポリシー
+          </Link>
+          に同意したものとみなします。
+          <br />
+          保存するのは、方位の判定に使う値（生年月日・場所）とメールアドレスだけです。
+        </p>
 
         {authError && (
           <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">
