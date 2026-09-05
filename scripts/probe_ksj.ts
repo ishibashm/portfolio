@@ -49,6 +49,11 @@ const DATALIST_CANDIDATES = [
     : []),
 ];
 const TERMS = "https://nlftp.mlit.go.jp/ksj/other/agreement.html";
+/** 版番号なしのページが無いとき、一覧ページへのリンクを探す索引。 */
+const INDEX_PAGES = [
+  "https://nlftp.mlit.go.jp/ksj/",
+  "https://nlftp.mlit.go.jp/ksj/gml/gml_datalist.html",
+];
 const SAMPLE_PREFS = ["01", "13", "27"];
 /** 県分けでない（全国 1 本）年版で HEAD する上限。 */
 const MAX_NATIONAL_HEADS = 4;
@@ -90,6 +95,44 @@ async function main() {
       break;
     }
     await wait();
+  }
+  if (!DATALIST) {
+    /* 版番号なしのページは N02 で 404 だった（run 33950977649）。版番号は
+       推測しない。**索引ページから** KsjTmplt-<id>-…html へのリンクを
+       拾って、そこを読む。索引は 2 か所を順に試す。 */
+    for (const index of INDEX_PAGES) {
+      await wait();
+      const res = await fetch(index, { headers: { "User-Agent": UA } });
+      console.log(`index: ${index} → HTTP ${res.status}`);
+      if (!res.ok) continue;
+      const page = await res.text();
+      const found = [
+        ...new Set(
+          [
+            ...page.matchAll(
+              new RegExp(
+                `[^"'\\s<>]*KsjTmplt-${DATASET}[^"'\\s<>]*\\.html`,
+                "g",
+              ),
+            ),
+          ].map((m) => m[0]),
+        ),
+      ];
+      console.log(`  ${DATASET} の一覧ページへのリンク: ${found.length} 本`);
+      for (const f of found) console.log(`    ${f}`);
+      for (const f of found) {
+        const abs = new URL(f, index).toString();
+        await wait();
+        const r2 = await fetch(abs, { headers: { "User-Agent": UA } });
+        console.log(`datalist: ${abs} → HTTP ${r2.status}`);
+        if (r2.ok) {
+          html = await r2.text();
+          DATALIST = abs;
+          break;
+        }
+      }
+      if (DATALIST) break;
+    }
   }
   if (!DATALIST) {
     console.log("一覧が取れない。ここで終わる（推測で URL を組まない）。");
