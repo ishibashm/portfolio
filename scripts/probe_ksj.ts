@@ -78,6 +78,38 @@ async function main() {
     byVersion.set(ver, set);
   }
   console.log(`zip の URL: ${urls.size} 本、年版: ${byVersion.size}`);
+  if (urls.size === 0) {
+    /* 1 回目（run 33947688471）は HTTP 200 なのに 0 本だった。ページの
+       作りが想定と違う（リンクを JS が組む、相対パス、別の一覧を XHR で
+       読む、など）。**推測で URL を組まずに**、中身を出して次を決める。 */
+    console.log(`\nHTML は ${html.length} 文字。手がかりを出す:`);
+    const a29 = [
+      ...new Set(
+        [...html.matchAll(/[^"'\s<>]*A29[^"'\s<>]*/g)].map((m) => m[0]),
+      ),
+    ];
+    console.log(`  "A29" を含む語: ${a29.length} 種`);
+    for (const t of a29.slice(0, 20)) console.log(`    ${t}`);
+    const zips = [
+      ...new Set(
+        [...html.matchAll(/[^"'\s<>]*\.zip[^"'\s<>]*/g)].map((m) => m[0]),
+      ),
+    ];
+    console.log(`  ".zip" を含む語: ${zips.length} 種`);
+    for (const t of zips.slice(0, 10)) console.log(`    ${t}`);
+    const scripts = [...html.matchAll(/<script[^>]*src=["']([^"']+)["']/g)].map(
+      (m) => m[1],
+    );
+    console.log(`  script src: ${scripts.length} 本`);
+    for (const t of scripts.slice(0, 15)) console.log(`    ${t}`);
+    const onclicks = [...html.matchAll(/onclick=["']([^"']{0,200})/g)].map(
+      (m) => m[1],
+    );
+    console.log(`  onclick: ${onclicks.length} 個（先頭 5）`);
+    for (const t of onclicks.slice(0, 5)) console.log(`    ${t}`);
+    const title = html.match(/<title>([^<]*)<\/title>/)?.[1] ?? "";
+    console.log(`  title: ${title}`);
+  }
   for (const [ver, prefs] of [...byVersion.entries()].sort()) {
     console.log(`  ${ver}: ${prefs.size} 県`);
   }
