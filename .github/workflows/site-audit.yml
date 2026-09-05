@@ -96,7 +96,10 @@ jobs:
           # 失敗時は応答ヘッダと冒頭を必ずダンプする（初回実行がまさに
           # これで、200 なのに中身が違う、までしか分からなかった）。
           BODY=$(curl -s --compressed "$BASE/llms.txt")
-          if ! echo "$BODY" | grep -q "Cloud Palette"; then
+          # ここも `echo | grep -q` にしない（下の記事の図と同じ理由）。
+          # llms.txt では表に出たことが無いが、仕組みは同じなので、
+          # 本文が育った日に黙って赤くなる。出てから直すものではない。
+          if [[ "$BODY" != *"Cloud Palette"* ]]; then
             echo "::error::llms.txt にサイト名が無い。生成が壊れている可能性" | tee -a "$GITHUB_STEP_SUMMARY"
             echo "--- llms.txt の応答ヘッダ ---" | tee -a "$GITHUB_STEP_SUMMARY"
             curl -sI "$BASE/llms.txt" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -177,7 +180,19 @@ jobs:
           # それで失敗にするのは筋が通らない。
           if [ -n "$SAMPLE" ]; then
             PAGE=$(curl -s --compressed "$BASE/blog/$SAMPLE")
-            if echo "$PAGE" | grep -q "/blog/$SAMPLE\.png"; then
+            # **`echo | grep -q` にしない。**grep -q は最初の一致で即座に
+            # 終わるので、書き手（echo）が SIGPIPE で落ちる。pipefail は
+            # 書き手の失敗をパイプライン全体の失敗として返すため、
+            # **一致したのに偽になる。**
+            #
+            # 記事ページは 166KB あってパイプのバッファ（64KB）を超える
+            # ので、毎回これに当たった。2 回赤くして原因を推測し、3 回目に
+            # 応答をダンプして初めて分かった（img も og:image も、最初から
+            # 正しく出ていた）。本文が小さいと書き切れてしまうので、
+            # llms.txt の検査は同じ書き方でも表に出ていない。
+            #
+            # シェルの組み込みで照合すればパイプを使わずに済む。
+            if [[ "$PAGE" == *"/blog/$SAMPLE.png"* ]]; then
               echo "記事の本文に図が出ている（$SAMPLE で確認）" | tee -a "$GITHUB_STEP_SUMMARY"
             else
               echo "::error::$SAMPLE の HTML に図が出ていない" | tee -a "$GITHUB_STEP_SUMMARY"
