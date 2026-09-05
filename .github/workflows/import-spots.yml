@@ -66,6 +66,13 @@ jobs:
           #
           # 先に add して、**索引と HEAD の差**で見る。これなら新規
           # ファイルも変更も同じように拾える。
+          # **prettier に通してから add する。**書き出しは
+          # JSON.stringify で、prettier の書式とは違う。lefthook の
+          # pre-commit が新規ファイルを弾いて、コミットが失敗した
+          # （run 33940656716）。フックは正しく仕事をしているので、
+          # 外すのではなく合わせる。--no-verify で越えない。
+          npx prettier --write src/data/powerSpots.json
+
           git add src/data/powerSpots.json
           if git diff --cached --quiet; then
             echo "変化なし。コミットしない。"
