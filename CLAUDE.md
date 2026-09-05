@@ -174,6 +174,13 @@ Leaflet の地図は 5 つある（`ArbitrageMapInner`・`MagneticMapInner`・
 - 八方位の扇形の頂点 … `utils/directionGeo` の `directionWedgePoints`
 - 地図クリックで座標を拾う … `map/MapClickPicker`
 - 器のサイズ追従 … `map/InvalidateMapSize`
+- 名所（一宮・名勝。Wikidata）… `map/PowerSpotLayer`（判定は
+  `lib/powerSpots` の `spotFromBase`。SpotVerdict と同じ経路）
+- 利用者が登録した地点（端末の localStorage だけ）… `map/UserSpotLayer`
+  （置き場は `lib/userSpots`。**サーバーに送らない**）
+- 4 層の盤から吹き出し用の 8 方位セルを組む … `lib/spotCellsFromLayers`
+  （暦エンジンを引くので、物件検索の地図が読む `lib/powerSpots` には
+  置かない）
 
 集約する前は同じものが 2〜5 か所に写されていて、**4 件の実害が出て
 いた**（#774〜#778 で解消）。
