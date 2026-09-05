@@ -16,6 +16,7 @@ import {
 import {
   loadProfilePresets,
   saveProfilePresets,
+  deleteProfilePreset,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { getProfileStorageMode } from "@/lib/profilePresentation";
@@ -142,6 +143,9 @@ export function PersonalProfileConfig({
       fetch,
       window.localStorage,
     );
+    // 保存は「足す・上書き」で、他所で足したものは残る。返ってきた
+    // 最新の一覧で差し替える（この部品の一覧は古いことがある）
+    setPresets(result.presets);
     setPresetCloudSynced(result.cloudSynced);
     setNeedsLogin(result.reason === "unauthenticated");
     return result.cloudSynced;
@@ -221,8 +225,16 @@ export function PersonalProfileConfig({
     const target = presets.find((p) => p.id === selectedPresetId);
     if (!confirm(`プリセット「${target?.name}」を削除してもよろしいですか？`))
       return;
-    const updated = presets.filter((p) => p.id !== selectedPresetId);
-    await savePresetsToStorage(updated);
+    // 消すのは専用の口で。古い一覧を丸ごと保存すると、他所で足した
+    // ものまで消える（saveProfilePresets は足す・上書きしかしない）
+    const result = await deleteProfilePreset(
+      selectedPresetId,
+      fetch,
+      window.localStorage,
+    );
+    setPresets(result.presets);
+    setPresetCloudSynced(result.cloudSynced);
+    setNeedsLogin(result.reason === "unauthenticated");
     setSelectedPresetId("");
     setNewPresetName("");
   };

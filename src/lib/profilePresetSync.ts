@@ -220,17 +220,94 @@ export async function loadProfilePresets(
   }
 }
 
+export interface SaveResult {
+  cloudSynced: boolean;
+  reason?: SyncFailureReason;
+  /** 保存後の一覧（クラウドと端末を合わせた最新）。呼び出し側はこれで state を差し替える */
+  presets: ProfilePreset[];
+}
+
+/**
+ * いま分かっている最新の一覧（クラウド ∪ 端末）。
+ *
+ * 保存の直前に読む。呼び出し側が持っている一覧は古いことがある——
+ * 別の頁・別のタブ・別の端末で足したものが無い。**その古い一覧で
+ * 全体を置き換えると、その間に足したものが消える。**実際に起きた
+ * （設定バー・ホーム・ダッシュボード・wealth の 4 か所がそれぞれ
+ * マウント時の一覧を持っていて、後から保存した所が先に足したものを
+ * 消していた）。
+ *
+ * クラウドが明示的に空（presets_initialized）なら空を最新とする
+ * （loadProfilePresets と同じ判断。別の端末で全部消したのを、古い
+ * 端末の控えで復活させない）。
+ */
+async function latestPresets(
+  fetcher: Fetcher,
+  storage: Storage,
+): Promise<ProfilePreset[]> {
+  const localPresets = readLocalPresets(storage);
+  try {
+    const response = await fetcher("/api/profile-presets");
+    if (!response.ok) return localPresets;
+    const data: unknown = await response.json();
+    const record =
+      data && typeof data === "object" ? (data as Record<string, unknown>) : {};
+    const maybePresets = record.presets;
+    const cloudPresets =
+      Array.isArray(maybePresets) && maybePresets.every(isProfilePreset)
+        ? maybePresets
+        : [];
+    if (cloudPresets.length > 0)
+      return mergePresets(cloudPresets, localPresets);
+    if (record.presets_initialized === true) return [];
+    return localPresets;
+  } catch {
+    return localPresets;
+  }
+}
+
+async function persist(
+  presets: ProfilePreset[],
+  fetcher: Fetcher,
+  storage: Storage,
+): Promise<SaveResult> {
+  cachePresets(storage, presets);
+  try {
+    const upload = await uploadPresets(fetcher, presets);
+    return { cloudSynced: upload.ok, reason: upload.reason, presets };
+  } catch {
+    return { cloudSynced: false, reason: "offline", presets };
+  }
+}
+
+/**
+ * 足す・上書きする。**消さない。**
+ *
+ * 渡された一覧の項目を、最新の一覧（latestPresets）に id で重ねる。
+ * 渡された一覧に無い id は残す——呼び出し側が知らないだけで、他所で
+ * 足したものだから。消したいときは deleteProfilePreset を使う。
+ */
 export async function saveProfilePresets(
   presets: ProfilePreset[],
   fetcher: Fetcher,
   storage: Storage,
-): Promise<{ cloudSynced: boolean; reason?: SyncFailureReason }> {
-  cachePresets(storage, presets);
+): Promise<SaveResult> {
+  const base = await latestPresets(fetcher, storage);
+  const merged = new Map(base.map((preset) => [preset.id, preset]));
+  for (const preset of presets) merged.set(preset.id, preset);
+  return persist([...merged.values()], fetcher, storage);
+}
 
-  try {
-    const upload = await uploadPresets(fetcher, presets);
-    return { cloudSynced: upload.ok, reason: upload.reason };
-  } catch {
-    return { cloudSynced: false, reason: "offline" };
-  }
+/** 1 件消す。最新の一覧から id を外して保存する。 */
+export async function deleteProfilePreset(
+  id: string,
+  fetcher: Fetcher,
+  storage: Storage,
+): Promise<SaveResult> {
+  const base = await latestPresets(fetcher, storage);
+  return persist(
+    base.filter((preset) => preset.id !== id),
+    fetcher,
+    storage,
+  );
 }

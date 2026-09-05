@@ -6,6 +6,7 @@ import type { Settings } from "@/lib/userSettings";
 import {
   loadProfilePresets,
   saveProfilePresets,
+  deleteProfilePreset,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { ALL_DIRECTIONS, DIRECTION_LABELS } from "@/utils/auspiciousDays";
@@ -610,6 +611,8 @@ export default function RegionalWealthPage() {
     setPresets(updated);
     if (typeof window === "undefined") return;
     const result = await saveProfilePresets(updated, fetch, window.localStorage);
+    // 足す・上書きだけ。他所で足したものは残るので、返ってきた最新で差し替える
+    setPresets(result.presets);
     setPresetCloudSynced(result.cloudSynced);
     setPresetNeedsLogin(result.reason === "unauthenticated");
   };
@@ -689,8 +692,14 @@ export default function RegionalWealthPage() {
 
   const handleDeletePreset = () => {
     if (!selectedPresetId) return;
+    const id = selectedPresetId;
     setSelectedPresetId("");
-    void persistPresets(presets.filter((p) => p.id !== selectedPresetId));
+    // 消すのは専用の口で（古い一覧の丸ごと保存で他所の分まで消さない）
+    void deleteProfilePreset(id, fetch, window.localStorage).then((result) => {
+      setPresets(result.presets);
+      setPresetCloudSynced(result.cloudSynced);
+      setPresetNeedsLogin(result.reason === "unauthenticated");
+    });
   };
 
   const formatCurrency = (value: number) => {
