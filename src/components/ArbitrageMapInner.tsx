@@ -91,7 +91,7 @@ const OVERVIEW_ZOOM_MAX = 10;
 const SECTORS_STORAGE_KEY = "arbitrage_show_sectors";
 /* 距離の輪。既定は消えている（目盛りは要るときだけ）。 */
 const RINGS_STORAGE_KEY = "arbitrage_show_rings";
-/* パワースポット（諸国一宮）。既定は消えている。一覧は押されてから読む。 */
+/* パワースポット（一宮・名勝）。既定は消えている。一覧は押されてから読む。 */
 const SPOTS_STORAGE_KEY = "arbitrage_show_spots";
 
 /**
@@ -1686,7 +1686,7 @@ export default function ArbitrageMapInner({
                   ◎ 距離 {showRings ? "表示中" : "非表示"}
                 </button>
               )}
-              {/* パワースポット（諸国一宮）。出発地が無くても場所は出せる
+              {/* パワースポット（一宮・名勝）。出発地が無くても場所は出せる
                   ので hasBase で隠さない。方位と段階は出発地があるときだけ
                   吹き出しに載る。 */}
               <button
@@ -1697,8 +1697,8 @@ export default function ArbitrageMapInner({
                 }}
                 title={
                   showSpots
-                    ? "一宮（パワースポット）を消す"
-                    : "一宮（パワースポット）を出す。押すと出発地からの方位と段階が見られます"
+                    ? "名所（一宮・名勝）を消す"
+                    : "名所（一宮・名勝）を出す。押すと出発地からの方位と段階が見られます"
                 }
                 aria-pressed={showSpots}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
@@ -1707,7 +1707,7 @@ export default function ArbitrageMapInner({
                     : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
                 }`}
               >
-                ⛩ 一宮 {showSpots ? "表示中" : "非表示"}
+                ⛩ 名所 {showSpots ? "表示中" : "非表示"}
               </button>
               {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
@@ -2044,7 +2044,7 @@ export default function ArbitrageMapInner({
           enabled={showRings}
         />
 
-        {/* パワースポット（諸国一宮）。判定は SpotVerdict と同じ経路
+        {/* パワースポット（一宮・名勝）。判定は SpotVerdict と同じ経路
             （lib/powerSpots）。「この地点を判定へ」は地図クリックと同じ
             受け口 onInspectSpot に渡す。 */}
         <PowerSpotLayer
