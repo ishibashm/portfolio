@@ -1,0 +1,28 @@
+# 国土数値情報 A29（用途地域）の一括ファイルが何があるかを見る。
+# ダウンロードはしない（HEAD と一覧ページの GET だけ）。
+#
+# 作業環境からは nlftp.mlit.go.jp に届かない（経路の方針で 403）ので、
+# Actions で回す。probe-zoning と同じ作法。
+name: Probe KSJ
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Probe
+        run: npx tsx scripts/probe_ksj.ts | tee -a "$GITHUB_STEP_SUMMARY"
