@@ -141,10 +141,26 @@ jobs:
           # 出たのかログから分かるようにする。値は出さない。
           if [ -n "$GOOGLE_CLIENT_ID" ]; then
             echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
-            echo "::notice::NEXT_PUBLIC_GOOGLE_CLIENT_ID あり。/login は Google Identity Services（Google の画面に cloud-palette.com が出る）。"
-          else
-            echo "::warning::Google のクライアント ID が空。/login は従来の Supabase 経由のままで、Google の画面には supabase.co が出ます。置き場は Settings → Secrets and variables → Actions の Variables タブ（名前は NEXT_PUBLIC_GOOGLE_CLIENT_ID）。Environments の中の変数は vars. から読めません。"
           fi
+          # Google のクライアント ID は、出どころを問わず**組み上がった .env**で
+          # 見る。vars / secrets の参照だけを見ていると、ENV_FILE の中に直接
+          # 書いた場合を「未設定」と誤って報告する。ADMIN_EMAIL と同じ形。
+          #
+          # 無くても build も deploy も緑で終わり、/login だけが従来の
+          # Supabase 経由に黙って落ちる（Google の画面に supabase.co が出る）
+          # ので、どちらで出たのかをここに残す。値は出さない。
+          if grep -qE '^NEXT_PUBLIC_GOOGLE_CLIENT_ID=.+' .env; then
+            echo "::notice::Google のクライアント ID あり。/login は Google Identity Services（Google の画面に cloud-palette.com が出る）。"
+            echo "Google ログイン: **GIS**（画面に cloud-palette.com）" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Google のクライアント ID が空。/login は従来の Supabase 経由のままで、Google の画面には supabase.co が出ます。置き場は Settings → Secrets and variables → Actions の Variables タブ（リポジトリ変数。名前は NEXT_PUBLIC_GOOGLE_CLIENT_ID）。Environments の中に入れたものは vars. からも secrets. からも読めません。"
+            echo "Google ログイン: **従来の Supabase 経由**（画面に supabase.co。クライアント ID が空）" | tee -a "$GITHUB_STEP_SUMMARY"
+            # 名前の打ち間違いを見つけるため、.env にある NEXT_PUBLIC_ の鍵を
+            # **名前だけ**出す。値は出さない。
+            echo "参考: .env にある NEXT_PUBLIC_ の鍵（名前のみ）" | tee -a "$GITHUB_STEP_SUMMARY"
+            grep -oE '^NEXT_PUBLIC_[A-Za-z0-9_]+' .env | sort -u | sed 's/^/  - /' | tee -a "$GITHUB_STEP_SUMMARY" || true
+          fi
+
           # ここまでで組み上がった .env に ADMIN_EMAIL があることを確かめる。
           # 出どころは問わない（ENV_FILE の中でも、上の追記でもよい）。
           #
