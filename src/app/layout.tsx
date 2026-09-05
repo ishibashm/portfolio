@@ -77,12 +77,33 @@ export const metadata: Metadata = {
       },
     ],
   },
+  /*
+    **card だけを置く。title / description / images をここに書かない。**
+
+    2026-09-05 に実測して分かった。ここに title・description・images を
+    書いていたせいで、**サイト内の全ページがルートの値を継承していた。**
+    子ページはどれも openGraph しか上書きしていない（twitter を書いた
+    ページは 1 つも無い）ので、
+
+        og:title      北海道札幌市中央区から見た方位別のエリアと家賃相場
+        twitter:title Cloud Palette | 引越しの方位とタイミングを決める
+
+    という食い違いが 1,127 の市区町村ページ・47 の県ページ・27 の記事の
+    全部で起きていた。X で共有すると、どこを共有しても同じカードになる。
+    #948 で og:image を記事ごとにしたときに、こちら側を見落としている。
+
+    ここを空にすると、Next が**各ページの title / description / og:image**
+    から twitter を組む。ビルド後の HTML で確かめた（推測ではない）。
+
+        記事      twitter:title 凶方位への移動を、吉が上回ることはできるのか
+                  twitter:image /blog/can-good-outweigh-a-bad-move.png
+        市区町村  twitter:title 北海道札幌市中央区から見た方位別の…
+        ホーム    従来どおり（ルートの title / description / ogp.png）
+
+    card だけは既定が summary（小さなサムネイル）なので、ここに残す。
+  */
   twitter: {
-    // summary_large_image を名乗る以上、画像が要る。
     card: "summary_large_image",
-    title: TITLE,
-    description: SITE_DESCRIPTION,
-    images: ["/ogp.png"],
   },
   /*
     画像プレビューの上限。**指定が無いときの既定は standard**（小さな
