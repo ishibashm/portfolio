@@ -90,5 +90,5 @@ jobs:
             echo "変化なし。コミットしない。"
             exit 0
           fi
-          git commit -m "chore(data): 用途地域の全国俯瞰タイル（z5〜z10）を国土数値情報 A29 から焼く"
+          git commit -m "chore(data): 用途地域の全国俯瞰タイル（z5〜z9）を国土数値情報 A29 から焼く"
           git push origin HEAD:master
