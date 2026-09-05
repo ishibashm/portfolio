@@ -22,6 +22,7 @@ import type {
   getHonmeiStar,
 } from "../../utils/ephemerisEngine";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
+import { nearestMunicipality, nearestPlaceLabel } from "@/lib/nearestPlace";
 import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
 
@@ -457,6 +458,26 @@ export default function DestinationMapPanel({
                   className="bg-white border border-stone-300 focus:border-emerald-200 text-stone-600 text-sm px-2 py-1 rounded-xl outline-none w-1/3 transition-colors font-mono"
                 />
               </div>
+              {/* **そこがどこなのかを出す。**
+                  利用者の報告：「その地点がそもそもどこに当たるのかが
+                  分からない」。座標だけが出ていて、自分がどこを見て
+                  いるのか分からないまま吉凶が出ていた。
+
+                  逆引きの API は持っていない。足すと**地点を選ぶたびに
+                  外部へ要求**が出るので、手元の 1,894 市区町村の代表点
+                  から最寄りを引く（lib/nearestPlace）。要求ゼロ・即時。
+
+                  返るのは「その座標を含む自治体」ではなく「代表点が
+                  いちばん近い自治体」なので、**「〜付近」と書いて断定
+                  しない。**遠いときは距離を出す。 */}
+              {targetLat !== null && targetLon !== null && (
+                <div className="relative z-10 mt-1 text-[10px] text-stone-600">
+                  📍{" "}
+                  {nearestPlaceLabel(
+                    nearestMunicipality(targetLat, targetLon),
+                  ) ?? "場所を特定できません"}
+                </div>
+              )}
               {targetLat !== null && targetLon !== null && (
                 <div className="flex gap-2 relative z-10 mt-1">
                   <button
