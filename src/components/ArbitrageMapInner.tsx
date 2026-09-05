@@ -42,6 +42,7 @@ import {
   normalizeHazardTab,
   type HazardTabId,
 } from "@/lib/hazardLayers";
+import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
 import { ZoningLayer } from "@/components/relocation/ZoningLayer";
 import { ZoningLegend } from "@/components/relocation/ZoningLegend";
 import type { ZoningName } from "@/utils/zoning";
@@ -1107,9 +1108,16 @@ export default function ArbitrageMapInner({
 
   // Render direction sectors
   const sectorLayers = useMemo(() => {
-    // 塗りを外して境界線だけにする条件。俯瞰（県の塗り分けが下にある）と、
-    // 件数バブル（掲載件数の色が下にある）の 2 つ。
-    const outlineOnly = isOverview || showHeatmap;
+    /* 塗りを外して境界線だけにする条件は lib/wedgeOverlay に置いてある。
+       ここに条件式を書いていたせいで、後から足した用途地域とハザードが
+       入っていなかった（#147 が防ぐはずだった「2 枚の色が混ざる」状態が
+       そのまま起きていた）。層を足したらあちらへ足すこと。 */
+    const outlineOnly = wedgeOutlineOnly({
+      isOverview,
+      showHeatmap,
+      zoningOn,
+      hazardOn: hazardTab !== "none",
+    });
     return sectors.map((d) => {
       const { color, opacity, dashArray } = d.tier
         ? {
@@ -1227,6 +1235,10 @@ export default function ArbitrageMapInner({
     wedgeRangeKm,
     isOverview,
     showHeatmap,
+    /* 用途地域・ハザードを足したので、切り替えたときに扇形も描き直す。
+       ここに足し忘れると、用途地域を出しても扇形が塗ったままになる。 */
+    zoningOn,
+    hazardTab,
   ]);
 
   if (!mounted) {
