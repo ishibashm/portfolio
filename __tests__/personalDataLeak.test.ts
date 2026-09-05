@@ -42,11 +42,19 @@ function trackedFiles(): string[] {
 
 /** 走査対象。バイナリと、地理データそのもの（座標が偶然当たる）は外す。 */
 const SKIP = /\.(png|jpe?g|gif|ico|webp|woff2?|ttf|pdf|geojson)$/i;
+/**
+ * 全国の公開データそのものも外す。駅名は町丁名と同じものが多く、
+ * `src/data/stations.json`（国土数値情報 N02。9,046 駅）に運営者の住所の
+ * 町丁名と同じ駅名が偶然入っていて、見張りが鳴った（run 33955677869）。
+ * 駅名は公開データで、住所の漏れではない。**個別の名前で除外しない**
+ * （ここに町丁名を書くと、それ自体が漏れになる）。
+ */
+const SKIP_FILES = new Set(["src/data/stations.json"]);
 
 function scan(needle: string): string[] {
   const hits: string[] = [];
   for (const f of trackedFiles()) {
-    if (SKIP.test(f)) continue;
+    if (SKIP.test(f) || SKIP_FILES.has(f)) continue;
     // このテスト自身と、見張り用の値を持つヘルパーは対象外。
     if (f === "__tests__/personalDataLeak.test.ts") continue;
     if (f === "__tests__/helpers/formerDefaults.ts") continue;
