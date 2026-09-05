@@ -97,8 +97,20 @@ const SPOTS: { name: string; lat: number; lon: number }[] = [
   { name: "沖縄県那覇市", lat: 26.2124, lon: 127.6809 },
 ];
 
-/** タイル指定 API のズーム制限を探る。 */
-const ZOOMS = [11, 12, 13, 14, 15];
+/**
+ * タイル指定 API のズーム制限を探る。
+ *
+ * 前回（run 33806982160）は 11〜15 で、11 が返ることまで分かった。
+ * 利用者の要望「用途地域を全国の俯瞰でも見たい」に答えるには、
+ * **10 以下を上流が返すのか**を知る必要がある。返らないなら
+ * 子タイルから組むしかなく、z5 の 1 枚は z11 の 4,096 枚になる
+ * （utils/zoning の註）。返るなら raster の下限をそこまで下げられる。
+ *
+ * 10 以下は「非対応」と「区画が無い」がどちらも 404 で区別できない
+ * （lib/zoningUpstream）ので、本文の先頭（note）も一緒に出す。
+ * 12 は前回と同じ値が返るかを見る対照。
+ */
+const ZOOMS = [5, 6, 7, 8, 9, 10, 11, 12];
 
 function latLonToTile(lat: number, lon: number, zoom: number) {
   const x = Math.floor(((lon + 180) / 360) * Math.pow(2, zoom));
