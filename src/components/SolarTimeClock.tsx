@@ -3715,8 +3715,9 @@ export const SolarTimeClock = () => {
 
       <div className="flex flex-col items-center space-y-4 md:space-y-6 z-10 w-full max-w-[1700px] px-3 md:px-4 animate-fade-in-up mt-4">
         <div className="w-full max-w-[1700px] text-center mb-2 px-4">
-          {/* このコンポーネントはトップページの中に埋め込まれており、
-              ページの h1 は別にある。h1 を 2 つ置くと文書構造が壊れるので h2 にする。 */}
+          {/* このコンポーネントは頁（/relocation/dashboard。以前はトップページ）
+              の中に埋め込まれており、ページの h1 は別にある。h1 を 2 つ置くと
+              文書構造が壊れるので h2 にする。 */}
           <h2 className="text-emerald-500 font-mono text-xl tracking-[0.2em] font-bold mb-2 uppercase drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3">
             Bio-Location Simulator
           </h2>

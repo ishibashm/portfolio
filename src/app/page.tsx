@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Compass, ArrowRight } from "lucide-react";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { QuickProfileBar } from "@/components/home/QuickProfileBar";
-import { LazyMount } from "@/components/LazyMount";
 import {
   CORE_ROUTES,
   ROUTE_GROUPS,
@@ -14,41 +12,6 @@ import {
   SITE_TAGLINE,
   SITE_DESCRIPTION,
 } from "@/lib/siteStructure";
-
-/*
-  **部品を直に読むこと。まとめ役の入口を作って、そこから読まないこと。**
-
-  以前は src/domains/metaphysical という 8 部品を再輸出する入口から
-  読んでいた。1 つだけ取り出しても**束ねられた 8 つ全部が同じチャンクに
-  入る。**ホームが描くのは時計だけなので、残り 7 つは一度も使われないまま
-  配られていた（実測で JS 転送 gzip 386KB → 143KB、未使用 JS 70KB → 0。#392）。
-
-  その入口は #396 で消した。dynamic import の先に再輸出だけの層を挟むと
-  同じことが起きる。
-*/
-const SolarTimeClock = dynamic(
-  () => import("@/components/SolarTimeClock").then((mod) => mod.SolarTimeClock),
-  {
-    ssr: false,
-    loading: () => <ClockPlaceholder />,
-  }
-);
-
-/*
-  読み込み中と、まだ画面に近づいていないときの置き換え。両方で同じものを
-  出す。高さを持たせて、出た瞬間のずれを小さくする。
-*/
-function ClockPlaceholder() {
-  return (
-    <div className="w-full h-80 flex items-center justify-center bg-stone-50/80 rounded-2xl border border-slate-200">
-      <div className="flex items-center gap-2 text-slate-500 font-sans text-sm">
-        <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin" />
-        <span>Solar Time & Geomancy Engine ロード中...</span>
-      </div>
-    </div>
-  );
-}
-
 
 export default function Home() {
   // Prevent browser auto-scrolling to bottom on load
@@ -143,30 +106,10 @@ export default function Home() {
         ))}
       </div>
 
-      {/* 方位と時刻の基礎。引越しの日取りを見るための道具として置く */}
-      <div className="w-full max-w-[1700px] bg-white/95 backdrop-blur-xl border border-slate-300 rounded-3xl p-6 md:p-8 shadow-lg shadow-slate-200/50">
-        <div className="mb-6 border-b border-slate-200 pb-4">
-          <h2 className="text-xl font-bold text-slate-900 font-serif">
-            いまの方位と時刻
-          </h2>
-          <p className="text-xs font-semibold text-slate-700 mt-1">
-            日盤の吉凶は真太陽時で切り替わります。引越し当日の動き出す時刻を決めるときに使います。
-          </p>
-        </div>
-        {/*
-          時計は初期表示に入っていない。360x640 の画面で測ると、ページ全体
-          5833px のうち時計の開始位置は 2856px（4.5 画面ぶん下）。ヘッダー →
-          プロフィール欄 → 中核ページの札 7 枚 → 時計、の 4 番目にある。
-
-          dynamic で分割してあっても、**読み込んだ後は必ず実行される**ので
-          初回表示の待ち時間に乗っていた。画面に近づくまで作らない。
-        */}
-        <div className="p-2 rounded-2xl bg-stone-50/80 border border-slate-200 shadow-inner">
-          <LazyMount fallback={<ClockPlaceholder />}>
-            <SolarTimeClock />
-          </LazyMount>
-        </div>
-      </div>
+      {/* 「いまの方位と時刻」（SolarTimeClock）はここに埋め込んであったが、
+          /relocation/dashboard に頁として移した。CORE_ROUTES の札から辿る。
+          下までスクロールした人に約 1.2MB の JS（lunar-javascript を含む）を
+          必ず配っていたのと、利用者の「重いし使い勝手が良くない」の指摘による。 */}
 
       {/* Monetization Native Ad Banner Unit */}
       <div className="w-full max-w-[1700px]">
