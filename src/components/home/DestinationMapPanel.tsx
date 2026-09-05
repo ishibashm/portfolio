@@ -21,6 +21,7 @@ import type {
   Direction,
   getHonmeiStar,
 } from "../../utils/ephemerisEngine";
+import { PlaceInput } from "@/components/relocation/PlaceInput";
 import type { Layers } from "./ConsultPanel";
 import type { HeatmapColumn, TrendCell } from "../SolarTimeClock";
 
@@ -383,6 +384,29 @@ export default function DestinationMapPanel({
                   />
                 </div>
               )}
+              {/* 地名で入れる。
+                  **ここが座標しか受け付けていなかった**（利用者の報告：
+                  「地点を指定する時に座標でしか指定できないので、特定の
+                  場所で調べたい時はいちいち座標を入力しないといけない」）。
+
+                  同じページの上半分（出生地・出発地）は最初から
+                  PlaceInput を使っていて、地名・郵便番号・座標の 3 通りに
+                  対応している。**目的地だけがその部品を使っていなかった。**
+                  新しく作らず、既にあるものを当てる。 */}
+              <div className="w-full relative z-10 mb-1">
+                <PlaceInput
+                  label="目的地を地名で"
+                  lat={targetLat}
+                  lon={targetLon}
+                  onChange={(newLat, newLon) => {
+                    setTargetLat(Number(newLat.toFixed(5)));
+                    setTargetLon(Number(newLon.toFixed(5)));
+                  }}
+                  help="市区町村名・住所・郵便番号で探せます。座標のままでも入れられます。"
+                />
+              </div>
+              {/* 座標や Google マップの URL を貼る口は残す。地図で拾った
+                  値を貼り付けて使う人がいる（PlaceInput の註と同じ理由）。 */}
               <div className="w-full relative z-10 flex gap-1 mb-1">
                 <input
                   type="text"
