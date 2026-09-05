@@ -125,8 +125,14 @@ jobs:
             echo "R2_BUCKET=$R2_BUCKET" >> .env
             echo "NEXT_PUBLIC_IMAGE_BASE_URL=$IMAGE_BASE_URL" >> .env
           fi
+          # 未設定でも build は通り、/login は従来の Supabase 経由に**黙って**
+          # 落ちる（Google の画面に supabase.co が出る状態に戻る）。どちらで
+          # 出たのかログから分かるようにする。値は出さない。
           if [ -n "$GOOGLE_CLIENT_ID" ]; then
             echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
+            echo "::notice::NEXT_PUBLIC_GOOGLE_CLIENT_ID あり。/login は Google Identity Services（Google の画面に cloud-palette.com が出る）。"
+          else
+            echo "::warning::NEXT_PUBLIC_GOOGLE_CLIENT_ID が未設定（repository variable）。/login は従来の Supabase 経由のままで、Google の画面には supabase.co が出ます。"
           fi
           # ここまでで組み上がった .env に ADMIN_EMAIL があることを確かめる。
           # 出どころは問わない（ENV_FILE の中でも、上の追記でもよい）。
