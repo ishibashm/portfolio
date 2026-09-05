@@ -62,9 +62,15 @@ async function main() {
     return;
   }
   const html = await res.text();
+  /* リンクは datalist からの相対パス（../data/A29/A29-19/A29-19_13_GML.zip）。
+     1 回目（run 33947688471）は絶対パスだけを探して 0 本だった
+     （run 33948048061 で中身を出して分かった。年版は A29-11 と A29-19）。
+     絶対に直して持つ。 */
   const urls = new Set<string>();
-  for (const m of html.matchAll(/\/ksj\/gml\/data\/A29\/[^'"\s]+\.zip/g)) {
-    urls.add(m[0]);
+  for (const m of html.matchAll(
+    /(?:\.\.\/|\/ksj\/gml\/)(data\/A29\/[^'"\s<>]+\.zip)/g,
+  )) {
+    urls.add(`/ksj/gml/${m[1]}`);
   }
   /** 年版（A29-19 など）→ 県コード → URL */
   const byVersion = new Map<string, Map<string, string>>();
