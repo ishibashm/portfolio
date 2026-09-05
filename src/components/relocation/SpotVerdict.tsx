@@ -13,6 +13,7 @@ import { TIER_BADGE_CLASS } from "@/utils/tierDisplay";
 /* 段階の名前は dayTier（暦エンジンを引かない葉）から。auspiciousDays を
    値で import すると、この部品を載せる頁にエンジン一式が乗る。 */
 import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
+import { addUserSpot } from "@/lib/userSpots";
 
 /**
  * 指定した1地点の吉凶を、そのまま画面で見る。
@@ -105,6 +106,8 @@ export function SpotVerdict({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [target, setTarget] = useState<SpotTarget | null>(null);
+  /* 「保存」の結果。端末に置いただけなので、成否を 1 行返せば足りる */
+  const [savedNote, setSavedNote] = useState<string | null>(null);
 
   const hasBase = Number.isFinite(baseLat) && Number.isFinite(baseLon);
 
@@ -279,15 +282,42 @@ export function SpotVerdict({
             </p>
           )}
 
-          {onFocus && (
+          <div className="flex flex-wrap items-center gap-3">
+            {onFocus && (
+              <button
+                type="button"
+                onClick={() => onFocus(target.lat, target.lon)}
+                className="text-[10px] font-bold text-indigo-600 hover:underline"
+              >
+                地図でこの地点を見る →
+              </button>
+            )}
+            {/* 端末の localStorage に置く（lib/userSpots）。サーバーには
+                送らない。地図の UserSpotLayer が購読して ★ で出す。 */}
             <button
               type="button"
-              onClick={() => onFocus(target.lat, target.lon)}
-              className="text-[10px] font-bold text-indigo-600 hover:underline"
+              onClick={() => {
+                const r = addUserSpot({
+                  name: target.name,
+                  lat: target.lat,
+                  lon: target.lon,
+                });
+                setSavedNote(
+                  r.added
+                    ? "この端末に保存しました（地図に ★ で出ます）"
+                    : r.reason === "full"
+                      ? "保存できる地点は 50 件までです"
+                      : "同じ地点が保存済みです（名前を更新しました）",
+                );
+              }}
+              className="text-[10px] font-bold text-violet-700 hover:underline"
             >
-              地図でこの地点を見る →
+              ★ この地点を保存
             </button>
-          )}
+            {savedNote && (
+              <span className="text-[10px] text-stone-500">{savedNote}</span>
+            )}
+          </div>
         </div>
       )}
     </div>

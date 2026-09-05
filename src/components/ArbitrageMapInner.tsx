@@ -45,6 +45,7 @@ import {
 import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
 import { DistanceRings } from "@/components/map/DistanceRings";
 import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
+import { UserSpotLayer } from "@/components/map/UserSpotLayer";
 import { ZoningLayer } from "@/components/relocation/ZoningLayer";
 import { ZoningLegend } from "@/components/relocation/ZoningLegend";
 import type { ZoningName } from "@/utils/zoning";
@@ -2050,6 +2051,15 @@ export default function ArbitrageMapInner({
         <PowerSpotLayer
           enabled={showSpots}
           zoom={zoom}
+          baseLat={hasBase ? baseLat : null}
+          baseLon={hasBase ? baseLon : null}
+          useClassical={useClassical}
+          dirKigaku={dirKigaku}
+          onInspect={onInspectSpot}
+        />
+
+        {/* 利用者が登録した地点（端末の localStorage）。常に出す。 */}
+        <UserSpotLayer
           baseLat={hasBase ? baseLat : null}
           baseLon={hasBase ? baseLon : null}
           useClassical={useClassical}
