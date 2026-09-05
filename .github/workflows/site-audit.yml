@@ -176,11 +176,33 @@ jobs:
           # 図の有無は記事ごとに違ってよい、と上で決めたばかりなので、
           # それで失敗にするのは筋が通らない。
           if [ -n "$SAMPLE" ]; then
-            if curl -sf "$BASE/blog/$SAMPLE" | grep -q "/blog/$SAMPLE.png"; then
+            PAGE=$(curl -s --compressed "$BASE/blog/$SAMPLE")
+            if echo "$PAGE" | grep -q "/blog/$SAMPLE\.png"; then
               echo "記事の本文に図が出ている（$SAMPLE で確認）" | tee -a "$GITHUB_STEP_SUMMARY"
             else
-              echo "::error::$SAMPLE の HTML に図が出ていない（ファイルはあるのに頁に出ていない）" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "::error::$SAMPLE の HTML に図が出ていない" | tee -a "$GITHUB_STEP_SUMMARY"
               echo "FAIL=1" >> "$GITHUB_ENV"
+
+              # **落ちたときに「何が返っていたか」が無いと調べられない。**
+              # llms.txt の検査は最初からこれをやっているのに、こちらに
+              # 写し忘れていた。おかげで 2 回続けて赤くしながら、原因を
+              # 推測でしか言えなかった（2026-09-05）。
+              #
+              # いちばん知りたいのは og:image。記事の図は blogImagePath が
+              # **実行時に existsSync でファイルの有無を見て**決めていて、
+              # 無ければ /ogp.png に落ちる。og:image も落ちていれば
+              # 「本番でファイルが見えていない」、og:image は正しいのに
+              # img だけ無いなら「描画側」と切り分けられる。
+              echo "--- 応答ヘッダ ---" | tee -a "$GITHUB_STEP_SUMMARY"
+              curl -sI "$BASE/blog/$SAMPLE" | head -20 | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "--- og:image / twitter:image ---" | tee -a "$GITHUB_STEP_SUMMARY"
+              { echo "$PAGE" | grep -o 'og:image" content="[^"]*"' | head -2 || true; } \
+                | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "--- 本文に出ている img（先頭 5 件）---" | tee -a "$GITHUB_STEP_SUMMARY"
+              { echo "$PAGE" | grep -o '<img[^>]*src="[^"]*"' | head -5 || true; } \
+                | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "--- 本文の長さ（バイト）---" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "$PAGE" | wc -c | tee -a "$GITHUB_STEP_SUMMARY"
             fi
           fi
 
