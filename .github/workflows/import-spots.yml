@@ -78,5 +78,5 @@ jobs:
             echo "変化なし。コミットしない。"
             exit 0
           fi
-          git commit -m "chore(data): 一宮の一覧を Wikidata から取り込む"
+          git commit -m "chore(data): 名所（一宮・名勝）の一覧を Wikidata から取り込む"
           git push origin HEAD:master

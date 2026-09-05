@@ -14,21 +14,44 @@ import { TIER_LABELS, type DayTier } from "@/utils/dayTier";
 import type { DirectionCell } from "@/components/relocation/SpotVerdict";
 
 /**
- * パワースポット（諸国一宮）の層。**共有部品**（CLAUDE.md 3 節。地図は
+ * パワースポット（一宮・名勝）の層。**共有部品**（CLAUDE.md 3 節。地図は
  * 5 つあり、写すと必ず食い違う）。
  *
  * - 一覧は押されてから読む（`loadPowerSpots`）。既定は非表示
  * - 遠景では升目にまとめる（`clusterByTile`。物件の升目と同じ関数）
- * - 吹き出しには「一宮である」という事実と、出発地から見た方位・距離・
+ * - 吹き出しには「一宮／名勝である」という事実と、出発地から見た方位・距離・
  *   その日の段階だけを出す。**効果や利益は書かない**
  * - 「この地点を判定へ」は地図クリックと同じ受け口（onInspect）へ渡す。
  *   判定の画面を別に作らない
  */
 
-const SPOT_STYLE = {
+/**
+ * 根拠ごとの色。神社（一宮）は琥珀、名勝は緑。**色の意味は 2 つだけ**に
+ * 留める（この地図には方位の吉凶・候補の件数の色が既に乗っている）。
+ * 根拠の文字列は scripts/import_spots.ts の DESIGNATIONS と同じ。
+ */
+const SPOT_STYLE_SHRINE = {
   color: "#7c2d12",
   fillColor: "#f59e0b",
   fillOpacity: 0.85,
+  weight: 1.5,
+  opacity: 0.9,
+};
+const SPOT_STYLE_SCENIC = {
+  color: "#14532d",
+  fillColor: "#22c55e",
+  fillOpacity: 0.85,
+  weight: 1.5,
+  opacity: 0.9,
+};
+function styleFor(basis: string) {
+  return basis.includes("名勝") ? SPOT_STYLE_SCENIC : SPOT_STYLE_SHRINE;
+}
+/** 升目にまとめたときの色（混在するので中立） */
+const SPOT_STYLE_CLUSTER = {
+  color: "#57534e",
+  fillColor: "#a8a29e",
+  fillOpacity: 0.55,
   weight: 1.5,
   opacity: 0.9,
 };
@@ -97,27 +120,27 @@ export function PowerSpotLayer({
               key={`spots-${c.lat.toFixed(3)}-${c.lon.toFixed(3)}`}
               center={[c.lat, c.lon]}
               radius={r}
-              pathOptions={{ ...SPOT_STYLE, fillOpacity: 0.55 }}
+              pathOptions={SPOT_STYLE_CLUSTER}
             >
               <Tooltip direction="top" offset={[0, -r]}>
-                {`一宮 ${c.count} 社（拡大すると分かれます）`}
+                {`名所 ${c.count} 件（拡大すると分かれます）`}
               </Tooltip>
               <Popup>
-                <div className="font-sans text-xs text-gray-900 p-2 min-w-[160px]">
-                  <div className="font-bold">このあたりの一宮 {c.count} 社</div>
+                <div className="font-sans text-xs text-gray-900 p-2 min-w-[160px] max-h-60 overflow-y-auto">
+                  <div className="font-bold">このあたりの名所 {c.count} 件</div>
                   <ul className="mt-1 space-y-0.5">
                     {c.items.map((s) => (
                       <li key={s.id}>
                         {s.name}
                         <span className="text-stone-500">
                           （{s.pref}
-                          {s.city}）
+                          {s.city}・{s.basis}）
                         </span>
                       </li>
                     ))}
                   </ul>
                   <div className="text-[9px] text-stone-500 mt-2 leading-snug">
-                    {"ズームすると 1 社ずつ選べます。"}
+                    {"ズームすると 1 件ずつ選べます。"}
                   </div>
                 </div>
               </Popup>
@@ -171,7 +194,7 @@ function SpotMarker({
     <CircleMarker
       center={[spot.lat, spot.lon]}
       radius={6}
-      pathOptions={SPOT_STYLE}
+      pathOptions={styleFor(spot.basis)}
     >
       <Tooltip direction="top" offset={[0, -6]}>
         {spot.name}
@@ -226,7 +249,7 @@ function SpotMarker({
           )}
           <div className="text-[9px] text-stone-500 mt-2 leading-snug">
             {
-              "一覧は Wikidata の諸国一宮（CC0）。所在地は座標から引いた最寄りの市区町村です。"
+              "一覧は Wikidata（CC0）の指定（一宮・名勝）。所在地は座標から引いた最寄りの市区町村です。"
             }
           </div>
         </div>
