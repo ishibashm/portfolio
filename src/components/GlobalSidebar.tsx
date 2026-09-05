@@ -15,6 +15,13 @@ const loadSupabase = () =>
 const hasAuthCookie = () =>
   process.env.NODE_ENV === "development" ||
   /(?:^|;\s*)sb-[^=;]*-auth-token(?:\.\d+)?=/.test(document.cookie);
+
+/*
+  cookie の変化を知らせる仕組みは無い。ログイン/ログアウトはどちらも
+  /login への遷移を伴い layout ごと描き直るので、購読は要らない。
+  useSyncExternalStore の形に合わせるための空の口。
+*/
+const subscribeAuthCookie = () => () => {};
 import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 import {
   Clock,
@@ -124,6 +131,29 @@ export function GlobalSidebar() {
   // 未ログインでもサイドバーは全項目を出せてしまい、ログイン済みに見えてしまう。
   // undefined = 確認中（この間はログイン/ログアウトのどちらも出さない）
   const [email, setEmail] = useState<string | null | undefined>(undefined);
+
+  /*
+    **ログインの入口が出ない不具合があった**（2026-09-05、利用者の報告
+    「ログインどこからするか、消えちゃった？」）。
+
+    下の効果は速度のために「認証 cookie が無ければ supabase を読まない」
+    という早期 return を持つ。そのとき email は undefined のままで、
+    描画側はそれを**確認中**と読んでログインもログアウトも出さない。
+    つまり**一度もログインしていない端末では、入口が永久に出なかった。**
+
+    cookie が無いのは「確認できない」ではなく**「未ログインだと確認
+    できた」**。なので email を待たずに、ここで先に決める。
+
+    効果の中で setEmail(null) を呼ぶ手もあるが、それは
+    react-hooks/set-state-in-effect を 1 件増やす（CLAUDE.md 4 節：
+    新しく書くコードで増やさない）。cookie は購読するものが無いので、
+    サーバーでは false、クライアントでは実物を読む形にする。
+  */
+  const maybeLoggedIn = useSyncExternalStore(
+    subscribeAuthCookie,
+    hasAuthCookie,
+    () => false,
+  );
 
   useEffect(() => {
     let active = true;
@@ -381,7 +411,9 @@ export function GlobalSidebar() {
             </div>
           )}
 
-          {email === undefined ? null : email ? (
+          {/* cookie が無い＝未ログインと分かっているので、確認を待たない。
+              cookie があるあいだだけ email の確認中（undefined）を待つ。 */}
+          {maybeLoggedIn && email === undefined ? null : email ? (
             <button
               onClick={handleLogout}
               className={`flex items-center justify-start gap-3 text-rose-500 hover:text-rose-600 hover:bg-rose-50 p-2 rounded-xl transition-colors ${centerWhenCollapsed}`}
