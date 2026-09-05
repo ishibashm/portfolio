@@ -44,6 +44,7 @@ import {
 } from "@/lib/hazardLayers";
 import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
 import { DistanceRings } from "@/components/map/DistanceRings";
+import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
 import { ZoningLayer } from "@/components/relocation/ZoningLayer";
 import { ZoningLegend } from "@/components/relocation/ZoningLegend";
 import type { ZoningName } from "@/utils/zoning";
@@ -90,6 +91,8 @@ const OVERVIEW_ZOOM_MAX = 10;
 const SECTORS_STORAGE_KEY = "arbitrage_show_sectors";
 /* 距離の輪。既定は消えている（目盛りは要るときだけ）。 */
 const RINGS_STORAGE_KEY = "arbitrage_show_rings";
+/* パワースポット（諸国一宮）。既定は消えている。一覧は押されてから読む。 */
+const SPOTS_STORAGE_KEY = "arbitrage_show_spots";
 
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
@@ -486,6 +489,11 @@ export default function ArbitrageMapInner({
     () =>
       typeof window !== "undefined" &&
       localStorage.getItem(RINGS_STORAGE_KEY) === "1",
+  );
+  const [showSpots, setShowSpots] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
   );
   /*
     現在地。**押されるまで購読しない。**開いた瞬間に位置情報の許可を
@@ -1678,6 +1686,29 @@ export default function ArbitrageMapInner({
                   ◎ 距離 {showRings ? "表示中" : "非表示"}
                 </button>
               )}
+              {/* パワースポット（諸国一宮）。出発地が無くても場所は出せる
+                  ので hasBase で隠さない。方位と段階は出発地があるときだけ
+                  吹き出しに載る。 */}
+              <button
+                onClick={() => {
+                  const next = !showSpots;
+                  setShowSpots(next);
+                  localStorage.setItem(SPOTS_STORAGE_KEY, next ? "1" : "0");
+                }}
+                title={
+                  showSpots
+                    ? "一宮（パワースポット）を消す"
+                    : "一宮（パワースポット）を出す。押すと出発地からの方位と段階が見られます"
+                }
+                aria-pressed={showSpots}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  showSpots
+                    ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
+                    : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                }`}
+              >
+                ⛩ 一宮 {showSpots ? "表示中" : "非表示"}
+              </button>
               {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
               操作が要った。今どちらを見ているのかも画面に出ていない。
@@ -2011,6 +2042,19 @@ export default function ArbitrageMapInner({
           baseLon={hasBase ? baseLon : null}
           visibleRadiusKm={wedgeRangeKm}
           enabled={showRings}
+        />
+
+        {/* パワースポット（諸国一宮）。判定は SpotVerdict と同じ経路
+            （lib/powerSpots）。「この地点を判定へ」は地図クリックと同じ
+            受け口 onInspectSpot に渡す。 */}
+        <PowerSpotLayer
+          enabled={showSpots}
+          zoom={zoom}
+          baseLat={hasBase ? baseLat : null}
+          baseLon={hasBase ? baseLon : null}
+          useClassical={useClassical}
+          dirKigaku={dirKigaku}
+          onInspect={onInspectSpot}
         />
 
         {/* 俯瞰の升目。県の塗りだけでは 47 個しか無く、どこに掲載が
