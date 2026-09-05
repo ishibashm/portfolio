@@ -2747,6 +2747,7 @@ export default function RelocationSimulatorPage() {
                 <SimulatorMap
                   startLat={startLat}
                   startLon={startLon}
+                  useClassical={useClassical}
                   steps={evaluatedSteps}
                   activeStepIndex={activeStepIndex}
                   onStartLocationChange={(lat, lon, name) => {

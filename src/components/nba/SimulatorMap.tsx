@@ -7,6 +7,8 @@ import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import "leaflet/dist/leaflet.css";
 import { CurrentLocationControl } from "@/components/map/CurrentLocationControl";
 import { useMapTheme } from "@/lib/useMapTheme";
+import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
+import { UserSpotLayer } from "@/components/map/UserSpotLayer";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 
 // Fix Leaflet marker icons in Next.js
@@ -75,6 +77,9 @@ interface SimulatorStep {
   };
 }
 
+/* 名所の表示を覚えておく先。地図ごとに別。 */
+const SPOTS_STORAGE_KEY = "simulator_show_spots";
+
 interface SimulatorMapProps {
   startLat: number;
   startLon: number;
@@ -88,6 +93,8 @@ interface SimulatorMapProps {
     name?: string,
   ) => void;
   detourPolygons: [number, number][][]; // Polygons representing detour zones
+  /** 方位の切り方。頁の暦基準（既定は伝統区分）と揃える */
+  useClassical?: boolean;
 }
 
 export default function SimulatorMap({
@@ -98,11 +105,29 @@ export default function SimulatorMap({
   onStartLocationChange,
   onStepDestinationChange,
   detourPolygons,
+  useClassical = true,
 }: SimulatorMapProps) {
   const [isMounted, setIsMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const { mapTheme, toggleMapTheme } = useMapTheme();
+  /* 名所（一宮・名勝）。既定は消えている。他の地図と同じ遅延初期化
+     （マウント効果で setState すると set-state-in-effect を増やす）。
+     鍵は地図ごと。 */
+  const [showSpots, setShowSpots] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
+  );
+  /* 名所・登録地点の「この地点を判定へ」。地名検索と同じ振り分け——
+     ステップを選んでいればその目的地、無ければ出発地。 */
+  const pickSpot = (lat: number, lon: number) => {
+    if (activeStepIndex !== null && activeStepIndex >= 0) {
+      onStepDestinationChange(activeStepIndex, lat, lon);
+    } else {
+      onStartLocationChange(lat, lon);
+    }
+  };
 
   /* 明暗の読み出しと購読は useMapTheme に寄せた（5 か所に同じ 15 行が
      写されていた）。ここに残るのは「描画に入ったか」だけ。 */
@@ -208,6 +233,30 @@ export default function SimulatorMap({
             {isSearching ? "検索中..." : "検索"}
           </button>
         </div>
+        {/* 名所（一宮・名勝）。他の地図と同じ共有部品。押すと出発地からの
+            方位と距離が吹き出しに出る（この地図は盤を持たないので段階は
+            出ない。判定はステップ側で見る）。 */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !showSpots;
+            setShowSpots(next);
+            localStorage.setItem(SPOTS_STORAGE_KEY, next ? "1" : "0");
+          }}
+          aria-pressed={showSpots}
+          title={
+            showSpots
+              ? "名所（一宮・名勝）を消す"
+              : "名所（一宮・名勝）を出す。吹き出しの「この地点を判定へ」で目的地に入れられます"
+          }
+          className={`self-start px-3 py-1.5 rounded-lg border font-mono text-[10px] font-bold transition-all active:scale-95 ${
+            showSpots
+              ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
+              : "bg-white/70 text-stone-600 border-stone-200 hover:bg-white"
+          }`}
+        >
+          ⛩ 名所 {showSpots ? "表示中" : "非表示"}
+        </button>
       </div>
 
       <div className="w-full flex-1 min-h-[400px] border border-stone-200 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
@@ -230,6 +279,22 @@ export default function SimulatorMap({
           {/* 現在地。地点をドラッグで置くときの目印になる。
               表示だけで、判定には入らない。 */}
           <CurrentLocationControl corner="bottomright" />
+
+          {/* 名所と登録地点（共有部品）。出発地から見た方位と距離だけ。
+              ズームは層が自分で追う。 */}
+          <PowerSpotLayer
+            enabled={showSpots}
+            baseLat={startPos[0]}
+            baseLon={startPos[1]}
+            useClassical={useClassical}
+            onInspect={pickSpot}
+          />
+          <UserSpotLayer
+            baseLat={startPos[0]}
+            baseLon={startPos[1]}
+            useClassical={useClassical}
+            onInspect={pickSpot}
+          />
 
           {/* Start Location Marker (Gold) */}
           <Marker

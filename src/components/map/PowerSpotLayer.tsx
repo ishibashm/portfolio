@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CircleMarker, Popup, Tooltip } from "react-leaflet";
+import {
+  CircleMarker,
+  Popup,
+  Tooltip,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import { clusterByTile } from "@/lib/mapClusters";
 import {
   loadPowerSpots,
@@ -58,7 +64,12 @@ const SPOT_STYLE_CLUSTER = {
 
 export interface PowerSpotLayerProps {
   enabled: boolean;
-  zoom: number;
+  /**
+   * 地図のズーム。呼び出し側が既に追っていれば渡す（物件検索・
+   * ダッシュボード）。渡さなければ層が自分で追う（試算頁のように
+   * ズームを持たない地図）。
+   */
+  zoom?: number;
   baseLat: number | null | undefined;
   baseLon: number | null | undefined;
   useClassical: boolean;
@@ -76,6 +87,14 @@ export function PowerSpotLayer({
   onInspect,
 }: PowerSpotLayerProps) {
   const [spots, setSpots] = useState<PowerSpot[] | null>(null);
+  /* ズームを渡されなかったときだけ自分で追う。イベントの中で setState
+     する（効果の中ではない）。 */
+  const map = useMap();
+  const [ownZoom, setOwnZoom] = useState(() => map.getZoom());
+  useMapEvents({
+    zoomend: () => setOwnZoom(map.getZoom()),
+  });
+  const effectiveZoom = zoom ?? ownZoom;
 
   useEffect(() => {
     if (!enabled || spots) return;
@@ -96,10 +115,10 @@ export function PowerSpotLayer({
     Number.isFinite(baseLat) &&
     Number.isFinite(baseLon);
 
-  if (zoom < POWER_SPOT_CLUSTER_BELOW_ZOOM) {
+  if (effectiveZoom < POWER_SPOT_CLUSTER_BELOW_ZOOM) {
     return (
       <>
-        {clusterByTile(spots, zoom).map((c) => {
+        {clusterByTile(spots, effectiveZoom).map((c) => {
           if (c.count === 1) {
             return (
               <SpotMarker
