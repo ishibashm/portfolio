@@ -15,15 +15,20 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "search = 候補の QID を探す／sparql = QID を指定して件数と座標を見る"
+        description: "search = 候補の QID を探す／props = その QID を何が指しているかを数える／sparql = QID とプロパティで件数と座標を見る"
         required: false
         default: "search"
         type: choice
         options:
           - search
+          - props
           - sparql
       qid:
-        description: "sparql のときだけ。例 Q1194950"
+        description: "props / sparql のときだけ。例 Q1656379"
+        required: false
+        default: ""
+      prop:
+        description: "sparql のときだけ。例 P31。まず props で数えてから選ぶ"
         required: false
         default: ""
 
@@ -48,4 +53,5 @@ jobs:
           npx -y tsx scripts/probe_spots.ts \
             --target "${{ inputs.target }}" \
             ${{ inputs.qid && format('--qid {0}', inputs.qid) || '' }} \
+            ${{ inputs.prop && format('--prop {0}', inputs.prop) || '' }} \
             | tee -a "$GITHUB_STEP_SUMMARY"
