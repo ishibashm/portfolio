@@ -57,10 +57,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet src/data/powerSpots.json; then
+
+          # **`git diff --quiet <path>` で判定しない。**未追跡の
+          # ファイルには何も見つけないので終了コード 0 を返し、
+          # 「変化なし」と読んで捨ててしまう。実際にそうなった
+          # （run 33939927717。106 件を書き出したのにコミットされず、
+          # ワークフローは緑のまま成果物だけ消えた）。
+          #
+          # 先に add して、**索引と HEAD の差**で見る。これなら新規
+          # ファイルも変更も同じように拾える。
+          git add src/data/powerSpots.json
+          if git diff --cached --quiet; then
             echo "変化なし。コミットしない。"
             exit 0
           fi
-          git add src/data/powerSpots.json
           git commit -m "chore(data): 一宮の一覧を Wikidata から取り込む"
           git push origin HEAD:master

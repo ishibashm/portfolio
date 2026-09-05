@@ -103,10 +103,15 @@ export interface PowerSpot {
 }
 
 async function main() {
+  /* 座標は OPTIONAL で取る。**必須にすると、座標の無い社が
+     「そもそも指定されていない」のと区別できないまま消える。**
+     実際に消えていた（run 33939927717。指定 108 社に対して書き出しは
+     106 件で、落ちた 2 社がどれかを言えなかった）。取ってから落とし、
+     **どれを落としたかを名前で出す。** */
   const query = `
 SELECT ?item ?itemLabel ?coord WHERE {
   ?item wdt:${DESIGNATION_PROP} wd:${ICHINOMIYA_QID}.
-  ?item wdt:P625 ?coord.
+  OPTIONAL { ?item wdt:P625 ?coord. }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja". }
 }`;
 
@@ -137,16 +142,30 @@ SELECT ?item ?itemLabel ?coord WHERE {
   for (const r of rows) {
     const uri = r.item?.value;
     const name = r.itemLabel?.value;
-    const wkt = r.coord?.value;
-    if (!uri || !name || !wkt) continue;
+    if (!uri || !name) continue;
     const id = uri.split("/").pop()!;
-    const pt = parsePoint(wkt);
-    if (!pt) continue;
     const e = byId.get(id) ?? { name, points: [] };
-    e.points.push(pt);
+    const wkt = r.coord?.value;
+    if (wkt) {
+      const pt = parsePoint(wkt);
+      if (pt) e.points.push(pt);
+    }
     byId.set(id, e);
   }
-  console.log(`畳んだ社: ${byId.size}`);
+  console.log(`指定のある社: ${byId.size}`);
+
+  /* **落とすものを黙って落とさない。**座標が無ければ地図に出せないが、
+     どれが出せないのかは分かる形で残す。ここを黙らせると、上流に
+     座標が入った日にも気付けない。 */
+  const dropped = [...byId.entries()].filter(([, e]) => e.points.length === 0);
+  if (dropped.length > 0) {
+    console.log(`\n座標が無くて出せない社: ${dropped.length}`);
+    for (const [id, e] of dropped) {
+      console.log(`  - ${e.name}（https://www.wikidata.org/wiki/${id}）`);
+    }
+    console.log("");
+  }
+  for (const [id] of dropped) byId.delete(id);
 
   const spots: PowerSpot[] = [];
   let multi = 0;
