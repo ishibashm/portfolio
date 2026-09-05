@@ -33,6 +33,7 @@ const NOT_A_PAGE = [
   "/blog/feed.xml",
   "/login",
   "/profile",
+  "/account",
 ];
 
 /**
