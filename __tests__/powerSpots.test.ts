@@ -15,6 +15,9 @@ const file = JSON.parse(
   readFileSync("src/data/powerSpots.json", "utf8"),
 ) as PowerSpotFile;
 
+/** 載ってよい根拠。scripts/import_spots.ts の DESIGNATIONS と同じ並び。 */
+const BASES = new Set(["諸国一宮", "特別名勝（国指定）", "名勝（国指定）"]);
+
 describe("powerSpots のデータ", () => {
   it("座標・名前・所在地が全部そろっていて、QID が重複しない", () => {
     const ids = new Set<string>();
@@ -28,7 +31,7 @@ describe("powerSpots のデータ", () => {
       expect(s.lon, s.name).toBeGreaterThan(122);
       expect(s.lon, s.name).toBeLessThan(154);
       expect(s.pref, s.name).toMatch(/[都道府県]$/);
-      expect(s.basis, s.name).toBe("諸国一宮");
+      expect(BASES.has(s.basis), `${s.name}: ${s.basis}`).toBe(true);
     }
   });
 
