@@ -288,12 +288,14 @@ export default function SimulatorMap({
             baseLon={startPos[1]}
             useClassical={useClassical}
             onInspect={pickSpot}
+            noBoardNote={null}
           />
           <UserSpotLayer
             baseLat={startPos[0]}
             baseLon={startPos[1]}
             useClassical={useClassical}
             onInspect={pickSpot}
+            noBoardNote={null}
           />
 
           {/* Start Location Marker (Gold) */}

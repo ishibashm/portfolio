@@ -75,6 +75,12 @@ export interface PowerSpotLayerProps {
   useClassical: boolean;
   dirKigaku?: Record<string, DirectionCell>;
   onInspect?: (lat: number, lon: number) => void;
+  /**
+   * 盤が無いときに吹き出しへ出す 1 行。既定は「生年月日と出発地を
+   * 入れると出ます」。**盤をそもそも持たない地図**（試算頁）では、
+   * 入れても出ないので null を渡して消す。
+   */
+  noBoardNote?: string | null;
 }
 
 export function PowerSpotLayer({
@@ -85,6 +91,7 @@ export function PowerSpotLayer({
   useClassical,
   dirKigaku,
   onInspect,
+  noBoardNote = "段階は生年月日と出発地を入れると出ます。",
 }: PowerSpotLayerProps) {
   const [spots, setSpots] = useState<PowerSpot[] | null>(null);
   /* ズームを渡されなかったときだけ自分で追う。イベントの中で setState
@@ -130,6 +137,7 @@ export function PowerSpotLayer({
                 useClassical={useClassical}
                 dirKigaku={dirKigaku}
                 onInspect={onInspect}
+                noBoardNote={noBoardNote}
               />
             );
           }
@@ -182,6 +190,7 @@ export function PowerSpotLayer({
           useClassical={useClassical}
           dirKigaku={dirKigaku}
           onInspect={onInspect}
+          noBoardNote={noBoardNote}
         />
       ))}
     </>
@@ -196,6 +205,7 @@ function SpotMarker({
   useClassical,
   dirKigaku,
   onInspect,
+  noBoardNote,
 }: {
   spot: PowerSpot;
   hasBase: boolean;
@@ -204,6 +214,7 @@ function SpotMarker({
   useClassical: boolean;
   dirKigaku?: Record<string, DirectionCell>;
   onInspect?: (lat: number, lon: number) => void;
+  noBoardNote: string | null;
 }) {
   const from = hasBase
     ? spotFromBase(baseLat, baseLon, spot, useClassical, dirKigaku)
@@ -245,11 +256,9 @@ function SpotMarker({
                     {(tier && TIER_LABELS[tier]) ?? from.cell.tier}
                   </span>
                 </div>
-              ) : (
-                <div className="text-[10px] text-stone-500">
-                  {"段階は生年月日と出発地を入れると出ます。"}
-                </div>
-              )}
+              ) : noBoardNote ? (
+                <div className="text-[10px] text-stone-500">{noBoardNote}</div>
+              ) : null}
               {from.unstableNote && (
                 <div className="text-[10px] text-amber-700">
                   {from.unstableNote}
