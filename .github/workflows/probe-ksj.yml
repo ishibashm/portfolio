@@ -13,6 +13,10 @@ name: Probe KSJ
 on:
   workflow_dispatch:
     inputs:
+      dataset:
+        description: "見るデータ（A29 = 用途地域 / N02 = 鉄道）"
+        required: false
+        default: "A29"
       inspect_pref:
         description: "中身を見る県コード（2 桁。空なら見ない）。小さい県を指定する"
         required: false
@@ -35,7 +39,9 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Probe
-        run: npx tsx scripts/probe_ksj.ts | tee -a "$GITHUB_STEP_SUMMARY"
+        env:
+          DATASET: ${{ inputs.dataset || 'A29' }}
+        run: npx tsx scripts/probe_ksj.ts --dataset "$DATASET" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Inspect one prefecture
         if: ${{ inputs.inspect_pref != '' }}
