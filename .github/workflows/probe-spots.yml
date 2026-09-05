@@ -1,0 +1,51 @@
+name: Probe spots
+
+# 社寺・名所の一覧をどこから取れるかを**実物で確かめるだけ**。
+#
+# 地図に出すには緯度経度が要る。名称や由緒は事実として書けるが、
+# **座標を記憶から書くとずれる**。地図のピンがずれれば嘘になるので、
+# 出典のあるデータ源から取る。
+#
+# 開発環境からは外へ出られない（egress で 403）ので、ここで確かめる
+# 以外に手が無い。probe-zoning と同じ立ち位置。
+#
+# **外部 API を読むだけで、DB には一切書かない。**鍵も要らない。
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "search = 候補の QID を探す／sparql = QID を指定して件数と座標を見る"
+        required: false
+        default: "search"
+        type: choice
+        options:
+          - search
+          - sparql
+      qid:
+        description: "sparql のときだけ。例 Q1194950"
+        required: false
+        default: ""
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Probe
+        run: |
+          npx -y tsx scripts/probe_spots.ts \
+            --target "${{ inputs.target }}" \
+            ${{ inputs.qid && format('--qid {0}', inputs.qid) || '' }} \
+            | tee -a "$GITHUB_STEP_SUMMARY"
