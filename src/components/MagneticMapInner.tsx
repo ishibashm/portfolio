@@ -34,6 +34,7 @@ import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
 import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
 import { UserSpotLayer } from "@/components/map/UserSpotLayer";
+import { StationLayer } from "@/components/map/StationLayer";
 import { spotCellsFromLayers } from "@/lib/spotCellsFromLayers";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
@@ -41,6 +42,8 @@ applyLeafletDefaultIcon();
 
 /* 名所の表示を覚えておく先。地図ごとに別（物件検索は arbitrage_show_spots）。 */
 const SPOTS_STORAGE_KEY = "dashboard_show_spots";
+/* 駅（国土数値情報 N02）。既定は消えている。一覧（1 万駅）は押されてから読む。 */
+const STATIONS_STORAGE_KEY = "dashboard_show_stations";
 
 interface MapInnerProps {
   lat: number;
@@ -178,6 +181,11 @@ export default function MagneticMapInner({
     () =>
       typeof window !== "undefined" &&
       localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
+  );
+  const [showStations, setShowStations] = React.useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(STATIONS_STORAGE_KEY) === "1",
   );
   /* 名所・登録地点の吹き出しが読む 8 方位のセル。段階は stepDayTier
      （＝ gradeVerdict。サイト全体で 1 系統）。扇形と同じ layers から組む
@@ -664,6 +672,27 @@ export default function MagneticMapInner({
           >
             ⛩ 名所 {showSpots ? "表示中" : "非表示"}
           </button>
+          {/* 駅（国土数値情報 N02）。物件検索の地図と同じ層（共有部品）。 */}
+          <button
+            onClick={() => {
+              const next = !showStations;
+              setShowStations(next);
+              localStorage.setItem(STATIONS_STORAGE_KEY, next ? "1" : "0");
+            }}
+            title={
+              showStations
+                ? "駅を消す"
+                : "駅を出す。押すと現在地からの方位と段階が見られます（国土数値情報 N02）"
+            }
+            aria-pressed={showStations}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+              showStations
+                ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
+                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+            }`}
+          >
+            🚉 駅 {showStations ? "表示中" : "非表示"}
+          </button>
         </div>
 
         {/* 名所と登録地点。判定は SpotVerdict と同じ経路（lib/powerSpots）。
@@ -678,6 +707,15 @@ export default function MagneticMapInner({
           onInspect={onSelectTarget}
         />
         <UserSpotLayer
+          baseLat={lat}
+          baseLon={lon}
+          useClassical={nodeMapping === "traditional"}
+          dirKigaku={spotCells}
+          onInspect={onSelectTarget}
+        />
+        <StationLayer
+          enabled={showStations}
+          zoom={zoom}
           baseLat={lat}
           baseLon={lon}
           useClassical={nodeMapping === "traditional"}
