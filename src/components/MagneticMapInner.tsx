@@ -32,9 +32,15 @@ import { applyLeafletDefaultIcon } from "@/lib/leafletDefaultIcon";
 import { HazardTileOverlay } from "@/components/HazardTileOverlay";
 import { StandardBaseTile } from "@/components/map/StandardBaseTile";
 import { MapClickPicker } from "@/components/map/MapClickPicker";
+import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
+import { UserSpotLayer } from "@/components/map/UserSpotLayer";
+import { spotCellsFromLayers } from "@/lib/spotCellsFromLayers";
 
 // 既定アイコンの下ごしらえ。理由と型の話は @/lib/leafletDefaultIcon に集約。
 applyLeafletDefaultIcon();
+
+/* 名所の表示を覚えておく先。地図ごとに別（物件検索は arbitrage_show_spots）。 */
+const SPOTS_STORAGE_KEY = "dashboard_show_spots";
 
 interface MapInnerProps {
   lat: number;
@@ -165,6 +171,21 @@ export default function MagneticMapInner({
   );
   const [zoom, setZoom] = React.useState(13);
   const { mapTheme, toggleMapTheme } = useMapTheme();
+  /* 名所（一宮・名勝）。既定は消えている。物件検索の地図と同じ作法で
+     遅延初期化（マウント効果で setState すると set-state-in-effect を
+     増やす）。鍵は地図ごと（物件検索は arbitrage_show_spots）。 */
+  const [showSpots, setShowSpots] = React.useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
+  );
+  /* 名所・登録地点の吹き出しが読む 8 方位のセル。段階は stepDayTier
+     （＝ gradeVerdict。サイト全体で 1 系統）。扇形と同じ layers から組む
+     ので、吹き出しと扇形が食い違わない。 */
+  const spotCells = React.useMemo(
+    () => spotCellsFromLayers(layers, doyouSatsuDirection),
+    [layers, doyouSatsuDirection],
+  );
 
   /* 明暗の読み出しと購読は useMapTheme に寄せた（#774）。
      ここに残るのは「描画に入ったか」だけ。 */
@@ -615,14 +636,54 @@ export default function MagneticMapInner({
         <StandardBaseTile />
 
         {/* Theme Switcher Button */}
-        <div className="absolute top-4 left-4 z-[1000] pointer-events-auto">
+        <div className="absolute top-4 left-4 z-[1000] pointer-events-auto flex flex-wrap gap-2">
           <button
             onClick={toggleMapTheme}
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold bg-white/80 text-stone-700 border-stone-200 hover:bg-white transition-colors shadow-lg active:scale-95 cursor-pointer"
           >
             {mapTheme === "dark" ? "☀️ ライトマップ" : "🌙 ダークマップ"}
           </button>
+          {/* 名所（一宮・名勝）。物件検索の地図と同じ層（共有部品）。 */}
+          <button
+            onClick={() => {
+              const next = !showSpots;
+              setShowSpots(next);
+              localStorage.setItem(SPOTS_STORAGE_KEY, next ? "1" : "0");
+            }}
+            title={
+              showSpots
+                ? "名所（一宮・名勝）を消す"
+                : "名所（一宮・名勝）を出す。押すと現在地からの方位と段階が見られます"
+            }
+            aria-pressed={showSpots}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+              showSpots
+                ? "bg-amber-600 text-white border-amber-600 hover:bg-amber-700"
+                : "bg-white/80 text-stone-700 border-stone-200 hover:bg-white"
+            }`}
+          >
+            ⛩ 名所 {showSpots ? "表示中" : "非表示"}
+          </button>
         </div>
+
+        {/* 名所と登録地点。判定は SpotVerdict と同じ経路（lib/powerSpots）。
+            「この地点を判定へ」は地図クリックと同じ受け口 onSelectTarget。 */}
+        <PowerSpotLayer
+          enabled={showSpots}
+          zoom={zoom}
+          baseLat={lat}
+          baseLon={lon}
+          useClassical={nodeMapping === "traditional"}
+          dirKigaku={spotCells}
+          onInspect={onSelectTarget}
+        />
+        <UserSpotLayer
+          baseLat={lat}
+          baseLon={lon}
+          useClassical={nodeMapping === "traditional"}
+          dirKigaku={spotCells}
+          onInspect={onSelectTarget}
+        />
 
         {clickedPos && (
           <Marker position={clickedPos}>
