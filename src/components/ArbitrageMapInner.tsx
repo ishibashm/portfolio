@@ -43,6 +43,7 @@ import {
   type HazardTabId,
 } from "@/lib/hazardLayers";
 import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
+import { DistanceRings } from "@/components/map/DistanceRings";
 import { ZoningLayer } from "@/components/relocation/ZoningLayer";
 import { ZoningLegend } from "@/components/relocation/ZoningLegend";
 import type { ZoningName } from "@/utils/zoning";
@@ -87,6 +88,8 @@ const OVERVIEW_ZOOM_MAX = 10;
 
 /** 扇形を消したかどうかを覚えておく先。地図のテーマ（map_theme）と同じ扱い。 */
 const SECTORS_STORAGE_KEY = "arbitrage_show_sectors";
+/* 距離の輪。既定は消えている（目盛りは要るときだけ）。 */
+const RINGS_STORAGE_KEY = "arbitrage_show_rings";
 
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
@@ -476,6 +479,14 @@ export default function ArbitrageMapInner({
    * その選択だけを localStorage に覚えさせる（地図のテーマと同じ扱い）。
    */
   const [showSectors, setShowSectors] = useState(true);
+  /* 既定は消えている。目盛りは要るときだけ出す。復元は zoningOn と
+     同じ遅延初期化で行う（マウント効果で setState すると
+     set-state-in-effect を 1 件増やす）。 */
+  const [showRings, setShowRings] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(RINGS_STORAGE_KEY) === "1",
+  );
   /*
     現在地。**押されるまで購読しない。**開いた瞬間に位置情報の許可を
     聞く画面は嫌われるので、既定は消えている（useWatchedPosition の註）。
@@ -1644,6 +1655,29 @@ export default function ArbitrageMapInner({
                   🧭 方位 {showSectors ? "表示中" : "非表示"}
                 </button>
               )}
+              {/* 距離の輪。扇形と同じく「今どうなっているか」を書く。 */}
+              {hasBase && (
+                <button
+                  onClick={() => {
+                    const next = !showRings;
+                    setShowRings(next);
+                    localStorage.setItem(RINGS_STORAGE_KEY, next ? "1" : "0");
+                  }}
+                  title={
+                    showRings
+                      ? "出発地からの距離の輪を消す"
+                      : "出発地からの距離の輪を出す（縮尺の目安）"
+                  }
+                  aria-pressed={showRings}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                    showRings
+                      ? "bg-stone-600 text-white border-stone-600 hover:bg-stone-700"
+                      : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                  }`}
+                >
+                  ◎ 距離 {showRings ? "表示中" : "非表示"}
+                </button>
+              )}
               {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
               操作が要った。今どちらを見ているのかも画面に出ていない。
@@ -1969,6 +2003,15 @@ export default function ArbitrageMapInner({
             地形も駅名も隠れるため、方位を決めたあと「その辺に何があるか」を
             見る段では邪魔になる。俯瞰でも近景でも同じボタンで効く */}
         {hasBase && showSectors && sectorLayers}
+
+        {/* 距離の輪。縮尺の目盛りで、吉凶の帯ではない（lib/distanceRings）。
+            扇形と同じ wedgeRangeKm を渡すので、画面に入る輪だけが出る。 */}
+        <DistanceRings
+          baseLat={hasBase ? baseLat : null}
+          baseLon={hasBase ? baseLon : null}
+          visibleRadiusKm={wedgeRangeKm}
+          enabled={showRings}
+        />
 
         {/* 俯瞰の升目。県の塗りだけでは 47 個しか無く、どこに掲載が
             あるのかが読めなかった。市区町村のまま出すと今度は 1,127 個に
