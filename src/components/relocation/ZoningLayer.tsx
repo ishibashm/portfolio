@@ -9,6 +9,9 @@ import {
   zoningFillFiltered,
   ZONING_MAX_ZOOM,
   ZONING_MIN_ZOOM,
+  ZONING_OVERVIEW_ATTRIBUTION,
+  ZONING_OVERVIEW_MAX_ZOOM,
+  ZONING_OVERVIEW_MIN_ZOOM,
   ZONING_RASTER_DISPLAY_MIN_ZOOM,
   ZONING_RASTER_MAX_ZOOM,
   ZONING_RASTER_MIN_ZOOM,
@@ -79,6 +82,10 @@ function tileKey(z: number, x: number, y: number) {
   return `${z}/${x}/${y}`;
 }
 
+/** 1×1 の透明 PNG。焼いていないタイル（海・山）の代わりに貼る */
+const TRANSPARENT_PNG =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
 export interface ZoningLayerProps {
   /** 出すかどうか。切ってあるときは取りにも行かない。 */
   enabled: boolean;
@@ -117,8 +124,17 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
       return;
     }
     const zoom = Math.round(map.getZoom());
-    if (zoom < ZONING_RASTER_DISPLAY_MIN_ZOOM) {
+    if (zoom < ZONING_OVERVIEW_MIN_ZOOM) {
       notify("用途地域はもう少し拡大すると出ます。");
+      return;
+    }
+    if (zoom < ZONING_RASTER_DISPLAY_MIN_ZOOM) {
+      /* 俯瞰の静的タイル（TileLayer）が描いている。選択（1 区分だけ残す）は
+         ここでは読まない——refresh の依存に selected を足すと選択のたびに
+         取得が走る。文言は選択の有無によらず同じにする */
+      notify(
+        "全国の俯瞰は国土数値情報（2019 年版）の塗りです。区画を押したり 1 区分に絞ったりするには拡大してください。",
+      );
       return;
     }
     if (zoom < ZONING_MIN_ZOOM) {
@@ -228,6 +244,18 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
 
   return (
     <>
+      {/* 全国の俯瞰（z5〜z9）は一度だけ焼いた静的タイル。無いタイルは
+          透明（errorTileUrl）。塗りは API の画像タイルと同じ関数 */}
+      <TileLayer
+        key="zoning-overview"
+        url="/zoning-overview/{z}/{x}/{y}.png"
+        minZoom={ZONING_OVERVIEW_MIN_ZOOM}
+        maxZoom={ZONING_OVERVIEW_MAX_ZOOM}
+        maxNativeZoom={ZONING_OVERVIEW_MAX_ZOOM}
+        errorTileUrl={TRANSPARENT_PNG}
+        opacity={0.45}
+        attribution={ZONING_OVERVIEW_ATTRIBUTION}
+      />
       {/* 広域（z11〜12）は塗った絵。Leaflet が minZoom/maxZoom の外では
           このレイヤーを描かないので、z13 以上では多角形だけになる。
           選択（1 区分だけ残す）はサーバー側で塗り分けるので URL に入れ、

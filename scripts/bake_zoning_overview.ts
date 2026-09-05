@@ -19,7 +19,8 @@
  *   タイルごとに持って塗り足す。最後に、何か塗られたタイルだけ PNG に
  *   書く。空のタイルは書かない（無ければ透明＝Leaflet の errorTileUrl）
  * - 出力は `public/zoning-overview/{z}/{x}/{y}.png`。静的に配れて CDN が
- *   効く。z5〜z10 で 2 千枚前後・数 MB の見込み（焼いてから実測を書く）
+ *   効く。既定は z5〜z9（z10 は API の画像タイルが受け持つ）。鳥取 1 県の
+ *   試運転は 270 区画 → 18 枚 144KB（run 33955644570）
  *
  * ## 走らせ方
  *
@@ -111,7 +112,12 @@ function main() {
     process.exitCode = 1;
     return;
   }
-  const zoomsArg = arg("--zooms") ?? "5-10";
+  /* 既定は z5〜z9。z10 は API の画像タイル（z11 を縮めて描く）が既に
+     受け持っている。z10 まで焼くと枚数が 4 倍になり repo が重くなる
+     （鳥取 1 県の試運転で z10 が 7 枚 / 18 枚。run 33955644570） */
+  const zoomsArg = arg("--zooms") ?? "5-9";
+  /* 試運転（1 県だけ）では枚数が少なくて当然なので、下限を下げられる */
+  const minTiles = Number(arg("--min-tiles") ?? "100");
   const [zLo, zHi] = zoomsArg.split("-").map(Number);
   const zooms: number[] = [];
   for (let z = zLo; z <= zHi; z++) zooms.push(z);
@@ -203,8 +209,10 @@ function main() {
   );
   for (const z of zooms) console.log(`  z${z}: ${perZoom.get(z) ?? 0} 枚`);
   console.log(`所要: ${Math.round((Date.now() - started) / 1000)} 秒`);
-  if (written < 100) {
-    console.error(`::error::タイルが ${written} 枚しか無い。入力を疑う`);
+  if (written < minTiles) {
+    console.error(
+      `::error::タイルが ${written} 枚しか無い（下限 ${minTiles}）。入力を疑う`,
+    );
     process.exitCode = 1;
   }
 }
