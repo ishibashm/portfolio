@@ -11,6 +11,8 @@ import {
   settingString,
 } from "@/lib/userSettings";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
+import { profileCompletion } from "@/lib/profileCompletion";
+import { ProfileProgress } from "@/components/profile/ProfileProgress";
 
 /**
  * 生年月日・出生地・出発地・目的地をまとめて入れる頁の中身。
@@ -57,6 +59,8 @@ export function ProfileForm() {
   const [baseLon, setBaseLon] = React.useState<number | null>(null);
   const [destLat, setDestLat] = React.useState<number | null>(null);
   const [destLon, setDestLon] = React.useState<number | null>(null);
+  /* ログイン直後にここへ回された人。/login が ?welcome=1 を付ける */
+  const [welcome, setWelcome] = React.useState(false);
 
   /* 開いたときに 1 度だけ読む。ログイン中はクラウドの値も取り込む */
   React.useEffect(() => {
@@ -74,6 +78,11 @@ export function ProfileForm() {
         setDestLat(dest.lat);
         setDestLon(dest.lon);
         setSynced(didSync);
+        /* 待ってから読む。効果の本体で setState すると
+           set-state-in-effect に当たる（CLAUDE.md 4 節） */
+        setWelcome(
+          new URLSearchParams(window.location.search).get("welcome") === "1",
+        );
         setStatus("idle");
       } catch {
         if (alive) setStatus("idle");
@@ -120,7 +129,17 @@ export function ProfileForm() {
     }
   }
 
-  const canUseTools = birthDate !== "" && baseLat !== null && baseLon !== null;
+  /* 進み具合は入力中の値から出す。保存を待たない（埋めた手応えが
+     その場で返らないと、確かめるために保存を押すことになる）。
+     線引きは lib/profileCompletion 1 か所。ここで書き直さない */
+  const completion = profileCompletion({
+    birth_date: birthDate || undefined,
+    birth_lat: birthLat ?? undefined,
+    birth_lon: birthLon ?? undefined,
+    base_lat: baseLat ?? undefined,
+    base_lon: baseLon ?? undefined,
+  });
+  const canUseTools = completion.ready;
 
   if (status === "loading") {
     return (
@@ -133,6 +152,20 @@ export function ProfileForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* ログイン直後の人にだけ、ここへ回した理由を出す。何も言わずに
+          入力欄を見せると「なぜ飛ばされたのか」が分からない */}
+      {welcome && (
+        <p className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-xs leading-relaxed text-indigo-900">
+          <b className="text-sm">ログインできました。</b>
+          <br />
+          {
+            "あとは生年月日といま住んでいる場所を入れると、方位の判定が動きます。入れた内容はアカウントに保存されるので、ほかの端末でも同じ設定で使えます。"
+          }
+        </p>
+      )}
+
+      <ProfileProgress completion={completion} />
+
       {/* 1. 生まれたとき ------------------------------------------- */}
       <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
         <legend className="px-2 text-sm font-bold text-stone-800">
