@@ -1,14 +1,95 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
+import {
+  createLoginNonce,
+  googleClientId,
+  loadGoogleIdentity,
+  safeNextPath,
+} from "@/lib/googleIdentity";
+
+/**
+ * Google Identity Services のボタン。ID トークンを cloud-palette.com の
+ * 中で受け取り、Supabase には `signInWithIdToken` で渡す。
+ *
+ * 従来の `signInWithOAuth` は Google に「Supabase のコールバックへ戻して」
+ * と頼むため、Google のアカウント選択画面に supabase.co のドメインが
+ * 「〜に移動」として出ていた（利用者の報告）。Google Cloud 側でアプリ名を
+ * 変えても、そこに出るのは戻り先のドメインなので変わらない。こちらは
+ * Google が見る相手が cloud-palette.com になる。
+ *
+ * NEXT_PUBLIC_GOOGLE_CLIENT_ID が無いときはこの部品を出さず、従来の
+ * ボタンに留まる（本番で変数を入れるまで壊さない）。
+ */
+function GoogleIdentityButton({
+  clientId,
+  onCredential,
+  onError,
+}: {
+  clientId: string;
+  onCredential: (credential: string, rawNonce: string) => void;
+  onError: (message: string) => void;
+}) {
+  const holder = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [google, nonce] = await Promise.all([
+          loadGoogleIdentity(),
+          createLoginNonce(),
+        ]);
+        if (cancelled || !holder.current) return;
+        google.initialize({
+          client_id: clientId,
+          callback: (res) => onCredential(res.credential, nonce.raw),
+          nonce: nonce.hashed,
+          auto_select: false,
+          ux_mode: "popup",
+        });
+        /* 器の幅に合わせる。GIS の上限は 400px。 */
+        const width = Math.min(400, Math.max(200, holder.current.clientWidth));
+        holder.current.replaceChildren();
+        google.renderButton(holder.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "pill",
+          logo_alignment: "center",
+          width,
+          locale: "ja",
+        });
+      } catch (e) {
+        if (!cancelled) onError(e instanceof Error ? e.message : String(e));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    /* onCredential / onError はレンダーごとに作り直されるが、GIS の
+       initialize を張り直す理由にはならない。nonce も 1 回の表示で 1 つ。 */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId]);
+
+  return (
+    <div
+      ref={holder}
+      className="w-full min-h-[44px] flex justify-center"
+      aria-label="Google でログイン"
+    />
+  );
+}
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [nextUrl, setNextUrl] = useState("/");
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const clientId = googleClientId();
 
   useEffect(() => {
     const supabase = createClient();
@@ -24,10 +105,36 @@ export default function LoginPage() {
       }
       const next = params.get("next");
       if (next) {
-        setNextUrl(next);
+        setNextUrl(safeNextPath(next));
       }
     }
   }, []);
+
+  /**
+   * GIS から受け取った ID トークンで Supabase のセッションを作る。
+   * ブラウザ側クライアント（@supabase/ssr）は cookie に保存するので、
+   * 遷移先のサーバー側でもそのままログイン済みとして見える。
+   */
+  const handleGoogleCredential = async (
+    credential: string,
+    rawNonce: string,
+  ) => {
+    setLoading(true);
+    setAuthError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: credential,
+      nonce: rawNonce,
+    });
+    if (error) {
+      console.error("Error logging in:", error);
+      setAuthError(error.message);
+      setLoading(false);
+      return;
+    }
+    window.location.assign(nextUrl);
+  };
 
   const handleGoogleLogin = async () => {
     /*
@@ -104,36 +211,52 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* OAuth Provider */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="w-full flex items-center justify-center gap-3 bg-white text-stone-800 border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
-        >
-          <svg
-            className="w-4 h-4"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+        {/* OAuth Provider。クライアント ID があるときは GIS のボタン
+            （Google の画面に cloud-palette.com が出る）。無いときは従来の
+            Supabase 経由。 */}
+        {clientId ? (
+          loading ? (
+            <div className="w-full min-h-[44px] flex items-center justify-center text-xs text-stone-500">
+              ログイン中…
+            </div>
+          ) : (
+            <GoogleIdentityButton
+              clientId={clientId}
+              onCredential={handleGoogleCredential}
+              onError={setAuthError}
+            />
+          )
+        ) : (
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 bg-white text-stone-800 border border-stone-200 px-6 py-2.5 rounded-xl font-medium hover:bg-stone-50 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none shadow-md"
           >
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 15.02 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
-          </svg>
-          Googleでログイン
-        </button>
+            <svg
+              className="w-4 h-4"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 15.02 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+            Googleでログイン
+          </button>
+        )}
 
         {authError && (
           <div className="w-full mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-[11px] leading-relaxed">

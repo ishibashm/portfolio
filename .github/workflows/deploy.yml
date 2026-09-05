@@ -78,6 +78,12 @@ jobs:
           # secret ではなく variable。ADSENSE_ID と同じ扱い。
           R2_BUCKET: ${{ vars.R2_BUCKET }}
           IMAGE_BASE_URL: ${{ vars.NEXT_PUBLIC_IMAGE_BASE_URL }}
+          # Google の OAuth クライアント ID。ページのソースに出る公開情報なので
+          # variable。入れると /login が Google Identity Services で ID トークンを
+          # cloud-palette.com の中で受け取り、Google の画面に supabase.co では
+          # なくこちらのドメインが出る。未設定なら従来の Supabase 経由のまま
+          # （src/lib/googleIdentity.ts の googleClientId）。
+          GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
         run: |
           if [ -z "$SERVER_ACTIONS_KEY" ]; then
             echo "::error::NEXT_SERVER_ACTIONS_ENCRYPTION_KEY secret is not set. Set a stable base64 key (openssl rand -base64 32) or Server Actions break across deploys."
@@ -118,6 +124,9 @@ jobs:
             echo "R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY" >> .env
             echo "R2_BUCKET=$R2_BUCKET" >> .env
             echo "NEXT_PUBLIC_IMAGE_BASE_URL=$IMAGE_BASE_URL" >> .env
+          fi
+          if [ -n "$GOOGLE_CLIENT_ID" ]; then
+            echo "NEXT_PUBLIC_GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" >> .env
           fi
           # ここまでで組み上がった .env に ADMIN_EMAIL があることを確かめる。
           # 出どころは問わない（ENV_FILE の中でも、上の追記でもよい）。
