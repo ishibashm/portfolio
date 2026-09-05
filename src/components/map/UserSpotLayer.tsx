@@ -32,6 +32,12 @@ export interface UserSpotLayerProps {
   useClassical: boolean;
   dirKigaku?: Record<string, DirectionCell>;
   onInspect?: (lat: number, lon: number) => void;
+  /**
+   * 盤が無いときに吹き出しへ出す 1 行。既定は「生年月日と出発地を
+   * 入れると出ます」。**盤をそもそも持たない地図**（試算頁）では、
+   * 入れても出ないので null を渡して消す。
+   */
+  noBoardNote?: string | null;
 }
 
 export function UserSpotLayer({
@@ -40,6 +46,7 @@ export function UserSpotLayer({
   useClassical,
   dirKigaku,
   onInspect,
+  noBoardNote = "段階は生年月日と出発地を入れると出ます。",
 }: UserSpotLayerProps) {
   const spots = useUserSpots();
   if (spots.length === 0) return null;
@@ -92,11 +99,11 @@ export function UserSpotLayer({
                           {(tier && TIER_LABELS[tier]) ?? from.cell.tier}
                         </span>
                       </div>
-                    ) : (
+                    ) : noBoardNote ? (
                       <div className="text-[10px] text-stone-500">
-                        {"段階は生年月日と出発地を入れると出ます。"}
+                        {noBoardNote}
                       </div>
-                    )}
+                    ) : null}
                     {from.unstableNote && (
                       <div className="text-[10px] text-amber-700">
                         {from.unstableNote}
