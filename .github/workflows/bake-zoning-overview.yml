@@ -1,0 +1,86 @@
+# 用途地域の全国の俯瞰（z5〜z10）の画像タイルを一度だけ焼いて、
+# public/zoning-overview/ にコミットする。
+#
+# 国土数値情報 A29（2019 年版。県ごとの zip、無償、出典の明示が条件）を
+# 47 本取って展開し、scripts/bake_zoning_overview.ts で焼く。用途地域は
+# 年に 1 回も変わらないので、手で回す（workflow_dispatch）。上流への
+# 要求は 47 本のダウンロードだけ（1 秒間隔）。
+#
+# 作業環境からは nlftp.mlit.go.jp に届かない（経路の方針で 403）ので、
+# Actions で回す。成果物は PNG で prettier の対象外。
+name: Bake zoning overview
+
+on:
+  workflow_dispatch:
+    inputs:
+      prefs:
+        description: "県コード（2 桁）を空白区切り。空なら 47 県全部。試しに焼くときは小さい県を"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Download A29-19 (measured URLs, run 33948154922)
+        env:
+          PREFS: ${{ inputs.prefs }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PREFS" ]; then
+            PREFS=$(seq -f "%02g" 1 47 | tr '\n' ' ')
+          fi
+          mkdir -p /tmp/a29
+          TOTAL=0
+          for P in $PREFS; do
+            URL="https://nlftp.mlit.go.jp/ksj/gml/data/A29/A29-19/A29-19_${P}_GML.zip"
+            curl -sS -L -A "cloud-palette-zoning-bake/1.0 (https://cloud-palette.com; contact via site)" \
+              -o "/tmp/a29_${P}.zip" "$URL"
+            SZ=$(stat -c %s "/tmp/a29_${P}.zip")
+            TOTAL=$((TOTAL + SZ))
+            mkdir -p "/tmp/a29/${P}" && unzip -q -o "/tmp/a29_${P}.zip" -d "/tmp/a29/${P}"
+            rm -f "/tmp/a29_${P}.zip"
+            sleep 1
+          done
+          echo "取った zip の合計: $TOTAL バイト" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "GeoJSON: $(find /tmp/a29 -iname '*.geojson' | wc -l) 本" | tee -a "$GITHUB_STEP_SUMMARY"
+          # 利用条件を記録に残す（メタデータの制約の項。1 県ぶん）
+          META=$(find /tmp/a29 -name 'KS-META-*.xml' | head -1)
+          echo "## メタデータの利用制約（$META）" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          grep -iE "useLimitation|otherConstraints|accessConstraints|useConstraints" -A 3 "$META" | head -40 | tee -a "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Bake
+        run: |
+          rm -rf public/zoning-overview
+          NODE_OPTIONS=--max-old-space-size=6144 npx -y tsx scripts/bake_zoning_overview.ts --dir /tmp/a29 | tee -a "$GITHUB_STEP_SUMMARY"
+          du -sh public/zoning-overview | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit
+        if: ${{ inputs.prefs == '' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A public/zoning-overview
+          if git diff --cached --quiet; then
+            echo "変化なし。コミットしない。"
+            exit 0
+          fi
+          git commit -m "chore(data): 用途地域の全国俯瞰タイル（z5〜z10）を国土数値情報 A29 から焼く"
+          git push origin HEAD:master

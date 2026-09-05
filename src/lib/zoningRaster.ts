@@ -159,6 +159,28 @@ export function rasterizeZoning(
 ): Uint8ClampedArray {
   const size = ZONING_TILE_SIZE;
   const rgba = new Uint8ClampedArray(size * size * 4);
+  paintZoningInto(rgba, features, z, x, y, options);
+  return rgba;
+}
+
+/**
+ * 既にある RGBA に区画を塗り足す。
+ *
+ * `rasterizeZoning` はタイル 1 枚を 1 回で作る（API 向け）。全国の俯瞰を
+ * 焼くとき（`scripts/bake_zoning_overview.ts`）は 1,900 の市区町村
+ * ファイルを順に読むので、同じタイルに何度も塗り足す必要がある。
+ * 塗り方は 1 か所（ここ）だけにして、API と焼き込みで色や境界が
+ * 食い違わないようにする。
+ */
+export function paintZoningInto(
+  rgba: Uint8ClampedArray,
+  features: readonly RawZoningFeature[],
+  z: number,
+  x: number,
+  y: number,
+  options: RasterizeOptions = {},
+): void {
+  const size = ZONING_TILE_SIZE;
   const only = options.only ?? null;
 
   for (const f of features) {
@@ -190,7 +212,6 @@ export function rasterizeZoning(
     /* 知らない型は描かない。GeoJSON の層と同じく、上流は Polygon と
        MultiPolygon しか返さない（実測） */
   }
-  return rgba;
 }
 
 /* ------------------------------------------------------------------ *
