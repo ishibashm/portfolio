@@ -46,6 +46,7 @@ import { wedgeOutlineOnly } from "@/lib/wedgeOverlay";
 import { DistanceRings } from "@/components/map/DistanceRings";
 import { PowerSpotLayer } from "@/components/map/PowerSpotLayer";
 import { UserSpotLayer } from "@/components/map/UserSpotLayer";
+import { StationLayer } from "@/components/map/StationLayer";
 import { ZoningLayer } from "@/components/relocation/ZoningLayer";
 import { ZoningLegend } from "@/components/relocation/ZoningLegend";
 import type { ZoningName } from "@/utils/zoning";
@@ -94,6 +95,8 @@ const SECTORS_STORAGE_KEY = "arbitrage_show_sectors";
 const RINGS_STORAGE_KEY = "arbitrage_show_rings";
 /* パワースポット（一宮・名勝）。既定は消えている。一覧は押されてから読む。 */
 const SPOTS_STORAGE_KEY = "arbitrage_show_spots";
+/* 駅（国土数値情報 N02）。既定は消えている。一覧（1 万駅）は押されてから読む。 */
+const STATIONS_STORAGE_KEY = "arbitrage_show_stations";
 
 /**
  * 検索半径から表示ズームを引く。初回表示と「出発地へ」ボタンで使う。
@@ -495,6 +498,11 @@ export default function ArbitrageMapInner({
     () =>
       typeof window !== "undefined" &&
       localStorage.getItem(SPOTS_STORAGE_KEY) === "1",
+  );
+  const [showStations, setShowStations] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(STATIONS_STORAGE_KEY) === "1",
   );
   /*
     現在地。**押されるまで購読しない。**開いた瞬間に位置情報の許可を
@@ -1710,6 +1718,28 @@ export default function ArbitrageMapInner({
               >
                 ⛩ 名所 {showSpots ? "表示中" : "非表示"}
               </button>
+              {/* 駅（国土数値情報 N02、2025 年版）。一覧は押されてから読む
+                  （1 万駅・約 630KB）。z11 未満は升目にまとめる。 */}
+              <button
+                onClick={() => {
+                  const next = !showStations;
+                  setShowStations(next);
+                  localStorage.setItem(STATIONS_STORAGE_KEY, next ? "1" : "0");
+                }}
+                title={
+                  showStations
+                    ? "駅を消す"
+                    : "駅を出す。押すと出発地からの方位と段階が見られます（国土数値情報 N02）"
+                }
+                aria-pressed={showStations}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-mono text-[9px] font-bold transition-colors shadow-lg active:scale-95 cursor-pointer ${
+                  showStations
+                    ? "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
+                    : "bg-white/80 text-stone-500 border-stone-200 hover:bg-white"
+                }`}
+              >
+                🚉 駅 {showStations ? "表示中" : "非表示"}
+              </button>
               {/* 近景 ⇄ 全国の切り替え。
               以前は「全国俯瞰」への片道ボタンしか無く、戻るにはズーム
               操作が要った。今どちらを見ているのかも画面に出ていない。
@@ -2060,6 +2090,18 @@ export default function ArbitrageMapInner({
 
         {/* 利用者が登録した地点（端末の localStorage）。常に出す。 */}
         <UserSpotLayer
+          baseLat={hasBase ? baseLat : null}
+          baseLon={hasBase ? baseLon : null}
+          useClassical={useClassical}
+          dirKigaku={dirKigaku}
+          onInspect={onInspectSpot}
+        />
+
+        {/* 駅（国土数値情報 N02）。判定は名所と同じ経路。帰属表示は層が
+            出ている間だけ足す（出典の明示が利用条件）。 */}
+        <StationLayer
+          enabled={showStations}
+          zoom={zoom}
           baseLat={hasBase ? baseLat : null}
           baseLon={hasBase ? baseLon : null}
           useClassical={useClassical}
