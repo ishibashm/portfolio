@@ -1,5 +1,10 @@
 # 国土数値情報 A29（用途地域）の一括ファイルが何があるかを見る。
-# ダウンロードはしない（HEAD と一覧ページの GET だけ）。
+# 既定はダウンロードしない（HEAD と一覧ページの GET だけ）。
+#
+# inspect_pref に県コード（2 桁）を入れたときだけ、その県の A29-19 の
+# zip を 1 本だけ取って中身（ファイル名と大きさ、GeoJSON があれば
+# 1 件目の属性）を見る。**取り込みの前に、形式を目で確かめる**ため。
+# 小さい県を指定すること（鳥取 31 / 島根 32 / 高知 39 など）。
 #
 # 作業環境からは nlftp.mlit.go.jp に届かない（経路の方針で 403）ので、
 # Actions で回す。probe-zoning と同じ作法。
@@ -7,6 +12,11 @@ name: Probe KSJ
 
 on:
   workflow_dispatch:
+    inputs:
+      inspect_pref:
+        description: "中身を見る県コード（2 桁。空なら見ない）。小さい県を指定する"
+        required: false
+        default: ""
 
 jobs:
   probe:
@@ -26,3 +36,38 @@ jobs:
 
       - name: Probe
         run: npx tsx scripts/probe_ksj.ts | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Inspect one prefecture
+        if: ${{ inputs.inspect_pref != '' }}
+        env:
+          PREF: ${{ inputs.inspect_pref }}
+        run: |
+          set -euo pipefail
+          URL="https://nlftp.mlit.go.jp/ksj/gml/data/A29/A29-19/A29-19_${PREF}_GML.zip"
+          echo "## 4. 1 県の中身（A29-19_${PREF}）" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          curl -sS -L -A "cloud-palette-ksj-probe/1.0 (https://cloud-palette.com; contact via site)" \
+            -o /tmp/a29.zip "$URL"
+          ls -l /tmp/a29.zip
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          unzip -l /tmp/a29.zip | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p /tmp/a29 && unzip -q -o /tmp/a29.zip -d /tmp/a29
+          GJ=$(find /tmp/a29 -iname '*.geojson' | head -1 || true)
+          if [ -n "$GJ" ]; then
+            echo "GeoJSON: $GJ ($(stat -c %s "$GJ") bytes)" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            # 1 件目の属性と座標の先頭だけ。ファイル全体は出さない
+            node -e '
+              const fs=require("fs"); const j=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+              console.log("features:", j.features.length, "crs:", JSON.stringify(j.crs ?? null));
+              const f=j.features[0];
+              console.log("properties:", JSON.stringify(f.properties));
+              console.log("geometry.type:", f.geometry.type, "first coord:", JSON.stringify(f.geometry.coordinates[0][0]));
+              const keys=new Map(); for (const g of j.features) for (const [k,v] of Object.entries(g.properties)) { const s=keys.get(k)??new Set(); if (s.size<6) s.add(String(v)); keys.set(k,s); }
+              for (const [k,s] of keys) console.log(k, "=>", [...s].join(" | "));
+            ' "$GJ" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "GeoJSON は無い（shp / xml だけ）" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
