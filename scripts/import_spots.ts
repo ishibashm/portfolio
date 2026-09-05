@@ -3,7 +3,8 @@ import { MUNICIPALITY_POINTS } from "../src/lib/municipalityCoords";
 import { distanceKmBetween } from "../src/utils/directionGeo";
 
 /**
- * 一宮の一覧を Wikidata から取り込んで `src/data/powerSpots.json` に焼く。
+ * 一宮・名勝・特別名勝の一覧を Wikidata から取り込んで
+ * `src/data/powerSpots.json` に焼く（指定は DESIGNATIONS）。
  *
  * ## 取るものと、取らないもの
  *
@@ -41,7 +42,7 @@ import { distanceKmBetween } from "../src/utils/directionGeo";
  *
  * ## 効果を書かない
  *
- * この表に入るのは「一宮という指定がある」という事実だけ。ご利益や
+ * この表に入るのは「一宮／名勝という指定がある」という事実だけ。ご利益や
  * 効果は書かない（CLAUDE.md 4 節）。画面側も同じ。
  */
 
@@ -49,10 +50,22 @@ const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
 const UA =
   "cloud-palette-spot-import/1.0 (https://cloud-palette.com; contact via site)";
 
-/** 一宮（諸国一宮）。probe で実測した QID。 */
-const ICHINOMIYA_QID = "Q1656379";
-/** 一宮と社を結ぶプロパティ。**推測ではなく props で数えて出した**（108 件）。 */
-const DESIGNATION_PROP = "P13723";
+/**
+ * 取り込む指定。**QID もプロパティも probe で実測したものだけ**
+ * （推測で並べない。一宮を P31 / P1435 で引いて 0 件だった）。
+ *
+ *   一宮   … P13723 → Q1656379   108 件（run 33941059021）
+ *   特別名勝 … P1435 → Q94987823   43 件（run 33946844992）
+ *   名勝   … P1435 → Q11414752  367 行・座標あり 347（run 33946990176）
+ *
+ * 並びは優先順。同じ QID が 2 つ以上に当たったら（特別名勝は名勝でも
+ * ある）先に出た basis を採る。
+ */
+const DESIGNATIONS: { qid: string; prop: string; basis: string }[] = [
+  { qid: "Q1656379", prop: "P13723", basis: "諸国一宮" },
+  { qid: "Q94987823", prop: "P1435", basis: "特別名勝（国指定）" },
+  { qid: "Q11414752", prop: "P1435", basis: "名勝（国指定）" },
+];
 
 const OUT = "src/data/powerSpots.json";
 
@@ -102,7 +115,12 @@ export interface PowerSpot {
   altCoords?: [number, number][];
 }
 
-async function main() {
+/** 1 つの指定を引く。行は QID で畳んで返す（座標は複数あり得る）。 */
+async function fetchDesignation(d: {
+  qid: string;
+  prop: string;
+  basis: string;
+}): Promise<Map<string, { name: string; points: [number, number][] }>> {
   /* 座標は OPTIONAL で取る。**必須にすると、座標の無い社が
      「そもそも指定されていない」のと区別できないまま消える。**
      実際に消えていた（run 33939927717。指定 108 社に対して書き出しは
@@ -110,7 +128,7 @@ async function main() {
      **どれを落としたかを名前で出す。** */
   const query = `
 SELECT ?item ?itemLabel ?coord WHERE {
-  ?item wdt:${DESIGNATION_PROP} wd:${ICHINOMIYA_QID}.
+  ?item wdt:${d.prop} wd:${d.qid}.
   OPTIONAL { ?item wdt:P625 ?coord. }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "ja". }
 }`;
@@ -125,17 +143,15 @@ SELECT ?item ?itemLabel ?coord WHERE {
     body: `query=${encodeURIComponent(query)}`,
   });
   if (!res.ok) {
-    console.error(`SPARQL が HTTP ${res.status}`);
-    console.error((await res.text()).slice(0, 500));
-    process.exitCode = 1;
-    return;
+    const text = (await res.text()).slice(0, 500);
+    throw new Error(`SPARQL が HTTP ${res.status}（${d.basis}）: ${text}`);
   }
 
   const body = (await res.json()) as {
     results?: { bindings?: Binding[] };
   };
   const rows = body.results?.bindings ?? [];
-  console.log(`返ってきた行: ${rows.length}`);
+  console.log(`[${d.basis}] 返ってきた行: ${rows.length}`);
 
   /* QID で畳む。行数は P625 の複数値で膨らむ（probe で 302 行／108 社）。 */
   const byId = new Map<string, { name: string; points: [number, number][] }>();
@@ -152,16 +168,42 @@ SELECT ?item ?itemLabel ?coord WHERE {
     }
     byId.set(id, e);
   }
-  console.log(`指定のある社: ${byId.size}`);
+  console.log(`[${d.basis}] 指定のある件数: ${byId.size}`);
+  return byId;
+}
+
+async function main() {
+  /* 指定ごとに引いて、QID で 1 つに畳む。**同じ地点を 2 回載せない。**
+     特別名勝は名勝でもあるので、先に出た（優先順の）basis を採る。
+     要求は指定の数だけ（3 回）。1 秒空ける。 */
+  const byId = new Map<
+    string,
+    { name: string; points: [number, number][]; basis: string }
+  >();
+  let overlap = 0;
+  for (const d of DESIGNATIONS) {
+    const got = await fetchDesignation(d);
+    for (const [id, e] of got) {
+      if (byId.has(id)) {
+        overlap++;
+        continue;
+      }
+      byId.set(id, { ...e, basis: d.basis });
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  console.log(`\n合計（QID で畳んだ後）: ${byId.size}、重なり: ${overlap}`);
 
   /* **落とすものを黙って落とさない。**座標が無ければ地図に出せないが、
      どれが出せないのかは分かる形で残す。ここを黙らせると、上流に
      座標が入った日にも気付けない。 */
   const dropped = [...byId.entries()].filter(([, e]) => e.points.length === 0);
   if (dropped.length > 0) {
-    console.log(`\n座標が無くて出せない社: ${dropped.length}`);
+    console.log(`\n座標が無くて出せないもの: ${dropped.length}`);
     for (const [id, e] of dropped) {
-      console.log(`  - ${e.name}（https://www.wikidata.org/wiki/${id}）`);
+      console.log(
+        `  - ${e.name}［${e.basis}］（https://www.wikidata.org/wiki/${id}）`,
+      );
     }
     console.log("");
   }
@@ -186,7 +228,7 @@ SELECT ?item ?itemLabel ?coord WHERE {
       pref: n.pref,
       city: n.city,
       code: n.code,
-      basis: "諸国一宮",
+      basis: e.basis,
       ...(sorted.length > 1 ? { altCoords: sorted.slice(1) } : {}),
     });
   }
@@ -195,12 +237,17 @@ SELECT ?item ?itemLabel ?coord WHERE {
    **並びが動くと差分がノイズだらけになり、中身の変化が読めない。** */
   spots.sort((a, b) => a.id.localeCompare(b.id));
 
-  console.log(`座標が複数あった社: ${multi}`);
+  console.log(`座標が複数あったもの: ${multi}`);
   console.log(`書き出す: ${spots.length} 件`);
+  for (const d of DESIGNATIONS) {
+    console.log(
+      `  ${d.basis}: ${spots.filter((s) => s.basis === d.basis).length} 件`,
+    );
+  }
 
   const out = {
     source: "Wikidata (CC0)",
-    designation: { qid: ICHINOMIYA_QID, prop: DESIGNATION_PROP },
+    designations: DESIGNATIONS,
     note: "所在地は座標から最寄りの市区町村を引いたもので、住所ではない。効果や利益は含まない。",
     generatedAt: new Date().toISOString().slice(0, 10),
     spots,
