@@ -311,3 +311,28 @@ export async function deleteProfilePreset(
     storage,
   );
 }
+
+/**
+ * 1 件の名前だけ変える。
+ *
+ * `saveProfilePresets` に「名前だけ差し替えた 1 件」を渡しても同じことが
+ * できるが、そのためには呼び出し側が**その 1 件の全項目**（生年月日・
+ * 座標・基準値）を持っていなければならない。一覧を出しているだけの画面は
+ * 名前と id しか扱っていないので、他の項目を undefined で埋めた形を渡して
+ * しまうと、**名前を変えただけで中身が消える。**
+ *
+ * 最新の一覧から本体を引いて名前だけ差し替える。中身には触らない。
+ */
+export async function renameProfilePreset(
+  id: string,
+  name: string,
+  fetcher: Fetcher,
+  storage: Storage,
+): Promise<SaveResult> {
+  const base = await latestPresets(fetcher, storage);
+  return persist(
+    base.map((preset) => (preset.id === id ? { ...preset, name } : preset)),
+    fetcher,
+    storage,
+  );
+}
