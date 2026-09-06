@@ -2,13 +2,24 @@
 
 import React from "react";
 import Link from "next/link";
-import { AlertTriangle, LogOut, Loader2, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  LogOut,
+  Loader2,
+  Pencil,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { loadSettings } from "@/lib/userSettings";
 import { profileCompletion } from "@/lib/profileCompletion";
 import { ProfileProgress } from "@/components/profile/ProfileProgress";
 import {
+  deleteProfilePreset,
   loadProfilePresets,
+  renameProfilePreset,
   type ProfilePreset,
 } from "@/lib/profilePresetSync";
 import { deleteAccountData } from "@/lib/accountData";
@@ -23,8 +34,13 @@ import { deleteAccountData } from "@/lib/accountData";
  *   保存済みプロフィール … 呼び出す口は 4 画面にあるが、一覧は無い
  *   ログアウト         … /login とサイドバー
  *
- * 入力は `/profile` の仕事なので、ここでは**入力欄を作らない**。同じ値を
- * 2 か所で書けるようにすると必ず食い違う。ここは見るところ。
+ * 生年月日と場所の入力は `/profile` の仕事なので、ここでは**その入力欄を
+ * 作らない**。同じ値を 2 か所で書けるようにすると必ず食い違う。
+ *
+ * ただし**保存済みプロフィールの名前と削除はここでやる**。名前は一覧に
+ * しか出てこないもので、直せるのがホームの時計の中（PersonalProfileConfig）
+ * だけだった。一覧を出しておいて直せないほうが食い違う。中身（生年月日・
+ * 場所）の編集は /profile に持たせる。
  */
 
 type Status = "loading" | "ready";
@@ -40,6 +56,11 @@ export function AccountPanel() {
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const [deleteMessage, setDeleteMessage] = React.useState<string | null>(null);
+  /* 名前を直している 1 件。null なら誰も直していない */
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [editingName, setEditingName] = React.useState("");
+  /* 進行中の 1 件（名前の保存・削除）。二重に押させない */
+  const [busyId, setBusyId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let alive = true;
@@ -155,7 +176,7 @@ export function AccountPanel() {
         </div>
         <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
           {
-            "家族ぶんなど、複数の生年月日を切り替えて使うための控えです。呼び出しと保存は設定バー（画面の上）と各ツールから行えます。"
+            "家族ぶんなど、複数の生年月日を切り替えて使うための控えです。ここで名前を直したり、要らなくなったものを消したりできます。呼び出しと新規保存は設定バー（画面の上）と各ツールから行えます。"
           }
         </p>
 
@@ -168,16 +189,117 @@ export function AccountPanel() {
         ) : (
           <ul className="mt-4 divide-y divide-stone-100">
             {presets.map((preset) => (
-              <li
-                key={preset.id}
-                className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2.5"
-              >
-                <span className="text-xs font-semibold text-stone-800">
-                  {preset.name}
-                </span>
-                <span className="text-[11px] text-stone-500">
-                  生年月日 {preset.birthDate || "未設定"}
-                </span>
+              <li key={preset.id} className="py-2.5">
+                {editingId === preset.id ? (
+                  /* 名前を直しているあいだ。Enter でも保存できるよう form
+                     にする（小さな入力で「押す場所を探す」を作らない） */
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const name = editingName.trim();
+                      if (!name) return;
+                      setBusyId(preset.id);
+                      const result = await renameProfilePreset(
+                        preset.id,
+                        name,
+                        fetch,
+                        window.localStorage,
+                      );
+                      setPresets(result.presets);
+                      setCloudSynced(result.cloudSynced);
+                      setBusyId(null);
+                      setEditingId(null);
+                    }}
+                    className="flex flex-wrap items-center gap-2"
+                  >
+                    <input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      autoFocus
+                      maxLength={100}
+                      aria-label="プロフィールの名前"
+                      className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-1.5 text-xs text-stone-800 focus:border-indigo-400 focus:outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={busyId === preset.id || !editingName.trim()}
+                      className="inline-flex cursor-pointer items-center gap-1 rounded-full bg-indigo-600 px-4 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-stone-300"
+                    >
+                      {busyId === preset.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                      ) : (
+                        <Check className="h-3 w-3" aria-hidden />
+                      )}
+                      保存
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-stone-500 hover:text-stone-700"
+                    >
+                      <X className="h-3 w-3" aria-hidden />
+                      やめる
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-stone-800">
+                        {preset.name}
+                      </p>
+                      <p className="text-[11px] text-stone-500">
+                        生年月日 {preset.birthDate || "未設定"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingId(preset.id);
+                          setEditingName(preset.name);
+                        }}
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-stone-300 px-3 py-1 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                      >
+                        <Pencil className="h-3 w-3" aria-hidden />
+                        名前
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === preset.id}
+                        onClick={async () => {
+                          /* 消す前に必ず名前を出して確かめる。一覧から
+                             1 件だけ消えるので、取り違えると気付きにくい */
+                          if (
+                            !window.confirm(
+                              `「${preset.name}」を消します。よろしいですか。`,
+                            )
+                          )
+                            return;
+                          setBusyId(preset.id);
+                          const result = await deleteProfilePreset(
+                            preset.id,
+                            fetch,
+                            window.localStorage,
+                          );
+                          setPresets(result.presets);
+                          setCloudSynced(result.cloudSynced);
+                          setBusyId(null);
+                        }}
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-rose-200 px-3 py-1 text-[11px] font-semibold text-rose-700 transition-colors hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {busyId === preset.id ? (
+                          <Loader2
+                            className="h-3 w-3 animate-spin"
+                            aria-hidden
+                          />
+                        ) : (
+                          <Trash2 className="h-3 w-3" aria-hidden />
+                        )}
+                        削除
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

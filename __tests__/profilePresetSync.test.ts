@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  type ProfilePreset,
   deleteProfilePreset,
   loadProfilePresets,
+  renameProfilePreset,
   saveProfilePresets,
-  type ProfilePreset,
 } from "@/lib/profilePresetSync";
 
 const localPreset: ProfilePreset = {
@@ -84,13 +85,11 @@ describe("profile preset cloud sync", () => {
   });
 
   it("keeps a local copy and reports when cloud saving fails", async () => {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-        }),
-      );
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      }),
+    );
 
     const result = await saveProfilePresets(
       [localPreset],
@@ -219,5 +218,97 @@ describe("saving never drops presets added elsewhere", () => {
       "preset_mine",
       "preset_other",
     ]);
+  });
+});
+
+/**
+ * 名前だけ変える。
+ *
+ * `saveProfilePresets` に 1 件渡す形でも名前は変えられるが、そのときは
+ * **その 1 件の全項目**を渡す必要がある。一覧を出しているだけの画面は
+ * 名前と id しか持っていないので、その形では中身が消える。ここで
+ * 「中身に触らない」を固定しておく。
+ */
+describe("renameProfilePreset", () => {
+  const other: ProfilePreset = {
+    ...localPreset,
+    id: "preset_other",
+    name: "別の端末で足した人",
+  };
+  const ok = () =>
+    new Response(JSON.stringify({ success: true }), { status: 200 });
+
+  it("指定した 1 件の名前だけが変わる", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ presets: [localPreset, other] }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(ok());
+
+    const result = await renameProfilePreset(
+      localPreset.id,
+      "新しい名前",
+      fetcher,
+      localStorage,
+    );
+
+    const renamed = result.presets.find((p) => p.id === localPreset.id);
+    expect(renamed?.name).toBe("新しい名前");
+    /* 中身は元のまま。名前を変えたら生年月日が消えた、を起こさない */
+    expect(renamed?.birthDate).toBe(localPreset.birthDate);
+    expect(renamed?.birthLat).toBe(localPreset.birthLat);
+    expect(renamed?.baseLat).toBe(localPreset.baseLat);
+    /* 他の 1 件はそのまま */
+    expect(result.presets.find((p) => p.id === "preset_other")?.name).toBe(
+      other.name,
+    );
+  });
+
+  it("他所で足された分を消さない", async () => {
+    localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ presets: [localPreset, other] }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(ok());
+
+    const result = await renameProfilePreset(
+      localPreset.id,
+      "改名",
+      fetcher,
+      localStorage,
+    );
+
+    expect(result.presets.map((p) => p.id).sort()).toEqual([
+      "preset_local",
+      "preset_other",
+    ]);
+  });
+
+  it("未ログインでも端末の控えには残る", async () => {
+    localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
+    const fetcher = vi
+      .fn()
+      .mockResolvedValue(new Response("", { status: 401 }));
+
+    const result = await renameProfilePreset(
+      localPreset.id,
+      "手元だけ",
+      fetcher,
+      localStorage,
+    );
+
+    expect(result.cloudSynced).toBe(false);
+    expect(result.presets[0].name).toBe("手元だけ");
+    const cached = JSON.parse(
+      localStorage.getItem("profile_presets_v1") ?? "[]",
+    );
+    expect(cached[0].name).toBe("手元だけ");
   });
 });
