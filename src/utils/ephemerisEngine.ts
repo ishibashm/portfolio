@@ -799,6 +799,25 @@ export interface VectorCollision {
 /**
  * ベクトル衝突計算（吉凶方位の物理的割り出し）
  */
+/**
+ * 土用の間日（土用の障りが無いとされる日の十二支）。季ごとに違う。
+ *
+ *   春土用 巳・午・酉 / 夏土用 卯・辰・申 / 秋土用 未・酉・亥 / 冬土用 寅・卯・巳
+ *
+ * **写しを作らないこと。**lib/monthlyCalendar は同じ表を手で写していて、
+ * 冬と春が 1 季ずれていた（冬に春の表、春に夏の表）。月別カレンダーの
+ * 「引越しに向く日」が冬と春の土用で毎年ずれていた。ここから引く。
+ */
+export const DOYOU_MABI: Record<
+  "SPRING" | "SUMMER" | "AUTUMN" | "WINTER",
+  readonly string[]
+> = {
+  SPRING: ["巳", "午", "酉"],
+  SUMMER: ["卯", "辰", "申"],
+  AUTUMN: ["未", "酉", "亥"],
+  WINTER: ["寅", "卯", "巳"],
+};
+
 export function calculateVectorCollision(
   personalStar: StarFrequency,
   yearBoard: BoardLayout,
@@ -931,15 +950,8 @@ export function calculateVectorCollision(
 
     const inDoyou = doyouType !== null;
     let isMabi = false;
-    if (zodiacs?.dayZodiac) {
-      if (doyouType === "SPRING")
-        isMabi = ["巳", "午", "酉"].includes(zodiacs.dayZodiac);
-      else if (doyouType === "SUMMER")
-        isMabi = ["卯", "辰", "申"].includes(zodiacs.dayZodiac);
-      else if (doyouType === "AUTUMN")
-        isMabi = ["未", "酉", "亥"].includes(zodiacs.dayZodiac);
-      else if (doyouType === "WINTER")
-        isMabi = ["寅", "卯", "巳"].includes(zodiacs.dayZodiac);
+    if (zodiacs?.dayZodiac && doyouType) {
+      isMabi = DOYOU_MABI[doyouType].includes(zodiacs.dayZodiac);
     }
 
     doyouState = {

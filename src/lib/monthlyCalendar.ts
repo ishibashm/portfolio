@@ -1,5 +1,9 @@
 import { getRokuyo, getLuckyDays } from "@/utils/lunar";
-import { AstroEngine, getCurrentZodiac } from "@/utils/ephemerisEngine";
+import {
+  AstroEngine,
+  DOYOU_MABI,
+  getCurrentZodiac,
+} from "@/utils/ephemerisEngine";
 import {
   kigakuMonthRange,
   getMonthDirections,
@@ -172,11 +176,17 @@ function doyouStateOf(
 ): { inDoyou: boolean; isMabi: boolean } {
   const sunLon = AstroEngine.getSolarLongitude(date);
   // 土用は各季の終わり 18 度ぶん。立春315/立夏45/立秋135/立冬225 の手前。
-  const RANGES: { from: number; to: number; mabi: string[] }[] = [
-    { from: 297, to: 315, mabi: ["巳", "午", "酉"] }, // 冬土用
-    { from: 27, to: 45, mabi: ["卯", "辰", "申"] }, // 春土用
-    { from: 117, to: 135, mabi: ["卯", "辰", "申"] }, // 夏土用
-    { from: 207, to: 225, mabi: ["未", "酉", "亥"] }, // 秋土用
+  /*
+    間日の表は ephemerisEngine の DOYOU_MABI から引く。以前はここに手で
+    写していて、冬に春の表（巳午酉）、春に夏の表（卯辰申）が入っていた。
+    /calendar/2026-04 が 4/23（卯）を「向く日」に入れ、4/25（巳・大安）を
+    落とすなど、冬と春の土用で毎年ずれていた。
+  */
+  const RANGES: { from: number; to: number; mabi: readonly string[] }[] = [
+    { from: 297, to: 315, mabi: DOYOU_MABI.WINTER }, // 冬土用
+    { from: 27, to: 45, mabi: DOYOU_MABI.SPRING }, // 春土用
+    { from: 117, to: 135, mabi: DOYOU_MABI.SUMMER }, // 夏土用
+    { from: 207, to: 225, mabi: DOYOU_MABI.AUTUMN }, // 秋土用
   ];
   for (const r of RANGES) {
     const inRange =
