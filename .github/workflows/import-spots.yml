@@ -32,7 +32,12 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Import
-        run: npx -y tsx scripts/import_spots.ts | tee -a "$GITHUB_STEP_SUMMARY"
+        # tee に繋ぐと、左側（tsx）が落ちても終了コードは tee の 0 になり、
+        # job が緑のまま終わる（#973 で site-audit が踏んだのと同じ）。
+        # pipefail で左側の失敗を残す。
+        run: |
+          set -o pipefail
+          npx -y tsx scripts/import_spots.ts | tee -a "$GITHUB_STEP_SUMMARY"
 
       # **2 回回して同じものが出ることを確かめる。**座標が複数ある社が
       # あり（鹽竈神社・天津神社）、決め方が甘いと実行のたびにピンが動く。

@@ -50,7 +50,12 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Import
-        run: npx -y tsx scripts/import_stations.ts --geojson "$GJ" | tee -a "$GITHUB_STEP_SUMMARY"
+        # tee に繋ぐと、左側（tsx）が落ちても終了コードは tee の 0 になり、
+        # job が緑のまま終わる（#973 で site-audit が踏んだのと同じ）。
+        # pipefail で左側の失敗を残す。
+        run: |
+          set -o pipefail
+          npx -y tsx scripts/import_stations.ts --geojson "$GJ" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Commit
         run: |

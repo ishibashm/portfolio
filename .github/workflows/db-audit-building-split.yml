@@ -44,4 +44,9 @@ jobs:
       - name: Audit
         env:
           SPLIT_AUDIT_PREF: ${{ inputs.prefecture }}
-        run: npx tsx scripts/audit_building_split.ts | tee -a "$GITHUB_STEP_SUMMARY"
+        # tee に繋ぐと、左側（tsx）が落ちても終了コードは tee の 0 になり、
+        # job が緑のまま終わる（#973 で site-audit が踏んだのと同じ）。
+        # pipefail で左側の失敗を残す。
+        run: |
+          set -o pipefail
+          npx tsx scripts/audit_building_split.ts | tee -a "$GITHUB_STEP_SUMMARY"
