@@ -33,6 +33,20 @@ export function todayInJapan(now: Date = new Date()): string {
   return toJapanDateString(now);
 }
 
+/**
+ * 日本時間で n 日前の暦日。集計の窓（直近 30 日など）を day 列と同じ暦で
+ * 切るための基準。
+ *
+ * `new Date("YYYY-MM-DDT00:00:00+09:00")` から n 日引いて toISOString で
+ * 読むと **UTC の日付**になる（JST の 0 時は前日の 15 時 UTC）。
+ * metrics/summary がこれをやっていて、「昨日」が一昨日、「直近 30 日」が
+ * 31 日になっていた。日本は夏時間が無いので、瞬間から 24 時間刻みで引いて
+ * JST の暦日を読めばずれない。
+ */
+export function daysAgoInJapan(days: number, now: Date = new Date()): string {
+  return toJapanDateString(new Date(now.getTime() - days * 86_400_000));
+}
+
 const JST_DATETIME_FORMATTER = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Tokyo",
   year: "numeric",

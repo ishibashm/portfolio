@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import prisma from "@/lib/prisma";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 import { toLogMessage } from "@/lib/errorMessage";
-import { todayInJapan } from "@/utils/japanDate";
+import { daysAgoInJapan, todayInJapan } from "@/utils/japanDate";
 import { estimateYen, totalEstimateYen, type UsageRow } from "@/lib/apiUsage";
 import { loadGcpBillingCost } from "@/lib/gcpBilling";
 import { loadBlogPosts } from "@/lib/blogStore";
@@ -130,14 +130,6 @@ const EXCLUDE_INTERNAL = Prisma.sql`is_internal IS NOT TRUE`;
 /** 「全部」を選んだときの、何も絞らない条件。 */
 const NO_FILTER = Prisma.sql`TRUE`;
 
-/** JST の今日から n 日前の "YYYY-MM-DD"。day 列と同じ暦で切るための基準。 */
-function jstDayBefore(days: number): string {
-  const todayJst = new Date(`${todayInJapan()}T00:00:00+09:00`);
-  return new Date(todayJst.getTime() - days * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-}
-
 /**
  * `?include=all` で内部の閲覧も含める。既定は除く。
  *
@@ -156,11 +148,11 @@ export async function GET(request: Request) {
 
   try {
     const today = todayInJapan();
-    const yesterday = jstDayBefore(1);
+    const yesterday = daysAgoInJapan(1);
     // 「直近 30 日」に今日を含める（今日を含めて 30 枠）。
-    const since30 = jstDayBefore(DAYS - 1);
-    const since60 = jstDayBefore(DAYS * 2 - 1);
-    const since7 = jstDayBefore(6);
+    const since30 = daysAgoInJapan(DAYS - 1);
+    const since60 = daysAgoInJapan(DAYS * 2 - 1);
+    const since7 = daysAgoInJapan(6);
     const monthStart = `${today.slice(0, 7)}-01`;
 
     const now = Date.now();
@@ -436,7 +428,7 @@ export async function GET(request: Request) {
         yesterday: byDay.get(yesterday) ?? { day: yesterday, pv: 0, uv: 0 },
         pv7: sumPv(since7),
         // 前の 7 日 = 直近 14 日の合計から直近 7 日を引く（daily の範囲内）
-        pvPrev7: sumPv(jstDayBefore(13)) - sumPv(since7),
+        pvPrev7: sumPv(daysAgoInJapan(13)) - sumPv(since7),
         pv30: sumPv(since30),
         pvPrev30: Number(prev30Pv[0]?.n ?? 0),
         daily: dailyNum,
