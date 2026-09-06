@@ -1903,6 +1903,18 @@ export default function RelocationSimulatorPage() {
 
           {/* Unified Ten-Chi-Jin Plan Level Panel */}
           <div className="w-full">
+            {/* 出発日の評価はサーバーに取りに行く（数秒かかる）。以前は
+                isEvaluatingNba を立てるだけで描いておらず、返るまで画面が
+                止まって見えた */}
+            {isEvaluatingNba && (
+              <p
+                role="status"
+                className="mb-2 flex items-center gap-2 text-[11px] text-indigo-700"
+              >
+                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+                出発日ごとの評価を取得しています…
+              </p>
+            )}
             <TenChiJinEvaluation
               mode="plan"
               steps={steps}
