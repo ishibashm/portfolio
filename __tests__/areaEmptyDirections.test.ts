@@ -32,8 +32,15 @@ function deadEnds(code: string): string[] {
 }
 
 function farOnly(code: string): string[] {
+  /* 頁と同じ順。150km 以内に掲載の無い街があれば「遠いだけ」ではない */
   return empty(code)
-    .filter((e) => e.hasBeyondRange)
+    .filter((e) => !e.hasWithinRangeMunicipality && e.hasAnyMunicipality)
+    .map((e) => e.direction);
+}
+
+function notListed(code: string): string[] {
+  return empty(code)
+    .filter((e) => e.hasWithinRangeMunicipality)
     .map((e) => e.direction);
 }
 
@@ -61,8 +68,12 @@ describe("emptyDirections", () => {
     expect(all).not.toContain("NW");
   });
 
-  it("函館市の南西は「遠いだけ」（本州が 150km より先にある）", () => {
-    expect(farOnly("01202")).toContain("SW");
+  it("函館市の南西は「掲載漏れ」（木古内町 27km が 150km 以内にある）", () => {
+    /* 2026-09-06 まで「遠いだけ（本州が 150km より先）」と書いていた。
+       本州は先にあるが、手前の渡島半島に木古内町・知内町がある。
+       hasBeyondRange を先に見ていたので隠れていた */
+    expect(notListed("01202")).toContain("SW");
+    expect(farOnly("01202")).not.toContain("SW");
     expect(deadEnds("01202")).not.toContain("SW");
   });
 
