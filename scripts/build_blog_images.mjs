@@ -835,6 +835,61 @@ const FIGURES = [
       </div>
       <div class="note"><b>吉方位も凶方位も、出発地ごとに変わります。</b></div>`,
   },
+  {
+    /*
+      さとうみつろう氏の現実創造論との対応。同じ「方位・時刻・地磁気」
+      という言葉を使いながら、やっていることが違う、を 1 枚で。
+      右列がこのサイトの扱い。判定に入れていないものは薄く。
+    */
+    slug: "reality-creation-theory-vs-this-site",
+    kicker: "データの見方",
+    title: "同じ言葉でも、<br>やっていることは違う",
+    sub: "「方位」「時刻」「地磁気」はこのサイトにもあります。意味が別です。",
+    body: `<div style="display:flex;flex-direction:column;gap:6px">
+        ${[
+          [
+            "方位",
+            "自転のスピンを取り込む",
+            "真北で八方位に切る。九星の規則だけ",
+            true,
+          ],
+          [
+            "時刻",
+            "磁気圏と位相を合わせる",
+            "年・月・日の三盤を暦で合成する",
+            true,
+          ],
+          [
+            "地磁気",
+            "脳の磁気受容で脳波が変わる",
+            "Kp 指数は参考表示。判定に入れない",
+            false,
+          ],
+          ["土・水", "採った場の磁場情報を保つ", "扱わない", false],
+          [
+            "冬至",
+            "ノイズを下げるゼロ状態",
+            "日盤の陽遁・陰遁が入れ替わる節目",
+            true,
+          ],
+        ]
+          .map(
+            ([
+              name,
+              theory,
+              site,
+              used,
+            ]) => `<div style="display:flex;align-items:center;gap:12px;
+               background:${used ? "#fff" : "transparent"};border:1px solid ${used ? "#e11d48" : "#e2e8f0"};
+               border-radius:10px;padding:8px 12px">
+            <div style="width:84px;font-size:19px;font-weight:800;color:#0f172a">${name}</div>
+            <div style="width:300px;font-size:15px;color:#64748b">理論: ${theory}</div>
+            <div style="font-size:16px;color:${used ? "#e11d48" : "#475569"};font-weight:${used ? 700 : 400}">${site}</div>
+          </div>`,
+          )
+          .join("")}
+      </div>`,
+  },
 ];
 
 function html(fig) {
