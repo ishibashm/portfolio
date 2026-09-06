@@ -27,9 +27,7 @@ describe("the OAuth callback", () => {
     );
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("location")).toBe(
-      "https://cloud-palette.com/",
-    );
+    expect(response.headers.get("location")).toBe("https://cloud-palette.com/");
   });
 
   it("preserves an explicitly requested destination", async () => {
@@ -42,5 +40,20 @@ describe("the OAuth callback", () => {
     expect(response.headers.get("location")).toBe(
       "https://cloud-palette.com/calendar",
     );
+  });
+
+  it("別サイトへ送れる next はトップに倒す（/login と同じ守り）", async () => {
+    // 以前は next をそのまま繋いでいた。`@evil.com` は
+    // `https://cloud-palette.com@evil.com` になり、ホストは evil.com
+    for (const next of ["@evil.com", "//evil.com/x", "https://evil.com"]) {
+      const response = await GET(
+        new Request(
+          `https://cloud-palette.com/auth/callback?code=ok&next=${encodeURIComponent(next)}`,
+        ),
+      );
+      expect(response.headers.get("location"), next).toBe(
+        "https://cloud-palette.com/",
+      );
+    }
   });
 });

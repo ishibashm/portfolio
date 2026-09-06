@@ -58,6 +58,33 @@ describe("userSettings", () => {
     expect(settings.base_lat).toBe(43.06);
   });
 
+  it("クラウドで消した項目（null）は、クラウドが新しければ端末からも消す", async () => {
+    // 以前は null を読み飛ばしていて、別の端末で消した出発地が残り続け、
+    // 次の保存で復活していた
+    writeLocalSettings({
+      base_lat: 35.1,
+      base_lon: 136.9,
+      birth_date: "1990-05-15",
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          base_lat: null,
+          base_lon: null,
+          birth_date: "1990-05-15",
+          updated_at: new Date(Date.now() + 60_000).toISOString(),
+        }),
+      }),
+    );
+
+    const { settings } = await loadSettings();
+    expect(settings.base_lat).toBeUndefined();
+    expect(settings.base_lon).toBeUndefined();
+    expect(settings.birth_date).toBe("1990-05-15");
+  });
+
   it("keeps the local copy when it is newer than the cloud", async () => {
     vi.stubGlobal(
       "fetch",

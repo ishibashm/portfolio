@@ -125,17 +125,26 @@ export async function loadSettings(): Promise<LoadResult> {
     const remoteAt = remote.updated_at ? Date.parse(remote.updated_at) : 0;
 
     const remoteFields: Settings = {};
+    /* クラウドで**消した**項目（null）。別の端末で出発地を消しても、
+       null を読み飛ばすと古い値が端末に残り、次の保存で復活していた。
+       クラウドが新しいときだけ、消えた項目を端末からも外す。 */
+    const remoteCleared: string[] = [];
     for (const key of SYNCED_FIELDS) {
-      if (remote[key] !== null && remote[key] !== undefined) {
+      if (remote[key] === null) {
+        remoteCleared.push(key);
+      } else if (remote[key] !== undefined) {
         remoteFields[key] = remote[key];
       }
     }
 
     // クラウドが新しければ上書き、そうでなければ欠けている項目だけ補完する。
-    const settings =
-      remoteAt > localAt
-        ? { ...local, ...remoteFields }
-        : { ...remoteFields, ...local };
+    let settings: Settings;
+    if (remoteAt > localAt) {
+      settings = { ...local, ...remoteFields };
+      for (const key of remoteCleared) delete settings[key];
+    } else {
+      settings = { ...remoteFields, ...local };
+    }
 
     return { settings, synced: true };
   } catch {
