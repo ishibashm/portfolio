@@ -856,7 +856,7 @@ export default function MagneticMapInner({
             {Math.abs(declination).toFixed(2)}°
           </div>
           <div className="text-[9px] text-stone-600 mt-0.5 leading-tight max-w-[200px]">
-            ※占術・気学の吉凶評価は、すべて「磁北」を基準に補正計算されています。月交点（空間方位）と月相（時間補正）は別個に評価されています。
+            ※方位の吉凶は真北を基準に判定しています。磁北の表示は、方位磁針で測ったときにどれだけずれるかを示す参考です。月交点（空間方位）と月相（時間補正）は別個に評価されています。
           </div>
         </div>
       </div>
