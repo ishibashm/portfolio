@@ -187,6 +187,26 @@ export async function GET(request: Request) {
         (m) => m.id !== "primary",
       ),
     ];
+    /*
+      本人の生年月日が無いときは、日別の判定を作らない。以前は空文字が
+      parseSafeDate で**今日**になり、「今日生まれた人」の本命殺・月命殺・
+      天中殺で 30 日ぶんのカレンダーを塗っていた。一覧 API は #202 で
+      hasBirthDate を見て個人の判定を止めており、同じ物件の一覧が空なのに
+      カレンダーだけ判定が出る状態だった。一覧と同じく空で返す。
+    */
+    if (party[0].birthDate.trim() === "") {
+      return NextResponse.json({
+        range,
+        hasBirthDate: false,
+        direction: null,
+        magneticDirection: null,
+        dateScores: [],
+        members: [],
+        timing: summarizeTiming([]),
+        allClearDates: [],
+      });
+    }
+
     const memberWeights = partyWeights(party);
     const dateList = buildDateList(targetDate, range);
 
@@ -356,6 +376,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       range,
+      hasBirthDate: true,
       direction: primary.direction,
       magneticDirection: primary.magneticDirection,
       dateScores,
