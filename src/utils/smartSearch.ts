@@ -86,6 +86,12 @@ export function parseSmartQuery(rawQuery: string): SmartFilters {
     out.minRentMan = parseFloat(m[1]);
     out.maxRentMan = parseFloat(m[2]);
   });
+  // 「10万円以上」「10万から」は下限。以前は下の上限の式が「10万円」だけを
+  // 拾って**上限 10 万**にしていた（「以上」は残ってキーワードになる）。
+  // 利用者の指示と逆の絞り込みになるので、上限より先に見る。
+  consume(/(\d+(?:\.\d+)?)\s*万円?\s*(以上|から)/, (m) => {
+    out.minRentMan = parseFloat(m[1]);
+  });
   consume(/(\d+(?:\.\d+)?)\s*万円?\s*(以下|以内|まで)?/, (m) => {
     out.maxRentMan = parseFloat(m[1]);
   });
