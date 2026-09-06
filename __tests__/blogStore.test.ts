@@ -150,15 +150,18 @@ describe("loadBlogPost", () => {
     expect(post?.slug).toBe("from-markdown");
   });
 
-  // 下書きは公開ページに出さない。where で published を絞っている。
-  it("公開中のものだけを引く", async () => {
-    findFirst.mockResolvedValue(dbRow);
-    await loadBlogPost("from-db");
+  // 下書き・非公開は公開ページに出さない。
+  it("非公開の行は Markdown に落とさず undefined", async () => {
+    // 以前は published: true で引いて無ければ Markdown を見ていたので、
+    // 管理画面で非公開にした記事も content/blog の写しでそのまま開けた
+    findFirst.mockResolvedValue({ ...dbRow, published: false });
+    expect(await loadBlogPost("from-markdown")).toBeUndefined();
+  });
 
-    expect(findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { slug: "from-db", published: true },
-      }),
-    );
+  it("DB に記事があるのに slug が無ければ 404（消した記事を復活させない）", async () => {
+    findFirst
+      .mockResolvedValueOnce(null) // その slug の行は無い
+      .mockResolvedValueOnce({ slug: "other" }); // だが DB は空ではない
+    expect(await loadBlogPost("from-markdown")).toBeUndefined();
   });
 });
