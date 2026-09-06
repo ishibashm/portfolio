@@ -86,7 +86,13 @@ interface WealthMetadata {
   baseLon?: number;
   birthLat?: number;
   birthLon?: number;
-  birthDate?: string;
+  birthDate?: string | null;
+  /**
+   * 生年月日を渡せたか。偽なら API は個人の軸（本命星・天中殺・出生図）を
+   * 作らず、全市区町村が UNKNOWN / 50 点で返る。以前は 2000-01-01 を
+   * 黙って入れて塗っていた。
+   */
+  hasBirthDate?: boolean;
   /**
    * 土用殺の方位（最終判定の表示のときだけ入る。単盤は null）。
    * 土用殺は最終を NOISE_GOU で上書きするので、これを照合しないと
@@ -1407,6 +1413,16 @@ export default function RegionalWealthPage() {
                 {metadata ? `${metadata.baseLat}, ${metadata.baseLon}` : "..."}
               </div>
             </div>
+            {metadata?.hasBirthDate === false && (
+              <p
+                role="status"
+                className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[11px] text-amber-800"
+              >
+                {
+                  "生年月日が未入力のため、方位の吉凶は出していません。入力すると本命星・天中殺で塗り分けます。"
+                }
+              </p>
+            )}
             <div className="flex-1 relative rounded-b-2xl overflow-hidden p-2">
               {loading ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm z-20">
