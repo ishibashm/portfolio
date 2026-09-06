@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { safeNextPath } from "@/lib/googleIdentity";
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   // if "next" is in param, use it as the redirect URL
   // 全機能ランチャー(/dashboard)は削除した。戻り先の指定が無ければトップへ。
-  const next = requestUrl.searchParams.get("next") ?? "/";
+  // /login と同じ守り。`next=@evil.com` は `${origin}@evil.com` になり、
+  // ブラウザは cloud-palette.com を userinfo、evil.com をホストとして
+  // 読む。`//evil.com` も別サイト。サイト内の path だけを通す。
+  const next = safeNextPath(requestUrl.searchParams.get("next"));
 
   if (code) {
     const cookieStore = await cookies();
