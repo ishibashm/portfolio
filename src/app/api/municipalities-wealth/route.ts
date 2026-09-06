@@ -45,7 +45,15 @@ function getAngleDiff(a: number, b: number): number {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = parseInt(searchParams.get("limit") || "100", 10);
+  /*
+    壊れた limit を Prisma に渡さない。`?limit=abc` は parseInt で NaN に
+    なり、`take: NaN` のまま findMany へ行って 500 で落ちていた。数でない・
+    0 以下は既定の 100 に倒す。上限は市区町村の総数（1,917）を超える
+    意味が無いので 2,000 で止める。
+  */
+  const rawLimit = parseInt(searchParams.get("limit") || "100", 10);
+  const limit =
+    Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 2000) : 100;
   const sort = searchParams.get("sort") || "desc";
 
   let baseLat = parseFloat(searchParams.get("baseLat") || "NaN");
