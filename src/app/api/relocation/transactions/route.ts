@@ -59,12 +59,17 @@ export async function GET(request: Request) {
       );
     }
 
+    /*
+      下限も置く。以前は上限しか無く、`radius_km=-50` は矩形の gte/lte が
+      逆転して必ず 0 件（「無い」と出る）、`limit=-5` は slice(0, -5) で
+      **近いほうの 5 件を黙って落とし**、truncated は常に true だった。
+    */
     const radiusKm = Math.min(
-      toNum(searchParams.get("radius_km")) ?? DEFAULT_RADIUS_KM,
+      Math.max(toNum(searchParams.get("radius_km")) ?? DEFAULT_RADIUS_KM, 1),
       MAX_RADIUS_KM,
     );
     const limit = Math.min(
-      toNum(searchParams.get("limit")) ?? DEFAULT_LIMIT,
+      Math.max(toNum(searchParams.get("limit")) ?? DEFAULT_LIMIT, 1),
       MAX_LIMIT,
     );
     const propertyType = searchParams.get("property_type");
@@ -164,6 +169,12 @@ export async function GET(request: Request) {
         rows: withDirection.slice(0, limit),
         totalInRadius: withDirection.length,
         truncated: withDirection.length > limit,
+        /*
+          読む行は SCAN_CAP（新しい順）で切っている。密集地では矩形の中に
+          それ以上あり、totalInRadius も方位別の中央値も「新しい 8,000 件」
+          の中の話になる。黙って半径の話に見せない。
+        */
+        scanCapped: rows.length >= SCAN_CAP,
         pendingCoords,
         byDirection: [...byDirection.entries()].map(([direction, v]) => ({
           direction,

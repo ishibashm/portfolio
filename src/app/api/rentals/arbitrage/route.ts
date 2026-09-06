@@ -119,7 +119,16 @@ export async function GET(request: Request) {
   const useClassical = useClassicalStr === "true";
   const nodeMapping = (searchParams.get("nodeMapping") ||
     (useClassical ? "traditional" : "physical")) as "traditional" | "physical";
-  const limit = parseInt(searchParams.get("limit") || "500");
+  /*
+    上限と NaN の守り。rentals/map と同じ形。ここは公開ページから叩ける
+    endpoint で、limit は $queryRawUnsafe の LIMIT にそのまま入る。
+    `?limit=abc` は NaN のまま bind されて 500、`?limit=999999` は 45 万行の
+    DISTINCT ON と全件の盤評価を走らせる。画面が送るのは 500 だけ。
+  */
+  const parsedLimit = parseInt(searchParams.get("limit") || "500", 10);
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(Math.max(parsedLimit, 1), 2000)
+    : 500;
   // 同一部屋の重複掲載をまとめるか。生データを見たい場合だけ false にする。
   const dedupe = searchParams.get("dedupe") !== "false";
   const lunarPhaseModifier = searchParams.get("lunarPhaseModifier") !== "false";
