@@ -63,7 +63,17 @@ export async function POST(req: Request) {
     const authHeader = req.headers.get("authorization");
     const secretKey = process.env.API_SECRET_KEY;
 
-    if (secretKey && authHeader !== `Bearer ${secretKey}`) {
+    /*
+      未設定のときに素通りさせない。以前は `secretKey && …` で、鍵が無いと
+      検査ごと飛ばして誰でも通れた。この先は Gemini の呼び出し（課金）と
+      rental_properties への書き込みなので、鍵が無いなら受け付けない。
+      cron の 2 本（telemetry / search-console）と同じ扱い（503）。
+    */
+    if (!secretKey) {
+      console.error("API_SECRET_KEY is not configured");
+      return NextResponse.json({ error: "Not configured" }, { status: 503 });
+    }
+    if (authHeader !== `Bearer ${secretKey}`) {
       console.warn("Unauthorized webhook access attempt.");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

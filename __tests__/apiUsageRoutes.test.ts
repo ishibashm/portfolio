@@ -42,18 +42,45 @@ describe("従量 API ルートの使用量計測", () => {
     vi.unstubAllGlobals();
   });
 
+  /*
+    webhook は鍵が要る。以前のこのテストは鍵を入れずに 200 を期待して
+    いて、**鍵が無ければ素通り**という穴をそのまま固定していた。鍵を
+    入れて通し、無いとき・違うときは通らないことを別に見る。
+  */
+  const WEBHOOK_KEY = "webhook-secret";
+  const webhookRequest = (headers: Record<string, string>) =>
+    new Request("https://cloud-palette.com/api/rentals/webhook", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...headers },
+      body: JSON.stringify({ body: "物件情報" }),
+    });
+
+  it("rentals/webhook は鍵が無いと 503 で、Gemini を呼ばない", async () => {
+    vi.stubEnv("API_SECRET_KEY", "");
+    const response = await webhookPost(webhookRequest({}));
+    expect(response.status).toBe(503);
+    expect(generateObject).not.toHaveBeenCalled();
+    expect(recordApiCall).not.toHaveBeenCalled();
+  });
+
+  it("rentals/webhook は鍵が違うと 401 で、Gemini を呼ばない", async () => {
+    vi.stubEnv("API_SECRET_KEY", WEBHOOK_KEY);
+    const response = await webhookPost(
+      webhookRequest({ authorization: "Bearer wrong" }),
+    );
+    expect(response.status).toBe(401);
+    expect(generateObject).not.toHaveBeenCalled();
+  });
+
   it("rentals/webhook は Gemini Flash の usage を記録する", async () => {
+    vi.stubEnv("API_SECRET_KEY", WEBHOOK_KEY);
     generateObject.mockResolvedValue({
       object: { properties: [] },
       usage: { inputTokens: 120, outputTokens: 30 },
     });
 
     const response = await webhookPost(
-      new Request("https://cloud-palette.com/api/rentals/webhook", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ body: "物件情報" }),
-      }),
+      webhookRequest({ authorization: `Bearer ${WEBHOOK_KEY}` }),
     );
 
     expect(response.status).toBe(200);
