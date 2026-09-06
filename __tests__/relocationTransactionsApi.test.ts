@@ -135,4 +135,30 @@ describe("relocation transactions API", () => {
     expect(data.totalInRadius).toBe(5);
     expect(data.truncated).toBe(true);
   });
+
+  it("負の limit は 1 に倒す（slice(0, -5) で近い 5 件を落とさない）", async () => {
+    findMany.mockResolvedValue(
+      Array.from({ length: 5 }, (_, i) => makeRow({ id: `t${i}` })),
+    );
+
+    const res = await GET(request(`lat=${BASE.lat}&lon=${BASE.lon}&limit=-5`));
+    const { data } = await res.json();
+    // 以前は rows が 0 件（末尾 5 件を除いた残り）で truncated が常に true
+    expect(data.rows).toHaveLength(1);
+    expect(data.totalInRadius).toBe(5);
+    expect(data.truncated).toBe(true);
+  });
+
+  it("負の半径は 1km に倒す（矩形が裏返って必ず 0 件にならない）", async () => {
+    findMany.mockResolvedValue([
+      makeRow({ id: "near", lat: BASE.lat + 0.004 }), // 約 0.4km
+      makeRow({ id: "far" }), // 約 10km
+    ]);
+
+    const res = await GET(
+      request(`lat=${BASE.lat}&lon=${BASE.lon}&radius_km=-50`),
+    );
+    const { data } = await res.json();
+    expect(data.rows.map((r: { id: string }) => r.id)).toEqual(["near"]);
+  });
 });
