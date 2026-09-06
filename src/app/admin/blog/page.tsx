@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Loader2, PenSquare, Plus, Trash2 } from "lucide-react";
+import { toJapanDateString } from "@/utils/japanDate";
 
 /**
  * ブログ記事の編集（管理者専用）。
@@ -120,9 +121,14 @@ export default function AdminBlogPage() {
         category: p.category ?? "",
         tags: p.tags ?? "",
         published: p.published,
-        // date input が読める形（YYYY-MM-DD）へ。時刻は保存時に落ちるが、
-        // 記事の公開日は日単位でしか使っていない。
-        publishedAt: (p.publishedAt ?? "").slice(0, 10),
+        // date input が読める形（YYYY-MM-DD）へ。**日本の暦日で切る。**
+        // 取り込みは JST 0 時（UTC では前日 15 時）で入れているので、ISO
+        // 文字列を先頭 10 文字で切ると 1 日前になり、そのまま保存すると
+        // 公開日が動いていた。時刻は保存時に落ちるが、記事の公開日は
+        // 日単位でしか使っていない。
+        publishedAt: p.publishedAt
+          ? toJapanDateString(new Date(p.publishedAt))
+          : "",
       });
     } catch (e) {
       setListError(
@@ -432,10 +438,10 @@ export default function AdminBlogPage() {
                         {p.category ?? "—"}
                       </td>
                       <td className="px-4 py-3 font-mono text-stone-500">
-                        {p.publishedAt.slice(0, 10)}
+                        {toJapanDateString(new Date(p.publishedAt))}
                       </td>
                       <td className="px-4 py-3 font-mono text-stone-500">
-                        {p.updatedAt.slice(0, 10)}
+                        {toJapanDateString(new Date(p.updatedAt))}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button
@@ -502,7 +508,7 @@ export default function AdminBlogPage() {
                     {p.slug}
                   </code>
                   <span className="font-mono text-[10px] text-amber-700">
-                    {p.publishedAt.slice(0, 10)}
+                    {toJapanDateString(new Date(p.publishedAt))}
                   </span>
                 </li>
               ))}
