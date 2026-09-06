@@ -17,6 +17,7 @@ import {
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { toLogMessage } from "@/lib/errorMessage";
 import {
   bearingBetween,
   directionFromBearing,
@@ -111,12 +112,21 @@ export async function GET(request: Request) {
   if (isNaN(baseLat)) baseLat = 35.6895;
   if (isNaN(baseLon)) baseLon = 139.6917;
 
-  // 生年月日が無い場合は安全のためダミー値をセット
-  if (!birthDateStr) birthDateStr = "2000-01-01T12:00";
+  /*
+    生年月日が無いときは**個人の判定を作らない**（rentals/arbitrage の
+    hasBirthDate と同じ）。以前は "2000-01-01T12:00" を黙って入れ、
+    2000 年生まれの本命殺・月命殺・天中殺で全市区町村を塗っていた。
+    さらに応答の metadata.birthDate にその値を返すので、頁が「未入力なら
+    metadata から埋める」で生年月日欄に写し、次の検索で
+    tactical_config_v1 と /api/user-config へ**架空の生年月日を保存**して
+    いた。個人の軸（本命星・天中殺・出生図）はここで止め、環境だけの
+    判定（UNKNOWN / 50 点）を返す。
+  */
+  const hasBirthDate = Boolean(birthDateStr && birthDateStr.trim() !== "");
 
   // datetime-localが秒を含まない場合があるため、有効なDate形式にする
-  const bDate = parseSafeDate(birthDateStr);
-  if (isNaN(bDate.getTime())) {
+  const bDate = hasBirthDate ? parseSafeDate(birthDateStr as string) : null;
+  if (bDate && isNaN(bDate.getTime())) {
     return NextResponse.json(
       { success: false, error: "Invalid birthDate" },
       { status: 400 },
@@ -137,78 +147,85 @@ export async function GET(request: Request) {
   }
 
   // AstroCartoGraphy: ネイタルの木星・金星の黄経を取得
-  const natalJupiter = AstroEngine.getJupiterLongitude(bDate);
-  const natalVenus = AstroEngine.getVenusLongitude(bDate);
+  const natalJupiter = bDate ? AstroEngine.getJupiterLongitude(bDate) : null;
+  const natalVenus = bDate ? AstroEngine.getVenusLongitude(bDate) : null;
 
   // パフォーマンス最適化：2000件のループ内で天文学計算（JulianDay等）を繰り返さないよう、GSTをキャッシュ
   let birthGst: number | undefined;
-  if (!isNaN(birthLat) && !isNaN(birthLon)) {
+  if (bDate && !isNaN(birthLat) && !isNaN(birthLon)) {
     birthGst = AstroEngine.getGreenwichSiderealTime(bDate);
   }
 
   let activeVectors: Partial<Record<Direction, string>> | null = null;
+  let doyouSatsuDirection: Direction | null = null;
+  let isDoyouHazard = false;
 
-  const honmeiStar = getHonmeiStar(bDate);
   const env = getCurrentEnvironmentalFrequencies(
     targetDate,
     isNaN(baseLon) ? 139.6917 : baseLon,
     physicalMonthMode,
   );
-  const voidZodiacs = getPersonalVoidZodiac(bDate);
 
-  const yB = generateBoard(useClassical ? env.classicalYearStar : env.yearStar);
-  const mB = generateBoard(
-    useClassical ? env.classicalMonthStar : env.monthStar,
-  );
-  const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
+  if (bDate) {
+    const honmeiStar = getHonmeiStar(bDate);
+    const voidZodiacs = getPersonalVoidZodiac(bDate);
 
-  const rawCollision = calculateVectorCollision(
-    useClassical ? honmeiStar.classical : honmeiStar.physical,
-    yB,
-    mB,
-    dB,
-    voidZodiacs,
-    env.raw.lunarNode,
-    "MIGRATION", // Action intent for relocation
-    targetDate,
-    baseLon,
-    undefined,
-    nodeMapping,
-  );
+    const yB = generateBoard(
+      useClassical ? env.classicalYearStar : env.yearStar,
+    );
+    const mB = generateBoard(
+      useClassical ? env.classicalMonthStar : env.monthStar,
+    );
+    const dB = generateBoard(useClassical ? env.classicalDayStar : env.dayStar);
 
-  // 利用者が選んだ絞り込み（本命星のみ／環境要因のみ など）を通す。
-  //
-  // ここだけ filterCollisionByMode を呼んでおらず、設定を変えても
-  // 資産マップの色だけ変わらなかった。ほかの API（arbitrage / history /
-  // export / simulator）はすべて通している。
-  //
-  // 既定の "composite" は素通し（ephemerisEngine.ts:1429）なので、
-  // 指定が無いときの判定はこれまでと変わらない。
-  const vectorData = filterCollisionByMode(
-    rawCollision,
-    useClassical ? honmeiStar.classical : honmeiStar.physical,
-    null,
-    voidZodiacs,
-    directionFilterMode,
-    yB,
-    mB,
-    dB,
-  );
+    const rawCollision = calculateVectorCollision(
+      useClassical ? honmeiStar.classical : honmeiStar.physical,
+      yB,
+      mB,
+      dB,
+      voidZodiacs,
+      env.raw.lunarNode,
+      "MIGRATION", // Action intent for relocation
+      targetDate,
+      baseLon,
+      undefined,
+      nodeMapping,
+    );
 
-  if (layerMode === "year") activeVectors = vectorData.yearLayer;
-  else if (layerMode === "month") activeVectors = vectorData.monthLayer;
-  else if (layerMode === "day") activeVectors = vectorData.dayLayer;
-  else activeVectors = vectorData.finalVectors;
+    // 利用者が選んだ絞り込み（本命星のみ／環境要因のみ など）を通す。
+    //
+    // ここだけ filterCollisionByMode を呼んでおらず、設定を変えても
+    // 資産マップの色だけ変わらなかった。ほかの API（arbitrage / history /
+    // export / simulator）はすべて通している。
+    //
+    // 既定の "composite" は素通し（ephemerisEngine.ts:1429）なので、
+    // 指定が無いときの判定はこれまでと変わらない。
+    const vectorData = filterCollisionByMode(
+      rawCollision,
+      useClassical ? honmeiStar.classical : honmeiStar.physical,
+      null,
+      voidZodiacs,
+      directionFilterMode,
+      yB,
+      mB,
+      dB,
+    );
 
-  // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU で
-  // 上書きする。画面が「五黄殺」ではなく「土用殺」と書けるように、
-  // どの方位が土用殺かを添える。単盤の表示では意味を持たないので null。
-  const doyouSatsuDirection =
-    activeVectors === vectorData.finalVectors
-      ? (vectorData.doyouSatsuDirection ?? null)
-      : null;
+    if (layerMode === "year") activeVectors = vectorData.yearLayer;
+    else if (layerMode === "month") activeVectors = vectorData.monthLayer;
+    else if (layerMode === "day") activeVectors = vectorData.dayLayer;
+    else activeVectors = vectorData.finalVectors;
 
-  const isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
+    // 土用殺は年盤・月盤・日盤のどれにも出ず、最終だけを NOISE_GOU で
+    // 上書きする。画面が「五黄殺」ではなく「土用殺」と書けるように、
+    // どの方位が土用殺かを添える。単盤の表示では意味を持たないので null。
+    doyouSatsuDirection =
+      activeVectors === vectorData.finalVectors
+        ? (vectorData.doyouSatsuDirection ?? null)
+        : null;
+
+    isDoyouHazard = vectorData.doyouState?.isDoyouHazard || false;
+  }
 
   // 動的偏角の取得
   // 取得できなかったときは 0（＝補正なし）に倒す。以前は東京の -8.2 度を
@@ -331,7 +348,13 @@ export async function GET(request: Request) {
         }
 
         // 2. AstroCartoGraphy（リロケーション占星術）ボーナス
-        if (!isNaN(birthLat) && !isNaN(birthLon)) {
+        if (
+          bDate &&
+          natalJupiter !== null &&
+          natalVenus !== null &&
+          !isNaN(birthLat) &&
+          !isNaN(birthLon)
+        ) {
           // ターゲット市区町村における出生時間のASCとMC
           const relocatedASC = AstroEngine.getAscendant(
             bDate,
@@ -430,7 +453,9 @@ export async function GET(request: Request) {
         birthLat,
         birthLon,
         targetDate,
-        birthDate: bDate.toISOString(),
+        // 無いときは null。架空の値を返すと頁が生年月日欄に写してしまう
+        birthDate: bDate ? bDate.toISOString() : null,
+        hasBirthDate,
         engineType,
         layerMode,
         nodeMapping,
@@ -447,12 +472,18 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Error fetching municipalities wealth data:", error);
+    // 生の例外文言を返さない。頁は message をそのまま赤帯に出すので、
+    // Prisma の表名・列名・接続先が利用者に見えていた。src/app/api で
+    // ここだけがそうなっていた。原因はログに残す。
+    console.error(
+      "Error fetching municipalities wealth data:",
+      toLogMessage(error),
+    );
     return NextResponse.json(
       {
         success: false,
         error: "Failed to fetch data",
-        message: error instanceof Error ? error.message : String(error),
+        message: "データの取得に失敗しました。時間をおいて再度お試しください。",
       },
       { status: 500 },
     );
