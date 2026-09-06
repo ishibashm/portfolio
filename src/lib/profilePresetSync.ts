@@ -336,3 +336,38 @@ export async function renameProfilePreset(
     storage,
   );
 }
+
+/** 画面で直せる項目だけ。`ProfilePreset` の他の項目はここに出さない。 */
+export interface PresetEdits {
+  birthDate: string;
+  birthLat: number | null;
+  birthLon: number | null;
+  baseLat: number | null;
+  baseLon: number | null;
+}
+
+/**
+ * 直した項目だけを重ねた控えを作る。
+ *
+ * `/profile` の入力欄は生年月日と 2 つの場所しか扱わない。控えにはそれ
+ * 以外（Gemini の鍵、基準値、どの評価を使うかの選択）も入っているので、
+ * 画面の値だけで組み立て直すと**見えていない項目が消える。**元の控えを
+ * 土台にして、直した項目だけを重ねる。
+ *
+ * **座標が null のときは元の値を残す。**控えの型は座標を必須にしていて、
+ * 「場所が無い控え」を表せない。空にしたつもりが 0 度 0 分（ギニア湾）に
+ * なるほうが害が大きいので、消せないことにしてある。
+ */
+export function applyPresetEdits(
+  preset: ProfilePreset,
+  edits: PresetEdits,
+): ProfilePreset {
+  return {
+    ...preset,
+    birthDate: edits.birthDate || preset.birthDate,
+    birthLat: edits.birthLat ?? preset.birthLat,
+    birthLon: edits.birthLon ?? preset.birthLon,
+    baseLat: edits.baseLat ?? preset.baseLat,
+    baseLon: edits.baseLon ?? preset.baseLon,
+  };
+}
