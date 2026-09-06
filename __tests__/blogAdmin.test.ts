@@ -79,8 +79,17 @@ describe("normalizePostInput", () => {
 
   it("公開日は未指定なら undefined（DB の既定 now() に任せる）", () => {
     expect(normalizePostInput(valid).publishedAt).toBeUndefined();
+  });
+
+  it("日付だけの公開日は日本時間の 0 時として読む（取り込みと同じ）", () => {
+    // 以前は new Date("2026-08-14") = UTC 0 時。取り込みは JST 0 時で
+    // 入れているので、管理画面で開いて保存するだけで 1 日前に動いていた
     expect(
       normalizePostInput({ ...valid, publishedAt: "2026-08-14" }).publishedAt,
-    ).toEqual(new Date("2026-08-14"));
+    ).toEqual(new Date("2026-08-14T00:00:00+09:00"));
+    expect(
+      normalizePostInput({ ...valid, publishedAt: "2026-08-14T12:00:00Z" })
+        .publishedAt,
+    ).toEqual(new Date("2026-08-14T12:00:00Z"));
   });
 });

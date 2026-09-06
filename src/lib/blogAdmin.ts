@@ -72,9 +72,19 @@ export function normalizePostInput(body: PostInput) {
         : null,
     tags: tags.join(","),
     published: body.published === true,
+    /*
+      日付だけ（YYYY-MM-DD）は**日本時間の 0 時**として読む。素の
+      new Date("2026-08-14") は UTC の 0 時＝JST 9 時で、それ自体は同じ
+      暦日だが、取り込み（import_blog_markdown）は JST 0 時で入れている。
+      管理画面がその値を UTC で 10 文字に切って "2026-08-13" と表示し、
+      そのまま保存すると公開日が 1 日前へ動いていた。読む側も書く側も
+      JST に揃える。
+    */
     publishedAt:
       typeof body.publishedAt === "string" && body.publishedAt
-        ? new Date(body.publishedAt)
+        ? /^\d{4}-\d{2}-\d{2}$/.test(body.publishedAt)
+          ? new Date(`${body.publishedAt}T00:00:00+09:00`)
+          : new Date(body.publishedAt)
         : undefined,
   };
 }
