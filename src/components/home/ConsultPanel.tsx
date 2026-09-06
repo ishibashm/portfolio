@@ -1469,7 +1469,7 @@ export function ConsultPanel({
                       YEAR: JUPITER RESONANCE
                     </span>
                     <p className="text-[10px] text-stone-600 leading-relaxed">
-                      木星の公転周期（約11.86年）を12分割し、地球への影響を1-9の周波数に変換します。木星が物理的に黄極を移動した瞬間に盤面が切り替わります。陽黄経による位相反転（陽遁・陰遁）を適用。
+                      木星の公転周期（約11.86年）を黄経30度ごとの12区画に分け、区画の番号から年盤の星（1〜9）を決めます。木星の黄経が区画の境を越えた瞬間に年盤が切り替わります。太陽黄経による位相反転（陽遁・陰遁）を適用。
                     </p>
                     <div className="bg-white/70 p-2 border border-stone-200 font-mono text-[10px] shadow-inner overflow-x-auto whitespace-nowrap custom-scrollbar">
                       <InlineMath
