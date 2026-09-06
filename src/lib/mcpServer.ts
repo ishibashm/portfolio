@@ -379,11 +379,13 @@ export function createMcpServer(): McpServer {
       /* too_close を dead_end より先に見る。**順番を入れ替えると、
          すぐ隣に街のある方位が行き止まりとして出る**（areaContent の
          hasNearMunicipality の註）。 */
+      /* 頁（houi/area）と同じ順。150km 以内に掲載の無い街があれば
+         no_listings、無くて先にはあれば far_only */
       const kind = (e: (typeof empties)[number]) =>
-        e.hasBeyondRange
-          ? "far_only"
+        e.hasWithinRangeMunicipality
+          ? "no_listings"
           : e.hasAnyMunicipality
-            ? "no_listings"
+            ? "far_only"
             : e.hasNearMunicipality
               ? "too_close"
               : "dead_end";

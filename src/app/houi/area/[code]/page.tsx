@@ -126,16 +126,23 @@ export default async function Page({
   /* **4 通りある。**2026-09-04 まで 3 通りで分けており、4 つ目
      （近すぎて外れているだけ）を行き止まりに混ぜていた。すぐ隣に街の
      ある 6 方位に「海や山で陸が尽きています」と出していた。 */
+  /* 見る順番が要る。**150km 以内に掲載の無い街があるか**を先に見る。
+     以前は hasBeyondRange を先に見ていたので、鹿児島市の南西（南九州市
+     27km）が「150km 以内に候補が入らない」に入り、逆に釧路市の南
+     （いちばん近い街が小笠原村 1,958km）が「街はあるが掲載が無い」に
+     入って名前が 1 つも出なかった（2026-09-06 に 73 + 88 方位）。 */
+  const notListed = empty.filter((e) => e.hasWithinRangeMunicipality);
+  /* 150km 以内には無く、どこかにはある＝先にしか無い。掲載の有無を
+     問わない母集団（hasAnyMunicipality）で見る */
+  const farOnly = empty.filter(
+    (e) => !e.hasWithinRangeMunicipality && e.hasAnyMunicipality,
+  );
   const tooClose = empty.filter(
-    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality && e.hasNearMunicipality,
+    (e) => !e.hasAnyMunicipality && e.hasNearMunicipality,
   );
   const deadEnd = empty.filter(
-    (e) => !e.hasBeyondRange && !e.hasAnyMunicipality && !e.hasNearMunicipality,
+    (e) => !e.hasAnyMunicipality && !e.hasNearMunicipality,
   );
-  const notListed = empty.filter(
-    (e) => !e.hasBeyondRange && e.hasAnyMunicipality,
-  );
-  const farOnly = empty.filter((e) => e.hasBeyondRange);
   const siblings = siblingAreas(area);
   /* 県ページは 47 県ぶん全部ある（prefEditorial に 47 県そろっている）。
      市区町村ページからは今まで上へ辿れず、県 → 市区町村の片道だった。 */
@@ -346,10 +353,10 @@ export default async function Page({
           {farOnly.length > 0 && (
             <p className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-700">
               <b>
-                150km 以内に候補が入らない方位:{" "}
+                150km 以内に市区町村が無い方位:{" "}
                 {farOnly.map((e) => DIRECTION_LABELS[e.direction]).join("・")}
               </b>
-              。いちばん近い候補でも、この一覧の範囲より遠いという意味です。
+              。いちばん近い街でも、この一覧の範囲より遠いという意味です。行き止まりではありません。
             </p>
           )}
 

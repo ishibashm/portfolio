@@ -69,7 +69,7 @@ export interface NeighbourArea extends Area {
  * 近すぎる相手は方位が定まらないので除く。同一市内の区など。
  *
  * 同じ判断をシミュレータの注意書きでも使うので、数字は
- * lib/directionDistance に置いてある（1km なら 414m ずれるだけで方位が
+ * lib/directionDistance に置いてある（1km なら四正で 268m ずれるだけで方位が
  * 隣に変わる、という計算が根拠）。2 か所に書くと片方だけ動く。
  */
 const MIN_KM = DIRECTION_UNSTABLE_KM;
@@ -121,7 +121,7 @@ function allMunicipalities() {
 export interface EmptyDirection {
   direction: CompassDirection;
   /**
-   * 一覧の範囲（150km）より遠くには市区町村があるか。
+   * 一覧の範囲（150km）より遠くには**掲載のある**市区町村があるか。
    *
    * **true と false で意味がまったく違う。**true は「近くに無いだけ」で、
    * 範囲を広げれば候補がある（函館市の南西には 677 の市区町村があるが、
@@ -129,8 +129,28 @@ export interface EmptyDirection {
    * 無い（長崎市の西・南西・南、浜松市中央区の南東・南）。
    *
    * **false を「行き止まり」と読まないこと。**下の註を見ること。
+   *
+   * **頁の箱分けにはこれを使わない。**150km 以内に掲載の無い街があれば
+   * 「遠いだけ」ではないし（`hasWithinRangeMunicipality`）、先にあるのが
+   * 掲載の無い町でも「遠いだけ」（`hasAnyMunicipality`）。ここは
+   * 「この一覧の候補が 1 つもありません」の言い過ぎを検査するための値。
    */
   hasBeyondRange: boolean;
+  /**
+   * 一覧の範囲（5〜150km）に、掲載の無い市区町村があるか。
+   *
+   * 方位が空なのは「範囲内に**掲載のある**市区町村が無い」だけで、
+   * 掲載の無い街は範囲内にありうる。以前は `hasBeyondRange` を先に
+   * 見ていたので、鹿児島市の南西（南九州市 27km）や米子市の北東
+   * （大山町 16km）が「150km 以内に候補が入らない」と出ていた
+   * （73 方位）。true なら、下の `nearestUnlisted` に名前が入る。
+   *
+   * 逆に false で `hasAnyMunicipality` が true なら、街は 150km より先に
+   * しか無い＝「遠いだけ」。以前は掲載のある市が先に無いと「街はあるが
+   * 掲載が無い」の箱に入り、名前が 1 つも出なかった（釧路市の南→
+   * 小笠原村 1,958km など 88 方位）。
+   */
+  hasWithinRangeMunicipality: boolean;
   /**
    * 掲載の有無と無関係に、その方位に市区町村があるか。
    *
@@ -231,8 +251,11 @@ const UNLISTED_SAMPLE = 3;
  */
 export function emptyDirections(origin: Area): EmptyDirection[] {
   const withinRange = neighboursByDirection(origin);
+  /* 「150km より先に**掲載のある**市区町村があるか」。掲載と無関係な
+     全市区町村で見るのは下の hasAnyMunicipality の役目。どちらの
+     母集団かで意味が違うので混ぜない（areaEditorialDeadEnds が
+     「この一覧の候補が 1 つもありません」の言い過ぎをここで検査する） */
   const beyond = new Set<CompassDirection>();
-
   for (const a of AREAS) {
     if (a.code === origin.code) continue;
     const km = distanceKmBetween(origin.lat, origin.lon, a.lat, a.lon);
@@ -313,6 +336,7 @@ export function emptyDirections(origin: Area): EmptyDirection[] {
     direction: d,
     hasBeyondRange: beyond.has(d),
     hasAnyMunicipality: anyMunicipality.has(d),
+    hasWithinRangeMunicipality: (unlisted.get(d) ?? []).length > 0,
     nearestUnlisted: (unlisted.get(d) ?? [])
       .sort((x, y) => x.distanceKm - y.distanceKm)
       .slice(0, UNLISTED_SAMPLE),

@@ -35,8 +35,10 @@ function tally(): Counts {
   const c: Counts = { far: 0, notListed: 0, dead: 0 };
   for (const origin of AREAS) {
     for (const e of emptyDirections(origin)) {
-      if (e.hasBeyondRange) c.far++;
-      else if (e.hasAnyMunicipality) c.notListed++;
+      /* 頁と同じ順。150km 以内に掲載の無い街があれば「掲載漏れ」、
+         無くて先にはあれば「遠いだけ」 */
+      if (e.hasWithinRangeMunicipality) c.notListed++;
+      else if (e.hasAnyMunicipality) c.far++;
       else c.dead++;
     }
   }
@@ -98,5 +100,45 @@ describe("候補の入らない方位の理由", () => {
       expect(e!.hasAnyMunicipality, `${code} ${dir}`).toBe(false);
       expect(e!.hasBeyondRange, `${code} ${dir}`).toBe(false);
     }
+  });
+});
+
+/**
+ * 見る順番と母集団を取り違えていた 2 つ（2026-09-06）。
+ *
+ *   1. 鹿児島市の南西には南九州市（27km）があるのに、掲載のある市が
+ *      150km より先にもあるため「150km 以内に候補が入らない」と出ていた
+ *   2. 釧路市の南はいちばん近い街が小笠原村（1,958km）なのに、
+ *      hasBeyondRange を掲載のある市だけで数えていたため「街はあるが
+ *      掲載が無い」に入り、名前が 1 つも出なかった
+ */
+describe("150km 以内の街と、150km より先の街を取り違えない", () => {
+  it("鹿児島市の南西は 150km 以内に南九州市がある（遠いだけではない）", () => {
+    const e = emptyDirections(findArea("46201")!).find(
+      (x) => x.direction === "SW",
+    );
+    expect(e?.hasWithinRangeMunicipality).toBe(true);
+    expect(e?.nearestUnlisted.map((u) => u.city)).toContain("南九州市");
+  });
+
+  it("釧路市の南は 150km 以内に街が無く、先にはある（遠いだけ）", () => {
+    const e = emptyDirections(findArea("01206")!).find(
+      (x) => x.direction === "S",
+    );
+    expect(e?.hasWithinRangeMunicipality).toBe(false);
+    expect(e?.hasAnyMunicipality).toBe(true);
+    expect(e?.nearestUnlisted).toEqual([]);
+  });
+
+  it("「掲載漏れ」の箱に入る方位には必ず名前が付く", () => {
+    const bad: string[] = [];
+    for (const a of AREAS) {
+      for (const e of emptyDirections(a)) {
+        if (e.hasWithinRangeMunicipality && e.nearestUnlisted.length === 0) {
+          bad.push(`${a.full} ${e.direction}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 });
