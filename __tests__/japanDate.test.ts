@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  daysAgoInJapan,
   todayInJapan,
   toJapanDateString,
   normalizeBirthDateTimeLocal,
@@ -85,5 +86,38 @@ describe("normalizeBirthDateTimeLocal", () => {
   it("空と壊れた値は空", () => {
     expect(normalizeBirthDateTimeLocal("")).toBe("");
     expect(normalizeBirthDateTimeLocal("not a date")).toBe("");
+  });
+});
+
+/**
+ * 集計の窓を切る基準。metrics/summary は JST 0 時の瞬間から n 日引いて
+ * toISOString で読んでいたので、UTC の日付（＝ 1 日前）になっていた。
+ * 「昨日」が一昨日、「直近 30 日」が 31 日。
+ */
+describe("daysAgoInJapan", () => {
+  const now = new Date("2026-09-06T12:00:00+09:00");
+
+  it("JST の暦日で n 日前を返す", () => {
+    expect(daysAgoInJapan(0, now)).toBe("2026-09-06");
+    expect(daysAgoInJapan(1, now)).toBe("2026-09-05");
+    expect(daysAgoInJapan(29, now)).toBe("2026-08-08");
+  });
+
+  it("JST の 0 時台でも前日に落ちない（UTC で読んだときの罠）", () => {
+    // JST 9/6 0:30 = UTC 9/5 15:30。UTC で読むと「今日」が 9/5 になる
+    const smallHours = new Date("2026-09-06T00:30:00+09:00");
+    expect(daysAgoInJapan(0, smallHours)).toBe("2026-09-06");
+    expect(daysAgoInJapan(1, smallHours)).toBe("2026-09-05");
+  });
+
+  it("旧実装（JST 0 時から引いて UTC で読む）と 1 日ずれることを固定する", () => {
+    const legacy = (days: number) => {
+      const todayJst = new Date(`2026-09-06T00:00:00+09:00`);
+      return new Date(todayJst.getTime() - days * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    };
+    expect(legacy(1)).toBe("2026-09-04"); // 一昨日になっていた
+    expect(daysAgoInJapan(1, now)).toBe("2026-09-05");
   });
 });
