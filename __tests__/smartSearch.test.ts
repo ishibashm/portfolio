@@ -32,6 +32,20 @@ describe("parseSmartQuery", () => {
     expect(f.maxRentMan).toBe(8);
   });
 
+  it("「以上」「から」は下限。上限に化けない", () => {
+    // 以前は「10万円以上」を上限 10 万と読み、指示と逆に絞っていた
+    const f = parseSmartQuery("神戸市 10万円以上");
+    expect(f.minRentMan).toBe(10);
+    expect(f.maxRentMan).toBeUndefined();
+    expect(f.keywords).toEqual(["神戸市"]);
+
+    expect(parseSmartQuery("8万から").minRentMan).toBe(8);
+
+    const both = parseSmartQuery("10万円以上 15万円以下");
+    expect(both.minRentMan).toBe(10);
+    expect(both.maxRentMan).toBe(15);
+  });
+
   it("全角数字と波ダッシュを受け付ける", () => {
     const f = parseSmartQuery("６〜８万円");
     expect(f.minRentMan).toBe(6);
