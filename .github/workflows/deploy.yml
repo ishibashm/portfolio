@@ -60,6 +60,12 @@ jobs:
           # .env の全文を再入力することになる）ため、単体でも渡せる口を
           # 用意しておく。CRON_SECRET と同じ形。
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          # IndexNow の鍵。/indexnow-key.txt がこの値をそのまま返し、
+          # scrape-rentals の送信（secrets.INDEXNOW_KEY）と同じ値でなければ
+          # 送信が弾かれる。以前は送信側だけが secret を読んでいて、配信側
+          # （Cloud Run）へ渡す口が無かった。CRON_SECRET と同じ形。未設定なら
+          # /indexnow-key.txt は 404 のまま（src/app/indexnow-key.txt/route.ts）。
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
           # Billing Export の参照先は秘密情報ではないため repository variables
           # から渡す。Cloud Run 実行 SA の ADC を使い、JSON 鍵は作らない。
           GCP_BILLING_EXPORT_TABLE: ${{ vars.GCP_BILLING_EXPORT_TABLE }}
@@ -118,6 +124,9 @@ jobs:
           fi
           if [ -n "$ADMIN_EMAIL" ]; then
             echo "ADMIN_EMAIL=$ADMIN_EMAIL" >> .env
+          fi
+          if [ -n "$INDEXNOW_KEY" ]; then
+            echo "INDEXNOW_KEY=$INDEXNOW_KEY" >> .env
           fi
           if [ -n "$GCP_BILLING_EXPORT_TABLE" ]; then
             echo "GCP_BILLING_EXPORT_TABLE=$GCP_BILLING_EXPORT_TABLE" >> .env
