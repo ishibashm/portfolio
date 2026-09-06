@@ -1454,7 +1454,26 @@ export default function ArbitrageMapInner({
             この範囲の物件を読み込み中…
           </div>
         )}
-        <div className="absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 max-h-[calc(100%-2rem)] overflow-y-auto">
+        {/*
+          操作の列。**下の「方位の吉凶」の凡例に被せない。**
+
+          用途地域の凡例（13 区分）を列の末尾に置いた（#1005）ところ、
+          今度は列が下へ伸びて右下の凡例に重なった（利用者の指摘、
+          実機の画面）。どちらも右側で、片方は上から下へ、もう片方は
+          下から上へ伸びるので、画面が短いと必ずぶつかる。
+
+          凡例を出しているあいだは、下の凡例のぶん（見出し＋7 行＋説明で
+          実測 13〜15rem）を空けて、列はその中でスクロールさせる。
+          `max()` で下限を置いているのは、器が低いと calc が負になって
+          列ごと消えるため（0 に丸められる）。
+        */}
+        <div
+          className={`absolute top-4 right-4 z-[1000] pointer-events-auto flex flex-col items-end gap-1.5 overflow-y-auto ${
+            zoningOn
+              ? "max-h-[max(8rem,calc(100%-17rem))]"
+              : "max-h-[calc(100%-2rem)]"
+          }`}
+        >
           {/* 器の大きさと、操作をたたむかどうか。**この 2 つは常に出す。**
               たたんだときに開き直せなくなるのを避ける。 */}
           <div className="flex gap-0.5 p-0.5 rounded-lg bg-white/90 border border-stone-200 shadow-lg">
@@ -1805,7 +1824,10 @@ export default function ArbitrageMapInner({
               列は縦にスクロールできるが、そうと分からない。凡例は
               最後にして、切り替えは常に手の届く所に残す。 */}
               {zoningOn && (
-                <div className="w-56 max-h-[45vh] overflow-y-auto shadow-lg rounded-2xl">
+                /* 高さは列の側で決める。ここにも overflow を置くと
+                   スクロールする器が入れ子になり、どちらが動くのか
+                   分からなくなる。器は 1 つ。 */
+                <div className="w-56 shrink-0 shadow-lg rounded-2xl">
                   <ZoningLegend
                     selected={zoningPick}
                     onSelect={setZoningPick}
