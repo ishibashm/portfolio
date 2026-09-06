@@ -21,10 +21,16 @@ describe("positiveNumber", () => {
     expect(positiveNumber("12.5")).toBe(12.5);
   });
 
-  it("0・負・非数・空は指定なしに倒す", () => {
-    for (const raw of ["0", "-1", "abc", "", null]) {
+  it("負・非数・空は指定なしに倒す", () => {
+    for (const raw of ["-1", "abc", "", " ", null]) {
       expect(positiveNumber(raw)).toBeNull();
     }
+  });
+
+  it('0 は指定として通す（一覧は "0" を真として絞るので、合わせる）', () => {
+    // 以前は 0 を指定なしにしていて、築 0 年（今年建った物件だけ）で
+    // 絞った一覧が数件なのに、県の件数は全件を返していた
+    expect(positiveNumber("0")).toBe(0);
   });
 });
 
@@ -77,10 +83,19 @@ describe("buildCountFilters", () => {
 
   it("壊れた値は指定なしとして扱い、条件を増やさない", () => {
     const { conditions, appliedFilters } = buildCountFilters(
-      params("maxRentMan=0&maxBuildingAge=-3&maxStationMin=abc"),
+      params("maxRentMan=-1&maxBuildingAge=-3&maxStationMin=abc"),
     );
     expect(conditions).toHaveLength(1);
     expect(appliedFilters).toEqual([]);
+  });
+
+  it("築 0 年は条件になる（一覧と同じ答えにする）", () => {
+    const { conditions, appliedFilters } = buildCountFilters(
+      params("maxBuildingAge=0"),
+    );
+    expect(conditions).toHaveLength(2);
+    expect(appliedFilters).toEqual(["maxBuildingAge"]);
+    expect(conditions[1].values).toEqual([0]);
   });
 
   it("間取りは 1 つの OR にまとめる（条件を 1 つだけ増やす）", () => {

@@ -22,11 +22,19 @@ import { LIVE_LISTING_SQL } from "@/lib/rentalListingSql";
  * 絞ったかを返し、画面はそれを添えて出す。**
  */
 
-/** 数値のクエリ。壊れた値・負の値は「指定なし」に倒す。 */
+/**
+ * 数値のクエリ。壊れた値・負の値は「指定なし」に倒す。
+ *
+ * **0 は指定として通す。**画面の一覧は文字列の "0" を真として絞る
+ * （`if (filterMaxAge)` → 築 0 年以下 = 今年建った物件だけ）ので、ここで
+ * 0 を「指定なし」にすると、一覧は数件なのに件数は全件、という食い違いが
+ * 出る。以前はそうなっていた。0 を通せば築年数・徒歩分・広さ・家賃の
+ * どれも一覧と同じ答えになる（家賃 0 は一覧も件数も 0 件）。
+ */
 export function positiveNumber(raw: string | null): number | null {
-  if (!raw) return null;
+  if (raw === null || raw.trim() === "") return null;
   const value = Number(raw);
-  if (!Number.isFinite(value) || value <= 0) return null;
+  if (!Number.isFinite(value) || value < 0) return null;
   return value;
 }
 

@@ -96,8 +96,10 @@ describe("県別件数", () => {
     expect(values).toContain("%1K%");
   });
 
-  it("壊れた値・0・負の数は「指定なし」に倒す", async () => {
-    const res = await call("?maxRentMan=abc&maxBuildingAge=0&minSizeSqm=-5");
+  it("壊れた値・負の数は「指定なし」に倒す（0 は指定として通す）", async () => {
+    // 0 は一覧が "0" を真として絞るので、ここでも条件にする
+    // （rentalCountFilters.test が固定）。負と非数だけ指定なし。
+    const res = await call("?maxRentMan=abc&maxBuildingAge=-1&minSizeSqm=-5");
     const json = await res.json();
 
     expect(json.data.appliedFilters).toEqual([]);
