@@ -49,7 +49,9 @@ describe("月別の引越しカレンダー", () => {
 
   it("向く日は必ず大安か暦の吉が乗っている", () => {
     for (const d of buildMonthlyCalendar(2026, 9).recommended) {
-      expect(d.rokuyo === "大安" || d.luckyLabels.length > 0, d.date).toBe(true);
+      expect(d.rokuyo === "大安" || d.luckyLabels.length > 0, d.date).toBe(
+        true,
+      );
     }
   });
 
@@ -92,5 +94,43 @@ describe("月別の引越しカレンダー", () => {
       expect(m.month).toBeGreaterThanOrEqual(1);
       expect(m.month).toBeLessThanOrEqual(12);
     }
+  });
+});
+
+/**
+ * 間日の表は季ごとに違う（春 巳午酉 / 夏 卯辰申 / 秋 未酉亥 / 冬 寅卯巳）。
+ * monthlyCalendar は手で写した表が 1 季ずれていて（冬に春の表、春に
+ * 夏の表）、/calendar/2026-04 が 4/23（卯）を「向く日」に入れ、
+ * 4/25（巳・大安）を落としていた。ephemerisEngine の DOYOU_MABI から
+ * 引くようにし、実際の日付で固定する。
+ */
+describe("土用の間日（季ごとの表）", () => {
+  const day = (y: number, m: number, date: string) =>
+    buildMonthlyCalendar(y, m).days.find((d) => d.date === date)!;
+
+  it("春土用: 巳・午・酉が間日。卯は障り", () => {
+    const u = day(2026, 4, "2026-04-23"); // 卯
+    expect(u.inDoyou).toBe(true);
+    expect(u.isMabi).toBe(false);
+    const mi = day(2026, 4, "2026-04-25"); // 巳
+    expect(mi.inDoyou).toBe(true);
+    expect(mi.isMabi).toBe(true);
+  });
+
+  it("冬土用: 寅・卯・巳が間日。午は障り", () => {
+    const tora = day(2028, 1, "2028-01-30"); // 寅
+    expect(tora.inDoyou).toBe(true);
+    expect(tora.isMabi).toBe(true);
+    const uma = day(2027, 1, "2027-01-27"); // 午
+    expect(uma.inDoyou).toBe(true);
+    expect(uma.isMabi).toBe(false);
+  });
+
+  it("旧実装（春に夏の表 卯辰申）では 4/23 を間日にしてしまう", () => {
+    const legacySpringMabi = ["卯", "辰", "申"];
+    const u = day(2026, 4, "2026-04-23");
+    // 旧実装ならこの日は「間日」＝向く日に入っていた
+    expect(legacySpringMabi.includes("卯")).toBe(true);
+    expect(u.isMabi).toBe(false);
   });
 });
