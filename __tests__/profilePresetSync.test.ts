@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type ProfilePreset,
+  applyPresetEdits,
   deleteProfilePreset,
   loadProfilePresets,
   renameProfilePreset,
@@ -310,5 +311,66 @@ describe("renameProfilePreset", () => {
       localStorage.getItem("profile_presets_v1") ?? "[]",
     );
     expect(cached[0].name).toBe("手元だけ");
+  });
+});
+
+/**
+ * 控えの中身を直す。
+ *
+ * 画面が扱うのは生年月日と 2 つの場所だけで、控えにはそれ以外
+ * （鍵・基準値・どの評価を使うか）も入っている。画面の値だけで組み立て
+ * 直すと**見えていない項目が消える。**
+ */
+describe("applyPresetEdits", () => {
+  const rich: ProfilePreset = {
+    ...localPreset,
+    geminiKey: "secret",
+    baselineHrvMean: 42,
+    usePsychologyScorer: true,
+  };
+
+  it("直した項目だけが変わる", () => {
+    const next = applyPresetEdits(rich, {
+      birthDate: "2000-12-31",
+      birthLat: 34.7,
+      birthLon: 135.5,
+      baseLat: 43.06,
+      baseLon: 141.35,
+    });
+
+    expect(next.birthDate).toBe("2000-12-31");
+    expect(next.birthLat).toBe(34.7);
+    expect(next.baseLon).toBe(141.35);
+    /* id と名前は画面で直さない。ここでは変えない */
+    expect(next.id).toBe(rich.id);
+    expect(next.name).toBe(rich.name);
+  });
+
+  it("画面に出ていない項目を消さない", () => {
+    const next = applyPresetEdits(rich, {
+      birthDate: "2000-12-31",
+      birthLat: 34.7,
+      birthLon: 135.5,
+      baseLat: 43.06,
+      baseLon: 141.35,
+    });
+
+    expect(next.geminiKey).toBe("secret");
+    expect(next.baselineHrvMean).toBe(42);
+    expect(next.usePsychologyScorer).toBe(true);
+  });
+
+  it("座標が空なら元の値を残す（0 度に倒さない）", () => {
+    const next = applyPresetEdits(rich, {
+      birthDate: "",
+      birthLat: null,
+      birthLon: null,
+      baseLat: null,
+      baseLon: null,
+    });
+
+    expect(next.birthDate).toBe(rich.birthDate);
+    expect(next.birthLat).toBe(rich.birthLat);
+    expect(next.baseLat).toBe(rich.baseLat);
   });
 });

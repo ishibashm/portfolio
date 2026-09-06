@@ -8,6 +8,7 @@ import {
   LogOut,
   Loader2,
   Pencil,
+  SlidersHorizontal,
   Trash2,
   UserRound,
   X,
@@ -176,7 +177,7 @@ export function AccountPanel() {
         </div>
         <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
           {
-            "家族ぶんなど、複数の生年月日を切り替えて使うための控えです。ここで名前を直したり、要らなくなったものを消したりできます。呼び出しと新規保存は設定バー（画面の上）と各ツールから行えます。"
+            "家族ぶんなど、複数の生年月日を切り替えて使うための控えです。名前はここで、生年月日と場所は「中身」から直せます。呼び出しと新規保存は設定バー（画面の上）と各ツールから行えます。"
           }
         </p>
 
@@ -263,6 +264,15 @@ export function AccountPanel() {
                         <Pencil className="h-3 w-3" aria-hidden />
                         名前
                       </button>
+                      {/* 中身は /profile の入力欄で直す。ここに同じ欄を
+                          作ると、同じ値を 2 か所で書けることになる */}
+                      <Link
+                        href={`/profile?preset=${encodeURIComponent(preset.id)}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-stone-300 px-3 py-1 text-[11px] font-semibold text-stone-700 transition-colors hover:bg-stone-50"
+                      >
+                        <SlidersHorizontal className="h-3 w-3" aria-hidden />
+                        中身
+                      </Link>
                       <button
                         type="button"
                         disabled={busyId === preset.id}

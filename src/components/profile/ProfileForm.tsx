@@ -12,6 +12,12 @@ import {
 } from "@/lib/userSettings";
 import { readDestination, writeDestination } from "@/lib/destinationSetting";
 import { profileCompletion } from "@/lib/profileCompletion";
+import {
+  applyPresetEdits,
+  loadProfilePresets,
+  saveProfilePresets,
+  type ProfilePreset,
+} from "@/lib/profilePresetSync";
 import { ProfileProgress } from "@/components/profile/ProfileProgress";
 
 /**
@@ -61,6 +67,15 @@ export function ProfileForm() {
   const [destLon, setDestLon] = React.useState<number | null>(null);
   /* ログイン直後にここへ回された人。/login が ?welcome=1 を付ける */
   const [welcome, setWelcome] = React.useState(false);
+  /*
+    保存済みプロフィールの中身を直しているとき（?preset=<id>）。
+    null なら自分の設定を直している。**入力欄は同じものを使う。**
+    同じ 3 項目なので、控え用にもう 1 組の欄を作ると必ず食い違う。
+  */
+  const [editingPreset, setEditingPreset] =
+    React.useState<ProfilePreset | null>(null);
+  /* ?preset= で来たのに、その控えが見つからなかった */
+  const [presetMissing, setPresetMissing] = React.useState(false);
 
   /* 開いたときに 1 度だけ読む。ログイン中はクラウドの値も取り込む */
   React.useEffect(() => {
@@ -69,20 +84,44 @@ export function ProfileForm() {
       try {
         const { settings, synced: didSync } = await loadSettings();
         if (!alive) return;
-        setBirthDate(settingString(settings, "birth_date") ?? "");
-        setBirthLat(settingNumber(settings, "birth_lat") ?? null);
-        setBirthLon(settingNumber(settings, "birth_lon") ?? null);
-        setBaseLat(settingNumber(settings, "base_lat") ?? null);
-        setBaseLon(settingNumber(settings, "base_lon") ?? null);
+
+        /* 待ってから読む。効果の本体で setState すると
+           set-state-in-effect に当たる（CLAUDE.md 4 節） */
+        const params = new URLSearchParams(window.location.search);
+        const presetId = params.get("preset");
+
+        if (presetId) {
+          /* 控えを直しに来た。欄には控えの値を入れる（自分の設定では
+             ない）。保存も控えへ戻す */
+          const { presets } = await loadProfilePresets(
+            fetch,
+            window.localStorage,
+          );
+          if (!alive) return;
+          const target = presets.find((p) => p.id === presetId);
+          if (target) {
+            setEditingPreset(target);
+            setBirthDate(target.birthDate);
+            setBirthLat(target.birthLat);
+            setBirthLon(target.birthLon);
+            setBaseLat(target.baseLat);
+            setBaseLon(target.baseLon);
+          } else {
+            setPresetMissing(true);
+          }
+        } else {
+          setBirthDate(settingString(settings, "birth_date") ?? "");
+          setBirthLat(settingNumber(settings, "birth_lat") ?? null);
+          setBirthLon(settingNumber(settings, "birth_lon") ?? null);
+          setBaseLat(settingNumber(settings, "base_lat") ?? null);
+          setBaseLon(settingNumber(settings, "base_lon") ?? null);
+        }
+
         const dest = readDestination();
         setDestLat(dest.lat);
         setDestLon(dest.lon);
         setSynced(didSync);
-        /* 待ってから読む。効果の本体で setState すると
-           set-state-in-effect に当たる（CLAUDE.md 4 節） */
-        setWelcome(
-          new URLSearchParams(window.location.search).get("welcome") === "1",
-        );
+        setWelcome(params.get("welcome") === "1");
         setStatus("idle");
       } catch {
         if (alive) setStatus("idle");
@@ -99,6 +138,42 @@ export function ProfileForm() {
     e.preventDefault();
     setStatus("saving");
     setMessage("");
+
+    /*
+      控えを直しているときは、**自分の設定を書き換えない。**別人の
+      生年月日で開いていることがあるので、保存したとたんに自分の
+      判定が入れ替わるのは事故になる。目的地も控えの持ち物ではない。
+    */
+    if (editingPreset) {
+      try {
+        const result = await saveProfilePresets(
+          [
+            applyPresetEdits(editingPreset, {
+              birthDate,
+              birthLat,
+              birthLon,
+              baseLat,
+              baseLon,
+            }),
+          ],
+          fetch,
+          window.localStorage,
+        );
+        setSynced(result.cloudSynced);
+        setStatus("saved");
+        setMessage(
+          result.cloudSynced
+            ? `「${editingPreset.name}」を保存しました。ほかの端末でも同じ内容になります。`
+            : `「${editingPreset.name}」をこの端末に保存しました。ログインすると、ほかの端末でも同じ内容が使えます。`,
+        );
+      } catch {
+        setStatus("error");
+        setMessage(
+          "保存できませんでした。通信の状態を確かめて、もう一度お試しください。",
+        );
+      }
+      return;
+    }
 
     /* 目的地は端末だけ。先に書いておく（保存が失敗しても残る） */
     writeDestination({
@@ -154,6 +229,47 @@ export function ProfileForm() {
     <form onSubmit={handleSubmit} className="space-y-8">
       {/* ログイン直後の人にだけ、ここへ回した理由を出す。何も言わずに
           入力欄を見せると「なぜ飛ばされたのか」が分からない */}
+      {/* 控えを直しに来た人へ。**どれを直しているかを必ず出す。**
+          欄は自分の設定と同じ見た目なので、書いてないと自分の設定を
+          直しているつもりになる */}
+      {editingPreset && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-xs leading-relaxed text-amber-900">
+          <p>
+            <b className="text-sm">
+              保存済みプロフィール「{editingPreset.name}」を直しています。
+            </b>
+          </p>
+          <p className="mt-1">
+            {
+              "ここでの保存はこの控えだけに入ります。いま使っているご自身の設定は変わりません。名前の変更と削除は "
+            }
+            <Link href="/account" className="font-semibold underline">
+              アカウントと登録内容
+            </Link>
+            {" から行えます。"}
+          </p>
+        </div>
+      )}
+
+      {presetMissing && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-xs leading-relaxed text-rose-800">
+          <p>
+            <b className="text-sm">
+              その保存済みプロフィールが見つかりません。
+            </b>
+          </p>
+          <p className="mt-1">
+            {"消されたか、別のアカウントのものかもしれません。"}
+            <Link href="/account" className="font-semibold underline">
+              アカウントと登録内容
+            </Link>
+            {
+              " で一覧を確かめてください。この画面はご自身の設定として開いています。"
+            }
+          </p>
+        </div>
+      )}
+
       {welcome && (
         <p className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 text-xs leading-relaxed text-indigo-900">
           <b className="text-sm">ログインできました。</b>
@@ -241,35 +357,39 @@ export function ProfileForm() {
         </div>
       </fieldset>
 
-      {/* 3. 引越し先の候補 ----------------------------------------- */}
-      <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
-        <legend className="px-2 text-sm font-bold text-stone-800">
-          3. 引越し先の候補
-          <span className="ml-2 text-[10px] font-normal text-stone-400">
-            任意
-          </span>
-        </legend>
-        <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
-          {
-            "決まっていれば入れておくと、試算や時期の分析で入れ直さずに済みます。"
-          }
-          <b>この項目はこの端末にだけ残り、送信されません。</b>
-        </p>
-        <div className="mt-4 max-w-xl">
-          <PlaceInput
-            label="目的地"
-            variant="form"
-            optional
-            lat={destLat}
-            lon={destLon}
-            onChange={(lat, lon) => {
-              setDestLat(lat);
-              setDestLon(lon);
-            }}
-            help="引越し先の候補です。決まっていなければ空のままで構いません。"
-          />
-        </div>
-      </fieldset>
+      {/* 3. 引越し先の候補 -----------------------------------------
+          控えを直しているときは出さない。目的地は控えの持ち物ではなく
+          （この端末だけの値）、ここに出すと控えに入ると誤解される */}
+      {!editingPreset && (
+        <fieldset className="rounded-2xl border border-stone-200 bg-white p-5">
+          <legend className="px-2 text-sm font-bold text-stone-800">
+            3. 引越し先の候補
+            <span className="ml-2 text-[10px] font-normal text-stone-400">
+              任意
+            </span>
+          </legend>
+          <p className="mt-1 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+            {
+              "決まっていれば入れておくと、試算や時期の分析で入れ直さずに済みます。"
+            }
+            <b>この項目はこの端末にだけ残り、送信されません。</b>
+          </p>
+          <div className="mt-4 max-w-xl">
+            <PlaceInput
+              label="目的地"
+              variant="form"
+              optional
+              lat={destLat}
+              lon={destLon}
+              onChange={(lat, lon) => {
+                setDestLat(lat);
+                setDestLon(lon);
+              }}
+              help="引越し先の候補です。決まっていなければ空のままで構いません。"
+            />
+          </div>
+        </fieldset>
+      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <button
@@ -283,9 +403,13 @@ export function ProfileForm() {
           保存する
         </button>
         <span className="text-[11px] text-stone-500">
-          {synced
-            ? "ログイン中です。生年月日と場所はクラウドにも保存されます。"
-            : "未ログインです。入力はこの端末にだけ残ります。"}
+          {editingPreset
+            ? synced
+              ? "ログイン中です。この控えはクラウドにも保存されます。"
+              : "未ログインです。この控えはこの端末にだけ残ります。"
+            : synced
+              ? "ログイン中です。生年月日と場所はクラウドにも保存されます。"
+              : "未ログインです。入力はこの端末にだけ残ります。"}
         </span>
       </div>
 
@@ -307,7 +431,28 @@ export function ProfileForm() {
 
       {/* 保存できたら、次にどこへ行けばよいかを出す。入れて終わりに
           しない（入力だけして何も起きない画面を作らない） */}
-      {status === "saved" && canUseTools && (
+      {status === "saved" && editingPreset && (
+        <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
+          <h2 className="text-sm font-bold text-stone-800">次にできること</h2>
+          <ul className="mt-3 space-y-2 text-xs">
+            <li>
+              <Link
+                href="/account"
+                className="font-semibold text-indigo-600 underline"
+              >
+                保存済みプロフィールの一覧へ戻る
+              </Link>
+            </li>
+            <li className="text-stone-600">
+              {
+                "この控えを実際に使うには、設定バー（画面の上）の呼び出しから選んでください。"
+              }
+            </li>
+          </ul>
+        </div>
+      )}
+
+      {status === "saved" && !editingPreset && canUseTools && (
         <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
           <h2 className="text-sm font-bold text-stone-800">次にできること</h2>
           <ul className="mt-3 space-y-2 text-xs">
