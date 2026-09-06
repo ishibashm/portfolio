@@ -536,15 +536,17 @@ export default function DestinationMapPanel({
                       const currentTendo =
                         classicalLayers?.tendoDirection ||
                         physicalLayers?.tendoDirection;
+                      /* 判定は真北（ephemerisEngine は真北の方位にだけ
+                         天道の上書きを当てる）。磁北側も見ていたときは、
+                         偏角の境目で天道でない方位に札が出ていた */
                       const isTargetTendo =
                         currentTendo &&
-                        (targetDirInfo.magneticDirection === currentTendo ||
-                          targetDirInfo.trueDirection === currentTendo);
+                        targetDirInfo.trueDirection === currentTendo;
                       if (!isTargetTendo) return null;
                       return (
                         <span
                           className="text-[9px] text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded bg-amber-500/20 font-bold font-mono shadow-[0_0_8px_rgba(245,158,11,0.3)] animate-pulse cursor-help"
-                          title="【天道回座】目標方位に暦上の最高吉神・天道が巡っています。凶殺やノイズが相殺・大吉補正されます。"
+                          title="【天道回座】目標方位に暦上の吉神・天道が巡っています。本命殺・本命的殺・月命殺・月命的殺の凶は相殺されます。五黄殺・暗剣殺・破・天中殺は対象外です。"
                         >
                           ✨天道回座中
                         </span>
@@ -554,7 +556,7 @@ export default function DestinationMapPanel({
                       targetDirInfo.magneticDirection && (
                       <span
                         className="text-[9px] text-amber-700 border border-amber-200 px-1 py-0.5 rounded bg-amber-50 animate-pulse cursor-help font-bold font-mono"
-                        title="【境界線偏角アラート】真北と磁北で判定する方位セクターが異なっています。基準北トグルの切り替えにより方位評価が変化します。"
+                        title="【境界線偏角アラート】真北と磁北で方位セクターが異なります。判定は真北で行っています。方位磁針で測ると隣のセクターに見えるので、現地で確かめるときは偏角ぶんを補正してください。"
                       >
                         ⚠️偏角ズレ
                       </span>
@@ -929,8 +931,7 @@ export default function DestinationMapPanel({
                       <strong className="text-indigo-700 font-mono">
                         {targetDirection}
                       </strong>{" "}
-                      方位（{useTrueNorth ? "真北" : "磁北"}
-                      基準）。同じ行に印を付けています。
+                      方位（真北基準）。同じ行に印を付けています。
                     </span>
                   </span>
                 ) : (

@@ -42,22 +42,20 @@ export function ClockDisplay({
     return () => clearInterval(timer);
   }, []);
 
+  /*
+    見出しが「Standard JST」なので、端末の時計ではなく日本時間で出す。
+    timeZone を付けないと toLocaleTimeString は端末のタイムゾーンで
+    描くので、海外の端末では JST と名乗って現地時刻が出ていた。太陽時
+    （この JST に eot + 経度差を足したもの）も同じぶんずれていた。
+  */
   const formatTime = (date: Date) =>
     date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
       hour12: false,
+      timeZone: "Asia/Tokyo",
     });
-
-  // Calculate Lunar & Rokuyo from targetDate (evaluation date) instead of now
-  const displayDate = new Date(targetDate);
-  displayDate.setHours(
-    now.getHours(),
-    now.getMinutes(),
-    now.getSeconds(),
-    now.getMilliseconds(),
-  );
 
   /*
     暦は**日本時間で**引く。Lunar.fromDate(date) は実行環境のタイムゾーンで
@@ -65,14 +63,21 @@ export function ClockDisplay({
     （#456 の Solar.fromDate と同じ罠。総点検が Solar の字面だけを
     探していて、Lunar 側のこの 1 件が網から漏れていた）。
   */
-  const jst = getZonedDateTimeFields(displayDate, 9);
+  /*
+    日付は評価日（targetDate）の日本時間の年月日、時刻はいまの日本時間。
+    以前は端末の現地時間で年月日と時分秒を組んでから JST に読み替えて
+    いたので、日本より西の端末では旧暦・六曜が翌日にずれていた
+    （UTC 20:00 の 9/6 → JST では 9/7）。
+  */
+  const day = getZonedDateTimeFields(targetDate, 9);
+  const clock = getZonedDateTimeFields(now, 9);
   const lunarDate = Solar.fromYmdHms(
-    jst.year,
-    jst.month,
-    jst.day,
-    jst.hours,
-    jst.minutes,
-    jst.seconds,
+    day.year,
+    day.month,
+    day.day,
+    clock.hours,
+    clock.minutes,
+    clock.seconds,
   ).getLunar();
   const ROKUYO_MAP = [
     "大安 (Taian)",
