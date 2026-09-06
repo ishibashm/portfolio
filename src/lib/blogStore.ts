@@ -105,10 +105,23 @@ export async function loadBlogPost(
 ): Promise<BlogPost | undefined> {
   try {
     const row = await prisma.blogPost.findFirst({
-      where: { slug, published: true },
+      where: { slug },
       select: ROW_FIELDS,
     });
-    if (row) return toBlogPost(row);
+    /*
+      **非公開にした記事を Markdown で出さない。**以前は published: true で
+      引いて、無ければ Markdown に落ちていた。取り込んだ 28 本は
+      content/blog にも残っている（Dockerfile が image に入れる）ので、
+      管理画面で非公開にしても、消しても、記事 URL はそのまま開けた
+      （一覧と RSS からだけ消えていた）。
+
+      行があって非公開なら 404。行が無くても DB に記事が 1 本でもあれば
+      DB を正として 404（消した記事を Markdown で復活させない）。
+      DB が空か読めないときだけ Markdown（取り込み前・DB の不調）。
+    */
+    if (row) return row.published ? toBlogPost(row) : undefined;
+    const seeded = await prisma.blogPost.findFirst({ select: { slug: true } });
+    if (seeded) return undefined;
   } catch (e) {
     console.warn("記事の取得に失敗。Markdown に落ちる:", toLogMessage(e));
   }
