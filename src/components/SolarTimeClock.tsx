@@ -3894,7 +3894,7 @@ export const SolarTimeClock = () => {
                 <option value="MIGRATION">引越し・長期移住・拠点の変更</option>
               </select>
               <p className="text-[9px] text-stone-600 mt-3 leading-relaxed">
-                「引越し」や「療養」など、目的に応じて最適な方位（磁場ベクトル）の吉凶判定アルゴリズムが自動的に切り替わります。
+                「引越し」や「療養」など、目的に応じて方位の吉凶の重みづけ（どの層を重く見るか）が自動的に切り替わります。
               </p>
             </div>
 

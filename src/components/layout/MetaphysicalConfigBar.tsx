@@ -60,6 +60,33 @@ const FILTER_LABELS = {
   environmental_bazi: "環境方位 ＋ 天中殺",
 } satisfies Record<MetaphysicalConfig["directionFilterMode"], string>;
 
+/**
+ * 選んだ見方の説明。**7 つ全部に文がある**ことを型で強制する。
+ *
+ * 以前は 4 つの `&&` 分岐で、組み合わせの 3 つ（本命星＋環境方位 など）を
+ * 選ぶと見出しだけ出て中身が空だった。利用者の求めで足した組み合わせが
+ * まさにその 3 つ。
+ *
+ * 文言は `directionFilterMode.ts` の LAYERS（どの層を見るか）を写す。
+ * 「地磁気」「バイオリズム」のように、判定に入っていないものを書かない。
+ */
+const FILTER_EXPLANATIONS: Record<DirectionFilterMode, string> = {
+  composite:
+    "「総合判定」が選択されています。本命星（本命殺・本命的殺・相性）、環境方位（五黄殺・暗剣殺・破・月交点）、天中殺（空亡）の 3 つの層をすべて重ねて評価します。",
+  personal_kigaku:
+    "「本命星のみ」が選択されているため、本命星や相性星のみを評価します。五黄殺等の共通環境凶方位や天中殺は計算から無視されます。",
+  personal_bazi:
+    "「天中殺のみ」が選択されています。生誕の日干支から算出される空亡（天中殺）方位のみをペナルティとして抽出します。",
+  environmental:
+    "「環境方位のみ」が選択されています。五黄殺・暗剣殺・各種「破」といった万人共通の環境凶方位のみをマッピングします。",
+  personal_kigaku_environmental:
+    "「本命星 ＋ 環境方位」が選択されています。本命星の相性と、五黄殺・暗剣殺・破などの共通凶方位を重ねます。天中殺は見ません。",
+  personal_kigaku_bazi:
+    "「本命星 ＋ 天中殺」が選択されています。本命星の相性と、生誕の日干支から出る空亡（天中殺）方位を重ねます。五黄殺などの共通凶方位は見ません。",
+  environmental_bazi:
+    "「環境方位 ＋ 天中殺」が選択されています。五黄殺・暗剣殺・破などの共通凶方位と、空亡（天中殺）方位を重ねます。本命星の相性は見ません。",
+};
+
 /** ボタンに出す短い名前。 */
 const FILTER_SHORT_LABELS: Record<DirectionFilterMode, string> = {
   composite: "総合 (ALL)",
@@ -895,14 +922,7 @@ export const MetaphysicalConfigBar: React.FC<MetaphysicalConfigBarProps> = ({
                 <span className="font-bold text-stone-500 block mb-0.5">
                   フィルター/目的の効果説明
                 </span>
-                {config.directionFilterMode === "personal_kigaku" &&
-                  "「個人吉凶」が選択されているため、本命星や相性星のみを評価します。五黄殺等の共通環境凶方位や天中殺は計算から無視されます。"}
-                {config.directionFilterMode === "personal_bazi" &&
-                  "「個人天中殺のみ」が選択されています。生誕の日干支から算出される空亡（天中殺）方位のみをペナルティとして抽出します。"}
-                {config.directionFilterMode === "environmental" &&
-                  "「環境方位のみ」が選択されています。五黄殺・暗剣殺・各種「破」といった万人共通の環境凶方位のみをマッピングします。"}
-                {config.directionFilterMode === "composite" &&
-                  "「総合判定」が選択されています。環境の地磁気および天体干渉と、個人のバイオリズムを重ね合わせて統合評価します。"}
+                {FILTER_EXPLANATIONS[config.directionFilterMode]}
                 {!config.useClassicalBoard && (
                   <span className="block mt-1 text-amber-600">
                     {config.physicalMonthMode === "coupled"
