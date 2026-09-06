@@ -139,25 +139,15 @@ const getTodayString = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-const normalizeDateTimeLocal = (dateStr: string): string => {
-  if (!dateStr) return "";
-  try {
-    const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      const hours = String(d.getHours()).padStart(2, "0");
-      const minutes = String(d.getMinutes()).padStart(2, "0");
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-  } catch {}
-  if (dateStr.includes("T")) {
-    return dateStr.substring(0, 16);
-  }
-  return `${dateStr}T12:00`;
-};
+/*
+  生年月日を datetime-local の値にする。中身は utils/japanDate に置いた。
+  ここに書いてあった実装は `new Date("1990-05-15")` を端末の現地時間で
+  読み直していて、日本より西の端末では前日になっていた（節月の境目の
+  人は本命星が変わる）。同じ罠を他の頁が踏まないよう、1 か所にする。
+*/
+const normalizeDateTimeLocal = normalizeBirthDateTimeLocal;
 
+import { normalizeBirthDateTimeLocal } from "@/utils/japanDate";
 import dynamic from "next/dynamic";
 
 import prefecturesWithData from "@/data/prefecturesWithData.json";
@@ -838,7 +828,6 @@ export default function ArbitrageScannerPage() {
       const storedTarget = localStorage.getItem("arb_targetDate");
       const storedRadius = localStorage.getItem("arb_radiusKm");
       const storedPrefecture = localStorage.getItem("arb_prefecture");
-      const storedClassical = localStorage.getItem("arb_useClassical");
       const storedLayer = localStorage.getItem("arb_layerMode");
       const storedTrueNorth = localStorage.getItem("arb_useTrueNorth");
 
@@ -859,7 +848,8 @@ export default function ArbitrageScannerPage() {
 
       if (storedBirth) bDate = storedBirth;
       if (storedTarget) tDate = storedTarget;
-      if (storedClassical) classical = storedClassical === "true";
+      /* arb_useClassical はどこも書いていない鍵だった（書く側は
+         tactical_config_v1 の use_classical）。読んでも常に空なので消した */
       if (storedLayer) layer = storedLayer;
       if (storedTrueNorth) trueNorth = storedTrueNorth === "true";
     }

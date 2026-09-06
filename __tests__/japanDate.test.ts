@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { todayInJapan, toJapanDateString } from "@/utils/japanDate";
+import {
+  todayInJapan,
+  toJapanDateString,
+  normalizeBirthDateTimeLocal,
+} from "@/utils/japanDate";
 
 describe("日本時間の暦日", () => {
   it("UTC で日付が変わっても、日本時間ではまだ翌日", () => {
@@ -48,5 +52,38 @@ describe("日本時間の暦日", () => {
 
   it("date 入力にそのまま入れられる形", () => {
     expect(todayInJapan()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+/**
+ * 生年月日 → datetime-local。**Date に通すと端末の場所で日付が変わる**
+ * 罠を塞いだ関数。日付だけの値は Date に通さないことが要点。
+ */
+describe("normalizeBirthDateTimeLocal", () => {
+  it("日付だけなら正午を付ける（Date に通さない）", () => {
+    expect(normalizeBirthDateTimeLocal("1990-05-15")).toBe("1990-05-15T12:00");
+  });
+
+  it("時差の指定が無い時刻つきは、そのまま先頭 16 文字", () => {
+    expect(normalizeBirthDateTimeLocal("1990-05-15T09:30")).toBe(
+      "1990-05-15T09:30",
+    );
+    expect(normalizeBirthDateTimeLocal("1990-05-15T09:30:45")).toBe(
+      "1990-05-15T09:30",
+    );
+  });
+
+  it("時差の指定があれば日本時間に直す（UTC 15:00 の前日 → JST 翌日 0 時）", () => {
+    expect(normalizeBirthDateTimeLocal("1990-05-14T15:00:00Z")).toBe(
+      "1990-05-15T00:00",
+    );
+    expect(normalizeBirthDateTimeLocal("1990-05-15T12:00:00+09:00")).toBe(
+      "1990-05-15T12:00",
+    );
+  });
+
+  it("空と壊れた値は空", () => {
+    expect(normalizeBirthDateTimeLocal("")).toBe("");
+    expect(normalizeBirthDateTimeLocal("not a date")).toBe("");
   });
 });
