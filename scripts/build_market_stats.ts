@@ -316,9 +316,20 @@ async function main() {
       }));
       console.log(`家賃指数: ${rentIndexSeries.length} 日ぶん蓄積済み`);
     } catch (e) {
+      /*
+        GitHub Actions の注釈として出す。ただの console.warn だと 25 本の
+        ジョブのログに埋もれ、**誰にも見えない。**実際、表が本番に無い
+        まま（relation "MarketDailySummary" does not exist）毎晩ここを
+        通っていたのに、ジョブは緑で、marketStats.json の rentIndexSeries
+        は導入日からずっと空だった（2026-09-07 にログを読んで判明）。
+        画面は「蓄積中（0 日ぶん）」を出し続けていた。
+
+        続行はそのまま（ここで止めると県別の集計まで道連れになる）。
+        落ちたことだけを、Summary に残る形で出す。
+      */
+      const reason = toLogMessage(e);
       console.warn(
-        "MarketDailySummary への蓄積をスキップ（テーブル未作成？ run-seed を実行すること）:",
-        toLogMessage(e),
+        `::warning::MarketDailySummary への蓄積をスキップ。家賃指数は今夜ぶんが積まれない（表が無いなら prisma/sql/20260907_add_market_daily_summary.sql を db-apply-sql で当てる）: ${reason}`,
       );
     }
 
