@@ -11,13 +11,30 @@
  * 「複数の要素を合成した 0〜100 の点」だけで、役割が違う。
  */
 
+import { isFatalNoise } from "@/utils/noiseSeverity";
+
 /**
  * 判定ステータス（OPTIMAL / SAFE / NOISE_〜）を 0〜100 の点に落とす。
  *
  * SolarTimeClock の中に置かれていたが、総合スコアタブの分割
  * （home/ScorecardPanel）で両方のファイルが使うようになったので
- * ここへ移した。中身は 1 文字も変えていない。値は判定の見え方を
- * 決める数字なので触らない（CLAUDE.md 3 節）。
+ * ここへ移した。api/municipalities-wealth も同じ表を switch 文で
+ * 持っていたので、そちらもこれを呼ぶ。
+ *
+ * 凶の重さは utils/noiseSeverity から引く（サイト全体でただ一つの
+ * 定義。#698・#712 で評価を 1 系統にした置き場）。以前はここに
+ * 月命殺・月命的殺を本命殺と同じ 20 点（大凶の段）で直書きしていて、
+ * noiseSeverity が「五大凶殺に入れず、天中殺方位と同じ二次凶」に
+ * 置いているのと逆だった。lib/verdictRating も二次凶を 1 語の「凶」に
+ * 畳んでいるので、同じ方位が升目では「大凶」、ラベルでは「凶」に
+ * なっていた。
+ *
+ *   五大凶殺のうち 五黄殺・暗剣殺・破 … 10
+ *   五大凶殺のうち 本命殺・本命的殺   … 20
+ *   それ以外の凶（二次凶）             … 40
+ *
+ * 区別は「五大凶殺かどうか」を isFatalNoise に聞く。ここに凶の名前を
+ * 並べ直すと、また別の定義になる。
  */
 export const getStatusScore = (status: string) => {
   if (!status) return 50;
@@ -25,21 +42,14 @@ export const getStatusScore = (status: string) => {
   if (status === "OPTIMAL_REGULAR") return 90;
   if (status === "SAFE") return 80;
   if (status === "WARNING") return 60;
-  if (status.startsWith("NOISE_VOID") || status.startsWith("NOISE_NODE"))
-    return 40;
-  if (
-    status.startsWith("NOISE_HONMEI") ||
-    status.startsWith("NOISE_TEKI") ||
-    status.startsWith("NOISE_GETSUMEI") ||
-    status.startsWith("NOISE_GETSUTEKI")
-  )
-    return 20;
   if (
     status.startsWith("NOISE_GOU") ||
     status.startsWith("NOISE_ANKEN") ||
     status.startsWith("NOISE_HA")
   )
     return 10;
+  if (isFatalNoise(status)) return 20;
+  if (status.startsWith("NOISE")) return 40;
   return 50;
 };
 

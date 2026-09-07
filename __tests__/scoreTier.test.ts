@@ -2,11 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   SCORE_THRESHOLDS,
   SCORE_TIER_LEGEND,
+  getStatusScore,
   scoreCellClass,
   scoreTextColor,
   scoreTier,
   scoreTierLabel,
 } from "@/lib/scoreTier";
+import {
+  FIVE_FATAL_NOISES,
+  NOISE_PRIORITY,
+  isFatalNoise,
+} from "@/utils/noiseSeverity";
+import { ratingForStatus } from "@/lib/verdictRating";
 
 /**
  * 0〜100 の総合スコアを段階に落とすしきい値。
@@ -228,5 +235,177 @@ describe("升目と数字の文字色が地色に対して読める", () => {
       expect(HEX[name], `${name} の実値をこの表に足すこと`).toBeDefined();
       expect(contrast(HEX[name], HEX.white), cls).toBeGreaterThanOrEqual(4.5);
     }
+  });
+});
+
+/* ------------------------------------------------------------------ *
+ * 状態 → 点（getStatusScore）
+ *
+ * 月命殺・月命的殺を本命殺と同じ 20 点（大凶の段）にしていた。
+ * utils/noiseSeverity（凶の重さの唯一の定義）は両方を五大凶殺に入れず
+ * 天中殺方位と同じ二次凶に置き、lib/verdictRating も「凶」の 1 語に
+ * 畳む。同じ方位が升目では「大凶」、ラベルでは「凶」だった。
+ *
+ * api/municipalities-wealth は同じ表を switch 文で写していて、
+ * そちらは OPTIMAL_REGULAR（吉方位）が写しに無く default の 50 で、
+ * 平穏（80）より低かった。
+ *
+ * 下に両方の旧実装を写してある。**旧実装に差し替えると下のテストが
+ * 落ちる**ことを確認済み。
+ * ------------------------------------------------------------------ */
+
+/** 変更前の getStatusScore（そのまま写し）。 */
+function oldStatusScore(status: string): number {
+  if (!status) return 50;
+  if (status === "OPTIMAL") return 100;
+  if (status === "OPTIMAL_REGULAR") return 90;
+  if (status === "SAFE") return 80;
+  if (status === "WARNING") return 60;
+  if (status.startsWith("NOISE_VOID") || status.startsWith("NOISE_NODE"))
+    return 40;
+  if (
+    status.startsWith("NOISE_HONMEI") ||
+    status.startsWith("NOISE_TEKI") ||
+    status.startsWith("NOISE_GETSUMEI") ||
+    status.startsWith("NOISE_GETSUTEKI")
+  )
+    return 20;
+  if (
+    status.startsWith("NOISE_GOU") ||
+    status.startsWith("NOISE_ANKEN") ||
+    status.startsWith("NOISE_HA")
+  )
+    return 10;
+  return 50;
+}
+
+/** 変更前の api/municipalities-wealth の switch（そのまま写し）。 */
+function oldWealthScore(status: string): number {
+  switch (status) {
+    case "OPTIMAL":
+      return 100;
+    case "SAFE":
+      return 80;
+    case "WARNING":
+      return 60;
+    case "NOISE_VOID":
+    case "NOISE_NODE":
+      return 40;
+    case "NOISE_HONMEI":
+    case "NOISE_TEKI":
+    case "NOISE_GETSUMEI":
+    case "NOISE_GETSUTEKI":
+      return 20;
+    case "NOISE_GOU":
+    case "NOISE_ANKEN":
+    case "NOISE_HA":
+      return 10;
+    default:
+      return 50;
+  }
+}
+
+/** エンジンと画面が使う状態コードの全部。 */
+const ALL_STATUSES = [
+  "OPTIMAL",
+  "OPTIMAL_REGULAR",
+  "OPTIMAL_BOOST",
+  "SAFE",
+  "WARNING",
+  "UNKNOWN",
+  "",
+  ...NOISE_PRIORITY,
+  "NOISE_TENCHU",
+  "NOISE_DOYOU",
+];
+
+describe("状態 → 点", () => {
+  it("五大凶殺は 20 以下、二次凶は 40。noiseSeverity の集合と一致する", () => {
+    for (const s of NOISE_PRIORITY) {
+      if (isFatalNoise(s)) {
+        expect(getStatusScore(s), s).toBeLessThanOrEqual(20);
+      } else {
+        expect(getStatusScore(s), s).toBe(40);
+      }
+    }
+    // 五黄殺・暗剣殺・破 は五大凶殺の中でも下。
+    for (const s of ["NOISE_GOU", "NOISE_ANKEN", "NOISE_HA"]) {
+      expect(getStatusScore(s), s).toBe(10);
+    }
+    expect(getStatusScore("NOISE_HONMEI")).toBe(20);
+    expect(getStatusScore("NOISE_TEKI")).toBe(20);
+  });
+
+  it("点は noiseSeverity の重さの順に単調（重いほど低い）", () => {
+    let prev = -1;
+    for (const s of NOISE_PRIORITY) {
+      const v = getStatusScore(s);
+      expect(v, s).toBeGreaterThanOrEqual(prev);
+      prev = v;
+    }
+  });
+
+  it("verdictRating の段と向きが揃う（大凶の段の点 < 凶の段の点 < 平穏）", () => {
+    for (const s of ALL_STATUSES) {
+      const r = ratingForStatus(s).rating;
+      const v = getStatusScore(s);
+      if (r === "大凶") expect(v, s).toBeLessThan(30);
+      if (r === "凶") {
+        expect(v, s).toBeGreaterThanOrEqual(30);
+        expect(v, s).toBeLessThan(50);
+      }
+      if (r === "平穏" && s === "SAFE") expect(v).toBe(80);
+    }
+  });
+
+  it("旧実装と違うのは 月命殺・月命的殺（20 → 40）と、写しに無かった二次凶だけ", () => {
+    const changed: Record<string, [number, number]> = {};
+    for (const s of ALL_STATUSES) {
+      const before = oldStatusScore(s);
+      const after = getStatusScore(s);
+      if (before !== after) changed[s] = [before, after];
+    }
+    expect(changed).toEqual({
+      NOISE_GETSUMEI: [20, 40],
+      NOISE_GETSUTEKI: [20, 40],
+      // 以前は表に無く「不明」の 50 に落ちていた。凶なので二次凶の 40。
+      NOISE_TENCHU: [50, 40],
+      NOISE_DOYOU: [50, 40],
+    });
+    // 旧実装は月命殺を本命殺と同じ段に置いていた。
+    expect(oldStatusScore("NOISE_GETSUMEI")).toBe(
+      oldStatusScore("NOISE_HONMEI"),
+    );
+    expect(FIVE_FATAL_NOISES).not.toContain("NOISE_GETSUMEI");
+  });
+
+  it("移住先マップの写しは、吉方位（OPTIMAL_REGULAR）を平穏より低く付けていた", () => {
+    expect(oldWealthScore("OPTIMAL_REGULAR")).toBe(50);
+    expect(oldWealthScore("SAFE")).toBe(80);
+    expect(getStatusScore("OPTIMAL_REGULAR")).toBe(90);
+    expect(getStatusScore("OPTIMAL_REGULAR")).toBeGreaterThan(
+      getStatusScore("SAFE"),
+    );
+  });
+
+  it("移住先マップの写しとの差も、吉方位と上の 4 つだけ", () => {
+    const changed: Record<string, [number, number]> = {};
+    for (const s of ALL_STATUSES) {
+      const before = oldWealthScore(s);
+      const after = getStatusScore(s);
+      if (before !== after) changed[s] = [before, after];
+    }
+    expect(changed).toEqual({
+      OPTIMAL_REGULAR: [50, 90],
+      NOISE_GETSUMEI: [20, 40],
+      NOISE_GETSUTEKI: [20, 40],
+      NOISE_TENCHU: [50, 40],
+      NOISE_DOYOU: [50, 40],
+    });
+  });
+
+  it("不明な状態と空文字は中立の 50", () => {
+    expect(getStatusScore("")).toBe(50);
+    expect(getStatusScore("UNKNOWN")).toBe(50);
   });
 });

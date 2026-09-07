@@ -18,6 +18,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { toLogMessage } from "@/lib/errorMessage";
+import { getStatusScore } from "@/lib/scoreTier";
 import {
   bearingBetween,
   directionFromBearing,
@@ -292,35 +293,16 @@ export async function GET(request: Request) {
         const targetDirection = direction;
         if (activeVectors && targetDirection) {
           astrologyStatus = activeVectors[targetDirection] || "UNKNOWN";
-          switch (astrologyStatus) {
-            case "OPTIMAL":
-              astrologyScore = 100;
-              break;
-            case "SAFE":
-              astrologyScore = 80;
-              break;
-            case "WARNING":
-              astrologyScore = 60;
-              break;
-            case "NOISE_VOID":
-            case "NOISE_NODE":
-              astrologyScore = 40;
-              break;
-            case "NOISE_HONMEI":
-            case "NOISE_TEKI":
-            case "NOISE_GETSUMEI":
-            case "NOISE_GETSUTEKI":
-              astrologyScore = 20;
-              break;
-            case "NOISE_GOU":
-            case "NOISE_ANKEN":
-            case "NOISE_HA":
-              astrologyScore = 10;
-              break;
-            default:
-              astrologyScore = 50;
-              break;
-          }
+          /*
+            点は lib/scoreTier の getStatusScore から引く。以前はここに
+            同じ表を switch 文で写していて、2 か所で食い違っていた。
+
+              OPTIMAL_REGULAR（吉方位）… 写しに無く default の 50。
+                                         平穏（SAFE 80）より低かった
+              月命殺・月命的殺          … 20（本命殺と同じ大凶の段）。
+                                         noiseSeverity は二次凶に置く
+          */
+          astrologyScore = getStatusScore(astrologyStatus);
 
           /*
             境界線アラート。真北の扇と、方位磁針で測ったときの扇が
