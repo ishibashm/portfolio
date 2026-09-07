@@ -238,9 +238,15 @@ export function TenChiJinEvaluation({
         }
 
         // Check cache for better timing options
+        //
+        // 「近い日」だけを候補にする。以前は距離を見ておらず、計画の全ステップを
+        // 通した最高値を 1 つ持っていたので、9 月の出発に「2 月に変えると
+        // 避けられます」と出ることがあった。前後 45 日に絞る。
+        const stepMs = Date.parse(step.departureDate);
         Object.keys(nbaEvaluations).forEach((dateKey) => {
-          // Look for adjacent recommended dates in cached evaluations
           const testEv = nbaEvaluations[dateKey];
+          const diffDays = Math.abs(Date.parse(dateKey) - stepMs) / 86_400_000;
+          if (!Number.isFinite(diffDays) || diffDays > 45) return;
           if (
             testEv &&
             testEv.qValue > ev.qValue &&
@@ -419,8 +425,9 @@ export function TenChiJinEvaluation({
             天・地・人の総合評価
           </h3>
           <p className="mt-1 text-[11px] text-stone-500">
-            方位（地）・時期（天）・心身と相性（人）の 3
-            つで、この移動を見ます。
+            {
+              "方位（地）と時期（天）で総合を出し、心身と相性（人）は参考として並べます。"
+            }
           </p>
         </div>
         <div className="flex items-center gap-3">

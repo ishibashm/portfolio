@@ -74,12 +74,18 @@ export interface Verdict {
   actionData?: string;
 }
 
-/** 3 軸のうち、いちばん低いものの名前と点。 */
+/**
+ * 総合に入っている軸のうち、いちばん低いものの名前と点。
+ *
+ * 総合は 地 0.6 + 天 0.4（TenChiJinEvaluation の overallScore）で、
+ * **人（心身・相性）は総合に入っていない。**以前は人も候補にしていて、
+ * 人を 100 にしても総合が動かないのに「人が 52% にとどまり、総合を
+ * 下げています」と書いていた。
+ */
 function weakestAxis(input: VerdictInput): { name: string; score: number } {
   const axes = [
     { name: "地（方位）", score: input.spaceScore },
     { name: "天（時期）", score: input.timeScore },
-    { name: "人（心身・相性）", score: input.humanScore },
   ];
   return axes.reduce((worst, axis) =>
     axis.score < worst.score ? axis : worst,
