@@ -15,6 +15,7 @@ import {
 } from "./ephemerisEngine";
 import { VedicEngine } from "./vedicEngine";
 import { toJapanDateString } from "./japanDate";
+import { getZonedDateTimeFields } from "./solarTime";
 
 export interface TarotCard {
   name: string;
@@ -477,9 +478,21 @@ const QI_MEN_GATES = [
 ];
 
 export function getLifePathNumber(birthDate: Date): NumerologyData {
-  const year = birthDate.getFullYear();
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
+  /*
+    **年月日は日本時間で読む。**`getFullYear()` などは実行環境の
+    タイムゾーンを見るので、本番（UTC）では日本時間の 0〜9 時に
+    生まれた人が**前日**として数えられていた。1990-01-02 05:30 の
+    人はライフパスが 4 ではなく 3 になる。
+
+    生年月日の文字列を日本時間として読むようにした（japanDate の
+    parseJapanDateTime）ので、**読む側もそろえないと元に戻る。**
+    日付だけを入れた人（多数派）は UTC の 0 時＝日本時間の 9 時で
+    同じ日になるため、答えは変わらない。
+  */
+  const f = getZonedDateTimeFields(birthDate, 9);
+  const year = f.year;
+  const month = f.month;
+  const day = f.day;
 
   const reduceNumber = (num: number): number => {
     if (num === 11 || num === 22 || num === 33) return num;
@@ -526,8 +539,11 @@ export function getLifePathNumber(birthDate: Date): NumerologyData {
 // Helpers for the new systems
 
 function getSunSign(birthDate: Date): string {
-  const month = birthDate.getMonth() + 1;
-  const day = birthDate.getDate();
+  /* 月日は日本時間で読む（getLifePathNumber と同じ理由）。星座の
+     境目の日に生まれた人は、9 時間ずれると隣の星座になる。 */
+  const f = getZonedDateTimeFields(birthDate, 9);
+  const month = f.month;
+  const day = f.day;
   if ((month === 12 && day >= 22) || (month === 1 && day <= 19))
     return "山羊座 (Capricorn)";
   if ((month === 1 && day >= 20) || (month === 2 && day <= 18))
@@ -1277,7 +1293,9 @@ export function fetchMetaphysicalData(
       (c) => currentYear >= c.startYear && currentYear <= c.endYear,
     );
     if (activeCycle) {
-      const birthYear = birthDate.getFullYear();
+      /* 生まれ年も日本時間で読む。大運は 10 年ごとの区切りなので、
+         元日前後に生まれた人の年齢が 1 つずれる。 */
+      const birthYear = getZonedDateTimeFields(birthDate, 9).year;
       daYunPillar = {
         pillar: activeCycle.ganZhi,
         startAge: activeCycle.startYear - birthYear,
