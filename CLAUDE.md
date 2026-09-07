@@ -650,7 +650,7 @@ import することになり、判定エンジンが丸ごと client のバン�
 | `SolarTimeClock.tsx` | `setMapProperties` / `setPressureDrop` | 機能が初期値のまま止まっているしるし |
 | `PersonalProfileConfig.tsx` | `setBaseSyncTimestamp` | 同上 |
 | `TenchusatsuVisualizer.tsx` | `years` | 見出しが「天中殺**周期**」なのに周期を出す表示が無い。8 年ぶんの VOID / CLEAR は計算済みで、描く先だけが無い |
-| `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる。警告は `/* exported … */`（ESLint 標準の「外から使われる」宣言）で事実として書いた（2026-09-07）。黙らせているのではないので、本当に未使用の関数が増えればそれだけ警告に残る |
+| `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる。警告は入口ごとに理由つきの `eslint-disable-next-line` で抑えた（2026-09-07。`/* exported */` は @typescript-eslint 版には効かず、試して 3 件残った）。本当に未使用の関数が増えればそれだけ警告に残る |
 
 「作りかけのしるし」も、**親ごと要らないと決まればそこで終わる。**
 `api/relocation-timing` の `mapping` はこの表に載っていたが、route 自体が
