@@ -25,6 +25,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
+import { normalizeBirthDateTimeLocal } from "@/utils/japanDate";
 import { PlaceInput } from "@/components/relocation/PlaceInput";
 import {
   readLocalSettings,
@@ -295,10 +296,23 @@ export function QuickProfileBar() {
           >
             {PROFILE_FIELDS.birthDate.label}
           </label>
+          {/*
+            保存されている値は**日付だけのことがある。**
+            /profile の欄は
+            `type="date"` なので "1990-01-02" が入る。`datetime-local` に
+            その文字列を渡すと、ブラウザは形の合わない値を**空欄として
+            描く**ので、登録済みなのに未入力に見えていた（逆向きの
+            食い違いが /profile 側にもあった）。
+
+            欄に出すときだけ正午を補う（`normalizeBirthDateTimeLocal`。
+            物件検索の同行者欄と同じ扱い）。**持っている値は書き換えない**
+            ので、触らずに保存しても日付だけのまま残る。ここで勝手に
+            正午へ寄せると時柱が変わる（判定が動く）。
+          */}
           <input
             id="quick-birth-date"
             type="datetime-local"
-            value={birthDate}
+            value={normalizeBirthDateTimeLocal(birthDate)}
             onChange={(e) => setBirthDate(e.target.value)}
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-rose-400 transition-colors"
           />
