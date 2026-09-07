@@ -31,7 +31,16 @@ export interface PlaceInputProps {
   label: string;
   lat: number | null;
   lon: number | null;
-  onChange: (lat: number, lon: number) => void;
+  /**
+   * 決まった場所。
+   *
+   * `name` は**地名で選べたときだけ**入る（候補・郵便番号から拾った
+   * 表示用の名前）。緯度経度を手で直したときは `undefined` になる。
+   * **前の地名を残さないこと。**座標だけ変わって名前が残ると、
+   * 別の場所に前の地名が付いたまま画面に出る。判定は座標で決まるので、
+   * 名前は表示にしか使わない。
+   */
+  onChange: (lat: number, lon: number, name?: string) => void;
   /** 任意の入力か。出生地は未入力でも方位の吉凶が出る。 */
   optional?: boolean;
   /** 欄の下に出す説明。何に使う値かを書く。 */
@@ -185,7 +194,7 @@ export function PlaceInput({
           setNotice("その郵便番号が見つかりませんでした。");
           return;
         }
-        onChange(body.data.lat, body.data.lon);
+        onChange(body.data.lat, body.data.lon, body.data.address);
         setPicked(body.data.address);
         setQuery("");
       } catch {
@@ -203,7 +212,7 @@ export function PlaceInput({
   }, [query]);
 
   const pick = (s: Suggestion) => {
-    onChange(s.lat, s.lon);
+    onChange(s.lat, s.lon, s.name);
     setPicked(s.name);
     setQuery("");
     setSuggestions([]);
@@ -315,7 +324,11 @@ export function PlaceInput({
             value={lat ?? ""}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
-              if (Number.isFinite(v) && lon !== null) onChange(v, lon);
+              if (!Number.isFinite(v) || lon === null) return;
+              /* 手で直したら地名は捨てる。座標だけ動いて名前が残ると、
+                 別の場所に前の地名が付いたまま出る */
+              setPicked(null);
+              onChange(v, lon);
             }}
             placeholder="緯度"
             className={s.coordInput}
@@ -326,7 +339,9 @@ export function PlaceInput({
             value={lon ?? ""}
             onChange={(e) => {
               const v = parseFloat(e.target.value);
-              if (Number.isFinite(v) && lat !== null) onChange(lat, v);
+              if (!Number.isFinite(v) || lat === null) return;
+              setPicked(null);
+              onChange(lat, v);
             }}
             placeholder="経度"
             className={s.coordInput}

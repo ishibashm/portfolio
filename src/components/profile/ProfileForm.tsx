@@ -66,6 +66,13 @@ export function ProfileForm() {
   const [baseLon, setBaseLon] = React.useState<number | null>(null);
   const [destLat, setDestLat] = React.useState<number | null>(null);
   const [destLon, setDestLon] = React.useState<number | null>(null);
+  /*
+    目的地の地名。**表示用だけ**（判定は座標で決まる）。
+    destinationSetting は最初から地名の置き場を持っていたのに、
+    ここが渡していなかったので誰も書いていなかった。座標だけだと、
+    /account や次に開いたときに自分が何を入れたのか読めない。
+  */
+  const [destLabel, setDestLabel] = React.useState("");
   /* ログイン直後にここへ回された人。/login が ?welcome=1 を付ける */
   const [welcome, setWelcome] = React.useState(false);
   /*
@@ -121,6 +128,7 @@ export function ProfileForm() {
         const dest = readDestination();
         setDestLat(dest.lat);
         setDestLon(dest.lon);
+        setDestLabel(dest.label);
         setSynced(didSync);
         setWelcome(params.get("welcome") === "1");
         setStatus("idle");
@@ -182,6 +190,7 @@ export function ProfileForm() {
     writeDestination({
       lat: destLat ?? undefined,
       lon: destLon ?? undefined,
+      label: destLabel,
     });
 
     try {
@@ -384,9 +393,12 @@ export function ProfileForm() {
               optional
               lat={destLat}
               lon={destLon}
-              onChange={(lat, lon) => {
+              onChange={(lat, lon, name) => {
                 setDestLat(lat);
                 setDestLon(lon);
+                /* 地名で選べたときだけ覚える。座標を手で直したときは
+                   捨てる（前の地名が別の場所に付いたまま残らないよう） */
+                setDestLabel(name ?? "");
               }}
               help="引越し先の候補です。決まっていなければ空のままで構いません。"
             />
