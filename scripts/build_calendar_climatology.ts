@@ -27,6 +27,21 @@ import {
   gradeVerdict,
   DayTier,
 } from "../src/utils/auspiciousDays";
+import type { StarFrequency } from "../src/utils/ephemerisEngine";
+
+/**
+ * 回す本命星。**型のついた一覧**にしてある。
+ *
+ * ここは `for (let star = 1; star <= 9; star++)` と書いてあり、
+ * `star` が素の number だったので `judgeDayAllDirections` の
+ * `honmeiStar: StarFrequency` に渡せなかった（scripts は
+ * `npx tsc --noEmit` の対象外なので気付かれずに残っていた）。
+ *
+ * 値そのものは 1〜9 で正しいが、**型で示しておかないと、次に上限を
+ * 触った人が 10 を渡しても誰も止めない。**キャストではなく一覧で示す
+ * （CLAUDE.md 3 節「キャストで逃げない」）。
+ */
+const STARS: StarFrequency[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const LON_REF = 135;
 const YEARS = 9;
@@ -61,7 +76,7 @@ async function main() {
   const profiles: Record<string, ProfileClimatology> = {};
   const t0 = Date.now();
 
-  for (let star = 1; star <= 9; star++) {
+  for (const star of STARS) {
     for (const voidZodiacs of VOID_GROUPS) {
       const key = `${star}|${voidZodiacs.join("")}`;
       const p = {
