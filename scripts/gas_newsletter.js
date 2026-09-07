@@ -20,6 +20,21 @@
  *    - 名前空間（Namespace）の有無にかかわらず頑健に動作するフォールバックパーサーを内蔵しています。
  */
 
+/*
+  doPost / doGet / sendDailyTechDigest は Google Apps Script が**名前で
+  呼ぶ入口**。このファイルの中から呼ばれることは無いので、そのままだと
+  eslint が「未使用」と言う。消すと動いている Apps Script が壊れる
+  （CLAUDE.md 4 節の表）。
+
+  ESLint 標準の exported 宣言（ブロックコメントで書くもの）は core の
+  no-unused-vars 向けで、@typescript-eslint 版には効かない（試して
+  3 件残った）。そこで入口ごとに理由つきで抑える。本当に未使用の関数が
+  増えたときは、それだけが警告に残る。
+
+  なお、この説明の中に宣言の字面をそのまま書くと、その閉じ記号で
+  このコメントが途中で閉じて構文エラーになる（実際に踏んだ）。
+*/
+
 // ==========================================
 // 設定情報 (一元管理)
 // ==========================================
@@ -57,6 +72,7 @@ const FEED_CONFIGS = [
 // 1. Web App: doPost (購読登録処理)
 // ==========================================
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Google Apps Script が名前で呼ぶ入口
 function doPost(e) {
   try {
     let email = "";
@@ -145,6 +161,7 @@ function doPost(e) {
 
 // GAS はイベント引数つきで呼ぶが、この doGet は読まない（受け口だけの引数を
 // 置くと no-unused-vars に数えられる。省いても実行は変わらない）。
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Google Apps Script が名前で呼ぶ入口
 function doGet() {
   try {
     const cache = CacheService.getScriptCache();
@@ -189,6 +206,7 @@ function doGet() {
 // 3. Daily Tech Digest: sendDailyTechDigest (日刊配信処理)
 // ==========================================
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Google Apps Script が名前で呼ぶ入口
 function sendDailyTechDigest() {
   try {
     const sheet = getSubscribersSheet();

@@ -379,7 +379,7 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 
 ## 4. 今やっていること — lint 警告の削減
 
-`npm run lint` の警告を減らしている。**645 → 25**（クラウド実測 2026-09-04。
+`npm run lint` の警告を減らしている。**645 → 21**（クラウド実測 2026-09-07。
 上の注意を読むこと）。`no-explicit-any` は **0**。
 
 **挙動は変えない。**見た目も計算結果も変えない作業。
@@ -400,12 +400,12 @@ grep -rn "mx-auto" src/components --include=*.tsx | grep -E "max-w-(3xl|4xl|5xl|
 - テストを消す・skip する
 - 減らせないファイルを無理に触る（飛ばして報告する）
 
-### 現状の内訳（2026-09-04 実測。総数 25）
+### 現状の内訳（2026-09-07 実測。総数 21）
 
 ```
 11  react-hooks/exhaustive-deps        ← 依存配列は再レンダリングのタイミングを変える。対象外
  7  react-hooks/set-state-in-effect    ← 同上で対象外
- 6  @typescript-eslint/no-unused-vars  ← 大半が「消してはいけない未使用」（下の表）
+ 2  @typescript-eslint/no-unused-vars  ← どちらも「消してはいけない未使用」（下の表）。Apps Script の入口 3 件は理由つきで抑えた
  1  react-hooks/purity                 ← 対象外
 ```
 
@@ -417,8 +417,8 @@ React が面倒を見る（#962 の `NewsCards` が見本）。
 **`no-explicit-any` は 0 件**（645 → 0。#729〜#732 で完了）。
 `catch (e: any)` も **0 件**（#215 で最後の 4 件が片付いた）。
 
-**残り 25 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
-未使用 6。ここが lint の底。
+**残り 21 件に、手を付けてよいものは無い。**対象外 19 + 消してはいけない
+未使用 2（`setBaseSyncTimestamp`・`years`）。ここが lint の底。
 
 any の最後の 5 件の片付き方は参考になる:
 - `userSettings.Settings` → 実際の値（JSON スカラー）の union に狭めたら、
@@ -467,7 +467,7 @@ any の最後の 5 件の片付き方は参考になる:
 
 ### 次にやるとよいもの
 
-**lint は底に着いた**（645 → 25。any は 0。残りは全部、対象外か
+**lint は底に着いた**（645 → 21。any は 0。残りは全部、対象外か
 消してはいけない未使用）。ここから先は lint ではなく、次を進める。
 
 **1. サイトの言葉と評価の一貫性。**評価はサイト全体で段階評価
@@ -650,7 +650,7 @@ import することになり、判定エンジンが丸ごと client のバン�
 | `SolarTimeClock.tsx` | `setMapProperties` / `setPressureDrop` | 機能が初期値のまま止まっているしるし |
 | `PersonalProfileConfig.tsx` | `setBaseSyncTimestamp` | 同上 |
 | `TenchusatsuVisualizer.tsx` | `years` | 見出しが「天中殺**周期**」なのに周期を出す表示が無い。8 年ぶんの VOID / CLEAR は計算済みで、描く先だけが無い |
-| `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる |
+| `scripts/gas_newsletter.js` | `doGet` / `doPost` / `sendDailyTechDigest` | **Google Apps Script が名前で呼ぶ入口。**消すと動いている Apps Script が壊れる。警告は入口ごとに理由つきの `eslint-disable-next-line` で抑えた（2026-09-07。`/* exported */` は @typescript-eslint 版には効かず、試して 3 件残った）。本当に未使用の関数が増えればそれだけ警告に残る |
 
 「作りかけのしるし」も、**親ごと要らないと決まればそこで終わる。**
 `api/relocation-timing` の `mapping` はこの表に載っていたが、route 自体が
