@@ -24,6 +24,8 @@ import path from "node:path";
 const FILES = [
   "src/components/SolarTimeClock.tsx",
   "src/components/TenchusatsuVisualizer.tsx",
+  "src/components/nba/TenChiJinEvaluation.tsx",
+  "src/app/relocation/simulator/page.tsx",
 ];
 
 describe("画面側も生年月日を日本時間で読む", () => {

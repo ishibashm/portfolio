@@ -56,7 +56,7 @@ import { stepDayTier } from "@/lib/stepTier";
 import { TIER_LABELS, TIER_ORDER, type DayTier } from "@/utils/auspiciousDays";
 import { TIER_FILL } from "@/utils/tierDisplay";
 import { isValidIsoDate } from "@/utils/dateValidation";
-import { toJapanDateString } from "@/utils/japanDate";
+import { parseJapanDateTime, toJapanDateString } from "@/utils/japanDate";
 import type { MetaphysicalData } from "@/utils/metaphysicalApis";
 import {
   readLocalSettings,
@@ -160,7 +160,12 @@ function parseSafeDate(
   fallback: Date = new Date(),
 ): Date {
   if (!dateStr) return fallback;
-  const d = new Date(dateStr);
+  /* **日本時間として読む。**素の `new Date("1990-01-02T05:30")` は
+     端末のタイムゾーンで読まれる。日本より西の端末では前の日になり、
+     節月の境目に生まれた人は本命星が変わる。サーバ側（/api/nba・
+     /api/relocation/nba-evaluate）は日本時間として読むので、揃えないと
+     同じ人の画面とサーバで答えが割れる。 */
+  const d = parseJapanDateTime(dateStr);
   if (d instanceof Date && !isNaN(d.getTime())) {
     return d;
   }
