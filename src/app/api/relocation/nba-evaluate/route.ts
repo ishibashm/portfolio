@@ -13,6 +13,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { baziEngine } from "@/utils/baziEngine";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
+import { parseJapanDateTime } from "@/utils/japanDate";
 import { VedicEngine } from "@/utils/vedicEngine";
 import {
   SwissEphemerisEngine,
@@ -50,19 +51,11 @@ export async function POST(req: Request) {
     const truncated = dates.length > MAX_DATES;
     const dateList = truncated ? dates.slice(0, MAX_DATES) : dates;
 
-    const parseSafeDate = (dateStr: string | null | undefined): Date => {
-      if (!dateStr) return new Date();
-      if (
-        dateStr.includes("T") &&
-        !dateStr.endsWith("Z") &&
-        !/[+-]\d{2}:?\d{2}$/.test(dateStr)
-      ) {
-        return new Date(dateStr + "+09:00");
-      }
-      return new Date(dateStr);
-    };
-
-    const birthDateObj = birthDate ? parseSafeDate(birthDate) : null;
+    /* 読み方は `japanDate` の parseJapanDateTime に寄せた。同じ規則が
+       ここと api/municipalities-wealth に写されていて、api/nba だけが
+       素の `new Date`（実行環境のタイムゾーン）だった。写しがあるかぎり
+       また割れる。 */
+    const birthDateObj = birthDate ? parseJapanDateTime(birthDate) : null;
     const voidZodiacArray = birthDateObj
       ? getPersonalVoidZodiac(birthDateObj)
       : [];
