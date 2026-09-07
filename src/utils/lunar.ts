@@ -159,9 +159,35 @@ export function isJapaneseHoliday(date: Date): {
   isHoliday: boolean;
   name: string;
 } {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
+  /*
+    **日本時間の年月日で見る。**同じファイルの getRokuyo / getLuckyDays は
+    そうしているのに、ここだけ `getFullYear()` などで**実行環境の
+    タイムゾーン**を読んでいた。本番（Cloud Run）は UTC なので、
+    絶対時刻を渡すと 0〜9 時が前日になる（#456 と同じ罠）。
+
+        new Date("2026-01-01T00:30:00+09:00").getDate()  // UTC では 31
+
+    元日を「12/31」として見ていた。曜日も同じで、振替休日の判定まで
+    1 日ずれる。
+  */
+  const f = getZonedDateTimeFields(date, 9);
+  return holidayOfJstDate(f.year, f.month, f.day);
+}
+
+/**
+ * 日本時間の暦日（年・月・日）だけを見て祝日を判定する。
+ *
+ * 中では**日付の計算にしか使わない Date**（UTC の 0 時で作る）を扱う。
+ * 曜日と前後日はそこから `getUTC*` で読むので、実行環境のタイムゾーンに
+ * 依らない。
+ */
+function holidayOfJstDate(
+  year: number,
+  month: number,
+  day: number,
+): { isHoliday: boolean; name: string } {
+  /** その暦日を指す、計算専用の Date。時刻は持たない。 */
+  const calendarDate = new Date(Date.UTC(year, month - 1, day));
 
   // 1. 固定祝日の定義
   const fixedHolidays: Record<string, string> = {
@@ -201,7 +227,7 @@ export function isJapaneseHoliday(date: Date): {
 
   // 3. ハッピーマンデーの計算（第N月曜日）
   const getMondayDate = (y: number, m: number, count: number) => {
-    const firstDay = new Date(y, m - 1, 1).getDay();
+    const firstDay = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
     const firstMonday = ((8 - firstDay) % 7) + 1;
     return firstMonday + 7 * (count - 1);
   };
@@ -220,21 +246,25 @@ export function isJapaneseHoliday(date: Date): {
   if (fixedHolidays[key]) return { isHoliday: true, name: fixedHolidays[key] };
 
   // 振替休日の判定
-  const prevDate = new Date(date);
-  prevDate.setDate(date.getDate() - 1);
+  const prevDate = new Date(calendarDate);
+  prevDate.setUTCDate(day - 1);
 
-  if (date.getDay() === 1) {
+  if (calendarDate.getUTCDay() === 1) {
     // 月曜日の場合
-    const prevH = isJapaneseHoliday(prevDate);
+    const prevH = holidayOfJstDate(
+      prevDate.getUTCFullYear(),
+      prevDate.getUTCMonth() + 1,
+      prevDate.getUTCDate(),
+    );
     if (prevH.isHoliday && !prevH.name.startsWith("振替休日")) {
       return { isHoliday: true, name: `振替休日 (${prevH.name})` };
     }
-  } else if (date.getDay() === 2 || date.getDay() === 3) {
+  } else if (calendarDate.getUTCDay() === 2 || calendarDate.getUTCDay() === 3) {
     // 5月6日の振替休日判定（憲法記念日、みどりの日、こどもの日のいずれかが日曜日）
     if (month === 5 && day === 6) {
-      const d3 = new Date(year, 4, 3).getDay();
-      const d4 = new Date(year, 4, 4).getDay();
-      const d5 = new Date(year, 4, 5).getDay();
+      const d3 = new Date(Date.UTC(year, 4, 3)).getUTCDay();
+      const d4 = new Date(Date.UTC(year, 4, 4)).getUTCDay();
+      const d5 = new Date(Date.UTC(year, 4, 5)).getUTCDay();
       if (d3 === 0 || d4 === 0 || d5 === 0) {
         return { isHoliday: true, name: "振替休日" };
       }
@@ -242,18 +272,22 @@ export function isJapaneseHoliday(date: Date): {
   }
 
   // 国民の休日の判定
-  const nextDate = new Date(date);
-  nextDate.setDate(date.getDate() + 1);
+  const nextDate = new Date(calendarDate);
+  nextDate.setUTCDate(day + 1);
 
   // 国民の休日の判定のためには、祝日判定自体をループしないように簡易取得
   const isPrevH =
-    fixedHolidays[`${prevDate.getMonth() + 1}-${prevDate.getDate()}`] ||
-    (prevDate.getMonth() + 1 === 3 && prevDate.getDate() === vernalEquinox) ||
-    (prevDate.getMonth() + 1 === 9 && prevDate.getDate() === autumnalEquinox);
+    fixedHolidays[`${prevDate.getUTCMonth() + 1}-${prevDate.getUTCDate()}`] ||
+    (prevDate.getUTCMonth() + 1 === 3 &&
+      prevDate.getUTCDate() === vernalEquinox) ||
+    (prevDate.getUTCMonth() + 1 === 9 &&
+      prevDate.getUTCDate() === autumnalEquinox);
   const isNextH =
-    fixedHolidays[`${nextDate.getMonth() + 1}-${nextDate.getDate()}`] ||
-    (nextDate.getMonth() + 1 === 3 && nextDate.getDate() === vernalEquinox) ||
-    (nextDate.getMonth() + 1 === 9 && nextDate.getDate() === autumnalEquinox);
+    fixedHolidays[`${nextDate.getUTCMonth() + 1}-${nextDate.getUTCDate()}`] ||
+    (nextDate.getUTCMonth() + 1 === 3 &&
+      nextDate.getUTCDate() === vernalEquinox) ||
+    (nextDate.getUTCMonth() + 1 === 9 &&
+      nextDate.getUTCDate() === autumnalEquinox);
 
   if (isPrevH && isNextH) {
     return { isHoliday: true, name: "国民の休日" };
