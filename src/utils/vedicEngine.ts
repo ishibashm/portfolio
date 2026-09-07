@@ -194,7 +194,15 @@ export class VedicEngine {
 
     if (evalMs < firstDashaEndMs) {
       activeMahadashaIndex = startLordIndex;
-      activeMahadashaStartMs = birthDate.getTime();
+      /*
+        出生時の大運（Mahadasha）は出生の時点で progress のぶんだけ
+        進んでいる（残りが (1 − progress) 年）。副運（Antardasha）を
+        出生から積み上げると、実際には終わりに近い副運を最初の副運と
+        言ってしまう。名目上の始まり（出生の progress × 年数 だけ前）から
+        積む。
+      */
+      activeMahadashaStartMs =
+        birthDate.getTime() - progress * LORD_YEARS[startLordIndex] * msPerYear;
     } else {
       let currentEndMs = firstDashaEndMs;
       let currentLordIndex = (startLordIndex + 1) % 9;
