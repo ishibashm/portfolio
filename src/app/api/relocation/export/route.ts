@@ -25,7 +25,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { getRokuyo } from "@/utils/lunar";
-import { toJapanDateString } from "@/utils/japanDate";
+import { parseJapanDateTime, toJapanDateString } from "@/utils/japanDate";
 import { denyUnlessAdmin } from "@/lib/adminApi";
 
 export const dynamic = "force-dynamic";
@@ -235,17 +235,11 @@ export async function GET(request: Request) {
       ? parseFloat(url.searchParams.get("target_elevation")!)
       : null;
 
-    const parseSafeDate = (dateStr: string | null | undefined): Date => {
-      if (!dateStr) return new Date();
-      if (
-        dateStr.includes("T") &&
-        !dateStr.endsWith("Z") &&
-        !/[+-]\d{2}:?\d{2}$/.test(dateStr)
-      ) {
-        return new Date(dateStr + "+09:00");
-      }
-      return new Date(dateStr);
-    };
+    /* 無ければ「いま」。読み方（時差の指定が無い文字列は日本時間）は
+       `japanDate` の parseJapanDateTime に寄せた。同じものが API に 6 つ
+       写されていて、api/nba だけが素の `new Date` になっていた。 */
+    const parseSafeDate = (dateStr: string | null | undefined): Date =>
+      dateStr ? parseJapanDateTime(dateStr) : new Date();
 
     const bDate = parseSafeDate(birthDateStr);
     const targetDate = url.searchParams.get("date")
