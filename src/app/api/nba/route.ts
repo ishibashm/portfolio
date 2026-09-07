@@ -24,7 +24,7 @@ import { VedicEngine } from "@/utils/vedicEngine";
 import { fetchSpaceWeather } from "@/utils/spaceWeather";
 import { fetchMacroEconomics } from "@/utils/macroEconomics";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
-import { toJapanDateString } from "@/utils/japanDate";
+import { daysAgoInJapan, toJapanDateString } from "@/utils/japanDate";
 import {
   SwissEphemerisEngine,
   CelestialBody,
@@ -68,11 +68,10 @@ export async function POST(req: Request) {
     // Default to Tokyo for longitude
     const lon = clientLon !== undefined ? clientLon : 139.6917;
 
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-
-    const startDate = yesterday.toISOString().split("T")[0];
-    const endDate = today.toISOString().split("T")[0];
+    // Oura の日次データは指輪の現地（JST）の日付で並ぶ。UTC で切ると
+    // 日本時間の 0〜9 時は前日の窓になり、data[0] が 2 日前の値になる。
+    const startDate = daysAgoInJapan(1, today);
+    const endDate = toJapanDateString(today);
 
     // Strictly prioritize clientBirthDate to fix state management cache bug
     let birthDateStr: string | null = clientBirthDate || null;
