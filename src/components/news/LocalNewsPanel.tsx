@@ -47,6 +47,11 @@ export interface LocalNewsPanelProps {
    * 見える。選んだ人に「当たる見出しがいま無い」と返す必要がある。
    */
   emptyText?: string;
+  /**
+   * 末尾の「ほかの見出しは /news」を出さない。/news の中に置くときに
+   * 使う（自分自身へのリンクになる）。
+   */
+  hideNewsLink?: boolean;
 }
 
 /** 見出しの日付。日本の媒体なので日本時間で丸める。 */
@@ -66,7 +71,18 @@ export function LocalNewsPanel({
   prefCode,
   placeName,
   emptyText,
+  hideNewsLink,
 }: LocalNewsPanelProps) {
+  /*
+    /news への導線は、その県で絞った状態（?pref=）へ向ける。県ページ →
+    /news は降りられるのに、着いた先で県を選び直すのは片道の導線
+    （CLAUDE.md 2-d）。市区町村コードの先頭 2 桁が県コード。
+  */
+  const newsHref = prefCode
+    ? `/news?pref=${encodeURIComponent(prefCode)}`
+    : areaCode
+      ? `/news?pref=${encodeURIComponent(areaCode.slice(0, 2))}`
+      : "/news";
   const [items, setItems] = React.useState<LocalNewsItem[]>([]);
   const [done, setDone] = React.useState(false);
 
@@ -154,13 +170,15 @@ export function LocalNewsPanel({
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[10px] text-stone-500">
-        {"ほかの見出しは "}
-        <Link href="/news" className="text-indigo-600 underline">
-          不動産・建築の情報
-        </Link>
-        {" にまとめてあります。"}
-      </p>
+      {!hideNewsLink && (
+        <p className="mt-3 text-[10px] text-stone-500">
+          {"ほかの見出しは "}
+          <Link href={newsHref} className="text-indigo-600 underline">
+            不動産・建築の情報
+          </Link>
+          {" にまとめてあります（この県で絞った状態で開きます）。"}
+        </p>
+      )}
     </section>
   );
 }
