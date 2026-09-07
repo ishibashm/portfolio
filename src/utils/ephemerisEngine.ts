@@ -669,8 +669,20 @@ export function getHourStar(
   // 2時間ごとのフェーズ(0〜11)に分割
   const phaseIndex = Math.floor(lst / 2);
 
-  // ベースとなる日のサイクル (Julian Day)
-  const jd = AstroEngine.getJulianDay(date);
+  /*
+    ベースとなる日のサイクル。**日本時間の正午で引く**（日盤と同じ）。
+
+    素の日時を渡すと `Math.floor(jd + 0.5)` は **09:00 JST**（世界時の
+    0 時）で繰り上がる。時盤は 2 時間ごとに動くので気付きにくいが、
+    朝 9 時に**時刻とは無関係の段差**が入っていた。#1073 で日盤を
+    日本時間の日に揃えたので、同じ模型の中で日の切り方が 2 通りある
+    状態になっていた（日盤は 0 時、時盤の土台は 9 時）。
+
+    +0.5 はそのまま残す。日盤（`Math.floor(jd)`）と 1 つずれるのは
+    元からの作りで、ここで動かすと 9 時以降の答えまで変わる。直したのは
+    **日の切り方だけ**。
+  */
+  const jd = AstroEngine.getJulianDay(jstNoonOf(date));
   const dayCycle = Math.floor(jd + 0.5) % 9;
 
   // 位相の合成（陽遁は加算、陰遁は減算で波をモジュレーション）
