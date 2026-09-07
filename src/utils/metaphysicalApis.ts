@@ -14,6 +14,7 @@ import {
   getDayStar,
 } from "./ephemerisEngine";
 import { VedicEngine } from "./vedicEngine";
+import { toJapanDateString } from "./japanDate";
 
 export interface TarotCard {
   name: string;
@@ -920,7 +921,7 @@ function getKabbalahTree(birthDate: Date, currentDate: Date) {
     "Tav",
   ];
 
-  const dayString = currentDate.toISOString().split("T")[0];
+  const dayString = toJapanDateString(currentDate);
   const rand = createRand(dayString);
 
   const activeIdx = Math.floor(rand() * sephiras.length);
@@ -978,7 +979,7 @@ function getHumanDesign(birthDate: Date, currentDate: Date) {
   );
   const profIdx = Math.floor(brand() * profiles.length);
 
-  const dayString = currentDate.toISOString().split("T")[0];
+  const dayString = toJapanDateString(currentDate);
   const drand = createRand(dayString);
   const todayGate = Math.floor(drand() * 64) + 1;
   const gateMeaning = `ゲート ${todayGate} (太陽/地球のトランジットにより活性化)。【活用法】現在アクティブなゲートの特性が環境全体に影響を与えています。あなた自身の意思決定オーソリティ（${authorities[authIdx]}）に従って判断してください。`;
@@ -1111,7 +1112,7 @@ function getGeomancy(currentDate: Date) {
     },
   ];
 
-  const dayString = currentDate.toISOString().split("T")[0];
+  const dayString = toJapanDateString(currentDate);
   const rand = createRand(dayString);
 
   const figIdx = Math.floor(rand() * figures.length);
@@ -1149,7 +1150,7 @@ function getZiWeiDouShu(birthDate: Date, currentDate: Date) {
   const selfIdx = Math.floor(brand() * majorStars.length);
   const bodyIdx = (selfIdx + 3) % majorStars.length;
 
-  const dayString = currentDate.toISOString().split("T")[0];
+  const dayString = toJapanDateString(currentDate);
   const drand = createRand(dayString);
   const flyIdx = Math.floor(drand() * majorStars.length);
 
@@ -1189,7 +1190,7 @@ export function fetchMetaphysicalData(
   useClassical: boolean = true,
 ): MetaphysicalData {
   // Use date hashes for deterministic daily outputs
-  const dayString = currentDate.toISOString().split("T")[0];
+  const dayString = toJapanDateString(currentDate);
   const rand = createRand(dayString);
 
   // 1. DivineAPI
