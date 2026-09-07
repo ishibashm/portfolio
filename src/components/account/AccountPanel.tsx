@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { loadSettings } from "@/lib/userSettings";
-import { profileCompletion } from "@/lib/profileCompletion";
+import { formatCoords, profileCompletion } from "@/lib/profileCompletion";
+import { describeDestination, readDestination } from "@/lib/destinationSetting";
 import { ProfileProgress } from "@/components/profile/ProfileProgress";
 import {
   deleteProfilePreset,
@@ -38,6 +39,11 @@ import { deleteAccountData } from "@/lib/accountData";
  * 生年月日と場所の入力は `/profile` の仕事なので、ここでは**その入力欄を
  * 作らない**。同じ値を 2 か所で書けるようにすると必ず食い違う。
  *
+ * **端末にだけ残るものも出す。**目的地は `SYNCED_FIELDS` に入れていない
+ * ので、アカウントには送らず localStorage にだけ残る。それでも「登録した
+ * 内容を消す」は目的地も消すと書いてあるので、**消すと言っているものが
+ * 一覧に出ていない**のは食い違い。保存先が違うことを添えて並べる。
+ *
  * ただし**保存済みプロフィールの名前と削除はここでやる**。名前は一覧に
  * しか出てこないもので、直せるのがホームの時計の中（PersonalProfileConfig）
  * だけだった。一覧を出しておいて直せないほうが食い違う。中身（生年月日・
@@ -51,6 +57,8 @@ export function AccountPanel() {
   const [email, setEmail] = React.useState<string | null>(null);
   const [completion, setCompletion] = React.useState(profileCompletion({}));
   const [presets, setPresets] = React.useState<ProfilePreset[]>([]);
+  /* 目的地。端末にだけ残るので、読むのもクラウドを見ない */
+  const [destination, setDestination] = React.useState<string | null>(null);
   const [cloudSynced, setCloudSynced] = React.useState(false);
   const [signingOut, setSigningOut] = React.useState(false);
   /* 消す操作は 2 段。誤って押しただけでは消えないようにする */
@@ -77,6 +85,7 @@ export function AccountPanel() {
       setCompletion(profileCompletion(settings.settings));
       setPresets(presetResult.presets);
       setCloudSynced(presetResult.cloudSynced);
+      setDestination(describeDestination(readDestination()));
       setStatus("ready");
     })().catch(() => {
       if (alive) setStatus("ready");
@@ -153,6 +162,32 @@ export function AccountPanel() {
 
       {/* 2. 何が登録されているか --------------------------------- */}
       <ProfileProgress completion={completion} />
+
+      {/* 2-b. 端末にだけ残るもの ------------------------------- */}
+      <section className="rounded-2xl border border-stone-200 bg-white p-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-bold text-stone-800">
+            引越し先の候補（目的地）
+          </h2>
+          <p className="text-[11px] text-stone-500">この端末にだけ</p>
+        </div>
+        {destination ? (
+          <p className="mt-3 font-mono text-xs break-all text-stone-700">
+            {destination}
+          </p>
+        ) : (
+          <p className="mt-3 text-[11px] leading-relaxed text-stone-600">
+            {
+              "まだ入れていません。入れておくと、シミュレータ・物件検索・時期の分析で同じ場所を打ち直さずに済みます。"
+            }
+          </p>
+        )}
+        <p className="mt-2 max-w-[70ch] text-[11px] leading-relaxed text-stone-500">
+          {
+            "「どこへ引越すつもりか」はアカウントに送っていません。ログインしていても、この端末の中だけに残ります。"
+          }
+        </p>
+      </section>
 
       <p className="text-[11px] leading-relaxed text-stone-500">
         {"内容を変えるには "}
@@ -248,8 +283,15 @@ export function AccountPanel() {
                       <p className="text-xs font-semibold text-stone-800">
                         {preset.name}
                       </p>
+                      {/* 中身を出す。名前だけだと、家族ぶんの控えが
+                          並んだときにどれがどれだか分からない */}
                       <p className="text-[11px] text-stone-500">
                         生年月日 {preset.birthDate || "未設定"}
+                      </p>
+                      <p className="font-mono text-[10px] break-all text-stone-500">
+                        住 {formatCoords(preset.baseLat, preset.baseLon)}
+                        {" ／ 生 "}
+                        {formatCoords(preset.birthLat, preset.birthLon)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
