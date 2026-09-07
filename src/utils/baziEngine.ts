@@ -98,7 +98,13 @@ export class BaziEngine {
     gender: number = 1,
   ): BaziResult {
     // 1. Adjust for True Solar Time
-    const solarResult = calculateSolarTime(date, longitude);
+    //
+    // 時差は JST（9）を明示する。省くと calculateSolarTime が経度から
+    // 推測し（round(経度/15)）、石垣・宮古島（8）や帯広・釧路・根室（10）で
+    // 60 分ずれた太陽時になる。下で getZonedDateTimeFields(solarTime, 9) と
+    // JST で読み直しているので、ここも 9 でなければ辻褄が合わない
+    // （boardInstant が同じ罠を直した経緯を書いている）。
+    const solarResult = calculateSolarTime(date, longitude, 9);
     const solarTime = solarResult.solarTime;
 
     // 2. Initialize Lunar/EightChar
