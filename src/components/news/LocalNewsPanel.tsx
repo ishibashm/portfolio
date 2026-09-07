@@ -39,6 +39,14 @@ export interface LocalNewsPanelProps {
   prefCode?: string;
   /** 見出しに出す地域の名前。 */
   placeName: string;
+  /**
+   * 0 件のときに出す一言。**渡さなければ 0 件は何も描かない**（県ページ・
+   * 市区町村ページの既定。頁の下に空の箱を並べない）。
+   *
+   * /news の県の選択欄では逆で、選んだのに何も出ないと「壊れた」と
+   * 見える。選んだ人に「当たる見出しがいま無い」と返す必要がある。
+   */
+  emptyText?: string;
 }
 
 /** 見出しの日付。日本の媒体なので日本時間で丸める。 */
@@ -57,6 +65,7 @@ export function LocalNewsPanel({
   areaCode,
   prefCode,
   placeName,
+  emptyText,
 }: LocalNewsPanelProps) {
   const [items, setItems] = React.useState<LocalNewsItem[]>([]);
   const [done, setDone] = React.useState(false);
@@ -92,8 +101,20 @@ export function LocalNewsPanel({
     };
   }, [areaCode, prefCode]);
 
-  /* 読み込み中も 0 件も、何も出さない。空の箱を置かない */
-  if (!done || items.length === 0) return null;
+  /* 読み込み中は何も出さない。0 件も既定では出さない（空の箱を置かない）。
+     一言を渡された画面（/news の選択欄）だけ、0 件をそのまま返す */
+  if (!done) return null;
+  if (items.length === 0) {
+    if (!emptyText) return null;
+    return (
+      <p
+        role="status"
+        className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-[11px] leading-relaxed text-stone-500"
+      >
+        {emptyText}
+      </p>
+    );
+  }
 
   return (
     <section className="mt-10 rounded-2xl border border-stone-200 bg-white p-5">
