@@ -21,6 +21,7 @@ import {
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import { toJapanDateString } from "@/utils/japanDate";
 import { isNoiseStatus } from "@/utils/arbitrageHelpers";
 import {
   DEFAULT_TENCHUSATSU_MODE,
@@ -227,7 +228,9 @@ export function buildDailyAstroStates(
       ).scoreModifier;
     }
 
-    const dateStr = d.toISOString().split("T")[0];
+    // 盤は JST で組む（上の getZonedDateTimeFields）。日付の札も JST で
+    // 切らないと、targetDate 省略時（＝いま）に 0〜9 時で 1 日ずれる
+    const dateStr = toJapanDateString(d);
     const zodiacs_d = getCurrentZodiac(new Date(dateStr), p.baseLon);
     const voidScopes_d: VoidScopes = {
       year: p.voidZodiacs.includes(zodiacs_d.yearZodiac),

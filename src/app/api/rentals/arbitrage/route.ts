@@ -13,6 +13,7 @@ import {
   parseDirectionFilterMode,
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
+import { toJapanDateString } from "@/utils/japanDate";
 import {
   bearingBetween,
   directionFromBearing,
@@ -553,7 +554,7 @@ export async function GET(request: Request) {
           involuntaryMove,
         });
         return {
-          date: horizonDates[i]?.toISOString().split("T")[0] ?? day.date,
+          date: horizonDates[i] ? toJapanDateString(horizonDates[i]) : day.date,
           score: day.score,
           status: day.status,
           isAvoid: isAvoidStatus(day.status),
@@ -957,7 +958,9 @@ export async function GET(request: Request) {
         useTrueNorth,
         nodeMapping,
         physicalMonthMode,
-        targetDate: targetDate.toISOString().split("T")[0],
+        // targetDate を省いた呼び出しは「いま」なので、UTC で切ると日本時間の
+        // 0〜9 時は前日になる（盤は JST で組んでいるので日付だけがずれる）
+        targetDate: toJapanDateString(targetDate),
         candidateStrategy,
         tenchusatsuMode,
         involuntaryMove,
