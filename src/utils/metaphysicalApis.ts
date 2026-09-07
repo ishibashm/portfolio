@@ -1266,7 +1266,13 @@ export function fetchMetaphysicalData(
   // Da Yun Luck Pillar Match
   let daYunPillar: MetaphysicalData["chineseMetasoft"]["daYunPillar"] = null;
   if (birthDate && personalBazi && personalBazi.luckCycles) {
-    const currentYear = currentDate.getFullYear();
+    /*
+      **年は日本時間で読む。**`getFullYear()` は実行環境のタイムゾーンを
+      見るので、本番（UTC）では元日の 0〜9 時（日本時間）に前年になる。
+      大運は 10 年ごとの区切りなので、その境目にあたる人は 9 時間だけ
+      1 つ前の柱が出る。上の dayString と同じ引き方に揃える。
+    */
+    const currentYear = Number(toJapanDateString(currentDate).slice(0, 4));
     const activeCycle = personalBazi.luckCycles.find(
       (c) => currentYear >= c.startYear && currentYear <= c.endYear,
     );
