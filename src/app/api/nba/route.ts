@@ -24,6 +24,7 @@ import { VedicEngine } from "@/utils/vedicEngine";
 import { fetchSpaceWeather } from "@/utils/spaceWeather";
 import { fetchMacroEconomics } from "@/utils/macroEconomics";
 import { fetchMetaphysicalData } from "@/utils/metaphysicalApis";
+import { toJapanDateString } from "@/utils/japanDate";
 import {
   SwissEphemerisEngine,
   CelestialBody,
@@ -468,7 +469,7 @@ export async function POST(req: Request) {
 
       // Nested Ephemeris Structures
       currentEphemeris: {
-        date: today.toISOString().split("T")[0],
+        date: toJapanDateString(today),
         solarPhase: sunLon,
         vedicAstrology: macroContexts.vedicAstrology,
         spaceWeather: imputedSpaceWeather,
@@ -478,7 +479,7 @@ export async function POST(req: Request) {
         resilience: resilienceScore,
       },
       targetEphemeris: {
-        date: today.toISOString().split("T")[0],
+        date: toJapanDateString(today),
         solarPhase: sunLon,
         isVoidTime,
         isConflictDay,
