@@ -50,7 +50,10 @@ export type BlogPostMetric = {
 export type BlogMetrics = {
   /** 一覧（/blog）の PV / UV。記事の合計とは別に出す。 */
   index: { pv: number; uv: number };
-  /** 記事の合計。 */
+  /**
+   * 記事の合計。**uv は記事ごとの UV を足した数**で、同じ人が 2 本読むと
+   * 2 と数える（記事横断の distinct は引いていない）。画面もそう書く。
+   */
   posts: { pv: number; uv: number };
   /** 記事ごと。PV の多い順、同数なら新しい順。 */
   rows: BlogPostMetric[];

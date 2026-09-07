@@ -182,6 +182,15 @@ export default function TimingAnalyticsPage() {
   // 走査範囲。過去も含める（自分の過去の移動を評価し直せる）
   const [pastMonths, setPastMonths] = useState(6);
   const [futureMonths, setFutureMonths] = useState(18);
+  /*
+    API は 1 回の走査を 2 年（730 日）までしか受けない。過去 12 か月＋
+    未来 24 か月のように合計が 2 年を超えるときは、**未来を優先して
+    過去を縮める。**以前は from（今日−過去）から 730 日ぶんを頼んで
+    いたので、過去のぶんだけ未来が削れ、「未来 24 か月」を選んでも
+    今日＋12 か月までしか返っていなかった。縮めたときはここに日数を
+    入れて画面に出す（黙って削らない）。
+  */
+  const [pastClippedDays, setPastClippedDays] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   /*
     押したマスの位置。詳細はヒートマップの下にも出るが、見通しは 21 か月
@@ -281,12 +290,17 @@ export default function TimingAnalyticsPage() {
     setBusy(true);
     setError(null);
     try {
-      const from = new Date();
+      const MAX_DAYS = 730;
+      const to = new Date();
+      to.setMonth(to.getMonth() + futureMonths);
+      let from = new Date();
       from.setMonth(from.getMonth() - pastMonths);
-      const total = Math.min(
-        730,
-        Math.round((pastMonths + futureMonths) * 30.4),
-      );
+      const spanDays = Math.round((to.getTime() - from.getTime()) / 86_400_000);
+      let clipped: number | null = null;
+      if (spanDays > MAX_DAYS) {
+        from = new Date(to.getTime() - MAX_DAYS * 86_400_000);
+        clipped = Math.round((Date.now() - from.getTime()) / 86_400_000);
+      }
       const params = new URLSearchParams({
         birthDate: settings.birthDate,
         lon: settings.baseLon,
@@ -295,13 +309,14 @@ export default function TimingAnalyticsPage() {
         directionFilterMode: settings.directionFilterMode,
         mode: "timeline",
         from: iso(from),
-        days: String(total),
+        to: iso(to),
       });
       const res = await fetch(`/api/relocation/auspicious-days?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const json = await res.json();
       if (!Array.isArray(json?.days)) throw new Error("empty");
       setDays(json.days);
+      setPastClippedDays(clipped);
       setProfile({
         honmeiStar: json.honmeiStar,
         voidZodiacs: json.voidZodiacs ?? [],
@@ -622,6 +637,14 @@ export default function TimingAnalyticsPage() {
           <p className="mt-2 text-[10px] leading-relaxed text-stone-600">
             {modeInfo(settings?.directionFilterMode ?? "composite").hint}
           </p>
+          {pastClippedDays !== null && (
+            <p
+              role="status"
+              className="mt-1 text-[10px] leading-relaxed text-amber-700"
+            >
+              {`1 回の走査は 2 年までなので、未来 ${futureMonths}か月を優先して過去を ${pastClippedDays} 日ぶんに縮めています。`}
+            </p>
+          )}
           {!modeInfo(settings?.directionFilterMode ?? "composite")
             .canBeAuspicious && (
             <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-[11px] leading-relaxed text-amber-900">
