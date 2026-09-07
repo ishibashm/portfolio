@@ -26,6 +26,9 @@ const FILES = [
   "src/components/TenchusatsuVisualizer.tsx",
   "src/components/nba/TenChiJinEvaluation.tsx",
   "src/app/relocation/simulator/page.tsx",
+  "src/components/relocation/DirectionTierOverview.tsx",
+  "src/components/relocation/FengShuiNote.tsx",
+  "src/components/widgets/CosmicCalendar.tsx",
 ];
 
 describe("画面側も生年月日を日本時間で読む", () => {

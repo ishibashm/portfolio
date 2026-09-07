@@ -14,6 +14,7 @@ import {
 import { readFengShui, type FengShuiReading } from "@/utils/fengShuiEngine";
 import { honmeiYearFor } from "@/utils/honmeiYear";
 import type { CompassDirection } from "@/utils/directionGeo";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 /**
  * 方位ごとに「その日の段階」と「いま表示している物件数」を並べる。
@@ -82,7 +83,7 @@ function fengShuiReadingFor(
   stored: ReturnType<typeof parseSnapshot>,
 ): FengShuiReading | null {
   if (!birthDate || !fengShuiActive(stored)) return null;
-  const d = new Date(birthDate);
+  const d = parseJapanDateTime(birthDate);
   if (Number.isNaN(d.getTime())) return null;
   return readFengShui(honmeiYearFor(d), stored.sex);
 }

@@ -16,6 +16,7 @@ import {
 } from "@/utils/directionGeo";
 import { fengShuiFor, type Sex } from "@/utils/fengShuiEngine";
 import { honmeiYearFor } from "@/utils/honmeiYear";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 /**
  * その移動の方位を、風水（八宅）でも見る。**併記であって合算ではない。**
@@ -69,7 +70,7 @@ export function FengShuiNote({
     ),
   );
 
-  const birth = new Date(birthDate);
+  const birth = parseJapanDateTime(birthDate);
   if (!birthDate || Number.isNaN(birth.getTime())) return null;
   if (!Number.isFinite(bearing)) return null;
 

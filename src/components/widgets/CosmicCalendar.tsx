@@ -16,6 +16,7 @@ import { AstroEngine, getPersonalVoidZodiac } from "@/utils/ephemerisEngine";
 import { baziEngine } from "@/utils/baziEngine";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import { parseJapanDateTime } from "@/utils/japanDate";
 
 export interface DayData {
   date: Date;
@@ -375,7 +376,7 @@ export function CosmicCalendar({
   let userVoidZodiacs: string[] = [];
   if (birthDate) {
     try {
-      const bDate = new Date(birthDate);
+      const bDate = parseJapanDateTime(birthDate);
       if (!isNaN(bDate.getTime())) {
         const bLonVal = parseFloat(birthLon) || 139.6917;
         const bazi = baziEngine.calculate(bDate, bLonVal);
