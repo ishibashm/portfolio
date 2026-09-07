@@ -17,7 +17,7 @@ import { DIRECTION_UNSTABLE_KM } from "@/lib/directionDistance";
  *
  * ただし 5km だけは別で、これは既に根拠がある。`directionDistance` の
  * `DIRECTION_UNSTABLE_KM`——この内側では方位がピンの置き方で変わる
- * （1km で 414m ずれれば隣の方位になる）。**判定の強弱ではなく、
+ * （1km で四正なら 268m ずれれば隣の方位になる）。**判定の強弱ではなく、
  * 判定の当てにならなさ**なので、意味を書いてよい。
  *
  * ## 縮尺で数を変える

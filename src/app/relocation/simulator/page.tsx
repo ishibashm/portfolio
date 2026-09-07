@@ -585,7 +585,7 @@ export default function RelocationSimulatorPage() {
       const direction = bearingToDirection(rawBearing, useClassical);
 
       // 近すぎる移動では、方位が「実際にどう動いたか」より「ピンをどこに
-      // 置いたか」で決まる。1km なら 414m ずれれば方位が隣に変わる。
+      // 置いたか」で決まる。1km なら四正で 268m ずれれば方位が隣に変わる。
       // 判定は従来どおり出したうえで、当てにならない距離だと画面に添える。
       const distanceKm = distanceKmBetween(
         currentBaseLat,
