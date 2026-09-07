@@ -81,12 +81,28 @@ describe("生年月日時を日本時間として読む", () => {
 });
 
 describe("読み方を 1 か所に寄せた（写しを増やさない）", () => {
-  it("/api/nba は素の new Date で生年月日を読まない", () => {
-    const src = readFileSync(
-      path.join(process.cwd(), "src/app/api/nba/route.ts"),
-      "utf8",
-    );
-    expect(src).toContain("parseJapanDateTime");
-    expect(src).not.toMatch(/new Date\(birthDateStr\)/);
+  const ROUTES = [
+    "src/app/api/nba/route.ts",
+    "src/app/api/relocation/nba-evaluate/route.ts",
+    "src/app/api/municipalities-wealth/route.ts",
+  ];
+
+  it("生年月日を読む API は parseJapanDateTime を使う", () => {
+    for (const rel of ROUTES) {
+      const src = readFileSync(path.join(process.cwd(), rel), "utf8");
+      expect(src, rel).toContain("parseJapanDateTime");
+    }
+  });
+
+  it("同じ規則の写し（parseSafeDate）が API に残っていない", () => {
+    /* 同じ判定が 3 本に写されていて、api/nba だけが素の `new Date` に
+       なっていた。写しがあるかぎりまた割れるので、字面で見張る。
+       画面側（SolarTimeClock・TenChiJinEvaluation）の同名関数は
+       **別の意味**（読めない値を今日に倒す入口）なのでここでは見ない。 */
+    for (const rel of ROUTES) {
+      const src = readFileSync(path.join(process.cwd(), rel), "utf8");
+      expect(src, rel).not.toContain("parseSafeDate");
+      expect(src, rel).not.toMatch(/new Date\(birthDateStr\)/);
+    }
   });
 });

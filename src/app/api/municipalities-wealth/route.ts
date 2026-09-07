@@ -18,6 +18,7 @@ import {
 } from "@/utils/ephemerisEngine";
 import { getGeomagneticData } from "@/utils/geomagnetism";
 import { toLogMessage } from "@/lib/errorMessage";
+import { parseJapanDateTime } from "@/utils/japanDate";
 import { getStatusScore } from "@/lib/scoreTier";
 import {
   bearingBetween,
@@ -26,18 +27,6 @@ import {
 } from "@/utils/directionGeo";
 
 export const dynamic = "force-dynamic";
-
-function parseSafeDate(dateStr: string | null | undefined): Date {
-  if (!dateStr) return new Date();
-  if (
-    dateStr.includes("T") &&
-    !dateStr.endsWith("Z") &&
-    !/[+-]\d{2}:?\d{2}$/.test(dateStr)
-  ) {
-    return new Date(dateStr + "+09:00");
-  }
-  return new Date(dateStr);
-}
 
 // 角度の差を計算する関数（円弧上の最短距離）
 function getAngleDiff(a: number, b: number): number {
@@ -126,7 +115,9 @@ export async function GET(request: Request) {
   const hasBirthDate = Boolean(birthDateStr && birthDateStr.trim() !== "");
 
   // datetime-localが秒を含まない場合があるため、有効なDate形式にする
-  const bDate = hasBirthDate ? parseSafeDate(birthDateStr as string) : null;
+  const bDate = hasBirthDate
+    ? parseJapanDateTime(birthDateStr as string)
+    : null;
   if (bDate && isNaN(bDate.getTime())) {
     return NextResponse.json(
       { success: false, error: "Invalid birthDate" },
@@ -134,7 +125,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const targetDate = parseSafeDate(targetDateStr);
+  /* 無ければ「いま」。読み方（時差の指定が無い文字列は日本時間）は
+     japanDate に寄せた。ここと api/relocation/nba-evaluate に同じものが
+     写されていて、api/nba だけが素の `new Date` で割れていた。 */
+  const targetDate = targetDateStr
+    ? parseJapanDateTime(targetDateStr)
+    : new Date();
 
   // 月相コンディションの計算
   let lunarPhaseScore = 0;
