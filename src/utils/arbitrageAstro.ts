@@ -21,8 +21,8 @@ import {
 import { getRokuyo, getLuckyDays, isJapaneseHoliday } from "@/utils/lunar";
 import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
+import { directionBoardInstant } from "@/utils/boardInstant";
 import { toJapanDateString } from "@/utils/japanDate";
-import { isNoiseStatus } from "@/utils/arbitrageHelpers";
 import {
   DEFAULT_TENCHUSATSU_MODE,
   TenchusatsuMode,
@@ -163,7 +163,16 @@ export function buildDailyAstroStates(
   dateList: Date[],
   p: AstroStateParams,
 ): DailyAstroState[] {
-  return dateList.map((d) => {
+  return dateList.map((rawDate) => {
+    /*
+      盤は**日本時間の正午**で引く（boardInstant の約束。ヒートマップ・
+      時期分析・地図が全部そこに合わせている）。以前は受け取った Date を
+      そのまま使っていて、一覧 API が "YYYY-MM-DD" を parseSafeDate した
+      値（UTC 0 時 = JST 9 時）で盤を組んでいた。節入りが 9〜12 時 JST に
+      来る日（2027-02-04 の立春 10:46 など）は、物件検索だけが前の
+      月盤・年盤で 8 方位すべてを別の判定にしていた。
+    */
+    const d = directionBoardInstant(rawDate, 0, p.baseLon);
     const env_d = getSystemEnvironment(d, p.baseLon, p.physicalMonthMode);
 
     let activeVectors_d: Partial<Record<Direction, string>>;
@@ -285,6 +294,18 @@ export interface PropertyAstroContext {
   involuntaryMove?: boolean;
 }
 
+/**
+ * 天道が「注意」に緩める凶。ephemerisEngine の天道の上書き（同じ 4 つを
+ * OPTIMAL に変える）と対で、五大凶殺（五黄殺・暗剣殺・破・本命殺・
+ * 本命的殺）のうち本命殺・本命的殺だけが入る。
+ */
+export const TENDO_SOFTENED_NOISES: readonly string[] = [
+  "NOISE_HONMEI",
+  "NOISE_TEKI",
+  "NOISE_GETSUMEI",
+  "NOISE_GETSUTEKI",
+];
+
 /** ある物件の方位で、1 日ぶんの吉凶とスコア内訳を出す（軽い部分） */
 export function scoreDateForProperty(
   state: DailyAstroState,
@@ -342,7 +363,17 @@ export function scoreDateForProperty(
       if (isTendo) {
         dailyIsTendo = true;
         tendoBonus = 20;
-        if (isNoiseStatus(dailyStatus)) dailyStatus = "WARNING";
+        /*
+          天道が緩めるのは**本命殺・本命的殺・月命殺・月命的殺の 4 つだけ**
+          （ephemerisEngine の天道の規則と同じ。画面も「五黄殺・暗剣殺・破・
+          天中殺は対象外」と案内している）。以前は isNoiseStatus（天中殺・
+          月交点以外の NOISE 全部）で見ていて、五黄殺・暗剣殺・破まで
+          WARNING（60 点 + 天道 20 点 = 80 点）に化けていた。2026 年の
+          寅月は天道が南で、南は五黄殺。地図と /houi が「大凶」と出す方位を
+          物件検索だけ「警告・調整方位」にしていた。
+        */
+        if (TENDO_SOFTENED_NOISES.includes(dailyStatus))
+          dailyStatus = "WARNING";
         else if (dailyStatus === "WARNING") dailyStatus = "SAFE";
       }
 
