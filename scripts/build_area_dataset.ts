@@ -20,6 +20,7 @@ import * as dotenv from "dotenv";
 
 import { PREF_JP } from "../src/lib/scrapeTargets";
 import { LIVE_LISTING_SQL } from "../src/lib/rentalListingSql";
+import { toJapanDateString } from "../src/utils/japanDate";
 import { addressPrefixClause } from "../src/lib/jisCityAlias";
 import {
   buildMunicipalityListings,
@@ -177,7 +178,12 @@ async function main() {
   if (previous.length === 0) {
     console.log("前回の areaDirections.json が読めなかった（引き継ぎ無し）");
   }
-  const today = new Date().toISOString().slice(0, 10);
+  /*
+    集計日は日本の暦日で。scrape-rentals の cron は 19:17 UTC（翌 04:17 JST）
+    なので、UTC で読むと**前日**の日付になる。頁の「集計日」と
+    DatasetJsonLd の dateModified に毎日 1 日前が出ていた。
+  */
+  const today = toJapanDateString(new Date());
   const merged = mergeAreaDataset(filtered, previous, today);
 
   fs.writeFileSync(

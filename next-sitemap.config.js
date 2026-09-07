@@ -432,6 +432,13 @@ module.exports = {
      数頁だけ載せられる */
   additionalPaths: async (config) =>
     Promise.all(
-      AREA_EDITORIAL_PATHS.map((loc) => config.transform(config, loc)),
+      [
+        ...AREA_EDITORIAL_PATHS,
+        /* /blog は searchParams（?sort=）を読むので動的描画になり、
+           next-sitemap が数える事前生成の一覧に出てこない。記事 24 本は
+           載るのに一覧だけ無い状態だった。llms.txt が案内している頁でも
+           あるので、ここで足す */
+        "/blog",
+      ].map((loc) => config.transform(config, loc)),
     ),
 };
