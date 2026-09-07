@@ -22,6 +22,7 @@
  * 由来を書いておく（増えたときに、どれを足すべきか分かるように）。
  *   tactical_config_v1 … userSettings.SETTINGS_KEY（生年月日・場所・基準値）
  *   profile_presets_v1 / wealth_presets … profilePresetSync の 2 つ
+ *   profile_presets_cloud_ids_v1 … クラウドにあると最後に確かめた id
  *   presets_initialized … クラウドが空だと分かっている印
  *   dest_lat / dest_lon / dest_label … destinationSetting（端末だけ・同期しない）
  *
@@ -33,6 +34,7 @@ export const ACCOUNT_LOCAL_KEYS = [
   "tactical_config_v1",
   "profile_presets_v1",
   "wealth_presets",
+  "profile_presets_cloud_ids_v1",
   "presets_initialized",
   "dest_lat",
   "dest_lon",

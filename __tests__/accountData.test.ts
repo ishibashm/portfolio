@@ -37,6 +37,7 @@ describe("消す鍵", () => {
       "tactical_config_v1",
       "profile_presets_v1",
       "wealth_presets",
+      "profile_presets_cloud_ids_v1",
       "presets_initialized",
       "dest_lat",
       "dest_lon",

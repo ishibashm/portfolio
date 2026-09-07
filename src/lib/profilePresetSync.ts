@@ -29,6 +29,57 @@ type Fetcher = (
 
 const STORAGE_KEYS = ["profile_presets_v1", "wealth_presets"] as const;
 
+/**
+ * クラウドにあると最後に確かめた id の一覧。
+ *
+ * **別の端末で消したプリセットを、この端末の控えで復活させないため。**
+ * 読み込みは「クラウド ∪ 端末」で合わせ、端末にしか無いものを上げる。
+ * その規則だけだと、端末 A で消した 1 件が端末 B の控えに残っていて、
+ * B が開いた瞬間に「B にしか無い」と見なして上げ直す（消しても
+ * 3 件中 1 件は決して減らない）。
+ *
+ * 端末にしか無くても、**前にクラウドにあった**と分かっていれば、それは
+ * 「他所で消された」であって「まだ上げていない」ではない。ここに残す。
+ * 無い（同期前に足した・ログイン前の控え）ものは今までどおり上げる。
+ */
+const CLOUD_IDS_KEY = "profile_presets_cloud_ids_v1";
+
+function readCloudIds(storage: Storage): Set<string> {
+  try {
+    const raw = storage.getItem(CLOUD_IDS_KEY);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return new Set(
+      Array.isArray(parsed)
+        ? parsed.filter((v): v is string => typeof v === "string")
+        : [],
+    );
+  } catch {
+    return new Set();
+  }
+}
+
+function writeCloudIds(storage: Storage, presets: ProfilePreset[]) {
+  try {
+    storage.setItem(CLOUD_IDS_KEY, JSON.stringify(presets.map((p) => p.id)));
+  } catch {
+    /* プライベートモードなどで書けないことがある。同期は続ける */
+  }
+}
+
+/**
+ * 端末の控えから、他所で消されたものを外す。クラウドに無く、しかし
+ * 前にクラウドにあった id がそれ。
+ */
+function dropDeletedElsewhere(
+  localPresets: ProfilePreset[],
+  cloudPresets: ProfilePreset[],
+  storage: Storage,
+): ProfilePreset[] {
+  const known = readCloudIds(storage);
+  const inCloud = new Set(cloudPresets.map((p) => p.id));
+  return localPresets.filter((p) => inCloud.has(p.id) || !known.has(p.id));
+}
+
 function isProfilePreset(value: unknown): value is ProfilePreset {
   if (!value || typeof value !== "object") return false;
   const preset = value as Record<string, unknown>;
@@ -186,12 +237,16 @@ export async function loadProfilePresets(
         : [];
 
     if (cloudPresets.length > 0) {
-      const mergedPresets = mergePresets(cloudPresets, localPresets);
+      const mergedPresets = mergePresets(
+        cloudPresets,
+        dropDeletedElsewhere(localPresets, cloudPresets, storage),
+      );
       const hasLocalOnlyPresets = mergedPresets.length > cloudPresets.length;
       const upload = hasLocalOnlyPresets
         ? await uploadPresets(fetcher, mergedPresets)
         : { ok: true, reason: undefined };
       cachePresets(storage, mergedPresets);
+      if (upload.ok) writeCloudIds(storage, mergedPresets);
       return {
         presets: mergedPresets,
         cloudSynced: upload.ok,
@@ -201,11 +256,13 @@ export async function loadProfilePresets(
 
     if (presetsInitialized) {
       cachePresets(storage, []);
+      writeCloudIds(storage, []);
       return { presets: [], cloudSynced: true };
     }
 
     if (localPresets.length > 0) {
       const upload = await uploadPresets(fetcher, localPresets);
+      if (upload.ok) writeCloudIds(storage, localPresets);
       return {
         presets: localPresets,
         cloudSynced: upload.ok,
@@ -258,7 +315,10 @@ async function latestPresets(
         ? maybePresets
         : [];
     if (cloudPresets.length > 0)
-      return mergePresets(cloudPresets, localPresets);
+      return mergePresets(
+        cloudPresets,
+        dropDeletedElsewhere(localPresets, cloudPresets, storage),
+      );
     if (record.presets_initialized === true) return [];
     return localPresets;
   } catch {
@@ -274,6 +334,7 @@ async function persist(
   cachePresets(storage, presets);
   try {
     const upload = await uploadPresets(fetcher, presets);
+    if (upload.ok) writeCloudIds(storage, presets);
     return { cloudSynced: upload.ok, reason: upload.reason, presets };
   } catch {
     return { cloudSynced: false, reason: "offline", presets };

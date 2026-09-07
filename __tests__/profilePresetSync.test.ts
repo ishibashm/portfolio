@@ -104,6 +104,72 @@ describe("profile preset cloud sync", () => {
     ]);
   });
 
+  it("別の端末で消したプリセットを、この端末の控えで復活させない", async () => {
+    // 端末 B の控えには 2 件、クラウドにあったと確かめた id も 2 件。
+    // 端末 A が preset_other を消した後にクラウドは 1 件になる。
+    // 以前は「B にしか無い」と見なして上げ直し、消しても減らなかった
+    const other = { ...localPreset, id: "preset_other", name: "実家" };
+    localStorage.setItem(
+      "profile_presets_v1",
+      JSON.stringify([localPreset, other]),
+    );
+    localStorage.setItem(
+      "profile_presets_cloud_ids_v1",
+      JSON.stringify(["preset_local", "preset_other"]),
+    );
+    const fetcher = vi.fn().mockResolvedValueOnce(
+      new Response(JSON.stringify({ presets: [localPreset] }), {
+        status: 200,
+      }),
+    );
+
+    const result = await loadProfilePresets(fetcher, localStorage);
+
+    expect(result.presets.map((p) => p.id)).toEqual(["preset_local"]);
+    expect(result.cloudSynced).toBe(true);
+    // 上げ直していない（GET の 1 回だけ）
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(localStorage.getItem("profile_presets_v1") ?? "[]").map(
+        (p: ProfilePreset) => p.id,
+      ),
+    ).toEqual(["preset_local"]);
+  });
+
+  it("まだ上げていない端末だけの控え（クラウドにあった記録が無い）は上げる", async () => {
+    const other = { ...localPreset, id: "preset_offline", name: "旅先" };
+    localStorage.setItem(
+      "profile_presets_v1",
+      JSON.stringify([localPreset, other]),
+    );
+    localStorage.setItem(
+      "profile_presets_cloud_ids_v1",
+      JSON.stringify(["preset_local"]),
+    );
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ presets: [localPreset] }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), { status: 200 }),
+      );
+
+    const result = await loadProfilePresets(fetcher, localStorage);
+
+    expect(result.presets.map((p) => p.id).sort()).toEqual([
+      "preset_local",
+      "preset_offline",
+    ]);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    // 上げた後は「クラウドにある」と記録される
+    expect(
+      JSON.parse(localStorage.getItem("profile_presets_cloud_ids_v1") ?? "[]"),
+    ).toEqual(expect.arrayContaining(["preset_local", "preset_offline"]));
+  });
+
   it("honors an explicitly empty cloud list instead of restoring stale local presets", async () => {
     localStorage.setItem("profile_presets_v1", JSON.stringify([localPreset]));
     const fetcher = vi
