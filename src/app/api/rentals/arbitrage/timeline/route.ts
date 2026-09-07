@@ -104,8 +104,26 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "invalid range" }, { status: 400 });
     }
 
-    const baseLat = parseFloat(searchParams.get("baseLat") || "35.6895");
-    const baseLon = parseFloat(searchParams.get("baseLon") || "139.6917");
+    /*
+      出発地は必須。以前は無いと東京駅（35.6895, 139.6917）に黙って
+      落ちていた。方位は出発地からの向きなので、東京以外の利用者が
+      出発地を渡し忘れると**東京から見た方位**の日別判定が返る。
+      一覧 API（rentals/arbitrage）は同じ場合を 400 で断っているので、
+      同じ物件で一覧は断られ、カレンダーだけ東京の答えを出す食い違い
+      だった。同じコードと文言で断る。
+    */
+    const baseLat = parseFloat(searchParams.get("baseLat") || "NaN");
+    const baseLon = parseFloat(searchParams.get("baseLon") || "NaN");
+    if (isNaN(baseLat) || isNaN(baseLon)) {
+      return NextResponse.json(
+        {
+          error: "BASE_LOCATION_REQUIRED",
+          message:
+            "出発地（現在のお住まい）の座標が必要です。方位はここからの向きで決まるため、既定値では判定できません。",
+        },
+        { status: 400 },
+      );
+    }
     const propLat = parseFloat(searchParams.get("propLat") || "NaN");
     const propLon = parseFloat(searchParams.get("propLon") || "NaN");
     if (isNaN(propLat) || isNaN(propLon)) {
