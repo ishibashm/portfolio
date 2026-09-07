@@ -1,4 +1,5 @@
 "use client";
+import { todayInJapan } from "@/utils/japanDate";
 
 import React from "react";
 import Link from "next/link";
@@ -132,7 +133,9 @@ export function ProfileForm() {
     };
   }, []);
 
-  const today = new Date().toISOString().slice(0, 10);
+  // 生年月日の上限。UTC で切ると日本の 0〜9 時は前日になり、今日生まれを
+  // 入れられない
+  const today = todayInJapan();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

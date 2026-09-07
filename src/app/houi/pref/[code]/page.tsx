@@ -19,6 +19,7 @@ import { PREF_EDITORIAL } from "@/lib/prefEditorial";
 import { DIRECTION_LABELS } from "@/lib/kigakuContent";
 import { metaDescriptionFromIntro } from "@/lib/editorialMeta";
 import { AREA_EDITORIAL } from "@/lib/areaEditorial";
+import { todayInJapan } from "@/utils/japanDate";
 
 /**
  * 市区町村への 1 行。**解説を書いた頁に印を付ける。**
@@ -132,7 +133,7 @@ export default async function Page({
         name={`${pref}の市区町村別家賃相場`}
         description={`${pref}の市区町村ごとに、掲載中の賃貸物件から集計した家賃（管理費込み）の中央値と専有面積あたりの単価をまとめたデータ。県の面積重心から見た八方位の区分つき。`}
         path={path}
-        dateModified={stats.asOf ?? new Date().toISOString().slice(0, 10)}
+        dateModified={stats.asOf ?? todayInJapan()}
       />
       {/* 市区町村ページ（/houi/area/[code]）と同じ並びにする。
           方位の早見表 → エリア別 → 県 → 市区町村 で 1 本に繋がる。 */}
