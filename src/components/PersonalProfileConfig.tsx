@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { formatCoords } from "@/lib/profileCompletion";
 import { PROFILE_FIELDS } from "@/lib/profileFields";
 import {
   Database,
@@ -529,7 +530,7 @@ export function PersonalProfileConfig({
               出生地座標 (緯度・経度)
             </span>
             <span className="text-xs text-stone-700 font-bold">
-              北緯 {birthLat.toFixed(3)} / 東経 {birthLon.toFixed(3)}
+              {formatCoords(birthLat, birthLon)}
             </span>
             <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
               {
@@ -576,7 +577,7 @@ export function PersonalProfileConfig({
               現在地の座標 (緯度・経度)
             </span>
             <span className="text-xs text-stone-700 font-bold">
-              北緯 {baseLat.toFixed(3)} / 東経 {baseLon.toFixed(3)}
+              {formatCoords(baseLat, baseLon)}
             </span>
             <span className="text-[9px] text-stone-600 mt-0.5 text-justify">
               {PROFILE_FIELDS.base.help}

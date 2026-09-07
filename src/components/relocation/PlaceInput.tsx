@@ -24,6 +24,7 @@
 
 import React from "react";
 import { MapPin } from "lucide-react";
+import { formatCoords } from "@/lib/profileCompletion";
 
 export interface PlaceInputProps {
   /** 「生まれたところ」「いま住んでいるところ」など。 */
@@ -284,9 +285,7 @@ export function PlaceInput({
         {picked ? (
           <span className="truncate">{picked}</span>
         ) : hasCoords ? (
-          <span>
-            設定済み（北緯 {lat.toFixed(3)} / 東経 {lon.toFixed(3)}）
-          </span>
+          <span>設定済み（{formatCoords(lat, lon)}）</span>
         ) : (
           <span className="text-stone-600">
             {optional ? "未設定でも判定は出ます" : "まだ設定されていません"}
