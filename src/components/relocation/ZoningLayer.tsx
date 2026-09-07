@@ -110,6 +110,15 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
   const seen = useRef<Set<string>>(new Set());
   /** 描き直しの世代。古い応答を捨てるのに使う。 */
   const generation = useRef(0);
+  /*
+    いまの縮尺。多角形（GeoJSON）は TileLayer と違って minZoom を持たない
+    ので、z14 で取った区画が z11 に引いても描かれたままになり、画像
+    タイルの上に二重に塗られていた（その一帯だけ濃く、白い縁つき）。
+    俯瞰（z9 以下）では「国土数値情報の塗りです」と言いながら
+    不動産情報ライブラリの区画が重なっていた。ZONING_MIN_ZOOM 未満では
+    多角形を描かない。
+  */
+  const [zoom, setZoom] = useState(() => Math.round(map.getZoom()));
 
   const notify = useCallback(
     (text: string | null) => {
@@ -230,7 +239,10 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
 
   useMapEvents({
     moveend: schedule,
-    zoomend: schedule,
+    zoomend: () => {
+      setZoom(Math.round(map.getZoom()));
+      schedule();
+    },
   });
 
   useEffect(() => {
@@ -274,43 +286,44 @@ export function ZoningLayer({ enabled, selected, onNotice }: ZoningLayerProps) {
         opacity={0.45}
         attribution="用途地域: 国土交通省 不動産情報ライブラリ"
       />
-      {Object.entries(tiles).map(([key, data]) => (
-        <GeoJSON
-          /*
+      {zoom >= ZONING_MIN_ZOOM &&
+        Object.entries(tiles).map(([key, data]) => (
+          <GeoJSON
+            /*
             選択が変わったら描き直す。Leaflet の GeoJSON は data が同じ
             参照だと style を引き直さないので、鍵に選択を混ぜる。
           */
-          key={`${key}-${selected ?? "all"}`}
-          data={data}
-          style={(feature) => {
-            const props = feature?.properties as ZoningProperties | undefined;
-            return {
-              fillColor: zoningFillFiltered(props?.name ?? null, selected),
-              fillOpacity: 0.45,
-              /* 細い白縁。区画の境目が地図の道路と混ざらないように */
-              color: "#ffffff",
-              weight: 0.6,
-              opacity: 0.8,
-            };
-          }}
-          onEachFeature={(feature, layer) => {
-            const p = feature.properties as ZoningProperties | undefined;
-            const name = p?.rawName ?? p?.name ?? "不明な区分";
-            const coverage = formatPercent(p?.coverage ?? null);
-            const floorArea = formatPercent(p?.floorArea ?? null);
-            /*
+            key={`${key}-${selected ?? "all"}`}
+            data={data}
+            style={(feature) => {
+              const props = feature?.properties as ZoningProperties | undefined;
+              return {
+                fillColor: zoningFillFiltered(props?.name ?? null, selected),
+                fillOpacity: 0.45,
+                /* 細い白縁。区画の境目が地図の道路と混ざらないように */
+                color: "#ffffff",
+                weight: 0.6,
+                opacity: 0.8,
+              };
+            }}
+            onEachFeature={(feature, layer) => {
+              const p = feature.properties as ZoningProperties | undefined;
+              const name = p?.rawName ?? p?.name ?? "不明な区分";
+              const coverage = formatPercent(p?.coverage ?? null);
+              const floorArea = formatPercent(p?.floorArea ?? null);
+              /*
               値が無いときは「—」。0 と書くと「建てられない」に読める。
             */
-            layer.bindPopup(
-              [
-                `<b>${name}</b>`,
-                p?.city ? `<div>${p.city}</div>` : "",
-                `<div>建蔽率 ${coverage ?? "—"} ／ 容積率 ${floorArea ?? "—"}</div>`,
-              ].join(""),
-            );
-          }}
-        />
-      ))}
+              layer.bindPopup(
+                [
+                  `<b>${name}</b>`,
+                  p?.city ? `<div>${p.city}</div>` : "",
+                  `<div>建蔽率 ${coverage ?? "—"} ／ 容積率 ${floorArea ?? "—"}</div>`,
+                ].join(""),
+              );
+            }}
+          />
+        ))}
     </>
   );
 }
