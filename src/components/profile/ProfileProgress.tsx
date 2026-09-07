@@ -85,6 +85,14 @@ export function ProfileProgress({
                   {step.need}
                 </p>
               )}
+              {/* 埋まっているものには**入っている値**を出す。✓ だけだと
+                  「何を登録したか」は入力欄を開くまで分からない。座標は
+                  桁が多いので等幅で出す（数字の位が縦にそろう） */}
+              {step.done && step.value && (
+                <p className="mt-0.5 font-mono text-[11px] leading-relaxed break-all text-stone-600">
+                  {step.value}
+                </p>
+              )}
             </div>
           </li>
         ))}

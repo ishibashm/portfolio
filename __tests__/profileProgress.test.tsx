@@ -39,6 +39,27 @@ describe("ProfileProgress", () => {
     expect(screen.getByText(/どちらの方位に動くのか/)).toBeInTheDocument();
   });
 
+  it("埋まった項目には入っている値を出す", () => {
+    // ✓ だけだと「何を登録したか」は入力欄を開くまで分からなかった。
+    render(
+      <ProfileProgress
+        completion={profileCompletion({
+          birth_date: "1990-01-02",
+          base_lat: 35.6812,
+          base_lon: 139.7671,
+        })}
+      />,
+    );
+
+    expect(screen.getByText("1990-01-02")).toBeInTheDocument();
+    expect(screen.getByText("北緯 35.681 / 東経 139.767")).toBeInTheDocument();
+  });
+
+  it("空の項目に値は出さない", () => {
+    render(<ProfileProgress completion={profileCompletion({})} />);
+    expect(screen.queryByText(/北緯/)).toBeNull();
+  });
+
   it("必須がそろえば締めの一文が変わる。出生地が空でも変わる", () => {
     render(
       <ProfileProgress
