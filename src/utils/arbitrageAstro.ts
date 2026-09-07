@@ -23,6 +23,7 @@ import { Solar } from "lunar-javascript";
 import { getZonedDateTimeFields } from "@/utils/solarTime";
 import { directionBoardInstant } from "@/utils/boardInstant";
 import { toJapanDateString } from "@/utils/japanDate";
+import { getStatusScore } from "@/lib/scoreTier";
 import {
   DEFAULT_TENCHUSATSU_MODE,
   TenchusatsuMode,
@@ -382,41 +383,22 @@ export function scoreDateForProperty(
         dailyStatus === "OPTIMAL" || dailyStatus === "OPTIMAL_REGULAR";
       if (isOptimal && ctx.hasJupiterLine) dailyStatus = "OPTIMAL_BOOST";
 
-      switch (dailyStatus) {
-        case "OPTIMAL_BOOST":
-          baseAstrologyScore = 110;
-          break;
-        case "OPTIMAL":
-          baseAstrologyScore = 100;
-          break;
-        case "SAFE":
-          baseAstrologyScore = 80;
-          break;
-        case "WARNING":
-          baseAstrologyScore = 60;
-          break;
-        case "NOISE_VOID":
-          baseAstrologyScore = 40;
-          voidPenalty = -40;
-          break;
-        case "NOISE_NODE":
-          baseAstrologyScore = 40;
-          break;
-        case "NOISE_HONMEI":
-        case "NOISE_TEKI":
-        case "NOISE_GETSUMEI":
-        case "NOISE_GETSUTEKI":
-          baseAstrologyScore = 20;
-          break;
-        case "NOISE_GOU":
-        case "NOISE_ANKEN":
-        case "NOISE_HA":
-          baseAstrologyScore = 10;
-          break;
-        default:
-          baseAstrologyScore = 50;
-          break;
-      }
+      /*
+        点は lib/scoreTier の getStatusScore から引く（#1063 で
+        api/municipalities-wealth の写しも同じ所へ寄せた）。以前はここに
+        3 つ目の写しがあり、
+
+          OPTIMAL_REGULAR（吉方位）… 写しに無く default の 50。
+                                     平穏（SAFE 80）より低かった
+          月命殺・月命的殺          … 20（本命殺と同じ大凶の段）。
+                                     noiseSeverity は二次凶に置く
+
+        の 2 つが食い違っていた。木星ラインの OPTIMAL_BOOST（110）と
+        天中殺方位の減点だけがここの固有。
+      */
+      baseAstrologyScore =
+        dailyStatus === "OPTIMAL_BOOST" ? 110 : getStatusScore(dailyStatus);
+      if (dailyStatus === "NOISE_VOID") voidPenalty = -40;
     }
 
     if (ctx.hasBirthLocation) {
